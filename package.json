@@ -11,9 +11,13 @@
     "react": "^15.6.1",
     "react-dom": "^15.6.1"
   },
+  "devDependencies": {
+    "jest": "^20.0.4"
+  },
   "scripts": {
-    "dev": "node server.js",
     "build": "next build",
-    "start": "next start"
+    "dev": "node server.js",
+    "start": "next start",
+    "test": "jest"
   }
 }
