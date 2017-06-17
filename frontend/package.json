@@ -7,17 +7,28 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "express": "^4.15.3",
+    "graphql": "^0.10.1",
     "next": "beta",
     "react": "^15.6.1",
-    "react-dom": "^15.6.1"
+    "react-apollo": "^1.4.2",
+    "react-dom": "^15.6.1",
+    "redux": "^3.7.0"
   },
   "devDependencies": {
-    "jest": "^20.0.4"
+    "jest": "^20.0.4",
+    "standard": "^10.0.2"
   },
   "scripts": {
     "build": "next build",
     "dev": "node server.js",
+    "lint": "standard",
     "start": "next start",
-    "test": "jest"
+    "test": "npm run lint && jest"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "roots": [
+      "test/"
+    ]
   }
 }
