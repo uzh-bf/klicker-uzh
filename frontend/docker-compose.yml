@@ -4,5 +4,6 @@ services:
     build: .
     ports:
       - "3000:3000"
-    entrypoint: [] #override the production entrypoint
+    volumes:
+      - ".:/app"
     command: "yarn run dev" # run next in development mode
