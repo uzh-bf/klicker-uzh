@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import withData from '../../lib/withData'
+import withData from '../lib/withData'
 import App from '../components/App'
 import QuestionList from '../components/QuestionList'
 

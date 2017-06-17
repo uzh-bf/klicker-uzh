@@ -18,18 +18,19 @@
   "devDependencies": {
     "@storybook/addon-storyshots": "^3.1.4",
     "@storybook/react": "^3.1.3",
+    "cross-env": "^5.0.1",
     "jest": "^20.0.4",
     "standard": "^10.0.2"
   },
   "scripts": {
-    "build": "next build",
+    "build": "next build src",
     "dev": "node server.js",
     "lint": "standard",
-    "start": "next start",
+    "start": "cross-env NODE_ENV=production node server.js",
     "storybook": "start-storybook -p 6006",
     "storybook-build": "build-storybook",
     "storybook-test": "storyshots",
-    "test": "npm run lint && jest"
+    "test": "yarn run lint && jest"
   },
   "jest": {
     "testEnvironment": "node",
