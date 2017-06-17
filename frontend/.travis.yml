@@ -6,9 +6,14 @@ node_js:
 
 cache:
   yarn: true
+  directories:
+    - node_modules
 
 services:
   - docker
 
 script:
-  - docker ps
+  - yarn run build
+  - ls -la
+  - docker build . -t klicker-react
+  - docker images
