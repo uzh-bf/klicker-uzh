@@ -1,0 +1,12 @@
+sudo: required
+
+language: node_js
+
+cache:
+  yarn: true
+
+services:
+  - docker
+
+script:
+  - docker ps
