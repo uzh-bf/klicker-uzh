@@ -1,4 +1,10 @@
 {
+  "name": "klicker-react",
+  "version": "0.0.1",
+  "main": "index.js",
+  "repository": "https://github.com/uzh-bf/klicker-react.git",
+  "author": "Roland Schläfli <rolandschlaefli@gmail.com>",
+  "license": "AGPL-3.0",
   "dependencies": {
     "express": "^4.15.3",
     "next": "beta",
