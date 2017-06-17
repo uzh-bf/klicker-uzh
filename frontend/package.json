@@ -30,7 +30,7 @@
     "storybook": "start-storybook -p 6006",
     "storybook-build": "build-storybook",
     "storybook-test": "storyshots",
-    "test": "yarn run lint && jest"
+    "test": "jest"
   },
   "jest": {
     "testEnvironment": "node",
