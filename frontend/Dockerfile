@@ -14,13 +14,21 @@ COPY entrypoint.sh /entrypoint.sh
 RUN chown 1000:1000 /entrypoint.sh \
   && chmod u+x /entrypoint.sh
 
-# inject the application sources
-COPY . $KLICKER_DIR
-RUN chown -R 1000:1000 /app
+# inject the application dependencies
+COPY package.json yarn.lock $KLICKER_DIR/
+
+WORKDIR $KLICKER_DIR
+
+# install yarn packages
+RUN set -x \
+  && yarn install
+
+# inject application sources
+COPY . KLICKER_DIR/
 
 # switch to the node user (uid 1000)
 # non-root as provided by the base image
-WORKDIR $KLICKER_DIR
+RUN chown -R 1000:1000 $KLICKER_DIR
 USER 1000
 
 # configure the entrypoint script
