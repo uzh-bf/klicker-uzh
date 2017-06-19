@@ -12,20 +12,22 @@ class QuestionList extends Component {
     return (
       <div>
         <ul>
-          {data.allQuestions.map(question =>
+          {data.allQuestions.map(question => (
             <li key={question.id}>{question.title}</li>
-          )}
+          ))}
         </ul>
       </div>
     )
   }
 }
 
-export default graphql(gql`
+export default graphql(
+  gql`
   {
     allQuestions {
       id
       title
     }
   }
-`)(QuestionList)
+`,
+)(QuestionList)

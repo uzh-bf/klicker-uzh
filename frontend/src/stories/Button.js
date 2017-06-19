@@ -10,20 +10,21 @@ const buttonStyles = {
   cursor: 'pointer',
   fontSize: 15,
   padding: '3px 10px',
-  margin: 10
+  margin: 10,
 }
 
-const Button = ({ children, onClick }) =>
+const Button = ({ children, onClick }) => (
   <button style={buttonStyles} onClick={onClick}>
     {children}
   </button>
+)
 
 Button.propTypes = {
   children: PropTypes.string.isRequired,
-  onClick: PropTypes.func
+  onClick: PropTypes.func,
 }
 Button.defaultProps = {
-  onClick: () => {}
+  onClick: () => {},
 }
 
 export default Button
