@@ -23,7 +23,7 @@ RUN chown 1000:1000 /entrypoint.sh \
   && chmod u+x /entrypoint.sh
 
 # inject application sources
-COPY . KLICKER_DIR/
+COPY . $KLICKER_DIR/
 
 # switch to the node user (uid 1000)
 # non-root as provided by the base image
