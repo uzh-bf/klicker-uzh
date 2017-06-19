@@ -13,7 +13,5 @@ services:
   - docker
 
 script:
-  - yarn run build
-  - ls -la
   - docker build . -t klicker-react
   - docker images

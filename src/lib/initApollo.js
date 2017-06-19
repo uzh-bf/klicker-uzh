@@ -16,9 +16,9 @@ function create(initialState) {
       uri: 'https://api.graph.cool/simple/v1/cj41d4jkmdqsw0185hgxq7le9', // Server URL (must be absolute)
       opts: {
         // Additional fetch() options like `credentials` or `headers`
-        credentials: 'same-origin'
-      }
-    })
+        credentials: 'same-origin',
+      },
+    }),
   })
 }
 
