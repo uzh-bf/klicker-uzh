@@ -1,0 +1,18 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Snapshot-Testing Works 1`] = `
+<main>
+  <header>
+    <h1>
+      Hello World
+    </h1>
+  </header>
+  Welcome to the new Klicker!
+  <a
+    href="/questions"
+    onClick={[Function]}
+  >
+    List of questions
+  </a>
+</main>
+`;
