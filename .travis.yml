@@ -8,6 +8,9 @@ branches:
   only:
     - master
 
+services:
+  - docker
+
 jobs:
   include:
     - stage: test
@@ -24,5 +27,3 @@ jobs:
         - docker pull quay.io/uzh-bf/klicker-react:latest
         - docker build --cache-from quay.io/uzh-bf/klicker-react:latest -t quay.io/uzh-bf/klicker-react:latest .
         - if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then bash -c "docker push quay.io/uzh-bf/klicker-react:latest"; fi
-      services:
-        - docker
