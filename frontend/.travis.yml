@@ -13,5 +13,6 @@ services:
   - docker
 
 script:
-  - docker build . -t klicker-react
-  - docker images
+  - docker build . -t quay.io/uzh-bf/klicker-react:latest
+  - docker login -u$QUAY_USER -p$QUAY_TOKEN quay.io/uzh-bf/klicker-react
+  - docker push quay.io/uzh-bf/klicker-react:latest
