@@ -34,7 +34,7 @@ USER 1000
 RUN yarn test
 
 
-FROM 8.1.2-alpine AS runner
+FROM node:8.1.2-alpine AS runner
 
 EXPOSE 3000
 WORKDIR $KLICKER_DIR
