@@ -1,11 +1,7 @@
 {
   "parser": "babel-eslint",
   "extends": "airbnb",
-  "plugins": [
-    "react",
-    "jsx-a11y",
-    "import"
-  ],
+  "plugins": ["react", "jsx-a11y", "import"],
   "rules": {
     "semi": 0,
     "react/prop-types": 1,

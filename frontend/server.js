@@ -10,16 +10,14 @@ app
   .then(() => {
     const server = express()
 
-    server.get('*', (req, res) => {
-      return handle(req, res)
-    })
+    server.get('*', (req, res) => handle(req, res))
 
-    server.listen(3000, err => {
+    server.listen(3000, (err) => {
       if (err) throw err
       console.log('Ready on http://localhost:3000')
     })
   })
-  .catch(err => {
+  .catch((err) => {
     console.error(err.stack)
     process.exit(1)
   })
