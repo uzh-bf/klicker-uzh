@@ -31,11 +31,12 @@
     "eslint-plugin-import": "2.6.1",
     "eslint-plugin-jsx-a11y": "5.1.1",
     "eslint-plugin-react": "7.1.0",
-    "jest": "^20.0.4"
+    "jest": "^20.0.4",
+    "nodemon": "^1.11.0"
   },
   "scripts": {
     "build": "next build src",
-    "dev": "node server.js",
+    "dev": "nodemon -w server.js server.js",
     "lint": "eslint src/**/*.js",
     "start": "cross-env NODE_ENV=production node server.js",
     "storybook": "start-storybook -p 6006",
