@@ -4,6 +4,10 @@ language: node_js
 node_js:
   - "8"
 
+branches:
+  only:
+    - master
+
 jobs:
   include:
     - stage: test
@@ -19,6 +23,6 @@ jobs:
         - docker login -u$QUAY_USER -p$QUAY_TOKEN quay.io/uzh-bf/klicker-react
         - docker pull quay.io/uzh-bf/klicker-react:latest
         - docker build --cache-from quay.io/uzh-bf/klicker-react:latest -t quay.io/uzh-bf/klicker-react:latest .
-        - docker push quay.io/uzh-bf/klicker-react:latest
+        - if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then bash -c "docker push quay.io/uzh-bf/klicker-react:latest"; fi
       services:
         - docker
