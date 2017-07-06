@@ -35,7 +35,7 @@
     "nodemon": "^1.11.0"
   },
   "scripts": {
-    "build": "next build src",
+    "build": "next build src && node ./src/lib/defaultLang",
     "dev": "nodemon -w server.js server.js",
     "lint": "eslint src/**/*.js",
     "start": "cross-env NODE_ENV=production node server.js",
