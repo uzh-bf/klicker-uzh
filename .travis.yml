@@ -4,14 +4,11 @@ language: node_js
 node_js:
   - "8"
 
-services:
-  - docker
-
 jobs:
   include:
     - stage: test
       script:
-        - echo "Testing..."
+        - yarn test
       cache:
         yarn: true
         directories:
@@ -23,7 +20,5 @@ jobs:
         - docker pull quay.io/uzh-bf/klicker-react:latest
         - docker build --cache-from quay.io/uzh-bf/klicker-react:latest -t quay.io/uzh-bf/klicker-react:latest .
         - docker push quay.io/uzh-bf/klicker-react:latest
-
-    - stage: deploy
-      script:
-        - echo "Deploying..."
+      services:
+        - docker
