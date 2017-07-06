@@ -1,11 +1,32 @@
 {
-  "presets": ["next/babel"],
   "env": {
     "development": {
-      "plugins": ["react-intl"]
+      "presets": "next/babel",
+      "plugins": [
+        "react-intl"
+      ]
     },
     "production": {
-      "plugins": [["react-intl", { "messagesDir": "src/lang/.messages" }]]
+      "presets": "next/babel",
+      "plugins": [
+        [
+          "react-intl",
+          {
+            "messagesDir": "src/lang/.messages"
+          }
+        ]
+      ]
+    },
+    "test": {
+      "presets": [
+        [
+          "env",
+          {
+            "modules": "commonjs"
+          }
+        ],
+        "next/babel"
+      ]
     }
   }
 }
