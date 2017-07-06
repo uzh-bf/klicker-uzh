@@ -4,7 +4,9 @@ exports[`Snapshot-Testing Works 1`] = `
 <main>
   <header>
     <h1>
-      Hello World
+      <span>
+        Hello World
+      </span>
     </h1>
   </header>
   Welcome to the new Klicker!
