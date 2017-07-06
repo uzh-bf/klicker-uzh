@@ -54,37 +54,22 @@ export default class Welcome extends React.Component {
     return (
       <div style={styles.main}>
         <h1>Welcome to STORYBOOK</h1>
+        <p>This is a UI component dev environment for your app.</p>
         <p>
-          This is a UI component dev environment for your app.
-        </p>
-        <p>
-          We've added some basic stories inside the
-          {' '}
-          <code style={styles.code}>src/stories</code>
-          {' '}
+          We've added some basic stories inside the <code style={styles.code}>src/stories</code>{' '}
           directory.
           <br />
-          A story is a single state of one or more UI components. You can have
-          as many stories as
+          A story is a single state of one or more UI components. You can have as many stories as
           you want.
           <br />
           (Basically a story is like a visual test case.)
         </p>
         <p>
-          See these sample
-          {' '}
-          <a
-            style={styles.link}
-            onClick={this.clickHandler}
-            role="button"
-            tabIndex="0"
-          >
+          See these sample{' '}
+          <a style={styles.link} onClick={this.clickHandler} role="button" tabIndex="0">
             stories
-          </a>
-          {' '}
-          for a component called
-          {' '}
-          <code style={styles.code}>Button</code>
+          </a>{' '}
+          for a component called <code style={styles.code}>Button</code>
           .
         </p>
         <p>
@@ -92,14 +77,13 @@ export default class Welcome extends React.Component {
           <br />
           You can also edit those components and see changes right away.
           <br />
-          (Try editing the <code style={styles.code}>Button</code> component
-          located at <code style={styles.code}>src/stories/Button.js</code>.)
+          (Try editing the <code style={styles.code}>Button</code> component located at{' '}
+          <code style={styles.code}>src/stories/Button.js</code>.)
         </p>
         <p>
           This is just one thing you can do with Storybook.
           <br />
-          Have a look at the
-          {' '}
+          Have a look at the{' '}
           <a
             style={styles.link}
             href="https://github.com/storybooks/storybook"
@@ -107,19 +91,14 @@ export default class Welcome extends React.Component {
             rel="noopener noreferrer"
           >
             Storybook
-          </a>
-          {' '}
+          </a>{' '}
           repo for more information.
         </p>
         <p style={styles.note}>
           <b>NOTE:</b>
           <br />
-          Have a look at the
-          {' '}
-          <code style={styles.code}>.storybook/webpack.config.js</code>
-          {' '}
-          to add webpack
-          loaders and plugins you are using in this project.
+          Have a look at the <code style={styles.code}>.storybook/webpack.config.js</code> to add
+          webpack loaders and plugins you are using in this project.
         </p>
       </div>
     )
