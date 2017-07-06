@@ -10,6 +10,7 @@
     "graphql": "^0.10.1",
     "isomorphic-fetch": "^2.2.1",
     "next": "beta",
+    "prop-types": "^15.5.10",
     "react": "^15.6.1",
     "react-apollo": "^1.4.2",
     "react-dom": "^15.6.1",
@@ -25,8 +26,7 @@
     "eslint-plugin-import": "2.6.1",
     "eslint-plugin-jsx-a11y": "5.1.1",
     "eslint-plugin-react": "7.1.0",
-    "jest": "^20.0.4",
-    "prop-types": "^15.5.10"
+    "jest": "^20.0.4"
   },
   "scripts": {
     "build": "next build src",
@@ -40,8 +40,6 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "roots": [
-      "test/"
-    ]
+    "roots": ["test/"]
   }
 }

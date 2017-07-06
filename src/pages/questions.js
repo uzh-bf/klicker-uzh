@@ -1,8 +1,9 @@
-import React from 'react'
 import Link from 'next/link'
-import withData from '../lib/withData'
+import React from 'react'
+
 import App from '../components/App'
 import QuestionList from '../components/QuestionList'
+import withData from '../lib/withData'
 
 export default withData(() =>
   (<App>
