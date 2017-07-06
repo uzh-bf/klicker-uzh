@@ -4,6 +4,10 @@ language: node_js
 node_js:
   - "8"
 
+branches:
+  only:
+    - master
+
 services:
   - docker
 
@@ -11,7 +15,7 @@ jobs:
   include:
     - stage: test
       script:
-        - echo "Testing..."
+        - yarn test
       cache:
         yarn: true
         directories:
@@ -22,8 +26,4 @@ jobs:
         - docker login -u$QUAY_USER -p$QUAY_TOKEN quay.io/uzh-bf/klicker-react
         - docker pull quay.io/uzh-bf/klicker-react:latest
         - docker build --cache-from quay.io/uzh-bf/klicker-react:latest -t quay.io/uzh-bf/klicker-react:latest .
-        - docker push quay.io/uzh-bf/klicker-react:latest
-
-    - stage: deploy
-      script:
-        - echo "Deploying..."
+        - if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then bash -c "docker push quay.io/uzh-bf/klicker-react:latest"; fi
