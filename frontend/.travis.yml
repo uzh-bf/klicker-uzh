@@ -14,18 +14,14 @@ services:
 
 jobs:
   include:
-    # test stage
     - stage: test
-    script:
-      - echo "Testing..."
-    # build stage
+      script:
+        - echo "Testing..."
     - stage: build
-    script:
-      - docker build . -t quay.io/uzh-bf/klicker-react:latest
-      - docker login -u$QUAY_USER -p$QUAY_TOKEN quay.io/uzh-bf/klicker-react
-      - docker push quay.io/uzh-bf/klicker-react:latest
-    # deploy stage
+      script:
+        - docker build . -t quay.io/uzh-bf/klicker-react:latest
+        - docker login -u$QUAY_USER -p$QUAY_TOKEN quay.io/uzh-bf/klicker-react
+        - docker push quay.io/uzh-bf/klicker-react:latest
     - stage: deploy
-    script:
-      - echo "Deploying..."
-
+      script:
+        - echo "Deploying..."
