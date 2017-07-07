@@ -8,9 +8,6 @@
     "react/require-default-props": 1,
     "react/jsx-filename-extension": 0,
     "react/forbid-prop-types": 1,
-    "sort-imports": 1,
-    "sort-keys": 1,
-    "sort-vars": 1,
     "global-require": 0,
     "import/no-dynamic-require": 0
   }
