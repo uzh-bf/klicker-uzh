@@ -31,8 +31,8 @@ RUN chown -R 1000:1000 $KLICKER_DIR/
 USER 1000
 
 # build the application
-RUN set -x \
-  && yarn run build
+# RUN set -x \
+  # && yarn run build
 
 # configure the entrypoint script
 ENTRYPOINT ["/entrypoint.sh"]

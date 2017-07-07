@@ -1,14 +1,50 @@
 import { FormattedMessage } from 'react-intl'
-import React from 'react'
+import React, { Component } from 'react'
 import pageWithIntl from '../lib/pageWithIntl'
 
-export default pageWithIntl(({ children }) =>
-  (<main>
-    <header>
-      <h1>
-        <FormattedMessage id="title" defaultMessage="Hello World" />
-      </h1>
-    </header>
-    {children}
-  </main>),
-)
+class App extends Component {
+  componentWillMount() {
+    // restrict code execution to clientside
+    if (typeof window !== 'undefined') {
+      const ENV = require('../lib/env').default
+
+      // embed logrocket if enabled
+      if (ENV.LOGROCKET) {
+        const LogRocket = require('logrocket')
+        const LogRocketReact = require('logrocket-react')
+
+        LogRocket.init(ENV.LOGROCKET)
+        LogRocketReact(LogRocket)
+      }
+
+      // embed sentry if enabled
+      if (ENV.SENTRY) {
+        const Raven = require('raven-js')
+
+        Raven.config(ENV.SENTRY).install()
+
+        if (ENV.LOGROCKET) {
+          Raven.setDataCallback((data) => {
+            data.extra.sessionURL = LogRocket.sessionURL
+            return data
+          })
+        }
+      }
+    }
+  }
+
+  render() {
+    return (
+      <main>
+        <header>
+          <h1>
+            <FormattedMessage id="title" defaultMessage="Hello World" />
+          </h1>
+        </header>
+        {this.props.children}
+      </main>
+    )
+  }
+}
+
+export default pageWithIntl(App)
