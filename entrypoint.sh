@@ -8,8 +8,10 @@ LOGROCKET=${LOGROCKET:-'__LOGROCKET__'}
 # ensure that the application has not been built already
 # take into account any changed environment variables
 # => prevent build from rerunning on crash, restart etc.
-if [[ ! -f /tmp/klicker.lock || ! grep -q $SENTRY /tmp/klicker_sentry || ! grep -q $LOGROCKET /tmp/klicker_logrocket ]];
-then
+SENTRY_SAME=`grep -q $SENTRY /tmp/klicker_sentry`
+LOGROCKET_SAME=`grep -q $LOGROCKET /tmp/klicker_logrocket`
+echo "SENTRY_SAME=$SENTRY_SAME; LOGROCKET_SAME=$LOGROCKET_SAME"
+if [[ ! -f /tmp/klicker.lock || !SENTRY_SAME || !LOGROCKET_SAME ]]; then
 
   echo "Lockfile not found, initializing application..."
 
