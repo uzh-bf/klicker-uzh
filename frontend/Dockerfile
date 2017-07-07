@@ -38,4 +38,4 @@ RUN set -x \
 ENTRYPOINT ["/entrypoint.sh"]
 
 # run next in production mode
-CMD ["yarn", "run", "start"]
+CMD ["yarn", "start"]
