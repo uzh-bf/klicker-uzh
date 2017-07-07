@@ -1,11 +1,12 @@
 {
   "name": "klicker-api",
   "version": "0.0.1",
-  "main": "index.js",
+  "main": "src/index.js",
   "repository": "https://github.com/uzh-bf/klicker-api.git",
   "author": "Roland Schläfli <roland.schlaefli@bf.uzh.ch>",
   "license": "AGPL-3.0",
   "dependencies": {
+    "body-parser": "^1.17.2",
     "express": "^4.15.3",
     "graphql": "^0.10.1",
     "graphql-server-express": "^1.0.0",
@@ -22,14 +23,14 @@
     "nodemon": "^1.11.0"
   },
   "scripts": {
-    "debug": "cross-env NODE_ENV=production node --inspect server.js",
-    "dev": "nodemon server.js",
+    "debug": "cross-env NODE_ENV=production node --inspect src/server.js",
+    "dev": "nodemon src/server.js",
     "lint": "eslint src/**/*.js",
-    "start": "cross-env NODE_ENV=production node server.js",
+    "start": "cross-env NODE_ENV=production node src/server.js",
     "test": "jest"
   },
   "jest": {
     "testEnvironment": "node",
-    "roots": ["test/"]
+    "roots": ["src/"]
   }
 }
