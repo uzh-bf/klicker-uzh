@@ -2,6 +2,11 @@ version: '3'
 services:
   api:
     build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ".:/app"
+    command: "yarn run dev" # run next in development mode
 
   mongodb:
     image: mongo:3.4.5
