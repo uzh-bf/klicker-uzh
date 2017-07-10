@@ -1,5 +1,5 @@
-import { FormattedMessage } from 'react-intl'
 import React, { Component } from 'react'
+import { FormattedMessage } from 'react-intl'
 import pageWithIntl from '../lib/pageWithIntl'
 
 class App extends Component {
@@ -12,7 +12,6 @@ class App extends Component {
       if (ENV.LOGROCKET !== '__LOGROCKET__') {
         const LogRocket = require('logrocket')
         const LogRocketReact = require('logrocket-react')
-
         LogRocket.init(ENV.LOGROCKET)
         LogRocketReact(LogRocket)
       }
@@ -24,10 +23,13 @@ class App extends Component {
         Raven.config(ENV.SENTRY).install()
 
         if (ENV.LOGROCKET !== '__LOGROCKET__') {
-          Raven.setDataCallback((data) => {
-            data.extra.sessionURL = LogRocket.sessionURL
-            return data
-          })
+          Raven.setDataCallback(data =>
+            Object.assign({}, data, {
+              extra: {
+                sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef
+              },
+            }),
+          )
         }
       }
     }
