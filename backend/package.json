@@ -15,6 +15,7 @@
   },
   "devDependencies": {
     "babel-eslint": "^7.2.3",
+    "bithound": "^1.7.0",
     "cross-env": "^5.0.1",
     "eslint": "^3.19.0",
     "eslint-config-airbnb-base": "^11.2.0",
@@ -31,6 +32,6 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "roots": ["src/"]
+    "roots": ["src/", "test/"]
   }
 }
