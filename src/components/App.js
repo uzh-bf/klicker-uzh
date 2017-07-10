@@ -1,6 +1,8 @@
+import Head from 'next/head'
 import React, { Component } from 'react'
 import { FormattedMessage } from 'react-intl'
 import PropTypes from 'prop-types'
+import { Grid } from 'semantic-ui-react'
 import pageWithIntl from '../lib/pageWithIntl'
 
 class App extends Component {
@@ -42,14 +44,37 @@ class App extends Component {
 
   render() {
     return (
-      <main>
-        <header>
-          <h1>
-            <FormattedMessage id="title" defaultMessage="Hello World" />
-          </h1>
-        </header>
-        {this.props.children}
-      </main>
+      <Grid>
+        <Head>
+          <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.10/components/reset.min.css"
+          />
+          <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.10/components/grid.min.css"
+          />
+        </Head>
+        <Grid.Row columns="1">
+          <Grid.Column>
+            <header>
+              <h1>Klicker</h1>
+            </header>
+          </Grid.Column>
+        </Grid.Row>
+        <Grid.Row columns="1">
+          <Grid.Column>
+            <Grid>
+              {this.props.children}
+            </Grid>
+          </Grid.Column>
+        </Grid.Row>
+        <style jsx>{`
+          h1 {
+            background-color: black;
+          }
+        `}</style>
+      </Grid>
     )
   }
 }

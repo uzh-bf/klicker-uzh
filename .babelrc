@@ -2,11 +2,12 @@
   "env": {
     "development": {
       "presets": "next/babel",
-      "plugins": ["add-react-displayname", "react-intl"]
+      "plugins": ["styled-jsx/babel", "add-react-displayname", "react-intl"]
     },
     "production": {
       "presets": "next/babel",
       "plugins": [
+        "styled-jsx/babel",
         "add-react-displayname",
         [
           "react-intl",
