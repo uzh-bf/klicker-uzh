@@ -7,7 +7,7 @@ export default ComposedComponent =>
   class WithData extends React.Component {
     static displayName = `WithData(${ComposedComponent.displayName})`
     static propTypes = {
-      serverState: PropTypes.object.isRequired,
+      serverState: PropTypes.object.isRequired, // eslint-disable-line react/forbid-prop-types
     }
 
     static async getInitialProps(ctx) {
