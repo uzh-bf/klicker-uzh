@@ -56,7 +56,7 @@ export default class Welcome extends React.Component {
         <h1>Welcome to STORYBOOK</h1>
         <p>This is a UI component dev environment for your app.</p>
         <p>
-          We've added some basic stories inside the <code style={styles.code}>src/stories</code>{' '}
+          We have added some basic stories inside the <code style={styles.code}>src/stories</code>{' '}
           directory.
           <br />
           A story is a single state of one or more UI components. You can have as many stories as
