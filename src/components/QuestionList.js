@@ -16,11 +16,6 @@ const QuestionList = ({ data }) => {
           </li>),
         )}
       </ul>
-      <style jsx>{`
-        li {
-          color: red;
-        }
-      `}</style>
     </div>
   )
 }

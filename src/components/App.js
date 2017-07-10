@@ -1,8 +1,7 @@
 import Head from 'next/head'
 import React, { Component } from 'react'
-import { FormattedMessage } from 'react-intl'
 import PropTypes from 'prop-types'
-import { Grid } from 'semantic-ui-react'
+import { Grid, Menu } from 'semantic-ui-react'
 import pageWithIntl from '../lib/pageWithIntl'
 
 class App extends Component {
@@ -54,12 +53,23 @@ class App extends Component {
             rel="stylesheet"
             href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.10/components/grid.min.css"
           />
+          <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.10/components/menu.min.css"
+          />
         </Head>
-        <Grid.Row columns="1">
-          <Grid.Column>
-            <header>
-              <h1>Klicker</h1>
-            </header>
+        <Grid.Row as="header" columns="3">
+          <Grid.Column verticalAlign="middle">
+            <h1>page title</h1>
+          </Grid.Column>
+          <Grid.Column textAlign="center" verticalAlign="middle">
+            middle part
+          </Grid.Column>
+          <Grid.Column className="heheh">
+            <Menu>
+              <Menu.Item active>hello world</Menu.Item>
+              <Menu.Item>lorem ipsum</Menu.Item>
+            </Menu>
           </Grid.Column>
         </Grid.Row>
         <Grid.Row columns="1">
@@ -69,6 +79,19 @@ class App extends Component {
             </Grid>
           </Grid.Column>
         </Grid.Row>
+        <Grid.Row columns="1">
+          <Grid.Column as="footer">IBF</Grid.Column>
+        </Grid.Row>
+        <style global jsx>{`
+          header {
+            background-color: grey;
+            height: 4rem;
+          }
+
+          footer {
+            background-color: grey;
+          }
+        `}</style>
       </Grid>
     )
   }
