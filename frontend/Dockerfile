@@ -1,5 +1,5 @@
 # extend the node alpine base
-FROM node:8.1.2-alpine
+FROM node:8.1.3-alpine
 
 MAINTAINER Roland Schlaefli <roland.schlaefli@bf.uzh.ch>
 LABEL NAME klicker-react
@@ -15,7 +15,7 @@ COPY package.json yarn.lock $KLICKER_DIR/
 
 # install yarn packages
 RUN set -x \
-  && yarn install
+  && yarn install --pure-lockfile
 
 # inject the entrypoint and make it runnable
 COPY entrypoint.sh /entrypoint.sh
@@ -29,10 +29,6 @@ COPY . $KLICKER_DIR/
 # non-root as provided by the base image
 RUN chown -R 1000:1000 $KLICKER_DIR/
 USER 1000
-
-# build the application
-RUN set -x \
-  && yarn run build
 
 # configure the entrypoint script
 ENTRYPOINT ["/entrypoint.sh"]
