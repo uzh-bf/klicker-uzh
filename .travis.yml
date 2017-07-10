@@ -24,6 +24,10 @@ jobs:
     - stage: test
       script:
         - bithound check git@github.com:uzh-bf/klicker-react
+      cache:
+        yarn: true
+        directories:
+          - node_modules
 
     - stage: build
       script:
