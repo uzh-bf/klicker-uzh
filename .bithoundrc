@@ -2,9 +2,9 @@
   "test": [
     "src/**/*.test.js"
   ],
-  "critics": [
+  "critics": {
     "lint": {"engine": "eslint"}
-  ],
+  },
   "dependencies": {
     "mute": [
       "eslint",
