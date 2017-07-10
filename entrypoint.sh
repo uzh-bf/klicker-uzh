@@ -14,7 +14,7 @@ if [[ ! -f /tmp/klicker_logrocket ]]; then echo "__LOGROCKET__" >> /tmp/klicker_
 # => prevent build from rerunning on crash, restart etc.
 SENTRY_SAME=`grep -q $SENTRY /tmp/klicker_sentry`
 LOGROCKET_SAME=`grep -q $LOGROCKET /tmp/klicker_logrocket`
-echo "SENTRY_SAME=$SENTRY_SAME; LOGROCKET_SAME=$LOGROCKET_SAME"
+if [[ SENTRY_SAME && LOGROCKET_SAME ]]; then echo "Sentry/Logrocket parameters unchanged..."; fi
 if [[ ! -f /tmp/klicker.lock || !SENTRY_SAME || !LOGROCKET_SAME ]]; then
 
   echo "Lockfile not found, initializing application..."
