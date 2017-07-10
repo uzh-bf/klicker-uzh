@@ -35,7 +35,7 @@ export default (Page) => {
     }
 
     render() {
-      const { locale, messages, now, ...props } = this.props
+      const { locale, messages, now, ...props } = this.props // eslint-disable-line react/prop-types
       return (
         <IntlProvider locale={locale} messages={messages} initialNow={now}>
           <IntlPage {...props} />

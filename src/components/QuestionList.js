@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import { gql, graphql } from 'react-apollo'
 
 const QuestionList = ({ data }) => {
@@ -17,6 +18,15 @@ const QuestionList = ({ data }) => {
       </ul>
     </div>
   )
+}
+
+QuestionList.propTypes = {
+  data: PropTypes.shape({
+    allQuestions: PropTypes.shape({
+      id: PropTypes.number,
+      title: PropTypes.string,
+    }),
+  }).isRequired,
 }
 
 export default graphql(
