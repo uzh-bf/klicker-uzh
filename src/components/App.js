@@ -1,8 +1,13 @@
 import React, { Component } from 'react'
 import { FormattedMessage } from 'react-intl'
+import PropTypes from 'prop-types'
 import pageWithIntl from '../lib/pageWithIntl'
 
 class App extends Component {
+  static propTypes = {
+    children: PropTypes.node.isRequired,
+  }
+
   componentWillMount() {
     // restrict code execution to clientside
     if (typeof window !== 'undefined') {
