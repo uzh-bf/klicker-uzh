@@ -1,0 +1,14 @@
+{
+  "test": [
+    "src/**/*.test.js"
+  ],
+  "critics": {
+    "lint": {"engine": "eslint"}
+  },
+  "dependencies": {
+    "mute": [
+      "eslint",
+      "next"
+    ]
+  }
+}

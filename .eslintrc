@@ -9,6 +9,12 @@
     "react/jsx-filename-extension": 0,
     "react/forbid-prop-types": 1,
     "global-require": 0,
-    "import/no-dynamic-require": 0
+    "import/no-dynamic-require": 0,
+    "no-console": 0
+  },
+  "env": {
+    "browser": true,
+    "node": true,
+    "jest": true
   }
 }
