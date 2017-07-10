@@ -69,11 +69,6 @@ class App extends Component {
             </Grid>
           </Grid.Column>
         </Grid.Row>
-        <style jsx>{`
-          h1 {
-            background-color: black;
-          }
-        `}</style>
       </Grid>
     )
   }
