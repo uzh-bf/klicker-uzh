@@ -1,13 +1,14 @@
-import Head from 'next/head'
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { Grid } from 'semantic-ui-react'
 
 import pageWithIntl from '../lib/pageWithIntl'
 import Footer from './common/Footer'
+import withCSS from '../lib/withCSS'
 
 class App extends Component {
   static propTypes = {
+    head: PropTypes.node.isRequired,
     children: PropTypes.node.isRequired,
   }
 
@@ -44,23 +45,15 @@ class App extends Component {
   }
 
   render() {
-    const { children } = this.props
+    const { head, children } = this.props
 
     return (
-      <Grid>
-        <Head>
-          <link
-            rel="stylesheet"
-            href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.10/components/reset.min.css"
-          />
-          <link
-            rel="stylesheet"
-            href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.10/components/grid.min.css"
-          />
-        </Head>
+      <Grid padded="horizontally">
+        {head}
         {children}
         <Footer />
-        <style global jsx>{`
+
+        <style jsx global>{`
           * {
             border-radius: 0 !important;
           }
@@ -70,4 +63,4 @@ class App extends Component {
   }
 }
 
-export default pageWithIntl(App)
+export default pageWithIntl(withCSS(App, ['reset', 'grid']))

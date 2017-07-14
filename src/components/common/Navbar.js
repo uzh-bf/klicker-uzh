@@ -41,7 +41,7 @@ class Navbar extends Component {
     const { activeItem } = this.state
 
     return (
-      <BaseLayout>
+      <BaseLayout columnClasses="navbar">
         {head}
 
         <Menu borderless as="nav">
@@ -67,7 +67,7 @@ class Navbar extends Component {
               <Popup
                 basic
                 hideOnScroll
-                className="sessionAccess"
+                className="sessionArea"
                 on="click"
                 position="bottom right"
                 trigger={
@@ -100,13 +100,13 @@ class Navbar extends Component {
             width: 25%;
           }
 
-          :global(.titleArea) {
-            width: 25%;
-          }
-
           :global(.navbarTitle) {
             font-size: 1.3rem;
             margin-left: 1rem;
+          }
+
+          :global(.popup.sessionArea) {
+            margin-top: 0 !important;
           }
 
           :global(.searchArea) {
@@ -118,8 +118,13 @@ class Navbar extends Component {
           :global(.searchField) {
           }
 
-          :global(.popup.sessionAccess) {
-            margin-top: 0 !important;
+          :global(.titleArea) {
+            width: 25%;
+          }
+        `}</style>
+        <style jsx global>{`
+          .navbar {
+            padding: 0 !important;
           }
         `}</style>
       </BaseLayout>

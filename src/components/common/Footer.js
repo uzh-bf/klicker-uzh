@@ -5,11 +5,10 @@ export default () =>
   (<Grid.Row>
     <Grid.Column as="footer">Klicker 2017 - IBF</Grid.Column>
 
-    <style global jsx>{`
+    <style jsx global>{`
       footer {
-        background-color: lightgrey;
-        border-top: 1px solid darkgrey;
-        height: 3rem;
+        border-top: 3px solid orange;
+        padding: 1rem;
       }
     `}</style>
   </Grid.Row>)
