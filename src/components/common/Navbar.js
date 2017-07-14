@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-import { Dropdown, Icon, Menu } from 'semantic-ui-react'
+import { Button, Divider, Dropdown, Icon, Image, Input, Menu, Popup } from 'semantic-ui-react'
 
 import BaseLayout from '../layouts/BaseLayout'
 import withCSS from '../../lib/withCSS'
@@ -8,12 +8,12 @@ import withCSS from '../../lib/withCSS'
 class Navbar extends Component {
   static propTypes = {
     accountShort: PropTypes.string.isRequired, // shorthand for the logged in user
-    head: PropTypes.node.isRequired,
+    head: PropTypes.node.isRequired, // head as injected by HOC
     search: PropTypes.bool, // optional search field embedded in navbar
     title: PropTypes.string.isRequired, // title of the page
-    handleSearch: PropTypes.func,
-    handleSidebarToggle: PropTypes.func.isRequired,
-    handleSort: PropTypes.func,
+    handleSearch: PropTypes.func, // function that handles onChange for search field
+    handleSidebarToggle: PropTypes.func.isRequired, // function that handles toggling of the sidebar
+    handleSort: PropTypes.func, // function that handles changing of sort order
   }
 
   static defaultProps = {
@@ -23,6 +23,7 @@ class Navbar extends Component {
   }
 
   state = {
+    activeItem: 'sidebar',
     sortBy: 'name',
     sortOrder: 'asc',
   }
@@ -43,31 +44,82 @@ class Navbar extends Component {
       <BaseLayout>
         {head}
 
-        <Menu fluid as="nav">
-          <Menu.Item
-            name="sidebar"
-            active={activeItem === 'sidebar'}
-            icon
-            onClick={this.handleSidebarToggle}
-          >
-            <Icon name="sidebar" />
-          </Menu.Item>
-          <Menu.Header as="h1" className="navbarTitle" content={title} />
+        <Menu borderless as="nav">
+          <Menu.Menu className="titleArea">
+            <Menu.Item
+              name="sidebar"
+              active={activeItem === 'sidebar'}
+              icon
+              onClick={this.handleSidebarToggle}
+            >
+              <Icon name="sidebar" />
+            </Menu.Item>
+            <Menu.Header as="h1" className="navbarTitle" content={title} />
+          </Menu.Menu>
 
-          <Menu.Menu position="right">
-            <Dropdown item text={accountShort} simple>
-              <Dropdown.Menu>
-                <Dropdown.Item>Settings</Dropdown.Item>
-                <Dropdown.Item>Logout</Dropdown.Item>
-              </Dropdown.Menu>
-            </Dropdown>
+          {search &&
+            <Menu.Item fitted className="searchArea">
+              <Input className="searchField" icon="search" placeholder="Search..." />
+            </Menu.Item>}
+
+          <Menu.Menu className="accountArea">
+            <Menu.Menu position="right">
+              <Popup
+                basic
+                hideOnScroll
+                className="sessionAccess"
+                on="click"
+                position="bottom right"
+                trigger={
+                  <Menu.Item name="session">
+                    /sessions/aw <Icon name="qrcode" />
+                  </Menu.Item>
+                }
+              >
+                <Popup.Content>
+                  <Image
+                    fluid
+                    src="http://www.rd.com/wp-content/uploads/sites/2/2016/02/06-train-cat-shake-hands.jpg"
+                  />
+                  <Divider />
+                  <Button fluid primary content="Download" icon="download" />
+                </Popup.Content>
+              </Popup>
+              <Dropdown item simple text={accountShort}>
+                <Dropdown.Menu>
+                  <Dropdown.Item>Settings</Dropdown.Item>
+                  <Dropdown.Item>Logout</Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown>
+            </Menu.Menu>
           </Menu.Menu>
         </Menu>
 
         <style jsx>{`
+          :global(.accountArea) {
+            width: 25%;
+          }
+
+          :global(.titleArea) {
+            width: 25%;
+          }
+
           :global(.navbarTitle) {
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             margin-left: 1rem;
+          }
+
+          :global(.searchArea) {
+            border: none;
+            text-align: center;
+            width: 50%;
+          }
+
+          :global(.searchField) {
+          }
+
+          :global(.popup.sessionAccess) {
+            margin-top: 0 !important;
           }
         `}</style>
       </BaseLayout>
@@ -75,4 +127,13 @@ class Navbar extends Component {
   }
 }
 
-export default withCSS(Navbar, ['dropdown', 'icon', 'menu'])
+export default withCSS(Navbar, [
+  'button',
+  'divider',
+  'dropdown',
+  'icon',
+  'image',
+  'input',
+  'menu',
+  'popup',
+])
