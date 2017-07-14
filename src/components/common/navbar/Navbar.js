@@ -2,8 +2,8 @@ import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { Button, Divider, Dropdown, Icon, Image, Input, Menu, Popup } from 'semantic-ui-react'
 
-import BaseLayout from '../layouts/BaseLayout'
-import withCSS from '../../lib/withCSS'
+import BaseLayout from '../../layouts/BaseLayout'
+import withCSS from '../../../lib/withCSS'
 
 class Navbar extends Component {
   static propTypes = {
@@ -45,7 +45,7 @@ class Navbar extends Component {
         {head}
 
         <Menu borderless as="nav">
-          <Menu.Menu className="titleArea">
+          <Menu.Menu className={search ? 'sideAreaWithSearch' : 'sideAreaWithoutSearch'}>
             <Menu.Item
               name="sidebar"
               active={activeItem === 'sidebar'}
@@ -62,7 +62,7 @@ class Navbar extends Component {
               <Input className="searchField" icon="search" placeholder="Search..." />
             </Menu.Item>}
 
-          <Menu.Menu className="accountArea">
+          <Menu.Menu className={search ? 'sideAreaWithSearch' : 'sideAreaWithoutSearch'}>
             <Menu.Menu position="right">
               <Popup
                 basic
@@ -96,10 +96,6 @@ class Navbar extends Component {
         </Menu>
 
         <style jsx>{`
-          :global(.accountArea) {
-            width: 25%;
-          }
-
           :global(.navbarTitle) {
             font-size: 1.3rem;
             margin-left: 1rem;
@@ -118,8 +114,12 @@ class Navbar extends Component {
           :global(.searchField) {
           }
 
-          :global(.titleArea) {
+          :global(.sideAreaWithSearch) {
             width: 25%;
+          }
+
+          :global(.sideAreaWithoutSearch) {
+            width: 50%;
           }
         `}</style>
         <style jsx global>{`

@@ -13,7 +13,7 @@ class App extends Component {
   }
 
   componentWillMount() {
-    // restrict code execution to clientside
+    // restrict code execution for trackers to clientside
     if (typeof window !== 'undefined') {
       const ENV = require('../lib/env').default
 
@@ -50,9 +50,11 @@ class App extends Component {
     return (
       <Grid padded="horizontally">
         {head}
+
         {children}
         <Footer />
 
+        {/* TODO: disable rounded corners in semantic itself? */}
         <style jsx global>{`
           * {
             border-radius: 0 !important;

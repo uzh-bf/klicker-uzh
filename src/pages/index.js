@@ -3,7 +3,7 @@ import React from 'react'
 import { Grid } from 'semantic-ui-react'
 
 import App from '../components/App'
-import Navbar from '../components/common/Navbar'
+import Navbar from '../components/common/navbar/Navbar'
 
 export default () =>
   (<App>
