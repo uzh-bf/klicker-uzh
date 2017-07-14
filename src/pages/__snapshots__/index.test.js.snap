@@ -1,14 +1,9 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`Snapshot-Testing Works 1`] = `
-<main>
-  <header>
-    <h1>
-      <span>
-        Hello World
-      </span>
-    </h1>
-  </header>
+<div
+  className="ui grid"
+>
   Welcome to the new Klicker!
   <a
     href="/questions"
@@ -16,5 +11,14 @@ exports[`Snapshot-Testing Works 1`] = `
   >
     List of questions
   </a>
-</main>
+  <div
+    className="row"
+  >
+    <footer
+      className="column"
+    >
+      Klicker 2017 - IBF
+    </footer>
+  </div>
+</div>
 `;
