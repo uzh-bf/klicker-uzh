@@ -7,7 +7,7 @@ import Navbar from '../components/common/Navbar'
 
 export default () =>
   (<App>
-    <Navbar search />
+    <Navbar search accountShort="AW" title="Fragenpool" />
     <Grid.Row columns="2">
       <Grid.Column>
         Welcome to the new Klicker!

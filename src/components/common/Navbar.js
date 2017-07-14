@@ -1,46 +1,47 @@
-import Head from 'next/head'
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-import { Icon, Menu } from 'semantic-ui-react'
+import { Dropdown, Icon, Menu } from 'semantic-ui-react'
 
 import BaseLayout from '../layouts/BaseLayout'
+import withCSS from '../../lib/withCSS'
 
 class Navbar extends Component {
   static propTypes = {
-    defaultActive: PropTypes.string.isRequired,
+    accountShort: PropTypes.string.isRequired, // shorthand for the logged in user
+    head: PropTypes.node.isRequired,
+    search: PropTypes.bool, // optional search field embedded in navbar
+    title: PropTypes.string.isRequired, // title of the page
+    handleSearch: PropTypes.func,
+    handleSidebarToggle: PropTypes.func.isRequired,
+    handleSort: PropTypes.func,
+  }
+
+  static defaultProps = {
+    search: false,
+    handleSearch: f => f,
+    handleSort: f => f,
   }
 
   state = {
-    activeItem: null,
-  }
-
-  componentWillMount() {
-    this.setState({ activeItem: this.props.defaultActive })
-  }
-
-  handleItemClick = (e, { name }) => {
-    this.setState({ activeItem: name })
-  }
-
-  handleSidebarToggle = (e) => {
-    console.log(e)
+    sortBy: 'name',
+    sortOrder: 'asc',
   }
 
   render() {
+    const {
+      accountShort,
+      head,
+      search,
+      title,
+      handleSearch,
+      handleSidebarToggle,
+      handleSort,
+    } = this.props
     const { activeItem } = this.state
 
     return (
       <BaseLayout>
-        <Head>
-          <link
-            rel="stylesheet"
-            href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.10/components/icon.min.css"
-          />
-          <link
-            rel="stylesheet"
-            href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.10/components/menu.min.css"
-          />
-        </Head>
+        {head}
 
         <Menu fluid as="nav">
           <Menu.Item
@@ -51,23 +52,27 @@ class Navbar extends Component {
           >
             <Icon name="sidebar" />
           </Menu.Item>
-          <Menu.Header as="h1" className="navbarTitle" content="hello world" />
-          <Menu.Item
-            name="bla"
-            active={activeItem === 'bla'}
-            onClick={this.handleItemClick}
-            content="hello world"
-          />
-          <Menu.Item
-            name="ble"
-            active={activeItem === 'ble'}
-            onClick={this.handleItemClick}
-            content="lorem ipsum"
-          />
+          <Menu.Header as="h1" className="navbarTitle" content={title} />
+
+          <Menu.Menu position="right">
+            <Dropdown item text={accountShort} simple>
+              <Dropdown.Menu>
+                <Dropdown.Item>Settings</Dropdown.Item>
+                <Dropdown.Item>Logout</Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown>
+          </Menu.Menu>
         </Menu>
+
+        <style jsx>{`
+          :global(.navbarTitle) {
+            font-size: 1.2rem;
+            margin-left: 1rem;
+          }
+        `}</style>
       </BaseLayout>
     )
   }
 }
 
-export default Navbar
+export default withCSS(Navbar, ['dropdown', 'icon', 'menu'])
