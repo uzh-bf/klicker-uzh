@@ -44,6 +44,8 @@ class App extends Component {
   }
 
   render() {
+    const { children } = this.props
+
     return (
       <Grid>
         <Head>
@@ -56,7 +58,7 @@ class App extends Component {
             href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.10/components/grid.min.css"
           />
         </Head>
-        {this.props.children}
+        {children}
         <Footer />
         <style global jsx>{`
           * {

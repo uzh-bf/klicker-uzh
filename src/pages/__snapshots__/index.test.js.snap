@@ -4,13 +4,50 @@ exports[`Snapshot-Testing Works 1`] = `
 <div
   className="ui grid"
 >
-  Welcome to the new Klicker!
-  <a
-    href="/questions"
-    onClick={[Function]}
+  <div
+    className="row"
   >
-    List of questions
-  </a>
+    <div
+      className="column"
+    >
+      <nav
+        className="ui fluid menu"
+      >
+        <a
+          className="item"
+          onClick={[Function]}
+        >
+          hello world
+        </a>
+        <a
+          className="item"
+          onClick={[Function]}
+        >
+          lorem ipsum
+        </a>
+      </nav>
+    </div>
+  </div>
+  <div
+    className="two column row"
+  >
+    <div
+      className="column"
+    >
+      Welcome to the new Klicker!
+      <a
+        href="/questions"
+        onClick={[Function]}
+      >
+        List of questions
+      </a>
+    </div>
+    <div
+      className="column"
+    >
+      this is column 2
+    </div>
+  </div>
   <div
     className="row"
   >
