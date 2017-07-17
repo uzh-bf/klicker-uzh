@@ -25,27 +25,21 @@ const Sidebar = ({ activeItem, children, head, visible }) =>
             name="questionPool"
             onClick={() => Router.push('/questions/')}
           >
-            <a>
-              <FormattedMessage id="pages.questionPool.title" defaultMessage="Question Pool" />
-            </a>
+            <FormattedMessage id="pages.questionPool.title" defaultMessage="Question Pool" />
           </Menu.Item>
           <Menu.Item
             active={activeItem === 'sessionHistory'}
             name="sessionHistory"
             onClick={() => Router.push('/sessions/')}
           >
-            <a>
-              <FormattedMessage id="pages.sessionHistory.title" defaultMessage="Session History" />
-            </a>
+            <FormattedMessage id="pages.sessionHistory.title" defaultMessage="Session History" />
           </Menu.Item>
           <Menu.Item
             active={activeItem === 'runningSession'}
             name="runningSession"
             onClick={() => Router.push('/sessions/running')}
           >
-            <a>
-              <FormattedMessage id="pages.runningSession.title" defaultMessage="Running Session" />
-            </a>
+            <FormattedMessage id="pages.runningSession.title" defaultMessage="Running Session" />
           </Menu.Item>
         </SemanticSidebar>
         <SemanticSidebar.Pusher>

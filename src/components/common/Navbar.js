@@ -24,11 +24,7 @@ class Navbar extends Component {
   }
 
   static defaultProps = {
-    search: {
-      query: '',
-      sortBy: 'id',
-      sortOrder: 'asc',
-    },
+    search: null,
     sidebarVisible: false,
   }
 
