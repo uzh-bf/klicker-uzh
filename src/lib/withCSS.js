@@ -11,8 +11,9 @@ export default (ComposedComponent, links) => {
     <Head>
       {links.map(link =>
         (<link
+          key={link}
           rel="stylesheet"
-          href={`https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.10/components/${link}.min.css`}
+          href={`https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.11/components/${link}.min.css`}
         />),
       )}
     </Head>
