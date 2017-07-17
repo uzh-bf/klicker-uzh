@@ -51,7 +51,7 @@ class Index extends Component {
     }
 
     return (
-      <TeacherLayout navbar={navbarConfig} sidebar={{ activeItem: 'questionPool' }}>
+      <TeacherLayout intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'questionPool' }}>
         <Grid padded columns="2">
           <Grid.Column>blebleble</Grid.Column>
           <Grid.Column>blablabla</Grid.Column>

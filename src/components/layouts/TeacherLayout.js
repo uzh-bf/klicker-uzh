@@ -4,7 +4,7 @@ import { Grid } from 'semantic-ui-react'
 
 import Footer from '../common/Footer'
 import Navbar from '../../components/common/navbar/Navbar'
-import Sidebar from '../../components/common/Sidebar'
+import Sidebar from '../../components/common/sidebar/Sidebar'
 import initLogging from '../../lib/initLogging'
 import withCSS from '../../lib/withCSS'
 
@@ -12,6 +12,7 @@ class App extends Component {
   static propTypes = {
     children: PropTypes.node.isRequired,
     head: PropTypes.node.isRequired,
+    intl: PropTypes.shape({ formatMessage: PropTypes.func.isRequired }),
     navbar: PropTypes.shape({
       accountShort: PropTypes.string.isRequired,
       search: PropTypes.shape({
@@ -29,6 +30,7 @@ class App extends Component {
   }
 
   static defaultProps = {
+    intl: null,
     navbar: null,
     search: null,
   }
@@ -52,7 +54,7 @@ class App extends Component {
   }
 
   render() {
-    const { children, head, navbar, sidebar } = this.props
+    const { children, head, intl, navbar, sidebar } = this.props
 
     return (
       <Grid padded className="fullHeight">
@@ -60,6 +62,7 @@ class App extends Component {
 
         {navbar &&
           <Navbar
+            intl={intl}
             sidebarVisible={this.state.sidebarVisible}
             handleSidebarToggle={this.handleSidebarToggle}
             {...navbar}

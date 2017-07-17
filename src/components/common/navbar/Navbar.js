@@ -11,6 +11,9 @@ class Navbar extends Component {
   static propTypes = {
     accountShort: PropTypes.string.isRequired, // shorthand for the logged in user
     head: PropTypes.node.isRequired, // head as injected by HOC
+    intl: PropTypes.shape({
+      formatMessage: PropTypes.func.isRequired,
+    }),
     sidebarVisible: PropTypes.bool,
 
     // optional search field embedded in navbar
@@ -27,12 +30,21 @@ class Navbar extends Component {
   }
 
   static defaultProps = {
+    intl: null,
     search: null,
     sidebarVisible: false,
   }
 
   render() {
-    const { accountShort, head, search, sidebarVisible, title, handleSidebarToggle } = this.props
+    const {
+      accountShort,
+      head,
+      intl,
+      search,
+      sidebarVisible,
+      title,
+      handleSidebarToggle,
+    } = this.props
 
     return (
       <Grid.Row className="noPadding">
@@ -47,7 +59,7 @@ class Navbar extends Component {
               <Menu.Header as="h1" className="navbarTitle" content={title} />
             </Menu.Menu>
 
-            {search && <SearchArea handleSearch={search.handleSearch} />}
+            {search && <SearchArea intl={intl} handleSearch={search.handleSearch} />}
 
             <Menu.Menu className={search ? 'sideAreaWithSearch' : 'sideAreaWithoutSearch'}>
               <Menu.Menu position="right">
