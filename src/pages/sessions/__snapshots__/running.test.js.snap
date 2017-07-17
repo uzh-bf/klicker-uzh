@@ -68,7 +68,9 @@ exports[`Snapshot-Testing Works 1`] = `
               tabIndex={0}
             >
               <div
+                aria-live="polite"
                 className="text"
+                role="alert"
               >
                 AW
               </div>
