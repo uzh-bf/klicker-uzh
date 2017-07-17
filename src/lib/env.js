@@ -1,4 +1,4 @@
 export default {
-  SENTRY: '__SENTRY__',
   LOGROCKET: '__LOGROCKET__',
+  SENTRY: '__SENTRY__',
 }

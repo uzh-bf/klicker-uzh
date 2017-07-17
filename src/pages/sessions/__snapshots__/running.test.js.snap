@@ -1,0 +1,183 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Snapshot-Testing Works 1`] = `
+<div
+  className="ui padded grid fullHeight"
+>
+  <div
+    className="row noPadding"
+  >
+    <div
+      className="column navbar noPadding"
+    >
+      <nav
+        className="ui borderless menu"
+      >
+        <div
+          className="menu sideAreaWithoutSearch"
+        >
+          <a
+            className="icon item"
+            onClick={[Function]}
+          >
+            <i
+              aria-hidden="true"
+              className="sidebar icon"
+            />
+          </a>
+          <h1
+            className="header navbarTitle"
+          >
+            Running Session
+          </h1>
+        </div>
+        <div
+          className="menu sideAreaWithoutSearch"
+        >
+          <div
+            className="right menu"
+          >
+            <a
+              className="item"
+              onBlur={[Function]}
+              onClick={[Function]}
+              onFocus={[Function]}
+              onMouseEnter={[Function]}
+              onMouseLeave={[Function]}
+            >
+              /sessions/
+              AW
+               
+              <i
+                aria-hidden="true"
+                className="qrcode icon"
+              />
+            </a>
+            <div
+              aria-busy={undefined}
+              aria-disabled={undefined}
+              aria-expanded={false}
+              aria-multiselectable={undefined}
+              className="ui item simple dropdown"
+              onBlur={[Function]}
+              onChange={[Function]}
+              onClick={[Function]}
+              onFocus={[Function]}
+              onMouseDown={[Function]}
+              role="listbox"
+              tabIndex={0}
+            >
+              <div
+                aria-live="polite"
+                className="text"
+                role="alert"
+              >
+                AW
+              </div>
+              <i
+                aria-hidden="true"
+                className="dropdown icon"
+              />
+              <div
+                className="menu transition"
+              >
+                <div
+                  aria-checked={undefined}
+                  aria-disabled={undefined}
+                  aria-selected={undefined}
+                  className="item"
+                  onClick={[Function]}
+                  role="option"
+                >
+                  <span>
+                    Settings
+                  </span>
+                </div>
+                <div
+                  aria-checked={undefined}
+                  aria-disabled={undefined}
+                  aria-selected={undefined}
+                  className="item"
+                  onClick={[Function]}
+                  role="option"
+                >
+                  <span>
+                    Logout
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </div>
+  </div>
+  <div
+    className="row noPadding fullHeight"
+  >
+    <div
+      className="column noPadding"
+    >
+      <div
+        className="pushable"
+      >
+        <div
+          className="ui vertical labeled icon ui overlay left wide sidebar menu"
+        >
+          <a
+            className="item"
+            onClick={[Function]}
+          >
+            <span>
+              Question Pool
+            </span>
+          </a>
+          <a
+            className="item"
+            onClick={[Function]}
+          >
+            <span>
+              Session History
+            </span>
+          </a>
+          <a
+            className="active item"
+            onClick={[Function]}
+          >
+            <span>
+              Running Session
+            </span>
+          </a>
+        </div>
+        <div
+          className="pusher"
+        >
+          <div
+            className="ui padded grid"
+          >
+            <div
+              className="ui padded two column grid"
+            >
+              <div
+                className="column"
+              >
+                blebleble
+              </div>
+              <div
+                className="column"
+              >
+                blablabla
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer
+    data-jsx={3236642150}
+  >
+    Klicker 2017 - IBF
+  </footer>
+</div>
+`;
