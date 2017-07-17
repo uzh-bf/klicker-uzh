@@ -5,7 +5,7 @@ import { Grid } from 'semantic-ui-react'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import pageWithIntl from '../../lib/pageWithIntl'
 
-class Index extends Component {
+class Running extends Component {
   static propTypes = {
     intl: PropTypes.shape({
       formatMessage: PropTypes.func.isRequired,
@@ -38,4 +38,4 @@ class Index extends Component {
   }
 }
 
-export default pageWithIntl(Index)
+export default pageWithIntl(Running)
