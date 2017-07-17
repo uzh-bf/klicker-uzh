@@ -1,14 +1,14 @@
 import React from 'react'
-import { Grid } from 'semantic-ui-react'
 
 export default () =>
-  (<Grid.Row>
-    <Grid.Column as="footer">Klicker 2017 - IBF</Grid.Column>
-
-    <style jsx global>{`
+  (<footer>
+    Klicker 2017 - IBF
+    <style jsx>{`
       footer {
-        border-top: 3px solid orange;
+        border-top: 2px solid orange;
+        bottom: 0;
         padding: 1rem;
+        width: 100%;
       }
     `}</style>
-  </Grid.Row>)
+  </footer>)

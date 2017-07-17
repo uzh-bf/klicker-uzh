@@ -1,0 +1,94 @@
+import React, { Component } from 'react'
+import PropTypes from 'prop-types'
+import { Grid } from 'semantic-ui-react'
+
+import Footer from '../common/Footer'
+import Navbar from '../../components/common/Navbar'
+import Sidebar from '../../components/common/Sidebar'
+import initLogging from '../../lib/initLogging'
+import withCSS from '../../lib/withCSS'
+
+class App extends Component {
+  static propTypes = {
+    children: PropTypes.node.isRequired,
+    head: PropTypes.node.isRequired,
+    navbar: PropTypes.shape({
+      accountShort: PropTypes.string.isRequired,
+      search: PropTypes.shape({
+        handleSearch: PropTypes.func.isRequired, // function that handles onChange for search field
+        handleSort: PropTypes.func.isRequired, // function that handles changing of sort order
+        query: PropTypes.string,
+        sortBy: PropTypes.string,
+        sortOrder: PropTypes.string,
+      }),
+      title: PropTypes.string.isRequired,
+    }),
+    sidebar: PropTypes.shape({
+      activeItem: PropTypes.string.isRequired,
+    }).isRequired,
+  }
+
+  static defaultProps = {
+    navbar: null,
+    search: null,
+  }
+
+  state = {
+    sidebarVisible: false,
+  }
+
+  componentWillMount() {
+    // initialize sentry and logrocket (if appropriately configured)
+    initLogging()
+  }
+
+  handleSidebarItemClick = (e, { name }) => {
+    console.log(name)
+    this.setState({ sidebarActiveItem: name })
+  }
+
+  handleSidebarToggle = () => {
+    this.setState(prevState => ({ sidebarVisible: !prevState.sidebarVisible }))
+  }
+
+  render() {
+    const { children, head, navbar, sidebar } = this.props
+
+    return (
+      <Grid padded className="fullHeight">
+        {head}
+
+        {navbar &&
+          <Navbar
+            sidebarVisible={this.state.sidebarVisible}
+            handleSidebarToggle={this.handleSidebarToggle}
+            {...navbar}
+          />}
+
+        <Sidebar visible={this.state.sidebarVisible} {...sidebar}>
+          {children}
+        </Sidebar>
+
+        <Footer />
+
+        <style jsx global>{`
+          * {
+            // TODO: disable rounded corners in semantic itself
+            border-radius: 0 !important;
+          }
+
+          .noPadding {
+            padding: 0 !important;
+          }
+
+          // TODO: make the app entirely full height (100%)
+          .fullHeight {
+            min-height: 50rem;
+          }
+        `}</style>
+      </Grid>
+    )
+  }
+}
+
+export default withCSS(App, ['reset', 'grid', 'menu', 'sidebar'])
