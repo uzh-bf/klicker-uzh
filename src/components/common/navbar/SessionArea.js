@@ -26,7 +26,8 @@ const SessionArea = ({ sessionId }) => {
           src="http://www.rd.com/wp-content/uploads/sites/2/2016/02/06-train-cat-shake-hands.jpg"
         />
         <Divider />
-        <Button fluid primary icon="download">
+        <Button fluid primary>
+          <Icon name="download" />
           <FormattedMessage id="common.button.download" defaultMessage="Download" />
         </Button>
       </Popup.Content>
