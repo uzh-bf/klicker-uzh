@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { Grid } from 'semantic-ui-react'
 
 import Footer from '../common/Footer'
-import Navbar from '../../components/common/Navbar'
+import Navbar from '../../components/common/navbar/Navbar'
 import Sidebar from '../../components/common/Sidebar'
 import initLogging from '../../lib/initLogging'
 import withCSS from '../../lib/withCSS'

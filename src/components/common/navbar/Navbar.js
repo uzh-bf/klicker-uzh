@@ -1,8 +1,11 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-import { Button, Divider, Dropdown, Grid, Icon, Image, Input, Menu, Popup } from 'semantic-ui-react'
+import { Grid, Icon, Menu } from 'semantic-ui-react'
 
-import withCSS from '../../lib/withCSS'
+import AccountArea from './AccountArea'
+import SearchArea from './SearchArea'
+import SessionArea from './SessionArea'
+import withCSS from '../../../lib/withCSS'
 
 class Navbar extends Component {
   static propTypes = {
@@ -44,45 +47,12 @@ class Navbar extends Component {
               <Menu.Header as="h1" className="navbarTitle" content={title} />
             </Menu.Menu>
 
-            {search &&
-              <Menu.Item fitted className="searchArea">
-                <Input
-                  className="searchField"
-                  icon="search"
-                  placeholder="Search..."
-                  onChange={search.handleSearch}
-                />
-              </Menu.Item>}
+            {search && <SearchArea handleSearch={search.handleSearch} />}
 
             <Menu.Menu className={search ? 'sideAreaWithSearch' : 'sideAreaWithoutSearch'}>
               <Menu.Menu position="right">
-                <Popup
-                  basic
-                  hideOnScroll
-                  className="sessionArea"
-                  on="click"
-                  position="bottom right"
-                  trigger={
-                    <Menu.Item name="session">
-                      /sessions/aw <Icon name="qrcode" />
-                    </Menu.Item>
-                  }
-                >
-                  <Popup.Content>
-                    <Image
-                      fluid
-                      src="http://www.rd.com/wp-content/uploads/sites/2/2016/02/06-train-cat-shake-hands.jpg"
-                    />
-                    <Divider />
-                    <Button fluid primary content="Download" icon="download" />
-                  </Popup.Content>
-                </Popup>
-                <Dropdown item simple text={accountShort}>
-                  <Dropdown.Menu>
-                    <Dropdown.Item>Settings</Dropdown.Item>
-                    <Dropdown.Item>Logout</Dropdown.Item>
-                  </Dropdown.Menu>
-                </Dropdown>
+                <SessionArea sessionId={accountShort} />
+                <AccountArea accountShort={accountShort} />
               </Menu.Menu>
             </Menu.Menu>
           </Menu>

@@ -42,6 +42,7 @@ const Sidebar = ({ activeItem, children, head, visible }) =>
             <FormattedMessage id="pages.runningSession.title" defaultMessage="Running Session" />
           </Menu.Item>
         </SemanticSidebar>
+
         <SemanticSidebar.Pusher>
           <Grid padded>
             {children}
