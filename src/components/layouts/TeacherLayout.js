@@ -8,7 +8,7 @@ import Sidebar from '../../components/common/sidebar/Sidebar'
 import initLogging from '../../lib/initLogging'
 import withCSS from '../../lib/withCSS'
 
-class App extends Component {
+class TeacherLayout extends Component {
   static propTypes = {
     children: PropTypes.node.isRequired,
     head: PropTypes.node.isRequired,
@@ -94,4 +94,4 @@ class App extends Component {
   }
 }
 
-export default withCSS(App, ['reset', 'grid', 'menu', 'sidebar'])
+export default withCSS(TeacherLayout, ['reset', 'grid', 'menu', 'sidebar'])
