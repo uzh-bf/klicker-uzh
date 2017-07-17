@@ -56,8 +56,6 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "roots": [
-      "src/"
-    ]
+    "roots": ["src/"]
   }
 }
