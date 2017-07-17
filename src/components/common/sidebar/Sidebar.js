@@ -1,10 +1,10 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import Router from 'next/router'
 import { Grid, Menu, Sidebar as SemanticSidebar } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
-import withCSS from '../../lib/withCSS'
+import SidebarItem from './SidebarItem'
+import withCSS from '../../../lib/withCSS'
 
 const Sidebar = ({ activeItem, children, head, visible }) =>
   (<Grid.Row className="noPadding fullHeight">
@@ -20,27 +20,29 @@ const Sidebar = ({ activeItem, children, head, visible }) =>
           visible={visible}
           width="wide"
         >
-          <Menu.Item
+          <SidebarItem
             active={activeItem === 'questionPool'}
             name="questionPool"
-            onClick={() => Router.push('/questions/')}
+            href="/questions/"
           >
             <FormattedMessage id="pages.questionPool.title" defaultMessage="Question Pool" />
-          </Menu.Item>
-          <Menu.Item
+          </SidebarItem>
+
+          <SidebarItem
             active={activeItem === 'sessionHistory'}
             name="sessionHistory"
-            onClick={() => Router.push('/sessions/')}
+            href="/sessions/"
           >
             <FormattedMessage id="pages.sessionHistory.title" defaultMessage="Session History" />
-          </Menu.Item>
-          <Menu.Item
+          </SidebarItem>
+
+          <SidebarItem
             active={activeItem === 'runningSession'}
             name="runningSession"
-            onClick={() => Router.push('/sessions/running')}
+            href="/sessions/running"
           >
             <FormattedMessage id="pages.runningSession.title" defaultMessage="Running Session" />
-          </Menu.Item>
+          </SidebarItem>
         </SemanticSidebar>
 
         <SemanticSidebar.Pusher>
