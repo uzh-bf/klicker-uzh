@@ -1,7 +1,23 @@
 const bodyParser = require('body-parser')
 const express = require('express')
 const { graphqlExpress, graphiqlExpress } = require('graphql-server-express')
-const schema = require('./schema/schema')
+const schema = require('./graphql/schema')
+const mongodb = require('mongodb')
+const mongoose = require('mongoose')
+
+mongoose.Promise = Promise
+
+const db = new mongodb.Db('klicker', new mongodb.Server('localhost', 27017))
+db.open().then(() => {
+  mongoose.connect('mongodb://localhost/klicker')
+  mongoose.connection
+    .once('open', () => {
+      console.log('hello mongo!')
+    })
+    .on('error', (error) => {
+      console.warn('Warning', error)
+    })
+})
 
 const dev = process.env.NODE_ENV !== 'production'
 
