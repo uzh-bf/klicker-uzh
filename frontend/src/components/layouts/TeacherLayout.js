@@ -54,7 +54,7 @@ class TeacherLayout extends Component {
   }
 
   render() {
-    const { children, head, intl, navbar, sidebar } = this.props
+    const { children, intl, head, navbar, sidebar } = this.props
 
     return (
       <Grid padded className="fullHeight">
@@ -78,6 +78,7 @@ class TeacherLayout extends Component {
           * {
             // TODO: disable rounded corners in semantic itself
             border-radius: 0 !important;
+            font-family: 'Open Sans', sans-serif;
           }
 
           .noPadding {
@@ -94,4 +95,8 @@ class TeacherLayout extends Component {
   }
 }
 
-export default withCSS(TeacherLayout, ['reset', 'grid', 'menu', 'sidebar'])
+export default withCSS(TeacherLayout, [
+  'https://fonts.googleapis.com/css?family=Open Sans',
+  'reset',
+  'grid',
+])

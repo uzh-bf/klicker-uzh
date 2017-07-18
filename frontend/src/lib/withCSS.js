@@ -9,13 +9,22 @@ const WithCSS = (ComposedComponent, links) => {
   // HACK: this might lead to duplicate link declarations in <head>
   const head = (
     <Head>
-      {links.map(link =>
-        (<link
-          key={link}
-          rel="stylesheet"
-          href={`https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.11/components/${link}.min.css`}
-        />),
-      )}
+      {links.map((link) => {
+        // if a full URL is given as a link, directly include it
+        if (link.substr(0, 4) === 'http') {
+          return <link key="font" rel="stylesheet" href={link} />
+        }
+
+        // if only a string is given, assume a semantic ui component
+        // and load it from cloudflare CDN
+        return (
+          <link
+            key={link}
+            rel="stylesheet"
+            href={`https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.11/components/${link}.min.css`}
+          />
+        )
+      })}
     </Head>
   )
 
