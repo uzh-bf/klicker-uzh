@@ -1,24 +1,17 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { gql, graphql } from 'react-apollo'
-import { Segment } from 'semantic-ui-react'
 
-import withCSS from '../lib/withCSS'
+import Question from './Question'
 
-const QuestionList = ({ data, head }) => {
+const QuestionList = ({ data }) => {
   if (data.loading) {
     return <div>Loading</div>
   }
 
   return (
     <div>
-      {head}
-
-      {data.allQuestions.map(question =>
-        (<Segment key={question.id}>
-          {question.title}
-        </Segment>),
-      )}
+      {data.allQuestions.map(question => <Question key={question.id} {...question} />)}
     </div>
   )
 }
@@ -32,10 +25,7 @@ QuestionList.propTypes = {
       }),
     ),
   }).isRequired,
-  head: PropTypes.node.isRequired,
 }
-
-const QuestionListWithCSS = withCSS(QuestionList, ['segment'])
 
 export default graphql(
   gql`
@@ -46,4 +36,4 @@ export default graphql(
       }
     }
   `,
-)(QuestionListWithCSS)
+)(QuestionList)

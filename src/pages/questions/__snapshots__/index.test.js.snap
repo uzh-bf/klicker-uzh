@@ -171,19 +171,28 @@ exports[`Snapshot-Testing Works 1`] = `
           className="pusher"
         >
           <div
-            className="ui padded two column grid"
+            className="ui stackable padded grid"
           >
             <div
-              className="column"
+              className="row"
             >
-              <div>
-                Loading
+              <div
+                className="stretched two wide column"
+              >
+                <div>
+                  Loading
+                </div>
               </div>
-            </div>
-            <div
-              className="column"
-            >
-              blablabla
+              <div
+                className="stretched twelve wide column"
+              >
+                <div>
+                  Loading
+                </div>
+              </div>
+              <div
+                className="stretched two wide column"
+              />
             </div>
           </div>
         </div>

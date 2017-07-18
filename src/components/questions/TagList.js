@@ -4,7 +4,7 @@ import _sortBy from 'lodash/sortBy'
 import { gql, graphql } from 'react-apollo'
 import { List } from 'semantic-ui-react'
 
-import withCSS from '../lib/withCSS'
+import withCSS from '../../lib/withCSS'
 
 const TagList = ({ activeTags, data, head, handleTagClick }) => {
   if (data.loading) {

@@ -2,8 +2,8 @@ import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { Grid } from 'semantic-ui-react'
 
-import QuestionList from '../../components/QuestionList'
-import TagList from '../../components/TagList'
+import QuestionList from '../../components/questions/QuestionList'
+import TagList from '../../components/questions/TagList'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import pageWithIntl from '../../lib/pageWithIntl'
 import withData from '../../lib/withData'
@@ -75,18 +75,12 @@ class Index extends Component {
             <Grid.Column stretched width="2">
               <TagList activeTags={this.state.activeTags} handleTagClick={this.handleTagClick} />
             </Grid.Column>
-            <Grid.Column stretched className="middle" width="12">
+            <Grid.Column stretched width="12">
               <QuestionList />
             </Grid.Column>
             <Grid.Column stretched width="2" />
           </Grid.Row>
         </Grid>
-
-        <style jsx>{`
-          :global(.middle) {
-            background: lightgrey;
-          }
-        `}</style>
       </TeacherLayout>
     )
   }
