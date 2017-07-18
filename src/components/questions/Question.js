@@ -5,10 +5,22 @@ import { Segment } from 'semantic-ui-react'
 import withCSS from '../../lib/withCSS'
 
 const Question = ({ head, id, title }) =>
-  (<Segment>
-    {head}
-    <strong>{id}</strong> - {title}
-  </Segment>)
+  (
+    <Segment.Group>
+      <Segment.Group horizontal>
+        <Segment>Hi</Segment>
+        <Segment>Ho</Segment>
+        <Segment>Ha</Segment>
+      </Segment.Group>
+      <Segment.Group horizontal>
+        <Segment inverted secondary>
+          {head}
+          <strong>{id}</strong> - {title}
+        </Segment>
+        <Segment inverted color="pink">Zuletzt</Segment>
+      </Segment.Group>
+    </Segment.Group>
+  )
 
 Question.propTypes = {
   head: PropTypes.node.isRequired,
