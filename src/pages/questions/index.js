@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-import { Grid } from 'semantic-ui-react'
+import { Button, Grid } from 'semantic-ui-react'
 
 import QuestionList from '../../components/questions/QuestionList'
 import TagList from '../../components/questions/TagList'
@@ -78,7 +78,7 @@ class Index extends Component {
             <Grid.Column stretched width="12">
               <QuestionList />
             </Grid.Column>
-            <Grid.Column stretched width="2" />
+            <Grid.Column stretched width="2"><Button circular icon='plus' /></Grid.Column>
           </Grid.Row>
         </Grid>
       </TeacherLayout>
