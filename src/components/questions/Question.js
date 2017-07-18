@@ -8,7 +8,7 @@ const Question = ({ head, id, title }) =>
   (
     <Segment>
       <Grid>
-        <Grid.Row>
+        <Grid.Row divided>
           <Grid.Column floated="left" width="12">
             {head}
             <strong>{id}</strong> - {title}
@@ -18,8 +18,8 @@ const Question = ({ head, id, title }) =>
           <Grid.Column floated="right" width="1">Risk</Grid.Column>
         </Grid.Row>
         <Grid.Row>
-          <Grid.Column width="11">Test</Grid.Column>
-          <Grid.Column width="5">
+          <Grid.Column color="grey" width="11">Test</Grid.Column>
+          <Grid.Column color="grey" width="5">
            Zuletzt
           </Grid.Column>
         </Grid.Row>
