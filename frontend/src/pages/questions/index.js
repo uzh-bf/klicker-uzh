@@ -2,8 +2,10 @@ import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { Grid } from 'semantic-ui-react'
 
+import QuestionList from '../../components/QuestionList'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import pageWithIntl from '../../lib/pageWithIntl'
+import withData from '../../lib/withData'
 
 class Index extends Component {
   static propTypes = {
@@ -53,7 +55,9 @@ class Index extends Component {
     return (
       <TeacherLayout intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'questionPool' }}>
         <Grid padded columns="2">
-          <Grid.Column>blebleble</Grid.Column>
+          <Grid.Column>
+            <QuestionList />
+          </Grid.Column>
           <Grid.Column>blablabla</Grid.Column>
         </Grid>
       </TeacherLayout>
@@ -61,4 +65,4 @@ class Index extends Component {
   }
 }
 
-export default pageWithIntl(Index)
+export default withData(pageWithIntl(Index))

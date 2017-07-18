@@ -46,9 +46,7 @@ const Sidebar = ({ activeItem, children, head, visible }) =>
         </SemanticSidebar>
 
         <SemanticSidebar.Pusher>
-          <Grid padded>
-            {children}
-          </Grid>
+          {children}
         </SemanticSidebar.Pusher>
       </SemanticSidebar.Pushable>
     </Grid.Column>

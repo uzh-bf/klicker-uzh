@@ -53,7 +53,7 @@ class Navbar extends Component {
         <Grid.Column className="navbar noPadding">
           <Menu borderless as="nav">
             <Menu.Menu className={search ? 'sideAreaWithSearch' : 'sideAreaWithoutSearch'}>
-              <Menu.Item name="sidebar" active={sidebarVisible} icon onClick={handleSidebarToggle}>
+              <Menu.Item icon active={sidebarVisible} name="sidebar" onClick={handleSidebarToggle}>
                 <Icon name="sidebar" />
               </Menu.Item>
               <Menu.Header as="h1" className="navbarTitle" content={title} />
@@ -92,9 +92,6 @@ class Navbar extends Component {
             .sideAreaWithoutSearch {
               width: 50%;
             }
-            .navbar {
-              padding: 0 !important;
-            }
           `}</style>
         </Grid.Column>
       </Grid.Row>
@@ -102,6 +99,8 @@ class Navbar extends Component {
   }
 }
 
+// higher order component
+// component => wrapped component
 export default withCSS(Navbar, [
   'button',
   'divider',
