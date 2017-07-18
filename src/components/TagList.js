@@ -15,20 +15,23 @@ const TagList = ({ activeTags, data, head, handleTagClick }) => {
   const sortedByName = _sortBy(data.allTags, ['name'])
 
   return (
-    <List size="big">
+    <List selection size="large">
       {head}
 
-      {sortedByName.map(tag =>
-        (<List.Item key={tag.id}>
-          <List.Icon name="folder" />
-          <List.Content onClick={() => handleTagClick(tag.id)}>
-            <a className={activeTags.includes(tag.id) ? 'active' : 'inactive'} role="presentation">
-              {tag.name}
-            </a>
-          </List.Content>
-        </List.Item>),
-      )}
+      {sortedByName.map((tag) => {
+        const isActive = activeTags.includes(tag.id)
 
+        return (
+          <List.Item className="listItem" key={tag.id} onClick={() => handleTagClick(tag.id)}>
+            <List.Icon name={isActive ? 'folder' : 'folder outline'} />
+            <List.Content>
+              <span className={isActive ? 'active' : 'inactive'}>
+                {tag.name}
+              </span>
+            </List.Content>
+          </List.Item>
+        )
+      })}
       <style jsx>{`
         .active {
           font-weight: bold;
