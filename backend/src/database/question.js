@@ -1,7 +1,7 @@
 const mongoose = require('mongoose')
 
-const Schema = mongoose.Schema
-
-module.exports = new Schema({
+const QuestionSchema = new mongoose.Schema({
   title: String,
 })
+
+module.exports = mongoose.model('Question', QuestionSchema)

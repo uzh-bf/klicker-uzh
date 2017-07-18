@@ -1,6 +1,6 @@
 const graphql = require('graphql')
 
-const { GraphQLObjectType, GraphQLString, GraphQLSchema } = graphql
+const { GraphQLList, GraphQLObjectType, GraphQLString, GraphQLSchema } = graphql
 
 const QuestionModel = require('../database/question')
 
@@ -15,17 +15,17 @@ const QuestionType = new GraphQLObjectType({
 const RootQuery = new GraphQLObjectType({
   name: 'RootQueryType',
   fields: {
+    allQuestions: {
+      type: new GraphQLList(QuestionType),
+      resolve() {
+        return QuestionModel.find({})
+      },
+    },
     question: {
       type: QuestionType,
       args: { id: { type: GraphQLString } },
       resolve(parentValue, args) {
-        const question = QuestionModel.findById(args.id)
-        console.dir(question)
-
-        return {
-          id: args.id,
-          title: 'Hello World',
-        }
+        return QuestionModel.findOne(args.id)
       },
     },
   },
