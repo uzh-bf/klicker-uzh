@@ -14,12 +14,8 @@ WORKDIR $KLICKER_DIR
 COPY package.json yarn.lock $KLICKER_DIR/
 
 # install yarn packages
-# HACK: temporary fix for https://github.com/apollographql/react-apollo/issues/826
 RUN set -x \
-  && yarn install --pure-lockfile \
-  && cd node_modules/react-apollo \
-  && npm remove react-dom \
-  && cd ../..
+  && yarn install --pure-lockfile
 
 # inject the entrypoint and make it runnable
 COPY entrypoint.sh /entrypoint.sh
