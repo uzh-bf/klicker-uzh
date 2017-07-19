@@ -6,7 +6,7 @@ import withCSS from '../../lib/withCSS'
 
 const Question = ({ head, id, title }) =>
   (
-    <Segment>
+    <div className="questions">
       <Grid>
         <Grid.Row divided>
           <Grid.Column floated="left" width="12">
@@ -17,14 +17,23 @@ const Question = ({ head, id, title }) =>
           <Grid.Column floated="right" width="1">CAPM</Grid.Column>
           <Grid.Column floated="right" width="1">Risk</Grid.Column>
         </Grid.Row>
-        <Grid.Row>
-          <Grid.Column color="grey" width="11">Test</Grid.Column>
-          <Grid.Column color="grey" width="5">
-            Zuletzt
-          </Grid.Column>
-        </Grid.Row>
       </Grid>
-    </Segment>
+      <Segment>
+        <Grid>
+          <Grid.Row>
+            <Grid.Column color="grey" width="11">Test</Grid.Column>
+            <Grid.Column color="grey" width="5">
+              Zuletzt verwendet
+            </Grid.Column>
+          </Grid.Row>
+        </Grid>
+      </Segment>
+      <style jsx>{`
+        .questions {
+          margin-bottom: 30px;
+        }
+      `}</style>
+    </div>
   )
 
 Question.propTypes = {
