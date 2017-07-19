@@ -86,9 +86,14 @@ class Index extends Component {
             </Grid.Column>
             <Grid.Column stretched verticalAlign="bottom" width="2">
               {/* TODO correct position of button */}
-              <p>Session starten</p>
-              <p>Frage erstellen</p>
-              <Button small icon="plus"/>
+              {
+                this.state.activeNewButton &&
+                <div>
+                  <p>Session starten</p>
+                  <p>Frage erstellen</p>
+                </div>
+              }
+              <Button small icon="plus" onClick={this.handleActiveNewButton}/>
             </Grid.Column>
           </Grid.Row>
         </Grid>
