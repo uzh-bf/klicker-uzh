@@ -84,7 +84,7 @@ class Index extends Component {
             <Grid.Column stretched width="12">
               <QuestionList />
             </Grid.Column>
-            <Grid.Column stretched verticalAlign="bottom" width="2">
+            <Grid.Column stretched textAlign="right" verticalAlign="bottom" width="2">
               {/* TODO correct position of button */}
               {this.state.activeNewButton &&
                 <div>
