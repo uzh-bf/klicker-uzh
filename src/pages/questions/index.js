@@ -86,17 +86,36 @@ class Index extends Component {
             </Grid.Column>
             <Grid.Column stretched verticalAlign="bottom" width="2">
               {/* TODO correct position of button */}
-              {
-                this.state.activeNewButton &&
+              {this.state.activeNewButton &&
                 <div>
                   <p>Session starten</p>
                   <p>Frage erstellen</p>
-                </div>
-              }
-              <Button small icon="plus" onClick={this.handleActiveNewButton} />
+                </div>}
+              <div>
+                <Button
+                  circular
+                  primary
+                  size="large"
+                  className={
+                    this.state.activeNewButton ? 'actionButton actionButtonActive' : 'actionButton'
+                  }
+                  icon="plus"
+                  onClick={this.handleActiveNewButton}
+                />
+              </div>
             </Grid.Column>
           </Grid.Row>
         </Grid>
+
+        <style jsx>{`
+          :global(.actionButton) {
+            border-radius: 10em !important;
+          }
+          :global(.actionButtonActive) {
+            transition: transform 0.5s;
+            transform: rotate(45deg);
+          }
+        `}</style>
       </TeacherLayout>
     )
   }
