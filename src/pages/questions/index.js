@@ -79,10 +79,10 @@ class Index extends Component {
         <Grid padded stackable>
           <Grid.Row>
             <Grid.Column stretched width="2">
-              <TagList activeTags={this.state.activeTags} handleTagClick={this.handleTagClick}/>
+              <TagList activeTags={this.state.activeTags} handleTagClick={this.handleTagClick} />
             </Grid.Column>
             <Grid.Column stretched width="12">
-              <QuestionList/>
+              <QuestionList />
             </Grid.Column>
             <Grid.Column stretched verticalAlign="bottom" width="2">
               {/* TODO correct position of button */}
@@ -93,7 +93,7 @@ class Index extends Component {
                   <p>Frage erstellen</p>
                 </div>
               }
-              <Button small icon="plus" onClick={this.handleActiveNewButton}/>
+              <Button small icon="plus" onClick={this.handleActiveNewButton} />
             </Grid.Column>
           </Grid.Row>
         </Grid>
