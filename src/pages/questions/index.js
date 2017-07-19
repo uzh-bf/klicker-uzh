@@ -78,9 +78,11 @@ class Index extends Component {
             <Grid.Column stretched width="12">
               <QuestionList/>
             </Grid.Column>
-            <Grid.Column stretched width="2">
+            <Grid.Column stretched verticalAlign="bottom" width="2">
               {/* TODO correct position of button */}
-              <Button circular icon="plus"/>
+              <p>Session starten</p>
+              <p>Frage erstellen</p>
+              <Button small icon="plus"/>
             </Grid.Column>
           </Grid.Row>
         </Grid>
