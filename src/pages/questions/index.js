@@ -16,16 +16,16 @@ class Index extends Component {
   }
 
   state = {
+    activeNewButton: false,
     activeTags: [],
     sidebarVisible: false,
-    activeNewButton: false,
   }
 
   // handling the state of the new course button
   handleActiveNewButton = () => {
     this.setState({ activeNewButton: !this.state.activeNewButton })
   }
-  
+
   // handle searching in the navbar search area
   handleSearch = () => {
     console.log('searched...')
