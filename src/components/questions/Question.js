@@ -20,7 +20,7 @@ const Question = ({ head, id, title }) =>
         <Grid.Row>
           <Grid.Column color="grey" width="11">Test</Grid.Column>
           <Grid.Column color="grey" width="5">
-           Zuletzt
+            Zuletzt
           </Grid.Column>
         </Grid.Row>
       </Grid>
