@@ -20,8 +20,8 @@ const Question = ({ head, id, title }) =>
       </Grid>
       <Segment>
         <Grid>
-          <Grid.Row>
-            <Grid.Column color="grey" width="11">Test</Grid.Column>
+          <Grid.Row divided>
+            <Grid.Column width="11">Test</Grid.Column>
             <Grid.Column color="grey" width="5">
               Zuletzt verwendet
             </Grid.Column>
