@@ -25,7 +25,6 @@ const Question = ({ head, id, title }) =>
         </Grid.Row>
       </Grid>
     </Segment>
-
   )
 
 Question.propTypes = {
