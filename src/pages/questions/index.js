@@ -78,7 +78,10 @@ class Index extends Component {
             <Grid.Column stretched width="12">
               <QuestionList/>
             </Grid.Column>
-            <Grid.Column stretched width="2"><Button circular icon="plus"/></Grid.Column>
+            <Grid.Column stretched width="2">
+              {/* TODO correct position of button */}
+              <Button circular icon="plus"/>
+            </Grid.Column>
           </Grid.Row>
         </Grid>
       </TeacherLayout>
