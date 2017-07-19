@@ -73,12 +73,12 @@ class Index extends Component {
         <Grid padded stackable>
           <Grid.Row>
             <Grid.Column stretched width="2">
-              <TagList activeTags={this.state.activeTags} handleTagClick={this.handleTagClick} />
+              <TagList activeTags={this.state.activeTags} handleTagClick={this.handleTagClick}/>
             </Grid.Column>
             <Grid.Column stretched width="12">
-              <QuestionList />
+              <QuestionList/>
             </Grid.Column>
-            <Grid.Column stretched width="2"><Button circular icon='plus' /></Grid.Column>
+            <Grid.Column stretched width="2"><Button circular icon="plus"/></Grid.Column>
           </Grid.Row>
         </Grid>
       </TeacherLayout>
