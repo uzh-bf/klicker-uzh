@@ -4,7 +4,8 @@ import { Grid, Segment } from 'semantic-ui-react'
 
 import withCSS from '../../lib/withCSS'
 
-const tagList = ['MC', 'CAPM', 'Risk']
+// TODO only for testing
+const tagList = ['CAPM', 'Risk']
 
 const Question = ({ head, id, title, type, version, lastUsed }) =>
   (<Grid className="questions">
@@ -15,11 +16,11 @@ const Question = ({ head, id, title, type, version, lastUsed }) =>
         <strong>#{id}</strong> - {title} {version > 1 && `(v${version})`}
       </Grid.Column>
       <Grid.Column floated="right" width="1">
-        {type}
+        <b>{type}</b>
       </Grid.Column>
       <Grid.Column floated="right" width="1">
         {
-          tagList.map(tag => console.log(tag))
+          tagList.map(tag => <div key={tag}>{tag}</div>)
         }
       </Grid.Column>
     </Grid.Row>
