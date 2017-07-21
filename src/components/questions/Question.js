@@ -42,6 +42,7 @@ const Question = ({ head, id, title, type, version, lastUsed }) =>
         padding-bottom: 0;
       }
       .ui.grid.questions >.row.titleRow >.column.tagGroup {
+        margin-right: 20px;
         padding: 0;
       }
       .ui.grid.questions > .row.titleRow > .column.title {
