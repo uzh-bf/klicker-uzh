@@ -5,20 +5,20 @@ import { Grid, Segment } from 'semantic-ui-react'
 import withCSS from '../../lib/withCSS'
 
 // TODO only for testing
-const tagList = ['CAPM', 'Risk']
+const tagList = ['CAPM']
 
 const Question = ({ head, id, title, type, version, lastUsed }) =>
-  (<Grid className="questions">
+  (<Grid stackable className="questions">
     {head}
 
-    <Grid.Row divided>
-      <Grid.Column floated="left" width="12">
+    <Grid.Row divided className="titleRow">
+      <Grid.Column className="title" floated="left" width="12">
         <strong>#{id}</strong> - {title} {version > 1 && `(v${version})`}
       </Grid.Column>
       <Grid.Column floated="right" width="1">
         <b>{type}</b>
       </Grid.Column>
-      <Grid.Column floated="right" width="1">
+      <Grid.Column className="tags" floated="right" width="1">
         {
           tagList.map(tag => <div key={tag}>{tag}</div>)
         }
@@ -35,8 +35,17 @@ const Question = ({ head, id, title, type, version, lastUsed }) =>
     </Segment>
 
     <style jsx>{`
+      .tags {
+        display: inline;
+      }
       :global(.ui.grid .questions) {
         margin-bottom: 30px;
+      }
+      :global(.ui.grid.questions > .row.titleRow) {
+        padding-bottom: 0;
+      }
+      :global(.ui.grid.questions > .row.titleRow > .column.title) {
+        padding-bottom: 20px;
       }
       :global(.ui.segment) {
         margin: 0;
