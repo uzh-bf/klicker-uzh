@@ -4,10 +4,7 @@ import { Grid, Segment } from 'semantic-ui-react'
 
 import withCSS from '../../lib/withCSS'
 
-// TODO only for testing
-const tagList = ['CAPM', 'Risk']
-
-const Question = ({ head, id, title, type, version, lastUsed }) =>
+const Question = ({ head, id, tagList, title, type, version, lastUsed }) =>
   (<Grid stackable className="questions">
     {head}
 
@@ -72,6 +69,7 @@ const Question = ({ head, id, title, type, version, lastUsed }) =>
 Question.propTypes = {
   head: PropTypes.node.isRequired,
   id: PropTypes.string.isRequired,
+  tagList: PropTypes.arrayOf(PropTypes.string),
   title: PropTypes.string.isRequired,
   type: PropTypes.oneOf(['SC', 'MC', 'FREE']).isRequired,
   version: PropTypes.number,
@@ -79,8 +77,9 @@ Question.propTypes = {
 }
 
 Question.defaultProps = {
-  version: 1,
   lastUsed: ['2017-08-08 14:30:22', '2016-09-09 15:22:09'], // TODO define default prop
+  tagList: ['Beta', 'CAPM'],
+  version: 1,
 }
 
 export default withCSS(Question, ['grid', 'segment'])
