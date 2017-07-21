@@ -1,19 +1,14 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import { gql, graphql } from 'react-apollo'
 
 import Session from './Session'
 
-const SessionList = ({ data }) => {
-  if (data.loading) {
-    return <div>Loading</div>
-  }
+const SessionList = ({ data }) =>
+  (<div>
+    {data.allSessions.map(session => <Session {...session} />)}
+  </div>)
 
-  return (
-    <div>
-      {data.allQuestions.map(session => <Session {...session} />)}
-    </div>
-  )
-}
 
 SessionList.propTypes = {
   data: PropTypes.shape({
@@ -26,4 +21,13 @@ SessionList.propTypes = {
   }).isRequired,
 }
 
-export default SessionList
+export default graphql(
+  gql`
+    {
+      allSessions {
+        id
+        title
+      }
+    }
+  `,
+)(SessionList)

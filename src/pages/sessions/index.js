@@ -5,7 +5,6 @@ import { Grid } from 'semantic-ui-react'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import pageWithIntl from '../../lib/pageWithIntl'
 import SessionList from '../../components/sessions/SessionList'
-import Session from '../../components/sessions/Session'
 import withData from '../../lib/withData'
 
 class Index extends Component {
@@ -58,7 +57,7 @@ class Index extends Component {
         <Grid padded stackable>
           <Grid.Row>
             <Grid.Column>
-              <Session />
+              <SessionList />
             </Grid.Column>
           </Grid.Row>
         </Grid>
