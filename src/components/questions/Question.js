@@ -33,7 +33,7 @@ const Question = ({ head, id, title, type, version, lastUsed }) =>
 
     <style jsx global>{`
       .ui.grid .questions {
-        margin-bottom: 30px;
+        margin-bottom: 10px;
       }
       .ui.grid.questions .ui.segment.lowerSection {
         background-color: #ededed;
