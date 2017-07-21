@@ -6,7 +6,7 @@ import Session from './Session'
 
 const SessionList = ({ data }) =>
   (<div>
-    {data.allSessions.map(session => <Session {...session} />)}
+    {data.allSessions.map(session => <Session key={session.id} {...session} />)}
   </div>)
 
 
