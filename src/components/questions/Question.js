@@ -41,6 +41,9 @@ const Question = ({ head, id, title, type, version, lastUsed }) =>
       .ui.grid.questions > .row.titleRow {
         padding-bottom: 0;
       }
+      .ui.grid.questions >.row.titleRow >.column.tagGroup {
+        padding: 0;
+      }
       .ui.grid.questions > .row.titleRow > .column.title {
         padding-bottom: 20px;
       }
@@ -51,6 +54,7 @@ const Question = ({ head, id, title, type, version, lastUsed }) =>
     <style jsx>{`
       .tag {
         border: solid 1px;
+        height: 100%;
       }
       .tagGroup {
         display: inline;
