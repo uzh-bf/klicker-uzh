@@ -28,7 +28,11 @@ export default graphql(
       allSessions {
         id
         title
+        questions {
+          id
+        }
         createdAt
+        updatedAt
       }
     }
   `,
