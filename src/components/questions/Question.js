@@ -11,16 +11,16 @@ const Question = ({ head, id, title, type, version, lastUsed }) =>
   (<Grid stackable className="questions">
     {head}
 
-    <Grid.Row divided className="titleRow">
+    <Grid.Row className="titleRow">
       <Grid.Column className="title" floated="left" width="12">
         <strong>#{id}</strong> - {title} {version > 1 && `(v${version})`}
       </Grid.Column>
       <Grid.Column floated="right" width="1">
         <b>{type}</b>
       </Grid.Column>
-      <Grid.Column className="tags" floated="right" width="1">
+      <Grid.Column className="tagGroup" floated="right" width="1">
         {
-          tagList.map(tag => <div key={tag}>{tag}</div>)
+          tagList.map(tag => <div className="tag" key={tag}>{tag}</div>)
         }
       </Grid.Column>
     </Grid.Row>
@@ -34,21 +34,26 @@ const Question = ({ head, id, title, type, version, lastUsed }) =>
       </Grid.Column>
     </Segment>
 
-    <style jsx>{`
-      .tags {
-        display: inline;
-      }
-      :global(.ui.grid .questions) {
+    <style jsx global>{`
+      .ui.grid .questions {
         margin-bottom: 30px;
       }
-      :global(.ui.grid.questions > .row.titleRow) {
+      .ui.grid.questions > .row.titleRow {
         padding-bottom: 0;
       }
-      :global(.ui.grid.questions > .row.titleRow > .column.title) {
+      .ui.grid.questions > .row.titleRow > .column.title {
         padding-bottom: 20px;
       }
-      :global(.ui.segment) {
+      .ui.segment {
         margin: 0;
+      }
+    `}</style>
+    <style jsx>{`
+      .tag {
+        border: solid 1px;
+      }
+      .tagGroup {
+        display: inline;
       }
     `}</style>
   </Grid>)
