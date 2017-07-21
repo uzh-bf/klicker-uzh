@@ -21,9 +21,9 @@ const Question = ({ head, id, title, type, version, lastUsed }) =>
         tagList.map(tag => <Grid.Column className="box tag" floated="right" key={tag}>{tag}</Grid.Column>)
       }
     </Grid.Row>
-    <Segment as={Grid.Row}>
-      <Grid.Column width="11">Test</Grid.Column>
-      <Grid.Column color="grey" width="5">
+    <Segment divided as={Grid.Row} className="lowerSection">
+      <Grid.Column width="12">Test</Grid.Column>
+      <Grid.Column width="4">
         Zuletzt verwendet
         {
           lastUsed.map(date => <div key={date}>{date}</div>)
@@ -34,6 +34,9 @@ const Question = ({ head, id, title, type, version, lastUsed }) =>
     <style jsx global>{`
       .ui.grid .questions {
         margin-bottom: 30px;
+      }
+      .ui.grid.questions .ui.segment.lowerSection {
+        background-color: #ededed;
       }
       .ui.grid.questions > .row.titleRow {
         padding-bottom: 0;
