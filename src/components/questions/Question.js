@@ -17,7 +17,7 @@ const Question = ({ head, id, title, type, version, lastUsed }) =>
       </Grid.Column>
       <Grid.Column floated="right"><b>{type}</b></Grid.Column>
       {
-        tagList.map(tag => <Grid.Column className="tagGroup tag" floated="right" key={tag}>{tag}</Grid.Column>)
+        tagList.map(tag => <Grid.Column className="tag" floated="right" key={tag}>{tag}</Grid.Column>)
       }
     </Grid.Row>
     <Segment as={Grid.Row}>
@@ -37,11 +37,16 @@ const Question = ({ head, id, title, type, version, lastUsed }) =>
       .ui.grid.questions > .row.titleRow {
         padding-bottom: 0;
       }
-      .ui.grid.questions >.row.titleRow >.column.tagGroup {
-        margin-right: 20px;
-        padding: 0;
-        border: solid 1px;
+      .ui.grid.questions >.row.titleRow >.column.tag {
+        border-top: solid 1px;
+        border-left: solid 1px;
         height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      .ui.grid.questions >.row.titleRow >.column.tag:last-child {
+        border-right: solid 1px;
+        margin-right: 20px;
       }
       .ui.grid.questions > .row.titleRow > .column.title {
         padding-bottom: 20px;
