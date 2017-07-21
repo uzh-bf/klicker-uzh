@@ -52,7 +52,7 @@ class Index extends Component {
 
     return (
       <TeacherLayout intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'sessionHistory' }}>
-        <Grid padded columns="2">
+        <Grid padded stackable>
           <Grid.Column>blebleble</Grid.Column>
         </Grid>
       </TeacherLayout>
