@@ -22,7 +22,7 @@ const Question = ({ head, id, title, type, version }) =>
         Risk
       </Grid.Column>
     </Grid.Row>
-    <Segment as={Grid.Row} divided>
+    <Segment as={Grid.Row}>
       <Grid.Column width="11">Test</Grid.Column>
       <Grid.Column color="grey" width="5">
         Zuletzt verwendet
@@ -30,7 +30,7 @@ const Question = ({ head, id, title, type, version }) =>
     </Segment>
 
     <style jsx>{`
-      .questions {
+      :global(.questions) {
         margin-bottom: 30px;
       }
     `}</style>
