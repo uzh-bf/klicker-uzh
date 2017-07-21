@@ -5,24 +5,20 @@ import { Grid, Segment } from 'semantic-ui-react'
 import withCSS from '../../lib/withCSS'
 
 // TODO only for testing
-const tagList = ['CAPM']
+const tagList = ['CAPM', 'Risk']
 
 const Question = ({ head, id, title, type, version, lastUsed }) =>
   (<Grid stackable className="questions">
     {head}
 
     <Grid.Row className="titleRow">
-      <Grid.Column className="title" floated="left" width="12">
+      <Grid.Column className="title" floated="left" width="11">
         <strong>#{id}</strong> - {title} {version > 1 && `(v${version})`}
       </Grid.Column>
-      <Grid.Column floated="right" width="1">
-        <b>{type}</b>
-      </Grid.Column>
-      <Grid.Column className="tagGroup" floated="right" width="1">
-        {
-          tagList.map(tag => <div className="tag" key={tag}>{tag}</div>)
-        }
-      </Grid.Column>
+      <Grid.Column floated="right"><b>{type}</b></Grid.Column>
+      {
+        tagList.map(tag => <Grid.Column className="tagGroup tag" floated="right" key={tag}>{tag}</Grid.Column>)
+      }
     </Grid.Row>
     <Segment as={Grid.Row}>
       <Grid.Column width="11">Test</Grid.Column>
@@ -44,21 +40,14 @@ const Question = ({ head, id, title, type, version, lastUsed }) =>
       .ui.grid.questions >.row.titleRow >.column.tagGroup {
         margin-right: 20px;
         padding: 0;
+        border: solid 1px;
+        height: 100%;
       }
       .ui.grid.questions > .row.titleRow > .column.title {
         padding-bottom: 20px;
       }
       .ui.segment {
         margin: 0;
-      }
-    `}</style>
-    <style jsx>{`
-      .tag {
-        border: solid 1px;
-        height: 100%;
-      }
-      .tagGroup {
-        display: inline;
       }
     `}</style>
   </Grid>)
