@@ -4,6 +4,8 @@ import { Grid } from 'semantic-ui-react'
 
 import withCSS from '../../lib/withCSS'
 
+const tagList = ['MC', 'CAPM', 'Risk']
+
 const Question = ({ head, id, title }) =>
   (
     <Grid className="questions">
@@ -12,7 +14,11 @@ const Question = ({ head, id, title }) =>
           {head}
           <strong>{id}</strong> - {title}
         </Grid.Column>
-        <Grid.Column floated="right" width="4">MC CAPM Risk</Grid.Column>
+        <Grid.Column floated="right" width="4">
+          {
+            tagList.forEach(tag => console.log(tag))
+          }
+        </Grid.Column>
       </Grid.Row>
       <Grid.Row>
         <Grid.Column width="11">Test</Grid.Column>
