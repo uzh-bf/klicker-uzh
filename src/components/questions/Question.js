@@ -78,7 +78,7 @@ Question.propTypes = {
 
 Question.defaultProps = {
   lastUsed: ['2017-08-08 14:30:22', '2016-09-09 15:22:09'], // TODO define default prop
-  tagList: ['Beta', 'CAPM'],
+  tagList: ['Beta', 'CAPM'], // TODO define deault prop
   version: 1,
 }
 
