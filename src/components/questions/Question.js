@@ -1,43 +1,52 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Grid } from 'semantic-ui-react'
+import { Grid, Segment } from 'semantic-ui-react'
 
 import withCSS from '../../lib/withCSS'
 
 const tagList = ['MC', 'CAPM', 'Risk']
 
-const Question = ({ head, id, title }) =>
-  (
-    <Grid className="questions">
-      <Grid.Row divided>
-        <Grid.Column floated="left" width="12">
-          {head}
-          <strong>{id}</strong> - {title}
-        </Grid.Column>
-        <Grid.Column floated="right" width="4">
-          {
-            tagList.forEach(tag => console.log(tag))
-          }
-        </Grid.Column>
-      </Grid.Row>
-      <Grid.Row>
-        <Grid.Column width="11">Test</Grid.Column>
-        <Grid.Column color="grey" width="5">
-          Zuletzt verwendet
-        </Grid.Column>
-      </Grid.Row>
-      <style jsx global>{`
-        .ui.grid .questions {
-          margin-bottom: 30px;
+const Question = ({ head, id, title, type, version }) =>
+  (<Grid className="questions">
+    {head}
+
+    <Grid.Row divided>
+      <Grid.Column floated="left" width="12">
+        <strong>#{id}</strong> - {title} {version > 1 && `(v${version})`}
+      </Grid.Column>
+      <Grid.Column floated="right" width="1">
+        {type}
+      </Grid.Column>
+      <Grid.Column floated="right" width="1">
+        {
+          tagList.forEach(tag => console.log(tag))
         }
-      `}</style>
-    </Grid>
-  )
+      </Grid.Column>
+    </Grid.Row>
+    <Segment as={Grid.Row}>
+      <Grid.Column width="11">Test</Grid.Column>
+      <Grid.Column color="grey" width="5">
+        Zuletzt verwendet
+      </Grid.Column>
+    </Segment>
+
+    <style jsx>{`
+      :global(.ui.grid .questions) {
+        margin-bottom: 30px;
+      }
+    `}</style>
+  </Grid>)
 
 Question.propTypes = {
   head: PropTypes.node.isRequired,
   id: PropTypes.string.isRequired,
   title: PropTypes.string.isRequired,
+  type: PropTypes.oneOf(['SC', 'MC', 'FREE']).isRequired,
+  version: PropTypes.number,
+}
+
+Question.defaultProps = {
+  version: 1,
 }
 
 export default withCSS(Question, ['grid', 'segment'])
