@@ -17,6 +17,7 @@ const Question = ({ head, id, title, type, version, lastUsed }) =>
       </Grid.Column>
       <Grid.Column floated="right"><b>{type}</b></Grid.Column>
       {
+        /* TODO vertical text align */
         tagList.map(tag => <Grid.Column className="tag" floated="right" key={tag}>{tag}</Grid.Column>)
       }
     </Grid.Row>
@@ -43,6 +44,8 @@ const Question = ({ head, id, title, type, version, lastUsed }) =>
         height: 100%;
         margin: 0;
         padding: 0;
+        text-align: center;
+        position: relative;
       }
       .ui.grid.questions >.row.titleRow >.column.tag:last-child {
         border-right: solid 1px;
