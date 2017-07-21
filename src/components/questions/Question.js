@@ -15,10 +15,10 @@ const Question = ({ head, id, title, type, version, lastUsed }) =>
       <Grid.Column className="title" floated="left" width="11">
         <strong>#{id}</strong> - {title} {version > 1 && `(v${version})`}
       </Grid.Column>
-      <Grid.Column floated="right"><b>{type}</b></Grid.Column>
+      <Grid.Column className="box type" floated="right"><b>{type}</b></Grid.Column>
       {
         /* TODO vertical text align */
-        tagList.map(tag => <Grid.Column className="tag" floated="right" key={tag}>{tag}</Grid.Column>)
+        tagList.map(tag => <Grid.Column className="box tag" floated="right" key={tag}>{tag}</Grid.Column>)
       }
     </Grid.Row>
     <Segment as={Grid.Row}>
@@ -38,7 +38,7 @@ const Question = ({ head, id, title, type, version, lastUsed }) =>
       .ui.grid.questions > .row.titleRow {
         padding-bottom: 0;
       }
-      .ui.grid.questions >.row.titleRow >.column.tag {
+      .ui.grid.questions >.row.titleRow >.column.box {
         border-top: solid 1px;
         border-left: solid 1px;
         height: 100%;
