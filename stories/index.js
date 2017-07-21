@@ -2,17 +2,12 @@
 
 import React from 'react'
 import { storiesOf } from '@storybook/react'
-import { Grid } from 'semantic-ui-react'
 
 import Question from '../src/components/questions/Question'
 import '../node_modules/semantic-ui-css/semantic.min.css'
 
-storiesOf('Question', module).add('basic', () =>
-  (<Grid padded stackable>
-    <Grid.Row>
-      <Grid.Column>
-        <Question id="abcd" title="Hello world" />
-      </Grid.Column>
-    </Grid.Row>
-  </Grid>),
-)
+storiesOf('Question', module)
+  .add('SC with a single version', () => <Question id="1" title="Hello world" type="SC" />)
+  .add('MC with multiple versions', () =>
+    <Question id="1" title="Good question" type="MC" version="2" />,
+  )
