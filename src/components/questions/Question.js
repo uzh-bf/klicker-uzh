@@ -22,9 +22,9 @@ const Question = ({ head, id, title, type, version, lastUsed }) =>
       }
     </Grid.Row>
     <Segment divided as={Grid.Row} className="lowerSection">
-      <Grid.Column width="12">Test</Grid.Column>
-      <Grid.Column width="4">
-        Zuletzt verwendet
+      <Grid.Column width="13">Test</Grid.Column>
+      <Grid.Column width="3">
+        <div className="lastUsedTitle">Zuletzt verwendet</div>
         {
           lastUsed.map(date => <div key={date}>{date}</div>)
         }
@@ -61,6 +61,12 @@ const Question = ({ head, id, title, type, version, lastUsed }) =>
         margin: 0;
       }
     `}</style>
+    <style jsx>{`
+      .lastUsedTitle {
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+    `}</style>
   </Grid>)
 
 Question.propTypes = {
@@ -74,7 +80,7 @@ Question.propTypes = {
 
 Question.defaultProps = {
   version: 1,
-  lastUsed: ['2017-08-08', '2016-09-09'], // TODO define default prop
+  lastUsed: ['2017-08-08 14:30:22', '2016-09-09 15:22:09'], // TODO define default prop
 }
 
 export default withCSS(Question, ['grid', 'segment'])
