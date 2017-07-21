@@ -16,6 +16,7 @@ SessionList.propTypes = {
       PropTypes.shape({
         id: PropTypes.string.isRequired,
         title: PropTypes.string.isRequired,
+        createdAt: PropTypes.string.isRequired,
       }),
     ),
   }).isRequired,
@@ -27,6 +28,7 @@ export default graphql(
       allSessions {
         id
         title
+        createdAt
       }
     }
   `,
