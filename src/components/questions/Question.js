@@ -12,9 +12,7 @@ const Question = ({ head, id, title }) =>
           {head}
           <strong>{id}</strong> - {title}
         </Grid.Column>
-        <Grid.Column floated="right" width="1">MC</Grid.Column>
-        <Grid.Column floated="right" width="1">CAPM</Grid.Column>
-        <Grid.Column floated="right" width="1">Risk</Grid.Column>
+        <Grid.Column floated="right" width="4">MC CAPM Risk</Grid.Column>
       </Grid.Row>
       <Grid.Row>
         <Grid.Column width="11">Test</Grid.Column>
@@ -22,8 +20,8 @@ const Question = ({ head, id, title }) =>
           Zuletzt verwendet
         </Grid.Column>
       </Grid.Row>
-      <style jsx>{`
-        .questions {
+      <style jsx global>{`
+        .ui.grid .questions {
           margin-bottom: 30px;
         }
       `}</style>
