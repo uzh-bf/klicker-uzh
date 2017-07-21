@@ -42,7 +42,8 @@
     "jest": "^20.0.4",
     "nodemon": "^1.11.0",
     "react-addons-test-utils": "^15.6.0",
-    "react-test-renderer": "^15.6.1"
+    "react-test-renderer": "^15.6.1",
+    "semantic-ui-css": "^2.2.11"
   },
   "scripts": {
     "build": "next build src && node ./src/lib/defaultLang",
