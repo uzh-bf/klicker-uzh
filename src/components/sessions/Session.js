@@ -1,6 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Grid, Segment } from 'semantic-ui-react'
+import QuestionInSession from './QuestionInSession'
 
 import withCSS from '../../lib/withCSS'
 
@@ -12,7 +13,7 @@ const Session = ({ head, id, title }) => (
       <Grid.Column className="date" width="4">Erstellt am 60.80.1000</Grid.Column>
     </Grid.Row>
     <Segment as={Grid.Row} className="questions">
-      <Grid.Column>Questions</Grid.Column>
+      <Grid.Column><QuestionInSession id="2222" title="Hallo Question" /><QuestionInSession id="2222" title="Question" /></Grid.Column>
     </Segment>
     <style jsx global>{`
       .ui.grid.session > .row.questions {
