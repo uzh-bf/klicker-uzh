@@ -5,7 +5,7 @@ import QuestionInSession from './QuestionInSession'
 
 import withCSS from '../../lib/withCSS'
 
-const Session = ({ head, id, title }) => (
+const Session = ({ head, id, title, questions }) => (
   <Grid padded stackable className="session">
     {head}
     <Grid.Row className="titleRow">
@@ -13,7 +13,11 @@ const Session = ({ head, id, title }) => (
       <Grid.Column className="date" width="4">Erstellt am 60.80.1000</Grid.Column>
     </Grid.Row>
     <Segment as={Grid.Row} className="questions">
-      <Grid.Column><QuestionInSession id="2222" title="Hallo Question" /><QuestionInSession id="2222" title="Question" /></Grid.Column>
+      <Grid.Column>
+        {console.dir(questions)}
+        <QuestionInSession id="2222" title="Hallo Question" />
+        <QuestionInSession id="2222" title="Question" />
+      </Grid.Column>
     </Segment>
     <style jsx global>{`
       .ui.grid.session > .row.questions {
@@ -31,17 +35,15 @@ Session.propTypes = {
   id: PropTypes.string.isRequired,
   title: PropTypes.string.isRequired,
   /*
-  status: PropTypes.string.isRequired,
-  question: PropTypes.shape({
+  status: PropTypes.string.isRequired, */
+  questions: PropTypes.shape({
     id: PropTypes.string.isRequired,
     description: PropTypes.string.isRequired,
     questionDefinition: PropTypes.shape({
       title: PropTypes.string.isRequired,
       type: PropTypes.string.isRequired,
     }).isRequired,
-  createdAt: PropTypes.string.isRequired,
-  updatedAt: PropTypes.string.isRequired,
-  */
+  }).isRequired,
 }
 
-export default withCSS(Session, ['grid', 'segment'])
+export default withCSS(Session, ['segment'])

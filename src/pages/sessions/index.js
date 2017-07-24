@@ -6,7 +6,6 @@ import TeacherLayout from '../../components/layouts/TeacherLayout'
 import pageWithIntl from '../../lib/pageWithIntl'
 import SessionList from '../../components/sessions/SessionList'
 import withData from '../../lib/withData'
-import GridColumn from 'semantic-ui-react/dist/es/collections/Grid/GridColumn'
 
 class Index extends Component {
   static propTypes = {
@@ -57,11 +56,11 @@ class Index extends Component {
       <TeacherLayout intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'sessionHistory' }}>
         <Grid padded stackable>
           <Grid.Row>
-            <GridColumn width="2" />
+            <Grid.Column width="2" />
             <Grid.Column width="12">
               <SessionList />
             </Grid.Column>
-            <GridColumn width="2" />
+            <Grid.Column width="2" />
           </Grid.Row>
         </Grid>
       </TeacherLayout>
