@@ -7,28 +7,39 @@ import QuestionInSession from './QuestionInSession'
 
 import withCSS from '../../lib/withCSS'
 
-const Session = ({ createdAt, head, id, name, questions, status }) => {
-  console.dir(status)
+const Session = ({ createdAt, head, id, intl, name, questions, status }) => {
   let buttonContent = ''
   let buttonIcon = ''
   switch (status) {
     case 'CREATED': {
-      buttonContent = 'Starten'
+      buttonContent = intl.formatMessage({
+        id: 'session.button.created.content',
+        defaultMessage: 'Starten',
+      })
       buttonIcon = 'play'
       break
     }
     case 'RUNNING': {
-      buttonContent = 'Was hier?'
+      buttonContent = intl.formatMessage({
+        id: 'session.button.running.content',
+        defaultMessage: 'Was hier?',
+      })
       buttonIcon = 'play' // TODO which icon here?
       break
     }
     case 'COMPLETED': {
-      buttonContent = 'Kopieren'
+      buttonContent = intl.formatMessage({
+        id: 'session.button.completed.content',
+        defaultMessage: 'Kopieren',
+      })
       buttonIcon = 'copy'
       break
     }
     default: {
-      buttonContent = 'Starten'
+      buttonContent = intl.formatMessage({
+        id: 'session.button.created.content',
+        defaultMessage: 'Starten',
+      })
       buttonIcon = 'play'
       break
     }
@@ -74,6 +85,9 @@ Session.propTypes = {
   createdAt: PropTypes.string.isRequired,
   head: PropTypes.node.isRequired,
   id: PropTypes.string.isRequired,
+  intl: PropTypes.shape({
+    formatMessage: PropTypes.func.isRequired,
+  }),
   name: PropTypes.string.isRequired,
   status: PropTypes.string.isRequired,
   questions: PropTypes.shape({
@@ -85,5 +99,10 @@ Session.propTypes = {
     }).isRequired,
   }).isRequired,
 }
+
+Session.defaultProps = {
+  intl: null,
+}
+
 
 export default withCSS(Session, ['segment'])

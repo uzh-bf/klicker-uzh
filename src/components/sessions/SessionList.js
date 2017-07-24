@@ -4,9 +4,9 @@ import { gql, graphql } from 'react-apollo'
 
 import Session from './Session'
 
-const SessionList = ({ data }) =>
+const SessionList = ({ data, intl }) =>
   (<div>
-    {data.allSessions.map(session => <Session key={session.id} {...session} />)}
+    {data.allSessions.map(session => <Session intl={intl} key={session.id} {...session} />)}
   </div>)
 
 
@@ -29,6 +29,13 @@ SessionList.propTypes = {
       }),
     ),
   }).isRequired,
+  intl: PropTypes.shape({
+    formatMessage: PropTypes.func.isRequired,
+  }),
+}
+
+SessionList.defaultProps = {
+  intl: null,
 }
 
 export default graphql(

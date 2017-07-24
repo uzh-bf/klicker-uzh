@@ -58,7 +58,7 @@ class Index extends Component {
           <Grid.Row>
             <Grid.Column width="2" />
             <Grid.Column width="12">
-              <SessionList />
+              <SessionList intl={intl} />
             </Grid.Column>
             <Grid.Column width="2" />
           </Grid.Row>
