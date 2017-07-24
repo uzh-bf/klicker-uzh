@@ -5,18 +5,20 @@ import QuestionInSession from './QuestionInSession'
 
 import withCSS from '../../lib/withCSS'
 
-const Session = ({ head, id, title, questions }) => (
+const Session = ({ head, id, name, questions }) => (
   <Grid padded stackable className="session">
     {head}
     <Grid.Row className="titleRow">
-      <Grid.Column width="12"><strong>{id}</strong> | {title}</Grid.Column>
+      <Grid.Column width="12"><strong>{id}</strong> | {name}</Grid.Column>
       <Grid.Column className="date" width="4">Erstellt am 60.80.1000</Grid.Column>
     </Grid.Row>
     <Segment as={Grid.Row} className="questions">
       <Grid.Column>
         {console.dir(questions)}
-        <QuestionInSession id="2222" title="Hallo Question" />
-        <QuestionInSession id="2222" title="Question" />
+        {questions.map(question =>
+          /* TODO get all values */
+          <QuestionInSession id={question.id} title={question.questionDefinition.title} type={question.questionDefinition.type} />,
+        )}
       </Grid.Column>
     </Segment>
     <style jsx global>{`
@@ -33,7 +35,7 @@ const Session = ({ head, id, title, questions }) => (
 Session.propTypes = {
   head: PropTypes.node.isRequired,
   id: PropTypes.string.isRequired,
-  title: PropTypes.string.isRequired,
+  name: PropTypes.string.isRequired,
   /*
   status: PropTypes.string.isRequired, */
   questions: PropTypes.shape({

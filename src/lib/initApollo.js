@@ -13,7 +13,7 @@ function create(initialState) {
     initialState,
     ssrMode: !process.browser, // Disables forceFetch on the server (so queries are only run once)
     networkInterface: createNetworkInterface({
-      uri: 'https://api.graph.cool/simple/v1/cj41d4jkmdqsw0185hgxq7le9', // Server URL (must be absolute)
+      uri: 'https://api.graph.cool/simple/v1/klicker', // Server URL (must be absolute)
       opts: {
         // Additional fetch() options like `credentials` or `headers`
         credentials: 'same-origin',
