@@ -88,7 +88,7 @@ Session.propTypes = {
   id: PropTypes.string.isRequired,
   intl: PropTypes.shape({
     formatMessage: PropTypes.func.isRequired,
-  }),
+  }).isRequired,
   name: PropTypes.string.isRequired,
   status: PropTypes.string.isRequired,
   questions: PropTypes.shape({
@@ -100,10 +100,5 @@ Session.propTypes = {
     }).isRequired,
   }).isRequired,
 }
-
-Session.defaultProps = {
-  intl: null,
-}
-
 
 export default withCSS(Session, ['segment'])
