@@ -45,6 +45,7 @@ const Session = ({ createdAt, head, id, name, questions }) => (
 )
 
 Session.propTypes = {
+  createdAt: PropTypes.string.isRequired,
   head: PropTypes.node.isRequired,
   id: PropTypes.string.isRequired,
   name: PropTypes.string.isRequired,
