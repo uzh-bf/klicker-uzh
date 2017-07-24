@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Grid, Segment } from 'semantic-ui-react'
+import { Button, Grid, Segment } from 'semantic-ui-react'
 import QuestionInSession from './QuestionInSession'
 
 import withCSS from '../../lib/withCSS'
@@ -13,7 +13,7 @@ const Session = ({ head, id, name, questions }) => (
       <Grid.Column className="date" width="4">Erstellt am 60.80.1000</Grid.Column>
     </Grid.Row>
     {/* TODO Possibility for more than two columns */}
-    <Segment as={Grid.Row} columns="2" className="questions">
+    <Segment as={Grid.Row} className="questions">
       {
         questions.map(question => (
           /* TODO Possibility for more than two columns */
@@ -26,6 +26,9 @@ const Session = ({ head, id, name, questions }) => (
           </Grid.Column>
         ))
       }
+      <Grid.Column >
+        <Button content="Starten" icon="play" labelPosition="left" />
+      </Grid.Column>
     </Segment>
     <style jsx global>{`
       .ui.grid.session > .row.questions {
