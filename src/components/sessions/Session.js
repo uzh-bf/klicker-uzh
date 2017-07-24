@@ -12,17 +12,20 @@ const Session = ({ head, id, name, questions }) => (
       <Grid.Column width="12"><strong>{id}</strong> | {name}</Grid.Column>
       <Grid.Column className="date" width="4">Erstellt am 60.80.1000</Grid.Column>
     </Grid.Row>
-    <Segment as={Grid.Row} className="questions">
-      <Grid.Column>
-        {
-          questions.map(question => (
+    {/* TODO Possibility for more than two columns */}
+    <Segment as={Grid.Row} columns="2" className="questions">
+      {
+        questions.map(question => (
+          /* TODO Possibility for more than two columns */
+          <Grid.Column key={question.id} width="6">
             <QuestionInSession
               id={question.id}
               title={question.questionDefinition.title}
               type={question.questionDefinition.type}
-            />))
-        }
-      </Grid.Column>
+            />
+          </Grid.Column>
+        ))
+      }
     </Segment>
     <style jsx global>{`
       .ui.grid.session > .row.questions {
