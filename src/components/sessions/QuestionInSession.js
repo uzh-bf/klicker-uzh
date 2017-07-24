@@ -15,6 +15,9 @@ const QuestionInSession = ({ head, id, title, type }) =>
     <Grid.Row>
       {title}
     </Grid.Row>
+    <style jsx global>{`
+
+    `}</style>
   </Segment>)
 
 QuestionInSession.propTypes = {
