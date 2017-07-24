@@ -8,6 +8,31 @@ import QuestionInSession from './QuestionInSession'
 import withCSS from '../../lib/withCSS'
 
 const Session = ({ createdAt, head, id, name, questions, status }) => {
+  console.dir(status)
+  let buttonContent = ''
+  let buttonIcon = ''
+  switch (status) {
+    case 'CREATED': {
+      buttonContent = 'Starten'
+      buttonIcon = 'play'
+      break
+    }
+    case 'RUNNING': {
+      buttonContent = 'Was hier?'
+      buttonIcon = 'play' // TODO which icon here?
+      break
+    }
+    case 'COMPLETED': {
+      buttonContent = 'Kopieren'
+      buttonIcon = 'copy'
+      break
+    }
+    default: {
+      buttonContent = 'Starten'
+      buttonIcon = 'play'
+      break
+    }
+  }
 
   return (
     <Grid padded stackable className="session">
@@ -15,8 +40,7 @@ const Session = ({ createdAt, head, id, name, questions, status }) => {
       <Grid.Row className="titleRow">
         <Grid.Column width="10"><strong>{id}</strong> | {name}</Grid.Column>
         <Grid.Column className="date" textAlign="right" width="6">
-          <FormattedMessage id="session.string.createdOn"
-                            defaultMessage="Created at" /> {moment(createdAt).format('DD.MM.YYYY hh:mm:ss')}
+          <FormattedMessage id="session.string.createdOn" defaultMessage="Created at" /> {moment(createdAt).format('DD.MM.YYYY hh:mm:ss')}
         </Grid.Column>
       </Grid.Row>
       {/* TODO Possibility for more than two columns */}
@@ -34,7 +58,7 @@ const Session = ({ createdAt, head, id, name, questions, status }) => {
           ))
         }
         <Grid.Column textAlign="right" className="buttonColumn" floated="right" verticalAlign="bottom" width="3">
-          <Button content={status === 'CREATED' ? 'Starten'} icon="play" labelPosition="left" />
+          <Button content={buttonContent} icon={buttonIcon} labelPosition="left" />
         </Grid.Column>
       </Segment>
       <style jsx global>{`

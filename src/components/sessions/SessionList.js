@@ -35,6 +35,7 @@ export default graphql(
   gql`
     {
       allSessions {
+        createdAt
         id
         name
         questions {
@@ -45,7 +46,7 @@ export default graphql(
             type
           }
         }
-        createdAt
+        status
         updatedAt
       }
     }
