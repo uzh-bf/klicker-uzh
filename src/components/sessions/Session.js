@@ -40,6 +40,9 @@ const Session = ({ createdAt, head, id, name, questions }) => (
       .ui.grid.session > .row.titleRow > .column.date {
         text-align: right;
       }
+      .ui.grid.session > .row.questions > .column.buttonColumn {
+        text-align: right;
+      }
     `}</style>
   </Grid>
 )
