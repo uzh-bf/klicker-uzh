@@ -16,7 +16,7 @@ const Session = ({ createdAt, head, id, name, questions }) => (
       </Grid.Column>
     </Grid.Row>
     {/* TODO Possibility for more than two columns */}
-    <Segment as={Grid.Row} className="questions">
+    <Segment as={Grid.Row} className="questionsRow">
       {
         questions.map(question => (
           /* TODO Possibility for more than two columns */
@@ -34,7 +34,7 @@ const Session = ({ createdAt, head, id, name, questions }) => (
       </Grid.Column>
     </Segment>
     <style jsx global>{`
-      .ui.grid.session > .row.questions {
+      .ui.grid.session > .row.questionsRow {
         margin-top: 0;
       }
       .ui.grid.session > .row.titleRow > .column.date {

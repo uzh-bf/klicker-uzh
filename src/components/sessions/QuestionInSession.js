@@ -12,10 +12,13 @@ const QuestionInSession = ({ head, id, title, type }) =>
       <Grid.Column floated="right" width="1">{type}</Grid.Column>
     </Grid.Row>
     <Divider />
-    <Grid.Row>
+    <Grid.Row className="contentRow">
       {title}
     </Grid.Row>
     <style jsx global>{`
+      .ui.grid.questionInSession {
+        margin: 0;
+      }
       .ui.grid.questionInSession > .row.titleRow {
         padding-top: 0;
         padding-bottom: 0;
