@@ -60,7 +60,7 @@ const Session = ({ createdAt, head, id, intl, name, questions, status }) => {
         {
           questions.map(question => (
             /* TODO Possibility for more than two columns, depends on long id */
-            <Grid.Column key={question.id} width="4">
+            <Grid.Column key={question.id} width="3">
               <QuestionInSession
                 id={question.id.slice(0, -15)} // HACK Correct short ID
                 title={question.questionDefinition.title}
