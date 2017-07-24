@@ -26,8 +26,8 @@ Session.propTypes = {
   head: PropTypes.node.isRequired,
   id: PropTypes.string.isRequired,
   title: PropTypes.string.isRequired,
-  status: PropTypes.string.isRequired,
   /*
+  status: PropTypes.string.isRequired,
   question: PropTypes.shape({
     id: PropTypes.string.isRequired,
     description: PropTypes.string.isRequired,
@@ -37,7 +37,7 @@ Session.propTypes = {
     }).isRequired,
   createdAt: PropTypes.string.isRequired,
   updatedAt: PropTypes.string.isRequired,
-      */
+  */
 }
 
 export default withCSS(Session, ['grid', 'segment'])
