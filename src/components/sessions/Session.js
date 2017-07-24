@@ -29,7 +29,7 @@ const Session = ({ head, id, name, questions }) => (
           </Grid.Column>
         ))
       }
-      <Grid.Column>
+      <Grid.Column className="buttonColumn">
         <Button content="Starten" icon="play" labelPosition="left" />
       </Grid.Column>
     </Segment>
