@@ -7,48 +7,51 @@ import QuestionInSession from './QuestionInSession'
 
 import withCSS from '../../lib/withCSS'
 
-const Session = ({ createdAt, head, id, name, questions }) => (
-  <Grid padded stackable className="session">
-    {head}
-    <Grid.Row className="titleRow">
-      <Grid.Column width="10"><strong>{id}</strong> | {name}</Grid.Column>
-      <Grid.Column className="date" textAlign="right" width="6">
-        <FormattedMessage id="session.string.createdOn" defaultMessage="Created at" /> {moment(createdAt).format('DD.MM.YYYY hh:mm:ss')}
-      </Grid.Column>
-    </Grid.Row>
-    {/* TODO Possibility for more than two columns */}
-    <Segment as={Grid.Row} className="questionsRow">
-      {
-        questions.map(question => (
-          /* TODO Possibility for more than two columns, depends on long id */
-          <Grid.Column key={question.id} width="4">
-            <QuestionInSession
-              id={question.id.slice(0, -15)}
-              title={question.questionDefinition.title}
-              type={question.questionDefinition.type}
-            />
-          </Grid.Column>
-        ))
-      }
-      <Grid.Column textAlign="right" className="buttonColumn" floated="right" verticalAlign="bottom" width="3">
-        <Button content="Starten" icon="play" labelPosition="left" />
-      </Grid.Column>
-    </Segment>
-    <style jsx global>{`
+const Session = ({ createdAt, head, id, name, questions, status }) => {
+
+  return (
+    <Grid padded stackable className="session">
+      {head}
+      <Grid.Row className="titleRow">
+        <Grid.Column width="10"><strong>{id}</strong> | {name}</Grid.Column>
+        <Grid.Column className="date" textAlign="right" width="6">
+          <FormattedMessage id="session.string.createdOn"
+                            defaultMessage="Created at" /> {moment(createdAt).format('DD.MM.YYYY hh:mm:ss')}
+        </Grid.Column>
+      </Grid.Row>
+      {/* TODO Possibility for more than two columns */}
+      <Segment as={Grid.Row} className="questionsRow">
+        {
+          questions.map(question => (
+            /* TODO Possibility for more than two columns, depends on long id */
+            <Grid.Column key={question.id} width="4">
+              <QuestionInSession
+                id={question.id.slice(0, -15)}
+                title={question.questionDefinition.title}
+                type={question.questionDefinition.type}
+              />
+            </Grid.Column>
+          ))
+        }
+        <Grid.Column textAlign="right" className="buttonColumn" floated="right" verticalAlign="bottom" width="3">
+          <Button content={status === 'CREATED' ? 'Starten'} icon="play" labelPosition="left" />
+        </Grid.Column>
+      </Segment>
+      <style jsx global>{`
       .ui.grid.session > .row.questionsRow {
         margin-top: 0;
       }
     `}</style>
-  </Grid>
-)
+    </Grid>
+  )
+}
 
 Session.propTypes = {
   createdAt: PropTypes.string.isRequired,
   head: PropTypes.node.isRequired,
   id: PropTypes.string.isRequired,
   name: PropTypes.string.isRequired,
-  /*
-  status: PropTypes.string.isRequired, */
+  status: PropTypes.string.isRequired,
   questions: PropTypes.shape({
     id: PropTypes.string.isRequired,
     description: PropTypes.string.isRequired,

@@ -15,8 +15,17 @@ SessionList.propTypes = {
     allSessions: PropTypes.arrayOf(
       PropTypes.shape({
         id: PropTypes.string.isRequired,
-        name: PropTypes.string.isRequired,
         createdAt: PropTypes.string.isRequired,
+        name: PropTypes.string.isRequired,
+        questions: PropTypes.shape({
+          id: PropTypes.string.isRequired,
+          description: PropTypes.string.isRequired,
+          questionDefinition: PropTypes.shape({
+            title: PropTypes.string.isRequired,
+            type: PropTypes.string.isRequired,
+          }).isRequired,
+        }),
+        status: PropTypes.string.isRequired,
       }),
     ),
   }).isRequired,
