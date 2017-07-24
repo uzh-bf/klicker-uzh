@@ -14,7 +14,7 @@ const Session = ({ createdAt, head, id, intl, name, questions, status }) => {
     case 'CREATED': {
       buttonContent = intl.formatMessage({
         id: 'session.button.created.content',
-        defaultMessage: 'Starten',
+        defaultMessage: 'Start',
       })
       buttonIcon = 'play'
       break
@@ -30,7 +30,7 @@ const Session = ({ createdAt, head, id, intl, name, questions, status }) => {
     case 'COMPLETED': {
       buttonContent = intl.formatMessage({
         id: 'session.button.completed.content',
-        defaultMessage: 'Kopieren',
+        defaultMessage: 'Copy',
       })
       buttonIcon = 'copy'
       break
@@ -38,7 +38,7 @@ const Session = ({ createdAt, head, id, intl, name, questions, status }) => {
     default: {
       buttonContent = intl.formatMessage({
         id: 'session.button.created.content',
-        defaultMessage: 'Starten',
+        defaultMessage: 'Start',
       })
       buttonIcon = 'play'
       break
