@@ -27,6 +27,9 @@ const QuestionInSession = ({ head, id, title, type }) =>
         padding-left: 0;
         padding-right: 0;
       }
+      .ui.grid.questionInSession > .row.contentRow {
+        padding: 0;
+      }
     `}</style>
   </Segment>)
 
