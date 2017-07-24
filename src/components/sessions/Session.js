@@ -29,7 +29,7 @@ const Session = ({ createdAt, head, id, name, questions }) => (
           </Grid.Column>
         ))
       }
-      <Grid.Column className="buttonColumn" floated="right" width="3">
+      <Grid.Column textAlign="right" className="buttonColumn" floated="right" width="3">
         <Button content="Starten" icon="play" labelPosition="left" />
       </Grid.Column>
     </Segment>
@@ -38,9 +38,6 @@ const Session = ({ createdAt, head, id, name, questions }) => (
         margin-top: 0;
       }
       .ui.grid.session > .row.titleRow > .column.date {
-        text-align: right;
-      }
-      .ui.grid.session > .row.questions > .column.buttonColumn {
         text-align: right;
       }
     `}</style>
