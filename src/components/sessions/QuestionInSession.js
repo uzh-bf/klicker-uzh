@@ -8,7 +8,7 @@ const QuestionInSession = ({ head, id, title, type }) =>
   (<Segment as={Grid} className="questionInSession">
     {head}
     <Grid.Row className="titleRow">
-      <Grid.Column strechted floated="left" textAlign="left" width="8"><strong>{id}</strong></Grid.Column>
+      <Grid.Column floated="left" textAlign="left" width="8"><strong>{id}</strong></Grid.Column>
       <Grid.Column floated="right" textAlign="right" width="8">{type}</Grid.Column>
     </Grid.Row>
     <Divider />
