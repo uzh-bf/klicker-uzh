@@ -1,13 +1,18 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Segment } from 'semantic-ui-react'
+import { Grid, Segment } from 'semantic-ui-react'
 
 import withCSS from '../../lib/withCSS'
 
 const QuestionInSession = ({ head, id, title, type }) =>
-  (<Segment>
+  (<Segment as={Grid}>
     {head}
-    <strong>{id}</strong> - {title} - {type}
+    <Grid.Row>
+      <strong>{id}</strong> - {type}
+    </Grid.Row>
+    <Grid.Row>
+      {title}
+    </Grid.Row>
   </Segment>)
 
 QuestionInSession.propTypes = {
