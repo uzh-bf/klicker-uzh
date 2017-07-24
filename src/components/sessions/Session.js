@@ -2,6 +2,7 @@ import React from 'react'
 import { FormattedMessage } from 'react-intl'
 import PropTypes from 'prop-types'
 import { Button, Grid, Segment } from 'semantic-ui-react'
+import moment from 'moment'
 import QuestionInSession from './QuestionInSession'
 
 import withCSS from '../../lib/withCSS'
@@ -12,7 +13,7 @@ const Session = ({ createdAt, head, id, name, questions }) => (
     <Grid.Row className="titleRow">
       <Grid.Column width="12"><strong>{id}</strong> | {name}</Grid.Column>
       <Grid.Column className="date" width="4">
-        <FormattedMessage id="session.string.createdOn" defaultMessage="Created at" /> {createdAt}
+        <FormattedMessage id="session.string.createdOn" defaultMessage="Created at" /> {moment(createdAt).format('DD.MM.YYYY')}
       </Grid.Column>
     </Grid.Row>
     {/* TODO Possibility for more than two columns */}

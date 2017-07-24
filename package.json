@@ -17,6 +17,7 @@
     "lodash": "^4.17.4",
     "logrocket": "^0.5.1",
     "logrocket-react": "^0.0.4",
+    "moment": "^2.18.1",
     "next": "beta",
     "prop-types": "^15.5.10",
     "raven-js": "^3.16.1",
