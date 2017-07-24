@@ -9,7 +9,7 @@ const Session = ({ head, id, title }) => (
     {head}
     <Grid.Row className="titleRow">
       <Grid.Column width="12"><strong>{id}</strong> | {title}</Grid.Column>
-      <Grid.Column width="4">Erstellt am 60.80.1000</Grid.Column>
+      <Grid.Column className="date" width="4">Erstellt am 60.80.1000</Grid.Column>
     </Grid.Row>
     <Segment as={Grid.Row} className="questions">
       <Grid.Column>Questions</Grid.Column>
@@ -17,6 +17,9 @@ const Session = ({ head, id, title }) => (
     <style jsx global>{`
       .ui.grid.session > .row.questions {
         margin-top: 0;
+      }
+      .ui.grid.session > .row.titleRow > .column.date {
+        text-align: right;
       }
     `}</style>
   </Grid>
