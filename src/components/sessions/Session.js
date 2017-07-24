@@ -14,11 +14,14 @@ const Session = ({ head, id, name, questions }) => (
     </Grid.Row>
     <Segment as={Grid.Row} className="questions">
       <Grid.Column>
-        {console.dir(questions)}
-        {questions.map(question =>
-          /* TODO get all values */
-          <QuestionInSession id={question.id} title={question.questionDefinition.title} type={question.questionDefinition.type} />,
-        )}
+        {
+          questions.map(question => (
+            <QuestionInSession
+              id={question.id}
+              title={question.questionDefinition.title}
+              type={question.questionDefinition.type}
+            />))
+        }
       </Grid.Column>
     </Segment>
     <style jsx global>{`
