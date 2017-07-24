@@ -1,4 +1,5 @@
 import React from 'react'
+import { FormattedMessage } from 'react-intl'
 import PropTypes from 'prop-types'
 import { Button, Grid, Segment } from 'semantic-ui-react'
 import QuestionInSession from './QuestionInSession'
@@ -10,7 +11,9 @@ const Session = ({ head, id, name, questions }) => (
     {head}
     <Grid.Row className="titleRow">
       <Grid.Column width="12"><strong>{id}</strong> | {name}</Grid.Column>
-      <Grid.Column className="date" width="4">Erstellt am 60.80.1000</Grid.Column>
+      <Grid.Column className="date" width="4">
+        <FormattedMessage id="session.string.createdOn" defaultMessage="Created on" /> 24.02.1999
+      </Grid.Column>
     </Grid.Row>
     {/* TODO Possibility for more than two columns */}
     <Segment as={Grid.Row} className="questions">
@@ -26,7 +29,7 @@ const Session = ({ head, id, name, questions }) => (
           </Grid.Column>
         ))
       }
-      <Grid.Column >
+      <Grid.Column>
         <Button content="Starten" icon="play" labelPosition="left" />
       </Grid.Column>
     </Segment>
