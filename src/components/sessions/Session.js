@@ -49,7 +49,8 @@ const Session = ({ createdAt, head, id, intl, name, questions, status }) => {
     <Grid padded stackable className="session">
       {head}
       <Grid.Row className="titleRow">
-        <Grid.Column width="10"><strong>{id}</strong> | {name}</Grid.Column>
+        {/* HACK delete slice and get correct user ID */}
+        <Grid.Column width="10"><strong>{id.slice(0, -15)}</strong> {name}</Grid.Column>
         <Grid.Column className="date" textAlign="right" width="6">
           <FormattedMessage id="session.string.createdOn" defaultMessage="Created at" /> {moment(createdAt).format('DD.MM.YYYY hh:mm:ss')}
         </Grid.Column>
