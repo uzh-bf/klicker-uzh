@@ -5,10 +5,21 @@ import { gql, graphql } from 'react-apollo'
 import Session from './Session'
 
 const SessionList = ({ data, intl }) =>
-  (<div>
-    {data.allSessions.map(session => <Session intl={intl} key={session.id} {...session} />)}
-  </div>)
-
+  (
+    <div>
+      {
+        data.allSessions.map(session => (
+          <Session
+            sessionId={session.id.slice(0, -15)}
+            intl={intl}
+            key={session.id}
+            {...session}
+          />
+          ),
+        )
+      }
+    </div>
+  )
 
 SessionList.propTypes = {
   data: PropTypes.shape({

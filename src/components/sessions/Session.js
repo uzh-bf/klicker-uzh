@@ -7,7 +7,7 @@ import QuestionInSession from './QuestionInSession'
 
 import withCSS from '../../lib/withCSS'
 
-const Session = ({ createdAt, head, id, intl, name, questions, status }) => {
+const Session = ({ createdAt, head, intl, name, questions, sessionId, status }) => {
   let buttonContent = ''
   let buttonIcon = ''
   switch (status) {
@@ -50,7 +50,7 @@ const Session = ({ createdAt, head, id, intl, name, questions, status }) => {
       {head}
       <Grid.Row className="titleRow">
         {/* HACK delete slice and get correct user ID */}
-        <Grid.Column width="10"><strong>{id.slice(0, -15)}</strong> {name}</Grid.Column>
+        <Grid.Column width="10"><strong>{sessionId}</strong> {name}</Grid.Column>
         <Grid.Column className="date" textAlign="right" width="6">
           <FormattedMessage id="session.string.createdOn" defaultMessage="Created at" /> {moment(createdAt).format('DD.MM.YYYY hh:mm:ss')}
         </Grid.Column>
