@@ -6,13 +6,13 @@ import QuestionInSession from './QuestionInSession'
 
 import withCSS from '../../lib/withCSS'
 
-const Session = ({ head, id, name, questions }) => (
+const Session = ({ createdAt, head, id, name, questions }) => (
   <Grid padded stackable className="session">
     {head}
     <Grid.Row className="titleRow">
       <Grid.Column width="12"><strong>{id}</strong> | {name}</Grid.Column>
       <Grid.Column className="date" width="4">
-        <FormattedMessage id="session.string.createdOn" defaultMessage="Created on" /> 24.02.1999
+        <FormattedMessage id="session.string.createdOn" defaultMessage="Created at" /> {createdAt}
       </Grid.Column>
     </Grid.Row>
     {/* TODO Possibility for more than two columns */}
