@@ -20,7 +20,7 @@ const Session = ({ createdAt, head, id, name, questions }) => (
       {
         questions.map(question => (
           /* TODO Possibility for more than two columns */
-          <Grid.Column key={question.id} width="6">
+          <Grid.Column key={question.id} width="5">
             <QuestionInSession
               id={question.id}
               title={question.questionDefinition.title}
@@ -29,7 +29,7 @@ const Session = ({ createdAt, head, id, name, questions }) => (
           </Grid.Column>
         ))
       }
-      <Grid.Column className="buttonColumn">
+      <Grid.Column className="buttonColumn" floated="right" width="3">
         <Button content="Starten" icon="play" labelPosition="left" />
       </Grid.Column>
     </Segment>
