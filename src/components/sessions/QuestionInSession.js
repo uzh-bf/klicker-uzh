@@ -7,8 +7,9 @@ import withCSS from '../../lib/withCSS'
 const QuestionInSession = ({ head, id, title, type }) =>
   (<Segment as={Grid}>
     {head}
-    <Grid.Row>
-      <strong>{id}</strong> - {type}
+    <Grid.Row columns="2">
+      <Grid.Column><strong>{id}</strong></Grid.Column>
+      <Grid.Column>{type}</Grid.Column>
     </Grid.Row>
     <Divider />
     <Grid.Row>
