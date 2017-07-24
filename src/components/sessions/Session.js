@@ -11,9 +11,9 @@ const Session = ({ createdAt, head, id, name, questions }) => (
   <Grid padded stackable className="session">
     {head}
     <Grid.Row className="titleRow">
-      <Grid.Column width="12"><strong>{id}</strong> | {name}</Grid.Column>
-      <Grid.Column className="date" width="4">
-        <FormattedMessage id="session.string.createdOn" defaultMessage="Created at" /> {moment(createdAt).format('DD.MM.YYYY')}
+      <Grid.Column width="10"><strong>{id}</strong> | {name}</Grid.Column>
+      <Grid.Column className="date" textAlign="right" width="6">
+        <FormattedMessage id="session.string.createdOn" defaultMessage="Created at" /> {moment(createdAt).format('DD.MM.YYYY hh:mm:ss')}
       </Grid.Column>
     </Grid.Row>
     {/* TODO Possibility for more than two columns */}
@@ -37,9 +37,6 @@ const Session = ({ createdAt, head, id, name, questions }) => (
     <style jsx global>{`
       .ui.grid.session > .row.questionsRow {
         margin-top: 0;
-      }
-      .ui.grid.session > .row.titleRow > .column.date {
-        text-align: right;
       }
     `}</style>
   </Grid>
