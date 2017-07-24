@@ -58,13 +58,13 @@ const Session = ({ createdAt, head, id, intl, name, questions, status }) => {
       {/* TODO Possibility for more than two columns */}
       <Segment as={Grid.Row} className="questionsRow">
         {
-          questions.map(question => (
+          questions.map(({ id: questionId, questionDefinition: { title, type } }) => (
             /* TODO Possibility for more than two columns, depends on long id */
-            <Grid.Column key={question.id} width="3">
+            <Grid.Column key={questionId} width="3">
               <QuestionInSession
-                id={question.id.slice(0, -15)} // HACK Correct short ID
-                title={question.questionDefinition.title}
-                type={question.questionDefinition.type}
+                id={questionId.slice(0, -15)} // HACK Correct short ID
+                title={title}
+                type={type}
               />
             </Grid.Column>
           ))
