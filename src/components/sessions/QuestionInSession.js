@@ -7,9 +7,9 @@ import withCSS from '../../lib/withCSS'
 const QuestionInSession = ({ head, id, title, type }) =>
   (<Segment as={Grid} className="questionInSession">
     {head}
-    <Grid.Row className="titleRow" columns="2">
-      <Grid.Column floated="left" width="8"><strong>{id}</strong></Grid.Column>
-      <Grid.Column floated="right" width="1">{type}</Grid.Column>
+    <Grid.Row className="titleRow">
+      <Grid.Column strechted floated="left" textAlign="left" width="8"><strong>{id}</strong></Grid.Column>
+      <Grid.Column floated="right" textAlign="right" width="8">{type}</Grid.Column>
     </Grid.Row>
     <Divider />
     <Grid.Row className="contentRow">

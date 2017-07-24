@@ -20,10 +20,10 @@ const Session = ({ createdAt, head, id, name, questions }) => (
     <Segment as={Grid.Row} className="questionsRow">
       {
         questions.map(question => (
-          /* TODO Possibility for more than two columns */
-          <Grid.Column key={question.id} width="5">
+          /* TODO Possibility for more than two columns, depends on long id */
+          <Grid.Column key={question.id} width="4">
             <QuestionInSession
-              id={question.id}
+              id={question.id.slice(0, -15)}
               title={question.questionDefinition.title}
               type={question.questionDefinition.type}
             />
