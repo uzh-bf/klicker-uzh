@@ -69,7 +69,7 @@ const Session = ({ createdAt, head, intl, name, questions, sessionId, status }) 
             </Grid.Column>
           ))
         }
-        <Grid.Column textAlign="right" className="buttonColumn" floated="right" verticalAlign="bottom" width="3">
+        <Grid.Column className="buttonColumn" floated="right" textAlign="right" verticalAlign="bottom" width="3">
           <Button content={buttonContent} icon={buttonIcon} labelPosition="left" />
         </Grid.Column>
       </Segment>
