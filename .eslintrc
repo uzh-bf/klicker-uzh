@@ -10,7 +10,16 @@
     "react/forbid-prop-types": 1,
     "global-require": 0,
     "import/no-dynamic-require": 0,
-    "no-console": 0
+    "no-console": 0,
+    "react/jsx-sort-props": [
+      1,
+      {
+        "callbacksLast": true,
+        "reservedFirst": true,
+        "shorthandFirst": true
+      }
+    ],
+    "sort-keys": 1
   },
   "env": {
     "browser": true,

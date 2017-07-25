@@ -1,5 +1,5 @@
-import React from 'react'
 import PropTypes from 'prop-types'
+import React from 'react'
 import { gql, graphql } from 'react-apollo'
 
 import Question from './Question'
@@ -11,13 +11,20 @@ const QuestionList = ({ data }) => {
 
   return (
     <div>
-      {data.questions.map((question) => {
-        return (
-          <div className="question">
-            {<Question key={question.id} id={question.id} lastUsed={question.instances.map(instance => instance.createdAt)} tags={question.tags.map(tag => tag.name)} title={question.title} type={question.type} />}
-          </div>
-        )
-      })}
+      {data.questions.map(question =>
+        (<div className="question">
+          {
+            <Question
+              key={question.id}
+              id={question.id}
+              lastUsed={question.instances.map(instance => instance.createdAt)}
+              tags={question.tags.map(tag => tag.name)}
+              title={question.title}
+              type={question.type}
+            />
+          }
+        </div>),
+      )}
       <style jsx>{`
         .question {
           margin-bottom: 2rem;
