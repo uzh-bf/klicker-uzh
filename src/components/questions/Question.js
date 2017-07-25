@@ -9,20 +9,18 @@ const Question = ({ head, id, lastUsed, tags, title, type, version }) =>
     {head}
 
     <Grid.Row className="titleRow">
-      <Grid.Column className="title" floated="left" width="11">
+      <Grid.Column className="titleColumn" floated="left" width="11">
         <strong>{title}</strong> {version > 1 && `(v${version})`}
       </Grid.Column>
-      <Grid.Column className="box type" floated="right">
-        <b>
-          {type}
-        </b>
+      <Grid.Column className="tag" floated="right">
+        {type}
       </Grid.Column>
-      {/* TODO vertical text align */
-      tags.map(tag =>
+      {/* TODO vertical text align */}
+      {tags.map(tag =>
         (<Grid.Column
-          className="box tag"
-          floated="right"
           key={tag}
+          className="tag"
+          floated="right"
           textAlign="center"
           verticalAlign="middle"
         >
@@ -44,14 +42,9 @@ const Question = ({ head, id, lastUsed, tags, title, type, version }) =>
       </Grid.Column>
     </Segment>
 
-    <style jsx global>{`
-      .ui.grid.questions .ui.segment.lowerSection {
-        background-color: #ededed;
-      }
-      .ui.grid.questions > .row.titleRow {
-        padding-bottom: 0;
-      }
-      .ui.grid.questions > .row.titleRow > .column.box {
+    {/* HACK: find way to not need !important statements */}
+    <style jsx>{`
+      :global(.tag) {
         border-top: solid 1px;
         border-left: solid 1px;
         height: 100%;
@@ -60,18 +53,29 @@ const Question = ({ head, id, lastUsed, tags, title, type, version }) =>
         text-align: center;
         position: relative;
       }
-      .ui.grid.questions > .row.titleRow > .column.tag:last-child {
+
+      :global(.tag) > span {
+        vertical-align: middle;
+      }
+
+      :global(.tag:not(last-child)) {
         border-right: solid 1px;
-        margin-right: 20px;
+        margin-right: 0;
       }
-      .ui.grid.questions > .row.titleRow > .column.title {
-        padding-bottom: 20px;
+
+      :global(.titleRow) {
+        padding-bottom: 0 !important;
       }
-      .ui.segment {
-        margin: 0;
+
+      :global(.titleColumn) {
+        padding-bottom: 20px !important;
       }
-    `}</style>
-    <style jsx>{`
+
+      :global(.lowerSection) {
+        background-color: #ededed !important;
+        margin-top: 0 !important;
+      }
+
       .lastUsedTitle {
         font-weight: bold;
         margin-bottom: 10px;

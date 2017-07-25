@@ -95,11 +95,11 @@ class Index extends Component {
                 <Button
                   circular
                   primary
-                  size="large"
                   className={
                     this.state.activeNewButton ? 'actionButton actionButtonActive' : 'actionButton'
                   }
                   icon="plus"
+                  size="large"
                   onClick={this.handleActiveNewButton}
                 />
               </div>
