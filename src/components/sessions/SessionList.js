@@ -26,17 +26,20 @@ SessionList.propTypes = {
     allSessions: PropTypes.arrayOf(
       PropTypes.shape({
         id: PropTypes.string.isRequired,
-        createdAt: PropTypes.string.isRequired,
         name: PropTypes.string.isRequired,
-        questions: PropTypes.shape({
+        status: PropTypes.string.isRequired,
+        blocks: PropTypes.shape({
           id: PropTypes.string.isRequired,
-          description: PropTypes.string.isRequired,
-          questionDefinition: PropTypes.shape({
-            title: PropTypes.string.isRequired,
-            type: PropTypes.string.isRequired,
+          questions: PropTypes.shape({
+            questionDefinition: PropTypes.shape({
+              createdAt: PropTypes.string.isRequired,
+              title: PropTypes.string.isRequired,
+              type: PropTypes.string.isRequired,
+            }).isRequired,
           }).isRequired,
         }),
-        status: PropTypes.string.isRequired,
+        createdAt: PropTypes.string.isRequired,
+        updatedAt: PropTypes.string.isRequired,
       }),
     ),
   }).isRequired,
@@ -53,18 +56,20 @@ export default graphql(
   gql`
     {
       allSessions {
-        createdAt
         id
         name
-        questions {
+        status
+        blocks {
           id
-          description
-          questionDefinition {
-            title
-            type
+          questions {
+            questionDefinition {
+              createdAt
+              title
+              type
+            }
           }
         }
-        status
+        createdAt
         updatedAt
       }
     }
