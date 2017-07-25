@@ -4,7 +4,7 @@ import { Grid, Segment } from 'semantic-ui-react'
 
 import withCSS from '../../lib/withCSS'
 
-const Question = ({ head, id, tagList, title, type, version, lastUsed }) =>
+const Question = ({ head, id, lastUsed, tags, title, type, version }) =>
   (<Grid stackable className="questions">
     {head}
 
@@ -12,33 +12,46 @@ const Question = ({ head, id, tagList, title, type, version, lastUsed }) =>
       <Grid.Column className="title" floated="left" width="11">
         <strong>#{id}</strong> - {title} {version > 1 && `(v${version})`}
       </Grid.Column>
-      <Grid.Column className="box type" floated="right"><b>{type}</b></Grid.Column>
-      {
-        /* TODO vertical text align */
-        tagList.map(tag => <Grid.Column className="box tag" floated="right" key={tag}>{tag}</Grid.Column>)
-      }
+      <Grid.Column className="box type" floated="right">
+        <b>
+          {type}
+        </b>
+      </Grid.Column>
+      {/* TODO vertical text align */
+      tags.map(tag =>
+        (<Grid.Column
+          className="box tag"
+          floated="right"
+          key={tag}
+          textAlign="center"
+          verticalAlign="middle"
+        >
+          <span>
+            {tag}
+          </span>
+        </Grid.Column>),
+      )}
     </Grid.Row>
     <Segment divided as={Grid.Row} className="lowerSection">
       <Grid.Column width="13">Test</Grid.Column>
       <Grid.Column width="3">
         <div className="lastUsedTitle">Zuletzt verwendet</div>
-        {
-          lastUsed.map(date => <div key={date}>{date}</div>)
-        }
+        {lastUsed.map(date =>
+          (<div key={date}>
+            {date}
+          </div>),
+        )}
       </Grid.Column>
     </Segment>
 
     <style jsx global>{`
-      .ui.grid .questions {
-        margin-bottom: 10px;
-      }
       .ui.grid.questions .ui.segment.lowerSection {
         background-color: #ededed;
       }
       .ui.grid.questions > .row.titleRow {
         padding-bottom: 0;
       }
-      .ui.grid.questions >.row.titleRow >.column.box {
+      .ui.grid.questions > .row.titleRow > .column.box {
         border-top: solid 1px;
         border-left: solid 1px;
         height: 100%;
@@ -47,7 +60,7 @@ const Question = ({ head, id, tagList, title, type, version, lastUsed }) =>
         text-align: center;
         position: relative;
       }
-      .ui.grid.questions >.row.titleRow >.column.tag:last-child {
+      .ui.grid.questions > .row.titleRow > .column.tag:last-child {
         border-right: solid 1px;
         margin-right: 20px;
       }
@@ -69,16 +82,16 @@ const Question = ({ head, id, tagList, title, type, version, lastUsed }) =>
 Question.propTypes = {
   head: PropTypes.node.isRequired,
   id: PropTypes.string.isRequired,
-  tagList: PropTypes.arrayOf(PropTypes.string),
+  lastUsed: PropTypes.arrayOf(PropTypes.string),
+  tags: PropTypes.arrayOf(PropTypes.string),
   title: PropTypes.string.isRequired,
   type: PropTypes.oneOf(['SC', 'MC', 'FREE']).isRequired,
   version: PropTypes.number,
-  lastUsed: PropTypes.arrayOf(PropTypes.string),
 }
 
 Question.defaultProps = {
-  lastUsed: ['2017-08-08 14:30:22', '2016-09-09 15:22:09'], // TODO define default prop
-  tagList: ['Beta', 'CAPM'], // TODO define deault prop
+  lastUsed: [],
+  tags: [],
   version: 1,
 }
 

@@ -11,7 +11,19 @@ const QuestionList = ({ data }) => {
 
   return (
     <div>
-      {data.allQuestions.map(question => <Question key={question.id} {...question} />)}
+      {data.questions.map((question) => {
+        const tags = question.tags
+        return (
+          <div className="question">
+            <Question key={question.id} tags={tags} />
+          </div>
+        )
+      })}
+      <style jsx>{`
+        .question {
+          margin-bottom: 2rem;
+        }
+      `}</style>
     </div>
   )
 }
@@ -30,9 +42,23 @@ QuestionList.propTypes = {
 export default graphql(
   gql`
     {
-      allQuestions {
+      questions: allQuestionDefinitions {
         id
         title
+        instances {
+          id
+          createdAt
+        }
+        tags {
+          id
+          name
+        }
+        versions {
+          id
+          createdAt
+        }
+        createdAt
+        updatedAt
       }
     }
   `,
