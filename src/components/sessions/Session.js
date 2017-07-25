@@ -7,7 +7,7 @@ import QuestionInSession from './QuestionInSession'
 
 import withCSS from '../../lib/withCSS'
 
-const Session = ({ createdAt, head, intl, name, questions, sessionId, status }) => {
+const Session = ({ createdAt, head, intl, name, blocks, sessionId, status }) => {
   let buttonContent = ''
   let buttonIcon = ''
   switch (status) {
@@ -52,19 +52,22 @@ const Session = ({ createdAt, head, intl, name, questions, sessionId, status }) 
         {/* HACK delete slice and get correct user ID */}
         <Grid.Column width="10"><strong>{sessionId}</strong> {name}</Grid.Column>
         <Grid.Column className="date" textAlign="right" width="6">
-          <FormattedMessage id="session.string.createdOn" defaultMessage="Created at" /> {moment(createdAt).format('DD.MM.YYYY hh:mm:ss')}
+          <FormattedMessage
+            id="session.string.createdOn"
+            defaultMessage="Created at"
+          /> {moment(createdAt).format('DD.MM.YYYY hh:mm:ss')}
         </Grid.Column>
       </Grid.Row>
       {/* TODO Possibility for more than two columns */}
       <Segment as={Grid.Row} className="questionsRow">
         {
-          questions.map(({ id: questionId, questionDefinition: { title, type } }) => (
+          /* TODO desturcture questions array and pass title and type */
+          blocks.map(({ id: questionId }) => (
             /* TODO Possibility for more than two columns, depends on long id */
             <Grid.Column key={questionId} width="3">
               <QuestionInSession
                 id={questionId.slice(0, -15)} // HACK Correct short ID
-                title={title}
-                type={type}
+                /* TODO pass type and id as props */
               />
             </Grid.Column>
           ))
@@ -92,13 +95,13 @@ Session.propTypes = {
   name: PropTypes.string.isRequired,
   status: PropTypes.string.isRequired,
   questions: PropTypes.shape({
-    id: PropTypes.string.isRequired,
-    description: PropTypes.string.isRequired,
     questionDefinition: PropTypes.shape({
+      createdAt: PropTypes.string.isRequired,
       title: PropTypes.string.isRequired,
       type: PropTypes.string.isRequired,
     }).isRequired,
   }).isRequired,
+
 }
 
 export default withCSS(Session, ['segment'])

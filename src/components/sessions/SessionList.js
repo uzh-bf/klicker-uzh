@@ -7,13 +7,18 @@ import Session from './Session'
 const SessionList = ({ data, intl }) =>
   (
     <div>
+      {console.dir(data.allSessions)}
       {
         data.allSessions.map(session => (
           <Session
-            sessionId={session.id.slice(0, -15)}
+            createdAt={session.createdAt}
+            id={session.id}
             intl={intl}
-            key={session.id}
-            {...session}
+            name={session.name}
+            sessionId={session.id.slice(0, -15)}
+            status={session.status}
+            updatedAt={session.updatedAt}
+            blocks={session.blocks}
           />
           ),
         )
@@ -28,7 +33,7 @@ SessionList.propTypes = {
         id: PropTypes.string.isRequired,
         name: PropTypes.string.isRequired,
         status: PropTypes.string.isRequired,
-        blocks: PropTypes.shape({
+        blocks: PropTypes.arrayOf({
           id: PropTypes.string.isRequired,
           questions: PropTypes.shape({
             questionDefinition: PropTypes.shape({
@@ -37,7 +42,7 @@ SessionList.propTypes = {
               type: PropTypes.string.isRequired,
             }).isRequired,
           }).isRequired,
-        }),
+        }).isRequired,
         createdAt: PropTypes.string.isRequired,
         updatedAt: PropTypes.string.isRequired,
       }),
