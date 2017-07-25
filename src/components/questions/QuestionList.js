@@ -12,10 +12,9 @@ const QuestionList = ({ data }) => {
   return (
     <div>
       {data.questions.map((question) => {
-        const tags = question.tags
         return (
           <div className="question">
-            <Question key={question.id} tags={tags} />
+            {<Question key={question.id} id={question.id} lastUsed={question.instances.map(instance => instance.createdAt)} tags={question.tags.map(tag => tag.name)} title={question.title} type={question.type} />}
           </div>
         )
       })}
@@ -45,7 +44,8 @@ export default graphql(
       questions: allQuestionDefinitions {
         id
         title
-        instances {
+        type
+        instances(orderBy: createdAt_DESC, first: 3) {
           id
           createdAt
         }

@@ -10,7 +10,7 @@ const Question = ({ head, id, lastUsed, tags, title, type, version }) =>
 
     <Grid.Row className="titleRow">
       <Grid.Column className="title" floated="left" width="11">
-        <strong>#{id}</strong> - {title} {version > 1 && `(v${version})`}
+        <strong>{title}</strong> {version > 1 && `(v${version})`}
       </Grid.Column>
       <Grid.Column className="box type" floated="right">
         <b>
