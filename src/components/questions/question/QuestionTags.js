@@ -32,6 +32,7 @@ const QuestionTags = ({ tags, type }) =>
 
       @media all and (min-width: 768px) {
         .container {
+          align-items: flex-end;
           flex-direction: row;
           justify-content: flex-end;
         }
