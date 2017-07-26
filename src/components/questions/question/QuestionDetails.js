@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import { FormattedMessage } from 'react-intl'
 
 import ListWithHeader from '../../common/ListWithHeader'
 
@@ -11,7 +12,9 @@ const QuestionDetails = ({ lastUsed }) =>
 
     {lastUsed.length > 0 &&
       <div className="column">
-        <ListWithHeader items={lastUsed}>hello</ListWithHeader>
+        <ListWithHeader items={lastUsed}>
+          <FormattedMessage id="questionPool.question.lastUsed" defaultMessage="Last used" />
+        </ListWithHeader>
       </div>}
 
     <style jsx>{`
