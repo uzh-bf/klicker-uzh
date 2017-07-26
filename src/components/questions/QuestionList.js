@@ -2,7 +2,7 @@ import PropTypes from 'prop-types'
 import React from 'react'
 import { gql, graphql } from 'react-apollo'
 
-import Question from './Question'
+import Question from './question/Question'
 
 const QuestionList = ({ data }) => {
   if (data.loading) {
