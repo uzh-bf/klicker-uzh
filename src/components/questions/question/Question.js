@@ -28,7 +28,8 @@ const Question = ({ head, id, lastUsed, tags, title, type, version }) =>
       }
 
       .title {
-        padding: 0;
+        margin: 0;
+        margin-bottom: 0.5rem;
         font-size: 1.2rem;
         width: 100%;
       }
