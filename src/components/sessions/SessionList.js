@@ -1,38 +1,44 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { gql, graphql } from 'react-apollo'
+import { Message } from 'semantic-ui-react'
 
-import Session from './Session'
+import Session from './session/Session'
 
-const SessionList = ({ data, intl }) =>
-  (
+const SessionList = ({ data }) => {
+  if (data.loading) {
+    return <div>Loading</div>
+  }
+
+  if (data.error) {
+    return (
+      <Message error>
+        {data.error}
+      </Message>
+    )
+  }
+
+  return (
     <div>
-      {console.dir(data.allSessions)}
-      {
-        data.allSessions.map(session => (
-          <Session
-            createdAt={session.createdAt}
-            id={session.id}
-            intl={intl}
-            name={session.name}
-            sessionId={session.id.slice(0, -15)}
-            status={session.status}
-            updatedAt={session.updatedAt}
-            blocks={session.blocks}
-          />
-          ),
-        )
-      }
+      {data.sessions.map(session =>
+        (<div className="session">
+          <Session key={session.id} {...session} />
+        </div>),
+      )}
+
+      <style jsx>{`
+        .session {
+          margin-bottom: 2rem;
+        }
+      `}</style>
     </div>
   )
+}
 
 SessionList.propTypes = {
   data: PropTypes.shape({
-    allSessions: PropTypes.arrayOf(
+    sessions: PropTypes.arrayOf(
       PropTypes.shape({
-        id: PropTypes.string.isRequired,
-        name: PropTypes.string.isRequired,
-        status: PropTypes.string.isRequired,
         blocks: PropTypes.arrayOf({
           id: PropTypes.string.isRequired,
           questions: PropTypes.shape({
@@ -44,31 +50,27 @@ SessionList.propTypes = {
           }).isRequired,
         }).isRequired,
         createdAt: PropTypes.string.isRequired,
+        id: PropTypes.string.isRequired,
+        name: PropTypes.string.isRequired,
+        status: PropTypes.string.isRequired,
         updatedAt: PropTypes.string.isRequired,
       }),
     ),
   }).isRequired,
-  intl: PropTypes.shape({
-    formatMessage: PropTypes.func.isRequired,
-  }),
-}
-
-SessionList.defaultProps = {
-  intl: null,
 }
 
 export default graphql(
   gql`
     {
-      allSessions {
+      sessions: allSessions(orderBy: updatedAt_DESC) {
         id
         name
-        status
         blocks {
-          id
+          showSolutions
+          timeLimit
           questions {
+            id
             questionDefinition {
-              createdAt
               title
               type
             }
