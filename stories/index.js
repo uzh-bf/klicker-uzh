@@ -16,26 +16,28 @@ storiesOf('QuestionSingle', module).add('default', () =>
   <QuestionSingle id="abc" title="hello world this is a long long question" type="SC" />,
 )
 
-storiesOf('QuestionBlock', module).add('default', () =>
-  (<QuestionBlock
-    questions={[
-      {
-        id: 'abcd',
-        title: 'haha',
-        type: 'SC',
-      },
-      {
-        id: 'dhds',
-        title: 'haha 2 asasd',
-        type: 'FREE',
-      },
-      {
-        id: 'dkdj',
-        title: 'lorem ipsum haha',
-        type: 'MC',
-      },
-    ]}
-    showSolutions={false}
-    timeLimit={60}
-  />),
-)
+storiesOf('QuestionBlock', module)
+  .add('default', () =>
+    (<QuestionBlock
+      questions={[
+        {
+          id: 'abcd',
+          title: 'haha',
+          type: 'SC',
+        },
+        {
+          id: 'dhds',
+          title: 'haha 2 asasd',
+          type: 'FREE',
+        },
+        {
+          id: 'dkdj',
+          title: 'lorem ipsum haha',
+          type: 'MC',
+        },
+      ]}
+      showSolutions={false}
+      timeLimit={60}
+    />),
+  )
+  .add('empty', () => <QuestionBlock questions={[]} showSolutions={false} timeLimit={60} />)
