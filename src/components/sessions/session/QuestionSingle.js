@@ -4,14 +4,10 @@ import PropTypes from 'prop-types'
 const QuestionSingle = ({ id, type, title }) =>
   (<div className="container">
     <div className="id">
-      <span>
-        {id.slice(0, 7)}
-      </span>
+      {id}
     </div>
     <div className="type">
-      <span>
-        {type}
-      </span>
+      {type}
     </div>
     <div className="content">
       {title}
@@ -23,33 +19,22 @@ const QuestionSingle = ({ id, type, title }) =>
         border: 1px solid grey;
         display: flex;
         flex-flow: row wrap;
+        padding: 0.3rem;
         width: 100%;
       }
       .id,
       .type {
-        border-bottom: 1px solid grey;
         display: border-box;
-        padding: 0.3rem 0;
+        padding-bottom: 0.3rem;
         width: 50%;
       }
       .type {
         text-align: right;
       }
-      .id > span {
-        margin-left: 0.3rem;
-      }
-      .type > span {
-        margin-right: 0.3rem;
-      }
       .content {
-        padding: 0.3rem;
+        border-top: 1px solid grey;
+        padding-top: 0.3rem;
         width: 100%;
-      }
-
-      @media all and (min-width: 768px) {
-        .container {
-          max-width: 15rem;
-        }
       }
     `}</style>
   </div>)
