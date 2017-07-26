@@ -47,8 +47,8 @@ class Index extends Component {
         query: '',
       },
       title: intl.formatMessage({
-        id: 'pages.sessionHistory.title',
         defaultMessage: 'Session History',
+        id: 'sessionHistory.title',
       }),
     }
 
