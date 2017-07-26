@@ -1,54 +1,47 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Segment } from 'semantic-ui-react'
 
 import ListWithHeader from '../../common/ListWithHeader'
 
 const QuestionDetails = ({ lastUsed }) =>
-  (<Segment className="wrapper">
-    <div className="container">
-      <div className="column">Test1</div>
-      <div className="column">Test2</div>
-      <div className="column">Test3</div>
+  (<div className="container">
+    <div className="column">Test1</div>
+    <div className="column">Test2</div>
+    <div className="column">Test3</div>
 
-      {lastUsed.length > 0 &&
-        <div className="column">
-          <ListWithHeader items={lastUsed}>hello</ListWithHeader>
-        </div>}
+    {lastUsed.length > 0 &&
+      <div className="column">
+        <ListWithHeader items={lastUsed}>hello</ListWithHeader>
+      </div>}
 
-      <style jsx>{`
-        :global(.segment.wrapper) {
-          background-color: lightgrey;
-          min-height: 7rem;
-          width: 100%;
-        }
+    <style jsx>{`
+      .container {
+        background-color: lightgrey;
+        border: 1px solid grey;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        min-height: 7rem;
+      }
+      .column {
+        text-align: center;
+      }
 
+      @media all and (min-width: 768px) {
         .container {
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-          justify-content: space-around;
+          flex-direction: row;
         }
         .column {
-          text-align: center;
+          flex: 1 1 25%;
+          padding: 1rem;
+          text-align: left;
         }
-
-        @media all and (min-width: 768px) {
-          .container {
-            flex-direction: row;
-          }
-          .column {
-            flex: 1 1 25%;
-            padding: 0 1rem;
-            text-align: left;
-          }
-          .column:not(:last-child) {
-            border-right: 1px solid grey;
-          }
+        .column:not(:last-child) {
+          border-right: 1px solid grey;
         }
-      `}</style>
-    </div>
-  </Segment>)
+      }
+    `}</style>
+  </div>)
 
 QuestionDetails.propTypes = {
   lastUsed: PropTypes.arrayOf(PropTypes.string),
