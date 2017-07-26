@@ -56,11 +56,11 @@ class Index extends Component {
       <TeacherLayout intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'sessionHistory' }}>
         <Grid padded stackable>
           <Grid.Row>
-            <Grid.Column width="1" />
-            <Grid.Column width="14">
+            <Grid.Column width="2" />
+            <Grid.Column width="12">
               <SessionList intl={intl} />
             </Grid.Column>
-            <Grid.Column width="1" />
+            <Grid.Column width="2" />
           </Grid.Row>
         </Grid>
       </TeacherLayout>
