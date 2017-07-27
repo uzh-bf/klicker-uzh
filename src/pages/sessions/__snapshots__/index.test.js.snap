@@ -39,8 +39,10 @@ exports[`Snapshot-Testing Works 1`] = `
             className="ui icon input searchField"
           >
             <input
+              disabled={undefined}
               onChange={[Function]}
               placeholder="Search..."
+              tabIndex={undefined}
               type="text"
             />
             <i
@@ -171,17 +173,24 @@ exports[`Snapshot-Testing Works 1`] = `
           className="pusher"
         >
           <div
-            className="ui padded two column grid"
+            className="ui stackable padded grid"
           >
             <div
-              className="column"
+              className="row"
             >
-              blebleble
-            </div>
-            <div
-              className="column"
-            >
-              blablabla
+              <div
+                className="two wide column"
+              />
+              <div
+                className="twelve wide column"
+              >
+                <div>
+                  Loading
+                </div>
+              </div>
+              <div
+                className="two wide column"
+              />
             </div>
           </div>
         </div>
