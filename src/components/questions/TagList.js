@@ -1,6 +1,5 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import _sortBy from 'lodash/sortBy'
 import { gql, graphql } from 'react-apollo'
 import { List } from 'semantic-ui-react'
 
@@ -11,14 +10,15 @@ const TagList = ({ activeTags, data, head, handleTagClick }) => {
     return <div>Loading</div>
   }
 
-  // sort the tags by name
-  const sortedByName = _sortBy(data.allTags, ['name'])
+  if (data.error) {
+    return <div>{data.error}</div>
+  }
 
   return (
     <List selection size="large">
       {head}
 
-      {sortedByName.map((tag) => {
+      {data.tags.map((tag) => {
         const isActive = activeTags.includes(tag.id)
 
         return (
@@ -32,6 +32,7 @@ const TagList = ({ activeTags, data, head, handleTagClick }) => {
           </List.Item>
         )
       })}
+
       <style jsx>{`
         .active {
           font-weight: bold;
@@ -44,13 +45,13 @@ const TagList = ({ activeTags, data, head, handleTagClick }) => {
 TagList.propTypes = {
   activeTags: PropTypes.arrayOf(PropTypes.string),
   data: PropTypes.shape({
-    allTags: PropTypes.arrayOf(
+    loading: PropTypes.bool.isRequired,
+    tags: PropTypes.arrayOf(
       PropTypes.shape({
         id: PropTypes.string.isRequired,
         name: PropTypes.string.isRequired,
       }),
     ),
-    loading: PropTypes.bool.isRequired,
   }).isRequired,
   handleTagClick: PropTypes.func.isRequired,
   head: PropTypes.node.isRequired,
@@ -64,7 +65,7 @@ const TagListWithCSS = withCSS(TagList, ['list'])
 
 export default graphql(gql`
   {
-    allTags {
+    tags: allTags(orderBy: name_ASC) {
       id
       name
     }

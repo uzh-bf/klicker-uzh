@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-import { Grid } from 'semantic-ui-react'
+import { Button, Grid } from 'semantic-ui-react'
 
 import QuestionList from '../../components/questions/QuestionList'
 import TagList from '../../components/questions/TagList'
@@ -16,8 +16,14 @@ class Index extends Component {
   }
 
   state = {
+    activeNewButton: false,
     activeTags: [],
     sidebarVisible: false,
+  }
+
+  // handling the state of the new course button
+  handleActiveNewButton = () => {
+    this.setState({ activeNewButton: !this.state.activeNewButton })
   }
 
   // handle searching in the navbar search area
@@ -78,9 +84,38 @@ class Index extends Component {
             <Grid.Column stretched width="12">
               <QuestionList />
             </Grid.Column>
-            <Grid.Column stretched width="2" />
+            <Grid.Column stretched textAlign="right" verticalAlign="bottom" width="2">
+              {/* TODO correct position of button */}
+              {this.state.activeNewButton &&
+                <div>
+                  <p>Session starten</p>
+                  <p>Frage erstellen</p>
+                </div>}
+              <div>
+                <Button
+                  circular
+                  primary
+                  className={
+                    this.state.activeNewButton ? 'actionButton actionButtonActive' : 'actionButton'
+                  }
+                  icon="plus"
+                  size="large"
+                  onClick={this.handleActiveNewButton}
+                />
+              </div>
+            </Grid.Column>
           </Grid.Row>
         </Grid>
+
+        <style jsx>{`
+          :global(.actionButton) {
+            border-radius: 10em !important;
+          }
+          :global(.actionButtonActive) {
+            transition: transform 0.5s;
+            transform: rotate(45deg);
+          }
+        `}</style>
       </TeacherLayout>
     )
   }
