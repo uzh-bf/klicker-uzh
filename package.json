@@ -26,7 +26,6 @@
     "react-apollo": "^1.4.3",
     "react-dom": "^15.6.1",
     "react-intl": "^2.3.0",
-    "react-scrollbar-js": "^1.0.1",
     "redux": "^3.7.0",
     "semantic-ui-react": "^0.71.0"
   },
