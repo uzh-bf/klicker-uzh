@@ -193,8 +193,24 @@ exports[`Snapshot-Testing Works 1`] = `
                 </div>
               </div>
               <div
-                className="stretched two wide column"
-              />
+                className="stretched right aligned bottom aligned two wide column"
+              >
+                <div
+                  data-jsx={4065644119}
+                >
+                  <button
+                    className="ui large circular icon primary button actionButton"
+                    disabled={undefined}
+                    onClick={[Function]}
+                    tabIndex={undefined}
+                  >
+                    <i
+                      aria-hidden="true"
+                      className="plus icon"
+                    />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

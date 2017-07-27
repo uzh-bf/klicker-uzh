@@ -1,8 +1,9 @@
-import React from 'react'
 import PropTypes from 'prop-types'
+import React from 'react'
+import moment from 'moment'
 import { gql, graphql } from 'react-apollo'
 
-import Question from './Question'
+import Question from './question/Question'
 
 const QuestionList = ({ data }) => {
   if (data.loading) {
@@ -11,7 +12,26 @@ const QuestionList = ({ data }) => {
 
   return (
     <div>
-      {data.allQuestions.map(question => <Question key={question.id} {...question} />)}
+      {data.questions.map(question =>
+        (<div className="question">
+          {
+            <Question
+              key={question.id}
+              id={question.id}
+              lastUsed={question.instances.map(instance => moment(instance.createdAt).format('DD.MM.YYYY HH:MM:SS'))}
+              tags={question.tags.map(tag => tag.name)}
+              title={question.title}
+              type={question.type}
+            />
+          }
+        </div>),
+      )}
+
+      <style jsx>{`
+        .question {
+          margin-bottom: 2rem;
+        }
+      `}</style>
     </div>
   )
 }
@@ -30,9 +50,24 @@ QuestionList.propTypes = {
 export default graphql(
   gql`
     {
-      allQuestions {
+      questions: allQuestionDefinitions {
         id
         title
+        type
+        instances(orderBy: createdAt_DESC, first: 3) {
+          id
+          createdAt
+        }
+        tags {
+          id
+          name
+        }
+        versions {
+          id
+          createdAt
+        }
+        createdAt
+        updatedAt
       }
     }
   `,
