@@ -10,6 +10,7 @@ import withCSS from '../../lib/withCSS'
 
 class TeacherLayout extends Component {
   static propTypes = {
+    actionButton: PropTypes.node,
     children: PropTypes.node.isRequired,
     head: PropTypes.node.isRequired,
     intl: PropTypes.shape({ formatMessage: PropTypes.func.isRequired }),
@@ -30,6 +31,7 @@ class TeacherLayout extends Component {
   }
 
   static defaultProps = {
+    actionButton: null,
     intl: null,
     navbar: null,
     search: null,
@@ -54,7 +56,7 @@ class TeacherLayout extends Component {
   }
 
   render() {
-    const { children, intl, head, navbar, sidebar } = this.props
+    const { actionButton, children, intl, head, navbar, sidebar } = this.props
 
     return (
       <div className="teacherLayout">
@@ -74,6 +76,10 @@ class TeacherLayout extends Component {
           </Sidebar>
         </div>
 
+        {actionButton && <div className="actionArea">
+          {actionButton}
+        </div>}
+
         <div className="footer">
           <Footer />
         </div>
@@ -92,6 +98,14 @@ class TeacherLayout extends Component {
           .content {
             display: flex;
             flex: 1;
+          }
+          .actionArea {
+            position: fixed;
+            bottom: 4rem;
+            right: 2rem;
+          }
+          .actionArea > :global(.actionButton) {
+            border-radius: 10em !important;
           }
         `}</style>
       </div>

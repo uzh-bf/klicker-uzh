@@ -23,6 +23,7 @@ class Index extends Component {
 
   // handling the state of the new course button
   handleActiveNewButton = () => {
+    console.dir('hello world')
     this.setState({ activeNewButton: !this.state.activeNewButton })
   }
 
@@ -74,8 +75,20 @@ class Index extends Component {
       }),
     }
 
+    const actionButton = (
+      <Button
+        circular
+        primary
+        className={
+          this.state.activeNewButton ? 'actionButton active' : 'actionButton'
+        }
+        icon="plus"
+        size="large"
+        onClick={this.handleActiveNewButton}
+      />)
+
     return (
-      <TeacherLayout intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'questionPool' }}>
+      <TeacherLayout actionButton={actionButton} intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'questionPool' }}>
         <Grid padded stackable>
           <Grid.Row>
             <Grid.Column stretched width="2">
@@ -84,38 +97,9 @@ class Index extends Component {
             <Grid.Column stretched width="12">
               <QuestionList />
             </Grid.Column>
-            <Grid.Column stretched textAlign="right" verticalAlign="bottom" width="2">
-              {/* TODO correct position of button */}
-              {this.state.activeNewButton &&
-                <div>
-                  <p>Session starten</p>
-                  <p>Frage erstellen</p>
-                </div>}
-              <div>
-                <Button
-                  circular
-                  primary
-                  className={
-                    this.state.activeNewButton ? 'actionButton actionButtonActive' : 'actionButton'
-                  }
-                  icon="plus"
-                  size="large"
-                  onClick={this.handleActiveNewButton}
-                />
-              </div>
-            </Grid.Column>
+            <Grid.Column stretched width="2" />
           </Grid.Row>
         </Grid>
-
-        <style jsx>{`
-          :global(.actionButton) {
-            border-radius: 10em !important;
-          }
-          :global(.actionButtonActive) {
-            transition: transform 0.5s;
-            transform: rotate(45deg);
-          }
-        `}</style>
       </TeacherLayout>
     )
   }
