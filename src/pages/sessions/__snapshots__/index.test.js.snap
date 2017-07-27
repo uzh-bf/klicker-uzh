@@ -39,8 +39,10 @@ exports[`Snapshot-Testing Works 1`] = `
             className="ui icon input searchField"
           >
             <input
+              disabled={undefined}
               onChange={[Function]}
               placeholder="Search..."
+              tabIndex={undefined}
               type="text"
             />
             <i
