@@ -80,9 +80,9 @@ class TeacherLayout extends Component {
           {actionButton}
         </div>}
 
-        <div className="footer">
+        {/*<div className="footer">
           <Footer />
-        </div>
+        </div>*/}
 
         <style jsx>{`
           :global(*) {
@@ -101,7 +101,7 @@ class TeacherLayout extends Component {
           }
           .actionArea {
             position: fixed;
-            bottom: 4rem;
+            bottom: 2rem;
             right: 2rem;
           }
           .actionArea > :global(.actionButton) {

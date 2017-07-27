@@ -83,7 +83,7 @@ class Index extends Component {
           this.state.activeNewButton ? 'actionButton active' : 'actionButton'
         }
         icon="plus"
-        size="large"
+        size="huge"
         onClick={this.handleActiveNewButton}
       />)
 
@@ -91,13 +91,13 @@ class Index extends Component {
       <TeacherLayout actionButton={actionButton} intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'questionPool' }}>
         <Grid padded stackable>
           <Grid.Row>
-            <Grid.Column stretched width="2">
+            <Grid.Column width="2">
               <TagList activeTags={this.state.activeTags} handleTagClick={this.handleTagClick} />
             </Grid.Column>
-            <Grid.Column stretched width="12">
+            <Grid.Column tablet="14" computer="12">
               <QuestionList />
             </Grid.Column>
-            <Grid.Column stretched width="2" />
+            <Grid.Column tablet="none" computer="2" />
           </Grid.Row>
         </Grid>
       </TeacherLayout>
