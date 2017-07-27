@@ -15,16 +15,13 @@ const QuestionTags = ({ tags, type }) =>
     <style jsx>{`
       .container {
         display: flex;
-        flex-direction: column;
-        justify-content: space-around;
+        flex-flow: row wrap;
       }
       .tag {
-        border-top: solid 1px;
-        padding: 0.5rem 1rem;
+        background-color: lightgrey;
+        padding: 0.3rem 0.5rem;
+        flex: 1;
         text-align: center;
-      }
-      .tag:last-child {
-        border-bottom: solid 1px;
       }
       .type {
         font-weight: bold;
@@ -33,14 +30,17 @@ const QuestionTags = ({ tags, type }) =>
       @media all and (min-width: 768px) {
         .container {
           align-items: flex-end;
-          flex-direction: row;
+          flex-flow: row nowrap;
           justify-content: flex-end;
         }
         .tag {
+          background: none;
           border-left: solid 1px;
+          border-top: 1px solid grey;
+          padding: 0.5rem 1rem;
+          flex: 0 1 auto;
         }
         .tag:last-child {
-          border-bottom: 0;
           border-right: solid 1px;
         }
       }

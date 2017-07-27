@@ -22,32 +22,32 @@ const Question = ({ head, id, lastUsed, tags, title, type, version }) =>
 
     <style jsx>{`
       .container {
-        align-items: flex-end;
         display: flex;
-        flex-flow: row wrap;
+        flex-flow: column nowrap;
+        padding: 1rem;
       }
 
       .title {
+        font-size: 1.2rem;
         margin: 0;
         margin-bottom: 0.5rem;
-        font-size: 1.2rem;
-        width: 100%;
-      }
-
-      .tags {
-        width: 100%;
-      }
-
-      .details {
-        width: 100%;
       }
 
       @media all and (min-width: 768px) {
-        .title {
-          width: 75%;
+        .container {
+          flex-flow: row wrap;
+          padding: 0;
+        }
+
+        .title,
+        .tags {
+          flex: 1 1 auto;
         }
         .tags {
-          width: 25%;
+          align-self: flex-end;
+        }
+        .details {
+          flex: 0 0 100%;
         }
       }
     `}</style>

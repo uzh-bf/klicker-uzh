@@ -22,9 +22,7 @@ const QuestionDetails = ({ lastUsed }) =>
         background-color: lightgrey;
         border: 1px solid grey;
         display: flex;
-        flex-direction: column;
-        justify-content: space-around;
-        min-height: 7rem;
+        flex-flow: column nowrap;
       }
       .column {
         text-align: center;
@@ -32,10 +30,11 @@ const QuestionDetails = ({ lastUsed }) =>
 
       @media all and (min-width: 768px) {
         .container {
-          flex-direction: row;
+          flex-flow: row nowrap;
+          min-height: 7rem;
         }
         .column {
-          flex: 1 1 25%;
+          flex: 1;
           padding: 1rem;
           text-align: left;
         }
