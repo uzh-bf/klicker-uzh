@@ -22,7 +22,7 @@ const TagList = ({ activeTags, data, head, handleTagClick }) => {
         const isActive = activeTags.includes(tag.id)
 
         return (
-          <List.Item className="listItem" key={tag.id} onClick={() => handleTagClick(tag.id)}>
+          <List.Item key={tag.id} className="listItem" onClick={() => handleTagClick(tag.id)}>
             <List.Icon name={isActive ? 'folder' : 'folder outline'} />
             <List.Content>
               <span className={isActive ? 'active' : 'inactive'}>
@@ -44,13 +44,13 @@ const TagList = ({ activeTags, data, head, handleTagClick }) => {
 TagList.propTypes = {
   activeTags: PropTypes.arrayOf(PropTypes.string),
   data: PropTypes.shape({
-    loading: PropTypes.bool.isRequired,
     allTags: PropTypes.arrayOf(
       PropTypes.shape({
         id: PropTypes.string.isRequired,
         name: PropTypes.string.isRequired,
       }),
     ),
+    loading: PropTypes.bool.isRequired,
   }).isRequired,
   handleTagClick: PropTypes.func.isRequired,
   head: PropTypes.node.isRequired,
