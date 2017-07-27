@@ -63,8 +63,8 @@ class Index extends Component {
         query: '',
       },
       title: intl.formatMessage({
-        id: 'pages.questionPool.title',
         defaultMessage: 'Question Pool',
+        id: 'pages.questionPool.title',
       }),
     }
 

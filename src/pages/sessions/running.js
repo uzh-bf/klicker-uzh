@@ -22,8 +22,8 @@ class Running extends Component {
     const navbarConfig = {
       accountShort: 'AW',
       title: intl.formatMessage({
-        id: 'pages.runningSession.title',
         defaultMessage: 'Running Session',
+        id: 'pages.runningSession.title',
       }),
     }
 

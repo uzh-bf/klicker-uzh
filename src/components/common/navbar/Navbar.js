@@ -10,12 +10,11 @@ import withCSS from '../../../lib/withCSS'
 class Navbar extends Component {
   static propTypes = {
     accountShort: PropTypes.string.isRequired, // shorthand for the logged in user
+    handleSidebarToggle: PropTypes.func.isRequired, // function that handles toggling of the sidebar
     head: PropTypes.node.isRequired, // head as injected by HOC
     intl: PropTypes.shape({
       formatMessage: PropTypes.func.isRequired,
     }),
-    sidebarVisible: PropTypes.bool,
-
     // optional search field embedded in navbar
     search: PropTypes.shape({
       handleSearch: PropTypes.func.isRequired, // function that handles onChange for search field
@@ -24,9 +23,8 @@ class Navbar extends Component {
       sortBy: PropTypes.string,
       sortOrder: PropTypes.string,
     }),
-
+    sidebarVisible: PropTypes.bool,
     title: PropTypes.string.isRequired, // title of the page
-    handleSidebarToggle: PropTypes.func.isRequired, // function that handles toggling of the sidebar
   }
 
   static defaultProps = {
