@@ -42,8 +42,8 @@ SessionList.propTypes = {
         blocks: PropTypes.arrayOf({
           id: PropTypes.string.isRequired,
           questions: PropTypes.shape({
+            id: PropTypes.string.isRequired,
             questionDefinition: PropTypes.shape({
-              createdAt: PropTypes.string.isRequired,
               title: PropTypes.string.isRequired,
               type: PropTypes.string.isRequired,
             }).isRequired,
@@ -66,6 +66,7 @@ export default graphql(
         id
         name
         blocks {
+          id
           showSolutions
           timeLimit
           questions {

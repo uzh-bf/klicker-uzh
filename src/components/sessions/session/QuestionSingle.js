@@ -16,25 +16,22 @@ const QuestionSingle = ({ id, type, title }) =>
     <style jsx>{`
       .questionSingle {
         background-color: white;
-        border: 1px solid grey;
         display: flex;
-        height: 100%;
         flex-flow: row wrap;
         padding: 0.3rem;
-        width: 100%;
       }
       .id,
       .type {
+        flex: 1;
         padding-bottom: 0.3rem;
-        width: 50%;
       }
       .type {
         text-align: right;
       }
       .content {
-        border-top: 1px solid grey;
+        border-top: 1px solid lightgrey;
+        flex: 0 0 100%;
         padding-top: 0.3rem;
-        width: 100%;
       }
     `}</style>
   </div>)

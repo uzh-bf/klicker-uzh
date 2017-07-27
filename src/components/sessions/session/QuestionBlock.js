@@ -1,40 +1,55 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import { Icon } from 'semantic-ui-react'
 
 import QuestionSingle from './QuestionSingle'
 
 const QuestionBlock = ({ questions, showSolutions, timeLimit }) =>
-  (<div className="container">
+  (<div className="questionBlock">
     <div className="timeLimit">
-      Time limit {timeLimit}s
+      <Icon name="clock" />{timeLimit}s
     </div>
     <div className="showSolution">
-      {showSolutions ? 'ML' : 'NO ML'}
+      <Icon name={showSolutions ? 'unhide' : 'hide'} />
     </div>
 
-    {questions.map(props =>
-      (<div className="question">
-        <QuestionSingle {...props} />
-      </div>),
-    )}
+    <div className="questions">
+      {questions.map(({ id, title, type }) =>
+        (<div className="question">
+          <QuestionSingle id={id} title={title} type={type} />
+        </div>),
+      )}
+    </div>
 
     <style jsx>{`
-      .container {
-        background-color: grey;
+      .questionBlock,
+      .questions {
         display: flex;
+      }
+      .questionBlock {
+        background-color: lightgrey;
+        border: 1px solid grey;
         flex-flow: row wrap;
         padding: 0.2rem;
       }
+      .questions {
+        flex-flow: column nowrap;
+      }
       .timeLimit,
       .showSolution {
-        width: 50%;
+        flex: 1 1 50%;
+        margin-bottom: 0.2rem;
       }
       .showSolution {
         text-align: right;
       }
       .question {
         background-color: lightgrey;
-        flex: 1 1 5rem;
+        border: 1px solid grey;
+        flex: 1;
+      }
+      .question:not(:first-child) {
+        margin-top: 0.2rem;
       }
     `}</style>
   </div>)

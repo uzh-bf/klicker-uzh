@@ -29,6 +29,7 @@ const Session = ({ createdAt, name, blocks, id, status }) => {
         {blocks.map(block =>
           (<div className="block">
             <QuestionBlock
+              key={block.id}
               questions={block.questions.map(question => ({
                 id: question.id,
                 title: question.questionDefinition.title,
@@ -69,9 +70,6 @@ const Session = ({ createdAt, name, blocks, id, status }) => {
           .session, .details {
             flex-flow: row wrap;
           }
-          .details {
-            padding: 0.5rem;
-          }
           .title,
           .date {
             flex: 0 0 50%;
@@ -90,15 +88,11 @@ const Session = ({ createdAt, name, blocks, id, status }) => {
           }
           .block {
             flex: 1;
-            margin: 0;
-          }
-          .block:not(:first-child) {
-            margin-left: 0.5rem;
+            margin: 0.3rem;
           }
           .actionArea {
             align-self: flex-end;
-            margin: 0;
-            margin-left: 1rem;
+            margin: 0 0 0.3rem 0.3rem;
           }
         }
       `}</style>
