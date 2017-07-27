@@ -34,7 +34,7 @@ const QuestionBlock = ({ questions, showSolutions, timeLimit }) =>
       }
       .question {
         background-color: lightgrey;
-        flex: 1 1 10rem;
+        flex: 1 1 5rem;
       }
     `}</style>
   </div>)

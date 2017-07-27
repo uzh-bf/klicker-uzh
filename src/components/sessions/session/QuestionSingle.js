@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 
 const QuestionSingle = ({ id, type, title }) =>
-  (<div className="container">
+  (<div className="questionSingle">
     <div className="id">
       {id}
     </div>
@@ -14,17 +14,17 @@ const QuestionSingle = ({ id, type, title }) =>
     </div>
 
     <style jsx>{`
-      .container {
+      .questionSingle {
         background-color: white;
         border: 1px solid grey;
         display: flex;
+        height: 100%;
         flex-flow: row wrap;
         padding: 0.3rem;
         width: 100%;
       }
       .id,
       .type {
-        display: border-box;
         padding-bottom: 0.3rem;
         width: 50%;
       }
