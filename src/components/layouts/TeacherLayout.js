@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-import { Grid } from 'semantic-ui-react'
+// import { Grid } from 'semantic-ui-react'
 
 import Footer from '../common/Footer'
 import Navbar from '../../components/common/navbar/Navbar'
@@ -57,40 +57,44 @@ class TeacherLayout extends Component {
     const { children, intl, head, navbar, sidebar } = this.props
 
     return (
-      <Grid padded className="fullHeight">
+      <div className="teacherLayout">
         {head}
 
         {navbar &&
-          <Navbar
+          <div className="navbar"><Navbar
             intl={intl}
             sidebarVisible={this.state.sidebarVisible}
             handleSidebarToggle={this.handleSidebarToggle}
             {...navbar}
-          />}
+          /></div>}
 
-        <Sidebar visible={this.state.sidebarVisible} {...sidebar}>
-          {children}
-        </Sidebar>
+        <div className="content">
+          <Sidebar visible={this.state.sidebarVisible} {...sidebar}>
+            {children}
+          </Sidebar>
+        </div>
 
-        <Footer />
+        <div className="footer">
+          <Footer />
+        </div>
 
-        <style jsx global>{`
-          * {
+        <style jsx>{`
+          :global(*) {
             // TODO: disable rounded corners in semantic itself
             border-radius: 0 !important;
             font-family: 'Open Sans', sans-serif;
           }
-
-          .noPadding {
-            padding: 0 !important;
+          .teacherLayout {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
           }
-
-          // TODO: make the app entirely full height (100%)
-          .fullHeight {
-            min-height: 50rem;
+          .content {
+            display: flex;
+            flex: 1;
           }
         `}</style>
-      </Grid>
+      </div>
     )
   }
 }
