@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import Router from 'next/router'
 import { Menu } from 'semantic-ui-react'
 
-const SidebarItem = ({ active, children, name, href }) =>
+const SidebarItem = ({ active, children, href, name }) =>
   (<Menu.Item active={active} name={name} onClick={() => Router.push(href)}>
     {children}
   </Menu.Item>)
@@ -11,8 +11,8 @@ const SidebarItem = ({ active, children, name, href }) =>
 SidebarItem.propTypes = {
   active: PropTypes.bool,
   children: PropTypes.node.isRequired,
-  name: PropTypes.string.isRequired,
   href: PropTypes.string.isRequired,
+  name: PropTypes.string.isRequired,
 }
 
 SidebarItem.defaultProps = {
