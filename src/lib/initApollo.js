@@ -11,14 +11,14 @@ if (!process.browser) {
 function create(initialState) {
   return new ApolloClient({
     initialState,
-    ssrMode: !process.browser, // Disables forceFetch on the server (so queries are only run once)
     networkInterface: createNetworkInterface({
-      uri: 'https://api.graph.cool/simple/v1/klicker', // Server URL (must be absolute)
       opts: {
         // Additional fetch() options like `credentials` or `headers`
         credentials: 'same-origin',
       },
+      uri: 'https://api.graph.cool/simple/v1/klicker', // Server URL (must be absolute)
     }),
+    ssrMode: !process.browser, // Disables forceFetch on the server (so queries are only run once)
   })
 }
 

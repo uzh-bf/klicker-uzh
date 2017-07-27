@@ -24,7 +24,7 @@ export default ComposedComponent =>
       if (!process.browser) {
         const apollo = initApollo()
         // Provide the `url` prop data in case a graphql query uses it
-        const url = { query: ctx.query, pathname: ctx.pathname }
+        const url = { pathname: ctx.pathname, query: ctx.query }
 
         // Run all graphql queries
         const app = (

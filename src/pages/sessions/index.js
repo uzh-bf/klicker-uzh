@@ -4,6 +4,8 @@ import { Grid } from 'semantic-ui-react'
 
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import pageWithIntl from '../../lib/pageWithIntl'
+import SessionList from '../../components/sessions/SessionList'
+import withData from '../../lib/withData'
 
 class Index extends Component {
   static propTypes = {
@@ -45,20 +47,25 @@ class Index extends Component {
         query: '',
       },
       title: intl.formatMessage({
-        id: 'pages.sessionHistory.title',
         defaultMessage: 'Session History',
+        id: 'sessionHistory.title',
       }),
     }
 
     return (
       <TeacherLayout intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'sessionHistory' }}>
-        <Grid padded columns="2">
-          <Grid.Column>blebleble</Grid.Column>
-          <Grid.Column>blablabla</Grid.Column>
+        <Grid padded stackable>
+          <Grid.Row>
+            <Grid.Column width="2" />
+            <Grid.Column width="12">
+              <SessionList intl={intl} />
+            </Grid.Column>
+            <Grid.Column width="2" />
+          </Grid.Row>
         </Grid>
       </TeacherLayout>
     )
   }
 }
 
-export default pageWithIntl(Index)
+export default withData(pageWithIntl(Index))
