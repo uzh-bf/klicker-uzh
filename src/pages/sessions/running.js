@@ -30,11 +30,11 @@ class Running extends Component {
       <TeacherLayout intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'runningSession' }}>
         <div className="runningSession">
           <div className="sessionProgress">Session Progress</div>
-          <div>
-            <div>
+          <div className="feedback">
+            <div className="confusionBarometer">
               Confusion Barometer
             </div>
-            <div>
+            <div className="feedbackChannel">
               Feedback-Channel
             </div>
           </div>
@@ -42,12 +42,24 @@ class Running extends Component {
 
         <style jsx>{`
         .runningSession {
-          margin: .5rem 10rem
-        }
-        .runningSession, .sessionProgress {
           display: flex;
-          flex-direction: column;
-          flex-flow: row wrap
+          flex-flow: row;
+          margin: 1rem 5rem
+        }
+        .sessionProgress {
+          background: red;
+          flex: 1;
+        }
+        .feedback {
+          flex: 1;
+        }
+        .feedback > .confusionBarometer {
+           background: green;
+           flex: 0 0 50%;
+        }
+        .feedback > .feedbackChannel {
+           background: blue;
+           flex: 0 0 50%;
         }
       `}</style>
       </TeacherLayout>
