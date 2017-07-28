@@ -31,6 +31,7 @@ class Running extends Component {
 
     return (
       <TeacherLayout intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'runningSession' }}>
+        {head}
         <div className="runningSession">
           <div className="sessionProgress"><SessionProgress /></div>
           <div className="feedback">
