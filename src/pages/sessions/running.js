@@ -1,6 +1,9 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 
+import ConfusionBarometer from '../../components/sessions/activeSession/ConfusionBarometer'
+import FeedbackChannel from '../../components/sessions/activeSession/FeedbackChannel'
+import SessionProgress from '../../components/sessions/activeSession/SessionProgress'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import pageWithIntl from '../../lib/pageWithIntl'
 
@@ -29,13 +32,13 @@ class Running extends Component {
     return (
       <TeacherLayout intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'runningSession' }}>
         <div className="runningSession">
-          <div className="sessionProgress">Session Progress</div>
+          <div className="sessionProgress"><SessionProgress /></div>
           <div className="feedback">
             <div className="confusionBarometer">
-              Confusion Barometer
+              <ConfusionBarometer />
             </div>
             <div className="feedbackChannel">
-              Feedback-Channel
+              <FeedbackChannel />
             </div>
           </div>
         </div>
