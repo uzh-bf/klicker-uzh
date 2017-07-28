@@ -52,6 +52,7 @@ class Running extends Component {
         .sessionProgress {
           background: red;
           flex: 1;
+          padding: 0.5rem
         }
         .feedback {
           flex: 1;
@@ -59,10 +60,12 @@ class Running extends Component {
         .feedback > .confusionBarometer {
            background: green;
            flex: 0 0 50%;
+           padding: 0.5rem
         }
         .feedback > .feedbackChannel {
            background: blue;
            flex: 0 0 50%;
+           padding: 0.5rem
         }
       `}</style>
       </TeacherLayout>
