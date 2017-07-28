@@ -1,9 +1,10 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { gql, graphql } from 'react-apollo'
+import { graphql } from 'react-apollo'
 import { List } from 'semantic-ui-react'
 
 import withCSS from '../../lib/withCSS'
+import { TagListQuery } from '../../queries/queries'
 
 const TagList = ({ activeTags, data, head, handleTagClick }) => {
   if (data.loading) {
@@ -61,13 +62,4 @@ TagList.defaultProps = {
   activeTags: [],
 }
 
-const TagListWithCSS = withCSS(TagList, ['list'])
-
-export default graphql(gql`
-  {
-    tags: allTags(orderBy: name_ASC) {
-      id
-      name
-    }
-  }
-`)(TagListWithCSS)
+export default graphql(TagListQuery)(withCSS(TagList, ['list']))

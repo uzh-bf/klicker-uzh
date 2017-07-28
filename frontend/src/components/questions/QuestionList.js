@@ -1,13 +1,18 @@
 import PropTypes from 'prop-types'
 import React from 'react'
 import moment from 'moment'
-import { gql, graphql } from 'react-apollo'
+import { graphql } from 'react-apollo'
 
 import Question from './question/Question'
+import { QuestionListQuery } from '../../queries/queries'
 
 const QuestionList = ({ data }) => {
   if (data.loading) {
     return <div>Loading</div>
+  }
+
+  if (data.error) {
+    return <div>{data.error}</div>
   }
 
   return (
@@ -38,7 +43,7 @@ const QuestionList = ({ data }) => {
 
 QuestionList.propTypes = {
   data: PropTypes.shape({
-    allQuestions: PropTypes.arrayOf(
+    questions: PropTypes.arrayOf(
       PropTypes.shape({
         id: PropTypes.string.isRequired,
         title: PropTypes.string.isRequired,
@@ -47,28 +52,4 @@ QuestionList.propTypes = {
   }).isRequired,
 }
 
-export default graphql(
-  gql`
-    {
-      questions: allQuestionDefinitions {
-        id
-        title
-        type
-        instances(orderBy: createdAt_DESC, first: 3) {
-          id
-          createdAt
-        }
-        tags {
-          id
-          name
-        }
-        versions {
-          id
-          createdAt
-        }
-        createdAt
-        updatedAt
-      }
-    }
-  `,
-)(QuestionList)
+export default graphql(QuestionListQuery)(QuestionList)
