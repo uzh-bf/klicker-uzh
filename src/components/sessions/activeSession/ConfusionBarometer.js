@@ -1,9 +1,12 @@
 import React from 'react'
+import { Header } from 'semantic-ui-react'
+
+import withCSS from '../../../lib/withCSS'
 
 const ConfusionBarometer = () => (
   <div>
-    Hello
+    <Header dividing as="h2" content="Confusion-Barometer" />
   </div>
 )
 
-export default ConfusionBarometer
+export default withCSS(ConfusionBarometer, ['header'])

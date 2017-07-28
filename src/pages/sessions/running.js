@@ -46,24 +46,24 @@ class Running extends Component {
         <style jsx>{`
         .runningSession {
           display: flex;
-          flex-flow: row;
+          flex-direction: row;
+          flex-wrap: wrap;
           margin: 1rem 5rem
         }
         .sessionProgress {
-          background: red;
-          flex: 1;
+          flex: 1 1 100%;
           padding: 0.5rem
         }
         .feedback {
-          flex: 1;
+          display: flex;
+          flex-flow: row wrap;
+          width: 100%;
         }
         .feedback > .confusionBarometer {
-           background: green;
            flex: 0 0 50%;
            padding: 0.5rem
         }
         .feedback > .feedbackChannel {
-           background: blue;
            flex: 0 0 50%;
            padding: 0.5rem
         }

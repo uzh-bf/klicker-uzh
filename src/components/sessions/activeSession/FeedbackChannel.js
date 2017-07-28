@@ -1,9 +1,12 @@
 import React from 'react'
+import { Header } from 'semantic-ui-react'
+
+import withCSS from '../../../lib/withCSS'
 
 const FeedbackChannel = () => (
   <div>
-    Hello
+    <Header dividing as="h2" content="Feedback-Channel" />
   </div>
 )
 
-export default FeedbackChannel
+export default withCSS(FeedbackChannel, ['header'])
