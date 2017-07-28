@@ -29,10 +29,7 @@ class Running extends Component {
 
     return (
       <TeacherLayout intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'runningSession' }}>
-        <Grid padded columns="2">
-          <Grid.Column>blebleble</Grid.Column>
-          <Grid.Column>blablabla</Grid.Column>
-        </Grid>
+        <Grid centered padded stackable><Grid.Row><Grid.Column width="12">Hello</Grid.Column></Grid.Row></Grid>
       </TeacherLayout>
     )
   }
