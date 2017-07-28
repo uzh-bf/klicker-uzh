@@ -1,6 +1,5 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-import { Grid } from 'semantic-ui-react'
 
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import pageWithIntl from '../../lib/pageWithIntl'
@@ -29,7 +28,28 @@ class Running extends Component {
 
     return (
       <TeacherLayout intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'runningSession' }}>
-        <Grid centered padded stackable><Grid.Row><Grid.Column width="12">Hello</Grid.Column></Grid.Row></Grid>
+        <div className="runningSession">
+          <div className="sessionProgress">Session Progress</div>
+          <div>
+            <div>
+              Confusion Barometer
+            </div>
+            <div>
+              Feedback-Channel
+            </div>
+          </div>
+        </div>
+
+        <style jsx>{`
+        .runningSession {
+          margin: .5rem 10rem
+        }
+        .runningSession, .sessionProgress {
+          display: flex;
+          flex-direction: column;
+          flex-flow: row wrap
+        }
+      `}</style>
       </TeacherLayout>
     )
   }
