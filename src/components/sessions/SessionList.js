@@ -1,9 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { gql, graphql } from 'react-apollo'
-import { Message } from 'semantic-ui-react'
+import { graphql } from 'react-apollo'
 
 import Session from './session/Session'
+import { SessionListQuery } from '../../queries/queries'
 
 const SessionList = ({ data }) => {
   if (data.loading) {
@@ -11,11 +11,7 @@ const SessionList = ({ data }) => {
   }
 
   if (data.error) {
-    return (
-      <Message error>
-        {data.error}
-      </Message>
-    )
+    return <div>{data.error}</div>
   }
 
   return (
@@ -59,27 +55,4 @@ SessionList.propTypes = {
   }).isRequired,
 }
 
-export default graphql(
-  gql`
-    {
-      sessions: allSessions(orderBy: updatedAt_DESC) {
-        id
-        name
-        blocks {
-          id
-          showSolutions
-          timeLimit
-          questions {
-            id
-            questionDefinition {
-              title
-              type
-            }
-          }
-        }
-        createdAt
-        updatedAt
-      }
-    }
-  `,
-)(SessionList)
+export default graphql(SessionListQuery)(SessionList)
