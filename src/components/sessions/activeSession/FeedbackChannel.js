@@ -1,5 +1,6 @@
 import React from 'react'
 import { Checkbox, Header } from 'semantic-ui-react'
+import Feedback from './Feedback'
 
 import withCSS from '../../../lib/withCSS'
 
@@ -9,7 +10,7 @@ const FeedbackChannel = () => (
     <Checkbox toggle label="Aktiviert" />
     <Checkbox toggle label="Fragen publizieren" />
     <div className="feedbacks">
-      Hello
+      <Feedback />
     </div>
     <style jsx>{`
       .feedbacks {
