@@ -8,7 +8,17 @@ const ConfusionBarometer = () => (
   <div>
     <Header dividing as="h2" content="Confusion-Barometer" />
     {/* TODO semantic-ui styling import */}
-    <Checkbox toggle />
+    <Checkbox toggle label="Aktiviert" />
+    <div className="pace">Geschwindigkeit</div>
+    <div className="comprehensibility">Verständlichkeit</div>
+    <style jsx>{`
+        .pace {
+          background: lightgrey;
+        }
+        .comprehensibility {
+          background: grey;
+        }
+      `}</style>
   </div>
 )
 
