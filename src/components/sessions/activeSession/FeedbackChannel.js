@@ -1,8 +1,30 @@
 import React from 'react'
 import { Checkbox, Header } from 'semantic-ui-react'
+import { graphql } from 'react-apollo'
+
 import Feedback from './Feedback'
 
 import withCSS from '../../../lib/withCSS'
+import { RunningSessionQuery } from '../../../queries/queries'
+
+/* TODO: Correct implementation with graphQL */
+const testData = [
+  {
+    content: 'Du bisch so hübsch!!',
+    id: '1jkj090',
+    votes: 1000,
+  },
+  {
+    content: 'Was bedeutet das CAPM genau?',
+    id: '10fghj89890',
+    votes: 200,
+  },
+  {
+    content: 'Super Vorlesung',
+    id: '10jkjkj90',
+    votes: 10,
+  },
+]
 
 const FeedbackChannel = () => (
   <div>
@@ -10,7 +32,9 @@ const FeedbackChannel = () => (
     <Checkbox toggle label="Aktiviert" />
     <Checkbox toggle label="Fragen publizieren" />
     <div className="feedbacks">
-      <Feedback />
+      {
+        testData.map(({ content, votes }) => <Feedback content={content} votes={votes} />)
+      }
     </div>
     <style jsx>{`
       .feedbacks {
@@ -22,4 +46,4 @@ const FeedbackChannel = () => (
 )
 
 // TODO semantic-ui styling import
-export default withCSS(FeedbackChannel, ['checkbox', 'header'])
+export default withCSS(graphql(RunningSessionQuery)(FeedbackChannel), ['checkbox', 'header'])

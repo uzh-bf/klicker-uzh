@@ -6,6 +6,7 @@ import FeedbackChannel from '../../components/sessions/activeSession/FeedbackCha
 import SessionProgress from '../../components/sessions/activeSession/SessionProgress'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import pageWithIntl from '../../lib/pageWithIntl'
+import withData from '../../lib/withData'
 
 class Running extends Component {
   static propTypes = {
@@ -73,4 +74,4 @@ class Running extends Component {
   }
 }
 
-export default pageWithIntl(Running)
+export default withData(pageWithIntl(Running))
