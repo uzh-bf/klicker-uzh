@@ -6,9 +6,19 @@ import withCSS from '../../../lib/withCSS'
 const FeedbackChannel = () => (
   <div>
     <Header dividing as="h2" content="Feedback-Channel" />
-    {/* TODO semantic-ui styling import */}
-    <Checkbox toggle />
+    <Checkbox toggle label="Aktiviert" />
+    <Checkbox toggle label="Fragen publizieren" />
+    <div className="feedbacks">
+      Hello
+    </div>
+    <style jsx>{`
+      .feedbacks {
+        background: lightgrey;
+        margin-top: .5rem;
+      }
+    `}</style>
   </div>
 )
 
+// TODO semantic-ui styling import
 export default withCSS(FeedbackChannel, ['checkbox', 'header'])
