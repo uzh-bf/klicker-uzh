@@ -36,7 +36,6 @@ const FeedbackChannel = () => (
     </div>
     <style jsx>{`
       .feedbacks {
-        background: lightgrey;
         margin-top: .5rem;
       }
     `}</style>
