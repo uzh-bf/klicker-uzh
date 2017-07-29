@@ -1,11 +1,9 @@
 import React from 'react'
 import { Checkbox, Header } from 'semantic-ui-react'
-import { graphql } from 'react-apollo'
 
 import Feedback from './Feedback'
 
 import withCSS from '../../../lib/withCSS'
-import { RunningSessionQuery } from '../../../queries/queries'
 
 /* TODO: Correct implementation with graphQL */
 const testData = [
@@ -46,4 +44,4 @@ const FeedbackChannel = () => (
 )
 
 // TODO semantic-ui styling import
-export default withCSS(graphql(RunningSessionQuery)(FeedbackChannel), ['checkbox', 'header'])
+export default withCSS(FeedbackChannel, ['checkbox', 'header'])

@@ -1,9 +1,16 @@
 import React from 'react'
+import { PropTypes } from 'prop-types'
 
-const Feedback = () => (
+const Feedback = ({ content, vote }) => (
   <div>
-    Hello World
+    <div>{content}</div>
+    <div>{vote}</div>
   </div>
 )
+
+Feedback.propTypes = {
+  content: PropTypes.string.isRequired,
+  vote: PropTypes.string.isRequired,
+}
 
 export default Feedback
