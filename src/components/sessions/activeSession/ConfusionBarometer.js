@@ -14,9 +14,13 @@ const ConfusionBarometer = () => (
     <style jsx>{`
         .pace {
           background: lightgrey;
+          padding: .5rem;
+          margin-top: 1rem;
         }
         .comprehensibility {
           background: grey;
+          padding: .5rem;
+          margin-top: 1rem;
         }
       `}</style>
   </div>
