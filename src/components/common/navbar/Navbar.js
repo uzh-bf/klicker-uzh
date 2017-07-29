@@ -101,8 +101,10 @@ class Navbar extends Component {
 // component => wrapped component
 export default withCSS(Navbar, [
   'button',
+  'checkbox', // HACK need to import this in correct file
   'divider',
   'dropdown',
+  'header', // HACK need to import this in correct file
   'icon',
   'image',
   'input',
