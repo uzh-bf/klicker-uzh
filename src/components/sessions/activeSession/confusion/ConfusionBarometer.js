@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { Checkbox, Header } from 'semantic-ui-react'
 
-import withCSS from '../../../lib/withCSS'
+import withCSS from '../../../../lib/withCSS'
 
 const ConfusionBarometer = ({ data }) => {
   const calculateAverage = (allData, category) => {

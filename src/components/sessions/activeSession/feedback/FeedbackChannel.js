@@ -4,7 +4,7 @@ import { Checkbox, Header } from 'semantic-ui-react'
 
 import Feedback from './Feedback'
 
-import withCSS from '../../../lib/withCSS'
+import withCSS from '../../../../lib/withCSS'
 
 const FeedbackChannel = ({ data }) => (
   <div>
