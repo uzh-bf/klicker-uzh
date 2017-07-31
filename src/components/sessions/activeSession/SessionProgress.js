@@ -16,6 +16,7 @@ const SessionProgress = () => (
       </div>
     </div>
     <div className="buttonSection">
+      {/* TODO evaluation button floating to the right */}
       <Button className="cancel" content="Abbrechen" icon="close" labelPosition="left" />
       <Button className="evaluation" content="Auswertung" icon="play" labelPosition="left" />
     </div>
