@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import { Checkbox, Header } from 'semantic-ui-react'
 
 import withCSS from '../../../lib/withCSS'
@@ -52,6 +53,12 @@ const ConfusionBarometer = ({ data }) => {
   )
 }
 
-ConfusionBarometer.propTypes = {}
+ConfusionBarometer.propTypes = {
+  data: PropTypes.arrayOf({
+    content: PropTypes.string,
+    id: PropTypes.string,
+    votes: PropTypes.number,
+  }).isRequired,
+}
 
 export default withCSS(ConfusionBarometer, ['checkbox', 'header'])
