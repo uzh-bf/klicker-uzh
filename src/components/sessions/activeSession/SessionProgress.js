@@ -75,9 +75,10 @@ const SessionProgress = ({ intl }) => (
           padding: 0.5rem;
         }
         .buttonSection {
-          display: flex;
-          flex-direction: row;
-          flex-wrap: wrap;
+          width: 100%;
+        }
+        :global(.buttonSection > .ui.button.evaluation) {
+          float: right;
         }
         .cancel {
           flex: 0 0 20%
