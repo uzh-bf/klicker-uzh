@@ -70,6 +70,10 @@ const SessionProgress = ({ intl }) => (
         .sessionContainer > .topRow > div {
           margin: 0 0.5rem;
         }
+        .sessionContainer > .topRow > div:last-child {
+          background-color: green;
+          flex: 1 1 auto;
+        }
         .sessionContainer > .content {
           display: flex;
           padding: 0.5rem;
