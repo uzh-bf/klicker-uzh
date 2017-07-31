@@ -6,11 +6,31 @@ import Feedback from './Feedback'
 
 import withCSS from '../../../../lib/withCSS'
 
-const FeedbackChannel = ({ data }) => (
+const FeedbackChannel = ({ data, intl }) => (
   <div>
-    <Header dividing as="h2" content="Feedback-Channel" />
-    <Checkbox toggle label="Aktiviert" />
-    <Checkbox toggle className="publishCheckbox" label="Fragen publizieren" />
+    <Header
+      dividing
+      as="h2"
+      content={intl.formatMessage({
+        defaultMessage: 'Feedback-Channel',
+        id: 'pages.runningSession.feedbackChannel.title', // TODO correct naming of identifier
+      })}
+    />
+    <Checkbox
+      toggle
+      label={intl.formatMessage({
+        defaultMessage: 'Aktiviert',
+        id: 'pages.runningSession.feedbackChannel.checkbox.activated', // TODO correct naming of identifier
+      })}
+    />
+    <Checkbox
+      toggle
+      className="publishCheckbox"
+      label={intl.formatMessage({
+        defaultMessage: 'Fragen publizieren',
+        id: 'pages.runningSession.feedbackChannel.checkbox.publishQuestions', // TODO correct naming of identifier
+      })}
+    />
     <div className="feedbacks">
       {
         data.map(({ content, votes }) => <Feedback content={content} votes={votes} />)
@@ -29,6 +49,9 @@ FeedbackChannel.propTypes = {
     content: PropTypes.string,
     id: PropTypes.string,
     votes: PropTypes.number,
+  }).isRequired,
+  intl: PropTypes.shape({
+    formatMessage: PropTypes.func.isRequired,
   }).isRequired,
 }
 

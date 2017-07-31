@@ -35,7 +35,7 @@ class Running extends Component {
     return (
       <TeacherLayout intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'runningSession' }}>
         <div className="runningSession">
-          <div className="sessionProgress"><SessionProgress /></div>
+          <div className="sessionProgress"><SessionProgress intl={intl} /></div>
           <div className="feedback">
             <div className="confusionBarometer">
               <ConfusionBarometer data={data.allUsers[0].activeSession.confusion} intl={intl} />

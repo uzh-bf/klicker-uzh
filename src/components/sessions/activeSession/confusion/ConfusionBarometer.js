@@ -29,7 +29,10 @@ const ConfusionBarometer = ({ data }) => {
       <Checkbox toggle label="Aktiviert" />
       <div className="difficulty">
         <p className="sectionTitle">
-          <FormattedMessage id="runningSession.confusionBarometer.paragraph.difficulty" defaultMessage="Difficulty" />
+          <FormattedMessage
+            defaultMessage="Difficulty"
+            id="pages.runningSession.confusionBarometer.paragraph.difficulty" // TODO correct naming of identifier
+          />
         </p>
         <p>{calculateAverage(data, 'difficulty')}</p>
       </div>
@@ -37,7 +40,7 @@ const ConfusionBarometer = ({ data }) => {
         <p className="sectionTitle">
           <FormattedMessage
             defaultMessage="Verständlichkeit"
-            id="runningSession.confusionBarometer.paragraph.comprehensibility"
+            id="pages.runningSession.confusionBarometer.paragraph.comprehensibility"
           />
         </p>
         <p>{calculateAverage(data, 'comprehensibility')}</p>

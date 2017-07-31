@@ -1,15 +1,28 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import { Button, Icon } from 'semantic-ui-react'
+import { FormattedMessage } from 'react-intl'
 
 import Question from './Question'
 
-const SessionProgress = () => (
+const SessionProgress = ({ intl }) => (
   <div className="container">
     <div className="sessionContainer">
       <div className="topRow">
-        <div><Icon name="time" /> Start</div>
-        <div><Icon name="play circle" /> Laufzeit</div>
-        <div>Sessions</div>
+        <div><Icon name="time" /> <FormattedMessage
+          defaultMessage="Start"
+          id="pages.runningSession.sessionProgress.paragraph.start" // TODO correct naming of identifier
+        /></div>
+        <div><Icon name="play circle" /> <FormattedMessage
+          defaultMessage="Difficulty"
+          id="pages.runningSession.sessionProgress.paragraph.runningTime" // TODO correct naming of identifier
+        /></div>
+        <div>
+          <FormattedMessage
+            defaultMessage="Sessions"
+            id="pages.runningSession.sessionProgress.paragraph.sessions" // TODO correct naming of identifier
+          />
+        </div>
       </div>
       <div className="content">
         <Question status="Aktiv" title="Hello World" type="MC" />
@@ -17,8 +30,24 @@ const SessionProgress = () => (
     </div>
     <div className="buttonSection">
       {/* TODO evaluation button floating to the right */}
-      <Button className="cancel" content="Abbrechen" icon="close" labelPosition="left" />
-      <Button className="evaluation" content="Auswertung" icon="play" labelPosition="left" />
+      <Button
+        className="cancel"
+        content={intl.formatMessage({
+          defaultMessage: 'Cancel',
+          id: 'pages.runningSession.sessionProgress.button.cancel', // TODO correct naming of identifier
+        })}
+        icon="close"
+        labelPosition="left"
+      />
+      <Button
+        className="evaluation"
+        content={intl.formatMessage({
+          defaultMessage: 'Evaluation',
+          id: 'pages.runningSession.sessionProgress.button.evaluation', // TODO correct naming of identifier
+        })}
+        icon="play"
+        labelPosition="left"
+      />
     </div>
 
     <style jsx>{`
@@ -61,5 +90,11 @@ const SessionProgress = () => (
       `}</style>
   </div>
 )
+
+SessionProgress.propTypes = {
+  intl: PropTypes.shape({
+    formatMessage: PropTypes.func.isRequired,
+  }).isRequired,
+}
 
 export default SessionProgress
