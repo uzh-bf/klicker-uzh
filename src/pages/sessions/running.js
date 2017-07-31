@@ -51,7 +51,7 @@ class Running extends Component {
           display: flex;
           flex-direction: row;
           flex-wrap: wrap;
-          margin: 1rem 5rem
+          margin: 1rem 6rem
         }
         .sessionProgress {
           flex: 1 1 100%;
@@ -80,6 +80,15 @@ Running.propTypes = {
   data: PropTypes.shape({
     allUsers: PropTypes.arrayOf({
       activeSession: PropTypes.shape({
+        blocks: PropTypes.arrayOf({
+          questions: PropTypes.arrayOf({
+            questionDefinition: PropTypes.shape({
+              title: PropTypes.string,
+              type: PropTypes.string,
+            }),
+          }),
+          status: PropTypes.string,
+        }),
         confusion: PropTypes.arrayOf({
           comprehensibility: PropTypes.number,
           createdAt: PropTypes.string,

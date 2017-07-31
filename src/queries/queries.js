@@ -115,8 +115,6 @@ const RunningSessionQuery = gql`
       }
     }
   }
-
-
 `
 
 export { QrGeneratorQuery, QuestionListQuery, RunningSessionQuery, SessionListQuery, TagListQuery }

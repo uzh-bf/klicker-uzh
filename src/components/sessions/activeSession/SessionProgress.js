@@ -12,7 +12,7 @@ const SessionProgress = () => (
         <div>Sessions</div>
       </div>
       <div className="content">
-        <Question status="Aktiv" title="Hello motherfucker" type="MC" />
+        <Question status="Aktiv" title="Hello World" type="MC" />
       </div>
     </div>
     <div className="buttonSection">
