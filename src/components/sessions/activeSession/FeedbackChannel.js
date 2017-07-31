@@ -28,7 +28,7 @@ const FeedbackChannel = () => (
   <div>
     <Header dividing as="h2" content="Feedback-Channel" />
     <Checkbox toggle label="Aktiviert" />
-    <Checkbox toggle label="Fragen publizieren" />
+    <Checkbox toggle className="publishCheckbox" label="Fragen publizieren" />
     <div className="feedbacks">
       {
         testData.map(({ content, votes }) => <Feedback content={content} votes={votes} />)

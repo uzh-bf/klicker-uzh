@@ -1,6 +1,8 @@
 import React from 'react'
 import { Button, Icon } from 'semantic-ui-react'
 
+import Question from './Question'
+
 const SessionProgress = () => (
   <div className="container">
     <div className="sessionContainer">
@@ -9,7 +11,9 @@ const SessionProgress = () => (
         <div><Icon name="play circle" /> Laufzeit</div>
         <div>Sessions</div>
       </div>
-      <div className="content">Content</div>
+      <div className="content">
+        <Question status="Aktiv" title="Hello motherfucker" type="MC" />
+      </div>
     </div>
     <div className="buttonSection">
       <Button className="cancel" content="Abbrechen" icon="close" labelPosition="left" />
