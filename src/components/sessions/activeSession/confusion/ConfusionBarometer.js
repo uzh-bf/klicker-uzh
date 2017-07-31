@@ -1,6 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Checkbox, Header } from 'semantic-ui-react'
+import { FormattedMessage } from 'react-intl'
 
 import withCSS from '../../../../lib/withCSS'
 
@@ -26,16 +27,23 @@ const ConfusionBarometer = ({ data }) => {
       <Header dividing as="h2" content="Confusion-Barometer" />
       {/* TODO semantic-ui styling import */}
       <Checkbox toggle label="Aktiviert" />
-      <div className="pace">
-        <p className="sectionTitle">Geschwindigkeit</p>
+      <div className="difficulty">
+        <p className="sectionTitle">
+          <FormattedMessage id="runningSession.confusionBarometer.paragraph.difficulty" defaultMessage="Difficulty" />
+        </p>
         <p>{calculateAverage(data, 'difficulty')}</p>
       </div>
       <div className="comprehensibility">
-        <p className="sectionTitle">Verständlichkeit</p>
+        <p className="sectionTitle">
+          <FormattedMessage
+            defaultMessage="Verständlichkeit"
+            id="runningSession.confusionBarometer.paragraph.comprehensibility"
+          />
+        </p>
         <p>{calculateAverage(data, 'comprehensibility')}</p>
       </div>
       <style jsx>{`
-        .pace {
+        .difficulty {
           background: lightgrey;
           padding: .5rem;
           margin-top: 1rem;

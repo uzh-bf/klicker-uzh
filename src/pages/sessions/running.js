@@ -38,10 +38,10 @@ class Running extends Component {
           <div className="sessionProgress"><SessionProgress /></div>
           <div className="feedback">
             <div className="confusionBarometer">
-              <ConfusionBarometer data={data.allUsers[0].activeSession.confusion} />
+              <ConfusionBarometer data={data.allUsers[0].activeSession.confusion} intl={intl} />
             </div>
             <div className="feedbackChannel">
-              <FeedbackChannel data={data.allUsers[0].activeSession.feedbacks} />
+              <FeedbackChannel data={data.allUsers[0].activeSession.feedbacks} intl={intl} />
             </div>
           </div>
         </div>
