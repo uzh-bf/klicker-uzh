@@ -93,19 +93,30 @@ const RunningSessionQuery = gql`
   {
     allUsers {
       activeSession {
-          confusion(orderBy: createdAt_DESC) {
-            comprehensibility
-            difficulty
-            createdAt
-          }
-          feedbacks(orderBy: votes_DESC) {
-            id
-            content
-            votes
+        confusion(orderBy: createdAt_DESC) {
+          comprehensibility
+          difficulty
+          createdAt
+        }
+        feedbacks(orderBy: votes_DESC) {
+          id
+          content
+          votes
+        }
+        blocks {
+          status
+          questions {
+            questionDefinition {
+              title
+              type
+            }
           }
         }
       }
+    }
   }
+
+
 `
 
 export { QrGeneratorQuery, QuestionListQuery, RunningSessionQuery, SessionListQuery, TagListQuery }
