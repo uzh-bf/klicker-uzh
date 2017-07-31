@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 
 const Question = ({ status, type, title }) =>
   (<div className="question">
-    <div className="id">
+    <div className="status">
       {status}
     </div>
     <div className="type">
@@ -20,10 +20,10 @@ const Question = ({ status, type, title }) =>
         flex-flow: row wrap;
         padding: 0.3rem;
       }
-      .id {
+      .status {
         font-weight: bold;
       }
-      .id,
+      .status,
       .type {
         flex: 1;
         padding-bottom: 0.3rem;

@@ -1,11 +1,13 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
+import { graphql } from 'react-apollo'
 
 import ConfusionBarometer from '../../components/sessions/activeSession/ConfusionBarometer'
 import FeedbackChannel from '../../components/sessions/activeSession/FeedbackChannel'
 import SessionProgress from '../../components/sessions/activeSession/SessionProgress'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import pageWithIntl from '../../lib/pageWithIntl'
+import { RunningSessionQuery } from '../../queries/queries'
 import withData from '../../lib/withData'
 
 class Running extends Component {
@@ -20,7 +22,7 @@ class Running extends Component {
   }
 
   render() {
-    const { intl } = this.props
+    const { data, intl } = this.props
 
     const navbarConfig = {
       accountShort: 'AW',
@@ -39,7 +41,7 @@ class Running extends Component {
               <ConfusionBarometer />
             </div>
             <div className="feedbackChannel">
-              <FeedbackChannel />
+              <FeedbackChannel data={data.allUsers[0].activeSession.feedbacks} />
             </div>
           </div>
         </div>
@@ -74,4 +76,23 @@ class Running extends Component {
   }
 }
 
-export default withData(pageWithIntl(Running))
+Running.propTypes = {
+  data: PropTypes.shape({
+    allUsers: PropTypes.arrayOf({
+      activeSession: PropTypes.shape({
+        confusion: PropTypes.arrayOf({
+          comprehensibility: PropTypes.number,
+          createdAt: PropTypes.string,
+          difficulty: PropTypes.number,
+        }),
+        feedbacks: PropTypes.arrayOf({
+          content: PropTypes.string,
+          id: PropTypes.string,
+          votes: PropTypes.number,
+        }),
+      }),
+    }),
+  }).isRequired,
+}
+
+export default withData(pageWithIntl(graphql(RunningSessionQuery)(Running)))

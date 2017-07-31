@@ -1,7 +1,9 @@
 import React from 'react'
 import { Button, Icon } from 'semantic-ui-react'
+import { graphql } from 'react-apollo'
 
 import Question from './Question'
+import { RunningSessionQuery } from '../../../queries/queries'
 
 const SessionProgress = () => (
   <div className="container">
@@ -61,4 +63,4 @@ const SessionProgress = () => (
   </div>
 )
 
-export default SessionProgress
+export default graphql(RunningSessionQuery)(SessionProgress)
