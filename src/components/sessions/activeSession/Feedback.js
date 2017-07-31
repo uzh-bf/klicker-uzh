@@ -5,8 +5,8 @@ import { Icon } from 'semantic-ui-react'
 const Feedback = ({ content, votes }) => (
   <div className="feedback">
     <div className="content">{content}</div>
-    <div className="icon"><Icon name="delete" /></div>
-    <div className="vote">{votes}</div>
+    <div className="icon"><Icon name="trash outline" /></div>
+    <div className="vote">+{votes}</div>
     <style jsx>{`
       .feedback {
         background: lightgrey;
@@ -26,6 +26,7 @@ const Feedback = ({ content, votes }) => (
         border-left: 1px solid;
         flex: 0 0 15%;
         padding: .5rem;
+        text-align: center;
       }
     `}</style>
   </div>
