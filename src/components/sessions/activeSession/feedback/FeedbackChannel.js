@@ -7,8 +7,9 @@ import Feedback from './Feedback'
 
 import withCSS from '../../../../lib/withCSS'
 
-const FeedbackChannel = ({ data, intl }) => (
+const FeedbackChannel = ({ data, head, intl }) => (
   <div>
+    {head}
     <h2>
       {/* TODO correct naming of identifier */}
       <FormattedMessage
@@ -50,6 +51,7 @@ FeedbackChannel.propTypes = {
     id: PropTypes.string,
     votes: PropTypes.number,
   }).isRequired,
+  head: PropTypes.node.isRequired, // head as injected by HOC
   intl: PropTypes.shape({
     formatMessage: PropTypes.func.isRequired,
   }).isRequired,

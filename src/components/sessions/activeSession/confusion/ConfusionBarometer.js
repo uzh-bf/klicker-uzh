@@ -5,7 +5,7 @@ import { FormattedMessage } from 'react-intl'
 
 import withCSS from '../../../../lib/withCSS'
 
-const ConfusionBarometer = ({ data }) => {
+const ConfusionBarometer = ({ data, head }) => {
   const calculateAverage = (allData, category) => {
     const values = []
     switch (category) {
@@ -24,6 +24,7 @@ const ConfusionBarometer = ({ data }) => {
 
   return (
     <div>
+      {head}
       <h2>
         {/* TODO correct naming of identifier */}
         <FormattedMessage
@@ -76,6 +77,7 @@ ConfusionBarometer.propTypes = {
     id: PropTypes.string,
     votes: PropTypes.number,
   }).isRequired,
+  head: PropTypes.node.isRequired, // head as injected by HOC
 }
 
 export default withCSS(ConfusionBarometer, ['checkbox', 'header'])
