@@ -60,7 +60,7 @@ class Running extends Component {
         .feedback {
           display: flex;
           flex-flow: row wrap;
-          width: 100%;
+          flex: 0 0 100%;
         }
         .feedback > .confusionBarometer {
            flex: 0 0 30%;

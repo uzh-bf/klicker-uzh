@@ -1,6 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Checkbox, Header } from 'semantic-ui-react'
+import { Checkbox } from 'semantic-ui-react'
+import { FormattedMessage } from 'react-intl'
 
 import Feedback from './Feedback'
 
@@ -8,14 +9,13 @@ import withCSS from '../../../../lib/withCSS'
 
 const FeedbackChannel = ({ data, intl }) => (
   <div>
-    <Header
-      dividing
-      as="h2"
-      content={intl.formatMessage({
-        defaultMessage: 'Feedback-Channel',
-        id: 'pages.runningSession.feedbackChannel.title', // TODO correct naming of identifier
-      })}
-    />
+    <h2>
+      {/* TODO correct naming of identifier */}
+      <FormattedMessage
+        defaultMessage="Feedback-Channel"
+        id="pages.runningSession.feedbackChannel.title"
+      />
+    </h2>
     <Checkbox
       toggle
       label={intl.formatMessage({

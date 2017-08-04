@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Checkbox, Header } from 'semantic-ui-react'
+import { Checkbox } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 import withCSS from '../../../../lib/withCSS'
@@ -24,7 +24,13 @@ const ConfusionBarometer = ({ data }) => {
 
   return (
     <div>
-      <Header dividing as="h2" content="Confusion-Barometer" />
+      <h2>
+        {/* TODO correct naming of identifier */}
+        <FormattedMessage
+          defaultMessage="Confusion-Barometer"
+          id="pages.runningSession.confusionBarometer.title"
+        />
+      </h2>
       {/* TODO semantic-ui styling import */}
       <Checkbox toggle label="Aktiviert" />
       <div className="difficulty">
