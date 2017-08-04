@@ -106,6 +106,7 @@ const RunningSessionQuery = gql`
         blocks {
           status
           questions {
+            id
             questionDefinition {
               title
               type

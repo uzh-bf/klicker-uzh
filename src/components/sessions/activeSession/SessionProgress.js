@@ -26,12 +26,16 @@ const SessionProgress = ({ data, intl }) => (
       </div>
       <div className="content">
         {
-          data.map(({ questions, status }) =>
+          data.map(block =>
             (<QuestionBlock
+              key={block.id}
               showSolutions
-              status={status}
-              questions={questions}
-              timeLimit={2}
+              status={block.status}
+              questions={block.questions.map(question => ({
+                id: question.id,
+                title: question.questionDefinition.title,
+                type: question.questionDefinition.type,
+              }))}
             />),
           )
         }
