@@ -6,6 +6,8 @@ import { FormattedMessage } from 'react-intl'
 import withCSS from '../../../../lib/withCSS'
 
 const ConfusionBarometer = ({ data, head, intl }) => {
+  // calculating average difficulty and comprehensibility
+  // depending on category, calculate difficulty or comprehensibility
   const calculateAverage = (allData, category) => {
     const values = []
     switch (category) {
