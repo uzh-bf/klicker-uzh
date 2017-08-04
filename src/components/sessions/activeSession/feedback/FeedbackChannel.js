@@ -33,7 +33,7 @@ const FeedbackChannel = ({ data, intl }) => (
     />
     <div className="feedbacks">
       {
-        data.map(({ content, votes }) => <Feedback content={content} votes={votes} />)
+        data.map(({ content, id, votes }) => <Feedback key={id} content={content} votes={votes} />)
       }
     </div>
     <style jsx>{`
