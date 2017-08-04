@@ -5,7 +5,7 @@ import { FormattedMessage } from 'react-intl'
 
 import withCSS from '../../../../lib/withCSS'
 
-const ConfusionBarometer = ({ data, head }) => {
+const ConfusionBarometer = ({ data, head, intl }) => {
   const calculateAverage = (allData, category) => {
     const values = []
     switch (category) {
@@ -33,7 +33,13 @@ const ConfusionBarometer = ({ data, head }) => {
         />
       </h2>
       {/* TODO semantic-ui styling import */}
-      <Checkbox toggle label="Aktiviert" />
+      <Checkbox
+        toggle
+        label={intl.formatMessage({
+          defaultMessage: 'Aktiviert',
+          id: 'pages.runningSession.confusionBarometer.checkbox.activated', // TODO correct naming of identifier
+        })}
+      />
       <div className="difficulty">
         <p className="sectionTitle">
           <FormattedMessage
@@ -78,6 +84,9 @@ ConfusionBarometer.propTypes = {
     votes: PropTypes.number,
   }).isRequired,
   head: PropTypes.node.isRequired, // head as injected by HOC
+  intl: PropTypes.shape({
+    formatMessage: PropTypes.func.isRequired,
+  }).isRequired,
 }
 
 export default withCSS(ConfusionBarometer, ['checkbox', 'header'])
