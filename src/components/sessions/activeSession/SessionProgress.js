@@ -3,9 +3,9 @@ import PropTypes from 'prop-types'
 import { Button, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
-import Question from './Question'
+import QuestionBlock from '../session/QuestionBlock'
 
-const SessionProgress = ({ intl }) => (
+const SessionProgress = ({ data, intl }) => (
   <div className="container">
     <div className="sessionContainer">
       <div className="topRow">
@@ -25,7 +25,16 @@ const SessionProgress = ({ intl }) => (
         </div>
       </div>
       <div className="content">
-        <Question status="Aktiv" title="Hello World" type="MC" />
+        {
+          data.map(({ questions, status }) =>
+            (<QuestionBlock
+              showSolutions
+              status={status}
+              questions={questions}
+              timeLimit={2}
+            />),
+          )
+        }
       </div>
     </div>
     <div className="buttonSection">
@@ -97,6 +106,15 @@ const SessionProgress = ({ intl }) => (
 )
 
 SessionProgress.propTypes = {
+  data: PropTypes.arrayOf({
+    questions: PropTypes.arrayOf({
+      questionDefinition: PropTypes.shape({
+        title: PropTypes.string,
+        type: PropTypes.string,
+      }),
+    }),
+    status: PropTypes.string,
+  }).isRequired,
   intl: PropTypes.shape({
     formatMessage: PropTypes.func.isRequired,
   }).isRequired,
