@@ -32,45 +32,43 @@ class Running extends Component {
       }),
     }
 
+    // HACK: use the first of all users in the database
+    // TODO: replace this with the data of the currently logged in user
+    const activeUser = data.allUsers[0]
+
     return (
       <TeacherLayout intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'runningSession' }}>
         <div className="runningSession">
-          <div className="sessionProgress"><SessionProgress data={data.allUsers[0].activeSession.blocks} intl={intl} /></div>
-          <div className="feedback">
-            <div className="confusionBarometer">
-              <ConfusionBarometer data={data.allUsers[0].activeSession.confusion} intl={intl} />
-            </div>
-            <div className="feedbackChannel">
-              <FeedbackChannel data={data.allUsers[0].activeSession.feedbacks} intl={intl} />
-            </div>
+          <div className="sessionProgress">
+            <SessionProgress data={activeUser.activeSession.blocks} intl={intl} />
+          </div>
+          <div className="confusionBarometer">
+            <ConfusionBarometer data={activeUser.activeSession.confusion} intl={intl} />
+          </div>
+          <div className="feedbackChannel">
+            <FeedbackChannel data={activeUser.activeSession.feedbacks} intl={intl} />
           </div>
         </div>
 
         <style jsx>{`
-        .runningSession {
-          display: flex;
-          flex-direction: row;
-          flex-wrap: wrap;
-          margin: 1rem 6rem
-        }
-        .sessionProgress {
-          flex: 1 1 100%;
-          padding: 0.5rem
-        }
-        .feedback {
-          display: flex;
-          flex-flow: row wrap;
-          flex: 0 0 100%;
-        }
-        .feedback > .confusionBarometer {
-           flex: 0 0 30%;
-           padding: 0.5rem
-        }
-        .feedback > .feedbackChannel {
-           flex: 0 0 70%;
-           padding: 0.5rem
-        }
-      `}</style>
+          .runningSession {
+            display: flex;
+            flex-flow: row wrap;
+            margin: 1rem 6rem;
+          }
+          .sessionProgress {
+            flex: 0 0 100%;
+            padding: 0.5rem;
+          }
+          .confusionBarometer {
+            flex: 0 0 30%;
+            padding: 0.5rem;
+          }
+          .feedbackChannel {
+            flex: 0 0 70%;
+            padding: 0.5rem;
+          }
+        `}</style>
       </TeacherLayout>
     )
   }
