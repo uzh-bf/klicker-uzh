@@ -9,9 +9,21 @@ import withCSS from '../../../lib/withCSS'
 
 const Session = ({ createdAt, name, blocks, id, status }) => {
   const statusCases = {
-    completed: { disabled: false, icon: 'copy', message: <FormattedMessage id="session.button.completed.content" defaultMessage="Copy" /> },
-    created: { disabled: false, icon: 'play', message: <FormattedMessage id="session.button.created.content" defaultMessage="Start" /> },
-    running: { disabled: true, icon: 'play', message: <FormattedMessage id="session.button.running.content" defaultMessage="Running" /> },
+    completed: {
+      disabled: false,
+      icon: 'copy',
+      message: <FormattedMessage id="session.button.completed.content" defaultMessage="Copy" />,
+    },
+    created: {
+      disabled: false,
+      icon: 'play',
+      message: <FormattedMessage id="session.button.created.content" defaultMessage="Start" />,
+    },
+    running: {
+      disabled: true,
+      icon: 'play',
+      message: <FormattedMessage id="session.button.running.content" defaultMessage="Running" />,
+    },
   }
   const buttonStatus = statusCases[status]
 
@@ -49,7 +61,8 @@ const Session = ({ createdAt, name, blocks, id, status }) => {
       </div>
 
       <style jsx>{`
-        .session, .details {
+        .session,
+        .details {
           display: flex;
           flex-direction: column;
         }
@@ -67,7 +80,8 @@ const Session = ({ createdAt, name, blocks, id, status }) => {
         }
 
         @media all and (min-width: 768px) {
-          .session, .details {
+          .session,
+          .details {
             flex-flow: row wrap;
           }
           .title,
@@ -101,17 +115,21 @@ const Session = ({ createdAt, name, blocks, id, status }) => {
 }
 
 Session.propTypes = {
-  blocks: PropTypes.shape({
-    questions: PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      questionDefinition: PropTypes.shape({
-        title: PropTypes.string.isRequired,
-        type: PropTypes.string.isRequired,
-      }).isRequired,
+  blocks: PropTypes.arrayOf(
+    PropTypes.shape({
+      questions: PropTypes.arrayOf(
+        PropTypes.shape({
+          id: PropTypes.string.isRequired,
+          questionDefinition: PropTypes.shape({
+            title: PropTypes.string.isRequired,
+            type: PropTypes.string.isRequired,
+          }).isRequired,
+        }),
+      ),
       showSolutions: PropTypes.bool.isRequired,
       timeLimit: PropTypes.number.isRequired,
     }),
-  }).isRequired,
+  ).isRequired,
   createdAt: PropTypes.string.isRequired,
   id: PropTypes.string.isRequired,
   name: PropTypes.string.isRequired,
