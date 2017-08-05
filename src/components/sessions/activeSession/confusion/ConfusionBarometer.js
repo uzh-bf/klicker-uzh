@@ -2,77 +2,91 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { Checkbox } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
+import _meanBy from 'lodash/meanBy'
 
 import withCSS from '../../../../lib/withCSS'
 
 const ConfusionBarometer = ({ data, head, intl }) => {
-  // calculating average difficulty and comprehensibility
-  // depending on category, calculate difficulty or comprehensibility
-  const calculateAverage = (allData, category) => {
-    const values = []
-    switch (category) {
-      case 'difficulty':
-        allData.map(({ difficulty }) => (values.push(difficulty)))
-        break
-      case 'comprehensibility':
-        allData.map(({ comprehensibility }) => (values.push(comprehensibility)))
-        break
-      default:
-        break
-    }
-    const sum = values.reduce((previous, current) => previous + current)
-    return sum / values.length
-  }
+  // calculate means for difficulty and comprehensibility
+  // TODO: might do this server-side (caching?)
+
+  const difficultyAverage = _meanBy(data, item => item.difficulty)
+  const comprehensibilityAverage = _meanBy(data, item => item.comprehensibility)
 
   return (
-    <div>
+    <div className="confusionBarometer">
       {head}
+
       <h2>
-        {/* TODO correct naming of identifier */}
         <FormattedMessage
           defaultMessage="Confusion-Barometer"
-          id="pages.runningSession.confusionBarometer.title"
+          id="runningSession.confusionBarometer.string.title"
         />
       </h2>
-      {/* TODO semantic-ui styling import */}
+
       <Checkbox
         toggle
         label={intl.formatMessage({
-          defaultMessage: 'Aktiviert',
-          id: 'pages.runningSession.confusionBarometer.checkbox.activated', // TODO correct naming of identifier
+          defaultMessage: 'Activated',
+          id: 'common.string.activated',
         })}
       />
-      <div className="difficulty">
-        <p className="sectionTitle">
+
+      <div className="confusionSection">
+        <h3>
           <FormattedMessage
             defaultMessage="Difficulty"
-            id="pages.runningSession.confusionBarometer.paragraph.difficulty" // TODO correct naming of identifier
+            id="runningSession.confusionBarometer.string.difficulty"
           />
-        </p>
-        <p>{calculateAverage(data, 'difficulty')}</p>
+        </h3>
+        <span>
+          {difficultyAverage}
+        </span>
       </div>
-      <div className="comprehensibility">
-        <p className="sectionTitle">
+
+      <div className="confusionSection">
+        <h3>
           <FormattedMessage
             defaultMessage="Verständlichkeit"
-            id="pages.runningSession.confusionBarometer.paragraph.comprehensibility"
+            id="runningSession.confusionBarometer.string.comprehensibility"
           />
-        </p>
-        <p>{calculateAverage(data, 'comprehensibility')}</p>
+        </h3>
+        <span>
+          {comprehensibilityAverage}
+        </span>
       </div>
+
       <style jsx>{`
-        .difficulty {
+        .confusionBarometer {
+          display: flex;
+          flex-direction: column;
+        }
+
+        h2 {
+          margin-bottom: 1rem;
+        }
+
+        h3 {
+          margin: 0 0 .5rem 0;
+        }
+
+        .confusionSection {
+          flex: 1;
+
           background: lightgrey;
-          padding: .5rem;
+          border: 1px solid grey;
           margin-top: 1rem;
+          padding: 1rem;
         }
-        .comprehensibility {
-          background: grey;
-          padding: .5rem;
-          margin-top: 1rem;
-        }
-        .sectionTitle {
-          font-weight: bold;
+
+        @media all and (min-width: 768px) {
+          .confusionSection {
+            padding: .5rem;
+          }
+
+          .confusionSection:last-child {
+            margin-top: .5rem;
+          }
         }
       `}</style>
     </div>
@@ -91,4 +105,4 @@ ConfusionBarometer.propTypes = {
   }).isRequired,
 }
 
-export default withCSS(ConfusionBarometer, ['checkbox', 'header'])
+export default withCSS(ConfusionBarometer, ['checkbox'])

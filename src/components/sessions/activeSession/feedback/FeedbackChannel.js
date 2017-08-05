@@ -49,7 +49,7 @@ const FeedbackChannel = ({ data, head, intl }) =>
     <style jsx>{`
       .feedbackChannel {
         display: flex;
-        flex-flow: column nowrap;
+        flex-direction: column;
       }
 
       h2,
