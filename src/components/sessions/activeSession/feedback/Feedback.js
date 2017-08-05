@@ -1,40 +1,63 @@
 import React from 'react'
 import { PropTypes } from 'prop-types'
-import { Icon } from 'semantic-ui-react'
+import { Button } from 'semantic-ui-react'
 
-const Feedback = ({ content, votes }) => (
-  <div className="feedback">
-    <div className="content">{content}</div>
-    <div className="icon"><Icon name="trash outline" /></div>
-    <div className="vote">+{votes}</div>
+const Feedback = ({ content, votes }) =>
+  (<div className="feedback">
+    <div className="content">
+      {content}
+    </div>
+    <div className="delete">
+      <Button basic icon="trash outline" fluid />
+    </div>
+    <div className="votes">
+      +{votes}
+    </div>
+
     <style jsx>{`
       .feedback {
-        background: lightgrey;
-        border: 1px solid;
         display: flex;
-        margin-bottom: .5rem;
+
+        background: lightgrey;
+        border: 1px solid grey;
       }
-      .feedback > .content {
-        flex: 0 0 80%;
-        padding: .5rem;
+
+      .content,
+      .delete {
+        padding: 1rem;
       }
-      .feedback > .icon {
-        flex: 0 0 5%;
-        padding: .5rem;
+
+      .content {
+        flex: 1;
       }
-      .feedback > .vote {
-        border-left: 1px solid;
-        flex: 0 0 15%;
-        padding: .5rem;
-        text-align: center;
+
+      .delete {
+        flex: 0 0 1rem;
+        align-self: center;
+      }
+
+      .votes {
+        flex: 0 0 5rem;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        border-left: 1px solid grey;
+      }
+
+      @media all and (min-width: 768px) {
+        .content,
+        .delete {
+          padding: .5rem;
+        }
       }
     `}</style>
-  </div>
-)
+  </div>)
 
 Feedback.propTypes = {
   content: PropTypes.string.isRequired,
-  votes: PropTypes.string.isRequired,
+  votes: PropTypes.number.isRequired,
 }
 
 export default Feedback

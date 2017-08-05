@@ -7,43 +7,97 @@ import Feedback from './Feedback'
 
 import withCSS from '../../../../lib/withCSS'
 
-const FeedbackChannel = ({ data, head, intl }) => (
-  <div>
+const FeedbackChannel = ({ data, head, intl }) =>
+  (<div className="feedbackChannel">
     {head}
+
     <h2>
-      {/* TODO correct naming of identifier */}
       <FormattedMessage
         defaultMessage="Feedback-Channel"
-        id="pages.runningSession.feedbackChannel.title"
+        id="runningSession.feedbackChannel.string.title"
       />
     </h2>
-    <Checkbox
-      toggle
-      label={intl.formatMessage({
-        defaultMessage: 'Aktiviert',
-        id: 'pages.runningSession.feedbackChannel.checkbox.activated', // TODO correct naming of identifier
-      })}
-    />
-    <Checkbox
-      toggle
-      className="publishCheckbox"
-      label={intl.formatMessage({
-        defaultMessage: 'Fragen publizieren',
-        id: 'pages.runningSession.feedbackChannel.checkbox.publishQuestions', // TODO correct naming of identifier
-      })}
-    />
-    <div className="feedbacks">
-      {
-        data.map(({ content, id, votes }) => <Feedback key={id} content={content} votes={votes} />)
-      }
+
+    <div className="toggle">
+      <Checkbox
+        toggle
+        label={intl.formatMessage({
+          defaultMessage: 'Activated',
+          id: 'common.string.activated',
+        })}
+      />
     </div>
+    <div className="toggle publicationToggle">
+      <Checkbox
+        toggle
+        className="publishCheckbox"
+        label={intl.formatMessage({
+          defaultMessage: 'Publish questions',
+          id: 'runningSession.feedbackChannel.string.publishQuestions',
+        })}
+      />
+    </div>
+
+    <div className="feedbacks">
+      {data.map(({ content, id, votes }) =>
+        (<div className="feedback">
+          <Feedback key={id} content={content} votes={votes} />
+        </div>),
+      )}
+    </div>
+
     <style jsx>{`
+      .feedbackChannel {
+        display: flex;
+        flex-flow: column nowrap;
+      }
+
+      h2,
+      .toggle,
       .feedbacks {
-        margin-top: .5rem;
+        flex: 1;
+      }
+
+      h2 {
+        margin-bottom: 1rem;
+      }
+
+      .publicationToggle {
+        margin-top: 1rem;
+      }
+
+      .feedbacks {
+        margin-top: 1rem;
+      }
+
+      .feedback:not(:last-child) {
+        margin-bottom: 1rem;
+      }
+
+      @media all and (min-width: 768px) {
+        .feedbackChannel {
+          flex-flow: row wrap;
+        }
+
+        h2,
+        .feedbacks {
+          flex: 0 0 100%;
+        }
+
+        .toggle {
+          flex: 0 0 auto;
+        }
+
+        .publicationToggle {
+          margin: 0 0 0 2rem;
+        }
+
+        .feedback:not(:last-child) {
+          margin-bottom: .5rem;
+        }
       }
     `}</style>
-  </div>
-)
+  </div>)
 
 FeedbackChannel.propTypes = {
   data: PropTypes.arrayOf({
@@ -57,5 +111,4 @@ FeedbackChannel.propTypes = {
   }).isRequired,
 }
 
-// TODO semantic-ui styling import
-export default withCSS(FeedbackChannel, ['checkbox', 'header'])
+export default withCSS(FeedbackChannel, ['checkbox'])

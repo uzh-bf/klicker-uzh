@@ -4,7 +4,7 @@ import { graphql } from 'react-apollo'
 
 import ConfusionBarometer from '../../components/sessions/activeSession/confusion/ConfusionBarometer'
 import FeedbackChannel from '../../components/sessions/activeSession/feedback/FeedbackChannel'
-import SessionProgress from '../../components/sessions/activeSession/SessionProgress'
+import SessionTimeline from '../../components/sessions/activeSession/SessionTimeline'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import pageWithIntl from '../../lib/pageWithIntl'
 import { RunningSessionQuery } from '../../queries/queries'
@@ -40,7 +40,7 @@ class Running extends Component {
       <TeacherLayout intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'runningSession' }}>
         <div className="runningSession">
           <div className="sessionProgress">
-            <SessionProgress data={activeUser.activeSession.blocks} intl={intl} />
+            <SessionTimeline blocks={activeUser.activeSession.blocks} intl={intl} />
           </div>
           <div className="confusionBarometer">
             <ConfusionBarometer data={activeUser.activeSession.confusion} intl={intl} />
@@ -53,20 +53,41 @@ class Running extends Component {
         <style jsx>{`
           .runningSession {
             display: flex;
-            flex-flow: row wrap;
-            margin: 1rem 6rem;
+            flex-direction: column;
+
+            padding: 1rem;
           }
-          .sessionProgress {
-            flex: 0 0 100%;
-            padding: 0.5rem;
-          }
-          .confusionBarometer {
-            flex: 0 0 30%;
-            padding: 0.5rem;
-          }
+
+          .sessionProgress,
+          .confusionBarometer,
           .feedbackChannel {
-            flex: 0 0 70%;
-            padding: 0.5rem;
+            flex: 1;
+
+            margin-bottom: 1rem;
+          }
+
+          @media all and (min-width: 768px) {
+            .runningSession {
+              flex-flow: row wrap;
+
+              margin: 1rem 6rem;
+              padding: 0;
+            }
+            .sessionProgress {
+              flex: 0 0 100%;
+
+              padding: .5rem;
+            }
+            .confusionBarometer {
+              flex: 1 1 30%;
+
+              padding: .5rem;
+            }
+            .feedbackChannel {
+              flex: 1 1 70%;
+
+              padding: .5rem;
+            }
           }
         `}</style>
       </TeacherLayout>
