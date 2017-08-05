@@ -5,18 +5,24 @@ import { FormattedMessage } from 'react-intl'
 
 import QuestionBlock from '../session/QuestionBlock'
 
-const SessionProgress = ({ data, intl }) => (
-  <div className="container">
+const SessionTimeline = ({ blocks, intl }) =>
+  (<div className="timeline">
     <div className="sessionContainer">
       <div className="topRow">
-        <div><Icon name="time" /> <FormattedMessage
-          defaultMessage="Start"
-          id="pages.runningSession.sessionProgress.paragraph.start" // TODO correct naming of identifier
-        /></div>
-        <div><Icon name="play circle" /> <FormattedMessage
-          defaultMessage="Difficulty"
-          id="pages.runningSession.sessionProgress.paragraph.runningTime" // TODO correct naming of identifier
-        /></div>
+        <div>
+          <Icon name="time" />{' '}
+          <FormattedMessage
+            defaultMessage="Start"
+            id="pages.runningSession.sessionProgress.paragraph.start" // TODO correct naming of identifier
+          />
+        </div>
+        <div>
+          <Icon name="play circle" />{' '}
+          <FormattedMessage
+            defaultMessage="Difficulty"
+            id="pages.runningSession.sessionProgress.paragraph.runningTime" // TODO correct naming of identifier
+          />
+        </div>
         <div>
           <FormattedMessage
             defaultMessage="Sessions"
@@ -25,20 +31,19 @@ const SessionProgress = ({ data, intl }) => (
         </div>
       </div>
       <div className="content">
-        {
-          data.map(block =>
-            (<QuestionBlock
-              key={block.id}
-              showSolutions
-              status={block.status}
-              questions={block.questions.map(question => ({
-                id: question.id,
-                title: question.questionDefinition.title,
-                type: question.questionDefinition.type,
-              }))}
-            />),
-          )
-        }
+        {blocks.map(block =>
+          (<QuestionBlock
+            key={block.id}
+            showSolutions
+            timeLimit={60}
+            status={block.status}
+            questions={block.questions.map(question => ({
+              id: question.id,
+              title: question.questionDefinition.title,
+              type: question.questionDefinition.type,
+            }))}
+          />),
+        )}
       </div>
     </div>
     <div className="buttonSection">
@@ -106,11 +111,10 @@ const SessionProgress = ({ data, intl }) => (
           justify-content: flex-end;
         }
       `}</style>
-  </div>
-)
+  </div>)
 
-SessionProgress.propTypes = {
-  data: PropTypes.arrayOf({
+SessionTimeline.propTypes = {
+  blocks: PropTypes.arrayOf({
     questions: PropTypes.arrayOf({
       questionDefinition: PropTypes.shape({
         title: PropTypes.string,
@@ -124,4 +128,4 @@ SessionProgress.propTypes = {
   }).isRequired,
 }
 
-export default SessionProgress
+export default SessionTimeline
