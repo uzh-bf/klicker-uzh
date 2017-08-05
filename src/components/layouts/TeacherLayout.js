@@ -77,6 +77,10 @@ class TeacherLayout extends Component {
         <style jsx global>{`
           * {
             font-family: 'Open Sans', sans-serif;
+          }
+
+          html,
+          body {
             font-size: 14px;
           }
 
