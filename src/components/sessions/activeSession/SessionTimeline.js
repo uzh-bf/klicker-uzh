@@ -6,33 +6,19 @@ import { FormattedMessage } from 'react-intl'
 import QuestionBlock from '../session/QuestionBlock'
 
 const SessionTimeline = ({ blocks, intl }) =>
-  (<div className="timeline">
-    <div className="sessionContainer">
-      <div className="topRow">
-        <div>
-          <Icon name="time" />{' '}
-          <FormattedMessage
-            defaultMessage="Start"
-            id="pages.runningSession.sessionProgress.paragraph.start" // TODO correct naming of identifier
-          />
-        </div>
-        <div>
-          <Icon name="play circle" />{' '}
-          <FormattedMessage
-            defaultMessage="Difficulty"
-            id="pages.runningSession.sessionProgress.paragraph.runningTime" // TODO correct naming of identifier
-          />
-        </div>
-        <div>
-          <FormattedMessage
-            defaultMessage="Sessions"
-            id="pages.runningSession.sessionProgress.paragraph.sessions" // TODO correct naming of identifier
-          />
-        </div>
+  (<div className="sessionTimeline">
+    <div className="topRow">
+      <div className="startingTime">
+        <Icon name="time" /> 18:17:22
       </div>
-      <div className="content">
-        {blocks.map(block =>
-          (<QuestionBlock
+      <div className="runningTime">
+        <Icon name="play circle" /> 12:56
+      </div>
+    </div>
+    <div className="blocks">
+      {blocks.map(block =>
+        (<div className="block">
+          <QuestionBlock
             key={block.id}
             showSolutions
             timeLimit={60}
@@ -42,75 +28,89 @@ const SessionTimeline = ({ blocks, intl }) =>
               title: question.questionDefinition.title,
               type: question.questionDefinition.type,
             }))}
-          />),
-        )}
+          />
+        </div>),
+      )}
+    </div>
+    <div className="buttons">
+      <div className="button">
+        <Button
+          content={intl.formatMessage({
+            defaultMessage: 'Previous',
+            id: 'runningSession.button.previous',
+          })}
+          icon="left arrow"
+          labelPosition="left"
+        />
+      </div>
+      <div className="button right">
+        <Button
+          content={intl.formatMessage({
+            defaultMessage: 'Next',
+            id: 'runningSession.button.next',
+          })}
+          icon="right arrow"
+          labelPosition="left"
+        />
       </div>
     </div>
-    <div className="buttonSection">
-      {/* TODO evaluation button floating to the right */}
-      <Button
-        className="cancel"
-        content={intl.formatMessage({
-          defaultMessage: 'Cancel',
-          id: 'pages.runningSession.sessionProgress.button.cancel', // TODO correct naming of identifier
-        })}
-        icon="close"
-        labelPosition="left"
-      />
-      <Button
-        className="evaluation"
-        content={intl.formatMessage({
-          defaultMessage: 'Evaluation',
-          id: 'pages.runningSession.sessionProgress.button.evaluation', // TODO correct naming of identifier
-        })}
-        icon="play"
-        labelPosition="left"
-      />
-    </div>
-
     <style jsx>{`
-        .container {
+        .sessionTimeline {
           display: flex;
-          flex-direction: row;
-          flex-wrap: wrap;
+          direction: column;
         }
-        .sessionContainer {
-          background-color: lightgrey;
-          border: 1px solid;
-          flex: 0 0 100%;
-          margin-bottom: 0.5rem;
-        }
-        .sessionContainer > .topRow {
+
+        .topRow {
+          flex: 1;
+
           display: flex;
-          border-bottom: 1px solid;
-          padding: 0.5rem;
+
+          background: grey;
+          padding: 1rem;
         }
-        .sessionContainer > .topRow > div {
-          margin: 0 0.5rem;
+
+        .runningTime {
+          margin-left: 2rem;
         }
-        .sessionContainer > .topRow > div:last-child {
-          background-color: green;
-          flex: 1 1 auto;
+
+        .blocks {
+          flex: 1;
+
+          border: 1px solid grey;
+          padding: 1rem;
         }
-        .sessionContainer > .content {
-          display: flex;
-          padding: 0.5rem;
+
+        .block:not(:first-child) {
+          margin-top: 1rem;
         }
-        .buttonSection {
-          width: 100%;
+
+        .buttons {
+          margin-top: 1rem;
         }
-        :global(.buttonSection > .ui.button.evaluation) {
-          float: right;
+
+        @media all and (min-width: 768px) {
+          .sessionTimeline {
+            flex-flow: row wrap;
+          }
+
+          .topRow {
+            flex: 0 0 100%;
+
+            padding: .5rem;
+          }
+
+          .blocks {
+            flex: 0 0 100%;
+
+            display: flex;
+            padding: .5rem;
+          }
+
+          .block {
+            margin: 0.3rem;
+          }
         }
-        .cancel {
-          flex: 0 0 20%
-          justify-content: flex-start;
-        }
-        .evaluation {
-          flex: 0 0 20%
-          justify-content: flex-end;
-        }
-      `}</style>
+    `}</style>
   </div>)
 
 SessionTimeline.propTypes = {

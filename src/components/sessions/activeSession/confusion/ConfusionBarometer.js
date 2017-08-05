@@ -33,6 +33,7 @@ const ConfusionBarometer = ({ data, head, intl }) => {
       />
 
       <div className="confusionSection">
+        {/* TODO: extract these sections into separate components (with graphs etc.) */}
         <h3>
           <FormattedMessage
             defaultMessage="Difficulty"
@@ -45,6 +46,7 @@ const ConfusionBarometer = ({ data, head, intl }) => {
       </div>
 
       <div className="confusionSection">
+        {/* TODO: extract these sections into separate components (with graphs etc.) */}
         <h3>
           <FormattedMessage
             defaultMessage="Verständlichkeit"
