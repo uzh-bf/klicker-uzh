@@ -1,9 +1,29 @@
 /* eslint-disable import/no-extraneous-dependencies, import/no-unresolved, import/extensions */
 
-import { configure } from '@storybook/react'
+import { addDecorator, configure } from '@storybook/react'
 
-function loadStories() {
-  require('../stories')
-}
+// integrate storybook-addon-knobs
+import { withKnobs } from '@storybook/addon-knobs'
 
-configure(loadStories, module)
+// integrate storybook-addon-intl for react-intl
+import { setIntlConfig, withIntl } from 'storybook-addon-intl'
+import { addLocaleData } from 'react-intl'
+import enLocaleData from 'react-intl/locale-data/en'
+import deLocaleData from 'react-intl/locale-data/de'
+
+// load intl locale-data for DE and EN
+addLocaleData(enLocaleData)
+addLocaleData(deLocaleData)
+
+// set the config for react-intl
+setIntlConfig({
+  locales: ['en', 'de'],
+  defaultLocale: 'en',
+  getMessages: locale => require(`../src/lang/${locale}.json`),
+})
+
+// add global decorators
+addDecorator(withKnobs)
+addDecorator(withIntl)
+
+configure(() => require('../stories'), module)

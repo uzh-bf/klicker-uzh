@@ -4,50 +4,51 @@
 
 import React from 'react'
 import { storiesOf } from '@storybook/react'
-import { IntlProvider } from 'react-intl'
+import { text, boolean, number } from '@storybook/addon-knobs'
 
 import Question from '../src/components/questions/question/Question'
-import QuestionSingle from '../src/components/sessions/session/QuestionSingle'
+
+import Session from '../src/components/sessions/session/Session'
 import QuestionBlock from '../src/components/sessions/session/QuestionBlock'
+import QuestionSingle from '../src/components/sessions/session/QuestionSingle'
+
 import '../node_modules/semantic-ui-css/semantic.min.css'
 import './base.css'
 
 storiesOf('Question', module)
   .add('SC with a single version', () =>
-    (<IntlProvider>
-      <Question
-        id="1"
-        lastUsed={['2015-02-08 14:32:11', '2016-09-09 15:22:09']}
-        tags={['CAPM', 'Risk']}
-        title="Hello world"
-        type="SC"
-      />
-    </IntlProvider>),
+    (<Question
+      id="1"
+      lastUsed={['2015-02-08 14:32:11', '2016-09-09 15:22:09']}
+      tags={['CAPM', 'Risk']}
+      title={text('title', 'Hello World')}
+      type="SC"
+    />),
   )
   .add('MC with multiple versions', () =>
-    (<IntlProvider>
-      <Question
-        id="1"
-        lastUsed={['2017-08-08 14:30:22', '2016-09-09 15:22:09']}
-        tags={['Beta']}
-        title="Good question"
-        type="MC"
-        version="2"
-      />
-    </IntlProvider>),
+    (<Question
+      id="1"
+      lastUsed={['2017-08-08 14:30:22', '2016-09-09 15:22:09']}
+      tags={['Beta']}
+      title={text('title', 'Hello World')}
+      type="MC"
+      version="2"
+    />),
   )
   .add('MC without tags', () =>
-    (<IntlProvider>
-      <Question
-        id="1"
-        lastUsed={['2017-08-08 14:30:22', '2016-09-09 15:22:09', '2015-10-09 15:22:09']}
-        tags={[]}
-        title="Good question"
-        type="MC"
-        version="1"
-      />
-    </IntlProvider>),
+    (<Question
+      id="1"
+      lastUsed={['2017-08-08 14:30:22', '2016-09-09 15:22:09', '2015-10-09 15:22:09']}
+      tags={[]}
+      title={text('title', 'Hello World')}
+      type="MC"
+      version="1"
+    />),
   )
+
+storiesOf('Session', module).add('default', () =>
+  <Session createdAt="2017-08-08 14:30:22" name="Hello World" status="PLANNED" />,
+)
 
 storiesOf('QuestionBlock', module)
   .add('default', () =>
@@ -69,11 +70,17 @@ storiesOf('QuestionBlock', module)
           type: 'MC',
         },
       ]}
-      showSolutions={false}
-      timeLimit={60}
+      showSolutions={boolean('showSolutions', false)}
+      timeLimit={number('timeLimit', 60)}
     />),
   )
-  .add('empty', () => <QuestionBlock questions={[]} showSolutions={false} timeLimit={60} />)
+  .add('empty', () =>
+    (<QuestionBlock
+      questions={[]}
+      showSolutions={boolean('showSolutions', false)}
+      timeLimit={number('timeLimit', 60)}
+    />),
+  )
 
 storiesOf('QuestionSingle', module).add('default', () =>
   <QuestionSingle id="abc" title="hello world this is a long long question" type="SC" />,
