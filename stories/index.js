@@ -7,10 +7,11 @@ import { storiesOf } from '@storybook/react'
 import { text, boolean, number } from '@storybook/addon-knobs'
 
 import Question from '../src/components/questions/question/Question'
-
 import Session from '../src/components/sessions/session/Session'
 import QuestionBlock from '../src/components/sessions/session/QuestionBlock'
 import QuestionSingle from '../src/components/sessions/session/QuestionSingle'
+import SessionTimeline from '../src/components/sessions/activeSession/SessionTimeline'
+import { injectIntl } from 'react-intl'
 
 import '../node_modules/semantic-ui-css/semantic.min.css'
 import './base.css'
@@ -41,3 +42,5 @@ storiesOf('QuestionBlock', module)
   )
 
 storiesOf('QuestionSingle', module).add('default', () => <QuestionSingle {...fixtures.question} />)
+
+storiesOf('SessionTimeline', module).add('default', () => <SessionTimeline blocks={[]} />)
