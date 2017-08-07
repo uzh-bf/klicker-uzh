@@ -1,12 +1,20 @@
+// @flow
+
 import React from 'react'
-import PropTypes from 'prop-types'
 import { Checkbox } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 import ConfusionSection from './ConfusionSection'
 import withCSS from '../../lib/withCSS'
 
-const ConfusionBarometer = ({ head, intl, isActive, onActiveToggle }) =>
+type Props = {
+  head: 'next/head',
+  intl: $IntlShape,
+  isActive: boolean,
+  onActiveToggle: () => mixed,
+}
+
+const ConfusionBarometer = ({ head, intl, isActive, onActiveToggle }: Props) =>
   (<div className="confusionBarometer">
     {head}
 
@@ -95,14 +103,5 @@ const ConfusionBarometer = ({ head, intl, isActive, onActiveToggle }) =>
       }
     `}</style>
   </div>)
-
-ConfusionBarometer.propTypes = {
-  head: PropTypes.node.isRequired, // head as injected by HOC
-  intl: PropTypes.shape({
-    formatMessage: PropTypes.func.isRequired,
-  }).isRequired,
-  isActive: PropTypes.bool.isRequired,
-  onActiveToggle: PropTypes.func.isRequired,
-}
 
 export default withCSS(ConfusionBarometer, ['checkbox'])

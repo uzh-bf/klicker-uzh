@@ -1,12 +1,27 @@
+// @flow
+
 import React from 'react'
-import PropTypes from 'prop-types'
 import { graphql } from 'react-apollo'
 import { List } from 'semantic-ui-react'
 
 import withCSS from '../../lib/withCSS'
 import { TagListQuery } from '../../queries/queries'
 
-const TagList = ({ activeTags, data, head, handleTagClick }) => {
+type Props = {
+  activeTags?: Array<string>,
+  data: {
+    loading: boolean,
+    error: string,
+    tags: Array<{
+      id: string,
+      name: string,
+    }>
+  },
+  head: 'next/head',
+  handleTagClick: () => mixed,
+}
+
+const TagList = ({ activeTags = [], data, head, handleTagClick }: Props) => {
   if (data.loading) {
     return <div>Loading</div>
   }
@@ -41,25 +56,6 @@ const TagList = ({ activeTags, data, head, handleTagClick }) => {
       `}</style>
     </List>
   )
-}
-
-TagList.propTypes = {
-  activeTags: PropTypes.arrayOf(PropTypes.string),
-  data: PropTypes.shape({
-    loading: PropTypes.bool.isRequired,
-    tags: PropTypes.arrayOf(
-      PropTypes.shape({
-        id: PropTypes.string.isRequired,
-        name: PropTypes.string.isRequired,
-      }),
-    ),
-  }).isRequired,
-  handleTagClick: PropTypes.func.isRequired,
-  head: PropTypes.node.isRequired,
-}
-
-TagList.defaultProps = {
-  activeTags: [],
 }
 
 export default graphql(TagListQuery)(withCSS(TagList, ['list']))

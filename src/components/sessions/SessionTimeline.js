@@ -1,10 +1,24 @@
+// @flow
+
 import React from 'react'
-import PropTypes from 'prop-types'
 import { Button, Icon } from 'semantic-ui-react'
 
 import QuestionBlock from '../questions/QuestionBlock'
 
-const SessionTimeline = ({ blocks, intl }) =>
+type Props = {
+  blocks: Array<{
+    questions: Array<{
+      questionDefinition: {
+        title: string,
+        type: string,
+      },
+    }>,
+    status: string,
+  }>,
+  intl: $IntlShape,
+}
+
+const SessionTimeline = ({ blocks, intl }: Props) =>
   (<div className="sessionTimeline">
     <div className="topRow">
       <div className="startingTime">
@@ -125,20 +139,5 @@ const SessionTimeline = ({ blocks, intl }) =>
       }
     `}</style>
   </div>)
-
-SessionTimeline.propTypes = {
-  blocks: PropTypes.arrayOf({
-    questions: PropTypes.arrayOf({
-      questionDefinition: PropTypes.shape({
-        title: PropTypes.string,
-        type: PropTypes.string,
-      }),
-    }),
-    status: PropTypes.string,
-  }).isRequired,
-  intl: PropTypes.shape({
-    formatMessage: PropTypes.func.isRequired,
-  }).isRequired,
-}
 
 export default SessionTimeline

@@ -1,13 +1,19 @@
-import React from 'react'
-import PropTypes from 'prop-types'
+// @flow
 
-const QuestionTags = ({ tags, type }) =>
+import React from 'react'
+
+type Props = {
+  tags: Array<string>,
+  type: string,
+}
+
+const QuestionTags = ({ tags, type }: Props) =>
   (<div className="container">
     <div className="type tag">
       {type}
     </div>
     {tags.map(tag =>
-      (<div key={tag.id} className="tag">
+      (<div key={tag} className="tag">
         {tag}
       </div>),
     )}
@@ -46,10 +52,5 @@ const QuestionTags = ({ tags, type }) =>
       }
     `}</style>
   </div>)
-
-QuestionTags.propTypes = {
-  tags: PropTypes.arrayOf(PropTypes.string).isRequired,
-  type: PropTypes.string.isRequired,
-}
 
 export default QuestionTags
