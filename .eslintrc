@@ -1,7 +1,7 @@
 {
   "parser": "babel-eslint",
-  "extends": "airbnb",
-  "plugins": ["react", "jsx-a11y", "import"],
+  "extends": ["airbnb", "plugin:flowtype/recommended"],
+  "plugins": ["react", "jsx-a11y", "import", "flowtype"],
   "rules": {
     "semi": 0,
     "react/prop-types": 1,
@@ -25,5 +25,10 @@
     "browser": true,
     "node": true,
     "jest": true
+  },
+  "settings": {
+    "flowtype": {
+      "onlyFilesWithFlowAnnotation": true
+    }
   }
 }
