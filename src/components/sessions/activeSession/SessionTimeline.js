@@ -1,7 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Button, Icon } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
 
 import QuestionBlock from '../session/QuestionBlock'
 
@@ -33,83 +32,97 @@ const SessionTimeline = ({ blocks, intl }) =>
       )}
     </div>
     <div className="buttons">
-      <div className="button">
-        <Button
-          content={intl.formatMessage({
-            defaultMessage: 'Previous',
-            id: 'runningSession.button.previous',
-          })}
-          icon="left arrow"
-          labelPosition="left"
-        />
-      </div>
-      <div className="button right">
-        <Button
-          content={intl.formatMessage({
-            defaultMessage: 'Next',
-            id: 'runningSession.button.next',
-          })}
-          icon="right arrow"
-          labelPosition="left"
-        />
-      </div>
+      <Button
+        content={intl.formatMessage({
+          defaultMessage: 'Previous',
+          id: 'runningSession.button.previous',
+        })}
+        icon="left arrow"
+        labelPosition="left"
+        size="large"
+      />
+      <Button
+        primary
+        content={intl.formatMessage({
+          defaultMessage: 'Next',
+          id: 'runningSession.button.next',
+        })}
+        icon="right arrow"
+        labelPosition="right"
+        size="large"
+      />
     </div>
     <style jsx>{`
+      .sessionTimeline {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .topRow {
+        flex: 1;
+
+        display: flex;
+
+        background: grey;
+        padding: 1rem;
+      }
+
+      .runningTime {
+        margin-left: 2rem;
+      }
+
+      .blocks {
+        flex: 1;
+
+        display: flex;
+        flex-direction: column;
+
+        border: 1px solid grey;
+        padding: 1rem;
+      }
+
+      .block:not(:first-child) {
+        margin-top: 1rem;
+      }
+
+      .buttons {
+        flex: 1;
+
+        display: flex;
+        flex-flow: row wrap;
+        justify-content: space-between;
+
+        margin-top: 1rem;
+      }
+
+      .buttons > :global(button) {
+        margin-right: 0;
+      }
+
+      @media all and (min-width: 768px) {
         .sessionTimeline {
-          display: flex;
-          direction: column;
+          flex-flow: row wrap;
         }
 
         .topRow {
-          flex: 1;
+          flex: 0 0 100%;
 
-          display: flex;
-
-          background: grey;
-          padding: 1rem;
-        }
-
-        .runningTime {
-          margin-left: 2rem;
+          padding: .5rem;
         }
 
         .blocks {
-          flex: 1;
+          flex: 0 0 100%;
 
-          border: 1px solid grey;
-          padding: 1rem;
+          flex-direction: row;
+
+          padding: .5rem;
         }
 
+        .block,
         .block:not(:first-child) {
-          margin-top: 1rem;
+          margin: 0.3rem;
         }
-
-        .buttons {
-          margin-top: 1rem;
-        }
-
-        @media all and (min-width: 768px) {
-          .sessionTimeline {
-            flex-flow: row wrap;
-          }
-
-          .topRow {
-            flex: 0 0 100%;
-
-            padding: .5rem;
-          }
-
-          .blocks {
-            flex: 0 0 100%;
-
-            display: flex;
-            padding: .5rem;
-          }
-
-          .block {
-            margin: 0.3rem;
-          }
-        }
+      }
     `}</style>
   </div>)
 
