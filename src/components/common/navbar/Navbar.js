@@ -59,9 +59,10 @@ class Navbar extends Component {
           </Menu>
         </div>
 
-        <div className="searchArea">
-          {search && <SearchArea intl={intl} handleSearch={search.handleSearch} />}
-        </div>
+        {search &&
+          <div className="searchArea">
+            <SearchArea intl={intl} handleSearch={search.handleSearch} />
+          </div>}
 
         <div className="accountArea">
           <Menu borderless className="noBorder">
