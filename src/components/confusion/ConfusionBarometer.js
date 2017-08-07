@@ -2,109 +2,101 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { Checkbox } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import _meanBy from 'lodash/meanBy'
 
+import ConfusionSection from './ConfusionSection'
 import withCSS from '../../lib/withCSS'
 
-const ConfusionBarometer = ({ data, head, intl, isActive, onActiveToggle }) => {
-  // calculate means for difficulty and comprehensibility
-  // TODO: might do this server-side (caching?)
+const ConfusionBarometer = ({ head, intl, isActive, onActiveToggle }) =>
+  (<div className="confusionBarometer">
+    {head}
 
-  const difficultyAverage = _meanBy(data, item => item.difficulty)
-  const comprehensibilityAverage = _meanBy(data, item => item.comprehensibility)
-
-  return (
-    <div className="confusionBarometer">
-      {head}
-
-      <h2>
-        <FormattedMessage
-          defaultMessage="Confusion-Barometer"
-          id="runningSession.confusionBarometer.string.title"
-        />
-      </h2>
-
-      <Checkbox
-        toggle
-        label={intl.formatMessage({
-          defaultMessage: 'Activated',
-          id: 'common.string.activated',
-        })}
-        value={isActive}
-        onChange={onActiveToggle}
+    <h2>
+      <FormattedMessage
+        defaultMessage="Confusion-Barometer"
+        id="runningSession.confusionBarometer.string.title"
       />
+    </h2>
 
-      {isActive &&
-        <div className="confusionSection">
-          {/* TODO: extract these sections into separate components (with graphs etc.) */}
-          <h3>
-            <FormattedMessage
-              defaultMessage="Difficulty"
-              id="runningSession.confusionBarometer.string.difficulty"
-            />
-          </h3>
-          <span>
-            {difficultyAverage}
-          </span>
-        </div>}
+    <Checkbox
+      toggle
+      label={intl.formatMessage({
+        defaultMessage: 'Activated',
+        id: 'common.string.activated',
+      })}
+      value={isActive}
+      onChange={onActiveToggle}
+    />
 
-      {isActive &&
-        <div className="confusionSection">
-          {/* TODO: extract these sections into separate components (with graphs etc.) */}
-          <h3>
-            <FormattedMessage
-              defaultMessage="Verständlichkeit"
-              id="runningSession.confusionBarometer.string.comprehensibility"
-            />
-          </h3>
-          <span>
-            {comprehensibilityAverage}
-          </span>
-        </div>}
+    {isActive &&
+      <ConfusionSection
+        title={intl.formatMessage({
+          defaultMessage: 'Difficulty',
+          id: 'runningSession.confusionBarometer.string.difficulty',
+        })}
+        data={[
+          { timestamp: '11:55', value: -10 },
+          { timestamp: '11:56', value: 0 },
+          { timestamp: '11:57', value: 10 },
+          { timestamp: '11:58', value: 25 },
+          { timestamp: '11:59', value: 50 },
+          { timestamp: '12:00', value: 0 },
+          { timestamp: '12:01', value: -50 },
+        ]}
+      />}
 
-      <style jsx>{`
-        .confusionBarometer {
-          display: flex;
-          flex-direction: column;
-        }
+    {isActive &&
+      <ConfusionSection
+        title={intl.formatMessage({
+          defaultMessage: 'Comprehensibility',
+          id: 'runningSession.confusionBarometer.string.comprehensibility',
+        })}
+        data={[
+          { timestamp: '11:55', value: 40 },
+          { timestamp: '11:56', value: 30 },
+          { timestamp: '11:57', value: 35 },
+          { timestamp: '11:58', value: 20 },
+          { timestamp: '11:59', value: 25 },
+          { timestamp: '12:00', value: 50 },
+          { timestamp: '12:01', value: 10 },
+        ]}
+      />}
 
-        h2 {
-          margin-bottom: 1rem;
-        }
+    <style jsx>{`
+      .confusionBarometer {
+        display: flex;
+        flex-direction: column;
+      }
 
-        h3 {
-          margin: 0 0 .5rem 0;
-        }
+      h2 {
+        margin-bottom: 1rem;
+      }
 
+      h3 {
+        margin: 0 0 .5rem 0;
+      }
+
+      .confusionSection {
+        flex: 1;
+
+        background: lightgrey;
+        border: 1px solid grey;
+        margin-top: 1rem;
+        padding: 1rem;
+      }
+
+      @media all and (min-width: 768px) {
         .confusionSection {
-          flex: 1;
-
-          background: lightgrey;
-          border: 1px solid grey;
-          margin-top: 1rem;
-          padding: 1rem;
+          padding: .5rem;
         }
 
-        @media all and (min-width: 768px) {
-          .confusionSection {
-            padding: .5rem;
-          }
-
-          .confusionSection:last-child {
-            margin-top: .5rem;
-          }
+        .confusionSection:last-child {
+          margin-top: .5rem;
         }
-      `}</style>
-    </div>
-  )
-}
+      }
+    `}</style>
+  </div>)
 
 ConfusionBarometer.propTypes = {
-  data: PropTypes.arrayOf({
-    content: PropTypes.string,
-    id: PropTypes.string,
-    votes: PropTypes.number,
-  }).isRequired,
   head: PropTypes.node.isRequired, // head as injected by HOC
   intl: PropTypes.shape({
     formatMessage: PropTypes.func.isRequired,
