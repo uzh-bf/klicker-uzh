@@ -22,7 +22,6 @@ const Question = ({ head, id, lastUsed, tags, title, type, version }) =>
       .container {
         display: flex;
         flex-flow: column nowrap;
-        padding: 1rem;
       }
 
       .title {
@@ -34,7 +33,6 @@ const Question = ({ head, id, lastUsed, tags, title, type, version }) =>
       @media all and (min-width: 768px) {
         .container {
           flex-flow: row wrap;
-          padding: 0;
         }
 
         .title,
