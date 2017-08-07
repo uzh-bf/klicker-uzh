@@ -17,8 +17,8 @@ addLocaleData(deLocaleData)
 
 // set the config for react-intl
 setIntlConfig({
-  locales: ['en', 'de'],
   defaultLocale: 'en',
+  locales: ['en', 'de'],
   getMessages: locale => require(`../src/lang/${locale}.json`),
 })
 
