@@ -111,18 +111,28 @@ class Navbar extends Component {
               flex-wrap: nowrap;
             }
 
+            .sideArea {
+              flex: 0 0 auto;
+            }
+
             .searchArea {
               flex: 1 1 50%;
               order: 1;
 
-              padding: .5rem;
+              padding: .5rem 2rem;
             }
 
             .accountArea {
-              flex: 1;
+              flex: 0 0 auto;
               order: 2;
 
               display: block;
+            }
+          }
+
+          @media all and (min-width: 991px) {
+            .searchArea {
+              padding: .5rem 3rem;
             }
           }
         `}</style>
