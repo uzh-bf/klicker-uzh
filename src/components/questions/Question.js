@@ -4,8 +4,6 @@ import PropTypes from 'prop-types'
 import QuestionDetails from './QuestionDetails'
 import QuestionTags from './QuestionTags'
 
-import withCSS from '../../../lib/withCSS'
-
 const Question = ({ head, id, lastUsed, tags, title, type, version }) =>
   (<div className="container">
     {head}
@@ -69,4 +67,4 @@ Question.defaultProps = {
   version: 1,
 }
 
-export default withCSS(Question, ['segment'])
+export default Question

@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 
-import ListWithHeader from '../../common/ListWithHeader'
+import ListWithHeader from '../common/ListWithHeader'
 
 const QuestionDetails = ({ lastUsed }) =>
   (<div className="container">
