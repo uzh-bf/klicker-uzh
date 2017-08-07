@@ -3,7 +3,7 @@ import React from 'react'
 import moment from 'moment'
 import { graphql } from 'react-apollo'
 
-import Question from './question/Question'
+import Question from './Question'
 import { QuestionListQuery } from '../../queries/queries'
 
 const QuestionList = ({ data }) => {

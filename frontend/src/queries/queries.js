@@ -63,7 +63,7 @@ const SessionListQuery = gql`
   }
 `
 
-const RunningSessionQuery = gql`
+/* const RunningSessionQuery = gql`
   {
     user {
       activeSession {
@@ -82,6 +82,35 @@ const RunningSessionQuery = gql`
           description
           questionDefinition {
             title
+          }
+        }
+      }
+    }
+  }
+` */
+
+const RunningSessionQuery = gql`
+  {
+    allUsers {
+      activeSession {
+        confusion(orderBy: createdAt_DESC) {
+          comprehensibility
+          difficulty
+          createdAt
+        }
+        feedbacks(orderBy: votes_DESC) {
+          id
+          content
+          votes
+        }
+        blocks {
+          status
+          questions {
+            id
+            questionDefinition {
+              title
+              type
+            }
           }
         }
       }

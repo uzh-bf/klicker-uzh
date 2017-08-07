@@ -76,18 +76,16 @@ class TeacherLayout extends Component {
 
         <style jsx global>{`
           * {
-            // TODO: disable rounded corners in semantic itself
-            border-radius: 0 !important;
             font-family: 'Open Sans', sans-serif;
+          }
+
+          html,
+          body {
+            font-size: 14px;
           }
 
           .noPadding {
             padding: 0 !important;
-          }
-
-          // TODO: make the app entirely full height (100%)
-          .fullHeight {
-            min-height: 50rem;
           }
         `}</style>
       </Grid>
