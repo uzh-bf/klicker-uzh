@@ -4,7 +4,7 @@ import { Checkbox } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import _meanBy from 'lodash/meanBy'
 
-import withCSS from '../../../../lib/withCSS'
+import withCSS from '../../lib/withCSS'
 
 const ConfusionBarometer = ({ data, head, intl, isActive, onActiveToggle }) => {
   // calculate means for difficulty and comprehensibility

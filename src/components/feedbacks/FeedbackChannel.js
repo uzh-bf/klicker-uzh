@@ -5,7 +5,7 @@ import { FormattedMessage } from 'react-intl'
 
 import Feedback from './Feedback'
 
-import withCSS from '../../../../lib/withCSS'
+import withCSS from '../../lib/withCSS'
 
 const FeedbackChannel = ({
   data,

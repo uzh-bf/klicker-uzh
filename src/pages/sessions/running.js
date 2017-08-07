@@ -2,9 +2,9 @@ import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { graphql } from 'react-apollo'
 
-import ConfusionBarometer from '../../components/sessions/activeSession/confusion/ConfusionBarometer'
-import FeedbackChannel from '../../components/sessions/activeSession/feedback/FeedbackChannel'
-import SessionTimeline from '../../components/sessions/activeSession/SessionTimeline'
+import ConfusionBarometer from '../../components/confusion/ConfusionBarometer'
+import FeedbackChannel from '../../components/feedbacks/FeedbackChannel'
+import SessionTimeline from '../../components/sessions/SessionTimeline'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import pageWithIntl from '../../lib/pageWithIntl'
 import { RunningSessionQuery } from '../../queries/queries'
@@ -62,6 +62,7 @@ class Running extends Component {
           <div className="sessionProgress">
             <SessionTimeline intl={intl} blocks={activeUser.activeSession.blocks} />
           </div>
+
           <div className="confusionBarometer">
             <ConfusionBarometer
               intl={intl}
@@ -70,6 +71,7 @@ class Running extends Component {
               onActiveToggle={this.handleConfusionActiveToggle}
             />
           </div>
+
           <div className="feedbackChannel">
             <FeedbackChannel
               intl={intl}

@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { graphql } from 'react-apollo'
 
-import Session from './session/Session'
+import Session from './Session'
 import { SessionListQuery } from '../../queries/queries'
 
 const SessionList = ({ data }) => {

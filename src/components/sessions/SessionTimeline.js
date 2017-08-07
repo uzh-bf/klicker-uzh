@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { Button, Icon } from 'semantic-ui-react'
 
-import QuestionBlock from '../session/QuestionBlock'
+import QuestionBlock from '../questions/QuestionBlock'
 
 const SessionTimeline = ({ blocks, intl }) =>
   (<div className="sessionTimeline">

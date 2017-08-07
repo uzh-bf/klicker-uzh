@@ -4,8 +4,7 @@ import moment from 'moment'
 import { FormattedMessage } from 'react-intl'
 import { Button, Icon } from 'semantic-ui-react'
 
-import QuestionBlock from './QuestionBlock'
-import withCSS from '../../../lib/withCSS'
+import QuestionBlock from '../questions/QuestionBlock'
 
 const Session = ({ createdAt, name, blocks, id, status }) => {
   const statusCases = {
@@ -140,4 +139,4 @@ Session.defaultProps = {
   status: 'created',
 }
 
-export default withCSS(Session, ['segment'])
+export default Session

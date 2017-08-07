@@ -4,14 +4,13 @@
 
 import React from 'react'
 import { storiesOf } from '@storybook/react'
-import { text, boolean, number } from '@storybook/addon-knobs'
+import { boolean, number } from '@storybook/addon-knobs'
 
-import Question from '../src/components/questions/question/Question'
-import Session from '../src/components/sessions/session/Session'
-import QuestionBlock from '../src/components/sessions/session/QuestionBlock'
-import QuestionSingle from '../src/components/sessions/session/QuestionSingle'
-import SessionTimeline from '../src/components/sessions/activeSession/SessionTimeline'
-import { injectIntl } from 'react-intl'
+import Question from '../src/components/questions/Question'
+import Session from '../src/components/sessions/Session'
+import QuestionBlock from '../src/components/questions/QuestionBlock'
+import QuestionSingle from '../src/components/questions/QuestionSingle'
+import SessionTimeline from '../src/components/sessions/SessionTimeline'
 
 import '../node_modules/semantic-ui-css/semantic.min.css'
 import './base.css'
