@@ -6,7 +6,7 @@ import _meanBy from 'lodash/meanBy'
 
 import withCSS from '../../../../lib/withCSS'
 
-const ConfusionBarometer = ({ data, head, intl }) => {
+const ConfusionBarometer = ({ data, head, intl, isActive, onActiveToggle }) => {
   // calculate means for difficulty and comprehensibility
   // TODO: might do this server-side (caching?)
 
@@ -30,33 +30,37 @@ const ConfusionBarometer = ({ data, head, intl }) => {
           defaultMessage: 'Activated',
           id: 'common.string.activated',
         })}
+        value={isActive}
+        onChange={onActiveToggle}
       />
 
-      <div className="confusionSection">
-        {/* TODO: extract these sections into separate components (with graphs etc.) */}
-        <h3>
-          <FormattedMessage
-            defaultMessage="Difficulty"
-            id="runningSession.confusionBarometer.string.difficulty"
-          />
-        </h3>
-        <span>
-          {difficultyAverage}
-        </span>
-      </div>
+      {isActive &&
+        <div className="confusionSection">
+          {/* TODO: extract these sections into separate components (with graphs etc.) */}
+          <h3>
+            <FormattedMessage
+              defaultMessage="Difficulty"
+              id="runningSession.confusionBarometer.string.difficulty"
+            />
+          </h3>
+          <span>
+            {difficultyAverage}
+          </span>
+        </div>}
 
-      <div className="confusionSection">
-        {/* TODO: extract these sections into separate components (with graphs etc.) */}
-        <h3>
-          <FormattedMessage
-            defaultMessage="Verständlichkeit"
-            id="runningSession.confusionBarometer.string.comprehensibility"
-          />
-        </h3>
-        <span>
-          {comprehensibilityAverage}
-        </span>
-      </div>
+      {isActive &&
+        <div className="confusionSection">
+          {/* TODO: extract these sections into separate components (with graphs etc.) */}
+          <h3>
+            <FormattedMessage
+              defaultMessage="Verständlichkeit"
+              id="runningSession.confusionBarometer.string.comprehensibility"
+            />
+          </h3>
+          <span>
+            {comprehensibilityAverage}
+          </span>
+        </div>}
 
       <style jsx>{`
         .confusionBarometer {
@@ -105,6 +109,8 @@ ConfusionBarometer.propTypes = {
   intl: PropTypes.shape({
     formatMessage: PropTypes.func.isRequired,
   }).isRequired,
+  isActive: PropTypes.bool.isRequired,
+  onActiveToggle: PropTypes.func.isRequired,
 }
 
 export default withCSS(ConfusionBarometer, ['checkbox'])

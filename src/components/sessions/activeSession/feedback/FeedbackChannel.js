@@ -7,7 +7,15 @@ import Feedback from './Feedback'
 
 import withCSS from '../../../../lib/withCSS'
 
-const FeedbackChannel = ({ data, head, intl }) =>
+const FeedbackChannel = ({
+  data,
+  head,
+  intl,
+  isActive,
+  isPublic,
+  onActiveToggle,
+  onPublicToggle,
+}) =>
   (<div className="feedbackChannel">
     {head}
 
@@ -25,26 +33,32 @@ const FeedbackChannel = ({ data, head, intl }) =>
           defaultMessage: 'Activated',
           id: 'common.string.activated',
         })}
+        value={isActive}
+        onChange={onActiveToggle}
       />
     </div>
     <div className="toggle publicationToggle">
       <Checkbox
         toggle
         className="publishCheckbox"
+        disabled={!isActive}
         label={intl.formatMessage({
           defaultMessage: 'Publish questions',
           id: 'runningSession.feedbackChannel.string.publishQuestions',
         })}
+        value={isPublic}
+        onChange={onPublicToggle}
       />
     </div>
 
-    <div className="feedbacks">
-      {data.map(({ content, id, votes }) =>
-        (<div className="feedback">
-          <Feedback key={id} content={content} votes={votes} />
-        </div>),
-      )}
-    </div>
+    {isActive &&
+      <div className="feedbacks">
+        {data.map(({ content, id, votes }) =>
+          (<div className="feedback">
+            <Feedback key={id} content={content} votes={votes} />
+          </div>),
+        )}
+      </div>}
 
     <style jsx>{`
       .feedbackChannel {
@@ -109,6 +123,10 @@ FeedbackChannel.propTypes = {
   intl: PropTypes.shape({
     formatMessage: PropTypes.func.isRequired,
   }).isRequired,
+  isActive: PropTypes.bool.isRequired,
+  isPublic: PropTypes.bool.isRequired,
+  onActiveToggle: PropTypes.func.isRequired,
+  onPublicToggle: PropTypes.func.isRequired,
 }
 
 export default withCSS(FeedbackChannel, ['checkbox'])

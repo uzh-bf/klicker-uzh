@@ -17,8 +17,28 @@ class Running extends Component {
     }).isRequired,
   }
 
-  handleSidebarToggle = () => {
-    this.setState({ sidebarVisible: !this.state.sidebarVisible })
+  state = {
+    confusionActive: false,
+    feedbacksActive: false,
+    feedbacksPublic: false,
+  }
+
+  handleConfusionActiveToggle = () => {
+    // TODO: trigger mutation instead of updating state
+    // TODO: trigger refetch and update values
+    this.setState(prevState => ({ confusionActive: !prevState.confusionActive }))
+  }
+
+  handleFeedbacksActiveToggle = () => {
+    // TODO: trigger mutation instead of updating state
+    // TODO: trigger refetch and update values
+    this.setState(prevState => ({ feedbacksActive: !prevState.feedbacksActive }))
+  }
+
+  handleFeedbacksPublicToggle = () => {
+    // TODO: trigger mutation instead of updating state
+    // TODO: trigger refetch and update values
+    this.setState(prevState => ({ feedbacksPublic: !prevState.feedbacksPublic }))
   }
 
   render() {
@@ -40,13 +60,25 @@ class Running extends Component {
       <TeacherLayout intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'runningSession' }}>
         <div className="runningSession">
           <div className="sessionProgress">
-            <SessionTimeline blocks={activeUser.activeSession.blocks} intl={intl} />
+            <SessionTimeline intl={intl} blocks={activeUser.activeSession.blocks} />
           </div>
           <div className="confusionBarometer">
-            <ConfusionBarometer data={activeUser.activeSession.confusion} intl={intl} />
+            <ConfusionBarometer
+              intl={intl}
+              data={activeUser.activeSession.confusion}
+              isActive={this.state.confusionActive}
+              onActiveToggle={this.handleConfusionActiveToggle}
+            />
           </div>
           <div className="feedbackChannel">
-            <FeedbackChannel data={activeUser.activeSession.feedbacks} intl={intl} />
+            <FeedbackChannel
+              intl={intl}
+              data={activeUser.activeSession.feedbacks}
+              isActive={this.state.feedbacksActive}
+              isPublic={this.state.feedbacksPublic}
+              onActiveToggle={this.handleFeedbacksActiveToggle}
+              onPublicToggle={this.handleFeedbacksPublicToggle}
+            />
           </div>
         </div>
 
