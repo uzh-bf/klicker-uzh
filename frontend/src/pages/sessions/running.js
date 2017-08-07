@@ -52,6 +52,14 @@ class Running extends Component {
       }),
     }
 
+    if (data.loading) {
+      return (
+        <TeacherLayout intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'runningSession' }}>
+          Loading
+        </TeacherLayout>
+      )
+    }
+
     // HACK: use the first of all users in the database
     // TODO: replace this with the data of the currently logged in user
     const activeUser = data.allUsers[0]
@@ -104,21 +112,26 @@ class Running extends Component {
             .runningSession {
               flex-flow: row wrap;
 
-              margin: 1rem 6rem;
-              padding: 0;
+              padding: 2rem;
             }
+
+            .sessionProgress,
+            .confusionBarometer,
+            .feedbackChannel {
+              padding: .5rem;
+            }
+
             .sessionProgress {
               flex: 0 0 100%;
-
-              padding: .5rem;
             }
             .confusionBarometer {
               flex: 0 0 30%;
-
-              padding: .5rem;
             }
-            .feedbackChannel {
-              padding: .5rem;
+          }
+
+          @media all and (min-width: 991px) {
+            .runningSession {
+              padding: 2rem 10%;
             }
           }
         `}</style>

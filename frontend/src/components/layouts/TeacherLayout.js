@@ -1,8 +1,6 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-import { Grid } from 'semantic-ui-react'
 
-import Footer from '../common/Footer'
 import Navbar from '../../components/common/navbar/Navbar'
 import Sidebar from '../../components/common/sidebar/Sidebar'
 import initLogging from '../../lib/initLogging'
@@ -10,6 +8,7 @@ import withCSS from '../../lib/withCSS'
 
 class TeacherLayout extends Component {
   static propTypes = {
+    actionButton: PropTypes.node,
     children: PropTypes.node.isRequired,
     head: PropTypes.node.isRequired,
     intl: PropTypes.shape({ formatMessage: PropTypes.func.isRequired }),
@@ -30,6 +29,7 @@ class TeacherLayout extends Component {
   }
 
   static defaultProps = {
+    actionButton: null,
     intl: null,
     navbar: null,
     search: null,
@@ -54,25 +54,32 @@ class TeacherLayout extends Component {
   }
 
   render() {
-    const { children, intl, head, navbar, sidebar } = this.props
+    const { actionButton, children, intl, head, navbar, sidebar } = this.props
 
     return (
-      <Grid padded className="fullHeight">
+      <div className="teacherLayout">
         {head}
 
         {navbar &&
-          <Navbar
-            intl={intl}
-            sidebarVisible={this.state.sidebarVisible}
-            handleSidebarToggle={this.handleSidebarToggle}
-            {...navbar}
-          />}
+          <div className="navbar">
+            <Navbar
+              intl={intl}
+              sidebarVisible={this.state.sidebarVisible}
+              handleSidebarToggle={this.handleSidebarToggle}
+              {...navbar}
+            />
+          </div>}
 
-        <Sidebar visible={this.state.sidebarVisible} {...sidebar}>
-          {children}
-        </Sidebar>
+        <div className="content">
+          <Sidebar visible={this.state.sidebarVisible} {...sidebar}>
+            {children}
+          </Sidebar>
+        </div>
 
-        <Footer />
+        {actionButton &&
+          <div className="actionArea">
+            {actionButton}
+          </div>}
 
         <style jsx global>{`
           * {
@@ -84,11 +91,32 @@ class TeacherLayout extends Component {
             font-size: 14px;
           }
 
-          .noPadding {
-            padding: 0 !important;
+          .noBorder {
+            border: 0 !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
           }
         `}</style>
-      </Grid>
+
+        <style jsx>{`
+          .teacherLayout {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+          }
+
+          .content {
+            display: flex;
+            flex: 1;
+          }
+
+          .actionArea {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+          }
+        `}</style>
+      </div>
     )
   }
 }
@@ -96,5 +124,4 @@ class TeacherLayout extends Component {
 export default withCSS(TeacherLayout, [
   'https://fonts.googleapis.com/css?family=Open Sans',
   'reset',
-  'grid',
 ])

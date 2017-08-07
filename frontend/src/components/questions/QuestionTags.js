@@ -7,7 +7,7 @@ const QuestionTags = ({ tags, type }) =>
       {type}
     </div>
     {tags.map(tag =>
-      (<div className="tag">
+      (<div key={tag.id} className="tag">
         {tag}
       </div>),
     )}
