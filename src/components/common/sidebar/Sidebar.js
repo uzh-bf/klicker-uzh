@@ -15,15 +15,12 @@ const Sidebar = ({ activeItem, children, head, visible }) =>
         vertical
         as={Menu}
         animation="overlay"
+        className="sidebarMenu"
         icon="labeled"
         visible={visible}
         width="wide"
       >
-        <SidebarItem
-          active={activeItem === 'questionPool'}
-          name="questionPool"
-          href="/questions/"
-        >
+        <SidebarItem active={activeItem === 'questionPool'} name="questionPool" href="/questions/">
           <FormattedMessage id="pages.questionPool.title" defaultMessage="Question Pool" />
         </SidebarItem>
 
@@ -48,6 +45,27 @@ const Sidebar = ({ activeItem, children, head, visible }) =>
         {children}
       </SemanticSidebar.Pusher>
     </SemanticSidebar.Pushable>
+
+    <style jsx>{`
+      .sidebar {
+        width: 100%;
+      }
+      :global(.sidebarMenu) {
+        text-align: left;
+        width: 75% !important;
+      }
+      @media all and (min-width: 768px) {
+        :global(.sidebarMenu) {
+          width: 20% !important;
+        }
+      }
+
+      @media all and (min-width: 991px) {
+        :global(.sidebarMenu) {
+          width: 15% !important;
+        }
+      }
+    `}</style>
   </div>)
 
 Sidebar.propTypes = {
