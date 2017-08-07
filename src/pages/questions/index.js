@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-import { Button, Grid } from 'semantic-ui-react'
+import { Button } from 'semantic-ui-react'
 
 import QuestionList from '../../components/questions/QuestionList'
 import TagList from '../../components/questions/TagList'

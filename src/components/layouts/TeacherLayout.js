@@ -124,5 +124,4 @@ class TeacherLayout extends Component {
 export default withCSS(TeacherLayout, [
   'https://fonts.googleapis.com/css?family=Open Sans',
   'reset',
-  'grid',
 ])

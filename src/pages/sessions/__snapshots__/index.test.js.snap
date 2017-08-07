@@ -2,19 +2,23 @@
 
 exports[`Snapshot-Testing Works 1`] = `
 <div
-  className="ui padded grid fullHeight"
+  className="teacherLayout"
+  data-jsx={4268290890}
 >
   <div
-    className="row noPadding"
+    className="navbar"
+    data-jsx={4268290890}
   >
     <div
-      className="column navbar noPadding"
+      className="navbar"
+      data-jsx={210784061}
     >
-      <nav
-        className="ui borderless menu"
+      <div
+        className="sideArea"
+        data-jsx={210784061}
       >
         <div
-          className="menu sideAreaWithSearch"
+          className="ui borderless noBorder menu"
         >
           <a
             className="icon item"
@@ -26,33 +30,38 @@ exports[`Snapshot-Testing Works 1`] = `
             />
           </a>
           <h1
-            className="header navbarTitle"
+            data-jsx={210784061}
           >
             Session History
           </h1>
         </div>
+      </div>
+      <div
+        className="searchArea"
+        data-jsx={210784061}
+      >
         <div
-          className="fitted item searchArea"
-          onClick={[Function]}
+          className="ui fluid icon input"
         >
-          <div
-            className="ui icon input searchField"
-          >
-            <input
-              disabled={undefined}
-              onChange={[Function]}
-              placeholder="Search..."
-              tabIndex={undefined}
-              type="text"
-            />
-            <i
-              aria-hidden="true"
-              className="search icon"
-            />
-          </div>
+          <input
+            disabled={undefined}
+            onChange={[Function]}
+            placeholder="Search..."
+            tabIndex={undefined}
+            type="text"
+          />
+          <i
+            aria-hidden="true"
+            className="search icon"
+          />
         </div>
+      </div>
+      <div
+        className="accountArea"
+        data-jsx={210784061}
+      >
         <div
-          className="menu sideAreaWithSearch"
+          className="ui borderless noBorder menu"
         >
           <div
             className="right menu"
@@ -97,6 +106,7 @@ exports[`Snapshot-Testing Works 1`] = `
               <i
                 aria-hidden="true"
                 className="dropdown icon"
+                onClick={[Function]}
               />
               <div
                 className="menu transition"
@@ -129,20 +139,22 @@ exports[`Snapshot-Testing Works 1`] = `
             </div>
           </div>
         </div>
-      </nav>
+      </div>
     </div>
   </div>
   <div
-    className="row noPadding fullHeight"
+    className="content"
+    data-jsx={4268290890}
   >
     <div
-      className="column noPadding"
+      className="sidebar"
+      data-jsx={1956274513}
     >
       <div
         className="pushable"
       >
         <div
-          className="ui vertical labeled icon ui overlay left wide sidebar menu"
+          className="ui vertical labeled icon ui overlay left wide sidebar sidebarMenu menu"
         >
           <a
             className="item"
@@ -173,34 +185,16 @@ exports[`Snapshot-Testing Works 1`] = `
           className="pusher"
         >
           <div
-            className="ui stackable padded grid"
+            className="sessionHistory"
+            data-jsx={2368156645}
           >
-            <div
-              className="row"
-            >
-              <div
-                className="two wide column"
-              />
-              <div
-                className="twelve wide column"
-              >
-                <div>
-                  Loading
-                </div>
-              </div>
-              <div
-                className="two wide column"
-              />
+            <div>
+              Loading
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-  <footer
-    data-jsx={3236642150}
-  >
-    Klicker 2017 - IBF
-  </footer>
 </div>
 `;

@@ -2,19 +2,23 @@
 
 exports[`Snapshot-Testing Works 1`] = `
 <div
-  className="ui padded grid fullHeight"
+  className="teacherLayout"
+  data-jsx={4268290890}
 >
   <div
-    className="row noPadding"
+    className="navbar"
+    data-jsx={4268290890}
   >
     <div
-      className="column navbar noPadding"
+      className="navbar"
+      data-jsx={210784061}
     >
-      <nav
-        className="ui borderless menu"
+      <div
+        className="sideArea"
+        data-jsx={210784061}
       >
         <div
-          className="menu sideAreaWithoutSearch"
+          className="ui borderless noBorder menu"
         >
           <a
             className="icon item"
@@ -26,13 +30,18 @@ exports[`Snapshot-Testing Works 1`] = `
             />
           </a>
           <h1
-            className="header navbarTitle"
+            data-jsx={210784061}
           >
             Running Session
           </h1>
         </div>
+      </div>
+      <div
+        className="accountArea"
+        data-jsx={210784061}
+      >
         <div
-          className="menu sideAreaWithoutSearch"
+          className="ui borderless noBorder menu"
         >
           <div
             className="right menu"
@@ -77,6 +86,7 @@ exports[`Snapshot-Testing Works 1`] = `
               <i
                 aria-hidden="true"
                 className="dropdown icon"
+                onClick={[Function]}
               />
               <div
                 className="menu transition"
@@ -109,20 +119,22 @@ exports[`Snapshot-Testing Works 1`] = `
             </div>
           </div>
         </div>
-      </nav>
+      </div>
     </div>
   </div>
   <div
-    className="row noPadding fullHeight"
+    className="content"
+    data-jsx={4268290890}
   >
     <div
-      className="column noPadding"
+      className="sidebar"
+      data-jsx={1956274513}
     >
       <div
         className="pushable"
       >
         <div
-          className="ui vertical labeled icon ui overlay left wide sidebar menu"
+          className="ui vertical labeled icon ui overlay left wide sidebar sidebarMenu menu"
         >
           <a
             className="item"
@@ -152,28 +164,10 @@ exports[`Snapshot-Testing Works 1`] = `
         <div
           className="pusher"
         >
-          <div
-            className="ui padded two column grid"
-          >
-            <div
-              className="column"
-            >
-              blebleble
-            </div>
-            <div
-              className="column"
-            >
-              blablabla
-            </div>
-          </div>
+          Loading
         </div>
       </div>
     </div>
   </div>
-  <footer
-    data-jsx={3236642150}
-  >
-    Klicker 2017 - IBF
-  </footer>
 </div>
 `;
