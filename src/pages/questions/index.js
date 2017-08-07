@@ -79,27 +79,68 @@ class Index extends Component {
       <Button
         circular
         primary
-        className={
-          this.state.activeNewButton ? 'actionButton active' : 'actionButton'
-        }
+        className={this.state.activeNewButton ? 'actionButton active' : 'actionButton'}
         icon="plus"
         size="huge"
         onClick={this.handleActiveNewButton}
-      />)
+      />
+    )
 
     return (
-      <TeacherLayout actionButton={actionButton} intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'questionPool' }}>
-        <Grid padded stackable>
-          <Grid.Row>
-            <Grid.Column width="2">
-              <TagList activeTags={this.state.activeTags} handleTagClick={this.handleTagClick} />
-            </Grid.Column>
-            <Grid.Column tablet="14" computer="12">
-              <QuestionList />
-            </Grid.Column>
-            <Grid.Column tablet="none" computer="2" />
-          </Grid.Row>
-        </Grid>
+      <TeacherLayout
+        actionButton={actionButton}
+        intl={intl}
+        navbar={navbarConfig}
+        sidebar={{ activeItem: 'questionPool' }}
+      >
+        <div className="questionPool">
+          <div className="tagList">
+            <TagList activeTags={this.state.activeTags} handleTagClick={this.handleTagClick} />
+          </div>
+          <div className="questionList">
+            <QuestionList />
+          </div>
+        </div>
+
+        <style jsx>{`
+          .questionPool {
+            display: flex;
+            flex-direction: column;
+
+            padding: 1rem;
+          }
+
+          .tagList {
+            flex: 1;
+
+            margin-bottom: 1rem;
+          }
+
+          @media all and (min-width: 768px) {
+            .questionPool {
+              flex-direction: row;
+
+              padding: 2rem;
+            }
+
+            .tagList {
+              flex: 0 0 auto;
+
+              margin: 0;
+              margin-right: 2rem;
+            }
+
+            .questionList {
+              flex: 1;
+            }
+          }
+
+          @media all and (min-width: 991px) {
+            .questionPool {
+              padding: 2rem 10% 2rem 2rem;
+            }
+          }
+        `}</style>
       </TeacherLayout>
     )
   }

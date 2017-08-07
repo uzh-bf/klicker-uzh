@@ -54,15 +54,27 @@ class Index extends Component {
 
     return (
       <TeacherLayout intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'sessionHistory' }}>
-        <Grid padded stackable>
-          <Grid.Row>
-            <Grid.Column width="2" />
-            <Grid.Column width="12">
-              <SessionList intl={intl} />
-            </Grid.Column>
-            <Grid.Column width="2" />
-          </Grid.Row>
-        </Grid>
+        <div className="sessionHistory">
+          <SessionList intl={intl} />
+        </div>
+
+        <style jsx>{`
+          .sessionHistory {
+            padding: 1rem .7rem;
+          }
+
+          @media all and (min-width: 768px) {
+            .sessionHistory {
+              padding: 2rem;
+            }
+          }
+
+          @media all and (min-width: 991px) {
+            .sessionHistory {
+              padding: 2rem 10%;
+            }
+          }
+        `}</style>
       </TeacherLayout>
     )
   }
