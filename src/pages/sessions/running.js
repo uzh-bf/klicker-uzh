@@ -113,13 +113,11 @@ class Running extends Component {
               padding: .5rem;
             }
             .confusionBarometer {
-              flex: 1 1 30%;
+              flex: 0 0 30%;
 
               padding: .5rem;
             }
             .feedbackChannel {
-              flex: 1 1 70%;
-
               padding: .5rem;
             }
           }
