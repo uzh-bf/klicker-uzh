@@ -86,26 +86,29 @@ class TeacherLayout extends Component {
 
         <style jsx>{`
           :global(*) {
-            // TODO: disable rounded corners in semantic itself
-            border-radius: 0 !important;
             font-family: 'Open Sans', sans-serif;
           }
+
+          html,
+          body {
+            font-size: 14px;
+          }
+
           .teacherLayout {
             display: flex;
             flex-direction: column;
             min-height: 100vh;
           }
+
           .content {
             display: flex;
             flex: 1;
           }
+
           .actionArea {
             position: fixed;
             bottom: 2rem;
             right: 2rem;
-          }
-          .actionArea > :global(.actionButton) {
-            border-radius: 10em !important;
           }
         `}</style>
       </div>

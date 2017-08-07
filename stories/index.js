@@ -4,52 +4,42 @@
 
 import React from 'react'
 import { storiesOf } from '@storybook/react'
+import { boolean, number } from '@storybook/addon-knobs'
 
-import Question from '../src/components/questions/question/Question'
-import QuestionSingle from '../src/components/sessions/session/QuestionSingle'
-import QuestionBlock from '../src/components/sessions/session/QuestionBlock'
+import Question from '../src/components/questions/Question'
+import Session from '../src/components/sessions/Session'
+import QuestionBlock from '../src/components/questions/QuestionBlock'
+import QuestionSingle from '../src/components/questions/QuestionSingle'
+import SessionTimeline from '../src/components/sessions/SessionTimeline'
+
 import '../node_modules/semantic-ui-css/semantic.min.css'
 import './base.css'
+import * as fixtures from './fixtures'
 
 storiesOf('Question', module)
-  .add('SC with a single version', () =>
-    (<Question id="1"
-               lastUsed={['2015-02-08 14:32:11', '2016-09-09 15:22:09']}
-               tagList={['CAPM', 'Risk']}
-               title="Hello world" type="SC"
-    />))
-  .add('MC with multiple versions', () =>
-    (<Question id="1" lastUsed={['2017-08-08 14:30:22', '2016-09-09 15:22:09']} tagList={['Beta']} title="Good question"
-               type="MC" version="2"
-    />),
-  )
+  .add('SC with a single version', () => <Question {...fixtures.question} />)
+  .add('MC with multiple versions', () => <Question {...fixtures.question} type="MC" version="2" />)
+  .add('MC without tags', () => <Question {...fixtures.question} tags={[]} type="MC" />)
 
-storiesOf('QuestionSingle', module).add('default', () =>
-  <QuestionSingle id="abc" title="hello world this is a long long question" type="SC" />,
-)
+storiesOf('Session', module).add('default', () => <Session {...fixtures.session} />)
 
 storiesOf('QuestionBlock', module)
   .add('default', () =>
     (<QuestionBlock
-      questions={[
-        {
-          id: 'abcd',
-          title: 'haha',
-          type: 'SC',
-        },
-        {
-          id: 'dhds',
-          title: 'haha 2 asasd',
-          type: 'FREE',
-        },
-        {
-          id: 'dkdj',
-          title: 'lorem ipsum haha',
-          type: 'MC',
-        },
-      ]}
-      showSolutions={false}
-      timeLimit={60}
+      {...fixtures.questionBlock}
+      showSolutions={boolean('showSolutions', false)}
+      timeLimit={number('timeLimit', 60)}
     />),
   )
-  .add('empty', () => <QuestionBlock questions={[]} showSolutions={false} timeLimit={60} />)
+  .add('empty', () =>
+    (<QuestionBlock
+      {...fixtures.questionBlock}
+      questions={[]}
+      showSolutions={boolean('showSolutions', false)}
+      timeLimit={number('timeLimit', 60)}
+    />),
+  )
+
+storiesOf('QuestionSingle', module).add('default', () => <QuestionSingle {...fixtures.question} />)
+
+storiesOf('SessionTimeline', module).add('default', () => <SessionTimeline blocks={[]} />)
