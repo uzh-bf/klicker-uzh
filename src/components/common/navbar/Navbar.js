@@ -45,6 +45,94 @@ class Navbar extends Component {
     } = this.props
 
     return (
+      <div className="navbar">
+        {head}
+
+        <div className="sideArea">
+          <Menu borderless className="noBorder">
+            <Menu.Item icon active={sidebarVisible} name="sidebar" onClick={handleSidebarToggle}>
+              <Icon name="sidebar" />
+            </Menu.Item>
+            <h1>
+              {title}
+            </h1>
+          </Menu>
+        </div>
+
+        <div className="searchArea">
+          {search && <SearchArea intl={intl} handleSearch={search.handleSearch} />}
+        </div>
+
+        <div className="accountArea">
+          <Menu borderless className="noBorder">
+            <Menu.Menu position="right">
+              <SessionArea sessionId={accountShort} />
+              <AccountArea accountShort={accountShort} />
+            </Menu.Menu>
+          </Menu>
+        </div>
+
+        <style jsx>{`
+          :global(.noBorder) {
+            border: 0 !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+          }
+
+          .navbar {
+            display: flex;
+            flex-flow: row wrap;
+
+            border-bottom: 1px solid grey;
+          }
+
+          h1 {
+            font-size: 1.3rem;
+            margin-left: 1rem;
+          }
+
+          .sideArea {
+            order: 0;
+          }
+
+          .searchArea {
+            flex: 1;
+            order: 2;
+
+            padding: 1rem;
+          }
+
+          .accountArea {
+            order: 1;
+          }
+
+          @media all and (min-width: 768px) {
+            .navbar {
+              align-items: center;
+              flex-flow: row nowrap;
+            }
+
+            .sideArea {
+              flex: 1;
+              order: 0;
+            }
+
+            .searchArea {
+              flex: 0 0 50%;
+              order: 1;
+
+              padding: .5rem;
+            }
+
+            .accountArea {
+              flex: 1;
+              order: 2;
+            }
+          }
+        `}</style>
+      </div>
+    )
+    /* return (
       <Grid.Row className="noPadding">
         {head}
 
@@ -93,7 +181,7 @@ class Navbar extends Component {
           `}</style>
         </Grid.Column>
       </Grid.Row>
-    )
+    ) */
   }
 }
 

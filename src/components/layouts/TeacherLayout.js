@@ -1,8 +1,6 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-// import { Grid } from 'semantic-ui-react'
 
-import Footer from '../common/Footer'
 import Navbar from '../../components/common/navbar/Navbar'
 import Sidebar from '../../components/common/sidebar/Sidebar'
 import initLogging from '../../lib/initLogging'
@@ -63,12 +61,14 @@ class TeacherLayout extends Component {
         {head}
 
         {navbar &&
-          <div className="navbar"><Navbar
-            intl={intl}
-            sidebarVisible={this.state.sidebarVisible}
-            handleSidebarToggle={this.handleSidebarToggle}
-            {...navbar}
-          /></div>}
+          <div className="navbar">
+            <Navbar
+              intl={intl}
+              sidebarVisible={this.state.sidebarVisible}
+              handleSidebarToggle={this.handleSidebarToggle}
+              {...navbar}
+            />
+          </div>}
 
         <div className="content">
           <Sidebar visible={this.state.sidebarVisible} {...sidebar}>
@@ -76,16 +76,13 @@ class TeacherLayout extends Component {
           </Sidebar>
         </div>
 
-        {actionButton && <div className="actionArea">
-          {actionButton}
-        </div>}
+        {actionButton &&
+          <div className="actionArea">
+            {actionButton}
+          </div>}
 
-        {/*<div className="footer">
-          <Footer />
-        </div>*/}
-
-        <style jsx>{`
-          :global(*) {
+        <style jsx global>{`
+          * {
             font-family: 'Open Sans', sans-serif;
           }
 
@@ -93,7 +90,9 @@ class TeacherLayout extends Component {
           body {
             font-size: 14px;
           }
+        `}</style>
 
+        <style jsx>{`
           .teacherLayout {
             display: flex;
             flex-direction: column;
