@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-import { Grid, Icon, Menu } from 'semantic-ui-react'
+import { Icon, Menu } from 'semantic-ui-react'
 
 import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'
@@ -45,54 +45,98 @@ class Navbar extends Component {
     } = this.props
 
     return (
-      <Grid.Row className="noPadding">
+      <div className="navbar">
         {head}
 
-        <Grid.Column className="navbar noPadding">
-          <Menu borderless as="nav">
-            <Menu.Menu className={search ? 'sideAreaWithSearch' : 'sideAreaWithoutSearch'}>
-              <Menu.Item icon active={sidebarVisible} name="sidebar" onClick={handleSidebarToggle}>
-                <Icon name="sidebar" />
-              </Menu.Item>
-              <Menu.Header as="h1" className="navbarTitle" content={title} />
-            </Menu.Menu>
+        <div className="sideArea">
+          <Menu borderless className="noBorder">
+            <Menu.Item icon active={sidebarVisible} name="sidebar" onClick={handleSidebarToggle}>
+              <Icon name="sidebar" />
+            </Menu.Item>
+            <h1>
+              {title}
+            </h1>
+          </Menu>
+        </div>
 
-            {search && <SearchArea intl={intl} handleSearch={search.handleSearch} />}
+        {search &&
+          <div className="searchArea">
+            <SearchArea intl={intl} handleSearch={search.handleSearch} />
+          </div>}
 
-            <Menu.Menu className={search ? 'sideAreaWithSearch' : 'sideAreaWithoutSearch'}>
-              <Menu.Menu position="right">
-                <SessionArea sessionId={accountShort} />
-                <AccountArea accountShort={accountShort} />
-              </Menu.Menu>
+        <div className="accountArea">
+          <Menu borderless className="noBorder">
+            <Menu.Menu position="right">
+              <SessionArea sessionId={accountShort} />
+              <AccountArea accountShort={accountShort} />
             </Menu.Menu>
           </Menu>
+        </div>
 
-          <style jsx global>{`
-            .navbarTitle {
-              font-size: 1.3rem;
-              margin-left: 1rem;
+        <style jsx>{`
+          .navbar {
+            display: flex;
+            align-items: center;
+            flex-flow: row wrap;
+            justify-content: space-between;
+
+            border-bottom: 1px solid lightgrey;
+          }
+
+          h1 {
+            // TODO: optimize font sizes
+            font-size: 1.3rem;
+            margin-left: 1rem;
+          }
+
+          .sideArea {
+            flex: 1;
+            order: 0;
+          }
+
+          .searchArea {
+            flex: 0 0 100%;
+            order: 1;
+
+            padding: 1rem;
+            padding-top: .5rem;
+          }
+
+          .accountArea {
+            display: none;
+          }
+
+          @media all and (min-width: 768px) {
+            .navbar {
+              flex-wrap: nowrap;
             }
 
-            .popup.sessionArea {
-              margin-top: 0 !important;
+            .sideArea {
+              flex: 0 0 auto;
             }
 
             .searchArea {
-              border: none;
-              text-align: center;
-              width: 50%;
+              flex: 1 1 50%;
+              order: 1;
+
+              padding: .5rem 2rem;
             }
 
-            .sideAreaWithSearch {
-              width: 25%;
-            }
+            .accountArea {
+              flex: 0 0 auto;
+              order: 2;
 
-            .sideAreaWithoutSearch {
-              width: 50%;
+              display: block;
             }
-          `}</style>
-        </Grid.Column>
-      </Grid.Row>
+          }
+
+          @media all and (min-width: 991px) {
+            .searchArea {
+              padding: .5rem 3rem;
+            }
+          }
+        `}</style>
+      </div>
     )
   }
 }

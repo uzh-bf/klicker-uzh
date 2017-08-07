@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-import { Button, Grid } from 'semantic-ui-react'
+import { Button } from 'semantic-ui-react'
 
 import QuestionList from '../../components/questions/QuestionList'
 import TagList from '../../components/questions/TagList'
@@ -23,6 +23,7 @@ class Index extends Component {
 
   // handling the state of the new course button
   handleActiveNewButton = () => {
+    console.dir('hello world')
     this.setState({ activeNewButton: !this.state.activeNewButton })
   }
 
@@ -74,46 +75,70 @@ class Index extends Component {
       }),
     }
 
+    const actionButton = (
+      <Button
+        circular
+        primary
+        className={this.state.activeNewButton ? 'actionButton active' : 'actionButton'}
+        icon="plus"
+        size="huge"
+        onClick={this.handleActiveNewButton}
+      />
+    )
+
     return (
-      <TeacherLayout intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'questionPool' }}>
-        <Grid padded stackable>
-          <Grid.Row>
-            <Grid.Column stretched width="2">
-              <TagList activeTags={this.state.activeTags} handleTagClick={this.handleTagClick} />
-            </Grid.Column>
-            <Grid.Column stretched width="12">
-              <QuestionList />
-            </Grid.Column>
-            <Grid.Column stretched textAlign="right" verticalAlign="bottom" width="2">
-              {/* TODO correct position of button */}
-              {this.state.activeNewButton &&
-                <div>
-                  <p>Session starten</p>
-                  <p>Frage erstellen</p>
-                </div>}
-              <div>
-                <Button
-                  circular
-                  primary
-                  className={
-                    this.state.activeNewButton ? 'actionButton actionButtonActive' : 'actionButton'
-                  }
-                  icon="plus"
-                  size="large"
-                  onClick={this.handleActiveNewButton}
-                />
-              </div>
-            </Grid.Column>
-          </Grid.Row>
-        </Grid>
+      <TeacherLayout
+        actionButton={actionButton}
+        intl={intl}
+        navbar={navbarConfig}
+        sidebar={{ activeItem: 'questionPool' }}
+      >
+        <div className="questionPool">
+          <div className="tagList">
+            <TagList activeTags={this.state.activeTags} handleTagClick={this.handleTagClick} />
+          </div>
+          <div className="questionList">
+            <QuestionList />
+          </div>
+        </div>
 
         <style jsx>{`
-          :global(.actionButton) {
-            border-radius: 10em !important;
+          .questionPool {
+            display: flex;
+            flex-direction: column;
+
+            padding: 1rem;
           }
-          :global(.actionButtonActive) {
-            transition: transform 0.5s;
-            transform: rotate(45deg);
+
+          .tagList {
+            flex: 1;
+
+            margin-bottom: 1rem;
+          }
+
+          @media all and (min-width: 768px) {
+            .questionPool {
+              flex-direction: row;
+
+              padding: 2rem;
+            }
+
+            .tagList {
+              flex: 0 0 auto;
+
+              margin: 0;
+              margin-right: 2rem;
+            }
+
+            .questionList {
+              flex: 1;
+            }
+          }
+
+          @media all and (min-width: 991px) {
+            .questionPool {
+              padding: 2rem 10% 2rem 2rem;
+            }
           }
         `}</style>
       </TeacherLayout>
