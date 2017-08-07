@@ -48,13 +48,6 @@ const Sidebar = ({ activeItem, children, head, visible }) =>
         {children}
       </SemanticSidebar.Pusher>
     </SemanticSidebar.Pushable>
-
-    <style jsx>{`
-      {/* HACK: this depends on styling in TeacherLayout, which is suboptimal */}
-      .sidebar {
-        flex: 1;
-      }
-    `}</style>
   </div>)
 
 Sidebar.propTypes = {
