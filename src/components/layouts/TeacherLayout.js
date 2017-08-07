@@ -90,6 +90,12 @@ class TeacherLayout extends Component {
           body {
             font-size: 14px;
           }
+
+          .noBorder {
+            border: 0 !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+          }
         `}</style>
 
         <style jsx>{`
