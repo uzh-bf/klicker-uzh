@@ -3,7 +3,7 @@
 [include]
 
 [libs]
-types/
+flow-typed/
 
 [options]
 module.ignore_non_literal_requires=true
