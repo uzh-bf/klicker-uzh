@@ -35,4 +35,4 @@ jobs:
       script:
         - docker login -u$QUAY_USER -p$QUAY_TOKEN quay.io/uzh-bf/klicker-react
         - if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then bash -c "docker pull quay.io/uzh-bf/klicker-react:latest;docker build --cache-from quay.io/uzh-bf/klicker-react:latest -t quay.io/uzh-bf/klicker-react:latest .;docker push quay.io/uzh-bf/klicker-react:latest"; fi
-        - if [ "$TRAVIS_PULL_REQUEST" = "true" ]; then bash -c "docker pull quay.io/uzh-bf/klicker-react:nightly;docker build --cache-from quay.io/uzh-bf/klicker-react:nightly -t quay.io/uzh-bf/klicker-react:nightly .;docker push quay.io/uzh-bf/klicker-react:nightly"; fi
+        - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then bash -c "docker build --cache-from quay.io/uzh-bf/klicker-react:nightly -t quay.io/uzh-bf/klicker-react:nightly .;docker push quay.io/uzh-bf/klicker-react:nightly"; fi
