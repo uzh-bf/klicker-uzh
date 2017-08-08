@@ -17,9 +17,10 @@ type Props = {
     }>,
     status: string,
   }>,
+  intl: $IntlShape,
 }
 
-const SessionTimeline = ({ blocks }: Props) =>
+const SessionTimeline = ({ blocks, intl }: Props) =>
   (<div className="sessionTimeline">
     <div className="topRow">
       <div className="startingTime">
