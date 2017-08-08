@@ -32,7 +32,7 @@
         ]
       }
     ],
-    "react/no-unused-prop-types": 1
+    "react/no-unused-prop-types": 0
   },
   "env": {
     "browser": true,
