@@ -25,7 +25,16 @@ class ActiveQuestion extends Component {
           id: 'student.activeQuestion.title',
         })}
       >
-        <div>hello world</div>
+        <div className="activeQuestion">
+          hello world
+        </div>
+
+        <style jsx>{`
+          .activeQuestion {
+            display: flex;
+            flex-direction: column;
+          }
+        `}</style>
       </StudentLayout>
     )
   }

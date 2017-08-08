@@ -25,7 +25,16 @@ class FeedbackChannel extends Component {
           id: 'student.feedbackChannel.title',
         })}
       >
-        <div>hello world</div>
+        <div className="feedbackChannel">
+          hello world
+        </div>
+
+        <style jsx>{`
+          .feedbackChannel {
+            display: flex;
+            flex-direction: column;
+          }
+        `}</style>
       </StudentLayout>
     )
   }
