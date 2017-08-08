@@ -74,6 +74,10 @@ class ActiveQuestion extends Component {
             flex-direction: column;
           }
 
+          .contentCollapsed, .contentExtended {
+            transition: linear max-height 1s 1s;
+          }
+
           .content {
             line-height: 1.2rem;
             margin: .5rem;
@@ -91,12 +95,15 @@ class ActiveQuestion extends Component {
 
           .contentCollapsed {
             flex: 1;
+
             max-height: 4.2rem;
             overflow: hidden;
           }
 
           .contentExtended {
             flex: 0 0 auto;
+
+            max-height: 100%;
           }
 
           .collapser {
