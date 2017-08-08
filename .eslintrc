@@ -19,7 +19,20 @@
         "shorthandFirst": true
       }
     ],
-    "sort-keys": 1
+    "sort-keys": 1,
+    "react/sort-comp": [
+      2,
+      {
+        "order": [
+          "type-annotations",
+          "static-methods",
+          "lifecycle",
+          "everything-else",
+          "render"
+        ]
+      }
+    ],
+    "react/no-unused-prop-types": 1
   },
   "env": {
     "browser": true,
