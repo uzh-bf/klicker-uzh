@@ -1,0 +1,148 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Snapshot-Testing Works 1`] = `
+<div
+  className="studentLayout"
+  data-jsx={3724175818}
+>
+  <div
+    className="header"
+    data-jsx={3724175818}
+  >
+    <button
+      className="ui basic icon button"
+      disabled={undefined}
+      onClick={[Function]}
+      tabIndex={undefined}
+    >
+      <i
+        aria-hidden="true"
+        className="content icon"
+      />
+    </button>
+    <h1
+      data-jsx={3724175818}
+    >
+      Active Question
+    </h1>
+  </div>
+  <div
+    className="content"
+    data-jsx={3724175818}
+  >
+    <div
+      className="sidebar"
+      data-jsx={3743778143}
+    >
+      <div
+        className="pushable"
+      >
+        <div
+          className="ui vertical labeled icon ui overlay left wide sidebar sidebarMenu menu"
+        >
+          <a
+            className="active item"
+            onClick={[Function]}
+          >
+            <span>
+              Active Question
+            </span>
+          </a>
+          <a
+            className="item"
+            onClick={[Function]}
+          >
+            <span>
+              Feedback-Channel
+            </span>
+          </a>
+        </div>
+        <div
+          className="pusher"
+        >
+          <div
+            className="activeQuestion"
+            data-jsx={124049965}
+          >
+            <div
+              className="content contentCollapsed"
+              data-jsx={124049965}
+            >
+              <p
+                data-jsx={124049965}
+              >
+                hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
+              </p>
+              <p
+                data-jsx={124049965}
+              >
+                wow, is this a long question. i could never have imagined seeing such a question.
+              </p>
+            </div>
+            <div
+              className="collapser"
+              data-jsx={124049965}
+            >
+              <i
+                aria-hidden="true"
+                className="angle double down icon"
+                onClick={[Function]}
+              />
+            </div>
+            <div
+              className="answers"
+              data-jsx={124049965}
+            >
+              <button
+                className="ui basic fluid button option"
+                disabled={undefined}
+                onClick={[Function]}
+                tabIndex={undefined}
+              >
+                answer 1
+              </button>
+              <button
+                className="ui basic fluid button option"
+                disabled={undefined}
+                onClick={[Function]}
+                tabIndex={undefined}
+              >
+                answer two
+              </button>
+              <button
+                className="ui basic fluid button option"
+                disabled={undefined}
+                onClick={[Function]}
+                tabIndex={undefined}
+              >
+                dritte antwort
+              </button>
+              <button
+                className="ui basic fluid button option"
+                disabled={undefined}
+                onClick={[Function]}
+                tabIndex={undefined}
+              >
+                fourth option
+              </button>
+            </div>
+            <div
+              className="actionArea"
+              data-jsx={124049965}
+            >
+              <button
+                className="ui primary button submitButton"
+                disabled={undefined}
+                onClick={[Function]}
+                tabIndex={undefined}
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
