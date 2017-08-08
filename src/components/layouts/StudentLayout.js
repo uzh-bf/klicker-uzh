@@ -1,7 +1,11 @@
 // @flow
 
 import React, { Component } from 'react'
+import Router from 'next/router'
+import { FormattedMessage } from 'react-intl'
+import { Button } from 'semantic-ui-react'
 
+import Sidebar from '../common/sidebar/Sidebar'
 import initLogging from '../../lib/initLogging'
 import withCSS from '../../lib/withCSS'
 
@@ -9,39 +13,87 @@ class StudentLayout extends Component {
   props: {
     children: any,
     head: 'next/head',
+    sidebar: {
+      activeItem: string,
+    },
+    title: string,
   }
 
   static defaultProps = {}
 
-  state = {}
+  state = {
+    sidebarVisible: false,
+  }
 
   componentWillMount() {
     // initialize sentry and logrocket (if appropriately configured)
     initLogging()
   }
 
+  handleSidebarItemClick = href => () => {
+    Router.push(href)
+  }
+
+  handleSidebarToggle = () => {
+    this.setState(prevState => ({ sidebarVisible: !prevState.sidebarVisible }))
+  }
+
   render() {
-    const { children, head } = this.props
+    const { children, head, sidebar, title } = this.props
+
+    const sidebarItems = [
+      {
+        href: '/student/activeQuestion',
+        label: (
+          <FormattedMessage id="student.sidebar.activeQuestion" defaultMessage="Active Question" />
+        ),
+        name: 'activeQuestion',
+      },
+      {
+        href: '/student/feedbackChannel',
+        label: (
+          <FormattedMessage
+            id="student.sidebar.feedbackChannel"
+            defaultMessage="Feedback-Channel"
+          />
+        ),
+        name: 'feedbackChannel',
+      },
+    ]
 
     return (
       <div className="studentLayout">
         {head}
 
         <div className="header">
-          <button>hello</button>
+          <Button basic icon="content" onClick={this.handleSidebarToggle} />
+          <h1>
+            {title}
+          </h1>
         </div>
 
         <div className="content">
-          {children}
+          <Sidebar
+            items={sidebarItems}
+            visible={this.state.sidebarVisible}
+            handleSidebarItemClick={this.handleSidebarItemClick}
+            {...sidebar}
+          >
+            {children}
+          </Sidebar>
         </div>
 
         <style jsx global>{`
           * {
             font-family: 'Open Sans', sans-serif;
           }
-          html,
-          body {
+
+          html {
             font-size: 16px;
+          }
+
+          body {
+            font-size: 1rem;
           }
         `}</style>
 
@@ -49,16 +101,30 @@ class StudentLayout extends Component {
           .studentLayout {
             display: flex;
             flex-direction: column;
+
             min-height: 100vh;
           }
+
           .header {
+            flex: 0 0 auto;
+
             display: flex;
-            background-color: lightgrey;
-            padding: 1rem;
+            align-items: center;
+
+            border-bottom: 1px solid lightgrey;
+            padding: .5rem;
           }
+
+          .header > h1 {
+            font-size: 1.5rem;
+            margin: 0;
+            margin-left: 1rem;
+          }
+
           .content {
-            display: flex;
             flex: 1;
+
+            display: flex;
           }
         `}</style>
       </div>
@@ -69,4 +135,8 @@ class StudentLayout extends Component {
 export default withCSS(StudentLayout, [
   'https://fonts.googleapis.com/css?family=Open Sans',
   'reset',
+  'button',
+  'icon',
+  'menu',
+  'sidebar',
 ])
