@@ -9,6 +9,7 @@ type Props = {
   blocks: Array<{
     id: string,
     questions: Array<{
+      id: string,
       questionDefinition: {
         title: string,
         type: string,
@@ -16,10 +17,9 @@ type Props = {
     }>,
     status: string,
   }>,
-  intl: $IntlShape,
 }
 
-const SessionTimeline = ({ blocks, intl }: Props) =>
+const SessionTimeline = ({ blocks }: Props) =>
   (<div className="sessionTimeline">
     <div className="topRow">
       <div className="startingTime">

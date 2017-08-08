@@ -6,7 +6,6 @@ import QuestionDetails from './QuestionDetails'
 import QuestionTags from './QuestionTags'
 
 type Props = {
-  head: 'next/head',
   id: string,
   lastUsed: Array<string>,
   tags: Array<string>,
@@ -21,10 +20,8 @@ const defaultProps = {
   version: 1,
 }
 
-const Question = ({ head, id, lastUsed, tags, title, type, version }: Props) =>
+const Question = ({ id, lastUsed, tags, title, type, version }: Props) =>
   (<div className="container">
-    {head}
-
     <h2 className="title">
       #{id.substring(0, 7)} - {title} {version > 1 && `(v${version})`}
     </h2>

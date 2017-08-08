@@ -87,6 +87,7 @@ type SessionListType = {
   sessions: Array<{
     id: string,
     name: string,
+    status: string,
     blocks: Array<{
       id: string,
       showSolutions: boolean,
@@ -108,6 +109,7 @@ const SessionListQuery = gql`
     sessions: allSessions(orderBy: updatedAt_DESC) {
       id
       name
+      status
       blocks {
         id
         showSolutions

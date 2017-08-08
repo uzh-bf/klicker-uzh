@@ -8,8 +8,6 @@ import { Button, Icon } from 'semantic-ui-react'
 import QuestionBlock from '../questions/QuestionBlock'
 
 type Props = {
-  createdAt: string,
-  name: string,
   blocks: Array<{
     id: string,
     questions: Array<{
@@ -22,7 +20,9 @@ type Props = {
     showSolutions: boolean,
     timeLimit: number,
   }>,
+  createdAt: string,
   id: string,
+  name: string,
   status: string,
 }
 

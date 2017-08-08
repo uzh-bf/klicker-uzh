@@ -39,6 +39,7 @@ const QuestionList = ({ data }: Props) => {
               tags={question.tags.map(tag => tag.name)}
               title={question.title}
               type={question.type}
+              version={question.versions.length}
             />
           }
         </div>),
