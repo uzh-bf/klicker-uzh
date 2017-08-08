@@ -6,22 +6,20 @@ import { List } from 'semantic-ui-react'
 
 import withCSS from '../../lib/withCSS'
 import { TagListQuery } from '../../queries/queries'
+import type { TagListType } from '../../queries/queries'
 
 type Props = {
-  activeTags?: Array<string>,
-  data: {
-    loading: boolean,
-    error: string,
-    tags: Array<{
-      id: string,
-      name: string,
-    }>
-  },
+  activeTags: Array<string>,
+  data: TagListType,
   head: 'next/head',
   handleTagClick: () => mixed,
 }
 
-const TagList = ({ activeTags = [], data, head, handleTagClick }: Props) => {
+const defaultProps = {
+  activeTags: [],
+}
+
+const TagList = ({ activeTags, data, head, handleTagClick }: Props) => {
   if (data.loading) {
     return <div>Loading</div>
   }
@@ -35,7 +33,7 @@ const TagList = ({ activeTags = [], data, head, handleTagClick }: Props) => {
       {head}
 
       {data.tags.map((tag) => {
-        const isActive = activeTags.includes(tag.id)
+        const isActive = activeTags.length > 0 && activeTags.includes(tag.id)
 
         return (
           <List.Item key={tag.id} className="listItem" onClick={() => handleTagClick(tag.id)}>
@@ -57,5 +55,7 @@ const TagList = ({ activeTags = [], data, head, handleTagClick }: Props) => {
     </List>
   )
 }
+
+TagList.defaultProps = defaultProps
 
 export default graphql(TagListQuery)(withCSS(TagList, ['list']))

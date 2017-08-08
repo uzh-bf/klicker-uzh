@@ -1,29 +1,14 @@
+// @flow
+
 import React from 'react'
 import { graphql } from 'react-apollo'
 
 import Session from './Session'
 import { SessionListQuery } from '../../queries/queries'
+import type { SessionListType } from '../../queries/queries'
 
 type Props = {
-  data: {
-    sessions: Array<{
-      blocks: Array<{
-        id: string,
-        questions: Array<{
-          id: string,
-          questionDefinition: {
-            title: string,
-            type: string,
-          }
-        }>
-      }>,
-      createdAt: string,
-      id: string,
-      name: string,
-      status: string,
-      updatedAt: string,
-    }>
-  }
+  data: SessionListType,
 }
 
 const SessionList = ({ data }: Props) => {
@@ -32,7 +17,11 @@ const SessionList = ({ data }: Props) => {
   }
 
   if (data.error) {
-    return <div>{data.error}</div>
+    return (
+      <div>
+        {data.error}
+      </div>
+    )
   }
 
   return (

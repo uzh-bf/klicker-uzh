@@ -8,14 +8,20 @@ import QuestionTags from './QuestionTags'
 type Props = {
   head: 'next/head',
   id: string,
-  lastUsed?: Array<string>,
-  tags?: Array<string>,
+  lastUsed: Array<string>,
+  tags: Array<string>,
   title: string,
   type: string,
-  version?: number,
+  version: number,
 }
 
-const Question = ({ head, id, lastUsed = [], tags = [], title, type, version = 1 }: Props) =>
+const defaultProps = {
+  lastUsed: [],
+  tags: [],
+  version: 1,
+}
+
+const Question = ({ head, id, lastUsed, tags, title, type, version }: Props) =>
   (<div className="container">
     {head}
 
@@ -59,5 +65,7 @@ const Question = ({ head, id, lastUsed = [], tags = [], title, type, version = 1
       }
     `}</style>
   </div>)
+
+Question.defaultProps = defaultProps
 
 export default Question

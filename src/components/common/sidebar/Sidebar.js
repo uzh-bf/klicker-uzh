@@ -1,12 +1,24 @@
+// @flow
+
 import React from 'react'
-import PropTypes from 'prop-types'
 import { Menu, Sidebar as SemanticSidebar } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 import SidebarItem from './SidebarItem'
 import withCSS from '../../../lib/withCSS'
 
-const Sidebar = ({ activeItem, children, head, visible }) =>
+type Props = {
+  activeItem: string,
+  children: any,
+  head: 'next/head',
+  visible: boolean,
+}
+
+const defaultProps = {
+  activeItem: 'questionPool',
+}
+
+const Sidebar = ({ activeItem, children, head, visible }: Props) =>
   (<div className="sidebar">
     {head}
 
@@ -68,15 +80,6 @@ const Sidebar = ({ activeItem, children, head, visible }) =>
     `}</style>
   </div>)
 
-Sidebar.propTypes = {
-  activeItem: PropTypes.string,
-  children: PropTypes.node.isRequired,
-  head: PropTypes.node.isRequired,
-  visible: PropTypes.bool.isRequired,
-}
-
-Sidebar.defaultProps = {
-  activeItem: 'questionPool',
-}
+Sidebar.defaultProps = defaultProps
 
 export default withCSS(Sidebar, ['menu', 'sidebar'])

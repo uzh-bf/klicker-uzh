@@ -7,7 +7,6 @@ import { Button, Icon } from 'semantic-ui-react'
 
 import QuestionBlock from '../questions/QuestionBlock'
 
-
 type Props = {
   createdAt: string,
   name: string,
@@ -18,16 +17,20 @@ type Props = {
       questionDefinition: {
         title: string,
         type: string,
-      }
+      },
     }>,
     showSolutions: boolean,
     timeLimit: number,
   }>,
   id: string,
-  status?: string,
+  status: string,
 }
 
-const Session = ({ createdAt, name, blocks, id, status = 'created' }: Props) => {
+const defaultProps = {
+  status: 'created',
+}
+
+const Session = ({ createdAt, name, blocks, id, status }: Props) => {
   const statusCases = {
     completed: {
       disabled: false,
@@ -133,5 +136,7 @@ const Session = ({ createdAt, name, blocks, id, status = 'created' }: Props) => 
     </div>
   )
 }
+
+Session.defaultProps = defaultProps
 
 export default Session

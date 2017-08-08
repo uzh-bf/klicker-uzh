@@ -1,7 +1,13 @@
-import React from 'react'
-import PropTypes from 'prop-types'
+// @flow
 
-const ListWithHeader = ({ children, items }) =>
+import React from 'react'
+
+type Props = {
+  children: any,
+  items: Array<string>,
+}
+
+const ListWithHeader = ({ children, items }: Props) =>
   (<div>
     <h3 className="listHeader">
       {children}
@@ -29,10 +35,5 @@ const ListWithHeader = ({ children, items }) =>
       }
     `}</style>
   </div>)
-
-ListWithHeader.propTypes = {
-  children: PropTypes.node.isRequired,
-  items: PropTypes.arrayOf(PropTypes.string).isRequired,
-}
 
 export default ListWithHeader

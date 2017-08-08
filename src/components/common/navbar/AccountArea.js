@@ -1,9 +1,14 @@
+// @flow
+
 import React from 'react'
-import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 import { Dropdown } from 'semantic-ui-react'
 
-const AccountArea = ({ accountShort }) =>
+type Props = {
+  accountShort: string,
+}
+
+const AccountArea = ({ accountShort }: Props) =>
   (<Dropdown item simple text={accountShort}>
     <Dropdown.Menu>
       <Dropdown.Item>
@@ -14,9 +19,5 @@ const AccountArea = ({ accountShort }) =>
       </Dropdown.Item>
     </Dropdown.Menu>
   </Dropdown>)
-
-AccountArea.propTypes = {
-  accountShort: PropTypes.string.isRequired,
-}
 
 export default AccountArea

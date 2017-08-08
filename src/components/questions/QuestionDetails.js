@@ -6,10 +6,14 @@ import { FormattedMessage } from 'react-intl'
 import ListWithHeader from '../common/ListWithHeader'
 
 type Props = {
-  lastUsed?: Array<string>,
+  lastUsed: Array<string>,
 }
 
-const QuestionDetails = ({ lastUsed = [] }: Props) =>
+const defaultProps = {
+  lastUsed: [],
+}
+
+const QuestionDetails = ({ lastUsed }: Props) =>
   (<div className="container">
     <div className="column">Test1</div>
     <div className="column">Test2</div>
@@ -49,5 +53,7 @@ const QuestionDetails = ({ lastUsed = [] }: Props) =>
       }
     `}</style>
   </div>)
+
+QuestionDetails.defaultProps = defaultProps
 
 export default QuestionDetails

@@ -1,5 +1,6 @@
+// @flow
+
 import React, { Component } from 'react'
-import PropTypes from 'prop-types'
 
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import pageWithIntl from '../../lib/pageWithIntl'
@@ -7,23 +8,15 @@ import SessionList from '../../components/sessions/SessionList'
 import withData from '../../lib/withData'
 
 class Index extends Component {
-  static propTypes = {
-    intl: PropTypes.shape({
-      formatMessage: PropTypes.func.isRequired,
-    }).isRequired,
+  props: {
+    intl: $IntlShape,
   }
 
   state = {
-    searched: 0,
-    sidebarActive: 'pool',
     sidebarVisible: false,
   }
 
   handleSearch = () => {
-    this.setState(prevState => ({
-      searched: prevState.searched + 1,
-    }))
-
     console.log('searched...')
   }
 

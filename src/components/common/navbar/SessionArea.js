@@ -1,9 +1,14 @@
+// @flow
+
 import React from 'react'
-import PropTypes from 'prop-types'
 import { Button, Divider, Icon, Image, Menu, Popup } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
-const SessionArea = ({ sessionId }) => {
+type Props = {
+  sessionId: string,
+}
+
+const SessionArea = ({ sessionId }: Props) => {
   const popupTrigger = (
     <Menu.Item name="session">
       /sessions/{sessionId} <Icon name="qrcode" />
@@ -33,10 +38,6 @@ const SessionArea = ({ sessionId }) => {
       </Popup.Content>
     </Popup>
   )
-}
-
-SessionArea.propTypes = {
-  sessionId: PropTypes.string.isRequired,
 }
 
 export default SessionArea

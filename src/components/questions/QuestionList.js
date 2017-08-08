@@ -6,24 +6,10 @@ import { graphql } from 'react-apollo'
 
 import Question from './Question'
 import { QuestionListQuery } from '../../queries/queries'
+import type { QuestionListType } from '../../queries/queries'
 
 type Props = {
-  data: {
-    loading: boolean,
-    error: string,
-    questions: Array<{
-      id: string,
-      instances: Array<{
-        createdAt: Date,
-      }>,
-      tags: Array<{
-        id: string,
-        name: string,
-      }>,
-      title: string,
-      type: string,
-    }>,
-  },
+  data: QuestionListType,
 }
 
 const QuestionList = ({ data }: Props) => {

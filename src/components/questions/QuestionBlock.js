@@ -6,33 +6,30 @@ import { Icon } from 'semantic-ui-react'
 import QuestionSingle from './QuestionSingle'
 
 type Props = {
-  questions?: Array<{
+  questions: Array<{
     id: string,
     title: string,
     type: string,
   }>,
-  showSolutions?: boolean,
-  status?: string,
-  timeLimit?: number,
+  showSolutions: boolean,
+  timeLimit: number,
 }
 
-const QuestionBlock = ({ questions = [], showSolutions = false, status, timeLimit }: Props) =>
+const defaultProps = {
+  questions: [],
+  showSolutions: false,
+  timeLimit: 0,
+}
+
+const QuestionBlock = ({ questions, showSolutions, timeLimit }: Props) =>
   (<div className="questionBlock">
-    {status
-      ? <div className="timeLimit">
-        {status}
-      </div>
-      : <div className="timeLimit">
-        <Icon name="clock" />
-        {timeLimit}s
-        </div>}
-    {status
-      ? <div className="showSolution">
-        {status}
-      </div>
-      : <div className="showSolution">
-        <Icon name={showSolutions ? 'unhide' : 'hide'} />
-      </div>}
+    <div className="timeLimit">
+      <Icon name="clock" />
+      {timeLimit}s
+    </div>
+    <div className="showSolution">
+      <Icon name={showSolutions ? 'unhide' : 'hide'} />
+    </div>
     <div className="questions">
       {questions.map(({ id, title, type }) =>
         (<div className="question">
@@ -40,7 +37,6 @@ const QuestionBlock = ({ questions = [], showSolutions = false, status, timeLimi
         </div>),
       )}
     </div>
-
     <style jsx>{`
       .questionBlock,
       .questions {
@@ -73,5 +69,7 @@ const QuestionBlock = ({ questions = [], showSolutions = false, status, timeLimi
       }
     `}</style>
   </div>)
+
+QuestionBlock.defaultProps = defaultProps
 
 export default QuestionBlock
