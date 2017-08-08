@@ -23,26 +23,26 @@ type Props = {
   createdAt: string,
   id: string,
   name: string,
-  status: string,
+  status: 'CREATED' | 'RUNNING' | 'COMPLETED',
 }
 
 const defaultProps = {
-  status: 'created',
+  status: 'CREATED',
 }
 
 const Session = ({ createdAt, name, blocks, id, status }: Props) => {
   const statusCases = {
-    completed: {
+    COMPLETED: {
       disabled: false,
       icon: 'copy',
       message: <FormattedMessage id="session.button.completed.content" defaultMessage="Copy" />,
     },
-    created: {
+    CREATED: {
       disabled: false,
       icon: 'play',
       message: <FormattedMessage id="session.button.created.content" defaultMessage="Start" />,
     },
-    running: {
+    RUNNING: {
       disabled: true,
       icon: 'play',
       message: <FormattedMessage id="session.button.running.content" defaultMessage="Running" />,
