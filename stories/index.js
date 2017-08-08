@@ -1,4 +1,3 @@
-// @flow
 /* eslint-disable import/no-extraneous-dependencies, import/no-unresolved, import/extensions */
 /* eslint-disable react/jsx-max-props-per-line, react/jsx-indent-props */
 /* eslint-disable react/jsx-first-prop-new-line */
@@ -16,6 +15,11 @@ import SessionTimeline from '../src/components/sessions/SessionTimeline'
 import '../node_modules/semantic-ui-css/semantic.min.css'
 import './base.css'
 import * as fixtures from './fixtures'
+
+// mock the intl function
+const intl = {
+  formatMessage: ({ defaultMessage }) => defaultMessage,
+}
 
 storiesOf('Question', module)
   .add('SC with a single version', () => <Question {...fixtures.question} />)
@@ -43,4 +47,4 @@ storiesOf('QuestionBlock', module)
 
 storiesOf('QuestionSingle', module).add('default', () => <QuestionSingle {...fixtures.question} />)
 
-storiesOf('SessionTimeline', module).add('default', () => <SessionTimeline blocks={[]} />)
+storiesOf('SessionTimeline', module).add('default', () => <SessionTimeline blocks={[]} intl={intl} />)
