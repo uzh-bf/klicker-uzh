@@ -5,17 +5,24 @@ import { Button } from 'semantic-ui-react'
 
 type Props = {
   content: string,
-  votes: number
+  showDelete: boolean,
+  votes: number,
 }
 
-const Feedback = ({ content, votes }: Props) =>
+const defaultProps = {
+  showDelete: true,
+}
+
+const Feedback = ({ content, showDelete, votes }: Props) =>
   (<div className="feedback">
     <div className="content">
       {content}
     </div>
-    <div className="delete">
-      <Button basic icon="trash outline" fluid />
-    </div>
+    {showDelete &&
+      <div className="delete">
+        <Button basic icon="trash outline" fluid />
+      </div>}
+
     <div className="votes">
       +{votes}
     </div>
@@ -60,5 +67,7 @@ const Feedback = ({ content, votes }: Props) =>
       }
     `}</style>
   </div>)
+
+Feedback.defaultProps = defaultProps
 
 export default Feedback
