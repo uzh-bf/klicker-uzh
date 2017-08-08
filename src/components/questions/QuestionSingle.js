@@ -1,7 +1,14 @@
-import React from 'react'
-import PropTypes from 'prop-types'
+// @flow
 
-const QuestionSingle = ({ id, type, title }) =>
+import React from 'react'
+
+type Props = {
+  id: string,
+  title: string,
+  type: string,
+}
+
+const QuestionSingle = ({ id, type, title }: Props) =>
   (<div className="questionSingle">
     <div className="id">
       {id}
@@ -35,11 +42,5 @@ const QuestionSingle = ({ id, type, title }) =>
       }
     `}</style>
   </div>)
-
-QuestionSingle.propTypes = {
-  id: PropTypes.string.isRequired,
-  title: PropTypes.string.isRequired,
-  type: PropTypes.string.isRequired,
-}
 
 export default QuestionSingle

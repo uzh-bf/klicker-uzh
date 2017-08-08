@@ -1,3 +1,5 @@
+// @flow
+
 const question = {
   id: '4c821db7-0940-4a24-b31a-7969104bbc9f',
   lastUsed: ['2015-02-08 14:32:11', '2016-09-09 15:22:09'],
@@ -14,7 +16,7 @@ const questionBlock = {
 }
 
 const session = {
-  blocks: [{ questions: [], showSolutions: false, timeLimit: 60 }],
+  blocks: [{ id: '0940-4a24-b31a', questions: [], showSolutions: false, timeLimit: 60 }],
   createdAt: '2015-02-08 14:32:11',
   id: '4c821db7-0940-4a24-b31a-7969104bbc9f',
   name: 'Long session',

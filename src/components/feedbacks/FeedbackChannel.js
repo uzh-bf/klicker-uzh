@@ -1,11 +1,26 @@
+// @flow
+
 import React from 'react'
-import PropTypes from 'prop-types'
 import { Checkbox } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 import Feedback from './Feedback'
 
 import withCSS from '../../lib/withCSS'
+
+type Props = {
+  data: Array<{
+    content: string,
+    id: string,
+    votes: number,
+  }>,
+  head: "next/head",
+  intl: $IntlShape,
+  isActive: boolean,
+  isPublic: boolean,
+  onActiveToggle: () => mixed,
+  onPublicToggle: () => mixed,
+}
 
 const FeedbackChannel = ({
   data,
@@ -15,7 +30,7 @@ const FeedbackChannel = ({
   isPublic,
   onActiveToggle,
   onPublicToggle,
-}) =>
+}: Props) =>
   (<div className="feedbackChannel">
     {head}
 
@@ -25,7 +40,6 @@ const FeedbackChannel = ({
         id="runningSession.feedbackChannel.string.title"
       />
     </h2>
-
     <div className="toggle">
       <Checkbox
         toggle
@@ -112,21 +126,5 @@ const FeedbackChannel = ({
       }
     `}</style>
   </div>)
-
-FeedbackChannel.propTypes = {
-  data: PropTypes.arrayOf({
-    content: PropTypes.string,
-    id: PropTypes.string,
-    votes: PropTypes.number,
-  }).isRequired,
-  head: PropTypes.node.isRequired, // head as injected by HOC
-  intl: PropTypes.shape({
-    formatMessage: PropTypes.func.isRequired,
-  }).isRequired,
-  isActive: PropTypes.bool.isRequired,
-  isPublic: PropTypes.bool.isRequired,
-  onActiveToggle: PropTypes.func.isRequired,
-  onPublicToggle: PropTypes.func.isRequired,
-}
 
 export default withCSS(FeedbackChannel, ['checkbox'])

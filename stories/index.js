@@ -16,9 +16,14 @@ import '../node_modules/semantic-ui-css/semantic.min.css'
 import './base.css'
 import * as fixtures from './fixtures'
 
+// mock the intl function
+const intl = {
+  formatMessage: ({ defaultMessage }) => defaultMessage,
+}
+
 storiesOf('Question', module)
   .add('SC with a single version', () => <Question {...fixtures.question} />)
-  .add('MC with multiple versions', () => <Question {...fixtures.question} type="MC" version="2" />)
+  .add('MC with multiple versions', () => <Question {...fixtures.question} type="MC" version={2} />)
   .add('MC without tags', () => <Question {...fixtures.question} tags={[]} type="MC" />)
 
 storiesOf('Session', module).add('default', () => <Session {...fixtures.session} />)
@@ -42,4 +47,6 @@ storiesOf('QuestionBlock', module)
 
 storiesOf('QuestionSingle', module).add('default', () => <QuestionSingle {...fixtures.question} />)
 
-storiesOf('SessionTimeline', module).add('default', () => <SessionTimeline blocks={[]} />)
+storiesOf('SessionTimeline', module).add('default', () =>
+  <SessionTimeline blocks={[]} intl={intl} />,
+)
