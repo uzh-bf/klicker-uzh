@@ -25,7 +25,11 @@ export default class IntlDocument extends Document {
 
     return (
       <html lang={this.props.locale}>
-        <Head />
+        <Head>
+          <meta httpEquiv="Content-type" content="text/html; charset=utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <meta httpEquiv="X-UA-Compatible" content="IE=Edge" />
+        </Head>
         <body>
           <Main />
           <script src={polyfill} />
