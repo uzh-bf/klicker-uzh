@@ -2,7 +2,6 @@
 
 import React from 'react'
 import { Menu, Sidebar as SemanticSidebar } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
 
 import SidebarItem from './SidebarItem'
 import withCSS from '../../../lib/withCSS'
@@ -10,15 +9,22 @@ import withCSS from '../../../lib/withCSS'
 type Props = {
   activeItem: string,
   children: any,
+  handleSidebarItemClick: () => mixed,
   head: 'next/head',
+  items: Array<{
+    label: string | React.Element<any>,
+    href: string,
+    name: string,
+  }>,
   visible: boolean,
 }
 
 const defaultProps = {
   activeItem: 'questionPool',
+  items: [],
 }
 
-const Sidebar = ({ activeItem, children, head, visible }: Props) =>
+const Sidebar = ({ activeItem, children, head, items, visible, handleSidebarItemClick }: Props) =>
   (<div className="sidebar">
     {head}
 
@@ -32,25 +38,17 @@ const Sidebar = ({ activeItem, children, head, visible }: Props) =>
         visible={visible}
         width="wide"
       >
-        <SidebarItem active={activeItem === 'questionPool'} name="questionPool" href="/questions/">
-          <FormattedMessage id="pages.questionPool.title" defaultMessage="Question Pool" />
-        </SidebarItem>
-
-        <SidebarItem
-          active={activeItem === 'sessionHistory'}
-          name="sessionHistory"
-          href="/sessions/"
-        >
-          <FormattedMessage id="pages.sessionHistory.title" defaultMessage="Session History" />
-        </SidebarItem>
-
-        <SidebarItem
-          active={activeItem === 'runningSession'}
-          name="runningSession"
-          href="/sessions/running"
-        >
-          <FormattedMessage id="pages.runningSession.title" defaultMessage="Running Session" />
-        </SidebarItem>
+        {items.map(item =>
+          (<SidebarItem
+            key={item.name}
+            active={item.name === activeItem}
+            name={item.name}
+            href={item.href}
+            handleSidebarItemClick={handleSidebarItemClick}
+          >
+            {item.label}
+          </SidebarItem>),
+        )}
       </SemanticSidebar>
 
       <SemanticSidebar.Pusher>
@@ -60,12 +58,17 @@ const Sidebar = ({ activeItem, children, head, visible }: Props) =>
 
     <style jsx>{`
       .sidebar {
+        display: flex;
+        flex-direction: column;
+
         width: 100%;
       }
+
       :global(.sidebarMenu) {
         text-align: left;
         width: 75% !important;
       }
+
       @media all and (min-width: 768px) {
         :global(.sidebarMenu) {
           width: 20% !important;
