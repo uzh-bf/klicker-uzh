@@ -19,7 +19,6 @@
     "logrocket-react": "^0.0.4",
     "moment": "^2.18.1",
     "next": "beta",
-    "prop-types": "^15.5.10",
     "raven-js": "^3.16.1",
     "react": "^15.6.1",
     "react-addons-css-transition-group": "^15.6.0",
