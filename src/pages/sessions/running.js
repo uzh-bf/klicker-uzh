@@ -49,7 +49,7 @@ class Running extends Component {
       accountShort: 'AW',
       title: intl.formatMessage({
         defaultMessage: 'Running Session',
-        id: 'pages.runningSession.title',
+        id: 'teacher.runningSession.title',
       }),
     }
 

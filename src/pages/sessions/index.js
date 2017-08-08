@@ -12,16 +12,8 @@ class Index extends Component {
     intl: $IntlShape,
   }
 
-  state = {
-    sidebarVisible: false,
-  }
-
   handleSearch = () => {
     console.log('searched...')
-  }
-
-  handleSidebarToggle = () => {
-    this.setState({ sidebarVisible: !this.state.sidebarVisible })
   }
 
   handleSort = () => {
@@ -40,7 +32,7 @@ class Index extends Component {
       },
       title: intl.formatMessage({
         defaultMessage: 'Session History',
-        id: 'sessionHistory.title',
+        id: 'teacher.sessionHistory.title',
       }),
     }
 

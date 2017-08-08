@@ -40,11 +40,6 @@ class Index extends Component {
     console.log('searched...')
   }
 
-  // handling toggle of the sidebar via navbar
-  handleSidebarToggle = () => {
-    this.setState({ sidebarVisible: !this.state.sidebarVisible })
-  }
-
   // handle sorting via navbar search area
   handleSort = () => {
     console.log('sorted...')
@@ -79,7 +74,7 @@ class Index extends Component {
       },
       title: intl.formatMessage({
         defaultMessage: 'Question Pool',
-        id: 'pages.questionPool.title',
+        id: 'teacher.questionPool.title',
       }),
     }
 
