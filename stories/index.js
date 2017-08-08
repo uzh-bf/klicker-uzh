@@ -47,4 +47,6 @@ storiesOf('QuestionBlock', module)
 
 storiesOf('QuestionSingle', module).add('default', () => <QuestionSingle {...fixtures.question} />)
 
-storiesOf('SessionTimeline', module).add('default', () => <SessionTimeline blocks={[]} intl={intl} />)
+storiesOf('SessionTimeline', module).add('default', () =>
+  <SessionTimeline blocks={[]} intl={intl} />,
+)
