@@ -30,7 +30,7 @@ jobs:
           - node_modules
 
     - stage: build
-      script:
+      install:
         - docker login -u$QUAY_USER -p$QUAY_TOKEN quay.io/uzh-bf/klicker-react
         - if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then bash -c "docker pull quay.io/uzh-bf/klicker-react:latest || echo "No image present";docker build --cache-from quay.io/uzh-bf/klicker-react:latest -t quay.io/uzh-bf/klicker-react:latest .;docker push quay.io/uzh-bf/klicker-react:latest"; fi
         - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then bash -c "docker pull quay.io/uzh-bf/klicker-react:nightly-$TRAVIS_PULL_REQUEST || echo "No image present";docker build --cache-from quay.io/uzh-bf/klicker-react:nightly-$TRAVIS_PULL_REQUEST -t quay.io/uzh-bf/klicker-react:nightly:nightly-$TRAVIS_PULL_REQUEST .;docker push quay.io/uzh-bf/klicker-react:nightly:nightly-$TRAVIS_PULL_REQUEST"; fi
