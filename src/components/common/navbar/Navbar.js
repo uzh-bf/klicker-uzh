@@ -116,7 +116,7 @@ class Navbar extends Component {
               flex: 1 1 50%;
               order: 1;
 
-              padding: .5rem 2rem;
+              padding: .2rem 2rem;
             }
 
             .accountArea {
@@ -129,7 +129,7 @@ class Navbar extends Component {
 
           @media all and (min-width: 991px) {
             .searchArea {
-              padding: .5rem 3rem;
+              padding: .2rem 3rem;
             }
           }
         `}</style>
