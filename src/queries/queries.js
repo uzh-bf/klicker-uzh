@@ -143,7 +143,8 @@ type RunningSessionType = {
         votes: string,
       }>,
       blocks: Array<{
-        status: 'CREATED' | 'RUNNING' | 'COMPLETED',
+        id: string,
+        status: string,
         questions: Array<{
           id: string,
           questionDefinition: {
@@ -170,6 +171,7 @@ const RunningSessionQuery = gql`
           votes
         }
         blocks {
+          id
           status
           questions {
             id

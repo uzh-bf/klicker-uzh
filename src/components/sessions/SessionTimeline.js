@@ -7,6 +7,7 @@ import QuestionBlock from '../questions/QuestionBlock'
 
 type Props = {
   blocks: Array<{
+    id: string,
     questions: Array<{
       questionDefinition: {
         title: string,
