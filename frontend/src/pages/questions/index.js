@@ -1,5 +1,6 @@
+// @flow
+
 import React, { Component } from 'react'
-import PropTypes from 'prop-types'
 import { Button } from 'semantic-ui-react'
 
 import QuestionList from '../../components/questions/QuestionList'
@@ -9,21 +10,28 @@ import pageWithIntl from '../../lib/pageWithIntl'
 import withData from '../../lib/withData'
 
 class Index extends Component {
-  static propTypes = {
-    intl: PropTypes.shape({
-      formatMessage: PropTypes.func.isRequired,
-    }).isRequired,
+  props: {
+    intl: $IntlShape,
   }
 
-  state = {
-    activeNewButton: false,
-    activeTags: [],
-    sidebarVisible: false,
+  state: {
+    activeNewButton: boolean,
+    activeTags: Array<string>,
+    sidebarVisible: boolean,
+  }
+
+  constructor(props) {
+    super(props)
+
+    this.state = {
+      activeNewButton: false,
+      activeTags: [],
+      sidebarVisible: false,
+    }
   }
 
   // handling the state of the new course button
   handleActiveNewButton = () => {
-    console.dir('hello world')
     this.setState({ activeNewButton: !this.state.activeNewButton })
   }
 

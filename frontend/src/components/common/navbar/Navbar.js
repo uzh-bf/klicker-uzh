@@ -1,5 +1,6 @@
+// @flow
+
 import React, { Component } from 'react'
-import PropTypes from 'prop-types'
 import { Icon, Menu } from 'semantic-ui-react'
 
 import AccountArea from './AccountArea'
@@ -8,27 +9,23 @@ import SessionArea from './SessionArea'
 import withCSS from '../../../lib/withCSS'
 
 class Navbar extends Component {
-  static propTypes = {
-    accountShort: PropTypes.string.isRequired, // shorthand for the logged in user
-    handleSidebarToggle: PropTypes.func.isRequired, // function that handles toggling of the sidebar
-    head: PropTypes.node.isRequired, // head as injected by HOC
-    intl: PropTypes.shape({
-      formatMessage: PropTypes.func.isRequired,
-    }),
-    // optional search field embedded in navbar
-    search: PropTypes.shape({
-      handleSearch: PropTypes.func.isRequired, // function that handles onChange for search field
-      handleSort: PropTypes.func.isRequired, // function that handles changing of sort order
-      query: PropTypes.string,
-      sortBy: PropTypes.string,
-      sortOrder: PropTypes.string,
-    }),
-    sidebarVisible: PropTypes.bool,
-    title: PropTypes.string.isRequired, // title of the page
+  props: {
+    accountShort: string,
+    handleSidebarToggle: () => mixed,
+    head: 'intl/head',
+    intl: $IntlShape,
+    search: {
+      handleSearch: () => mixed,
+      handleSort: () => mixed,
+      query?: string,
+      sortBy?: string,
+      sortOrder?: string,
+    },
+    sidebarVisible: boolean,
+    title: string,
   }
 
   static defaultProps = {
-    intl: null,
     search: null,
     sidebarVisible: false,
   }

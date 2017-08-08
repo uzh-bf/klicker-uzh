@@ -1,18 +1,28 @@
-import PropTypes from 'prop-types'
+// @flow
+
 import React from 'react'
 import moment from 'moment'
 import { graphql } from 'react-apollo'
 
 import Question from './Question'
 import { QuestionListQuery } from '../../queries/queries'
+import type { QuestionListType } from '../../queries/queries'
 
-const QuestionList = ({ data }) => {
+type Props = {
+  data: QuestionListType,
+}
+
+const QuestionList = ({ data }: Props) => {
   if (data.loading) {
     return <div>Loading</div>
   }
 
   if (data.error) {
-    return <div>{data.error}</div>
+    return (
+      <div>
+        {data.error}
+      </div>
+    )
   }
 
   return (
@@ -23,10 +33,13 @@ const QuestionList = ({ data }) => {
             <Question
               key={question.id}
               id={question.id}
-              lastUsed={question.instances.map(instance => moment(instance.createdAt).format('DD.MM.YYYY HH:MM:SS'))}
+              lastUsed={question.instances.map(instance =>
+                moment(instance.createdAt).format('DD.MM.YYYY HH:MM:SS'),
+              )}
               tags={question.tags.map(tag => tag.name)}
               title={question.title}
               type={question.type}
+              version={question.versions.length}
             />
           }
         </div>),
@@ -39,17 +52,6 @@ const QuestionList = ({ data }) => {
       `}</style>
     </div>
   )
-}
-
-QuestionList.propTypes = {
-  data: PropTypes.shape({
-    questions: PropTypes.arrayOf(
-      PropTypes.shape({
-        id: PropTypes.string.isRequired,
-        title: PropTypes.string.isRequired,
-      }),
-    ),
-  }).isRequired,
 }
 
 export default graphql(QuestionListQuery)(QuestionList)

@@ -1,29 +1,35 @@
+// @flow
+
 import React from 'react'
-import PropTypes from 'prop-types'
 import { Icon } from 'semantic-ui-react'
 
 import QuestionSingle from './QuestionSingle'
 
-const QuestionBlock = ({ questions, showSolutions, status, timeLimit }) =>
+type Props = {
+  questions: Array<{
+    id: string,
+    title: string,
+    type: string,
+  }>,
+  showSolutions: boolean,
+  timeLimit: number,
+}
+
+const defaultProps = {
+  questions: [],
+  showSolutions: false,
+  timeLimit: 0,
+}
+
+const QuestionBlock = ({ questions, showSolutions, timeLimit }: Props) =>
   (<div className="questionBlock">
-    {
-      status
-        ? <div className="timeLimit">
-          {status}
-        </div>
-        : <div className="timeLimit">
-          <Icon name="clock" />{timeLimit}s
-        </div>
-    }
-    {
-      status
-        ? <div className="showSolution">
-          {status}
-        </div>
-        : <div className="showSolution">
-          <Icon name={showSolutions ? 'unhide' : 'hide'} />
-        </div>
-    }
+    <div className="timeLimit">
+      <Icon name="clock" />
+      {timeLimit}s
+    </div>
+    <div className="showSolution">
+      <Icon name={showSolutions ? 'unhide' : 'hide'} />
+    </div>
     <div className="questions">
       {questions.map(({ id, title, type }) =>
         (<div className="question">
@@ -31,7 +37,6 @@ const QuestionBlock = ({ questions, showSolutions, status, timeLimit }) =>
         </div>),
       )}
     </div>
-
     <style jsx>{`
       .questionBlock,
       .questions {
@@ -65,24 +70,6 @@ const QuestionBlock = ({ questions, showSolutions, status, timeLimit }) =>
     `}</style>
   </div>)
 
-QuestionBlock.propTypes = {
-  questions: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      title: PropTypes.string.isRequired,
-      type: PropTypes.string.isRequired,
-    }),
-  ),
-  showSolutions: PropTypes.bool,
-  status: PropTypes.string,
-  timeLimit: PropTypes.number,
-}
-
-QuestionBlock.defaultProps = {
-  questions: [],
-  showSolutions: false,
-  status: null,
-  timeLimit: null,
-}
+QuestionBlock.defaultProps = defaultProps
 
 export default QuestionBlock

@@ -1,13 +1,27 @@
+// @flow
+
 import React from 'react'
-import PropTypes from 'prop-types'
 
 import QuestionDetails from './QuestionDetails'
 import QuestionTags from './QuestionTags'
 
-const Question = ({ head, id, lastUsed, tags, title, type, version }) =>
-  (<div className="container">
-    {head}
+type Props = {
+  id: string,
+  lastUsed: Array<string>,
+  tags: Array<string>,
+  title: string,
+  type: string,
+  version: number,
+}
 
+const defaultProps = {
+  lastUsed: [],
+  tags: [],
+  version: 1,
+}
+
+const Question = ({ id, lastUsed, tags, title, type, version }: Props) =>
+  (<div className="container">
     <h2 className="title">
       #{id.substring(0, 7)} - {title} {version > 1 && `(v${version})`}
     </h2>
@@ -49,20 +63,6 @@ const Question = ({ head, id, lastUsed, tags, title, type, version }) =>
     `}</style>
   </div>)
 
-Question.propTypes = {
-  head: PropTypes.node.isRequired,
-  id: PropTypes.string.isRequired,
-  lastUsed: PropTypes.arrayOf(PropTypes.string),
-  tags: PropTypes.arrayOf(PropTypes.string),
-  title: PropTypes.string.isRequired,
-  type: PropTypes.oneOf(['SC', 'MC', 'FREE']).isRequired,
-  version: PropTypes.number,
-}
-
-Question.defaultProps = {
-  lastUsed: [],
-  tags: [],
-  version: 1,
-}
+Question.defaultProps = defaultProps
 
 export default Question

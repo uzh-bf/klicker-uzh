@@ -2,11 +2,16 @@
   "env": {
     "development": {
       "presets": "next/babel",
-      "plugins": ["add-react-displayname", "react-intl"]
+      "plugins": [
+        "transform-flow-strip-types",
+        "add-react-displayname",
+        "react-intl"
+      ]
     },
     "production": {
       "presets": "next/babel",
       "plugins": [
+        "transform-flow-strip-types",
         "add-react-displayname",
         [
           "react-intl",
@@ -25,7 +30,8 @@
           }
         ],
         "next/babel"
-      ]
+      ],
+      "plugins": ["transform-flow-strip-types"]
     }
   }
 }

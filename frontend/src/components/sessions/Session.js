@@ -1,12 +1,36 @@
+// @flow
+
 import React from 'react'
-import PropTypes from 'prop-types'
 import moment from 'moment'
 import { FormattedMessage } from 'react-intl'
 import { Button, Icon } from 'semantic-ui-react'
 
 import QuestionBlock from '../questions/QuestionBlock'
 
-const Session = ({ createdAt, name, blocks, id, status }) => {
+type Props = {
+  blocks: Array<{
+    id: string,
+    questions: Array<{
+      id: string,
+      questionDefinition: {
+        title: string,
+        type: string,
+      },
+    }>,
+    showSolutions: boolean,
+    timeLimit: number,
+  }>,
+  createdAt: string,
+  id: string,
+  name: string,
+  status: string,
+}
+
+const defaultProps = {
+  status: 'created',
+}
+
+const Session = ({ createdAt, name, blocks, id, status }: Props) => {
   const statusCases = {
     completed: {
       disabled: false,
@@ -113,30 +137,6 @@ const Session = ({ createdAt, name, blocks, id, status }) => {
   )
 }
 
-Session.propTypes = {
-  blocks: PropTypes.arrayOf(
-    PropTypes.shape({
-      questions: PropTypes.arrayOf(
-        PropTypes.shape({
-          id: PropTypes.string.isRequired,
-          questionDefinition: PropTypes.shape({
-            title: PropTypes.string.isRequired,
-            type: PropTypes.string.isRequired,
-          }).isRequired,
-        }),
-      ),
-      showSolutions: PropTypes.bool.isRequired,
-      timeLimit: PropTypes.number.isRequired,
-    }),
-  ).isRequired,
-  createdAt: PropTypes.string.isRequired,
-  id: PropTypes.string.isRequired,
-  name: PropTypes.string.isRequired,
-  status: PropTypes.string.isRequired,
-}
-
-Session.defaultProps = {
-  status: 'created',
-}
+Session.defaultProps = defaultProps
 
 export default Session

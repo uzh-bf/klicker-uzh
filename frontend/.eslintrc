@@ -1,7 +1,7 @@
 {
   "parser": "babel-eslint",
-  "extends": "airbnb",
-  "plugins": ["react", "jsx-a11y", "import"],
+  "extends": ["airbnb", "plugin:flowtype/recommended"],
+  "plugins": ["react", "jsx-a11y", "import", "flowtype"],
   "rules": {
     "semi": 0,
     "react/prop-types": 1,
@@ -19,11 +19,29 @@
         "shorthandFirst": true
       }
     ],
-    "sort-keys": 1
+    "sort-keys": 1,
+    "react/sort-comp": [
+      2,
+      {
+        "order": [
+          "type-annotations",
+          "static-methods",
+          "lifecycle",
+          "everything-else",
+          "render"
+        ]
+      }
+    ],
+    "react/no-unused-prop-types": 0
   },
   "env": {
     "browser": true,
     "node": true,
     "jest": true
+  },
+  "settings": {
+    "flowtype": {
+      "onlyFilesWithFlowAnnotation": true
+    }
   }
 }

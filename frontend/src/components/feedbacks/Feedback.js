@@ -1,8 +1,14 @@
+// @flow
+
 import React from 'react'
-import { PropTypes } from 'prop-types'
 import { Button } from 'semantic-ui-react'
 
-const Feedback = ({ content, votes }) =>
+type Props = {
+  content: string,
+  votes: number
+}
+
+const Feedback = ({ content, votes }: Props) =>
   (<div className="feedback">
     <div className="content">
       {content}
@@ -54,10 +60,5 @@ const Feedback = ({ content, votes }) =>
       }
     `}</style>
   </div>)
-
-Feedback.propTypes = {
-  content: PropTypes.string.isRequired,
-  votes: PropTypes.number.isRequired,
-}
 
 export default Feedback

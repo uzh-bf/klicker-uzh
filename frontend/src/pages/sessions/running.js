@@ -1,5 +1,6 @@
+// @flow
+
 import React, { Component } from 'react'
-import PropTypes from 'prop-types'
 import { graphql } from 'react-apollo'
 
 import ConfusionBarometer from '../../components/confusion/ConfusionBarometer'
@@ -7,14 +8,14 @@ import FeedbackChannel from '../../components/feedbacks/FeedbackChannel'
 import SessionTimeline from '../../components/sessions/SessionTimeline'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import pageWithIntl from '../../lib/pageWithIntl'
-import { RunningSessionQuery } from '../../queries/queries'
 import withData from '../../lib/withData'
+import { RunningSessionQuery } from '../../queries/queries'
+import type { RunningSessionType } from '../../queries/queries'
 
 class Running extends Component {
-  static propTypes = {
-    intl: PropTypes.shape({
-      formatMessage: PropTypes.func.isRequired,
-    }).isRequired,
+  props: {
+    data: RunningSessionType,
+    intl: $IntlShape,
   }
 
   state = {
@@ -138,34 +139,6 @@ class Running extends Component {
       </TeacherLayout>
     )
   }
-}
-
-Running.propTypes = {
-  data: PropTypes.shape({
-    allUsers: PropTypes.arrayOf({
-      activeSession: PropTypes.shape({
-        blocks: PropTypes.arrayOf({
-          questions: PropTypes.arrayOf({
-            questionDefinition: PropTypes.shape({
-              title: PropTypes.string,
-              type: PropTypes.string,
-            }),
-          }),
-          status: PropTypes.string,
-        }),
-        confusion: PropTypes.arrayOf({
-          comprehensibility: PropTypes.number,
-          createdAt: PropTypes.string,
-          difficulty: PropTypes.number,
-        }),
-        feedbacks: PropTypes.arrayOf({
-          content: PropTypes.string,
-          id: PropTypes.string,
-          votes: PropTypes.number,
-        }),
-      }),
-    }),
-  }).isRequired,
 }
 
 export default withData(pageWithIntl(graphql(RunningSessionQuery)(Running)))

@@ -1,10 +1,19 @@
+// @flow
+
 import React from 'react'
-import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 
 import ListWithHeader from '../common/ListWithHeader'
 
-const QuestionDetails = ({ lastUsed }) =>
+type Props = {
+  lastUsed: Array<string>,
+}
+
+const defaultProps = {
+  lastUsed: [],
+}
+
+const QuestionDetails = ({ lastUsed }: Props) =>
   (<div className="container">
     <div className="column">Test1</div>
     <div className="column">Test2</div>
@@ -45,12 +54,6 @@ const QuestionDetails = ({ lastUsed }) =>
     `}</style>
   </div>)
 
-QuestionDetails.propTypes = {
-  lastUsed: PropTypes.arrayOf(PropTypes.string),
-}
-
-QuestionDetails.defaultProps = {
-  lastUsed: [],
-}
+QuestionDetails.defaultProps = defaultProps
 
 export default QuestionDetails
