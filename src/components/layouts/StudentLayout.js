@@ -27,6 +27,10 @@ class StudentLayout extends Component {
       <div className="studentLayout">
         {head}
 
+        <div className="header">
+          <button>hello</button>
+        </div>
+
         <div className="content">
           {children}
         </div>
@@ -38,7 +42,7 @@ class StudentLayout extends Component {
 
           html,
           body {
-            font-size: 14px;
+            font-size: 16px;
           }
         `}</style>
 
@@ -47,6 +51,13 @@ class StudentLayout extends Component {
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+          }
+
+          .header {
+            display: flex;
+
+            background-color: lightgrey;
+            padding: 1rem;
           }
 
           .content {
