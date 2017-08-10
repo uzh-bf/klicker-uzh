@@ -23,4 +23,8 @@ const session = {
   status: 'created',
 }
 
-export { questionBlock, question, session }
+export default {
+  question,
+  questionBlock,
+  session,
+}
