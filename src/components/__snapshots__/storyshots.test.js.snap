@@ -1,0 +1,277 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Storyshots ActionButton default 1`] = `
+<div
+  className="actionButtonWrapper"
+  data-jsx={4197750628}
+>
+  <div
+    className="actionButton"
+    data-jsx={4197750628}
+  >
+    <button
+      className="ui large circular icon primary button"
+      disabled={undefined}
+      onClick={[Function]}
+      tabIndex={undefined}
+    >
+      <i
+        aria-hidden="true"
+        className="plus icon"
+      />
+    </button>
+  </div>
+  <div
+    className="ui vertical text menu buttonMenu"
+    data-jsx={4197750628}
+  >
+    <a
+      className="item"
+      data-jsx={4197750628}
+      onClick={undefined}
+      role="navigation"
+    >
+      abcd
+    </a>
+    <a
+      className="item"
+      data-jsx={4197750628}
+      onClick={undefined}
+      role="navigation"
+    >
+      cdef
+    </a>
+  </div>
+</div>
+`;
+
+exports[`Storyshots Collapser collapsed 1`] = `
+<div
+  className="collapser"
+  data-jsx={290410321}
+>
+  <div
+    className="content collapsed"
+    data-jsx={290410321}
+  >
+    <div>
+      <p>
+        hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
+      </p>
+      <p>
+        wow, is this a long question. i could never have imagined seeing such a question.
+      </p>
+      <p>
+        hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
+      </p>
+      <p>
+        wow, is this a long question. i could never have imagined seeing such a question.
+      </p>
+    </div>
+  </div>
+  <div
+    className="collapse"
+    data-jsx={290410321}
+  >
+    <i
+      aria-hidden="true"
+      className="angle double down icon"
+      onClick={undefined}
+    />
+  </div>
+</div>
+`;
+
+exports[`Storyshots Collapser default 1`] = `
+<div
+  className="collapser"
+  data-jsx={290410321}
+>
+  <div
+    className="content collapsed"
+    data-jsx={290410321}
+  >
+    <div>
+      <p>
+        hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
+      </p>
+      <p>
+        wow, is this a long question. i could never have imagined seeing such a question.
+      </p>
+      <p>
+        hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
+      </p>
+      <p>
+        wow, is this a long question. i could never have imagined seeing such a question.
+      </p>
+    </div>
+  </div>
+  <div
+    className="collapse"
+    data-jsx={290410321}
+  >
+    <i
+      aria-hidden="true"
+      className="angle double down icon"
+      onClick={[Function]}
+    />
+  </div>
+</div>
+`;
+
+exports[`Storyshots Collapser extended 1`] = `
+<div
+  className="collapser"
+  data-jsx={290410321}
+>
+  <div
+    className="content"
+    data-jsx={290410321}
+  >
+    <div>
+      <p>
+        hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
+      </p>
+      <p>
+        wow, is this a long question. i could never have imagined seeing such a question.
+      </p>
+      <p>
+        hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
+      </p>
+      <p>
+        wow, is this a long question. i could never have imagined seeing such a question.
+      </p>
+    </div>
+  </div>
+  <div
+    className="collapse"
+    data-jsx={290410321}
+  >
+    <i
+      aria-hidden="true"
+      className="angle double up icon"
+      onClick={undefined}
+    />
+  </div>
+</div>
+`;
+
+exports[`Storyshots SingleChoiceOptions default 1`] = `
+<div
+  className="options"
+  data-jsx={2080075436}
+>
+  <div
+    className="option"
+    data-jsx={2080075436}
+  >
+    <button
+      className="ui basic fluid button"
+      disabled={undefined}
+      onClick={[Function]}
+      tabIndex={undefined}
+    >
+      answer2
+    </button>
+  </div>
+  <div
+    className="option"
+    data-jsx={2080075436}
+  >
+    <button
+      className="ui basic fluid button"
+      disabled={undefined}
+      onClick={[Function]}
+      tabIndex={undefined}
+    >
+      antwort 2
+    </button>
+  </div>
+  <div
+    className="option"
+    data-jsx={2080075436}
+  >
+    <button
+      className="ui basic fluid button"
+      disabled={undefined}
+      onClick={[Function]}
+      tabIndex={undefined}
+    >
+      option 3
+    </button>
+  </div>
+  <div
+    className="option"
+    data-jsx={2080075436}
+  >
+    <button
+      className="ui basic fluid button"
+      disabled={undefined}
+      onClick={[Function]}
+      tabIndex={undefined}
+    >
+      tschege
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Storyshots SingleChoiceOptions withActiveOption 1`] = `
+<div
+  className="options"
+  data-jsx={2080075436}
+>
+  <div
+    className="option"
+    data-jsx={2080075436}
+  >
+    <button
+      className="ui basic fluid button"
+      disabled={undefined}
+      onClick={[Function]}
+      tabIndex={undefined}
+    >
+      answer2
+    </button>
+  </div>
+  <div
+    className="option active"
+    data-jsx={2080075436}
+  >
+    <button
+      className="ui basic fluid button"
+      disabled={undefined}
+      onClick={[Function]}
+      tabIndex={undefined}
+    >
+      antwort 2
+    </button>
+  </div>
+  <div
+    className="option"
+    data-jsx={2080075436}
+  >
+    <button
+      className="ui basic fluid button"
+      disabled={undefined}
+      onClick={[Function]}
+      tabIndex={undefined}
+    >
+      option 3
+    </button>
+  </div>
+  <div
+    className="option"
+    data-jsx={2080075436}
+  >
+    <button
+      className="ui basic fluid button"
+      disabled={undefined}
+      onClick={[Function]}
+      tabIndex={undefined}
+    >
+      tschege
+    </button>
+  </div>
+</div>
+`;
