@@ -1,3 +1,3 @@
-export intlMock = {
+export const intlMock = {
   formatMessage: ({ defaultMessage }) => defaultMessage,
 }
