@@ -1,6 +1,7 @@
 // @flow
 
 import React from 'react'
+import classNames from 'classnames'
 import { Icon } from 'semantic-ui-react'
 
 type Props = {
@@ -11,7 +12,7 @@ type Props = {
 
 const Collapser = ({ children, collapsed, handleCollapseToggle }: Props) =>
   (<div className="collapser">
-    <div className={`content ${collapsed && 'collapsed'}`}>
+    <div className={classNames('content', { collapsed })}>
       {children}
     </div>
     <div className="collapse">
@@ -40,12 +41,12 @@ const Collapser = ({ children, collapsed, handleCollapseToggle }: Props) =>
         flex: 1 0 4.2rem;
       }
 
-      .content p {
+      .content :global(p) {
         margin-top: 0;
         margin-bottom: .6rem;
       }
 
-      .content p:last-child {
+      .content :global(p:last-child) {
         margin-bottom: 0;
       }
 

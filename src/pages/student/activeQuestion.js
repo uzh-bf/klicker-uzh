@@ -15,6 +15,7 @@ class ActiveQuestion extends Component {
   }
 
   state = {
+    activeOption: -1,
     contentCollapsed: true,
   }
 
@@ -22,8 +23,8 @@ class ActiveQuestion extends Component {
     this.setState(prevState => ({ contentCollapsed: !prevState.contentCollapsed }))
   }
 
-  handleOptionClick = (index: number) => () => {
-    console.log(`option${index} has been clicked`)
+  handleOptionClick = index => () => {
+    this.setState({ activeOption: index })
   }
 
   render() {
@@ -62,6 +63,7 @@ class ActiveQuestion extends Component {
           </div>
           <div className="options">
             <SingleChoiceOptions
+              activeOption={this.state.activeOption}
               options={[
                 { label: 'answer1' },
                 { label: 'antwort 2' },

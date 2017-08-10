@@ -5,6 +5,7 @@
 import React from 'react'
 import { storiesOf } from '@storybook/react'
 import { boolean, number } from '@storybook/addon-knobs'
+import { action } from '@storybook/addon-actions'
 
 import ActionButton from '../src/components/common/ActionButton'
 import Collapser from '../src/components/common/Collapser'
@@ -59,28 +60,58 @@ storiesOf('ActionButton', module).add('default', () =>
   <ActionButton items={[{ label: 'abcd' }, { label: 'cdef' }]} />,
 )
 
-storiesOf('Collapser', module).add('default', () =>
-  (<Collapser>
-    <p>
-      hello this is a very short question that is getting longer and longer as we speak. it is in
-      fact very very long. the end is even hidden at the beginning.
-    </p>
-    <p>wow, is this a long question. i could never have imagined seeing such a question.</p>
-    <p>
-      hello this is a very short question that is getting longer and longer as we speak. it is in
-      fact very very long. the end is even hidden at the beginning.
-    </p>
-    <p>wow, is this a long question. i could never have imagined seeing such a question.</p>
-  </Collapser>),
-)
+storiesOf('Collapser', module)
+  .add('collapsed', () =>
+    (<Collapser collapsed>
+      <p>
+        hello this is a very short question that is getting longer and longer as we speak. it is in
+        fact very very long. the end is even hidden at the beginning.
+      </p>
+      <p>wow, is this a long question. i could never have imagined seeing such a question.</p>
+      <p>
+        hello this is a very short question that is getting longer and longer as we speak. it is in
+        fact very very long. the end is even hidden at the beginning.
+      </p>
+      <p>wow, is this a long question. i could never have imagined seeing such a question.</p>
+    </Collapser>),
+  )
+  .add('extended', () =>
+    (<Collapser>
+      <p>
+        hello this is a very short question that is getting longer and longer as we speak. it is in
+        fact very very long. the end is even hidden at the beginning.
+      </p>
+      <p>wow, is this a long question. i could never have imagined seeing such a question.</p>
+      <p>
+        hello this is a very short question that is getting longer and longer as we speak. it is in
+        fact very very long. the end is even hidden at the beginning.
+      </p>
+      <p>wow, is this a long question. i could never have imagined seeing such a question.</p>
+    </Collapser>),
+  )
 
-storiesOf('SingleChoiceOptions', module).add('default', () =>
-  (<SingleChoiceOptions
-    options={[
-      { label: 'answer1' },
-      { label: 'antwort 2' },
-      { label: 'option 3' },
-      { label: 'tschege' },
-    ]}
-  />),
-)
+storiesOf('SingleChoiceOptions', module)
+  .add('default', () =>
+    (<SingleChoiceOptions
+      activeOption={number('activeOption', -1)}
+      options={[
+        { label: 'answer1' },
+        { label: 'antwort 2' },
+        { label: 'option 3' },
+        { label: 'tschege' },
+      ]}
+      handleOptionClick={index => action(`option ${index} clicked`)}
+    />),
+  )
+  .add('activeItem', () =>
+    (<SingleChoiceOptions
+      activeOption={number('activeOption', 1)}
+      options={[
+        { label: 'answer1' },
+        { label: 'antwort 2' },
+        { label: 'option 3' },
+        { label: 'tschege' },
+      ]}
+      handleOptionClick={index => action(`option ${index} clicked`)}
+    />),
+  )
