@@ -28,8 +28,19 @@ const SingleChoiceOptions = ({ activeOption, options, handleOptionClick }: Props
       }
 
       .option.active :global(button) {
-        border: 2px solid green !important;
-        background-color: lightgrey !important;
+        border: 1px solid green !important;
+
+        animation: bounce .5s;
+      }
+
+      // TODO: improve animation
+      @keyframes bounce {
+        0%, 100% {
+          transform: translateX(0)
+        }
+        50% {
+          transform: translateY(-2px)
+        }
       }
     `}</style>
   </div>)
