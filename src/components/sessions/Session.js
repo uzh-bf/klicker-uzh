@@ -48,7 +48,7 @@ const Session = ({ createdAt, name, blocks, id, status }: Props) => {
       message: <FormattedMessage id="session.button.running.content" defaultMessage="Running" />,
     },
   }
-  const buttonStatus = statusCases[status]
+  const buttonStatus = statusCases[status] || statusCases['CREATED']
 
   return (
     <div className="session">
