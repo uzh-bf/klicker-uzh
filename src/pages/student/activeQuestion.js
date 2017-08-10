@@ -5,7 +5,7 @@ import { Button } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 import Collapser from '../../components/common/Collapser'
-import SingleChoiceOptions from '../../components/questionTypes/options/SingleChoiceOptions'
+import SingleChoiceOptions from '../../components/questionTypes/SingleChoiceOptions'
 import StudentLayout from '../../components/layouts/StudentLayout'
 import pageWithIntl from '../../lib/pageWithIntl'
 import withData from '../../lib/withData'
