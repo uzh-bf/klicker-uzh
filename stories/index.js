@@ -6,12 +6,14 @@ import React from 'react'
 import { storiesOf } from '@storybook/react'
 import { boolean, number } from '@storybook/addon-knobs'
 
+import ActionButton from '../src/components/common/ActionButton'
 import Question from '../src/components/questions/Question'
 import Session from '../src/components/sessions/Session'
 import QuestionBlock from '../src/components/questions/QuestionBlock'
 import QuestionSingle from '../src/components/questions/QuestionSingle'
 import SessionTimeline from '../src/components/sessions/SessionTimeline'
 
+import '../node_modules/semantic-ui-css/components/reset.min.css'
 import '../node_modules/semantic-ui-css/semantic.min.css'
 import './base.css'
 import * as fixtures from './fixtures'
@@ -49,4 +51,8 @@ storiesOf('QuestionSingle', module).add('default', () => <QuestionSingle {...fix
 
 storiesOf('SessionTimeline', module).add('default', () =>
   <SessionTimeline blocks={[]} intl={intl} />,
+)
+
+storiesOf('ActionButton', module).add('default', () =>
+  <ActionButton items={[{ label: 'abcd' }, { label: 'cdef' }]} />,
 )
