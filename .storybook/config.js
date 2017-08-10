@@ -26,4 +26,17 @@ setIntlConfig({
 addDecorator(withKnobs)
 addDecorator(withIntl)
 
-configure(() => require('../stories'), module)
+// dynamically load stories from the components directory
+// load all files with *.stories.js in the end
+const req = require.context('../src/components', true, /\.stories\.js$/)
+
+function loadStories() {
+  // load css needed for each story
+  require('../node_modules/semantic-ui-css/semantic.min.css')
+  require('./base.css')
+
+  req.keys().forEach((filename) => req(filename))
+  // require('../stories')
+}
+
+configure(loadStories, module);
