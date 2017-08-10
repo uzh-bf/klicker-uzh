@@ -2,6 +2,7 @@
 
 import React, { Component } from 'react'
 import { Button } from 'semantic-ui-react'
+import { FormattedMessage } from 'react-intl'
 
 import Collapser from '../../components/common/Collapser'
 import SingleChoiceOptions from '../../components/questionTypes/options/SingleChoiceOptions'
@@ -74,8 +75,8 @@ class ActiveQuestion extends Component {
             />
           </div>
           <div className="actionArea">
-            <Button primary className="submitButton">
-              Send
+            <Button primary className="submitButton" disabled={!(this.state.activeOption >= 0)}>
+              <FormattedMessage id="common.string.send" defaultMessage="Send" />
             </Button>
           </div>
         </div>

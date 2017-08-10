@@ -62,81 +62,128 @@ exports[`Snapshot-Testing Works 1`] = `
         >
           <div
             className="activeQuestion"
-            data-jsx={124049965}
+            data-jsx={1851307869}
           >
             <div
-              className="content contentCollapsed"
-              data-jsx={124049965}
-            >
-              <p
-                data-jsx={124049965}
-              >
-                hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
-              </p>
-              <p
-                data-jsx={124049965}
-              >
-                wow, is this a long question. i could never have imagined seeing such a question.
-              </p>
-            </div>
-            <div
               className="collapser"
-              data-jsx={124049965}
+              data-jsx={1851307869}
             >
-              <i
-                aria-hidden="true"
-                className="angle double down icon"
-                onClick={[Function]}
-              />
+              <div
+                className="collapser"
+                data-jsx={290410321}
+              >
+                <div
+                  className="content collapsed"
+                  data-jsx={290410321}
+                >
+                  <p
+                    data-jsx={1851307869}
+                  >
+                    hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
+                  </p>
+                  <p
+                    data-jsx={1851307869}
+                  >
+                    wow, is this a long question. i could never have imagined seeing such a question.
+                  </p>
+                  <p
+                    data-jsx={1851307869}
+                  >
+                    hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
+                  </p>
+                  <p
+                    data-jsx={1851307869}
+                  >
+                    wow, is this a long question. i could never have imagined seeing such a question.
+                  </p>
+                </div>
+                <div
+                  className="collapse"
+                  data-jsx={290410321}
+                >
+                  <i
+                    aria-hidden="true"
+                    className="angle double down icon"
+                    onClick={[Function]}
+                  />
+                </div>
+              </div>
             </div>
             <div
-              className="answers"
-              data-jsx={124049965}
+              className="options"
+              data-jsx={1851307869}
             >
-              <button
-                className="ui basic fluid button option"
-                disabled={undefined}
-                onClick={[Function]}
-                tabIndex={undefined}
+              <div
+                className="options"
+                data-jsx={2080075436}
               >
-                answer 1
-              </button>
-              <button
-                className="ui basic fluid button option"
-                disabled={undefined}
-                onClick={[Function]}
-                tabIndex={undefined}
-              >
-                answer two
-              </button>
-              <button
-                className="ui basic fluid button option"
-                disabled={undefined}
-                onClick={[Function]}
-                tabIndex={undefined}
-              >
-                dritte antwort
-              </button>
-              <button
-                className="ui basic fluid button option"
-                disabled={undefined}
-                onClick={[Function]}
-                tabIndex={undefined}
-              >
-                fourth option
-              </button>
+                <div
+                  className="option"
+                  data-jsx={2080075436}
+                >
+                  <button
+                    className="ui basic fluid button"
+                    disabled={undefined}
+                    onClick={[Function]}
+                    tabIndex={undefined}
+                  >
+                    answer1
+                  </button>
+                </div>
+                <div
+                  className="option"
+                  data-jsx={2080075436}
+                >
+                  <button
+                    className="ui basic fluid button"
+                    disabled={undefined}
+                    onClick={[Function]}
+                    tabIndex={undefined}
+                  >
+                    antwort 2
+                  </button>
+                </div>
+                <div
+                  className="option"
+                  data-jsx={2080075436}
+                >
+                  <button
+                    className="ui basic fluid button"
+                    disabled={undefined}
+                    onClick={[Function]}
+                    tabIndex={undefined}
+                  >
+                    option 3
+                  </button>
+                </div>
+                <div
+                  className="option"
+                  data-jsx={2080075436}
+                >
+                  <button
+                    className="ui basic fluid button"
+                    disabled={undefined}
+                    onClick={[Function]}
+                    tabIndex={undefined}
+                  >
+                    tschege
+                  </button>
+                </div>
+              </div>
             </div>
             <div
               className="actionArea"
-              data-jsx={124049965}
+              data-jsx={1851307869}
             >
               <button
-                className="ui primary button submitButton"
-                disabled={undefined}
+                className="ui primary disabled button submitButton"
+                disabled={true}
                 onClick={[Function]}
-                tabIndex={undefined}
+                tabIndex={-1}
               >
-                Send
+                <span>
+                  Send
+                </span>
               </button>
             </div>
           </div>
