@@ -1,4 +1,4 @@
-// flow-typed signature: 77a78044a6021c0258fb1b8b69dd4318
+// flow-typed signature: 495348fe7e36289229ca4b9b8cbad572
 // flow-typed version: 9821eaaefe/lodash_v4.x.x/flow_>=v0.47.x
 
 declare module 'lodash' {

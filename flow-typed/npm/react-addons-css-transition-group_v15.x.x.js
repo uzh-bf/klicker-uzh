@@ -1,4 +1,4 @@
-// flow-typed signature: 9b26b8cc01622c77e3c23e4fcd8f1a31
+// flow-typed signature: fe7abf92d2b0a6cb8907b2ea573c8586
 // flow-typed version: e06e1b48c4/react-addons-css-transition-group_v15.x.x/flow_>=v0.26.x
 
 declare module 'react-addons-css-transition-group' {
