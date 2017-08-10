@@ -14,12 +14,16 @@ type Props = {
     id: string,
     votes: number,
   }>,
-  head: "next/head",
+  head: 'next/head',
   intl: $IntlShape,
   isActive: boolean,
   isPublic: boolean,
   onActiveToggle: () => mixed,
   onPublicToggle: () => mixed,
+}
+
+const defaultProps = {
+  data: [],
 }
 
 const FeedbackChannel = ({
@@ -43,6 +47,7 @@ const FeedbackChannel = ({
     <div className="toggle">
       <Checkbox
         toggle
+        defaultChecked={isActive}
         label={intl.formatMessage({
           defaultMessage: 'Activated',
           id: 'common.string.activated',
@@ -55,6 +60,7 @@ const FeedbackChannel = ({
       <Checkbox
         toggle
         className="publishCheckbox"
+        defaultChecked={isPublic}
         disabled={!isActive}
         label={intl.formatMessage({
           defaultMessage: 'Publish questions',
@@ -126,5 +132,7 @@ const FeedbackChannel = ({
       }
     `}</style>
   </div>)
+
+FeedbackChannel.defaultProps = defaultProps
 
 export default withCSS(FeedbackChannel, ['checkbox'])

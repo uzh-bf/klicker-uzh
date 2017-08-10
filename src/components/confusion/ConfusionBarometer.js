@@ -27,6 +27,7 @@ const ConfusionBarometer = ({ head, intl, isActive, onActiveToggle }: Props) =>
 
     <Checkbox
       toggle
+      defaultChecked={isActive}
       label={intl.formatMessage({
         defaultMessage: 'Activated',
         id: 'common.string.activated',
