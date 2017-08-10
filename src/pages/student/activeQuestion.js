@@ -30,10 +30,15 @@ class ActiveQuestion extends Component {
       >
         <div className="activeQuestion">
           <div
-            className={
-              this.state.contentExtended ? 'content contentExtended' : 'content contentCollapsed'
-            }
+            className={`content ${this.state.contentExtended
+              ? 'contentExtended'
+              : 'contentCollapsed'}`}
           >
+            <p>
+              hello this is a very short question that is getting longer and longer as we speak. it
+              is in fact very very long. the end is even hidden at the beginning.
+            </p>
+            <p>wow, is this a long question. i could never have imagined seeing such a question.</p>
             <p>
               hello this is a very short question that is getting longer and longer as we speak. it
               is in fact very very long. the end is even hidden at the beginning.
@@ -74,14 +79,13 @@ class ActiveQuestion extends Component {
             flex-direction: column;
           }
 
-          .contentCollapsed, .contentExtended {
-            transition: linear max-height 1s 1s;
-          }
-
           .content {
+            flex: 1 0 4.2rem;
+
             line-height: 1.2rem;
             margin: .5rem;
             margin-bottom: .3rem;
+            overflow: hidden;
           }
 
           .content p {
@@ -93,17 +97,8 @@ class ActiveQuestion extends Component {
             margin-bottom: 0;
           }
 
-          .contentCollapsed {
-            flex: 1;
-
-            max-height: 4.2rem;
-            overflow: hidden;
-          }
-
           .contentExtended {
             flex: 0 0 auto;
-
-            max-height: 100%;
           }
 
           .collapser {
@@ -122,7 +117,6 @@ class ActiveQuestion extends Component {
 
           .actionArea {
             align-self: flex-end;
-            flex: 0 0 auto;
           }
 
           :global(.submitButton) {
