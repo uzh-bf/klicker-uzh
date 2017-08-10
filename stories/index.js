@@ -7,6 +7,8 @@ import { storiesOf } from '@storybook/react'
 import { boolean, number } from '@storybook/addon-knobs'
 
 import ActionButton from '../src/components/common/ActionButton'
+import Collapser from '../src/components/common/Collapser'
+import SingleChoiceOptions from '../src/components/questionTypes/options/SingleChoiceOptions'
 import Question from '../src/components/questions/Question'
 import Session from '../src/components/sessions/Session'
 import QuestionBlock from '../src/components/questions/QuestionBlock'
@@ -55,4 +57,30 @@ storiesOf('SessionTimeline', module).add('default', () =>
 
 storiesOf('ActionButton', module).add('default', () =>
   <ActionButton items={[{ label: 'abcd' }, { label: 'cdef' }]} />,
+)
+
+storiesOf('Collapser', module).add('default', () =>
+  (<Collapser>
+    <p>
+      hello this is a very short question that is getting longer and longer as we speak. it is in
+      fact very very long. the end is even hidden at the beginning.
+    </p>
+    <p>wow, is this a long question. i could never have imagined seeing such a question.</p>
+    <p>
+      hello this is a very short question that is getting longer and longer as we speak. it is in
+      fact very very long. the end is even hidden at the beginning.
+    </p>
+    <p>wow, is this a long question. i could never have imagined seeing such a question.</p>
+  </Collapser>),
+)
+
+storiesOf('SingleChoiceOptions', module).add('default', () =>
+  (<SingleChoiceOptions
+    options={[
+      { label: 'answer1' },
+      { label: 'antwort 2' },
+      { label: 'option 3' },
+      { label: 'tschege' },
+    ]}
+  />),
 )

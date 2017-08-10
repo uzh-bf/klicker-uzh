@@ -1,8 +1,10 @@
 // @flow
 
 import React, { Component } from 'react'
-import { Button, Icon } from 'semantic-ui-react'
+import { Button } from 'semantic-ui-react'
 
+import Collapser from '../../components/common/Collapser'
+import SingleChoiceOptions from '../../components/questionTypes/options/SingleChoiceOptions'
 import StudentLayout from '../../components/layouts/StudentLayout'
 import pageWithIntl from '../../lib/pageWithIntl'
 import withData from '../../lib/withData'
@@ -13,7 +15,15 @@ class ActiveQuestion extends Component {
   }
 
   state = {
-    contentExtended: false,
+    contentCollapsed: true,
+  }
+
+  handleCollapseToggle = () => {
+    this.setState(prevState => ({ contentCollapsed: !prevState.contentCollapsed }))
+  }
+
+  handleOptionClick = (index: number) => () => {
+    console.log(`option${index} has been clicked`)
   }
 
   render() {
@@ -29,42 +39,37 @@ class ActiveQuestion extends Component {
         })}
       >
         <div className="activeQuestion">
-          <div
-            className={`content ${this.state.contentExtended
-              ? 'contentExtended'
-              : 'contentCollapsed'}`}
-          >
-            <p>
-              hello this is a very short question that is getting longer and longer as we speak. it
-              is in fact very very long. the end is even hidden at the beginning.
-            </p>
-            <p>wow, is this a long question. i could never have imagined seeing such a question.</p>
-            <p>
-              hello this is a very short question that is getting longer and longer as we speak. it
-              is in fact very very long. the end is even hidden at the beginning.
-            </p>
-            <p>wow, is this a long question. i could never have imagined seeing such a question.</p>
-          </div>
           <div className="collapser">
-            <Icon
-              name={this.state.contentExtended ? 'angle double up' : 'angle double down'}
-              onClick={() =>
-                this.setState(prevState => ({ contentExtended: !prevState.contentExtended }))}
-            />
+            <Collapser
+              collapsed={this.state.contentCollapsed}
+              handleCollapseToggle={this.handleCollapseToggle}
+            >
+              <p>
+                hello this is a very short question that is getting longer and longer as we speak.
+                it is in fact very very long. the end is even hidden at the beginning.
+              </p>
+              <p>
+                wow, is this a long question. i could never have imagined seeing such a question.
+              </p>
+              <p>
+                hello this is a very short question that is getting longer and longer as we speak.
+                it is in fact very very long. the end is even hidden at the beginning.
+              </p>
+              <p>
+                wow, is this a long question. i could never have imagined seeing such a question.
+              </p>
+            </Collapser>
           </div>
-          <div className="answers">
-            <Button basic fluid className="option">
-              answer 1
-            </Button>
-            <Button basic fluid className="option">
-              answer two
-            </Button>
-            <Button basic fluid className="option">
-              dritte antwort
-            </Button>
-            <Button basic fluid className="option">
-              fourth option
-            </Button>
+          <div className="options">
+            <SingleChoiceOptions
+              options={[
+                { label: 'answer1' },
+                { label: 'antwort 2' },
+                { label: 'option 3' },
+                { label: 'tschege' },
+              ]}
+              handleOptionClick={this.handleOptionClick}
+            />
           </div>
           <div className="actionArea">
             <Button primary className="submitButton">
@@ -79,40 +84,9 @@ class ActiveQuestion extends Component {
             flex-direction: column;
           }
 
-          .content {
-            flex: 1 0 4.2rem;
-
-            line-height: 1.2rem;
-            margin: .5rem;
-            margin-bottom: .3rem;
-            overflow: hidden;
-          }
-
-          .content p {
-            margin-top: 0;
-            margin-bottom: .6rem;
-          }
-
-          .content p:last-child {
-            margin-bottom: 0;
-          }
-
-          .contentExtended {
-            flex: 0 0 auto;
-          }
-
-          .collapser {
-            margin: auto;
-            margin-bottom: .3rem;
-          }
-
-          .answers {
+          .options {
             border-top: 1px solid lightgrey;
             padding: .5rem;
-          }
-
-          :global(.option:not(:last-child)) {
-            margin-bottom: .5rem;
           }
 
           .actionArea {
