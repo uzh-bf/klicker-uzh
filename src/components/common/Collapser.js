@@ -17,7 +17,7 @@ const Collapser = ({ children, collapsed, handleCollapseToggle }: Props) =>
     </div>
     <div className="collapse">
       <Icon
-        name={collapsed ? 'angle double up' : 'angle double down'}
+        name={collapsed ? 'angle double down' : 'angle double up'}
         onClick={handleCollapseToggle}
       />
     </div>
