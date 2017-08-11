@@ -29,6 +29,14 @@ jobs:
         directories:
           - node_modules
 
+    - stage: test
+      script:
+        - yarn run format:ci
+      cache:
+        yarn: true
+        directories:
+          - node_modules
+
     - stage: build
       script:
         - docker login -u$QUAY_USER -p$QUAY_TOKEN quay.io/uzh-bf/klicker-react
