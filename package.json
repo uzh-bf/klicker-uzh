@@ -72,7 +72,11 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "roots": ["src/"]
+    "roots": [
+      "src/"
+    ]
   },
-  "pre-commit": ["format"]
+  "pre-commit": [
+    "format"
+  ]
 }
