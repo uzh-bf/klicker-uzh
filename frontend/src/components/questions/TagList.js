@@ -4,7 +4,8 @@ import React from 'react'
 import { graphql } from 'react-apollo'
 import { List } from 'semantic-ui-react'
 
-import withCSS from '../../lib/withCSS'
+import { withCSS } from '../../lib'
+
 import { TagListQuery } from '../../queries/queries'
 import type { TagListType } from '../../queries/queries'
 
@@ -25,7 +26,11 @@ const TagList = ({ activeTags, data, head, handleTagClick }: Props) => {
   }
 
   if (data.error) {
-    return <div>{data.error}</div>
+    return (
+      <div>
+        {data.error}
+      </div>
+    )
   }
 
   return (

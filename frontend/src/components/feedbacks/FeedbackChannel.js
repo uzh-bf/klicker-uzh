@@ -4,9 +4,9 @@ import React from 'react'
 import { Checkbox } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
-import Feedback from './Feedback'
+import { withCSS } from '../../lib'
 
-import withCSS from '../../lib/withCSS'
+import Feedback from './Feedback'
 
 type Props = {
   data: Array<{
@@ -14,12 +14,18 @@ type Props = {
     id: string,
     votes: number,
   }>,
-  head: "next/head",
+  head: 'next/head',
   intl: $IntlShape,
-  isActive: boolean,
-  isPublic: boolean,
-  onActiveToggle: () => mixed,
-  onPublicToggle: () => mixed,
+  isActive?: boolean,
+  isPublic?: boolean,
+  handleActiveToggle: () => mixed,
+  handlePublicToggle: () => mixed,
+}
+
+const defaultProps = {
+  data: [],
+  isActive: false,
+  isPublic: false,
 }
 
 const FeedbackChannel = ({
@@ -28,8 +34,8 @@ const FeedbackChannel = ({
   intl,
   isActive,
   isPublic,
-  onActiveToggle,
-  onPublicToggle,
+  handleActiveToggle,
+  handlePublicToggle,
 }: Props) =>
   (<div className="feedbackChannel">
     {head}
@@ -43,25 +49,27 @@ const FeedbackChannel = ({
     <div className="toggle">
       <Checkbox
         toggle
+        defaultChecked={isActive}
         label={intl.formatMessage({
           defaultMessage: 'Activated',
           id: 'common.string.activated',
         })}
         value={isActive}
-        onChange={onActiveToggle}
+        onChange={handleActiveToggle}
       />
     </div>
     <div className="toggle publicationToggle">
       <Checkbox
         toggle
         className="publishCheckbox"
+        defaultChecked={isPublic}
         disabled={!isActive}
         label={intl.formatMessage({
           defaultMessage: 'Publish questions',
           id: 'runningSession.feedbackChannel.string.publishQuestions',
         })}
         value={isPublic}
-        onChange={onPublicToggle}
+        onChange={handlePublicToggle}
       />
     </div>
 
@@ -126,5 +134,7 @@ const FeedbackChannel = ({
       }
     `}</style>
   </div>)
+
+FeedbackChannel.defaultProps = defaultProps
 
 export default withCSS(FeedbackChannel, ['checkbox'])

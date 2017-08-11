@@ -3,19 +3,19 @@
 exports[`Snapshot-Testing Works 1`] = `
 <div
   className="teacherLayout"
-  data-jsx={4268290890}
+  data-jsx={3320318560}
 >
   <div
     className="navbar"
-    data-jsx={4268290890}
+    data-jsx={3320318560}
   >
     <div
       className="navbar"
-      data-jsx={210784061}
+      data-jsx={1530501213}
     >
       <div
         className="sideArea"
-        data-jsx={210784061}
+        data-jsx={1530501213}
       >
         <div
           className="ui borderless noBorder menu"
@@ -30,7 +30,7 @@ exports[`Snapshot-Testing Works 1`] = `
             />
           </a>
           <h1
-            data-jsx={210784061}
+            data-jsx={1530501213}
           >
             Session History
           </h1>
@@ -38,7 +38,7 @@ exports[`Snapshot-Testing Works 1`] = `
       </div>
       <div
         className="searchArea"
-        data-jsx={210784061}
+        data-jsx={1530501213}
       >
         <div
           className="ui fluid icon input"
@@ -58,7 +58,7 @@ exports[`Snapshot-Testing Works 1`] = `
       </div>
       <div
         className="accountArea"
-        data-jsx={210784061}
+        data-jsx={1530501213}
       >
         <div
           className="ui borderless noBorder menu"
@@ -144,11 +144,11 @@ exports[`Snapshot-Testing Works 1`] = `
   </div>
   <div
     className="content"
-    data-jsx={4268290890}
+    data-jsx={3320318560}
   >
     <div
       className="sidebar"
-      data-jsx={1956274513}
+      data-jsx={3743778143}
     >
       <div
         className="pushable"

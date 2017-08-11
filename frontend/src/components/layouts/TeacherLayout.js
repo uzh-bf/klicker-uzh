@@ -1,26 +1,28 @@
 // @flow
 
 import React, { Component } from 'react'
+import Router from 'next/router'
+import { FormattedMessage } from 'react-intl'
+
+import { initLogging, withCSS } from '../../lib'
 
 import Navbar from '../../components/common/navbar/Navbar'
 import Sidebar from '../../components/common/sidebar/Sidebar'
-import initLogging from '../../lib/initLogging'
-import withCSS from '../../lib/withCSS'
 
 class TeacherLayout extends Component {
   props: {
-    actionButton: HTMLButtonElement,
+    actionButton: React.Element<any>,
     children: any,
     head: 'next/head',
     intl: $IntlShape,
     navbar: {
       accountShort: string,
       search: {
-        handleSearch: () => mixed,
-        handleSort: () => mixed,
         query: string,
         sortBy: string,
         sortOrder: string,
+        handleSearch: (query: string) => mixed,
+        handleSort: (order: string) => mixed,
       },
       title: string,
     },
@@ -37,7 +39,6 @@ class TeacherLayout extends Component {
   }
 
   state = {
-    sidebarActiveItem: 'questionPool',
     sidebarVisible: false,
   }
 
@@ -46,8 +47,8 @@ class TeacherLayout extends Component {
     initLogging()
   }
 
-  handleSidebarItemClick = (e, { name }) => {
-    this.setState({ sidebarActiveItem: name })
+  handleSidebarItemClick = (href: string) => () => {
+    Router.push(href)
   }
 
   handleSidebarToggle = () => {
@@ -56,6 +57,28 @@ class TeacherLayout extends Component {
 
   render() {
     const { actionButton, children, intl, head, navbar, sidebar } = this.props
+
+    const sidebarItems = [
+      {
+        href: '/questions',
+        label: <FormattedMessage id="teacher.questionPool.title" defaultMessage="Question Pool" />,
+        name: 'questionPool',
+      },
+      {
+        href: '/sessions',
+        label: (
+          <FormattedMessage id="teacher.sessionHistory.title" defaultMessage="Session History" />
+        ),
+        name: 'sessionHistory',
+      },
+      {
+        href: '/sessions/running',
+        label: (
+          <FormattedMessage id="teacher.runningSession.title" defaultMessage="Running Session" />
+        ),
+        name: 'runningSession',
+      },
+    ]
 
     return (
       <div className="teacherLayout">
@@ -66,13 +89,21 @@ class TeacherLayout extends Component {
             <Navbar
               intl={intl}
               sidebarVisible={this.state.sidebarVisible}
+              title={intl.formatMessage({
+                id: `teacher.${sidebar.activeItem}.title`,
+              })}
               handleSidebarToggle={this.handleSidebarToggle}
               {...navbar}
             />
           </div>}
 
         <div className="content">
-          <Sidebar visible={this.state.sidebarVisible} {...sidebar}>
+          <Sidebar
+            items={sidebarItems}
+            visible={this.state.sidebarVisible}
+            handleSidebarItemClick={this.handleSidebarItemClick}
+            {...sidebar}
+          >
             {children}
           </Sidebar>
         </div>
@@ -107,8 +138,9 @@ class TeacherLayout extends Component {
           }
 
           .content {
-            display: flex;
             flex: 1;
+
+            display: flex;
           }
 
           .actionArea {

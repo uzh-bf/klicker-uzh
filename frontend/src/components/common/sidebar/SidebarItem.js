@@ -1,7 +1,6 @@
 // @flow
 
 import React from 'react'
-import Router from 'next/router'
 import { Menu } from 'semantic-ui-react'
 
 type Props = {
@@ -9,14 +8,15 @@ type Props = {
   children: any,
   href: string,
   name: string,
+  handleSidebarItemClick: (href: string) => () => mixed,
 }
 
 const defaultProps = {
   active: false,
 }
 
-const SidebarItem = ({ active, children, href, name }: Props) =>
-  (<Menu.Item active={active} name={name} onClick={() => Router.push(href)}>
+const SidebarItem = ({ active, children, href, name, handleSidebarItemClick }: Props) =>
+  (<Menu.Item active={active} name={name} onClick={handleSidebarItemClick(href)}>
     {children}
   </Menu.Item>)
 

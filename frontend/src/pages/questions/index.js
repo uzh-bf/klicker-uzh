@@ -3,11 +3,11 @@
 import React, { Component } from 'react'
 import { Button } from 'semantic-ui-react'
 
+import { pageWithIntl, withData } from '../../lib'
+
 import QuestionList from '../../components/questions/QuestionList'
 import TagList from '../../components/questions/TagList'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
-import pageWithIntl from '../../lib/pageWithIntl'
-import withData from '../../lib/withData'
 
 class Index extends Component {
   props: {
@@ -22,7 +22,6 @@ class Index extends Component {
 
   constructor(props) {
     super(props)
-
     this.state = {
       activeNewButton: false,
       activeTags: [],
@@ -36,22 +35,17 @@ class Index extends Component {
   }
 
   // handle searching in the navbar search area
-  handleSearch = () => {
-    console.log('searched...')
-  }
-
-  // handling toggle of the sidebar via navbar
-  handleSidebarToggle = () => {
-    this.setState({ sidebarVisible: !this.state.sidebarVisible })
+  handleSearch = (query: string) => {
+    console.log(`Searched... for ${query}`)
   }
 
   // handle sorting via navbar search area
-  handleSort = () => {
-    console.log('sorted...')
+  handleSort = (by: string, order: string) => {
+    console.log(`sorted by ${by} in ${order} order`)
   }
 
   // handle clicking on a tag in the tag list
-  handleTagClick = (tagId) => {
+  handleTagClick = (tagId: string) => {
     this.setState((prevState) => {
       // remove the tag from active tags
       if (prevState.activeTags.includes(tagId)) {
@@ -79,7 +73,7 @@ class Index extends Component {
       },
       title: intl.formatMessage({
         defaultMessage: 'Question Pool',
-        id: 'pages.questionPool.title',
+        id: 'teacher.questionPool.title',
       }),
     }
 
