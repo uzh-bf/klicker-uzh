@@ -11,9 +11,6 @@
     "lint": {"engine": "eslint"}
   },
   "dependencies": {
-    "mute": [
-      "eslint",
-      "next"
-    ]
+    "mute": []
   }
 }

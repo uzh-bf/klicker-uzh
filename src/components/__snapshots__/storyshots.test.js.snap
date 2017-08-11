@@ -1,0 +1,1473 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Storyshots ActionButton default 1`] = `
+<div
+  className="actionButtonWrapper"
+  data-jsx={4197750628}
+>
+  <div
+    className="actionButton"
+    data-jsx={4197750628}
+  >
+    <button
+      className="ui large circular icon primary button"
+      disabled={undefined}
+      onClick={[Function]}
+      tabIndex={undefined}
+    >
+      <i
+        aria-hidden="true"
+        className="plus icon"
+      />
+    </button>
+  </div>
+  <div
+    className="ui vertical text menu buttonMenu"
+    data-jsx={4197750628}
+  >
+    <button
+      className="item"
+      data-jsx={4197750628}
+      onClick={[Function]}
+    >
+      abcd
+    </button>
+    <button
+      className="item"
+      data-jsx={4197750628}
+      onClick={[Function]}
+    >
+      cdef
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Storyshots Collapser collapsed 1`] = `
+<div
+  className="collapser"
+  data-jsx={290410321}
+>
+  <div
+    className="content collapsed"
+    data-jsx={290410321}
+  >
+    <div>
+      <p>
+        hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
+      </p>
+      <p>
+        wow, is this a long question. i could never have imagined seeing such a question.
+      </p>
+      <p>
+        hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
+      </p>
+      <p>
+        wow, is this a long question. i could never have imagined seeing such a question.
+      </p>
+    </div>
+  </div>
+  <div
+    className="collapse"
+    data-jsx={290410321}
+  >
+    <i
+      aria-hidden="true"
+      className="angle double down icon"
+      onClick={[Function]}
+    />
+  </div>
+</div>
+`;
+
+exports[`Storyshots Collapser default 1`] = `
+<div
+  className="collapser"
+  data-jsx={290410321}
+>
+  <div
+    className="content collapsed"
+    data-jsx={290410321}
+  >
+    <div>
+      <p>
+        hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
+      </p>
+      <p>
+        wow, is this a long question. i could never have imagined seeing such a question.
+      </p>
+      <p>
+        hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
+      </p>
+      <p>
+        wow, is this a long question. i could never have imagined seeing such a question.
+      </p>
+    </div>
+  </div>
+  <div
+    className="collapse"
+    data-jsx={290410321}
+  >
+    <i
+      aria-hidden="true"
+      className="angle double down icon"
+      onClick={[Function]}
+    />
+  </div>
+</div>
+`;
+
+exports[`Storyshots Collapser extended 1`] = `
+<div
+  className="collapser"
+  data-jsx={290410321}
+>
+  <div
+    className="content"
+    data-jsx={290410321}
+  >
+    <div>
+      <p>
+        hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
+      </p>
+      <p>
+        wow, is this a long question. i could never have imagined seeing such a question.
+      </p>
+      <p>
+        hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
+      </p>
+      <p>
+        wow, is this a long question. i could never have imagined seeing such a question.
+      </p>
+    </div>
+  </div>
+  <div
+    className="collapse"
+    data-jsx={290410321}
+  >
+    <i
+      aria-hidden="true"
+      className="angle double up icon"
+      onClick={[Function]}
+    />
+  </div>
+</div>
+`;
+
+exports[`Storyshots ConfusionBarometer default 1`] = `
+<div
+  className="confusionBarometer"
+  data-jsx={4012471055}
+>
+  <h2
+    data-jsx={4012471055}
+  >
+    <span>
+      Confusion-Barometer
+    </span>
+  </h2>
+  <div
+    className="ui toggle checkbox"
+    onChange={[Function]}
+    onClick={[Function]}
+    onMouseDown={[Function]}
+  >
+    <input
+      checked={false}
+      className="hidden"
+      name={undefined}
+      readOnly={true}
+      tabIndex={0}
+      type="checkbox"
+      value={false}
+    />
+    <label>
+      Activated
+    </label>
+  </div>
+</div>
+`;
+
+exports[`Storyshots ConfusionSlider default 1`] = `
+<div
+  className="confusionSlider"
+  data-jsx={219419674}
+>
+  <div
+    className="title"
+    data-jsx={219419674}
+  >
+    <h2>
+      Speed
+    </h2>
+  </div>
+  <div
+    className="slider"
+    data-jsx={219419674}
+  >
+    <div
+      className="rangeslider rangeslider-horizontal"
+      onMouseDown={[Function]}
+      onMouseUp={[Function]}
+      onTouchEnd={[Function]}
+      onTouchStart={[Function]}
+    >
+      <div
+        className="rangeslider__fill"
+        style={
+          Object {
+            "width": "0px",
+          }
+        }
+      />
+      <div
+        className="rangeslider__handle"
+        onMouseDown={[Function]}
+        onTouchEnd={[Function]}
+        onTouchMove={[Function]}
+        style={
+          Object {
+            "left": "0px",
+          }
+        }
+      >
+        <div
+          className="rangeslider__tooltip"
+        >
+          <span>
+            10
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots FeedbackChannel default 1`] = `
+<div
+  className="feedbackChannel"
+  data-jsx={2247287158}
+>
+  <h2
+    data-jsx={2247287158}
+  >
+    <span>
+      Feedback-Channel
+    </span>
+  </h2>
+  <div
+    className="toggle"
+    data-jsx={2247287158}
+  >
+    <div
+      className="ui toggle checkbox"
+      onChange={[Function]}
+      onClick={[Function]}
+      onMouseDown={[Function]}
+    >
+      <input
+        checked={false}
+        className="hidden"
+        name={undefined}
+        readOnly={true}
+        tabIndex={0}
+        type="checkbox"
+        value={false}
+      />
+      <label>
+        Activated
+      </label>
+    </div>
+  </div>
+  <div
+    className="toggle publicationToggle"
+    data-jsx={2247287158}
+  >
+    <div
+      className="ui disabled toggle checkbox publishCheckbox"
+      onChange={[Function]}
+      onClick={[Function]}
+      onMouseDown={[Function]}
+    >
+      <input
+        checked={false}
+        className="hidden"
+        name={undefined}
+        readOnly={true}
+        tabIndex={-1}
+        type="checkbox"
+        value={false}
+      />
+      <label>
+        Publish questions
+      </label>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots FeedbackChannel isActive 1`] = `
+<div
+  className="feedbackChannel"
+  data-jsx={2247287158}
+>
+  <h2
+    data-jsx={2247287158}
+  >
+    <span>
+      Feedback-Channel
+    </span>
+  </h2>
+  <div
+    className="toggle"
+    data-jsx={2247287158}
+  >
+    <div
+      className="ui checked toggle checkbox"
+      onChange={[Function]}
+      onClick={[Function]}
+      onMouseDown={[Function]}
+    >
+      <input
+        checked={true}
+        className="hidden"
+        name={undefined}
+        readOnly={true}
+        tabIndex={0}
+        type="checkbox"
+        value={true}
+      />
+      <label>
+        Activated
+      </label>
+    </div>
+  </div>
+  <div
+    className="toggle publicationToggle"
+    data-jsx={2247287158}
+  >
+    <div
+      className="ui toggle checkbox publishCheckbox"
+      onChange={[Function]}
+      onClick={[Function]}
+      onMouseDown={[Function]}
+    >
+      <input
+        checked={false}
+        className="hidden"
+        name={undefined}
+        readOnly={true}
+        tabIndex={0}
+        type="checkbox"
+        value={false}
+      />
+      <label>
+        Publish questions
+      </label>
+    </div>
+  </div>
+  <div
+    className="feedbacks"
+    data-jsx={2247287158}
+  >
+    <div
+      className="feedback"
+      data-jsx={2247287158}
+    >
+      <div
+        className="feedback"
+        data-jsx={1568002809}
+      >
+        <div
+          className="content"
+          data-jsx={1568002809}
+        >
+          hello alex!
+        </div>
+        <div
+          className="delete"
+          data-jsx={1568002809}
+        >
+          <button
+            className="ui basic fluid icon button"
+            disabled={undefined}
+            onClick={[Function]}
+            tabIndex={undefined}
+          >
+            <i
+              aria-hidden="true"
+              className="trash outline icon"
+            />
+          </button>
+        </div>
+        <div
+          className="votes"
+          data-jsx={1568002809}
+        >
+          +
+          100
+        </div>
+      </div>
+    </div>
+    <div
+      className="feedback"
+      data-jsx={2247287158}
+    >
+      <div
+        className="feedback"
+        data-jsx={1568002809}
+      >
+        <div
+          className="content"
+          data-jsx={1568002809}
+        >
+          bla bleh
+        </div>
+        <div
+          className="delete"
+          data-jsx={1568002809}
+        >
+          <button
+            className="ui basic fluid icon button"
+            disabled={undefined}
+            onClick={[Function]}
+            tabIndex={undefined}
+          >
+            <i
+              aria-hidden="true"
+              className="trash outline icon"
+            />
+          </button>
+        </div>
+        <div
+          className="votes"
+          data-jsx={1568002809}
+        >
+          +
+          40
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots FeedbackChannel isPublic 1`] = `
+<div
+  className="feedbackChannel"
+  data-jsx={2247287158}
+>
+  <h2
+    data-jsx={2247287158}
+  >
+    <span>
+      Feedback-Channel
+    </span>
+  </h2>
+  <div
+    className="toggle"
+    data-jsx={2247287158}
+  >
+    <div
+      className="ui checked toggle checkbox"
+      onChange={[Function]}
+      onClick={[Function]}
+      onMouseDown={[Function]}
+    >
+      <input
+        checked={true}
+        className="hidden"
+        name={undefined}
+        readOnly={true}
+        tabIndex={0}
+        type="checkbox"
+        value={true}
+      />
+      <label>
+        Activated
+      </label>
+    </div>
+  </div>
+  <div
+    className="toggle publicationToggle"
+    data-jsx={2247287158}
+  >
+    <div
+      className="ui checked toggle checkbox publishCheckbox"
+      onChange={[Function]}
+      onClick={[Function]}
+      onMouseDown={[Function]}
+    >
+      <input
+        checked={true}
+        className="hidden"
+        name={undefined}
+        readOnly={true}
+        tabIndex={0}
+        type="checkbox"
+        value={true}
+      />
+      <label>
+        Publish questions
+      </label>
+    </div>
+  </div>
+  <div
+    className="feedbacks"
+    data-jsx={2247287158}
+  >
+    <div
+      className="feedback"
+      data-jsx={2247287158}
+    >
+      <div
+        className="feedback"
+        data-jsx={1568002809}
+      >
+        <div
+          className="content"
+          data-jsx={1568002809}
+        >
+          hello alex!
+        </div>
+        <div
+          className="delete"
+          data-jsx={1568002809}
+        >
+          <button
+            className="ui basic fluid icon button"
+            disabled={undefined}
+            onClick={[Function]}
+            tabIndex={undefined}
+          >
+            <i
+              aria-hidden="true"
+              className="trash outline icon"
+            />
+          </button>
+        </div>
+        <div
+          className="votes"
+          data-jsx={1568002809}
+        >
+          +
+          100
+        </div>
+      </div>
+    </div>
+    <div
+      className="feedback"
+      data-jsx={2247287158}
+    >
+      <div
+        className="feedback"
+        data-jsx={1568002809}
+      >
+        <div
+          className="content"
+          data-jsx={1568002809}
+        >
+          bla bleh
+        </div>
+        <div
+          className="delete"
+          data-jsx={1568002809}
+        >
+          <button
+            className="ui basic fluid icon button"
+            disabled={undefined}
+            onClick={[Function]}
+            tabIndex={undefined}
+          >
+            <i
+              aria-hidden="true"
+              className="trash outline icon"
+            />
+          </button>
+        </div>
+        <div
+          className="votes"
+          data-jsx={1568002809}
+        >
+          +
+          40
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots ListWithHeader default 1`] = `
+<div
+  data-jsx={3358450463}
+>
+  <h3
+    className="listHeader"
+    data-jsx={3358450463}
+  >
+    hello world
+  </h3>
+  <ul
+    className="list"
+    data-jsx={3358450463}
+  >
+    <li
+      className="listItem"
+      data-jsx={3358450463}
+    >
+      abcd
+    </li>
+    <li
+      className="listItem"
+      data-jsx={3358450463}
+    >
+      cdef
+    </li>
+  </ul>
+</div>
+`;
+
+exports[`Storyshots Question MC with multiple versions 1`] = `
+<div
+  className="container"
+  data-jsx={769450314}
+>
+  <h2
+    className="title"
+    data-jsx={769450314}
+  >
+    #
+    4c821db
+     - 
+    This is a long question
+     
+    (v2)
+  </h2>
+  <div
+    className="tags"
+    data-jsx={769450314}
+  >
+    <div
+      className="container"
+      data-jsx={4150526596}
+    >
+      <div
+        className="type tag"
+        data-jsx={4150526596}
+      >
+        MC
+      </div>
+      <div
+        className="tag"
+        data-jsx={4150526596}
+      >
+        CAPM
+      </div>
+      <div
+        className="tag"
+        data-jsx={4150526596}
+      >
+        Risk
+      </div>
+    </div>
+  </div>
+  <div
+    className="details"
+    data-jsx={769450314}
+  >
+    <div
+      className="container"
+      data-jsx={2119890886}
+    >
+      <div
+        className="column"
+        data-jsx={2119890886}
+      >
+        Test1
+      </div>
+      <div
+        className="column"
+        data-jsx={2119890886}
+      >
+        Test2
+      </div>
+      <div
+        className="column"
+        data-jsx={2119890886}
+      >
+        Test3
+      </div>
+      <div
+        className="column"
+        data-jsx={2119890886}
+      >
+        <div
+          data-jsx={3358450463}
+        >
+          <h3
+            className="listHeader"
+            data-jsx={3358450463}
+          >
+            <span>
+              Last used
+            </span>
+          </h3>
+          <ul
+            className="list"
+            data-jsx={3358450463}
+          >
+            <li
+              className="listItem"
+              data-jsx={3358450463}
+            >
+              2015-02-08 14:32:11
+            </li>
+            <li
+              className="listItem"
+              data-jsx={3358450463}
+            >
+              2016-09-09 15:22:09
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots Question MC without tags 1`] = `
+<div
+  className="container"
+  data-jsx={769450314}
+>
+  <h2
+    className="title"
+    data-jsx={769450314}
+  >
+    #
+    4c821db
+     - 
+    This is a long question
+     
+  </h2>
+  <div
+    className="tags"
+    data-jsx={769450314}
+  >
+    <div
+      className="container"
+      data-jsx={4150526596}
+    >
+      <div
+        className="type tag"
+        data-jsx={4150526596}
+      >
+        MC
+      </div>
+    </div>
+  </div>
+  <div
+    className="details"
+    data-jsx={769450314}
+  >
+    <div
+      className="container"
+      data-jsx={2119890886}
+    >
+      <div
+        className="column"
+        data-jsx={2119890886}
+      >
+        Test1
+      </div>
+      <div
+        className="column"
+        data-jsx={2119890886}
+      >
+        Test2
+      </div>
+      <div
+        className="column"
+        data-jsx={2119890886}
+      >
+        Test3
+      </div>
+      <div
+        className="column"
+        data-jsx={2119890886}
+      >
+        <div
+          data-jsx={3358450463}
+        >
+          <h3
+            className="listHeader"
+            data-jsx={3358450463}
+          >
+            <span>
+              Last used
+            </span>
+          </h3>
+          <ul
+            className="list"
+            data-jsx={3358450463}
+          >
+            <li
+              className="listItem"
+              data-jsx={3358450463}
+            >
+              2015-02-08 14:32:11
+            </li>
+            <li
+              className="listItem"
+              data-jsx={3358450463}
+            >
+              2016-09-09 15:22:09
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots Question SC with a single version 1`] = `
+<div
+  className="container"
+  data-jsx={769450314}
+>
+  <h2
+    className="title"
+    data-jsx={769450314}
+  >
+    #
+    4c821db
+     - 
+    This is a long question
+     
+  </h2>
+  <div
+    className="tags"
+    data-jsx={769450314}
+  >
+    <div
+      className="container"
+      data-jsx={4150526596}
+    >
+      <div
+        className="type tag"
+        data-jsx={4150526596}
+      >
+        SC
+      </div>
+      <div
+        className="tag"
+        data-jsx={4150526596}
+      >
+        CAPM
+      </div>
+      <div
+        className="tag"
+        data-jsx={4150526596}
+      >
+        Risk
+      </div>
+    </div>
+  </div>
+  <div
+    className="details"
+    data-jsx={769450314}
+  >
+    <div
+      className="container"
+      data-jsx={2119890886}
+    >
+      <div
+        className="column"
+        data-jsx={2119890886}
+      >
+        Test1
+      </div>
+      <div
+        className="column"
+        data-jsx={2119890886}
+      >
+        Test2
+      </div>
+      <div
+        className="column"
+        data-jsx={2119890886}
+      >
+        Test3
+      </div>
+      <div
+        className="column"
+        data-jsx={2119890886}
+      >
+        <div
+          data-jsx={3358450463}
+        >
+          <h3
+            className="listHeader"
+            data-jsx={3358450463}
+          >
+            <span>
+              Last used
+            </span>
+          </h3>
+          <ul
+            className="list"
+            data-jsx={3358450463}
+          >
+            <li
+              className="listItem"
+              data-jsx={3358450463}
+            >
+              2015-02-08 14:32:11
+            </li>
+            <li
+              className="listItem"
+              data-jsx={3358450463}
+            >
+              2016-09-09 15:22:09
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots QuestionBlock default 1`] = `
+<div
+  className="questionBlock"
+  data-jsx={1012223770}
+>
+  <div
+    className="timeLimit"
+    data-jsx={1012223770}
+  >
+    <i
+      aria-hidden="true"
+      className="clock icon"
+    />
+    60
+    s
+  </div>
+  <div
+    className="showSolution"
+    data-jsx={1012223770}
+  >
+    <i
+      aria-hidden="true"
+      className="hide icon"
+    />
+  </div>
+  <div
+    className="questions"
+    data-jsx={1012223770}
+  >
+    <div
+      className="question"
+      data-jsx={1012223770}
+    >
+      <div
+        className="questionSingle"
+        data-jsx={1928862230}
+      >
+        <div
+          className="id"
+          data-jsx={1928862230}
+        >
+          4c821db7-0940-4a24-b31a-7969104bbc9f
+        </div>
+        <div
+          className="type"
+          data-jsx={1928862230}
+        >
+          SC
+        </div>
+        <div
+          className="content"
+          data-jsx={1928862230}
+        >
+          This is a long question
+        </div>
+      </div>
+    </div>
+    <div
+      className="question"
+      data-jsx={1012223770}
+    >
+      <div
+        className="questionSingle"
+        data-jsx={1928862230}
+      >
+        <div
+          className="id"
+          data-jsx={1928862230}
+        >
+          4c821db7-0940-4a24-b31a-7969104bbc9f
+        </div>
+        <div
+          className="type"
+          data-jsx={1928862230}
+        >
+          SC
+        </div>
+        <div
+          className="content"
+          data-jsx={1928862230}
+        >
+          This is a long question
+        </div>
+      </div>
+    </div>
+    <div
+      className="question"
+      data-jsx={1012223770}
+    >
+      <div
+        className="questionSingle"
+        data-jsx={1928862230}
+      >
+        <div
+          className="id"
+          data-jsx={1928862230}
+        >
+          4c821db7-0940-4a24-b31a-7969104bbc9f
+        </div>
+        <div
+          className="type"
+          data-jsx={1928862230}
+        >
+          SC
+        </div>
+        <div
+          className="content"
+          data-jsx={1928862230}
+        >
+          This is a long question
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots QuestionBlock empty 1`] = `
+<div
+  className="questionBlock"
+  data-jsx={1012223770}
+>
+  <div
+    className="timeLimit"
+    data-jsx={1012223770}
+  >
+    <i
+      aria-hidden="true"
+      className="clock icon"
+    />
+    60
+    s
+  </div>
+  <div
+    className="showSolution"
+    data-jsx={1012223770}
+  >
+    <i
+      aria-hidden="true"
+      className="hide icon"
+    />
+  </div>
+  <div
+    className="questions"
+    data-jsx={1012223770}
+  />
+</div>
+`;
+
+exports[`Storyshots QuestionSingle default 1`] = `
+<div
+  className="questionSingle"
+  data-jsx={1928862230}
+>
+  <div
+    className="id"
+    data-jsx={1928862230}
+  >
+    4c821db7-0940-4a24-b31a-7969104bbc9f
+  </div>
+  <div
+    className="type"
+    data-jsx={1928862230}
+  >
+    SC
+  </div>
+  <div
+    className="content"
+    data-jsx={1928862230}
+  >
+    This is a long question
+  </div>
+</div>
+`;
+
+exports[`Storyshots Session default 1`] = `
+<div
+  className="session"
+  data-jsx={622378283}
+>
+  <h2
+    className="title"
+    data-jsx={622378283}
+  >
+    4c821db
+     - 
+    Long session
+  </h2>
+  <div
+    className="date"
+    data-jsx={622378283}
+  >
+    <span>
+      Created on
+    </span>
+     
+    08.02.2015 14:02:00
+  </div>
+  <div
+    className="details"
+    data-jsx={622378283}
+  >
+    <div
+      className="block"
+      data-jsx={622378283}
+    >
+      <div
+        className="questionBlock"
+        data-jsx={1012223770}
+      >
+        <div
+          className="timeLimit"
+          data-jsx={1012223770}
+        >
+          <i
+            aria-hidden="true"
+            className="clock icon"
+          />
+          60
+          s
+        </div>
+        <div
+          className="showSolution"
+          data-jsx={1012223770}
+        >
+          <i
+            aria-hidden="true"
+            className="hide icon"
+          />
+        </div>
+        <div
+          className="questions"
+          data-jsx={1012223770}
+        >
+          <div
+            className="question"
+            data-jsx={1012223770}
+          >
+            <div
+              className="questionSingle"
+              data-jsx={1928862230}
+            >
+              <div
+                className="id"
+                data-jsx={1928862230}
+              >
+                4c821db7-0940-4a24-b31a-7969104bbc9f
+              </div>
+              <div
+                className="type"
+                data-jsx={1928862230}
+              >
+                SC
+              </div>
+              <div
+                className="content"
+                data-jsx={1928862230}
+              >
+                This is a long question
+              </div>
+            </div>
+          </div>
+          <div
+            className="question"
+            data-jsx={1012223770}
+          >
+            <div
+              className="questionSingle"
+              data-jsx={1928862230}
+            >
+              <div
+                className="id"
+                data-jsx={1928862230}
+              >
+                4c821db7-0940-4a24-b31a-7969104bbc9f
+              </div>
+              <div
+                className="type"
+                data-jsx={1928862230}
+              >
+                SC
+              </div>
+              <div
+                className="content"
+                data-jsx={1928862230}
+              >
+                This is a long question
+              </div>
+            </div>
+          </div>
+          <div
+            className="question"
+            data-jsx={1012223770}
+          >
+            <div
+              className="questionSingle"
+              data-jsx={1928862230}
+            >
+              <div
+                className="id"
+                data-jsx={1928862230}
+              >
+                4c821db7-0940-4a24-b31a-7969104bbc9f
+              </div>
+              <div
+                className="type"
+                data-jsx={1928862230}
+              >
+                SC
+              </div>
+              <div
+                className="content"
+                data-jsx={1928862230}
+              >
+                This is a long question
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      className="actionArea"
+      data-jsx={622378283}
+    >
+      <button
+        className="ui icon left labeled button"
+        disabled={undefined}
+        onClick={[Function]}
+        tabIndex={undefined}
+      >
+        <i
+          aria-hidden="true"
+          className="play icon"
+        />
+        <span>
+          Start
+        </span>
+      </button>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots SessionTimeline default 1`] = `
+<div
+  className="sessionTimeline"
+  data-jsx={2629295027}
+>
+  <div
+    className="topRow"
+    data-jsx={2629295027}
+  >
+    <div
+      className="startingTime"
+      data-jsx={2629295027}
+    >
+      <i
+        aria-hidden="true"
+        className="time icon"
+      />
+       18:17:22
+    </div>
+    <div
+      className="runningTime"
+      data-jsx={2629295027}
+    >
+      <i
+        aria-hidden="true"
+        className="play circle icon"
+      />
+       12:56
+    </div>
+  </div>
+  <div
+    className="blocks"
+    data-jsx={2629295027}
+  />
+  <div
+    className="buttons"
+    data-jsx={2629295027}
+  >
+    <button
+      className="ui large icon left labeled button"
+      disabled={undefined}
+      onClick={[Function]}
+      tabIndex={undefined}
+    >
+      <i
+        aria-hidden="true"
+        className="left arrow icon"
+      />
+      Previous
+    </button>
+    <button
+      className="ui large icon primary right labeled button"
+      disabled={undefined}
+      onClick={[Function]}
+      tabIndex={undefined}
+    >
+      <i
+        aria-hidden="true"
+        className="right arrow icon"
+      />
+      Next
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Storyshots SingleChoiceOptions default 1`] = `
+<div
+  className="options"
+  data-jsx={2080075436}
+>
+  <div
+    className="option"
+    data-jsx={2080075436}
+  >
+    <button
+      className="ui basic fluid button"
+      disabled={undefined}
+      onClick={[Function]}
+      tabIndex={undefined}
+    >
+      answer2
+    </button>
+  </div>
+  <div
+    className="option"
+    data-jsx={2080075436}
+  >
+    <button
+      className="ui basic fluid button"
+      disabled={undefined}
+      onClick={[Function]}
+      tabIndex={undefined}
+    >
+      antwort 2
+    </button>
+  </div>
+  <div
+    className="option"
+    data-jsx={2080075436}
+  >
+    <button
+      className="ui basic fluid button"
+      disabled={undefined}
+      onClick={[Function]}
+      tabIndex={undefined}
+    >
+      option 3
+    </button>
+  </div>
+  <div
+    className="option"
+    data-jsx={2080075436}
+  >
+    <button
+      className="ui basic fluid button"
+      disabled={undefined}
+      onClick={[Function]}
+      tabIndex={undefined}
+    >
+      tschege
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Storyshots SingleChoiceOptions withActiveOption 1`] = `
+<div
+  className="options"
+  data-jsx={2080075436}
+>
+  <div
+    className="option"
+    data-jsx={2080075436}
+  >
+    <button
+      className="ui basic fluid button"
+      disabled={undefined}
+      onClick={[Function]}
+      tabIndex={undefined}
+    >
+      answer2
+    </button>
+  </div>
+  <div
+    className="option active"
+    data-jsx={2080075436}
+  >
+    <button
+      className="ui basic fluid button"
+      disabled={undefined}
+      onClick={[Function]}
+      tabIndex={undefined}
+    >
+      antwort 2
+    </button>
+  </div>
+  <div
+    className="option"
+    data-jsx={2080075436}
+  >
+    <button
+      className="ui basic fluid button"
+      disabled={undefined}
+      onClick={[Function]}
+      tabIndex={undefined}
+    >
+      option 3
+    </button>
+  </div>
+  <div
+    className="option"
+    data-jsx={2080075436}
+  >
+    <button
+      className="ui basic fluid button"
+      disabled={undefined}
+      onClick={[Function]}
+      tabIndex={undefined}
+    >
+      tschege
+    </button>
+  </div>
+</div>
+`;

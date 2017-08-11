@@ -1,0 +1,433 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Snapshot-Testing Works 1`] = `
+<div
+  className="studentLayout"
+  data-jsx={2022545551}
+>
+  <div
+    className="header"
+    data-jsx={2022545551}
+  >
+    <button
+      className="ui basic icon button"
+      disabled={undefined}
+      onClick={[Function]}
+      tabIndex={undefined}
+    >
+      <i
+        aria-hidden="true"
+        className="content icon"
+      />
+    </button>
+    <h1
+      data-jsx={2022545551}
+    >
+      Active Question
+    </h1>
+  </div>
+  <div
+    className="content"
+    data-jsx={2022545551}
+  >
+    <div
+      className="sidebar"
+      data-jsx={3743778143}
+    >
+      <div
+        className="pushable"
+      >
+        <div
+          className="ui vertical labeled icon ui overlay left wide sidebar sidebarMenu menu"
+        >
+          <a
+            className="active item"
+            onClick={[Function]}
+          >
+            <span>
+              Active Question
+            </span>
+          </a>
+          <a
+            className="item"
+            onClick={[Function]}
+          >
+            <span>
+              Feedback-Channel
+            </span>
+          </a>
+        </div>
+        <div
+          className="pusher"
+        >
+          <div
+            className="student"
+            data-jsx={75986794}
+          >
+            <div
+              className="questionArea active"
+              data-jsx={75986794}
+            >
+              <div
+                className="collapser"
+                data-jsx={75986794}
+              >
+                <div
+                  className="collapser"
+                  data-jsx={290410321}
+                >
+                  <div
+                    className="content collapsed"
+                    data-jsx={290410321}
+                  >
+                    <p
+                      data-jsx={75986794}
+                    >
+                      hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
+                    </p>
+                    <p
+                      data-jsx={75986794}
+                    >
+                      wow, is this a long question. i could never have imagined seeing such a question.
+                    </p>
+                    <p
+                      data-jsx={75986794}
+                    >
+                      hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
+                    </p>
+                    <p
+                      data-jsx={75986794}
+                    >
+                      wow, is this a long question. i could never have imagined seeing such a question.
+                    </p>
+                  </div>
+                  <div
+                    className="collapse"
+                    data-jsx={290410321}
+                  >
+                    <i
+                      aria-hidden="true"
+                      className="angle double down icon"
+                      onClick={[Function]}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div
+                className="options"
+                data-jsx={75986794}
+              >
+                <div
+                  className="options"
+                  data-jsx={2080075436}
+                >
+                  <div
+                    className="option"
+                    data-jsx={2080075436}
+                  >
+                    <button
+                      className="ui basic fluid button"
+                      disabled={undefined}
+                      onClick={[Function]}
+                      tabIndex={undefined}
+                    >
+                      answer1
+                    </button>
+                  </div>
+                  <div
+                    className="option"
+                    data-jsx={2080075436}
+                  >
+                    <button
+                      className="ui basic fluid button"
+                      disabled={undefined}
+                      onClick={[Function]}
+                      tabIndex={undefined}
+                    >
+                      antwort 2
+                    </button>
+                  </div>
+                  <div
+                    className="option"
+                    data-jsx={2080075436}
+                  >
+                    <button
+                      className="ui basic fluid button"
+                      disabled={undefined}
+                      onClick={[Function]}
+                      tabIndex={undefined}
+                    >
+                      option 3
+                    </button>
+                  </div>
+                  <div
+                    className="option"
+                    data-jsx={2080075436}
+                  >
+                    <button
+                      className="ui basic fluid button"
+                      disabled={undefined}
+                      onClick={[Function]}
+                      tabIndex={undefined}
+                    >
+                      tschege
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div
+                className="actionButton"
+                data-jsx={75986794}
+              >
+                <button
+                  className="ui primary button submitButton"
+                  disabled={undefined}
+                  onClick={[Function]}
+                  tabIndex={undefined}
+                >
+                  <span>
+                    Send
+                  </span>
+                </button>
+              </div>
+            </div>
+            <div
+              className="feedbackArea"
+              data-jsx={75986794}
+            >
+              <div
+                className="confusion"
+                data-jsx={75986794}
+              >
+                <div
+                  className="confusionSlider"
+                  data-jsx={219419674}
+                >
+                  <div
+                    className="title"
+                    data-jsx={219419674}
+                  >
+                    <h2
+                      data-jsx={75986794}
+                    >
+                      <span>
+                        Speed
+                      </span>
+                    </h2>
+                  </div>
+                  <div
+                    className="slider"
+                    data-jsx={219419674}
+                  >
+                    <div
+                      className="rangeslider rangeslider-horizontal"
+                      onMouseDown={[Function]}
+                      onMouseUp={[Function]}
+                      onTouchEnd={[Function]}
+                      onTouchStart={[Function]}
+                    >
+                      <div
+                        className="rangeslider__fill"
+                        style={
+                          Object {
+                            "width": "0px",
+                          }
+                        }
+                      />
+                      <div
+                        className="rangeslider__handle"
+                        onMouseDown={[Function]}
+                        onTouchEnd={[Function]}
+                        onTouchMove={[Function]}
+                        style={
+                          Object {
+                            "left": "0px",
+                          }
+                        }
+                      >
+                        <div
+                          className="rangeslider__tooltip"
+                        >
+                          <span />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  className="confusionSlider"
+                  data-jsx={219419674}
+                >
+                  <div
+                    className="title"
+                    data-jsx={219419674}
+                  >
+                    <h2
+                      data-jsx={75986794}
+                    >
+                      <span>
+                        Difficulty
+                      </span>
+                    </h2>
+                  </div>
+                  <div
+                    className="slider"
+                    data-jsx={219419674}
+                  >
+                    <div
+                      className="rangeslider rangeslider-horizontal"
+                      onMouseDown={[Function]}
+                      onMouseUp={[Function]}
+                      onTouchEnd={[Function]}
+                      onTouchStart={[Function]}
+                    >
+                      <div
+                        className="rangeslider__fill"
+                        style={
+                          Object {
+                            "width": "0px",
+                          }
+                        }
+                      />
+                      <div
+                        className="rangeslider__handle"
+                        onMouseDown={[Function]}
+                        onTouchEnd={[Function]}
+                        onTouchMove={[Function]}
+                        style={
+                          Object {
+                            "left": "0px",
+                          }
+                        }
+                      >
+                        <div
+                          className="rangeslider__tooltip"
+                        >
+                          <span />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                className="feedbacks"
+                data-jsx={75986794}
+              >
+                <div
+                  className="feedback"
+                  data-jsx={75986794}
+                >
+                  <div
+                    className="feedback"
+                    data-jsx={1568002809}
+                  >
+                    <div
+                      className="content"
+                      data-jsx={1568002809}
+                    >
+                      hello world
+                    </div>
+                    <div
+                      className="votes"
+                      data-jsx={1568002809}
+                    >
+                      +
+                      100
+                    </div>
+                  </div>
+                </div>
+                <div
+                  className="feedback"
+                  data-jsx={75986794}
+                >
+                  <div
+                    className="feedback"
+                    data-jsx={1568002809}
+                  >
+                    <div
+                      className="content"
+                      data-jsx={1568002809}
+                    >
+                      blablbla
+                    </div>
+                    <div
+                      className="votes"
+                      data-jsx={1568002809}
+                    >
+                      +
+                      50
+                    </div>
+                  </div>
+                </div>
+                <div
+                  className="feedback"
+                  data-jsx={75986794}
+                >
+                  <div
+                    className="feedback"
+                    data-jsx={1568002809}
+                  >
+                    <div
+                      className="content"
+                      data-jsx={1568002809}
+                    >
+                      hello
+                    </div>
+                    <div
+                      className="votes"
+                      data-jsx={1568002809}
+                    >
+                      +
+                      25
+                    </div>
+                  </div>
+                </div>
+                <div
+                  className="feedback"
+                  data-jsx={75986794}
+                >
+                  <div
+                    className="feedback"
+                    data-jsx={1568002809}
+                  >
+                    <div
+                      className="content"
+                      data-jsx={1568002809}
+                    >
+                      hooi
+                    </div>
+                    <div
+                      className="votes"
+                      data-jsx={1568002809}
+                    >
+                      +
+                      10
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                className="actionButton"
+                data-jsx={75986794}
+              >
+                <button
+                  className="ui large circular icon primary button"
+                  disabled={undefined}
+                  onClick={[Function]}
+                  tabIndex={undefined}
+                >
+                  <i
+                    aria-hidden="true"
+                    className="plus icon"
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;

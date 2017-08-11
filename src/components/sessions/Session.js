@@ -2,8 +2,8 @@
 
 import React from 'react'
 import moment from 'moment'
-import { FormattedMessage } from 'react-intl'
 import { Button, Icon } from 'semantic-ui-react'
+import { FormattedMessage } from 'react-intl'
 
 import QuestionBlock from '../questions/QuestionBlock'
 
@@ -23,32 +23,32 @@ type Props = {
   createdAt: string,
   id: string,
   name: string,
-  status: string,
+  status: 'CREATED' | 'RUNNING' | 'COMPLETED',
 }
 
 const defaultProps = {
-  status: 'created',
+  status: 'CREATED',
 }
 
 const Session = ({ createdAt, name, blocks, id, status }: Props) => {
   const statusCases = {
-    completed: {
+    COMPLETED: {
       disabled: false,
       icon: 'copy',
       message: <FormattedMessage id="session.button.completed.content" defaultMessage="Copy" />,
     },
-    created: {
+    CREATED: {
       disabled: false,
       icon: 'play',
       message: <FormattedMessage id="session.button.created.content" defaultMessage="Start" />,
     },
-    running: {
+    RUNNING: {
       disabled: true,
       icon: 'play',
       message: <FormattedMessage id="session.button.running.content" defaultMessage="Running" />,
     },
   }
-  const buttonStatus = statusCases[status]
+  const buttonStatus = statusCases[status] || statusCases.CREATED
 
   return (
     <div className="session">

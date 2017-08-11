@@ -4,11 +4,11 @@ import React from 'react'
 import { Input } from 'semantic-ui-react'
 
 type Props = {
-  handleSearch: () => mixed,
   intl: $IntlShape,
+  handleSearch: (query: string) => mixed,
 }
 
-const SearchArea = ({ handleSearch, intl }: Props) =>
+const SearchArea = ({ intl, handleSearch }: Props) =>
   (<Input
     fluid
     icon="search"

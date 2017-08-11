@@ -87,7 +87,7 @@ type SessionListType = {
   sessions: Array<{
     id: string,
     name: string,
-    status: string,
+    status: 'CREATED' | 'RUNNING' | 'COMPLETED',
     blocks: Array<{
       id: string,
       showSolutions: boolean,
