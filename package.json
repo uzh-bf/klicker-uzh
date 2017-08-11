@@ -78,6 +78,6 @@
     ]
   },
   "pre-commit": [
-    "format"
+    "lint"
   ]
 }
