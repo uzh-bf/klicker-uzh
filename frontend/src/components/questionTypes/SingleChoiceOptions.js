@@ -35,11 +35,12 @@ const SingleChoiceOptions = ({ activeOption, options, handleOptionClick }: Props
 
       // TODO: improve animation
       @keyframes bounce {
-        0%, 100% {
-          transform: translateX(0)
+        0%,
+        100% {
+          transform: translateX(0);
         }
         50% {
-          transform: translateY(-2px)
+          transform: translateY(-2px);
         }
       }
     `}</style>

@@ -1,14 +1,12 @@
+/* eslint-disable react/prop-types */
+
 import React from 'react'
-import PropTypes from 'prop-types'
 import { ApolloProvider, getDataFromTree } from 'react-apollo'
 import initApollo from './initApollo'
 
 export default ComposedComponent =>
   class WithData extends React.Component {
     static displayName = `WithData(${ComposedComponent.displayName})`
-    static propTypes = {
-      serverState: PropTypes.object.isRequired, // eslint-disable-line react/forbid-prop-types
-    }
 
     static async getInitialProps(ctx) {
       let serverState = {}

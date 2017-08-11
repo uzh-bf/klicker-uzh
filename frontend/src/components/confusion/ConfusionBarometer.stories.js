@@ -36,8 +36,7 @@ const confusionBarometerMocked = () => <ConfusionBarometer isActive intl={intlMo
 confusionBarometerMocked.options = { createNodeMock }
 */
 
-storiesOf('ConfusionBarometer', module)
-  .add('default', () => <Wrapper />)
-  // TODO: reenable if issue with refs is fixed
-  // https://github.com/recharts/recharts/issues/765
-  // .add('isActive', confusionBarometerMocked)
+storiesOf('ConfusionBarometer', module).add('default', () => <Wrapper />)
+// TODO: reenable if issue with refs is fixed
+// https://github.com/recharts/recharts/issues/765
+// .add('isActive', confusionBarometerMocked)
