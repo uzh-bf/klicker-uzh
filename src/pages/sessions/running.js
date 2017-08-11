@@ -46,9 +46,9 @@ class Running extends Component {
   }
 
   handleFeedbacksPublicToggle = () => {
-          // TODO: trigger mutation instead of updating state
-          // TODO: trigger refetch and update values
-          this.setState(prevState => ({ feedbacksPublic: !prevState.feedbacksPublic }))
+    // TODO: trigger mutation instead of updating state
+    // TODO: trigger refetch and update values
+    this.setState(prevState => ({ feedbacksPublic: !prevState.feedbacksPublic }))
   }
 
   render() {

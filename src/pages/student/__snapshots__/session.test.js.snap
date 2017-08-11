@@ -119,11 +119,11 @@ exports[`Snapshot-Testing Works 1`] = `
               >
                 <div
                   className="options"
-                  data-jsx={2080075436}
+                  data-jsx={2300864390}
                 >
                   <div
                     className="option"
-                    data-jsx={2080075436}
+                    data-jsx={2300864390}
                   >
                     <button
                       className="ui basic fluid button"
@@ -136,7 +136,7 @@ exports[`Snapshot-Testing Works 1`] = `
                   </div>
                   <div
                     className="option"
-                    data-jsx={2080075436}
+                    data-jsx={2300864390}
                   >
                     <button
                       className="ui basic fluid button"
@@ -149,7 +149,7 @@ exports[`Snapshot-Testing Works 1`] = `
                   </div>
                   <div
                     className="option"
-                    data-jsx={2080075436}
+                    data-jsx={2300864390}
                   >
                     <button
                       className="ui basic fluid button"
@@ -162,7 +162,7 @@ exports[`Snapshot-Testing Works 1`] = `
                   </div>
                   <div
                     className="option"
-                    data-jsx={2080075436}
+                    data-jsx={2300864390}
                   >
                     <button
                       className="ui basic fluid button"
