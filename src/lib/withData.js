@@ -11,7 +11,8 @@ function getComponentDisplayName(Component) {
   return Component.displayName || Component.name || 'Unknown'
 }
 
-export default ComposedComponent => class WithData extends React.Component {
+export default ComposedComponent =>
+  class WithData extends React.Component {
     static displayName = `WithData(${getComponentDisplayName(ComposedComponent)})`
 
     static async getInitialProps(ctx) {
@@ -84,4 +85,4 @@ export default ComposedComponent => class WithData extends React.Component {
         </ApolloProvider>
       )
     }
-}
+  }
