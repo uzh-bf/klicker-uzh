@@ -1,5 +1,6 @@
 import { createStore, combineReducers, applyMiddleware, compose } from 'redux'
-import reducers from '../redux/reducers'
+import { reducer as formReducer } from 'redux-form'
+import * as reducers from '../redux/reducers'
 
 let reduxStore = null
 
@@ -15,6 +16,7 @@ function create(apollo, initialState = {}) {
       // Setup reducers
       ...reducers,
       apollo: apollo.reducer(),
+      form: formReducer,
     }),
     initialState, // Hydrate the store with server-side data
     compose(
