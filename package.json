@@ -51,6 +51,9 @@
     "flow-bin": "^0.52.0",
     "jest": "^20.0.4",
     "nodemon": "^1.11.0",
+    "pre-commit": "^1.2.2",
+    "prettier-eslint": "^6.4.2",
+    "prettier-eslint-cli": "^4.1.1",
     "react-addons-test-utils": "^15.6.0",
     "react-test-renderer": "^15.6.1",
     "semantic-ui-css": "^2.2.11",
@@ -61,7 +64,8 @@
     "debug": "cross-env NODE_ENV=production node --inspect server.js",
     "dev": "nodemon -w server.js server.js",
     "flow": "flow",
-    "lint": "eslint src/**/*.js",
+    "lint": "eslint --fix src/**/*.js",
+    "prettier": "prettier-eslint --write src/**/*.js",
     "start": "cross-env NODE_ENV=production node server.js",
     "storybook": "start-storybook -p 6006",
     "storybook-build": "build-storybook",
@@ -73,5 +77,8 @@
     "roots": [
       "src/"
     ]
-  }
+  },
+  "pre-commit": [
+    "prettier"
+  ]
 }
