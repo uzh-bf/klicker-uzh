@@ -47,6 +47,12 @@ app
   .then(() => {
     const server = express()
 
+    // redirect the root route to the question pool page
+    // TODO: redirect location depending on login status
+    server.get('/', (req, res) => {
+      res.redirect('/questions/')
+    })
+
     server.get('*', (req, res) => {
       const accept = accepts(req)
       const locale = accept.language(dev ? ['en'] : languages)
