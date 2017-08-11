@@ -10,6 +10,7 @@ const question = {
 }
 
 const questionBlock = {
+  id: '4c821db7-0940-4a24-b31a-7969104bbc9f',
   questions: [question, question, question],
   showSolutions: false,
   timeLimit: 60,
@@ -20,12 +21,14 @@ const question2 = {
   questionDefinition: {
     title: question.title,
     type: question.type,
-  }
+  },
 }
 
 const questionBlock2 = {
-  ...questionBlock,
-  questions: [question2, question2, question2]
+  id: '4c821db7-0940-4a24-b31a-7969104bbc9f',
+  questions: [question2, question2, question2],
+  showSolutions: false,
+  timeLimit: 60,
 }
 
 const session = {

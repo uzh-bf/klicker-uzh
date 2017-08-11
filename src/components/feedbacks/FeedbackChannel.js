@@ -16,14 +16,16 @@ type Props = {
   }>,
   head: 'next/head',
   intl: $IntlShape,
-  isActive: boolean,
-  isPublic: boolean,
+  isActive?: boolean,
+  isPublic?: boolean,
   handleActiveToggle: () => mixed,
   handlePublicToggle: () => mixed,
 }
 
 const defaultProps = {
   data: [],
+  isActive: false,
+  isPublic: false,
 }
 
 const FeedbackChannel = ({

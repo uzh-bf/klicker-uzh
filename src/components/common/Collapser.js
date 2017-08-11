@@ -6,8 +6,12 @@ import { Icon } from 'semantic-ui-react'
 
 type Props = {
   children: any,
-  collapsed: boolean,
+  collapsed?: boolean,
   handleCollapseToggle: () => mixed,
+}
+
+const defaultProps = {
+  collapsed: false,
 }
 
 const Collapser = ({ children, collapsed, handleCollapseToggle }: Props) =>
@@ -56,4 +60,7 @@ const Collapser = ({ children, collapsed, handleCollapseToggle }: Props) =>
       }
     `}</style>
   </div>)
+
+Collapser.defaultProps = defaultProps
+
 export default Collapser

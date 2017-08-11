@@ -5,7 +5,7 @@ import { Button } from 'semantic-ui-react'
 
 type Props = {
   content: string,
-  showDelete: boolean,
+  showDelete?: boolean,
   votes: number,
 }
 

@@ -7,6 +7,7 @@
 
 import React, { Component } from 'react'
 import { storiesOf } from '@storybook/react'
+import { action } from '@storybook/addon-actions'
 
 import Collapser from './Collapser'
 
@@ -52,12 +53,12 @@ storiesOf('Collapser', module)
     </Wrapper>),
   )
   .add('collapsed', () =>
-    (<Collapser collapsed>
+    (<Collapser collapsed handleCollapseToggle={() => action('collapser-clicked')}>
       {content}
     </Collapser>),
   )
   .add('extended', () =>
-    (<Collapser>
+    (<Collapser handleCollapseToggle={() => action('collapser-clicked')}>
       {content}
     </Collapser>),
   )
