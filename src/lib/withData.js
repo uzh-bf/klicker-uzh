@@ -30,7 +30,7 @@ export default ComposedComponent =>
         const apollo = initApollo()
         const redux = initRedux(apollo)
         // Provide the `url` prop data in case a GraphQL query uses it
-        const url = { query: ctx.query, pathname: ctx.pathname }
+        const url = { pathname: ctx.pathname, query: ctx.query }
 
         try {
           // Run all GraphQL queries
