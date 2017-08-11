@@ -1,7 +1,6 @@
 // @flow
 
 import React, { Component } from 'react'
-import Router from 'next/router'
 import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
 
@@ -14,14 +13,13 @@ class StudentLayout extends Component {
     children: any,
     head: 'next/head',
     sidebar: {
-      activeItem: string,
+      handleItemChange: (newItem: string) => mixed,
     },
     title: string,
   }
 
-  static defaultProps = {}
-
   state = {
+    sidebarActiveItem: 'activeQuestion',
     sidebarVisible: false,
   }
 
@@ -30,8 +28,10 @@ class StudentLayout extends Component {
     initLogging()
   }
 
-  handleSidebarItemClick = href => () => {
-    Router.push(href)
+  handleSidebarItemClick = (sidebarActiveItem: string) => () => {
+    this.setState({ sidebarActiveItem })
+    this.handleSidebarToggle()
+    this.props.sidebar.handleItemChange(sidebarActiveItem)
   }
 
   handleSidebarToggle = () => {
@@ -43,14 +43,14 @@ class StudentLayout extends Component {
 
     const sidebarItems = [
       {
-        href: '/student/activeQuestion',
+        href: 'activeQuestion',
         label: (
           <FormattedMessage id="student.sidebar.activeQuestion" defaultMessage="Active Question" />
         ),
         name: 'activeQuestion',
       },
       {
-        href: '/student/feedbackChannel',
+        href: 'feedbackChannel',
         label: (
           <FormattedMessage
             id="student.sidebar.feedbackChannel"
@@ -125,6 +125,12 @@ class StudentLayout extends Component {
             flex: 1;
 
             display: flex;
+          }
+
+          @media all and (min-width: 768px) {
+            .header {
+              display: none;
+            }
           }
         `}</style>
       </div>
