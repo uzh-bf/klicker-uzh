@@ -86,7 +86,7 @@ class Running extends Component {
               intl={intl}
               data={activeUser.activeSession.confusion}
               isActive={this.state.confusionActive}
-              onActiveToggle={this.handleConfusionActiveToggle}
+              handlectiveToggle={this.handleConfusionActiveToggle}
             />
           </div>
 
@@ -96,8 +96,8 @@ class Running extends Component {
               data={activeUser.activeSession.feedbacks}
               isActive={this.state.feedbacksActive}
               isPublic={this.state.feedbacksPublic}
-              onActiveToggle={this.handleFeedbacksActiveToggle}
-              onPublicToggle={this.handleFeedbacksPublicToggle}
+              handleActiveToggle={this.handleFeedbacksActiveToggle}
+              handlePublicToggle={this.handleFeedbacksPublicToggle}
             />
           </div>
         </div>
