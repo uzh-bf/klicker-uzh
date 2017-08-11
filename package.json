@@ -64,21 +64,15 @@
     "debug": "cross-env NODE_ENV=production node --inspect server.js",
     "dev": "nodemon -w server.js server.js",
     "flow": "flow",
-    "lint": "eslint --fix src/**/*.js",
-    "prettier": "prettier-eslint --single-quote --no-semi --write src/**/*.js",
+    "format": "prettier-eslint --single-quote --no-semi --write \"src/**/*.js\"",
+    "lint": "eslint \"src/**/*.js\"",
     "start": "cross-env NODE_ENV=production node server.js",
     "storybook": "start-storybook -p 6006",
-    "storybook-build": "build-storybook",
-    "storybook-test": "storyshots",
     "test": "jest"
   },
   "jest": {
     "testEnvironment": "node",
-    "roots": [
-      "src/"
-    ]
+    "roots": ["src/"]
   },
-  "pre-commit": [
-    "prettier"
-  ]
+  "pre-commit": ["format"]
 }
