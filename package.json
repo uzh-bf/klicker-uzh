@@ -65,7 +65,7 @@
     "dev": "nodemon -w server.js server.js",
     "flow": "flow",
     "lint": "eslint --fix src/**/*.js",
-    "prettier": "prettier-eslint --write src/**/*.js",
+    "prettier": "prettier-eslint --single-quote --no-semi --write src/**/*.js",
     "start": "cross-env NODE_ENV=production node server.js",
     "storybook": "start-storybook -p 6006",
     "storybook-build": "build-storybook",
