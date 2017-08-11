@@ -30,6 +30,7 @@
     "react-redux": "^5.0.6",
     "recharts": "^1.0.0-alpha.2",
     "redux": "^3.7.2",
+    "redux-form": "^7.0.3",
     "semantic-ui-react": "^0.71.0"
   },
   "devDependencies": {
