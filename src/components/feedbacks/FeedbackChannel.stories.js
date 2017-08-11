@@ -32,11 +32,10 @@ class Wrapper extends Component {
 
 const data = [
   { content: 'hello alex!', id: 'abcd', votes: 100 },
-{ content: 'bla bleh', id: 'defg', votes: 40 }
+  { content: 'bla bleh', id: 'defg', votes: 40 },
 ]
 
 storiesOf('FeedbackChannel', module)
-.add('default', () => <Wrapper data={data} />)
-.add('isActive', () => <FeedbackChannel isActive data={data} intl={intlMock}/>)
-.add('isPublic', () => <FeedbackChannel isActive isPublic data={data} intl={intlMock}/>)
-
+  .add('default', () => <Wrapper data={data} />)
+  .add('isActive', () => <FeedbackChannel isActive data={data} intl={intlMock} />)
+  .add('isPublic', () => <FeedbackChannel isActive isPublic data={data} intl={intlMock} />)

@@ -7,11 +7,12 @@
 
 // TODO: get this working
 
-/*import React from 'react'
+/* import React from 'react'
 import { storiesOf } from '@storybook/react'
 
 import Navbar from './Navbar'
 import { intlMock } from '../../../../.storybook/utils'
 
-storiesOf('Navbar', module).add('default', () => <Navbar accountShort="AW" intl={intlMock} title="Example page"/>)
+storiesOf('Navbar', module)
+  .add('default', () => <Navbar accountShort="AW" intl={intlMock} title="Example page"/>)
 */

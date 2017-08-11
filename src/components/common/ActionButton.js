@@ -21,9 +21,9 @@ const ActionButton = ({ items }: Props) =>
     </div>
     <div className="ui vertical text menu buttonMenu">
       {items.map(item =>
-        (<a className="item" onClick={item.handleClick} role="navigation">
+        (<button className="item" onClick={item.handleClick}>
           {item.label}
-        </a>),
+        </button>),
       )}
     </div>
 
