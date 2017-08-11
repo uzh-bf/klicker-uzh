@@ -4,9 +4,9 @@ import React, { Component } from 'react'
 import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
 
+import { initLogging, withCSS } from '../../lib'
+
 import Sidebar from '../common/sidebar/Sidebar'
-import initLogging from '../../lib/initLogging'
-import withCSS from '../../lib/withCSS'
 
 class StudentLayout extends Component {
   props: {

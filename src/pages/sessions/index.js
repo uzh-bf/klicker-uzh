@@ -2,22 +2,24 @@
 
 import React, { Component } from 'react'
 
+import { pageWithIntl, withData } from '../../lib'
+
 import TeacherLayout from '../../components/layouts/TeacherLayout'
-import pageWithIntl from '../../lib/pageWithIntl'
 import SessionList from '../../components/sessions/SessionList'
-import withData from '../../lib/withData'
 
 class Index extends Component {
   props: {
     intl: $IntlShape,
   }
 
-  handleSearch = () => {
-    console.log('searched...')
+  // handle searching in the navbar search area
+  handleSearch = (query: string) => {
+    console.log(`Searched... for ${query}`)
   }
 
-  handleSort = () => {
-    console.log('sorted...')
+  // handle sorting via navbar search area
+  handleSort = (by: string, order: string) => {
+    console.log(`sorted by ${by} in ${order} order`)
   }
 
   render() {

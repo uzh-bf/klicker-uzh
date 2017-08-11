@@ -6,7 +6,7 @@ import { Button } from 'semantic-ui-react'
 type Props = {
   items: Array<{
     label: string,
-    onClick: () => mixed,
+    handleClick: () => mixed,
   }>,
 }
 
@@ -21,7 +21,7 @@ const ActionButton = ({ items }: Props) =>
     </div>
     <div className="ui vertical text menu buttonMenu">
       {items.map(item =>
-        (<a className="item" onClick={item.onClick} role="navigation">
+        (<a className="item" onClick={item.handleClick} role="navigation">
           {item.label}
         </a>),
       )}

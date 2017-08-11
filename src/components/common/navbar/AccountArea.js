@@ -1,8 +1,8 @@
 // @flow
 
 import React from 'react'
-import { FormattedMessage } from 'react-intl'
 import { Dropdown } from 'semantic-ui-react'
+import { FormattedMessage } from 'react-intl'
 
 type Props = {
   accountShort: string,

@@ -3,13 +3,13 @@
 import React from 'react'
 import { Menu, Sidebar as SemanticSidebar } from 'semantic-ui-react'
 
+import { withCSS } from '../../../lib'
+
 import SidebarItem from './SidebarItem'
-import withCSS from '../../../lib/withCSS'
 
 type Props = {
   activeItem: string,
   children: any,
-  handleSidebarItemClick: () => mixed,
   head: 'next/head',
   items: Array<{
     label: string | React.Element<any>,
@@ -17,6 +17,7 @@ type Props = {
     name: string,
   }>,
   visible: boolean,
+  handleSidebarItemClick: (href: string) => () => mixed,
 }
 
 const defaultProps = {

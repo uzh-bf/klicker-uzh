@@ -4,10 +4,10 @@ import React, { Component } from 'react'
 import Router from 'next/router'
 import { FormattedMessage } from 'react-intl'
 
+import { initLogging, withCSS } from '../../lib'
+
 import Navbar from '../../components/common/navbar/Navbar'
 import Sidebar from '../../components/common/sidebar/Sidebar'
-import initLogging from '../../lib/initLogging'
-import withCSS from '../../lib/withCSS'
 
 class TeacherLayout extends Component {
   props: {
@@ -18,11 +18,11 @@ class TeacherLayout extends Component {
     navbar: {
       accountShort: string,
       search: {
-        handleSearch: () => mixed,
-        handleSort: () => mixed,
         query: string,
         sortBy: string,
         sortOrder: string,
+        handleSearch: (query: string) => mixed,
+        handleSort: (order: string) => mixed,
       },
       title: string,
     },
@@ -47,7 +47,7 @@ class TeacherLayout extends Component {
     initLogging()
   }
 
-  handleSidebarItemClick = href => () => {
+  handleSidebarItemClick = (href: string) => () => {
     Router.push(href)
   }
 

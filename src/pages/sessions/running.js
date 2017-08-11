@@ -3,12 +3,12 @@
 import React, { Component } from 'react'
 import { graphql } from 'react-apollo'
 
+import { pageWithIntl, withData } from '../../lib'
+
 import ConfusionBarometer from '../../components/confusion/ConfusionBarometer'
 import FeedbackChannel from '../../components/feedbacks/FeedbackChannel'
 import SessionTimeline from '../../components/sessions/SessionTimeline'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
-import pageWithIntl from '../../lib/pageWithIntl'
-import withData from '../../lib/withData'
 import { RunningSessionQuery } from '../../queries/queries'
 import type { RunningSessionType } from '../../queries/queries'
 
@@ -18,10 +18,19 @@ class Running extends Component {
     intl: $IntlShape,
   }
 
-  state = {
-    confusionActive: false,
-    feedbacksActive: false,
-    feedbacksPublic: false,
+  state: {
+    confusionActive: boolean,
+    feedbacksActive: boolean,
+    feedbacksPublic: boolean,
+  }
+
+  constructor(props) {
+    super(props)
+    this.state = {
+      confusionActive: false,
+      feedbacksActive: false,
+      feedbacksPublic: false,
+    }
   }
 
   handleConfusionActiveToggle = () => {

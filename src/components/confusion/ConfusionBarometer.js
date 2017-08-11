@@ -4,17 +4,18 @@ import React from 'react'
 import { Checkbox } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
+import { withCSS } from '../../lib'
+
 import ConfusionSection from './ConfusionSection'
-import withCSS from '../../lib/withCSS'
 
 type Props = {
   head: 'next/head',
   intl: $IntlShape,
   isActive: boolean,
-  onActiveToggle: () => mixed,
+  handleActiveToggle: () => mixed,
 }
 
-const ConfusionBarometer = ({ head, intl, isActive, onActiveToggle }: Props) =>
+const ConfusionBarometer = ({ head, intl, isActive, handleActiveToggle }: Props) =>
   (<div className="confusionBarometer">
     {head}
 
@@ -33,7 +34,7 @@ const ConfusionBarometer = ({ head, intl, isActive, onActiveToggle }: Props) =>
         id: 'common.string.activated',
       })}
       value={isActive}
-      onChange={onActiveToggle}
+      onChange={handleActiveToggle}
     />
 
     {isActive &&

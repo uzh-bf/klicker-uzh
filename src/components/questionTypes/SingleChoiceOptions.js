@@ -1,8 +1,8 @@
 // @flow
 
 import React from 'react'
-import { Button } from 'semantic-ui-react'
 import classNames from 'classnames'
+import { Button } from 'semantic-ui-react'
 
 type Props = {
   activeOption: number,

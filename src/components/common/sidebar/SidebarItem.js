@@ -6,9 +6,9 @@ import { Menu } from 'semantic-ui-react'
 type Props = {
   active: boolean,
   children: any,
-  handleSidebarItemClick: () => mixed,
   href: string,
   name: string,
+  handleSidebarItemClick: (href: string) => () => mixed,
 }
 
 const defaultProps = {
