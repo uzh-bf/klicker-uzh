@@ -1,5 +1,5 @@
 import { createStore, combineReducers, applyMiddleware, compose } from 'redux'
-import * as reducers from '../redux/reducers'
+import reducers from '../redux/reducers'
 
 let reduxStore = null
 
