@@ -27,8 +27,9 @@
     "react-dom": "^15.6.1",
     "react-intl": "^2.3.0",
     "react-rangeslider": "^2.1.0",
+    "react-redux": "^5.0.6",
     "recharts": "^1.0.0-alpha.2",
-    "redux": "^3.7.0",
+    "redux": "^3.7.2",
     "semantic-ui-react": "^0.71.0"
   },
   "devDependencies": {
