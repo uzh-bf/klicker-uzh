@@ -11,11 +11,11 @@ exports[`Snapshot-Testing Works 1`] = `
   >
     <div
       className="navbar"
-      data-jsx={1998781277}
+      data-jsx={1530501213}
     >
       <div
         className="sideArea"
-        data-jsx={1998781277}
+        data-jsx={1530501213}
       >
         <div
           className="ui borderless noBorder menu"
@@ -30,7 +30,7 @@ exports[`Snapshot-Testing Works 1`] = `
             />
           </a>
           <h1
-            data-jsx={1998781277}
+            data-jsx={1530501213}
           >
             Question Pool
           </h1>
@@ -38,7 +38,7 @@ exports[`Snapshot-Testing Works 1`] = `
       </div>
       <div
         className="searchArea"
-        data-jsx={1998781277}
+        data-jsx={1530501213}
       >
         <div
           className="ui fluid icon input"
@@ -58,7 +58,7 @@ exports[`Snapshot-Testing Works 1`] = `
       </div>
       <div
         className="accountArea"
-        data-jsx={1998781277}
+        data-jsx={1530501213}
       >
         <div
           className="ui borderless noBorder menu"

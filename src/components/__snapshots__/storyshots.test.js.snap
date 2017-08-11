@@ -25,22 +25,20 @@ exports[`Storyshots ActionButton default 1`] = `
     className="ui vertical text menu buttonMenu"
     data-jsx={4197750628}
   >
-    <a
+    <button
       className="item"
       data-jsx={4197750628}
-      onClick={undefined}
-      role="navigation"
+      onClick={[Function]}
     >
       abcd
-    </a>
-    <a
+    </button>
+    <button
       className="item"
       data-jsx={4197750628}
-      onClick={undefined}
-      role="navigation"
+      onClick={[Function]}
     >
       cdef
-    </a>
+    </button>
   </div>
 </div>
 `;
@@ -76,7 +74,7 @@ exports[`Storyshots Collapser collapsed 1`] = `
     <i
       aria-hidden="true"
       className="angle double down icon"
-      onClick={undefined}
+      onClick={[Function]}
     />
   </div>
 </div>
@@ -150,7 +148,7 @@ exports[`Storyshots Collapser extended 1`] = `
     <i
       aria-hidden="true"
       className="angle double up icon"
-      onClick={undefined}
+      onClick={[Function]}
     />
   </div>
 </div>
@@ -186,6 +184,62 @@ exports[`Storyshots ConfusionBarometer default 1`] = `
     <label>
       Activated
     </label>
+  </div>
+</div>
+`;
+
+exports[`Storyshots ConfusionSlider default 1`] = `
+<div
+  className="confusionSlider"
+  data-jsx={219419674}
+>
+  <div
+    className="title"
+    data-jsx={219419674}
+  >
+    <h2>
+      Speed
+    </h2>
+  </div>
+  <div
+    className="slider"
+    data-jsx={219419674}
+  >
+    <div
+      className="rangeslider rangeslider-horizontal"
+      onMouseDown={[Function]}
+      onMouseUp={[Function]}
+      onTouchEnd={[Function]}
+      onTouchStart={[Function]}
+    >
+      <div
+        className="rangeslider__fill"
+        style={
+          Object {
+            "width": "0px",
+          }
+        }
+      />
+      <div
+        className="rangeslider__handle"
+        onMouseDown={[Function]}
+        onTouchEnd={[Function]}
+        onTouchMove={[Function]}
+        style={
+          Object {
+            "left": "0px",
+          }
+        }
+      >
+        <div
+          className="rangeslider__tooltip"
+        >
+          <span>
+            10
+          </span>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 `;
@@ -243,7 +297,7 @@ exports[`Storyshots FeedbackChannel default 1`] = `
         readOnly={true}
         tabIndex={-1}
         type="checkbox"
-        value={undefined}
+        value={false}
       />
       <label>
         Publish questions
@@ -306,7 +360,7 @@ exports[`Storyshots FeedbackChannel isActive 1`] = `
         readOnly={true}
         tabIndex={0}
         type="checkbox"
-        value={undefined}
+        value={false}
       />
       <label>
         Publish questions

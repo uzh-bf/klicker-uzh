@@ -8,7 +8,7 @@
 import React, { Component } from 'react'
 import { storiesOf } from '@storybook/react'
 
-import ConfusionSlider from './ConfusionBarometer'
+import ConfusionSlider from './ConfusionSlider'
 
 // create a stateful wrapper for the component
 class Wrapper extends Component {
