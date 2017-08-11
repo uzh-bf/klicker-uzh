@@ -1,6 +1,6 @@
 import { createStore, combineReducers, applyMiddleware, compose } from 'redux'
 import { reducer as formReducer } from 'redux-form'
-import * as reducers from '../redux/reducers'
+import * as reducers from '../redux'
 
 let reduxStore = null
 
