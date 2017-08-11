@@ -93,6 +93,7 @@ class Session extends React.Component {
                 collapsed={this.state.questionCollapsed}
                 handleCollapseToggle={this.handleCollapseToggle}
               >
+                <p>{process.env.TEST}</p>
                 <p>
                   hello this is a very short question that is getting longer and longer as we speak.
                   it is in fact very very long. the end is even hidden at the beginning.
