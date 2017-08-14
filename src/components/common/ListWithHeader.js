@@ -7,10 +7,6 @@ type Props = {
   items: Array<string>,
 }
 
-const defaultProps = {
-  items: [],
-}
-
 const ListWithHeader = ({ children, items }: Props) =>
   (<div>
     <h3 className="listHeader">
@@ -39,7 +35,5 @@ const ListWithHeader = ({ children, items }: Props) =>
       }
     `}</style>
   </div>)
-
-ListWithHeader.defaultProps = defaultProps
 
 export default ListWithHeader
