@@ -3,8 +3,9 @@
 import React from 'react'
 import { Checkbox } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
+import { Helmet } from 'react-helmet'
 
-import { withCSS } from '../../lib'
+import { createLinks } from '../../lib'
 
 import Feedback from './Feedback'
 
@@ -14,7 +15,6 @@ type Props = {
     id: string,
     votes: number,
   }>,
-  head: any,
   intl: $IntlShape,
   isActive?: boolean,
   isPublic?: boolean,
@@ -30,7 +30,6 @@ const defaultProps = {
 
 const FeedbackChannel = ({
   data,
-  head,
   intl,
   isActive,
   isPublic,
@@ -38,7 +37,9 @@ const FeedbackChannel = ({
   handlePublicToggle,
 }: Props) =>
   (<div className="feedbackChannel">
-    {head}
+    <Helmet>
+      {createLinks(undefined, ['checkbox'])}
+    </Helmet>
 
     <h2>
       <FormattedMessage
@@ -137,4 +138,4 @@ const FeedbackChannel = ({
 
 FeedbackChannel.defaultProps = defaultProps
 
-export default withCSS(FeedbackChannel, ['checkbox'])
+export default FeedbackChannel

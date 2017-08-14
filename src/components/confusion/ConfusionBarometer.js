@@ -3,21 +3,22 @@
 import React from 'react'
 import { Checkbox } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-
-import { withCSS } from '../../lib'
+import { Helmet } from 'react-helmet'
+import { createLinks } from '../../lib'
 
 import ConfusionSection from './ConfusionSection'
 
 type Props = {
-  head: any,
   intl: $IntlShape,
   isActive: boolean,
   handleActiveToggle: () => mixed,
 }
 
-const ConfusionBarometer = ({ head, intl, isActive, handleActiveToggle }: Props) =>
+const ConfusionBarometer = ({ intl, isActive, handleActiveToggle }: Props) =>
   (<div className="confusionBarometer">
-    {head}
+    <Helmet>
+      {createLinks(undefined, ['checkbox'])}
+    </Helmet>
 
     <h2>
       <FormattedMessage
@@ -106,4 +107,4 @@ const ConfusionBarometer = ({ head, intl, isActive, handleActiveToggle }: Props)
     `}</style>
   </div>)
 
-export default withCSS(ConfusionBarometer, ['checkbox'])
+export default ConfusionBarometer

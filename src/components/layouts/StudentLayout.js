@@ -5,14 +5,13 @@ import { FormattedMessage } from 'react-intl'
 import { Helmet } from 'react-helmet'
 import { Button } from 'semantic-ui-react'
 
-import { initLogging, withCSS } from '../../lib'
+import { createLinks, initLogging } from '../../lib'
 
 import Sidebar from '../common/sidebar/Sidebar'
 
 class StudentLayout extends Component {
   props: {
     children: any,
-    head: any,
     pageTitle: string,
     sidebar: {
       handleItemChange: (newItem: string) => mixed,
@@ -41,7 +40,7 @@ class StudentLayout extends Component {
   }
 
   render() {
-    const { children, head, pageTitle, sidebar, title } = this.props
+    const { children, pageTitle, sidebar, title } = this.props
 
     const sidebarItems = [
       {
@@ -65,9 +64,11 @@ class StudentLayout extends Component {
 
     return (
       <div className="studentLayout">
-        {head}
-
         <Helmet>
+          {createLinks(
+            ['https://fonts.googleapis.com/css?family=Open Sans'],
+            ['reset', 'button', 'icon', 'menu', 'sidebar'],
+          )}
           <title>
             {pageTitle}
           </title>
@@ -146,11 +147,4 @@ class StudentLayout extends Component {
   }
 }
 
-export default withCSS(StudentLayout, [
-  'https://fonts.googleapis.com/css?family=Open Sans',
-  'reset',
-  'button',
-  'icon',
-  'menu',
-  'sidebar',
-])
+export default StudentLayout

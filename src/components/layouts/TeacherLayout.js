@@ -5,7 +5,7 @@ import Router from 'next/router'
 import { FormattedMessage } from 'react-intl'
 import { Helmet } from 'react-helmet'
 
-import { initLogging, withCSS } from '../../lib'
+import { createLinks, initLogging } from '../../lib'
 
 import Navbar from '../../components/common/navbar/Navbar'
 import Sidebar from '../../components/common/sidebar/Sidebar'
@@ -14,7 +14,6 @@ class TeacherLayout extends Component {
   props: {
     actionButton: React.Element<any>,
     children: any,
-    head: any,
     intl: $IntlShape,
     navbar: {
       accountShort: string,
@@ -58,7 +57,7 @@ class TeacherLayout extends Component {
   }
 
   render() {
-    const { actionButton, children, intl, head, navbar, pageTitle, sidebar } = this.props
+    const { actionButton, children, intl, navbar, pageTitle, sidebar } = this.props
 
     const sidebarItems = [
       {
@@ -84,9 +83,8 @@ class TeacherLayout extends Component {
 
     return (
       <div className="teacherLayout">
-        {head}
-
         <Helmet>
+          {createLinks(['https://fonts.googleapis.com/css?family=Open Sans'], ['reset'])}
           <title>
             {pageTitle}
           </title>
@@ -162,7 +160,4 @@ class TeacherLayout extends Component {
   }
 }
 
-export default withCSS(TeacherLayout, [
-  'https://fonts.googleapis.com/css?family=Open Sans',
-  'reset',
-])
+export default TeacherLayout
