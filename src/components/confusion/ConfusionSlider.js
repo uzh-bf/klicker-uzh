@@ -7,7 +7,7 @@ import { Helmet } from 'react-helmet'
 import { createLinks } from '../../lib'
 
 type Props = {
-  title?: React.Element<*>,
+  title?: any,
   value: ?number,
   handleChange: (newValue: number) => mixed,
 }
