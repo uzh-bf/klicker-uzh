@@ -16,8 +16,8 @@ type Props = {
     votes: number,
   }>,
   intl: $IntlShape,
-  isActive: ?boolean,
-  isPublic: ?boolean,
+  isActive?: boolean,
+  isPublic?: boolean,
   handleActiveToggle: () => mixed,
   handlePublicToggle: () => mixed,
 }
