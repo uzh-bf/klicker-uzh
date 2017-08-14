@@ -133,6 +133,4 @@ const Session = ({ createdAt, name, blocks, id, status }: Props) => {
   )
 }
 
-Session.defaultProps = defaultProps
-
 export default Session
