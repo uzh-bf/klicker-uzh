@@ -3,8 +3,9 @@
 import React from 'react'
 import { graphql } from 'react-apollo'
 import { List } from 'semantic-ui-react'
+import { Helmet } from 'react-helmet'
 
-import { withCSS } from '../../lib'
+import { createLinks } from '../../lib'
 
 import { TagListQuery } from '../../queries/queries'
 import type { TagListType } from '../../queries/queries'
@@ -12,15 +13,10 @@ import type { TagListType } from '../../queries/queries'
 type Props = {
   activeTags: Array<string>,
   data: TagListType,
-  head: any,
   handleTagClick: () => mixed,
 }
 
-const defaultProps = {
-  activeTags: [],
-}
-
-const TagList = ({ activeTags, data, head, handleTagClick }: Props) => {
+const TagList = ({ activeTags, data, handleTagClick }: Props) => {
   if (data.loading) {
     return <div>Loading</div>
   }
@@ -35,7 +31,9 @@ const TagList = ({ activeTags, data, head, handleTagClick }: Props) => {
 
   return (
     <List selection size="large">
-      {head}
+      <Helmet>
+        {createLinks(undefined, ['list'])}
+      </Helmet>
 
       {data.tags.map((tag) => {
         const isActive = activeTags.length > 0 && activeTags.includes(tag.id)
@@ -61,6 +59,4 @@ const TagList = ({ activeTags, data, head, handleTagClick }: Props) => {
   )
 }
 
-TagList.defaultProps = defaultProps
-
-export default graphql(TagListQuery)(withCSS(TagList, ['list']))
+export default graphql(TagListQuery)(TagList)

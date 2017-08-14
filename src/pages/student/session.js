@@ -15,7 +15,6 @@ import StudentLayout from '../../components/layouts/StudentLayout'
 
 class Session extends React.Component {
   props: {
-    head: any,
     intl: $IntlShape,
   }
 
@@ -59,7 +58,7 @@ class Session extends React.Component {
   }
 
   render() {
-    const { head, intl } = this.props
+    const { intl } = this.props
 
     const title =
       this.state.sidebarActiveItem === 'activeQuestion'
@@ -82,8 +81,6 @@ class Session extends React.Component {
         title={title}
       >
         <div className="student">
-          {head}
-
           <div
             className={classNames('questionArea', {
               active: this.state.sidebarActiveItem === 'activeQuestion',

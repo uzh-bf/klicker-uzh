@@ -70,6 +70,8 @@ class Index extends Component {
         handleSearch: this.handleSearch,
         handleSort: this.handleSort,
         query: '',
+        sortBy: '',
+        sortOrder: '',
       },
       title: intl.formatMessage({
         defaultMessage: 'Question Pool',
@@ -77,7 +79,7 @@ class Index extends Component {
       }),
     }
 
-    const actionButton = (
+    const actionButton: any = (
       <Button
         circular
         primary

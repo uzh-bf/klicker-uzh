@@ -16,7 +16,6 @@ type Props = {
 }
 
 const defaultProps = {
-  questions: [],
   showSolutions: false,
   timeLimit: 0,
 }

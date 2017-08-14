@@ -31,6 +31,8 @@ class Index extends Component {
         handleSearch: this.handleSearch,
         handleSort: this.handleSort,
         query: '',
+        sortBy: '',
+        sortOrder: '',
       },
       title: intl.formatMessage({
         defaultMessage: 'Session History',
