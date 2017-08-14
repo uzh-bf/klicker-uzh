@@ -83,8 +83,6 @@ class Session extends React.Component {
         <div className="student">
           {head}
 
-          {process.env.SENTRY}
-
           <div
             className={classNames('questionArea', {
               active: this.state.sidebarActiveItem === 'activeQuestion',
