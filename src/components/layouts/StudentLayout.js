@@ -68,7 +68,9 @@ class StudentLayout extends Component {
         {head}
 
         <Helmet>
-          <title>{pageTitle}</title>
+          <title>
+            {pageTitle}
+          </title>
         </Helmet>
 
         <div className="header">
