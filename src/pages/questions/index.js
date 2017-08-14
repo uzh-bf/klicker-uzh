@@ -79,7 +79,7 @@ class Index extends Component {
       }),
     }
 
-    const actionButton = (
+    const actionButton: any = (
       <Button
         circular
         primary

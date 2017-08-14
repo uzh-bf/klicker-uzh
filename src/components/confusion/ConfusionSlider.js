@@ -8,7 +8,7 @@ import { createLinks } from '../../lib'
 
 type Props = {
   title: React.Element<*>,
-  value: number,
+  value: ?number,
   handleChange: (newValue: number) => mixed,
 }
 

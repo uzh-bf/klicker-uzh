@@ -6,7 +6,7 @@ import { Icon } from 'semantic-ui-react'
 
 type Props = {
   children: any,
-  collapsed: boolean,
+  collapsed?: boolean,
   handleCollapseToggle: () => mixed,
 }
 
