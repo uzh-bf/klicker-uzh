@@ -12,7 +12,7 @@ import type { TagListType } from '../../queries/queries'
 type Props = {
   activeTags: Array<string>,
   data: TagListType,
-  head: 'next/head',
+  head: any,
   handleTagClick: () => mixed,
 }
 

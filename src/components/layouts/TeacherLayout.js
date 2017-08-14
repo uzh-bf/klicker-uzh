@@ -14,7 +14,7 @@ class TeacherLayout extends Component {
   props: {
     actionButton: React.Element<any>,
     children: any,
-    head: 'next/head',
+    head: any,
     intl: $IntlShape,
     navbar: {
       accountShort: string,

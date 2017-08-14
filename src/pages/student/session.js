@@ -15,7 +15,7 @@ import StudentLayout from '../../components/layouts/StudentLayout'
 
 class Session extends React.Component {
   props: {
-    head: 'next/head',
+    head: any,
     intl: $IntlShape,
   }
 

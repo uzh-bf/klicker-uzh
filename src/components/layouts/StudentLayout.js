@@ -12,7 +12,7 @@ import Sidebar from '../common/sidebar/Sidebar'
 class StudentLayout extends Component {
   props: {
     children: any,
-    head: 'next/head',
+    head: any,
     pageTitle: string,
     sidebar: {
       handleItemChange: (newItem: string) => mixed,

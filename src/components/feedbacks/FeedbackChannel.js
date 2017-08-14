@@ -14,7 +14,7 @@ type Props = {
     id: string,
     votes: number,
   }>,
-  head: 'next/head',
+  head: any,
   intl: $IntlShape,
   isActive?: boolean,
   isPublic?: boolean,
