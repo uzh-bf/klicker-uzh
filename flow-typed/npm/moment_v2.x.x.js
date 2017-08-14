@@ -1,5 +1,5 @@
-// flow-typed signature: b066790a0280dbd8ea71ea2a212c78ef
-// flow-typed version: b43dff3e0e/moment_v2.x.x/flow_>=v0.28.x
+// flow-typed signature: d5750534f4aa4aa1501659f69fc249ca
+// flow-typed version: b0a2f0a72a/moment_v2.x.x/flow_>=v0.28.x
 
 type moment$MomentOptions = {
   y?: number|string,
@@ -118,6 +118,7 @@ declare class moment$Moment {
   static utc(moment: moment$Moment): moment$Moment;
   static utc(date: Date): moment$Moment;
   static parseZone(rawDate: string): moment$Moment;
+  parseZone(): moment$Moment;
   isValid(): bool;
   invalidAt(): 0|1|2|3|4|5|6;
   creationData(): moment$MomentCreationData;
