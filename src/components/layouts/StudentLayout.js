@@ -2,6 +2,7 @@
 
 import React, { Component } from 'react'
 import { FormattedMessage } from 'react-intl'
+import { Helmet } from 'react-helmet'
 import { Button } from 'semantic-ui-react'
 
 import { initLogging, withCSS } from '../../lib'
@@ -12,6 +13,7 @@ class StudentLayout extends Component {
   props: {
     children: any,
     head: 'next/head',
+    pageTitle: string,
     sidebar: {
       handleItemChange: (newItem: string) => mixed,
     },
@@ -39,7 +41,7 @@ class StudentLayout extends Component {
   }
 
   render() {
-    const { children, head, sidebar, title } = this.props
+    const { children, head, pageTitle, sidebar, title } = this.props
 
     const sidebarItems = [
       {
@@ -64,6 +66,10 @@ class StudentLayout extends Component {
     return (
       <div className="studentLayout">
         {head}
+
+        <Helmet>
+          <title>{pageTitle}</title>
+        </Helmet>
 
         <div className="header">
           <Button basic icon="content" onClick={this.handleSidebarToggle} />
