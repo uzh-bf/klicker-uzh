@@ -8,11 +8,13 @@ import { createLinks } from '../../lib'
 
 type Props = {
   title?: React.Element<any>,
-  value: number,
+  value: number | null,
   handleChange: (newValue: number) => mixed,
 }
 
-const defaultProps = { title: null }
+const defaultProps = {
+  title: null,
+}
 
 const ConfusionSlider = ({ title, value, handleChange }: Props) =>
   (<div className="confusionSlider">

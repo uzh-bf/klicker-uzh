@@ -94,7 +94,7 @@ class Running extends Component {
               intl={intl}
               data={activeUser.activeSession.confusion}
               isActive={this.state.confusionActive}
-              handlectiveToggle={this.handleConfusionActiveToggle}
+              handleActiveToggle={this.handleConfusionActiveToggle}
             />
           </div>
 
