@@ -59,6 +59,4 @@ const TagList = ({ activeTags, data, handleTagClick }: Props) => {
   )
 }
 
-TagList.defaultProps = defaultProps
-
 export default graphql(TagListQuery)(TagList)
