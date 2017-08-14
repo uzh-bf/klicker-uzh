@@ -142,7 +142,7 @@ type RunningSessionType = {
       feedbacks: Array<{
         id: string,
         content: string,
-        votes: string,
+        votes: number,
       }>,
       blocks: Array<{
         id: string,

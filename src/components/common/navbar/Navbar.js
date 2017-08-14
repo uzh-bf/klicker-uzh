@@ -63,7 +63,7 @@ const Navbar = ({
 
     {search &&
       <div className="searchArea">
-        <SearchArea intl={intl} handleSearch={search.handleSearch} />
+        <SearchArea intl={intl} handleSearch={search.handleSearch} handleSort={search.handleSort} />
       </div>}
 
     <div className="accountArea">
