@@ -15,7 +15,7 @@ import StudentLayout from '../../components/layouts/StudentLayout'
 
 class Session extends React.Component {
   props: {
-    head: 'next/head',
+    head: any,
     intl: $IntlShape,
   }
 
@@ -74,6 +74,7 @@ class Session extends React.Component {
 
     return (
       <StudentLayout
+        pageTitle="Session #1762"
         sidebar={{
           activeItem: this.state.sidebarActiveItem,
           handleItemChange: this.handleSidebarItemChange,

@@ -9,7 +9,7 @@ import { withCSS } from '../../lib'
 import ConfusionSection from './ConfusionSection'
 
 type Props = {
-  head: 'next/head',
+  head: any,
   intl: $IntlShape,
   isActive: boolean,
   handleActiveToggle: () => mixed,

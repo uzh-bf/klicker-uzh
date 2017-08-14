@@ -1,4 +1,4 @@
-import Head from 'next/head'
+import { Helmet } from 'react-helmet'
 import React from 'react'
 
 // take in a ComposedComponent and a list of semantic ui css file links
@@ -8,7 +8,7 @@ const WithCSS = (ComposedComponent, links) => {
   // TODO: extension => check whether link is semantic or full
   // HACK: this might lead to duplicate link declarations in <head>
   const head = (
-    <Head>
+    <Helmet>
       {links.map((link) => {
         // if a full URL is given as a link, directly include it
         if (link.substr(0, 4) === 'http') {
@@ -25,7 +25,7 @@ const WithCSS = (ComposedComponent, links) => {
           />
         )
       })}
-    </Head>
+    </Helmet>
   )
 
   // return the enhanced component, passing head and remaining props

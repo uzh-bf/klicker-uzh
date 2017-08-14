@@ -75,7 +75,15 @@ class Running extends Component {
     const activeUser = data.allUsers[0]
 
     return (
-      <TeacherLayout intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'runningSession' }}>
+      <TeacherLayout
+        intl={intl}
+        navbar={navbarConfig}
+        pageTitle={intl.formatMessage({
+          defaultMessage: 'Running Session',
+          id: 'teacher.runningSession.pageTitle',
+        })}
+        sidebar={{ activeItem: 'runningSession' }}
+      >
         <div className="runningSession">
           <div className="sessionProgress">
             <SessionTimeline intl={intl} blocks={activeUser.activeSession.blocks} />
