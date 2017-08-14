@@ -64,7 +64,15 @@ class Running extends Component {
 
     if (data.loading) {
       return (
-        <TeacherLayout intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'runningSession' }}>
+        <TeacherLayout
+          intl={intl}
+          navbar={navbarConfig}
+          pageTitle={intl.formatMessage({
+            defaultMessage: 'Running Session',
+            id: 'teacher.runningSession.pageTitle',
+          })}
+          sidebar={{ activeItem: 'runningSession' }}
+        >
           Loading
         </TeacherLayout>
       )
