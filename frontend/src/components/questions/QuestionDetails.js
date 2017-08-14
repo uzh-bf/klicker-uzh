@@ -9,10 +9,6 @@ type Props = {
   lastUsed: Array<string>,
 }
 
-const defaultProps = {
-  lastUsed: [],
-}
-
 const QuestionDetails = ({ lastUsed }: Props) =>
   (<div className="container">
     <div className="column">Test1</div>
@@ -53,7 +49,5 @@ const QuestionDetails = ({ lastUsed }: Props) =>
       }
     `}</style>
   </div>)
-
-QuestionDetails.defaultProps = defaultProps
 
 export default QuestionDetails

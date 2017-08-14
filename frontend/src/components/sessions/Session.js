@@ -26,10 +26,6 @@ type Props = {
   status: 'CREATED' | 'RUNNING' | 'COMPLETED',
 }
 
-const defaultProps = {
-  status: 'CREATED',
-}
-
 const Session = ({ createdAt, name, blocks, id, status }: Props) => {
   const statusCases = {
     COMPLETED: {
@@ -48,7 +44,7 @@ const Session = ({ createdAt, name, blocks, id, status }: Props) => {
       message: <FormattedMessage id="session.button.running.content" defaultMessage="Running" />,
     },
   }
-  const buttonStatus = statusCases[status] || statusCases.CREATED
+  const buttonStatus = statusCases[status]
 
   return (
     <div className="session">
@@ -136,7 +132,5 @@ const Session = ({ createdAt, name, blocks, id, status }: Props) => {
     </div>
   )
 }
-
-Session.defaultProps = defaultProps
 
 export default Session

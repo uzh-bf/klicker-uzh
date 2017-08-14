@@ -21,7 +21,7 @@ class Wrapper extends Component {
       <ConfusionBarometer
         intl={intlMock}
         isActive={this.state.isActive}
-        onActiveToggle={() => this.setState(prevState => ({ isActive: !prevState.isActive }))}
+        handleActiveToggle={() => this.setState(prevState => ({ isActive: !prevState.isActive }))}
       />
     )
   }

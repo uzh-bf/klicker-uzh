@@ -2,8 +2,8 @@
 
 import React from 'react'
 import { Icon, Menu } from 'semantic-ui-react'
-
-import { withCSS } from '../../../lib'
+import { Helmet } from 'react-helmet'
+import { createLinks } from '../../../lib'
 
 import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'
@@ -11,7 +11,6 @@ import SessionArea from './SessionArea'
 
 type Props = {
   accountShort: string,
-  head: 'intl/head',
   intl: $IntlShape,
   search: {
     query: string,
@@ -26,12 +25,12 @@ type Props = {
 }
 
 const defaultProps = {
+  search: undefined,
   sidebarVisible: false,
 }
 
 const Navbar = ({
   accountShort,
-  head,
   intl,
   search,
   sidebarVisible,
@@ -39,7 +38,18 @@ const Navbar = ({
   handleSidebarToggle,
 }: Props) =>
   (<div className="navbar">
-    {head}
+    <Helmet>
+      {createLinks(undefined, [
+        'button',
+        'divider',
+        'dropdown',
+        'icon',
+        'image',
+        'input',
+        'menu',
+        'popup',
+      ])}
+    </Helmet>
 
     <div className="sideArea">
       <Menu borderless className="noBorder">
@@ -54,7 +64,7 @@ const Navbar = ({
 
     {search &&
       <div className="searchArea">
-        <SearchArea intl={intl} handleSearch={search.handleSearch} />
+        <SearchArea intl={intl} handleSearch={search.handleSearch} handleSort={search.handleSort} />
       </div>}
 
     <div className="accountArea">
@@ -133,15 +143,4 @@ const Navbar = ({
 
 Navbar.defaultProps = defaultProps
 
-// higher order component
-// component => wrapped component
-export default withCSS(Navbar, [
-  'button',
-  'divider',
-  'dropdown',
-  'icon',
-  'image',
-  'input',
-  'menu',
-  'popup',
-])
+export default Navbar
