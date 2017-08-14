@@ -14,6 +14,7 @@ class StudentLayout extends Component {
     children: any,
     pageTitle: string,
     sidebar: {
+      activeItem: string,
       handleItemChange: (newItem: string) => mixed,
     },
     title: string,

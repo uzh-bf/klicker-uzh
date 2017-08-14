@@ -7,6 +7,7 @@
 
 import React, { Component } from 'react'
 import { storiesOf } from '@storybook/react'
+import { action } from '@storybook/addon-actions'
 
 import FeedbackChannel from './FeedbackChannel'
 import { intlMock } from '../../../.storybook/utils'
@@ -37,5 +38,22 @@ const data = [
 
 storiesOf('FeedbackChannel', module)
   .add('default', () => <Wrapper data={data} />)
-  .add('isActive', () => <FeedbackChannel isActive data={data} intl={intlMock} />)
-  .add('isPublic', () => <FeedbackChannel isActive isPublic data={data} intl={intlMock} />)
+  .add('isActive', () =>
+    (<FeedbackChannel
+      isActive
+      data={data}
+      intl={intlMock}
+      handleActiveToggle={() => action('active-toggle')}
+      handlePublicToggle={() => action('public-toggle')}
+    />),
+  )
+  .add('isPublic', () =>
+    (<FeedbackChannel
+      isActive
+      isPublic
+      data={data}
+      intl={intlMock}
+      handleActiveToggle={() => action('active-toggle')}
+      handlePublicToggle={() => action('public-toggle')}
+    />),
+  )

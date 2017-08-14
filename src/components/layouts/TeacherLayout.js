@@ -12,7 +12,7 @@ import Sidebar from '../../components/common/sidebar/Sidebar'
 
 class TeacherLayout extends Component {
   props: {
-    actionButton: React.Element<any>,
+    actionButton?: React.Element<any>,
     children: any,
     intl: $IntlShape,
     navbar: {
@@ -22,7 +22,7 @@ class TeacherLayout extends Component {
         sortBy: string,
         sortOrder: string,
         handleSearch: (query: string) => mixed,
-        handleSort: (order: string) => mixed,
+        handleSort: (by: string, order: string) => mixed,
       },
       title: string,
     },
@@ -34,7 +34,6 @@ class TeacherLayout extends Component {
 
   static defaultProps = {
     actionButton: null,
-    intl: null,
     navbar: null,
     search: null,
   }
