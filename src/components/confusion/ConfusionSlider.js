@@ -7,13 +7,14 @@ import { Helmet } from 'react-helmet'
 import { createLinks } from '../../lib'
 
 type Props = {
-  title?: any,
-  value: ?number,
+  title: React.Element<*>,
+  value: number,
   handleChange: (newValue: number) => mixed,
 }
 
 const defaultProps = {
   title: undefined,
+  value: undefined,
 }
 
 const ConfusionSlider = ({ title, value, handleChange }: Props) =>

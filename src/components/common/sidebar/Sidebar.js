@@ -8,14 +8,14 @@ import { createLinks } from '../../../lib'
 import SidebarItem from './SidebarItem'
 
 type Props = {
-  activeItem: ?string,
+  activeItem: string,
   children: any,
   items: Array<{
-    label: string | any,
+    label: string | React.Element<*>,
     href: string,
     name: string,
   }>,
-  visible: ?boolean,
+  visible: boolean,
   handleSidebarItemClick: (href: string) => () => mixed,
 }
 

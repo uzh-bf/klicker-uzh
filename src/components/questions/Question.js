@@ -11,7 +11,7 @@ type Props = {
   tags: Array<string>,
   title: string,
   type: string,
-  version?: number,
+  version: number,
 }
 
 const defaultProps = {

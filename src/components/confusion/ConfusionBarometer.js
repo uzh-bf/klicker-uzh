@@ -10,7 +10,7 @@ import ConfusionSection from './ConfusionSection'
 
 type Props = {
   intl: $IntlShape,
-  isActive: ?boolean,
+  isActive: boolean,
   handleActiveToggle: () => mixed,
 }
 
