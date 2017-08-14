@@ -4,6 +4,8 @@ import React from 'react'
 import { Button, Divider, Icon, Image, Menu, Popup } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
+import { withCSS } from '../../../lib'
+
 type Props = {
   sessionId: string,
 }
@@ -40,4 +42,4 @@ const SessionArea = ({ sessionId }: Props) => {
   )
 }
 
-export default SessionArea
+export default withCSS(SessionArea, ['popup', 'image', 'divider', 'button', 'icon', 'menu'])

@@ -2,9 +2,8 @@
 
 import React from 'react'
 import Slider from 'react-rangeslider'
-import { Helmet } from 'react-helmet'
 
-import { createLinks } from '../../lib'
+import { withCSS } from '../../lib'
 
 type Props = {
   title: React.Element<*>,
@@ -19,13 +18,6 @@ const defaultProps = {
 
 const ConfusionSlider = ({ title, value, handleChange }: Props) =>
   (<div className="confusionSlider">
-    <Helmet>
-      {createLinks(
-        ['https://unpkg.com/react-rangeslider@2.1.0/umd/randeslider.min.css'],
-        undefined,
-      )}
-    </Helmet>
-
     {title &&
       <div className="title">
         {title}
@@ -45,4 +37,6 @@ const ConfusionSlider = ({ title, value, handleChange }: Props) =>
 
 ConfusionSlider.defaultProps = defaultProps
 
-export default ConfusionSlider
+export default withCSS(ConfusionSlider, [
+  'https://unpkg.com/react-rangeslider@2.1.0/umd/randeslider.min.css',
+])

@@ -3,6 +3,8 @@
 import React from 'react'
 import { Input } from 'semantic-ui-react'
 
+import { withCSS } from '../../../lib'
+
 type Props = {
   intl: $IntlShape,
   handleSearch: (query: string) => mixed,
@@ -19,4 +21,4 @@ const SearchArea = ({ intl, handleSearch }: Props) =>
     onChange={handleSearch}
   />)
 
-export default SearchArea
+export default withCSS(SearchArea, ['input'])

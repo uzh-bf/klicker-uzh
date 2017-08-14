@@ -4,6 +4,8 @@ import React from 'react'
 import classNames from 'classnames'
 import { Button } from 'semantic-ui-react'
 
+import { withCSS } from '../../lib'
+
 type Props = {
   activeOption: number,
   options: Array<{
@@ -46,4 +48,4 @@ const SingleChoiceOptions = ({ activeOption, options, handleOptionClick }: Props
     `}</style>
   </div>)
 
-export default SingleChoiceOptions
+export default withCSS(SingleChoiceOptions, ['button'])

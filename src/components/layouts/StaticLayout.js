@@ -7,7 +7,6 @@ import { initLogging, withCSS } from '../../lib'
 class StaticLayout extends Component {
   props: {
     children: any,
-    head: 'next/head',
   }
 
   state = {}
@@ -18,12 +17,10 @@ class StaticLayout extends Component {
   }
 
   render() {
-    const { children, head } = this.props
+    const { children } = this.props
 
     return (
       <div className="staticLayout">
-        {head}
-
         {children}
 
         <style jsx global>{`

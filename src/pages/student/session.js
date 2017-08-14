@@ -5,7 +5,7 @@ import classNames from 'classnames'
 import { Button } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
-import { withData, pageWithIntl } from '../../lib'
+import { pageWithIntl, withCSS, withData } from '../../lib'
 
 import Collapser from '../../components/common/Collapser'
 import ConfusionSlider from '../../components/confusion/ConfusionSlider'
@@ -237,4 +237,4 @@ class Session extends React.Component {
   }
 }
 
-export default withData(pageWithIntl(Session))
+export default withCSS(withData(pageWithIntl(Session)), ['button'])

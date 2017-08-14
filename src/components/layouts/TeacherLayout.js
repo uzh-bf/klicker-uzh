@@ -5,7 +5,7 @@ import Router from 'next/router'
 import { FormattedMessage } from 'react-intl'
 import { Helmet } from 'react-helmet'
 
-import { createLinks, initLogging } from '../../lib'
+import { initLogging, withCSS } from '../../lib'
 
 import Navbar from '../../components/common/navbar/Navbar'
 import Sidebar from '../../components/common/sidebar/Sidebar'
@@ -81,7 +81,6 @@ class TeacherLayout extends Component {
     return (
       <div className="teacherLayout">
         <Helmet>
-          {createLinks(['https://fonts.googleapis.com/css?family=Open Sans'], ['reset'])}
           <title>
             {pageTitle}
           </title>
@@ -157,4 +156,7 @@ class TeacherLayout extends Component {
   }
 }
 
-export default TeacherLayout
+export default withCSS(TeacherLayout, [
+  'https://fonts.googleapis.com/css?family=Open Sans',
+  'reset',
+])

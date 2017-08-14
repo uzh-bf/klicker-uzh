@@ -2,8 +2,7 @@
 
 import React from 'react'
 import { Icon, Menu } from 'semantic-ui-react'
-import { Helmet } from 'react-helmet'
-import { createLinks } from '../../../lib'
+import { withCSS } from '../../../lib'
 
 import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'
@@ -38,19 +37,6 @@ const Navbar = ({
   handleSidebarToggle,
 }: Props) =>
   (<div className="navbar">
-    <Helmet>
-      {createLinks(undefined, [
-        'button',
-        'divider',
-        'dropdown',
-        'icon',
-        'image',
-        'input',
-        'menu',
-        'popup',
-      ])}
-    </Helmet>
-
     <div className="sideArea">
       <Menu borderless className="noBorder">
         <Menu.Item icon active={sidebarVisible} name="sidebar" onClick={handleSidebarToggle}>
@@ -143,4 +129,4 @@ const Navbar = ({
 
 Navbar.defaultProps = defaultProps
 
-export default Navbar
+export default withCSS(Navbar, ['menu'])

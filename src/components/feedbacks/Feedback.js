@@ -3,6 +3,8 @@
 import React from 'react'
 import { Button } from 'semantic-ui-react'
 
+import { withCSS } from '../../lib'
+
 type Props = {
   content: string,
   showDelete?: boolean,
@@ -70,4 +72,4 @@ const Feedback = ({ content, showDelete, votes }: Props) =>
 
 Feedback.defaultProps = defaultProps
 
-export default Feedback
+export default withCSS(Feedback, ['button'])

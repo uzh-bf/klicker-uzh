@@ -22,4 +22,4 @@ const SidebarItem = ({ active, children, href, name, handleSidebarItemClick }: P
 
 SidebarItem.defaultProps = defaultProps
 
-export default SidebarItem
+export default withCSS(SidebarItem, ['menu'])

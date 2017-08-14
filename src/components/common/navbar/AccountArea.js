@@ -4,6 +4,8 @@ import React from 'react'
 import { Dropdown } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
+import { withCSS } from '../../../lib'
+
 type Props = {
   accountShort: string,
 }
@@ -20,4 +22,4 @@ const AccountArea = ({ accountShort }: Props) =>
     </Dropdown.Menu>
   </Dropdown>)
 
-export default AccountArea
+export default withCSS(AccountArea, ['dropdown'])

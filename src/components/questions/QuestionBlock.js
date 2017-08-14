@@ -3,6 +3,7 @@
 import React from 'react'
 import { Icon } from 'semantic-ui-react'
 
+import { withCSS } from '../../lib'
 import QuestionSingle from './QuestionSingle'
 
 type Props = {
@@ -71,4 +72,4 @@ const QuestionBlock = ({ questions, showSolutions, timeLimit }: Props) =>
 
 QuestionBlock.defaultProps = defaultProps
 
-export default QuestionBlock
+export default withCSS(QuestionBlock, ['icon'])
