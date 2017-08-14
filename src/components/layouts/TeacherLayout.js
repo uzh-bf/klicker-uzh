@@ -15,7 +15,7 @@ class TeacherLayout extends Component {
     actionButton?: React.Element<any>,
     children: any,
     intl: $IntlShape,
-    navbar: {
+    navbar?: {
       accountShort: string,
       search: {
         query: string,
@@ -33,9 +33,8 @@ class TeacherLayout extends Component {
   }
 
   static defaultProps = {
-    actionButton: null,
-    navbar: null,
-    search: null,
+    actionButton: undefined,
+    navbar: undefined,
   }
 
   state = {
