@@ -12,7 +12,7 @@ import Sidebar from '../../components/common/sidebar/Sidebar'
 
 class TeacherLayout extends Component {
   props: {
-    actionButton?: ?React$Element<*>,
+    actionButton?: JSX.Element,
     children: any,
     intl: $IntlShape,
     navbar: {
