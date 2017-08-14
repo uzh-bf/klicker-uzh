@@ -11,7 +11,7 @@ type Props = {
   activeItem: ?string,
   children: any,
   items: Array<{
-    label: string | React$Element<*>,
+    label: string | React.Element<*>,
     href: string,
     name: string,
   }>,
