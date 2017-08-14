@@ -74,6 +74,7 @@ class Session extends React.Component {
 
     return (
       <StudentLayout
+        pageTitle="Session #1762"
         sidebar={{
           activeItem: this.state.sidebarActiveItem,
           handleItemChange: this.handleSidebarItemChange,
