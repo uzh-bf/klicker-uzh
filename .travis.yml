@@ -82,6 +82,9 @@ jobs:
           - node_modules
 
     - stage: build
+      before_install: yarn global add greenkeeper-lockfile@1
+      before_script: greenkeeper-lockfile-update
+      after_script: greenkeeper-lockfile-upload
       script:
         - docker login -u$QUAY_USER -p$QUAY_TOKEN quay.io/uzh-bf/klicker-react
         - if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then bash -c "docker pull quay.io/uzh-bf/klicker-react:latest;docker build --cache-from quay.io/uzh-bf/klicker-react:latest -t quay.io/uzh-bf/klicker-react:latest .; fi
