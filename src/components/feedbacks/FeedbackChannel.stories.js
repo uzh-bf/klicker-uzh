@@ -23,8 +23,8 @@ class Wrapper extends Component {
         data={this.props.data}
         intl={intlMock}
         isActive={this.state.isActive}
-        onActiveToggle={() => this.setState(prevState => ({ isActive: !prevState.isActive }))}
-        onPublicToggle={() => this.setState(prevState => ({ isPublic: !prevState.isPublic }))}
+        handleActiveToggle={() => this.setState(prevState => ({ isActive: !prevState.isActive }))}
+        handlePublicToggle={() => this.setState(prevState => ({ isPublic: !prevState.isPublic }))}
       />
     )
   }
