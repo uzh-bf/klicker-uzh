@@ -11,12 +11,10 @@ type Props = {
   tags: Array<string>,
   title: string,
   type: string,
-  version: number,
+  version: ?number,
 }
 
 const defaultProps = {
-  lastUsed: [],
-  tags: [],
   version: 1,
 }
 

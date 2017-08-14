@@ -10,10 +10,6 @@ type Props = {
   }>,
 }
 
-const defaultProps = {
-  items: [],
-}
-
 const ActionButton = ({ items }: Props) =>
   (<div className="actionButtonWrapper">
     <div className="actionButton">
@@ -68,7 +64,5 @@ const ActionButton = ({ items }: Props) =>
       }
     `}</style>
   </div>)
-
-ActionButton.defaultProps = defaultProps
 
 export default ActionButton

@@ -23,7 +23,7 @@ type Props = {
   createdAt: string,
   id: string,
   name: string,
-  status: 'CREATED' | 'RUNNING' | 'COMPLETED',
+  status: ?'CREATED' | 'RUNNING' | 'COMPLETED',
 }
 
 const defaultProps = {

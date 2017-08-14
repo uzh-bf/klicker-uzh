@@ -10,8 +10,12 @@ import ConfusionSection from './ConfusionSection'
 
 type Props = {
   intl: $IntlShape,
-  isActive: boolean,
+  isActive: ?boolean,
   handleActiveToggle: () => mixed,
+}
+
+const defaultProps = {
+  isActive: false,
 }
 
 const ConfusionBarometer = ({ intl, isActive, handleActiveToggle }: Props) =>
@@ -106,5 +110,7 @@ const ConfusionBarometer = ({ intl, isActive, handleActiveToggle }: Props) =>
       }
     `}</style>
   </div>)
+
+ConfusionBarometer.defaultProps = defaultProps
 
 export default ConfusionBarometer

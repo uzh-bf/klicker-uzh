@@ -4,7 +4,7 @@ import React from 'react'
 import { Menu } from 'semantic-ui-react'
 
 type Props = {
-  active: boolean,
+  active: ?boolean,
   children: any,
   href: string,
   name: string,

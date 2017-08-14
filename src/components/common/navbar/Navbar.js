@@ -12,7 +12,7 @@ import SessionArea from './SessionArea'
 type Props = {
   accountShort: string,
   intl: $IntlShape,
-  search: {
+  search?: {
     query: string,
     sortBy: string,
     sortOrder: string,
@@ -25,6 +25,7 @@ type Props = {
 }
 
 const defaultProps = {
+  search: undefined,
   sidebarVisible: false,
 }
 

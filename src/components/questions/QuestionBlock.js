@@ -11,12 +11,11 @@ type Props = {
     title: string,
     type: string,
   }>,
-  showSolutions: boolean,
-  timeLimit: number,
+  showSolutions: ?boolean,
+  timeLimit: ?number,
 }
 
 const defaultProps = {
-  questions: [],
   showSolutions: false,
   timeLimit: 0,
 }

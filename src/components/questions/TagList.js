@@ -16,10 +16,6 @@ type Props = {
   handleTagClick: () => mixed,
 }
 
-const defaultProps = {
-  activeTags: [],
-}
-
 const TagList = ({ activeTags, data, handleTagClick }: Props) => {
   if (data.loading) {
     return <div>Loading</div>
