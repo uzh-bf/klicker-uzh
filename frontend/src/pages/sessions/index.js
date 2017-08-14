@@ -39,7 +39,15 @@ class Index extends Component {
     }
 
     return (
-      <TeacherLayout intl={intl} navbar={navbarConfig} sidebar={{ activeItem: 'sessionHistory' }}>
+      <TeacherLayout
+        intl={intl}
+        navbar={navbarConfig}
+        pageTitle={intl.formatMessage({
+          defaultMessage: 'Session History',
+          id: 'teacher.sessionHistory.pageTitle',
+        })}
+        sidebar={{ activeItem: 'sessionHistory' }}
+      >
         <div className="sessionHistory">
           <SessionList intl={intl} />
         </div>

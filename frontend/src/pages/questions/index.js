@@ -93,6 +93,10 @@ class Index extends Component {
         actionButton={actionButton}
         intl={intl}
         navbar={navbarConfig}
+        pageTitle={intl.formatMessage({
+          defaultMessage: 'Question Pool',
+          id: 'teacher.questionPool.pageTitle',
+        })}
         sidebar={{ activeItem: 'questionPool' }}
       >
         <div className="questionPool">

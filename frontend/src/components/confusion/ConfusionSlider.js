@@ -6,7 +6,7 @@ import Slider from 'react-rangeslider'
 import { withCSS } from '../../lib'
 
 type Props = {
-  head: 'next/head',
+  head: any,
   title?: React.Element<any>,
   value: number,
   handleChange: (newValue: number) => mixed,
