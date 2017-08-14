@@ -39,49 +39,6 @@ jobs:
           - node_modules
 
     - stage: build
-      script:
-        - docker login -u$QUAY_USER -p$QUAY_TOKEN quay.io/uzh-bf/klicker-react
-        - if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then bash -c "docker pull quay.io/uzh-bf/klicker-react:latest;docker build --cache-from quay.io/uzh-bf/klicker-react:latest -t quay.io/uzh-bf/klicker-react:latest .;docker push quay.io/uzh-bf/klicker-react:latest"; fi
-        sudo: required
-
-language: node_js
-node_js:
-  - "8"
-
-branches:
-  only:
-    - master
-
-services:
-  - docker
-
-jobs:
-  include:
-    - stage: test
-      script:
-        - yarn run flow
-      cache:
-        yarn: true
-        directories:
-          - node_modules
-
-    - stage: test
-      script:
-        - yarn test
-      cache:
-        yarn: true
-        directories:
-          - node_modules
-
-    - stage: test
-      script:
-        - yarn run format:ci
-      cache:
-        yarn: true
-        directories:
-          - node_modules
-
-    - stage: build
       before_install: yarn global add greenkeeper-lockfile@1
       before_script: greenkeeper-lockfile-update
       after_script: greenkeeper-lockfile-upload
