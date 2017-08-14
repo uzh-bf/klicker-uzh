@@ -3,6 +3,8 @@
 import React from 'react'
 import { Menu } from 'semantic-ui-react'
 
+import { withCSS } from '../../../lib'
+
 type Props = {
   active: boolean,
   children: any,
