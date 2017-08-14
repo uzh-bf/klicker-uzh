@@ -3,6 +3,7 @@
     "development": {
       "presets": "next/babel",
       "plugins": [
+        "inline-dotenv",
         "transform-flow-strip-types",
         "add-react-displayname",
         "react-intl"
@@ -11,6 +12,7 @@
     "production": {
       "presets": "next/babel",
       "plugins": [
+        "transform-inline-environment-variables",
         "transform-flow-strip-types",
         "add-react-displayname",
         [
