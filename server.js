@@ -1,5 +1,3 @@
-require('dotenv').config()
-
 const IntlPolyfill = require('intl')
 
 const { basename } = require('path')
