@@ -21,7 +21,7 @@ const defaultProps = {
 const Question = ({ id, lastUsed, tags, title, type, version }: Props) =>
   (<div className="container">
     <h2 className="title">
-      #{id.substring(0, 7)} - {title} {version > 1 && `(v${version})`}
+      #{id.substring(0, 7)} - {title} {(version && version > 1 && `(v${version})`)}
     </h2>
     <div className="tags">
       <QuestionTags tags={tags} type={type} />
