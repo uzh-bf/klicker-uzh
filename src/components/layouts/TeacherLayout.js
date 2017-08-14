@@ -3,6 +3,7 @@
 import React, { Component } from 'react'
 import Router from 'next/router'
 import { FormattedMessage } from 'react-intl'
+import { Helmet } from 'react-helmet'
 
 import { initLogging, withCSS } from '../../lib'
 
@@ -13,7 +14,7 @@ class TeacherLayout extends Component {
   props: {
     actionButton: React.Element<any>,
     children: any,
-    head: 'next/head',
+    head: any,
     intl: $IntlShape,
     navbar: {
       accountShort: string,
@@ -26,6 +27,7 @@ class TeacherLayout extends Component {
       },
       title: string,
     },
+    pageTitle: string,
     sidebar: {
       activeItem: string,
     },
@@ -56,7 +58,7 @@ class TeacherLayout extends Component {
   }
 
   render() {
-    const { actionButton, children, intl, head, navbar, sidebar } = this.props
+    const { actionButton, children, intl, head, navbar, pageTitle, sidebar } = this.props
 
     const sidebarItems = [
       {
@@ -83,6 +85,12 @@ class TeacherLayout extends Component {
     return (
       <div className="teacherLayout">
         {head}
+
+        <Helmet>
+          <title>
+            {pageTitle}
+          </title>
+        </Helmet>
 
         {navbar &&
           <div className="navbar">

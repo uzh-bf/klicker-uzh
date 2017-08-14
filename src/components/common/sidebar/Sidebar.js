@@ -10,7 +10,7 @@ import SidebarItem from './SidebarItem'
 type Props = {
   activeItem: string,
   children: any,
-  head: 'next/head',
+  head: any,
   items: Array<{
     label: string | React.Element<any>,
     href: string,
