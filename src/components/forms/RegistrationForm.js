@@ -2,6 +2,7 @@
 
 import React from 'react'
 import isEmail from 'validator/lib/isEmail'
+import isLength from 'validator/lib/isLength'
 import { FormattedMessage } from 'react-intl'
 import { Field, reduxForm } from 'redux-form'
 import { Button } from 'semantic-ui-react'
@@ -12,7 +13,7 @@ import { SemanticInput } from './components'
 
 type Props = {
   handleSubmit: (values: {
-    firsName: string,
+    firstName: string,
     lastName: string,
     email: string,
     shortname: string,
@@ -22,11 +23,23 @@ type Props = {
   }) => mixed,
 }
 
-const validate = ({ email = '' }) => {
+const validate = ({ email = '', shortname = '', password = '', passwordRepeat = '' }) => {
   const errors = {}
 
   if (!isEmail(email)) {
     errors.email = 'Fail email'
+  }
+
+  if (!isLength(shortname, { max: 6, min: 3 })) {
+    errors.shortname = 'Invalid shortname'
+  }
+
+  if (!isLength(password, { max: undefined, min: 7 })) {
+    errors.password = 'Too short'
+  }
+
+  if (passwordRepeat !== password) {
+    errors.passwordRepeat = 'Not the same'
   }
 
   return errors
