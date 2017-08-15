@@ -27,20 +27,24 @@ type Props = {
 const validate = ({ email = '', shortname = '', password = '', passwordRepeat = '' }) => {
   const errors = {}
 
+  // the email address needs to be valid
   if (!isEmail(email)) {
-    errors.email = 'Fail email'
+    errors.email = 'registration.form.email.invalid'
   }
 
+  // the shortname is allowed to be within 3 to 6 chars
   if (!isLength(shortname, { max: 6, min: 3 })) {
-    errors.shortname = 'Invalid shortname'
+    errors.shortname = 'registration.form.shortname.invalid'
   }
 
+  // password should at least have 7 characters (or more?)
   if (!isLength(password, { max: undefined, min: 7 })) {
-    errors.password = 'Too short'
+    errors.password = 'registration.form.password.invalid'
   }
 
+  // both password fields need to match
   if (passwordRepeat !== password) {
-    errors.passwordRepeat = 'Not the same'
+    errors.passwordRepeat = 'registration.form.passwordRepeat.invalid'
   }
 
   return errors
@@ -53,31 +57,84 @@ const RegistrationForm = ({ intl, handleSubmit }: Props) =>
     </Helmet>
 
     <div className="personal">
-      <Field required component={SemanticInput} intl={intl} label="First name" name="firstName" type="text" />
-      <Field required component={SemanticInput} intl={intl} label="Last name" name="lastName" type="text" />
-      <Field required component={SemanticInput} intl={intl} label="Email" name="email" type="email" />
-    </div>
-
-    <div className="account">
-      <Field required component={SemanticInput} intl={intl} label="Shortname" name="shortname" type="text" />
-      <Field required component={SemanticInput} intl={intl} label="Password" name="password" type="password" />
       <Field
         required
         component={SemanticInput}
         intl={intl}
-        label="Repeat password"
+        label={intl.formatMessage({
+          id: 'common.form.firstName.label',
+          defaultMessage: 'First name',
+        })}
+        name="firstName"
+        type="text"
+      />
+      <Field
+        required
+        component={SemanticInput}
+        intl={intl}
+        label={intl.formatMessage({
+          id: 'common.form.lastName.label',
+          defaultMessage: 'Last name',
+        })}
+        name="lastName"
+        type="text"
+      />
+      <Field
+        required
+        component={SemanticInput}
+        intl={intl}
+        label={intl.formatMessage({ id: 'common.form.email.label', defaultMessage: 'Email' })}
+        name="email"
+        type="email"
+      />
+    </div>
+
+    <div className="account">
+      <Field
+        required
+        component={SemanticInput}
+        intl={intl}
+        label={intl.formatMessage({
+          id: 'registration.form.shortname.label',
+          defaultMessage: 'Shortname',
+        })}
+        name="shortname"
+        type="text"
+      />
+      <Field
+        required
+        component={SemanticInput}
+        intl={intl}
+        label={intl.formatMessage({
+          id: 'registration.form.password.label',
+          defaultMessage: 'Password',
+        })}
+        name="password"
+        type="password"
+      />
+      <Field
+        required
+        component={SemanticInput}
+        intl={intl}
+        label={intl.formatMessage({
+          id: 'registration.form.passwordRepeat.label',
+          defaultMessage: 'Repeat password',
+        })}
         name="passwordRepeat"
         type="password"
       />
       <div className="field">
         <label htmlFor="useCase">
-          <FormattedMessage id="common.string.useCase" defaultMessage="Use case" />
+          <FormattedMessage
+            id="registration.form.useCase.label"
+            defaultMessage="Use case description"
+          />
         </label>
         <Field name="useCase" component="textarea" type="text" />
       </div>
 
       <Button primary floated="right" type="submit">
-        <FormattedMessage id="common.string.submit" defaultMessage="Submit" />
+        <FormattedMessage id="common.form.button.submit" defaultMessage="Submit" />
       </Button>
     </div>
 
