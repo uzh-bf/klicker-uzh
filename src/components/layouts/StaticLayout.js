@@ -34,6 +34,8 @@ class StaticLayout extends Component {
           {children}
         </div>
 
+        <footer>&copy; IBF</footer>
+
         <style jsx global>{`
           * {
             font-family: 'Open Sans', sans-serif;
@@ -51,6 +53,12 @@ class StaticLayout extends Component {
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+          }
+
+          footer {
+            background-color: lightgrey;
+            border-top: 2px solid orange;
+            padding: 1rem;
           }
         `}</style>
       </div>
