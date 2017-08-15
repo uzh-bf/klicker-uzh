@@ -1,0 +1,27 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`createLinks works with full urls 1`] = `
+Array [
+  <link
+    href="http://www.google.com"
+    rel="stylesheet"
+/>,
+]
+`;
+
+exports[`createLinks works with semantic components 1`] = `
+Array [
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.11/components/dropdown.min.css"
+    rel="stylesheet"
+/>,
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.11/components/header.min.css"
+    rel="stylesheet"
+/>,
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.11/components/menu.min.css"
+    rel="stylesheet"
+/>,
+]
+`;
