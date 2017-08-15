@@ -66,10 +66,14 @@ class StudentLayout extends Component {
     return (
       <div className="studentLayout">
         <Helmet>
-          {createLinks(
-            ['https://fonts.googleapis.com/css?family=Open Sans'],
-            ['reset', 'button', 'icon', 'menu', 'sidebar'],
-          )}
+          {createLinks([
+            'https://fonts.googleapis.com/css?family=Open Sans',
+            'reset',
+            'button',
+            'icon',
+            'menu',
+            'sidebar',
+          ])}
           <title>
             {pageTitle}
           </title>
