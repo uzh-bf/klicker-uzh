@@ -26,8 +26,8 @@ fi
 echo "Lockfile not found, initializing application..."
 
 echo "Replacing environment variables..."
-sed -i 's;__SENTRY__;'"$SENTRY"';g' ./env
-sed -i 's;__LOGROCKET__;'"$LOGROCKET"';g' ./env
+sed -i 's;__SENTRY__;'"$SENTRY"';g' ./.env
+sed -i 's;__LOGROCKET__;'"$LOGROCKET"';g' ./.env
 
 echo "Building application sources..."
 yarn run build
