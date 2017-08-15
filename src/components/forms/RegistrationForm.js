@@ -12,6 +12,7 @@ import { createLinks } from '../../lib'
 import { SemanticInput } from './components'
 
 type Props = {
+  intl: $IntlShape,
   handleSubmit: (values: {
     firstName: string,
     lastName: string,
@@ -45,24 +46,25 @@ const validate = ({ email = '', shortname = '', password = '', passwordRepeat = 
   return errors
 }
 
-const RegistrationForm = ({ handleSubmit }: Props) =>
+const RegistrationForm = ({ intl, handleSubmit }: Props) =>
   (<form className="ui form error" onSubmit={handleSubmit}>
     <Helmet>
       {createLinks(['button', 'form', 'icon', 'textarea'])}
     </Helmet>
 
     <div className="personal">
-      <Field required component={SemanticInput} label="First name" name="firstName" type="text" />
-      <Field required component={SemanticInput} label="Last name" name="lastName" type="text" />
-      <Field required component={SemanticInput} label="Email" name="email" type="email" />
+      <Field required component={SemanticInput} intl={intl} label="First name" name="firstName" type="text" />
+      <Field required component={SemanticInput} intl={intl} label="Last name" name="lastName" type="text" />
+      <Field required component={SemanticInput} intl={intl} label="Email" name="email" type="email" />
     </div>
 
     <div className="account">
-      <Field required component={SemanticInput} label="Shortname" name="shortname" type="text" />
-      <Field required component={SemanticInput} label="Password" name="password" type="password" />
+      <Field required component={SemanticInput} intl={intl} label="Shortname" name="shortname" type="text" />
+      <Field required component={SemanticInput} intl={intl} label="Password" name="password" type="password" />
       <Field
         required
         component={SemanticInput}
+        intl={intl}
         label="Repeat password"
         name="passwordRepeat"
         type="password"

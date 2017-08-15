@@ -41,7 +41,7 @@ class Registration extends React.Component {
             <FormattedMessage id="user.registration.title" defaultMessage="Registration" />
           </h1>
 
-          <RegistrationForm onSubmit={this.handleSubmit} />
+          <RegistrationForm intl={intl} onSubmit={this.handleSubmit} />
 
           <style jsx>{`
             .registration {

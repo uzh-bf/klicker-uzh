@@ -3,10 +3,10 @@
 
 import React from 'react'
 import { Form, Icon } from 'semantic-ui-react'
+import { FormattedMessage } from 'react-intl'
 
 type Props = {
   disabled?: boolean,
-  error?: boolean,
   input: {
     name: string,
     value: string,
@@ -16,8 +16,8 @@ type Props = {
     onDrop: () => mixed,
     onFocus: () => mixed,
   },
-  intl?: $IntlShape,
-  label: string,
+  intl: $IntlShape,
+  label?: string,
   meta: {
     active: boolean,
     asyncValidating: boolean,
@@ -43,8 +43,7 @@ type Props = {
 
 const defaultProps = {
   disabled: false,
-  error: undefined,
-  intl: undefined,
+  label: undefined,
   placeholder: undefined,
   required: false,
   width: undefined,
@@ -52,40 +51,37 @@ const defaultProps = {
 
 const SemanticInput = ({
   disabled,
-  error,
   input,
   intl,
   label,
-  meta: { error: metaError, invalid, touched },
+  meta: { error, invalid, touched },
   placeholder,
   required,
   width,
   ...rest
 }: Props) => {
-  // translate the label if intl was injected. otherwise use it directly.
-  const inputLabel = intl ? intl.formatMessage({ id: label }) : label
-
-  // calculate the error message
-  const errorContent = error || metaError
-  const errorMessage = intl ? intl.formatMessage({ id: errorContent }) : errorContent
-
   // construct field props
-  const fieldProps = { disabled, error: error || (touched && metaError), required, width }
+  const fieldProps = { disabled, error: touched && invalid, required, width }
 
   return (
     <Form.Field {...fieldProps}>
       {label &&
         <label forHtml={input.name}>
-          {inputLabel}
+          <FormattedMessage id={label} />
         </label>}
 
-      <input {...input} {...rest} placeholder={placeholder || inputLabel} />
+      <input
+        {...input}
+        {...rest}
+        placeholder={(placeholder || label) && intl.formatMessage({ id: placeholder || label })}
+      />
 
       {touched &&
         invalid &&
+        error &&
         <div className="errorMessage">
           <Icon name="hand pointer" />
-          {errorMessage}
+          <FormattedMessage id={error} />
         </div>}
 
       <style jsx>{`
