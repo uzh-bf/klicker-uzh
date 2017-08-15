@@ -1,7 +1,6 @@
 // @flow
 
 import React from 'react'
-import { reduxForm } from 'redux-form'
 import { FormattedMessage } from 'react-intl'
 
 import { withData, pageWithIntl } from '../../lib'
@@ -22,7 +21,7 @@ class Registration extends React.Component {
     this.state = {}
   }
 
-  handleSubmit = (values: any) => {
+  handleSubmit = (values) => {
     console.dir(values)
   }
 
@@ -63,8 +62,4 @@ class Registration extends React.Component {
   }
 }
 
-export default withData(
-  reduxForm({
-    form: 'registration',
-  })(pageWithIntl(Registration)),
-)
+export default withData(pageWithIntl(Registration))

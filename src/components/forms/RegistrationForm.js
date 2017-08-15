@@ -2,14 +2,22 @@
 
 import React from 'react'
 import { FormattedMessage } from 'react-intl'
-import { Field } from 'redux-form'
+import { Field, reduxForm } from 'redux-form'
 import { Button } from 'semantic-ui-react'
 import { Helmet } from 'react-helmet'
 
 import { createLinks } from '../../lib'
 
 type Props = {
-  handleSubmit: () => mixed
+  handleSubmit: (values: {
+    firsName: string,
+    lastName: string,
+    email: string,
+    shortName: string,
+    password: string,
+    passwordRepeat: string,
+    useCase: string,
+  }) => mixed,
 }
 
 const RegistrationForm = ({ handleSubmit }: Props) =>
@@ -105,4 +113,6 @@ const RegistrationForm = ({ handleSubmit }: Props) =>
     `}</style>
   </form>)
 
-export default RegistrationForm
+export default reduxForm({
+  form: 'registration',
+})(RegistrationForm)
