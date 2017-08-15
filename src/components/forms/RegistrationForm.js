@@ -62,8 +62,8 @@ const RegistrationForm = ({ intl, handleSubmit }: Props) =>
         component={SemanticInput}
         intl={intl}
         label={intl.formatMessage({
-          id: 'common.form.firstName.label',
           defaultMessage: 'First name',
+          id: 'common.form.firstName.label',
         })}
         name="firstName"
         type="text"
@@ -73,8 +73,8 @@ const RegistrationForm = ({ intl, handleSubmit }: Props) =>
         component={SemanticInput}
         intl={intl}
         label={intl.formatMessage({
-          id: 'common.form.lastName.label',
           defaultMessage: 'Last name',
+          id: 'common.form.lastName.label',
         })}
         name="lastName"
         type="text"
@@ -83,7 +83,10 @@ const RegistrationForm = ({ intl, handleSubmit }: Props) =>
         required
         component={SemanticInput}
         intl={intl}
-        label={intl.formatMessage({ id: 'common.form.email.label', defaultMessage: 'Email' })}
+        label={intl.formatMessage({
+          defaultMessage: 'Email',
+          id: 'common.form.email.label',
+        })}
         name="email"
         type="email"
       />
@@ -95,8 +98,8 @@ const RegistrationForm = ({ intl, handleSubmit }: Props) =>
         component={SemanticInput}
         intl={intl}
         label={intl.formatMessage({
-          id: 'registration.form.shortname.label',
           defaultMessage: 'Shortname',
+          id: 'registration.form.shortname.label',
         })}
         name="shortname"
         type="text"
@@ -106,8 +109,8 @@ const RegistrationForm = ({ intl, handleSubmit }: Props) =>
         component={SemanticInput}
         intl={intl}
         label={intl.formatMessage({
-          id: 'registration.form.password.label',
           defaultMessage: 'Password',
+          id: 'registration.form.password.label',
         })}
         name="password"
         type="password"
@@ -117,8 +120,8 @@ const RegistrationForm = ({ intl, handleSubmit }: Props) =>
         component={SemanticInput}
         intl={intl}
         label={intl.formatMessage({
-          id: 'registration.form.passwordRepeat.label',
           defaultMessage: 'Repeat password',
+          id: 'registration.form.passwordRepeat.label',
         })}
         name="passwordRepeat"
         type="password"
@@ -126,15 +129,15 @@ const RegistrationForm = ({ intl, handleSubmit }: Props) =>
       <div className="field">
         <label htmlFor="useCase">
           <FormattedMessage
-            id="registration.form.useCase.label"
             defaultMessage="Use case description"
+            id="registration.form.useCase.label"
           />
         </label>
         <Field name="useCase" component="textarea" type="text" />
       </div>
 
       <Button primary floated="right" type="submit">
-        <FormattedMessage id="common.form.button.submit" defaultMessage="Submit" />
+        <FormattedMessage defaultMessage="Submit" id="common.form.button.submit" />
       </Button>
     </div>
 
