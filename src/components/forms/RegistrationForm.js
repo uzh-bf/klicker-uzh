@@ -49,10 +49,10 @@ const RegistrationForm = ({ handleSubmit }: Props) =>
 
     <div className="account">
       <div className="field">
-        <label htmlFor="shortName">
-          <FormattedMessage id="common.string.shortName" defaultMessage="Shortname" />
+        <label htmlFor="shortname">
+          <FormattedMessage id="common.string.shortname" defaultMessage="Shortname" />
         </label>
-        <Field name="shortName" component="input" type="text" />
+        <Field name="shortname" component="input" type="text" />
       </div>
       <div className="field">
         <label htmlFor="password">

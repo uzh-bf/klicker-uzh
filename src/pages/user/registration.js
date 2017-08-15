@@ -2,27 +2,29 @@
 
 import React from 'react'
 import { FormattedMessage } from 'react-intl'
+import { graphql } from 'react-apollo'
 
 import { withData, pageWithIntl } from '../../lib'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import RegistrationForm from '../../components/forms/RegistrationForm'
+import { RegistrationMutation } from '../../queries/mutations'
 
 class Registration extends React.Component {
   props: {
+    createUser: ({ variables: { email: string, password: string, shortname: string } }) => mixed,
     intl: $IntlShape,
     handleSubmit: () => mixed,
   }
 
-  state: {}
-
-  constructor(props) {
-    super(props)
-    this.state = {}
-  }
-
   handleSubmit = (values) => {
-    console.dir(values)
+    this.props.createUser({
+      variables: {
+        email: values.email,
+        password: values.password,
+        shortname: values.shortname,
+      },
+    })
   }
 
   render() {
@@ -62,4 +64,6 @@ class Registration extends React.Component {
   }
 }
 
-export default withData(pageWithIntl(Registration))
+export default withData(
+  pageWithIntl(graphql(RegistrationMutation, { name: 'createUser' })(Registration)),
+)
