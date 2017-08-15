@@ -124,6 +124,17 @@ class Registration extends React.Component {
                 padding-left: .5rem;
               }
             }
+
+            @media all and (min-width: 991px) {
+              .registration {
+                margin: 0 15%;
+              }
+
+              .form {
+                border: 1px solid lightgrey;
+                padding: 1rem;
+              }
+            }
           `}</style>
         </div>
       </StaticLayout>
