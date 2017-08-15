@@ -4,11 +4,10 @@ import React from 'react'
 import { FormattedMessage } from 'react-intl'
 import { graphql } from 'react-apollo'
 
-import { withData, pageWithIntl } from '../../lib'
-
 import StaticLayout from '../../components/layouts/StaticLayout'
 import RegistrationForm from '../../components/forms/RegistrationForm'
 import { RegistrationMutation } from '../../queries/mutations'
+import { withData, pageWithIntl } from '../../lib'
 
 class Registration extends React.Component {
   props: {
