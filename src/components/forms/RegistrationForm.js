@@ -28,11 +28,11 @@ type Props = {
 const validate = ({ firstName = '', lastName = '', email = '', shortname = '', password = '', passwordRepeat = '', useCase = '' }) => {
   const errors = {}
 
-  if (!isAlpha(firstName && isLength(firstName, { min: 1, max: undefined }))) {
+  if (!isAlpha(firstName && isLength(firstName, { max: undefined, min: 1 }))) {
     errors.firstName = 'registration.form.firstName.invalid'
   }
 
-  if (!isAlpha(lastName) && isLength(lastName, { min: 1, max: undefined })) {
+  if (!isAlpha(lastName) && isLength(lastName, { max: undefined, min: 1 })) {
     errors.lastName = 'registration.form.lastName.invalid'
   }
 
@@ -54,6 +54,10 @@ const validate = ({ firstName = '', lastName = '', email = '', shortname = '', p
   // both password fields need to match
   if (passwordRepeat !== password) {
     errors.passwordRepeat = 'registration.form.passwordRepeat.invalid'
+  }
+
+  if (!isAlpha(useCase)) {
+    errors.useCase = 'registration.form.useCase.invalid'
   }
 
   return errors
