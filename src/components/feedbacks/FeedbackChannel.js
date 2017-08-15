@@ -3,9 +3,8 @@
 import React from 'react'
 import { Checkbox } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import { Helmet } from 'react-helmet'
 
-import { createLinks } from '../../lib'
+import { withCSS } from '../../lib'
 
 import Feedback from './Feedback'
 
@@ -36,10 +35,6 @@ const FeedbackChannel = ({
   handlePublicToggle,
 }: Props) =>
   (<div className="feedbackChannel">
-    <Helmet>
-      {createLinks(undefined, ['checkbox'])}
-    </Helmet>
-
     <h2>
       <FormattedMessage
         defaultMessage="Feedback-Channel"
@@ -137,4 +132,4 @@ const FeedbackChannel = ({
 
 FeedbackChannel.defaultProps = defaultProps
 
-export default FeedbackChannel
+export default withCSS(FeedbackChannel, ['checkbox'])

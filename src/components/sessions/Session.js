@@ -5,6 +5,8 @@ import moment from 'moment'
 import { Button, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
+import { withCSS } from '../../lib'
+
 import QuestionBlock from '../questions/QuestionBlock'
 
 type Props = {
@@ -133,4 +135,4 @@ const Session = ({ createdAt, name, blocks, id, status }: Props) => {
   )
 }
 
-export default Session
+export default withCSS(Session, ['button', 'icon'])

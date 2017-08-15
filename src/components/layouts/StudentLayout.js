@@ -5,7 +5,7 @@ import { FormattedMessage } from 'react-intl'
 import { Helmet } from 'react-helmet'
 import { Button } from 'semantic-ui-react'
 
-import { createLinks, initLogging } from '../../lib'
+import { initLogging, withCSS } from '../../lib'
 
 import Sidebar from '../common/sidebar/Sidebar'
 
@@ -66,10 +66,6 @@ class StudentLayout extends Component {
     return (
       <div className="studentLayout">
         <Helmet>
-          {createLinks(
-            ['https://fonts.googleapis.com/css?family=Open Sans'],
-            ['reset', 'button', 'icon', 'menu', 'sidebar'],
-          )}
           <title>
             {pageTitle}
           </title>
@@ -148,4 +144,8 @@ class StudentLayout extends Component {
   }
 }
 
-export default StudentLayout
+export default withCSS(StudentLayout, [
+  'https://fonts.googleapis.com/css?family=Open Sans',
+  'reset',
+  'button',
+])

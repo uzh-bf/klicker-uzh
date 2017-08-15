@@ -4,6 +4,8 @@ import React from 'react'
 import classNames from 'classnames'
 import { Icon } from 'semantic-ui-react'
 
+import { withCSS } from '../../lib'
+
 type Props = {
   children: any,
   collapsed?: boolean,
@@ -63,4 +65,4 @@ const Collapser = ({ children, collapsed, handleCollapseToggle }: Props) =>
 
 Collapser.defaultProps = defaultProps
 
-export default Collapser
+export default withCSS(Collapser, ['icon'])

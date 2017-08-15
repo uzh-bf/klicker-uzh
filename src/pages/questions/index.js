@@ -3,7 +3,7 @@
 import React, { Component } from 'react'
 import { Button } from 'semantic-ui-react'
 
-import { pageWithIntl, withData } from '../../lib'
+import { pageWithIntl, withCSS, withData } from '../../lib'
 
 import QuestionList from '../../components/questions/QuestionList'
 import TagList from '../../components/questions/TagList'
@@ -154,4 +154,4 @@ class Index extends Component {
   }
 }
 
-export default withData(pageWithIntl(Index))
+export default withCSS(withData(pageWithIntl(Index)), ['button'])

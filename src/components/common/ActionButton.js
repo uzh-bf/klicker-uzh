@@ -3,6 +3,8 @@
 import React from 'react'
 import { Button } from 'semantic-ui-react'
 
+import { withCSS } from '../../lib'
+
 type Props = {
   items: Array<{
     label: string,
@@ -65,4 +67,4 @@ const ActionButton = ({ items }: Props) =>
     `}</style>
   </div>)
 
-export default ActionButton
+export default withCSS(ActionButton, ['button'])

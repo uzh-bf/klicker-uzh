@@ -2,8 +2,8 @@
 
 import React from 'react'
 import { Menu, Sidebar as SemanticSidebar } from 'semantic-ui-react'
-import { Helmet } from 'react-helmet'
-import { createLinks } from '../../../lib'
+
+import { withCSS } from '../../../lib'
 
 import SidebarItem from './SidebarItem'
 
@@ -26,10 +26,6 @@ const defaultProps = {
 
 const Sidebar = ({ activeItem, children, items, visible, handleSidebarItemClick }: Props) =>
   (<div className="sidebar">
-    <Helmet>
-      {createLinks(undefined, ['menu', 'sidebar'])}
-    </Helmet>
-
     <SemanticSidebar.Pushable>
       <SemanticSidebar
         vertical
@@ -87,4 +83,4 @@ const Sidebar = ({ activeItem, children, items, visible, handleSidebarItemClick 
 
 Sidebar.defaultProps = defaultProps
 
-export default Sidebar
+export default withCSS(Sidebar, ['sidebar'])

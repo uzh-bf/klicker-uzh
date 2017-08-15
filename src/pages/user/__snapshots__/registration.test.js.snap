@@ -1,0 +1,17 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Snapshot-Testing Works 1`] = `
+<div>
+  <div
+    className="staticLayout"
+    data-jsx={3661694597}
+  >
+    <div
+      className="registration"
+      data-jsx={645662128}
+    >
+      hello world
+    </div>
+  </div>
+</div>
+`;

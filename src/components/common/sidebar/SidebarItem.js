@@ -3,6 +3,8 @@
 import React from 'react'
 import { Menu } from 'semantic-ui-react'
 
+import { withCSS } from '../../../lib'
+
 type Props = {
   active: boolean,
   children: any,
@@ -22,4 +24,4 @@ const SidebarItem = ({ active, children, href, name, handleSidebarItemClick }: P
 
 SidebarItem.defaultProps = defaultProps
 
-export default SidebarItem
+export default withCSS(SidebarItem, ['menu'])

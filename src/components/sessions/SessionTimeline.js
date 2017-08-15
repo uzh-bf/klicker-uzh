@@ -3,6 +3,8 @@
 import React from 'react'
 import { Button, Icon } from 'semantic-ui-react'
 
+import { withCSS } from '../../lib'
+
 import QuestionBlock from '../questions/QuestionBlock'
 
 type Props = {
@@ -142,4 +144,4 @@ const SessionTimeline = ({ blocks, intl }: Props) =>
     `}</style>
   </div>)
 
-export default SessionTimeline
+export default withCSS(SessionTimeline, ['button', 'icon'])

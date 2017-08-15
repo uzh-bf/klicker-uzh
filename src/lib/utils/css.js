@@ -4,21 +4,18 @@
 
 import React from 'react'
 
-function createLinks(
-  linksFull?: Array<string> = [],
-  linksSemantic?: Array<string> = [],
-): Array<any> {
-  const links = [
-    ...linksFull,
-    ...linksSemantic.map(
-      file =>
-        `https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.11/components/${file}.min.css`,
-    ),
-  ]
-
-  const elements = links.map(link => <link key={link} rel="stylesheet" href={link} />)
-
-  return elements
+function createLinks(links: Array<string> = []): Array<any> {
+  return links.map(link =>
+    (<link
+      key={link}
+      rel="stylesheet"
+      href={
+        link.substr(0, 4) === 'http'
+          ? link
+          : `https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.11/components/${link}.min.css`
+      }
+    />),
+  )
 }
 
 export { createLinks }
