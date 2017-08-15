@@ -1,0 +1,213 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Snapshot-Testing Works 1`] = `
+<div
+  className="staticLayout"
+  data-jsx={2161656035}
+>
+  <div
+    className="content"
+    data-jsx={2161656035}
+  >
+    <div
+      className="registration"
+      data-jsx={1990206599}
+    >
+      <h1
+        data-jsx={1990206599}
+      >
+        <span>
+          Registration
+        </span>
+      </h1>
+      <form
+        className="ui form error"
+        data-jsx={2689033462}
+        onSubmit={[Function]}
+      >
+        <div
+          className="personal"
+          data-jsx={2689033462}
+        >
+          <div
+            className="field"
+          >
+            <label
+              data-jsx={2917643520}
+              forHtml="firstName"
+            >
+              First name
+            </label>
+            <input
+              data-jsx={2917643520}
+              name="firstName"
+              onBlur={[Function]}
+              onChange={[Function]}
+              onDragStart={[Function]}
+              onDrop={[Function]}
+              onFocus={[Function]}
+              placeholder="First name"
+              type="text"
+              value=""
+            />
+          </div>
+          <div
+            className="field"
+          >
+            <label
+              data-jsx={2917643520}
+              forHtml="lastName"
+            >
+              Last name
+            </label>
+            <input
+              data-jsx={2917643520}
+              name="lastName"
+              onBlur={[Function]}
+              onChange={[Function]}
+              onDragStart={[Function]}
+              onDrop={[Function]}
+              onFocus={[Function]}
+              placeholder="Last name"
+              type="text"
+              value=""
+            />
+          </div>
+          <div
+            className="required field"
+          >
+            <label
+              data-jsx={2917643520}
+              forHtml="email"
+            >
+              Email
+            </label>
+            <input
+              data-jsx={2917643520}
+              name="email"
+              onBlur={[Function]}
+              onChange={[Function]}
+              onDragStart={[Function]}
+              onDrop={[Function]}
+              onFocus={[Function]}
+              placeholder="Email"
+              type="email"
+              value=""
+            />
+          </div>
+        </div>
+        <div
+          className="account"
+          data-jsx={2689033462}
+        >
+          <div
+            className="required field"
+          >
+            <label
+              data-jsx={2917643520}
+              forHtml="shortname"
+            >
+              Shortname
+            </label>
+            <input
+              data-jsx={2917643520}
+              name="shortname"
+              onBlur={[Function]}
+              onChange={[Function]}
+              onDragStart={[Function]}
+              onDrop={[Function]}
+              onFocus={[Function]}
+              placeholder="Shortname"
+              type="text"
+              value=""
+            />
+          </div>
+          <div
+            className="required field"
+          >
+            <label
+              data-jsx={2917643520}
+              forHtml="password"
+            >
+              Password
+            </label>
+            <input
+              data-jsx={2917643520}
+              name="password"
+              onBlur={[Function]}
+              onChange={[Function]}
+              onDragStart={[Function]}
+              onDrop={[Function]}
+              onFocus={[Function]}
+              placeholder="Password"
+              type="password"
+              value=""
+            />
+          </div>
+          <div
+            className="required field"
+          >
+            <label
+              data-jsx={2917643520}
+              forHtml="passwordRepeat"
+            >
+              Repeat password
+            </label>
+            <input
+              data-jsx={2917643520}
+              name="passwordRepeat"
+              onBlur={[Function]}
+              onChange={[Function]}
+              onDragStart={[Function]}
+              onDrop={[Function]}
+              onFocus={[Function]}
+              placeholder="Repeat password"
+              type="password"
+              value=""
+            />
+          </div>
+          <div
+            className="field"
+            data-jsx={2689033462}
+          >
+            <label
+              data-jsx={2689033462}
+              htmlFor="useCase"
+            >
+              <span>
+                Use case description
+              </span>
+            </label>
+            <textarea
+              name="useCase"
+              onBlur={[Function]}
+              onChange={[Function]}
+              onDragStart={[Function]}
+              onDrop={[Function]}
+              onFocus={[Function]}
+              type="text"
+              value=""
+            />
+          </div>
+          <button
+            className="ui primary right floated button"
+            disabled={undefined}
+            onClick={[Function]}
+            tabIndex={undefined}
+            type="submit"
+          >
+            <span>
+              Submit
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <footer
+    data-jsx={2161656035}
+  >
+    © IBF
+  </footer>
+</div>
+`;

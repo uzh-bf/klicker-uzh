@@ -21,7 +21,7 @@ const defaultProps = {
 const ConfusionBarometer = ({ intl, isActive, handleActiveToggle }: Props) =>
   (<div className="confusionBarometer">
     <Helmet>
-      {createLinks(undefined, ['checkbox'])}
+      {createLinks(['checkbox'])}
     </Helmet>
 
     <h2>

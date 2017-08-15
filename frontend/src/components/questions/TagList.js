@@ -32,7 +32,7 @@ const TagList = ({ activeTags, data, handleTagClick }: Props) => {
   return (
     <List selection size="large">
       <Helmet>
-        {createLinks(undefined, ['list'])}
+        {createLinks(['list'])}
       </Helmet>
 
       {data.tags.map((tag) => {
