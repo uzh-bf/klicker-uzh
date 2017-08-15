@@ -1,9 +1,10 @@
 // @flow
 
 import React from 'react'
+import isEmail from 'validator/lib/isEmail'
 import { FormattedMessage } from 'react-intl'
 import { Field, reduxForm } from 'redux-form'
-import { Button } from 'semantic-ui-react'
+import { Button, Form } from 'semantic-ui-react'
 import { Helmet } from 'react-helmet'
 
 import { createLinks } from '../../lib'
@@ -13,60 +14,75 @@ type Props = {
     firsName: string,
     lastName: string,
     email: string,
-    shortName: string,
+    shortname: string,
     password: string,
     passwordRepeat: string,
     useCase: string,
   }) => mixed,
 }
 
-const RegistrationForm = ({ handleSubmit }: Props) =>
+const validate = ({ email = '', shortname, password, passworRepeat }) => {
+  const errors = {}
+  if (isEmail(email)) {
+    errors.email = 'Fail email'
+  }
+  return errors
+}
+
+const renderField = ({ input, label, type, meta: { touched, error, warning } }) =>
+  (<Field error={error}>
+    <label forHtml={input.name}>
+      {label}
+    </label>
+    <input {...input} type={type} />
+  </Field>)
+
+const RegistrationForm = ({ email, handleSubmit }: Props) =>
   (<form className="ui form" onSubmit={handleSubmit}>
     <Helmet>
       {createLinks(['button', 'form'])}
     </Helmet>
 
+    {email}
+
     <div className="personal">
-      <div className="field">
-        <label htmlFor="firstName">
-          <FormattedMessage id="common.string.firstname" defaultMessage="First name" />
-        </label>
-        <Field name="firstName" component="input" type="text" />
+      <div>
+        <Field name="firstName" component={renderField} type="text" />
       </div>
-      <div className="field">
+      <div>
         <label htmlFor="lastName">
           <FormattedMessage id="common.string.lastName" defaultMessage="Last name" />
         </label>
-        <Field name="lastName" component="input" type="text" />
+        <Field name="lastName" component={renderField} type="text" />
       </div>
-      <div className="field">
+      <div>
         <label htmlFor="email">
           <FormattedMessage id="common.string.email" defaultMessage="Email" />
         </label>
-        <Field name="email" component="input" type="email" />
+        <Field name="email" component={renderField} type="email" />
       </div>
     </div>
 
     <div className="account">
-      <div className="field">
+      <div>
         <label htmlFor="shortname">
           <FormattedMessage id="common.string.shortname" defaultMessage="Shortname" />
         </label>
-        <Field name="shortname" component="input" type="text" />
+        <Field name="shortname" component={renderField} type="text" />
       </div>
-      <div className="field">
+      <div>
         <label htmlFor="password">
           <FormattedMessage id="common.string.password" defaultMessage="Password" />
         </label>
-        <Field name="password" component="input" type="password" />
+        <Field name="password" component={renderField} type="password" />
       </div>
-      <div className="field">
+      <div>
         <label htmlFor="passwordRepeat">
           <FormattedMessage id="common.string.passwordRepeat" defaultMessage="Repeat password" />
         </label>
-        <Field name="passwordRepeat" component="input" type="password" />
+        <Field name="passwordRepeat" component={renderField} type="password" />
       </div>
-      <div className="field">
+      <div>
         <label htmlFor="useCase">
           <FormattedMessage id="common.string.useCase" defaultMessage="Use case" />
         </label>
@@ -115,4 +131,5 @@ const RegistrationForm = ({ handleSubmit }: Props) =>
 
 export default reduxForm({
   form: 'registration',
+  validate,
 })(RegistrationForm)
