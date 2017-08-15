@@ -4662,9 +4662,9 @@ loglevel@^1.4.1:
   version "1.4.1"
   resolved "https://registry.yarnpkg.com/loglevel/-/loglevel-1.4.1.tgz#95b383f91a3c2756fd4ab093667e4309161f2bcd"
 
-logrocket-react@^0.0.4:
-  version "0.0.4"
-  resolved "https://registry.yarnpkg.com/logrocket-react/-/logrocket-react-0.0.4.tgz#790581b3e7c3b68ee8ed3eb0ee2cfa76045c9985"
+logrocket-react@0.0.5:
+  version "0.0.5"
+  resolved "https://registry.yarnpkg.com/logrocket-react/-/logrocket-react-0.0.5.tgz#f0f17cdf508606a25ea156f25a37a1f4dec82fdf"
   dependencies:
     react "15"
     react-dom "15"
