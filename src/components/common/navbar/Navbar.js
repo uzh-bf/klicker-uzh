@@ -39,16 +39,7 @@ const Navbar = ({
 }: Props) =>
   (<div className="navbar">
     <Helmet>
-      {createLinks([
-        'button',
-        'divider',
-        'dropdown',
-        'icon',
-        'image',
-        'input',
-        'menu',
-        'popup',
-      ])}
+      {createLinks(['button', 'divider', 'dropdown', 'icon', 'image', 'input', 'menu', 'popup'])}
     </Helmet>
 
     <div className="sideArea">

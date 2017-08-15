@@ -20,10 +20,7 @@ const defaultProps = {
 const ConfusionSlider = ({ title, value, handleChange }: Props) =>
   (<div className="confusionSlider">
     <Helmet>
-      {createLinks(
-        ['https://unpkg.com/react-rangeslider@2.1.0/umd/randeslider.min.css'],
-
-      )}
+      {createLinks(['https://unpkg.com/react-rangeslider@2.1.0/umd/randeslider.min.css'])}
     </Helmet>
 
     {title &&
