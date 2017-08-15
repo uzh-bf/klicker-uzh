@@ -1,6 +1,7 @@
 // @flow
 
 import React from 'react'
+import isAlpha from 'validator/lib/isAlpha'
 import isEmail from 'validator/lib/isEmail'
 import isLength from 'validator/lib/isLength'
 import { FormattedMessage } from 'react-intl'
@@ -24,8 +25,16 @@ type Props = {
   }) => mixed,
 }
 
-const validate = ({ email = '', shortname = '', password = '', passwordRepeat = '' }) => {
+const validate = ({ firstName = '', lastName = '', email = '', shortname = '', password = '', passwordRepeat = '', useCase = '' }) => {
   const errors = {}
+
+  if (!isAlpha(firstName && isLength(firstName, { min: 1, max: undefined }))) {
+    errors.firstName = 'registration.form.firstName.invalid'
+  }
+
+  if (!isAlpha(lastName) && isLength(lastName, { min: 1, max: undefined })) {
+    errors.lastName = 'registration.form.lastName.invalid'
+  }
 
   // the email address needs to be valid
   if (!isEmail(email)) {
@@ -33,7 +42,7 @@ const validate = ({ email = '', shortname = '', password = '', passwordRepeat = 
   }
 
   // the shortname is allowed to be within 3 to 6 chars
-  if (!isLength(shortname, { max: 6, min: 3 })) {
+  if (!isAlpha(shortname) || !isLength(shortname, { max: 6, min: 3 })) {
     errors.shortname = 'registration.form.shortname.invalid'
   }
 
@@ -58,7 +67,6 @@ const RegistrationForm = ({ intl, handleSubmit }: Props) =>
 
     <div className="personal">
       <Field
-        required
         component={SemanticInput}
         intl={intl}
         label={intl.formatMessage({
@@ -69,7 +77,6 @@ const RegistrationForm = ({ intl, handleSubmit }: Props) =>
         type="text"
       />
       <Field
-        required
         component={SemanticInput}
         intl={intl}
         label={intl.formatMessage({
