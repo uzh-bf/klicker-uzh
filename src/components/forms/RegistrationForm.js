@@ -46,43 +46,46 @@ const RegistrationForm = ({ email, handleSubmit }: Props) =>
     {email}
 
     <div className="personal">
-      <div>
-        <Field name="firstName" component={renderField} type="text" />
+      <div className="field">
+        <label htmlFor="firstName">
+          <FormattedMessage id="common.string.firstName" defaultMessage="First name" />
+        </label>
+        <Field name="firstName" component="input" type="text" />
       </div>
-      <div>
+      <div className="field">
         <label htmlFor="lastName">
           <FormattedMessage id="common.string.lastName" defaultMessage="Last name" />
         </label>
-        <Field name="lastName" component={renderField} type="text" />
+        <Field name="lastName" component="input" type="text" />
       </div>
-      <div>
+      <div className="field">
         <label htmlFor="email">
           <FormattedMessage id="common.string.email" defaultMessage="Email" />
         </label>
-        <Field name="email" component={renderField} type="email" />
+        <Field name="email" component="input" type="email" />
       </div>
     </div>
 
     <div className="account">
-      <div>
+      <div className="field">
         <label htmlFor="shortname">
           <FormattedMessage id="common.string.shortname" defaultMessage="Shortname" />
         </label>
-        <Field name="shortname" component={renderField} type="text" />
+        <Field name="shortname" component="input" type="text" />
       </div>
-      <div>
+      <div className="field">
         <label htmlFor="password">
           <FormattedMessage id="common.string.password" defaultMessage="Password" />
         </label>
-        <Field name="password" component={renderField} type="password" />
+        <Field name="password" component="input" type="password" />
       </div>
-      <div>
+      <div className="field">
         <label htmlFor="passwordRepeat">
           <FormattedMessage id="common.string.passwordRepeat" defaultMessage="Repeat password" />
         </label>
-        <Field name="passwordRepeat" component={renderField} type="password" />
+        <Field name="passwordRepeat" component="input" type="password" />
       </div>
-      <div>
+      <div className="field">
         <label htmlFor="useCase">
           <FormattedMessage id="common.string.useCase" defaultMessage="Use case" />
         </label>
@@ -131,5 +134,5 @@ const RegistrationForm = ({ email, handleSubmit }: Props) =>
 
 export default reduxForm({
   form: 'registration',
-  validate,
+  // validate,
 })(RegistrationForm)
