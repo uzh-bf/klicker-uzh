@@ -61,20 +61,21 @@ const SemanticInput = ({
   ...rest
 }: Props) => {
   // construct field props
+  // define an erroneous field as a field that has been touched and is invalid
   const fieldProps = { disabled, error: touched && invalid, required, width }
+
+  // construct input props
+  // define the default placeholder to be equal to the label
+  const inputProps = { placeholder: label, ...rest }
 
   return (
     <Form.Field {...fieldProps}>
       {label &&
         <label forHtml={input.name}>
-          <FormattedMessage id={label} />
+          {label}
         </label>}
 
-      <input
-        {...input}
-        {...rest}
-        placeholder={(placeholder || label) && intl.formatMessage({ id: placeholder || label })}
-      />
+      <input {...input} {...inputProps} />
 
       {touched &&
         invalid &&
