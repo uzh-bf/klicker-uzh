@@ -37,7 +37,7 @@ const FeedbackChannel = ({
 }: Props) =>
   (<div className="feedbackChannel">
     <Helmet>
-      {createLinks(undefined, ['checkbox'])}
+      {createLinks(['checkbox'])}
     </Helmet>
 
     <h2>

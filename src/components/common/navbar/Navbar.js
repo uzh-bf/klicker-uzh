@@ -39,7 +39,7 @@ const Navbar = ({
 }: Props) =>
   (<div className="navbar">
     <Helmet>
-      {createLinks(undefined, [
+      {createLinks([
         'button',
         'divider',
         'dropdown',

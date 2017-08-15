@@ -67,8 +67,7 @@ class StudentLayout extends Component {
       <div className="studentLayout">
         <Helmet>
           {createLinks(
-            ['https://fonts.googleapis.com/css?family=Open Sans'],
-            ['reset', 'button', 'icon', 'menu', 'sidebar'],
+            ['https://fonts.googleapis.com/css?family=Open Sans', 'reset', 'button', 'icon', 'menu', 'sidebar'],
           )}
           <title>
             {pageTitle}
