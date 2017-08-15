@@ -25,7 +25,15 @@ type Props = {
   }) => mixed,
 }
 
-const validate = ({ firstName = '', lastName = '', email = '', shortname = '', password = '', passwordRepeat = '', useCase = '' }) => {
+const validate = ({
+  firstName = '',
+  lastName = '',
+  email = '',
+  shortname = '',
+  password = '',
+  passwordRepeat = '',
+  useCase = '',
+}) => {
   const errors = {}
 
   if (!isAlpha(firstName && isLength(firstName, { max: undefined, min: 1 }))) {
