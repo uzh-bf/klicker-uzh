@@ -2,7 +2,6 @@ node_modules/
 
 src/.next
 src/lang/.messages
-.env
 *.log
 
 .idea/
