@@ -14,6 +14,7 @@ import { SemanticInput } from './components'
 
 type Props = {
   intl: $IntlShape,
+  invalid: boolean,
   handleSubmit: (values: {
     firstName: string,
     lastName: string,
@@ -37,41 +38,41 @@ const validate = ({
   const errors = {}
 
   if (!isAlpha(firstName && isLength(firstName, { max: undefined, min: 1 }))) {
-    errors.firstName = 'registration.form.firstName.invalid'
+    errors.firstName = 'form.firstName.invalid'
   }
 
   if (!isAlpha(lastName) && isLength(lastName, { max: undefined, min: 1 })) {
-    errors.lastName = 'registration.form.lastName.invalid'
+    errors.lastName = 'form.lastName.invalid'
   }
 
   // the email address needs to be valid
   if (!isEmail(email)) {
-    errors.email = 'registration.form.email.invalid'
+    errors.email = 'form.email.invalid'
   }
 
   // the shortname is allowed to be within 3 to 6 chars
   if (!isAlpha(shortname) || !isLength(shortname, { max: 6, min: 3 })) {
-    errors.shortname = 'registration.form.shortname.invalid'
+    errors.shortname = 'form.shortname.invalid'
   }
 
   // password should at least have 7 characters (or more?)
   if (!isLength(password, { max: undefined, min: 7 })) {
-    errors.password = 'registration.form.password.invalid'
+    errors.password = 'form.password.invalid'
   }
 
   // both password fields need to match
   if (passwordRepeat !== password) {
-    errors.passwordRepeat = 'registration.form.passwordRepeat.invalid'
+    errors.passwordRepeat = 'form.passwordRepeat.invalid'
   }
 
   if (!isAlpha(useCase)) {
-    errors.useCase = 'registration.form.useCase.invalid'
+    errors.useCase = 'form.useCase.invalid'
   }
 
   return errors
 }
 
-const RegistrationForm = ({ intl, handleSubmit }: Props) =>
+const RegistrationForm = ({ intl, invalid, handleSubmit }: Props) =>
   (<form className="ui form error" onSubmit={handleSubmit}>
     <Helmet>
       {createLinks(['button', 'form', 'icon', 'textarea'])}
@@ -83,7 +84,7 @@ const RegistrationForm = ({ intl, handleSubmit }: Props) =>
         intl={intl}
         label={intl.formatMessage({
           defaultMessage: 'First name',
-          id: 'common.form.firstName.label',
+          id: 'form.firstName.label',
         })}
         name="firstName"
         type="text"
@@ -93,7 +94,7 @@ const RegistrationForm = ({ intl, handleSubmit }: Props) =>
         intl={intl}
         label={intl.formatMessage({
           defaultMessage: 'Last name',
-          id: 'common.form.lastName.label',
+          id: 'form.lastName.label',
         })}
         name="lastName"
         type="text"
@@ -104,7 +105,7 @@ const RegistrationForm = ({ intl, handleSubmit }: Props) =>
         intl={intl}
         label={intl.formatMessage({
           defaultMessage: 'Email',
-          id: 'common.form.email.label',
+          id: 'form.email.label',
         })}
         name="email"
         type="email"
@@ -118,7 +119,7 @@ const RegistrationForm = ({ intl, handleSubmit }: Props) =>
         intl={intl}
         label={intl.formatMessage({
           defaultMessage: 'Shortname',
-          id: 'registration.form.shortname.label',
+          id: 'form.shortname.label',
         })}
         name="shortname"
         type="text"
@@ -129,7 +130,7 @@ const RegistrationForm = ({ intl, handleSubmit }: Props) =>
         intl={intl}
         label={intl.formatMessage({
           defaultMessage: 'Password',
-          id: 'registration.form.password.label',
+          id: 'form.password.label',
         })}
         name="password"
         type="password"
@@ -140,7 +141,7 @@ const RegistrationForm = ({ intl, handleSubmit }: Props) =>
         intl={intl}
         label={intl.formatMessage({
           defaultMessage: 'Repeat password',
-          id: 'registration.form.passwordRepeat.label',
+          id: 'form.passwordRepeat.label',
         })}
         name="passwordRepeat"
         type="password"
@@ -149,14 +150,14 @@ const RegistrationForm = ({ intl, handleSubmit }: Props) =>
         <label htmlFor="useCase">
           <FormattedMessage
             defaultMessage="Use case description"
-            id="registration.form.useCase.label"
+            id="form.useCase.label"
           />
         </label>
         <Field name="useCase" component="textarea" type="text" />
       </div>
 
-      <Button primary floated="right" type="submit">
-        <FormattedMessage defaultMessage="Submit" id="common.form.button.submit" />
+      <Button primary disabled={invalid} floated="right" type="submit">
+        <FormattedMessage defaultMessage="Submit" id="form.button.submit" />
       </Button>
     </div>
 
