@@ -51,7 +51,7 @@ declare module 'enzyme' {
     setState(state: {}, callback?: Function): this,
     setProps(props: {}): this;
     setContext(context: Object): this;
-    instance(): React$Component<*, *, *>;
+    instance(): React$Component<*, *>;
     update(): this;
     debug(): string;
     type(): string | Function | null;

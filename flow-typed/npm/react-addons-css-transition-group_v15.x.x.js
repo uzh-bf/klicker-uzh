@@ -24,7 +24,7 @@ declare module 'react-addons-css-transition-group' {
     transitionEnter: boolean,
     transitionLeave: boolean,
   }
-  declare class ReactCSSTransitionGroup extends React$Component<DefaultProps, Props, any> {
+  declare class ReactCSSTransitionGroup extends React$Component<Props, any> {
     props: Props;
     static defaultProps: DefaultProps;
   }
