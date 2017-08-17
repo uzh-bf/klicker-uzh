@@ -5,7 +5,7 @@ import classNames from 'classnames'
 import { Icon } from 'semantic-ui-react'
 
 type Props = {
-  children: React.Node,
+  children: React.ChildrenArray<React.Node></React.Node>,
   collapsed: boolean,
   handleCollapseToggle: () => mixed,
 }
