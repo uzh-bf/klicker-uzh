@@ -16,17 +16,26 @@
   },
   "devDependencies": {
     "babel-eslint": "^7.2.3",
-    "cross-env": "^5.0.1",
+    "cross-env": "^5.0.5",
+    "dotenv": "^4.0.0",
     "eslint": "^4.4.1",
     "eslint-config-airbnb-base": "^11.2.0",
+    "eslint-plugin-flowtype": "^2.35.0",
     "eslint-plugin-import": "^2.2.0",
+    "flow-bin": "^0.53.0",
     "jest": "^20.0.4",
-    "nodemon": "^1.11.0"
+    "nodemon": "^1.11.0",
+    "pre-commit": "^1.2.2",
+    "prettier-eslint": "^6.4.2",
+    "prettier-eslint-cli": "^4.2.0"
   },
   "scripts": {
     "debug": "cross-env NODE_ENV=production node --inspect src/server.js",
-    "dev": "nodemon src/server.js",
-    "lint": "eslint src/**/*.js",
+    "dev": "nodemon -w src/server.js src/server.js",
+    "flow": "flow",
+    "format": "prettier-eslint --single-quote --no-semi --write \"src/**/*.js\"",
+    "format:ci": "prettier-eslint --single-quote --no-semi --list-different \"src/**/*.js\"",
+    "lint": "eslint \"src/**/*.js\"",
     "start": "cross-env NODE_ENV=production node src/server.js",
     "test": "jest"
   },
@@ -36,5 +45,8 @@
       "src/",
       "test/"
     ]
-  }
+  },
+  "pre-commit": [
+    "lint"
+  ]
 }

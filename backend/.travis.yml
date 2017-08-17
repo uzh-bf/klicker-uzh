@@ -15,7 +15,23 @@ jobs:
   include:
     - stage: test
       script:
+        - yarn run flow
+      cache:
+        yarn: true
+        directories:
+          - node_modules
+
+    - stage: test
+      script:
         - yarn test
+      cache:
+        yarn: true
+        directories:
+          - node_modules
+
+    - stage: test
+      script:
+        - yarn run format:ci
       cache:
         yarn: true
         directories:
@@ -24,6 +40,6 @@ jobs:
     - stage: build
       script:
         - docker login -u$QUAY_USER -p$QUAY_TOKEN quay.io/uzh-bf/klicker-api
-        - docker pull quay.io/uzh-bf/klicker-api:latest
-        - docker build --cache-from quay.io/uzh-bf/klicker-api:latest -t quay.io/uzh-bf/klicker-api:latest .
-        - if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then bash -c "docker push quay.io/uzh-bf/klicker-api:latest"; fi
+        - if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then bash -c "docker pull quay.io/uzh-bf/klicker-api:latest;docker build --cache-from quay.io/uzh-bf/klicker-api:latest -t quay.io/uzh-bf/klicker-api:latest .;docker push quay.io/uzh-bf/klicker-api:latest"; fi
+        - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then bash -c "docker pull quay.io/uzh-bf/klicker-api:nightly;docker build --cache-from quay.io/uzh-bf/klicker-api:nightly -t quay.io/uzh-bf/klicker-api:nightly -t quay.io/uzh-bf/klicker-api:nightly-$TRAVIS_PULL_REQUEST .;docker push quay.io/uzh-bf/klicker-api:nightly; docker push quay.io/uzh-bf/klicker-api:nightly-$TRAVIS_PULL_REQUEST"; fi
+

@@ -1,3 +1,5 @@
+// @flow
+
 const graphql = require('graphql')
 
 const { GraphQLList, GraphQLObjectType, GraphQLString, GraphQLSchema } = graphql
