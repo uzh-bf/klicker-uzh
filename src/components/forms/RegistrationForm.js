@@ -148,10 +148,7 @@ const RegistrationForm = ({ intl, invalid, handleSubmit }: Props) =>
       />
       <div className="field">
         <label htmlFor="useCase">
-          <FormattedMessage
-            defaultMessage="Use case description"
-            id="form.useCase.label"
-          />
+          <FormattedMessage defaultMessage="Use case description" id="form.useCase.label" />
         </label>
         <Field name="useCase" component="textarea" type="text" />
       </div>

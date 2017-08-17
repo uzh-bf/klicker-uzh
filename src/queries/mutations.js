@@ -26,7 +26,7 @@ type LoginMutationType = {
     id: string,
     email: string,
     shortname: string,
-  }
+  },
 }
 const LoginMutation = gql`
   mutation LoginUser($email: String!, $password: String!) {

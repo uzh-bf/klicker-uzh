@@ -36,8 +36,8 @@ const validate = ({ email = '', password = '' }) => {
   return errors
 }
 
-const LoginForm = ({ intl, invalid, handleSubmit }: Props) => (
-  <form className="ui form error" onSubmit={handleSubmit}>
+const LoginForm = ({ intl, invalid, handleSubmit }: Props) =>
+  (<form className="ui form error" onSubmit={handleSubmit}>
     <Helmet>
       {createLinks(['button', 'form', 'icon'])}
     </Helmet>
@@ -70,33 +70,32 @@ const LoginForm = ({ intl, invalid, handleSubmit }: Props) => (
     </Button>
 
     <style jsx>{`
-        .form {
-          display: flex;
-          flex-direction: column;
-        }
+      .form {
+        display: flex;
+        flex-direction: column;
+      }
 
+      .form :global(.semanticButton) {
+        margin-right: 0;
+      }
+
+      @media all and (min-width: 768px) {
         .form :global(.semanticButton) {
+          flex: 0 0 auto;
+          align-self: flex-end;
+
           margin-right: 0;
         }
+      }
 
-        @media all and (min-width: 768px) {
-          .form :global(.semanticButton) {
-            flex: 0 0 auto;
-            align-self: flex-end;
-
-            margin-right: 0;
-          }
+      @media all and (min-width: 991px) {
+        .form {
+          border: 1px solid lightgrey;
+          padding: 1rem;
         }
-
-        @media all and (min-width: 991px) {
-          .form {
-            border: 1px solid lightgrey;
-            padding: 1rem;
-          }
-        }
-      `}</style>
-  </form>
-)
+      }
+    `}</style>
+  </form>)
 
 export default reduxForm({
   form: 'login',
