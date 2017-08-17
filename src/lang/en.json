@@ -1,3 +1,26 @@
 {
-  "title": "Hello World"
+  "common.string.settings": "Settings",
+  "common.string.logout": "Logout",
+  "common.button.download": "Download",
+  "pages.questionPool.title": "Question Pool",
+  "pages.sessionHistory.title": "Session History",
+  "pages.runningSession.title": "Running Session",
+  "runningSession.confusionBarometer.string.title": "Confusion-Barometer",
+  "runningSession.feedbackChannel.string.title": "Feedback-Channel",
+  "registration.form.useCase.label": "Use case description",
+  "common.form.button.submit": "Submit",
+  "student.sidebar.activeQuestion": "Active Question",
+  "student.sidebar.feedbackChannel": "Feedback-Channel",
+  "teacher.questionPool.title": "Question Pool",
+  "teacher.sessionHistory.title": "Session History",
+  "teacher.runningSession.title": "Running Session",
+  "questionPool.question.lastUsed": "Last used",
+  "session.button.completed.content": "Copy",
+  "session.button.created.content": "Start",
+  "session.button.running.content": "Running",
+  "sessionHistory.string.createdOn": "Created on",
+  "common.string.send": "Send",
+  "common.string.speed": "Speed",
+  "common.string.difficulty": "Difficulty",
+  "user.registration.title": "Registration"
 }
