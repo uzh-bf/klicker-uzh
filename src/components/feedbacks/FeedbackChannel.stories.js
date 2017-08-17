@@ -13,7 +13,7 @@ import FeedbackChannel from './FeedbackChannel'
 import { intlMock } from '../../../.storybook/utils'
 
 // create a stateful wrapper for the component
-class Wrapper extends Component {
+class Wrapper extends Component<$FlowFixMeProps, $FlowFixMeState> {
   state = {
     isActive: false,
     isPublic: false,

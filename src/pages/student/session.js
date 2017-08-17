@@ -1,6 +1,6 @@
 // @flow
 
-import React from 'react'
+import * as React from 'react';
 import classNames from 'classnames'
 import { Button } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
@@ -13,19 +13,15 @@ import Feedback from '../../components/feedbacks/Feedback'
 import SingleChoiceOptions from '../../components/questionTypes/SingleChoiceOptions'
 import StudentLayout from '../../components/layouts/StudentLayout'
 
-class Session extends React.Component {
-  props: {
-    intl: $IntlShape,
-  }
-
-  state: {
-    feedbackDifficulty: number | null,
-    feedbackSpeed: number | null,
-    questionActiveOption: number,
-    questionCollapsed: boolean,
-    sidebarActiveItem: string,
-  }
-
+class Session extends React.Component<{
+  intl: $IntlShape,
+}, {
+  feedbackDifficulty: number | null,
+  feedbackSpeed: number | null,
+  questionActiveOption: number,
+  questionCollapsed: boolean,
+  sidebarActiveItem: string,
+}> {
   constructor(props) {
     super(props)
     this.state = {

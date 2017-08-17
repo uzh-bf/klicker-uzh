@@ -9,17 +9,15 @@ import { createLinks, initLogging } from '../../lib'
 
 import Sidebar from '../common/sidebar/Sidebar'
 
-class StudentLayout extends Component {
-  props: {
-    children: any,
-    pageTitle: string,
-    sidebar: {
-      activeItem: string,
-      handleItemChange: (newItem: string) => mixed,
-    },
-    title: string,
-  }
-
+class StudentLayout extends Component<{
+  children: any,
+  pageTitle: string,
+  sidebar: {
+    activeItem: string,
+    handleItemChange: (newItem: string) => mixed,
+  },
+  title: string,
+}, $FlowFixMeState> {
   state = {
     sidebarActiveItem: 'activeQuestion',
     sidebarVisible: false,

@@ -1,6 +1,6 @@
 // @flow
 
-import React from 'react'
+import * as React from 'react';
 import { Icon, Menu } from 'semantic-ui-react'
 import { Helmet } from 'react-helmet'
 import { createLinks } from '../../../lib'

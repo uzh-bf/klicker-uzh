@@ -1,6 +1,6 @@
 // @flow
 
-import React from 'react'
+import * as React from 'react';
 import { Icon } from 'semantic-ui-react'
 
 import QuestionSingle from './QuestionSingle'

@@ -11,7 +11,7 @@ import { storiesOf } from '@storybook/react'
 import ConfusionSlider from './ConfusionSlider'
 
 // create a stateful wrapper for the component
-class Wrapper extends Component {
+class Wrapper extends Component<{}, $FlowFixMeState> {
   state = {
     value: 10,
   }

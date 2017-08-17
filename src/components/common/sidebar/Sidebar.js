@@ -1,6 +1,6 @@
 // @flow
 
-import React from 'react'
+import * as React from 'react';
 import { Menu, Sidebar as SemanticSidebar } from 'semantic-ui-react'
 import { Helmet } from 'react-helmet'
 import { createLinks } from '../../../lib'
@@ -11,7 +11,7 @@ type Props = {
   activeItem: string,
   children: any,
   items: Array<{
-    label: string | React.Element<*>,
+    label: string | React.Element<any>,
     href: string,
     name: string,
   }>,

@@ -12,18 +12,14 @@ import TeacherLayout from '../../components/layouts/TeacherLayout'
 import { RunningSessionQuery } from '../../queries/queries'
 import type { RunningSessionType } from '../../queries/queries'
 
-class Running extends Component {
-  props: {
-    data: RunningSessionType,
-    intl: $IntlShape,
-  }
-
-  state: {
-    confusionActive: boolean,
-    feedbacksActive: boolean,
-    feedbacksPublic: boolean,
-  }
-
+class Running extends Component<{
+  data: RunningSessionType,
+  intl: $IntlShape,
+}, {
+  confusionActive: boolean,
+  feedbacksActive: boolean,
+  feedbacksPublic: boolean,
+}> {
   constructor(props) {
     super(props)
     this.state = {

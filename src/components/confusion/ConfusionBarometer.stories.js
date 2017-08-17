@@ -12,7 +12,7 @@ import ConfusionBarometer from './ConfusionBarometer'
 import { intlMock } from '../../../.storybook/utils'
 
 // create a stateful wrapper for the component
-class Wrapper extends Component {
+class Wrapper extends Component<{}, $FlowFixMeState> {
   state = {
     isActive: false,
   }

@@ -1,6 +1,6 @@
 // @flow
 
-import React from 'react'
+import * as React from 'react';
 import { FormattedMessage } from 'react-intl'
 import { graphql } from 'react-apollo'
 
@@ -9,13 +9,11 @@ import RegistrationForm from '../../components/forms/RegistrationForm'
 import { RegistrationMutation } from '../../queries/mutations'
 import { withData, pageWithIntl } from '../../lib'
 
-class Registration extends React.Component {
-  props: {
-    createUser: ({ variables: { email: string, password: string, shortname: string } }) => mixed,
-    intl: $IntlShape,
-    handleSubmit: () => mixed,
-  }
-
+class Registration extends React.Component<{
+  createUser: ({ variables: { email: string, password: string, shortname: string } }) => mixed,
+  intl: $IntlShape,
+  handleSubmit: () => mixed,
+}> {
   handleSubmit = (values) => {
     this.props.createUser({
       variables: {

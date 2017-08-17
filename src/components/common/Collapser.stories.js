@@ -12,7 +12,7 @@ import { action } from '@storybook/addon-actions'
 import Collapser from './Collapser'
 
 // create a stateful wrapper for the component
-class Wrapper extends Component {
+class Wrapper extends Component<$FlowFixMeProps, $FlowFixMeState> {
   state = {
     collapsed: true,
   }

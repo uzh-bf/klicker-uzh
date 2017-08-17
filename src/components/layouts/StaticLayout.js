@@ -5,12 +5,10 @@ import { Helmet } from 'react-helmet'
 
 import { createLinks, initLogging } from '../../lib'
 
-class StaticLayout extends Component {
-  props: {
-    children: any,
-    pageTitle: string,
-  }
-
+class StaticLayout extends Component<{
+  children: any,
+  pageTitle: string,
+}, $FlowFixMeState> {
   state = {}
 
   componentWillMount() {

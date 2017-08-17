@@ -1,6 +1,6 @@
 // @flow
 
-import React from 'react'
+import * as React from 'react';
 import isAlpha from 'validator/lib/isAlpha'
 import isEmail from 'validator/lib/isEmail'
 import isLength from 'validator/lib/isLength'

@@ -13,7 +13,7 @@ import { number } from '@storybook/addon-knobs'
 import SingleChoiceOptions from './SingleChoiceOptions'
 
 // create a stateful wrapper for the component
-class Wrapper extends Component {
+class Wrapper extends Component<$FlowFixMeProps, $FlowFixMeState> {
   state = {
     activeOption: -1,
   }

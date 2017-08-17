@@ -1,6 +1,6 @@
 // @flow
 
-import React from 'react'
+import * as React from 'react';
 import { graphql } from 'react-apollo'
 
 import Session from './Session'

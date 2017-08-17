@@ -9,17 +9,13 @@ import QuestionList from '../../components/questions/QuestionList'
 import TagList from '../../components/questions/TagList'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 
-class Index extends Component {
-  props: {
-    intl: $IntlShape,
-  }
-
-  state: {
-    activeNewButton: boolean,
-    activeTags: Array<string>,
-    sidebarVisible: boolean,
-  }
-
+class Index extends Component<{
+  intl: $IntlShape,
+}, {
+  activeNewButton: boolean,
+  activeTags: Array<string>,
+  sidebarVisible: boolean,
+}> {
   constructor(props) {
     super(props)
     this.state = {
