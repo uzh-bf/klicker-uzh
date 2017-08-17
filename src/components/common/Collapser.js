@@ -1,12 +1,12 @@
 // @flow
 
-import React from 'react'
+import * as React from 'react'
 import classNames from 'classnames'
 import { Icon } from 'semantic-ui-react'
 
 type Props = {
-  children: any,
-  collapsed?: boolean,
+  children: React.ChildrenArray<React.Node></React.Node>,
+  collapsed: boolean,
   handleCollapseToggle: () => mixed,
 }
 

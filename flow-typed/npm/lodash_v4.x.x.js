@@ -1,5 +1,5 @@
-// flow-typed signature: 77a78044a6021c0258fb1b8b69dd4318
-// flow-typed version: 9821eaaefe/lodash_v4.x.x/flow_>=v0.47.x
+// flow-typed signature: 328ddf9f3d981b2b0f0ca4186bf96103
+// flow-typed version: 8daeabda84/lodash_v4.x.x/flow_>=v0.47.x
 
 declare module 'lodash' {
   declare type TemplateSettings = {
@@ -457,7 +457,7 @@ declare module 'lodash' {
     words(string?: string, pattern?: RegExp|string): Array<string>;
 
     // Util
-    attempt(func: Function): any;
+    attempt(func: Function, ...args: Array<any>): any;
     bindAll(object?: ?Object, methodNames: Array<string>): Object;
     bindAll(object?: ?Object, ...methodNames: Array<string>): Object;
     cond(pairs: NestedArray<Function>): Function;

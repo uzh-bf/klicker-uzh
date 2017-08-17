@@ -1,16 +1,17 @@
 // @flow
 
-import React, { Component } from 'react'
+import * as React from 'react'
 import { Helmet } from 'react-helmet'
 
 import { createLinks, initLogging } from '../../lib'
 
-class StaticLayout extends Component {
-  props: {
-    children: any,
-    pageTitle: string,
-  }
+type Props = {
+  children: React.Node,
+  pageTitle: string,
+}
+type State = {}
 
+class StaticLayout extends React.Component<Props, State> {
   state = {}
 
   componentWillMount() {

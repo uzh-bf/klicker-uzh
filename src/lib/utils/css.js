@@ -2,9 +2,9 @@
 
 /* eslint-disable import/prefer-default-export */
 
-import React from 'react'
+import * as React from 'react'
 
-function createLinks(links: Array<string> = []): Array<*> {
+function createLinks(links: Array<string> = []): Array<React.Element<'link'>> {
   return links.map(link =>
     (<link
       key={link}

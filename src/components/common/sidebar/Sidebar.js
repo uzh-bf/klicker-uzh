@@ -1,6 +1,6 @@
 // @flow
 
-import React from 'react'
+import * as React from 'react'
 import { Menu, Sidebar as SemanticSidebar } from 'semantic-ui-react'
 import { Helmet } from 'react-helmet'
 import { createLinks } from '../../../lib'
@@ -9,9 +9,9 @@ import SidebarItem from './SidebarItem'
 
 type Props = {
   activeItem: string,
-  children: any,
+  children: React.Node,
   items: Array<{
-    label: string | React.Element<*>,
+    label: string | React.Node,
     href: string,
     name: string,
   }>,

@@ -1,12 +1,12 @@
 // @flow
 /* eslint-disable jsx-a11y/label-has-for */
 
-import React from 'react'
+import * as React from 'react'
 import { Form, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 type Props = {
-  disabled?: boolean,
+  disabled: boolean,
   input: {
     name: string,
     value: string,
@@ -17,7 +17,7 @@ type Props = {
     onFocus: () => mixed,
   },
   intl: $IntlShape,
-  label?: string,
+  label: string,
   meta: {
     active: boolean,
     asyncValidating: boolean,
@@ -36,9 +36,9 @@ type Props = {
     warning: ?string,
     dispatch: () => mixed,
   },
-  placeholder?: string,
-  required?: boolean,
-  width?: number,
+  placeholder: string,
+  required: boolean,
+  width: number,
 }
 
 const defaultProps = {

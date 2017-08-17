@@ -4,7 +4,7 @@ import { gql } from 'react-apollo'
 
 type TagListType = {
   loading: boolean,
-  error?: string,
+  error: ?string,
   tags: Array<{
     id: string,
     name: string,
@@ -21,7 +21,7 @@ const TagListQuery = gql`
 
 type QuestionListType = {
   loading: boolean,
-  error?: string,
+  error: ?string,
   questions: Array<{
     id: string,
     title: string,
@@ -68,7 +68,7 @@ const QuestionListQuery = gql`
 
 type QrGeneratorType = {
   loading: boolean,
-  error?: string,
+  error: ?string,
   user: {
     shortname: string,
   },
@@ -83,7 +83,7 @@ const QrGeneratorQuery = gql`
 
 type SessionListType = {
   loading: boolean,
-  error?: string,
+  error: ?string,
   sessions: Array<{
     id: string,
     name: string,
@@ -131,7 +131,7 @@ const SessionListQuery = gql`
 // HACK: use the currently logged in user instead of the first of every user
 type RunningSessionType = {
   loading: boolean,
-  error?: string,
+  error: ?string,
   allUsers: Array<{
     activeSession: {
       confusion: Array<{

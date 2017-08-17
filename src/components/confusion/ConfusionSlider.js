@@ -1,14 +1,14 @@
 // @flow
 
-import React from 'react'
+import * as React from 'react'
 import Slider from 'react-rangeslider'
 import { Helmet } from 'react-helmet'
 
 import { createLinks } from '../../lib'
 
 type Props = {
-  title: React.Element<*>,
-  value: ?number,
+  title: React.Node,
+  value: number,
   handleChange: (newValue: number) => mixed,
 }
 

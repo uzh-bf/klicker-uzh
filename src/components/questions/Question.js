@@ -1,6 +1,6 @@
 // @flow
 
-import React from 'react'
+import * as React from 'react'
 
 import QuestionDetails from './QuestionDetails'
 import QuestionTags from './QuestionTags'

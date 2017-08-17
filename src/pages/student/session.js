@@ -1,6 +1,6 @@
 // @flow
 
-import React from 'react'
+import * as React from 'react'
 import classNames from 'classnames'
 import { Button } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
@@ -13,28 +13,24 @@ import Feedback from '../../components/feedbacks/Feedback'
 import SingleChoiceOptions from '../../components/questionTypes/SingleChoiceOptions'
 import StudentLayout from '../../components/layouts/StudentLayout'
 
-class Session extends React.Component {
-  props: {
-    intl: $IntlShape,
-  }
+type Props = {
+  intl: $IntlShape,
+}
+type State = {
+  feedbackDifficulty: number | null,
+  feedbackSpeed: number | null,
+  questionActiveOption: number,
+  questionCollapsed: boolean,
+  sidebarActiveItem: string,
+}
 
-  state: {
-    feedbackDifficulty: number | null,
-    feedbackSpeed: number | null,
-    questionActiveOption: number,
-    questionCollapsed: boolean,
-    sidebarActiveItem: string,
-  }
-
-  constructor(props) {
-    super(props)
-    this.state = {
-      feedbackDifficulty: null,
-      feedbackSpeed: null,
-      questionActiveOption: -1,
-      questionCollapsed: true,
-      sidebarActiveItem: 'activeQuestion',
-    }
+class Session extends React.Component<Props, State> {
+  state = {
+    feedbackDifficulty: null,
+    feedbackSpeed: null,
+    questionActiveOption: -1,
+    questionCollapsed: true,
+    sidebarActiveItem: 'activeQuestion',
   }
 
   handleCollapseToggle = () => {
