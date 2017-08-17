@@ -1,6 +1,6 @@
 // @flow
 
-import * as React from 'react';
+import * as React from 'react'
 import { Menu } from 'semantic-ui-react'
 
 type Props = {

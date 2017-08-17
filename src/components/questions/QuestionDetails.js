@@ -1,6 +1,6 @@
 // @flow
 
-import * as React from 'react';
+import * as React from 'react'
 import { FormattedMessage } from 'react-intl'
 
 import ListWithHeader from '../common/ListWithHeader'

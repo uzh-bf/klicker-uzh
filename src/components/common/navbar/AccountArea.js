@@ -1,6 +1,6 @@
 // @flow
 
-import * as React from 'react';
+import * as React from 'react'
 import { Dropdown } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 

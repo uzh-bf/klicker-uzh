@@ -1,7 +1,7 @@
 // @flow
 /* eslint-disable jsx-a11y/label-has-for */
 
-import * as React from 'react';
+import * as React from 'react'
 import { Form, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 

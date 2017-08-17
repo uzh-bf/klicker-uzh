@@ -10,26 +10,29 @@ import { createLinks, initLogging } from '../../lib'
 import Navbar from '../../components/common/navbar/Navbar'
 import Sidebar from '../../components/common/sidebar/Sidebar'
 
-class TeacherLayout extends Component<{
-  actionButton?: React.Element<any>,
-  children: any,
-  intl: $IntlShape,
-  navbar: {
-    accountShort: string,
-    search?: {
-      query: string,
-      sortBy: string,
-      sortOrder: string,
-      handleSearch: (query: string) => mixed,
-      handleSort: (by: string, order: string) => mixed,
+class TeacherLayout extends Component<
+  {
+    actionButton?: React.Element<any>,
+    children: any,
+    intl: $IntlShape,
+    navbar: {
+      accountShort: string,
+      search?: {
+        query: string,
+        sortBy: string,
+        sortOrder: string,
+        handleSearch: (query: string) => mixed,
+        handleSort: (by: string, order: string) => mixed,
+      },
+      title: string,
     },
-    title: string,
+    pageTitle: string,
+    sidebar: {
+      activeItem: string,
+    },
   },
-  pageTitle: string,
-  sidebar: {
-    activeItem: string,
-  },
-}, $FlowFixMeState> {
+  $FlowFixMeState,
+> {
   static defaultProps = {
     actionButton: undefined,
   }
