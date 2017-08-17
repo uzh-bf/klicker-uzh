@@ -1,0 +1,132 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Snapshot-Testing Works 1`] = `
+<div
+  className="staticLayout"
+  data-jsx={2161656035}
+>
+  <div
+    className="content"
+    data-jsx={2161656035}
+  >
+    <div
+      className="login"
+      data-jsx={1688187079}
+    >
+      <h1
+        data-jsx={1688187079}
+      >
+        <span>
+          Login
+        </span>
+      </h1>
+      <form
+        className="ui form error"
+        data-jsx={2063282003}
+      >
+        <div
+          className="required field"
+        >
+          <label
+            data-jsx={2917643520}
+            forHtml="email"
+          >
+            Email
+          </label>
+          <input
+            data-jsx={2917643520}
+            name="email"
+            onBlur={[Function]}
+            onChange={[Function]}
+            onDragStart={[Function]}
+            onDrop={[Function]}
+            onFocus={[Function]}
+            placeholder="Email"
+            type="email"
+            value=""
+          />
+        </div>
+        <div
+          className="required field"
+        >
+          <label
+            data-jsx={2917643520}
+            forHtml="password"
+          >
+            Password
+          </label>
+          <input
+            data-jsx={2917643520}
+            name="password"
+            onBlur={[Function]}
+            onChange={[Function]}
+            onDragStart={[Function]}
+            onDrop={[Function]}
+            onFocus={[Function]}
+            placeholder="Password"
+            type="password"
+            value=""
+          />
+        </div>
+        <div
+          className="actionArea"
+          data-jsx={2063282003}
+        >
+          <button
+            className="ui primary disabled button semanticButton"
+            disabled={true}
+            onClick={[Function]}
+            tabIndex={-1}
+            type="submit"
+          >
+            Submit
+          </button>
+          <div
+            className="links"
+            data-jsx={2063282003}
+          >
+            <div
+              className="ui list"
+              role="list"
+            >
+              <div
+                className="item"
+                data-value={undefined}
+                onClick={[Function]}
+                role="listitem"
+              >
+                <a
+                  data-jsx={2063282003}
+                  href="/user/resetPassword"
+                  onClick={[Function]}
+                >
+                  Forgot password?
+                </a>
+              </div>
+              <div
+                className="item"
+                data-value={undefined}
+                onClick={[Function]}
+                role="listitem"
+              >
+                <a
+                  data-jsx={2063282003}
+                  href="/user/aaiLogin"
+                  onClick={[Function]}
+                >
+                  Login with AAI
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+  <footer
+    data-jsx={2161656035}
+  >
+    © IBF
+  </footer>
+</div>
+`;
