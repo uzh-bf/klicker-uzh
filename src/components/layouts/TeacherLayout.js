@@ -1,6 +1,6 @@
 // @flow
 
-import React, { Component } from 'react'
+import * as React from 'react'
 import Router from 'next/router'
 import { FormattedMessage } from 'react-intl'
 import { Helmet } from 'react-helmet'
@@ -10,29 +10,31 @@ import { createLinks, initLogging } from '../../lib'
 import Navbar from '../../components/common/navbar/Navbar'
 import Sidebar from '../../components/common/sidebar/Sidebar'
 
-class TeacherLayout extends Component<
-  {
-    actionButton?: React.Element<any>,
-    children: any,
-    intl: $IntlShape,
-    navbar: {
-      accountShort: string,
-      search?: {
-        query: string,
-        sortBy: string,
-        sortOrder: string,
-        handleSearch: (query: string) => mixed,
-        handleSort: (by: string, order: string) => mixed,
-      },
-      title: string,
+type Props = {
+  actionButton?: React.Element<any>,
+  children: any,
+  intl: $IntlShape,
+  navbar: {
+    accountShort: string,
+    search?: {
+      query: string,
+      sortBy: string,
+      sortOrder: string,
+      handleSearch: (query: string) => mixed,
+      handleSort: (by: string, order: string) => mixed,
     },
-    pageTitle: string,
-    sidebar: {
-      activeItem: string,
-    },
+    title: string,
   },
-  $FlowFixMeState,
-> {
+  pageTitle: string,
+  sidebar: {
+    activeItem: string,
+  },
+}
+type State = {
+  sidebarVisible: boolean,
+}
+
+class TeacherLayout extends React.Component<Props, State> {
   static defaultProps = {
     actionButton: undefined,
   }

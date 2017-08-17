@@ -13,27 +13,24 @@ import Feedback from '../../components/feedbacks/Feedback'
 import SingleChoiceOptions from '../../components/questionTypes/SingleChoiceOptions'
 import StudentLayout from '../../components/layouts/StudentLayout'
 
-class Session extends React.Component<
-  {
-    intl: $IntlShape,
-  },
-  {
-    feedbackDifficulty: number | null,
-    feedbackSpeed: number | null,
-    questionActiveOption: number,
-    questionCollapsed: boolean,
-    sidebarActiveItem: string,
-  },
-> {
-  constructor(props) {
-    super(props)
-    this.state = {
-      feedbackDifficulty: null,
-      feedbackSpeed: null,
-      questionActiveOption: -1,
-      questionCollapsed: true,
-      sidebarActiveItem: 'activeQuestion',
-    }
+type Props = {
+  intl: $IntlShape,
+}
+type State = {
+  feedbackDifficulty: number | null,
+  feedbackSpeed: number | null,
+  questionActiveOption: number,
+  questionCollapsed: boolean,
+  sidebarActiveItem: string,
+}
+
+class Session extends React.Component<Props, State> {
+  state = {
+    feedbackDifficulty: null,
+    feedbackSpeed: null,
+    questionActiveOption: -1,
+    questionCollapsed: true,
+    sidebarActiveItem: 'activeQuestion',
   }
 
   handleCollapseToggle = () => {

@@ -9,11 +9,13 @@ import RegistrationForm from '../../components/forms/RegistrationForm'
 import { RegistrationMutation } from '../../queries/mutations'
 import { withData, pageWithIntl } from '../../lib'
 
-class Registration extends React.Component<{
+type Props = {
   createUser: ({ variables: { email: string, password: string, shortname: string } }) => mixed,
   intl: $IntlShape,
   handleSubmit: () => mixed,
-}> {
+}
+
+class Registration extends React.Component<Props> {
   handleSubmit = (values) => {
     this.props.createUser({
       variables: {

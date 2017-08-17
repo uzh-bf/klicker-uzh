@@ -1,6 +1,6 @@
 /* eslint-disable no-underscore-dangle */
 
-import React, { Component } from 'react'
+import * as React from 'react'
 import { IntlProvider, addLocaleData, injectIntl } from 'react-intl'
 
 // Register React Intl's locale data for the user's locale in the browser. This
@@ -15,7 +15,7 @@ if (typeof window !== 'undefined' && window.ReactIntlLocaleData) {
 export default (Page) => {
   const IntlPage = injectIntl(Page)
 
-  return class PageWithIntl extends Component {
+  return class PageWithIntl extends React.Component {
     static async getInitialProps(context) {
       let props
       if (typeof Page.getInitialProps === 'function') {

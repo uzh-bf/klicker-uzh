@@ -1,15 +1,17 @@
 // @flow
 
-import React, { Component } from 'react'
+import * as React from 'react'
 
 import { pageWithIntl, withData } from '../../lib'
 
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import SessionList from '../../components/sessions/SessionList'
 
-class Index extends Component<{
+type Props = {
   intl: $IntlShape,
-}> {
+}
+
+class Index extends React.Component<Props> {
   // handle searching in the navbar search area
   handleSearch = (query: string) => {
     console.log(`Searched... for ${query}`)

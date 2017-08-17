@@ -5,7 +5,7 @@
 /* eslint-disable react/jsx-first-prop-new-line */
 /* eslint-disable react/prop-types */
 
-import React, { Component } from 'react'
+import * as React from 'react'
 import { storiesOf } from '@storybook/react'
 import { action } from '@storybook/addon-actions'
 import { number } from '@storybook/addon-knobs'
@@ -13,7 +13,7 @@ import { number } from '@storybook/addon-knobs'
 import SingleChoiceOptions from './SingleChoiceOptions'
 
 // create a stateful wrapper for the component
-class Wrapper extends Component<$FlowFixMeProps, $FlowFixMeState> {
+class Wrapper extends React.Component<*, *> {
   state = {
     activeOption: -1,
   }

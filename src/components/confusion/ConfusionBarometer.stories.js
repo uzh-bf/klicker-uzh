@@ -5,14 +5,14 @@
 /* eslint-disable react/jsx-first-prop-new-line */
 /* eslint-disable react/prop-types */
 
-import React, { Component } from 'react'
+import * as React from 'react'
 import { storiesOf } from '@storybook/react'
 
 import ConfusionBarometer from './ConfusionBarometer'
 import { intlMock } from '../../../.storybook/utils'
 
 // create a stateful wrapper for the component
-class Wrapper extends Component<{}, $FlowFixMeState> {
+class Wrapper extends React.Component<*, *> {
   state = {
     isActive: false,
   }
