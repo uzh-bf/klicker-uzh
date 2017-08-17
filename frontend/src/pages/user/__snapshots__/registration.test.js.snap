@@ -190,10 +190,10 @@ exports[`Snapshot-Testing Works 1`] = `
             />
           </div>
           <button
-            className="ui primary right floated button"
-            disabled={undefined}
+            className="ui primary disabled right floated button"
+            disabled={true}
             onClick={[Function]}
-            tabIndex={undefined}
+            tabIndex={-1}
             type="submit"
           >
             <span>
