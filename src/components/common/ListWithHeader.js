@@ -3,7 +3,7 @@
 import * as React from 'react'
 
 type Props = {
-  children: any,
+  children: React.Node,
   items: Array<string>,
 }
 

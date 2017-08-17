@@ -9,9 +9,9 @@ import SidebarItem from './SidebarItem'
 
 type Props = {
   activeItem: string,
-  children: any,
+  children: React.Node,
   items: Array<{
-    label: string | React.Element<any>,
+    label: string | React.Node,
     href: string,
     name: string,
   }>,

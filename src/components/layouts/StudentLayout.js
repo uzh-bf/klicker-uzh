@@ -10,7 +10,7 @@ import { createLinks, initLogging } from '../../lib'
 import Sidebar from '../common/sidebar/Sidebar'
 
 type Props = {
-  children: any,
+  children: React.Node,
   pageTitle: string,
   sidebar: {
     activeItem: string,

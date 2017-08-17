@@ -5,7 +5,7 @@ import { Menu } from 'semantic-ui-react'
 
 type Props = {
   active: boolean,
-  children: any,
+  children: React.Node,
   href: string,
   name: string,
   handleSidebarItemClick: (href: string) => () => mixed,
@@ -19,7 +19,6 @@ const SidebarItem = ({ active, children, href, name, handleSidebarItemClick }: P
   (<Menu.Item active={active} name={name} onClick={handleSidebarItemClick(href)}>
     {children}
   </Menu.Item>)
-
 SidebarItem.defaultProps = defaultProps
 
 export default SidebarItem

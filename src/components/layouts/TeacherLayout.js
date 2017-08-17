@@ -11,12 +11,12 @@ import Navbar from '../../components/common/navbar/Navbar'
 import Sidebar from '../../components/common/sidebar/Sidebar'
 
 type Props = {
-  actionButton?: React.Element<any>,
-  children: any,
+  actionButton: React.Node,
+  children: React.Node,
   intl: $IntlShape,
   navbar: {
     accountShort: string,
-    search?: {
+    search: {
       query: string,
       sortBy: string,
       sortOrder: string,
@@ -37,6 +37,9 @@ type State = {
 class TeacherLayout extends React.Component<Props, State> {
   static defaultProps = {
     actionButton: undefined,
+    navbar: {
+      search: undefined,
+    },
   }
 
   state = {

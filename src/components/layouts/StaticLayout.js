@@ -6,7 +6,7 @@ import { Helmet } from 'react-helmet'
 import { createLinks, initLogging } from '../../lib'
 
 type Props = {
-  children: any,
+  children: React.Node,
   pageTitle: string,
 }
 type State = {}

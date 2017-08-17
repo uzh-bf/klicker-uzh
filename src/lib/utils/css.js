@@ -4,7 +4,7 @@
 
 import * as React from 'react'
 
-function createLinks(links: Array<string> = []): Array<React.Element<any>> {
+function createLinks(links: Array<string> = []): Array<React.Element<'link'>> {
   return links.map(link =>
     (<link
       key={link}

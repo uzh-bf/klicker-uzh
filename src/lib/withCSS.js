@@ -5,7 +5,7 @@ import { Helmet } from 'react-helmet'
 
 import { createLinks } from './utils/css'
 
-function withCSS(WrappedComponent: any, links: Array<string>) {
+function withCSS(WrappedComponent: React.ComponentType<any>, links: Array<string>) {
   const WithCSS = (props: any) =>
     (<div>
       <Helmet>
