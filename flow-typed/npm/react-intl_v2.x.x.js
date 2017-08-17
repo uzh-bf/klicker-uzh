@@ -6,7 +6,7 @@
  * Copied here based on intention to merge with flow-typed expressed here:
  * https://github.com/marudor/flowInterfaces/issues/6
  */
-import React from 'react';
+import * as React from 'react';
 
 // Mostly from https://github.com/yahoo/react-intl/wiki/API#react-intl-api
 
@@ -110,12 +110,12 @@ declare module 'react-intl' {
     messageDescriptors: T,
   ): T;
   declare function injectIntl(
-    WrappedComponent: ReactClass<*>,
+    WrappedComponent: React.ComponentType<*>,
     options?: {
       intlPropName?: string,
       withRef?: boolean,
     },
-  ): ReactClass<*>;
+  ): React.ComponentType<*>;
   declare function formatMessage(
     messageDescriptor: MessageDescriptor,
     values?: Object,
