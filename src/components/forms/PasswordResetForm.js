@@ -2,7 +2,6 @@
 
 import React from 'react'
 import isEmail from 'validator/lib/isEmail'
-import isLength from 'validator/lib/isLength'
 import { Field, reduxForm } from 'redux-form'
 
 import { FormWithLinks, SemanticInput } from './components'
@@ -12,27 +11,21 @@ type Props = {
   invalid: boolean,
   handleSubmit: (values: {
     email: string,
-    password: string,
   }) => mixed,
 }
 
-const validate = ({ email = '', password = '' }) => {
+const validate = ({ email = '' }) => {
   const errors = {}
 
   // the email address needs to be valid
   if (!isEmail(email)) {
-    errors.email = 'form.email.invalid'
-  }
-
-  // password should at least have 7 characters (or more?)
-  if (!isLength(password, { max: undefined, min: 1 })) {
-    errors.password = 'form.password.invalid'
+    errors.email = 'form.common.email.invalid'
   }
 
   return errors
 }
 
-const LoginForm = ({ intl, invalid, handleSubmit }: Props) => {
+const PasswordResetForm = ({ intl, invalid, handleSubmit }: Props) => {
   const button = {
     handleSubmit,
     invalid,
@@ -43,15 +36,11 @@ const LoginForm = ({ intl, invalid, handleSubmit }: Props) => {
   }
   const links = [
     {
-      href: '/user/resetPassword',
+      href: '/user/login',
       label: intl.formatMessage({
-        defaultMessage: 'Forgot password?',
-        id: 'form.forgotPassword.label',
+        defaultMessage: 'Back to login',
+        id: 'form.passwordReset.backToLogin',
       }),
-    },
-    {
-      href: '/user/aaiLogin',
-      label: intl.formatMessage({ defaultMessage: 'Login with AAI', id: 'form.aaiLogin.label' }),
     },
   ]
 
@@ -68,22 +57,11 @@ const LoginForm = ({ intl, invalid, handleSubmit }: Props) => {
         name="email"
         type="email"
       />
-      <Field
-        required
-        component={SemanticInput}
-        intl={intl}
-        label={intl.formatMessage({
-          defaultMessage: 'Password',
-          id: 'form.password.label',
-        })}
-        name="password"
-        type="password"
-      />
     </FormWithLinks>
   )
 }
 
 export default reduxForm({
-  form: 'login',
+  form: 'passwordReset',
   validate,
-})(LoginForm)
+})(PasswordResetForm)
