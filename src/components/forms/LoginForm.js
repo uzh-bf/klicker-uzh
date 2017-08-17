@@ -3,9 +3,10 @@
 import React from 'react'
 import isEmail from 'validator/lib/isEmail'
 import isLength from 'validator/lib/isLength'
+import Link from 'next/link'
 import { FormattedMessage } from 'react-intl'
 import { Field, reduxForm } from 'redux-form'
-import { Button } from 'semantic-ui-react'
+import { Button, List } from 'semantic-ui-react'
 import { Helmet } from 'react-helmet'
 
 import { createLinks } from '../../lib'
@@ -39,7 +40,7 @@ const validate = ({ email = '', password = '' }) => {
 const LoginForm = ({ intl, invalid, handleSubmit }: Props) =>
   (<form className="ui form error" onSubmit={handleSubmit}>
     <Helmet>
-      {createLinks(['button', 'form', 'icon'])}
+      {createLinks(['button', 'form', 'icon', 'list'])}
     </Helmet>
 
     <Field
@@ -65,9 +66,33 @@ const LoginForm = ({ intl, invalid, handleSubmit }: Props) =>
       type="password"
     />
 
-    <Button primary className="semanticButton" disabled={invalid} type="submit">
-      <FormattedMessage defaultMessage="Submit" id="form.button.submit" />
-    </Button>
+    <div className="actionArea">
+      <Button primary className="semanticButton" disabled={invalid} type="submit">
+        <FormattedMessage defaultMessage="Submit" id="form.button.submit" />
+      </Button>
+
+      <div className="links">
+        <List>
+          <List.Item>
+            <Link href="/user/resetPassword">
+              <a>
+                <FormattedMessage
+                  defaultMessage="Forgot password?"
+                  id="form.forgotPassword.label"
+                />
+              </a>
+            </Link>
+          </List.Item>
+          <List.Item>
+            <Link href="/user/aaiLogin">
+              <a>
+                <FormattedMessage defaultMessage="Login with AAI" id="form.aaiLogin.label" />
+              </a>
+            </Link>
+          </List.Item>
+        </List>
+      </div>
+    </div>
 
     <style jsx>{`
       .form {
@@ -75,16 +100,38 @@ const LoginForm = ({ intl, invalid, handleSubmit }: Props) =>
         flex-direction: column;
       }
 
+      .actionArea {
+        display: flex;
+        flex-direction: column;
+      }
+
       .form :global(.semanticButton) {
+        flex: 0 0 100%;
+
         margin-right: 0;
       }
 
+      .links {
+        margin-top: 1rem;
+      }
+
       @media all and (min-width: 768px) {
+        .actionArea {
+          flex-direction: row;
+          justify-content: space-between;
+        }
+
         .form :global(.semanticButton) {
           flex: 0 0 auto;
-          align-self: flex-end;
+          order: 1;
 
           margin-right: 0;
+        }
+
+        .links {
+          order: 0;
+
+          margin-top: 0;
         }
       }
 
