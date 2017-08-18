@@ -3,6 +3,7 @@
   "assignees": ["rschlaefli"],
   "labels": ["dependencies"],
   "pinVersions": true,
+  "prCreation": "not-pending",
   "schedule": ["after 10pm and before 7am every weekday"],
   "timezone": "Europe/Zurich",
   "packageRules": [
