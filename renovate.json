@@ -14,11 +14,11 @@
         "^prettier",
         "^pre-commit"
       ],
-      "groupName": ["code style"]
+      "groupName": "code style"
     },
     {
       "packageNames": ["flow-bin", "babel-plugin-transform-flow-strip-types"],
-      "groupName": ["flow"]
+      "groupName": "flow"
     },
     {
       "packageNames": [
@@ -27,15 +27,15 @@
         "react-test-renderer",
         "enzyme"
       ],
-      "groupName": ["test"]
+      "groupName": "test"
     },
     {
       "packagePatterns": ["^raven", "^logrocket"],
-      "groupName": ["monitoring"]
+      "groupName": "monitoring"
     },
     {
       "packagePatterns": ["^@storybook", "^storybook"],
-      "groupName": ["storybook"]
+      "groupName": "storybook"
     }
   ]
 }
