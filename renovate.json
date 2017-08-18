@@ -1,1 +1,30 @@
-{"extends": [":library"]}
+{
+  "extends": [":library"],
+  "assignees": ["rschlaefli"],
+  "labels": ["dependencies"],
+  "pinVersions": true,
+  "schedule": ["after 10pm and before 7am every weekday"],
+  "timezone": "Europe/Zurich",
+  "packageRules": [
+    {
+      "packagePatterns": "^(babel-eslint|eslint|prettier|pre-commit)",
+      "groupName": ["code style"]
+    },
+    {
+      "packageNames": ["flow-bin", "babel-plugin-transform-flow-strip-types"],
+      "groupName": ["flow"]
+    },
+    {
+      "packageNames": ["jest", "react-addons-test-utils", "react-test-renderer", "enzyme"],
+      "groupName": ["test"]
+    },
+    {
+      "packagePatterns": "^(raven|logrocket)",
+      "groupName": ["monitoring"]
+    },
+    {
+      "packagePatterns": "^(@storybook|storybook)",
+      "groupName": ["storybook"]
+    }
+  ]
+}
