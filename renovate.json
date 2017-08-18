@@ -8,7 +8,12 @@
   "timezone": "Europe/Zurich",
   "packageRules": [
     {
-      "packagePatterns": "^(babel-eslint|eslint|prettier|pre-commit)",
+      "packagePatterns": [
+        "^babel-eslint",
+        "^eslint",
+        "^prettier",
+        "^pre-commit"
+      ],
       "groupName": ["code style"]
     },
     {
@@ -16,15 +21,20 @@
       "groupName": ["flow"]
     },
     {
-      "packageNames": ["jest", "react-addons-test-utils", "react-test-renderer", "enzyme"],
+      "packageNames": [
+        "jest",
+        "react-addons-test-utils",
+        "react-test-renderer",
+        "enzyme"
+      ],
       "groupName": ["test"]
     },
     {
-      "packagePatterns": "^(raven|logrocket)",
+      "packagePatterns": ["^raven", "^logrocket"],
       "groupName": ["monitoring"]
     },
     {
-      "packagePatterns": "^(@storybook|storybook)",
+      "packagePatterns": ["^@storybook", "^storybook"],
       "groupName": ["storybook"]
     }
   ]
