@@ -7,6 +7,7 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "body-parser": "^1.17.2",
+    "dotenv": "^4.0.0",
     "express": "^4.15.3",
     "graphql": "^0.10.1",
     "graphql-server-express": "^1.0.0",
@@ -17,7 +18,6 @@
   "devDependencies": {
     "babel-eslint": "^7.2.3",
     "cross-env": "^5.0.5",
-    "dotenv": "^4.0.0",
     "eslint": "^4.4.1",
     "eslint-config-airbnb-base": "^11.2.0",
     "eslint-plugin-flowtype": "^2.35.0",
@@ -31,7 +31,7 @@
   },
   "scripts": {
     "debug": "cross-env NODE_ENV=production node --inspect src/server.js",
-    "dev": "nodemon -w src/server.js src/server.js",
+    "dev": "nodemon -w src/* src/server.js",
     "flow": "flow",
     "format": "prettier-eslint --single-quote --no-semi --write \"src/**/*.js\"",
     "format:ci": "prettier-eslint --single-quote --no-semi --list-different \"src/**/*.js\"",
