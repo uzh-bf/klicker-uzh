@@ -1,7 +1,7 @@
 {
   "name": "klicker-react",
   "version": "0.0.1",
-  "main": "index.js",
+  "main": "server.js",
   "repository": "https://github.com/uzh-bf/klicker-react.git",
   "author": "Roland Schläfli <roland.schlaefli@bf.uzh.ch>",
   "license": "AGPL-3.0",
@@ -71,9 +71,9 @@
     "debug": "cross-env NODE_ENV=production node --inspect server.js",
     "dev": "nodemon -w server.js server.js",
     "flow": "flow",
-    "format": "prettier-eslint --single-quote --no-semi --write \"src/**/*.js\"",
-    "format:ci": "prettier-eslint --single-quote --no-semi --list-different \"src/**/*.js\"",
-    "lint": "eslint \"src/**/*.js\"",
+    "format": "prettier-eslint --single-quote --no-semi --write 'src/**/*.js'",
+    "format:ci": "prettier-eslint --single-quote --no-semi --list-different 'src/**/*.js'",
+    "lint": "eslint 'src/**/*.js'",
     "start": "cross-env NODE_ENV=production node server.js",
     "storybook": "start-storybook -p 6006",
     "test": "jest"
