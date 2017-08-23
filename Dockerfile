@@ -15,7 +15,7 @@ COPY package.json yarn.lock $KLICKER_DIR/
 
 # install yarn packages
 RUN set -x \
-  && yarn install --pure-lockfile
+  && yarn install --frozen-lockfile
 
 # inject the entrypoint and make it runnable
 COPY entrypoint.sh /entrypoint.sh
