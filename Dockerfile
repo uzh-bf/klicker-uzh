@@ -1,5 +1,5 @@
 # extend the node alpine base
-FROM node:8.3.0-alpine
+FROM node:8.4.0-alpine
 
 MAINTAINER Roland Schlaefli <roland.schlaefli@bf.uzh.ch>
 LABEL NAME klicker-react
