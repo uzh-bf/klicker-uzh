@@ -1,7 +1,7 @@
 {
   "name": "klicker-api",
   "version": "0.0.1",
-  "main": "src/index.js",
+  "main": "src/server.js",
   "repository": "https://github.com/uzh-bf/klicker-api.git",
   "author": "Roland Schläfli <roland.schlaefli@bf.uzh.ch>",
   "license": "AGPL-3.0",
@@ -31,11 +31,11 @@
   },
   "scripts": {
     "debug": "cross-env NODE_ENV=production node --inspect src/server.js",
-    "dev": "nodemon -w src/* src/server.js",
+    "dev": "nodemon -w 'src/*' src/server.js",
     "flow": "flow",
-    "format": "prettier-eslint --single-quote --no-semi --write \"src/**/*.js\"",
-    "format:ci": "prettier-eslint --single-quote --no-semi --list-different \"src/**/*.js\"",
-    "lint": "eslint \"src/**/*.js\"",
+    "format": "prettier-eslint --single-quote --no-semi --write 'src/**/*.js'",
+    "format:ci": "prettier-eslint --single-quote --no-semi --list-different 'src/**/*.js'",
+    "lint": "eslint 'src/**/*.js'",
     "start": "cross-env NODE_ENV=production node src/server.js",
     "test": "jest"
   },
