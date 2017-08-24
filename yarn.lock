@@ -30,9 +30,9 @@
     react-addons-create-fragment "^15.5.3"
     util-deprecate "^1.0.2"
 
-"@storybook/addon-knobs@3.2.7":
-  version "3.2.7"
-  resolved "https://registry.yarnpkg.com/@storybook/addon-knobs/-/addon-knobs-3.2.7.tgz#08f7f482f473c2f1fe5821165c203d942dc2e9bd"
+"@storybook/addon-knobs@3.2.8":
+  version "3.2.8"
+  resolved "https://registry.yarnpkg.com/@storybook/addon-knobs/-/addon-knobs-3.2.8.tgz#eb4821409e62f2f886d7ae9333bcc95e4b0714eb"
   dependencies:
     "@storybook/addons" "^3.2.6"
     babel-runtime "^6.23.0"
@@ -53,9 +53,9 @@
   dependencies:
     "@storybook/addons" "^3.2.6"
 
-"@storybook/addon-storyshots@3.2.7":
-  version "3.2.7"
-  resolved "https://registry.yarnpkg.com/@storybook/addon-storyshots/-/addon-storyshots-3.2.7.tgz#16b72fa3c63680a970c3a99980e32bad46893ae0"
+"@storybook/addon-storyshots@3.2.8":
+  version "3.2.8"
+  resolved "https://registry.yarnpkg.com/@storybook/addon-storyshots/-/addon-storyshots-3.2.8.tgz#f6e9aa6c99a9f437042da49123c0dc75fe51b90f"
   dependencies:
     babel-runtime "^6.23.0"
     global "^4.3.2"
@@ -95,9 +95,9 @@
     fuse.js "^3.0.1"
     prop-types "^15.5.9"
 
-"@storybook/react@3.2.7":
-  version "3.2.7"
-  resolved "https://registry.yarnpkg.com/@storybook/react/-/react-3.2.7.tgz#6e8492e6d30f65e528bfa3f8c6c5bbf019b7ce9f"
+"@storybook/react@3.2.8":
+  version "3.2.8"
+  resolved "https://registry.yarnpkg.com/@storybook/react/-/react-3.2.8.tgz#7d43ef450559b7cf3b3ecc17cc54d5a09d5ea402"
   dependencies:
     "@storybook/addon-actions" "^3.2.6"
     "@storybook/addon-links" "^3.2.6"

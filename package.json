@@ -42,10 +42,10 @@
   "devDependencies": {
     "@storybook/addon-actions": "3.2.6",
     "@storybook/addon-info": "3.2.7",
-    "@storybook/addon-knobs": "3.2.7",
+    "@storybook/addon-knobs": "3.2.8",
     "@storybook/addon-links": "3.2.6",
-    "@storybook/addon-storyshots": "3.2.7",
-    "@storybook/react": "3.2.7",
+    "@storybook/addon-storyshots": "3.2.8",
+    "@storybook/react": "3.2.8",
     "babel-eslint": "7.2.3",
     "babel-plugin-transform-flow-strip-types": "6.22.0",
     "enzyme": "2.9.1",
