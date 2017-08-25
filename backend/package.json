@@ -14,7 +14,7 @@
     "graphql-server-express": "1.1.2",
     "lodash": "4.17.4",
     "mongodb": "2.2.31",
-    "mongoose": "4.11.7"
+    "mongoose": "4.11.8"
   },
   "devDependencies": {
     "babel-eslint": "7.2.3",
