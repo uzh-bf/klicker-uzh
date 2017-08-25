@@ -1,5 +1,3 @@
-// @flow
-
 const mongoose = require('mongoose')
 
 const Response = new mongoose.Schema({

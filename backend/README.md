@@ -7,3 +7,7 @@
 ## Flow-Integration
 
 Install flow-types available for project: `yarn global add flow-typed`, `flow-typed install`
+
+## JWT
+
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1OTk1ZWI2Yjc3OGQ5ZWVmMDU5NGFkYTAiLCJwZXJtaXNzaW9ucyI6WyJ1c2VyIiwiYWRtaW4iXX0.6E7SzoVXFstKJ7WUEHZ1NBxQZgmK-bOAKZXEH6n8tao
