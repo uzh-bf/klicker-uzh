@@ -4,7 +4,8 @@
   "plugins": ["import", "flowtype"],
   "rules": {
     "semi": 0,
-    "no-console": 0
+    "no-console": 0,
+    "max-len": [1, 120]
   },
   "env": {
     "node": true,

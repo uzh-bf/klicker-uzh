@@ -1,6 +1,6 @@
-// @flow
-
 const mongoose = require('mongoose')
+
+const ObjectId = mongoose.Schema.Types.ObjectId
 
 const ConfusionTimeStep = require('./ConfusionTimeStep')
 const Feedback = require('./Feedback')
@@ -15,6 +15,7 @@ const Session = new mongoose.Schema({
     isFeedbackChannelActive: { type: Boolean, default: false },
     isFeedbackChannelPublic: { type: Boolean, default: false },
   },
+  user: { type: ObjectId, ref: 'User' },
 
   blocks: [QuestionBlock],
   confusionTS: [ConfusionTimeStep],

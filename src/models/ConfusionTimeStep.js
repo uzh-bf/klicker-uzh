@@ -1,5 +1,3 @@
-// @flow
-
 const mongoose = require('mongoose')
 
 const ConfusionTimeStep = new mongoose.Schema({

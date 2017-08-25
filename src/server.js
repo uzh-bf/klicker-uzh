@@ -1,32 +1,73 @@
-// @flow
-
 require('dotenv').config()
 
 const bodyParser = require('body-parser')
+const cookieParser = require('cookie-parser')
 const express = require('express')
-const { graphqlExpress, graphiqlExpress } = require('graphql-server-express')
-const schema = require('./schema/schema')
+const { graphqlExpress } = require('apollo-server-express')
+const schema = require('./schema')
 const mongoose = require('mongoose')
+const expressJWT = require('express-jwt')
+
+const { isValidJWT } = require('./services/auth')
 
 mongoose.Promise = Promise
 
-mongoose.connect('mongodb://klicker:klicker@ds161042.mlab.com:61042/klicker-dev')
+if (!process.env.MONGO_URL) {
+  console.warn('> Error: Please pass the MONGO_URL as an environment variable.')
+  process.exit(1)
+}
+
+if (!process.env.JWT_SECRET) {
+  console.warn('> Error: Please pass the JWT_SECRET as an environment variable.')
+  process.exit(1)
+}
+
+mongoose.connect(`mongodb://${process.env.MONGO_URL}`)
+
 mongoose.connection
   .once('open', () => {
-    console.log('hello mongo!')
+    console.log('> Connection to MongoDB established.')
   })
   .on('error', (error) => {
-    console.warn('Warning', error)
+    console.warn('> Warning: ', error)
   })
 
-const dev = process.env.NODE_ENV !== 'production'
-
+// initialize an express server
 const server = express()
 
-server.use('/graphql', bodyParser.json(), graphqlExpress({ schema }))
-if (dev) server.use('/graphiql', graphiqlExpress({ endpointURL: '/graphql' }))
+// expose the GraphQL API endpoint
+// parse JWT that are passed as a header and attach their content to req.user
+server.use(
+  '/graphql',
+  cookieParser(),
+  expressJWT({
+    credentialsRequired: false,
+    requestProperty: 'auth',
+    secret: process.env.JWT_SECRET,
+    getToken: (req) => {
+      // try to parse an authorization cookie
+      if (req.cookies && req.cookies.jwt && isValidJWT(req.cookies.jwt, process.env.JWT_SECRET)) {
+        return req.cookies.jwt
+      }
+
+      // try to parse the authorization header
+      if (
+        req.headers.authorization &&
+        req.headers.authorization.split(' ')[0] === 'Bearer' &&
+        isValidJWT(req.headers.authorization)
+      ) {
+        return req.headers.authorization.split(' ')[1]
+      }
+
+      // no token found
+      return null
+    },
+  }),
+  bodyParser.json(),
+  graphqlExpress((req, res) => ({ context: { auth: req.auth, res }, schema })),
+)
 
 server.listen(3000, (err) => {
   if (err) throw err
-  console.log('> Ready on http://localhost:3000')
+  console.log('> API ready on http://localhost:3000!')
 })
