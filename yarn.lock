@@ -116,16 +116,16 @@ apollo-server-core@^1.1.0:
   dependencies:
     apollo-tracing "^0.0.7"
 
-apollo-server-express@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/apollo-server-express/-/apollo-server-express-1.1.0.tgz#48d5027b41698c386e415cf182924c2a79da0497"
+apollo-server-express@^1.1.2:
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/apollo-server-express/-/apollo-server-express-1.1.2.tgz#6933c77fe5dfb9a7f30dd393239ad9953a613cd9"
   dependencies:
     apollo-server-core "^1.1.0"
-    apollo-server-module-graphiql "^1.1.0"
+    apollo-server-module-graphiql "^1.1.2"
 
-apollo-server-module-graphiql@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/apollo-server-module-graphiql/-/apollo-server-module-graphiql-1.1.0.tgz#f10333e50659d61dc48e2ed6afac6f313b1f418b"
+apollo-server-module-graphiql@^1.1.2:
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/apollo-server-module-graphiql/-/apollo-server-module-graphiql-1.1.2.tgz#49a154cf80e984acb082bd0096175b561e1bfbcc"
 
 apollo-tracing@^0.0.7:
   version "0.0.7"
@@ -1515,11 +1515,11 @@ graceful-fs@^4.1.11, graceful-fs@^4.1.2:
   version "4.1.11"
   resolved "https://registry.yarnpkg.com/graceful-fs/-/graceful-fs-4.1.11.tgz#0e8bdfe4d1ddb8854d64e04ea7c00e2a026e5658"
 
-graphql-server-express@1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/graphql-server-express/-/graphql-server-express-1.1.0.tgz#28f3ccb51fcac552e47df5f010f05853269f03cb"
+graphql-server-express@1.1.2:
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/graphql-server-express/-/graphql-server-express-1.1.2.tgz#6e8a306a6616ac72c7850efa9fda9cba29836335"
   dependencies:
-    apollo-server-express "^1.1.0"
+    apollo-server-express "^1.1.2"
 
 graphql-tools@^1.1.0:
   version "1.2.1"
