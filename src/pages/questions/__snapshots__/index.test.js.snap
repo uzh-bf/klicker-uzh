@@ -217,6 +217,7 @@ exports[`Snapshot-Testing Works 1`] = `
       className="ui huge circular icon primary button actionButton"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       <i
