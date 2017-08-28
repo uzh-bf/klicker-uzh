@@ -19,7 +19,7 @@
     "jsonwebtoken": "7.4.3",
     "lodash": "4.17.4",
     "mongodb": "2.2.31",
-    "mongoose": "4.11.8"
+    "mongoose": "4.11.9"
   },
   "devDependencies": {
     "babel-eslint": "7.2.3",
