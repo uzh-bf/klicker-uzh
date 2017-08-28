@@ -193,6 +193,7 @@ exports[`Snapshot-Testing Works 1`] = `
             className="ui primary disabled right floated button"
             disabled={true}
             onClick={[Function]}
+            role="button"
             tabIndex={-1}
             type="submit"
           >
