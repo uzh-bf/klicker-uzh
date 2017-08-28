@@ -41,7 +41,7 @@
   },
   "devDependencies": {
     "@storybook/addon-actions": "3.2.6",
-    "@storybook/addon-info": "3.2.7",
+    "@storybook/addon-info": "3.2.9",
     "@storybook/addon-knobs": "3.2.8",
     "@storybook/addon-links": "3.2.6",
     "@storybook/addon-storyshots": "3.2.8",
@@ -69,14 +69,16 @@
   "scripts": {
     "build": "next build src && node ./src/lib/defaultLang",
     "debug": "cross-env NODE_ENV=production node --inspect server.js",
-    "dev": "nodemon -w server.js server.js",
-    "flow": "flow",
-    "format": "prettier-eslint --single-quote --no-semi --write 'src/**/*.js'",
-    "format:ci": "prettier-eslint --single-quote --no-semi --list-different 'src/**/*.js'",
-    "lint": "eslint 'src/**/*.js'",
+    "dev": "nodemon -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock server.js",
+    "dev:inspect": "nodemon -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock --inspect server.js",
+    "flow": "flow check",
+    "format": "prettier-eslint --single-quote --no-semi --write server.js \"src/**/*.js\"",
+    "format:ci": "prettier-eslint --single-quote --no-semi --list-different server.js \"src/**/*.js\"",
+    "lint": "eslint server.js \"src/**/*.js\"",
     "start": "cross-env NODE_ENV=production node server.js",
     "storybook": "start-storybook -p 6006",
-    "test": "jest"
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
   "jest": {
     "testEnvironment": "node",

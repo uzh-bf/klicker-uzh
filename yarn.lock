@@ -17,9 +17,9 @@
     react-inspector "^2.1.1"
     uuid "^3.1.0"
 
-"@storybook/addon-info@3.2.7":
-  version "3.2.7"
-  resolved "https://registry.yarnpkg.com/@storybook/addon-info/-/addon-info-3.2.7.tgz#1a12a4b6cd79747d706c223842c22b7442eafe85"
+"@storybook/addon-info@3.2.9":
+  version "3.2.9"
+  resolved "https://registry.yarnpkg.com/@storybook/addon-info/-/addon-info-3.2.9.tgz#50daca12d216f8338843023f13030cd92ab9789e"
   dependencies:
     "@storybook/addons" "^3.2.6"
     "@storybook/components" "^3.2.7"
@@ -1888,7 +1888,7 @@ caniuse-db@^1.0.30000529, caniuse-db@^1.0.30000634, caniuse-db@^1.0.30000639:
   version "1.0.30000718"
   resolved "https://registry.yarnpkg.com/caniuse-db/-/caniuse-db-1.0.30000718.tgz#86cdd97987302554934c61e106f4e470f16f993c"
 
-caniuse-lite@^1.0.30000697, caniuse-lite@^1.0.30000718:
+caniuse-lite@^1.0.30000697, caniuse-lite@^1.0.30000718
   version "1.0.30000718"
   resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30000718.tgz#0dd24290beb11310b2d80f6b70a823c2a65a6fad"
 
