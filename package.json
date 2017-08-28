@@ -36,13 +36,12 @@
     "recharts": "1.0.0-alpha.4",
     "redux": "3.7.2",
     "redux-form": "7.0.3",
-    "semantic-ui-react": "0.71.4",
+    "semantic-ui-react": "0.72.0",
     "validator": "8.1.0"
   },
   "devDependencies": {
     "@storybook/addon-actions": "3.2.6",
     "@storybook/addon-info": "3.2.9",
-    "@storybook/addon-knobs": "3.2.8",
     "@storybook/addon-links": "3.2.6",
     "@storybook/addon-storyshots": "3.2.8",
     "@storybook/react": "3.2.8",

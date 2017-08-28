@@ -13,6 +13,7 @@ exports[`Storyshots ActionButton default 1`] = `
       className="ui large circular icon primary button"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       <i
@@ -393,6 +394,7 @@ exports[`Storyshots FeedbackChannel isActive 1`] = `
             className="ui basic fluid icon button"
             disabled={undefined}
             onClick={[Function]}
+            role="button"
             tabIndex={undefined}
           >
             <i
@@ -432,6 +434,7 @@ exports[`Storyshots FeedbackChannel isActive 1`] = `
             className="ui basic fluid icon button"
             disabled={undefined}
             onClick={[Function]}
+            role="button"
             tabIndex={undefined}
           >
             <i
@@ -539,6 +542,7 @@ exports[`Storyshots FeedbackChannel isPublic 1`] = `
             className="ui basic fluid icon button"
             disabled={undefined}
             onClick={[Function]}
+            role="button"
             tabIndex={undefined}
           >
             <i
@@ -578,6 +582,7 @@ exports[`Storyshots FeedbackChannel isPublic 1`] = `
             className="ui basic fluid icon button"
             disabled={undefined}
             onClick={[Function]}
+            role="button"
             tabIndex={undefined}
           >
             <i
@@ -1271,6 +1276,7 @@ exports[`Storyshots Session default 1`] = `
         className="ui icon left labeled button"
         disabled={undefined}
         onClick={[Function]}
+        role="button"
         tabIndex={undefined}
       >
         <i
@@ -1328,6 +1334,7 @@ exports[`Storyshots SessionTimeline default 1`] = `
       className="ui large icon left labeled button"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       <i
@@ -1340,6 +1347,7 @@ exports[`Storyshots SessionTimeline default 1`] = `
       className="ui large icon primary right labeled button"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       <i
@@ -1365,6 +1373,7 @@ exports[`Storyshots SingleChoiceOptions default 1`] = `
       className="ui basic fluid button"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       answer2
@@ -1378,6 +1387,7 @@ exports[`Storyshots SingleChoiceOptions default 1`] = `
       className="ui basic fluid button"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       antwort 2
@@ -1391,6 +1401,7 @@ exports[`Storyshots SingleChoiceOptions default 1`] = `
       className="ui basic fluid button"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       option 3
@@ -1404,6 +1415,7 @@ exports[`Storyshots SingleChoiceOptions default 1`] = `
       className="ui basic fluid button"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       tschege
@@ -1425,6 +1437,7 @@ exports[`Storyshots SingleChoiceOptions withActiveOption 1`] = `
       className="ui basic fluid button"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       answer2
@@ -1438,6 +1451,7 @@ exports[`Storyshots SingleChoiceOptions withActiveOption 1`] = `
       className="ui basic fluid button"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       antwort 2
@@ -1451,6 +1465,7 @@ exports[`Storyshots SingleChoiceOptions withActiveOption 1`] = `
       className="ui basic fluid button"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       option 3
@@ -1464,6 +1479,7 @@ exports[`Storyshots SingleChoiceOptions withActiveOption 1`] = `
       className="ui basic fluid button"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       tschege

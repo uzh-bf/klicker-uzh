@@ -76,6 +76,7 @@ exports[`Snapshot-Testing Works 1`] = `
             className="ui primary disabled button semanticButton"
             disabled={true}
             onClick={[Function]}
+            role="button"
             tabIndex={-1}
             type="submit"
           >
