@@ -12,7 +12,7 @@ type TagListType = {
 }
 const TagListQuery = gql`
   {
-    tags: allTags(orderBy: name_ASC) {
+    tags: allTags {
       id
       name
     }
@@ -44,12 +44,11 @@ type QuestionListType = {
 }
 const QuestionListQuery = gql`
   {
-    questions: allQuestionDefinitions {
+    questions: allQuestions {
       id
       title
       type
-      instances(orderBy: createdAt_DESC, first: 3) {
-        id
+      instances {
         createdAt
       }
       tags {
@@ -57,7 +56,6 @@ const QuestionListQuery = gql`
         name
       }
       versions {
-        id
         createdAt
       }
       createdAt
