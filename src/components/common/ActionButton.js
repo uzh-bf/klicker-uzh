@@ -10,17 +10,17 @@ type Props = {
   }>,
 }
 
-const ActionButton = ({ items }: Props) =>
-  (<div className="actionButtonWrapper">
+const ActionButton = ({ items }: Props) => (
+  <div className="actionButtonWrapper">
     <div className="actionButton">
       <Button circular primary icon="plus" size="large" />
     </div>
     <div className="ui vertical text menu buttonMenu">
-      {items.map(item =>
-        (<button className="item" onClick={item.handleClick}>
+      {items.map(item => (
+        <button className="item" onClick={item.handleClick}>
           {item.label}
-        </button>),
-      )}
+        </button>
+      ))}
     </div>
 
     <style jsx>{`
@@ -39,7 +39,7 @@ const ActionButton = ({ items }: Props) =>
       .buttonMenu .item {
         opacity: 0;
         transform: scale(0) translateX(10rem);
-        transition: transform .3s ease-in-out, opacity .3s ease-in;
+        transition: transform 0.3s ease-in-out, opacity 0.3s ease-in;
       }
 
       .actionButton {
@@ -47,7 +47,7 @@ const ActionButton = ({ items }: Props) =>
         align-self: flex-end;
         order: 1;
 
-        transition: transform .5s ease-in-out;
+        transition: transform 0.5s ease-in-out;
       }
 
       .actionButton:hover + .buttonMenu .item {
@@ -63,6 +63,7 @@ const ActionButton = ({ items }: Props) =>
         margin-right: 0;
       }
     `}</style>
-  </div>)
+  </div>
+)
 
 export default ActionButton

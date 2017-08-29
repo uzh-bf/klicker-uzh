@@ -70,20 +70,18 @@ const SemanticInput = ({
 
   return (
     <Form.Field {...fieldProps}>
-      {label &&
-        <label forHtml={input.name}>
-          {label}
-        </label>}
+      {label && <label forHtml={input.name}>{label}</label>}
 
       <input {...input} {...inputProps} />
 
       {touched &&
-        invalid &&
-        error &&
-        <div className="errorMessage">
-          <Icon name="hand pointer" />
-          <FormattedMessage id={error} />
-        </div>}
+      invalid &&
+      error && (
+      <div className="errorMessage">
+            <Icon name="hand pointer" />
+            <FormattedMessage id={error} />
+          </div>
+        )}
 
       <style jsx>{`
         .errorMessage {
@@ -93,8 +91,8 @@ const SemanticInput = ({
           border-top: none;
           box-shadow: 2px 2px 3px 0px rgba(0, 0, 0, 0.05);
           color: #9f3a38;
-          font-size: .9rem;
-          padding: .3rem .5rem;
+          font-size: 0.9rem;
+          padding: 0.3rem 0.5rem;
         }
       `}</style>
     </Form.Field>

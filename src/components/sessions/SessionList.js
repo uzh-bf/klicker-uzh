@@ -17,20 +17,16 @@ const SessionList = ({ data }: Props) => {
   }
 
   if (data.error) {
-    return (
-      <div>
-        {data.error}
-      </div>
-    )
+    return <div>{data.error}</div>
   }
 
   return (
     <div>
-      {data.sessions.map(session =>
-        (<div className="session">
+      {data.sessions.map(session => (
+        <div className="session">
           <Session key={session.id} {...session} />
-        </div>),
-      )}
+        </div>
+      ))}
 
       <style jsx>{`
         .session {

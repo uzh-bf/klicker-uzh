@@ -12,14 +12,14 @@ import QuestionBlock from './QuestionBlock'
 import fixtures from '../../../.storybook/fixtures'
 
 storiesOf('QuestionBlock', module)
-  .add('default', () =>
-    <QuestionBlock {...fixtures.questionBlock} showSolutions={false} timeLimit={60} />,
-  )
-  .add('empty', () =>
-    (<QuestionBlock
+  .add('default', () => (
+    <QuestionBlock {...fixtures.questionBlock} showSolutions={false} timeLimit={60} />
+  ))
+  .add('empty', () => (
+    <QuestionBlock
       {...fixtures.questionBlock}
       questions={[]}
       showSolutions={false}
       timeLimit={60}
-    />),
-  )
+    />
+  ))

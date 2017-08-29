@@ -11,11 +11,11 @@ import { action } from '@storybook/addon-actions'
 
 import ActionButton from './ActionButton'
 
-storiesOf('ActionButton', module).add('default', () =>
-  (<ActionButton
+storiesOf('ActionButton', module).add('default', () => (
+  <ActionButton
     items={[
       { handleClick: () => action('clicked'), label: 'abcd' },
       { handleClick: () => action('clicked'), label: 'cdef' },
     ]}
-  />),
-)
+  />
+))

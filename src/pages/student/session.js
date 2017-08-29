@@ -187,7 +187,7 @@ class Session extends React.Component {
 
               flex: 1;
 
-              padding: .5rem;
+              padding: 0.5rem;
             }
 
             .questionArea.active,
@@ -196,14 +196,14 @@ class Session extends React.Component {
             }
 
             .confusion {
-              margin-bottom: .5rem;
-              padding: .5rem;
+              margin-bottom: 0.5rem;
+              padding: 0.5rem;
 
               border: 1px solid grey;
             }
 
             .feedback:not(:last-child) {
-              margin-bottom: .5rem;
+              margin-bottom: 0.5rem;
             }
 
             .actionButton {

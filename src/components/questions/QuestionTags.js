@@ -7,16 +7,14 @@ type Props = {
   type: string,
 }
 
-const QuestionTags = ({ tags, type }: Props) =>
-  (<div className="container">
-    <div className="type tag">
-      {type}
-    </div>
-    {tags.map(tag =>
-      (<div key={tag} className="tag">
+const QuestionTags = ({ tags, type }: Props) => (
+  <div className="container">
+    <div className="type tag">{type}</div>
+    {tags.map(tag => (
+      <div key={tag} className="tag">
         {tag}
-      </div>),
-    )}
+      </div>
+    ))}
 
     <style jsx>{`
       .container {
@@ -51,6 +49,7 @@ const QuestionTags = ({ tags, type }: Props) =>
         }
       }
     `}</style>
-  </div>)
+  </div>
+)
 
 export default QuestionTags

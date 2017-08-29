@@ -24,11 +24,9 @@ const defaultProps = {
   visible: false,
 }
 
-const Sidebar = ({ activeItem, children, items, visible, handleSidebarItemClick }: Props) =>
-  (<div className="sidebar">
-    <Helmet>
-      {createLinks(['menu', 'sidebar'])}
-    </Helmet>
+const Sidebar = ({ activeItem, children, items, visible, handleSidebarItemClick }: Props) => (
+  <div className="sidebar">
+    <Helmet>{createLinks(['menu', 'sidebar'])}</Helmet>
 
     <SemanticSidebar.Pushable>
       <SemanticSidebar
@@ -40,8 +38,8 @@ const Sidebar = ({ activeItem, children, items, visible, handleSidebarItemClick 
         visible={visible}
         width="wide"
       >
-        {items.map(item =>
-          (<SidebarItem
+        {items.map(item => (
+          <SidebarItem
             key={item.name}
             active={item.name === activeItem}
             name={item.name}
@@ -49,13 +47,11 @@ const Sidebar = ({ activeItem, children, items, visible, handleSidebarItemClick 
             handleSidebarItemClick={handleSidebarItemClick}
           >
             {item.label}
-          </SidebarItem>),
-        )}
+          </SidebarItem>
+        ))}
       </SemanticSidebar>
 
-      <SemanticSidebar.Pusher>
-        {children}
-      </SemanticSidebar.Pusher>
+      <SemanticSidebar.Pusher>{children}</SemanticSidebar.Pusher>
     </SemanticSidebar.Pushable>
 
     <style jsx>{`
@@ -83,7 +79,8 @@ const Sidebar = ({ activeItem, children, items, visible, handleSidebarItemClick 
         }
       }
     `}</style>
-  </div>)
+  </div>
+)
 
 Sidebar.defaultProps = defaultProps
 

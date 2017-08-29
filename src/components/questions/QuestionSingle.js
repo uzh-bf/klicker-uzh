@@ -8,17 +8,11 @@ type Props = {
   type: string,
 }
 
-const QuestionSingle = ({ id, type, title }: Props) =>
-  (<div className="questionSingle">
-    <div className="id">
-      {id}
-    </div>
-    <div className="type">
-      {type}
-    </div>
-    <div className="content">
-      {title}
-    </div>
+const QuestionSingle = ({ id, type, title }: Props) => (
+  <div className="questionSingle">
+    <div className="id">{id}</div>
+    <div className="type">{type}</div>
+    <div className="content">{title}</div>
 
     <style jsx>{`
       .questionSingle {
@@ -41,6 +35,7 @@ const QuestionSingle = ({ id, type, title }: Props) =>
         padding-top: 0.3rem;
       }
     `}</style>
-  </div>)
+  </div>
+)
 
 export default QuestionSingle

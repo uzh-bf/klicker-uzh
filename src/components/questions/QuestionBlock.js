@@ -20,8 +20,8 @@ const defaultProps = {
   timeLimit: 0,
 }
 
-const QuestionBlock = ({ questions, showSolutions, timeLimit }: Props) =>
-  (<div className="questionBlock">
+const QuestionBlock = ({ questions, showSolutions, timeLimit }: Props) => (
+  <div className="questionBlock">
     <div className="timeLimit">
       <Icon name="clock" />
       {timeLimit}s
@@ -30,11 +30,11 @@ const QuestionBlock = ({ questions, showSolutions, timeLimit }: Props) =>
       <Icon name={showSolutions ? 'unhide' : 'hide'} />
     </div>
     <div className="questions">
-      {questions.map(({ id, title, type }) =>
-        (<div className="question">
+      {questions.map(({ id, title, type }) => (
+        <div className="question">
           <QuestionSingle id={id} title={title} type={type} />
-        </div>),
-      )}
+        </div>
+      ))}
     </div>
     <style jsx>{`
       .questionBlock,
@@ -67,7 +67,8 @@ const QuestionBlock = ({ questions, showSolutions, timeLimit }: Props) =>
         margin-top: 0.2rem;
       }
     `}</style>
-  </div>)
+  </div>
+)
 
 QuestionBlock.defaultProps = defaultProps
 
