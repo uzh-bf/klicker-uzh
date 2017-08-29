@@ -20,7 +20,7 @@ function create() {
       // Server URL (must be absolute)
       // https://api.graph.cool/simple/v1/klicker
       // uri: 'http://localhost:4000/graphql',
-      uri: process.env.API_URL || 'http://localhost',
+      uri: process.env.API_URL || 'https://api.graph.cool/simple/v1/klicker',
     }),
     ssrMode: !process.browser, // Disables forceFetch on the server (so queries are only run once)
   })
