@@ -14,10 +14,10 @@ if [[ ! -f /tmp/klicker_logrocket ]]; then echo "__LOGROCKET__" > /tmp/klicker_l
 # ensure that the application has not been built already
 # take into account any changed environment variables
 # => prevent build from rerunning on crash, restart etc.
-API_URL_SAME=`grep -q $API_URL /tmp/klicker_api_url`
-SENTRY_SAME=`grep -q $SENTRY /tmp/klicker_sentry`
-LOGROCKET_SAME=`grep -q $LOGROCKET /tmp/klicker_logrocket`
-if [[ -f /tmp/klicker.lock && API_URL_SAME &&SENTRY_SAME && LOGROCKET_SAME ]]; then
+API_URL_SAME=$(grep -q $API_URL /tmp/klicker_api_url)
+SENTRY_SAME=$(grep -q $SENTRY /tmp/klicker_sentry)
+LOGROCKET_SAME=$(grep -q $LOGROCKET /tmp/klicker_logrocket)
+if [[ -f /tmp/klicker.lock && API_URL_SAME && SENTRY_SAME && LOGROCKET_SAME ]]; then
   echo "Parameters unchanged, skipping build..."
 
   exec "$@"
