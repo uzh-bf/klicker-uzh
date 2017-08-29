@@ -68,20 +68,20 @@ const SemanticInput = ({
   // define the default placeholder to be equal to the label
   const inputProps = { placeholder: label, ...rest }
 
+  const showError = touched && invalid && error
+
   return (
     <Form.Field {...fieldProps}>
       {label && <label forHtml={input.name}>{label}</label>}
 
       <input {...input} {...inputProps} />
 
-      {touched &&
-      invalid &&
-      error && (
-      <div className="errorMessage">
-            <Icon name="hand pointer" />
-            <FormattedMessage id={error} />
-          </div>
-        )}
+      {showError && (
+        <div className="errorMessage">
+          <Icon name="hand pointer" />
+          <FormattedMessage id={error} />
+        </div>
+      )}
 
       <style jsx>{`
         .errorMessage {
