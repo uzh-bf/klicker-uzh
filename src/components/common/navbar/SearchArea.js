@@ -8,8 +8,8 @@ type Props = {
   handleSearch: (query: string) => mixed,
 }
 
-const SearchArea = ({ intl, handleSearch }: Props) =>
-  (<Input
+const SearchArea = ({ intl, handleSearch }: Props) => (
+  <Input
     fluid
     icon="search"
     placeholder={intl.formatMessage({
@@ -17,6 +17,7 @@ const SearchArea = ({ intl, handleSearch }: Props) =>
       id: 'common.input.search.placeholder',
     })}
     onChange={handleSearch}
-  />)
+  />
+)
 
 export default SearchArea

@@ -10,6 +10,6 @@ import { storiesOf } from '@storybook/react'
 
 import ListWithHeader from './ListWithHeader'
 
-storiesOf('ListWithHeader', module).add('default', () =>
-  <ListWithHeader items={['abcd', 'cdef']}>hello world</ListWithHeader>,
-)
+storiesOf('ListWithHeader', module).add('default', () => (
+  <ListWithHeader items={['abcd', 'cdef']}>hello world</ListWithHeader>
+))

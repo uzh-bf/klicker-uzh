@@ -74,16 +74,12 @@ class StudentLayout extends Component {
             'menu',
             'sidebar',
           ])}
-          <title>
-            {pageTitle}
-          </title>
+          <title>{pageTitle}</title>
         </Helmet>
 
         <div className="header">
           <Button basic icon="content" onClick={this.handleSidebarToggle} />
-          <h1>
-            {title}
-          </h1>
+          <h1>{title}</h1>
         </div>
 
         <div className="content">
@@ -126,7 +122,7 @@ class StudentLayout extends Component {
             align-items: center;
 
             border-bottom: 1px solid lightgrey;
-            padding: .5rem;
+            padding: 0.5rem;
           }
 
           .header > h1 {
