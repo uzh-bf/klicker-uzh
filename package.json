@@ -33,6 +33,7 @@
     "react-intl": "2.3.0",
     "react-rangeslider": "2.1.0",
     "react-redux": "5.0.6",
+    "react-rte": "^0.14.1",
     "recharts": "1.0.0-alpha.4",
     "redux": "3.7.2",
     "redux-form": "7.0.3",
