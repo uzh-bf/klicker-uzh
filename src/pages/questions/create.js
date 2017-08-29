@@ -1,6 +1,7 @@
 // @flow
 
 import React, { Component } from 'react'
+import RichTextEditor from 'react-rte'
 
 import { pageWithIntl, withData } from '../../lib'
 
@@ -37,18 +38,39 @@ class CreateQuestion extends Component {
         <div className="grid">
           <div className="questionName">
             <h2>Question name</h2>
-            some input field
+            <input />
           </div>
           <div className="questionType">
             <h2>Question type</h2>
-            <div>hello</div>
-            <div>helll</div>
-            <div>blaaaa</div>
-            <div>blaaaa</div>
+            <div className="option">Single-Choice</div>
+            <div className="option">Multiple-Choice</div>
+            <div className="option">blaaaa</div>
+            <div className="option">blaaaa</div>
           </div>
-          <div className="preview">item 3</div>
+          <div className="questionTags">
+            <h2>Tags</h2>
+            <div className="tag">CAPM</div>
+            <div className="tag">AABCD</div>
+            <input />
+          </div>
+          <div className="preview">
+            <h2>Preview</h2>
+            <div className="previewContent">
+              abcd
+            </div>
+          </div>
           <div className="content">
-            blabla some stuff
+            <h2>Content</h2>
+            <RichTextEditor
+              value={RichTextEditor.createEmptyValue()}
+              onChange={newValue => console.dir(newValue)}
+            />
+          </div>
+          <div className="answerOptions">
+            <h2>Options</h2>
+            <div className="option">hello world</div>
+            <div className="option">blablabla</div>
+            <div className="correct option">this is it</div>
           </div>
         </div>
 
@@ -57,23 +79,41 @@ class CreateQuestion extends Component {
             .grid {
               display: grid;
               padding: 1rem 0;
-              margin: 0 15%;
+              margin: 0 20%;
 
               grid-gap: 1rem;
-              grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
+              grid-template-columns: repeat(6, 1fr);
               grid-template-rows: auto;
-              grid-template-areas:
-                'name name name name preview preview'
-                'type type type type preview preview'
-                'content content content content content content';
+              grid-template-areas: 'name name name name preview preview'
+                'type type tags tags preview preview'
+                'content content content content content content'
+                'options options options options options options';
             }
 
             h2 {
-              grid-row: 1;
+              grid-row: 1/2;
               grid-column: 1/4;
 
-              border-bottom: 1px solid lightgrey;
               margin: 0;
+              margin-bottom: 0.5rem;
+            }
+
+            input {
+              width: 100%;
+            }
+
+            .option {
+              border: 1px solid lightgrey;
+              padding: 1rem;
+            }
+
+            .option:hover {
+              border: 1px solid lightblue;
+              cursor: pointer;
+            }
+
+            .option:not(:last-child) {
+              margin-bottom: .5rem;
             }
 
             .questionName {
@@ -82,28 +122,34 @@ class CreateQuestion extends Component {
 
             .questionType {
               grid-area: type;
-
-              display: grid;
-              grid-gap: 1rem;
-              grid-template-columns: 1fr 1fr 1fr;
-              grid-template-rows: auto;
             }
 
-            .questionType > div {
-              border: 1px solid lightgrey;
-              height: 10rem;
+            .questionType > .option {
+            }
+
+            .questionTags {
+              grid-area: tags;
             }
 
             .preview {
               grid-area: preview;
+            }
 
-              background-color: red;
+            .previewContent {
+              border: 1px solid lightgrey;
+              padding: 1rem;
+              height: 100%;
             }
 
             .content {
               grid-area: content;
+            }
 
-              background-color: grey;
+            .answerOptions {
+              grid-area: options;
+            }
+
+            .answerOptions > .option {
             }
           }
         `}</style>
