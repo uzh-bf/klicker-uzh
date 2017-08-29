@@ -11,7 +11,7 @@ jest.mock('react-dom', () => ({
 }))
 
 describe('Snapshot-Testing', () => {
-  it.skip('Works', () => {
+  it('Works', () => {
     const component = renderer.create(<Running />)
     const tree = component.toJSON()
     expect(tree).toMatchSnapshot()
