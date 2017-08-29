@@ -18,11 +18,9 @@ const RegistrationMutation = gql`
 `
 
 type LoginMutationType = {
-  user: {
-    id: string,
-    email: string,
-    shortname: string,
-  },
+  id: string,
+  email: string,
+  shortname: string,
 }
 const LoginMutation = gql`
   mutation Login($email: String!, $password: String!) {
