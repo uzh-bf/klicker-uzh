@@ -2,7 +2,7 @@ const mongoose = require('mongoose')
 const JWT = require('jsonwebtoken')
 
 mongoose.Promise = Promise
-process.env.JWT_SECRET = 'hello-world'
+process.env.APP_SECRET = 'hello-world'
 
 const { isAuthenticated, isValidJWT, signup, login } = require('./auth')
 const { UserModel } = require('../models')
