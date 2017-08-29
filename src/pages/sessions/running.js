@@ -80,7 +80,7 @@ class Running extends Component {
 
     // HACK: use the first of all users in the database
     // TODO: replace this with the data of the currently logged in user
-    const activeUser = data.allUsers && data.allUsers[0]
+    const activeUser = data.allUsers[0]
 
     return (
       <TeacherLayout
