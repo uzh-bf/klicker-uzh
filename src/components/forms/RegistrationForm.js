@@ -37,11 +37,11 @@ const validate = ({
 }) => {
   const errors = {}
 
-  if (!isAlpha(firstName && isLength(firstName, { max: undefined, min: 1 }))) {
+  if (firstName && !isAlpha(firstName && isLength(firstName, { max: undefined, min: 1 }))) {
     errors.firstName = 'form.firstName.invalid'
   }
 
-  if (!isAlpha(lastName) && isLength(lastName, { max: undefined, min: 1 })) {
+  if (lastName && !isAlpha(lastName) && isLength(lastName, { max: undefined, min: 1 })) {
     errors.lastName = 'form.lastName.invalid'
   }
 
@@ -65,7 +65,7 @@ const validate = ({
     errors.passwordRepeat = 'form.passwordRepeat.invalid'
   }
 
-  if (!isAlpha(useCase)) {
+  if (useCase && !isAlpha(useCase)) {
     errors.useCase = 'form.useCase.invalid'
   }
 
