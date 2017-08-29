@@ -15,14 +15,17 @@ const createTagMutation = async (parentValue, { tag: { name } }, { auth }) => {
 
   const newTag = await new TagModel({
     name,
-  }).save()
-
-  const user = await UserModel.findById(auth.sub)
-
-  await user.update({
-    $set: { tags: [...user.tags, newTag.id] },
-    $currentDate: { updatedAt: true },
   })
+
+  const updatedUser = UserModel.update(
+    { _id: auth.sub },
+    {
+      $push: { tags: newTag.id },
+      $currentDate: { updatedAt: true },
+    },
+  )
+
+  await Promise.all([newTag.save(), updatedUser])
 
   return newTag
 }

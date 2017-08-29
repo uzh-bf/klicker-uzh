@@ -8,6 +8,7 @@ const Question = require('./Question')
 const Tag = `
   input TagInput {
     name: String
+    question: ID
   }
 
   type Tag {

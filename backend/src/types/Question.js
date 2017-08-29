@@ -10,6 +10,8 @@ const Question = `
     title: String
     type: String
 
+    description: String
+
     tags: [ID]
   }
 
@@ -19,7 +21,9 @@ const Question = `
     title: String!
     type: String!
 
+    instances: [QuestionInstance]
     tags: [Tag]
+    versions: [QuestionVersion]
 
     createdAt: String
     updatedAt: String
