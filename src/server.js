@@ -13,6 +13,8 @@ const { isValidJWT } = require('./services/auth')
 
 mongoose.Promise = Promise
 
+const dev = process.env.NODE_ENV !== 'production'
+
 const appSettings = ['APP_DOMAIN', 'APP_SECRET', 'MONGO_URL']
 appSettings.forEach((envVar) => {
   if (!process.env[envVar]) {
@@ -39,6 +41,7 @@ const server = express()
 server.use(
   '/graphql',
   cors({
+    credentials: dev, // allow passing credentials over CORS in dev mode
     origin: 'http://localhost:3000',
     optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
   }),
