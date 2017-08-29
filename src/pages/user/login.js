@@ -50,7 +50,9 @@ class Login extends React.Component {
 
           {/* TODO: improve message handling */}
           {error && <div className="errorMessage message">Login failed: {error}</div>}
-          {success && <div className="successMessage message">Successfully logged in as {success}</div>}
+          {success && (
+            <div className="successMessage message">Successfully logged in as {success}</div>
+          )}
 
           <LoginForm error={this.state.error} intl={intl} onSubmit={this.handleSubmit} />
 
