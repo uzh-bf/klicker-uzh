@@ -22,18 +22,12 @@ const TagList = ({ activeTags, data, handleTagClick }: Props) => {
   }
 
   if (data.error) {
-    return (
-      <div>
-        {data.error}
-      </div>
-    )
+    return <div>{data.error}</div>
   }
 
   return (
     <List selection size="large">
-      <Helmet>
-        {createLinks(['list'])}
-      </Helmet>
+      <Helmet>{createLinks(['list'])}</Helmet>
 
       {data.tags.map((tag) => {
         const isActive = activeTags.length > 0 && activeTags.includes(tag.id)
@@ -42,9 +36,7 @@ const TagList = ({ activeTags, data, handleTagClick }: Props) => {
           <List.Item key={tag.id} className="listItem" onClick={() => handleTagClick(tag.id)}>
             <List.Icon name={isActive ? 'folder' : 'folder outline'} />
             <List.Content>
-              <span className={isActive ? 'active' : 'inactive'}>
-                {tag.name}
-              </span>
+              <span className={isActive ? 'active' : 'inactive'}>{tag.name}</span>
             </List.Content>
           </List.Item>
         )

@@ -20,11 +20,9 @@ type Props = {
   }>,
 }
 
-const FormWithLinks = ({ button, children, links }: Props) =>
-  (<form className="ui form error">
-    <Helmet>
-      {createLinks(['button', 'form', 'list'])}
-    </Helmet>
+const FormWithLinks = ({ button, children, links }: Props) => (
+  <form className="ui form error">
+    <Helmet>{createLinks(['button', 'form', 'list'])}</Helmet>
 
     {children}
 
@@ -41,15 +39,13 @@ const FormWithLinks = ({ button, children, links }: Props) =>
 
       <div className="links">
         <List>
-          {links.map(link =>
-            (<List.Item>
+          {links.map(link => (
+            <List.Item>
               <Link href={link.href}>
-                <a>
-                  {link.label}
-                </a>
+                <a>{link.label}</a>
               </Link>
-            </List.Item>),
-          )}
+            </List.Item>
+          ))}
         </List>
       </div>
     </div>
@@ -96,6 +92,7 @@ const FormWithLinks = ({ button, children, links }: Props) =>
         }
       }
     `}</style>
-  </form>)
+  </form>
+)
 
 export default FormWithLinks

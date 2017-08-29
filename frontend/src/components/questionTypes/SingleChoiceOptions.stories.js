@@ -37,10 +37,10 @@ const options = [
 
 storiesOf('SingleChoiceOptions', module)
   .add('default', () => <Wrapper options={options} />)
-  .add('withActiveOption', () =>
-    (<SingleChoiceOptions
+  .add('withActiveOption', () => (
+    <SingleChoiceOptions
       activeOption={1}
       options={options}
       handleOptionClick={index => () => action(`option ${index} clicked`)}
-    />),
-  )
+    />
+  ))

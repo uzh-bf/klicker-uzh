@@ -72,11 +72,9 @@ const validate = ({
   return errors
 }
 
-const RegistrationForm = ({ intl, invalid, handleSubmit }: Props) =>
-  (<form className="ui form error" onSubmit={handleSubmit}>
-    <Helmet>
-      {createLinks(['button', 'form', 'icon', 'textarea'])}
-    </Helmet>
+const RegistrationForm = ({ intl, invalid, handleSubmit }: Props) => (
+  <form className="ui form error" onSubmit={handleSubmit}>
+    <Helmet>{createLinks(['button', 'form', 'icon', 'textarea'])}</Helmet>
 
     <div className="personal">
       <Field
@@ -176,11 +174,11 @@ const RegistrationForm = ({ intl, invalid, handleSubmit }: Props) =>
           flex: 1 1 50%;
         }
         .personal {
-          padding-right: .5rem;
+          padding-right: 0.5rem;
         }
         .account {
           margin: 0;
-          padding-left: .5rem;
+          padding-left: 0.5rem;
         }
       }
 
@@ -191,7 +189,8 @@ const RegistrationForm = ({ intl, invalid, handleSubmit }: Props) =>
         }
       }
     `}</style>
-  </form>)
+  </form>
+)
 
 export default reduxForm({
   form: 'registration',

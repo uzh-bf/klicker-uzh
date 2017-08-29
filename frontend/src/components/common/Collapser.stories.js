@@ -47,18 +47,12 @@ const content = (
 )
 
 storiesOf('Collapser', module)
-  .add('default', () =>
-    (<Wrapper>
+  .add('default', () => <Wrapper>{content}</Wrapper>)
+  .add('collapsed', () => (
+    <Collapser collapsed handleCollapseToggle={() => action('collapser-clicked')}>
       {content}
-    </Wrapper>),
-  )
-  .add('collapsed', () =>
-    (<Collapser collapsed handleCollapseToggle={() => action('collapser-clicked')}>
-      {content}
-    </Collapser>),
-  )
-  .add('extended', () =>
-    (<Collapser handleCollapseToggle={() => action('collapser-clicked')}>
-      {content}
-    </Collapser>),
-  )
+    </Collapser>
+  ))
+  .add('extended', () => (
+    <Collapser handleCollapseToggle={() => action('collapser-clicked')}>{content}</Collapser>
+  ))

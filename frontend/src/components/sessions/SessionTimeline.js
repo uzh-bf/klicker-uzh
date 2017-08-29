@@ -20,8 +20,8 @@ type Props = {
   intl: $IntlShape,
 }
 
-const SessionTimeline = ({ blocks, intl }: Props) =>
-  (<div className="sessionTimeline">
+const SessionTimeline = ({ blocks, intl }: Props) => (
+  <div className="sessionTimeline">
     <div className="topRow">
       <div className="startingTime">
         <Icon name="time" /> 18:17:22
@@ -31,8 +31,8 @@ const SessionTimeline = ({ blocks, intl }: Props) =>
       </div>
     </div>
     <div className="blocks">
-      {blocks.map(block =>
-        (<div className="block">
+      {blocks.map(block => (
+        <div className="block">
           <QuestionBlock
             key={block.id}
             showSolutions
@@ -44,8 +44,8 @@ const SessionTimeline = ({ blocks, intl }: Props) =>
               type: question.questionDefinition.type,
             }))}
           />
-        </div>),
-      )}
+        </div>
+      ))}
     </div>
     <div className="buttons">
       <Button
@@ -123,7 +123,7 @@ const SessionTimeline = ({ blocks, intl }: Props) =>
         .topRow {
           flex: 0 0 100%;
 
-          padding: .5rem;
+          padding: 0.5rem;
         }
 
         .blocks {
@@ -131,7 +131,7 @@ const SessionTimeline = ({ blocks, intl }: Props) =>
 
           flex-direction: row;
 
-          padding: .5rem;
+          padding: 0.5rem;
         }
 
         .block,
@@ -140,6 +140,7 @@ const SessionTimeline = ({ blocks, intl }: Props) =>
         }
       }
     `}</style>
-  </div>)
+  </div>
+)
 
 export default SessionTimeline

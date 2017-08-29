@@ -38,22 +38,22 @@ const data = [
 
 storiesOf('FeedbackChannel', module)
   .add('default', () => <Wrapper data={data} />)
-  .add('isActive', () =>
-    (<FeedbackChannel
+  .add('isActive', () => (
+    <FeedbackChannel
       isActive
       data={data}
       intl={intlMock}
       handleActiveToggle={() => action('active-toggle')}
       handlePublicToggle={() => action('public-toggle')}
-    />),
-  )
-  .add('isPublic', () =>
-    (<FeedbackChannel
+    />
+  ))
+  .add('isPublic', () => (
+    <FeedbackChannel
       isActive
       isPublic
       data={data}
       intl={intlMock}
       handleActiveToggle={() => action('active-toggle')}
       handlePublicToggle={() => action('public-toggle')}
-    />),
-  )
+    />
+  ))

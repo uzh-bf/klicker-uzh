@@ -57,8 +57,8 @@ const Session = ({ createdAt, name, blocks, id, status }: Props) => {
       </div>
 
       <div className="details">
-        {blocks.map(block =>
-          (<div className="block">
+        {blocks.map(block => (
+          <div className="block">
             <QuestionBlock
               key={block.id}
               questions={block.questions.map(question => ({
@@ -69,8 +69,8 @@ const Session = ({ createdAt, name, blocks, id, status }: Props) => {
               showSolutions={block.showSolutions}
               timeLimit={block.timeLimit}
             />
-          </div>),
-        )}
+          </div>
+        ))}
         <div className="actionArea">
           <Button icon disabled={buttonStatus.disabled} labelPosition="left">
             <Icon name={buttonStatus.icon} />
