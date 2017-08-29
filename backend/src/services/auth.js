@@ -67,7 +67,13 @@ const login = async (res, email, password) => {
   // httpOnly: don't allow interactions from javascript
   // secure: whether the cookie should only be sent over https
   // TODO: set other important cookie settings
-  res.cookie('jwt', jwt, { domain: process.env.APP_DOMAIN, httpOnly: true, maxAge: 86400000, path: '/graphql', secure: !dev })
+  res.cookie('jwt', jwt, {
+    domain: process.env.APP_DOMAIN,
+    httpOnly: true,
+    maxAge: 86400000,
+    path: '/graphql',
+    secure: !dev,
+  })
 
   // resolve with data about the user
   return user
