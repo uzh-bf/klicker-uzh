@@ -5,36 +5,44 @@ const { QuestionModel, TagModel, UserModel } = require('../models')
 const allQuestionsQuery = async (parentValue, args, { auth }) => {
   AuthService.isAuthenticated(auth)
 
-  const user = await UserModel.findById(auth.sub).populate(['questions'])
+  // TODO: only populate tags if asked for in the query
+  const user = await UserModel.findById(auth.sub).populate({ path: 'questions', populate: { path: 'tags' } })
+
   return user.questions
 }
 
 const questionQuery = (parentValue, { id }, { auth }) => {
   AuthService.isAuthenticated(auth)
 
-  return QuestionModel.findOne({ id, user: auth.sub })
+  // TODO: only populate tags if asked for in the query
+  return QuestionModel.findOne({ id, user: auth.sub }).populate({ path: 'questions', populate: { path: 'tags' } })
 }
 
 /* ----- mutations ----- */
-const createQuestionMutation = async (parentValue, { question: { tags, title, type } }, { auth }) => {
+const createQuestionMutation = async (parentValue, { question: { description, tags, title, type } }, { auth }) => {
   AuthService.isAuthenticated(auth)
 
   // if non-existent tags are passed, they need to be created
-  const fetchTags = await TagModel.find({ _id: { $in: tags } })
+  // const fetchTags = await TagModel.find({ _id: { $in: tags } })
+  const fetchTags = await TagModel.find({ name: { $in: tags } })
+  const tagIds = fetchTags.map(tag => tag.id)
 
-  const newQuestion = await new QuestionModel({
-    tags: fetchTags,
+  const newQuestion = new QuestionModel({
+    tags: [...tagIds],
     title,
     type,
-  }).save()
-
-  const user = await UserModel.findById(auth.sub).populate(['questions'])
-  user.questions.push(newQuestion.id)
-
-  user.update({
-    $set: { questions: [...user.questions, newQuestion.id] },
-    $currentDate: { updatedAt: true },
+    versions: [{ description, options: [], solution: {} }], // add an initial version 0
   })
+
+  const updatedUser = UserModel.update(
+    { _id: auth.sub },
+    {
+      $push: { questions: newQuestion.id },
+      $currentDate: { updatedAt: true },
+    },
+  )
+
+  await Promise.all([newQuestion.save(), updatedUser])
 
   return newQuestion
 }

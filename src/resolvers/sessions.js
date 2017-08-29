@@ -19,7 +19,17 @@ const sessionQuery = async (parentValue, { id }, { auth }) => {
 const createSessionMutation = async (parentValue, { session: { name } }, { auth }) => {
   AuthService.isAuthenticated(auth)
 
-  return new SessionModel({ name, user: auth.sub }).save()
+  const newSession = await new SessionModel({ name, user: auth.sub }).save()
+
+  await UserModel.update(
+    { _id: auth.sub },
+    {
+      $push: { sessions: newSession.id },
+      $currentDate: { updatedAt: true },
+    },
+  )
+
+  return newSession
 }
 
 module.exports = {
