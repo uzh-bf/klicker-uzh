@@ -28,13 +28,13 @@ exports[`Snapshot-Testing Works 1`] = `
           className="required field"
         >
           <label
-            data-jsx={2917643520}
+            data-jsx={1632341904}
             forHtml="email"
           >
             Email
           </label>
           <input
-            data-jsx={2917643520}
+            data-jsx={1632341904}
             name="email"
             onBlur={[Function]}
             onChange={[Function]}
@@ -50,13 +50,13 @@ exports[`Snapshot-Testing Works 1`] = `
           className="required field"
         >
           <label
-            data-jsx={2917643520}
+            data-jsx={1632341904}
             forHtml="password"
           >
             Password
           </label>
           <input
-            data-jsx={2917643520}
+            data-jsx={1632341904}
             name="password"
             onBlur={[Function]}
             onChange={[Function]}
