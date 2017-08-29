@@ -1,6 +1,8 @@
 import { ApolloClient, createNetworkInterface } from 'react-apollo'
 import fetch from 'isomorphic-fetch'
 
+const dev = process.env.NODE_ENV !== 'production'
+
 let apolloClient = null
 
 // Polyfill fetch() on the server (used by apollo-client)
@@ -13,9 +15,12 @@ function create() {
     networkInterface: createNetworkInterface({
       opts: {
         // Additional fetch() options like `credentials` or `headers`
-        credentials: 'same-origin',
+        credentials: dev ? 'include' : 'same-origin',
       },
-      uri: 'https://api.graph.cool/simple/v1/klicker', // Server URL (must be absolute)
+      // Server URL (must be absolute)
+      // https://api.graph.cool/simple/v1/klicker
+      // uri: 'http://localhost:4000/graphql',
+      uri: process.env.API_URL,
     }),
     ssrMode: !process.browser, // Disables forceFetch on the server (so queries are only run once)
   })
