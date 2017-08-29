@@ -13,15 +13,13 @@ const { isValidJWT } = require('./services/auth')
 
 mongoose.Promise = Promise
 
-if (!process.env.MONGO_URL) {
-  console.warn('> Error: Please pass the MONGO_URL as an environment variable.')
-  process.exit(1)
-}
-
-if (!process.env.JWT_SECRET) {
-  console.warn('> Error: Please pass the JWT_SECRET as an environment variable.')
-  process.exit(1)
-}
+const appSettings = ['APP_DOMAIN', 'APP_SECRET', 'MONGO_URL']
+appSettings.forEach((envVar) => {
+  if (!process.env[envVar]) {
+    console.warn(`> Error: Please pass the ${envVar} as an environment variable.`)
+    process.exit(1)
+  }
+})
 
 mongoose.connect(`mongodb://${process.env.MONGO_URL}`)
 
@@ -48,10 +46,10 @@ server.use(
   expressJWT({
     credentialsRequired: false,
     requestProperty: 'auth',
-    secret: process.env.JWT_SECRET,
+    secret: process.env.APP_SECRET,
     getToken: (req) => {
       // try to parse an authorization cookie
-      if (req.cookies && req.cookies.jwt && isValidJWT(req.cookies.jwt, process.env.JWT_SECRET)) {
+      if (req.cookies && req.cookies.jwt && isValidJWT(req.cookies.jwt, process.env.APP_SECRET)) {
         return req.cookies.jwt
       }
 

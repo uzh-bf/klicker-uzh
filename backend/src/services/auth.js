@@ -3,6 +3,8 @@ const JWT = require('jsonwebtoken')
 
 const UserModel = require('../models/User')
 
+const dev = process.env.NODE_ENV !== 'production'
+
 const isAuthenticated = (auth) => {
   if (!auth || !auth.sub) {
     throw new Error('INVALID_LOGIN')
@@ -56,15 +58,16 @@ const login = async (res, email, password) => {
   // generate a JWT for future authentication
   // expiresIn: one day equals 86400 seconds
   // TODO: add more necessary properties for the JWT
-  const jwt = JWT.sign({ expiresIn: 86400, sub: user.id, scope: ['user'] }, process.env.JWT_SECRET)
+  const jwt = JWT.sign({ expiresIn: 86400, sub: user.id, scope: ['user'] }, process.env.APP_SECRET)
 
   // set a cookie with the generated JWT
+  // domain: the domain the cookie should be valid for
   // maxAge: one day equals 86400000 milliseconds
   // path: cookie should only be valid for the graphql API
   // httpOnly: don't allow interactions from javascript
+  // secure: whether the cookie should only be sent over https
   // TODO: set other important cookie settings
-  // TODO: restrict the cookie to https?
-  res.cookie('jwt', jwt, { httpOnly: true, maxAge: 86400000, path: '/graphql' })
+  res.cookie('jwt', jwt, { domain: 'localhost', httpOnly: true, maxAge: 86400000, path: '/graphql', secure: !dev })
 
   // resolve with data about the user
   return user
