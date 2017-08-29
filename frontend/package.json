@@ -69,8 +69,8 @@
   "scripts": {
     "build": "next build src && node ./src/lib/defaultLang",
     "debug": "cross-env NODE_ENV=production node --inspect server.js",
-    "dev": "nodemon -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock server.js",
-    "dev:inspect": "nodemon -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock --inspect server.js",
+    "dev": "nodemon -w .env -w package.json -w yarn.lock server.js",
+    "dev:inspect": "nodemon -w .env -w package.json -w yarn.lock --inspect server.js",
     "flow": "flow check",
     "format": "prettier-eslint --single-quote --no-semi --write server.js \"src/**/*.js\"",
     "format:ci": "prettier-eslint --single-quote --no-semi --list-different server.js \"src/**/*.js\"",
