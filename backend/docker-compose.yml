@@ -5,8 +5,9 @@ services:
     ports:
       - "4000:3000"
     environment:
+      APP_DOMAIN: localhost
+      APP_SECRET: hello-world
       MONGO_URL: mongodb/klicker
-      JWT_SECRET: hello-world
 
   mongodb:
     image: mongo:3.4.5
