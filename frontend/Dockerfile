@@ -27,7 +27,7 @@ COPY . $KLICKER_DIR/
 
 # switch to the node user (uid 1000)
 # non-root as provided by the base image
-RUN chown -R 1000:1000 $KLICKER_DIR/
+RUN chown -R 1000:1000 "$KLICKER_DIR/"
 USER 1000
 
 # configure the entrypoint script
