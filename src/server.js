@@ -15,7 +15,7 @@ mongoose.Promise = Promise
 
 const dev = process.env.NODE_ENV !== 'production'
 
-const appSettings = ['APP_DOMAIN', 'APP_SECRET', 'MONGO_URL']
+const appSettings = ['APP_DOMAIN', 'APP_PORT', 'APP_SECRET', 'MONGO_URL']
 appSettings.forEach((envVar) => {
   if (!process.env[envVar]) {
     console.warn(`> Error: Please pass the ${envVar} as an environment variable.`)
@@ -73,7 +73,7 @@ server.use(
   graphqlExpress((req, res) => ({ context: { auth: req.auth, res }, schema })),
 )
 
-server.listen(3000, (err) => {
+server.listen(process.env.APP_PORT, (err) => {
   if (err) throw err
-  console.log('> API ready on http://localhost:3000!')
+  console.log(`> API ready on http://localhost:${process.env.APP_PORT}!`)
 })
