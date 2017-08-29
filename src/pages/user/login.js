@@ -54,7 +54,7 @@ class Login extends React.Component {
             <div className="successMessage message">Successfully logged in as {success}</div>
           )}
 
-          <LoginForm error={this.state.error} intl={intl} onSubmit={this.handleSubmit} />
+          <LoginForm intl={intl} onSubmit={this.handleSubmit} />
 
           <style jsx>{`
             .login {
