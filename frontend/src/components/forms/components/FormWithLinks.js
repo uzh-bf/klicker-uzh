@@ -22,7 +22,7 @@ type Props = {
 
 const FormWithLinks = ({ button, children, links }: Props) => (
   <form className="ui form error">
-    <Helmet>{createLinks(['button', 'form', 'list'])}</Helmet>
+    <Helmet defer={false}>{createLinks(['button', 'form', 'list'])}</Helmet>
 
     {children}
 

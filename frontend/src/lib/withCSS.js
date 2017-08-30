@@ -8,7 +8,7 @@ import { createLinks } from './utils/css'
 function withCSS(WrappedComponent: any, links: Array<string>) {
   const WithCSS = (props: any) => (
     <div>
-      <Helmet>{createLinks(links)}</Helmet>
+      <Helmet defer={false}>{createLinks(links)}</Helmet>
       <WrappedComponent {...props} />
     </div>
   )

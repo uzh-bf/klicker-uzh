@@ -23,8 +23,10 @@ class StaticLayout extends Component {
 
     return (
       <div className="staticLayout">
-        <Helmet>
+        <Helmet defer={false}>
           {createLinks(['https://fonts.googleapis.com/css?family=Open Sans', 'reset'])}
+        </Helmet>
+        <Helmet>
           <title>{pageTitle}</title>
         </Helmet>
 

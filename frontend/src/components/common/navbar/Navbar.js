@@ -38,7 +38,7 @@ const Navbar = ({
   handleSidebarToggle,
 }: Props) => (
   <div className="navbar">
-    <Helmet>
+    <Helmet defer={false}>
       {createLinks(['button', 'divider', 'dropdown', 'icon', 'image', 'input', 'menu', 'popup'])}
     </Helmet>
 

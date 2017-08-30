@@ -74,7 +74,7 @@ const validate = ({
 
 const RegistrationForm = ({ intl, invalid, handleSubmit }: Props) => (
   <form className="ui form error" onSubmit={handleSubmit}>
-    <Helmet>{createLinks(['button', 'form', 'icon', 'textarea'])}</Helmet>
+    <Helmet defer={false}>{createLinks(['button', 'form', 'icon', 'textarea'])}</Helmet>
 
     <div className="personal">
       <Field

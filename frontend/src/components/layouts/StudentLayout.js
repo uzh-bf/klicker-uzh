@@ -65,7 +65,7 @@ class StudentLayout extends Component {
 
     return (
       <div className="studentLayout">
-        <Helmet>
+        <Helmet defer={false}>
           {createLinks([
             'https://fonts.googleapis.com/css?family=Open Sans',
             'reset',
@@ -74,6 +74,8 @@ class StudentLayout extends Component {
             'menu',
             'sidebar',
           ])}
+        </Helmet>
+        <Helmet>
           <title>{pageTitle}</title>
         </Helmet>
 

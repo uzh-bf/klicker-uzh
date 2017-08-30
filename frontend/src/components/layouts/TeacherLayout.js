@@ -80,8 +80,10 @@ class TeacherLayout extends Component {
 
     return (
       <div className="teacherLayout">
-        <Helmet>
+        <Helmet defer={false}>
           {createLinks(['https://fonts.googleapis.com/css?family=Open Sans', 'reset'])}
+        </Helmet>
+        <Helmet>
           <title>{pageTitle}</title>
         </Helmet>
 
