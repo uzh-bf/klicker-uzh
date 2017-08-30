@@ -8,10 +8,7 @@
   "timezone": "Europe/Zurich",
   "packageRules": [
     {
-      "packagePatterns": [
-        "^babel-eslint",
-        "^eslint"
-      ],
+      "packagePatterns": ["^babel-eslint", "^eslint"],
       "groupName": "eslint"
     },
     {
