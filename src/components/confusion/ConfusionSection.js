@@ -19,11 +19,9 @@ type Props = {
   title: string,
 }
 
-const ConfusionSection = ({ data, title }: Props) =>
-  (<div className="confusionSection">
-    <h3>
-      {title}
-    </h3>
+const ConfusionSection = ({ data, title }: Props) => (
+  <div className="confusionSection">
+    <h3>{title}</h3>
 
     <div className="chart">
       <ResponsiveContainer>
@@ -49,6 +47,7 @@ const ConfusionSection = ({ data, title }: Props) =>
         height: 10rem;
       }
     `}</style>
-  </div>)
+  </div>
+)
 
 export default ConfusionSection

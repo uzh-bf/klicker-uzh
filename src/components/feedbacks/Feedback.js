@@ -13,19 +13,16 @@ const defaultProps = {
   showDelete: true,
 }
 
-const Feedback = ({ content, showDelete, votes }: Props) =>
-  (<div className="feedback">
-    <div className="content">
-      {content}
-    </div>
-    {showDelete &&
+const Feedback = ({ content, showDelete, votes }: Props) => (
+  <div className="feedback">
+    <div className="content">{content}</div>
+    {showDelete && (
       <div className="delete">
         <Button basic icon="trash outline" fluid />
-      </div>}
+      </div>
+    )}
 
-    <div className="votes">
-      +{votes}
-    </div>
+    <div className="votes">+{votes}</div>
 
     <style jsx>{`
       .feedback {
@@ -62,11 +59,12 @@ const Feedback = ({ content, showDelete, votes }: Props) =>
       @media all and (min-width: 768px) {
         .content,
         .delete {
-          padding: .5rem;
+          padding: 0.5rem;
         }
       }
     `}</style>
-  </div>)
+  </div>
+)
 
 Feedback.defaultProps = defaultProps
 

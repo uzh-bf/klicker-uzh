@@ -12,25 +12,25 @@ type Props = {
   handleOptionClick: (optionNumber: number) => () => mixed,
 }
 
-const SingleChoiceOptions = ({ activeOption, options, handleOptionClick }: Props) =>
-  (<div className="options">
-    {options.map((option, index) =>
-      (<div key={option.label} className={classNames('option', { active: index === activeOption })}>
+const SingleChoiceOptions = ({ activeOption, options, handleOptionClick }: Props) => (
+  <div className="options">
+    {options.map((option, index) => (
+      <div key={option.label} className={classNames('option', { active: index === activeOption })}>
         <Button basic fluid onClick={handleOptionClick(index)}>
           {option.label}
         </Button>
-      </div>),
-    )}
+      </div>
+    ))}
 
     <style jsx>{`
       :global(.option:not(:last-child)) {
-        margin-bottom: .5rem;
+        margin-bottom: 0.5rem;
       }
 
       .option.active :global(button) {
         border: 1px solid green !important;
 
-        animation: bounce .5s;
+        animation: bounce 0.5s;
       }
 
       // TODO: improve animation
@@ -44,6 +44,7 @@ const SingleChoiceOptions = ({ activeOption, options, handleOptionClick }: Props
         }
       }
     `}</style>
-  </div>)
+  </div>
+)
 
 export default SingleChoiceOptions

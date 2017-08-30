@@ -18,17 +18,13 @@ const QuestionList = ({ data }: Props) => {
   }
 
   if (data.error) {
-    return (
-      <div>
-        {data.error}
-      </div>
-    )
+    return <div>{data.error}</div>
   }
 
   return (
     <div>
-      {data.questions.map(question =>
-        (<div className="question">
+      {data.questions.map(question => (
+        <div className="question">
           {
             <Question
               key={question.id}
@@ -42,8 +38,8 @@ const QuestionList = ({ data }: Props) => {
               version={question.versions.length}
             />
           }
-        </div>),
-      )}
+        </div>
+      ))}
 
       <style jsx>{`
         .question {

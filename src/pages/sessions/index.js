@@ -56,7 +56,7 @@ class Index extends Component {
 
         <style jsx>{`
           .sessionHistory {
-            padding: 1rem .7rem;
+            padding: 1rem 0.7rem;
           }
 
           @media all and (min-width: 768px) {

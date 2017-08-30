@@ -18,11 +18,9 @@ const defaultProps = {
   isActive: false,
 }
 
-const ConfusionBarometer = ({ intl, isActive, handleActiveToggle }: Props) =>
-  (<div className="confusionBarometer">
-    <Helmet>
-      {createLinks(['checkbox'])}
-    </Helmet>
+const ConfusionBarometer = ({ intl, isActive, handleActiveToggle }: Props) => (
+  <div className="confusionBarometer">
+    <Helmet>{createLinks(['checkbox'])}</Helmet>
 
     <h2>
       <FormattedMessage
@@ -42,7 +40,7 @@ const ConfusionBarometer = ({ intl, isActive, handleActiveToggle }: Props) =>
       onChange={handleActiveToggle}
     />
 
-    {isActive &&
+    {isActive && (
       <ConfusionSection
         title={intl.formatMessage({
           defaultMessage: 'Difficulty',
@@ -57,9 +55,10 @@ const ConfusionBarometer = ({ intl, isActive, handleActiveToggle }: Props) =>
           { timestamp: '12:00', value: 0 },
           { timestamp: '12:01', value: -50 },
         ]}
-      />}
+      />
+    )}
 
-    {isActive &&
+    {isActive && (
       <ConfusionSection
         title={intl.formatMessage({
           defaultMessage: 'Comprehensibility',
@@ -74,7 +73,8 @@ const ConfusionBarometer = ({ intl, isActive, handleActiveToggle }: Props) =>
           { timestamp: '12:00', value: 50 },
           { timestamp: '12:01', value: 10 },
         ]}
-      />}
+      />
+    )}
 
     <style jsx>{`
       .confusionBarometer {
@@ -87,7 +87,7 @@ const ConfusionBarometer = ({ intl, isActive, handleActiveToggle }: Props) =>
       }
 
       h3 {
-        margin: 0 0 .5rem 0;
+        margin: 0 0 0.5rem 0;
       }
 
       .confusionSection {
@@ -101,15 +101,16 @@ const ConfusionBarometer = ({ intl, isActive, handleActiveToggle }: Props) =>
 
       @media all and (min-width: 768px) {
         .confusionSection {
-          padding: .5rem;
+          padding: 0.5rem;
         }
 
         .confusionSection:last-child {
-          margin-top: .5rem;
+          margin-top: 0.5rem;
         }
       }
     `}</style>
-  </div>)
+  </div>
+)
 
 ConfusionBarometer.defaultProps = defaultProps
 

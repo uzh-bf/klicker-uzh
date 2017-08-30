@@ -14,11 +14,9 @@ const defaultProps = {
   collapsed: false,
 }
 
-const Collapser = ({ children, collapsed, handleCollapseToggle }: Props) =>
-  (<div className="collapser">
-    <div className={classNames('content', { collapsed })}>
-      {children}
-    </div>
+const Collapser = ({ children, collapsed, handleCollapseToggle }: Props) => (
+  <div className="collapser">
+    <div className={classNames('content', { collapsed })}>{children}</div>
     <div className="collapse">
       <Icon
         name={collapsed ? 'angle double down' : 'angle double up'}
@@ -36,8 +34,8 @@ const Collapser = ({ children, collapsed, handleCollapseToggle }: Props) =>
         flex: 0 0 auto;
 
         line-height: 1.2rem;
-        margin: .5rem;
-        margin-bottom: .3rem;
+        margin: 0.5rem;
+        margin-bottom: 0.3rem;
         overflow: hidden;
       }
 
@@ -47,7 +45,7 @@ const Collapser = ({ children, collapsed, handleCollapseToggle }: Props) =>
 
       .content :global(p) {
         margin-top: 0;
-        margin-bottom: .6rem;
+        margin-bottom: 0.6rem;
       }
 
       .content :global(p:last-child) {
@@ -56,10 +54,11 @@ const Collapser = ({ children, collapsed, handleCollapseToggle }: Props) =>
 
       .collapse {
         margin: auto;
-        margin-bottom: .3rem;
+        margin-bottom: 0.3rem;
       }
     `}</style>
-  </div>)
+  </div>
+)
 
 Collapser.defaultProps = defaultProps
 

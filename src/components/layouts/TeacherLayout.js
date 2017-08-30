@@ -82,12 +82,10 @@ class TeacherLayout extends Component {
       <div className="teacherLayout">
         <Helmet>
           {createLinks(['https://fonts.googleapis.com/css?family=Open Sans', 'reset'])}
-          <title>
-            {pageTitle}
-          </title>
+          <title>{pageTitle}</title>
         </Helmet>
 
-        {navbar &&
+        {navbar && (
           <div className="navbar">
             <Navbar
               intl={intl}
@@ -98,7 +96,8 @@ class TeacherLayout extends Component {
               handleSidebarToggle={this.handleSidebarToggle}
               {...navbar}
             />
-          </div>}
+          </div>
+        )}
 
         <div className="content">
           <Sidebar
@@ -111,10 +110,7 @@ class TeacherLayout extends Component {
           </Sidebar>
         </div>
 
-        {actionButton &&
-          <div className="actionArea">
-            {actionButton}
-          </div>}
+        {actionButton && <div className="actionArea">{actionButton}</div>}
 
         <style jsx global>{`
           * {

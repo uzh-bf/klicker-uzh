@@ -11,10 +11,10 @@ exports[`Snapshot-Testing Works 1`] = `
   >
     <div
       className="registration"
-      data-jsx={1990206599}
+      data-jsx={232182413}
     >
       <h1
-        data-jsx={1990206599}
+        data-jsx={232182413}
       >
         <span>
           Registration
@@ -22,24 +22,24 @@ exports[`Snapshot-Testing Works 1`] = `
       </h1>
       <form
         className="ui form error"
-        data-jsx={2689033462}
+        data-jsx={1683376726}
         onSubmit={[Function]}
       >
         <div
           className="personal"
-          data-jsx={2689033462}
+          data-jsx={1683376726}
         >
           <div
             className="field"
           >
             <label
-              data-jsx={2917643520}
+              data-jsx={1632341904}
               forHtml="firstName"
             >
               First name
             </label>
             <input
-              data-jsx={2917643520}
+              data-jsx={1632341904}
               name="firstName"
               onBlur={[Function]}
               onChange={[Function]}
@@ -55,13 +55,13 @@ exports[`Snapshot-Testing Works 1`] = `
             className="field"
           >
             <label
-              data-jsx={2917643520}
+              data-jsx={1632341904}
               forHtml="lastName"
             >
               Last name
             </label>
             <input
-              data-jsx={2917643520}
+              data-jsx={1632341904}
               name="lastName"
               onBlur={[Function]}
               onChange={[Function]}
@@ -77,13 +77,13 @@ exports[`Snapshot-Testing Works 1`] = `
             className="required field"
           >
             <label
-              data-jsx={2917643520}
+              data-jsx={1632341904}
               forHtml="email"
             >
               Email
             </label>
             <input
-              data-jsx={2917643520}
+              data-jsx={1632341904}
               name="email"
               onBlur={[Function]}
               onChange={[Function]}
@@ -98,19 +98,19 @@ exports[`Snapshot-Testing Works 1`] = `
         </div>
         <div
           className="account"
-          data-jsx={2689033462}
+          data-jsx={1683376726}
         >
           <div
             className="required field"
           >
             <label
-              data-jsx={2917643520}
+              data-jsx={1632341904}
               forHtml="shortname"
             >
               Shortname
             </label>
             <input
-              data-jsx={2917643520}
+              data-jsx={1632341904}
               name="shortname"
               onBlur={[Function]}
               onChange={[Function]}
@@ -126,13 +126,13 @@ exports[`Snapshot-Testing Works 1`] = `
             className="required field"
           >
             <label
-              data-jsx={2917643520}
+              data-jsx={1632341904}
               forHtml="password"
             >
               Password
             </label>
             <input
-              data-jsx={2917643520}
+              data-jsx={1632341904}
               name="password"
               onBlur={[Function]}
               onChange={[Function]}
@@ -148,13 +148,13 @@ exports[`Snapshot-Testing Works 1`] = `
             className="required field"
           >
             <label
-              data-jsx={2917643520}
+              data-jsx={1632341904}
               forHtml="passwordRepeat"
             >
               Repeat password
             </label>
             <input
-              data-jsx={2917643520}
+              data-jsx={1632341904}
               name="passwordRepeat"
               onBlur={[Function]}
               onChange={[Function]}
@@ -168,10 +168,10 @@ exports[`Snapshot-Testing Works 1`] = `
           </div>
           <div
             className="field"
-            data-jsx={2689033462}
+            data-jsx={1683376726}
           >
             <label
-              data-jsx={2689033462}
+              data-jsx={1683376726}
               htmlFor="useCase"
             >
               <span>
@@ -193,6 +193,7 @@ exports[`Snapshot-Testing Works 1`] = `
             className="ui primary disabled right floated button"
             disabled={true}
             onClick={[Function]}
+            role="button"
             tabIndex={-1}
             type="submit"
           >
