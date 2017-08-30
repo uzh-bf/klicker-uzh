@@ -36,7 +36,7 @@ const FeedbackChannel = ({
   handlePublicToggle,
 }: Props) => (
   <div className="feedbackChannel">
-    <Helmet>{createLinks(['checkbox'])}</Helmet>
+    <Helmet defer={false}>{createLinks(['checkbox'])}</Helmet>
 
     <h2>
       <FormattedMessage
