@@ -27,7 +27,7 @@ const TagList = ({ activeTags, data, handleTagClick }: Props) => {
 
   return (
     <List selection size="large">
-      <Helmet>{createLinks(['list'])}</Helmet>
+      <Helmet defer={false}>{createLinks(['list'])}</Helmet>
 
       {data.tags.map((tag) => {
         const isActive = activeTags.length > 0 && activeTags.includes(tag.id)
