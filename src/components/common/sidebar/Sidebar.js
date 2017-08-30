@@ -26,7 +26,7 @@ const defaultProps = {
 
 const Sidebar = ({ activeItem, children, items, visible, handleSidebarItemClick }: Props) => (
   <div className="sidebar">
-    <Helmet>{createLinks(['menu', 'sidebar'])}</Helmet>
+    <Helmet defer={false}>{createLinks(['menu', 'sidebar'])}</Helmet>
 
     <SemanticSidebar.Pushable>
       <SemanticSidebar
