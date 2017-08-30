@@ -10,11 +10,9 @@
     {
       "packagePatterns": [
         "^babel-eslint",
-        "^eslint",
-        "^prettier",
-        "^pre-commit"
+        "^eslint"
       ],
-      "groupName": "code style"
+      "groupName": "eslint"
     },
     {
       "packageNames": ["flow-bin", "babel-plugin-transform-flow-strip-types"],
