@@ -1,5 +1,5 @@
-// flow-typed signature: e6782e1ce08cd6d18bdb1506e97afaf8
-// flow-typed version: b43dff3e0e/react-intl_v2.x.x/flow_>=v0.23.x
+// flow-typed signature: 2abdb261db147bc76a21110fbf276037
+// flow-typed version: 19506e57e6/react-intl_v2.x.x/flow_>=v0.23.x <=v0.52.x
 
 /**
  * Original implementation of this file by @marudor at https://github.com/marudor/flowInterfaces
