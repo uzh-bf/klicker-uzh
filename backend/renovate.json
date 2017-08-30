@@ -1,4 +1,5 @@
 {
+  "automerge": "patch",
   "extends": [":app"],
   "assignees": ["rschlaefli"],
   "labels": ["dependencies"],
@@ -8,25 +9,32 @@
   "timezone": "Europe/Zurich",
   "packageRules": [
     {
-      "packagePatterns": [
-        "^babel-eslint",
-        "^eslint",
-        "^prettier",
-        "^pre-commit"
-      ],
-      "groupName": "code style"
+      "packageNames": ["mongodb", "mongoose"],
+      "groupName": "database"
+    },
+    {
+      "packagePatterns": ["^babel-eslint", "^eslint"],
+      "groupName": "eslint",
+      "automerge": "minor"
     },
     {
       "packageNames": ["flow-bin"],
-      "groupName": "flow"
+      "groupName": "flow",
+      "automerge": "minor"
+    },
+    {
+      "packageNames": ["apollo-server-express", "graphql", "graphql-tools"],
+      "groupName": "graphql"
+    },
+    {
+      "packagePatterns": ["^prettier"],
+      "groupName": "prettier",
+      "automerge": "minor"
     },
     {
       "packageNames": ["jest"],
-      "groupName": "test"
-    },
-    {
-      "packageNames": ["mongodb", "mongoose"],
-      "groupName": "database"
+      "groupName": "test",
+      "automerge": "minor"
     }
   ]
 }
