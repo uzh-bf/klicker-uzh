@@ -9,7 +9,7 @@ import React, { Component } from 'react'
 import { storiesOf } from '@storybook/react'
 import { action } from '@storybook/addon-actions'
 
-import SingleChoiceOptions from './SingleChoiceOptions'
+import SCAnswerOptions from './SCAnswerOptions'
 
 // create a stateful wrapper for the component
 class Wrapper extends Component {
@@ -18,7 +18,7 @@ class Wrapper extends Component {
   }
   render() {
     return (
-      <SingleChoiceOptions
+      <SCAnswerOptions
         activeOption={this.state.activeOption}
         options={this.props.options}
         handleOptionClick={index => () => this.setState({ activeOption: index })}
@@ -35,10 +35,10 @@ const options = [
   { label: 'tschege' },
 ]
 
-storiesOf('SingleChoiceOptions', module)
+storiesOf('SCAnswerOptions', module)
   .add('default', () => <Wrapper options={options} />)
   .add('withActiveOption', () => (
-    <SingleChoiceOptions
+    <SCAnswerOptions
       activeOption={1}
       options={options}
       handleOptionClick={index => () => action(`option ${index} clicked`)}
