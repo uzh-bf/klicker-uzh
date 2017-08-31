@@ -1122,6 +1122,444 @@ exports[`Storyshots QuestionSingle default 1`] = `
 </div>
 `;
 
+exports[`Storyshots QuestionTypes SC Answering Options 1`] = `
+<div
+  className="options"
+  data-jsx={964719302}
+>
+  <div
+    className="option"
+    data-jsx={964719302}
+  >
+    <button
+      className="ui basic fluid button"
+      disabled={undefined}
+      onClick={[Function]}
+      role="button"
+      tabIndex={undefined}
+    >
+      answer2
+    </button>
+  </div>
+  <div
+    className="option active"
+    data-jsx={964719302}
+  >
+    <button
+      className="ui basic fluid button"
+      disabled={undefined}
+      onClick={[Function]}
+      role="button"
+      tabIndex={undefined}
+    >
+      antwort 2
+    </button>
+  </div>
+  <div
+    className="option"
+    data-jsx={964719302}
+  >
+    <button
+      className="ui basic fluid button"
+      disabled={undefined}
+      onClick={[Function]}
+      role="button"
+      tabIndex={undefined}
+    >
+      option 3
+    </button>
+  </div>
+  <div
+    className="option"
+    data-jsx={964719302}
+  >
+    <button
+      className="ui basic fluid button"
+      disabled={undefined}
+      onClick={[Function]}
+      role="button"
+      tabIndex={undefined}
+    >
+      tschege
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Storyshots QuestionTypes SC Creation Option (correct) 1`] = `
+<div
+  className="option correct"
+  data-jsx-ext="21922914401"
+>
+  <button
+    className="leftAction"
+    data-jsx-ext="21922914401"
+    onClick={undefined}
+  >
+    <svg
+      fill="currentColor"
+      height="1em"
+      preserveAspectRatio="xMidYMid meet"
+      style={
+        Object {
+          "color": undefined,
+          "verticalAlign": "middle",
+        }
+      }
+      viewBox="0 0 40 40"
+      width="1em"
+    >
+      <g>
+        <path
+          d="m15.9 30.7v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.7 0v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.8 0v-15.7q0-0.3-0.2-0.5t-0.6-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.4 0 0.6-0.2t0.2-0.5z m-12.2-22.1h10l-1.1-2.6q-0.1-0.2-0.3-0.3h-7.1q-0.2 0.1-0.4 0.3z m20.7 0.7v1.4q0 0.3-0.2 0.5t-0.5 0.2h-2.1v21.2q0 1.8-1.1 3.2t-2.5 1.3h-18.6q-1.4 0-2.5-1.3t-1-3.1v-21.3h-2.2q-0.3 0-0.5-0.2t-0.2-0.5v-1.4q0-0.3 0.2-0.5t0.5-0.2h6.9l1.6-3.8q0.3-0.8 1.2-1.4t1.7-0.5h7.2q0.9 0 1.8 0.5t1.2 1.4l1.5 3.8h6.9q0.3 0 0.5 0.2t0.2 0.5z"
+        />
+      </g>
+    </svg>
+  </button>
+  <button
+    className="toggle correct"
+    data-jsx-ext="21922914401"
+    onClick={undefined}
+  >
+    TRUE
+  </button>
+  <div
+    className="name"
+    data-jsx-ext="21922914401"
+  >
+    That's true!
+  </div>
+</div>
+`;
+
+exports[`Storyshots QuestionTypes SC Creation Option (incorrect) 1`] = `
+<div
+  className="option"
+  data-jsx-ext="21922914401"
+>
+  <button
+    className="leftAction"
+    data-jsx-ext="21922914401"
+    onClick={undefined}
+  >
+    <svg
+      fill="currentColor"
+      height="1em"
+      preserveAspectRatio="xMidYMid meet"
+      style={
+        Object {
+          "color": undefined,
+          "verticalAlign": "middle",
+        }
+      }
+      viewBox="0 0 40 40"
+      width="1em"
+    >
+      <g>
+        <path
+          d="m15.9 30.7v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.7 0v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.8 0v-15.7q0-0.3-0.2-0.5t-0.6-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.4 0 0.6-0.2t0.2-0.5z m-12.2-22.1h10l-1.1-2.6q-0.1-0.2-0.3-0.3h-7.1q-0.2 0.1-0.4 0.3z m20.7 0.7v1.4q0 0.3-0.2 0.5t-0.5 0.2h-2.1v21.2q0 1.8-1.1 3.2t-2.5 1.3h-18.6q-1.4 0-2.5-1.3t-1-3.1v-21.3h-2.2q-0.3 0-0.5-0.2t-0.2-0.5v-1.4q0-0.3 0.2-0.5t0.5-0.2h6.9l1.6-3.8q0.3-0.8 1.2-1.4t1.7-0.5h7.2q0.9 0 1.8 0.5t1.2 1.4l1.5 3.8h6.9q0.3 0 0.5 0.2t0.2 0.5z"
+        />
+      </g>
+    </svg>
+  </button>
+  <button
+    className="toggle"
+    data-jsx-ext="21922914401"
+    onClick={undefined}
+  >
+    FALSE
+  </button>
+  <div
+    className="name"
+    data-jsx-ext="21922914401"
+  >
+    So wrong!
+  </div>
+</div>
+`;
+
+exports[`Storyshots QuestionTypes SC Creation Options 1`] = `
+<div
+  className="options"
+  data-jsx={1206276717}
+>
+  <div
+    data-jsx={1206276717}
+  >
+    <div
+      className="option correct"
+      data-jsx-ext="21922914401"
+    >
+      <button
+        className="leftAction"
+        data-jsx-ext="21922914401"
+        onClick={[Function]}
+      >
+        <svg
+          fill="currentColor"
+          height="1em"
+          preserveAspectRatio="xMidYMid meet"
+          style={
+            Object {
+              "color": undefined,
+              "verticalAlign": "middle",
+            }
+          }
+          viewBox="0 0 40 40"
+          width="1em"
+        >
+          <g>
+            <path
+              d="m15.9 30.7v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.7 0v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.8 0v-15.7q0-0.3-0.2-0.5t-0.6-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.4 0 0.6-0.2t0.2-0.5z m-12.2-22.1h10l-1.1-2.6q-0.1-0.2-0.3-0.3h-7.1q-0.2 0.1-0.4 0.3z m20.7 0.7v1.4q0 0.3-0.2 0.5t-0.5 0.2h-2.1v21.2q0 1.8-1.1 3.2t-2.5 1.3h-18.6q-1.4 0-2.5-1.3t-1-3.1v-21.3h-2.2q-0.3 0-0.5-0.2t-0.2-0.5v-1.4q0-0.3 0.2-0.5t0.5-0.2h6.9l1.6-3.8q0.3-0.8 1.2-1.4t1.7-0.5h7.2q0.9 0 1.8 0.5t1.2 1.4l1.5 3.8h6.9q0.3 0 0.5 0.2t0.2 0.5z"
+            />
+          </g>
+        </svg>
+      </button>
+      <button
+        className="toggle correct"
+        data-jsx-ext="21922914401"
+        onClick={[Function]}
+      >
+        TRUE
+      </button>
+      <div
+        className="name"
+        data-jsx-ext="21922914401"
+      >
+        Correct option
+      </div>
+    </div>
+  </div>
+  <div
+    data-jsx={1206276717}
+  >
+    <div
+      className="option"
+      data-jsx-ext="21922914401"
+    >
+      <button
+        className="leftAction"
+        data-jsx-ext="21922914401"
+        onClick={[Function]}
+      >
+        <svg
+          fill="currentColor"
+          height="1em"
+          preserveAspectRatio="xMidYMid meet"
+          style={
+            Object {
+              "color": undefined,
+              "verticalAlign": "middle",
+            }
+          }
+          viewBox="0 0 40 40"
+          width="1em"
+        >
+          <g>
+            <path
+              d="m15.9 30.7v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.7 0v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.8 0v-15.7q0-0.3-0.2-0.5t-0.6-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.4 0 0.6-0.2t0.2-0.5z m-12.2-22.1h10l-1.1-2.6q-0.1-0.2-0.3-0.3h-7.1q-0.2 0.1-0.4 0.3z m20.7 0.7v1.4q0 0.3-0.2 0.5t-0.5 0.2h-2.1v21.2q0 1.8-1.1 3.2t-2.5 1.3h-18.6q-1.4 0-2.5-1.3t-1-3.1v-21.3h-2.2q-0.3 0-0.5-0.2t-0.2-0.5v-1.4q0-0.3 0.2-0.5t0.5-0.2h6.9l1.6-3.8q0.3-0.8 1.2-1.4t1.7-0.5h7.2q0.9 0 1.8 0.5t1.2 1.4l1.5 3.8h6.9q0.3 0 0.5 0.2t0.2 0.5z"
+            />
+          </g>
+        </svg>
+      </button>
+      <button
+        className="toggle"
+        data-jsx-ext="21922914401"
+        onClick={[Function]}
+      >
+        FALSE
+      </button>
+      <div
+        className="name"
+        data-jsx-ext="21922914401"
+      >
+        This is false
+      </div>
+    </div>
+  </div>
+  <div
+    className="option"
+    data-jsx={3520221148}
+    data-jsx-ext="21922914401"
+  >
+    <button
+      className="leftAction"
+      data-jsx={3520221148}
+      data-jsx-ext="21922914401"
+      onClick={[Function]}
+    >
+      <svg
+        fill="currentColor"
+        height="1em"
+        preserveAspectRatio="xMidYMid meet"
+        style={
+          Object {
+            "color": undefined,
+            "verticalAlign": "middle",
+          }
+        }
+        viewBox="0 0 40 40"
+        width="1em"
+      >
+        <g>
+          <path
+            d="m35.9 16.4v4.3q0 0.9-0.6 1.5t-1.5 0.7h-9.3v9.2q0 0.9-0.6 1.6t-1.5 0.6h-4.3q-0.9 0-1.5-0.6t-0.7-1.6v-9.2h-9.3q-0.9 0-1.5-0.7t-0.6-1.5v-4.3q0-0.9 0.6-1.5t1.5-0.6h9.3v-9.3q0-0.9 0.7-1.5t1.5-0.6h4.3q0.9 0 1.5 0.6t0.6 1.5v9.3h9.3q0.9 0 1.5 0.6t0.6 1.5z"
+          />
+        </g>
+      </svg>
+    </button>
+    <button
+      className="toggle"
+      data-jsx={3520221148}
+      data-jsx-ext="21922914401"
+      onClick={[Function]}
+    >
+      FALSE
+    </button>
+    <input
+      data-jsx={3520221148}
+      data-jsx-ext="21922914401"
+      onChange={[Function]}
+      type="text"
+      value=""
+    />
+    <button
+      className="rightAction"
+      data-jsx={3520221148}
+      data-jsx-ext="21922914401"
+      onClick={[Function]}
+      type="submit"
+    >
+      <svg
+        fill="currentColor"
+        height="1em"
+        preserveAspectRatio="xMidYMid meet"
+        style={
+          Object {
+            "color": undefined,
+            "verticalAlign": "middle",
+          }
+        }
+        viewBox="0 0 40 40"
+        width="1em"
+      >
+        <g>
+          <path
+            d="m11.6 34.3h17.1v-8.6h-17.1v8.6z m20 0h2.8v-20q0-0.3-0.2-0.9t-0.4-0.7l-6.3-6.3q-0.2-0.2-0.8-0.5t-0.8-0.2v9.3q0 0.9-0.7 1.5t-1.5 0.6h-12.8q-0.9 0-1.6-0.6t-0.6-1.5v-9.3h-2.8v28.6h2.8v-9.3q0-0.9 0.6-1.5t1.6-0.6h18.5q0.9 0 1.5 0.6t0.7 1.5v9.3z m-8.6-20.7v-7.2q0-0.3-0.2-0.5t-0.5-0.2h-4.3q-0.3 0-0.5 0.2t-0.2 0.5v7.2q0 0.3 0.2 0.5t0.5 0.2h4.3q0.3 0 0.5-0.2t0.2-0.5z m14.3 0.7v20.7q0 0.9-0.6 1.5t-1.6 0.6h-30q-0.8 0-1.5-0.6t-0.6-1.5v-30q0-0.9 0.6-1.5t1.5-0.6h20.8q0.9 0 1.9 0.4t1.7 1.1l6.3 6.2q0.6 0.6 1 1.7t0.5 2z"
+          />
+        </g>
+      </svg>
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Storyshots QuestionTypes SC Creation Placeholder 1`] = `
+<div
+  className="option"
+  data-jsx={3520221148}
+  data-jsx-ext="21922914401"
+>
+  <button
+    className="leftAction"
+    data-jsx={3520221148}
+    data-jsx-ext="21922914401"
+    onClick={[Function]}
+  >
+    <svg
+      fill="currentColor"
+      height="1em"
+      preserveAspectRatio="xMidYMid meet"
+      style={
+        Object {
+          "color": undefined,
+          "verticalAlign": "middle",
+        }
+      }
+      viewBox="0 0 40 40"
+      width="1em"
+    >
+      <g>
+        <path
+          d="m35.9 16.4v4.3q0 0.9-0.6 1.5t-1.5 0.7h-9.3v9.2q0 0.9-0.6 1.6t-1.5 0.6h-4.3q-0.9 0-1.5-0.6t-0.7-1.6v-9.2h-9.3q-0.9 0-1.5-0.7t-0.6-1.5v-4.3q0-0.9 0.6-1.5t1.5-0.6h9.3v-9.3q0-0.9 0.7-1.5t1.5-0.6h4.3q0.9 0 1.5 0.6t0.6 1.5v9.3h9.3q0.9 0 1.5 0.6t0.6 1.5z"
+        />
+      </g>
+    </svg>
+  </button>
+  <button
+    className="toggle"
+    data-jsx={3520221148}
+    data-jsx-ext="21922914401"
+    onClick={[Function]}
+  >
+    FALSE
+  </button>
+  <input
+    data-jsx={3520221148}
+    data-jsx-ext="21922914401"
+    onChange={[Function]}
+    type="text"
+    value=""
+  />
+  <button
+    className="rightAction"
+    data-jsx={3520221148}
+    data-jsx-ext="21922914401"
+    onClick={[Function]}
+    type="submit"
+  >
+    <svg
+      fill="currentColor"
+      height="1em"
+      preserveAspectRatio="xMidYMid meet"
+      style={
+        Object {
+          "color": undefined,
+          "verticalAlign": "middle",
+        }
+      }
+      viewBox="0 0 40 40"
+      width="1em"
+    >
+      <g>
+        <path
+          d="m11.6 34.3h17.1v-8.6h-17.1v8.6z m20 0h2.8v-20q0-0.3-0.2-0.9t-0.4-0.7l-6.3-6.3q-0.2-0.2-0.8-0.5t-0.8-0.2v9.3q0 0.9-0.7 1.5t-1.5 0.6h-12.8q-0.9 0-1.6-0.6t-0.6-1.5v-9.3h-2.8v28.6h2.8v-9.3q0-0.9 0.6-1.5t1.6-0.6h18.5q0.9 0 1.5 0.6t0.7 1.5v9.3z m-8.6-20.7v-7.2q0-0.3-0.2-0.5t-0.5-0.2h-4.3q-0.3 0-0.5 0.2t-0.2 0.5v7.2q0 0.3 0.2 0.5t0.5 0.2h4.3q0.3 0 0.5-0.2t0.2-0.5z m14.3 0.7v20.7q0 0.9-0.6 1.5t-1.6 0.6h-30q-0.8 0-1.5-0.6t-0.6-1.5v-30q0-0.9 0.6-1.5t1.5-0.6h20.8q0.9 0 1.9 0.4t1.7 1.1l6.3 6.2q0.6 0.6 1 1.7t0.5 2z"
+        />
+      </g>
+    </svg>
+  </button>
+</div>
+`;
+
+exports[`Storyshots QuestionTypes TypeChooser 1`] = `
+<div
+  className="typeChooser"
+  data-jsx={275591448}
+>
+  <button
+    className="type active"
+    data-jsx={275591448}
+    onClick={[Function]}
+  >
+    Single Choice
+  </button>
+  <button
+    className="type"
+    data-jsx={275591448}
+    onClick={[Function]}
+  >
+    Multiple Choice
+  </button>
+  <button
+    className="type"
+    data-jsx={275591448}
+    onClick={[Function]}
+  >
+    Free-Form
+  </button>
+</div>
+`;
+
 exports[`Storyshots Session default 1`] = `
 <div
   className="session"
@@ -1355,134 +1793,6 @@ exports[`Storyshots SessionTimeline default 1`] = `
         className="right arrow icon"
       />
       Next
-    </button>
-  </div>
-</div>
-`;
-
-exports[`Storyshots SingleChoiceOptions default 1`] = `
-<div
-  className="options"
-  data-jsx={964719302}
->
-  <div
-    className="option"
-    data-jsx={964719302}
-  >
-    <button
-      className="ui basic fluid button"
-      disabled={undefined}
-      onClick={[Function]}
-      role="button"
-      tabIndex={undefined}
-    >
-      answer2
-    </button>
-  </div>
-  <div
-    className="option"
-    data-jsx={964719302}
-  >
-    <button
-      className="ui basic fluid button"
-      disabled={undefined}
-      onClick={[Function]}
-      role="button"
-      tabIndex={undefined}
-    >
-      antwort 2
-    </button>
-  </div>
-  <div
-    className="option"
-    data-jsx={964719302}
-  >
-    <button
-      className="ui basic fluid button"
-      disabled={undefined}
-      onClick={[Function]}
-      role="button"
-      tabIndex={undefined}
-    >
-      option 3
-    </button>
-  </div>
-  <div
-    className="option"
-    data-jsx={964719302}
-  >
-    <button
-      className="ui basic fluid button"
-      disabled={undefined}
-      onClick={[Function]}
-      role="button"
-      tabIndex={undefined}
-    >
-      tschege
-    </button>
-  </div>
-</div>
-`;
-
-exports[`Storyshots SingleChoiceOptions withActiveOption 1`] = `
-<div
-  className="options"
-  data-jsx={964719302}
->
-  <div
-    className="option"
-    data-jsx={964719302}
-  >
-    <button
-      className="ui basic fluid button"
-      disabled={undefined}
-      onClick={[Function]}
-      role="button"
-      tabIndex={undefined}
-    >
-      answer2
-    </button>
-  </div>
-  <div
-    className="option active"
-    data-jsx={964719302}
-  >
-    <button
-      className="ui basic fluid button"
-      disabled={undefined}
-      onClick={[Function]}
-      role="button"
-      tabIndex={undefined}
-    >
-      antwort 2
-    </button>
-  </div>
-  <div
-    className="option"
-    data-jsx={964719302}
-  >
-    <button
-      className="ui basic fluid button"
-      disabled={undefined}
-      onClick={[Function]}
-      role="button"
-      tabIndex={undefined}
-    >
-      option 3
-    </button>
-  </div>
-  <div
-    className="option"
-    data-jsx={964719302}
-  >
-    <button
-      className="ui basic fluid button"
-      disabled={undefined}
-      onClick={[Function]}
-      role="button"
-      tabIndex={undefined}
-    >
-      tschege
     </button>
   </div>
 </div>
