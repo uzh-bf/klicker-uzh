@@ -1,23 +1,31 @@
 // @flow
 
 import React, { Component } from 'react'
+import TagsInput from 'react-tagsinput'
+import { graphql } from 'react-apollo'
 // import RichTextEditor from 'react-rte/lib/RichTextEditor'
 
-import { pageWithIntl, withData } from '../../lib'
-
-import { SCCreationOptions } from '../../components/questionTypes/SC'
-
 import TeacherLayout from '../../components/layouts/TeacherLayout'
+import TypeChooser from '../../components/questionTypes/TypeChooser'
+import { pageWithIntl, withData } from '../../lib'
+import { SCCreationOptions } from '../../components/questionTypes/SC'
+import { CreateQuestionMutation } from '../../queries/mutations'
+
+import stylesTagsInput from './styles-tagsinput'
 
 type Props = {
   intl: $IntlShape,
+  createQuestion: (string, string, string, string) => Promise<*>,
 }
 
 class CreateQuestion extends Component {
   props: Props
 
   state = {
+    activeType: 'SC',
     options: [],
+    selectedTags: [],
+    title: '',
   }
 
   handleNewOption = (option) => {
@@ -40,6 +48,27 @@ class CreateQuestion extends Component {
         ...this.state.options.slice(index + 1),
       ],
     })
+  }
+
+  handleTitleChange = (e) => {
+    this.setState({ title: e.target.value })
+  }
+
+  handleTagChange = (selectedTags) => {
+    this.setState({ selectedTags })
+  }
+
+  handleTypeChange = newType => () => {
+    this.setState({ activeType: newType })
+  }
+
+  handleSave = () => {
+    this.props.createQuestion(
+      this.state.title,
+      'hello world',
+      this.state.activeType,
+      this.state.selectedTags,
+    )
   }
 
   render() {
@@ -66,20 +95,25 @@ class CreateQuestion extends Component {
         <div className="grid">
           <div className="questionName">
             <h2>Question name</h2>
-            <input />
+            <input type="text" value={this.state.title} onChange={this.handleTitleChange} />
           </div>
 
           <div className="questionType">
             <h2>Question type</h2>
-            <div className="option">Single-Choice</div>
-            <div className="option">Multiple-Choice</div>
+            <TypeChooser
+              activeType={this.state.activeType}
+              types={[
+                { name: 'Single Choice', value: 'SC' },
+                { name: 'Multiple Choice', value: 'MC' },
+                { name: 'Free-Form', value: 'FREE' },
+              ]}
+              handleChange={this.handleTypeChange}
+            />
           </div>
 
           <div className="questionTags">
             <h2>Tags</h2>
-            <div className="tag">CAPM</div>
-            <div className="tag">AABCD</div>
-            <input />
+            <TagsInput value={this.state.selectedTags} onChange={this.handleTagChange} />
           </div>
 
           <div className="preview">
@@ -105,8 +139,15 @@ class CreateQuestion extends Component {
               handleOptionToggleCorrect={this.handleOptionToggleCorrect}
             />
           </div>
-        </div>
 
+          <button className="discard">Discard</button>
+          <button className="save" onClick={this.handleSave}>
+            Save
+          </button>
+        </div>
+        <style global jsx>
+          {stylesTagsInput}
+        </style>
         <style jsx>{`
           @supports (grid-gap: 1rem) {
             .grid {
@@ -115,12 +156,12 @@ class CreateQuestion extends Component {
               margin: 0 20%;
 
               grid-gap: 1rem;
-              grid-template-columns: repeat(7, 1fr);
+              grid-template-columns: repeat(6, 1fr);
               grid-template-rows: auto;
-              grid-template-areas: 'name name name name . preview preview'
-                'type type tags tags . preview preview'
-                'content content content content content content content'
-                'options options options options options options options';
+              grid-template-areas: 'name name name name preview preview'
+                'type type tags tags preview preview'
+                'content content content content content content'
+                'options options options options options options';
             }
 
             h2 {
@@ -196,6 +237,10 @@ class CreateQuestion extends Component {
               border-color: grey;
               text-align: center;
             }
+
+            .save {
+              align-self: center;
+            }
           }
         `}</style>
       </TeacherLayout>
@@ -203,4 +248,13 @@ class CreateQuestion extends Component {
   }
 }
 
-export default withData(pageWithIntl(CreateQuestion))
+export default withData(
+  pageWithIntl(
+    graphql(CreateQuestionMutation, {
+      props: ({ mutate }) => ({
+        createQuestion: (title, description, type, tags) =>
+          mutate({ variables: { title, description, type, tags } }),
+      }),
+    })(CreateQuestion),
+  ),
+)
