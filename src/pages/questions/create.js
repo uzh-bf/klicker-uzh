@@ -30,7 +30,6 @@ class CreateQuestion extends Component {
     })
   }
 
-
   handleOptionToggleCorrect = index => () => {
     const option = this.state.options[index]
 
@@ -69,21 +68,25 @@ class CreateQuestion extends Component {
             <h2>Question name</h2>
             <input />
           </div>
+
           <div className="questionType">
             <h2>Question type</h2>
             <div className="option">Single-Choice</div>
             <div className="option">Multiple-Choice</div>
           </div>
+
           <div className="questionTags">
             <h2>Tags</h2>
-            <div className="tag">CAPM</div></div>
+            <div className="tag">CAPM</div>
             <div className="tag">AABCD</div>
             <input />
           </div>
+
           <div className="preview">
             <h2>Preview</h2>
             <div className="previewContent">abcd</div>
           </div>
+
           <div className="content">
             <h2>Content</h2>
             <div>hello world</div>
@@ -92,6 +95,7 @@ class CreateQuestion extends Component {
               onChange={newValue => console.dir(newValue)}
             /> */}
           </div>
+
           <div className="answerOptions">
             <h2>Options</h2>
             <SCCreationOptions
