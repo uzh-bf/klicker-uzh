@@ -9,9 +9,9 @@
 
 import React, { Component } from 'react'
 import { storiesOf } from '@storybook/react'
-import { action } from '@storybook/addon-actions'
 
-import { SCAnswerOptions, SCCreationOptions, SCCreationOption, SCCreationPlaceholder } from '.'
+import TypeChooser from './TypeChooser'
+import { SCAnswerOptions, SCCreationOptions, SCCreationOption, SCCreationPlaceholder } from './SC'
 
 class SCAnswerWrapper extends Component {
   state = {
@@ -72,9 +72,21 @@ class SCCreationWrapper extends Component {
   }
 }
 
-storiesOf('SC Questions', module)
-  .add('Answering Options', () => <SCAnswerWrapper />)
-  .add('Creation Options', () => <SCCreationWrapper />)
-  .add('Creation Option (correct)', () => <SCCreationOption correct name="That's true!" />)
-  .add('Creation Option (incorrect)', () => <SCCreationOption correct={false} name="So wrong!" />)
-  .add('Creation Placeholder', () => <SCCreationPlaceholder />)
+storiesOf('QuestionTypes', module)
+  .add('TypeChooser', () => (
+    <TypeChooser
+      activeType="SC"
+      types={[
+        { name: 'Single Choice', value: 'SC' },
+        { name: 'Multiple Choice', value: 'MC' },
+        { name: 'Free-Form', value: 'FREE' },
+      ]}
+    />
+  ))
+  .add('SC Answering Options', () => <SCAnswerWrapper />)
+  .add('SC Creation Options', () => <SCCreationWrapper />)
+  .add('SC Creation Option (correct)', () => <SCCreationOption correct name="That's true!" />)
+  .add('SC Creation Option (incorrect)', () => (
+    <SCCreationOption correct={false} name="So wrong!" />
+  ))
+  .add('SC Creation Placeholder', () => <SCCreationPlaceholder />)
