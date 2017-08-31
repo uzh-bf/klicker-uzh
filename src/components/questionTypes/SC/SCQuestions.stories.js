@@ -17,7 +17,7 @@ import PlaceholderInput from './PlaceholderInput'
 
 class SCAnswerWrapper extends Component {
   state = {
-    activeOption: -1,
+    activeOption: 1,
   }
   render() {
     return (
@@ -44,8 +44,33 @@ class SCCreationWrapper extends Component {
     this.setState({ options: [...this.state.options, option] })
   }
 
+  handleDeleteOption = index => () => {
+    this.setState({
+      options: [...this.state.options.slice(0, index), ...this.state.options.slice(index + 1)],
+    })
+  }
+
+  handleOptionToggleCorrect = index => () => {
+    const option = this.state.options[index]
+
+    this.setState({
+      options: [
+        ...this.state.options.slice(0, index),
+        { ...option, correct: !option.correct },
+        ...this.state.options.slice(index + 1),
+      ],
+    })
+  }
+
   render() {
-    return <SCCreationOptions options={this.state.options} handleNewOption={this.handleNewOption} />
+    return (
+      <SCCreationOptions
+        options={this.state.options}
+        handleNewOption={this.handleNewOption}
+        handleDeleteOption={this.handleDeleteOption}
+        handleOptionToggleCorrect={this.handleOptionToggleCorrect}
+      />
+    )
   }
 }
 
