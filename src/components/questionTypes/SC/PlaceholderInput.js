@@ -74,13 +74,15 @@ class PlaceholderInput extends React.Component {
 
           .inputActivate,
           .save {
-            background-color: lightgreimport Icon from 'react-fontawesome' y;
+            background-color: lightgrey;
             padding: 1rem;
           }
 
           .toggle {
             background-color: red;
             border: 1px solid lightgrey;
+
+            width: 4rem;
           }
 
           .toggle.correct {
@@ -106,7 +108,7 @@ class PlaceholderInput extends React.Component {
           .input:focus {
             outline-color: none;
           }
-          correct .save,
+          .save,
           .toggle {
             flex: 1;
 
