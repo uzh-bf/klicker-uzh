@@ -19,7 +19,7 @@ const defaultProps = {
 
 const ConfusionSlider = ({ title, value, handleChange }: Props) => (
   <div className="confusionSlider">
-    <Helmet>
+    <Helmet defer={false}>
       {createLinks(['https://unpkg.com/react-rangeslider@2.1.0/umd/randeslider.min.css'])}
     </Helmet>
 
