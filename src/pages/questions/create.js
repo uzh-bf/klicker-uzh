@@ -9,12 +9,20 @@ import { SCCreationOptions } from '../../components/questionTypes/SC'
 
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 
+type Props = {
+  intl: $IntlShape,
+}
+
 class CreateQuestion extends Component {
-  props: {
-    intl: $IntlShape,
+  props: Props
+
+  state = {
+    options: [],
   }
 
-  state = {}
+  handleNewOption = (option) => {
+    this.setState({ options: [...this.state.options, option] })
+  }
 
   render() {
     const { intl } = this.props
@@ -26,11 +34,6 @@ class CreateQuestion extends Component {
         id: 'teacher.createQuestion.title',
       }),
     }
-
-    const options = [
-      {correct: false, name: 'Hello world'},
-      {correct: true, name: 'This is so true'}
-    ]
 
     return (
       <TeacherLayout
@@ -72,7 +75,10 @@ class CreateQuestion extends Component {
           </div>
           <div className="answerOptions">
             <h2>Options</h2>
-            <SCCreationOptions options={options} />
+            <SCCreationOptions
+              options={this.state.options}
+              handleNewOption={this.handleNewOption}
+            />
           </div>
         </div>
 
