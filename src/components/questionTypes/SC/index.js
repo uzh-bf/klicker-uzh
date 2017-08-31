@@ -1,2 +1,4 @@
-export { default as SCAnswerOptions } from './SCAnswerOptions'
-export { default as SCCreationOptions } from './SCCreationOptions'
+export { default as SCAnswerOptions } from './answer/Options'
+export { default as SCCreationOptions } from './creation/Options'
+export { default as SCCreationOption } from './creation/Option'
+export { default as SCCreationPlaceholder } from './creation/Placeholder'

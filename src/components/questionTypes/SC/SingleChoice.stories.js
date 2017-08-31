@@ -11,9 +11,7 @@ import React, { Component } from 'react'
 import { storiesOf } from '@storybook/react'
 import { action } from '@storybook/addon-actions'
 
-import SCAnswerOptions from './SCAnswerOptions'
-import SCCreationOptions from './SCCreationOptions'
-import PlaceholderInput from './PlaceholderInput'
+import { SCAnswerOptions, SCCreationOptions, SCCreationOption, SCCreationPlaceholder } from '.'
 
 class SCAnswerWrapper extends Component {
   state = {
@@ -74,12 +72,9 @@ class SCCreationWrapper extends Component {
   }
 }
 
-storiesOf('SCQuestions', module)
-  .add('SCAnswerOptions', () => <SCAnswerWrapper />)
-  .add('SCCreationOptions', () => <SCCreationWrapper />)
-  .add('PlaceholderInput', () => (
-    <PlaceholderInput
-      handleSave={({ correct, name }) =>
-        action(`Added new option: correct=${correct ? 'true' : 'false'}, name=${name}`)}
-    />
-  ))
+storiesOf('SC Questions', module)
+  .add('Answering Options', () => <SCAnswerWrapper />)
+  .add('Creation Options', () => <SCCreationWrapper />)
+  .add('Creation Option (correct)', () => <SCCreationOption correct name="That's true!" />)
+  .add('Creation Option (incorrect)', () => <SCCreationOption correct={false} name="So wrong!" />)
+  .add('Creation Placeholder', () => <SCCreationPlaceholder />)

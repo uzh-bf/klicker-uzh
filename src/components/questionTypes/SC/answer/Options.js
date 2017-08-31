@@ -12,7 +12,7 @@ type Props = {
   handleOptionClick: (optionNumber: number) => () => mixed,
 }
 
-const SCAnswerOptions = ({ activeOption, options, handleOptionClick }: Props) => (
+const Options = ({ activeOption, options, handleOptionClick }: Props) => (
   <div className="options">
     {options.map((option, index) => (
       <div key={option.label} className={classNames('option', { active: index === activeOption })}>
@@ -47,4 +47,4 @@ const SCAnswerOptions = ({ activeOption, options, handleOptionClick }: Props) =>
   </div>
 )
 
-export default SCAnswerOptions
+export default Options

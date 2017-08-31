@@ -24,6 +24,25 @@ class CreateQuestion extends Component {
     this.setState({ options: [...this.state.options, option] })
   }
 
+  handleDeleteOption = index => () => {
+    this.setState({
+      options: [...this.state.options.slice(0, index), ...this.state.options.slice(index + 1)],
+    })
+  }
+
+
+  handleOptionToggleCorrect = index => () => {
+    const option = this.state.options[index]
+
+    this.setState({
+      options: [
+        ...this.state.options.slice(0, index),
+        { ...option, correct: !option.correct },
+        ...this.state.options.slice(index + 1),
+      ],
+    })
+  }
+
   render() {
     const { intl } = this.props
 
@@ -57,7 +76,7 @@ class CreateQuestion extends Component {
           </div>
           <div className="questionTags">
             <h2>Tags</h2>
-            <div className="tag">CAPM</div>
+            <div className="tag">CAPM</div></div>
             <div className="tag">AABCD</div>
             <input />
           </div>
@@ -77,7 +96,9 @@ class CreateQuestion extends Component {
             <h2>Options</h2>
             <SCCreationOptions
               options={this.state.options}
+              handleDeleteOption={this.handleDeleteOption}
               handleNewOption={this.handleNewOption}
+              handleOptionToggleCorrect={this.handleOptionToggleCorrect}
             />
           </div>
         </div>
