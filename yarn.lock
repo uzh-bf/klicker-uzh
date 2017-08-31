@@ -1973,10 +1973,6 @@ clap@^1.0.9:
   dependencies:
     chalk "^1.1.3"
 
-class-autobind@^0.1.4:
-  version "0.1.4"
-  resolved "https://registry.yarnpkg.com/class-autobind/-/class-autobind-0.1.4.tgz#34516c49167cf8d3f639ddc186bcfa2268afff34"
-
 classnames@2.2.5, classnames@^2.2.3, classnames@^2.2.5:
   version "2.2.5"
   resolved "https://registry.yarnpkg.com/classnames/-/classnames-2.2.5.tgz#fb3801d453467649ef3603c7d61a02bd129bde6d"
@@ -2648,50 +2644,6 @@ dotenv@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-2.0.0.tgz#bd759c357aaa70365e01c96b7b0bec08a6e0d949"
 
-draft-js-export-html@>=0.6.0:
-  version "0.6.0"
-  resolved "https://registry.yarnpkg.com/draft-js-export-html/-/draft-js-export-html-0.6.0.tgz#cc80f0544c43d0a7fedbc53c0cb0914e8090f769"
-  dependencies:
-    draft-js-utils ">=0.2.0"
-
-draft-js-export-markdown@>=0.3.0:
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/draft-js-export-markdown/-/draft-js-export-markdown-0.3.0.tgz#86390e03ceaf1d347fc616867ab7f535eb76bf42"
-  dependencies:
-    draft-js-utils ">=0.2.0"
-
-draft-js-import-element@>=0.5.0, draft-js-import-element@^0.5.0:
-  version "0.5.0"
-  resolved "https://registry.yarnpkg.com/draft-js-import-element/-/draft-js-import-element-0.5.0.tgz#1d6c470561d6e4d40aa23d9b6d338b1e8d180fe1"
-  dependencies:
-    draft-js-utils ">=0.2.0"
-    synthetic-dom "^0.2.0"
-
-draft-js-import-html@>=0.4.0:
-  version "0.4.0"
-  resolved "https://registry.yarnpkg.com/draft-js-import-html/-/draft-js-import-html-0.4.0.tgz#efa0b970efb546bd8d4989b3a491ff5575b68b1b"
-  dependencies:
-    draft-js-import-element "^0.5.0"
-
-draft-js-import-markdown@>=0.3.0:
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/draft-js-import-markdown/-/draft-js-import-markdown-0.3.0.tgz#e4500c6ff52c9d66d01f7cdc94328a5eaee14956"
-  dependencies:
-    draft-js-import-element ">=0.5.0"
-    synthetic-dom "^0.2.0"
-
-draft-js-utils@>=0.2.0:
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/draft-js-utils/-/draft-js-utils-0.2.0.tgz#2403a314a055f73952517ef96a7cc4ccdf132c4f"
-
-draft-js@>=0.10.0:
-  version "0.10.1"
-  resolved "https://registry.yarnpkg.com/draft-js/-/draft-js-0.10.1.tgz#6f1219d8095729691429ca6fd7a58d2a8be5cb67"
-  dependencies:
-    fbjs "^0.8.7"
-    immutable "~3.7.4"
-    object-assign "^4.1.0"
-
 duplexer@~0.1.1:
   version "0.1.1"
   resolved "https://registry.yarnpkg.com/duplexer/-/duplexer-0.1.1.tgz#ace6ff808c1ce66b57d1ebf97977acb02334cfc1"
@@ -3281,7 +3233,7 @@ fb-watchman@^2.0.0:
   dependencies:
     bser "^2.0.0"
 
-fbjs@^0.8.12, fbjs@^0.8.4, fbjs@^0.8.7, fbjs@^0.8.9:
+fbjs@^0.8.12, fbjs@^0.8.4, fbjs@^0.8.9:
   version "0.8.14"
   resolved "https://registry.yarnpkg.com/fbjs/-/fbjs-0.8.14.tgz#d1dbe2be254c35a91e09f31f9cd50a40b2a0ed1c"
   dependencies:
@@ -3906,10 +3858,6 @@ ignore@^3.2.0, ignore@^3.2.7, ignore@^3.3.3:
 immutable@^3.8.1:
   version "3.8.1"
   resolved "https://registry.yarnpkg.com/immutable/-/immutable-3.8.1.tgz#200807f11ab0f72710ea485542de088075f68cd2"
-
-immutable@~3.7.4:
-  version "3.7.6"
-  resolved "https://registry.yarnpkg.com/immutable/-/immutable-3.7.6.tgz#13b4d3cb12befa15482a26fe1b2ebae640071e4b"
 
 imurmurhash@^0.1.4:
   version "0.1.4"
@@ -6570,21 +6518,6 @@ react-resize-detector@0.4.1:
   dependencies:
     prop-types "^15.5.8"
 
-react-rte@^0.14.1:
-  version "0.14.1"
-  resolved "https://registry.yarnpkg.com/react-rte/-/react-rte-0.14.1.tgz#b35f5cf8e9bd0f492b4bbc52f9a42c701964fb21"
-  dependencies:
-    babel-runtime "^6.23.0"
-    class-autobind "^0.1.4"
-    classnames "^2.2.5"
-    draft-js ">=0.10.0"
-    draft-js-export-html ">=0.6.0"
-    draft-js-export-markdown ">=0.3.0"
-    draft-js-import-html ">=0.4.0"
-    draft-js-import-markdown ">=0.3.0"
-    draft-js-utils ">=0.2.0"
-    immutable "^3.8.1"
-
 react-side-effect@^1.1.0:
   version "1.1.3"
   resolved "https://registry.yarnpkg.com/react-side-effect/-/react-side-effect-1.1.3.tgz#512c25abe0dec172834c4001ec5c51e04d41bc5c"
@@ -7541,10 +7474,6 @@ symbol-observable@^1.0.1, symbol-observable@^1.0.2, symbol-observable@^1.0.3:
 symbol-tree@^3.2.1:
   version "3.2.2"
   resolved "https://registry.yarnpkg.com/symbol-tree/-/symbol-tree-3.2.2.tgz#ae27db38f660a7ae2e1c3b7d1bc290819b8519e6"
-
-synthetic-dom@^0.2.0:
-  version "0.2.1"
-  resolved "https://registry.yarnpkg.com/synthetic-dom/-/synthetic-dom-0.2.1.tgz#6c76fcf91ea9a5231318f8f415e27883d534df86"
 
 table@^3.7.8:
   version "3.8.3"

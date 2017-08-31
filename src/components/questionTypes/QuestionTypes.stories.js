@@ -81,7 +81,9 @@ storiesOf('QuestionTypes', module)
         { name: 'Multiple Choice', value: 'MC' },
         { name: 'Free-Form', value: 'FREE' },
       ]}
-      handleChange={a => () => null}
+      handleChange={a => () => {
+        console.log(a)
+      }}
     />
   ))
   .add('SC Answering Options', () => <SCAnswerWrapper />)

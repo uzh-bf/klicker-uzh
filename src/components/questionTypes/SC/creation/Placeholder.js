@@ -30,7 +30,7 @@ class Placeholder extends React.Component {
     this.props.handleSave({ correct: this.state.correct, name: this.state.name })
   }
 
-  handleNameChange = (e) => {
+  handleNameChange = (e: SyntheticInputEvent) => {
     this.setState({ name: e.target.value })
   }
 

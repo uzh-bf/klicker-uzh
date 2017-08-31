@@ -15,7 +15,7 @@ import stylesTagsInput from './styles-tagsinput'
 
 type Props = {
   intl: $IntlShape,
-  createQuestion: (string, string, string, string) => Promise<*>,
+  createQuestion: (string, string, string, Array<string>) => Promise<*>,
 }
 
 class CreateQuestion extends Component {
