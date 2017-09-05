@@ -35,7 +35,7 @@
     "react-redux": "5.0.6",
     "recharts": "1.0.0-alpha.4",
     "redux": "3.7.2",
-    "redux-form": "7.0.3",
+    "redux-form": "7.0.4",
     "semantic-ui-react": "0.72.0",
     "validator": "8.1.0"
   },
