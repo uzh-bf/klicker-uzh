@@ -17,16 +17,13 @@ const defaultProps = {
   value: undefined,
 }
 
-const ConfusionSlider = ({ title, value, handleChange }: Props) =>
-  (<div className="confusionSlider">
-    <Helmet>
+const ConfusionSlider = ({ title, value, handleChange }: Props) => (
+  <div className="confusionSlider">
+    <Helmet defer={false}>
       {createLinks(['https://unpkg.com/react-rangeslider@2.1.0/umd/randeslider.min.css'])}
     </Helmet>
 
-    {title &&
-      <div className="title">
-        {title}
-      </div>}
+    {title && <div className="title">{title}</div>}
 
     <div className="slider">
       <Slider min={-50} max={50} orientation="horizontal" value={value} onChange={handleChange} />
@@ -38,7 +35,8 @@ const ConfusionSlider = ({ title, value, handleChange }: Props) =>
         margin: 0;
       }
     `}</style>
-  </div>)
+  </div>
+)
 
 ConfusionSlider.defaultProps = defaultProps
 

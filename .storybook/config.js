@@ -2,9 +2,6 @@
 
 import { addDecorator, configure } from '@storybook/react'
 
-// integrate storybook-addon-knobs
-import { withKnobs } from '@storybook/addon-knobs'
-
 // integrate storybook-addon-intl for react-intl
 import { setIntlConfig, withIntl } from 'storybook-addon-intl'
 import { addLocaleData } from 'react-intl'
@@ -23,7 +20,6 @@ setIntlConfig({
 })
 
 // add global decorators
-addDecorator(withKnobs)
 addDecorator(withIntl)
 
 // dynamically load stories from the components directory

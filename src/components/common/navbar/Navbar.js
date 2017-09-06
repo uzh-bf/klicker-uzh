@@ -36,9 +36,9 @@ const Navbar = ({
   sidebarVisible,
   title,
   handleSidebarToggle,
-}: Props) =>
-  (<div className="navbar">
-    <Helmet>
+}: Props) => (
+  <div className="navbar">
+    <Helmet defer={false}>
       {createLinks(['button', 'divider', 'dropdown', 'icon', 'image', 'input', 'menu', 'popup'])}
     </Helmet>
 
@@ -47,16 +47,15 @@ const Navbar = ({
         <Menu.Item icon active={sidebarVisible} name="sidebar" onClick={handleSidebarToggle}>
           <Icon name="sidebar" />
         </Menu.Item>
-        <h1>
-          {title}
-        </h1>
+        <h1>{title}</h1>
       </Menu>
     </div>
 
-    {search &&
+    {search && (
       <div className="searchArea">
         <SearchArea intl={intl} handleSearch={search.handleSearch} handleSort={search.handleSort} />
-      </div>}
+      </div>
+    )}
 
     <div className="accountArea">
       <Menu borderless className="noBorder">
@@ -93,7 +92,7 @@ const Navbar = ({
         order: 1;
 
         padding: 1rem;
-        padding-top: .5rem;
+        padding-top: 0.5rem;
       }
 
       .accountArea {
@@ -113,7 +112,7 @@ const Navbar = ({
           flex: 1 1 50%;
           order: 1;
 
-          padding: .2rem 2rem;
+          padding: 0.2rem 2rem;
         }
 
         .accountArea {
@@ -126,11 +125,12 @@ const Navbar = ({
 
       @media all and (min-width: 991px) {
         .searchArea {
-          padding: .2rem 3rem;
+          padding: 0.2rem 3rem;
         }
       }
     `}</style>
-  </div>)
+  </div>
+)
 
 Navbar.defaultProps = defaultProps
 

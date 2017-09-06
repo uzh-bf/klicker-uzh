@@ -11,23 +11,29 @@ import { withData, pageWithIntl } from '../../lib'
 
 class Registration extends React.Component {
   props: {
-    createUser: ({ variables: { email: string, password: string, shortname: string } }) => mixed,
     intl: $IntlShape,
-    handleSubmit: () => mixed,
+    createUser: (email: string, password: string, shortname: string) => Promise<*>,
+  }
+
+  state = {
+    error: null,
+    success: null,
   }
 
   handleSubmit = (values) => {
-    this.props.createUser({
-      variables: {
-        email: values.email,
-        password: values.password,
-        shortname: values.shortname,
-      },
-    })
+    this.props
+      .createUser(values.email, values.password, values.shortname)
+      .then(({ data }) => {
+        this.setState({ error: null, success: data.createUser.email })
+      })
+      .catch(({ message }) => {
+        this.setState({ error: message, success: null })
+      })
   }
 
   render() {
     const { intl } = this.props
+    const { error, success } = this.state
 
     return (
       <StaticLayout
@@ -41,6 +47,12 @@ class Registration extends React.Component {
             <FormattedMessage id="user.registration.title" defaultMessage="Registration" />
           </h1>
 
+          {/* TODO: improve message handling */}
+          {error && <div className="errorMessage message">Registration failed: {error}</div>}
+          {success && (
+            <div className="successMessage message">Successfully registered as {success}</div>
+          )}
+
           <RegistrationForm intl={intl} onSubmit={this.handleSubmit} />
 
           <style jsx>{`
@@ -49,6 +61,16 @@ class Registration extends React.Component {
             }
             h1 {
               margin-top: 0;
+            }
+
+            .message {
+              font-weight: bold;
+            }
+            .errorMessage {
+              color: red;
+            }
+            .successMessage {
+              color: green;
             }
 
             @media all and (min-width: 991px) {
@@ -64,5 +86,12 @@ class Registration extends React.Component {
 }
 
 export default withData(
-  pageWithIntl(graphql(RegistrationMutation, { name: 'createUser' })(Registration)),
+  pageWithIntl(
+    graphql(RegistrationMutation, {
+      props: ({ mutate }) => ({
+        createUser: (email, password, shortname) =>
+          mutate({ variables: { email, password, shortname } }),
+      }),
+    })(Registration),
+  ),
 )

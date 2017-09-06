@@ -144,7 +144,7 @@ class Running extends Component {
             .sessionProgress,
             .confusionBarometer,
             .feedbackChannel {
-              padding: .5rem;
+              padding: 0.5rem;
             }
 
             .sessionProgress {

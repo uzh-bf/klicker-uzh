@@ -34,11 +34,9 @@ const FeedbackChannel = ({
   isPublic,
   handleActiveToggle,
   handlePublicToggle,
-}: Props) =>
-  (<div className="feedbackChannel">
-    <Helmet>
-      {createLinks(['checkbox'])}
-    </Helmet>
+}: Props) => (
+  <div className="feedbackChannel">
+    <Helmet defer={false}>{createLinks(['checkbox'])}</Helmet>
 
     <h2>
       <FormattedMessage
@@ -73,14 +71,15 @@ const FeedbackChannel = ({
       />
     </div>
 
-    {isActive &&
+    {isActive && (
       <div className="feedbacks">
-        {data.map(({ content, id, votes }) =>
-          (<div className="feedback">
+        {data.map(({ content, id, votes }) => (
+          <div className="feedback">
             <Feedback key={id} content={content} votes={votes} />
-          </div>),
-        )}
-      </div>}
+          </div>
+        ))}
+      </div>
+    )}
 
     <style jsx>{`
       .feedbackChannel {
@@ -129,11 +128,12 @@ const FeedbackChannel = ({
         }
 
         .feedback:not(:last-child) {
-          margin-bottom: .5rem;
+          margin-bottom: 0.5rem;
         }
       }
     `}</style>
-  </div>)
+  </div>
+)
 
 FeedbackChannel.defaultProps = defaultProps
 

@@ -8,8 +8,8 @@ type Props = {
   accountShort: string,
 }
 
-const AccountArea = ({ accountShort }: Props) =>
-  (<Dropdown item simple text={accountShort}>
+const AccountArea = ({ accountShort }: Props) => (
+  <Dropdown item simple text={accountShort}>
     <Dropdown.Menu>
       <Dropdown.Item>
         <FormattedMessage id="common.string.settings" defaultMessage="Settings" />
@@ -18,6 +18,7 @@ const AccountArea = ({ accountShort }: Props) =>
         <FormattedMessage id="common.string.logout" defaultMessage="Logout" />
       </Dropdown.Item>
     </Dropdown.Menu>
-  </Dropdown>)
+  </Dropdown>
+)
 
 export default AccountArea

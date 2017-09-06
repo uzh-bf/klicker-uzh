@@ -1,23 +1,40 @@
 {
+  "automerge": "patch",
   "extends": [":app"],
   "assignees": ["rschlaefli"],
   "labels": ["dependencies"],
   "reviewers": ["rschlaefli"],
   "schedule": ["after 10pm and before 7am"],
+  "semanticCommits": false,
   "timezone": "Europe/Zurich",
   "packageRules": [
     {
-      "packagePatterns": [
-        "^babel-eslint",
-        "^eslint",
-        "^prettier",
-        "^pre-commit"
-      ],
-      "groupName": "code style"
+      "packagePatterns": ["^babel-eslint", "^eslint"],
+      "groupName": "eslint",
+      "automerge": "minor"
     },
     {
       "packageNames": ["flow-bin", "babel-plugin-transform-flow-strip-types"],
-      "groupName": "flow"
+      "groupName": "flow",
+      "automerge": "minor"
+    },
+    {
+      "packagePatterns": ["^raven", "^logrocket"],
+      "groupName": "monitoring"
+    },
+    {
+      "packagePatterns": ["^prettier"],
+      "groupName": "prettier",
+      "automerge": "minor"
+    },
+    {
+      "packageNames": ["react", "react-dom"],
+      "groupName": "react"
+    },
+    {
+      "packagePatterns": ["^@storybook", "^storybook"],
+      "groupName": "storybook",
+      "automerge": "minor"
     },
     {
       "packageNames": [
@@ -26,15 +43,8 @@
         "react-test-renderer",
         "enzyme"
       ],
-      "groupName": "test"
-    },
-    {
-      "packagePatterns": ["^raven", "^logrocket"],
-      "groupName": "monitoring"
-    },
-    {
-      "packagePatterns": ["^@storybook", "^storybook"],
-      "groupName": "storybook"
+      "groupName": "test",
+      "automerge": "minor"
     }
   ]
 }

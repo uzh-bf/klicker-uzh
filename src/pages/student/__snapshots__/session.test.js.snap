@@ -3,16 +3,17 @@
 exports[`Snapshot-Testing Works 1`] = `
 <div
   className="studentLayout"
-  data-jsx={2022545551}
+  data-jsx={3095557183}
 >
   <div
     className="header"
-    data-jsx={2022545551}
+    data-jsx={3095557183}
   >
     <button
       className="ui basic icon button"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       <i
@@ -21,14 +22,14 @@ exports[`Snapshot-Testing Works 1`] = `
       />
     </button>
     <h1
-      data-jsx={2022545551}
+      data-jsx={3095557183}
     >
       Active Question
     </h1>
   </div>
   <div
     className="content"
-    data-jsx={2022545551}
+    data-jsx={3095557183}
   >
     <div
       className="sidebar"
@@ -62,48 +63,48 @@ exports[`Snapshot-Testing Works 1`] = `
         >
           <div
             className="student"
-            data-jsx={75986794}
+            data-jsx={3709880010}
           >
             <div
               className="questionArea active"
-              data-jsx={75986794}
+              data-jsx={3709880010}
             >
               <div
                 className="collapser"
-                data-jsx={75986794}
+                data-jsx={3709880010}
               >
                 <div
                   className="collapser"
-                  data-jsx={290410321}
+                  data-jsx={1840183473}
                 >
                   <div
                     className="content collapsed"
-                    data-jsx={290410321}
+                    data-jsx={1840183473}
                   >
                     <p
-                      data-jsx={75986794}
+                      data-jsx={3709880010}
                     >
                       hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
                     </p>
                     <p
-                      data-jsx={75986794}
+                      data-jsx={3709880010}
                     >
                       wow, is this a long question. i could never have imagined seeing such a question.
                     </p>
                     <p
-                      data-jsx={75986794}
+                      data-jsx={3709880010}
                     >
                       hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
                     </p>
                     <p
-                      data-jsx={75986794}
+                      data-jsx={3709880010}
                     >
                       wow, is this a long question. i could never have imagined seeing such a question.
                     </p>
                   </div>
                   <div
                     className="collapse"
-                    data-jsx={290410321}
+                    data-jsx={1840183473}
                   >
                     <i
                       aria-hidden="true"
@@ -115,20 +116,21 @@ exports[`Snapshot-Testing Works 1`] = `
               </div>
               <div
                 className="options"
-                data-jsx={75986794}
+                data-jsx={3709880010}
               >
                 <div
                   className="options"
-                  data-jsx={2300864390}
+                  data-jsx={964719302}
                 >
                   <div
                     className="option"
-                    data-jsx={2300864390}
+                    data-jsx={964719302}
                   >
                     <button
                       className="ui basic fluid button"
                       disabled={undefined}
                       onClick={[Function]}
+                      role="button"
                       tabIndex={undefined}
                     >
                       answer1
@@ -136,12 +138,13 @@ exports[`Snapshot-Testing Works 1`] = `
                   </div>
                   <div
                     className="option"
-                    data-jsx={2300864390}
+                    data-jsx={964719302}
                   >
                     <button
                       className="ui basic fluid button"
                       disabled={undefined}
                       onClick={[Function]}
+                      role="button"
                       tabIndex={undefined}
                     >
                       antwort 2
@@ -149,12 +152,13 @@ exports[`Snapshot-Testing Works 1`] = `
                   </div>
                   <div
                     className="option"
-                    data-jsx={2300864390}
+                    data-jsx={964719302}
                   >
                     <button
                       className="ui basic fluid button"
                       disabled={undefined}
                       onClick={[Function]}
+                      role="button"
                       tabIndex={undefined}
                     >
                       option 3
@@ -162,12 +166,13 @@ exports[`Snapshot-Testing Works 1`] = `
                   </div>
                   <div
                     className="option"
-                    data-jsx={2300864390}
+                    data-jsx={964719302}
                   >
                     <button
                       className="ui basic fluid button"
                       disabled={undefined}
                       onClick={[Function]}
+                      role="button"
                       tabIndex={undefined}
                     >
                       tschege
@@ -177,12 +182,13 @@ exports[`Snapshot-Testing Works 1`] = `
               </div>
               <div
                 className="actionButton"
-                data-jsx={75986794}
+                data-jsx={3709880010}
               >
                 <button
                   className="ui primary button submitButton"
                   disabled={undefined}
                   onClick={[Function]}
+                  role="button"
                   tabIndex={undefined}
                 >
                   <span>
@@ -193,11 +199,11 @@ exports[`Snapshot-Testing Works 1`] = `
             </div>
             <div
               className="feedbackArea"
-              data-jsx={75986794}
+              data-jsx={3709880010}
             >
               <div
                 className="confusion"
-                data-jsx={75986794}
+                data-jsx={3709880010}
               >
                 <div
                   className="confusionSlider"
@@ -208,7 +214,7 @@ exports[`Snapshot-Testing Works 1`] = `
                     data-jsx={219419674}
                   >
                     <h2
-                      data-jsx={75986794}
+                      data-jsx={3709880010}
                     >
                       <span>
                         Speed
@@ -263,7 +269,7 @@ exports[`Snapshot-Testing Works 1`] = `
                     data-jsx={219419674}
                   >
                     <h2
-                      data-jsx={75986794}
+                      data-jsx={3709880010}
                     >
                       <span>
                         Difficulty
@@ -312,25 +318,25 @@ exports[`Snapshot-Testing Works 1`] = `
               </div>
               <div
                 className="feedbacks"
-                data-jsx={75986794}
+                data-jsx={3709880010}
               >
                 <div
                   className="feedback"
-                  data-jsx={75986794}
+                  data-jsx={3709880010}
                 >
                   <div
                     className="feedback"
-                    data-jsx={1568002809}
+                    data-jsx={3449085289}
                   >
                     <div
                       className="content"
-                      data-jsx={1568002809}
+                      data-jsx={3449085289}
                     >
                       hello world
                     </div>
                     <div
                       className="votes"
-                      data-jsx={1568002809}
+                      data-jsx={3449085289}
                     >
                       +
                       100
@@ -339,21 +345,21 @@ exports[`Snapshot-Testing Works 1`] = `
                 </div>
                 <div
                   className="feedback"
-                  data-jsx={75986794}
+                  data-jsx={3709880010}
                 >
                   <div
                     className="feedback"
-                    data-jsx={1568002809}
+                    data-jsx={3449085289}
                   >
                     <div
                       className="content"
-                      data-jsx={1568002809}
+                      data-jsx={3449085289}
                     >
                       blablbla
                     </div>
                     <div
                       className="votes"
-                      data-jsx={1568002809}
+                      data-jsx={3449085289}
                     >
                       +
                       50
@@ -362,21 +368,21 @@ exports[`Snapshot-Testing Works 1`] = `
                 </div>
                 <div
                   className="feedback"
-                  data-jsx={75986794}
+                  data-jsx={3709880010}
                 >
                   <div
                     className="feedback"
-                    data-jsx={1568002809}
+                    data-jsx={3449085289}
                   >
                     <div
                       className="content"
-                      data-jsx={1568002809}
+                      data-jsx={3449085289}
                     >
                       hello
                     </div>
                     <div
                       className="votes"
-                      data-jsx={1568002809}
+                      data-jsx={3449085289}
                     >
                       +
                       25
@@ -385,21 +391,21 @@ exports[`Snapshot-Testing Works 1`] = `
                 </div>
                 <div
                   className="feedback"
-                  data-jsx={75986794}
+                  data-jsx={3709880010}
                 >
                   <div
                     className="feedback"
-                    data-jsx={1568002809}
+                    data-jsx={3449085289}
                   >
                     <div
                       className="content"
-                      data-jsx={1568002809}
+                      data-jsx={3449085289}
                     >
                       hooi
                     </div>
                     <div
                       className="votes"
-                      data-jsx={1568002809}
+                      data-jsx={3449085289}
                     >
                       +
                       10
@@ -409,12 +415,13 @@ exports[`Snapshot-Testing Works 1`] = `
               </div>
               <div
                 className="actionButton"
-                data-jsx={75986794}
+                data-jsx={3709880010}
               >
                 <button
                   className="ui large circular icon primary button"
                   disabled={undefined}
                   onClick={[Function]}
+                  role="button"
                   tabIndex={undefined}
                 >
                   <i

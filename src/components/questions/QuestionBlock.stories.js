@@ -7,24 +7,19 @@
 
 import React from 'react'
 import { storiesOf } from '@storybook/react'
-import { boolean, number } from '@storybook/addon-knobs'
 
 import QuestionBlock from './QuestionBlock'
 import fixtures from '../../../.storybook/fixtures'
 
 storiesOf('QuestionBlock', module)
-  .add('default', () =>
-    (<QuestionBlock
-      {...fixtures.questionBlock}
-      showSolutions={boolean('showSolutions', false)}
-      timeLimit={number('timeLimit', 60)}
-    />),
-  )
-  .add('empty', () =>
-    (<QuestionBlock
+  .add('default', () => (
+    <QuestionBlock {...fixtures.questionBlock} showSolutions={false} timeLimit={60} />
+  ))
+  .add('empty', () => (
+    <QuestionBlock
       {...fixtures.questionBlock}
       questions={[]}
-      showSolutions={boolean('showSolutions', false)}
-      timeLimit={number('timeLimit', 60)}
-    />),
-  )
+      showSolutions={false}
+      timeLimit={60}
+    />
+  ))

@@ -8,7 +8,6 @@
 import React, { Component } from 'react'
 import { storiesOf } from '@storybook/react'
 import { action } from '@storybook/addon-actions'
-import { number } from '@storybook/addon-knobs'
 
 import SingleChoiceOptions from './SingleChoiceOptions'
 
@@ -38,10 +37,10 @@ const options = [
 
 storiesOf('SingleChoiceOptions', module)
   .add('default', () => <Wrapper options={options} />)
-  .add('withActiveOption', () =>
-    (<SingleChoiceOptions
-      activeOption={number('activeOption', 1)}
+  .add('withActiveOption', () => (
+    <SingleChoiceOptions
+      activeOption={1}
       options={options}
       handleOptionClick={index => () => action(`option ${index} clicked`)}
-    />),
-  )
+    />
+  ))

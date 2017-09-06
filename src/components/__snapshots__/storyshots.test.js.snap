@@ -3,16 +3,17 @@
 exports[`Storyshots ActionButton default 1`] = `
 <div
   className="actionButtonWrapper"
-  data-jsx={4197750628}
+  data-jsx={3236727444}
 >
   <div
     className="actionButton"
-    data-jsx={4197750628}
+    data-jsx={3236727444}
   >
     <button
       className="ui large circular icon primary button"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       <i
@@ -23,18 +24,18 @@ exports[`Storyshots ActionButton default 1`] = `
   </div>
   <div
     className="ui vertical text menu buttonMenu"
-    data-jsx={4197750628}
+    data-jsx={3236727444}
   >
     <button
       className="item"
-      data-jsx={4197750628}
+      data-jsx={3236727444}
       onClick={[Function]}
     >
       abcd
     </button>
     <button
       className="item"
-      data-jsx={4197750628}
+      data-jsx={3236727444}
       onClick={[Function]}
     >
       cdef
@@ -46,11 +47,11 @@ exports[`Storyshots ActionButton default 1`] = `
 exports[`Storyshots Collapser collapsed 1`] = `
 <div
   className="collapser"
-  data-jsx={290410321}
+  data-jsx={1840183473}
 >
   <div
     className="content collapsed"
-    data-jsx={290410321}
+    data-jsx={1840183473}
   >
     <div>
       <p>
@@ -69,7 +70,7 @@ exports[`Storyshots Collapser collapsed 1`] = `
   </div>
   <div
     className="collapse"
-    data-jsx={290410321}
+    data-jsx={1840183473}
   >
     <i
       aria-hidden="true"
@@ -83,11 +84,11 @@ exports[`Storyshots Collapser collapsed 1`] = `
 exports[`Storyshots Collapser default 1`] = `
 <div
   className="collapser"
-  data-jsx={290410321}
+  data-jsx={1840183473}
 >
   <div
     className="content collapsed"
-    data-jsx={290410321}
+    data-jsx={1840183473}
   >
     <div>
       <p>
@@ -106,7 +107,7 @@ exports[`Storyshots Collapser default 1`] = `
   </div>
   <div
     className="collapse"
-    data-jsx={290410321}
+    data-jsx={1840183473}
   >
     <i
       aria-hidden="true"
@@ -120,11 +121,11 @@ exports[`Storyshots Collapser default 1`] = `
 exports[`Storyshots Collapser extended 1`] = `
 <div
   className="collapser"
-  data-jsx={290410321}
+  data-jsx={1840183473}
 >
   <div
     className="content"
-    data-jsx={290410321}
+    data-jsx={1840183473}
   >
     <div>
       <p>
@@ -143,7 +144,7 @@ exports[`Storyshots Collapser extended 1`] = `
   </div>
   <div
     className="collapse"
-    data-jsx={290410321}
+    data-jsx={1840183473}
   >
     <i
       aria-hidden="true"
@@ -157,10 +158,10 @@ exports[`Storyshots Collapser extended 1`] = `
 exports[`Storyshots ConfusionBarometer default 1`] = `
 <div
   className="confusionBarometer"
-  data-jsx={4012471055}
+  data-jsx={3527990463}
 >
   <h2
-    data-jsx={4012471055}
+    data-jsx={3527990463}
   >
     <span>
       Confusion-Barometer
@@ -247,10 +248,10 @@ exports[`Storyshots ConfusionSlider default 1`] = `
 exports[`Storyshots FeedbackChannel default 1`] = `
 <div
   className="feedbackChannel"
-  data-jsx={2247287158}
+  data-jsx={3242351590}
 >
   <h2
-    data-jsx={2247287158}
+    data-jsx={3242351590}
   >
     <span>
       Feedback-Channel
@@ -258,7 +259,7 @@ exports[`Storyshots FeedbackChannel default 1`] = `
   </h2>
   <div
     className="toggle"
-    data-jsx={2247287158}
+    data-jsx={3242351590}
   >
     <div
       className="ui toggle checkbox"
@@ -282,7 +283,7 @@ exports[`Storyshots FeedbackChannel default 1`] = `
   </div>
   <div
     className="toggle publicationToggle"
-    data-jsx={2247287158}
+    data-jsx={3242351590}
   >
     <div
       className="ui disabled toggle checkbox publishCheckbox"
@@ -310,10 +311,10 @@ exports[`Storyshots FeedbackChannel default 1`] = `
 exports[`Storyshots FeedbackChannel isActive 1`] = `
 <div
   className="feedbackChannel"
-  data-jsx={2247287158}
+  data-jsx={3242351590}
 >
   <h2
-    data-jsx={2247287158}
+    data-jsx={3242351590}
   >
     <span>
       Feedback-Channel
@@ -321,7 +322,7 @@ exports[`Storyshots FeedbackChannel isActive 1`] = `
   </h2>
   <div
     className="toggle"
-    data-jsx={2247287158}
+    data-jsx={3242351590}
   >
     <div
       className="ui checked toggle checkbox"
@@ -345,7 +346,7 @@ exports[`Storyshots FeedbackChannel isActive 1`] = `
   </div>
   <div
     className="toggle publicationToggle"
-    data-jsx={2247287158}
+    data-jsx={3242351590}
   >
     <div
       className="ui toggle checkbox publishCheckbox"
@@ -369,30 +370,31 @@ exports[`Storyshots FeedbackChannel isActive 1`] = `
   </div>
   <div
     className="feedbacks"
-    data-jsx={2247287158}
+    data-jsx={3242351590}
   >
     <div
       className="feedback"
-      data-jsx={2247287158}
+      data-jsx={3242351590}
     >
       <div
         className="feedback"
-        data-jsx={1568002809}
+        data-jsx={3449085289}
       >
         <div
           className="content"
-          data-jsx={1568002809}
+          data-jsx={3449085289}
         >
           hello alex!
         </div>
         <div
           className="delete"
-          data-jsx={1568002809}
+          data-jsx={3449085289}
         >
           <button
             className="ui basic fluid icon button"
             disabled={undefined}
             onClick={[Function]}
+            role="button"
             tabIndex={undefined}
           >
             <i
@@ -403,7 +405,7 @@ exports[`Storyshots FeedbackChannel isActive 1`] = `
         </div>
         <div
           className="votes"
-          data-jsx={1568002809}
+          data-jsx={3449085289}
         >
           +
           100
@@ -412,26 +414,27 @@ exports[`Storyshots FeedbackChannel isActive 1`] = `
     </div>
     <div
       className="feedback"
-      data-jsx={2247287158}
+      data-jsx={3242351590}
     >
       <div
         className="feedback"
-        data-jsx={1568002809}
+        data-jsx={3449085289}
       >
         <div
           className="content"
-          data-jsx={1568002809}
+          data-jsx={3449085289}
         >
           bla bleh
         </div>
         <div
           className="delete"
-          data-jsx={1568002809}
+          data-jsx={3449085289}
         >
           <button
             className="ui basic fluid icon button"
             disabled={undefined}
             onClick={[Function]}
+            role="button"
             tabIndex={undefined}
           >
             <i
@@ -442,7 +445,7 @@ exports[`Storyshots FeedbackChannel isActive 1`] = `
         </div>
         <div
           className="votes"
-          data-jsx={1568002809}
+          data-jsx={3449085289}
         >
           +
           40
@@ -456,10 +459,10 @@ exports[`Storyshots FeedbackChannel isActive 1`] = `
 exports[`Storyshots FeedbackChannel isPublic 1`] = `
 <div
   className="feedbackChannel"
-  data-jsx={2247287158}
+  data-jsx={3242351590}
 >
   <h2
-    data-jsx={2247287158}
+    data-jsx={3242351590}
   >
     <span>
       Feedback-Channel
@@ -467,7 +470,7 @@ exports[`Storyshots FeedbackChannel isPublic 1`] = `
   </h2>
   <div
     className="toggle"
-    data-jsx={2247287158}
+    data-jsx={3242351590}
   >
     <div
       className="ui checked toggle checkbox"
@@ -491,7 +494,7 @@ exports[`Storyshots FeedbackChannel isPublic 1`] = `
   </div>
   <div
     className="toggle publicationToggle"
-    data-jsx={2247287158}
+    data-jsx={3242351590}
   >
     <div
       className="ui checked toggle checkbox publishCheckbox"
@@ -515,30 +518,31 @@ exports[`Storyshots FeedbackChannel isPublic 1`] = `
   </div>
   <div
     className="feedbacks"
-    data-jsx={2247287158}
+    data-jsx={3242351590}
   >
     <div
       className="feedback"
-      data-jsx={2247287158}
+      data-jsx={3242351590}
     >
       <div
         className="feedback"
-        data-jsx={1568002809}
+        data-jsx={3449085289}
       >
         <div
           className="content"
-          data-jsx={1568002809}
+          data-jsx={3449085289}
         >
           hello alex!
         </div>
         <div
           className="delete"
-          data-jsx={1568002809}
+          data-jsx={3449085289}
         >
           <button
             className="ui basic fluid icon button"
             disabled={undefined}
             onClick={[Function]}
+            role="button"
             tabIndex={undefined}
           >
             <i
@@ -549,7 +553,7 @@ exports[`Storyshots FeedbackChannel isPublic 1`] = `
         </div>
         <div
           className="votes"
-          data-jsx={1568002809}
+          data-jsx={3449085289}
         >
           +
           100
@@ -558,26 +562,27 @@ exports[`Storyshots FeedbackChannel isPublic 1`] = `
     </div>
     <div
       className="feedback"
-      data-jsx={2247287158}
+      data-jsx={3242351590}
     >
       <div
         className="feedback"
-        data-jsx={1568002809}
+        data-jsx={3449085289}
       >
         <div
           className="content"
-          data-jsx={1568002809}
+          data-jsx={3449085289}
         >
           bla bleh
         </div>
         <div
           className="delete"
-          data-jsx={1568002809}
+          data-jsx={3449085289}
         >
           <button
             className="ui basic fluid icon button"
             disabled={undefined}
             onClick={[Function]}
+            role="button"
             tabIndex={undefined}
           >
             <i
@@ -588,7 +593,7 @@ exports[`Storyshots FeedbackChannel isPublic 1`] = `
         </div>
         <div
           className="votes"
-          data-jsx={1568002809}
+          data-jsx={3449085289}
         >
           +
           40
@@ -1271,6 +1276,7 @@ exports[`Storyshots Session default 1`] = `
         className="ui icon left labeled button"
         disabled={undefined}
         onClick={[Function]}
+        role="button"
         tabIndex={undefined}
       >
         <i
@@ -1289,15 +1295,15 @@ exports[`Storyshots Session default 1`] = `
 exports[`Storyshots SessionTimeline default 1`] = `
 <div
   className="sessionTimeline"
-  data-jsx={2629295027}
+  data-jsx={1843648147}
 >
   <div
     className="topRow"
-    data-jsx={2629295027}
+    data-jsx={1843648147}
   >
     <div
       className="startingTime"
-      data-jsx={2629295027}
+      data-jsx={1843648147}
     >
       <i
         aria-hidden="true"
@@ -1307,7 +1313,7 @@ exports[`Storyshots SessionTimeline default 1`] = `
     </div>
     <div
       className="runningTime"
-      data-jsx={2629295027}
+      data-jsx={1843648147}
     >
       <i
         aria-hidden="true"
@@ -1318,16 +1324,17 @@ exports[`Storyshots SessionTimeline default 1`] = `
   </div>
   <div
     className="blocks"
-    data-jsx={2629295027}
+    data-jsx={1843648147}
   />
   <div
     className="buttons"
-    data-jsx={2629295027}
+    data-jsx={1843648147}
   >
     <button
       className="ui large icon left labeled button"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       <i
@@ -1340,6 +1347,7 @@ exports[`Storyshots SessionTimeline default 1`] = `
       className="ui large icon primary right labeled button"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       <i
@@ -1355,16 +1363,17 @@ exports[`Storyshots SessionTimeline default 1`] = `
 exports[`Storyshots SingleChoiceOptions default 1`] = `
 <div
   className="options"
-  data-jsx={2300864390}
+  data-jsx={964719302}
 >
   <div
     className="option"
-    data-jsx={2300864390}
+    data-jsx={964719302}
   >
     <button
       className="ui basic fluid button"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       answer2
@@ -1372,12 +1381,13 @@ exports[`Storyshots SingleChoiceOptions default 1`] = `
   </div>
   <div
     className="option"
-    data-jsx={2300864390}
+    data-jsx={964719302}
   >
     <button
       className="ui basic fluid button"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       antwort 2
@@ -1385,12 +1395,13 @@ exports[`Storyshots SingleChoiceOptions default 1`] = `
   </div>
   <div
     className="option"
-    data-jsx={2300864390}
+    data-jsx={964719302}
   >
     <button
       className="ui basic fluid button"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       option 3
@@ -1398,12 +1409,13 @@ exports[`Storyshots SingleChoiceOptions default 1`] = `
   </div>
   <div
     className="option"
-    data-jsx={2300864390}
+    data-jsx={964719302}
   >
     <button
       className="ui basic fluid button"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       tschege
@@ -1415,16 +1427,17 @@ exports[`Storyshots SingleChoiceOptions default 1`] = `
 exports[`Storyshots SingleChoiceOptions withActiveOption 1`] = `
 <div
   className="options"
-  data-jsx={2300864390}
+  data-jsx={964719302}
 >
   <div
     className="option"
-    data-jsx={2300864390}
+    data-jsx={964719302}
   >
     <button
       className="ui basic fluid button"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       answer2
@@ -1432,12 +1445,13 @@ exports[`Storyshots SingleChoiceOptions withActiveOption 1`] = `
   </div>
   <div
     className="option active"
-    data-jsx={2300864390}
+    data-jsx={964719302}
   >
     <button
       className="ui basic fluid button"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       antwort 2
@@ -1445,12 +1459,13 @@ exports[`Storyshots SingleChoiceOptions withActiveOption 1`] = `
   </div>
   <div
     className="option"
-    data-jsx={2300864390}
+    data-jsx={964719302}
   >
     <button
       className="ui basic fluid button"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       option 3
@@ -1458,12 +1473,13 @@ exports[`Storyshots SingleChoiceOptions withActiveOption 1`] = `
   </div>
   <div
     className="option"
-    data-jsx={2300864390}
+    data-jsx={964719302}
   >
     <button
       className="ui basic fluid button"
       disabled={undefined}
       onClick={[Function]}
+      role="button"
       tabIndex={undefined}
     >
       tschege

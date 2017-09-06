@@ -23,16 +23,14 @@ class StaticLayout extends Component {
 
     return (
       <div className="staticLayout">
-        <Helmet>
+        <Helmet defer={false}>
           {createLinks(['https://fonts.googleapis.com/css?family=Open Sans', 'reset'])}
-          <title>
-            {pageTitle}
-          </title>
+        </Helmet>
+        <Helmet>
+          <title>{pageTitle}</title>
         </Helmet>
 
-        <div className="content">
-          {children}
-        </div>
+        <div className="content">{children}</div>
 
         <footer>&copy; IBF</footer>
 

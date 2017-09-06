@@ -7,17 +7,15 @@ type Props = {
   items: Array<string>,
 }
 
-const ListWithHeader = ({ children, items }: Props) =>
-  (<div>
-    <h3 className="listHeader">
-      {children}
-    </h3>
+const ListWithHeader = ({ children, items }: Props) => (
+  <div>
+    <h3 className="listHeader">{children}</h3>
     <ul className="list">
-      {items.map(item =>
-        (<li key={item} className="listItem">
+      {items.map(item => (
+        <li key={item} className="listItem">
           {item}
-        </li>),
-      )}
+        </li>
+      ))}
     </ul>
 
     <style jsx>{`
@@ -34,6 +32,7 @@ const ListWithHeader = ({ children, items }: Props) =>
         list-style: none;
       }
     `}</style>
-  </div>)
+  </div>
+)
 
 export default ListWithHeader

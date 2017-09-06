@@ -11,6 +11,6 @@ import { storiesOf } from '@storybook/react'
 import SessionTimeline from './SessionTimeline'
 import { intlMock } from '../../../.storybook/utils'
 
-storiesOf('SessionTimeline', module).add('default', () =>
-  <SessionTimeline blocks={[]} intl={intlMock} />,
-)
+storiesOf('SessionTimeline', module).add('default', () => (
+  <SessionTimeline blocks={[]} intl={intlMock} />
+))

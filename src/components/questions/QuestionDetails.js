@@ -9,18 +9,19 @@ type Props = {
   lastUsed: Array<string>,
 }
 
-const QuestionDetails = ({ lastUsed }: Props) =>
-  (<div className="container">
+const QuestionDetails = ({ lastUsed }: Props) => (
+  <div className="container">
     <div className="column">Test1</div>
     <div className="column">Test2</div>
     <div className="column">Test3</div>
 
-    {lastUsed.length > 0 &&
+    {lastUsed.length > 0 && (
       <div className="column">
         <ListWithHeader items={lastUsed}>
           <FormattedMessage id="questionPool.question.lastUsed" defaultMessage="Last used" />
         </ListWithHeader>
-      </div>}
+      </div>
+    )}
 
     <style jsx>{`
       .container {
@@ -48,6 +49,7 @@ const QuestionDetails = ({ lastUsed }: Props) =>
         }
       }
     `}</style>
-  </div>)
+  </div>
+)
 
 export default QuestionDetails

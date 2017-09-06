@@ -9,10 +9,7 @@ type RegistrationMutationType = {
 }
 const RegistrationMutation = gql`
   mutation CreateUser($email: String!, $password: String!, $shortname: String!) {
-    createUser(
-      authProvider: { email: { email: $email, password: $password } }
-      shortname: $shortname
-    ) {
+    createUser(user: { email: $email, password: $password, shortname: $shortname }) {
       id
       email
       shortname
@@ -21,22 +18,16 @@ const RegistrationMutation = gql`
 `
 
 type LoginMutationType = {
-  token: string,
-  user: {
-    id: string,
-    email: string,
-    shortname: string,
-  },
+  id: string,
+  email: string,
+  shortname: string,
 }
 const LoginMutation = gql`
-  mutation LoginUser($email: String!, $password: String!) {
-    signinUser(email: { email: $email, password: $password }) {
-      token
-      user {
-        id
-        email
-        shortname
-      }
+  mutation Login($email: String!, $password: String!) {
+    login(email: $email, password: $password) {
+      id
+      email
+      shortname
     }
   }
 `

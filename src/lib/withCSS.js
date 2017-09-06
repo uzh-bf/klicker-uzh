@@ -6,13 +6,12 @@ import { Helmet } from 'react-helmet'
 import { createLinks } from './utils/css'
 
 function withCSS(WrappedComponent: any, links: Array<string>) {
-  const WithCSS = (props: any) =>
-    (<div>
-      <Helmet>
-        {createLinks(links)}
-      </Helmet>
+  const WithCSS = (props: any) => (
+    <div>
+      <Helmet defer={false}>{createLinks(links)}</Helmet>
       <WrappedComponent {...props} />
-    </div>)
+    </div>
+  )
 
   WithCSS.displayName = `WithCSS(${WrappedComponent.displayName || WrappedComponent.name})`
 
