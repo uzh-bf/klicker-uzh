@@ -9,7 +9,6 @@ import React, { Component } from 'react'
 import { storiesOf } from '@storybook/react'
 
 import ConfusionBarometer from './ConfusionBarometer'
-import { intlMock } from '../../../.storybook/utils'
 
 // create a stateful wrapper for the component
 class Wrapper extends Component {
@@ -19,7 +18,6 @@ class Wrapper extends Component {
   render() {
     return (
       <ConfusionBarometer
-        intl={intlMock}
         isActive={this.state.isActive}
         handleActiveToggle={() => this.setState(prevState => ({ isActive: !prevState.isActive }))}
       />
@@ -32,7 +30,7 @@ const createNodeMock = () => {
   const doc = document.implementation.createHTMLDocument();
   return { parentElement: doc.body };
 }
-const confusionBarometerMocked = () => <ConfusionBarometer isActive intl={intlMock} />
+const confusionBarometerMocked = () => <ConfusionBarometer isActive />
 confusionBarometerMocked.options = { createNodeMock }
 */
 
