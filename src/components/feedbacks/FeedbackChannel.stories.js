@@ -10,6 +10,7 @@ import { storiesOf } from '@storybook/react'
 import { action } from '@storybook/addon-actions'
 
 import FeedbackChannel from './FeedbackChannel'
+import { intlMock } from '../../../.storybook/utils'
 
 // create a stateful wrapper for the component
 class Wrapper extends Component {
@@ -21,6 +22,7 @@ class Wrapper extends Component {
     return (
       <FeedbackChannel
         data={this.props.data}
+        intl={intlMock}
         isActive={this.state.isActive}
         handleActiveToggle={() => this.setState(prevState => ({ isActive: !prevState.isActive }))}
         handlePublicToggle={() => this.setState(prevState => ({ isPublic: !prevState.isPublic }))}
@@ -40,6 +42,7 @@ storiesOf('FeedbackChannel', module)
     <FeedbackChannel
       isActive
       data={data}
+      intl={intlMock}
       handleActiveToggle={() => action('active-toggle')}
       handlePublicToggle={() => action('public-toggle')}
     />
@@ -49,6 +52,7 @@ storiesOf('FeedbackChannel', module)
       isActive
       isPublic
       data={data}
+      intl={intlMock}
       handleActiveToggle={() => action('active-toggle')}
       handlePublicToggle={() => action('public-toggle')}
     />
