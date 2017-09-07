@@ -23,7 +23,14 @@ appSettings.forEach((envVar) => {
   }
 })
 
-mongoose.connect(`mongodb://${process.env.MONGO_URL}`)
+// connect to mongodb
+// use username and password authentication if passed in the environment
+// otherwise assume that no authentication needed (e.g. docker)
+if (process.env.MONGO_USER && process.env.MONGO_PASSWORD) {
+  mongoose.connect(`mongodb://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_URL}`)
+} else {
+  mongoose.connect(`mongodb://${process.env.MONGO_URL}`)
+}
 
 mongoose.connection
   .once('open', () => {
