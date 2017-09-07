@@ -18,6 +18,7 @@ const TypeChooser = ({ activeType, types, handleChange }: Props) => (
       <button
         key={value}
         className={classNames('type', { active: value === activeType })}
+        type="button"
         onClick={handleChange(value)}
       >
         {name}

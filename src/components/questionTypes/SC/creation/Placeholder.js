@@ -38,12 +38,13 @@ class Placeholder extends React.Component {
     const { correct, inputMode } = this.state
     return (
       <div className={classNames('option', { inputMode })}>
-        <button className="leftAction" onClick={this.handleModeToggle}>
+        <button className="leftAction" type="button" onClick={this.handleModeToggle}>
           {inputMode ? <FaTrash /> : <FaPlus />}
         </button>
 
         <button
           className={classNames('toggle', { correct })}
+          type="button"
           onClick={() => this.setState({ correct: !correct })}
         >
           {correct ? 'TRUE' : 'FALSE'}
@@ -51,7 +52,7 @@ class Placeholder extends React.Component {
 
         <input type="text" value={this.state.name} onChange={this.handleNameChange} />
 
-        <button className="rightAction" type="submit" onClick={this.handleSave}>
+        <button className="rightAction" type="button" onClick={this.handleSave}>
           <FaFloppyO />
         </button>
 
