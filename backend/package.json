@@ -29,7 +29,7 @@
     "eslint-plugin-flowtype": "2.35.0",
     "eslint-plugin-import": "2.7.0",
     "flow-bin": "0.54.0",
-    "jest": "20.0.4",
+    "jest": "21.0.1",
     "nodemon": "1.11.0",
     "pre-commit": "1.2.2",
     "prettier": "1.6.1",
