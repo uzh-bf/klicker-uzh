@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
 
-const ObjectId = mongoose.Schema.Types.ObjectId
+const { ObjectId } = mongoose.Schema.Types
 
 const Tag = new mongoose.Schema({
   name: { type: String, required: true, index: true },

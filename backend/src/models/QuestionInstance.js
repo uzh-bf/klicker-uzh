@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
 
-const ObjectId = mongoose.Schema.Types.ObjectId
+const { ObjectId } = mongoose.Schema.Types
 
 const QuestionInstance = new mongoose.Schema({
   question: { type: ObjectId, required: true, ref: 'Question' },

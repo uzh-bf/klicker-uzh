@@ -4,7 +4,9 @@ const JWT = require('jsonwebtoken')
 mongoose.Promise = Promise
 process.env.APP_SECRET = 'hello-world'
 
-const { isAuthenticated, isValidJWT, signup, login } = require('./auth')
+const {
+  isAuthenticated, isValidJWT, signup, login,
+} = require('./auth')
 const { UserModel } = require('../models')
 
 describe('AuthService', () => {
@@ -50,13 +52,11 @@ describe('AuthService', () => {
       const newUser = await signup('testEmail@bf.uzh.ch', 'somePassword', 'shorty')
 
       // expect the new user to contain correct data
-      expect(newUser).toEqual(
-        expect.objectContaining({
-          email: 'testEmail@bf.uzh.ch',
-          shortname: 'shorty',
-          isAAI: false,
-        }),
-      )
+      expect(newUser).toEqual(expect.objectContaining({
+        email: 'testEmail@bf.uzh.ch',
+        shortname: 'shorty',
+        isAAI: false,
+      }))
 
       // expect the password to not be the same (as it is hashed)
       expect(newUser.password).not.toEqual('somePassword')
@@ -90,12 +90,10 @@ describe('AuthService', () => {
 
       // expect the returned user to contain the correct email and shortname
       // the shortname is only saved in the database (thus the connection must work)
-      expect(user).toEqual(
-        expect.objectContaining({
-          email: 'roland.schlaefli@bf.uzh.ch',
-          shortname: 'rsc',
-        }),
-      )
+      expect(user).toEqual(expect.objectContaining({
+        email: 'roland.schlaefli@bf.uzh.ch',
+        shortname: 'rsc',
+      }))
 
       // expect a new cookie to have been set
       expect(cookieStore[0]).toEqual('jwt')
