@@ -35,7 +35,6 @@ type QuestionListType = {
       name: string,
     }>,
     versions: Array<{
-      id: string,
       createdAt: string,
     }>,
     createdAt: string,

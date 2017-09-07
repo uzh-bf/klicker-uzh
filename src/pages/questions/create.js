@@ -3,7 +3,6 @@
 import React, { Component } from 'react'
 import TagsInput from 'react-tagsinput'
 import { graphql } from 'react-apollo'
-// import RichTextEditor from 'react-rte/lib/RichTextEditor'
 
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import TypeChooser from '../../components/questionTypes/TypeChooser'
@@ -23,6 +22,7 @@ class CreateQuestion extends Component {
 
   state = {
     activeType: 'SC',
+    content: '',
     options: [],
     selectedTags: [],
     title: '',
@@ -50,6 +50,10 @@ class CreateQuestion extends Component {
     })
   }
 
+  handleContentChange = (e) => {
+    this.setState({ content: e.target.value })
+  }
+
   handleTitleChange = (e) => {
     this.setState({ title: e.target.value })
   }
@@ -63,12 +67,13 @@ class CreateQuestion extends Component {
   }
 
   handleSave = () => {
-    this.props.createQuestion(
-      this.state.title,
-      'hello world',
-      this.state.activeType,
-      this.state.selectedTags,
-    )
+    this.props.createQuestion({
+      description: 'hello world',
+      options: this.state.options,
+      tags: this.state.selectedTags,
+      title: this.state.title,
+      type: this.state.activeType,
+    })
   }
 
   render() {
@@ -123,11 +128,7 @@ class CreateQuestion extends Component {
 
           <div className="content">
             <h2>Content</h2>
-            <div>hello world</div>
-            {/* <RichTextEditor
-              value={RichTextEditor.createEmptyValue()}
-              onChange={newValue => console.dir(newValue)}
-            /> */}
+            <textarea value={this.state.content} onChange={this.handleContentChange}/>
           </div>
 
           <div className="answerOptions">
@@ -252,8 +253,8 @@ export default withData(
   pageWithIntl(
     graphql(CreateQuestionMutation, {
       props: ({ mutate }) => ({
-        createQuestion: (title, description, type, tags) =>
-          mutate({ variables: { title, description, type, tags } }),
+        createQuestion: ({ description, options, tags, title, type }) =>
+          mutate({ variables: { description, options, tags, title, type } }),
       }),
     })(CreateQuestion),
   ),
