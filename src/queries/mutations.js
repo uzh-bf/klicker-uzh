@@ -53,7 +53,7 @@ const CreateQuestionMutation = gql`
       title
       type
       tags {
-        name
+        id
       }
       versions {
         description
