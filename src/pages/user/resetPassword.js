@@ -7,12 +7,11 @@ import StaticLayout from '../../components/layouts/StaticLayout'
 import PasswordResetForm from '../../components/forms/PasswordResetForm'
 import { withData, pageWithIntl } from '../../lib'
 
-class ResetPassword extends React.Component {
-  props: {
-    intl: $IntlShape,
-    handleSubmit: () => mixed,
-  }
-
+type Props = {
+  intl: $IntlShape,
+  handleSubmit: () => mixed,
+}
+class ResetPassword extends React.Component<Props> {
   handleSubmit = () => {
     console.log('reset password...')
   }

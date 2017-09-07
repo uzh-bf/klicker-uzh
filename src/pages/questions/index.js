@@ -1,6 +1,6 @@
 // @flow
 
-import React, { Component } from 'react'
+import * as React from 'react'
 import { Button } from 'semantic-ui-react'
 
 import { pageWithIntl, withData } from '../../lib'
@@ -9,24 +9,19 @@ import QuestionList from '../../components/questions/QuestionList'
 import TagList from '../../components/questions/TagList'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 
-class Index extends Component {
-  props: {
-    intl: $IntlShape,
-  }
-
-  state: {
-    activeNewButton: boolean,
-    activeTags: Array<string>,
-    sidebarVisible: boolean,
-  }
-
-  constructor(props) {
-    super(props)
-    this.state = {
-      activeNewButton: false,
-      activeTags: [],
-      sidebarVisible: false,
-    }
+type Props = {
+  intl: $IntlShape,
+}
+type State = {
+  activeNewButton: boolean,
+  activeTags: Array<string>,
+  sidebarVisible: boolean,
+}
+class Index extends React.Component<> {
+  state = {
+    activeNewButton: false,
+    activeTags: [],
+    sidebarVisible: false,
   }
 
   // handling the state of the new course button

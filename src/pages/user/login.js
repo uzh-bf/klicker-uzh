@@ -9,17 +9,19 @@ import LoginForm from '../../components/forms/LoginForm'
 import { LoginMutation } from '../../queries/mutations'
 import { withData, pageWithIntl } from '../../lib'
 
-class Login extends React.Component {
-  props: {
-    intl: $IntlShape,
-    login: (email: string, password: string) => Promise<*>,
-  }
-
+type Props = {
+  intl: $IntlShape,
+  login: (email: string, password: string) => Promise<*>,
+}
+type State = {
+  error: string,
+  success: string,
+}
+class Login extends React.Component<Props, State> {
   state = {
     error: null,
     success: null,
   }
-
   handleSubmit = (values) => {
     this.props
       .login(values.email, values.password)
