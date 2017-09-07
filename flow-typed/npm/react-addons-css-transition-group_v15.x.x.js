@@ -1,5 +1,5 @@
-// flow-typed signature: 9b26b8cc01622c77e3c23e4fcd8f1a31
-// flow-typed version: e06e1b48c4/react-addons-css-transition-group_v15.x.x/flow_>=v0.26.x
+// flow-typed signature: 2d61b9386096aaf4b9b5ef453de3a56a
+// flow-typed version: a2aed2eebc/react-addons-css-transition-group_v15.x.x/flow_>=v0.53.x
 
 declare module 'react-addons-css-transition-group' {
   declare type ReactCSSTransitionGroupNames = {
@@ -24,8 +24,7 @@ declare module 'react-addons-css-transition-group' {
     transitionEnter: boolean,
     transitionLeave: boolean,
   }
-  declare class ReactCSSTransitionGroup extends React$Component<DefaultProps, Props, any> {
-    props: Props;
+  declare class ReactCSSTransitionGroup extends React$Component<Props> {
     static defaultProps: DefaultProps;
   }
   declare module.exports: Class<ReactCSSTransitionGroup>;
