@@ -124,10 +124,14 @@ class TeacherLayout extends Component {
             font-size: 14px;
           }
 
+          input,
+          .noBorder {
+            border-radius: 0 !important;
+          }
+
           .noBorder {
             border: 0 !important;
             box-shadow: none !important;
-            border-radius: 0 !important;
           }
         `}</style>
 
