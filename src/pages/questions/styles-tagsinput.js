@@ -26,11 +26,11 @@ export default `
 
   .react-tagsinput-input {
     background: transparent;
-    border: 0;
+    border: 0 !important;
     color: #777;
     font-weight: 400;
-    margin-bottom: .5rem;
-    margin-top: 1px;
+    margin-bottom: .5rem !important;
+    margin-top: 1px !important;
     outline: none;
     padding: .7rem;
   }
@@ -58,7 +58,7 @@ export default `
     }
 
     .react-tagsinput-input {
-      padding: .5rem;
+      padding: .5rem !important;
       text-align: left;
     }
   }
