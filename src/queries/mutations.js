@@ -32,5 +32,36 @@ const LoginMutation = gql`
   }
 `
 
-export { LoginMutation, RegistrationMutation }
-export type { LoginMutationType, RegistrationMutationType }
+type CreateQuestionMutationType = {
+  id: string,
+  title: string,
+  type: string,
+  tags: Array<{
+    name: string,
+  }>,
+  versions: Array<{
+    description: string,
+    createdAt: string,
+  }>,
+}
+const CreateQuestionMutation = gql`
+  mutation CreateQuestion($title: String!, $description: String, $type: String!, $tags: [ID]) {
+    createQuestion(
+      question: { title: $title, description: $description, type: $type, tags: $tags }
+    ) {
+      id
+      title
+      type
+      tags {
+        name
+      }
+      versions {
+        description
+        createdAt
+      }
+    }
+  }
+`
+
+export { CreateQuestionMutation, LoginMutation, RegistrationMutation }
+export type { CreateQuestionMutationType, LoginMutationType, RegistrationMutationType }
