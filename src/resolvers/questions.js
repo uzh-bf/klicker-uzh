@@ -19,7 +19,11 @@ const questionQuery = (parentValue, { id }, { auth }) => {
 }
 
 /* ----- mutations ----- */
-const createQuestionMutation = async (parentValue, { question: { description, tags, title, type } }, { auth }) => {
+const createQuestionMutation = async (parentValue, {
+  question: {
+    description, tags, title, type,
+  },
+}, { auth }) => {
   AuthService.isAuthenticated(auth)
 
   // if non-existent tags are passed, they need to be created
