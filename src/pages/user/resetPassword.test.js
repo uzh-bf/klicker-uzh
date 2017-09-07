@@ -1,6 +1,6 @@
 /* eslint-env jest */
 
-import React from 'react'
+import * as React from 'react'
 import renderer from 'react-test-renderer'
 
 import ResetPassword from './resetPassword'

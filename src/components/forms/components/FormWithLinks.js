@@ -1,6 +1,6 @@
 // @flow
 
-import React from 'react'
+import * as React from 'react'
 import Link from 'next/link'
 import { Helmet } from 'react-helmet'
 import { Button, List } from 'semantic-ui-react'
