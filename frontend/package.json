@@ -30,7 +30,7 @@
     "react-apollo": "1.4.15",
     "react-dom": "15.6.1",
     "react-helmet": "5.2.0",
-    "react-intl": "2.3.0",
+    "react-intl": "2.4.0",
     "react-rangeslider": "2.1.0",
     "react-redux": "5.0.6",
     "recharts": "1.0.0-alpha.4",
