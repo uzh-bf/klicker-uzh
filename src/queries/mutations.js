@@ -35,9 +35,13 @@ const LoginMutation = gql`
 type CreateQuestionMutationType = {
   id: string,
   title: string,
+  options: Array<{
+    correct: boolean,
+    name: string,
+  }>,
   type: string,
   tags: Array<{
-    name: string,
+    id: string,
   }>,
   versions: Array<{
     description: string,
@@ -45,9 +49,21 @@ type CreateQuestionMutationType = {
   }>,
 }
 const CreateQuestionMutation = gql`
-  mutation CreateQuestion($title: String!, $description: String, $type: String!, $tags: [ID]) {
+  mutation CreateQuestion(
+    $title: String!
+    $description: String
+    $options: [QuestionOptionInput]!
+    $type: String!
+    $tags: [ID]
+  ) {
     createQuestion(
-      question: { title: $title, description: $description, type: $type, tags: $tags }
+      question: {
+        title: $title
+        description: $description
+        options: $options
+        type: $type
+        tags: $tags
+      }
     ) {
       id
       title
@@ -57,6 +73,10 @@ const CreateQuestionMutation = gql`
       }
       versions {
         description
+        options {
+          correct
+          name
+        }
         createdAt
       }
     }
