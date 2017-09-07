@@ -7093,9 +7093,9 @@ stackframe@^1.0.3:
   version "1.3.1"
   resolved "https://registry.yarnpkg.com/statuses/-/statuses-1.3.1.tgz#faf51b9eb74aaef3b3acf4ad5f61abf24cb7b93e"
 
-storybook-addon-intl@2.1.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/storybook-addon-intl/-/storybook-addon-intl-2.1.0.tgz#e78ef8f1b8177341f9dfc53c1900c4ddf56f0891"
+storybook-addon-intl@2.1.1:
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/storybook-addon-intl/-/storybook-addon-intl-2.1.1.tgz#e2e80fad5326b49c7b5f5e9798f78be577ca91c6"
   dependencies:
     "@storybook/addons" "^3.1.0"
     prop-types "^15.5.0"
