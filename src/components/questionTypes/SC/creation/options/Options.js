@@ -15,8 +15,8 @@ type Props = {
     correct: boolean,
     name: string,
   }) => void,
-  handleDeleteOption: number => () => void,
-  handleOptionToggleCorrect: number => () => void,
+  handleDeleteOption: (index: number) => () => void,
+  handleOptionToggleCorrect: (index: number) => () => void,
   handleUpdateOrder: (oldIndex: number, newIndex: number) => void,
 }
 
@@ -31,18 +31,33 @@ const Options = ({
   handleNewOption,
   handleUpdateOrder,
 }: Props) => {
-  const SortableOption = SortableElement(Option)
-  const SortableOptions = SortableContainer(({ options, ...props }) => (
-    <div>
+  const SortableOption = SortableElement(props => (
+    <div className="option">
+      <Option {...props} />
+      <style jsx>{`
+        .option {
+          margin-bottom: 0.5rem;
+        }
+      `}</style>
+    </div>
+  ))
+  const SortableOptions = SortableContainer(({ options, handleCorrectToggle, handleDelete }) => (
+    <div className="options">
       {options.map(({ correct, name }, index) => (
-        <SortableOption key={`sortable-${name}`} index={index} name={name} correct={correct} {...props} />
+        <SortableOption
+          key={`sortable-${name}`}
+          index={index}
+          name={name}
+          correct={correct}
+          handleCorrectToggle={handleCorrectToggle(index)}
+          handleDelete={handleDelete(index)}
+        />
       ))}
     </div>
   ))
 
-
   return (
-    <div className="options">
+    <div>
       <SortableOptions
         options={options}
         handleCorrectToggle={handleOptionToggleCorrect}
