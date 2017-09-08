@@ -98,7 +98,7 @@ storiesOf('QuestionTypes', module)
   ))
   .add('SC Answering Options', () => <SCAnswerWrapper />)
   .add('SC Creation Content', () => <SCCreationContent />)
-  .add('SC Creation Options', () => <SCCreationWrapper />)
+  .add('SC Creation Options [NoTest]', () => <SCCreationWrapper />)
   .add('SC Creation Option (correct)', () => <SCCreationOption correct name="That's true!" />)
   .add('SC Creation Option (incorrect)', () => (
     <SCCreationOption correct={false} name="So wrong!" />
