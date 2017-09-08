@@ -9,9 +9,17 @@
 
 import React, { Component } from 'react'
 import { storiesOf } from '@storybook/react'
+import { arrayMove } from 'react-sortable-hoc'
 
 import TypeChooser from './TypeChooser'
-import { SCAnswerOptions, SCCreationOptions, SCCreationOption, SCCreationPlaceholder } from './SC'
+import {
+  SCAnswerOptions,
+  SCCreationContent,
+  SCCreationOptions,
+  SCCreationOption,
+  SCCreationPlaceholder,
+  SCCreationPreview,
+} from './SC'
 
 class SCAnswerWrapper extends Component {
   state = {
@@ -21,12 +29,7 @@ class SCAnswerWrapper extends Component {
     return (
       <SCAnswerOptions
         activeOption={this.state.activeOption}
-        options={[
-          { label: 'answer2' },
-          { label: 'antwort 2' },
-          { label: 'option 3' },
-          { label: 'tschege' },
-        ]}
+        options={[{ label: 'answer 1' }, { label: 'antwort 2' }, { label: 'option 3' }]}
         handleOptionClick={index => () => this.setState({ activeOption: index })}
       />
     )
@@ -48,8 +51,10 @@ class SCCreationWrapper extends Component {
     })
   }
 
-  handleUpdateOrder = (options) => {
-    this.setState({ options })
+  handleUpdateOrder = ({ oldIndex, newIndex }) => {
+    this.setState({
+      options: arrayMove(this.state.options, oldIndex, newIndex),
+    })
   }
 
   handleOptionToggleCorrect = index => () => {
@@ -92,9 +97,13 @@ storiesOf('QuestionTypes', module)
     />
   ))
   .add('SC Answering Options', () => <SCAnswerWrapper />)
+  .add('SC Creation Content', () => <SCCreationContent />)
   .add('SC Creation Options', () => <SCCreationWrapper />)
   .add('SC Creation Option (correct)', () => <SCCreationOption correct name="That's true!" />)
   .add('SC Creation Option (incorrect)', () => (
     <SCCreationOption correct={false} name="So wrong!" />
   ))
   .add('SC Creation Placeholder', () => <SCCreationPlaceholder />)
+  .add('SC Creation Preview', () => (
+    <SCCreationPreview title="Hello question" description="abcd" options={[]} />
+  ))

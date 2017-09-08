@@ -23,35 +23,42 @@ const Preview = ({ title, description, options }: Props) => (
     <div className="title">{title || 'TITLE'}</div>
     <div className="description">{description || 'DESCRIPTION'}</div>
     <div className="options">
-      <AnswerOptions activeOption={-1} options={(options.length === 0 && [{ label: 'OPTION' }]) || options} />
+      <AnswerOptions
+        activeOption={-1}
+        options={(options.length === 0 && [{ label: 'OPTION' }]) || options}
+      />
     </div>
-    <div className="button"><FormattedMessage defaultMessage="Submit" id="common.button.submit" /></div>
+    <div className="button">
+      <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+    </div>
 
     <style jsx>{`
-        .preview {
-          display: flex;
-          flex-direction: column;
+      .preview {
+        display: flex;
+        flex-direction: column;
 
-          border: 1px solid lightgrey;
-          height: 100%;
-          padding: 1rem;
-        }
+        border: 1px solid lightgrey;
+        height: 100%;
+        padding: 1rem;
+      }
 
-        .title, .description, .options {
-          margin-bottom: 1rem;
-        }
+      .title,
+      .description,
+      .options {
+        margin-bottom: 1rem;
+      }
 
-        .title {
-          font-weight: bold;
-        }
+      .title {
+        font-weight: bold;
+      }
 
-        .button {
-          align-self: flex-end;
+      .button {
+        align-self: flex-end;
 
-          border: 1px solid lightgrey;
-          padding: .5rem;
-        }
-      `}</style>
+        border: 1px solid lightgrey;
+        padding: 0.5rem;
+      }
+    `}</style>
   </div>
 )
 
