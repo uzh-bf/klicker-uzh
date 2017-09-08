@@ -36,30 +36,34 @@ const Options = ({
       <Option {...props} />
       <style jsx>{`
         .option {
+          cursor: grab;
           margin-bottom: 0.5rem;
         }
       `}</style>
     </div>
   ))
-  const SortableOptions = SortableContainer(({ options, handleCorrectToggle, handleDelete }) => (
-    <div className="options">
-      {options.map(({ correct, name }, index) => (
-        <SortableOption
-          key={`sortable-${name}`}
-          index={index}
-          name={name}
-          correct={correct}
-          handleCorrectToggle={handleCorrectToggle(index)}
-          handleDelete={handleDelete(index)}
-        />
-      ))}
-    </div>
-  ))
+
+  const SortableOptions = SortableContainer(
+    ({ sortableOptions, handleCorrectToggle, handleDelete }) => (
+      <div className="options">
+        {sortableOptions.map(({ correct, name }, index) => (
+          <SortableOption
+            key={`sortable-${name}`}
+            index={index}
+            name={name}
+            correct={correct}
+            handleCorrectToggle={handleCorrectToggle(index)}
+            handleDelete={handleDelete(index)}
+          />
+        ))}
+      </div>
+    ),
+  )
 
   return (
     <div>
       <SortableOptions
-        options={options}
+        sortableOptions={options}
         handleCorrectToggle={handleOptionToggleCorrect}
         handleDelete={handleDeleteOption}
         onSortEnd={handleUpdateOrder}
