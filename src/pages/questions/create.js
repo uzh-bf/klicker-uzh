@@ -12,7 +12,11 @@ import { arrayMove } from 'react-sortable-hoc'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import TypeChooser from '../../components/questionTypes/TypeChooser'
 import { createLinks, pageWithIntl, withData } from '../../lib'
-import { SCCreationOptions } from '../../components/questionTypes/SC'
+import {
+  SCCreationOptions,
+  SCCreationPreview,
+  SCCreationContent,
+} from '../../components/questionTypes/SC'
 import { CreateQuestionMutation } from '../../queries/mutations'
 import { QuestionListQuery, TagListQuery } from '../../queries/queries'
 
@@ -28,10 +32,10 @@ class CreateQuestion extends Component {
 
   state = {
     activeType: 'SC',
-    content: '',
+    content: null,
     options: [],
     selectedTags: [],
-    title: '',
+    title: null,
   }
 
   handleUpdateOrder = ({ oldIndex, newIndex }) => {
@@ -41,7 +45,9 @@ class CreateQuestion extends Component {
   }
 
   handleNewOption = (option) => {
-    this.setState({ options: [...this.state.options, option] })
+    this.setState(prevState => ({
+      options: [...prevState.options, option],
+    }))
   }
 
   handleDeleteOption = index => () => {
@@ -185,10 +191,10 @@ class CreateQuestion extends Component {
             <label htmlFor="content">
               <FormattedMessage defaultMessage="Content" id="teacher.createQuestion.content" />
             </label>
-            <textarea
+            <SCCreationContent
               name="content"
               value={this.state.content}
-              onChange={this.handleContentChange}
+              handleChange={this.handleContentChange}
             />
           </div>
 
@@ -206,7 +212,13 @@ class CreateQuestion extends Component {
             />
           </div>
 
-          <div className="preview">this would be a preview</div>
+          <div className="preview">
+            <SCCreationPreview
+              title={this.state.title}
+              description={this.state.content}
+              options={this.state.options.map(option => ({ label: option.name }))}
+            />
+          </div>
 
           <button
             className="ui button discard"
@@ -285,9 +297,6 @@ class CreateQuestion extends Component {
 
               .preview {
                 grid-area: preview;
-
-                border: 1px solid lightgrey;
-                padding: 1rem;
               }
 
               .content {
