@@ -48,6 +48,10 @@ class SCCreationWrapper extends Component {
     })
   }
 
+  handleUpdateOrder = (options) => {
+    this.setState({ options })
+  }
+
   handleOptionToggleCorrect = index => () => {
     const option = this.state.options[index]
 
@@ -64,6 +68,7 @@ class SCCreationWrapper extends Component {
     return (
       <SCCreationOptions
         options={this.state.options}
+        handleUpdateOrder={this.handleUpdateOrder}
         handleNewOption={this.handleNewOption}
         handleDeleteOption={this.handleDeleteOption}
         handleOptionToggleCorrect={this.handleOptionToggleCorrect}
