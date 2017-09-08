@@ -5,6 +5,7 @@
 
 import React, { Component } from 'react'
 import TagsInput from 'react-tagsinput'
+import Autosuggest from 'react-autosuggest'
 import Router from 'next/router'
 import { graphql } from 'react-apollo'
 import { FormattedMessage } from 'react-intl'
@@ -37,6 +38,46 @@ import stylesTagsInput from './styles-tagsinput'
     type: string,
   }) => Promise<*>,
 } */
+
+const tags = [
+  { id: 'abcd', name: 'ABCD' },
+  { id: 'asas', name: 'ascccc' },
+  { id: 'abcd', name: 'fgdfgdf' },
+]
+
+const autocompleteRenderInput = ({ addTag, ...props }) => {
+  const handleOnChange = (e, { newValue, method }) => {
+    if (method === 'enter') {
+      e.preventDefault()
+    } else {
+      props.onChange(e)
+    }
+  }
+
+  const inputValue = (props.value && props.value.trim().toLowerCase()) || ''
+  const inputLength = inputValue.length
+
+  const suggestions = tags.filter(tag => tag.name.toLowerCase().slice(0, inputLength) === inputValue)
+
+  const getSuggestionValue = suggestion => suggestion.name
+  const renderSuggestion = suggestion => <span>{suggestion.name}</span>
+
+  return (
+    <Autosuggest
+      ref={props.ref}
+      suggestions={suggestions}
+      shouldRenderSuggestions={value => value && value.trim().length > 0}
+      getSuggestionValue={getSuggestionValue}
+      renderSuggestion={renderSuggestion}
+      inputProps={{ ...props, onChange: handleOnChange }}
+      onSuggestionSelected={(e, { suggestion }) => {
+        addTag(suggestion.name)
+      }}
+      onSuggestionsClearRequested={() => {}}
+      onSuggestionsFetchRequested={() => {}}
+    />
+  )
+}
 
 class CreateQuestion extends Component {
   // props: Props
@@ -192,6 +233,7 @@ class CreateQuestion extends Component {
               <FormattedMessage defaultMessage="Tags" id="teacher.createQuestion.tags" />
             </label>
             <TagsInput
+              renderInput={autocompleteRenderInput}
               name="tags"
               value={this.state.selectedTags}
               onChange={this.handleTagChange}
@@ -352,12 +394,10 @@ class CreateQuestion extends Component {
 const withMutation = graphql(CreateQuestionMutation, {
   props: ({ mutate }) => ({
     createQuestion: ({ description, options, tags, title, type }) =>
-      mutate(
-        ({
-          refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
-          variables: { description, options, tags, title, type },
-        }),
-      ),
+      mutate({
+        refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
+        variables: { description, options, tags, title, type },
+      }),
   }),
 })
 
