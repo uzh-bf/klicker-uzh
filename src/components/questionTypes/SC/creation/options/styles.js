@@ -17,6 +17,7 @@ export default `
   .option {
     display: flex;
 
+    background-color: white;
     border: 1px solid grey;
     position: relative;
     overflow: hidden;

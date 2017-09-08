@@ -1,6 +1,7 @@
 // @flow
 
 import React from 'react'
+import { SortableContainer, SortableElement } from 'react-sortable-hoc'
 
 import Placeholder from './Placeholder'
 import Option from './Option'
@@ -16,6 +17,7 @@ type Props = {
   }) => void,
   handleDeleteOption: number => () => void,
   handleOptionToggleCorrect: number => () => void,
+  handleUpdateOrder: (oldIndex: number, newIndex: number) => void,
 }
 
 const defaultProps = {
@@ -27,28 +29,31 @@ const Options = ({
   handleOptionToggleCorrect,
   handleDeleteOption,
   handleNewOption,
-}: Props) => (
-  <div className="options">
-    {options.map(({ correct, name }, index) => (
-      <div>
-        <Option
-          correct={correct}
-          name={name}
-          handleCorrectToggle={handleOptionToggleCorrect(index)}
-          handleDelete={handleDeleteOption(index)}
-        />
-      </div>
-    ))}
+  handleUpdateOrder,
+}: Props) => {
+  const SortableOption = SortableElement(Option)
+  const SortableOptions = SortableContainer(({ options, ...props }) => (
+    <div>
+      {options.map(({ correct, name }, index) => (
+        <SortableOption key={`sortable-${name}`} index={index} name={name} correct={correct} {...props} />
+      ))}
+    </div>
+  ))
 
-    <Placeholder handleSave={handleNewOption} />
 
-    <style jsx>{`
-      .options > div:not(:last-child) {
-        margin-bottom: 0.5rem;
-      }
-    `}</style>
-  </div>
-)
+  return (
+    <div className="options">
+      <SortableOptions
+        options={options}
+        handleCorrectToggle={handleOptionToggleCorrect}
+        handleDelete={handleDeleteOption}
+        onSortEnd={handleUpdateOrder}
+      />
+
+      <Placeholder handleSave={handleNewOption} />
+    </div>
+  )
+}
 
 Options.defaultProps = defaultProps
 

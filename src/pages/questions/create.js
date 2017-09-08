@@ -7,6 +7,7 @@ import Router from 'next/router'
 import { graphql } from 'react-apollo'
 import { FormattedMessage } from 'react-intl'
 import { Helmet } from 'react-helmet'
+import { arrayMove } from 'react-sortable-hoc'
 
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import TypeChooser from '../../components/questionTypes/TypeChooser'
@@ -33,8 +34,10 @@ class CreateQuestion extends Component {
     title: '',
   }
 
-  handleUpdateOrder = (options) => {
-    this.setState({ options })
+  handleUpdateOrder = ({ oldIndex, newIndex }) => {
+    this.setState({
+      options: arrayMove(this.state.options, oldIndex, newIndex),
+    })
   }
 
   handleNewOption = (option) => {
