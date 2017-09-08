@@ -33,6 +33,10 @@ class CreateQuestion extends Component {
     title: '',
   }
 
+  handleUpdateOrder = (options) => {
+    this.setState({ options })
+  }
+
   handleNewOption = (option) => {
     this.setState({ options: [...this.state.options, option] })
   }
@@ -74,13 +78,15 @@ class CreateQuestion extends Component {
   handleSave = (e) => {
     e.preventDefault()
 
-    this.props.createQuestion({
-      description: 'hello world',
-      options: this.state.options,
-      tags: this.state.selectedTags,
-      title: this.state.title,
-      type: this.state.activeType,
-    }).then(() => Router.push('/questions'))
+    this.props
+      .createQuestion({
+        description: 'hello world',
+        options: this.state.options,
+        tags: this.state.selectedTags,
+        title: this.state.title,
+        type: this.state.activeType,
+      })
+      .then(() => Router.push('/questions'))
   }
 
   render() {
@@ -190,13 +196,14 @@ class CreateQuestion extends Component {
             <SCCreationOptions
               name="options"
               options={this.state.options}
+              handleUpdateOrder={this.handleUpdateOrder}
               handleDeleteOption={this.handleDeleteOption}
               handleNewOption={this.handleNewOption}
               handleOptionToggleCorrect={this.handleOptionToggleCorrect}
             />
           </div>
 
-          <div className="preview">this is a preview</div>
+          <div className="preview">this would be a preview</div>
 
           <button
             className="ui button discard"
@@ -269,9 +276,6 @@ class CreateQuestion extends Component {
                 grid-area: type;
               }
 
-              .questionType > .option {
-              }
-
               .questionTags {
                 grid-area: tags;
               }
@@ -295,9 +299,6 @@ class CreateQuestion extends Component {
 
               .answerOptions {
                 grid-area: options;
-              }
-
-              .answerOptions > .option {
               }
 
               .answerOptions > .option.placeholder {
