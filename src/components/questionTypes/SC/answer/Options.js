@@ -16,7 +16,7 @@ const Options = ({ activeOption, options, handleOptionClick }: Props) => (
   <div className="options">
     {options.map((option, index) => (
       <div key={option.label} className={classNames('option', { active: index === activeOption })}>
-        <Button basic fluid onClick={handleOptionClick(index)}>
+        <Button basic fluid onClick={handleOptionClick && handleOptionClick(index)}>
           {option.label}
         </Button>
       </div>
