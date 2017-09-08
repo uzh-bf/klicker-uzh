@@ -1,5 +1,7 @@
-// @flow
+// TODO: reenable flow
 // semantic: button, form, input
+
+// import type { OperationComponent } from 'react-apollo'
 
 import React, { Component } from 'react'
 import TagsInput from 'react-tagsinput'
@@ -22,13 +24,22 @@ import { QuestionListQuery, TagListQuery } from '../../queries/queries'
 
 import stylesTagsInput from './styles-tagsinput'
 
-type Props = {
+/* type Props = {
   intl: $IntlShape,
-  createQuestion: (string, string, string, Array<string>) => Promise<*>,
-}
+  createQuestion: ({
+    description: ?string,
+    options: Array<{
+      correct: boolean,
+      name: string,
+    }>,
+    tags: Array<string>,
+    title: ?string,
+    type: string,
+  }) => Promise<*>,
+} */
 
 class CreateQuestion extends Component {
-  props: Props
+  // props: Props
 
   state = {
     activeType: 'SC',
@@ -89,7 +100,7 @@ class CreateQuestion extends Component {
 
     this.props
       .createQuestion({
-        description: 'hello world',
+        description: this.state.content,
         options: this.state.options,
         tags: this.state.selectedTags,
         title: this.state.title,
@@ -337,16 +348,17 @@ class CreateQuestion extends Component {
   }
 }
 
-export default withData(
-  pageWithIntl(
-    graphql(CreateQuestionMutation, {
-      props: ({ mutate }) => ({
-        createQuestion: ({ description, options, tags, title, type }) =>
-          mutate({
-            refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
-            variables: { description, options, tags, title, type },
-          }),
-      }),
-    })(CreateQuestion),
-  ),
-)
+// const withMutation: OperationComponent<*, *, *> = graphql(CreateQuestionMutation, {
+const withMutation = graphql(CreateQuestionMutation, {
+  props: ({ mutate }) => ({
+    createQuestion: ({ description, options, tags, title, type }) =>
+      mutate(
+        ({
+          refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
+          variables: { description, options, tags, title, type },
+        }),
+      ),
+  }),
+})
+
+export default withData(pageWithIntl(withMutation(CreateQuestion)))

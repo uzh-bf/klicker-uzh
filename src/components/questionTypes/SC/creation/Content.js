@@ -2,7 +2,12 @@
 
 import React from 'react'
 
-const Content = ({ value, handleChange }) => (
+type Props = {
+  value: string,
+  handleChange: (newValue: string) => void,
+}
+
+const Content = ({ value, handleChange }: Props) => (
   <textarea name="content" value={value} onChange={handleChange} />
 )
 

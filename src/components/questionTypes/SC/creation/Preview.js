@@ -26,6 +26,7 @@ const Preview = ({ title, description, options }: Props) => (
       <AnswerOptions
         activeOption={-1}
         options={(options.length === 0 && [{ label: 'OPTION' }]) || options}
+        handleOptionClick={f => () => f}
       />
     </div>
     <div className="button">
