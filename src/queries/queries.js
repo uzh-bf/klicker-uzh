@@ -2,13 +2,14 @@
 
 import { gql } from 'react-apollo'
 
+type Tag = {
+  id: string,
+  name: string,
+}
 type TagListType = {
   loading: boolean,
   error?: string,
-  tags: Array<{
-    id: string,
-    name: string,
-  }>,
+  tags: Array<Tag>,
 }
 const TagListQuery = gql`
   {
@@ -30,10 +31,7 @@ type QuestionListType = {
       id: string,
       createdAt: string,
     }>,
-    tags: Array<{
-      id: string,
-      name: string,
-    }>,
+    tags: Array<Tag>,
     versions: Array<{
       createdAt: string,
     }>,

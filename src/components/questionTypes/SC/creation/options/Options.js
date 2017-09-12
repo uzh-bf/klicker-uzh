@@ -1,7 +1,8 @@
 // @flow
 
 import React from 'react'
-import { SortableContainer, SortableElement } from 'react-sortable-hoc'
+import { arrayMove, SortableContainer, SortableElement } from 'react-sortable-hoc'
+import { FormattedMessage } from 'react-intl'
 
 import Placeholder from './Placeholder'
 import Option from './Option'
@@ -20,60 +21,86 @@ type Props = {
   handleUpdateOrder: (oldIndex: number, newIndex: number) => void,
 }
 
-const defaultProps = {
-  options: [],
-}
+class Options extends React.Component {
+  static defaultProps = {
+    input: {
+      value: [],
+    },
+  }
 
-const Options = ({
-  options,
-  handleOptionToggleCorrect,
-  handleDeleteOption,
-  handleNewOption,
-  handleUpdateOrder,
-}: Props) => {
-  const SortableOption = SortableElement(props => (
-    <div className="option">
-      <Option {...props} />
-      <style jsx>{`
-        .option {
-          cursor: grab;
-          margin-bottom: 0.5rem;
-        }
-      `}</style>
-    </div>
-  ))
+  handleUpdateOrder = ({ oldIndex, newIndex }) => {
+    this.props.input.onChange(arrayMove(this.props.input.value, oldIndex, newIndex))
+  }
 
-  const SortableOptions = SortableContainer(
-    ({ sortableOptions, handleCorrectToggle, handleDelete }) => (
-      <div className="options">
-        {sortableOptions.map(({ correct, name }, index) => (
-          <SortableOption
-            key={`sortable-${name}`}
-            index={index}
-            name={name}
-            correct={correct}
-            handleCorrectToggle={handleCorrectToggle(index)}
-            handleDelete={handleDelete(index)}
-          />
-        ))}
+  handleNewOption = (option) => {
+    this.props.input.onChange([...this.props.input.value, option])
+  }
+
+  handleDeleteOption = index => () => {
+    this.props.input.onChange([
+      ...this.props.input.value.slice(0, index),
+      ...this.props.input.value.slice(index + 1),
+    ])
+  }
+
+  handleOptionToggleCorrect = index => () => {
+    const option = this.props.input.value[index]
+
+    this.props.input.onChange([
+      ...this.props.input.value.slice(0, index),
+      { ...option, correct: !option.correct },
+      ...this.props.input.value.slice(index + 1),
+    ])
+  }
+
+  render() {
+    const SortableOption = SortableElement(props => (
+      <div className="option">
+        <Option {...props} />
+        <style jsx>{`
+          .option {
+            cursor: grab;
+            margin-bottom: 0.5rem;
+          }
+        `}</style>
       </div>
-    ),
-  )
+    ))
 
-  return (
-    <div>
-      <SortableOptions
-        sortableOptions={options}
-        handleCorrectToggle={handleOptionToggleCorrect}
-        handleDelete={handleDeleteOption}
-        onSortEnd={handleUpdateOrder}
-      />
+    const SortableOptions = SortableContainer(
+      ({ sortableOptions, handleCorrectToggle, handleDelete }) => (
+        <div className="options">
+          {sortableOptions.map(({ correct, name }, index) => (
+            <SortableOption
+              key={`sortable-${name}`}
+              index={index}
+              name={name}
+              correct={correct}
+              handleCorrectToggle={handleCorrectToggle(index)}
+              handleDelete={handleDelete(index)}
+            />
+          ))}
+        </div>
+      ),
+    )
 
-      <Placeholder handleSave={handleNewOption} />
-    </div>
-  )
+    const { input: { value } } = this.props
+
+    return (
+      <div className="field">
+        <label htmlFor="options">
+          <FormattedMessage defaultMessage="Options" id="teacher.createQuestion.options" />
+        </label>
+        <SortableOptions
+          sortableOptions={value || []}
+          handleCorrectToggle={this.handleOptionToggleCorrect}
+          handleDelete={this.handleDeleteOption}
+          onSortEnd={this.handleUpdateOrder}
+        />
+
+        <Placeholder handleSave={this.handleNewOption} />
+      </div>
+    )
+  }
 }
-
-Options.defaultProps = defaultProps
 
 export default Options
