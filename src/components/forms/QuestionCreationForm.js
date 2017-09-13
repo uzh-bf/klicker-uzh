@@ -16,6 +16,11 @@ import {
   SCCreationPreview,
   SCCreationContent,
 } from '../../components/questionTypes/SC'
+import {
+  FREECreationOptions,
+  FREECreationPreview,
+  FREECreationContent,
+} from '../../components/questionTypes/FREE'
 
 import type { OptionType, TagType } from '../../types'
 
@@ -49,6 +54,7 @@ type Props = {
   options: Array<OptionType>,
   tags: Array<TagType>,
   title: string,
+  type: string,
   handleSubmit: () => void,
   onDiscard: () => void,
 }
@@ -58,6 +64,7 @@ const defaultProps = {
   options: [],
   tags: [],
   title: '',
+  type: '',
 }
 
 const QuestionCreationForm = ({
@@ -187,6 +194,7 @@ const withState = connect(state => ({
   content: _get(state, 'form.createQuestion.values.content'),
   options: _get(state, 'form.createQuestion.values.options'),
   title: _get(state, 'form.createQuestion.values.title'),
+  type: _get(state, 'form.createQuestion.values.type'),
 }))
 
 export default reduxForm({
