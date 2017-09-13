@@ -2,9 +2,16 @@
 
 import { gql } from 'react-apollo'
 
+import type { OptionType, TagType } from '../types'
+
 type RegistrationMutationType = {
   id: string,
   email: string,
+  shortname: string,
+}
+type RegistrationInputType = {
+  email: string,
+  password: string,
   shortname: string,
 }
 const RegistrationMutation = gql`
@@ -21,6 +28,10 @@ type LoginMutationType = {
   id: string,
   email: string,
   shortname: string,
+}
+type LoginInputType = {
+  email: string,
+  password: string,
 }
 const LoginMutation = gql`
   mutation Login($email: String!, $password: String!) {
@@ -47,6 +58,13 @@ type CreateQuestionMutationType = {
     description: string,
     createdAt: string,
   }>,
+}
+type CreateQuestionInputType = {
+  title: string,
+  description: string,
+  options: Array<OptionType>,
+  tags: Array<TagType>,
+  type: string,
 }
 const CreateQuestionMutation = gql`
   mutation CreateQuestion(
@@ -84,4 +102,11 @@ const CreateQuestionMutation = gql`
 `
 
 export { CreateQuestionMutation, LoginMutation, RegistrationMutation }
-export type { CreateQuestionMutationType, LoginMutationType, RegistrationMutationType }
+export type {
+  CreateQuestionInputType,
+  CreateQuestionMutationType,
+  LoginInputType,
+  LoginMutationType,
+  RegistrationInputType,
+  RegistrationMutationType,
+}
