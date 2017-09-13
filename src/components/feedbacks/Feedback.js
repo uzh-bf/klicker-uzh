@@ -3,17 +3,13 @@
 import React from 'react'
 import { Button } from 'semantic-ui-react'
 
-type Props = {
-  content: string,
-  showDelete?: boolean,
-  votes: number,
-}
+import type { FeedbackType } from '../../types'
 
 const defaultProps = {
   showDelete: true,
 }
 
-const Feedback = ({ content, showDelete, votes }: Props) => (
+const Feedback = ({ content, showDelete, votes }: FeedbackType) => (
   <div className="feedback">
     <div className="content">{content}</div>
     {showDelete && (
