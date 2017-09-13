@@ -2,8 +2,6 @@
 
 import React from 'react'
 import { Menu, Sidebar as SemanticSidebar } from 'semantic-ui-react'
-import { Helmet } from 'react-helmet'
-import { createLinks } from '../../../lib'
 
 import SidebarItem from './SidebarItem'
 
@@ -26,8 +24,6 @@ const defaultProps = {
 
 const Sidebar = ({ activeItem, children, items, visible, handleSidebarItemClick }: Props) => (
   <div className="sidebar">
-    <Helmet defer={false}>{createLinks(['menu', 'sidebar'])}</Helmet>
-
     <SemanticSidebar.Pushable>
       <SemanticSidebar
         vertical
