@@ -3,25 +3,25 @@ import { filterQuestions } from './filters'
 const questions = [
   {
     id: '1',
-    tags: ['Tag 1', 'Tag 2', 'Tag 3'],
+    tags: [{ name: 'Tag 1' }, { name: 'Tag 2' }, { name: 'Tag 3' }],
     title: 'Question 1',
     type: 'SC',
   },
   {
     id: '2',
-    tags: ['Tag 1', 'Tag 4', 'Tag 5'],
+    tags: [{ name: 'Tag 1' }, { name: 'Tag 4' }, { name: 'Tag 5' }],
     title: 'Question 2',
     type: 'MC',
   },
   {
     id: '3',
-    tags: ['Tag 1', 'Tag 6', 'Tag 7'],
+    tags: [{ name: 'Tag 1' }, { name: 'Tag 6' }, { name: 'Tag 7' }],
     title: 'Question 3',
     type: 'FREE',
   },
   {
     id: '4',
-    tags: ['Tag 1', 'Tag 4', 'Tag 5'],
+    tags: [{ name: 'Tag 1' }, { name: 'Tag 4' }, { name: 'Tag 5' }],
     title: 'Question 4',
     type: 'SC',
   },
@@ -30,7 +30,7 @@ const questions = [
 expect.addSnapshotSerializer({
   print: val => `Question #${val.id}
   - Title: ${val.title}
-  - Tags: ${val.tags}
+  - Tags: ${val.tags.map(tag => tag.name)}
   - Type: ${val.type}`,
   test: val => val.id && val.tags && val.title && val.type,
 })
