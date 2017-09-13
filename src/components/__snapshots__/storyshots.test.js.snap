@@ -1173,11 +1173,25 @@ exports[`Storyshots QuestionTypes SC Answering Options 1`] = `
 `;
 
 exports[`Storyshots QuestionTypes SC Creation Content 1`] = `
-<textarea
-  name="content"
-  onChange={undefined}
-  value={undefined}
-/>
+<div
+  className="field"
+  data-jsx={281623178}
+>
+  <label
+    data-jsx={281623178}
+    htmlFor="content"
+  >
+    <span>
+      Content
+    </span>
+  </label>
+  <textarea
+    data-jsx={281623178}
+    name="content"
+    onChange={undefined}
+    value="hello world"
+  />
+</div>
 `;
 
 exports[`Storyshots QuestionTypes SC Creation Option (correct) 1`] = `
@@ -1405,33 +1419,46 @@ exports[`Storyshots QuestionTypes SC Creation Preview 1`] = `
 
 exports[`Storyshots QuestionTypes TypeChooser 1`] = `
 <div
-  className="typeChooser"
-  data-jsx={275591448}
+  className="field"
+  data-jsx={1200278040}
 >
-  <button
-    className="type active"
-    data-jsx={275591448}
-    onClick={[Function]}
-    type="button"
+  <label
+    data-jsx={1200278040}
+    htmlFor="types"
   >
-    Single Choice
-  </button>
-  <button
-    className="type"
-    data-jsx={275591448}
-    onClick={[Function]}
-    type="button"
+    <span>
+      Question type
+    </span>
+  </label>
+  <div
+    className="typeChooser"
+    data-jsx={1200278040}
   >
-    Multiple Choice
-  </button>
-  <button
-    className="type"
-    data-jsx={275591448}
-    onClick={[Function]}
-    type="button"
-  >
-    Free-Form
-  </button>
+    <button
+      className="type active"
+      data-jsx={1200278040}
+      onClick={[Function]}
+      type="button"
+    >
+      Single-Choice
+    </button>
+    <button
+      className="type"
+      data-jsx={1200278040}
+      onClick={[Function]}
+      type="button"
+    >
+      Multiple-Choice
+    </button>
+    <button
+      className="type"
+      data-jsx={1200278040}
+      onClick={[Function]}
+      type="button"
+    >
+      Free-Form
+    </button>
+  </div>
 </div>
 `;
 
