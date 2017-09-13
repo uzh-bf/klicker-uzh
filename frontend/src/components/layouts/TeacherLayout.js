@@ -81,9 +81,10 @@ class TeacherLayout extends Component {
     return (
       <div className="teacherLayout">
         <Helmet defer={false}>
-          {createLinks(['https://fonts.googleapis.com/css?family=Open Sans', 'reset'])}
-        </Helmet>
-        <Helmet>
+          {createLinks([
+            'https://fonts.googleapis.com/css?family=Open Sans',
+            'https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.13/semantic.min.css',
+          ])}
           <title>{pageTitle}</title>
         </Helmet>
 
@@ -124,10 +125,14 @@ class TeacherLayout extends Component {
             font-size: 14px;
           }
 
+          input,
+          .noBorder {
+            border-radius: 0 !important;
+          }
+
           .noBorder {
             border: 0 !important;
             box-shadow: none !important;
-            border-radius: 0 !important;
           }
         `}</style>
 
