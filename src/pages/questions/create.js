@@ -1,38 +1,28 @@
-// TODO: reenable flow
-// semantic: button, form, input
-
-// import type { OperationComponent } from 'react-apollo'
+/* flow */
+/* eslint-disable react/prop-types */
 
 import React, { Component } from 'react'
 import Router from 'next/router'
 import { graphql } from 'react-apollo'
-import { Helmet } from 'react-helmet'
 
-import QuestionCreationForm from '../../components/forms/QuestionCreationForm'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
-import { createLinks, pageWithIntl, withData } from '../../lib'
-
+import QuestionCreationForm from '../../components/forms/QuestionCreationForm'
+import { pageWithIntl, withData } from '../../lib'
 import { CreateQuestionMutation } from '../../queries/mutations'
 import { QuestionListQuery, TagListQuery } from '../../queries/queries'
 
-import stylesTagsInput from './styles-tagsinput'
-
 /* type Props = {
+  data: any,
   intl: $IntlShape,
-  createQuestion: ({
-    description: ?string,
-    options: Array<{
-      correct: boolean,
-      name: string,
-    }>,
-    tags: Array<string>,
-    title: ?string,
-    type: string,
-  }) => Promise<*>,
+  createQuestion: any => Promise<*>,
 } */
 
 class CreateQuestion extends Component {
   // props: Props
+
+  handleDiscard = () => {
+    Router.push('/questions')
+  }
 
   handleSave = ({ content, options, tags, title, type }) => {
     this.props
@@ -67,8 +57,12 @@ class CreateQuestion extends Component {
         })}
         sidebar={{ activeItem: 'createQuestion' }}
       >
-        <Helmet defer={false}>{createLinks(['button', 'form'])}</Helmet>
-        <QuestionCreationForm intl={intl} tags={data.tags} onSubmit={this.handleSave} />
+        <QuestionCreationForm
+          intl={intl}
+          tags={data.tags}
+          onSubmit={this.handleSave}
+          onDiscard={this.handleDiscard}
+        />
       </TeacherLayout>
     )
   }
@@ -76,7 +70,7 @@ class CreateQuestion extends Component {
 
 const withTags = graphql(TagListQuery)
 
-const withMutation = graphql(CreateQuestionMutation, {
+const withCreateQuestionMutation = graphql(CreateQuestionMutation, {
   props: ({ mutate }) => ({
     createQuestion: ({ description, options, tags, title, type }) =>
       mutate({
@@ -86,4 +80,4 @@ const withMutation = graphql(CreateQuestionMutation, {
   }),
 })
 
-export default withData(pageWithIntl(withTags(withMutation(CreateQuestion))))
+export default withData(pageWithIntl(withTags(withCreateQuestionMutation(CreateQuestion))))
