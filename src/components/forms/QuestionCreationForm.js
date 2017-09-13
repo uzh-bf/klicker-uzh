@@ -11,7 +11,11 @@ import TitleInput from '../questions/creation/TitleInput'
 import TagInput from '../questions/creation/TagInput'
 import TypeChooser from '../questionTypes/TypeChooser'
 import stylesTagsInput from './styles-tagsinput'
-import { SCCreationContent, SCCreationOptions, SCCreationPreview } from '../../components/questionTypes/SC'
+import {
+  SCCreationContent,
+  SCCreationOptions,
+  SCCreationPreview,
+} from '../../components/questionTypes/SC'
 import { FREECreationPreview } from '../../components/questionTypes/FREE'
 
 import type { OptionType, TagType } from '../../types'
@@ -60,61 +64,61 @@ const defaultProps = {
 }
 
 const QuestionCreationForm = ({
-                                intl,
-                                invalid,
-                                content,
-                                options,
-                                tags,
-                                title,
-                                type,
-                                handleSubmit: onSubmit,
-                                onDiscard,
-                              }: Props) => {
-  return (
-    <form className="ui form" onSubmit={onSubmit}>
-      <div className="questionInput questionTitle">
-        <Field name="title" component={TitleInput} />
+  intl,
+  invalid,
+  content,
+  options,
+  tags,
+  title,
+  type,
+  handleSubmit: onSubmit,
+  onDiscard,
+}: Props) => (
+  <form className="ui form" onSubmit={onSubmit}>
+    <div className="questionInput questionTitle">
+      <Field name="title" component={TitleInput} />
+    </div>
+
+    <div className="questionInput questionType">
+      <Field name="type" component={TypeChooser} intl={intl} />
+    </div>
+
+    <div className="questionInput questionTags">
+      <Field name="tags" component={TagInput} tags={tags} />
+    </div>
+
+    <div className="questionInput questionContent">
+      <Field
+        name="content"
+        component={type === 'SC' || type === 'MC' ? SCCreationContent : SCCreationContent}
+      />
+    </div>
+
+    {type !== 'FREE' && (
+      <div className="questionInput questionOptions">
+        <Field name="options" component={SCCreationOptions} />
       </div>
+    )}
 
-      <div className="questionInput questionType">
-        <Field name="type" component={TypeChooser} intl={intl} />
-      </div>
+    <div className="questionPreview">
+      {type === 'SC' || type === 'MC' ? (
+        <SCCreationPreview title={title} description={content} options={options} />
+      ) : (
+        <FREECreationPreview title={title} description={content} />
+      )}
+    </div>
 
-      <div className="questionInput questionTags">
-        <Field name="tags" component={TagInput} tags={tags} />
-      </div>
+    <button className="ui button discard" type="reset" onClick={onDiscard}>
+      <FormattedMessage defaultMessage="Discard" id="teacher.createQuestion.button.discard" />
+    </button>
+    <button className="ui primary button save" disabled={invalid} type="submit">
+      <FormattedMessage defaultMessage="Save" id="common.button.save" />
+    </button>
 
-      <div className="questionInput questionContent">
-        <Field name="content" component={type === 'SC' || type === 'MC' ? SCCreationContent : SCCreationContent} />
-      </div>
-
-      {
-        type !== 'FREE' &&
-        <div className="questionInput questionOptions">
-          <Field name="options" component={SCCreationOptions} />
-        </div>
-      }
-
-      <div className="questionPreview">
-        {
-          type === 'SC' || type === 'MC'
-            ? <SCCreationPreview title={title} description={content} options={options} />
-            : <FREECreationPreview title={title} description={content} />
-        }
-
-      </div>
-
-      <button className="ui button discard" type="reset" onClick={onDiscard}>
-        <FormattedMessage defaultMessage="Discard" id="teacher.createQuestion.button.discard" />
-      </button>
-      <button className="ui primary button save" disabled={invalid} type="submit">
-        <FormattedMessage defaultMessage="Save" id="common.button.save" />
-      </button>
-
-      <style global jsx>
-        {stylesTagsInput}
-      </style>
-      <style jsx>{`
+    <style global jsx>
+      {stylesTagsInput}
+    </style>
+    <style jsx>{`
         form {
           display: flex;
           flex-direction: column;
@@ -140,9 +144,9 @@ const QuestionCreationForm = ({
               grid-template-columns: repeat(6, 1fr);
               grid-template-rows: auto;
               grid-template-areas: 'title title title title preview preview'
-              'type type tags tags preview preview'
-              'content content content content content content'
-              'options options options options options options';
+                'type type tags tags preview preview'
+                'content content content content content content'
+                'options options options options options options';
             }
 
             .questionInput {
@@ -187,9 +191,8 @@ const QuestionCreationForm = ({
           }
         }
       `}</style>
-    </form>
-  )
-}
+  </form>
+)
 
 QuestionCreationForm.defaultProps = defaultProps
 
