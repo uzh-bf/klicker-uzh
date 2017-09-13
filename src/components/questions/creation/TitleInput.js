@@ -4,8 +4,10 @@ import React from 'react'
 import { FormattedMessage } from 'react-intl'
 
 type Props = {
-  value: string,
-  onChange: (newValue: string) => void,
+  input: {
+    value: string,
+    onChange: (newValue: string) => void,
+  },
 }
 const TitleInput = ({ input: { value, onChange } }: Props) => (
   <div className="field">

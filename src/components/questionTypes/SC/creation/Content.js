@@ -3,9 +3,10 @@
 import React from 'react'
 import { FormattedMessage } from 'react-intl'
 
+import type { TextInputType } from '../../../../types'
+
 type Props = {
-  value: string,
-  handleChange: (newValue: string) => void,
+  input: TextInputType,
 }
 
 const Content = ({ input: { value, onChange } }: Props) => (

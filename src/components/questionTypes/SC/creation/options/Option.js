@@ -6,9 +6,10 @@ import { FaTrash } from 'react-icons/lib/fa'
 
 import styles from './styles'
 
+import type { OptionType } from '../../../../../types'
+
 type Props = {
-  correct: boolean,
-  name: string,
+  ...OptionType,
   handleCorrectToggle: () => void,
   handleDelete: () => void,
 }

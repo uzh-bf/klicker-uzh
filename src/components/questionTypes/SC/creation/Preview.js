@@ -5,11 +5,11 @@ import { FormattedMessage } from 'react-intl'
 
 import AnswerOptions from '../answer/Options'
 
+import type { OptionType } from '../../../../types'
+
 type Props = {
   description: string,
-  options: Array<{
-    label: string,
-  }>,
+  options: Array<OptionType>,
   title: string,
 }
 
@@ -25,8 +25,8 @@ const Preview = ({ title, description, options }: Props) => (
     <div className="options">
       <AnswerOptions
         activeOption={-1}
-        options={(options.length === 0 && [{ label: 'OPTION' }]) || options}
-        handleOptionClick={f => () => f}
+        options={(options.length === 0 && [{ name: 'OPTION' }]) || options}
+        onOptionClick={f => () => f}
       />
     </div>
     <div className="button">

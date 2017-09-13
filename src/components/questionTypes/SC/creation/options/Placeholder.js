@@ -6,15 +6,15 @@ import { FaFloppyO, FaPlus, FaTrash } from 'react-icons/lib/fa'
 
 import styles from './styles'
 
+import type { OptionType } from '../../../../../types'
+
 type Props = {
-  handleSave: ({
-    correct: boolean,
-    name: string,
-  }) => void,
+  handleSave: (newType: OptionType) => void,
 }
 
 class Placeholder extends React.Component {
   props: Props
+
   state = {
     correct: false,
     inputMode: false,

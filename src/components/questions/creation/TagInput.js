@@ -6,14 +6,11 @@ import { FormattedMessage } from 'react-intl'
 
 import { autocompleteRenderInput } from '../../common/Autosuggest'
 
+import type { TagType, ArrayInputType } from '../../../types'
+
 type Props = {
-  tags: Array<{
-    name: string,
-  }>,
-  input: {
-    value: Array<string>,
-    onChange: (newTag: string) => void,
-  }
+  tags: Array<TagType>,
+  input: ArrayInputType<TagType>,
 }
 
 const defaultProps = {

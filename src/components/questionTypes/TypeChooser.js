@@ -4,12 +4,11 @@ import React from 'react'
 import classNames from 'classnames'
 import { FormattedMessage } from 'react-intl'
 
+import type { TextInputType } from '../../types'
+
 type Props = {
   intl: $IntlShape,
-  input: {
-    value: string,
-    onChange: string => void,
-  }
+  input: TextInputType,
 }
 
 const TypeChooser = ({ intl, input: { value, onChange } }: Props) => {
@@ -37,6 +36,8 @@ const TypeChooser = ({ intl, input: { value, onChange } }: Props) => {
     },
   ]
 
+  const handleClick = newValue => () => onChange(newValue)
+
   return (
     <div className="field">
       <label htmlFor="types">
@@ -48,7 +49,7 @@ const TypeChooser = ({ intl, input: { value, onChange } }: Props) => {
             key={typeValue}
             className={classNames('type', { active: typeValue === value })}
             type="button"
-            onClick={onChange(typeValue)}
+            onClick={handleClick(typeValue)}
           >
             {name}
           </button>

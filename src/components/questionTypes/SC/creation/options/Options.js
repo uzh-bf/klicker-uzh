@@ -7,43 +7,37 @@ import { FormattedMessage } from 'react-intl'
 import Placeholder from './Placeholder'
 import Option from './Option'
 
+import type { ArrayInputType, OptionType } from '../../../../../types'
+
 type Props = {
-  options: Array<{
-    correct: boolean,
-    name: string,
-  }>,
-  handleNewOption: ({
-    correct: boolean,
-    name: string,
-  }) => void,
-  handleDeleteOption: (index: number) => () => void,
-  handleOptionToggleCorrect: (index: number) => () => void,
-  handleUpdateOrder: (oldIndex: number, newIndex: number) => void,
+  input: ArrayInputType<OptionType>,
 }
 
 class Options extends React.Component {
+  props: Props
+
   static defaultProps = {
     input: {
       value: [],
     },
   }
 
-  handleUpdateOrder = ({ oldIndex, newIndex }) => {
+  handleUpdateOrder = ({ oldIndex, newIndex }: { oldIndex: number, newIndex: number }) => {
     this.props.input.onChange(arrayMove(this.props.input.value, oldIndex, newIndex))
   }
 
-  handleNewOption = (option) => {
+  handleNewOption = (option: OptionType) => {
     this.props.input.onChange([...this.props.input.value, option])
   }
 
-  handleDeleteOption = index => () => {
+  handleDeleteOption = (index: number) => () => {
     this.props.input.onChange([
       ...this.props.input.value.slice(0, index),
       ...this.props.input.value.slice(index + 1),
     ])
   }
 
-  handleOptionToggleCorrect = index => () => {
+  handleOptionToggleCorrect = (index: number) => () => {
     const option = this.props.input.value[index]
 
     this.props.input.onChange([
