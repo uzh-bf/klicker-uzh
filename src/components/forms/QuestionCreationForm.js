@@ -85,7 +85,7 @@ const QuestionCreationForm = ({
       </div>
 
       <div className="questionInput questionContent">
-        <Field name="content" component={type === 'SC' ? SCCreationContent : SCCreationContent} />
+        <Field name="content" component={type === 'SC' || type === 'MC' ? SCCreationContent : SCCreationContent} />
       </div>
 
       {
@@ -97,7 +97,7 @@ const QuestionCreationForm = ({
 
       <div className="questionPreview">
         {
-          type === 'SC'
+          type === 'SC' || type === 'MC'
             ? <SCCreationPreview title={title} description={content} options={options} />
             : <FREECreationPreview title={title} description={content} />
         }
