@@ -1,4 +1,5 @@
 // @flow
+/* eslint-disable no-unused-vars */
 
 import _every from 'lodash/every'
 

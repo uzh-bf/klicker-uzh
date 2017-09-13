@@ -183,4 +183,11 @@ const RunningSessionQuery = gql`
 `
 
 export { QrGeneratorQuery, QuestionListQuery, RunningSessionQuery, SessionListQuery, TagListQuery }
-export type { QrGeneratorType, QuestionListType, QuestionType, RunningSessionType, SessionListType, TagListType }
+export type {
+  QrGeneratorType,
+  QuestionListType,
+  QuestionType,
+  RunningSessionType,
+  SessionListType,
+  TagListType,
+}
