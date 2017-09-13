@@ -1,6 +1,2 @@
-export { default as FREEAnswerOptions } from './answer/Options'
-export { default as FREECreationOptions } from './creation/options/Options'
-export { default as FREECreationOption } from './creation/options/Option'
-export { default as FREECreationPlaceholder } from './creation/options/Placeholder'
 export { default as FREECreationPreview } from './creation/Preview'
 export { default as FREECreationContent } from './creation/Content'
