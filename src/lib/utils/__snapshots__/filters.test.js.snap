@@ -1,0 +1,215 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`filterQuestions filters by tags 1`] = `
+Array [
+  Object {
+    "id": "1",
+    "tags": Array [
+      "Tag 1",
+      "Tag 2",
+      "Tag 3",
+    ],
+    "title": "Question 1",
+    "type": "SC",
+  },
+  Object {
+    "id": "2",
+    "tags": Array [
+      "Tag 1",
+      "Tag 4",
+      "Tag 5",
+    ],
+    "title": "Question 2",
+    "type": "MC",
+  },
+  Object {
+    "id": "3",
+    "tags": Array [
+      "Tag 1",
+      "Tag 6",
+      "Tag 7",
+    ],
+    "title": "Question 3",
+    "type": "FREE",
+  },
+  Object {
+    "id": "4",
+    "tags": Array [
+      "Tag 1",
+      "Tag 4",
+      "Tag 5",
+    ],
+    "title": "Question 4",
+    "type": "SC",
+  },
+]
+`;
+
+exports[`filterQuestions filters by tags 2`] = `
+Array [
+  Object {
+    "id": "3",
+    "tags": Array [
+      "Tag 1",
+      "Tag 6",
+      "Tag 7",
+    ],
+    "title": "Question 3",
+    "type": "FREE",
+  },
+]
+`;
+
+exports[`filterQuestions filters by tags 3`] = `Array []`;
+
+exports[`filterQuestions filters by title 1`] = `
+Array [
+  Object {
+    "id": "1",
+    "tags": Array [
+      "Tag 1",
+      "Tag 2",
+      "Tag 3",
+    ],
+    "title": "Question 1",
+    "type": "SC",
+  },
+]
+`;
+
+exports[`filterQuestions filters by title 2`] = `Array []`;
+
+exports[`filterQuestions filters by type 1`] = `
+Array [
+  Object {
+    "id": "1",
+    "tags": Array [
+      "Tag 1",
+      "Tag 2",
+      "Tag 3",
+    ],
+    "title": "Question 1",
+    "type": "SC",
+  },
+  Object {
+    "id": "2",
+    "tags": Array [
+      "Tag 1",
+      "Tag 4",
+      "Tag 5",
+    ],
+    "title": "Question 2",
+    "type": "MC",
+  },
+  Object {
+    "id": "3",
+    "tags": Array [
+      "Tag 1",
+      "Tag 6",
+      "Tag 7",
+    ],
+    "title": "Question 3",
+    "type": "FREE",
+  },
+  Object {
+    "id": "4",
+    "tags": Array [
+      "Tag 1",
+      "Tag 4",
+      "Tag 5",
+    ],
+    "title": "Question 4",
+    "type": "SC",
+  },
+]
+`;
+
+exports[`filterQuestions filters by type 2`] = `
+Array [
+  Object {
+    "id": "1",
+    "tags": Array [
+      "Tag 1",
+      "Tag 2",
+      "Tag 3",
+    ],
+    "title": "Question 1",
+    "type": "SC",
+  },
+  Object {
+    "id": "2",
+    "tags": Array [
+      "Tag 1",
+      "Tag 4",
+      "Tag 5",
+    ],
+    "title": "Question 2",
+    "type": "MC",
+  },
+  Object {
+    "id": "3",
+    "tags": Array [
+      "Tag 1",
+      "Tag 6",
+      "Tag 7",
+    ],
+    "title": "Question 3",
+    "type": "FREE",
+  },
+  Object {
+    "id": "4",
+    "tags": Array [
+      "Tag 1",
+      "Tag 4",
+      "Tag 5",
+    ],
+    "title": "Question 4",
+    "type": "SC",
+  },
+]
+`;
+
+exports[`filterQuestions returns all on empty filter 1`] = `
+Array [
+  Object {
+    "id": "1",
+    "tags": Array [
+      "Tag 1",
+      "Tag 2",
+      "Tag 3",
+    ],
+    "title": "Question 1",
+    "type": "SC",
+  },
+  Object {
+    "id": "2",
+    "tags": Array [
+      "Tag 1",
+      "Tag 4",
+      "Tag 5",
+    ],
+    "title": "Question 2",
+    "type": "MC",
+  },
+  Object {
+    "id": "3",
+    "tags": Array [
+      "Tag 1",
+      "Tag 6",
+      "Tag 7",
+    ],
+    "title": "Question 3",
+    "type": "FREE",
+  },
+  Object {
+    "id": "4",
+    "tags": Array [
+      "Tag 1",
+      "Tag 4",
+      "Tag 5",
+    ],
+    "title": "Question 4",
+    "type": "SC",
+  },
+]
+`;

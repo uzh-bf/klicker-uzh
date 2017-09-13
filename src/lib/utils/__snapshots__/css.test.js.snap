@@ -1,5 +1,18 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`createLinks works with combinations of both 1`] = `
+Array [
+  <link
+    href="http://www.google.com"
+    rel="stylesheet"
+  />,
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.11/components/header.min.css"
+    rel="stylesheet"
+  />,
+]
+`;
+
 exports[`createLinks works with full urls 1`] = `
 Array [
   <link
