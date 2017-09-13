@@ -12,7 +12,7 @@ import TagInput from '../questions/creation/TagInput'
 import TypeChooser from '../questionTypes/TypeChooser'
 import stylesTagsInput from './styles-tagsinput'
 import { SCCreationContent, SCCreationOptions, SCCreationPreview } from '../../components/questionTypes/SC'
-import { FREECreationOptions, FREECreationPreview } from '../../components/questionTypes/FREE'
+import { FREECreationPreview } from '../../components/questionTypes/FREE'
 
 import type { OptionType, TagType } from '../../types'
 
