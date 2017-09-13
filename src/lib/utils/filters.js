@@ -23,7 +23,7 @@ function filterQuestions(questions: Question[], filters: QuestionFilters) {
     if (filters.tags && !_every(filters.tags, tag => question.tags.includes(tag))) {
       return false
     }
-    if (filters.type && !question.type === filters.type) {
+    if (filters.type && question.type !== filters.type) {
       return false
     }
     return true
