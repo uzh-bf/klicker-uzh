@@ -2,14 +2,7 @@
 
 import _every from 'lodash/every'
 
-import type { TagType } from '../../types'
-
-type Question = {
-  id: string,
-  tags: Array<TagType>,
-  title: string,
-  type: 'SC' | 'MC' | 'FREE',
-}
+import type { QuestionType } from '../../queries/queries'
 
 type QuestionFilters = {
   tags: Array<string>,
@@ -17,7 +10,7 @@ type QuestionFilters = {
   type: ?string,
 }
 
-function filterQuestions(questions: Question[], filters: QuestionFilters) {
+function filterQuestions(questions: QuestionType[], filters: QuestionFilters) {
   return questions.filter((question) => {
     if (filters.title && !question.title.includes(filters.title)) {
       return false

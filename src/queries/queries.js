@@ -2,14 +2,12 @@
 
 import { gql } from 'react-apollo'
 
-type Tag = {
-  id: string,
-  name: string,
-}
+import type { TagType } from '../types'
+
 type TagListType = {
   loading: boolean,
   error?: string,
-  tags: Array<Tag>,
+  tags: Array<TagType>,
 }
 const TagListQuery = gql`
   {
@@ -20,24 +18,25 @@ const TagListQuery = gql`
   }
 `
 
+type QuestionType = {
+  id: string,
+  title: string,
+  type: 'SC' | 'MC' | 'FREE',
+  instances: Array<{
+    id: string,
+    createdAt: string,
+  }>,
+  tags: Array<TagType>,
+  versions: Array<{
+    createdAt: string,
+  }>,
+  createdAt: string,
+  updatedAt: string,
+}
 type QuestionListType = {
   loading: boolean,
   error?: string,
-  questions: Array<{
-    id: string,
-    title: string,
-    type: string,
-    instances: Array<{
-      id: string,
-      createdAt: string,
-    }>,
-    tags: Array<Tag>,
-    versions: Array<{
-      createdAt: string,
-    }>,
-    createdAt: string,
-    updatedAt: string,
-  }>,
+  questions: QuestionType[],
 }
 const QuestionListQuery = gql`
   {
@@ -184,4 +183,4 @@ const RunningSessionQuery = gql`
 `
 
 export { QrGeneratorQuery, QuestionListQuery, RunningSessionQuery, SessionListQuery, TagListQuery }
-export type { QrGeneratorType, QuestionListType, RunningSessionType, SessionListType, TagListType }
+export type { QrGeneratorType, QuestionListType, QuestionType, RunningSessionType, SessionListType, TagListType }
