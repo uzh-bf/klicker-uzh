@@ -1,13 +1,9 @@
-// @flow
-/* eslint-disable import/prefer-default-export */
+/* eslint-disable import/prefer-default-export, react/prop-types, no-unused-vars */
 
 import React from 'react'
 import Autosuggest from 'react-autosuggest'
 
-type Tag = {
-  name: string,
-}
-const autocompleteRenderInput = (tags: Array<Tag>) => ({ addTag, ...props }) => {
+const autocompleteRenderInput = tags => ({ addTag, ...props }) => {
   const handleOnChange = (e, { newValue, method }) => {
     if (method === 'enter') {
       e.preventDefault()
