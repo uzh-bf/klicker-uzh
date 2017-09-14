@@ -1,7 +1,10 @@
 // @flow
 
 import React from 'react'
+import _get from 'lodash/get'
 import classNames from 'classnames'
+import { connect } from 'react-redux'
+import { reduxForm } from 'redux-form'
 import { FormattedMessage } from 'react-intl'
 
 import type { TextInputType } from '../../../../../types'
@@ -11,8 +14,8 @@ type Props = {
   input: TextInputType,
 }
 
-const Options = ({ intl, input: { value, onChange } }: Props) => {
-  const options = [
+const Options = ({ intl, input: { value, onChange }, options }: Props) => {
+  const optionsData = [
     {
       name: intl.formatMessage({
         defaultMessage: 'No Limitations',
@@ -37,7 +40,7 @@ const Options = ({ intl, input: { value, onChange } }: Props) => {
         <FormattedMessage defaultMessage="Options" id="teacher.createQuestion.options" />
       </label>
       <div className="optionsChooser">
-        {options.map(({ name, value: optionValue }) => (
+        {optionsData.map(({ name, value: optionValue }) => (
           <button
             key={optionValue}
             className={classNames('option', { active: optionValue === value })}
@@ -48,10 +51,15 @@ const Options = ({ intl, input: { value, onChange } }: Props) => {
           </button>
         ))}
       </div>
-      <label htmlFor="min">Min</label>
-      <input />
-      <label htmlFor="max">Max</label>
-      <input />
+      {
+        options === 'NUMBER' &&
+        <div>
+          <label htmlFor="min">Min</label>
+          <input />
+          <label htmlFor="max">Max</label>
+          <input />
+        </div>
+      }
 
 
       <style jsx>{`
@@ -75,4 +83,10 @@ const Options = ({ intl, input: { value, onChange } }: Props) => {
   )
 }
 
-export default Options
+const withState = connect(state => ({
+  options: _get(state, 'form.createQuestion.values.options'),
+}))
+
+export default reduxForm({
+  form: 'createQuestion',
+})(withState(Options))
