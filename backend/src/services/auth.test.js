@@ -86,7 +86,7 @@ describe('AuthService', () => {
     })
 
     it('works with a real user', async () => {
-      const user = await login(res, 'roland.schlaefli@bf.uzh.ch', 'abcd')
+      const user = await login(res, 'roland.schlaefli@bf.uzh.ch', 'abcdabcd')
 
       // expect the returned user to contain the correct email and shortname
       // the shortname is only saved in the database (thus the connection must work)
