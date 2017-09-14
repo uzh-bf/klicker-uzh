@@ -24,6 +24,7 @@ class Index extends Component {
 
   state: {
     creationMode: boolean,
+    dropped: string[],
     filters: QuestionFilters,
     sidebarVisible: boolean,
   }
@@ -32,6 +33,7 @@ class Index extends Component {
     super(props)
     this.state = {
       creationMode: false,
+      dropped: [],
       filters: {
         tags: [],
         title: null,
@@ -43,6 +45,10 @@ class Index extends Component {
 
   toggleCreationMode = (): void => {
     this.setState(prevState => ({ creationMode: !prevState.creationMode }))
+  }
+
+  handleDropped = (id: string) => () => {
+    this.setState(prevState => ({ dropped: [...prevState.dropped, id] }))
   }
 
   // handle searching in the navbar search area
@@ -155,7 +161,12 @@ class Index extends Component {
             <TagList activeTags={this.state.filters.tags} handleTagClick={this.handleTagClick} />
           </div>
           <div className="questionList">
-            <QuestionList filters={this.state.filters} />
+            <QuestionList
+              dropped={this.state.dropped}
+              filters={this.state.filters}
+              creationMode={this.state.creationMode}
+              onQuestionDropped={this.handleDropped}
+            />
           </div>
         </div>
 
