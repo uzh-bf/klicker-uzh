@@ -2,16 +2,13 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { Helmet } from 'react-helmet'
 import { Button, List } from 'semantic-ui-react'
-
-import { createLinks } from '../../../lib'
 
 type Props = {
   button: {
     invalid: boolean,
     label: string,
-    handleSubmit: () => mixed,
+    onSubmit: () => mixed,
   },
   children: any, // redux-form <Field> passed as children
   links: Array<{
@@ -22,8 +19,6 @@ type Props = {
 
 const FormWithLinks = ({ button, children, links }: Props) => (
   <form className="ui form error">
-    <Helmet defer={false}>{createLinks(['button', 'form', 'list'])}</Helmet>
-
     {children}
 
     <div className="actionArea">
@@ -32,7 +27,7 @@ const FormWithLinks = ({ button, children, links }: Props) => (
         className="semanticButton"
         disabled={button.invalid}
         type="submit"
-        onClick={button.handleSubmit}
+        onClick={button.onSubmit}
       >
         {button.label}
       </Button>

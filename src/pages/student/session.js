@@ -10,8 +10,8 @@ import { withData, pageWithIntl } from '../../lib'
 import Collapser from '../../components/common/Collapser'
 import ConfusionSlider from '../../components/confusion/ConfusionSlider'
 import Feedback from '../../components/feedbacks/Feedback'
-import SingleChoiceOptions from '../../components/questionTypes/SingleChoiceOptions'
 import StudentLayout from '../../components/layouts/StudentLayout'
+import { SCAnswerOptions } from '../../components/questionTypes/SC'
 
 class Session extends React.Component {
   props: {
@@ -109,7 +109,7 @@ class Session extends React.Component {
             </div>
 
             <div className="options">
-              <SingleChoiceOptions
+              <SCAnswerOptions
                 activeOption={this.state.questionActiveOption}
                 options={[
                   { label: 'answer1' },
