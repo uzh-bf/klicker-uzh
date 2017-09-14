@@ -12,6 +12,11 @@ import type { TextInputType } from '../../../../../types'
 type Props = {
   intl: $IntlShape,
   input: TextInputType,
+  options: TextInputType,
+}
+
+const defaultProps = {
+  options: null,
 }
 
 const Options = ({ intl, input: { value, onChange }, options }: Props) => {
@@ -82,6 +87,8 @@ const Options = ({ intl, input: { value, onChange }, options }: Props) => {
     </div>
   )
 }
+
+Options.defaultProps = defaultProps
 
 const withState = connect(state => ({
   options: _get(state, 'form.createQuestion.values.options'),
