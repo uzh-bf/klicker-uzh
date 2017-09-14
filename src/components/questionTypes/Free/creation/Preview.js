@@ -25,7 +25,7 @@ const Preview = ({ title, options, description }: Props) => (
     <div className="title">{title || 'TITLE'}</div>
     <div className="description">{description || 'DESCRIPTION'}</div>
     {
-      options.restrictions.type === 'NUMBERS' &&
+      options.restrictions.type === 'NUMBERS' && options.restrictions.min && options.restrictions.max &&
       <div className="diagram">
         <div className="min">{options.restrictions.min}</div>
         <div className="max">{options.restrictions.max}</div>
