@@ -17,6 +17,7 @@ const Preview = ({ title, description }: Props) => (
   <div className="preview">
     <div className="title">{title || 'TITLE'}</div>
     <div className="description">{description || 'DESCRIPTION'}</div>
+    <div className="diagram">Hello I am a diagram</div>
     <div className="button">
       <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
     </div>

@@ -106,7 +106,7 @@ const QuestionCreationForm = ({
       {type === 'SC' || type === 'MC' ? (
         <SCCreationPreview title={title} description={content} options={options} />
       ) : (
-        <FREECreationPreview title={title} description={content} />
+        <FREECreationPreview title={title} description={content} options={options} />
       )}
     </div>
 
