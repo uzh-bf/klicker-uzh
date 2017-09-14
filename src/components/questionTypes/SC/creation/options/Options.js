@@ -18,36 +18,57 @@ class Options extends React.Component {
 
   static defaultProps = {
     input: {
-      value: [],
+      value: {
+        choices: [],
+        randomized: false,
+      },
     },
   }
 
   handleUpdateOrder = ({ oldIndex, newIndex }: { oldIndex: number, newIndex: number }) => {
-    this.props.input.onChange(arrayMove(this.props.input.value, oldIndex, newIndex))
+    const { value, onChange } = this.props.input
+
+    onChange({
+      ...value,
+      choices: arrayMove(value.choices, oldIndex, newIndex),
+    })
   }
 
   handleNewOption = (option: OptionType) => {
-    this.props.input.onChange([...this.props.input.value, option])
+    const { value, onChange } = this.props.input
+
+    onChange({
+      ...value,
+      choices: [...value.choices, option],
+    })
   }
 
   handleDeleteOption = (index: number) => () => {
-    this.props.input.onChange([
-      ...this.props.input.value.slice(0, index),
-      ...this.props.input.value.slice(index + 1),
-    ])
+    const { value, onChange } = this.props.input
+
+    onChange({
+      ...value,
+      choices: [...value.choices.slice(0, index), ...value.choices.slice(index + 1)],
+    })
   }
 
   handleOptionToggleCorrect = (index: number) => () => {
-    const option = this.props.input.value[index]
+    const { value, onChange } = this.props.input
+    const option = value.choices[index]
 
-    this.props.input.onChange([
-      ...this.props.input.value.slice(0, index),
-      { ...option, correct: !option.correct },
-      ...this.props.input.value.slice(index + 1),
-    ])
+    onChange({
+      ...value,
+      choices: [
+        ...value.choices.slice(0, index),
+        { ...option, correct: !option.correct },
+        ...value.choices.slice(index + 1),
+      ],
+    })
   }
 
   render() {
+    const { input: { value } } = this.props
+
     const SortableOption = SortableElement(props => (
       <div className="option">
         <Option {...props} />
@@ -61,7 +82,7 @@ class Options extends React.Component {
     ))
 
     const SortableOptions = SortableContainer(
-      ({ sortableOptions, handleCorrectToggle, handleDelete }) => (
+      ({ sortableOptions = [], handleCorrectToggle, handleDelete }) => (
         <div className="options">
           {sortableOptions.map(({ correct, name }, index) => (
             <SortableOption
@@ -77,15 +98,13 @@ class Options extends React.Component {
       ),
     )
 
-    const { input: { value } } = this.props
-
     return (
       <div className="field">
         <label htmlFor="options">
           <FormattedMessage defaultMessage="Options" id="teacher.createQuestion.options" />
         </label>
         <SortableOptions
-          sortableOptions={value || []}
+          sortableOptions={value.choices}
           handleCorrectToggle={this.handleOptionToggleCorrect}
           handleDelete={this.handleDeleteOption}
           onSortEnd={this.handleUpdateOrder}

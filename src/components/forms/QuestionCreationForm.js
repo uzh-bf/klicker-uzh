@@ -55,14 +55,6 @@ type Props = {
   onDiscard: () => void,
 }
 
-const defaultProps = {
-  content: '',
-  options: [],
-  tags: [],
-  title: '',
-  type: '',
-}
-
 const QuestionCreationForm = ({
   intl,
   invalid,
@@ -90,23 +82,23 @@ const QuestionCreationForm = ({
     <div className="questionInput questionContent">
       <Field
         name="content"
-        component={type === 'SC' || type === 'MC' ? SCCreationContent : SCCreationContent}
+        component={SCCreationContent}
       />
     </div>
 
     <div className="questionInput questionOptions">
       <Field
         name="options"
-        component={type === 'SC' || type === 'MC' ? SCCreationOptions : FREECreationOptions}
+        component={(type === 'SC' || type === 'MC') ? SCCreationOptions : FREECreationOptions}
         intl={intl}
       />
     </div>
 
     <div className="questionPreview">
       {type === 'SC' || type === 'MC' ? (
-        <SCCreationPreview title={title} description={content} options={options} />
+        <SCCreationPreview title={title} description={content} options={options.choices} />
       ) : (
-        <FREECreationPreview title={title} description={content} options={options} />
+        <FREECreationPreview title={title} description={content} options={options.choices} />
       )}
     </div>
 
@@ -196,8 +188,6 @@ const QuestionCreationForm = ({
   </form>
 )
 
-QuestionCreationForm.defaultProps = defaultProps
-
 const withState = connect(state => ({
   content: _get(state, 'form.createQuestion.values.content'),
   options: _get(state, 'form.createQuestion.values.options'),
@@ -207,5 +197,18 @@ const withState = connect(state => ({
 
 export default reduxForm({
   form: 'createQuestion',
+  initialValues: {
+    content: '',
+    options: {
+      choices: [],
+      randomized: false,
+      restrictions: {
+        type: 'NONE',
+      },
+    },
+    tags: [],
+    title: '',
+    type: 'SC',
+  },
   validate,
 })(withState(QuestionCreationForm))
