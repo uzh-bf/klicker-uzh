@@ -1,6 +1,7 @@
 // @flow
 
 import React, { Component } from 'react'
+import Router from 'next/router'
 import { Button } from 'semantic-ui-react'
 
 import { pageWithIntl, withData } from '../../lib'
@@ -30,8 +31,10 @@ class Index extends Component {
   }
 
   // handling the state of the new course button
+  // TODO: implement animated action button
   handleActiveNewButton = () => {
-    this.setState({ activeNewButton: !this.state.activeNewButton })
+    // this.setState({ activeNewButton: !this.state.activeNewButton })
+    Router.push('/questions/create')
   }
 
   // handle searching in the navbar search area
