@@ -27,8 +27,8 @@ const Preview = ({ title, options, description }: Props) => (
     {
       options.restrictions.type === 'NUMBERS' &&
       <div className="diagram">
-        <p>Min: {options.restrictions.min}</p>
-        <p>Max: {options.restrictions.max}</p>
+        <div className="min">{options.restrictions.min}</div>
+        <div className="max">{options.restrictions.max}</div>
         <div className="line" />
         <div className="box" />
       </div>
@@ -61,6 +61,10 @@ const Preview = ({ title, options, description }: Props) => (
 
         border: 2px solid lightgrey;
         padding: 0.5rem;
+      }
+
+      .diagram > .max {
+        float: right;
       }
 
       .diagram > .line {
