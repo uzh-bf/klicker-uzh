@@ -98,6 +98,7 @@ const QuestionCreationForm = ({
       <Field
         name="options"
         component={type === 'SC' || type === 'MC' ? SCCreationOptions : FREECreationOptions}
+        intl={intl}
       />
     </div>
 
