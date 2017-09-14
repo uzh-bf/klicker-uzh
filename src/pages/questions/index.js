@@ -2,11 +2,13 @@
 
 import React, { Component } from 'react'
 import Router from 'next/router'
-import { Button } from 'semantic-ui-react'
 import _debounce from 'lodash/debounce'
+import classNames from 'classnames'
+import { FaPlus } from 'react-icons/lib/fa'
 
 import { pageWithIntl, withData } from '../../lib'
 
+import SessionCreationForm from '../../components/forms/SessionCreationForm'
 import QuestionList from '../../components/questions/QuestionList'
 import TagList from '../../components/questions/TagList'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
@@ -21,7 +23,7 @@ class Index extends Component {
   props: Props
 
   state: {
-    activeNewButton: boolean,
+    creationMode: boolean,
     filters: QuestionFilters,
     sidebarVisible: boolean,
   }
@@ -29,7 +31,7 @@ class Index extends Component {
   constructor(props) {
     super(props)
     this.state = {
-      activeNewButton: false,
+      creationMode: false,
       filters: {
         tags: [],
         title: null,
@@ -39,15 +41,12 @@ class Index extends Component {
     }
   }
 
-  // handling the state of the new course button
-  // TODO: implement animated action button
-  handleActiveNewButton = () => {
-    // this.setState({ activeNewButton: !this.state.activeNewButton })
-    Router.push('/questions/create')
+  toggleCreationMode = (): void => {
+    this.setState(prevState => ({ creationMode: !prevState.creationMode }))
   }
 
   // handle searching in the navbar search area
-  handleSearch = (query: string) => {
+  handleSearch = (query: string): void => {
     this.setState(prevState => ({
       filters: {
         ...prevState.filters,
@@ -57,12 +56,12 @@ class Index extends Component {
   }
 
   // handle sorting via navbar search area
-  handleSort = (by: string, order: string) => {
+  handleSort = (by: string, order: string): void => {
     console.log(`sorted by ${by} in ${order} order`)
   }
 
   // handle clicking on a tag in the tag list
-  handleTagClick = (tagName: string) => {
+  handleTagClick = (tagName: string): void => {
     this.setState((prevState) => {
       // remove the tag from active tags
       if (prevState.filters.tags.includes(tagName)) {
@@ -103,19 +102,46 @@ class Index extends Component {
     }
 
     const actionButton: any = (
-      <Button
-        circular
-        primary
-        className={this.state.activeNewButton ? 'actionButton active' : 'actionButton'}
-        icon="plus"
-        size="huge"
-        onClick={this.handleActiveNewButton}
-      />
+      <div className="actionButton">
+        <button
+          className={classNames('ui huge circular primary icon button', {
+            active: this.state.creationMode,
+          })}
+          onClick={this.toggleCreationMode}
+        >
+          <FaPlus />
+        </button>
+      </div>
+    )
+
+    const actionArea: any = (
+      <div className="creationForm">
+        <SessionCreationForm
+          onSubmit={this.toggleCreationMode}
+          onDiscard={this.toggleCreationMode}
+        />
+
+        <style jsx>{`
+          .creationForm {
+            animation-name: slide-in;
+            animation-duration: 0.5s;
+          }
+
+          @keyframes slide-in {
+            0% {
+              transform: translateY(300px);
+            }
+            100% {
+              transform: translateY(0);
+            }
+          }
+        `}</style>
+      </div>
     )
 
     return (
       <TeacherLayout
-        actionButton={actionButton}
+        actionArea={this.state.creationMode ? actionArea : actionButton}
         intl={intl}
         navbar={navbarConfig}
         pageTitle={intl.formatMessage({
@@ -147,9 +173,15 @@ class Index extends Component {
             margin-bottom: 1rem;
           }
 
+          .actionButton {
+            display: flex;
+            flex-direction: row;
+            justify-items: flex-end;
+          }
+
           @media all and (min-width: 768px) {
             .questionPool {
-              flex-direction: row;
+              flex-flow: row wrap;
 
               padding: 2rem;
             }
