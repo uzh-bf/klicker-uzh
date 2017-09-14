@@ -13,9 +13,12 @@ import type { QuestionFilters } from '../../lib/utils/filters'
 type Props = {
   data: QuestionListType,
   filters: QuestionFilters,
+  dropped: Array<string>,
+  creationMode: boolean,
+  onQuestionDropped: (id: string) => () => void,
 }
 
-const QuestionList = ({ data, filters }: Props) => {
+const QuestionList = ({ data, filters, dropped, onQuestionDropped, creationMode }: Props) => {
   if (data.loading) {
     return <div>Loading</div>
   }
@@ -42,6 +45,9 @@ const QuestionList = ({ data, filters }: Props) => {
               title={question.title}
               type={question.type}
               version={question.versions.length}
+              draggable={creationMode && !dropped.includes(question.id)}
+              creationMode={creationMode}
+              onDrop={onQuestionDropped(question.id)}
             />
           }
         </div>

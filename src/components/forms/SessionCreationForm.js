@@ -42,6 +42,7 @@ class SessionCreationForm extends React.Component {
             <FaEdit />
           </span>
         </div>
+
         <div className="sessionTimeline">
           {this.state.questions.map(question => (
             <div key={question.id} className="timelineItem">
@@ -52,6 +53,7 @@ class SessionCreationForm extends React.Component {
             <QuestionDropzone onDrop={this.handleNewQuestion} />
           </div>
         </div>
+
         <div className="actionArea">
           <button className="ui fluid button" type="button" onClick={this.handleDiscard}>
             <FaTrash />

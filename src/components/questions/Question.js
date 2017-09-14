@@ -3,6 +3,7 @@
 import React from 'react'
 import classNames from 'classnames'
 import { DragSource } from 'react-dnd'
+import { FaCheck, FaClose } from 'react-icons/lib/fa'
 
 import QuestionDetails from './QuestionDetails'
 import QuestionTags from './QuestionTags'
@@ -14,8 +15,11 @@ type Props = {
   title: string,
   type: string,
   version: number,
+  draggable: boolean,
   isDragging: boolean,
+  creationMode: boolean,
   connectDragSource: any,
+  onDrop: () => void,
 }
 
 const defaultProps = {
@@ -29,32 +33,69 @@ const Question = ({
   title,
   type,
   version,
+  draggable,
+  creationMode,
   isDragging,
   connectDragSource,
 }: Props) =>
   connectDragSource(
-    <div className={classNames('container', { isDragging })}>
-      <h2 className="title">
-        #{id.substring(0, 7)} - {title} {version && version > 1 && `(v${version})`}
-      </h2>
-      <div className="tags">
-        <QuestionTags tags={tags} type={type} />
-      </div>
-      <div className="details">
-        <QuestionDetails lastUsed={lastUsed} />
+    <div className={classNames('question', { creationMode, draggable, isDragging })}>
+      {creationMode && (
+        <div className={classNames('sessionMembership', { active: !draggable })}>
+          <input
+            type="checkbox"
+            className="ui checkbox"
+            name={`check-${id}`}
+            checked={!draggable}
+            onClick={() => null}
+          />
+        </div>
+      )}
+
+      <div className="wrapper">
+        <h2 className="title">
+          #{id.substring(0, 7)} - {title} {version && version > 1 && `(v${version})`}
+        </h2>
+
+        <div className="tags">
+          <QuestionTags tags={tags} type={type} />
+        </div>
+
+        <div className="details">
+          <QuestionDetails lastUsed={lastUsed} />
+        </div>
       </div>
 
       <style jsx>{`
-        .container {
+        .question,
+        .wrapper {
           display: flex;
           flex-flow: column nowrap;
+        }
 
-          opacity: 1;
+        .question.draggable {
           cursor: grab;
         }
 
-        .container.isDragging {
+        .question.draggable:hover {
+          box-shadow: 3px 3px 5px grey;
+        }
+
+        .question.isDragging {
           opacity: 0.5;
+        }
+
+        .sessionMembership {
+          flex: 0 0 auto;
+          display: flex;
+
+          color: darkred;
+          padding: 0.5rem;
+          text-align: left;
+        }
+
+        .sessionMembership.active {
+          color: green;
         }
 
         .title {
@@ -64,8 +105,21 @@ const Question = ({
         }
 
         @media all and (min-width: 768px) {
-          .container {
+          .question,
+          .wrapper {
             flex-flow: row wrap;
+          }
+
+          .sessionMembership {
+            flex: 0 0 1rem;
+            display: flex;
+            align-items: center;
+
+            padding: 1rem;
+          }
+
+          .wrapper {
+            flex: 1;
           }
 
           .title,
@@ -90,6 +144,16 @@ const source = {
   // only props defined here are "transported" to the dropzone
   beginDrag({ id, title, type }) {
     return { id, title, type }
+  },
+  // whether the element can be dragged
+  canDrag({ draggable }) {
+    return draggable
+  },
+  // if the element is dropped somewhere
+  endDrag({ onDrop }, monitor) {
+    if (monitor.didDrop()) {
+      onDrop()
+    }
   },
 }
 
