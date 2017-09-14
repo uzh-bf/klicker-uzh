@@ -26,7 +26,10 @@ const Preview = ({ title, options, description }: Props) => (
     <div className="description">{description || 'DESCRIPTION'}</div>
     {
       options.restrictions.type === 'NUMBERS' &&
-      <div className="diagram">Hello I am a diagram</div>
+      <div className="diagram">
+        <p>Min: {options.restrictions.min}</p>
+        <p>Max: {options.restrictions.max}</p>
+      </div>
     }
     <div className="button">
       <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
