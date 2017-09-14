@@ -24,14 +24,14 @@ const TagList = ({ activeTags, data, handleTagClick }: Props) => {
 
   return (
     <List selection size="large">
-      {data.tags.map((tag) => {
-        const isActive = activeTags.length > 0 && activeTags.includes(tag.id)
+      {data.tags.map(({ id, name }) => {
+        const isActive = activeTags.length > 0 && activeTags.includes(name)
 
         return (
-          <List.Item key={tag.id} className="listItem" onClick={() => handleTagClick(tag.id)}>
+          <List.Item key={id} className="listItem" onClick={() => handleTagClick(name)}>
             <List.Icon name={isActive ? 'folder' : 'folder outline'} />
             <List.Content>
-              <span className={isActive ? 'active' : 'inactive'}>{tag.name}</span>
+              <span className={isActive ? 'active' : 'inactive'}>{name}</span>
             </List.Content>
           </List.Item>
         )
