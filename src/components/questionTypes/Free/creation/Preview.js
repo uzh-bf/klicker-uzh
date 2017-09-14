@@ -29,6 +29,8 @@ const Preview = ({ title, options, description }: Props) => (
       <div className="diagram">
         <p>Min: {options.restrictions.min}</p>
         <p>Max: {options.restrictions.max}</p>
+        <div className="line" />
+        <div className="box" />
       </div>
     }
     <div className="button">
@@ -57,8 +59,25 @@ const Preview = ({ title, options, description }: Props) => (
       .button {
         align-self: flex-end;
 
-        border: 1px solid lightgrey;
+        border: 2px solid lightgrey;
         padding: 0.5rem;
+      }
+
+      .diagram > .line {
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 0.1rem;
+        background: #000;
+      }
+
+      .diagram > .box {
+        position: relative;
+        top: -1rem;
+        left: 50%;
+        width: 1rem;
+        height: 2rem;
+        background: grey;
       }
     `}</style>
   </div>
