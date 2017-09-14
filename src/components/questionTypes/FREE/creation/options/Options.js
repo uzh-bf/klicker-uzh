@@ -17,9 +17,35 @@ class Options extends React.Component {
   static defaultProps = {
     value: {
       restrictions: {
+        max: null,
+        min: null,
         type: 'NONE',
       },
     },
+  }
+
+  handleMaxChange = (max: number) => () => {
+    const { input: { value, onChange } } = this.props
+
+    onChange({
+      ...value,
+      restrictions: {
+        ...value.restrictions,
+        max,
+      },
+    })
+  }
+
+  handleMinChange = (min: number) => () => {
+    const { input: { value, onChange } } = this.props
+
+    onChange({
+      ...value,
+      restrictions: {
+        ...value.restrictions,
+        min,
+      },
+    })
   }
 
   handleTypeChange = (type: string) => () => {

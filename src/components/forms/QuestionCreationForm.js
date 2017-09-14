@@ -80,16 +80,13 @@ const QuestionCreationForm = ({
     </div>
 
     <div className="questionInput questionContent">
-      <Field
-        name="content"
-        component={SCCreationContent}
-      />
+      <Field name="content" component={SCCreationContent} />
     </div>
 
     <div className="questionInput questionOptions">
       <Field
         name="options"
-        component={(type === 'SC' || type === 'MC') ? SCCreationOptions : FREECreationOptions}
+        component={type === 'SC' || type === 'MC' ? SCCreationOptions : FREECreationOptions}
         intl={intl}
       />
     </div>
