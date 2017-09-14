@@ -44,7 +44,17 @@ class Index extends Component {
   }
 
   toggleCreationMode = (): void => {
-    this.setState(prevState => ({ creationMode: !prevState.creationMode }))
+    this.setState((prevState) => {
+      // toggle creation mode
+      const creationMode = !prevState.creationMode
+
+      // if the creation mode was activated before, reset dropped questions on discard
+      if (!creationMode) {
+        return { creationMode, dropped: [] }
+      }
+
+      return { creationMode }
+    })
   }
 
   handleDropped = (id: string) => () => {
@@ -52,12 +62,9 @@ class Index extends Component {
   }
 
   // handle searching in the navbar search area
-  handleSearch = (query: string): void => {
+  handleSearch = (title: string): void => {
     this.setState(prevState => ({
-      filters: {
-        ...prevState.filters,
-        title: query,
-      },
+      filters: { ...prevState.filters, title },
     }))
   }
 
