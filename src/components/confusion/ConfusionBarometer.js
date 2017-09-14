@@ -3,8 +3,6 @@
 import React from 'react'
 import { Checkbox } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import { Helmet } from 'react-helmet'
-import { createLinks } from '../../lib'
 
 import ConfusionSection from './ConfusionSection'
 
@@ -20,8 +18,6 @@ const defaultProps = {
 
 const ConfusionBarometer = ({ intl, isActive, handleActiveToggle }: Props) => (
   <div className="confusionBarometer">
-    <Helmet defer={false}>{createLinks(['checkbox'])}</Helmet>
-
     <h2>
       <FormattedMessage
         defaultMessage="Confusion-Barometer"
