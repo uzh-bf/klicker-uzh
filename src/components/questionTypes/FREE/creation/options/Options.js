@@ -1,41 +1,52 @@
 // @flow
 
 import React from 'react'
+import classNames from 'classnames'
 import { FormattedMessage } from 'react-intl'
 
-class Options extends React.Component {
-  static defaultProps = {
-    input: {
-      value: [],
+import type { TextInputType } from '../../../../../types'
+
+type Props = {
+  intl: $IntlShape,
+  input: TextInputType,
+}
+
+const Options = ({ intl, input: { value } }: Props) => {
+  const options = [
+    {
+      name: intl.formatMessage({
+        defaultMessage: 'No Limitations',
+        id: 'teacher.createQuestion.options.noLimitations',
+      }),
+      value: 'NOLIMIT',
     },
-  }
+    {
+      name: intl.formatMessage({
+        defaultMessage: 'Number Range',
+        id: 'teacher.createQuestion.options.numberRange',
+      }),
+      value: 'NUMBER',
+    },
+  ]
 
-  render() {
-    return (
-      <div className="field">
-        <label htmlFor="options">
-          <FormattedMessage defaultMessage="Options" id="teacher.createQuestion.options" />
-        </label>
-        <button
-          className={'noLimitations'}
-          type="button"
-        >
-          <FormattedMessage
-            defaultMessage="No Limitations"
-            id="teacher.createQuestion.options.noLimitations"
-          />
-        </button>
-        <button
-          className={'noLimitations'}
-          type="button"
-        >
-          <FormattedMessage
-            defaultMessage="Number Range"
-            id="teacher.createQuestion.options.numberRange"
-          />
-        </button>
+  return (
+    <div className="field">
+      <label htmlFor="options">
+        <FormattedMessage defaultMessage="Options" id="teacher.createQuestion.options" />
+      </label>
+      <div className="optionsChooser">
+        {options.map(({ name, value: optionValue }) => (
+          <button
+            key={optionValue}
+            className={classNames('option', { active: optionValue === value })}
+            type="button"
+          >
+            {name}
+          </button>
+        ))}
+      </div>
 
-        <style jsx>{`
+      <style jsx>{`
           button {
             background-color: white;
             border: 1px solid lightgrey;
@@ -49,12 +60,11 @@ class Options extends React.Component {
           }
 
           button:not(:last-child) {
-            margin-bottom: 0.5rem;
+            margin-right: 1rem;
           }
         `}</style>
-      </div>
-    )
-  }
+    </div>
+  )
 }
 
 export default Options
