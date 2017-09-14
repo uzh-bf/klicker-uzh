@@ -48,6 +48,11 @@ const Options = ({ intl, input: { value, onChange } }: Props) => {
           </button>
         ))}
       </div>
+      <label htmlFor="min">Min</label>
+      <input />
+      <label htmlFor="max">Max</label>
+      <input />
+
 
       <style jsx>{`
           button {
