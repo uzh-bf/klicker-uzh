@@ -988,7 +988,7 @@ exports[`Storyshots QuestionBlock default 1`] = `
           className="id"
           data-jsx={1928862230}
         >
-          4c821db7-0940-4a24-b31a-7969104bbc9f
+          #4c821db
         </div>
         <div
           className="type"
@@ -1016,7 +1016,7 @@ exports[`Storyshots QuestionBlock default 1`] = `
           className="id"
           data-jsx={1928862230}
         >
-          4c821db7-0940-4a24-b31a-7969104bbc9f
+          #4c821db
         </div>
         <div
           className="type"
@@ -1044,7 +1044,7 @@ exports[`Storyshots QuestionBlock default 1`] = `
           className="id"
           data-jsx={1928862230}
         >
-          4c821db7-0940-4a24-b31a-7969104bbc9f
+          #4c821db
         </div>
         <div
           className="type"
@@ -1105,7 +1105,7 @@ exports[`Storyshots QuestionSingle default 1`] = `
     className="id"
     data-jsx={1928862230}
   >
-    4c821db7-0940-4a24-b31a-7969104bbc9f
+    #4c821db
   </div>
   <div
     className="type"
@@ -1533,7 +1533,7 @@ exports[`Storyshots Session default 1`] = `
                 className="id"
                 data-jsx={1928862230}
               >
-                4c821db7-0940-4a24-b31a-7969104bbc9f
+                #4c821db
               </div>
               <div
                 className="type"
@@ -1561,7 +1561,7 @@ exports[`Storyshots Session default 1`] = `
                 className="id"
                 data-jsx={1928862230}
               >
-                4c821db7-0940-4a24-b31a-7969104bbc9f
+                #4c821db
               </div>
               <div
                 className="type"
@@ -1589,7 +1589,7 @@ exports[`Storyshots Session default 1`] = `
                 className="id"
                 data-jsx={1928862230}
               >
-                4c821db7-0940-4a24-b31a-7969104bbc9f
+                #4c821db
               </div>
               <div
                 className="type"
