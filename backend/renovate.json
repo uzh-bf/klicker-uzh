@@ -4,7 +4,7 @@
   "assignees": ["rschlaefli"],
   "labels": ["dependencies"],
   "reviewers": ["rschlaefli"],
-  "schedule": ["after 10pm and before 7am"],
+  "schedule": ["after 10am and before 2pm on monday and thursday"],
   "semanticCommits": false,
   "timezone": "Europe/Zurich",
   "packageRules": [
