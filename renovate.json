@@ -45,6 +45,10 @@
       ],
       "groupName": "test",
       "automerge": "minor"
+    },
+    {
+      "packagePatterns": ["^prosemirror"],
+      "groupName": "prosemirror"
     }
   ]
 }
