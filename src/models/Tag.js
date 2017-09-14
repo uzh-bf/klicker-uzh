@@ -4,6 +4,7 @@ const { ObjectId } = mongoose.Schema.Types
 
 const Tag = new mongoose.Schema({
   name: { type: String, required: true, index: true },
+  user: { type: ObjectId, ref: 'User' },
 
   questions: [{ type: ObjectId, ref: 'Question' }],
 

@@ -13,8 +13,9 @@ const allTagsQuery = async (parentValue, args, { auth }) => {
 const createTagMutation = async (parentValue, { tag: { name } }, { auth }) => {
   AuthService.isAuthenticated(auth)
 
-  const newTag = await new TagModel({
+  const newTag = new TagModel({
     name,
+    user: auth.sub,
   })
 
   const updatedUser = UserModel.update(
