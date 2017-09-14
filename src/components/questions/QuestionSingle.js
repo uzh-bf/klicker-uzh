@@ -10,7 +10,7 @@ type Props = {
 
 const QuestionSingle = ({ id, type, title }: Props) => (
   <div className="questionSingle">
-    <div className="id">{id}</div>
+    <div className="id">{`#${id.substring(0, 7)}`}</div>
     <div className="type">{type}</div>
     <div className="content">{title}</div>
 
