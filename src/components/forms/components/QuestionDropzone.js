@@ -9,12 +9,10 @@ type Props = {
   isOver: boolean,
   connectDropTarget: any,
 }
-const QuestionDropzone = ({ isOver, connectDropTarget }: Props) =>
+const QuestionDropzone = ({ canDrop, isOver, connectDropTarget }: Props) =>
   connectDropTarget(
-    <div className={classNames('dropzone', { isOver })}>
-      <div className="icon">
-        <FaPlus />
-      </div>
+    <div className={classNames('dropzone', { canDrop, isOver })}>
+      <FaPlus />
 
       <style jsx>{`
         .dropzone {
@@ -22,15 +20,18 @@ const QuestionDropzone = ({ isOver, connectDropTarget }: Props) =>
           align-items: center;
           justify-content: center;
 
-          background-color: lightgrey;
-          border: 1px solid grey;
+          background-color: #f2f2f2;
+          border: 1px solid lightgrey;
+          color: lightgrey;
+          font-size: 1.5rem;
           height: 100%;
           width: 100%;
         }
 
-        .dropzone > .icon {
+        .dropzone.canDrop {
+          background-color: lightgrey;
+          border-color: grey;
           color: grey;
-          font-size: 1.5rem;
         }
 
         .dropzone.isOver {
@@ -53,6 +54,7 @@ const target = {
 // define what information the dropzone component should collect
 // we want to know whether we are hovering with a dragged component
 const collect = (connect, monitor) => ({
+  canDrop: monitor.canDrop(),
   connectDropTarget: connect.dropTarget(),
   isOver: monitor.isOver(),
 })
