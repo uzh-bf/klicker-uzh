@@ -24,26 +24,26 @@ class Options extends React.Component {
     },
   }
 
-  handleMaxChange = (max: number) => () => {
+  handleMaxChange = (e) => {
     const { input: { value, onChange } } = this.props
 
     onChange({
       ...value,
       restrictions: {
         ...value.restrictions,
-        max,
+        max: e.target.value,
       },
     })
   }
 
-  handleMinChange = (min: number) => () => {
+  handleMinChange = (e) => {
     const { input: { value, onChange } } = this.props
 
     onChange({
       ...value,
       restrictions: {
         ...value.restrictions,
-        min,
+        min: e.target.value,
       },
     })
   }
@@ -101,9 +101,9 @@ class Options extends React.Component {
         {value.restrictions.type === 'NUMBERS' && (
           <div>
             <label htmlFor="min">Min</label>
-            <input />
+            <input name="min" type="number" value={value.restrictions.min} onChange={e => this.handleMinChange(e)} />
             <label htmlFor="max">Max</label>
-            <input />
+            <input name="max" type="number" value={value.restrictions.max} onChange={e => this.handleMaxChange(e)} />
           </div>
         )}
 
