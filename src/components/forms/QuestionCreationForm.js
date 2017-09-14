@@ -95,7 +95,7 @@ const QuestionCreationForm = ({
       {type === 'SC' || type === 'MC' ? (
         <SCCreationPreview title={title} description={content} options={options.choices} />
       ) : (
-        <FREECreationPreview title={title} description={content} options={options.choices} />
+        <FREECreationPreview title={title} description={content} options={options} />
       )}
     </div>
 
@@ -200,6 +200,8 @@ export default reduxForm({
       choices: [],
       randomized: false,
       restrictions: {
+        max: null,
+        min: null,
         type: 'NONE',
       },
     },

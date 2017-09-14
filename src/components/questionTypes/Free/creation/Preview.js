@@ -10,14 +10,24 @@ type Props = {
 
 const defaultProps = {
   description: 'DESCRIPTION',
+  options: {
+    restrictions: {
+      max: null,
+      min: null,
+      type: 'NONE',
+    },
+  },
   title: 'TITLE',
 }
 
-const Preview = ({ title, description }: Props) => (
+const Preview = ({ title, options, description }: Props) => (
   <div className="preview">
     <div className="title">{title || 'TITLE'}</div>
     <div className="description">{description || 'DESCRIPTION'}</div>
-    <div className="diagram">Hello I am a diagram</div>
+    {
+      options.restrictions.type === 'NUMBERS' &&
+      <div className="diagram">Hello I am a diagram</div>
+    }
     <div className="button">
       <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
     </div>
