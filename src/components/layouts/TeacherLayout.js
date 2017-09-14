@@ -2,7 +2,7 @@
 
 import React, { Component } from 'react'
 import Router from 'next/router'
-import HTML5Backend from 'react-dnd-html5-backend';
+import HTML5Backend from 'react-dnd-html5-backend'
 import { FormattedMessage } from 'react-intl'
 import { Helmet } from 'react-helmet'
 import { DragDropContext } from 'react-dnd'
