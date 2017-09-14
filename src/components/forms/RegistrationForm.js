@@ -4,12 +4,11 @@ import React from 'react'
 import isAlpha from 'validator/lib/isAlpha'
 import isEmail from 'validator/lib/isEmail'
 import isLength from 'validator/lib/isLength'
+import isEmpty from 'validator/lib/isEmpty'
 import { FormattedMessage } from 'react-intl'
 import { Field, reduxForm } from 'redux-form'
 import { Button } from 'semantic-ui-react'
-import { Helmet } from 'react-helmet'
 
-import { createLinks } from '../../lib'
 import { SemanticInput } from './components'
 
 type Props = {
@@ -26,42 +25,34 @@ type Props = {
   }) => mixed,
 }
 
-const validate = ({
-  firstName = '',
-  lastName = '',
-  email = '',
-  shortname = '',
-  password = '',
-  passwordRepeat = '',
-  useCase = '',
-}) => {
+const validate = ({ firstName, lastName, email, shortname, password, passwordRepeat, useCase }) => {
   const errors = {}
 
-  if (firstName && !isAlpha(firstName && isLength(firstName, { max: undefined, min: 1 }))) {
+  if (!firstName || !isAlpha(firstName) || isEmpty(firstName)) {
     errors.firstName = 'form.firstName.invalid'
   }
 
-  if (lastName && !isAlpha(lastName) && isLength(lastName, { max: undefined, min: 1 })) {
+  if (!lastName || !isAlpha(lastName) || isEmpty(lastName)) {
     errors.lastName = 'form.lastName.invalid'
   }
 
   // the email address needs to be valid
-  if (!isEmail(email)) {
+  if (!email || !isEmail(email)) {
     errors.email = 'form.email.invalid'
   }
 
   // the shortname is allowed to be within 3 to 6 chars
-  if (!isAlpha(shortname) || !isLength(shortname, { max: 6, min: 3 })) {
+  if (!shortname || !isAlpha(shortname) || !isLength(shortname, { max: 6, min: 3 })) {
     errors.shortname = 'form.shortname.invalid'
   }
 
   // password should at least have 7 characters (or more?)
-  if (!isLength(password, { max: undefined, min: 7 })) {
+  if (!password || !isLength(password, { max: undefined, min: 7 })) {
     errors.password = 'form.password.invalid'
   }
 
   // both password fields need to match
-  if (passwordRepeat !== password) {
+  if (!passwordRepeat || passwordRepeat !== password) {
     errors.passwordRepeat = 'form.passwordRepeat.invalid'
   }
 
@@ -72,10 +63,8 @@ const validate = ({
   return errors
 }
 
-const RegistrationForm = ({ intl, invalid, handleSubmit }: Props) => (
-  <form className="ui form error" onSubmit={handleSubmit}>
-    <Helmet defer={false}>{createLinks(['button', 'form', 'icon', 'textarea'])}</Helmet>
-
+const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }: Props) => (
+  <form className="ui form error" onSubmit={onSubmit}>
     <div className="personal">
       <Field
         component={SemanticInput}
