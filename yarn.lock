@@ -6145,38 +6145,38 @@ prop-types@15.5.8:
   dependencies:
     fbjs "^0.8.9"
 
-prosemirror-model@^0.22.0:
-  version "0.22.0"
-  resolved "https://registry.yarnpkg.com/prosemirror-model/-/prosemirror-model-0.22.0.tgz#39462581800221da3c22ff3263efc9106f9b347d"
+prosemirror-model@^0.23.0:
+  version "0.23.0"
+  resolved "https://registry.yarnpkg.com/prosemirror-model/-/prosemirror-model-0.23.0.tgz#0bc5fdb4a3ccaf1a4469f3fd1d191b0a044b81a7"
   dependencies:
     orderedmap "^1.0.0"
 
-prosemirror-schema-basic@0.22.0:
-  version "0.22.0"
-  resolved "https://registry.yarnpkg.com/prosemirror-schema-basic/-/prosemirror-schema-basic-0.22.0.tgz#c55445a5db4a61daf084b2332565df18023e29f4"
+prosemirror-schema-basic@0.23.0:
+  version "0.23.0"
+  resolved "https://registry.yarnpkg.com/prosemirror-schema-basic/-/prosemirror-schema-basic-0.23.0.tgz#588ea7538ff5d4cc1b4996d22160462c445ece07"
   dependencies:
-    prosemirror-model "^0.22.0"
+    prosemirror-model "^0.23.0"
 
-prosemirror-state@0.22.0, prosemirror-state@^0.22.0:
-  version "0.22.0"
-  resolved "https://registry.yarnpkg.com/prosemirror-state/-/prosemirror-state-0.22.0.tgz#e4bdd825b95061769102029aee2995010cdd4c5e"
+prosemirror-state@0.23.0, prosemirror-state@^0.23.0:
+  version "0.23.0"
+  resolved "https://registry.yarnpkg.com/prosemirror-state/-/prosemirror-state-0.23.0.tgz#45523e35746147c5accacf7105afb0c0e75e7715"
   dependencies:
-    prosemirror-model "^0.22.0"
-    prosemirror-transform "^0.22.0"
+    prosemirror-model "^0.23.0"
+    prosemirror-transform "^0.23.0"
 
-prosemirror-transform@^0.22.0:
-  version "0.22.2"
-  resolved "https://registry.yarnpkg.com/prosemirror-transform/-/prosemirror-transform-0.22.2.tgz#54e103fa11196c3d08490f91127e8f967f8e4db6"
+prosemirror-transform@^0.23.0:
+  version "0.23.0"
+  resolved "https://registry.yarnpkg.com/prosemirror-transform/-/prosemirror-transform-0.23.0.tgz#6f56d1bb5e5b889143fc85bf94a0bcac676a93e2"
   dependencies:
-    prosemirror-model "^0.22.0"
+    prosemirror-model "^0.23.0"
 
-prosemirror-view@0.22.1:
-  version "0.22.1"
-  resolved "https://registry.yarnpkg.com/prosemirror-view/-/prosemirror-view-0.22.1.tgz#1e945c625531472fb817483b101de85a018593b5"
+prosemirror-view@0.23.0:
+  version "0.23.0"
+  resolved "https://registry.yarnpkg.com/prosemirror-view/-/prosemirror-view-0.23.0.tgz#68d38d82646bd4b3cd918ded63585318dfaadac7"
   dependencies:
-    prosemirror-model "^0.22.0"
-    prosemirror-state "^0.22.0"
-    prosemirror-transform "^0.22.0"
+    prosemirror-model "^0.23.0"
+    prosemirror-state "^0.23.0"
+    prosemirror-transform "^0.23.0"
 
 proxy-addr@~1.1.5:
   version "1.1.5"
