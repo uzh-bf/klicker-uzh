@@ -2,17 +2,18 @@
 
 import React, { Component } from 'react'
 import Router from 'next/router'
+import HTML5Backend from 'react-dnd-html5-backend';
 import { FormattedMessage } from 'react-intl'
 import { Helmet } from 'react-helmet'
-
-import { createLinks, initLogging } from '../../lib'
+import { DragDropContext } from 'react-dnd'
 
 import Navbar from '../../components/common/navbar/Navbar'
 import Sidebar from '../../components/common/sidebar/Sidebar'
+import { createLinks, initLogging } from '../../lib'
 
 class TeacherLayout extends Component {
   props: {
-    actionButton?: React$Element<*>,
+    actionArea?: React$Element<*>,
     children: any,
     intl: $IntlShape,
     navbar: {
@@ -33,7 +34,7 @@ class TeacherLayout extends Component {
   }
 
   static defaultProps = {
-    actionButton: undefined,
+    actionArea: undefined,
   }
 
   state = {
@@ -54,7 +55,7 @@ class TeacherLayout extends Component {
   }
 
   render() {
-    const { actionButton, children, intl, navbar, pageTitle, sidebar } = this.props
+    const { actionArea, children, intl, navbar, pageTitle, sidebar } = this.props
 
     const sidebarItems = [
       {
@@ -113,7 +114,7 @@ class TeacherLayout extends Component {
           </Sidebar>
         </div>
 
-        {actionButton && <div className="actionArea">{actionButton}</div>}
+        {actionArea && <div className="actionArea">{actionArea}</div>}
 
         <style jsx global>{`
           * {
@@ -151,8 +152,9 @@ class TeacherLayout extends Component {
 
           .actionArea {
             position: fixed;
-            bottom: 2rem;
-            right: 2rem;
+            bottom: 0;
+            right: 0;
+            left: 0;
           }
         `}</style>
       </div>
@@ -160,4 +162,6 @@ class TeacherLayout extends Component {
   }
 }
 
-export default TeacherLayout
+const withDnD = DragDropContext(HTML5Backend)
+
+export default withDnD(TeacherLayout)
