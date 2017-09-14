@@ -1,9 +1,12 @@
 /* eslint-disable no-use-before-define */
 
 // HACK: export before require such that circular dependencies can be handled
-module.exports = () => [Question, Tag]
+module.exports = () => [Question, QuestionInstance, QuestionOption, QuestionVersion, Tag]
 
 const Tag = require('./Tag')
+const QuestionInstance = require('./QuestionInstance')
+const QuestionVersion = require('./QuestionVersion')
+const QuestionOption = require('./QuestionOption')
 
 const Question = `
   input QuestionInput {
@@ -12,6 +15,7 @@ const Question = `
 
     description: String
 
+    options: [QuestionOptionInput]
     tags: [ID]
   }
 

@@ -19,35 +19,56 @@ const questionQuery = (parentValue, { id }, { auth }) => {
 }
 
 /* ----- mutations ----- */
-const createQuestionMutation = async (parentValue, {
-  question: {
-    description, tags, title, type,
+const createQuestionMutation = async (
+  parentValue,
+  {
+    question: {
+      description, options, tags, title, type,
+    },
   },
-}, { auth }) => {
+  { auth },
+) => {
   AuthService.isAuthenticated(auth)
 
-  // if non-existent tags are passed, they need to be created
-  // const fetchTags = await TagModel.find({ _id: { $in: tags } })
-  const fetchTags = await TagModel.find({ name: { $in: tags } })
-  const tagIds = fetchTags.map(tag => tag.id)
+  // find the corresponding user
+  const user = await UserModel.findById(auth.sub).populate(['tags'])
 
+  // get references for the already existing tags
+  const existingTags = user.tags.filter(tag => tags.includes(tag.name))
+  const existingTagNames = existingTags.map(tag => tag.name)
+
+  // if non-existent tags are passed, they need to be created
+  const newTags = [...new Set(tags)]
+    .filter(name => !existingTagNames.includes(name))
+    .map(name => new TagModel({ name, user: auth.sub }))
+
+  // append the newly created tags to the list of tag ids
+  const allTags = [...existingTags, ...newTags]
+
+  // create a new question
+  // pass the list of tag ids for reference
+  // create an initial version "0" containing the description, options and solution
   const newQuestion = new QuestionModel({
-    tags: [...tagIds],
+    tags: [...allTags],
     title,
     type,
-    versions: [{ description, options: [], solution: {} }], // add an initial version 0
+    versions: [{ description, options, solution: {} }],
   })
 
-  const updatedUser = UserModel.update(
-    { _id: auth.sub },
-    {
-      $push: { questions: newQuestion.id },
-      $currentDate: { updatedAt: true },
-    },
-  )
+  const allTagsUpdate = allTags.map((tag) => {
+    tag.questions.push(newQuestion)
+    return tag.save()
+  })
 
-  await Promise.all([newQuestion.save(), updatedUser])
+  // push the new question and possibly tags into the user model
+  user.questions.push(newQuestion)
+  user.tags = user.tags.concat(newTags)
+  user.updatedAt = Date.now()
 
+  // wait until the question and user both have been saved
+  await Promise.all([newQuestion.save(), user.save(), ...allTagsUpdate])
+
+  // return the new questions data
   return newQuestion
 }
 
