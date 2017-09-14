@@ -1,0 +1,101 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`filterQuestions filters by tags (Tag 1) 1`] = `
+Array [
+  Question #1
+  - Title: Question 1
+  - Tags: Tag 1,Tag 2,Tag 3
+  - Type: SC,
+  Question #2
+  - Title: Question 2
+  - Tags: Tag 1,Tag 4,Tag 5
+  - Type: MC,
+  Question #3
+  - Title: Question 3
+  - Tags: Tag 1,Tag 6,Tag 7
+  - Type: FREE,
+  Question #4
+  - Title: Question 4
+  - Tags: Tag 1,Tag 4,Tag 5
+  - Type: SC,
+]
+`;
+
+exports[`filterQuestions filters by tags (Tag 6) 1`] = `
+Array [
+  Question #3
+  - Title: Question 3
+  - Tags: Tag 1,Tag 6,Tag 7
+  - Type: FREE,
+]
+`;
+
+exports[`filterQuestions filters by tags (nonexistent) 1`] = `Array []`;
+
+exports[`filterQuestions filters by title (nonexistent) 1`] = `Array []`;
+
+exports[`filterQuestions filters by title (st) 1`] = `
+Array [
+  Question #1
+  - Title: Question 1
+  - Tags: Tag 1,Tag 2,Tag 3
+  - Type: SC,
+  Question #2
+  - Title: Question 2
+  - Tags: Tag 1,Tag 4,Tag 5
+  - Type: MC,
+  Question #3
+  - Title: Question 3
+  - Tags: Tag 1,Tag 6,Tag 7
+  - Type: FREE,
+  Question #4
+  - Title: Question 4
+  - Tags: Tag 1,Tag 4,Tag 5
+  - Type: SC,
+]
+`;
+
+exports[`filterQuestions filters by title (tion 1) 1`] = `
+Array [
+  Question #1
+  - Title: Question 1
+  - Tags: Tag 1,Tag 2,Tag 3
+  - Type: SC,
+]
+`;
+
+exports[`filterQuestions filters by type (SC) 1`] = `
+Array [
+  Question #1
+  - Title: Question 1
+  - Tags: Tag 1,Tag 2,Tag 3
+  - Type: SC,
+  Question #4
+  - Title: Question 4
+  - Tags: Tag 1,Tag 4,Tag 5
+  - Type: SC,
+]
+`;
+
+exports[`filterQuestions filters by type (nonexistent) 1`] = `Array []`;
+
+exports[`filterQuestions returns all on empty filter 1`] = `
+Array [
+  Question #1
+  - Title: Question 1
+  - Tags: Tag 1,Tag 2,Tag 3
+  - Type: SC,
+  Question #2
+  - Title: Question 2
+  - Tags: Tag 1,Tag 4,Tag 5
+  - Type: MC,
+  Question #3
+  - Title: Question 3
+  - Tags: Tag 1,Tag 6,Tag 7
+  - Type: FREE,
+  Question #4
+  - Title: Question 4
+  - Tags: Tag 1,Tag 4,Tag 5
+  - Type: SC,
+]
+`;
