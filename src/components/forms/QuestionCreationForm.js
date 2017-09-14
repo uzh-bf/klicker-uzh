@@ -16,7 +16,7 @@ import {
   SCCreationOptions,
   SCCreationPreview,
 } from '../../components/questionTypes/SC'
-import { FREECreationPreview } from '../../components/questionTypes/FREE'
+import { FREECreationOptions, FREECreationPreview } from '../../components/questionTypes/FREE'
 
 import type { OptionType, TagType } from '../../types'
 
@@ -94,11 +94,12 @@ const QuestionCreationForm = ({
       />
     </div>
 
-    {type !== 'FREE' && (
-      <div className="questionInput questionOptions">
-        <Field name="options" component={SCCreationOptions} />
-      </div>
-    )}
+    <div className="questionInput questionOptions">
+      <Field
+        name="options"
+        component={type === 'SC' || type === 'MC' ? SCCreationOptions : FREECreationOptions}
+      />
+    </div>
 
     <div className="questionPreview">
       {type === 'SC' || type === 'MC' ? (
@@ -119,78 +120,78 @@ const QuestionCreationForm = ({
       {stylesTagsInput}
     </style>
     <style jsx>{`
-        form {
-          display: flex;
-          flex-direction: column;
+      form {
+        display: flex;
+        flex-direction: column;
 
-          padding: 1rem;
-        }
+        padding: 1rem;
+      }
 
-        .questionInput,
-        .questionPreview {
-          margin-bottom: 1rem;
-        }
+      .questionInput,
+      .questionPreview {
+        margin-bottom: 1rem;
+      }
 
-        .questionInput > :global(.field > label) {
-          font-size: 1.2rem;
-        }
+      .questionInput > :global(.field > label) {
+        font-size: 1.2rem;
+      }
 
-        @supports (grid-gap: 1rem) {
-          @media all and (min-width: 768px) {
-            form {
-              display: grid;
+      @supports (grid-gap: 1rem) {
+        @media all and (min-width: 768px) {
+          form {
+            display: grid;
 
-              grid-gap: 1rem;
-              grid-template-columns: repeat(6, 1fr);
-              grid-template-rows: auto;
-              grid-template-areas: 'title title title title preview preview'
-                'type type tags tags preview preview'
-                'content content content content content content'
-                'options options options options options options';
-            }
-
-            .questionInput {
-              margin-bottom: 0;
-            }
-
-            .questionTitle {
-              grid-area: title;
-            }
-
-            .questionType {
-              grid-area: type;
-            }
-
-            .questionTags {
-              grid-area: tags;
-            }
-
-            .questionPreview {
-              grid-area: preview;
-              margin-bottom: 0;
-            }
-
-            .questionContent {
-              grid-area: content;
-            }
-
-            .questionOptions {
-              grid-area: options;
-            }
-
-            .save {
-              align-self: center;
-            }
+            grid-gap: 1rem;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: auto;
+            grid-template-areas: 'title title title title preview preview'
+              'type type tags tags preview preview'
+              'content content content content content content'
+              'options options options options options options';
           }
 
-          @media all and (min-width: 991px) {
-            form {
-              margin: 0 20%;
-              padding: 1rem 0;
-            }
+          .questionInput {
+            margin-bottom: 0;
+          }
+
+          .questionTitle {
+            grid-area: title;
+          }
+
+          .questionType {
+            grid-area: type;
+          }
+
+          .questionTags {
+            grid-area: tags;
+          }
+
+          .questionPreview {
+            grid-area: preview;
+            margin-bottom: 0;
+          }
+
+          .questionContent {
+            grid-area: content;
+          }
+
+          .questionOptions {
+            grid-area: options;
+          }
+
+          .save {
+            align-self: center;
           }
         }
-      `}</style>
+
+        @media all and (min-width: 991px) {
+          form {
+            margin: 0 20%;
+            padding: 1rem 0;
+          }
+        }
+      }
+    `}</style>
   </form>
 )
 
