@@ -4276,7 +4276,7 @@ jest-changed-files@^21.0.2:
   dependencies:
     throat "^4.0.0"
 
-jest-cli@^21.0.1:
+jest-cli@^21.0.2:
   version "21.0.2"
   resolved "https://registry.yarnpkg.com/jest-cli/-/jest-cli-21.0.2.tgz#2e08af63d44fc21284ebf496cf71e381f3cc9786"
   dependencies:
@@ -4489,11 +4489,11 @@ jest-validate@^21.0.2:
     leven "^2.1.0"
     pretty-format "^21.0.2"
 
-jest@21.0.1:
-  version "21.0.1"
-  resolved "https://registry.yarnpkg.com/jest/-/jest-21.0.1.tgz#746cddc89477beaea5b208e7017ca26652bfdb38"
+jest@21.0.2:
+  version "21.0.2"
+  resolved "https://registry.yarnpkg.com/jest/-/jest-21.0.2.tgz#a5c9bdc9d4322ae672fe8cb3eaf25c268c5f04b2"
   dependencies:
-    jest-cli "^21.0.1"
+    jest-cli "^21.0.2"
 
 jquery@x.*:
   version "3.2.1"
