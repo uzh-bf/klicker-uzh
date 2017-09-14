@@ -11,7 +11,7 @@ type Props = {
   input: TextInputType,
 }
 
-const Options = ({ intl, input: { value } }: Props) => {
+const Options = ({ intl, input: { value, onChange } }: Props) => {
   const options = [
     {
       name: intl.formatMessage({
@@ -29,6 +29,8 @@ const Options = ({ intl, input: { value } }: Props) => {
     },
   ]
 
+  const handleClick = newValue => () => onChange(newValue)
+
   return (
     <div className="field">
       <label htmlFor="options">
@@ -39,6 +41,7 @@ const Options = ({ intl, input: { value } }: Props) => {
           <button
             key={optionValue}
             className={classNames('option', { active: optionValue === value })}
+            onClick={handleClick(optionValue)}
             type="button"
           >
             {name}
