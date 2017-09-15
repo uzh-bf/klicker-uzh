@@ -7,10 +7,10 @@ import { FormattedMessage } from 'react-intl'
 import Placeholder from './Placeholder'
 import Option from './Option'
 
-import type { ArrayInputType, OptionType } from '../../../../../types'
+import type { ReduxFormInputType, SCOptionsType, OptionType } from '../../../../../types'
 
 type Props = {
-  input: ArrayInputType<OptionType>,
+  input: ReduxFormInputType<SCOptionsType>,
 }
 
 class Options extends React.Component {

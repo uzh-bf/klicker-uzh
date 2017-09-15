@@ -4,11 +4,11 @@ import React from 'react'
 import classNames from 'classnames'
 import { FormattedMessage } from 'react-intl'
 
-import type { TextInputType } from '../../../../../types'
+import type { ReduxFormInputType, FREEOptionsType } from '../../../../../types'
 
 type Props = {
   intl: $IntlShape,
-  input: TextInputType,
+  input: ReduxFormInputType<FREEOptionsType>,
 }
 
 class Options extends React.Component {
@@ -24,26 +24,26 @@ class Options extends React.Component {
     },
   }
 
-  handleMaxChange = (e) => {
+  handleMaxChange = (e: SyntheticInputEvent) => {
     const { input: { value, onChange } } = this.props
 
     onChange({
       ...value,
       restrictions: {
         ...value.restrictions,
-        max: e.target.value,
+        max: +e.target.value,
       },
     })
   }
 
-  handleMinChange = (e) => {
+  handleMinChange = (e: SyntheticInputEvent) => {
     const { input: { value, onChange } } = this.props
 
     onChange({
       ...value,
       restrictions: {
         ...value.restrictions,
-        min: e.target.value,
+        min: +e.target.value,
       },
     })
   }
@@ -101,9 +101,19 @@ class Options extends React.Component {
         {value.restrictions.type === 'NUMBERS' && (
           <div>
             <label htmlFor="min">Min</label>
-            <input name="min" type="number" value={value.restrictions.min} onChange={e => this.handleMinChange(e)} />
+            <input
+              name="min"
+              type="number"
+              value={value.restrictions.min}
+              onChange={this.handleMinChange}
+            />
             <label htmlFor="max">Max</label>
-            <input name="max" type="number" value={value.restrictions.max} onChange={e => this.handleMaxChange(e)} />
+            <input
+              name="max"
+              type="number"
+              value={value.restrictions.max}
+              onChange={this.handleMaxChange}
+            />
           </div>
         )}
 

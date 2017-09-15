@@ -3,8 +3,11 @@
 import React from 'react'
 import { FormattedMessage } from 'react-intl'
 
+import type { FREEOptionsType } from '../../../../types'
+
 type Props = {
   description: string,
+  options: FREEOptionsType,
   title: string,
 }
 
@@ -24,21 +27,25 @@ const Preview = ({ title, options, description }: Props) => (
   <div className="preview">
     <div className="title">{title || 'TITLE'}</div>
     <div className="description">{description || 'DESCRIPTION'}</div>
-    {
-      options.restrictions.type === 'NUMBERS' && options.restrictions.min && options.restrictions.max &&
-      <div className="diagram">
-        <div className="min">{options.restrictions.min}</div>
-        <div className="max">{options.restrictions.max}</div>
-        <div className="line" />
-        <div className="box" />
-      </div>
-    }
-    {
-      options.restrictions.type === 'NUMBERS' && options.restrictions.min && options.restrictions.max &&
-      <div className="diagram">
-        <p><b>Selection:</b> {(+options.restrictions.min + +options.restrictions.max) / 2}</p>
-      </div>
-    }
+    {options.restrictions.type === 'NUMBERS' &&
+    options.restrictions.min &&
+    options.restrictions.max && (
+    <div className="diagram">
+          <div className="min">{options.restrictions.min}</div>
+          <div className="max">{options.restrictions.max}</div>
+          <div className="line" />
+          <div className="box" />
+        </div>
+      )}
+    {options.restrictions.type === 'NUMBERS' &&
+    options.restrictions.min &&
+    options.restrictions.max && (
+    <div className="diagram">
+          <p>
+        <b>Selection:</b> {(+options.restrictions.min + +options.restrictions.max) / 2}
+      </p>
+        </div>
+      )}
     <div className="button">
       <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
     </div>

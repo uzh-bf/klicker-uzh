@@ -18,7 +18,7 @@ import {
 } from '../../components/questionTypes/SC'
 import { FREECreationOptions, FREECreationPreview } from '../../components/questionTypes/FREE'
 
-import type { OptionType, TagType } from '../../types'
+import type { TagType, OptionsType } from '../../types'
 
 // form validation
 const validate = ({ content, options, tags, title }) => {
@@ -47,7 +47,7 @@ type Props = {
   content: string,
   intl: $IntlShape,
   invalid: boolean,
-  options: Array<OptionType>,
+  options: OptionsType,
   tags: Array<TagType>,
   title: string,
   type: string,
