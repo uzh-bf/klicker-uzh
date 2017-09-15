@@ -10,11 +10,9 @@ function createLinks(links: Array<string> = []): Array<*> {
       key={link}
       rel="stylesheet"
       href={
-        link.substr(0, 4) === 'http' ? (
-          link
-        ) : (
-          `https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.11/components/${link}.min.css`
-        )
+        link.substr(0, 4) === 'http'
+          ? link
+          : `https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.11/components/${link}.min.css`
       }
     />
   ))
