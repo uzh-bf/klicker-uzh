@@ -96,6 +96,12 @@ class Index extends Component {
     })
   }
 
+  handleNewSession = type => (values) => {
+    console.log(type)
+    console.dir(values)
+    this.toggleCreationMode()
+  }
+
   render() {
     const { intl } = this.props
 
@@ -130,7 +136,8 @@ class Index extends Component {
     const actionArea: any = (
       <div className="creationForm">
         <SessionCreationForm
-          onSubmit={this.toggleCreationMode}
+          onSave={this.handleNewSession('save')}
+          onStart={this.handleNewSession('start')}
           onDiscard={this.toggleCreationMode}
         />
 

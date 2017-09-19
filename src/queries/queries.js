@@ -4,12 +4,12 @@ import { gql } from 'react-apollo'
 
 import type { TagType } from '../types'
 
-type TagListType = {
+export type TagListType = {
   loading: boolean,
   error?: string,
   tags: Array<TagType>,
 }
-const TagListQuery = gql`
+export const TagListQuery = gql`
   {
     tags: allTags {
       id
@@ -18,7 +18,7 @@ const TagListQuery = gql`
   }
 `
 
-type QuestionType = {
+export type QuestionType = {
   id: string,
   title: string,
   type: 'SC' | 'MC' | 'FREE',
@@ -33,12 +33,12 @@ type QuestionType = {
   createdAt: string,
   updatedAt: string,
 }
-type QuestionListType = {
+export type QuestionListType = {
   loading: boolean,
   error?: string,
   questions: QuestionType[],
 }
-const QuestionListQuery = gql`
+export const QuestionListQuery = gql`
   {
     questions: allQuestions {
       id
@@ -60,14 +60,14 @@ const QuestionListQuery = gql`
   }
 `
 
-type QrGeneratorType = {
+export type QrGeneratorType = {
   loading: boolean,
   error?: string,
   user: {
     shortname: string,
   },
 }
-const QrGeneratorQuery = gql`
+export const QrGeneratorQuery = gql`
   {
     user {
       shortname
@@ -75,7 +75,7 @@ const QrGeneratorQuery = gql`
   }
 `
 
-type SessionListType = {
+export type SessionListType = {
   loading: boolean,
   error?: string,
   sessions: Array<{
@@ -98,7 +98,7 @@ type SessionListType = {
     updatedAt: string,
   }>,
 }
-const SessionListQuery = gql`
+export const SessionListQuery = gql`
   {
     sessions: allSessions(orderBy: updatedAt_DESC) {
       id
@@ -123,7 +123,7 @@ const SessionListQuery = gql`
 `
 
 // HACK: use the currently logged in user instead of the first of every user
-type RunningSessionType = {
+export type RunningSessionType = {
   loading: boolean,
   error?: string,
   allUsers: Array<{
@@ -152,7 +152,7 @@ type RunningSessionType = {
     },
   }>,
 }
-const RunningSessionQuery = gql`
+export const RunningSessionQuery = gql`
   {
     allUsers {
       activeSession {
@@ -181,13 +181,3 @@ const RunningSessionQuery = gql`
     }
   }
 `
-
-export { QrGeneratorQuery, QuestionListQuery, RunningSessionQuery, SessionListQuery, TagListQuery }
-export type {
-  QrGeneratorType,
-  QuestionListType,
-  QuestionType,
-  RunningSessionType,
-  SessionListType,
-  TagListType,
-}

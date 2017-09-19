@@ -1,6 +1,7 @@
 // @flow
 
 import React from 'react'
+import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage } from 'react-intl'
 import { FaEdit, FaTrash, FaPlay, FaFloppyO } from 'react-icons/lib/fa'
 
@@ -10,6 +11,8 @@ import QuestionDropzone from './components/QuestionDropzone'
 type Props = {
   handleSubmit: () => void,
   onDiscard: () => void,
+  onSave: () => void,
+  onStart: () => void,
 }
 
 class SessionCreationForm extends React.Component {
@@ -25,22 +28,18 @@ class SessionCreationForm extends React.Component {
     }))
   }
 
-  handleDiscard = () => {
-    this.props.onDiscard()
-  }
-
-  handleStart = (values) => {
-    this.props.handleSubmit(values)
-  }
-
   render() {
     return (
-      <form className="ui form sessionCreation">
+      <form
+        className="ui form sessionCreation"
+        onSubmit={this.props.handleSubmit(this.props.onSave)}
+      >
         <div className="sessionTitle">
           Some Title{' '}
           <span className="editButton">
             <FaEdit />
           </span>
+          <Field name="sessionName" component="input" />
         </div>
 
         <div className="sessionTimeline">
@@ -55,7 +54,11 @@ class SessionCreationForm extends React.Component {
         </div>
 
         <div className="actionArea">
-          <button className="ui fluid button" type="button" onClick={this.handleDiscard}>
+          <button
+            className="ui fluid button"
+            type="button"
+            onClick={this.props.handleSubmit(this.props.onDiscard)}
+          >
             <FaTrash />
             <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
           </button>
@@ -63,7 +66,11 @@ class SessionCreationForm extends React.Component {
             <FaFloppyO />
             <FormattedMessage defaultMessage="Save" id="common.button.save" />
           </button>
-          <button className="ui fluid primary button" type="button">
+          <button
+            className="ui fluid primary button"
+            type="button"
+            onClick={this.props.handleSubmit(this.props.onStart)}
+          >
             <FaPlay />
             <FormattedMessage defaultMessage="Start" id="common.button.start" />
           </button>
@@ -134,4 +141,6 @@ class SessionCreationForm extends React.Component {
   }
 }
 
-export default SessionCreationForm
+export default reduxForm({
+  form: 'registration',
+})(SessionCreationForm)
