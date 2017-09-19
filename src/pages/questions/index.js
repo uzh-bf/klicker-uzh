@@ -2,12 +2,13 @@
 
 import React, { Component } from 'react'
 import Router from 'next/router'
+import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
 import classNames from 'classnames'
 import { FaPlus } from 'react-icons/lib/fa'
 
 import { pageWithIntl, withData } from '../../lib'
-
+import { CreateSessionMutation } from '../../queries/mutations'
 import SessionCreationForm from '../../components/forms/SessionCreationForm'
 import QuestionList from '../../components/questions/QuestionList'
 import TagList from '../../components/questions/TagList'
@@ -96,9 +97,17 @@ class Index extends Component {
     })
   }
 
-  handleNewSession = type => (values) => {
+  handleNewSession = type => ({ sessionName, questions }) => {
     console.log(type)
-    console.dir(values)
+
+    if (type === 'save') {
+      this.props.createSession({ name: sessionName, questions })
+    }
+
+    if (type === 'start') {
+      console.log('start')
+    }
+
     this.toggleCreationMode()
   }
 
@@ -234,4 +243,13 @@ class Index extends Component {
   }
 }
 
-export default withData(pageWithIntl(Index))
+const withCreateSessionMutation = graphql(CreateSessionMutation, {
+  props: ({ mutate }) => ({
+    createSession: ({ name, questions }) =>
+      mutate({
+        variables: { name, questions },
+      }),
+  }),
+})
+
+export default withData(pageWithIntl(withCreateSessionMutation(Index)))

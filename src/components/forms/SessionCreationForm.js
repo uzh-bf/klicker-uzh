@@ -5,8 +5,7 @@ import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage } from 'react-intl'
 import { FaEdit, FaTrash, FaPlay, FaFloppyO } from 'react-icons/lib/fa'
 
-import QuestionSingle from '../questions/QuestionSingle'
-import QuestionDropzone from './components/QuestionDropzone'
+import SessionTimeline from './components/SessionTimeline'
 
 type Props = {
   handleSubmit: () => void,
@@ -15,132 +14,86 @@ type Props = {
   onStart: () => void,
 }
 
-class SessionCreationForm extends React.Component {
-  props: Props
+const SessionCreationForm = ({ handleSubmit, onSave, onDiscard, onStart }: Props) => (
+  <form className="ui form sessionCreation" onSubmit={handleSubmit(onSave)}>
+    <div className="sessionTitle">
+      Some Title{' '}
+      <span className="editButton">
+        <FaEdit />
+      </span>
+      <Field name="sessionName" component="input" />
+    </div>
 
-  state = {
-    questions: [],
-  }
+    <div className="sessionTimeline">
+      <Field name="questions" component={SessionTimeline} />
+    </div>
 
-  handleNewQuestion = (newQuestion) => {
-    this.setState(prevState => ({
-      questions: [...prevState.questions, newQuestion],
-    }))
-  }
+    <div className="actionArea">
+      <button className="ui fluid button" type="button" onClick={handleSubmit(onDiscard)}>
+        <FaTrash />
+        <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+      </button>
+      <button className="ui fluid button" type="submit">
+        <FaFloppyO />
+        <FormattedMessage defaultMessage="Save" id="common.button.save" />
+      </button>
+      <button className="ui fluid primary button" type="button" onClick={handleSubmit(onStart)}>
+        <FaPlay />
+        <FormattedMessage defaultMessage="Start" id="common.button.start" />
+      </button>
+    </div>
 
-  render() {
-    return (
-      <form
-        className="ui form sessionCreation"
-        onSubmit={this.props.handleSubmit(this.props.onSave)}
-      >
-        <div className="sessionTitle">
-          Some Title{' '}
-          <span className="editButton">
-            <FaEdit />
-          </span>
-          <Field name="sessionName" component="input" />
-        </div>
+    <style jsx>{`
+      .sessionCreation {
+        display: flex;
+        flex-flow: row wrap;
 
-        <div className="sessionTimeline">
-          {this.state.questions.map(question => (
-            <div key={question.id} className="timelineItem">
-              <QuestionSingle id={question.id} title={question.title} type={question.type} />
-            </div>
-          ))}
-          <div className="timelineItem">
-            <QuestionDropzone onDrop={this.handleNewQuestion} />
-          </div>
-        </div>
+        background-color: white;
+      }
 
-        <div className="actionArea">
-          <button
-            className="ui fluid button"
-            type="button"
-            onClick={this.props.handleSubmit(this.props.onDiscard)}
-          >
-            <FaTrash />
-            <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
-          </button>
-          <button className="ui fluid button" type="submit">
-            <FaFloppyO />
-            <FormattedMessage defaultMessage="Save" id="common.button.save" />
-          </button>
-          <button
-            className="ui fluid primary button"
-            type="button"
-            onClick={this.props.handleSubmit(this.props.onStart)}
-          >
-            <FaPlay />
-            <FormattedMessage defaultMessage="Start" id="common.button.start" />
-          </button>
-        </div>
+      .sessionTitle {
+        flex: 0 0 100%;
 
-        <style jsx>{`
-          .sessionCreation {
-            display: flex;
-            flex-flow: row wrap;
+        border: 1px solid lightgrey;
+        padding: 0.5rem;
+        text-align: center;
+      }
 
-            background-color: white;
-          }
+      .sessionTitle > .editButton {
+        margin-left: 0.5rem;
+      }
 
-          .sessionTitle {
-            flex: 0 0 100%;
+      .sessionTimeline {
+        flex: 1;
+      }
 
-            border: 1px solid lightgrey;
-            padding: 0.5rem;
-            text-align: center;
-          }
+      .actionArea {
+        flex: 0 0 10rem;
 
-          .sessionTitle > .editButton {
-            margin-left: 0.5rem;
-          }
+        border: 1px solid lightgrey;
+        border-top: 0;
+        padding: 0.5rem;
+      }
 
-          .sessionTimeline {
-            flex: 1;
-            display: flex;
-            flex-direction: row;
+      .actionArea > .button:not(:last-child) {
+        margin-bottom: 0.5rem;
+      }
 
-            border-left: 1px solid lightgrey;
-            border-bottom: 1px solid lightgrey;
-            padding: 0.5rem;
-          }
+      .actionArea > .button:first-child {
+        margin-bottom: 2rem;
+      }
 
-          .sessionTimeline > .timelineItem {
-            border: 1px solid lightgrey;
-            width: 12rem;
-          }
-
-          .sessionTimeline > .timelineItem:not(:last-child) {
-            margin-right: 0.5rem;
-          }
-
-          .actionArea {
-            flex: 0 0 10rem;
-
-            border: 1px solid lightgrey;
-            border-top: 0;
-            padding: 0.5rem;
-          }
-
-          .actionArea > .button:not(:last-child) {
-            margin-bottom: 0.5rem;
-          }
-
-          .actionArea > .button:first-child {
-            margin-bottom: 2rem;
-          }
-
-          .actionArea > .button > :global(svg) {
-            margin-right: 0.4rem;
-            margin-top: -3px;
-          }
-        `}</style>
-      </form>
-    )
-  }
-}
+      .actionArea > .button > :global(svg) {
+        margin-right: 0.4rem;
+        margin-top: -3px;
+      }
+    `}</style>
+  </form>
+)
 
 export default reduxForm({
   form: 'registration',
+  initialValues: {
+    questions: [],
+  },
 })(SessionCreationForm)
