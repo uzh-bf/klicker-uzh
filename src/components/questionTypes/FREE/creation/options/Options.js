@@ -4,7 +4,7 @@ import React from 'react'
 import classNames from 'classnames'
 import { FormattedMessage } from 'react-intl'
 
-import type { ReduxFormInputType, FREEOptionsType } from '../../../../../types'
+import type { FREEOptionsType, ReduxFormInputType } from '../../../../../types'
 
 type Props = {
   intl: $IntlShape,
@@ -99,21 +99,29 @@ class Options extends React.Component {
           ))}
         </div>
         {value.restrictions.type === 'NUMBERS' && (
-          <div>
-            <label htmlFor="min">Min</label>
-            <input
-              name="min"
-              type="number"
-              value={value.restrictions.min}
-              onChange={this.handleMinChange}
-            />
-            <label htmlFor="max">Max</label>
-            <input
-              name="max"
-              type="number"
-              value={value.restrictions.max}
-              onChange={this.handleMaxChange}
-            />
+          <div className="range">
+            <div className="rangeField">
+              <label htmlFor="min">
+                <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />
+              </label>
+              <input
+                name="min"
+                type="number"
+                value={value.restrictions.min}
+                onChange={this.handleMinChange}
+              />
+            </div>
+            <div className="rangeField">
+              <label htmlFor="max">
+                <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />
+              </label>
+              <input
+                name="max"
+                type="number"
+                value={value.restrictions.max}
+                onChange={this.handleMaxChange}
+              />
+            </div>
           </div>
         )}
 
@@ -132,6 +140,15 @@ class Options extends React.Component {
 
           button:not(:last-child) {
             margin-right: 1rem;
+          }
+
+          .range {
+            margin-top: 0.5rem;
+            display: flex;
+          }
+
+          .rangeField {
+            width: 50%;
           }
         `}</style>
       </div>
