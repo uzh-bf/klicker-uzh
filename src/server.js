@@ -6,12 +6,15 @@ const cookieParser = require('cookie-parser')
 const express = require('express')
 const expressJWT = require('express-jwt')
 const mongoose = require('mongoose')
+const opticsAgent = require('optics-agent')
 const { graphqlExpress } = require('apollo-server-express')
 
 const schema = require('./schema')
 const { isValidJWT } = require('./services/auth')
 
 mongoose.Promise = Promise
+
+opticsAgent.instrumentSchema(schema)
 
 const dev = process.env.NODE_ENV !== 'production'
 
@@ -77,7 +80,8 @@ server.use(
     },
   }),
   bodyParser.json(),
-  graphqlExpress((req, res) => ({ context: { auth: req.auth, res }, schema })),
+  opticsAgent.middleware(),
+  graphqlExpress((req, res) => ({ context: { auth: req.auth, res, opticsContext: opticsAgent.context(req) }, schema })),
 )
 
 server.listen(process.env.APP_PORT, (err) => {
