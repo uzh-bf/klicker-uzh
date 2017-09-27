@@ -33,9 +33,9 @@
     "jest": "21.1.0",
     "nodemon": "1.12.1",
     "pre-commit": "1.2.2",
-    "prettier": "1.6.1",
-    "prettier-eslint": "7.1.0",
-    "prettier-eslint-cli": "4.3.0"
+    "prettier": "1.7.0",
+    "prettier-eslint": "8.1.1",
+    "prettier-eslint-cli": "4.3.2"
   },
   "scripts": {
     "debug": "cross-env NODE_ENV=production node --inspect src/server.js",
