@@ -61,7 +61,8 @@ const Preview = ({ title, options, description }: Props) => (
       }
 
       .title,
-      .description {
+      .description,
+      .selection {
         margin-bottom: 1rem;
       }
 
