@@ -20,7 +20,8 @@
     "jsonwebtoken": "8.0.1",
     "lodash": "4.17.4",
     "mongodb": "2.2.31",
-    "mongoose": "4.11.11"
+    "mongoose": "4.11.11",
+    "optics-agent": "^1.1.7"
   },
   "devDependencies": {
     "babel-eslint": "8.0.0",
@@ -29,8 +30,8 @@
     "eslint-plugin-flowtype": "2.36.0",
     "eslint-plugin-import": "2.7.0",
     "flow-bin": "0.54.1",
-    "nodemon": "1.12.1",
     "jest": "21.1.0",
+    "nodemon": "1.12.1",
     "pre-commit": "1.2.2",
     "prettier": "1.6.1",
     "prettier-eslint": "7.1.0",
