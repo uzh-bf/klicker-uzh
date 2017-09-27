@@ -40,10 +40,10 @@ const Preview = ({ title, options, description }: Props) => (
     {options.restrictions.type === 'NUMBERS' &&
       options.restrictions.min &&
       options.restrictions.max && (
-        <div className="diagram">
-          <p>
-            <b>Selection:</b> {(+options.restrictions.min + +options.restrictions.max) / 2}
-          </p>
+        <div className="selection">
+          {/* TODO how to align title horizontally centered? */}
+          <b className="title">Selection:</b>
+          <div className="box">{(+options.restrictions.min + +options.restrictions.max) / 2}</div>
         </div>
       )}
     <div className="button">
@@ -95,6 +95,17 @@ const Preview = ({ title, options, description }: Props) => (
         width: 1rem;
         height: 2rem;
         background: grey;
+      }
+
+      .selection {
+        display: flex;
+        align-self: flex-end;
+      }
+
+      .selection > .box {
+        border: 1px solid lightgrey;
+        padding: 0.5rem 2rem;
+        margin-left: 1rem;
       }
     `}</style>
   </div>
