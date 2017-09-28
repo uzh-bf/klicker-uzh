@@ -3,6 +3,7 @@
 import React, { Component } from 'react'
 import Router from 'next/router'
 import { Button } from 'semantic-ui-react'
+import _debounce from 'lodash/debounce'
 
 import { pageWithIntl, withData } from '../../lib'
 
@@ -10,14 +11,18 @@ import QuestionList from '../../components/questions/QuestionList'
 import TagList from '../../components/questions/TagList'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 
+import type { QuestionFilters } from '../../lib/utils/filters'
+
+type Props = {
+  intl: $IntlShape,
+}
+
 class Index extends Component {
-  props: {
-    intl: $IntlShape,
-  }
+  props: Props
 
   state: {
     activeNewButton: boolean,
-    activeTags: Array<string>,
+    filters: QuestionFilters,
     sidebarVisible: boolean,
   }
 
@@ -25,7 +30,11 @@ class Index extends Component {
     super(props)
     this.state = {
       activeNewButton: false,
-      activeTags: [],
+      filters: {
+        tags: [],
+        title: null,
+        type: null,
+      },
       sidebarVisible: false,
     }
   }
@@ -39,7 +48,12 @@ class Index extends Component {
 
   // handle searching in the navbar search area
   handleSearch = (query: string) => {
-    console.log(`Searched... for ${query}`)
+    this.setState(prevState => ({
+      filters: {
+        ...prevState.filters,
+        title: query,
+      },
+    }))
   }
 
   // handle sorting via navbar search area
@@ -48,18 +62,24 @@ class Index extends Component {
   }
 
   // handle clicking on a tag in the tag list
-  handleTagClick = (tagId: string) => {
+  handleTagClick = (tagName: string) => {
     this.setState((prevState) => {
       // remove the tag from active tags
-      if (prevState.activeTags.includes(tagId)) {
+      if (prevState.filters.tags.includes(tagName)) {
         return {
-          activeTags: prevState.activeTags.filter(tag => tag !== tagId),
+          filters: {
+            ...prevState.filters,
+            tags: prevState.filters.tags.filter(tag => tag !== tagName),
+          },
         }
       }
 
       // add the tag to active tags
       return {
-        activeTags: [...prevState.activeTags, tagId],
+        filters: {
+          ...prevState.filters,
+          tags: [...prevState.filters.tags, tagName],
+        },
       }
     })
   }
@@ -70,7 +90,7 @@ class Index extends Component {
     const navbarConfig = {
       accountShort: 'AW',
       search: {
-        handleSearch: this.handleSearch,
+        handleSearch: _debounce(this.handleSearch, 200),
         handleSort: this.handleSort,
         query: '',
         sortBy: '',
@@ -106,10 +126,10 @@ class Index extends Component {
       >
         <div className="questionPool">
           <div className="tagList">
-            <TagList activeTags={this.state.activeTags} handleTagClick={this.handleTagClick} />
+            <TagList activeTags={this.state.filters.tags} handleTagClick={this.handleTagClick} />
           </div>
           <div className="questionList">
-            <QuestionList />
+            <QuestionList filters={this.state.filters} />
           </div>
         </div>
 
