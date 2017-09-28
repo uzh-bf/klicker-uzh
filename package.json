@@ -15,7 +15,7 @@
     "classnames": "2.2.5",
     "cross-env": "5.0.5",
     "dotenv": "4.0.0",
-    "express": "4.15.4",
+    "express": "4.15.5",
     "glob": "7.1.2",
     "graphql": "0.10.5",
     "intl": "1.2.5",
