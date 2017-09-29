@@ -1,16 +1,18 @@
 const bcrypt = require('bcryptjs')
 const JWT = require('jsonwebtoken')
 
-const UserModel = require('../models/User')
+const { UserModel } = require('../models')
 
 const dev = process.env.NODE_ENV !== 'production'
 
+// check whether an authentication object is valid
 const isAuthenticated = (auth) => {
   if (!auth || !auth.sub) {
     throw new Error('INVALID_LOGIN')
   }
 }
 
+// check whether a JWT is valid
 const isValidJWT = (jwt, secret) => {
   try {
     JWT.verify(jwt, secret)
@@ -20,6 +22,7 @@ const isValidJWT = (jwt, secret) => {
   }
 }
 
+// signup a new user
 // make this an async function such that it returns a promise
 // we can later use this promise as a return value for resolvers or similar
 const signup = async (email, password, shortname) => {
@@ -44,6 +47,7 @@ const signup = async (email, password, shortname) => {
   throw new Error('SIGNUP_FAILED')
 }
 
+// login an existing user
 // make this an async function such that it returns a promise
 // we can later use this promise as a return value for resolvers or similar
 const login = async (res, email, password) => {
@@ -67,13 +71,15 @@ const login = async (res, email, password) => {
   // httpOnly: don't allow interactions from javascript
   // secure: whether the cookie should only be sent over https
   // TODO: set other important cookie settings
-  res.cookie('jwt', jwt, {
-    domain: process.env.APP_DOMAIN,
-    httpOnly: true,
-    maxAge: 86400000,
-    path: '/graphql',
-    secure: !dev,
-  })
+  if (res && res.cookie) {
+    res.cookie('jwt', jwt, {
+      domain: process.env.APP_DOMAIN,
+      httpOnly: true,
+      maxAge: 86400000,
+      path: '/graphql',
+      secure: !dev,
+    })
+  }
 
   // resolve with data about the user
   return user

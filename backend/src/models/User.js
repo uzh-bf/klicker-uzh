@@ -25,6 +25,8 @@ const User = new mongoose.Schema({
   questions: [{ type: ObjectId, ref: 'Question' }],
   sessions: [{ type: ObjectId, ref: 'Session' }],
 
+  runningSession: { type: ObjectId, ref: 'Session' },
+
   createdAt: { type: Date, default: Date.now() },
   updatedAt: { type: Date, default: Date.now() },
 })
