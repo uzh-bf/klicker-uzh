@@ -29,7 +29,7 @@ expect.addSnapshotSerializer({
 })
 
 // prepare a new session instance
-const prepareSession = user =>
+const prepareSession = userId =>
   SessionService.createSession({
     name: 'testing session',
     questionBlocks: [
@@ -37,7 +37,7 @@ const prepareSession = user =>
         questions: [{ id: '59b1481857f3c34af09a4736' }],
       },
     ],
-    user,
+    userId,
   })
 
 describe('SessionService', () => {
@@ -46,6 +46,7 @@ describe('SessionService', () => {
   beforeAll(async () => {
     // connect to the database
     await mongoose.connect('mongodb://klicker:klicker@ds161042.mlab.com:61042/klicker-dev')
+
     // login as a test user
     user = await AuthService.login(null, 'roland.schlaefli@bf.uzh.ch', 'abcdabcd')
   })
@@ -59,7 +60,7 @@ describe('SessionService', () => {
       expect(SessionService.createSession({
         name: 'empty session',
         questionBlocks: [],
-        user: user.id,
+        userId: user.id,
       })).rejects.toEqual(new Error('EMPTY_SESSION'))
     })
 
@@ -77,7 +78,7 @@ describe('SessionService', () => {
             questions: [{ id: '59b1481857f3c34af09a4736' }],
           },
         ],
-        user: user.id,
+        userId: user.id,
       })
 
       expect(newSession.blocks.length).toEqual(2)
@@ -94,7 +95,7 @@ describe('SessionService', () => {
             questions: [{ id: '59b1481857f3c34af09a4736' }],
           },
         ],
-        user: user.id,
+        userId: user.id,
       })
 
       expect(newSession).toMatchSnapshot()
