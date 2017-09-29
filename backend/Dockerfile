@@ -1,9 +1,9 @@
 # extend the node alpine base
-FROM node:8.4.0-alpine
+FROM node:8-alpine
 
-MAINTAINER Roland Schlaefli <roland.schlaefli@bf.uzh.ch>
-LABEL NAME klicker-api
-LABEL VERSION 0.0.1
+LABEL maintainer="Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
+LABEL name="klicker-api"
+LABEL version="0.0.1"
 EXPOSE 3000
 
 # root application directory
