@@ -1,7 +1,7 @@
 const { QuestionInstanceModel, SessionModel, UserModel } = require('../models')
 
 // create a new session
-const createSession = async ({ name, questionBlocks, user }) => {
+const createSession = async ({ name, questionBlocks, userId }) => {
   // ensure that the session contains at least one question block
   if (questionBlocks.length === 0) {
     throw new Error('EMPTY_SESSION')
@@ -18,7 +18,7 @@ const createSession = async ({ name, questionBlocks, user }) => {
       // create a new question instance model
       const instance = new QuestionInstanceModel({
         question: question.id,
-        user,
+        user: userId,
         version: 0,
       })
 
@@ -35,7 +35,7 @@ const createSession = async ({ name, questionBlocks, user }) => {
   const newSession = new SessionModel({
     name,
     blocks,
-    user,
+    user: userId,
   })
 
   // save everything at once
@@ -43,7 +43,7 @@ const createSession = async ({ name, questionBlocks, user }) => {
     ...instances.map(instance => instance.save()),
     newSession.save(),
     UserModel.update(
-      { _id: user },
+      { _id: userId },
       {
         $push: { sessions: newSession.id },
         $currentDate: { updatedAt: true },
