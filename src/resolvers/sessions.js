@@ -1,4 +1,5 @@
 const AuthService = require('../services/auth')
+const SessionService = require('../services/sessions')
 const { SessionModel, UserModel } = require('../models')
 
 /* ----- queries ----- */
@@ -16,24 +17,32 @@ const sessionQuery = async (parentValue, { id }, { auth }) => {
 }
 
 /* ----- mutations ----- */
-const createSessionMutation = async (parentValue, { session: { name } }, { auth }) => {
+const createSessionMutation = async (parentValue, { session: { name, blocks } }, { auth }) => {
   AuthService.isAuthenticated(auth)
 
-  const newSession = await new SessionModel({ name, user: auth.sub }).save()
+  return SessionService.createSession({
+    name,
+    questionBlocks: blocks,
+    user: auth.sub,
+  })
+}
 
-  await UserModel.update(
-    { _id: auth.sub },
-    {
-      $push: { sessions: newSession.id },
-      $currentDate: { updatedAt: true },
-    },
-  )
+const startSessionMutation = async (parentValue, { id }, { auth }) => {
+  AuthService.isAuthenticated(auth)
 
-  return newSession
+  return SessionService.startSession({ id, userId: auth.sub })
+}
+
+const endSessionMutation = async (parentValue, { id }, { auth }) => {
+  AuthService.isAuthenticated(auth)
+
+  return SessionService.endSession({ id, userId: auth.sub })
 }
 
 module.exports = {
   allSessions: allSessionsQuery,
   createSession: createSessionMutation,
+  endSession: endSessionMutation,
   session: sessionQuery,
+  startSession: startSessionMutation,
 }

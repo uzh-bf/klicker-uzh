@@ -27,6 +27,8 @@ const Session = new mongoose.Schema({
   confusionTS: [ConfusionTimeStep],
   feedbacks: [Feedback],
 
+  activeInstance: { type: ObjectId, ref: 'QuestionInstance' },
+
   createdAt: { type: Date, default: Date.now() },
   updatedAt: { type: Date, default: Date.now() },
 })

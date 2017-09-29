@@ -1,7 +1,9 @@
 const { makeExecutableSchema } = require('graphql-tools')
 
 const { allQuestions, createQuestion, question } = require('./resolvers/questions')
-const { allSessions, createSession, session } = require('./resolvers/sessions')
+const {
+  allSessions, createSession, endSession, session, startSession,
+} = require('./resolvers/sessions')
 const { allTags, createTag } = require('./resolvers/tags')
 const { createUser, login, user } = require('./resolvers/users')
 const { allTypes } = require('./types')
@@ -28,8 +30,13 @@ const typeDefs = [
 
   type Mutation {
     createQuestion(question: QuestionInput): Question
+
     createSession(session: SessionInput): Session
+    startSession(id: ID): Session
+    endSession(id: ID): Session
+
     createTag(tag: TagInput): Tag
+
     createUser(user: UserInput): User
     login(email: String, password: String): User
   }
@@ -53,7 +60,9 @@ const resolvers = {
     createSession,
     createTag,
     createUser,
+    endSession,
     login,
+    startSession,
   },
 }
 

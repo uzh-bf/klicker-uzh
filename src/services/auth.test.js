@@ -10,8 +10,8 @@ const {
 const { UserModel } = require('../models')
 
 describe('AuthService', () => {
-  beforeAll(() => {
-    mongoose.connect('mongodb://klicker:klicker@ds161042.mlab.com:61042/klicker-dev')
+  beforeAll(async () => {
+    await mongoose.connect('mongodb://klicker:klicker@ds161042.mlab.com:61042/klicker-dev')
   })
   afterAll((done) => {
     mongoose.disconnect(done)
