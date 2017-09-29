@@ -21,7 +21,7 @@
     "lodash": "4.17.4",
     "mongodb": "2.2.31",
     "mongoose": "4.11.11",
-    "optics-agent": "^1.1.7"
+    "optics-agent": "1.1.7"
   },
   "devDependencies": {
     "babel-eslint": "8.0.0",
