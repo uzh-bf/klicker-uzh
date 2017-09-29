@@ -10,10 +10,15 @@ branches:
 
 services:
   - docker
+  - mongodb
 
 jobs:
   include:
     - stage: test
+      before_script:
+        - sleep 15
+        - mv .env .env.dev
+        - mv .env.travis .env
       script:
         - yarn test
       cache:
