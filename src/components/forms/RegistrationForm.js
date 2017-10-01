@@ -12,7 +12,7 @@ import { Button } from 'semantic-ui-react'
 import { SemanticInput } from './components'
 
 type Props = {
-  intl: $IntlShape,
+  intl: any,
   invalid: boolean,
   handleSubmit: (values: {
     firstName: string,

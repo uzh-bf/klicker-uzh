@@ -13,7 +13,7 @@ import Sidebar from '../../components/common/sidebar/Sidebar'
 type Props = {
   actionButton?: React$Element<*>,
   children: any,
-  intl: $IntlShape,
+  intl: any,
   navbar: {
     accountShort: string,
     search?: {

@@ -10,7 +10,7 @@ import { RegistrationMutation } from '../../queries/mutations'
 import { withData, pageWithIntl } from '../../lib'
 
 type Props = {
-  intl: $IntlShape,
+  intl: any,
   createUser: (email: string, password: string, shortname: string) => Promise<*>,
 }
 type State = {

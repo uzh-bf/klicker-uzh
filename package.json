@@ -17,7 +17,7 @@
     "dotenv": "4.0.0",
     "express": "4.16.1",
     "glob": "7.1.2",
-    "graphql": "0.11.3",
+    "graphql": "0.11.6",
     "intl": "1.2.5",
     "isomorphic-fetch": "2.2.1",
     "lodash": "4.17.4",

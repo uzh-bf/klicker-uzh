@@ -7,7 +7,7 @@ import { Field, reduxForm } from 'redux-form'
 import { FormWithLinks, SemanticInput } from './components'
 
 type Props = {
-  intl: $IntlShape,
+  intl: any,
   invalid: boolean,
   handleSubmit: (values: {
     email: string,

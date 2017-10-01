@@ -8,7 +8,7 @@ import PasswordResetForm from '../../components/forms/PasswordResetForm'
 import { withData, pageWithIntl } from '../../lib'
 
 type Props = {
-  intl: $IntlShape,
+  intl: any,
   handleSubmit: () => mixed,
 }
 class ResetPassword extends React.Component<Props> {

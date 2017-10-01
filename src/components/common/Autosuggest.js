@@ -1,6 +1,6 @@
 /* eslint-disable import/prefer-default-export, react/prop-types, no-unused-vars */
 
-import React from 'react'
+import * as React from 'react'
 import Autosuggest from 'react-autosuggest'
 
 const autocompleteRenderInput = tags => ({ addTag, ...props }) => {

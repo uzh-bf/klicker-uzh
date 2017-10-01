@@ -16,7 +16,7 @@ type Props = {
     onDrop: () => mixed,
     onFocus: () => mixed,
   },
-  intl: $IntlShape,
+  intl: any,
   label?: string,
   meta: {
     active: boolean,

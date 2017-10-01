@@ -10,7 +10,7 @@ import { LoginMutation } from '../../queries/mutations'
 import { withData, pageWithIntl } from '../../lib'
 
 type Props = {
-  intl: $IntlShape,
+  intl: any,
   login: (email: string, password: string) => Promise<*>,
 }
 type State = {

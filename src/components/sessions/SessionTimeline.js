@@ -17,7 +17,7 @@ type Props = {
     }>,
     status: string,
   }>,
-  intl: $IntlShape,
+  intl: any,
 }
 
 const SessionTimeline = ({ blocks, intl }: Props) => (

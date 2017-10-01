@@ -1,6 +1,6 @@
 // @flow
 
-import React from 'react'
+import * as React from 'react'
 import _get from 'lodash/get'
 import isEmpty from 'validator/lib/isEmpty'
 import { connect } from 'react-redux'
@@ -44,7 +44,7 @@ const validate = ({ content, options, tags, title }) => {
 
 type Props = {
   content: string,
-  intl: $IntlShape,
+  intl: any,
   invalid: boolean,
   options: Array<OptionType>,
   tags: Array<TagType>,

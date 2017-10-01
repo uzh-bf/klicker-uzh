@@ -14,7 +14,7 @@ import type { RunningSessionType } from '../../queries/queries'
 
 type Props = {
   data: RunningSessionType,
-  intl: $IntlShape,
+  intl: any,
 }
 type State = {
   confusionActive: boolean,

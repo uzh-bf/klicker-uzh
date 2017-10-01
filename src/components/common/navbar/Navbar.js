@@ -9,7 +9,7 @@ import SessionArea from './SessionArea'
 
 type Props = {
   accountShort: string,
-  intl: $IntlShape,
+  intl: any,
   search: {
     query: string,
     sortBy: string,

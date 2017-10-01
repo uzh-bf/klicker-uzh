@@ -8,7 +8,7 @@ import TeacherLayout from '../../components/layouts/TeacherLayout'
 import SessionList from '../../components/sessions/SessionList'
 
 type Props = {
-  intl: $IntlShape,
+  intl: any,
 }
 class Index extends React.Component<Props> {
   // handle searching in the navbar search area

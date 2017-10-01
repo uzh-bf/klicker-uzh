@@ -7,7 +7,7 @@ import { FormattedMessage } from 'react-intl'
 import ConfusionSection from './ConfusionSection'
 
 type Props = {
-  intl: $IntlShape,
+  intl: any,
   isActive: boolean,
   handleActiveToggle: () => mixed,
 }

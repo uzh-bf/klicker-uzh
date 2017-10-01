@@ -14,7 +14,7 @@ import StudentLayout from '../../components/layouts/StudentLayout'
 import { SCAnswerOptions } from '../../components/questionTypes/SC'
 
 type Props = {
-  intl: $IntlShape,
+  intl: any,
 }
 type State = {
   feedbackDifficulty: number | null,
