@@ -37,7 +37,7 @@
     "react-helmet": "5.2.0",
     "react-icons": "2.2.5",
     "react-intl": "2.4.0",
-    "react-rangeslider": "2.1.0",
+    "react-rangeslider": "2.2.0",
     "react-redux": "5.0.6",
     "react-sortable-hoc": "0.6.7",
     "recharts": "1.0.0-apha.5",
