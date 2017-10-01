@@ -3,9 +3,6 @@
 import * as React from 'react'
 import { Checkbox } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import { Helmet } from 'react-helmet'
-
-import { createLinks } from '../../lib'
 
 import Feedback from './Feedback'
 
@@ -36,8 +33,6 @@ const FeedbackChannel = ({
   handlePublicToggle,
 }: Props) => (
   <div className="feedbackChannel">
-    <Helmet defer={false}>{createLinks(['checkbox'])}</Helmet>
-
     <h2>
       <FormattedMessage
         defaultMessage="Feedback-Channel"

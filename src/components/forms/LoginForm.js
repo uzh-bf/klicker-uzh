@@ -16,30 +16,30 @@ type Props = {
   }) => mixed,
 }
 
-const validate = ({ email = '', password = '' }) => {
+const validate = ({ email, password }) => {
   const errors = {}
 
   // the email address needs to be valid
-  if (!isEmail(email)) {
+  if (!email || !isEmail(email)) {
     errors.email = 'form.email.invalid'
   }
 
   // password should at least have 7 characters (or more?)
-  if (!isLength(password, { max: undefined, min: 1 })) {
+  if (!password || !isLength(password, { max: undefined, min: 1 })) {
     errors.password = 'form.password.invalid'
   }
 
   return errors
 }
 
-const LoginForm = ({ intl, invalid, handleSubmit }: Props) => {
+const LoginForm = ({ intl, invalid, handleSubmit: onSubmit }: Props) => {
   const button = {
-    handleSubmit,
     invalid,
     label: intl.formatMessage({
       defaultMessage: 'Submit',
       id: 'form.common.button.submit',
     }),
+    onSubmit,
   }
   const links = [
     {

@@ -5,14 +5,17 @@ import moment from 'moment'
 import { graphql } from 'react-apollo'
 
 import Question from './Question'
+import { filterQuestions } from '../../lib/utils/filters'
 import { QuestionListQuery } from '../../queries/queries'
 import type { QuestionListType } from '../../queries/queries'
+import type { QuestionFilters } from '../../lib/utils/filters'
 
 type Props = {
   data: QuestionListType,
+  filters: QuestionFilters,
 }
 
-const QuestionList = ({ data }: Props) => {
+const QuestionList = ({ data, filters }: Props) => {
   if (data.loading) {
     return <div>Loading</div>
   }
@@ -21,9 +24,12 @@ const QuestionList = ({ data }: Props) => {
     return <div>{data.error}</div>
   }
 
+  // calculate questions to show based on filter criteria
+  const questions = filters ? filterQuestions(data.questions, filters) : data.questions
+
   return (
     <div>
-      {data.questions.map(question => (
+      {questions.map(question => (
         <div className="question">
           {
             <Question

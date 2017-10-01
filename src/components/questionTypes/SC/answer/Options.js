@@ -4,20 +4,20 @@ import * as React from 'react'
 import classNames from 'classnames'
 import { Button } from 'semantic-ui-react'
 
+import type { OptionType } from '../../../../types'
+
 type Props = {
   activeOption: number,
-  options: Array<{
-    label: string,
-  }>,
-  handleOptionClick: (optionNumber: number) => () => mixed,
+  options: Array<OptionType>,
+  onOptionClick: (optionNumber: number) => () => mixed,
 }
 
-const SingleChoiceOptions = ({ activeOption, options, handleOptionClick }: Props) => (
+const Options = ({ activeOption, options, onOptionClick }: Props) => (
   <div className="options">
     {options.map((option, index) => (
-      <div key={option.label} className={classNames('option', { active: index === activeOption })}>
-        <Button basic fluid onClick={handleOptionClick(index)}>
-          {option.label}
+      <div key={option.name} className={classNames('option', { active: index === activeOption })}>
+        <Button basic fluid onClick={onOptionClick && onOptionClick(index)}>
+          {option.name}
         </Button>
       </div>
     ))}
@@ -47,4 +47,4 @@ const SingleChoiceOptions = ({ activeOption, options, handleOptionClick }: Props
   </div>
 )
 
-export default SingleChoiceOptions
+export default Options

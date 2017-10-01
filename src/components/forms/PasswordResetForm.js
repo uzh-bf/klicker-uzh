@@ -14,25 +14,25 @@ type Props = {
   }) => mixed,
 }
 
-const validate = ({ email = '' }) => {
+const validate = ({ email }) => {
   const errors = {}
 
   // the email address needs to be valid
-  if (!isEmail(email)) {
+  if (!email || !isEmail(email)) {
     errors.email = 'form.common.email.invalid'
   }
 
   return errors
 }
 
-const PasswordResetForm = ({ intl, invalid, handleSubmit }: Props) => {
+const PasswordResetForm = ({ intl, invalid, handleSubmit: onSubmit }: Props) => {
   const button = {
-    handleSubmit,
     invalid,
     label: intl.formatMessage({
       defaultMessage: 'Submit',
       id: 'form.common.button.submit',
     }),
+    onSubmit,
   }
   const links = [
     {

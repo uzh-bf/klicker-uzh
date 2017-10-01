@@ -1,5 +1,5 @@
-// flow-typed signature: 3bd74ed331d2602631b916099fa01c99
-// flow-typed version: 39d19131b6/react-intl_v2.x.x/flow_>=v0.53.x
+// flow-typed signature: 9c4aec480ff0b8a9145f54de18f49c85
+// flow-typed version: 97b6f00328/react-intl_v2.x.x/flow_>=v0.53.x
 
 /**
  * Original implementation of this file by @marudor at https://github.com/marudor/flowInterfaces
@@ -229,4 +229,5 @@ declare module "react-intl" {
     }
   > {}
   declare type IntlShape = $npm$ReactIntl$IntlShape;
+  declare type MessageDescriptor = $npm$ReactIntl$MessageDescriptor;
 }

@@ -16,7 +16,7 @@ const SearchArea = ({ intl, handleSearch }: Props) => (
       defaultMessage: 'Search...',
       id: 'common.input.search.placeholder',
     })}
-    onChange={handleSearch}
+    onChange={e => handleSearch(e.target.value)}
   />
 )
 

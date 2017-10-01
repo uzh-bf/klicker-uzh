@@ -3,9 +3,6 @@
 import * as React from 'react'
 import { graphql } from 'react-apollo'
 import { List } from 'semantic-ui-react'
-import { Helmet } from 'react-helmet'
-
-import { createLinks } from '../../lib'
 
 import { TagListQuery } from '../../queries/queries'
 import type { TagListType } from '../../queries/queries'
@@ -27,16 +24,14 @@ const TagList = ({ activeTags, data, handleTagClick }: Props) => {
 
   return (
     <List selection size="large">
-      <Helmet defer={false}>{createLinks(['list'])}</Helmet>
-
-      {data.tags.map((tag) => {
-        const isActive = activeTags.length > 0 && activeTags.includes(tag.id)
+      {data.tags.map(({ id, name }) => {
+        const isActive = activeTags.length > 0 && activeTags.includes(name)
 
         return (
-          <List.Item key={tag.id} className="listItem" onClick={() => handleTagClick(tag.id)}>
+          <List.Item key={id} className="listItem" onClick={() => handleTagClick(name)}>
             <List.Icon name={isActive ? 'folder' : 'folder outline'} />
             <List.Content>
-              <span className={isActive ? 'active' : 'inactive'}>{tag.name}</span>
+              <span className={isActive ? 'active' : 'inactive'}>{name}</span>
             </List.Content>
           </List.Item>
         )

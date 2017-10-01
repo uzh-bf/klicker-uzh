@@ -1,5 +1,5 @@
-// flow-typed signature: 51b7e473d4d441bf2a9fa17734cb0b74
-// flow-typed version: d7a8d069fa/enzyme_v2.3.x/flow_>=v0.53.x
+// flow-typed signature: 67be1d90f7798898d63dc9fa2213fe9b
+// flow-typed version: 8742c67386/enzyme_v2.3.x/flow_>=v0.53.x
 
 import * as React from "react";
 
@@ -86,6 +86,7 @@ declare module "enzyme" {
   }
 
   declare export class ShallowWrapper extends Wrapper {
+    constructor(nodes: NodeOrNodes, root: any, options?: ?Object): ShallowWrapper;
     equals(node: React.Node): boolean,
     shallow(options?: { context?: Object }): ShallowWrapper
   }
