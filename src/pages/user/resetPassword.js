@@ -1,18 +1,17 @@
 // @flow
 
-import React from 'react'
+import * as React from 'react'
 import { FormattedMessage } from 'react-intl'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import PasswordResetForm from '../../components/forms/PasswordResetForm'
 import { withData, pageWithIntl } from '../../lib'
 
-class ResetPassword extends React.Component {
-  props: {
-    intl: $IntlShape,
-    handleSubmit: () => mixed,
-  }
-
+type Props = {
+  intl: any,
+  handleSubmit: () => mixed,
+}
+class ResetPassword extends React.Component<Props> {
   handleSubmit = () => {
     console.log('reset password...')
   }

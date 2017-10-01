@@ -1,6 +1,6 @@
 // @flow
 
-import React from 'react'
+import * as React from 'react'
 import Slider from 'react-rangeslider'
 import { Helmet } from 'react-helmet'
 

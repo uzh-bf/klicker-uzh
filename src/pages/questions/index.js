@@ -1,6 +1,6 @@
 // @flow
 
-import React, { Component } from 'react'
+import * as React from 'react'
 import Router from 'next/router'
 import { Button } from 'semantic-ui-react'
 import _debounce from 'lodash/debounce'
@@ -14,29 +14,22 @@ import TeacherLayout from '../../components/layouts/TeacherLayout'
 import type { QuestionFilters } from '../../lib/utils/filters'
 
 type Props = {
-  intl: $IntlShape,
+  intl: any,
 }
-
-class Index extends Component {
-  props: Props
-
-  state: {
-    activeNewButton: boolean,
-    filters: QuestionFilters,
-    sidebarVisible: boolean,
-  }
-
-  constructor(props) {
-    super(props)
-    this.state = {
-      activeNewButton: false,
-      filters: {
-        tags: [],
-        title: null,
-        type: null,
-      },
-      sidebarVisible: false,
-    }
+type State = {
+  activeNewButton: boolean,
+  filters: QuestionFilters,
+  sidebarVisible: boolean,
+}
+class Index extends React.Component<Props, State> {
+  state = {
+    activeNewButton: false,
+    filters: {
+      tags: [],
+      title: null,
+      type: null,
+    },
+    sidebarVisible: false,
   }
 
   // handling the state of the new course button

@@ -1,7 +1,7 @@
 // @flow
 /* eslint-disable jsx-a11y/label-has-for */
 
-import React from 'react'
+import * as React from 'react'
 import { Form, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
@@ -16,7 +16,7 @@ type Props = {
     onDrop: () => mixed,
     onFocus: () => mixed,
   },
-  intl: $IntlShape,
+  intl: any,
   label?: string,
   meta: {
     active: boolean,

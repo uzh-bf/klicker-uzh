@@ -1,10 +1,10 @@
 // @flow
 
-import React from 'react'
+import * as React from 'react'
 import { Input } from 'semantic-ui-react'
 
 type Props = {
-  intl: $IntlShape,
+  intl: any,
   handleSearch: (query: string) => mixed,
 }
 

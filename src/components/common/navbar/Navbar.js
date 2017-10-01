@@ -1,6 +1,6 @@
 // @flow
 
-import React from 'react'
+import * as React from 'react'
 import { Icon, Menu } from 'semantic-ui-react'
 
 import AccountArea from './AccountArea'
@@ -9,7 +9,7 @@ import SessionArea from './SessionArea'
 
 type Props = {
   accountShort: string,
-  intl: $IntlShape,
+  intl: any,
   search: {
     query: string,
     sortBy: string,

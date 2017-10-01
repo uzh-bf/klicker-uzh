@@ -2,7 +2,7 @@
 
 /* eslint-disable import/prefer-default-export */
 
-import React from 'react'
+import * as React from 'react'
 
 function createLinks(links: Array<string> = []): Array<*> {
   return links.map(link => (

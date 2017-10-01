@@ -3,7 +3,7 @@
 
 import Document, { Head, Main, NextScript } from 'next/document'
 import Helmet from 'react-helmet'
-import React from 'react'
+import * as React from 'react'
 
 // The document (which is SSR-only) needs to be customized to expose the locale
 // data for the user's locale for React Intl to work in the browser.

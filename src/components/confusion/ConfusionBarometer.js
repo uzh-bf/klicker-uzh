@@ -1,13 +1,13 @@
 // @flow
 
-import React from 'react'
+import * as React from 'react'
 import { Checkbox } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 import ConfusionSection from './ConfusionSection'
 
 type Props = {
-  intl: $IntlShape,
+  intl: any,
   isActive: boolean,
   handleActiveToggle: () => mixed,
 }

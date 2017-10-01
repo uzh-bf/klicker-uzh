@@ -1,6 +1,6 @@
 // @flow
 
-import React, { Component } from 'react'
+import * as React from 'react'
 import { FormattedMessage } from 'react-intl'
 import { Helmet } from 'react-helmet'
 import { Button } from 'semantic-ui-react'
@@ -9,17 +9,20 @@ import { createLinks, initLogging } from '../../lib'
 
 import Sidebar from '../common/sidebar/Sidebar'
 
-class StudentLayout extends Component {
-  props: {
-    children: any,
-    pageTitle: string,
-    sidebar: {
-      activeItem: string,
-      handleItemChange: (newItem: string) => mixed,
-    },
-    title: string,
-  }
-
+type Props = {
+  children: any,
+  pageTitle: string,
+  sidebar: {
+    activeItem: string,
+    handleItemChange: (newItem: string) => mixed,
+  },
+  title: string,
+}
+type State = {
+  sidebarActiveItem: string,
+  sidebarVisible: boolean,
+}
+class StudentLayout extends React.Component<Props, State> {
   state = {
     sidebarActiveItem: 'activeQuestion',
     sidebarVisible: false,

@@ -5,7 +5,7 @@
 /* eslint-disable react/jsx-first-prop-new-line */
 /* eslint-disable react/prop-types */
 
-import React, { Component } from 'react'
+import * as React from 'react'
 import { storiesOf } from '@storybook/react'
 import { action } from '@storybook/addon-actions'
 
@@ -13,7 +13,7 @@ import FeedbackChannel from './FeedbackChannel'
 import { intlMock } from '../../../.storybook/utils'
 
 // create a stateful wrapper for the component
-class Wrapper extends Component {
+class Wrapper extends React.Component<{ data: any }, { isActive: boolean, isPublic: boolean }> {
   state = {
     isActive: false,
     isPublic: false,

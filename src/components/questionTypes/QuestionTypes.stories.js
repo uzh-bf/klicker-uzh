@@ -7,7 +7,7 @@
   react/prop-types, react/no-multi-comp
 */
 
-import React, { Component } from 'react'
+import * as React from 'react'
 import { storiesOf } from '@storybook/react'
 import { intlMock } from '../../../.storybook/utils'
 
@@ -21,7 +21,7 @@ import {
   SCCreationPreview,
 } from './SC'
 
-class SCAnswerWrapper extends Component {
+class SCAnswerWrapper extends React.Component<{ options: any }, { activeOption: number }> {
   state = {
     activeOption: 1,
   }
@@ -40,7 +40,7 @@ class SCAnswerWrapper extends Component {
   }
 }
 
-class SCCreationWrapper extends Component {
+class SCCreationWrapper extends React.Component<any, any> {
   state = {
     options: [{ correct: true, name: 'Correct option' }, { correct: false, name: 'This is false' }],
   }

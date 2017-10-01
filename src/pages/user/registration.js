@@ -1,6 +1,6 @@
 // @flow
 
-import React from 'react'
+import * as React from 'react'
 import { FormattedMessage } from 'react-intl'
 import { graphql } from 'react-apollo'
 
@@ -9,12 +9,15 @@ import RegistrationForm from '../../components/forms/RegistrationForm'
 import { RegistrationMutation } from '../../queries/mutations'
 import { withData, pageWithIntl } from '../../lib'
 
-class Registration extends React.Component {
-  props: {
-    intl: $IntlShape,
-    createUser: (email: string, password: string, shortname: string) => Promise<*>,
-  }
-
+type Props = {
+  intl: any,
+  createUser: (email: string, password: string, shortname: string) => Promise<*>,
+}
+type State = {
+  error: string,
+  success: string,
+}
+class Registration extends React.Component<Props, State> {
   state = {
     error: null,
     success: null,

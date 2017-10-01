@@ -1,6 +1,6 @@
 // @flow
 
-import React from 'react'
+import * as React from 'react'
 import { Menu, Sidebar as SemanticSidebar } from 'semantic-ui-react'
 
 import SidebarItem from './SidebarItem'

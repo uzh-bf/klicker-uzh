@@ -1,6 +1,6 @@
 // @flow
 
-import React from 'react'
+import * as React from 'react'
 import { Checkbox } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
@@ -12,7 +12,7 @@ type Props = {
     id: string,
     votes: number,
   }>,
-  intl: $IntlShape,
+  intl: any,
   isActive?: boolean,
   isPublic?: boolean,
   handleActiveToggle: () => mixed,

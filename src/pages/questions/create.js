@@ -1,7 +1,7 @@
 /* flow */
 /* eslint-disable react/prop-types */
 
-import React, { Component } from 'react'
+import * as React from 'react'
 import Router from 'next/router'
 import { graphql } from 'react-apollo'
 
@@ -13,13 +13,11 @@ import { QuestionListQuery, TagListQuery } from '../../queries/queries'
 
 /* type Props = {
   data: any,
-  intl: $IntlShape,
+  intl: any,
   createQuestion: any => Promise<*>,
 } */
 
-class CreateQuestion extends Component {
-  // props: Props
-
+class CreateQuestion extends React.Component<> {
   handleDiscard = () => {
     Router.push('/questions')
   }
