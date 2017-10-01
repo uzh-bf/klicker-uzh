@@ -30,8 +30,8 @@
     "prosemirror-view": "0.23.0",
     "raven-js": "3.17.0",
     "react": "15.6.1",
-    "react-apollo": "1.4.16",
     "react-addons-css-transition-group": "15.6.2",
+    "react-apollo": "1.4.16",
     "react-autosuggest": "9.3.2",
     "react-dom": "15.6.1",
     "react-helmet": "5.2.0",
@@ -63,7 +63,9 @@
     "eslint-plugin-jsx-a11y": "5.1.1",
     "eslint-plugin-react": "7.3.0",
     "flow-bin": "0.52.0",
+    "husky": "^0.14.3",
     "jest": "21.1.0",
+    "lint-staged": "4.2.3",
     "nodemon": "1.12.0",
     "pre-commit": "1.2.2",
     "prettier": "1.7.2",
@@ -75,26 +77,27 @@
     "storybook-addon-intl": "2.1.1"
   },
   "scripts": {
+    "precommit": "lint-staged",
+    "prepush": "yarn run test && yarn run flow",
     "build": "next build src && node ./src/lib/defaultLang",
-    "debug": "cross-env NODE_ENV=production node --inspect server.js",
     "dev": "nodemon -w .env -w package.json -w yarn.lock server.js",
     "dev:inspect": "nodemon -w .env -w package.json -w yarn.lock --inspect server.js",
     "flow": "flow check",
     "format": "prettier-eslint --single-quote --no-semi --write server.js \"src/**/*.js\"",
-    "format:ci": "prettier-eslint --single-quote --no-semi --list-different server.js \"src/**/*.js\"",
+    "format:ci":
+      "prettier-eslint --single-quote --no-semi --list-different server.js \"src/**/*.js\"",
     "lint": "eslint server.js \"src/**/*.js\"",
     "start": "cross-env NODE_ENV=production node server.js",
+    "start:inspect": "cross-env NODE_ENV=production node --inspect server.js",
     "storybook": "start-storybook -p 6006",
     "test": "jest",
     "test:watch": "jest --watch"
   },
   "jest": {
     "testEnvironment": "node",
-    "roots": [
-      "src/"
-    ]
+    "roots": ["src/"]
   },
-  "pre-commit": [
-    "lint"
-  ]
+  "lint-staged": {
+    "*.{js,json}": ["prettier-eslint --single-quote --no-semi --write", "eslint", "git add"]
+  }
 }
