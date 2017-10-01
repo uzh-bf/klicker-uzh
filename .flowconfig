@@ -1,4 +1,6 @@
 [ignore]
+.*/node_modules/immutable/.*
+.*/node_modules/radium/.*
 .*/node_modules/react-apollo/.*
 .*/node_modules/apollo-client/.*
 .*/node_modules/apollo-link-core/.*
