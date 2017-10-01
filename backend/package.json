@@ -30,15 +30,17 @@
     "eslint-plugin-flowtype": "2.36.0",
     "eslint-plugin-import": "2.7.0",
     "flow-bin": "0.55.0",
+    "husky": "0.14.3",
     "jest": "21.1.0",
+    "lint-staged": "4.2.3",
     "nodemon": "1.12.1",
-    "pre-commit": "1.2.2",
     "prettier": "1.7.0",
     "prettier-eslint": "8.1.1",
     "prettier-eslint-cli": "4.3.2"
   },
   "scripts": {
-    "debug": "cross-env NODE_ENV=production node --inspect src/server.js",
+    "precommit": "lint-staged",
+    "prepush": "yarn run test",
     "dev": "nodemon -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock src/server.js",
     "dev:inspect": "nodemon -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock --inspect src/server.js",
     "flow": "flow check",
@@ -46,17 +48,16 @@
     "format:ci": "prettier-eslint --single-quote --no-semi --list-different \"src/**/*.js\"",
     "lint": "eslint \"src/**/*.js\"",
     "start": "cross-env NODE_ENV=production node src/server.js",
+    "start:inspect": "cross-env NODE_ENV=production node --inspect src/server.js",
     "test": "jest",
     "test:watch": "jest --watch"
   },
   "jest": {
     "testEnvironment": "node",
-    "roots": [
-      "src/"
-    ]
+    "roots": ["src/"]
   },
-  "pre-commit": [
-    "format",
-    "lint"
-  ]
+  "lint-staged": {
+    "*.js": ["prettier-eslint --single-quote --no-semi --write", "eslint", "git add"],
+    "*.json": ["prettier-eslint --single-quote --no-semi --write", "git add"]
+  }
 }
