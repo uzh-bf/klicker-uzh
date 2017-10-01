@@ -1,4 +1,5 @@
 [ignore]
+.*/node_modules/react-apollo/.*
 .*/node_modules/apollo-client/.*
 .*/node_modules/apollo-link-core/.*
 .*/node_modules/graphql-tag/.*
