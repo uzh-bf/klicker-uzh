@@ -4990,9 +4990,9 @@ logrocket-react@0.0.4:
     react "15"
     react-dom "15"
 
-logrocket@0.5.4:
-  version "0.5.4"
-  resolved "https://registry.yarnpkg.com/logrocket/-/logrocket-0.5.4.tgz#2fb58348d27d0a9699f7a044c882a642608f33a1"
+logrocket@0.5.5:
+  version "0.5.5"
+  resolved "https://registry.yarnpkg.com/logrocket/-/logrocket-0.5.5.tgz#4bbcfb851a07d9860ebebd8d32dceb4c27f9f25e"
 
 longest@^1.0.1:
   version "1.0.1"
