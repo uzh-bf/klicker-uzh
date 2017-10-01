@@ -83,7 +83,8 @@
     "dev:inspect": "nodemon -w .env -w package.json -w yarn.lock --inspect server.js",
     "flow": "flow check",
     "format": "prettier-eslint --single-quote --no-semi --write server.js \"src/**/*.js\"",
-    "format:ci": "prettier-eslint --single-quote --no-semi --list-different server.js \"src/**/*.js\"",
+    "format:ci":
+      "prettier-eslint --single-quote --no-semi --list-different server.js \"src/**/*.js\"",
     "lint": "eslint server.js \"src/**/*.js\"",
     "start": "cross-env NODE_ENV=production node server.js",
     "start:inspect": "cross-env NODE_ENV=production node --inspect server.js",
@@ -93,15 +94,10 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "roots": [
-      "src/"
-    ]
+    "roots": ["src/"]
   },
   "lint-staged": {
-    "*.{js,json}": [
-      "prettier-eslint --single-quote --no-semi --write",
-      "eslint",
-      "git add"
-    ]
+    "*.js": ["prettier-eslint --single-quote --no-semi --write", "eslint", "git add"],
+    "*.json": ["prettier-eslint --single-quote --no-semi --write", "git add"]
   }
 }
