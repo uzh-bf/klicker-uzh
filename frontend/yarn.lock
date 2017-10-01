@@ -6629,9 +6629,9 @@ react-style-proptype@^3.0.0:
   dependencies:
     prop-types "^15.5.4"
 
-react-tagsinput@3.17.0:
-  version "3.17.0"
-  resolved "https://registry.yarnpkg.com/react-tagsinput/-/react-tagsinput-3.17.0.tgz#d699bc7ff3be3492d5a3d2a57f6976908774fba3"
+react-tagsinput@3.18.0:
+  version "3.18.0"
+  resolved "https://registry.yarnpkg.com/react-tagsinput/-/react-tagsinput-3.18.0.tgz#40e036fc0f4c3d6b4689858189ab02926717a818"
 
 react-test-renderer@15.6.1:
   version "15.6.1"
