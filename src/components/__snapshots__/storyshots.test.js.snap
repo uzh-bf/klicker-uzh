@@ -207,6 +207,10 @@ exports[`Storyshots ConfusionSlider default 1`] = `
     data-jsx={219419674}
   >
     <div
+      aria-orientation="horizontal"
+      aria-valuemax={50}
+      aria-valuemin={-50}
+      aria-valuenow={10}
       className="rangeslider rangeslider-horizontal"
       onMouseDown={[Function]}
       onMouseUp={[Function]}
@@ -223,6 +227,7 @@ exports[`Storyshots ConfusionSlider default 1`] = `
       />
       <div
         className="rangeslider__handle"
+        onKeyDown={[Function]}
         onMouseDown={[Function]}
         onTouchEnd={[Function]}
         onTouchMove={[Function]}
@@ -231,15 +236,17 @@ exports[`Storyshots ConfusionSlider default 1`] = `
             "left": "0px",
           }
         }
+        tabIndex={0}
       >
         <div
-          className="rangeslider__tooltip"
+          className="rangeslider__handle-label"
         >
-          <span>
-            10
-          </span>
+          
         </div>
       </div>
+      <ul
+        className="rangeslider__labels"
+      />
     </div>
   </div>
 </div>
