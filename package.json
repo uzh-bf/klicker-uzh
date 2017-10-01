@@ -67,7 +67,6 @@
     "jest": "21.1.0",
     "lint-staged": "4.2.3",
     "nodemon": "1.12.0",
-    "pre-commit": "1.2.2",
     "prettier": "1.7.2",
     "prettier-eslint": "8.2.0",
     "prettier-eslint-cli": "4.4.0",
@@ -84,8 +83,7 @@
     "dev:inspect": "nodemon -w .env -w package.json -w yarn.lock --inspect server.js",
     "flow": "flow check",
     "format": "prettier-eslint --single-quote --no-semi --write server.js \"src/**/*.js\"",
-    "format:ci":
-      "prettier-eslint --single-quote --no-semi --list-different server.js \"src/**/*.js\"",
+    "format:ci": "prettier-eslint --single-quote --no-semi --list-different server.js \"src/**/*.js\"",
     "lint": "eslint server.js \"src/**/*.js\"",
     "start": "cross-env NODE_ENV=production node server.js",
     "start:inspect": "cross-env NODE_ENV=production node --inspect server.js",
@@ -95,9 +93,15 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "roots": ["src/"]
+    "roots": [
+      "src/"
+    ]
   },
   "lint-staged": {
-    "*.{js,json}": ["prettier-eslint --single-quote --no-semi --write", "eslint", "git add"]
+    "*.{js,json}": [
+      "prettier-eslint --single-quote --no-semi --write",
+      "eslint",
+      "git add"
+    ]
   }
 }
