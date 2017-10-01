@@ -1,11 +1,13 @@
+require('dotenv').config()
+
 const mongoose = require('mongoose')
-// const JWT = require('jsonwebtoken')
 
 const AuthService = require('./auth')
+const QuestionService = require('./questions')
 const SessionService = require('./sessions')
+const { setupTestEnv } = require('../utils/testHelpers')
 
 mongoose.Promise = Promise
-process.env.APP_SECRET = 'hello-world'
 
 // define how jest should serialize objects into snapshots
 // we need to strip ids and dates as they are always changing
@@ -14,7 +16,6 @@ expect.addSnapshotSerializer({
   print: val => `
     Name: ${val.name}
     Status: ${val.status}
-    User: ${val.user}
 
     Blocks: ${val.blocks.map(block => `
       Show solutions: ${block.showSolutions}
@@ -42,13 +43,36 @@ const prepareSession = userId =>
 
 describe('SessionService', () => {
   let user
+  let question1
+  let question2
 
   beforeAll(async () => {
     // connect to the database
-    await mongoose.connect('mongodb://klicker:klicker@ds161042.mlab.com:61042/klicker-dev')
+    await mongoose.connect(`mongodb://${process.env.MONGO_URL}`, {
+      keepAlive: true,
+      reconnectTries: 10,
+      useMongoClient: true,
+    })
+
+    await setupTestEnv({ email: 'testSessions@bf.uzh.ch', password: 'somePassword', shortname: 'sessio' })
 
     // login as a test user
-    user = await AuthService.login(null, 'roland.schlaefli@bf.uzh.ch', 'abcdabcd')
+    user = await AuthService.login(null, 'testSessions@bf.uzh.ch', 'somePassword')
+
+    question1 = await QuestionService.createQuestion({
+      description: 'a description',
+      tags: ['AZA', 'BBB'],
+      title: 'first question',
+      type: 'SC',
+      userId: user.id,
+    })
+    question2 = await QuestionService.createQuestion({
+      description: 'very good',
+      tags: ['CDEF'],
+      title: 'second question',
+      type: 'SC',
+      userId: user.id,
+    })
   })
   afterAll((done) => {
     mongoose.disconnect(done)
@@ -69,19 +93,20 @@ describe('SessionService', () => {
         name: 'session with an empty block',
         questionBlocks: [
           {
-            questions: [{ id: '59b13d288b01b731583850ab' }, { id: '59b13d6f8b01b731583850af' }],
+            questions: [{ id: question1.id }, { id: question2.id }],
           },
           {
             questions: [],
           },
           {
-            questions: [{ id: '59b1481857f3c34af09a4736' }],
+            questions: [{ id: question1.id }],
           },
         ],
         userId: user.id,
       })
 
       expect(newSession.blocks.length).toEqual(2)
+      expect(newSession).toMatchSnapshot()
     })
 
     it('allows creating a valid session', async () => {
@@ -89,10 +114,10 @@ describe('SessionService', () => {
         name: 'hello world',
         questionBlocks: [
           {
-            questions: [{ id: '59b13d288b01b731583850ab' }, { id: '59b13d6f8b01b731583850af' }],
+            questions: [{ id: question1.id }, { id: question2.id }],
           },
           {
-            questions: [{ id: '59b1481857f3c34af09a4736' }],
+            questions: [{ id: question1.id }],
           },
         ],
         userId: user.id,

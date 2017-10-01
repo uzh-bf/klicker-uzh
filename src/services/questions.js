@@ -31,6 +31,7 @@ const createQuestion = async ({
     tags: [...allTags],
     title,
     type,
+    user: userId,
     versions: [{ description, options, solution: {} }],
   })
 

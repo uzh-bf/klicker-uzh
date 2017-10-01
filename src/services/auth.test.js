@@ -1,17 +1,25 @@
+require('dotenv').config()
+
 const mongoose = require('mongoose')
 const JWT = require('jsonwebtoken')
 
 mongoose.Promise = Promise
-process.env.APP_SECRET = 'hello-world'
 
 const {
   isAuthenticated, isValidJWT, signup, login,
 } = require('./auth')
 const { UserModel } = require('../models')
+const { setupTestEnv } = require('../utils/testHelpers')
 
 describe('AuthService', () => {
   beforeAll(async () => {
-    await mongoose.connect('mongodb://klicker:klicker@ds161042.mlab.com:61042/klicker-dev')
+    await mongoose.connect(`mongodb://${process.env.MONGO_URL}`, {
+      keepAlive: true,
+      reconnectTries: 10,
+      useMongoClient: true,
+    })
+
+    await setupTestEnv({ email: 'testAuth@bf.uzh.ch', password: 'somePassword', shortname: 'auth' })
   })
   afterAll((done) => {
     mongoose.disconnect(done)
@@ -46,15 +54,15 @@ describe('AuthService', () => {
   describe('signup', () => {
     it('works with valid user data', async () => {
       // remove a user with the given test email if he already exists
-      await UserModel.findOneAndRemove({ email: 'testEmail@bf.uzh.ch' })
+      await UserModel.findOneAndRemove({ email: 'testSignup@bf.uzh.ch' })
 
       // try creating a new user with valid data
-      const newUser = await signup('testEmail@bf.uzh.ch', 'somePassword', 'shorty')
+      const newUser = await signup('testSignup@bf.uzh.ch', 'somePassword', 'signup')
 
       // expect the new user to contain correct data
       expect(newUser).toEqual(expect.objectContaining({
-        email: 'testEmail@bf.uzh.ch',
-        shortname: 'shorty',
+        email: 'testSignup@bf.uzh.ch',
+        shortname: 'signup',
         isAAI: false,
       }))
 
@@ -86,13 +94,13 @@ describe('AuthService', () => {
     })
 
     it('works with a real user', async () => {
-      const user = await login(res, 'roland.schlaefli@bf.uzh.ch', 'abcdabcd')
+      const user = await login(res, 'testAuth@bf.uzh.ch', 'somePassword')
 
       // expect the returned user to contain the correct email and shortname
       // the shortname is only saved in the database (thus the connection must work)
       expect(user).toEqual(expect.objectContaining({
-        email: 'roland.schlaefli@bf.uzh.ch',
-        shortname: 'rsc',
+        email: 'testAuth@bf.uzh.ch',
+        shortname: 'auth',
       }))
 
       // expect a new cookie to have been set
