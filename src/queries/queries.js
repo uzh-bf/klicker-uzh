@@ -100,20 +100,15 @@ export type SessionListType = {
 }
 export const SessionListQuery = gql`
   {
-    sessions: allSessions(orderBy: updatedAt_DESC) {
+    sessions: allSessions {
       id
       name
       status
       blocks {
-        id
-        showSolutions
-        timeLimit
         questions {
           id
-          questionDefinition {
-            title
-            type
-          }
+          title
+          type
         }
       }
       createdAt
