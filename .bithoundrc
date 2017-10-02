@@ -11,6 +11,9 @@
     "lint": {"engine": "eslint"}
   },
   "dependencies": {
-    "mute": []
+    "mute": [
+      "eslint-plugin-jsx-a11y",
+      "babel-eslint"
+    ]
   }
 }
