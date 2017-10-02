@@ -44,7 +44,7 @@ const Session = ({ createdAt, name, blocks, id, status }: Props) => {
       message: <FormattedMessage id="session.button.running.content" defaultMessage="Running" />,
     },
   }
-  const buttonStatus = statusCases[status]
+  const buttonStatus = statusCases.CREATED // statusCases[status]
 
   return (
     <div className="session">
@@ -60,11 +60,11 @@ const Session = ({ createdAt, name, blocks, id, status }: Props) => {
         {blocks.map(block => (
           <div className="block">
             <QuestionBlock
-              key={block.id}
-              questions={block.questions.map(question => ({
-                id: question.id,
-                title: question.questionDefinition.title,
-                type: question.questionDefinition.type,
+              // key={block.id}
+              questions={block.instances.map(instance => ({
+                id: instance.id,
+                title: instance.question.title,
+                type: instance.question.type,
               }))}
               showSolutions={block.showSolutions}
               timeLimit={block.timeLimit}

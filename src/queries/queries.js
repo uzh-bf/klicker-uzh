@@ -105,10 +105,13 @@ export const SessionListQuery = gql`
       name
       status
       blocks {
-        questions {
+        instances {
           id
-          title
-          type
+          question {
+            id
+            title
+            type
+          }
         }
       }
       createdAt
