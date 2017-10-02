@@ -40,7 +40,7 @@
   },
   "scripts": {
     "precommit": "lint-staged",
-    "prepush": "yarn run test --only-changed",
+    "prepush": "yarn run test --onlyChanged",
     "dev": "nodemon -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock src/server.js",
     "dev:inspect": "nodemon -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock --inspect src/server.js",
     "flow": "flow check",
