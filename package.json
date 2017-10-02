@@ -77,7 +77,7 @@
   },
   "scripts": {
     "precommit": "lint-staged",
-    "prepush": "yarn run test && yarn run flow",
+    "prepush": "yarn run test --only-changed && yarn run flow",
     "build": "next build src && node ./src/lib/defaultLang",
     "dev": "nodemon -w .env -w package.json -w yarn.lock server.js",
     "dev:inspect": "nodemon -w .env -w package.json -w yarn.lock --inspect server.js",
