@@ -24,10 +24,10 @@
     "optics-agent": "1.1.7"
   },
   "devDependencies": {
-    "babel-eslint": "8.0.0",
-    "eslint": "4.7.2",
-    "eslint-config-airbnb-base": "12.0.0",
-    "eslint-plugin-flowtype": "2.36.0",
+    "babel-eslint": "8.0.1",
+    "eslint": "4.8.0",
+    "eslint-config-airbnb-base": "12.0.1",
+    "eslint-plugin-flowtype": "2.37.0",
     "eslint-plugin-import": "2.7.0",
     "flow-bin": "0.56.0",
     "husky": "0.14.3",
