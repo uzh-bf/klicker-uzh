@@ -108,11 +108,15 @@ export type CreateSessionMutationType = {
 export type CreateSessionInputType = {
   name: string,
 }
+export type QuestionBlockInput = {
+  questions: Array<{
+    id: string,
+  }>,
+}
 export const CreateSessionMutation = gql`
-  mutation CreateSession($name: String!) {
-    createSession(session: { name: $name }) {
+  mutation CreateSession($name: String!, $blocks: [Session_QuestionBlockInput]!) {
+    createSession(session: { name: $name, blocks: $blocks }) {
       id
-      name
     }
   }
 `
