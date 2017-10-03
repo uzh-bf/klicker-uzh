@@ -21,12 +21,13 @@ type ObjectIdType = {
 }
 
 type QuestionType = {
-  id?: string,
+  id: string,
   title: string,
   type: string,
 }
 
 type QuestionBlockType = {
+  status: string,
   instances: Array<{
     id: string,
     question: QuestionType,

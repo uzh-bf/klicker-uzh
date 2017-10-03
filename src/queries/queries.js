@@ -2,7 +2,7 @@
 
 import { gql } from 'react-apollo'
 
-import type { TagType } from '../types'
+import type { QuestionBlockType, TagType } from '../types'
 
 export type TagListType = {
   loading: boolean,
@@ -82,17 +82,7 @@ export type SessionListType = {
     id: string,
     name: string,
     status: 'CREATED' | 'RUNNING' | 'COMPLETED',
-    blocks: Array<{
-      showSolutions: boolean,
-      timeLimit: number,
-      instances: Array<{
-        id: string,
-        question: {
-          title: string,
-          type: string,
-        },
-      }>,
-    }>,
+    blocks: QuestionBlockType[],
     createdAt: string,
     updatedAt: string,
   }>,
@@ -135,17 +125,7 @@ export type RunningSessionType = {
         content: string,
         votes: number,
       }>,
-      blocks: Array<{
-        id: string,
-        status: string,
-        questions: Array<{
-          id: string,
-          questionDefinition: {
-            title: string,
-            type: string,
-          },
-        }>,
-      }>,
+      blocks: QuestionBlockType[],
     },
   }>,
 }
@@ -166,9 +146,9 @@ export const RunningSessionQuery = gql`
         blocks {
           id
           status
-          questions {
+          instances {
             id
-            questionDefinition {
+            question {
               title
               type
             }
