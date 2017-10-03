@@ -12,6 +12,8 @@ import Question from './Question'
 import fixtures from '../../../.storybook/fixtures'
 
 storiesOf('Question', module)
-  .add('SC with a single version', () => <Question {...fixtures.question} />)
-  .add('MC with multiple versions', () => <Question {...fixtures.question} type="MC" version={2} />)
-  .add('MC without tags', () => <Question {...fixtures.question} tags={[]} type="MC" />)
+  .add('SC with a single version [NoTest]', () => <Question {...fixtures.question} />)
+  .add('MC with multiple versions [NoTest]', () => (
+    <Question {...fixtures.question} type="MC" version={2} />
+  ))
+  .add('MC without tags [NoTest]', () => <Question {...fixtures.question} tags={[]} type="MC" />)

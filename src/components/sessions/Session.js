@@ -7,26 +7,18 @@ import { FormattedMessage } from 'react-intl'
 
 import QuestionBlock from '../questions/QuestionBlock'
 
+import type { QuestionBlockType } from '../../types'
+
 type Props = {
-  blocks: Array<{
-    id: string,
-    questions: Array<{
-      id: string,
-      questionDefinition: {
-        title: string,
-        type: string,
-      },
-    }>,
-    showSolutions: boolean,
-    timeLimit: number,
-  }>,
+  blocks: QuestionBlockType[],
   createdAt: string,
   id: string,
   name: string,
   status: 'CREATED' | 'RUNNING' | 'COMPLETED',
 }
 
-const Session = ({ createdAt, name, blocks, id, status }: Props) => {
+// const Session = ({ createdAt, name, blocks, id, status }: Props) => {
+const Session = ({ createdAt, name, blocks, id }: Props) => {
   const statusCases = {
     COMPLETED: {
       disabled: false,
@@ -44,7 +36,7 @@ const Session = ({ createdAt, name, blocks, id, status }: Props) => {
       message: <FormattedMessage id="session.button.running.content" defaultMessage="Running" />,
     },
   }
-  const buttonStatus = statusCases[status]
+  const buttonStatus = statusCases.CREATED // statusCases[status]
 
   return (
     <div className="session">
@@ -60,11 +52,11 @@ const Session = ({ createdAt, name, blocks, id, status }: Props) => {
         {blocks.map(block => (
           <div className="block">
             <QuestionBlock
-              key={block.id}
-              questions={block.questions.map(question => ({
-                id: question.id,
-                title: question.questionDefinition.title,
-                type: question.questionDefinition.type,
+              // TODO: key={...}
+              questions={block.instances.map(instance => ({
+                id: instance.id,
+                title: instance.question.title,
+                type: instance.question.type,
               }))}
               showSolutions={block.showSolutions}
               timeLimit={block.timeLimit}
@@ -84,6 +76,7 @@ const Session = ({ createdAt, name, blocks, id, status }: Props) => {
         .details {
           display: flex;
           flex-direction: column;
+          flex: 1;
         }
         .title,
         .date {

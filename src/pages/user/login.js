@@ -1,6 +1,7 @@
 // @flow
 
 import React from 'react'
+import Router from 'next/router'
 import { FormattedMessage } from 'react-intl'
 import { graphql } from 'react-apollo'
 
@@ -17,24 +18,24 @@ class Login extends React.Component {
 
   state = {
     error: null,
-    success: null,
   }
 
   handleSubmit = (values) => {
     this.props
       .login(values.email, values.password)
-      .then(({ data }) => {
-        // TODO: redirect to question pool
-        this.setState({ error: null, success: data.login.email })
+      .then(() => {
+        // redirect to question pool
+        Router.push('/questions')
+        // this.setState({ error: null, success: data.login.email })
       })
       .catch(({ message }) => {
-        this.setState({ error: message, success: null })
+        this.setState({ error: message })
       })
   }
 
   render() {
     const { intl } = this.props
-    const { error, success } = this.state
+    const { error } = this.state
 
     return (
       <StaticLayout
@@ -50,9 +51,6 @@ class Login extends React.Component {
 
           {/* TODO: improve message handling */}
           {error && <div className="errorMessage message">Login failed: {error}</div>}
-          {success && (
-            <div className="successMessage message">Successfully logged in as {success}</div>
-          )}
 
           <LoginForm intl={intl} onSubmit={this.handleSubmit} />
 
