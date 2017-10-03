@@ -21,7 +21,7 @@ const Session = new mongoose.Schema({
     isFeedbackChannelActive: { type: Boolean, default: false },
     isFeedbackChannelPublic: { type: Boolean, default: false },
   },
-  user: { type: ObjectId, ref: 'User' },
+  user: { type: ObjectId, ref: 'User', required: true },
 
   blocks: [QuestionBlock],
   confusionTS: [ConfusionTimeStep],

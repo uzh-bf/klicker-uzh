@@ -14,7 +14,7 @@ const createSession = async ({ name, questionBlocks, userId }) => {
   // skip any blocks that are empty (erroneous blocks)
   // create question instances for all questions within
   const blocks = questionBlocks.filter(block => block.questions.length > 0).map(block => ({
-    questions: block.questions.map((question) => {
+    instances: block.questions.map((question) => {
       // create a new question instance model
       const instance = new QuestionInstanceModel({
         question: question.id,
