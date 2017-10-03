@@ -3,7 +3,6 @@
 import React from 'react'
 import classNames from 'classnames'
 import { DragSource } from 'react-dnd'
-import { FaCheck, FaClose } from 'react-icons/lib/fa'
 
 import QuestionDetails from './QuestionDetails'
 import QuestionTags from './QuestionTags'
