@@ -1,27 +1,40 @@
 // @flow
 
 import React from 'react'
+import isEmpty from 'validator/lib/isEmpty'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage } from 'react-intl'
-import { FaEdit, FaTrash, FaPlay, FaFloppyO } from 'react-icons/lib/fa'
+import { FaTrash, FaPlay, FaFloppyO } from 'react-icons/lib/fa'
 
-import SessionTimeline from './components/SessionTimeline'
+import { SemanticInput, SessionTimeline } from './components'
 
 type Props = {
-  handleSubmit: () => void,
+  invalid: boolean,
+  handleSubmit: any => void,
   onDiscard: () => void,
   onSave: () => void,
   onStart: () => void,
 }
 
-const SessionCreationForm = ({ handleSubmit, onSave, onDiscard, onStart }: Props) => (
+// form validation
+const validate = ({ sessionName, questions }) => {
+  const errors = {}
+
+  if (!sessionName || isEmpty(sessionName)) {
+    errors.sessionName = 'form.createSession.sessionName.empty'
+  }
+
+  if (!questions || questions.length === 0) {
+    errors.questions = 'form.createSession.questions.empty'
+  }
+
+  return errors
+}
+
+const SessionCreationForm = ({ invalid, handleSubmit, onSave, onDiscard, onStart }: Props) => (
   <form className="ui form sessionCreation" onSubmit={handleSubmit(onSave)}>
-    <div className="sessionTitle">
-      Some Title{' '}
-      <span className="editButton">
-        <FaEdit />
-      </span>
-      <Field name="sessionName" component="input" />
+    <div className="sessionName">
+      <Field name="sessionName" label="Name" component={SemanticInput} />
     </div>
 
     <div className="sessionTimeline">
@@ -33,11 +46,16 @@ const SessionCreationForm = ({ handleSubmit, onSave, onDiscard, onStart }: Props
         <FaTrash />
         <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
       </button>
-      <button className="ui fluid button" type="submit">
+      <button className="ui fluid button" disabled={invalid} type="submit">
         <FaFloppyO />
         <FormattedMessage defaultMessage="Save" id="common.button.save" />
       </button>
-      <button className="ui fluid primary button" type="button" onClick={handleSubmit(onStart)}>
+      <button
+        className="ui fluid primary button"
+        disabled={invalid}
+        type="button"
+        onClick={handleSubmit(onStart)}
+      >
         <FaPlay />
         <FormattedMessage defaultMessage="Start" id="common.button.start" />
       </button>
@@ -51,7 +69,7 @@ const SessionCreationForm = ({ handleSubmit, onSave, onDiscard, onStart }: Props
         background-color: white;
       }
 
-      .sessionTitle {
+      .sessionName {
         flex: 0 0 100%;
 
         border: 1px solid lightgrey;
@@ -59,7 +77,7 @@ const SessionCreationForm = ({ handleSubmit, onSave, onDiscard, onStart }: Props
         text-align: center;
       }
 
-      .sessionTitle > .editButton {
+      .sessionName > .editButton {
         margin-left: 0.5rem;
       }
 
@@ -92,8 +110,9 @@ const SessionCreationForm = ({ handleSubmit, onSave, onDiscard, onStart }: Props
 )
 
 export default reduxForm({
-  form: 'registration',
+  form: 'createSession',
   initialValues: {
     questions: [],
   },
+  validate,
 })(SessionCreationForm)
