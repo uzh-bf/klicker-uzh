@@ -641,319 +641,6 @@ exports[`Storyshots ListWithHeader default 1`] = `
 </div>
 `;
 
-exports[`Storyshots Question MC with multiple versions 1`] = `
-<div
-  className="container"
-  data-jsx={769450314}
->
-  <h2
-    className="title"
-    data-jsx={769450314}
-  >
-    #
-    4c821db
-     - 
-    This is a long question
-     
-    (v2)
-  </h2>
-  <div
-    className="tags"
-    data-jsx={769450314}
-  >
-    <div
-      className="container"
-      data-jsx={4150526596}
-    >
-      <div
-        className="type tag"
-        data-jsx={4150526596}
-      >
-        MC
-      </div>
-      <div
-        className="tag"
-        data-jsx={4150526596}
-      >
-        CAPM
-      </div>
-      <div
-        className="tag"
-        data-jsx={4150526596}
-      >
-        Risk
-      </div>
-    </div>
-  </div>
-  <div
-    className="details"
-    data-jsx={769450314}
-  >
-    <div
-      className="container"
-      data-jsx={2119890886}
-    >
-      <div
-        className="column"
-        data-jsx={2119890886}
-      >
-        Test1
-      </div>
-      <div
-        className="column"
-        data-jsx={2119890886}
-      >
-        Test2
-      </div>
-      <div
-        className="column"
-        data-jsx={2119890886}
-      >
-        Test3
-      </div>
-      <div
-        className="column"
-        data-jsx={2119890886}
-      >
-        <div
-          data-jsx={3358450463}
-        >
-          <h3
-            className="listHeader"
-            data-jsx={3358450463}
-          >
-            <span>
-              Last used
-            </span>
-          </h3>
-          <ul
-            className="list"
-            data-jsx={3358450463}
-          >
-            <li
-              className="listItem"
-              data-jsx={3358450463}
-            >
-              2015-02-08 14:32:11
-            </li>
-            <li
-              className="listItem"
-              data-jsx={3358450463}
-            >
-              2016-09-09 15:22:09
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-`;
-
-exports[`Storyshots Question MC without tags 1`] = `
-<div
-  className="container"
-  data-jsx={769450314}
->
-  <h2
-    className="title"
-    data-jsx={769450314}
-  >
-    #
-    4c821db
-     - 
-    This is a long question
-     
-  </h2>
-  <div
-    className="tags"
-    data-jsx={769450314}
-  >
-    <div
-      className="container"
-      data-jsx={4150526596}
-    >
-      <div
-        className="type tag"
-        data-jsx={4150526596}
-      >
-        MC
-      </div>
-    </div>
-  </div>
-  <div
-    className="details"
-    data-jsx={769450314}
-  >
-    <div
-      className="container"
-      data-jsx={2119890886}
-    >
-      <div
-        className="column"
-        data-jsx={2119890886}
-      >
-        Test1
-      </div>
-      <div
-        className="column"
-        data-jsx={2119890886}
-      >
-        Test2
-      </div>
-      <div
-        className="column"
-        data-jsx={2119890886}
-      >
-        Test3
-      </div>
-      <div
-        className="column"
-        data-jsx={2119890886}
-      >
-        <div
-          data-jsx={3358450463}
-        >
-          <h3
-            className="listHeader"
-            data-jsx={3358450463}
-          >
-            <span>
-              Last used
-            </span>
-          </h3>
-          <ul
-            className="list"
-            data-jsx={3358450463}
-          >
-            <li
-              className="listItem"
-              data-jsx={3358450463}
-            >
-              2015-02-08 14:32:11
-            </li>
-            <li
-              className="listItem"
-              data-jsx={3358450463}
-            >
-              2016-09-09 15:22:09
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-`;
-
-exports[`Storyshots Question SC with a single version 1`] = `
-<div
-  className="container"
-  data-jsx={769450314}
->
-  <h2
-    className="title"
-    data-jsx={769450314}
-  >
-    #
-    4c821db
-     - 
-    This is a long question
-     
-  </h2>
-  <div
-    className="tags"
-    data-jsx={769450314}
-  >
-    <div
-      className="container"
-      data-jsx={4150526596}
-    >
-      <div
-        className="type tag"
-        data-jsx={4150526596}
-      >
-        SC
-      </div>
-      <div
-        className="tag"
-        data-jsx={4150526596}
-      >
-        CAPM
-      </div>
-      <div
-        className="tag"
-        data-jsx={4150526596}
-      >
-        Risk
-      </div>
-    </div>
-  </div>
-  <div
-    className="details"
-    data-jsx={769450314}
-  >
-    <div
-      className="container"
-      data-jsx={2119890886}
-    >
-      <div
-        className="column"
-        data-jsx={2119890886}
-      >
-        Test1
-      </div>
-      <div
-        className="column"
-        data-jsx={2119890886}
-      >
-        Test2
-      </div>
-      <div
-        className="column"
-        data-jsx={2119890886}
-      >
-        Test3
-      </div>
-      <div
-        className="column"
-        data-jsx={2119890886}
-      >
-        <div
-          data-jsx={3358450463}
-        >
-          <h3
-            className="listHeader"
-            data-jsx={3358450463}
-          >
-            <span>
-              Last used
-            </span>
-          </h3>
-          <ul
-            className="list"
-            data-jsx={3358450463}
-          >
-            <li
-              className="listItem"
-              data-jsx={3358450463}
-            >
-              2015-02-08 14:32:11
-            </li>
-            <li
-              className="listItem"
-              data-jsx={3358450463}
-            >
-              2016-09-09 15:22:09
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-`;
-
 exports[`Storyshots QuestionBlock default 1`] = `
 <div
   className="questionBlock"
@@ -1472,11 +1159,11 @@ exports[`Storyshots QuestionTypes TypeChooser 1`] = `
 exports[`Storyshots Session default 1`] = `
 <div
   className="session"
-  data-jsx={622378283}
+  data-jsx={563880998}
 >
   <h2
     className="title"
-    data-jsx={622378283}
+    data-jsx={563880998}
   >
     4c821db
      - 
@@ -1484,7 +1171,7 @@ exports[`Storyshots Session default 1`] = `
   </h2>
   <div
     className="date"
-    data-jsx={622378283}
+    data-jsx={563880998}
   >
     <span>
       Created on
@@ -1494,11 +1181,11 @@ exports[`Storyshots Session default 1`] = `
   </div>
   <div
     className="details"
-    data-jsx={622378283}
+    data-jsx={563880998}
   >
     <div
       className="block"
-      data-jsx={622378283}
+      data-jsx={563880998}
     >
       <div
         className="questionBlock"
@@ -1617,7 +1304,7 @@ exports[`Storyshots Session default 1`] = `
     </div>
     <div
       className="actionArea"
-      data-jsx={622378283}
+      data-jsx={563880998}
     >
       <button
         className="ui icon left labeled button"

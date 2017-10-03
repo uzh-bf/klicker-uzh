@@ -2733,6 +2733,15 @@ dnd-core@^2.5.1:
     lodash "^4.2.0"
     redux "^3.7.1"
 
+dnd-core@^2.5.3:
+  version "2.5.3"
+  resolved "https://registry.yarnpkg.com/dnd-core/-/dnd-core-2.5.3.tgz#a4163d59a01779860d2edbdadab5183ce321147c"
+  dependencies:
+    asap "^2.0.6"
+    invariant "^2.0.0"
+    lodash "^4.2.0"
+    redux "^3.7.1"
+
 doctrine@1.5.0:
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/doctrine/-/doctrine-1.5.0.tgz#379dce730f6166f76cefa4e6707a159b02c5a6fa"
@@ -6700,6 +6709,12 @@ react-dnd-html5-backend@^2.5.1:
   resolved "https://registry.yarnpkg.com/react-dnd-html5-backend/-/react-dnd-html5-backend-2.5.1.tgz#d3656e514b0c469902a485fffa75f8684e21c777"
   dependencies:
     lodash "^4.2.0"
+
+react-dnd-test-backend@^2.5.3:
+  version "2.5.3"
+  resolved "https://registry.yarnpkg.com/react-dnd-test-backend/-/react-dnd-test-backend-2.5.3.tgz#02f288880135ed8ab3ed0dd1770ffc4570a83771"
+  dependencies:
+    dnd-core "^2.5.3"
 
 react-dnd@^2.5.1:
   version "2.5.1"

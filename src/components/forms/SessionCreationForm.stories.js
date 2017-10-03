@@ -11,6 +11,6 @@ import { storiesOf } from '@storybook/react'
 import SessionCreationForm from './SessionCreationForm'
 import { intlMock } from '../../../.storybook/utils'
 
-storiesOf('SessionCreationForm', module).add('default', () => (
+storiesOf('SessionCreationForm', module).add('default [NoTest]', () => (
   <SessionCreationForm intl={intlMock} />
 ))

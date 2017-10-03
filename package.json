@@ -42,8 +42,8 @@
     "react-rangeslider": "2.2.0",
     "react-redux": "5.0.6",
     "react-sortable-hoc": "0.6.8",
-    "recharts": "1.0.0-apha.5",
     "react-tagsinput": "3.18.0",
+    "recharts": "1.0.0-apha.5",
     "redux": "3.7.2",
     "redux-form": "7.0.3",
     "semantic-ui-react": "0.74.2",
@@ -73,6 +73,7 @@
     "prettier-eslint": "8.2.0",
     "prettier-eslint-cli": "4.4.0",
     "react-addons-test-utils": "15.6.0",
+    "react-dnd-test-backend": "^2.5.3",
     "react-test-renderer": "15.6.1",
     "semantic-ui-css": "2.2.12",
     "storybook-addon-intl": "2.1.1"

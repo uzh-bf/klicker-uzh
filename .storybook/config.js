@@ -5,6 +5,9 @@ import { addDecorator, configure } from '@storybook/react'
 // integrate storybook-addon-intl for react-intl
 import { setIntlConfig, withIntl } from 'storybook-addon-intl'
 import { addLocaleData } from 'react-intl'
+// import { DragDropContext } from 'react-dnd'
+// import HTML5Backend from 'react-dnd-html5-backend'
+
 import enLocaleData from 'react-intl/locale-data/en'
 import deLocaleData from 'react-intl/locale-data/de'
 
@@ -22,6 +25,8 @@ setIntlConfig({
 // add global decorators
 addDecorator(withIntl)
 
+// addDecorator(story => DragDropContext(HTML5Backend)(<div>{story()}</div>))
+
 // dynamically load stories from the components directory
 // load all files with *.stories.js in the end
 const req = require.context('../src/components', true, /\.stories\.js$/)
@@ -31,8 +36,8 @@ function loadStories() {
   require('../node_modules/semantic-ui-css/semantic.min.css')
   require('./base.css')
 
-  req.keys().forEach((filename) => req(filename))
+  req.keys().forEach(filename => req(filename))
   // require('../stories')
 }
 
-configure(loadStories, module);
+configure(loadStories, module)
