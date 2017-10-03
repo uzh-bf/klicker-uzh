@@ -4,17 +4,17 @@ import { gql } from 'react-apollo'
 
 import type { OptionType, TagType } from '../types'
 
-type RegistrationMutationType = {
+export type RegistrationMutationType = {
   id: string,
   email: string,
   shortname: string,
 }
-type RegistrationInputType = {
+export type RegistrationInputType = {
   email: string,
   password: string,
   shortname: string,
 }
-const RegistrationMutation = gql`
+export const RegistrationMutation = gql`
   mutation CreateUser($email: String!, $password: String!, $shortname: String!) {
     createUser(user: { email: $email, password: $password, shortname: $shortname }) {
       id
@@ -24,16 +24,16 @@ const RegistrationMutation = gql`
   }
 `
 
-type LoginMutationType = {
+export type LoginMutationType = {
   id: string,
   email: string,
   shortname: string,
 }
-type LoginInputType = {
+export type LoginInputType = {
   email: string,
   password: string,
 }
-const LoginMutation = gql`
+export const LoginMutation = gql`
   mutation Login($email: String!, $password: String!) {
     login(email: $email, password: $password) {
       id
@@ -43,7 +43,7 @@ const LoginMutation = gql`
   }
 `
 
-type CreateQuestionMutationType = {
+export type CreateQuestionMutationType = {
   id: string,
   title: string,
   options: Array<{
@@ -59,14 +59,14 @@ type CreateQuestionMutationType = {
     createdAt: string,
   }>,
 }
-type CreateQuestionInputType = {
+export type CreateQuestionInputType = {
   title: string,
   description: string,
   options: Array<OptionType>,
   tags: Array<TagType>,
   type: string,
 }
-const CreateQuestionMutation = gql`
+export const CreateQuestionMutation = gql`
   mutation CreateQuestion(
     $title: String!
     $description: String
@@ -101,12 +101,22 @@ const CreateQuestionMutation = gql`
   }
 `
 
-export { CreateQuestionMutation, LoginMutation, RegistrationMutation }
-export type {
-  CreateQuestionInputType,
-  CreateQuestionMutationType,
-  LoginInputType,
-  LoginMutationType,
-  RegistrationInputType,
-  RegistrationMutationType,
+export type CreateSessionMutationType = {
+  id: string,
+  name: string,
 }
+export type CreateSessionInputType = {
+  name: string,
+}
+export type QuestionBlockInput = {
+  questions: Array<{
+    id: string,
+  }>,
+}
+export const CreateSessionMutation = gql`
+  mutation CreateSession($name: String!, $blocks: [Session_QuestionBlockInput]!) {
+    createSession(session: { name: $name, blocks: $blocks }) {
+      id
+    }
+  }
+`

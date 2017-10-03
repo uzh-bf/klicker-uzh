@@ -16,6 +16,26 @@ type TagType = {
   name: string,
 }
 
+type ObjectIdType = {
+  id: string,
+}
+
+type QuestionType = {
+  id: string,
+  title: string,
+  type: string,
+}
+
+type QuestionBlockType = {
+  instances: Array<{
+    id: string,
+    question: QuestionType,
+  }>,
+  showSolutions: boolean,
+  status?: string,
+  timeLimit: number,
+}
+
 type TextInputType = {
   value: string,
   onChange: (newValue: string) => void,
@@ -26,4 +46,13 @@ type ArrayInputType<T> = {
   onChange: (newValue: Array<T>) => void,
 }
 
-export type { ArrayInputType, FeedbackType, TextInputType, OptionType, TagType }
+export type {
+  ArrayInputType,
+  FeedbackType,
+  TextInputType,
+  ObjectIdType,
+  OptionType,
+  QuestionBlockType,
+  QuestionType,
+  TagType,
+}

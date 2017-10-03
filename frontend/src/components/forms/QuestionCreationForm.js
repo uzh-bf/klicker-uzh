@@ -96,7 +96,7 @@ const QuestionCreationForm = ({
     </div>
 
     <button className="ui button discard" type="reset" onClick={onDiscard}>
-      <FormattedMessage defaultMessage="Discard" id="teacher.createQuestion.button.discard" />
+      <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
     </button>
     <button className="ui primary button save" disabled={invalid} type="submit">
       <FormattedMessage defaultMessage="Save" id="common.button.save" />
