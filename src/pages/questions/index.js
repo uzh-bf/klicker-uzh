@@ -1,4 +1,4 @@
-// @flow
+/* TODO: flow */
 
 import React, { Component } from 'react'
 import { graphql } from 'react-apollo'
@@ -14,22 +14,22 @@ import QuestionList from '../../components/questions/QuestionList'
 import TagList from '../../components/questions/TagList'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 
-import type { QuestionFilters } from '../../lib/utils/filters'
+/* import type { QuestionFilters } from '../../lib/utils/filters'
 
 type Props = {
   intl: $IntlShape,
   createSession: any => Promise<*>,
-}
+} */
 
 class Index extends Component {
-  props: Props
+  // props: Props
 
-  state: {
+  /* state: {
     creationMode: boolean,
     dropped: string[],
     filters: QuestionFilters,
     sidebarVisible: boolean,
-  }
+  } */
 
   constructor(props) {
     super(props)
@@ -45,7 +45,8 @@ class Index extends Component {
     }
   }
 
-  toggleCreationMode = (): void => {
+  toggleCreationMode = () => {
+    // : void => {
     this.setState((prevState) => {
       // toggle creation mode
       const creationMode = !prevState.creationMode
@@ -59,24 +60,28 @@ class Index extends Component {
     })
   }
 
-  handleDropped = (id: string) => () => {
+  handleDropped = id => () => {
+    // (id: string) => () => {
     this.setState(prevState => ({ dropped: [...prevState.dropped, id] }))
   }
 
   // handle searching in the navbar search area
-  handleSearch = (title: string): void => {
+  handleSearch = (title) => {
+    // (title: string): void => {
     this.setState(prevState => ({
       filters: { ...prevState.filters, title },
     }))
   }
 
   // handle sorting via navbar search area
-  handleSort = (by: string, order: string): void => {
+  handleSort = (by, order) => {
+    // (by: string, order: string): void => {
     console.log(`sorted by ${by} in ${order} order`)
   }
 
   // handle clicking on a tag in the tag list
-  handleTagClick = (tagName: string): void => {
+  handleTagClick = (tagName) => {
+    // (tagName: string): void => {
     this.setState((prevState) => {
       // remove the tag from active tags
       if (prevState.filters.tags.includes(tagName)) {
@@ -143,7 +148,7 @@ class Index extends Component {
       }),
     }
 
-    const actionButton: any = (
+    const actionButton = ( // : any = (
       <div className="actionButton">
         <button
           className={classNames('ui huge circular primary icon button', {
@@ -156,7 +161,7 @@ class Index extends Component {
       </div>
     )
 
-    const actionArea: any = (
+    const actionArea = ( // : any = (
       <div className="creationForm">
         <SessionCreationForm
           onSave={this.handleNewSession('save')}
