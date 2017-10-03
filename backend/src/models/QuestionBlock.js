@@ -13,7 +13,7 @@ const QuestionBlock = new mongoose.Schema({
   timeLimit: { type: Number, default: -1, min: -1 },
   showSolutions: { type: Boolean, default: false },
 
-  questions: [{ type: ObjectId, ref: 'QuestionInstance' }],
+  instances: [{ type: ObjectId, ref: 'QuestionInstance' }],
 
   createdAt: { type: Date, default: Date.now() },
   updatedAt: { type: Date, default: Date.now() },

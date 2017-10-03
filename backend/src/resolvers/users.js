@@ -2,11 +2,8 @@ const AuthService = require('../services/auth')
 const { UserModel } = require('../models')
 
 /* ----- queries ----- */
-const userQuery = (parentValue, args, { auth }) => {
-  AuthService.isAuthenticated(auth)
-
-  return UserModel.findById(auth.sub).populate(['questions', 'sessions', 'tags'])
-}
+const authUserByIDQuery = (parentValue, args, { auth }) => UserModel.findById(auth.sub)
+const userByIDQuery = parentValue => UserModel.findById(parentValue.user)
 
 /* ----- mutations ----- */
 const createUserMutation = (parentValue, { user: { email, password, shortname } }) =>
@@ -15,7 +12,11 @@ const createUserMutation = (parentValue, { user: { email, password, shortname } 
 const loginMutation = (parentValue, { email, password }, { res }) => AuthService.login(res, email, password)
 
 module.exports = {
+  // queries
+  authUser: authUserByIDQuery,
+  user: userByIDQuery,
+
+  // mutations
   createUser: createUserMutation,
   login: loginMutation,
-  user: userQuery,
 }

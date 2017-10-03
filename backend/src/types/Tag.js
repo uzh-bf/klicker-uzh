@@ -15,6 +15,7 @@ const Tag = `
     id: ID!
 
     name: String!
+    user: User!
 
     questions: [Question]!
 

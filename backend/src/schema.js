@@ -1,11 +1,20 @@
 const { makeExecutableSchema } = require('graphql-tools')
 
-const { allQuestions, createQuestion, question } = require('./resolvers/questions')
+const { requireAuth } = require('./services/auth')
 const {
-  allSessions, createSession, endSession, session, startSession,
+  allQuestions,
+  createQuestion,
+  questionsByPV,
+  questionByPV,
+  questionInstancesByPV,
+} = require('./resolvers/questions')
+const {
+  allSessions, createSession, endSession, sessionsByPV, startSession,
 } = require('./resolvers/sessions')
-const { allTags, createTag } = require('./resolvers/tags')
-const { createUser, login, user } = require('./resolvers/users')
+const { allTags, createTag, tags } = require('./resolvers/tags')
+const {
+  createUser, login, user, authUser,
+} = require('./resolvers/users')
 const { allTypes } = require('./types')
 
 // create graphql schema in schema language
@@ -22,9 +31,6 @@ const typeDefs = [
     allQuestions: [Question]
     allSessions: [Session]
     allTags: [Tag]
-    question(id: ID): Question
-    session(id: ID): Session
-    tag(id: ID): Tag
     user: User
   }
 
@@ -48,21 +54,41 @@ const typeDefs = [
 // everything imported from their respective modules in resolvers/
 const resolvers = {
   Query: {
-    allQuestions,
-    allSessions,
-    allTags,
-    question,
-    session,
-    user,
+    allQuestions: requireAuth(allQuestions),
+    allSessions: requireAuth(allSessions),
+    allTags: requireAuth(allTags),
+    user: requireAuth(authUser),
   },
   Mutation: {
-    createQuestion,
-    createSession,
-    createTag,
+    createQuestion: requireAuth(createQuestion),
+    createSession: requireAuth(createSession),
+    createTag: requireAuth(createTag),
     createUser,
-    endSession,
+    endSession: requireAuth(endSession),
     login,
-    startSession,
+    startSession: requireAuth(startSession),
+  },
+  Question: {
+    tags,
+    user,
+  },
+  QuestionBlock: {
+    instances: questionInstancesByPV,
+  },
+  QuestionInstance: {
+    question: questionByPV,
+  },
+  Session: {
+    user,
+  },
+  Tag: {
+    questions: questionsByPV,
+    user,
+  },
+  User: {
+    questions: questionsByPV,
+    sessions: sessionsByPV,
+    tags,
   },
 }
 

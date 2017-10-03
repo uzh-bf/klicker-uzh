@@ -7,9 +7,19 @@ const dev = process.env.NODE_ENV !== 'production'
 
 // check whether an authentication object is valid
 const isAuthenticated = (auth) => {
-  if (!auth || !auth.sub) {
+  if (auth && auth.sub) {
+    return true
+  }
+  return false
+}
+
+// HOC to ensure the requester is authenticated
+// wraps a graphql resolver
+const requireAuth = wrapped => (parentValue, args, context) => {
+  if (!isAuthenticated(context.auth)) {
     throw new Error('INVALID_LOGIN')
   }
+  return wrapped(parentValue, args, context)
 }
 
 // check whether a JWT is valid
@@ -20,6 +30,26 @@ const isValidJWT = (jwt, secret) => {
   } catch (err) {
     return false
   }
+}
+
+// extract JWT from header or cookie
+const getToken = (req) => {
+  // try to parse an authorization cookie
+  if (req.cookies && req.cookies.jwt && isValidJWT(req.cookies.jwt, process.env.APP_SECRET)) {
+    return req.cookies.jwt
+  }
+
+  // try to parse the authorization header
+  if (req.headers.authorization) {
+    const split = req.headers.authorization.split(' ')
+
+    if (split[0] === 'Bearer' && isValidJWT(split[1], process.env.APP_SECRET)) {
+      return split[1]
+    }
+  }
+
+  // no token found
+  return null
 }
 
 // signup a new user
@@ -87,7 +117,9 @@ const login = async (res, email, password) => {
 
 module.exports = {
   isAuthenticated,
+  requireAuth,
   isValidJWT,
+  getToken,
   signup,
   login,
 }

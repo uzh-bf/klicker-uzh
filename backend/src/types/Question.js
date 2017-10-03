@@ -24,6 +24,7 @@ const Question = `
 
     title: String!
     type: String!
+    user: User!
 
     instances: [QuestionInstance]
     tags: [Tag]

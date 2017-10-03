@@ -33,7 +33,7 @@ const Session = `
   }
 
   type QuestionBlock {
-    questions: [QuestionInstance]
+    instances: [QuestionInstance]
   }
 
   type Session {
@@ -42,6 +42,7 @@ const Session = `
     name: String!
     status: Int!
     settings: SessionSettings
+    user: User!
 
     blocks: [QuestionBlock]
     feedbacks: [Feedback]

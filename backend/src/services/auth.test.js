@@ -6,10 +6,12 @@ const JWT = require('jsonwebtoken')
 mongoose.Promise = Promise
 
 const {
-  isAuthenticated, isValidJWT, signup, login,
+  isAuthenticated, isValidJWT, signup, login, requireAuth, getToken,
 } = require('./auth')
 const { UserModel } = require('../models')
 const { setupTestEnv } = require('../utils/testHelpers')
+
+const appSecret = process.env.APP_SECRET
 
 describe('AuthService', () => {
   beforeAll(async () => {
@@ -32,10 +34,26 @@ describe('AuthService', () => {
       const auth3 = { sub: null }
       const auth4 = { sub: 'abcd' }
 
-      expect(() => isAuthenticated(auth1)).toThrow('INVALID_LOGIN')
-      expect(() => isAuthenticated(auth2)).toThrow('INVALID_LOGIN')
-      expect(() => isAuthenticated(auth3)).toThrow('INVALID_LOGIN')
-      expect(isAuthenticated(auth4)).toBeUndefined()
+      expect(isAuthenticated(auth1)).toEqual(false)
+      expect(isAuthenticated(auth2)).toEqual(false)
+      expect(isAuthenticated(auth3)).toEqual(false)
+      expect(isAuthenticated(auth4)).toEqual(true)
+    })
+  })
+
+  describe('requireAuth', () => {
+    it('restricts access to authenticated users', () => {
+      const auth1 = null
+      const auth2 = {}
+      const auth3 = { sub: null }
+      const auth4 = { sub: 'abcd' }
+
+      const wrappedFunction = requireAuth(() => 'something')
+
+      expect(() => wrappedFunction(null, null, { auth: auth1 })).toThrow('INVALID_LOGIN')
+      expect(() => wrappedFunction(null, null, { auth: auth2 })).toThrow('INVALID_LOGIN')
+      expect(() => wrappedFunction(null, null, { auth: auth3 })).toThrow('INVALID_LOGIN')
+      expect(wrappedFunction(null, null, { auth: auth4 })).toEqual('something')
     })
   })
 
@@ -43,11 +61,59 @@ describe('AuthService', () => {
     it('correctly validates JWTs', () => {
       const jwt1 = null
       const jwt2 = 'abcd'
-      const jwt3 = JWT.sign({ id: 'abcd' }, 'hello-world')
+      const jwt3 = JWT.sign({ id: 'abcd' }, appSecret)
 
-      expect(isValidJWT(jwt1, 'hello-world')).toBeFalsy()
-      expect(isValidJWT(jwt2, 'hello-world')).toBeFalsy()
-      expect(isValidJWT(jwt3, 'hello-world')).toBeTruthy()
+      expect(isValidJWT(jwt1, appSecret)).toBeFalsy()
+      expect(isValidJWT(jwt2, appSecret)).toBeFalsy()
+      expect(isValidJWT(jwt3, appSecret)).toBeTruthy()
+    })
+  })
+
+  describe('getToken', () => {
+    const baseReq = {
+      cookies: {},
+      headers: {},
+    }
+    const validJWT = JWT.sign({ id: 'abcd' }, appSecret)
+
+    it('handles nonexistent tokens', () => {
+      expect(getToken(baseReq)).toBeNull()
+    })
+
+    it('extracts tokens from cookies', () => {
+      // invalid JWT handling
+      expect(getToken({
+        ...baseReq,
+        cookies: {
+          jwt: 'invalid-token',
+        },
+      })).toBeNull()
+
+      // valid JWT handling
+      expect(getToken({
+        ...baseReq,
+        cookies: {
+          jwt: validJWT,
+        },
+      })).toEqual(validJWT)
+    })
+
+    it('extracts tokens from headers', () => {
+      // invalid JWT handling
+      expect(getToken({
+        ...baseReq,
+        headers: {
+          authorization: 'Bearer invalid-token',
+        },
+      })).toBeNull()
+
+      // valid JWT handling
+      expect(getToken({
+        ...baseReq,
+        headers: {
+          authorization: `Bearer ${validJWT}`,
+        },
+      })).toEqual(validJWT)
     })
   })
 

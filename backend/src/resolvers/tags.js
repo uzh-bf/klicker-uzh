@@ -1,18 +1,16 @@
-const AuthService = require('../services/auth')
 const { TagModel, UserModel } = require('../models')
 
 /* ----- queries ----- */
 const allTagsQuery = async (parentValue, args, { auth }) => {
-  AuthService.isAuthenticated(auth)
-
   const user = await UserModel.findById(auth.sub).populate(['tags'])
   return user.tags
 }
 
+const tagByIDQuery = (parentValue, { id }) => TagModel.findById(id)
+const tagsByPVQuery = parentValue => TagModel.find({ _id: { $in: parentValue.tags } })
+
 /* ----- mutations ----- */
 const createTagMutation = async (parentValue, { tag: { name } }, { auth }) => {
-  AuthService.isAuthenticated(auth)
-
   const newTag = new TagModel({
     name,
     user: auth.sub,
@@ -32,6 +30,11 @@ const createTagMutation = async (parentValue, { tag: { name } }, { auth }) => {
 }
 
 module.exports = {
+  // queries
   allTags: allTagsQuery,
+  tag: tagByIDQuery,
+  tags: tagsByPVQuery,
+
+  // mutations
   createTag: createTagMutation,
 }
