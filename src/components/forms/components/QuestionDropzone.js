@@ -6,6 +6,7 @@ import { FaPlus } from 'react-icons/lib/fa'
 import { DropTarget } from 'react-dnd'
 
 type Props = {
+  canDrop: boolean,
   isOver: boolean,
   connectDropTarget: any,
 }

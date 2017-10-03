@@ -7,19 +7,10 @@ import { FormattedMessage } from 'react-intl'
 
 import QuestionBlock from '../questions/QuestionBlock'
 
+import type { QuestionBlockType } from '../../types'
+
 type Props = {
-  blocks: Array<{
-    id: string,
-    questions: Array<{
-      id: string,
-      questionDefinition: {
-        title: string,
-        type: string,
-      },
-    }>,
-    showSolutions: boolean,
-    timeLimit: number,
-  }>,
+  blocks: QuestionBlockType[],
   createdAt: string,
   id: string,
   name: string,
@@ -61,7 +52,7 @@ const Session = ({ createdAt, name, blocks, id }: Props) => {
         {blocks.map(block => (
           <div className="block">
             <QuestionBlock
-              // key={block.id}
+              // TODO: key={...}
               questions={block.instances.map(instance => ({
                 id: instance.id,
                 title: instance.question.title,

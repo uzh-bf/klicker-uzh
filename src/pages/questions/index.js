@@ -18,7 +18,7 @@ import type { QuestionFilters } from '../../lib/utils/filters'
 
 type Props = {
   intl: $IntlShape,
-  createSession: any => void,
+  createSession: any => Promise<*>,
 }
 
 class Index extends Component {

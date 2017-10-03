@@ -4,9 +4,10 @@ import React from 'react'
 import QuestionDropzone from './QuestionDropzone'
 import QuestionSingle from '../../questions/QuestionSingle'
 
+import type { ArrayInputType, QuestionType } from '../../../types'
+
 type Props = {
-  value: Array<*>,
-  onChange: () => void,
+  input: ArrayInputType<QuestionType>,
 }
 const SessionTimeline = ({ input: { value, onChange } }: Props) => {
   const handleNewQuestion = (newQuestion) => {
