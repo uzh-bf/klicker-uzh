@@ -2,15 +2,11 @@
 
 import React from 'react'
 
-type Props = {
-  id: string,
-  title: string,
-  type: string,
-}
+import type { QuestionType } from '../../types'
 
-const QuestionSingle = ({ id, type, title }: Props) => (
+const QuestionSingle = ({ id, type, title }: QuestionType) => (
   <div className="questionSingle">
-    <div className="id">{id}</div>
+    <div className="id">{`#${id.substring(0, 7)}`}</div>
     <div className="type">{type}</div>
     <div className="content">{title}</div>
 

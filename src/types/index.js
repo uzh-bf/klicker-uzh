@@ -24,6 +24,31 @@ type FREEOptionsType = {
   },
 }
 
+type ObjectIdType = {
+  id: string,
+}
+
+type QuestionType = {
+  id: string,
+  title: string,
+  type: string,
+}
+
+type QuestionBlockType = {
+  instances: Array<{
+    id: string,
+    question: QuestionType,
+  }>,
+  showSolutions: boolean,
+  status?: string,
+  timeLimit: number,
+}
+
+type TextInputType = {
+  value: string,
+  onChange: (newValue: string) => void,
+}
+
 type SCOptionsType = {
   choices: OptionType[],
   randomized: boolean,
@@ -54,6 +79,9 @@ export type {
   OptionsType,
   ReduxFormInputType,
   TextInputType,
+  ObjectIdType,
   OptionType,
+  QuestionBlockType,
+  QuestionType,
   TagType,
 }
