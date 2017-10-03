@@ -27,12 +27,12 @@ type QuestionType = {
 }
 
 type QuestionBlockType = {
-  status: string,
   instances: Array<{
     id: string,
     question: QuestionType,
   }>,
   showSolutions: boolean,
+  status?: string,
   timeLimit: number,
 }
 

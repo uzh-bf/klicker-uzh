@@ -10,7 +10,6 @@ const question = {
 }
 
 const questionBlock = {
-  id: '4c821db7-0940-4a24-b31a-7969104bbc9f',
   questions: [question, question, question],
   showSolutions: false,
   timeLimit: 60,
@@ -19,6 +18,7 @@ const questionBlock = {
 const question2 = {
   id: question.id,
   question: {
+    id: '4c821db7-0940-4a24-b31a-7969104bbc9f',
     title: question.title,
     type: question.type,
   },
