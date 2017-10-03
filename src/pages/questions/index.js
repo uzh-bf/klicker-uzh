@@ -1,13 +1,13 @@
 // @flow
 
 import React, { Component } from 'react'
-import Router from 'next/router'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
 import classNames from 'classnames'
 import { FaPlus } from 'react-icons/lib/fa'
 
 import { pageWithIntl, withData } from '../../lib'
+import { SessionListQuery } from '../../queries/queries'
 import { CreateSessionMutation } from '../../queries/mutations'
 import SessionCreationForm from '../../components/forms/SessionCreationForm'
 import QuestionList from '../../components/questions/QuestionList'
@@ -18,6 +18,7 @@ import type { QuestionFilters } from '../../lib/utils/filters'
 
 type Props = {
   intl: $IntlShape,
+  createSession: any => void,
 }
 
 class Index extends Component {
@@ -100,15 +101,28 @@ class Index extends Component {
   handleNewSession = type => ({ sessionName, questions }) => {
     console.log(type)
 
-    if (type === 'save') {
-      this.props.createSession({ name: sessionName, questions })
+    // HACK: map each question into a separate question block
+    const blocks = questions.map(question => ({ questions: [{ id: question.id }] }))
+
+    // create a new session
+    this.props
+      .createSession({ blocks, name: sessionName })
+      .then(() => {
+        // return to normal mode
+        this.toggleCreationMode()
+      })
+      .catch((e) => {
+        // TODO: show an error in the session creation form
+        console.log(e)
+      })
+
+    /* if (type === 'save') {
+      this.props.createSession({ blocks, name: sessionName })
     }
 
     if (type === 'start') {
-      console.log('start')
-    }
-
-    this.toggleCreationMode()
+      this.props.createSession({ blocks, name: sessionName })
+    } */
   }
 
   render() {
@@ -245,9 +259,10 @@ class Index extends Component {
 
 const withCreateSessionMutation = graphql(CreateSessionMutation, {
   props: ({ mutate }) => ({
-    createSession: ({ name, questions }) =>
+    createSession: ({ blocks, name }) =>
       mutate({
-        variables: { name, questions },
+        refetchQueries: [{ query: SessionListQuery }],
+        variables: { blocks, name },
       }),
   }),
 })
