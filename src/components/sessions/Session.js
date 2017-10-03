@@ -26,7 +26,8 @@ type Props = {
   status: 'CREATED' | 'RUNNING' | 'COMPLETED',
 }
 
-const Session = ({ createdAt, name, blocks, id, status }: Props) => {
+// const Session = ({ createdAt, name, blocks, id, status }: Props) => {
+const Session = ({ createdAt, name, blocks, id }: Props) => {
   const statusCases = {
     COMPLETED: {
       disabled: false,
@@ -84,6 +85,7 @@ const Session = ({ createdAt, name, blocks, id, status }: Props) => {
         .details {
           display: flex;
           flex-direction: column;
+          flex: 1;
         }
         .title,
         .date {
