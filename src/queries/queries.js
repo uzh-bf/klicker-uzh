@@ -83,12 +83,11 @@ export type SessionListType = {
     name: string,
     status: 'CREATED' | 'RUNNING' | 'COMPLETED',
     blocks: Array<{
-      id: string,
       showSolutions: boolean,
       timeLimit: number,
-      questions: Array<{
+      instances: Array<{
         id: string,
-        questionDefinition: {
+        question: {
           title: string,
           type: string,
         },

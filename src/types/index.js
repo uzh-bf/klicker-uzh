@@ -21,7 +21,7 @@ type ObjectIdType = {
 }
 
 type QuestionType = {
-  id: string,
+  id?: string,
   title: string,
   type: string,
 }
