@@ -116,14 +116,17 @@ const Preview = ({ title, options, description }: Props) => {
         }
 
         .freeText {
+          border: 1px solid lightgrey;
+          padding: 0.5rem 1rem;
+          height: 4rem;
+          width: 100%;
           margin-bottom: 1rem;
         }
 
         .freeText > .box {
-          border: 1px solid lightgrey;
-          padding: 0.5rem 2rem;
-          height: 2rem;
-          width: 100%;
+          height: 50%;
+          width: 0;
+          border-left: 0.2rem solid black;
         }
       `}</style>
     </div>
