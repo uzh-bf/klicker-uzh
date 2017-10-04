@@ -44,11 +44,6 @@ type QuestionBlockType = {
   timeLimit: number,
 }
 
-type TextInputType = {
-  value: string,
-  onChange: (newValue: string) => void,
-}
-
 type SCOptionsType = {
   choices: OptionType[],
   randomized: boolean,
