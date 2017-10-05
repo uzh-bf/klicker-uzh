@@ -1,13 +1,13 @@
 {
   "parser": "babel-eslint",
-  "extends": ["airbnb", "plugin:flowtype/recommended"],
-  "plugins": ["react", "jsx-a11y", "import", "flowtype"],
+  "extends": ["airbnb"],
+  "plugins": ["react", "jsx-a11y", "import"],
   "rules": {
     "semi": 0,
     "react/prop-types": 1,
     "react/require-default-props": 1,
     "react/jsx-filename-extension": 0,
-    "react/forbid-prop-types": 1,
+    "react/forbid-prop-types": 0,
     "global-require": 0,
     "import/no-dynamic-require": 0,
     "no-console": 0,
@@ -18,7 +18,7 @@
       }
     ],
     "react/jsx-sort-props": [
-      2,
+      1,
       {
         "callbacksLast": true,
         "reservedFirst": ["key"],
@@ -44,10 +44,5 @@
     "browser": true,
     "node": true,
     "jest": true
-  },
-  "settings": {
-    "flowtype": {
-      "onlyFilesWithFlowAnnotation": true
-    }
   }
 }

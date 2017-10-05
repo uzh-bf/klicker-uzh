@@ -1,20 +1,18 @@
-// @flow
-
 import React from 'react'
+import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { FaTrash } from 'react-icons/lib/fa'
 
 import styles from './styles'
 
-import type { OptionType } from '../../../../../types'
-
-type Props = {
-  ...OptionType,
-  handleCorrectToggle: () => void,
-  handleDelete: () => void,
+const propTypes = {
+  correct: PropTypes.bool.isRequired,
+  handleCorrectToggle: PropTypes.func.isRequired,
+  handleDelete: PropTypes.func.isRequired,
+  name: PropTypes.string.isRequired,
 }
 
-const Option = ({ correct, name, handleCorrectToggle, handleDelete }: Props) => (
+const Option = ({ correct, name, handleCorrectToggle, handleDelete }) => (
   <div className={classNames('option', { correct })}>
     <button className="leftAction" onClick={handleDelete}>
       <FaTrash />
@@ -29,5 +27,7 @@ const Option = ({ correct, name, handleCorrectToggle, handleDelete }: Props) => 
     <style jsx>{styles}</style>
   </div>
 )
+
+Option.propTypes = propTypes
 
 export default Option

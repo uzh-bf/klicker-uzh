@@ -1,6 +1,5 @@
-// @flow
-
 import React from 'react'
+import PropTypes from 'prop-types'
 import {
   LineChart,
   Line,
@@ -11,15 +10,12 @@ import {
   YAxis,
 } from 'recharts'
 
-type Props = {
-  data: Array<{
-    timestamp: string,
-    value: number,
-  }>,
-  title: string,
+const propTypes = {
+  data: LineChart.propTypes.data.isRequired,
+  title: PropTypes.string.isRequired,
 }
 
-const ConfusionSection = ({ data, title }: Props) => (
+const ConfusionSection = ({ data, title }) => (
   <div className="confusionSection">
     <h3>{title}</h3>
 
@@ -49,5 +45,7 @@ const ConfusionSection = ({ data, title }: Props) => (
     `}</style>
   </div>
 )
+
+ConfusionSection.propTypes = propTypes
 
 export default ConfusionSection

@@ -19,14 +19,6 @@ jobs:
   include:
     - stage: test
       script:
-        - yarn run flow
-      cache:
-        yarn: true
-        directories:
-          - node_modules
-
-    - stage: test
-      script:
         - yarn test
       cache:
         yarn: true

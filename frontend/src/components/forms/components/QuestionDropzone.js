@@ -1,16 +1,21 @@
-// @flow
-
 import React from 'react'
+import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { FaPlus } from 'react-icons/lib/fa'
 import { DropTarget } from 'react-dnd'
 
-type Props = {
-  canDrop: boolean,
-  isOver: boolean,
-  connectDropTarget: any,
+const propTypes = {
+  canDrop: PropTypes.bool,
+  connectDropTarget: PropTypes.func.isRequired,
+  isOver: PropTypes.bool,
 }
-const QuestionDropzone = ({ canDrop, isOver, connectDropTarget }: Props) =>
+
+const defaultProps = {
+  canDrop: true,
+  isOver: false,
+}
+
+const QuestionDropzone = ({ canDrop, isOver, connectDropTarget }) =>
   connectDropTarget(
     <div className={classNames('dropzone', { canDrop, isOver })}>
       <FaPlus />
@@ -62,5 +67,8 @@ const collect = (connect, monitor) => ({
 
 // use the same unique id 'question' as defined with the source configuration
 const withDnD = DropTarget('question', target, collect)
+
+QuestionDropzone.propTypes = propTypes
+QuestionDropzone.defaultProps = defaultProps
 
 export default withDnD(QuestionDropzone)

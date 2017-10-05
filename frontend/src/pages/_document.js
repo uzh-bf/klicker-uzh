@@ -1,5 +1,4 @@
 /* eslint-disable react/no-danger */
-// TODO: enable flow for this file?
 
 import Document, { Head, Main, NextScript } from 'next/document'
 import Helmet from 'react-helmet'

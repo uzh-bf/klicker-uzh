@@ -1,7 +1,6 @@
-// @flow
-
 import React from 'react'
-import { FormattedMessage } from 'react-intl'
+import PropTypes from 'prop-types'
+import { intlShape, FormattedMessage } from 'react-intl'
 import { graphql } from 'react-apollo'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
@@ -9,12 +8,12 @@ import RegistrationForm from '../../components/forms/RegistrationForm'
 import { RegistrationMutation } from '../../queries/mutations'
 import { withData, pageWithIntl } from '../../lib'
 
-class Registration extends React.Component {
-  props: {
-    intl: $IntlShape,
-    createUser: (email: string, password: string, shortname: string) => Promise<*>,
-  }
+const propTypes = {
+  createUser: PropTypes.func.isRequired,
+  intl: intlShape.isRequired,
+}
 
+class Registration extends React.Component {
   state = {
     error: null,
     success: null,
@@ -84,6 +83,8 @@ class Registration extends React.Component {
     )
   }
 }
+
+Registration.propTypes = propTypes
 
 export default withData(
   pageWithIntl(

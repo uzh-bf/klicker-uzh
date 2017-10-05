@@ -1,7 +1,6 @@
-/* TODO: flow */
-/* eslint-disable react/prop-types */
-
 import React, { Component } from 'react'
+import PropTypes from 'prop-types'
+import { intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
 import classNames from 'classnames'
@@ -15,35 +14,21 @@ import QuestionList from '../../components/questions/QuestionList'
 import TagList from '../../components/questions/TagList'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 
-/* import type { QuestionFilters } from '../../lib/utils/filters'
-
-type Props = {
-  intl: $IntlShape,
-  createSession: any => Promise<*>,
-} */
+const propTypes = {
+  createSession: PropTypes.func.isRequired,
+  intl: intlShape.isRequired,
+}
 
 class Index extends Component {
-  // props: Props
-
-  /* state: {
-    creationMode: boolean,
-    dropped: string[],
-    filters: QuestionFilters,
-    sidebarVisible: boolean,
-  } */
-
-  constructor(props) {
-    super(props)
-    this.state = {
-      creationMode: false,
-      dropped: [],
-      filters: {
-        tags: [],
-        title: null,
-        type: null,
-      },
-      sidebarVisible: false,
-    }
+  state = {
+    creationMode: false,
+    dropped: [],
+    filters: {
+      tags: [],
+      title: null,
+      type: null,
+    },
+    sidebarVisible: false,
   }
 
   toggleCreationMode = () => {
@@ -262,6 +247,8 @@ class Index extends Component {
     )
   }
 }
+
+Index.propTypes = propTypes
 
 const withCreateSessionMutation = graphql(CreateSessionMutation, {
   props: ({ mutate }) => ({

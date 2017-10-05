@@ -1,7 +1,7 @@
-// @flow
-
 import React, { Component } from 'react'
+import PropTypes from 'prop-types'
 import { graphql } from 'react-apollo'
+import { intlShape } from 'react-intl'
 
 import { pageWithIntl, withData } from '../../lib'
 
@@ -10,27 +10,17 @@ import FeedbackChannel from '../../components/feedbacks/FeedbackChannel'
 import SessionTimeline from '../../components/sessions/SessionTimeline'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import { RunningSessionQuery } from '../../queries/queries'
-import type { RunningSessionType } from '../../queries/queries'
+
+const propTypes = {
+  data: PropTypes.object.isRequired,
+  intl: intlShape.isRequired,
+}
 
 class Running extends Component {
-  props: {
-    data: RunningSessionType,
-    intl: $IntlShape,
-  }
-
-  state: {
-    confusionActive: boolean,
-    feedbacksActive: boolean,
-    feedbacksPublic: boolean,
-  }
-
-  constructor(props) {
-    super(props)
-    this.state = {
-      confusionActive: false,
-      feedbacksActive: false,
-      feedbacksPublic: false,
-    }
+  state = {
+    confusionActive: false,
+    feedbacksActive: false,
+    feedbacksPublic: false,
   }
 
   handleConfusionActiveToggle = () => {
@@ -165,5 +155,7 @@ class Running extends Component {
     )
   }
 }
+
+Running.propTypes = propTypes
 
 export default withData(pageWithIntl(graphql(RunningSessionQuery)(Running)))

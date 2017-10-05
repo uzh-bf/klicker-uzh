@@ -1,14 +1,14 @@
-// @flow
-
 import React from 'react'
+import PropTypes from 'prop-types'
+import { intlShape } from 'react-intl'
 import { Input } from 'semantic-ui-react'
 
-type Props = {
-  intl: $IntlShape,
-  handleSearch: (query: string) => mixed,
+const propTypes = {
+  handleSearch: PropTypes.func.isRequired,
+  intl: intlShape.isRequired,
 }
 
-const SearchArea = ({ intl, handleSearch }: Props) => (
+const SearchArea = ({ intl, handleSearch }) => (
   <Input
     fluid
     icon="search"
@@ -19,5 +19,7 @@ const SearchArea = ({ intl, handleSearch }: Props) => (
     onChange={e => handleSearch(e.target.value)}
   />
 )
+
+SearchArea.propTypes = propTypes
 
 export default SearchArea

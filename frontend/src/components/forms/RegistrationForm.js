@@ -1,29 +1,14 @@
-// @flow
-
 import React from 'react'
+import PropTypes from 'prop-types'
 import isAlpha from 'validator/lib/isAlpha'
 import isEmail from 'validator/lib/isEmail'
 import isLength from 'validator/lib/isLength'
 import isEmpty from 'validator/lib/isEmpty'
-import { FormattedMessage } from 'react-intl'
+import { intlShape, FormattedMessage } from 'react-intl'
 import { Field, reduxForm } from 'redux-form'
 import { Button } from 'semantic-ui-react'
 
 import { SemanticInput } from './components'
-
-type Props = {
-  intl: $IntlShape,
-  invalid: boolean,
-  handleSubmit: (values: {
-    firstName: string,
-    lastName: string,
-    email: string,
-    shortname: string,
-    password: string,
-    passwordRepeat: string,
-    useCase: string,
-  }) => mixed,
-}
 
 const validate = ({ firstName, lastName, email, shortname, password, passwordRepeat, useCase }) => {
   const errors = {}
@@ -63,7 +48,13 @@ const validate = ({ firstName, lastName, email, shortname, password, passwordRep
   return errors
 }
 
-const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }: Props) => (
+const propTypes = {
+  handleSubmit: PropTypes.func.isRequired,
+  intl: intlShape.isRequired,
+  invalid: PropTypes.bool.isRequired,
+}
+
+const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
   <form className="ui form error" onSubmit={onSubmit}>
     <div className="personal">
       <Field
@@ -180,6 +171,8 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }: Props) => (
     `}</style>
   </form>
 )
+
+RegistrationForm.propTypes = propTypes
 
 export default reduxForm({
   form: 'registration',
