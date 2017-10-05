@@ -1,25 +1,9 @@
-// @flow
-
 import React from 'react'
 import classNames from 'classnames'
 import { DragSource } from 'react-dnd'
 
 import QuestionDetails from './QuestionDetails'
 import QuestionTags from './QuestionTags'
-
-type Props = {
-  id: string,
-  lastUsed: Array<string>,
-  tags: Array<string>,
-  title: string,
-  type: string,
-  version: number,
-  draggable: boolean,
-  isDragging: boolean,
-  creationMode: boolean,
-  connectDragSource: any,
-  onDrop: () => void,
-}
 
 const defaultProps = {
   version: 1,
@@ -36,7 +20,7 @@ const Question = ({
   creationMode,
   isDragging,
   connectDragSource,
-}: Props) =>
+}) =>
   connectDragSource(
     <div className={classNames('question', { creationMode, draggable, isDragging })}>
       {creationMode && (

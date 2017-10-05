@@ -1,18 +1,8 @@
-// @flow
-
 import React from 'react'
 import isEmail from 'validator/lib/isEmail'
 import { Field, reduxForm } from 'redux-form'
 
 import { FormWithLinks, SemanticInput } from './components'
-
-type Props = {
-  intl: $IntlShape,
-  invalid: boolean,
-  handleSubmit: (values: {
-    email: string,
-  }) => mixed,
-}
 
 const validate = ({ email }) => {
   const errors = {}
@@ -25,7 +15,7 @@ const validate = ({ email }) => {
   return errors
 }
 
-const PasswordResetForm = ({ intl, invalid, handleSubmit: onSubmit }: Props) => {
+const PasswordResetForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
   const button = {
     invalid,
     label: intl.formatMessage({

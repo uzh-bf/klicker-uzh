@@ -1,5 +1,3 @@
-// @flow
-
 import React from 'react'
 import moment from 'moment'
 import { graphql } from 'react-apollo'
@@ -7,18 +5,8 @@ import { graphql } from 'react-apollo'
 import Question from './Question'
 import { filterQuestions } from '../../lib/utils/filters'
 import { QuestionListQuery } from '../../queries/queries'
-import type { QuestionListType } from '../../queries/queries'
-import type { QuestionFilters } from '../../lib/utils/filters'
 
-type Props = {
-  data: QuestionListType,
-  filters: QuestionFilters,
-  dropped: Array<string>,
-  creationMode: boolean,
-  onQuestionDropped: (id: string) => () => void,
-}
-
-const QuestionList = ({ data, filters, dropped, onQuestionDropped, creationMode }: Props) => {
+const QuestionList = ({ data, filters, dropped, onQuestionDropped, creationMode }) => {
   if (data.loading) {
     return <div>Loading</div>
   }

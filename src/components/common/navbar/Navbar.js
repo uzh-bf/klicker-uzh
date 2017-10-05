@@ -1,5 +1,3 @@
-// @flow
-
 import React from 'react'
 import { Icon, Menu } from 'semantic-ui-react'
 
@@ -7,34 +5,12 @@ import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'
 import SessionArea from './SessionArea'
 
-type Props = {
-  accountShort: string,
-  intl: $IntlShape,
-  search: {
-    query: string,
-    sortBy: string,
-    sortOrder: string,
-    handleSearch: (query: string) => mixed,
-    handleSort: (by: string, order: string) => mixed,
-  },
-  sidebarVisible: boolean,
-  title: string,
-  handleSidebarToggle: () => mixed,
-}
-
 const defaultProps = {
   search: undefined,
   sidebarVisible: false,
 }
 
-const Navbar = ({
-  accountShort,
-  intl,
-  search,
-  sidebarVisible,
-  title,
-  handleSidebarToggle,
-}: Props) => (
+const Navbar = ({ accountShort, intl, search, sidebarVisible, title, handleSidebarToggle }) => (
   <div className="navbar">
     <div className="sideArea">
       <Menu borderless className="noBorder">

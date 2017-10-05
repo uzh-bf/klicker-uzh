@@ -1,16 +1,7 @@
-// @flow
-
 import React from 'react'
 import { Button } from 'semantic-ui-react'
 
-type Props = {
-  items: Array<{
-    label: string,
-    handleClick: () => mixed,
-  }>,
-}
-
-const ActionButton = ({ items }: Props) => (
+const ActionButton = ({ items }) => (
   <div className="actionButtonWrapper">
     <div className="actionButton">
       <Button circular primary icon="plus" size="large" />

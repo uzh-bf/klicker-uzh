@@ -1,13 +1,6 @@
-// @flow
-
 import React from 'react'
 
-type Props = {
-  tags: Array<string>,
-  type: string,
-}
-
-const QuestionTags = ({ tags, type }: Props) => (
+const QuestionTags = ({ tags, type }) => (
   <div className="container">
     <div className="type tag">{type}</div>
     {tags.map(tag => (

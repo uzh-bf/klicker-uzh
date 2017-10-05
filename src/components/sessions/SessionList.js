@@ -1,17 +1,10 @@
-// @flow
-
 import React from 'react'
 import { graphql } from 'react-apollo'
 
 import Session from './Session'
 import { SessionListQuery } from '../../queries/queries'
-import type { SessionListType } from '../../queries/queries'
 
-type Props = {
-  data: SessionListType,
-}
-
-const SessionList = ({ data }: Props) => {
+const SessionList = ({ data }) => {
   if (data.loading) {
     return <div>Loading</div>
   }

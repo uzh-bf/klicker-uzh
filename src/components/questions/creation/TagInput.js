@@ -1,23 +1,14 @@
-// @flow
-
 import React from 'react'
 import TagsInput from 'react-tagsinput'
 import { FormattedMessage } from 'react-intl'
 
 import { autocompleteRenderInput } from '../../common/Autosuggest'
 
-import type { TagType, ArrayInputType } from '../../../types'
-
-type Props = {
-  tags: Array<TagType>,
-  input: ArrayInputType<TagType>,
-}
-
 const defaultProps = {
   tags: [],
 }
 
-const TagInput = ({ tags, input: { value, onChange } }: Props) => (
+const TagInput = ({ tags, input: { value, onChange } }) => (
   <div className="field">
     <label htmlFor="tags">
       <FormattedMessage defaultMessage="Tags" id="teacher.createQuestion.tags" />

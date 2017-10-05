@@ -1,23 +1,8 @@
-// @flow
-
 import React from 'react'
 import Link from 'next/link'
 import { Button, List } from 'semantic-ui-react'
 
-type Props = {
-  button: {
-    invalid: boolean,
-    label: string,
-    onSubmit: () => mixed,
-  },
-  children: any, // redux-form <Field> passed as children
-  links: Array<{
-    href: string,
-    label: string,
-  }>,
-}
-
-const FormWithLinks = ({ button, children, links }: Props) => (
+const FormWithLinks = ({ button, children, links }) => (
   <form className="ui form error">
     {children}
 

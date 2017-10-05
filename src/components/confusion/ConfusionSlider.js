@@ -1,23 +1,15 @@
-// @flow
-
 import React from 'react'
 import Slider from 'react-rangeslider'
 import { Helmet } from 'react-helmet'
 
 import { createLinks } from '../../lib'
 
-type Props = {
-  title: React.Element<*>,
-  value: ?number,
-  handleChange: (newValue: number) => mixed,
-}
-
 const defaultProps = {
   title: undefined,
   value: undefined,
 }
 
-const ConfusionSlider = ({ title, value, handleChange }: Props) => (
+const ConfusionSlider = ({ title, value, handleChange }) => (
   <div className="confusionSlider">
     <Helmet defer={false}>
       {createLinks(['https://unpkg.com/react-rangeslider/umd/rangeslider.min.css'])}

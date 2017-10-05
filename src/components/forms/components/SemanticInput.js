@@ -1,45 +1,8 @@
-// @flow
 /* eslint-disable jsx-a11y/label-has-for */
 
 import React from 'react'
 import { Form, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-
-type Props = {
-  disabled?: boolean,
-  input: {
-    name: string,
-    value: string,
-    onBlur: () => mixed,
-    onChange: () => mixed,
-    onDragStart: () => mixed,
-    onDrop: () => mixed,
-    onFocus: () => mixed,
-  },
-  intl: $IntlShape,
-  label?: string,
-  meta: {
-    active: boolean,
-    asyncValidating: boolean,
-    autofilled: boolean,
-    dirty: boolean,
-    error: ?string,
-    form: string,
-    initial: ?string,
-    invalid: boolean,
-    pristine: boolean,
-    submitFailed: boolean,
-    submitting: boolean,
-    touched: boolean,
-    valid: boolean,
-    visited: boolean,
-    warning: ?string,
-    dispatch: () => mixed,
-  },
-  placeholder?: string,
-  required?: boolean,
-  width?: number,
-}
 
 const defaultProps = {
   disabled: false,
@@ -59,7 +22,7 @@ const SemanticInput = ({
   required,
   width,
   ...rest
-}: Props) => {
+}) => {
   // construct field props
   // define an erroneous field as a field that has been touched and is invalid
   const fieldProps = { disabled, error: touched && invalid, required, width }

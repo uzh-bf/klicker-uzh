@@ -1,5 +1,3 @@
-// @flow
-
 import React, { Component } from 'react'
 
 import { pageWithIntl, withData } from '../../lib'
@@ -8,17 +6,13 @@ import TeacherLayout from '../../components/layouts/TeacherLayout'
 import SessionList from '../../components/sessions/SessionList'
 
 class Index extends Component {
-  props: {
-    intl: $IntlShape,
-  }
-
   // handle searching in the navbar search area
-  handleSearch = (query: string) => {
+  handleSearch = (query) => {
     console.log(`Searched... for ${query}`)
   }
 
   // handle sorting via navbar search area
-  handleSort = (by: string, order: string) => {
+  handleSort = (by, order) => {
     console.log(`sorted by ${by} in ${order} order`)
   }
 

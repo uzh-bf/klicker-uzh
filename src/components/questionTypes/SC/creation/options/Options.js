@@ -1,5 +1,3 @@
-// @flow
-
 import React from 'react'
 import { arrayMove, SortableContainer, SortableElement } from 'react-sortable-hoc'
 import { FormattedMessage } from 'react-intl'
@@ -7,37 +5,29 @@ import { FormattedMessage } from 'react-intl'
 import Placeholder from './Placeholder'
 import Option from './Option'
 
-import type { ArrayInputType, OptionType } from '../../../../../types'
-
-type Props = {
-  input: ArrayInputType<OptionType>,
-}
-
 class Options extends React.Component {
-  props: Props
-
   static defaultProps = {
     input: {
       value: [],
     },
   }
 
-  handleUpdateOrder = ({ oldIndex, newIndex }: { oldIndex: number, newIndex: number }) => {
+  handleUpdateOrder = ({ oldIndex, newIndex }) => {
     this.props.input.onChange(arrayMove(this.props.input.value, oldIndex, newIndex))
   }
 
-  handleNewOption = (option: OptionType) => {
+  handleNewOption = (option) => {
     this.props.input.onChange([...this.props.input.value, option])
   }
 
-  handleDeleteOption = (index: number) => () => {
+  handleDeleteOption = index => () => {
     this.props.input.onChange([
       ...this.props.input.value.slice(0, index),
       ...this.props.input.value.slice(index + 1),
     ])
   }
 
-  handleOptionToggleCorrect = (index: number) => () => {
+  handleOptionToggleCorrect = index => () => {
     const option = this.props.input.value[index]
 
     this.props.input.onChange([

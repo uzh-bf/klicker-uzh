@@ -1,5 +1,3 @@
-// @flow
-
 import React from 'react'
 import Router from 'next/router'
 import { FormattedMessage } from 'react-intl'
@@ -11,11 +9,6 @@ import { LoginMutation } from '../../queries/mutations'
 import { withData, pageWithIntl } from '../../lib'
 
 class Login extends React.Component {
-  props: {
-    intl: $IntlShape,
-    login: (email: string, password: string) => Promise<*>,
-  }
-
   state = {
     error: null,
   }

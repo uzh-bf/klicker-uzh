@@ -1,5 +1,3 @@
-// @flow
-
 import React, { Component } from 'react'
 import { FormattedMessage } from 'react-intl'
 import { Helmet } from 'react-helmet'
@@ -10,16 +8,6 @@ import { createLinks, initLogging } from '../../lib'
 import Sidebar from '../common/sidebar/Sidebar'
 
 class StudentLayout extends Component {
-  props: {
-    children: any,
-    pageTitle: string,
-    sidebar: {
-      activeItem: string,
-      handleItemChange: (newItem: string) => mixed,
-    },
-    title: string,
-  }
-
   state = {
     sidebarActiveItem: 'activeQuestion',
     sidebarVisible: false,
@@ -30,7 +18,7 @@ class StudentLayout extends Component {
     initLogging()
   }
 
-  handleSidebarItemClick = (sidebarActiveItem: string) => () => {
+  handleSidebarItemClick = sidebarActiveItem => () => {
     this.setState({ sidebarActiveItem })
     this.handleSidebarToggle()
     this.props.sidebar.handleItemChange(sidebarActiveItem)

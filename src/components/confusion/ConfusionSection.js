@@ -1,5 +1,3 @@
-// @flow
-
 import React from 'react'
 import {
   LineChart,
@@ -11,15 +9,7 @@ import {
   YAxis,
 } from 'recharts'
 
-type Props = {
-  data: Array<{
-    timestamp: string,
-    value: number,
-  }>,
-  title: string,
-}
-
-const ConfusionSection = ({ data, title }: Props) => (
+const ConfusionSection = ({ data, title }) => (
   <div className="confusionSection">
     <h3>{title}</h3>
 

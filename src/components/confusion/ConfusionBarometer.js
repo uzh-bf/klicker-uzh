@@ -1,22 +1,14 @@
-// @flow
-
 import React from 'react'
 import { Checkbox } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 import ConfusionSection from './ConfusionSection'
 
-type Props = {
-  intl: $IntlShape,
-  isActive: boolean,
-  handleActiveToggle: () => mixed,
-}
-
 const defaultProps = {
   isActive: false,
 }
 
-const ConfusionBarometer = ({ intl, isActive, handleActiveToggle }: Props) => (
+const ConfusionBarometer = ({ intl, isActive, handleActiveToggle }) => (
   <div className="confusionBarometer">
     <h2>
       <FormattedMessage

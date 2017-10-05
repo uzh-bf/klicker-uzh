@@ -1,5 +1,3 @@
-// @flow
-
 import React from 'react'
 import { FormattedMessage } from 'react-intl'
 
@@ -8,11 +6,6 @@ import PasswordResetForm from '../../components/forms/PasswordResetForm'
 import { withData, pageWithIntl } from '../../lib'
 
 class ResetPassword extends React.Component {
-  props: {
-    intl: $IntlShape,
-    handleSubmit: () => mixed,
-  }
-
   handleSubmit = () => {
     console.log('reset password...')
   }

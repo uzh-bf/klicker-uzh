@@ -1,10 +1,6 @@
-// @flow
-
 import React from 'react'
 
-import type { QuestionType } from '../../types'
-
-const QuestionSingle = ({ id, type, title }: QuestionType) => (
+const QuestionSingle = ({ id, type, title }) => (
   <div className="questionSingle">
     <div className="id">{`#${id.substring(0, 7)}`}</div>
     <div className="type">{type}</div>

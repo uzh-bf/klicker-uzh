@@ -1,16 +1,9 @@
-// @flow
-
 import React, { Component } from 'react'
 import { Helmet } from 'react-helmet'
 
 import { createLinks, initLogging } from '../../lib'
 
 class StaticLayout extends Component {
-  props: {
-    children: any,
-    pageTitle: string,
-  }
-
   state = {}
 
   componentWillMount() {

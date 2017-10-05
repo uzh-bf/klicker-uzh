@@ -1,15 +1,7 @@
-// @flow
-
 import React from 'react'
 import { FormattedMessage } from 'react-intl'
 
-type Props = {
-  input: {
-    value: string,
-    onChange: (newValue: string) => void,
-  },
-}
-const TitleInput = ({ input: { value, onChange } }: Props) => (
+const TitleInput = ({ input: { value, onChange } }) => (
   <div className="field">
     <label htmlFor="questionTitle">
       <FormattedMessage defaultMessage="Question title" id="teacher.createQuestion.questionTitle" />

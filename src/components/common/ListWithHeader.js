@@ -1,13 +1,6 @@
-// @flow
-
 import React from 'react'
 
-type Props = {
-  children: any,
-  items: Array<string>,
-}
-
-const ListWithHeader = ({ children, items }: Props) => (
+const ListWithHeader = ({ children, items }) => (
   <div>
     <h3 className="listHeader">{children}</h3>
     <ul className="list">

@@ -1,14 +1,8 @@
-// @flow
-
 import React from 'react'
 import { Button, Divider, Icon, Image, Menu, Popup } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
-type Props = {
-  sessionId: string,
-}
-
-const SessionArea = ({ sessionId }: Props) => {
+const SessionArea = ({ sessionId }) => {
   const popupTrigger = (
     <Menu.Item name="session">
       /sessions/{sessionId} <Icon name="qrcode" />

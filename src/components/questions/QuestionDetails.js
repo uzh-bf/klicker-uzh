@@ -1,15 +1,9 @@
-// @flow
-
 import React from 'react'
 import { FormattedMessage } from 'react-intl'
 
 import ListWithHeader from '../common/ListWithHeader'
 
-type Props = {
-  lastUsed: Array<string>,
-}
-
-const QuestionDetails = ({ lastUsed }: Props) => (
+const QuestionDetails = ({ lastUsed }) => (
   <div className="container">
     <div className="column">Test1</div>
     <div className="column">Test2</div>

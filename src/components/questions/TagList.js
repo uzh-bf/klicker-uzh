@@ -1,19 +1,10 @@
-// @flow
-
 import React from 'react'
 import { graphql } from 'react-apollo'
 import { List } from 'semantic-ui-react'
 
 import { TagListQuery } from '../../queries/queries'
-import type { TagListType } from '../../queries/queries'
 
-type Props = {
-  activeTags: Array<string>,
-  data: TagListType,
-  handleTagClick: () => mixed,
-}
-
-const TagList = ({ activeTags, data, handleTagClick }: Props) => {
+const TagList = ({ activeTags, data, handleTagClick }) => {
   if (data.loading) {
     return <div>Loading</div>
   }

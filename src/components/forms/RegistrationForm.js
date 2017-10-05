@@ -1,5 +1,3 @@
-// @flow
-
 import React from 'react'
 import isAlpha from 'validator/lib/isAlpha'
 import isEmail from 'validator/lib/isEmail'
@@ -10,20 +8,6 @@ import { Field, reduxForm } from 'redux-form'
 import { Button } from 'semantic-ui-react'
 
 import { SemanticInput } from './components'
-
-type Props = {
-  intl: $IntlShape,
-  invalid: boolean,
-  handleSubmit: (values: {
-    firstName: string,
-    lastName: string,
-    email: string,
-    shortname: string,
-    password: string,
-    passwordRepeat: string,
-    useCase: string,
-  }) => mixed,
-}
 
 const validate = ({ firstName, lastName, email, shortname, password, passwordRepeat, useCase }) => {
   const errors = {}
@@ -63,7 +47,7 @@ const validate = ({ firstName, lastName, email, shortname, password, passwordRep
   return errors
 }
 
-const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }: Props) => (
+const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
   <form className="ui form error" onSubmit={onSubmit}>
     <div className="personal">
       <Field

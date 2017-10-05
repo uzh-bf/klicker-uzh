@@ -1,24 +1,14 @@
-// @flow
-
 import React from 'react'
 import { FormattedMessage } from 'react-intl'
 
 import AnswerOptions from '../answer/Options'
-
-import type { OptionType } from '../../../../types'
-
-type Props = {
-  description: string,
-  options: Array<OptionType>,
-  title: string,
-}
 
 const defaultProps = {
   description: 'DESCRIPTION',
   title: 'TITLE',
 }
 
-const Preview = ({ title, description, options }: Props) => (
+const Preview = ({ title, description, options }) => (
   <div className="preview">
     <div className="title">{title || 'TITLE'}</div>
     <div className="description">{description || 'DESCRIPTION'}</div>

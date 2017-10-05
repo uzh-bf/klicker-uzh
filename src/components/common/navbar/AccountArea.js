@@ -1,14 +1,8 @@
-// @flow
-
 import React from 'react'
 import { Dropdown } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
-type Props = {
-  accountShort: string,
-}
-
-const AccountArea = ({ accountShort }: Props) => (
+const AccountArea = ({ accountShort }) => (
   <Dropdown item simple text={accountShort}>
     <Dropdown.Menu>
       <Dropdown.Item>

@@ -1,5 +1,3 @@
-// @flow
-
 import React from 'react'
 import classNames from 'classnames'
 import { Button } from 'semantic-ui-react'
@@ -14,46 +12,31 @@ import StudentLayout from '../../components/layouts/StudentLayout'
 import { SCAnswerOptions } from '../../components/questionTypes/SC'
 
 class Session extends React.Component {
-  props: {
-    intl: $IntlShape,
-  }
-
-  state: {
-    feedbackDifficulty: number | null,
-    feedbackSpeed: number | null,
-    questionActiveOption: number,
-    questionCollapsed: boolean,
-    sidebarActiveItem: string,
-  }
-
-  constructor(props) {
-    super(props)
-    this.state = {
-      feedbackDifficulty: null,
-      feedbackSpeed: null,
-      questionActiveOption: -1,
-      questionCollapsed: true,
-      sidebarActiveItem: 'activeQuestion',
-    }
+  state = {
+    feedbackDifficulty: null,
+    feedbackSpeed: null,
+    questionActiveOption: -1,
+    questionCollapsed: true,
+    sidebarActiveItem: 'activeQuestion',
   }
 
   handleCollapseToggle = () => {
     this.setState(prevState => ({ questionCollapsed: !prevState.questionCollapsed }))
   }
 
-  handleDifficultyChange = (feedbackDifficulty: number) => {
+  handleDifficultyChange = (feedbackDifficulty) => {
     this.setState({ feedbackDifficulty })
   }
 
-  handleOptionClick = (questionActiveOption: number) => () => {
+  handleOptionClick = questionActiveOption => () => {
     this.setState({ questionActiveOption })
   }
 
-  handleSidebarItemChange = (sidebarActiveItem: string) => {
+  handleSidebarItemChange = (sidebarActiveItem) => {
     this.setState({ sidebarActiveItem })
   }
 
-  handleSpeedChange = (feedbackSpeed: number) => {
+  handleSpeedChange = (feedbackSpeed) => {
     this.setState({ feedbackSpeed })
   }
 

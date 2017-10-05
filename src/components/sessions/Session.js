@@ -1,5 +1,3 @@
-// @flow
-
 import React from 'react'
 import moment from 'moment'
 import { Button, Icon } from 'semantic-ui-react'
@@ -7,18 +5,8 @@ import { FormattedMessage } from 'react-intl'
 
 import QuestionBlock from '../questions/QuestionBlock'
 
-import type { QuestionBlockType } from '../../types'
-
-type Props = {
-  blocks: QuestionBlockType[],
-  createdAt: string,
-  id: string,
-  name: string,
-  status: 'CREATED' | 'RUNNING' | 'COMPLETED',
-}
-
 // const Session = ({ createdAt, name, blocks, id, status }: Props) => {
-const Session = ({ createdAt, name, blocks, id }: Props) => {
+const Session = ({ createdAt, name, blocks, id }) => {
   const statusCases = {
     COMPLETED: {
       disabled: false,

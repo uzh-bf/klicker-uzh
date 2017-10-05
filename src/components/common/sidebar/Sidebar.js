@@ -1,21 +1,7 @@
-// @flow
-
 import React from 'react'
 import { Menu, Sidebar as SemanticSidebar } from 'semantic-ui-react'
 
 import SidebarItem from './SidebarItem'
-
-type Props = {
-  activeItem: string,
-  children: any,
-  items: Array<{
-    label: string | React.Element<*>,
-    href: string,
-    name: string,
-  }>,
-  visible: boolean,
-  handleSidebarItemClick: (href: string) => () => mixed,
-}
 
 const defaultProps = {
   activeItem: 'questionPool',

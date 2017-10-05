@@ -1,23 +1,8 @@
-// @flow
-
 import React from 'react'
 import { Checkbox } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 import Feedback from './Feedback'
-
-type Props = {
-  data: Array<{
-    content: string,
-    id: string,
-    votes: number,
-  }>,
-  intl: $IntlShape,
-  isActive?: boolean,
-  isPublic?: boolean,
-  handleActiveToggle: () => mixed,
-  handlePublicToggle: () => mixed,
-}
 
 const defaultProps = {
   isActive: false,
@@ -31,7 +16,7 @@ const FeedbackChannel = ({
   isPublic,
   handleActiveToggle,
   handlePublicToggle,
-}: Props) => (
+}) => (
   <div className="feedbackChannel">
     <h2>
       <FormattedMessage

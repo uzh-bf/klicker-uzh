@@ -1,6 +1,3 @@
-/* TODO: flow */
-/* eslint-disable react/prop-types */
-
 import React, { Component } from 'react'
 import Router from 'next/router'
 import { graphql } from 'react-apollo'
@@ -11,15 +8,7 @@ import { pageWithIntl, withData } from '../../lib'
 import { CreateQuestionMutation } from '../../queries/mutations'
 import { QuestionListQuery, TagListQuery } from '../../queries/queries'
 
-/* type Props = {
-  data: any,
-  intl: $IntlShape,
-  createQuestion: any => Promise<*>,
-} */
-
 class CreateQuestion extends Component {
-  // props: Props
-
   handleDiscard = () => {
     Router.push('/questions')
   }

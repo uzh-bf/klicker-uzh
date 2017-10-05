@@ -1,5 +1,3 @@
-// @flow
-
 import React, { Component } from 'react'
 import Router from 'next/router'
 import HTML5Backend from 'react-dnd-html5-backend'
@@ -12,27 +10,6 @@ import Sidebar from '../../components/common/sidebar/Sidebar'
 import { createLinks, initLogging } from '../../lib'
 
 class TeacherLayout extends Component {
-  props: {
-    actionArea?: React$Element<*>,
-    children: any,
-    intl: $IntlShape,
-    navbar: {
-      accountShort: string,
-      search?: {
-        query: string,
-        sortBy: string,
-        sortOrder: string,
-        handleSearch: (query: string) => mixed,
-        handleSort: (by: string, order: string) => mixed,
-      },
-      title: string,
-    },
-    pageTitle: string,
-    sidebar: {
-      activeItem: string,
-    },
-  }
-
   static defaultProps = {
     actionArea: undefined,
   }
@@ -46,7 +23,7 @@ class TeacherLayout extends Component {
     initLogging()
   }
 
-  handleSidebarItemClick = (href: string) => () => {
+  handleSidebarItemClick = href => () => {
     Router.push(href)
   }
 

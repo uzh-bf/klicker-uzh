@@ -1,5 +1,3 @@
-// @flow
-
 import React from 'react'
 import _get from 'lodash/get'
 import isEmpty from 'validator/lib/isEmpty'
@@ -16,8 +14,6 @@ import {
   SCCreationPreview,
   SCCreationContent,
 } from '../../components/questionTypes/SC'
-
-import type { OptionType, TagType } from '../../types'
 
 // form validation
 const validate = ({ content, options, tags, title }) => {
@@ -42,17 +38,6 @@ const validate = ({ content, options, tags, title }) => {
   return errors
 }
 
-type Props = {
-  content: string,
-  intl: $IntlShape,
-  invalid: boolean,
-  options: Array<OptionType>,
-  tags: Array<TagType>,
-  title: string,
-  handleSubmit: () => void,
-  onDiscard: () => void,
-}
-
 const defaultProps = {
   content: '',
   options: [],
@@ -69,7 +54,7 @@ const QuestionCreationForm = ({
   title,
   handleSubmit: onSubmit,
   onDiscard,
-}: Props) => (
+}) => (
   <form className="ui form" onSubmit={onSubmit}>
     <div className="questionInput questionTitle">
       <Field name="title" component={TitleInput} />

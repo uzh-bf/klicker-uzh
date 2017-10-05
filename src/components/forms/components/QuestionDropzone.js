@@ -1,16 +1,9 @@
-// @flow
-
 import React from 'react'
 import classNames from 'classnames'
 import { FaPlus } from 'react-icons/lib/fa'
 import { DropTarget } from 'react-dnd'
 
-type Props = {
-  canDrop: boolean,
-  isOver: boolean,
-  connectDropTarget: any,
-}
-const QuestionDropzone = ({ canDrop, isOver, connectDropTarget }: Props) =>
+const QuestionDropzone = ({ canDrop, isOver, connectDropTarget }) =>
   connectDropTarget(
     <div className={classNames('dropzone', { canDrop, isOver })}>
       <FaPlus />

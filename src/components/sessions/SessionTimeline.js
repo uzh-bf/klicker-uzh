@@ -1,18 +1,9 @@
-// @flow
-
 import React from 'react'
 import { Button, Icon } from 'semantic-ui-react'
 
 import QuestionBlock from '../questions/QuestionBlock'
 
-import type { QuestionBlockType } from '../../types'
-
-type Props = {
-  blocks: QuestionBlockType[],
-  intl: $IntlShape,
-}
-
-const SessionTimeline = ({ blocks, intl }: Props) => (
+const SessionTimeline = ({ blocks, intl }) => (
   <div className="sessionTimeline">
     <div className="topRow">
       <div className="startingTime">

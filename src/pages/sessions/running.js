@@ -1,5 +1,3 @@
-// @flow
-
 import React, { Component } from 'react'
 import { graphql } from 'react-apollo'
 
@@ -10,27 +8,12 @@ import FeedbackChannel from '../../components/feedbacks/FeedbackChannel'
 import SessionTimeline from '../../components/sessions/SessionTimeline'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import { RunningSessionQuery } from '../../queries/queries'
-import type { RunningSessionType } from '../../queries/queries'
 
 class Running extends Component {
-  props: {
-    data: RunningSessionType,
-    intl: $IntlShape,
-  }
-
-  state: {
-    confusionActive: boolean,
-    feedbacksActive: boolean,
-    feedbacksPublic: boolean,
-  }
-
-  constructor(props) {
-    super(props)
-    this.state = {
-      confusionActive: false,
-      feedbacksActive: false,
-      feedbacksPublic: false,
-    }
+  state = {
+    confusionActive: false,
+    feedbacksActive: false,
+    feedbacksPublic: false,
   }
 
   handleConfusionActiveToggle = () => {

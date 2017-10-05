@@ -1,17 +1,8 @@
-// @flow
-
 import React from 'react'
 import classNames from 'classnames'
 import { FormattedMessage } from 'react-intl'
 
-import type { TextInputType } from '../../types'
-
-type Props = {
-  intl: $IntlShape,
-  input: TextInputType,
-}
-
-const TypeChooser = ({ intl, input: { value, onChange } }: Props) => {
+const TypeChooser = ({ intl, input: { value, onChange } }) => {
   const types = [
     {
       name: intl.formatMessage({

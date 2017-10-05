@@ -1,5 +1,3 @@
-// @flow
-
 import React from 'react'
 import isEmpty from 'validator/lib/isEmpty'
 import { Field, reduxForm } from 'redux-form'
@@ -7,14 +5,6 @@ import { FormattedMessage } from 'react-intl'
 import { FaTrash, FaPlay, FaFloppyO } from 'react-icons/lib/fa'
 
 import { SemanticInput, SessionTimeline } from './components'
-
-type Props = {
-  invalid: boolean,
-  handleSubmit: any => void,
-  onDiscard: () => void,
-  onSave: () => void,
-  onStart: () => void,
-}
 
 // form validation
 const validate = ({ sessionName, questions }) => {
@@ -31,7 +21,7 @@ const validate = ({ sessionName, questions }) => {
   return errors
 }
 
-const SessionCreationForm = ({ invalid, handleSubmit, onSave, onDiscard, onStart }: Props) => (
+const SessionCreationForm = ({ invalid, handleSubmit, onSave, onDiscard, onStart }) => (
   <form className="ui form sessionCreation" onSubmit={handleSubmit(onSave)}>
     <div className="sessionName">
       <Field name="sessionName" label="Name" component={SemanticInput} />

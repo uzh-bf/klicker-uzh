@@ -1,18 +1,8 @@
-// @flow
-
 import React from 'react'
 import classNames from 'classnames'
 import { Button } from 'semantic-ui-react'
 
-import type { OptionType } from '../../../../types'
-
-type Props = {
-  activeOption: number,
-  options: Array<OptionType>,
-  onOptionClick: (optionNumber: number) => () => mixed,
-}
-
-const Options = ({ activeOption, options, onOptionClick }: Props) => (
+const Options = ({ activeOption, options, onOptionClick }) => (
   <div className="options">
     {options.map((option, index) => (
       <div key={option.name} className={classNames('option', { active: index === activeOption })}>
