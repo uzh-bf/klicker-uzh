@@ -25,6 +25,7 @@
     "logrocket-react": "0.0.4",
     "moment": "2.18.1",
     "next": "3.2.2",
+    "prop-types": "15.6.0",
     "prosemirror-schema-basic": "0.24.0",
     "prosemirror-state": "0.24.0",
     "prosemirror-view": "0.24.0",
