@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import isEmpty from 'validator/lib/isEmpty'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage } from 'react-intl'
@@ -19,6 +20,14 @@ const validate = ({ sessionName, questions }) => {
   }
 
   return errors
+}
+
+const propTypes = {
+  handleSubmit: PropTypes.func.isRequired,
+  invalid: PropTypes.bool.isRequired,
+  onDiscard: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+  onStart: PropTypes.func.isRequired,
 }
 
 const SessionCreationForm = ({ invalid, handleSubmit, onSave, onDiscard, onStart }) => (
@@ -98,6 +107,8 @@ const SessionCreationForm = ({ invalid, handleSubmit, onSave, onDiscard, onStart
     `}</style>
   </form>
 )
+
+SessionCreationForm.propTypes = propTypes
 
 export default reduxForm({
   form: 'createSession',

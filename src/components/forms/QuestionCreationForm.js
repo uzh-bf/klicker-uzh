@@ -1,9 +1,10 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import _get from 'lodash/get'
 import isEmpty from 'validator/lib/isEmpty'
 import { connect } from 'react-redux'
 import { Field, reduxForm } from 'redux-form'
-import { FormattedMessage } from 'react-intl'
+import { intlShape, FormattedMessage } from 'react-intl'
 
 import TitleInput from '../questions/creation/TitleInput'
 import TagInput from '../questions/creation/TagInput'
@@ -36,6 +37,17 @@ const validate = ({ content, options, tags, title }) => {
   }
 
   return errors
+}
+
+const propTypes = {
+  content: PropTypes.string.isRequired,
+  handleSubmit: PropTypes.func.isRequired,
+  intl: intlShape.isRequired,
+  invalid: PropTypes.bool.isRequired,
+  onDiscard: PropTypes.func.isRequired,
+  options: PropTypes.array,
+  tags: PropTypes.arrayOf(PropTypes.string),
+  title: PropTypes.string.isRequired,
 }
 
 const defaultProps = {
@@ -166,6 +178,7 @@ const QuestionCreationForm = ({
   </form>
 )
 
+QuestionCreationForm.propTypes = propTypes
 QuestionCreationForm.defaultProps = defaultProps
 
 const withState = connect(state => ({

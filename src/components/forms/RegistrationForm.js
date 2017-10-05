@@ -1,9 +1,10 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import isAlpha from 'validator/lib/isAlpha'
 import isEmail from 'validator/lib/isEmail'
 import isLength from 'validator/lib/isLength'
 import isEmpty from 'validator/lib/isEmpty'
-import { FormattedMessage } from 'react-intl'
+import { intlShape, FormattedMessage } from 'react-intl'
 import { Field, reduxForm } from 'redux-form'
 import { Button } from 'semantic-ui-react'
 
@@ -45,6 +46,12 @@ const validate = ({ firstName, lastName, email, shortname, password, passwordRep
   }
 
   return errors
+}
+
+const propTypes = {
+  handleSubmit: PropTypes.func.isRequired,
+  intl: intlShape.isRequired,
+  invalid: PropTypes.bool.isRequired,
 }
 
 const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
@@ -164,6 +171,8 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
     `}</style>
   </form>
 )
+
+RegistrationForm.propTypes = propTypes
 
 export default reduxForm({
   form: 'registration',
