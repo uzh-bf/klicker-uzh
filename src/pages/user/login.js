@@ -1,12 +1,18 @@
 import React from 'react'
 import Router from 'next/router'
-import { FormattedMessage } from 'react-intl'
+import PropTypes from 'prop-types'
+import { intlShape, FormattedMessage } from 'react-intl'
 import { graphql } from 'react-apollo'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import LoginForm from '../../components/forms/LoginForm'
 import { LoginMutation } from '../../queries/mutations'
 import { withData, pageWithIntl } from '../../lib'
+
+const propTypes = {
+  intl: intlShape.isRequired,
+  login: PropTypes.func.isRequired,
+}
 
 class Login extends React.Component {
   state = {
@@ -76,6 +82,8 @@ class Login extends React.Component {
     )
   }
 }
+
+Login.propTypes = propTypes
 
 export default withData(
   pageWithIntl(

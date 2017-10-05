@@ -1,5 +1,13 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
+
+const propTypes = {
+  input: PropTypes.shape({
+    onChange: PropTypes.func.isRequired,
+    value: PropTypes.string.isRequired,
+  }).isRequired,
+}
 
 const Content = ({ input: { value, onChange } }) => (
   <div className="field">
@@ -17,5 +25,7 @@ const Content = ({ input: { value, onChange } }) => (
     `}</style>
   </div>
 )
+
+Content.propTypes = propTypes
 
 export default Content

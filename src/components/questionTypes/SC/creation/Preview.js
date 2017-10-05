@@ -1,10 +1,18 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 
 import AnswerOptions from '../answer/Options'
 
+const propTypes = {
+  description: PropTypes.string,
+  options: PropTypes.array,
+  title: PropTypes.string,
+}
+
 const defaultProps = {
   description: 'DESCRIPTION',
+  options: [],
   title: 'TITLE',
 }
 
@@ -53,6 +61,7 @@ const Preview = ({ title, description, options }) => (
   </div>
 )
 
+Preview.propTypes = propTypes
 Preview.defaultProps = defaultProps
 
 export default Preview

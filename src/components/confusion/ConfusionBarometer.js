@@ -6,9 +6,9 @@ import { intlShape, FormattedMessage } from 'react-intl'
 import ConfusionSection from './ConfusionSection'
 
 const propTypes = {
+  handleActiveToggle: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   isActive: PropTypes.bool,
-  handleActiveToggle: PropTypes.func.isRequired,
 }
 
 const defaultProps = {

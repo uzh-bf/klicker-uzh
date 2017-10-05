@@ -1,6 +1,21 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { Button } from 'semantic-ui-react'
+
+const propTypes = {
+  activeOption: PropTypes.number.isRequired,
+  onOptionClick: PropTypes.func.isRequired,
+  options: PropTypes.arrayOf(
+    PropTypes.shape({
+      name: PropTypes.string.isRequired,
+    }),
+  ),
+}
+
+const defaultProps = {
+  options: [],
+}
 
 const Options = ({ activeOption, options, onOptionClick }) => (
   <div className="options">
@@ -36,5 +51,8 @@ const Options = ({ activeOption, options, onOptionClick }) => (
     `}</style>
   </div>
 )
+
+Options.propTypes = propTypes
+Options.defaultProps = defaultProps
 
 export default Options

@@ -1,4 +1,6 @@
 import React, { Component } from 'react'
+import PropTypes from 'prop-types'
+import { intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
 import classNames from 'classnames'
@@ -11,6 +13,11 @@ import SessionCreationForm from '../../components/forms/SessionCreationForm'
 import QuestionList from '../../components/questions/QuestionList'
 import TagList from '../../components/questions/TagList'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
+
+const propTypes = {
+  createSession: PropTypes.func.isRequired,
+  intl: intlShape.isRequired,
+}
 
 class Index extends Component {
   state = {
@@ -240,6 +247,8 @@ class Index extends Component {
     )
   }
 }
+
+Index.propTypes = propTypes
 
 const withCreateSessionMutation = graphql(CreateSessionMutation, {
   props: ({ mutate }) => ({

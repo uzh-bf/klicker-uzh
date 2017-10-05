@@ -1,7 +1,7 @@
 import React from 'react'
 import classNames from 'classnames'
 import { Button } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
+import { intlShape, FormattedMessage } from 'react-intl'
 
 import { withData, pageWithIntl } from '../../lib'
 
@@ -10,6 +10,10 @@ import ConfusionSlider from '../../components/confusion/ConfusionSlider'
 import Feedback from '../../components/feedbacks/Feedback'
 import StudentLayout from '../../components/layouts/StudentLayout'
 import { SCAnswerOptions } from '../../components/questionTypes/SC'
+
+const propTypes = {
+  intl: intlShape.isRequired,
+}
 
 class Session extends React.Component {
   state = {
@@ -219,5 +223,7 @@ class Session extends React.Component {
     )
   }
 }
+
+Session.propTypes = propTypes
 
 export default withData(pageWithIntl(Session))

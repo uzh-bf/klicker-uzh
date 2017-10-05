@@ -1,17 +1,19 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import { arrayMove, SortableContainer, SortableElement } from 'react-sortable-hoc'
 import { FormattedMessage } from 'react-intl'
 
 import Placeholder from './Placeholder'
 import Option from './Option'
 
-class Options extends React.Component {
-  static defaultProps = {
-    input: {
-      value: [],
-    },
-  }
+const propTypes = {
+  input: PropTypes.shape({
+    onChange: PropTypes.func.isRequired,
+    value: PropTypes.arrayOf(Option.propTypes).isRequired,
+  }).isRequired,
+}
 
+class Options extends React.Component {
   handleUpdateOrder = ({ oldIndex, newIndex }) => {
     this.props.input.onChange(arrayMove(this.props.input.value, oldIndex, newIndex))
   }
@@ -86,5 +88,7 @@ class Options extends React.Component {
     )
   }
 }
+
+Options.propTypes = propTypes
 
 export default Options

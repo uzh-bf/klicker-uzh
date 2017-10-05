@@ -1,9 +1,13 @@
 import React from 'react'
-import { FormattedMessage } from 'react-intl'
+import { intlShape, FormattedMessage } from 'react-intl'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import PasswordResetForm from '../../components/forms/PasswordResetForm'
 import { withData, pageWithIntl } from '../../lib'
+
+const propTypes = {
+  intl: intlShape.isRequired,
+}
 
 class ResetPassword extends React.Component {
   handleSubmit = () => {
@@ -46,5 +50,7 @@ class ResetPassword extends React.Component {
     )
   }
 }
+
+ResetPassword.propTypes = propTypes
 
 export default withData(pageWithIntl(ResetPassword))

@@ -5,8 +5,8 @@ import { Button } from 'semantic-ui-react'
 const propTypes = {
   items: PropTypes.arrayOf(
     PropTypes.shape({
-      label: PropTypes.string.isRequired,
       handleClick: PropTypes.func.isRequired,
+      label: PropTypes.string.isRequired,
     }),
   ),
 }

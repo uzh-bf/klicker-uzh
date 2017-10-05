@@ -1,9 +1,12 @@
 import React, { Component } from 'react'
-
-import { pageWithIntl, withData } from '../../lib'
+import { intlShape, pageWithIntl, withData } from '../../lib'
 
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import SessionList from '../../components/sessions/SessionList'
+
+const propTypes = {
+  intl: intlShape.isRequired,
+}
 
 class Index extends Component {
   // handle searching in the navbar search area
@@ -69,5 +72,7 @@ class Index extends Component {
     )
   }
 }
+
+Index.propTypes = propTypes
 
 export default withData(pageWithIntl(Index))

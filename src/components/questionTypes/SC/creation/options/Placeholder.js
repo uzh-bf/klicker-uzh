@@ -1,8 +1,13 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { FaFloppyO, FaPlus, FaTrash } from 'react-icons/lib/fa'
 
 import styles from './styles'
+
+const propTypes = {
+  handleSave: PropTypes.func.isRequired,
+}
 
 class Placeholder extends React.Component {
   state = {
@@ -90,5 +95,7 @@ class Placeholder extends React.Component {
     )
   }
 }
+
+Placeholder.propTypes = propTypes
 
 export default Placeholder

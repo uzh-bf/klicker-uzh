@@ -1,6 +1,15 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import { FormattedMessage } from 'react-intl'
+import { intlShape, FormattedMessage } from 'react-intl'
+
+const propTypes = {
+  input: PropTypes.shape({
+    onChange: PropTypes.func.isRequired,
+    value: PropTypes.string.isRequired,
+  }).isRequired,
+  intl: intlShape.isRequired,
+}
 
 const TypeChooser = ({ intl, input: { value, onChange } }) => {
   const types = [
@@ -72,5 +81,7 @@ const TypeChooser = ({ intl, input: { value, onChange } }) => {
     </div>
   )
 }
+
+TypeChooser.propTypes = propTypes
 
 export default TypeChooser
