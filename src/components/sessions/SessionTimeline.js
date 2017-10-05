@@ -1,7 +1,18 @@
 import React from 'react'
+import PropTypes from 'prop-types'
+import { intlShape } from 'react-intl'
 import { Button, Icon } from 'semantic-ui-react'
 
 import QuestionBlock from '../questions/QuestionBlock'
+
+const propTypes = {
+  blocks: PropTypes.array, // TODO: extend
+  intl: intlShape.isRequired,
+}
+
+const defaultProps = {
+  blocks: [],
+}
 
 const SessionTimeline = ({ blocks, intl }) => (
   <div className="sessionTimeline">
@@ -125,5 +136,8 @@ const SessionTimeline = ({ blocks, intl }) => (
     `}</style>
   </div>
 )
+
+SessionTimeline.propTypes = propTypes
+SessionTimeline.defaultProps = defaultProps
 
 export default SessionTimeline

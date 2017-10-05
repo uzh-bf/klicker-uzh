@@ -1,11 +1,22 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import moment from 'moment'
 import { Button, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 import QuestionBlock from '../questions/QuestionBlock'
 
-// const Session = ({ createdAt, name, blocks, id, status }: Props) => {
+const propTypes = {
+  blocks: PropTypes.array,
+  createdAt: PropTypes.string.isRequired,
+  id: PropTypes.string.isRequired,
+  name: PropTypes.string.isRequired,
+}
+
+const defaultProps = {
+  blocks: [],
+}
+
 const Session = ({ createdAt, name, blocks, id }) => {
   const statusCases = {
     COMPLETED: {
@@ -113,5 +124,8 @@ const Session = ({ createdAt, name, blocks, id }) => {
     </div>
   )
 }
+
+Session.propTypes = propTypes
+Session.defaultProps = defaultProps
 
 export default Session
