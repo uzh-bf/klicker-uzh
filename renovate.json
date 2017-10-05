@@ -18,11 +18,6 @@
       "automerge": "minor"
     },
     {
-      "packageNames": ["flow-bin"],
-      "groupName": "flow",
-      "automerge": "minor"
-    },
-    {
       "packageNames": ["apollo-server-express", "graphql", "graphql-tools"],
       "groupName": "graphql"
     },
