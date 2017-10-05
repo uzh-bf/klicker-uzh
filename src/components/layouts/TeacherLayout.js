@@ -1,7 +1,8 @@
 import React, { Component } from 'react'
+import PropTypes from 'prop-types'
 import Router from 'next/router'
 import HTML5Backend from 'react-dnd-html5-backend'
-import { FormattedMessage } from 'react-intl'
+import { intlShape, FormattedMessage } from 'react-intl'
 import { Helmet } from 'react-helmet'
 import { DragDropContext } from 'react-dnd'
 
@@ -9,11 +10,21 @@ import Navbar from '../../components/common/navbar/Navbar'
 import Sidebar from '../../components/common/sidebar/Sidebar'
 import { createLinks, initLogging } from '../../lib'
 
-class TeacherLayout extends Component {
-  static defaultProps = {
-    actionArea: undefined,
-  }
+const propTypes = {
+  actionArea: PropTypes.element,
+  children: PropTypes.children.isRequired,
+  intl: intlShape.isRequired,
+  navbar: Navbar.propTypes.isRequired,
+  pageTitle: PropTypes.string,
+  sidebar: Sidebar.propTypes.isRequired,
+}
 
+const defaultProps = {
+  actionArea: undefined,
+  pageTitle: 'TeacherLayout',
+}
+
+class TeacherLayout extends Component {
   state = {
     sidebarVisible: false,
   }
@@ -138,6 +149,9 @@ class TeacherLayout extends Component {
     )
   }
 }
+
+TeacherLayout.propTypes = propTypes
+TeacherLayout.defaultProps = defaultProps
 
 const withDnD = DragDropContext(HTML5Backend)
 

@@ -1,7 +1,17 @@
 import React, { Component } from 'react'
+import PropTypes from 'prop-types'
 import { Helmet } from 'react-helmet'
 
 import { createLinks, initLogging } from '../../lib'
+
+const propTypes = {
+  children: PropTypes.children.isRequired,
+  pageTitle: PropTypes.string,
+}
+
+const defaultProps = {
+  pageTitle: 'StaticLayout',
+}
 
 class StaticLayout extends Component {
   state = {}
@@ -57,5 +67,8 @@ class StaticLayout extends Component {
     )
   }
 }
+
+StaticLayout.propTypes = propTypes
+StaticLayout.defaultProps = defaultProps
 
 export default StaticLayout
