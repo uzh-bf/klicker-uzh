@@ -21,7 +21,7 @@ expect.addSnapshotSerializer({
       Show solutions: ${block.showSolutions}
       Status: ${block.status}
       Time limit: ${block.timeLimit}
-      Number of instances: ${block.questions.length}
+      Number of instances: ${block.instances.length}
     `)}
 
     Settings:
