@@ -27,11 +27,16 @@ class Options extends React.Component {
   handleMaxChange = (e: SyntheticInputEvent) => {
     const { input: { value, onChange } } = this.props
 
+    let newMax = e.target.value
+    if (e.target.value === '') {
+      newMax = null
+    }
+
     onChange({
       ...value,
       restrictions: {
         ...value.restrictions,
-        max: +e.target.value,
+        max: newMax,
       },
     })
   }
@@ -39,11 +44,16 @@ class Options extends React.Component {
   handleMinChange = (e: SyntheticInputEvent) => {
     const { input: { value, onChange } } = this.props
 
+    let newMin = e.target.value
+    if (e.target.value === '') {
+      newMin = null
+    }
+
     onChange({
       ...value,
       restrictions: {
         ...value.restrictions,
-        min: +e.target.value,
+        min: newMin,
       },
     })
   }

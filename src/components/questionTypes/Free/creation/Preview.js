@@ -35,8 +35,14 @@ const Preview = ({ title, options, description }: Props) => {
       <div className="description">{description || 'DESCRIPTION'}</div>
       {restrictedToNumbers && (
         <div className="diagram">
-          <div className="min">Min: {options.restrictions.min}</div>
-          <div className="max">Max: {options.restrictions.max}</div>
+          <div className="min">
+            <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />:{' '}
+            {options.restrictions.min}
+          </div>
+          <div className="max">
+            <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />:{' '}
+            {options.restrictions.max}
+          </div>
           <div className="line" />
           <div className="box" />
         </div>
@@ -44,12 +50,28 @@ const Preview = ({ title, options, description }: Props) => {
       {restrictedToNumbers ? (
         <div className="selection">
           {/* TODO how to align title horizontally centered? */}
-          <b className="title">Selection:</b>
+          <b className="title">
+            <FormattedMessage defaultMessage="Selection" id="teacher.createQuestion.selection" />
+          </b>
           <div className="box">{(+options.restrictions.min + +options.restrictions.max) / 2}</div>
         </div>
       ) : (
-        <div className="freeText">
-          <div className="box" />
+        <div>
+          <div className="freeText">
+            <div className="box" />
+          </div>
+          {options.restrictions.min !== null && (
+            <div>
+              <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />:{' '}
+              {options.restrictions.min}
+            </div>
+          )}
+          {options.restrictions.max !== null && (
+            <div>
+              <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />:{' '}
+              {options.restrictions.max}
+            </div>
+          )}
         </div>
       )}
       <div className="button">
