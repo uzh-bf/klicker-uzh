@@ -28,7 +28,7 @@
     "prosemirror-schema-basic": "0.24.0",
     "prosemirror-state": "0.24.0",
     "prosemirror-view": "0.24.0",
-    "raven-js": "3.18.0",
+    "raven-js": "3.18.1",
     "react": "15.6.1",
     "react-addons-css-transition-group": "15.6.2",
     "react-apollo": "1.4.16",
