@@ -5,18 +5,10 @@ import { Button, Icon } from 'semantic-ui-react'
 
 import QuestionBlock from '../questions/QuestionBlock'
 
+import type { QuestionBlockType } from '../../types'
+
 type Props = {
-  blocks: Array<{
-    id: string,
-    questions: Array<{
-      id: string,
-      questionDefinition: {
-        title: string,
-        type: string,
-      },
-    }>,
-    status: string,
-  }>,
+  blocks: QuestionBlockType[],
   intl: $IntlShape,
 }
 
@@ -34,14 +26,14 @@ const SessionTimeline = ({ blocks, intl }: Props) => (
       {blocks.map(block => (
         <div className="block">
           <QuestionBlock
-            key={block.id}
+            // key={block.id}
             showSolutions
             timeLimit={60}
             status={block.status}
-            questions={block.questions.map(question => ({
-              id: question.id,
-              title: question.questionDefinition.title,
-              type: question.questionDefinition.type,
+            questions={block.instances.map(instance => ({
+              id: instance.id,
+              title: instance.question.title,
+              type: instance.question.type,
             }))}
           />
         </div>
