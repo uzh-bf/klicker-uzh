@@ -1,8 +1,15 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import Slider from 'react-rangeslider'
 import { Helmet } from 'react-helmet'
 
 import { createLinks } from '../../lib'
+
+const propTypes = {
+  handleChange: PropTypes.func.isRequired,
+  title: PropTypes.string,
+  value: PropTypes.number,
+}
 
 const defaultProps = {
   title: undefined,
@@ -30,6 +37,7 @@ const ConfusionSlider = ({ title, value, handleChange }) => (
   </div>
 )
 
+ConfusionSlider.propTypes = propTypes
 ConfusionSlider.defaultProps = defaultProps
 
 export default ConfusionSlider

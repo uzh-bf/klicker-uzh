@@ -1,8 +1,15 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import { Checkbox } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
+import { intlShape, FormattedMessage } from 'react-intl'
 
 import ConfusionSection from './ConfusionSection'
+
+const propTypes = {
+  intl: intlShape.isRequired,
+  isActive: PropTypes.bool,
+  handleActiveToggle: PropTypes.func.isRequired,
+}
 
 const defaultProps = {
   isActive: false,
@@ -100,6 +107,7 @@ const ConfusionBarometer = ({ intl, isActive, handleActiveToggle }) => (
   </div>
 )
 
+ConfusionBarometer.propTypes = propTypes
 ConfusionBarometer.defaultProps = defaultProps
 
 export default ConfusionBarometer

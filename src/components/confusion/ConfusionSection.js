@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import {
   LineChart,
   Line,
@@ -8,6 +9,11 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+
+const propTypes = {
+  data: LineChart.propTypes.data.isRequired,
+  title: PropTypes.string.isRequired,
+}
 
 const ConfusionSection = ({ data, title }) => (
   <div className="confusionSection">
@@ -39,5 +45,7 @@ const ConfusionSection = ({ data, title }) => (
     `}</style>
   </div>
 )
+
+ConfusionSection.propTypes = propTypes
 
 export default ConfusionSection
