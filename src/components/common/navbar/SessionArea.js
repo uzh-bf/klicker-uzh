@@ -1,6 +1,11 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import { Button, Divider, Icon, Image, Menu, Popup } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
+
+const propTypes = {
+  sessionId: PropTypes.string.isRequired,
+}
 
 const SessionArea = ({ sessionId }) => {
   const popupTrigger = (
@@ -33,5 +38,7 @@ const SessionArea = ({ sessionId }) => {
     </Popup>
   )
 }
+
+SessionArea.propTypes = propTypes
 
 export default SessionArea

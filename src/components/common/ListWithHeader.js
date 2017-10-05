@@ -1,4 +1,14 @@
 import React from 'react'
+import PropTypes from 'prop-types'
+
+const propTypes = {
+  children: PropTypes.children.isRequired,
+  items: PropTypes.arrayOf(PropTypes.string.isRequired),
+}
+
+const defaultProps = {
+  items: [],
+}
 
 const ListWithHeader = ({ children, items }) => (
   <div>
@@ -27,5 +37,8 @@ const ListWithHeader = ({ children, items }) => (
     `}</style>
   </div>
 )
+
+ListWithHeader.propTypes = propTypes
+ListWithHeader.defaultProps = defaultProps
 
 export default ListWithHeader

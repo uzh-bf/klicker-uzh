@@ -1,14 +1,30 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import { Menu, Sidebar as SemanticSidebar } from 'semantic-ui-react'
 
 import SidebarItem from './SidebarItem'
 
+const propTypes = {
+  activeItem: PropTypes.string,
+  children: PropTypes.children.isRequired,
+  handleSidebarItemClick: PropTypes.func.isRequired,
+  items: PropTypes.arrayOf(
+    PropTypes.shape({
+      href: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+    }),
+  ),
+  visible: PropTypes.bool,
+}
+
 const defaultProps = {
   activeItem: 'questionPool',
+  items: [],
   visible: false,
 }
 
-const Sidebar = ({ activeItem, children, items, visible, handleSidebarItemClick }: Props) => (
+const Sidebar = ({ activeItem, children, items, visible, handleSidebarItemClick }) => (
   <div className="sidebar">
     <SemanticSidebar.Pushable>
       <SemanticSidebar
@@ -64,6 +80,7 @@ const Sidebar = ({ activeItem, children, items, visible, handleSidebarItemClick 
   </div>
 )
 
+Sidebar.propTypes = propTypes
 Sidebar.defaultProps = defaultProps
 
 export default Sidebar

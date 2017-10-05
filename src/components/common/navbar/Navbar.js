@@ -1,9 +1,23 @@
 import React from 'react'
+import PropTypes from 'prop-types'
+import { intlShape } from 'react-intl'
 import { Icon, Menu } from 'semantic-ui-react'
 
 import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'
 import SessionArea from './SessionArea'
+
+const propTypes = {
+  accountShort: PropTypes.string.isRequired,
+  handleSidebarToggle: PropTypes.func.isRequired,
+  intl: intlShape.isRequired,
+  search: PropTypes.shape({
+    handleSearch: PropTypes.func.isRequired,
+    handleSort: PropTypes.func.isRequired,
+  }),
+  sidebarVisible: PropTypes.bool,
+  title: PropTypes.string.isRequired,
+}
 
 const defaultProps = {
   search: undefined,
@@ -102,6 +116,7 @@ const Navbar = ({ accountShort, intl, search, sidebarVisible, title, handleSideb
   </div>
 )
 
+Navbar.propTypes = propTypes
 Navbar.defaultProps = defaultProps
 
 export default Navbar

@@ -1,5 +1,19 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import { Button } from 'semantic-ui-react'
+
+const propTypes = {
+  items: PropTypes.arrayOf(
+    PropTypes.shape({
+      label: PropTypes.string.isRequired,
+      handleClick: PropTypes.func.isRequired,
+    }),
+  ),
+}
+
+const defaultProps = {
+  items: [],
+}
 
 const ActionButton = ({ items }) => (
   <div className="actionButtonWrapper">
@@ -56,5 +70,8 @@ const ActionButton = ({ items }) => (
     `}</style>
   </div>
 )
+
+ActionButton.propTypes = propTypes
+ActionButton.defaultProps = defaultProps
 
 export default ActionButton

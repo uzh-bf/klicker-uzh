@@ -1,6 +1,13 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { Icon } from 'semantic-ui-react'
+
+const propTypes = {
+  children: PropTypes.children.isRequired,
+  collapsed: PropTypes.bool,
+  handleCollapseToggle: PropTypes.func.isRequired,
+}
 
 const defaultProps = {
   collapsed: false,
@@ -52,6 +59,7 @@ const Collapser = ({ children, collapsed, handleCollapseToggle }) => (
   </div>
 )
 
+Collapser.propTypes = propTypes
 Collapser.defaultProps = defaultProps
 
 export default Collapser
