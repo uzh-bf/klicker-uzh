@@ -1,10 +1,12 @@
-export default `
+import css from 'styled-jsx/css'
+
+export default css`
   .react-tagsinput {
     border: 1px solid lightgrey;
     overflow: hidden;
-    padding-left: .5rem;
-    padding-top: .5rem;
-    padding-right: .5rem;
+    padding-left: 0.5rem;
+    padding-top: 0.5rem;
+    padding-right: 0.5rem;
   }
 
   .react-tagsinput--focused {
@@ -17,9 +19,9 @@ export default `
     border: 1px solid grey;
     color: grey;
     display: inline-block;
-    margin-bottom: .5rem;
-    margin-right: .5rem;
-    padding: .7rem;
+    margin-bottom: 0.5rem;
+    margin-right: 0.5rem;
+    padding: 0.7rem;
     text-align: center;
     width: 100%;
   }
@@ -29,10 +31,10 @@ export default `
     border: 0 !important;
     color: #777;
     font-weight: 400;
-    margin-bottom: .5rem !important;
+    margin-bottom: 0.5rem !important;
     margin-top: 1px !important;
     outline: none;
-    padding: .7rem;
+    padding: 0.7rem;
   }
 
   .react-autosuggest__container {
@@ -57,7 +59,7 @@ export default `
   }
 
   .react-autosuggest__input {
-    padding: .5rem !important;
+    padding: 0.5rem !important;
     text-align: left;
   }
 
@@ -67,9 +69,9 @@ export default `
     }
 
     .react-tagsinput-tag {
-      margin-bottom: .5rem;
-      margin-right: .5rem;
-      padding: .5rem;
+      margin-bottom: 0.5rem;
+      margin-right: 0.5rem;
+      padding: 0.5rem;
       text-align: left;
       width: auto;
     }
@@ -84,7 +86,7 @@ export default `
     }
 
     .react-tagsinput-input {
-      padding: .5rem !important;
+      padding: 0.5rem !important;
       text-align: left;
     }
   }
