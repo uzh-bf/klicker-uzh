@@ -28,7 +28,7 @@ class Options extends React.Component {
     const { input: { value, onChange } } = this.props
 
     let newMax = e.target.value
-    if (e.target.value === '') {
+    if (newMax === '') {
       newMax = null
     }
 
@@ -45,7 +45,7 @@ class Options extends React.Component {
     const { input: { value, onChange } } = this.props
 
     let newMin = e.target.value
-    if (e.target.value === '') {
+    if (newMin === '') {
       newMin = null
     }
 
