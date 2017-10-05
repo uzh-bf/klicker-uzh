@@ -1,25 +1,21 @@
-// @flow
-
 import React from 'react'
+import PropTypes from 'prop-types'
 import { Checkbox } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
+import { intlShape, FormattedMessage } from 'react-intl'
 
 import Feedback from './Feedback'
 
-type Props = {
-  data: Array<{
-    content: string,
-    id: string,
-    votes: number,
-  }>,
-  intl: $IntlShape,
-  isActive?: boolean,
-  isPublic?: boolean,
-  handleActiveToggle: () => mixed,
-  handlePublicToggle: () => mixed,
+const propTypes = {
+  data: PropTypes.arrayOf(Feedback.propTypes),
+  handleActiveToggle: PropTypes.func.isRequired,
+  handlePublicToggle: PropTypes.func.isRequired,
+  intl: intlShape.isRequired,
+  isActive: PropTypes.bool.isRequired,
+  isPublic: PropTypes.bool.isRequired,
 }
 
 const defaultProps = {
+  data: [],
   isActive: false,
   isPublic: false,
 }
@@ -31,7 +27,7 @@ const FeedbackChannel = ({
   isPublic,
   handleActiveToggle,
   handlePublicToggle,
-}: Props) => (
+}) => (
   <div className="feedbackChannel">
     <h2>
       <FormattedMessage
@@ -130,6 +126,7 @@ const FeedbackChannel = ({
   </div>
 )
 
+FeedbackChannel.propTypes = propTypes
 FeedbackChannel.defaultProps = defaultProps
 
 export default FeedbackChannel

@@ -1,18 +1,23 @@
-// @flow
-
 import React from 'react'
+import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { Button } from 'semantic-ui-react'
 
-import type { OptionType } from '../../../../types'
-
-type Props = {
-  activeOption: number,
-  options: Array<OptionType>,
-  onOptionClick: (optionNumber: number) => () => mixed,
+const propTypes = {
+  activeOption: PropTypes.number.isRequired,
+  onOptionClick: PropTypes.func.isRequired,
+  options: PropTypes.arrayOf(
+    PropTypes.shape({
+      name: PropTypes.string.isRequired,
+    }),
+  ),
 }
 
-const Options = ({ activeOption, options, onOptionClick }: Props) => (
+const defaultProps = {
+  options: [],
+}
+
+const Options = ({ activeOption, options, onOptionClick }) => (
   <div className="options">
     {options.map((option, index) => (
       <div key={option.name} className={classNames('option', { active: index === activeOption })}>
@@ -46,5 +51,8 @@ const Options = ({ activeOption, options, onOptionClick }: Props) => (
     `}</style>
   </div>
 )
+
+Options.propTypes = propTypes
+Options.defaultProps = defaultProps
 
 export default Options

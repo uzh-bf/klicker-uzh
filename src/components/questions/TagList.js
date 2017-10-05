@@ -1,19 +1,30 @@
-// @flow
-
 import React from 'react'
+import PropTypes from 'prop-types'
 import { graphql } from 'react-apollo'
 import { List } from 'semantic-ui-react'
 
 import { TagListQuery } from '../../queries/queries'
-import type { TagListType } from '../../queries/queries'
 
-type Props = {
-  activeTags: Array<string>,
-  data: TagListType,
-  handleTagClick: () => mixed,
+const propTypes = {
+  activeTags: PropTypes.arrayOf(PropTypes.string),
+  data: PropTypes.shape({
+    error: PropTypes.string,
+    loading: PropTypes.bool.isRequired,
+    tags: PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        name: PropTypes.string.isRequired,
+      }),
+    ),
+  }).isRequired,
+  handleTagClick: PropTypes.func.isRequired,
 }
 
-const TagList = ({ activeTags, data, handleTagClick }: Props) => {
+const defaultProps = {
+  activeTags: [],
+}
+
+const TagList = ({ activeTags, data, handleTagClick }) => {
   if (data.loading) {
     return <div>Loading</div>
   }
@@ -45,5 +56,8 @@ const TagList = ({ activeTags, data, handleTagClick }: Props) => {
     </List>
   )
 }
+
+TagList.propTypes = propTypes
+TagList.defaultProps = defaultProps
 
 export default graphql(TagListQuery)(TagList)
