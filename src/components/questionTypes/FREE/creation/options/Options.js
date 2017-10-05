@@ -115,6 +115,7 @@ class Options extends React.Component {
                 <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />
               </label>
               <input
+                max={value.restrictions.max}
                 name="min"
                 type="number"
                 value={value.restrictions.min}
@@ -126,6 +127,7 @@ class Options extends React.Component {
                 <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />
               </label>
               <input
+                min={value.restrictions.min}
                 name="max"
                 type="number"
                 value={value.restrictions.max}
