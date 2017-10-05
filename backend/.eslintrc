@@ -1,7 +1,7 @@
 {
   "parser": "babel-eslint",
-  "extends": ["airbnb-base", "plugin:flowtype/recommended"],
-  "plugins": ["import", "flowtype"],
+  "extends": ["airbnb-base"],
+  "plugins": ["import"],
   "rules": {
     "semi": 0,
     "no-console": 0,
@@ -10,10 +10,5 @@
   "env": {
     "node": true,
     "jest": true
-  },
-  "settings": {
-    "flowtype": {
-      "onlyFilesWithFlowAnnotation": true
-    }
   }
 }

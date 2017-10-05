@@ -4,10 +4,6 @@
 [![Build Status](https://travis-ci.org/uzh-bf/klicker-api.svg?branch=master)](https://travis-ci.org/uzh-bf/klicker-api)
 [![Docker Repository on Quay](https://quay.io/repository/uzh-bf/klicker-api/status "Docker Repository on Quay")](https://quay.io/repository/uzh-bf/klicker-api)
 
-## Flow-Integration
-
-Install flow-types available for project: `yarn global add flow-typed`, `flow-typed install`
-
 ## JWT
 
 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1OTk1ZWI2Yjc3OGQ5ZWVmMDU5NGFkYTAiLCJwZXJtaXNzaW9ucyI6WyJ1c2VyIiwiYWRtaW4iXX0.6E7SzoVXFstKJ7WUEHZ1NBxQZgmK-bOAKZXEH6n8tao
