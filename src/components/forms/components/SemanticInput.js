@@ -1,44 +1,23 @@
-// @flow
 /* eslint-disable jsx-a11y/label-has-for */
 
 import React from 'react'
+import PropTypes from 'prop-types'
 import { Form, Icon } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
+import { intlShape, FormattedMessage } from 'react-intl'
 
-type Props = {
-  disabled?: boolean,
-  input: {
-    name: string,
-    value: string,
-    onBlur: () => mixed,
-    onChange: () => mixed,
-    onDragStart: () => mixed,
-    onDrop: () => mixed,
-    onFocus: () => mixed,
-  },
-  intl: $IntlShape,
-  label?: string,
-  meta: {
-    active: boolean,
-    asyncValidating: boolean,
-    autofilled: boolean,
-    dirty: boolean,
-    error: ?string,
-    form: string,
-    initial: ?string,
-    invalid: boolean,
-    pristine: boolean,
-    submitFailed: boolean,
-    submitting: boolean,
-    touched: boolean,
-    valid: boolean,
-    visited: boolean,
-    warning: ?string,
-    dispatch: () => mixed,
-  },
-  placeholder?: string,
-  required?: boolean,
-  width?: number,
+const propTypes = {
+  disabled: PropTypes.bool,
+  input: PropTypes.object.isRequired,
+  intl: intlShape.isRequired,
+  label: PropTypes.string,
+  meta: PropTypes.shape({
+    error: PropTypes.string,
+    invalid: PropTypes.bool,
+    touched: PropTypes.bool,
+  }).isRequired,
+  placeholder: PropTypes.string,
+  required: PropTypes.bool,
+  width: PropTypes.number,
 }
 
 const defaultProps = {
@@ -59,7 +38,7 @@ const SemanticInput = ({
   required,
   width,
   ...rest
-}: Props) => {
+}) => {
   // construct field props
   // define an erroneous field as a field that has been touched and is invalid
   const fieldProps = { disabled, error: touched && invalid, required, width }
@@ -99,6 +78,7 @@ const SemanticInput = ({
   )
 }
 
+SemanticInput.propTypes = propTypes
 SemanticInput.defaultProps = defaultProps
 
 export default SemanticInput

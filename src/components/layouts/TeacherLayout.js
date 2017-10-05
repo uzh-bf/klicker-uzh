@@ -1,9 +1,8 @@
-// @flow
-
 import React, { Component } from 'react'
+import PropTypes from 'prop-types'
 import Router from 'next/router'
 import HTML5Backend from 'react-dnd-html5-backend'
-import { FormattedMessage } from 'react-intl'
+import { intlShape, FormattedMessage } from 'react-intl'
 import { Helmet } from 'react-helmet'
 import { DragDropContext } from 'react-dnd'
 
@@ -11,32 +10,22 @@ import Navbar from '../../components/common/navbar/Navbar'
 import Sidebar from '../../components/common/sidebar/Sidebar'
 import { createLinks, initLogging } from '../../lib'
 
+const propTypes = {
+  actionArea: PropTypes.element,
+  children: PropTypes.node.isRequired,
+  intl: intlShape.isRequired,
+  navbar: PropTypes.shape(Navbar.propTypes),
+  pageTitle: PropTypes.string,
+  sidebar: PropTypes.shape(Sidebar.propTypes).isRequired,
+}
+
+const defaultProps = {
+  actionArea: undefined,
+  navbar: undefined,
+  pageTitle: 'TeacherLayout',
+}
+
 class TeacherLayout extends Component {
-  props: {
-    actionArea?: React$Element<*>,
-    children: any,
-    intl: $IntlShape,
-    navbar: {
-      accountShort: string,
-      search?: {
-        query: string,
-        sortBy: string,
-        sortOrder: string,
-        handleSearch: (query: string) => mixed,
-        handleSort: (by: string, order: string) => mixed,
-      },
-      title: string,
-    },
-    pageTitle: string,
-    sidebar: {
-      activeItem: string,
-    },
-  }
-
-  static defaultProps = {
-    actionArea: undefined,
-  }
-
   state = {
     sidebarVisible: false,
   }
@@ -46,7 +35,7 @@ class TeacherLayout extends Component {
     initLogging()
   }
 
-  handleSidebarItemClick = (href: string) => () => {
+  handleSidebarItemClick = href => () => {
     Router.push(href)
   }
 
@@ -161,6 +150,9 @@ class TeacherLayout extends Component {
     )
   }
 }
+
+TeacherLayout.propTypes = propTypes
+TeacherLayout.defaultProps = defaultProps
 
 const withDnD = DragDropContext(HTML5Backend)
 

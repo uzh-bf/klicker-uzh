@@ -1,15 +1,22 @@
-// @flow
-
 import React from 'react'
+import PropTypes from 'prop-types'
 import QuestionDropzone from './QuestionDropzone'
 import QuestionSingle from '../../questions/QuestionSingle'
 
-import type { ArrayInputType, QuestionType } from '../../../types'
-
-type Props = {
-  input: ArrayInputType<QuestionType>,
+const propTypes = {
+  input: PropTypes.shape({
+    onChange: PropTypes.func.isRequired,
+    value: PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        title: PropTypes.string.isRequired,
+        type: PropTypes.string.isRequired,
+      }),
+    ),
+  }).isRequired,
 }
-const SessionTimeline = ({ input: { value, onChange } }: Props) => {
+
+const SessionTimeline = ({ input: { value, onChange } }) => {
   const handleNewQuestion = (newQuestion) => {
     onChange([...value, newQuestion])
   }
@@ -47,5 +54,7 @@ const SessionTimeline = ({ input: { value, onChange } }: Props) => {
     </div>
   )
 }
+
+SessionTimeline.propTypes = propTypes
 
 export default SessionTimeline

@@ -1,17 +1,19 @@
-// @flow
-
 import React from 'react'
+import PropTypes from 'prop-types'
 import { graphql } from 'react-apollo'
 
 import Session from './Session'
 import { SessionListQuery } from '../../queries/queries'
-import type { SessionListType } from '../../queries/queries'
 
-type Props = {
-  data: SessionListType,
+const propTypes = {
+  data: PropTypes.shape({
+    error: PropTypes.string,
+    loading: PropTypes.bool.isRequired,
+    sessions: PropTypes.array,
+  }).isRequired,
 }
 
-const SessionList = ({ data }: Props) => {
+const SessionList = ({ data }) => {
   if (data.loading) {
     return <div>Loading</div>
   }
@@ -36,5 +38,7 @@ const SessionList = ({ data }: Props) => {
     </div>
   )
 }
+
+SessionList.propTypes = propTypes
 
 export default graphql(SessionListQuery)(SessionList)

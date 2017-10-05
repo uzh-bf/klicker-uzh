@@ -1,18 +1,13 @@
-// @flow
-
 import React from 'react'
+import PropTypes from 'prop-types'
 import { Icon } from 'semantic-ui-react'
 
 import QuestionSingle from './QuestionSingle'
 
-type Props = {
-  questions: Array<{
-    id: string,
-    title: string,
-    type: string,
-  }>,
-  showSolutions: boolean,
-  timeLimit: number,
+const propTypes = {
+  questions: PropTypes.arrayOf(PropTypes.shape(QuestionSingle.propTypes)).isRequired,
+  showSolutions: PropTypes.bool,
+  timeLimit: PropTypes.number,
 }
 
 const defaultProps = {
@@ -20,7 +15,7 @@ const defaultProps = {
   timeLimit: 0,
 }
 
-const QuestionBlock = ({ questions, showSolutions, timeLimit }: Props) => (
+const QuestionBlock = ({ questions, showSolutions, timeLimit }) => (
   <div className="questionBlock">
     <div className="timeLimit">
       <Icon name="clock" />
@@ -70,6 +65,7 @@ const QuestionBlock = ({ questions, showSolutions, timeLimit }: Props) => (
   </div>
 )
 
+QuestionBlock.propTypes = propTypes
 QuestionBlock.defaultProps = defaultProps
 
 export default QuestionBlock

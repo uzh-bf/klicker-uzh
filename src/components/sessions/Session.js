@@ -1,24 +1,23 @@
-// @flow
-
 import React from 'react'
+import PropTypes from 'prop-types'
 import moment from 'moment'
 import { Button, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 import QuestionBlock from '../questions/QuestionBlock'
 
-import type { QuestionBlockType } from '../../types'
-
-type Props = {
-  blocks: QuestionBlockType[],
-  createdAt: string,
-  id: string,
-  name: string,
-  status: 'CREATED' | 'RUNNING' | 'COMPLETED',
+const propTypes = {
+  blocks: PropTypes.array,
+  createdAt: PropTypes.string.isRequired,
+  id: PropTypes.string.isRequired,
+  name: PropTypes.string.isRequired,
 }
 
-// const Session = ({ createdAt, name, blocks, id, status }: Props) => {
-const Session = ({ createdAt, name, blocks, id }: Props) => {
+const defaultProps = {
+  blocks: [],
+}
+
+const Session = ({ createdAt, name, blocks, id }) => {
   const statusCases = {
     COMPLETED: {
       disabled: false,
@@ -125,5 +124,8 @@ const Session = ({ createdAt, name, blocks, id }: Props) => {
     </div>
   )
 }
+
+Session.propTypes = propTypes
+Session.defaultProps = defaultProps
 
 export default Session
