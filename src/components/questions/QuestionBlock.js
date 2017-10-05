@@ -5,7 +5,7 @@ import { Icon } from 'semantic-ui-react'
 import QuestionSingle from './QuestionSingle'
 
 const propTypes = {
-  questions: PropTypes.array(QuestionSingle.propTypes).isRequired,
+  questions: PropTypes.arrayOf(PropTypes.shape(QuestionSingle.propTypes)).isRequired,
   showSolutions: PropTypes.bool,
   timeLimit: PropTypes.number,
 }

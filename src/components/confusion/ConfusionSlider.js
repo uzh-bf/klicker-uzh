@@ -7,7 +7,7 @@ import { createLinks } from '../../lib'
 
 const propTypes = {
   handleChange: PropTypes.func.isRequired,
-  title: PropTypes.string,
+  title: PropTypes.element,
   value: PropTypes.number,
 }
 

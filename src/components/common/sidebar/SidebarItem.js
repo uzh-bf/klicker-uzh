@@ -3,8 +3,8 @@ import PropTypes from 'prop-types'
 import { Menu } from 'semantic-ui-react'
 
 const propTypes = {
-  active: PropTypes.boolean,
-  children: PropTypes.children.isRequired,
+  active: PropTypes.bool,
+  children: PropTypes.node.isRequired,
   handleSidebarItemClick: PropTypes.func.isRequired,
   href: PropTypes.string.isRequired,
   name: PropTypes.string.isRequired,

@@ -1,10 +1,11 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 
 import ListWithHeader from '../common/ListWithHeader'
 
 const propTypes = {
-  lastUsed: ListWithHeader.propTypes.lastUsed,
+  lastUsed: PropTypes.array,
 }
 
 const defaultProps = {

@@ -46,7 +46,11 @@ const propTypes = {
   invalid: PropTypes.bool.isRequired,
   onDiscard: PropTypes.func.isRequired,
   options: PropTypes.array,
-  tags: PropTypes.arrayOf(PropTypes.string),
+  tags: PropTypes.arrayOf(
+    PropTypes.shape({
+      name: PropTypes.string.isRequired,
+    }),
+  ),
   title: PropTypes.string.isRequired,
 }
 

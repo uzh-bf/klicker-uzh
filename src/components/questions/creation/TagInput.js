@@ -8,9 +8,13 @@ import { autocompleteRenderInput } from '../../common/Autosuggest'
 const propTypes = {
   input: PropTypes.shape({
     onChange: PropTypes.func.isRequired,
-    value: TagsInput.propTypes.value,
+    value: PropTypes.array,
   }).isRequired,
-  tags: PropTypes.arrayOf(PropTypes.string),
+  tags: PropTypes.arrayOf(
+    PropTypes.shape({
+      name: PropTypes.string.isRequired,
+    }),
+  ),
 }
 
 const defaultProps = {

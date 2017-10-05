@@ -9,7 +9,7 @@ const propTypes = {
     label: PropTypes.string.isRequired,
     onSubmit: PropTypes.func.isRequired,
   }).isRequired,
-  children: PropTypes.children.isRequired,
+  children: PropTypes.node.isRequired,
   links: PropTypes.arrayOf(
     PropTypes.shape({
       href: PropTypes.string.isRequired,

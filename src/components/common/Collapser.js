@@ -4,7 +4,7 @@ import classNames from 'classnames'
 import { Icon } from 'semantic-ui-react'
 
 const propTypes = {
-  children: PropTypes.children.isRequired,
+  children: PropTypes.node.isRequired,
   collapsed: PropTypes.bool,
   handleCollapseToggle: PropTypes.func.isRequired,
 }

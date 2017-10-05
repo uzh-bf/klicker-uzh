@@ -6,12 +6,12 @@ import SidebarItem from './SidebarItem'
 
 const propTypes = {
   activeItem: PropTypes.string,
-  children: PropTypes.children.isRequired,
+  children: PropTypes.node.isRequired,
   handleSidebarItemClick: PropTypes.func.isRequired,
   items: PropTypes.arrayOf(
     PropTypes.shape({
       href: PropTypes.string.isRequired,
-      label: PropTypes.string.isRequired,
+      label: PropTypes.element.isRequired,
       name: PropTypes.string.isRequired,
     }),
   ),

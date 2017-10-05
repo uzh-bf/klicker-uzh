@@ -12,7 +12,7 @@ const propTypes = {
   data: PropTypes.shape({
     error: PropTypes.string,
     loading: PropTypes.bool.isRequired,
-    questions: PropTypes.array.isRequired, // TODO: extend proptypes with schema
+    questions: PropTypes.array, // TODO: extend proptypes with schema
   }).isRequired,
   dropped: PropTypes.arrayOf(PropTypes.string),
   filters: PropTypes.object.isRequired,

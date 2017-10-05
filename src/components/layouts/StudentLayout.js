@@ -9,9 +9,9 @@ import { createLinks, initLogging } from '../../lib'
 import Sidebar from '../common/sidebar/Sidebar'
 
 const propTypes = {
-  children: PropTypes.children.isRequired,
+  children: PropTypes.node.isRequired,
   pageTitle: PropTypes.string,
-  sidebar: Sidebar.propTypes.isRequired,
+  sidebar: PropTypes.shape(Sidebar.propTypes).isRequired,
   title: PropTypes.string.isRequired,
 }
 

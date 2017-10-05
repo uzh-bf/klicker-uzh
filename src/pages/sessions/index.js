@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
-import { intlShape, pageWithIntl, withData } from '../../lib'
+import { intlShape } from 'react-intl'
+import { pageWithIntl, withData } from '../../lib'
 
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import SessionList from '../../components/sessions/SessionList'

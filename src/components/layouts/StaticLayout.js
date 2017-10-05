@@ -5,7 +5,7 @@ import { Helmet } from 'react-helmet'
 import { createLinks, initLogging } from '../../lib'
 
 const propTypes = {
-  children: PropTypes.children.isRequired,
+  children: PropTypes.node.isRequired,
   pageTitle: PropTypes.string,
 }
 

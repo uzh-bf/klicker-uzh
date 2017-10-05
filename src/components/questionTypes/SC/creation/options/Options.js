@@ -9,7 +9,7 @@ import Option from './Option'
 const propTypes = {
   input: PropTypes.shape({
     onChange: PropTypes.func.isRequired,
-    value: PropTypes.arrayOf(Option.propTypes).isRequired,
+    value: PropTypes.arrayOf(PropTypes.shape(Option.propTypes)).isRequired,
   }).isRequired,
 }
 

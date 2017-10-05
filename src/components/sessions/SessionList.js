@@ -7,9 +7,9 @@ import { SessionListQuery } from '../../queries/queries'
 
 const propTypes = {
   data: PropTypes.shape({
-    error: PropTypes.string.isRequired,
+    error: PropTypes.string,
     loading: PropTypes.bool.isRequired,
-    sessions: PropTypes.array.isRequired,
+    sessions: PropTypes.array,
   }).isRequired,
 }
 

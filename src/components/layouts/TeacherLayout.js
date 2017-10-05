@@ -12,15 +12,16 @@ import { createLinks, initLogging } from '../../lib'
 
 const propTypes = {
   actionArea: PropTypes.element,
-  children: PropTypes.children.isRequired,
+  children: PropTypes.node.isRequired,
   intl: intlShape.isRequired,
-  navbar: Navbar.propTypes.isRequired,
+  navbar: PropTypes.shape(Navbar.propTypes),
   pageTitle: PropTypes.string,
-  sidebar: Sidebar.propTypes.isRequired,
+  sidebar: PropTypes.shape(Sidebar.propTypes).isRequired,
 }
 
 const defaultProps = {
   actionArea: undefined,
+  navbar: undefined,
   pageTitle: 'TeacherLayout',
 }
 

@@ -8,7 +8,7 @@ import { TagListQuery } from '../../queries/queries'
 const propTypes = {
   activeTags: PropTypes.arrayOf(PropTypes.string),
   data: PropTypes.shape({
-    error: PropTypes.string.isRequired,
+    error: PropTypes.string,
     loading: PropTypes.bool.isRequired,
     tags: PropTypes.arrayOf(
       PropTypes.shape({
