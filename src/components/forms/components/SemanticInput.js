@@ -1,8 +1,24 @@
 /* eslint-disable jsx-a11y/label-has-for */
 
 import React from 'react'
+import PropTypes from 'prop-types'
 import { Form, Icon } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
+import { intlShape, FormattedMessage } from 'react-intl'
+
+const propTypes = {
+  disabled: PropTypes.bool,
+  input: PropTypes.object.isRequired,
+  intl: intlShape.isRequired,
+  label: PropTypes.string,
+  meta: PropTypes.shape({
+    error: PropTypes.string,
+    invalid: PropTypes.bool,
+    touched: PropTypes.bool,
+  }).isRequired,
+  placeholder: PropTypes.string,
+  required: PropTypes.bool,
+  width: PropTypes.number,
+}
 
 const defaultProps = {
   disabled: false,
@@ -62,6 +78,7 @@ const SemanticInput = ({
   )
 }
 
+SemanticInput.propTypes = propTypes
 SemanticInput.defaultProps = defaultProps
 
 export default SemanticInput

@@ -1,6 +1,20 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import QuestionDropzone from './QuestionDropzone'
 import QuestionSingle from '../../questions/QuestionSingle'
+
+const propTypes = {
+  input: PropTypes.shape({
+    onChange: PropTypes.func.isRequired,
+    value: PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        title: PropTypes.string.isRequired,
+        type: PropTypes.string.isRequired,
+      }),
+    ),
+  }).isRequired,
+}
 
 const SessionTimeline = ({ input: { value, onChange } }) => {
   const handleNewQuestion = (newQuestion) => {
@@ -40,5 +54,7 @@ const SessionTimeline = ({ input: { value, onChange } }) => {
     </div>
   )
 }
+
+SessionTimeline.propTypes = propTypes
 
 export default SessionTimeline

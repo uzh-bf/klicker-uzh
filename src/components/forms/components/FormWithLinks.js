@@ -1,6 +1,26 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import Link from 'next/link'
 import { Button, List } from 'semantic-ui-react'
+
+const propTypes = {
+  button: PropTypes.shape({
+    invalid: PropTypes.bool.isRequired,
+    label: PropTypes.string.isRequired,
+    onSubmit: PropTypes.func.isRequired,
+  }).isRequired,
+  children: PropTypes.children.isRequired,
+  links: PropTypes.arrayOf(
+    PropTypes.shape({
+      href: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+    }),
+  ),
+}
+
+const defaultProps = {
+  links: [],
+}
 
 const FormWithLinks = ({ button, children, links }) => (
   <form className="ui form error">
@@ -74,5 +94,8 @@ const FormWithLinks = ({ button, children, links }) => (
     `}</style>
   </form>
 )
+
+FormWithLinks.propTypes = propTypes
+FormWithLinks.defaultProps = defaultProps
 
 export default FormWithLinks
