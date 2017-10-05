@@ -1,4 +1,10 @@
 import React from 'react'
+import PropTypes from 'prop-types'
+
+const propTypes = {
+  tags: PropTypes.arrayOf(PropTypes.string).isRequired,
+  type: PropTypes.string.isRequired,
+}
 
 const QuestionTags = ({ tags, type }) => (
   <div className="container">
@@ -44,5 +50,7 @@ const QuestionTags = ({ tags, type }) => (
     `}</style>
   </div>
 )
+
+QuestionTags.propTypes = propTypes
 
 export default QuestionTags

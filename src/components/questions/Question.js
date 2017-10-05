@@ -1,11 +1,30 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { DragSource } from 'react-dnd'
 
 import QuestionDetails from './QuestionDetails'
 import QuestionTags from './QuestionTags'
 
+const propTypes = {
+  connectDragSource: PropTypes.func.isRequired,
+  creationMode: PropTypes.bool,
+  draggable: PropTypes.bool,
+  id: PropTypes.string.isRequired,
+  isDragging: PropTypes.bool,
+  lastUsed: PropTypes.array,
+  tags: PropTypes.array,
+  title: PropTypes.string.isRequired,
+  type: PropTypes.string.isRequired,
+  version: PropTypes.number,
+}
+
 const defaultProps = {
+  creationMode: false,
+  draggable: false,
+  isDragging: false,
+  lastUsed: [],
+  tags: [],
   version: 1,
 }
 
@@ -120,6 +139,7 @@ const Question = ({
     </div>,
   )
 
+Question.propTypes = propTypes
 Question.defaultProps = defaultProps
 
 // define the source for DnD

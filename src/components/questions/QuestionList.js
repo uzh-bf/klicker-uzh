@@ -1,10 +1,28 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import moment from 'moment'
 import { graphql } from 'react-apollo'
 
 import Question from './Question'
 import { filterQuestions } from '../../lib/utils/filters'
 import { QuestionListQuery } from '../../queries/queries'
+
+const propTypes = {
+  creationMode: PropTypes.bool,
+  data: PropTypes.shape({
+    error: PropTypes.string,
+    loading: PropTypes.bool.isRequired,
+    questions: PropTypes.array.isRequired, // TODO: extend proptypes with schema
+  }).isRequired,
+  dropped: PropTypes.arrayOf(PropTypes.string),
+  filters: PropTypes.object.isRequired,
+  onQuestionDropped: PropTypes.func.isRequired,
+}
+
+const defaultProps = {
+  creationMode: false,
+  dropped: [],
+}
 
 const QuestionList = ({ data, filters, dropped, onQuestionDropped, creationMode }) => {
   if (data.loading) {
@@ -49,5 +67,8 @@ const QuestionList = ({ data, filters, dropped, onQuestionDropped, creationMode 
     </div>
   )
 }
+
+QuestionList.propTypes = propTypes
+QuestionList.defaultProps = defaultProps
 
 export default graphql(QuestionListQuery)(QuestionList)

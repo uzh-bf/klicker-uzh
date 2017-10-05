@@ -1,8 +1,17 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import TagsInput from 'react-tagsinput'
 import { FormattedMessage } from 'react-intl'
 
 import { autocompleteRenderInput } from '../../common/Autosuggest'
+
+const propTypes = {
+  input: PropTypes.shape({
+    onChange: PropTypes.func.isRequired,
+    value: TagsInput.propTypes.value,
+  }).isRequired,
+  tags: PropTypes.arrayOf(PropTypes.string),
+}
 
 const defaultProps = {
   tags: [],
@@ -22,6 +31,7 @@ const TagInput = ({ tags, input: { value, onChange } }) => (
   </div>
 )
 
+TagInput.propTypes = propTypes
 TagInput.defaultProps = defaultProps
 
 export default TagInput

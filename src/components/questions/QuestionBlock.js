@@ -1,7 +1,14 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import { Icon } from 'semantic-ui-react'
 
 import QuestionSingle from './QuestionSingle'
+
+const propTypes = {
+  questions: PropTypes.array(QuestionSingle.propTypes).isRequired,
+  showSolutions: PropTypes.bool,
+  timeLimit: PropTypes.number,
+}
 
 const defaultProps = {
   showSolutions: false,
@@ -58,6 +65,7 @@ const QuestionBlock = ({ questions, showSolutions, timeLimit }) => (
   </div>
 )
 
+QuestionBlock.propTypes = propTypes
 QuestionBlock.defaultProps = defaultProps
 
 export default QuestionBlock

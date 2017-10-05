@@ -1,5 +1,13 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
+
+const propTypes = {
+  input: PropTypes.shape({
+    onChange: PropTypes.func.isRequired,
+    value: PropTypes.string.isRequired,
+  }).isRequired,
+}
 
 const TitleInput = ({ input: { value, onChange } }) => (
   <div className="field">
@@ -9,5 +17,7 @@ const TitleInput = ({ input: { value, onChange } }) => (
     <input name="questionTitle" type="text" value={value} onChange={onChange} />
   </div>
 )
+
+TitleInput.propTypes = propTypes
 
 export default TitleInput

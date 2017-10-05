@@ -1,4 +1,11 @@
 import React from 'react'
+import PropTypes from 'prop-types'
+
+const propTypes = {
+  id: PropTypes.string.isRequired,
+  title: PropTypes.string.isRequired,
+  type: PropTypes.string.isRequired,
+}
 
 const QuestionSingle = ({ id, type, title }) => (
   <div className="questionSingle">
@@ -29,5 +36,7 @@ const QuestionSingle = ({ id, type, title }) => (
     `}</style>
   </div>
 )
+
+QuestionSingle.propTypes = propTypes
 
 export default QuestionSingle
