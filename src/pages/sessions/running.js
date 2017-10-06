@@ -68,9 +68,7 @@ class Running extends Component {
       )
     }
 
-    // HACK: use the first of all users in the database
-    // TODO: replace this with the data of the currently logged in user
-    const activeUser = data.allUsers[0]
+    const { runningSession } = data.user
 
     return (
       <TeacherLayout
@@ -84,13 +82,13 @@ class Running extends Component {
       >
         <div className="runningSession">
           <div className="sessionProgress">
-            <SessionTimeline intl={intl} blocks={activeUser.activeSession.blocks} />
+            <SessionTimeline intl={intl} blocks={runningSession.blocks} />
           </div>
 
           <div className="confusionBarometer">
             <ConfusionBarometer
               intl={intl}
-              data={activeUser.activeSession.confusion}
+              // data={runningSession.confusion}
               isActive={this.state.confusionActive}
               handleActiveToggle={this.handleConfusionActiveToggle}
             />
@@ -99,7 +97,7 @@ class Running extends Component {
           <div className="feedbackChannel">
             <FeedbackChannel
               intl={intl}
-              data={activeUser.activeSession.feedbacks}
+              data={runningSession.feedbacks}
               isActive={this.state.feedbacksActive}
               isPublic={this.state.feedbacksPublic}
               handleActiveToggle={this.handleFeedbacksActiveToggle}

@@ -28,8 +28,8 @@ class Wrapper extends Component {
 }
 
 const data = [
-  { content: 'hello alex!', id: 'abcd', votes: 100 },
-  { content: 'bla bleh', id: 'defg', votes: 40 },
+  { content: 'hello alex!', key: 0, votes: 100 },
+  { content: 'bla bleh', key: 1, votes: 40 },
 ]
 
 storiesOf('feedbacks', module)

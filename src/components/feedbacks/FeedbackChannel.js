@@ -64,9 +64,9 @@ const FeedbackChannel = ({
 
     {isActive && (
       <div className="feedbacks">
-        {data.map(({ content, id, votes }) => (
+        {data.map(({ content, key, votes }) => (
           <div className="feedback">
-            <Feedback key={id} content={content} votes={votes} />
+            <Feedback key={key} content={content} votes={votes} />
           </div>
         ))}
       </div>

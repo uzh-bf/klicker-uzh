@@ -8,6 +8,7 @@ const question = {
 }
 
 const questionBlock = {
+  key: 0,
   questions: [question, question, question],
   showSolutions: false,
   timeLimit: 60,
@@ -23,7 +24,7 @@ const question2 = {
 }
 
 const questionBlock2 = {
-  id: '4c821db7-0940-4a24-b31a-7969104bbc9f',
+  key: 1,
   instances: [question2, question2, question2],
   showSolutions: false,
   timeLimit: 60,

@@ -63,20 +63,15 @@ export const SessionListQuery = gql`
 
 export const RunningSessionQuery = gql`
   {
-    allUsers {
-      activeSession {
-        confusion(orderBy: createdAt_DESC) {
-          comprehensibility
-          difficulty
-          createdAt
-        }
-        feedbacks(orderBy: votes_DESC) {
-          id
+    user {
+      runningSession {
+        feedbacks {
+          key
           content
           votes
         }
         blocks {
-          id
+          key
           status
           instances {
             id
