@@ -1,13 +1,16 @@
 /* eslint-disable import/no-extraneous-dependencies, react/prop-types */
 
-import React, { Component } from 'react'
+import React from 'react'
 import { storiesOf } from '@storybook/react'
 import { action } from '@storybook/addon-actions'
+
+import ActionButton from './ActionButton'
+import ListWithHeader from './ListWithHeader'
 
 import Collapser from './Collapser'
 
 // create a stateful wrapper for the component
-class Wrapper extends Component {
+class CollapserWrapper extends React.Component {
   state = {
     collapsed: true,
   }
@@ -41,13 +44,19 @@ const content = (
   </div>
 )
 
-storiesOf('Collapser', module)
-  .add('Collapser', () => <Wrapper>{content}</Wrapper>)
-  .add('Collapser (collapsed)', () => (
-    <Collapser collapsed handleCollapseToggle={() => action('collapser-clicked')}>
-      {content}
-    </Collapser>
+storiesOf('common', module)
+  .add('ActionButton', () => (
+    <ActionButton
+      items={[
+        { handleClick: () => action('click abcd'), label: 'abcd' },
+        { handleClick: () => action('click cdef'), label: 'cdef' },
+      ]}
+    />
   ))
+  .add('ListWithHeader', () => (
+    <ListWithHeader items={['abcd', 'cdef']}>hello world</ListWithHeader>
+  ))
+  .add('Collapser', () => <CollapserWrapper>{content}</CollapserWrapper>)
   .add('Collapser (extended)', () => (
     <Collapser handleCollapseToggle={() => action('collapser-clicked')}>{content}</Collapser>
   ))

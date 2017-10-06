@@ -11,7 +11,7 @@ import SessionArea from './SessionArea'
 
 import { intlMock } from '../../../../.storybook/utils'
 
-storiesOf('Navbar', module)
+storiesOf('navbar', module)
   .add('Navbar', () => (
     <Navbar
       accountShort="AW"

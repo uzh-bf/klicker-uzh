@@ -32,7 +32,7 @@ const data = [
   { content: 'bla bleh', id: 'defg', votes: 40 },
 ]
 
-storiesOf('FeedbackChannel', module)
+storiesOf('feedbacks', module)
   .add('FeedbackChannel', () => <Wrapper data={data} />)
   .add('FeedbackChannel (isActive)', () => (
     <FeedbackChannel

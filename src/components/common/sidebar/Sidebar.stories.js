@@ -12,7 +12,7 @@ const items = [
   { href: 'i2', label: 'Item 2', name: 'item2' },
 ]
 
-storiesOf('Sidebar', module)
+storiesOf('sidebar', module)
   .add('Sidebar (visible)', () => (
     <Sidebar
       visible

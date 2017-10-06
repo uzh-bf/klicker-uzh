@@ -1,646 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Storyshots ActionButton default 1`] = `
-<div
-  className="actionButtonWrapper"
-  data-jsx={3236727444}
->
-  <div
-    className="actionButton"
-    data-jsx={3236727444}
-  >
-    <button
-      className="ui large circular icon primary button"
-      disabled={undefined}
-      onClick={[Function]}
-      role="button"
-      tabIndex={undefined}
-    >
-      <i
-        aria-hidden="true"
-        className="plus icon"
-      />
-    </button>
-  </div>
-  <div
-    className="ui vertical text menu buttonMenu"
-    data-jsx={3236727444}
-  >
-    <button
-      className="item"
-      data-jsx={3236727444}
-      onClick={[Function]}
-    >
-      abcd
-    </button>
-    <button
-      className="item"
-      data-jsx={3236727444}
-      onClick={[Function]}
-    >
-      cdef
-    </button>
-  </div>
-</div>
-`;
-
-exports[`Storyshots Collapser collapsed 1`] = `
-<div
-  className="collapser"
-  data-jsx={1840183473}
->
-  <div
-    className="content collapsed"
-    data-jsx={1840183473}
-  >
-    <div>
-      <p>
-        hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
-      </p>
-      <p>
-        wow, is this a long question. i could never have imagined seeing such a question.
-      </p>
-      <p>
-        hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
-      </p>
-      <p>
-        wow, is this a long question. i could never have imagined seeing such a question.
-      </p>
-    </div>
-  </div>
-  <div
-    className="collapse"
-    data-jsx={1840183473}
-  >
-    <i
-      aria-hidden="true"
-      className="angle double down icon"
-      onClick={[Function]}
-    />
-  </div>
-</div>
-`;
-
-exports[`Storyshots Collapser default 1`] = `
-<div
-  className="collapser"
-  data-jsx={1840183473}
->
-  <div
-    className="content collapsed"
-    data-jsx={1840183473}
-  >
-    <div>
-      <p>
-        hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
-      </p>
-      <p>
-        wow, is this a long question. i could never have imagined seeing such a question.
-      </p>
-      <p>
-        hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
-      </p>
-      <p>
-        wow, is this a long question. i could never have imagined seeing such a question.
-      </p>
-    </div>
-  </div>
-  <div
-    className="collapse"
-    data-jsx={1840183473}
-  >
-    <i
-      aria-hidden="true"
-      className="angle double down icon"
-      onClick={[Function]}
-    />
-  </div>
-</div>
-`;
-
-exports[`Storyshots Collapser extended 1`] = `
-<div
-  className="collapser"
-  data-jsx={1840183473}
->
-  <div
-    className="content"
-    data-jsx={1840183473}
-  >
-    <div>
-      <p>
-        hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
-      </p>
-      <p>
-        wow, is this a long question. i could never have imagined seeing such a question.
-      </p>
-      <p>
-        hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
-      </p>
-      <p>
-        wow, is this a long question. i could never have imagined seeing such a question.
-      </p>
-    </div>
-  </div>
-  <div
-    className="collapse"
-    data-jsx={1840183473}
-  >
-    <i
-      aria-hidden="true"
-      className="angle double up icon"
-      onClick={[Function]}
-    />
-  </div>
-</div>
-`;
-
-exports[`Storyshots ConfusionBarometer default 1`] = `
-<div
-  className="confusionBarometer"
-  data-jsx={3527990463}
->
-  <h2
-    data-jsx={3527990463}
-  >
-    <span>
-      Confusion-Barometer
-    </span>
-  </h2>
-  <div
-    className="ui toggle checkbox"
-    onChange={[Function]}
-    onClick={[Function]}
-    onMouseDown={[Function]}
-  >
-    <input
-      checked={false}
-      className="hidden"
-      name={undefined}
-      readOnly={true}
-      tabIndex={0}
-      type="checkbox"
-      value={false}
-    />
-    <label>
-      Activated
-    </label>
-  </div>
-</div>
-`;
-
-exports[`Storyshots ConfusionSlider default 1`] = `
-<div
-  className="confusionSlider"
-  data-jsx={219419674}
->
-  <div
-    className="title"
-    data-jsx={219419674}
-  >
-    <h2>
-      Speed
-    </h2>
-  </div>
-  <div
-    className="slider"
-    data-jsx={219419674}
-  >
-    <div
-      aria-orientation="horizontal"
-      aria-valuemax={50}
-      aria-valuemin={-50}
-      aria-valuenow={10}
-      className="rangeslider rangeslider-horizontal"
-      onMouseDown={[Function]}
-      onMouseUp={[Function]}
-      onTouchEnd={[Function]}
-      onTouchStart={[Function]}
-    >
-      <div
-        className="rangeslider__fill"
-        style={
-          Object {
-            "width": "0px",
-          }
-        }
-      />
-      <div
-        className="rangeslider__handle"
-        onKeyDown={[Function]}
-        onMouseDown={[Function]}
-        onTouchEnd={[Function]}
-        onTouchMove={[Function]}
-        style={
-          Object {
-            "left": "0px",
-          }
-        }
-        tabIndex={0}
-      >
-        <div
-          className="rangeslider__handle-label"
-        >
-          
-        </div>
-      </div>
-      <ul
-        className="rangeslider__labels"
-      />
-    </div>
-  </div>
-</div>
-`;
-
-exports[`Storyshots FeedbackChannel default 1`] = `
-<div
-  className="feedbackChannel"
-  data-jsx={3242351590}
->
-  <h2
-    data-jsx={3242351590}
-  >
-    <span>
-      Feedback-Channel
-    </span>
-  </h2>
-  <div
-    className="toggle"
-    data-jsx={3242351590}
-  >
-    <div
-      className="ui toggle checkbox"
-      onChange={[Function]}
-      onClick={[Function]}
-      onMouseDown={[Function]}
-    >
-      <input
-        checked={false}
-        className="hidden"
-        name={undefined}
-        readOnly={true}
-        tabIndex={0}
-        type="checkbox"
-        value={false}
-      />
-      <label>
-        Activated
-      </label>
-    </div>
-  </div>
-  <div
-    className="toggle publicationToggle"
-    data-jsx={3242351590}
-  >
-    <div
-      className="ui disabled toggle checkbox publishCheckbox"
-      onChange={[Function]}
-      onClick={[Function]}
-      onMouseDown={[Function]}
-    >
-      <input
-        checked={false}
-        className="hidden"
-        name={undefined}
-        readOnly={true}
-        tabIndex={-1}
-        type="checkbox"
-        value={false}
-      />
-      <label>
-        Publish questions
-      </label>
-    </div>
-  </div>
-</div>
-`;
-
-exports[`Storyshots FeedbackChannel isActive 1`] = `
-<div
-  className="feedbackChannel"
-  data-jsx={3242351590}
->
-  <h2
-    data-jsx={3242351590}
-  >
-    <span>
-      Feedback-Channel
-    </span>
-  </h2>
-  <div
-    className="toggle"
-    data-jsx={3242351590}
-  >
-    <div
-      className="ui checked toggle checkbox"
-      onChange={[Function]}
-      onClick={[Function]}
-      onMouseDown={[Function]}
-    >
-      <input
-        checked={true}
-        className="hidden"
-        name={undefined}
-        readOnly={true}
-        tabIndex={0}
-        type="checkbox"
-        value={true}
-      />
-      <label>
-        Activated
-      </label>
-    </div>
-  </div>
-  <div
-    className="toggle publicationToggle"
-    data-jsx={3242351590}
-  >
-    <div
-      className="ui toggle checkbox publishCheckbox"
-      onChange={[Function]}
-      onClick={[Function]}
-      onMouseDown={[Function]}
-    >
-      <input
-        checked={false}
-        className="hidden"
-        name={undefined}
-        readOnly={true}
-        tabIndex={0}
-        type="checkbox"
-        value={false}
-      />
-      <label>
-        Publish questions
-      </label>
-    </div>
-  </div>
-  <div
-    className="feedbacks"
-    data-jsx={3242351590}
-  >
-    <div
-      className="feedback"
-      data-jsx={3242351590}
-    >
-      <div
-        className="feedback"
-        data-jsx={3449085289}
-      >
-        <div
-          className="content"
-          data-jsx={3449085289}
-        >
-          hello alex!
-        </div>
-        <div
-          className="delete"
-          data-jsx={3449085289}
-        >
-          <button
-            className="ui basic fluid icon button"
-            disabled={undefined}
-            onClick={[Function]}
-            role="button"
-            tabIndex={undefined}
-          >
-            <i
-              aria-hidden="true"
-              className="trash outline icon"
-            />
-          </button>
-        </div>
-        <div
-          className="votes"
-          data-jsx={3449085289}
-        >
-          +
-          100
-        </div>
-      </div>
-    </div>
-    <div
-      className="feedback"
-      data-jsx={3242351590}
-    >
-      <div
-        className="feedback"
-        data-jsx={3449085289}
-      >
-        <div
-          className="content"
-          data-jsx={3449085289}
-        >
-          bla bleh
-        </div>
-        <div
-          className="delete"
-          data-jsx={3449085289}
-        >
-          <button
-            className="ui basic fluid icon button"
-            disabled={undefined}
-            onClick={[Function]}
-            role="button"
-            tabIndex={undefined}
-          >
-            <i
-              aria-hidden="true"
-              className="trash outline icon"
-            />
-          </button>
-        </div>
-        <div
-          className="votes"
-          data-jsx={3449085289}
-        >
-          +
-          40
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-`;
-
-exports[`Storyshots FeedbackChannel isPublic 1`] = `
-<div
-  className="feedbackChannel"
-  data-jsx={3242351590}
->
-  <h2
-    data-jsx={3242351590}
-  >
-    <span>
-      Feedback-Channel
-    </span>
-  </h2>
-  <div
-    className="toggle"
-    data-jsx={3242351590}
-  >
-    <div
-      className="ui checked toggle checkbox"
-      onChange={[Function]}
-      onClick={[Function]}
-      onMouseDown={[Function]}
-    >
-      <input
-        checked={true}
-        className="hidden"
-        name={undefined}
-        readOnly={true}
-        tabIndex={0}
-        type="checkbox"
-        value={true}
-      />
-      <label>
-        Activated
-      </label>
-    </div>
-  </div>
-  <div
-    className="toggle publicationToggle"
-    data-jsx={3242351590}
-  >
-    <div
-      className="ui checked toggle checkbox publishCheckbox"
-      onChange={[Function]}
-      onClick={[Function]}
-      onMouseDown={[Function]}
-    >
-      <input
-        checked={true}
-        className="hidden"
-        name={undefined}
-        readOnly={true}
-        tabIndex={0}
-        type="checkbox"
-        value={true}
-      />
-      <label>
-        Publish questions
-      </label>
-    </div>
-  </div>
-  <div
-    className="feedbacks"
-    data-jsx={3242351590}
-  >
-    <div
-      className="feedback"
-      data-jsx={3242351590}
-    >
-      <div
-        className="feedback"
-        data-jsx={3449085289}
-      >
-        <div
-          className="content"
-          data-jsx={3449085289}
-        >
-          hello alex!
-        </div>
-        <div
-          className="delete"
-          data-jsx={3449085289}
-        >
-          <button
-            className="ui basic fluid icon button"
-            disabled={undefined}
-            onClick={[Function]}
-            role="button"
-            tabIndex={undefined}
-          >
-            <i
-              aria-hidden="true"
-              className="trash outline icon"
-            />
-          </button>
-        </div>
-        <div
-          className="votes"
-          data-jsx={3449085289}
-        >
-          +
-          100
-        </div>
-      </div>
-    </div>
-    <div
-      className="feedback"
-      data-jsx={3242351590}
-    >
-      <div
-        className="feedback"
-        data-jsx={3449085289}
-      >
-        <div
-          className="content"
-          data-jsx={3449085289}
-        >
-          bla bleh
-        </div>
-        <div
-          className="delete"
-          data-jsx={3449085289}
-        >
-          <button
-            className="ui basic fluid icon button"
-            disabled={undefined}
-            onClick={[Function]}
-            role="button"
-            tabIndex={undefined}
-          >
-            <i
-              aria-hidden="true"
-              className="trash outline icon"
-            />
-          </button>
-        </div>
-        <div
-          className="votes"
-          data-jsx={3449085289}
-        >
-          +
-          40
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-`;
-
-exports[`Storyshots ListWithHeader default 1`] = `
-<div
-  data-jsx={3358450463}
->
-  <h3
-    className="listHeader"
-    data-jsx={3358450463}
-  >
-    hello world
-  </h3>
-  <ul
-    className="list"
-    data-jsx={3358450463}
-  >
-    <li
-      className="listItem"
-      data-jsx={3358450463}
-    >
-      abcd
-    </li>
-    <li
-      className="listItem"
-      data-jsx={3358450463}
-    >
-      cdef
-    </li>
-  </ul>
-</div>
-`;
-
 exports[`Storyshots QuestionBlock default 1`] = `
 <div
   className="questionBlock"
@@ -1392,4 +751,1478 @@ exports[`Storyshots SessionTimeline default 1`] = `
     </button>
   </div>
 </div>
+`;
+
+exports[`Storyshots common ActionButton 1`] = `
+<div
+  className="actionButtonWrapper"
+  data-jsx={3236727444}
+>
+  <div
+    className="actionButton"
+    data-jsx={3236727444}
+  >
+    <button
+      className="ui large circular icon primary button"
+      disabled={undefined}
+      onClick={[Function]}
+      role="button"
+      tabIndex={undefined}
+    >
+      <i
+        aria-hidden="true"
+        className="plus icon"
+      />
+    </button>
+  </div>
+  <div
+    className="ui vertical text menu buttonMenu"
+    data-jsx={3236727444}
+  >
+    <button
+      className="item"
+      data-jsx={3236727444}
+      onClick={[Function]}
+    >
+      abcd
+    </button>
+    <button
+      className="item"
+      data-jsx={3236727444}
+      onClick={[Function]}
+    >
+      cdef
+    </button>
+  </div>
+</div>
+`;
+
+exports[`Storyshots common Collapser (extended) 1`] = `
+<div
+  className="collapser"
+  data-jsx={1840183473}
+>
+  <div
+    className="content"
+    data-jsx={1840183473}
+  >
+    <div>
+      <p>
+        hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
+      </p>
+      <p>
+        wow, is this a long question. i could never have imagined seeing such a question.
+      </p>
+      <p>
+        hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
+      </p>
+      <p>
+        wow, is this a long question. i could never have imagined seeing such a question.
+      </p>
+    </div>
+  </div>
+  <div
+    className="collapse"
+    data-jsx={1840183473}
+  >
+    <i
+      aria-hidden="true"
+      className="angle double up icon"
+      onClick={[Function]}
+    />
+  </div>
+</div>
+`;
+
+exports[`Storyshots common Collapser 1`] = `
+<div
+  className="collapser"
+  data-jsx={1840183473}
+>
+  <div
+    className="content collapsed"
+    data-jsx={1840183473}
+  >
+    <div>
+      <p>
+        hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
+      </p>
+      <p>
+        wow, is this a long question. i could never have imagined seeing such a question.
+      </p>
+      <p>
+        hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long. the end is even hidden at the beginning.
+      </p>
+      <p>
+        wow, is this a long question. i could never have imagined seeing such a question.
+      </p>
+    </div>
+  </div>
+  <div
+    className="collapse"
+    data-jsx={1840183473}
+  >
+    <i
+      aria-hidden="true"
+      className="angle double down icon"
+      onClick={[Function]}
+    />
+  </div>
+</div>
+`;
+
+exports[`Storyshots common ListWithHeader 1`] = `
+<div
+  data-jsx={3358450463}
+>
+  <h3
+    className="listHeader"
+    data-jsx={3358450463}
+  >
+    hello world
+  </h3>
+  <ul
+    className="list"
+    data-jsx={3358450463}
+  >
+    <li
+      className="listItem"
+      data-jsx={3358450463}
+    >
+      abcd
+    </li>
+    <li
+      className="listItem"
+      data-jsx={3358450463}
+    >
+      cdef
+    </li>
+  </ul>
+</div>
+`;
+
+exports[`Storyshots confusion ConfusionBarometer 1`] = `
+<div
+  className="confusionBarometer"
+  data-jsx={3527990463}
+>
+  <h2
+    data-jsx={3527990463}
+  >
+    <span>
+      Confusion-Barometer
+    </span>
+  </h2>
+  <div
+    className="ui toggle checkbox"
+    onChange={[Function]}
+    onClick={[Function]}
+    onMouseDown={[Function]}
+  >
+    <input
+      checked={false}
+      className="hidden"
+      name={undefined}
+      readOnly={true}
+      tabIndex={0}
+      type="checkbox"
+      value={false}
+    />
+    <label>
+      Activated
+    </label>
+  </div>
+</div>
+`;
+
+exports[`Storyshots confusion ConfusionSlider 1`] = `
+<div
+  className="confusionSlider"
+  data-jsx={219419674}
+>
+  <div
+    className="title"
+    data-jsx={219419674}
+  >
+    <h2>
+      Speed
+    </h2>
+  </div>
+  <div
+    className="slider"
+    data-jsx={219419674}
+  >
+    <div
+      aria-orientation="horizontal"
+      aria-valuemax={50}
+      aria-valuemin={-50}
+      aria-valuenow={10}
+      className="rangeslider rangeslider-horizontal"
+      onMouseDown={[Function]}
+      onMouseUp={[Function]}
+      onTouchEnd={[Function]}
+      onTouchStart={[Function]}
+    >
+      <div
+        className="rangeslider__fill"
+        style={
+          Object {
+            "width": "0px",
+          }
+        }
+      />
+      <div
+        className="rangeslider__handle"
+        onKeyDown={[Function]}
+        onMouseDown={[Function]}
+        onTouchEnd={[Function]}
+        onTouchMove={[Function]}
+        style={
+          Object {
+            "left": "0px",
+          }
+        }
+        tabIndex={0}
+      >
+        <div
+          className="rangeslider__handle-label"
+        >
+          
+        </div>
+      </div>
+      <ul
+        className="rangeslider__labels"
+      />
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots feedbacks Feedback 1`] = `
+<div
+  className="feedback"
+  data-jsx={3449085289}
+>
+  <div
+    className="content"
+    data-jsx={3449085289}
+  >
+    hello world
+  </div>
+  <div
+    className="delete"
+    data-jsx={3449085289}
+  >
+    <button
+      className="ui basic fluid icon button"
+      disabled={undefined}
+      onClick={[Function]}
+      role="button"
+      tabIndex={undefined}
+    >
+      <i
+        aria-hidden="true"
+        className="trash outline icon"
+      />
+    </button>
+  </div>
+  <div
+    className="votes"
+    data-jsx={3449085289}
+  >
+    +
+    100
+  </div>
+</div>
+`;
+
+exports[`Storyshots feedbacks FeedbackChannel (isActive) 1`] = `
+<div
+  className="feedbackChannel"
+  data-jsx={3242351590}
+>
+  <h2
+    data-jsx={3242351590}
+  >
+    <span>
+      Feedback-Channel
+    </span>
+  </h2>
+  <div
+    className="toggle"
+    data-jsx={3242351590}
+  >
+    <div
+      className="ui checked toggle checkbox"
+      onChange={[Function]}
+      onClick={[Function]}
+      onMouseDown={[Function]}
+    >
+      <input
+        checked={true}
+        className="hidden"
+        name={undefined}
+        readOnly={true}
+        tabIndex={0}
+        type="checkbox"
+        value={true}
+      />
+      <label>
+        Activated
+      </label>
+    </div>
+  </div>
+  <div
+    className="toggle publicationToggle"
+    data-jsx={3242351590}
+  >
+    <div
+      className="ui toggle checkbox publishCheckbox"
+      onChange={[Function]}
+      onClick={[Function]}
+      onMouseDown={[Function]}
+    >
+      <input
+        checked={false}
+        className="hidden"
+        name={undefined}
+        readOnly={true}
+        tabIndex={0}
+        type="checkbox"
+        value={false}
+      />
+      <label>
+        Publish questions
+      </label>
+    </div>
+  </div>
+  <div
+    className="feedbacks"
+    data-jsx={3242351590}
+  >
+    <div
+      className="feedback"
+      data-jsx={3242351590}
+    >
+      <div
+        className="feedback"
+        data-jsx={3449085289}
+      >
+        <div
+          className="content"
+          data-jsx={3449085289}
+        >
+          hello alex!
+        </div>
+        <div
+          className="delete"
+          data-jsx={3449085289}
+        >
+          <button
+            className="ui basic fluid icon button"
+            disabled={undefined}
+            onClick={[Function]}
+            role="button"
+            tabIndex={undefined}
+          >
+            <i
+              aria-hidden="true"
+              className="trash outline icon"
+            />
+          </button>
+        </div>
+        <div
+          className="votes"
+          data-jsx={3449085289}
+        >
+          +
+          100
+        </div>
+      </div>
+    </div>
+    <div
+      className="feedback"
+      data-jsx={3242351590}
+    >
+      <div
+        className="feedback"
+        data-jsx={3449085289}
+      >
+        <div
+          className="content"
+          data-jsx={3449085289}
+        >
+          bla bleh
+        </div>
+        <div
+          className="delete"
+          data-jsx={3449085289}
+        >
+          <button
+            className="ui basic fluid icon button"
+            disabled={undefined}
+            onClick={[Function]}
+            role="button"
+            tabIndex={undefined}
+          >
+            <i
+              aria-hidden="true"
+              className="trash outline icon"
+            />
+          </button>
+        </div>
+        <div
+          className="votes"
+          data-jsx={3449085289}
+        >
+          +
+          40
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots feedbacks FeedbackChannel (isPublic) 1`] = `
+<div
+  className="feedbackChannel"
+  data-jsx={3242351590}
+>
+  <h2
+    data-jsx={3242351590}
+  >
+    <span>
+      Feedback-Channel
+    </span>
+  </h2>
+  <div
+    className="toggle"
+    data-jsx={3242351590}
+  >
+    <div
+      className="ui checked toggle checkbox"
+      onChange={[Function]}
+      onClick={[Function]}
+      onMouseDown={[Function]}
+    >
+      <input
+        checked={true}
+        className="hidden"
+        name={undefined}
+        readOnly={true}
+        tabIndex={0}
+        type="checkbox"
+        value={true}
+      />
+      <label>
+        Activated
+      </label>
+    </div>
+  </div>
+  <div
+    className="toggle publicationToggle"
+    data-jsx={3242351590}
+  >
+    <div
+      className="ui checked toggle checkbox publishCheckbox"
+      onChange={[Function]}
+      onClick={[Function]}
+      onMouseDown={[Function]}
+    >
+      <input
+        checked={true}
+        className="hidden"
+        name={undefined}
+        readOnly={true}
+        tabIndex={0}
+        type="checkbox"
+        value={true}
+      />
+      <label>
+        Publish questions
+      </label>
+    </div>
+  </div>
+  <div
+    className="feedbacks"
+    data-jsx={3242351590}
+  >
+    <div
+      className="feedback"
+      data-jsx={3242351590}
+    >
+      <div
+        className="feedback"
+        data-jsx={3449085289}
+      >
+        <div
+          className="content"
+          data-jsx={3449085289}
+        >
+          hello alex!
+        </div>
+        <div
+          className="delete"
+          data-jsx={3449085289}
+        >
+          <button
+            className="ui basic fluid icon button"
+            disabled={undefined}
+            onClick={[Function]}
+            role="button"
+            tabIndex={undefined}
+          >
+            <i
+              aria-hidden="true"
+              className="trash outline icon"
+            />
+          </button>
+        </div>
+        <div
+          className="votes"
+          data-jsx={3449085289}
+        >
+          +
+          100
+        </div>
+      </div>
+    </div>
+    <div
+      className="feedback"
+      data-jsx={3242351590}
+    >
+      <div
+        className="feedback"
+        data-jsx={3449085289}
+      >
+        <div
+          className="content"
+          data-jsx={3449085289}
+        >
+          bla bleh
+        </div>
+        <div
+          className="delete"
+          data-jsx={3449085289}
+        >
+          <button
+            className="ui basic fluid icon button"
+            disabled={undefined}
+            onClick={[Function]}
+            role="button"
+            tabIndex={undefined}
+          >
+            <i
+              aria-hidden="true"
+              className="trash outline icon"
+            />
+          </button>
+        </div>
+        <div
+          className="votes"
+          data-jsx={3449085289}
+        >
+          +
+          40
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots feedbacks FeedbackChannel 1`] = `
+<div
+  className="feedbackChannel"
+  data-jsx={3242351590}
+>
+  <h2
+    data-jsx={3242351590}
+  >
+    <span>
+      Feedback-Channel
+    </span>
+  </h2>
+  <div
+    className="toggle"
+    data-jsx={3242351590}
+  >
+    <div
+      className="ui toggle checkbox"
+      onChange={[Function]}
+      onClick={[Function]}
+      onMouseDown={[Function]}
+    >
+      <input
+        checked={false}
+        className="hidden"
+        name={undefined}
+        readOnly={true}
+        tabIndex={0}
+        type="checkbox"
+        value={false}
+      />
+      <label>
+        Activated
+      </label>
+    </div>
+  </div>
+  <div
+    className="toggle publicationToggle"
+    data-jsx={3242351590}
+  >
+    <div
+      className="ui disabled toggle checkbox publishCheckbox"
+      onChange={[Function]}
+      onClick={[Function]}
+      onMouseDown={[Function]}
+    >
+      <input
+        checked={false}
+        className="hidden"
+        name={undefined}
+        readOnly={true}
+        tabIndex={-1}
+        type="checkbox"
+        value={false}
+      />
+      <label>
+        Publish questions
+      </label>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots forms LoginForm 1`] = `
+<form
+  className="ui form error"
+  data-jsx={2063282003}
+>
+  <div
+    className="required field"
+  >
+    <label
+      data-jsx={1632341904}
+      forHtml="email"
+    >
+      Email
+    </label>
+    <input
+      data-jsx={1632341904}
+      name="email"
+      onBlur={[Function]}
+      onChange={[Function]}
+      onDragStart={[Function]}
+      onDrop={[Function]}
+      onFocus={[Function]}
+      placeholder="Email"
+      type="email"
+      value=""
+    />
+  </div>
+  <div
+    className="required field"
+  >
+    <label
+      data-jsx={1632341904}
+      forHtml="password"
+    >
+      Password
+    </label>
+    <input
+      data-jsx={1632341904}
+      name="password"
+      onBlur={[Function]}
+      onChange={[Function]}
+      onDragStart={[Function]}
+      onDrop={[Function]}
+      onFocus={[Function]}
+      placeholder="Password"
+      type="password"
+      value=""
+    />
+  </div>
+  <div
+    className="actionArea"
+    data-jsx={2063282003}
+  >
+    <button
+      className="ui primary disabled button semanticButton"
+      disabled={true}
+      onClick={[Function]}
+      role="button"
+      tabIndex={-1}
+      type="submit"
+    >
+      Submit
+    </button>
+    <div
+      className="links"
+      data-jsx={2063282003}
+    >
+      <div
+        className="ui list"
+        role="list"
+      >
+        <div
+          className="item"
+          data-value={undefined}
+          onClick={[Function]}
+          role="listitem"
+        >
+          <a
+            data-jsx={2063282003}
+            href="/user/resetPassword"
+            onClick={[Function]}
+          >
+            Forgot password?
+          </a>
+        </div>
+        <div
+          className="item"
+          data-value={undefined}
+          onClick={[Function]}
+          role="listitem"
+        >
+          <a
+            data-jsx={2063282003}
+            href="/user/aaiLogin"
+            onClick={[Function]}
+          >
+            Login with AAI
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+`;
+
+exports[`Storyshots forms PasswortResetForm 1`] = `
+<form
+  className="ui form error"
+  data-jsx={2063282003}
+>
+  <div
+    className="required field"
+  >
+    <label
+      data-jsx={1632341904}
+      forHtml="email"
+    >
+      Email
+    </label>
+    <input
+      data-jsx={1632341904}
+      name="email"
+      onBlur={[Function]}
+      onChange={[Function]}
+      onDragStart={[Function]}
+      onDrop={[Function]}
+      onFocus={[Function]}
+      placeholder="Email"
+      type="email"
+      value=""
+    />
+  </div>
+  <div
+    className="actionArea"
+    data-jsx={2063282003}
+  >
+    <button
+      className="ui primary disabled button semanticButton"
+      disabled={true}
+      onClick={[Function]}
+      role="button"
+      tabIndex={-1}
+      type="submit"
+    >
+      Submit
+    </button>
+    <div
+      className="links"
+      data-jsx={2063282003}
+    >
+      <div
+        className="ui list"
+        role="list"
+      >
+        <div
+          className="item"
+          data-value={undefined}
+          onClick={[Function]}
+          role="listitem"
+        >
+          <a
+            data-jsx={2063282003}
+            href="/user/login"
+            onClick={[Function]}
+          >
+            Back to login
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+`;
+
+exports[`Storyshots forms RegistrationForm 1`] = `
+<form
+  className="ui form error"
+  data-jsx={1683376726}
+  onSubmit={[Function]}
+>
+  <div
+    className="personal"
+    data-jsx={1683376726}
+  >
+    <div
+      className="field"
+    >
+      <label
+        data-jsx={1632341904}
+        forHtml="firstName"
+      >
+        First name
+      </label>
+      <input
+        data-jsx={1632341904}
+        name="firstName"
+        onBlur={[Function]}
+        onChange={[Function]}
+        onDragStart={[Function]}
+        onDrop={[Function]}
+        onFocus={[Function]}
+        placeholder="First name"
+        type="text"
+        value=""
+      />
+    </div>
+    <div
+      className="field"
+    >
+      <label
+        data-jsx={1632341904}
+        forHtml="lastName"
+      >
+        Last name
+      </label>
+      <input
+        data-jsx={1632341904}
+        name="lastName"
+        onBlur={[Function]}
+        onChange={[Function]}
+        onDragStart={[Function]}
+        onDrop={[Function]}
+        onFocus={[Function]}
+        placeholder="Last name"
+        type="text"
+        value=""
+      />
+    </div>
+    <div
+      className="required field"
+    >
+      <label
+        data-jsx={1632341904}
+        forHtml="email"
+      >
+        Email
+      </label>
+      <input
+        data-jsx={1632341904}
+        name="email"
+        onBlur={[Function]}
+        onChange={[Function]}
+        onDragStart={[Function]}
+        onDrop={[Function]}
+        onFocus={[Function]}
+        placeholder="Email"
+        type="email"
+        value=""
+      />
+    </div>
+  </div>
+  <div
+    className="account"
+    data-jsx={1683376726}
+  >
+    <div
+      className="required field"
+    >
+      <label
+        data-jsx={1632341904}
+        forHtml="shortname"
+      >
+        Shortname
+      </label>
+      <input
+        data-jsx={1632341904}
+        name="shortname"
+        onBlur={[Function]}
+        onChange={[Function]}
+        onDragStart={[Function]}
+        onDrop={[Function]}
+        onFocus={[Function]}
+        placeholder="Shortname"
+        type="text"
+        value=""
+      />
+    </div>
+    <div
+      className="required field"
+    >
+      <label
+        data-jsx={1632341904}
+        forHtml="password"
+      >
+        Password
+      </label>
+      <input
+        data-jsx={1632341904}
+        name="password"
+        onBlur={[Function]}
+        onChange={[Function]}
+        onDragStart={[Function]}
+        onDrop={[Function]}
+        onFocus={[Function]}
+        placeholder="Password"
+        type="password"
+        value=""
+      />
+    </div>
+    <div
+      className="required field"
+    >
+      <label
+        data-jsx={1632341904}
+        forHtml="passwordRepeat"
+      >
+        Repeat password
+      </label>
+      <input
+        data-jsx={1632341904}
+        name="passwordRepeat"
+        onBlur={[Function]}
+        onChange={[Function]}
+        onDragStart={[Function]}
+        onDrop={[Function]}
+        onFocus={[Function]}
+        placeholder="Repeat password"
+        type="password"
+        value=""
+      />
+    </div>
+    <div
+      className="field"
+      data-jsx={1683376726}
+    >
+      <label
+        data-jsx={1683376726}
+        htmlFor="useCase"
+      >
+        <span>
+          Use case description
+        </span>
+      </label>
+      <textarea
+        name="useCase"
+        onBlur={[Function]}
+        onChange={[Function]}
+        onDragStart={[Function]}
+        onDrop={[Function]}
+        onFocus={[Function]}
+        type="text"
+        value=""
+      />
+    </div>
+    <button
+      className="ui primary disabled right floated button"
+      disabled={true}
+      onClick={[Function]}
+      role="button"
+      tabIndex={-1}
+      type="submit"
+    >
+      <span>
+        Submit
+      </span>
+    </button>
+  </div>
+</form>
+`;
+
+exports[`Storyshots forms SessionCreationForm 1`] = `
+<form
+  className="ui form sessionCreation"
+  data-jsx={3156297394}
+  onSubmit={null}
+>
+  <div
+    className="sessionName"
+    data-jsx={3156297394}
+  >
+    <div
+      className="field"
+    >
+      <label
+        data-jsx={1632341904}
+        forHtml="sessionName"
+      >
+        Name
+      </label>
+      <input
+        data-jsx={1632341904}
+        name="sessionName"
+        onBlur={[Function]}
+        onChange={[Function]}
+        onDragStart={[Function]}
+        onDrop={[Function]}
+        onFocus={[Function]}
+        placeholder="Name"
+        value=""
+      />
+    </div>
+  </div>
+  <div
+    className="sessionTimeline"
+    data-jsx={3156297394}
+  >
+    <div
+      className="sessionTimeline"
+      data-jsx={1648436831}
+    >
+      <div
+        className="timelineItem"
+        data-jsx={1648436831}
+      >
+        <div
+          className="dropzone"
+          data-jsx={2892037957}
+        >
+          <svg
+            fill="currentColor"
+            height="1em"
+            preserveAspectRatio="xMidYMid meet"
+            style={
+              Object {
+                "color": undefined,
+                "verticalAlign": "middle",
+              }
+            }
+            viewBox="0 0 40 40"
+            width="1em"
+          >
+            <g>
+              <path
+                d="m35.9 16.4v4.3q0 0.9-0.6 1.5t-1.5 0.7h-9.3v9.2q0 0.9-0.6 1.6t-1.5 0.6h-4.3q-0.9 0-1.5-0.6t-0.7-1.6v-9.2h-9.3q-0.9 0-1.5-0.7t-0.6-1.5v-4.3q0-0.9 0.6-1.5t1.5-0.6h9.3v-9.3q0-0.9 0.7-1.5t1.5-0.6h4.3q0.9 0 1.5 0.6t0.6 1.5v9.3h9.3q0.9 0 1.5 0.6t0.6 1.5z"
+              />
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    className="actionArea"
+    data-jsx={3156297394}
+  >
+    <button
+      className="ui fluid button"
+      data-jsx={3156297394}
+      onClick={null}
+      type="button"
+    >
+      <svg
+        fill="currentColor"
+        height="1em"
+        preserveAspectRatio="xMidYMid meet"
+        style={
+          Object {
+            "color": undefined,
+            "verticalAlign": "middle",
+          }
+        }
+        viewBox="0 0 40 40"
+        width="1em"
+      >
+        <g>
+          <path
+            d="m15.9 30.7v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.7 0v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.8 0v-15.7q0-0.3-0.2-0.5t-0.6-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.4 0 0.6-0.2t0.2-0.5z m-12.2-22.1h10l-1.1-2.6q-0.1-0.2-0.3-0.3h-7.1q-0.2 0.1-0.4 0.3z m20.7 0.7v1.4q0 0.3-0.2 0.5t-0.5 0.2h-2.1v21.2q0 1.8-1.1 3.2t-2.5 1.3h-18.6q-1.4 0-2.5-1.3t-1-3.1v-21.3h-2.2q-0.3 0-0.5-0.2t-0.2-0.5v-1.4q0-0.3 0.2-0.5t0.5-0.2h6.9l1.6-3.8q0.3-0.8 1.2-1.4t1.7-0.5h7.2q0.9 0 1.8 0.5t1.2 1.4l1.5 3.8h6.9q0.3 0 0.5 0.2t0.2 0.5z"
+          />
+        </g>
+      </svg>
+      <span>
+        Discard
+      </span>
+    </button>
+    <button
+      className="ui fluid button"
+      data-jsx={3156297394}
+      disabled={true}
+      type="submit"
+    >
+      <svg
+        fill="currentColor"
+        height="1em"
+        preserveAspectRatio="xMidYMid meet"
+        style={
+          Object {
+            "color": undefined,
+            "verticalAlign": "middle",
+          }
+        }
+        viewBox="0 0 40 40"
+        width="1em"
+      >
+        <g>
+          <path
+            d="m11.6 34.3h17.1v-8.6h-17.1v8.6z m20 0h2.8v-20q0-0.3-0.2-0.9t-0.4-0.7l-6.3-6.3q-0.2-0.2-0.8-0.5t-0.8-0.2v9.3q0 0.9-0.7 1.5t-1.5 0.6h-12.8q-0.9 0-1.6-0.6t-0.6-1.5v-9.3h-2.8v28.6h2.8v-9.3q0-0.9 0.6-1.5t1.6-0.6h18.5q0.9 0 1.5 0.6t0.7 1.5v9.3z m-8.6-20.7v-7.2q0-0.3-0.2-0.5t-0.5-0.2h-4.3q-0.3 0-0.5 0.2t-0.2 0.5v7.2q0 0.3 0.2 0.5t0.5 0.2h4.3q0.3 0 0.5-0.2t0.2-0.5z m14.3 0.7v20.7q0 0.9-0.6 1.5t-1.6 0.6h-30q-0.8 0-1.5-0.6t-0.6-1.5v-30q0-0.9 0.6-1.5t1.5-0.6h20.8q0.9 0 1.9 0.4t1.7 1.1l6.3 6.2q0.6 0.6 1 1.7t0.5 2z"
+          />
+        </g>
+      </svg>
+      <span>
+        Save
+      </span>
+    </button>
+    <button
+      className="ui fluid primary button"
+      data-jsx={3156297394}
+      disabled={true}
+      onClick={null}
+      type="button"
+    >
+      <svg
+        fill="currentColor"
+        height="1em"
+        preserveAspectRatio="xMidYMid meet"
+        style={
+          Object {
+            "color": undefined,
+            "verticalAlign": "middle",
+          }
+        }
+        viewBox="0 0 40 40"
+        width="1em"
+      >
+        <g>
+          <path
+            d="m35.4 20.7l-29.6 16.5q-0.6 0.3-0.9 0t-0.4-0.8v-32.8q0-0.6 0.4-0.8t0.9 0l29.6 16.5q0.5 0.3 0.5 0.7t-0.5 0.7z"
+          />
+        </g>
+      </svg>
+      <span>
+        Start
+      </span>
+    </button>
+  </div>
+</form>
+`;
+
+exports[`Storyshots navbar AccountArea 1`] = `
+<div
+  aria-busy={undefined}
+  aria-disabled={undefined}
+  aria-expanded={false}
+  aria-multiselectable={undefined}
+  className="ui item simple dropdown"
+  onBlur={[Function]}
+  onChange={[Function]}
+  onClick={[Function]}
+  onFocus={[Function]}
+  onMouseDown={[Function]}
+  role="listbox"
+  tabIndex={0}
+>
+  <div
+    aria-live="polite"
+    className="text"
+    role="alert"
+  >
+    AW
+  </div>
+  <i
+    aria-hidden="true"
+    className="dropdown icon"
+    onClick={[Function]}
+  />
+  <div
+    className="menu transition"
+  >
+    <div
+      aria-checked={undefined}
+      aria-disabled={undefined}
+      aria-selected={undefined}
+      className="item"
+      onClick={[Function]}
+      role="option"
+    >
+      <span>
+        Settings
+      </span>
+    </div>
+    <div
+      aria-checked={undefined}
+      aria-disabled={undefined}
+      aria-selected={undefined}
+      className="item"
+      onClick={[Function]}
+      role="option"
+    >
+      <span>
+        Logout
+      </span>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots navbar Navbar 1`] = `
+<div
+  className="navbar"
+  data-jsx={2070704589}
+>
+  <div
+    className="sideArea"
+    data-jsx={2070704589}
+  >
+    <div
+      className="ui borderless noBorder menu"
+    >
+      <div
+        className="icon item"
+        onClick={[Function]}
+      >
+        <i
+          aria-hidden="true"
+          className="sidebar icon"
+        />
+      </div>
+      <h1
+        data-jsx={2070704589}
+      >
+        Example page
+      </h1>
+    </div>
+  </div>
+  <div
+    className="searchArea"
+    data-jsx={2070704589}
+  >
+    <div
+      className="ui fluid icon input"
+    >
+      <input
+        disabled={undefined}
+        onChange={[Function]}
+        placeholder="Search..."
+        tabIndex={undefined}
+        type="text"
+      />
+      <i
+        aria-hidden="true"
+        className="search icon"
+      />
+    </div>
+  </div>
+  <div
+    className="accountArea"
+    data-jsx={2070704589}
+  >
+    <div
+      className="ui borderless noBorder menu"
+    >
+      <div
+        className="right menu"
+      >
+        <a
+          className="item"
+          onBlur={[Function]}
+          onClick={[Function]}
+          onFocus={[Function]}
+          onMouseEnter={[Function]}
+          onMouseLeave={[Function]}
+        >
+          /sessions/
+          AW
+           
+          <i
+            aria-hidden="true"
+            className="qrcode icon"
+          />
+        </a>
+        <div
+          aria-busy={undefined}
+          aria-disabled={undefined}
+          aria-expanded={false}
+          aria-multiselectable={undefined}
+          className="ui item simple dropdown"
+          onBlur={[Function]}
+          onChange={[Function]}
+          onClick={[Function]}
+          onFocus={[Function]}
+          onMouseDown={[Function]}
+          role="listbox"
+          tabIndex={0}
+        >
+          <div
+            aria-live="polite"
+            className="text"
+            role="alert"
+          >
+            AW
+          </div>
+          <i
+            aria-hidden="true"
+            className="dropdown icon"
+            onClick={[Function]}
+          />
+          <div
+            className="menu transition"
+          >
+            <div
+              aria-checked={undefined}
+              aria-disabled={undefined}
+              aria-selected={undefined}
+              className="item"
+              onClick={[Function]}
+              role="option"
+            >
+              <span>
+                Settings
+              </span>
+            </div>
+            <div
+              aria-checked={undefined}
+              aria-disabled={undefined}
+              aria-selected={undefined}
+              className="item"
+              onClick={[Function]}
+              role="option"
+            >
+              <span>
+                Logout
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots navbar SearchArea 1`] = `
+<div
+  className="ui fluid icon input"
+>
+  <input
+    disabled={undefined}
+    onChange={[Function]}
+    placeholder="Search..."
+    tabIndex={undefined}
+    type="text"
+  />
+  <i
+    aria-hidden="true"
+    className="search icon"
+  />
+</div>
+`;
+
+exports[`Storyshots navbar SessionArea 1`] = `
+<a
+  className="item"
+  onBlur={[Function]}
+  onClick={[Function]}
+  onFocus={[Function]}
+  onMouseEnter={[Function]}
+  onMouseLeave={[Function]}
+>
+  /sessions/
+  AW
+   
+  <i
+    aria-hidden="true"
+    className="qrcode icon"
+  />
+</a>
+`;
+
+exports[`Storyshots sidebar Sidebar (invisible) 1`] = `
+<div
+  className="sidebar"
+  data-jsx={213114463}
+>
+  <div
+    className="pushable"
+  >
+    <div
+      className="ui vertical labeled icon ui overlay left wide sidebar sidebarMenu menu"
+    >
+      <a
+        className="active item"
+        onClick={[Function]}
+      >
+        Item 1
+      </a>
+      <a
+        className="item"
+        onClick={[Function]}
+      >
+        Item 2
+      </a>
+    </div>
+    <div
+      className="pusher"
+    >
+      PAGE CONTENT
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots sidebar Sidebar (visible) 1`] = `
+<div
+  className="sidebar"
+  data-jsx={213114463}
+>
+  <div
+    className="pushable"
+  >
+    <div
+      className="ui vertical labeled icon ui overlay left wide visible sidebar sidebarMenu menu"
+    >
+      <a
+        className="active item"
+        onClick={[Function]}
+      >
+        Item 1
+      </a>
+      <a
+        className="item"
+        onClick={[Function]}
+      >
+        Item 2
+      </a>
+    </div>
+    <div
+      className="pusher"
+    >
+      PAGE CONTENT
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots sidebar SidebarItem 1`] = `
+<a
+  className="item"
+  onClick={[Function]}
+>
+  ITEM CONTENT
+</a>
 `;

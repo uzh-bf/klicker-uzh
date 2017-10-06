@@ -40,19 +40,23 @@ class SliderWrapper extends Component {
   }
 }
 
-/*
-const createNodeMock = () => {
-  const doc = document.implementation.createHTMLDocument();
-  return { parentElement: doc.body };
-}
-const confusionBarometerMocked = () => <ConfusionBarometer isActive intl={intlMock} />
-confusionBarometerMocked.options = { createNodeMock }
-*/
-
-storiesOf('ConfusionBarometer', module)
-  .add('ConfusionBarometer', () => <BarometerWrapper />)
-  .add('ConfusionSection', () => <ConfusionSection />)
+storiesOf('confusion', module)
   .add('ConfusionSlider', () => <SliderWrapper />)
-// TODO: reenable if issue with refs is fixed
-// https://github.com/recharts/recharts/issues/765
-// .add('isActive', confusionBarometerMocked)
+  .add('ConfusionBarometer', () => <BarometerWrapper />)
+  // HACK: disable test as recharts breaks => https://github.com/recharts/recharts/issues/765
+  .add('ConfusionBarometer (isActive) [NoTest]', () => (
+    <ConfusionBarometer isActive intl={intlMock} handleActiveToggle={() => null} />
+  ))
+  .add('ConfusionSection [NoTest]', () => <ConfusionSection />)
+
+/* const createNodeMock = () => {
+  const doc = document.implementation.createHTMLDocument()
+  return { parentElement: doc.body }
+}
+const confusionBarometerMocked = () => (
+  <ConfusionBarometer isActive intl={intlMock} handleActiveToggle={() => null} />
+)
+confusionBarometerMocked.options = { createNodeMock }
+
+const confusionSectionMocked = () => <ConfusionSection />
+confusionSectionMocked.options = { createNodeMock } */
