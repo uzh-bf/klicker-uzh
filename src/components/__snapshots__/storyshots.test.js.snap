@@ -1868,6 +1868,47 @@ exports[`Storyshots layouts TeacherLayout 1`] = `
 </div>
 `;
 
+exports[`Storyshots questionTypes/FREE FREE Creation Preview (unrestricted) 1`] = `
+<div
+  className="preview"
+  data-jsx={2911428003}
+>
+  <div
+    className="title"
+    data-jsx={2911428003}
+  >
+    TITLE
+  </div>
+  <div
+    className="description"
+    data-jsx={2911428003}
+  >
+    DESCRIPTION
+  </div>
+  <div
+    data-jsx={2911428003}
+  >
+    <div
+      className="freeText"
+      data-jsx={2911428003}
+    >
+      <div
+        className="box"
+        data-jsx={2911428003}
+      />
+    </div>
+  </div>
+  <div
+    className="button"
+    data-jsx={2911428003}
+  >
+    <span>
+      Submit
+    </span>
+  </div>
+</div>
+`;
+
 exports[`Storyshots questionTypes/SC SC Answering Options 1`] = `
 <div
   className="options"
