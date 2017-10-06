@@ -1,7 +1,4 @@
-/* eslint-disable import/no-extraneous-dependencies, import/no-unresolved, import/extensions */
-/* eslint-disable react/jsx-max-props-per-line, react/jsx-indent-props */
-/* eslint-disable react/jsx-first-prop-new-line */
-/* eslint-disable react/prop-types */
+/* eslint-disable import/no-extraneous-dependencies, react/prop-types */
 
 import React, { Component } from 'react'
 import { storiesOf } from '@storybook/react'
@@ -45,12 +42,12 @@ const content = (
 )
 
 storiesOf('Collapser', module)
-  .add('default', () => <Wrapper>{content}</Wrapper>)
-  .add('collapsed', () => (
+  .add('Collapser', () => <Wrapper>{content}</Wrapper>)
+  .add('Collapser (collapsed)', () => (
     <Collapser collapsed handleCollapseToggle={() => action('collapser-clicked')}>
       {content}
     </Collapser>
   ))
-  .add('extended', () => (
+  .add('Collapser (extended)', () => (
     <Collapser handleCollapseToggle={() => action('collapser-clicked')}>{content}</Collapser>
   ))

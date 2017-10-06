@@ -1,16 +1,15 @@
-/* eslint-disable import/no-extraneous-dependencies, import/no-unresolved, import/extensions */
-/* eslint-disable react/jsx-max-props-per-line, react/jsx-indent-props */
-/* eslint-disable react/jsx-first-prop-new-line */
-/* eslint-disable react/prop-types */
+/* eslint-disable import/no-extraneous-dependencies, react/no-multi-comp */
 
 import React, { Component } from 'react'
 import { storiesOf } from '@storybook/react'
 
 import ConfusionBarometer from './ConfusionBarometer'
+import ConfusionSection from './ConfusionSection'
+import ConfusionSlider from './ConfusionSlider'
 import { intlMock } from '../../../.storybook/utils'
 
 // create a stateful wrapper for the component
-class Wrapper extends Component {
+class BarometerWrapper extends Component {
   state = {
     isActive: false,
   }
@@ -25,6 +24,22 @@ class Wrapper extends Component {
   }
 }
 
+// create a stateful wrapper for the component
+class SliderWrapper extends Component {
+  state = {
+    value: 10,
+  }
+  render() {
+    return (
+      <ConfusionSlider
+        title={<h2>Speed</h2>}
+        value={this.state.value}
+        handleChange={value => this.setState({ value })}
+      />
+    )
+  }
+}
+
 /*
 const createNodeMock = () => {
   const doc = document.implementation.createHTMLDocument();
@@ -34,7 +49,10 @@ const confusionBarometerMocked = () => <ConfusionBarometer isActive intl={intlMo
 confusionBarometerMocked.options = { createNodeMock }
 */
 
-storiesOf('ConfusionBarometer', module).add('default', () => <Wrapper />)
+storiesOf('ConfusionBarometer', module)
+  .add('ConfusionBarometer', () => <BarometerWrapper />)
+  .add('ConfusionSection', () => <ConfusionSection />)
+  .add('ConfusionSlider', () => <SliderWrapper />)
 // TODO: reenable if issue with refs is fixed
 // https://github.com/recharts/recharts/issues/765
 // .add('isActive', confusionBarometerMocked)

@@ -1,16 +1,30 @@
-/* eslint-disable import/no-extraneous-dependencies, import/no-unresolved, import/extensions */
-/* eslint-disable react/jsx-max-props-per-line, react/jsx-indent-props */
-/* eslint-disable react/jsx-first-prop-new-line */
-/* eslint-disable react/prop-types */
+/* eslint-disable import/no-extraneous-dependencies */
 
-// TODO: get this working
-
-/* import React from 'react'
+import React from 'react'
 import { storiesOf } from '@storybook/react'
+import { action } from '@storybook/addon-actions'
 
 import Navbar from './Navbar'
+import AccountArea from './AccountArea'
+import SearchArea from './SearchArea'
+import SessionArea from './SessionArea'
+
 import { intlMock } from '../../../../.storybook/utils'
 
 storiesOf('Navbar', module)
-  .add('default', () => <Navbar accountShort="AW" intl={intlMock} title="Example page"/>)
-*/
+  .add('Navbar', () => (
+    <Navbar
+      accountShort="AW"
+      intl={intlMock}
+      search={{
+        handleSearch: query => action(`search ${query}`),
+        handleSort: () => action('sort'),
+      }}
+      title="Example page"
+    />
+  ))
+  .add('AccountArea', () => <AccountArea accountShort="AW" />)
+  .add('SearchArea', () => (
+    <SearchArea intl={intlMock} handleSearch={query => action(`search ${query}`)} />
+  ))
+  .add('SessionArea', () => <SessionArea sessionId="AW" />)

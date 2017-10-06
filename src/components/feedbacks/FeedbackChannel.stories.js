@@ -1,13 +1,11 @@
-/* eslint-disable import/no-extraneous-dependencies, import/no-unresolved, import/extensions */
-/* eslint-disable react/jsx-max-props-per-line, react/jsx-indent-props */
-/* eslint-disable react/jsx-first-prop-new-line */
-/* eslint-disable react/prop-types */
+/* eslint-disable import/no-extraneous-dependencies, react/prop-types */
 
 import React, { Component } from 'react'
 import { storiesOf } from '@storybook/react'
 import { action } from '@storybook/addon-actions'
 
 import FeedbackChannel from './FeedbackChannel'
+import Feedback from './Feedback'
 import { intlMock } from '../../../.storybook/utils'
 
 // create a stateful wrapper for the component
@@ -35,8 +33,8 @@ const data = [
 ]
 
 storiesOf('FeedbackChannel', module)
-  .add('default', () => <Wrapper data={data} />)
-  .add('isActive', () => (
+  .add('FeedbackChannel', () => <Wrapper data={data} />)
+  .add('FeedbackChannel (isActive)', () => (
     <FeedbackChannel
       isActive
       data={data}
@@ -45,7 +43,7 @@ storiesOf('FeedbackChannel', module)
       handlePublicToggle={() => action('public-toggle')}
     />
   ))
-  .add('isPublic', () => (
+  .add('FeedbackChannel (isPublic)', () => (
     <FeedbackChannel
       isActive
       isPublic
@@ -55,3 +53,4 @@ storiesOf('FeedbackChannel', module)
       handlePublicToggle={() => action('public-toggle')}
     />
   ))
+  .add('Feedback', () => <Feedback content="hello world" votes={100} />)
