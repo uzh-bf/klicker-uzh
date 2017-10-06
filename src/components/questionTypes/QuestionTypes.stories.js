@@ -56,23 +56,24 @@ class SCCreationWrapper extends Component {
   }
 }
 
-storiesOf('QuestionTypes', module)
-  .add('TypeChooser', () => (
-    <TypeChooser
-      input={{
-        onChange: (a) => {
-          console.log(a)
-        },
-        value: 'SC',
-      }}
-      intl={intlMock}
-      types={[
-        { name: 'Single Choice', value: 'SC' },
-        { name: 'Multiple Choice', value: 'MC' },
-        { name: 'Free-Form', value: 'FREE' },
-      ]}
-    />
-  ))
+storiesOf('questionTypes/components', module).add('TypeChooser', () => (
+  <TypeChooser
+    input={{
+      onChange: (a) => {
+        console.log(a)
+      },
+      value: 'SC',
+    }}
+    intl={intlMock}
+    types={[
+      { name: 'Single Choice', value: 'SC' },
+      { name: 'Multiple Choice', value: 'MC' },
+      { name: 'Free-Form', value: 'FREE' },
+    ]}
+  />
+))
+
+storiesOf('questionTypes/SC', module)
   .add('SC Answering Options', () => <SCAnswerWrapper />)
   .add('SC Creation Content', () => <SCCreationContent input={{ value: 'hello world' }} />)
   .add('SC Creation Options [NoTest]', () => <SCCreationWrapper />)
