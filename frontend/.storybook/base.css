@@ -1,3 +1,7 @@
 * {
   font-family: 'Open Sans', sans-serif;
 }
+
+#root {
+  height: 100%;
+}
