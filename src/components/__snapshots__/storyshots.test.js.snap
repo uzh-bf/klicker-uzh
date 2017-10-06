@@ -901,6 +901,311 @@ exports[`Storyshots common ListWithHeader 1`] = `
 </div>
 `;
 
+exports[`Storyshots common/navbar AccountArea 1`] = `
+<div
+  aria-busy={undefined}
+  aria-disabled={undefined}
+  aria-expanded={false}
+  aria-multiselectable={undefined}
+  className="ui item simple dropdown"
+  onBlur={[Function]}
+  onChange={[Function]}
+  onClick={[Function]}
+  onFocus={[Function]}
+  onMouseDown={[Function]}
+  role="listbox"
+  tabIndex={0}
+>
+  <div
+    aria-live="polite"
+    className="text"
+    role="alert"
+  >
+    AW
+  </div>
+  <i
+    aria-hidden="true"
+    className="dropdown icon"
+    onClick={[Function]}
+  />
+  <div
+    className="menu transition"
+  >
+    <div
+      aria-checked={undefined}
+      aria-disabled={undefined}
+      aria-selected={undefined}
+      className="item"
+      onClick={[Function]}
+      role="option"
+    >
+      <span>
+        Settings
+      </span>
+    </div>
+    <div
+      aria-checked={undefined}
+      aria-disabled={undefined}
+      aria-selected={undefined}
+      className="item"
+      onClick={[Function]}
+      role="option"
+    >
+      <span>
+        Logout
+      </span>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots common/navbar Navbar 1`] = `
+<div
+  className="navbar"
+  data-jsx={2070704589}
+>
+  <div
+    className="sideArea"
+    data-jsx={2070704589}
+  >
+    <div
+      className="ui borderless noBorder menu"
+    >
+      <div
+        className="icon item"
+        onClick={[Function]}
+      >
+        <i
+          aria-hidden="true"
+          className="sidebar icon"
+        />
+      </div>
+      <h1
+        data-jsx={2070704589}
+      >
+        Example page
+      </h1>
+    </div>
+  </div>
+  <div
+    className="searchArea"
+    data-jsx={2070704589}
+  >
+    <div
+      className="ui fluid icon input"
+    >
+      <input
+        disabled={undefined}
+        onChange={[Function]}
+        placeholder="Search..."
+        tabIndex={undefined}
+        type="text"
+      />
+      <i
+        aria-hidden="true"
+        className="search icon"
+      />
+    </div>
+  </div>
+  <div
+    className="accountArea"
+    data-jsx={2070704589}
+  >
+    <div
+      className="ui borderless noBorder menu"
+    >
+      <div
+        className="right menu"
+      >
+        <a
+          className="item"
+          onBlur={[Function]}
+          onClick={[Function]}
+          onFocus={[Function]}
+          onMouseEnter={[Function]}
+          onMouseLeave={[Function]}
+        >
+          /sessions/
+          AW
+           
+          <i
+            aria-hidden="true"
+            className="qrcode icon"
+          />
+        </a>
+        <div
+          aria-busy={undefined}
+          aria-disabled={undefined}
+          aria-expanded={false}
+          aria-multiselectable={undefined}
+          className="ui item simple dropdown"
+          onBlur={[Function]}
+          onChange={[Function]}
+          onClick={[Function]}
+          onFocus={[Function]}
+          onMouseDown={[Function]}
+          role="listbox"
+          tabIndex={0}
+        >
+          <div
+            aria-live="polite"
+            className="text"
+            role="alert"
+          >
+            AW
+          </div>
+          <i
+            aria-hidden="true"
+            className="dropdown icon"
+            onClick={[Function]}
+          />
+          <div
+            className="menu transition"
+          >
+            <div
+              aria-checked={undefined}
+              aria-disabled={undefined}
+              aria-selected={undefined}
+              className="item"
+              onClick={[Function]}
+              role="option"
+            >
+              <span>
+                Settings
+              </span>
+            </div>
+            <div
+              aria-checked={undefined}
+              aria-disabled={undefined}
+              aria-selected={undefined}
+              className="item"
+              onClick={[Function]}
+              role="option"
+            >
+              <span>
+                Logout
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots common/navbar SearchArea 1`] = `
+<div
+  className="ui fluid icon input"
+>
+  <input
+    disabled={undefined}
+    onChange={[Function]}
+    placeholder="Search..."
+    tabIndex={undefined}
+    type="text"
+  />
+  <i
+    aria-hidden="true"
+    className="search icon"
+  />
+</div>
+`;
+
+exports[`Storyshots common/navbar SessionArea 1`] = `
+<a
+  className="item"
+  onBlur={[Function]}
+  onClick={[Function]}
+  onFocus={[Function]}
+  onMouseEnter={[Function]}
+  onMouseLeave={[Function]}
+>
+  /sessions/
+  AW
+   
+  <i
+    aria-hidden="true"
+    className="qrcode icon"
+  />
+</a>
+`;
+
+exports[`Storyshots common/sidebar Sidebar (invisible) 1`] = `
+<div
+  className="sidebar"
+  data-jsx={213114463}
+>
+  <div
+    className="pushable"
+  >
+    <div
+      className="ui vertical labeled icon ui overlay left wide sidebar sidebarMenu menu"
+    >
+      <a
+        className="active item"
+        onClick={[Function]}
+      >
+        Item 1
+      </a>
+      <a
+        className="item"
+        onClick={[Function]}
+      >
+        Item 2
+      </a>
+    </div>
+    <div
+      className="pusher"
+    >
+      PAGE CONTENT
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots common/sidebar Sidebar (visible) 1`] = `
+<div
+  className="sidebar"
+  data-jsx={213114463}
+>
+  <div
+    className="pushable"
+  >
+    <div
+      className="ui vertical labeled icon ui overlay left wide visible sidebar sidebarMenu menu"
+    >
+      <a
+        className="active item"
+        onClick={[Function]}
+      >
+        Item 1
+      </a>
+      <a
+        className="item"
+        onClick={[Function]}
+      >
+        Item 2
+      </a>
+    </div>
+    <div
+      className="pusher"
+    >
+      PAGE CONTENT
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots common/sidebar SidebarItem 1`] = `
+<a
+  className="item"
+  onClick={[Function]}
+>
+  ITEM CONTENT
+</a>
+`;
+
 exports[`Storyshots confusion ConfusionBarometer 1`] = `
 <div
   className="confusionBarometer"
@@ -1390,6 +1695,257 @@ exports[`Storyshots feedbacks FeedbackChannel 1`] = `
       <label>
         Publish questions
       </label>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots forms - components FormWithLinks 1`] = `
+<form
+  className="ui form error"
+  data-jsx={2063282003}
+>
+  form fields
+  <div
+    className="actionArea"
+    data-jsx={2063282003}
+  >
+    <button
+      className="ui primary button semanticButton"
+      disabled={undefined}
+      onClick={[Function]}
+      role="button"
+      tabIndex={undefined}
+      type="submit"
+    >
+      button
+    </button>
+    <div
+      className="links"
+      data-jsx={2063282003}
+    >
+      <div
+        className="ui list"
+        role="list"
+      >
+        <div
+          className="item"
+          data-value={undefined}
+          onClick={[Function]}
+          role="listitem"
+        >
+          <a
+            data-jsx={2063282003}
+            href="href1"
+            onClick={[Function]}
+          >
+            link1
+          </a>
+        </div>
+        <div
+          className="item"
+          data-value={undefined}
+          onClick={[Function]}
+          role="listitem"
+        >
+          <a
+            data-jsx={2063282003}
+            href="href2"
+            onClick={[Function]}
+          >
+            link2
+          </a>
+        </div>
+        <div
+          className="item"
+          data-value={undefined}
+          onClick={[Function]}
+          role="listitem"
+        >
+          <a
+            data-jsx={2063282003}
+            href="href3"
+            onClick={[Function]}
+          >
+            link3
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+`;
+
+exports[`Storyshots forms - components QuestionDropzone 1`] = `
+<div
+  style={
+    Object {
+      "height": 100,
+      "width": 100,
+    }
+  }
+>
+  <div
+    className="dropzone"
+    data-jsx={2892037957}
+  >
+    <svg
+      fill="currentColor"
+      height="1em"
+      preserveAspectRatio="xMidYMid meet"
+      style={
+        Object {
+          "color": undefined,
+          "verticalAlign": "middle",
+        }
+      }
+      viewBox="0 0 40 40"
+      width="1em"
+    >
+      <g>
+        <path
+          d="m35.9 16.4v4.3q0 0.9-0.6 1.5t-1.5 0.7h-9.3v9.2q0 0.9-0.6 1.6t-1.5 0.6h-4.3q-0.9 0-1.5-0.6t-0.7-1.6v-9.2h-9.3q-0.9 0-1.5-0.7t-0.6-1.5v-4.3q0-0.9 0.6-1.5t1.5-0.6h9.3v-9.3q0-0.9 0.7-1.5t1.5-0.6h4.3q0.9 0 1.5 0.6t0.6 1.5v9.3h9.3q0.9 0 1.5 0.6t0.6 1.5z"
+        />
+      </g>
+    </svg>
+  </div>
+</div>
+`;
+
+exports[`Storyshots forms - components SemanticInput (with error) 1`] = `
+<div
+  className="error field"
+>
+  <label
+    data-jsx={1632341904}
+    forHtml={undefined}
+  >
+    label
+  </label>
+  <input
+    data-jsx={1632341904}
+    placeholder="label"
+  />
+  <div
+    className="errorMessage"
+    data-jsx={1632341904}
+  >
+    <i
+      aria-hidden="true"
+      className="hand pointer icon"
+    />
+    <span>
+      fail
+    </span>
+  </div>
+</div>
+`;
+
+exports[`Storyshots forms - components SemanticInput 1`] = `
+<div
+  className="field"
+>
+  <label
+    data-jsx={1632341904}
+    forHtml={undefined}
+  >
+    label
+  </label>
+  <input
+    data-jsx={1632341904}
+    placeholder="label"
+  />
+</div>
+`;
+
+exports[`Storyshots forms - components SessionTimeline 1`] = `
+<div
+  className="sessionTimeline"
+  data-jsx={1648436831}
+>
+  <div
+    className="timelineItem"
+    data-jsx={1648436831}
+  >
+    <div
+      className="questionSingle"
+      data-jsx={1928862230}
+    >
+      <div
+        className="id"
+        data-jsx={1928862230}
+      >
+        #id1
+      </div>
+      <div
+        className="type"
+        data-jsx={1928862230}
+      >
+        SC
+      </div>
+      <div
+        className="content"
+        data-jsx={1928862230}
+      >
+        question1
+      </div>
+    </div>
+  </div>
+  <div
+    className="timelineItem"
+    data-jsx={1648436831}
+  >
+    <div
+      className="questionSingle"
+      data-jsx={1928862230}
+    >
+      <div
+        className="id"
+        data-jsx={1928862230}
+      >
+        #id2
+      </div>
+      <div
+        className="type"
+        data-jsx={1928862230}
+      >
+        FREE
+      </div>
+      <div
+        className="content"
+        data-jsx={1928862230}
+      >
+        question2
+      </div>
+    </div>
+  </div>
+  <div
+    className="timelineItem"
+    data-jsx={1648436831}
+  >
+    <div
+      className="dropzone"
+      data-jsx={2892037957}
+    >
+      <svg
+        fill="currentColor"
+        height="1em"
+        preserveAspectRatio="xMidYMid meet"
+        style={
+          Object {
+            "color": undefined,
+            "verticalAlign": "middle",
+          }
+        }
+        viewBox="0 0 40 40"
+        width="1em"
+      >
+        <g>
+          <path
+            d="m35.9 16.4v4.3q0 0.9-0.6 1.5t-1.5 0.7h-9.3v9.2q0 0.9-0.6 1.6t-1.5 0.6h-4.3q-0.9 0-1.5-0.6t-0.7-1.6v-9.2h-9.3q-0.9 0-1.5-0.7t-0.6-1.5v-4.3q0-0.9 0.6-1.5t1.5-0.6h9.3v-9.3q0-0.9 0.7-1.5t1.5-0.6h4.3q0.9 0 1.5 0.6t0.6 1.5v9.3h9.3q0.9 0 1.5 0.6t0.6 1.5z"
+          />
+        </g>
+      </svg>
     </div>
   </div>
 </div>
@@ -1920,309 +2476,4 @@ exports[`Storyshots forms SessionCreationForm 1`] = `
     </button>
   </div>
 </form>
-`;
-
-exports[`Storyshots navbar AccountArea 1`] = `
-<div
-  aria-busy={undefined}
-  aria-disabled={undefined}
-  aria-expanded={false}
-  aria-multiselectable={undefined}
-  className="ui item simple dropdown"
-  onBlur={[Function]}
-  onChange={[Function]}
-  onClick={[Function]}
-  onFocus={[Function]}
-  onMouseDown={[Function]}
-  role="listbox"
-  tabIndex={0}
->
-  <div
-    aria-live="polite"
-    className="text"
-    role="alert"
-  >
-    AW
-  </div>
-  <i
-    aria-hidden="true"
-    className="dropdown icon"
-    onClick={[Function]}
-  />
-  <div
-    className="menu transition"
-  >
-    <div
-      aria-checked={undefined}
-      aria-disabled={undefined}
-      aria-selected={undefined}
-      className="item"
-      onClick={[Function]}
-      role="option"
-    >
-      <span>
-        Settings
-      </span>
-    </div>
-    <div
-      aria-checked={undefined}
-      aria-disabled={undefined}
-      aria-selected={undefined}
-      className="item"
-      onClick={[Function]}
-      role="option"
-    >
-      <span>
-        Logout
-      </span>
-    </div>
-  </div>
-</div>
-`;
-
-exports[`Storyshots navbar Navbar 1`] = `
-<div
-  className="navbar"
-  data-jsx={2070704589}
->
-  <div
-    className="sideArea"
-    data-jsx={2070704589}
-  >
-    <div
-      className="ui borderless noBorder menu"
-    >
-      <div
-        className="icon item"
-        onClick={[Function]}
-      >
-        <i
-          aria-hidden="true"
-          className="sidebar icon"
-        />
-      </div>
-      <h1
-        data-jsx={2070704589}
-      >
-        Example page
-      </h1>
-    </div>
-  </div>
-  <div
-    className="searchArea"
-    data-jsx={2070704589}
-  >
-    <div
-      className="ui fluid icon input"
-    >
-      <input
-        disabled={undefined}
-        onChange={[Function]}
-        placeholder="Search..."
-        tabIndex={undefined}
-        type="text"
-      />
-      <i
-        aria-hidden="true"
-        className="search icon"
-      />
-    </div>
-  </div>
-  <div
-    className="accountArea"
-    data-jsx={2070704589}
-  >
-    <div
-      className="ui borderless noBorder menu"
-    >
-      <div
-        className="right menu"
-      >
-        <a
-          className="item"
-          onBlur={[Function]}
-          onClick={[Function]}
-          onFocus={[Function]}
-          onMouseEnter={[Function]}
-          onMouseLeave={[Function]}
-        >
-          /sessions/
-          AW
-           
-          <i
-            aria-hidden="true"
-            className="qrcode icon"
-          />
-        </a>
-        <div
-          aria-busy={undefined}
-          aria-disabled={undefined}
-          aria-expanded={false}
-          aria-multiselectable={undefined}
-          className="ui item simple dropdown"
-          onBlur={[Function]}
-          onChange={[Function]}
-          onClick={[Function]}
-          onFocus={[Function]}
-          onMouseDown={[Function]}
-          role="listbox"
-          tabIndex={0}
-        >
-          <div
-            aria-live="polite"
-            className="text"
-            role="alert"
-          >
-            AW
-          </div>
-          <i
-            aria-hidden="true"
-            className="dropdown icon"
-            onClick={[Function]}
-          />
-          <div
-            className="menu transition"
-          >
-            <div
-              aria-checked={undefined}
-              aria-disabled={undefined}
-              aria-selected={undefined}
-              className="item"
-              onClick={[Function]}
-              role="option"
-            >
-              <span>
-                Settings
-              </span>
-            </div>
-            <div
-              aria-checked={undefined}
-              aria-disabled={undefined}
-              aria-selected={undefined}
-              className="item"
-              onClick={[Function]}
-              role="option"
-            >
-              <span>
-                Logout
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-`;
-
-exports[`Storyshots navbar SearchArea 1`] = `
-<div
-  className="ui fluid icon input"
->
-  <input
-    disabled={undefined}
-    onChange={[Function]}
-    placeholder="Search..."
-    tabIndex={undefined}
-    type="text"
-  />
-  <i
-    aria-hidden="true"
-    className="search icon"
-  />
-</div>
-`;
-
-exports[`Storyshots navbar SessionArea 1`] = `
-<a
-  className="item"
-  onBlur={[Function]}
-  onClick={[Function]}
-  onFocus={[Function]}
-  onMouseEnter={[Function]}
-  onMouseLeave={[Function]}
->
-  /sessions/
-  AW
-   
-  <i
-    aria-hidden="true"
-    className="qrcode icon"
-  />
-</a>
-`;
-
-exports[`Storyshots sidebar Sidebar (invisible) 1`] = `
-<div
-  className="sidebar"
-  data-jsx={213114463}
->
-  <div
-    className="pushable"
-  >
-    <div
-      className="ui vertical labeled icon ui overlay left wide sidebar sidebarMenu menu"
-    >
-      <a
-        className="active item"
-        onClick={[Function]}
-      >
-        Item 1
-      </a>
-      <a
-        className="item"
-        onClick={[Function]}
-      >
-        Item 2
-      </a>
-    </div>
-    <div
-      className="pusher"
-    >
-      PAGE CONTENT
-    </div>
-  </div>
-</div>
-`;
-
-exports[`Storyshots sidebar Sidebar (visible) 1`] = `
-<div
-  className="sidebar"
-  data-jsx={213114463}
->
-  <div
-    className="pushable"
-  >
-    <div
-      className="ui vertical labeled icon ui overlay left wide visible sidebar sidebarMenu menu"
-    >
-      <a
-        className="active item"
-        onClick={[Function]}
-      >
-        Item 1
-      </a>
-      <a
-        className="item"
-        onClick={[Function]}
-      >
-        Item 2
-      </a>
-    </div>
-    <div
-      className="pusher"
-    >
-      PAGE CONTENT
-    </div>
-  </div>
-</div>
-`;
-
-exports[`Storyshots sidebar SidebarItem 1`] = `
-<a
-  className="item"
-  onClick={[Function]}
->
-  ITEM CONTENT
-</a>
 `;
