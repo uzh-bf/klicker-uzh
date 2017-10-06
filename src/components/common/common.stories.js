@@ -58,7 +58,7 @@ const collapserContent = (
   </div>
 )
 
-storiesOf('common', module)
+storiesOf('common/components', module)
   .add('ActionButton', () => (
     <ActionButton
       items={[

@@ -28,7 +28,7 @@ const rootReducer = combineReducers({
 
 const store = createStore(rootReducer)
 
-storiesOf('forms', module)
+storiesOf('forms/components', module)
   .addDecorator(getStory => <ReduxProvider store={store}>{getStory()}</ReduxProvider>)
   .addDecorator(getStory => (
     <DragDropContextProvider backend={HTML5Backend}>{getStory()}</DragDropContextProvider>
@@ -42,7 +42,7 @@ storiesOf('forms', module)
     <SessionCreationForm intl={intlMock} handleSubmit={() => null} />
   ))
 
-storiesOf('forms - components', module)
+storiesOf('forms/helpers', module)
   .addDecorator(getStory => <ReduxProvider store={store}>{getStory()}</ReduxProvider>)
   .addDecorator(getStory => (
     <DragDropContextProvider backend={HTML5Backend}>{getStory()}</DragDropContextProvider>
