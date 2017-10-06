@@ -4,6 +4,7 @@ import TagsInput from 'react-tagsinput'
 import { FormattedMessage } from 'react-intl'
 
 import { autocompleteRenderInput } from '../../common/Autosuggest'
+import styles from './styles-tagsinput'
 
 const propTypes = {
   input: PropTypes.shape({
@@ -32,6 +33,9 @@ const TagInput = ({ tags, input: { value, onChange } }) => (
       value={value || []}
       onChange={onChange}
     />
+    <style global jsx>
+      {styles}
+    </style>
   </div>
 )
 

@@ -9,7 +9,6 @@ import { intlShape, FormattedMessage } from 'react-intl'
 import TitleInput from '../questions/creation/TitleInput'
 import TagInput from '../questions/creation/TagInput'
 import TypeChooser from '../questionTypes/TypeChooser'
-import stylesTagsInput from './styles-tagsinput'
 import {
   SCCreationContent,
   SCCreationOptions,
@@ -113,9 +112,6 @@ const QuestionCreationForm = ({
       <FormattedMessage defaultMessage="Save" id="common.button.save" />
     </button>
 
-    <style global jsx>
-      {stylesTagsInput}
-    </style>
     <style jsx>{`
       form {
         display: flex;
