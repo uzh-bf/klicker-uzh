@@ -1,9 +1,4 @@
-/*
-  eslint-disable
-  import/no-extraneous-dependencies, import/no-unresolved, import/extensions,
-  react/jsx-max-props-per-line, react/jsx-indent-props, react/jsx-first-prop-new-line,
-  react/prop-types, react/no-multi-comp
-*/
+/* eslint-disable import/no-extraneous-dependencies, react/no-multi-comp */
 
 import React, { Component } from 'react'
 import { storiesOf } from '@storybook/react'
@@ -18,6 +13,7 @@ import {
   SCCreationPlaceholder,
   SCCreationPreview,
 } from './SC'
+import { FREECreationPreview } from './FREE'
 
 class SCAnswerWrapper extends Component {
   state = {
@@ -85,3 +81,7 @@ storiesOf('questionTypes/SC', module)
   .add('SC Creation Preview', () => (
     <SCCreationPreview title="Hello question" description="abcd" options={[]} />
   ))
+
+storiesOf('questionTypes/FREE', module).add('FREE Creation Preview (unrestricted)', () => (
+  <FREECreationPreview />
+))
