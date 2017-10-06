@@ -1,16 +1,19 @@
-// @flow
-
 import React, { Component } from 'react'
+import PropTypes from 'prop-types'
 import { Helmet } from 'react-helmet'
 
 import { createLinks, initLogging } from '../../lib'
 
-class StaticLayout extends Component {
-  props: {
-    children: any,
-    pageTitle: string,
-  }
+const propTypes = {
+  children: PropTypes.node.isRequired,
+  pageTitle: PropTypes.string,
+}
 
+const defaultProps = {
+  pageTitle: 'StaticLayout',
+}
+
+class StaticLayout extends Component {
   state = {}
 
   componentWillMount() {
@@ -64,5 +67,8 @@ class StaticLayout extends Component {
     )
   }
 }
+
+StaticLayout.propTypes = propTypes
+StaticLayout.defaultProps = defaultProps
 
 export default StaticLayout

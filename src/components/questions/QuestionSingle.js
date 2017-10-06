@@ -1,10 +1,13 @@
-// @flow
-
 import React from 'react'
+import PropTypes from 'prop-types'
 
-import type { QuestionType } from '../../types'
+const propTypes = {
+  id: PropTypes.string.isRequired,
+  title: PropTypes.string.isRequired,
+  type: PropTypes.string.isRequired,
+}
 
-const QuestionSingle = ({ id, type, title }: QuestionType) => (
+const QuestionSingle = ({ id, type, title }) => (
   <div className="questionSingle">
     <div className="id">{`#${id.substring(0, 7)}`}</div>
     <div className="type">{type}</div>
@@ -33,5 +36,7 @@ const QuestionSingle = ({ id, type, title }: QuestionType) => (
     `}</style>
   </div>
 )
+
+QuestionSingle.propTypes = propTypes
 
 export default QuestionSingle

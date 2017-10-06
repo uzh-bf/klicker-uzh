@@ -1,20 +1,11 @@
-// @flow
-
 import React from 'react'
+import PropTypes from 'prop-types'
 import isEmail from 'validator/lib/isEmail'
 import isLength from 'validator/lib/isLength'
 import { Field, reduxForm } from 'redux-form'
+import { intlShape } from 'react-intl'
 
 import { FormWithLinks, SemanticInput } from './components'
-
-type Props = {
-  intl: $IntlShape,
-  invalid: boolean,
-  handleSubmit: (values: {
-    email: string,
-    password: string,
-  }) => mixed,
-}
 
 const validate = ({ email, password }) => {
   const errors = {}
@@ -32,7 +23,13 @@ const validate = ({ email, password }) => {
   return errors
 }
 
-const LoginForm = ({ intl, invalid, handleSubmit: onSubmit }: Props) => {
+const propTypes = {
+  handleSubmit: PropTypes.func.isRequired,
+  intl: intlShape.isRequired,
+  invalid: PropTypes.bool.isRequired,
+}
+
+const LoginForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
   const button = {
     invalid,
     label: intl.formatMessage({
@@ -82,6 +79,8 @@ const LoginForm = ({ intl, invalid, handleSubmit: onSubmit }: Props) => {
     </FormWithLinks>
   )
 }
+
+LoginForm.propTypes = propTypes
 
 export default reduxForm({
   form: 'login',

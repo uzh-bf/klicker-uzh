@@ -1,7 +1,6 @@
 {
   "ignore": [
     "**/node_modules/**",
-    "**/flow-typed/**",
     "**/.storybook/**"
   ],
   "test": [

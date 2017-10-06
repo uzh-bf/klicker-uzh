@@ -1,10 +1,8 @@
-// @flow
-
 /* eslint-disable import/prefer-default-export */
 
 import React from 'react'
 
-function createLinks(links: Array<string> = []): Array<*> {
+function createLinks(links = []) {
   return links.map(link => (
     <link
       key={link}

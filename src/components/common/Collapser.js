@@ -1,20 +1,19 @@
-// @flow
-
 import React from 'react'
+import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { Icon } from 'semantic-ui-react'
 
-type Props = {
-  children: any,
-  collapsed?: boolean,
-  handleCollapseToggle: () => mixed,
+const propTypes = {
+  children: PropTypes.node.isRequired,
+  collapsed: PropTypes.bool,
+  handleCollapseToggle: PropTypes.func.isRequired,
 }
 
 const defaultProps = {
   collapsed: false,
 }
 
-const Collapser = ({ children, collapsed, handleCollapseToggle }: Props) => (
+const Collapser = ({ children, collapsed, handleCollapseToggle }) => (
   <div className="collapser">
     <div className={classNames('content', { collapsed })}>{children}</div>
     <div className="collapse">
@@ -60,6 +59,7 @@ const Collapser = ({ children, collapsed, handleCollapseToggle }: Props) => (
   </div>
 )
 
+Collapser.propTypes = propTypes
 Collapser.defaultProps = defaultProps
 
 export default Collapser

@@ -1,24 +1,22 @@
-// @flow
-
 import React, { Component } from 'react'
-
+import { intlShape } from 'react-intl'
 import { pageWithIntl, withData } from '../../lib'
 
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import SessionList from '../../components/sessions/SessionList'
 
-class Index extends Component {
-  props: {
-    intl: $IntlShape,
-  }
+const propTypes = {
+  intl: intlShape.isRequired,
+}
 
+class Index extends Component {
   // handle searching in the navbar search area
-  handleSearch = (query: string) => {
+  handleSearch = (query) => {
     console.log(`Searched... for ${query}`)
   }
 
   // handle sorting via navbar search area
-  handleSort = (by: string, order: string) => {
+  handleSort = (by, order) => {
     console.log(`sorted by ${by} in ${order} order`)
   }
 
@@ -75,5 +73,7 @@ class Index extends Component {
     )
   }
 }
+
+Index.propTypes = propTypes
 
 export default withData(pageWithIntl(Index))

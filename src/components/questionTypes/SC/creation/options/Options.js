@@ -1,69 +1,42 @@
-// @flow
-
 import React from 'react'
+import PropTypes from 'prop-types'
 import { arrayMove, SortableContainer, SortableElement } from 'react-sortable-hoc'
 import { FormattedMessage } from 'react-intl'
 
 import Placeholder from './Placeholder'
 import Option from './Option'
 
-import type { ReduxFormInputType, SCOptionsType, OptionType } from '../../../../../types'
-
-type Props = {
-  input: ReduxFormInputType<SCOptionsType>,
+const propTypes = {
+  input: PropTypes.shape({
+    onChange: PropTypes.func.isRequired,
+    value: PropTypes.arrayOf(PropTypes.shape(Option.propTypes)).isRequired,
+  }).isRequired,
 }
 
 class Options extends React.Component {
-  props: Props
-
-  static defaultProps = {
-    input: {
-      value: {
-        choices: [],
-        randomized: false,
-      },
-    },
+  handleUpdateOrder = ({ oldIndex, newIndex }) => {
+    this.props.input.onChange(arrayMove(this.props.input.value, oldIndex, newIndex))
   }
 
-  handleUpdateOrder = ({ oldIndex, newIndex }: { oldIndex: number, newIndex: number }) => {
-    const { value, onChange } = this.props.input
-
-    onChange({
-      ...value,
-      choices: arrayMove(value.choices, oldIndex, newIndex),
-    })
+  handleNewOption = (option) => {
+    this.props.input.onChange([...this.props.input.value, option])
   }
 
-  handleNewOption = (option: OptionType) => {
-    const { value, onChange } = this.props.input
-
-    onChange({
-      ...value,
-      choices: [...value.choices, option],
-    })
+  handleDeleteOption = index => () => {
+    this.props.input.onChange([
+      ...this.props.input.value.slice(0, index),
+      ...this.props.input.value.slice(index + 1),
+    ])
   }
 
-  handleDeleteOption = (index: number) => () => {
-    const { value, onChange } = this.props.input
+  handleOptionToggleCorrect = index => () => {
+    const option = this.props.input.value[index]
 
-    onChange({
-      ...value,
-      choices: [...value.choices.slice(0, index), ...value.choices.slice(index + 1)],
-    })
-  }
-
-  handleOptionToggleCorrect = (index: number) => () => {
-    const { value, onChange } = this.props.input
-    const option = value.choices[index]
-
-    onChange({
-      ...value,
-      choices: [
-        ...value.choices.slice(0, index),
-        { ...option, correct: !option.correct },
-        ...value.choices.slice(index + 1),
-      ],
-    })
+    this.props.input.onChange([
+      ...this.props.input.value.slice(0, index),
+      { ...option, correct: !option.correct },
+      ...this.props.input.value.slice(index + 1),
+    ])
   }
 
   render() {
@@ -115,5 +88,7 @@ class Options extends React.Component {
     )
   }
 }
+
+Options.propTypes = propTypes
 
 export default Options

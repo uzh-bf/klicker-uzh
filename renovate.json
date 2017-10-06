@@ -14,11 +14,6 @@
       "automerge": "minor"
     },
     {
-      "packageNames": ["flow-bin", "babel-plugin-transform-flow-strip-types"],
-      "groupName": "flow",
-      "automerge": "minor"
-    },
-    {
       "packagePatterns": ["^raven", "^logrocket"],
       "groupName": "monitoring"
     },
@@ -37,12 +32,7 @@
       "automerge": "minor"
     },
     {
-      "packageNames": [
-        "jest",
-        "react-addons-test-utils",
-        "react-test-renderer",
-        "enzyme"
-      ],
+      "packageNames": ["jest", "react-addons-test-utils", "react-test-renderer", "enzyme"],
       "groupName": "test",
       "automerge": "minor"
     },
