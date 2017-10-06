@@ -1,23 +1,28 @@
-// @flow
-
 import React from 'react'
+import PropTypes from 'prop-types'
 import TagsInput from 'react-tagsinput'
 import { FormattedMessage } from 'react-intl'
 
 import { autocompleteRenderInput } from '../../common/Autosuggest'
+import styles from './styles-tagsinput'
 
-import type { TagType, ArrayInputType } from '../../../types'
-
-type Props = {
-  tags: Array<TagType>,
-  input: ArrayInputType<TagType>,
+const propTypes = {
+  input: PropTypes.shape({
+    onChange: PropTypes.func.isRequired,
+    value: PropTypes.array,
+  }).isRequired,
+  tags: PropTypes.arrayOf(
+    PropTypes.shape({
+      name: PropTypes.string.isRequired,
+    }),
+  ),
 }
 
 const defaultProps = {
   tags: [],
 }
 
-const TagInput = ({ tags, input: { value, onChange } }: Props) => (
+const TagInput = ({ tags, input: { value, onChange } }) => (
   <div className="field">
     <label htmlFor="tags">
       <FormattedMessage defaultMessage="Tags" id="teacher.createQuestion.tags" />
@@ -28,9 +33,13 @@ const TagInput = ({ tags, input: { value, onChange } }: Props) => (
       value={value || []}
       onChange={onChange}
     />
+    <style global jsx>
+      {styles}
+    </style>
   </div>
 )
 
+TagInput.propTypes = propTypes
 TagInput.defaultProps = defaultProps
 
 export default TagInput

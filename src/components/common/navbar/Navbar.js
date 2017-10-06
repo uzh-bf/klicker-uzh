@@ -1,25 +1,22 @@
-// @flow
-
 import React from 'react'
+import PropTypes from 'prop-types'
+import { intlShape } from 'react-intl'
 import { Icon, Menu } from 'semantic-ui-react'
 
 import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'
 import SessionArea from './SessionArea'
 
-type Props = {
-  accountShort: string,
-  intl: $IntlShape,
-  search: {
-    query: string,
-    sortBy: string,
-    sortOrder: string,
-    handleSearch: (query: string) => mixed,
-    handleSort: (by: string, order: string) => mixed,
-  },
-  sidebarVisible: boolean,
-  title: string,
-  handleSidebarToggle: () => mixed,
+const propTypes = {
+  accountShort: PropTypes.string.isRequired,
+  handleSidebarToggle: PropTypes.func.isRequired,
+  intl: intlShape.isRequired,
+  search: PropTypes.shape({
+    handleSearch: PropTypes.func.isRequired,
+    handleSort: PropTypes.func.isRequired,
+  }),
+  sidebarVisible: PropTypes.bool,
+  title: PropTypes.string.isRequired,
 }
 
 const defaultProps = {
@@ -27,14 +24,7 @@ const defaultProps = {
   sidebarVisible: false,
 }
 
-const Navbar = ({
-  accountShort,
-  intl,
-  search,
-  sidebarVisible,
-  title,
-  handleSidebarToggle,
-}: Props) => (
+const Navbar = ({ accountShort, intl, search, sidebarVisible, title, handleSidebarToggle }) => (
   <div className="navbar">
     <div className="sideArea">
       <Menu borderless className="noBorder">
@@ -126,6 +116,7 @@ const Navbar = ({
   </div>
 )
 
+Navbar.propTypes = propTypes
 Navbar.defaultProps = defaultProps
 
 export default Navbar

@@ -1,13 +1,16 @@
-// @flow
-
 import React from 'react'
+import PropTypes from 'prop-types'
 
-type Props = {
-  children: any,
-  items: Array<string>,
+const propTypes = {
+  children: PropTypes.node.isRequired,
+  items: PropTypes.arrayOf(PropTypes.string.isRequired),
 }
 
-const ListWithHeader = ({ children, items }: Props) => (
+const defaultProps = {
+  items: [],
+}
+
+const ListWithHeader = ({ children, items }) => (
   <div>
     <h3 className="listHeader">{children}</h3>
     <ul className="list">
@@ -34,5 +37,8 @@ const ListWithHeader = ({ children, items }: Props) => (
     `}</style>
   </div>
 )
+
+ListWithHeader.propTypes = propTypes
+ListWithHeader.defaultProps = defaultProps
 
 export default ListWithHeader

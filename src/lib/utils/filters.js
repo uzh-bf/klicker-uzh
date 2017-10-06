@@ -1,17 +1,8 @@
-// @flow
 /* eslint-disable no-unused-vars */
 
 import _every from 'lodash/every'
 
-import type { QuestionType } from '../../queries/queries'
-
-type QuestionFilters = {
-  tags: Array<string>,
-  title: ?string,
-  type: ?string,
-}
-
-function filterQuestions(questions: QuestionType[], filters: QuestionFilters) {
+function filterQuestions(questions, filters) {
   return questions.filter((question) => {
     if (filters.title && !question.title.includes(filters.title)) {
       return false
@@ -29,9 +20,8 @@ function filterQuestions(questions: QuestionType[], filters: QuestionFilters) {
   })
 }
 
-function filterSessions(sessions: any, filters: any) {
+function filterSessions(sessions, filters) {
   return sessions
 }
 
 export { filterQuestions, filterSessions }
-export type { QuestionFilters }

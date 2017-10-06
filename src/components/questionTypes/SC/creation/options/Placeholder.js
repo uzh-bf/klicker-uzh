@@ -1,20 +1,15 @@
-// @flow
-
 import React from 'react'
+import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { FaFloppyO, FaPlus, FaTrash } from 'react-icons/lib/fa'
 
 import styles from './styles'
 
-import type { OptionType } from '../../../../../types'
-
-type Props = {
-  handleSave: (newType: OptionType) => void,
+const propTypes = {
+  handleSave: PropTypes.func.isRequired,
 }
 
 class Placeholder extends React.Component {
-  props: Props
-
   state = {
     correct: false,
     inputMode: false,
@@ -30,7 +25,7 @@ class Placeholder extends React.Component {
     this.props.handleSave({ correct: this.state.correct, name: this.state.name })
   }
 
-  handleNameChange = (e: SyntheticInputEvent) => {
+  handleNameChange = (e) => {
     this.setState({ name: e.target.value })
   }
 
@@ -100,5 +95,7 @@ class Placeholder extends React.Component {
     )
   }
 }
+
+Placeholder.propTypes = propTypes
 
 export default Placeholder

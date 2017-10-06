@@ -1,12 +1,10 @@
-// @flow
-
 import React from 'react'
 import { Helmet } from 'react-helmet'
 
 import { createLinks } from './utils/css'
 
-function withCSS(WrappedComponent: any, links: Array<string>) {
-  const WithCSS = (props: any) => (
+function withCSS(WrappedComponent, links) {
+  const WithCSS = props => (
     <div>
       <Helmet defer={false}>{createLinks(links)}</Helmet>
       <WrappedComponent {...props} />

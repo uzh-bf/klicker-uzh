@@ -1,6 +1,5 @@
-// @flow
-
 import React, { Component } from 'react'
+import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 import { Helmet } from 'react-helmet'
 import { Button } from 'semantic-ui-react'
@@ -9,17 +8,18 @@ import { createLinks, initLogging } from '../../lib'
 
 import Sidebar from '../common/sidebar/Sidebar'
 
-class StudentLayout extends Component {
-  props: {
-    children: any,
-    pageTitle: string,
-    sidebar: {
-      activeItem: string,
-      handleItemChange: (newItem: string) => mixed,
-    },
-    title: string,
-  }
+const propTypes = {
+  children: PropTypes.node.isRequired,
+  pageTitle: PropTypes.string,
+  sidebar: PropTypes.shape(Sidebar.propTypes).isRequired,
+  title: PropTypes.string.isRequired,
+}
 
+const defaultProps = {
+  pageTitle: 'StudentLayout',
+}
+
+class StudentLayout extends Component {
   state = {
     sidebarActiveItem: 'activeQuestion',
     sidebarVisible: false,
@@ -30,7 +30,7 @@ class StudentLayout extends Component {
     initLogging()
   }
 
-  handleSidebarItemClick = (sidebarActiveItem: string) => () => {
+  handleSidebarItemClick = sidebarActiveItem => () => {
     this.setState({ sidebarActiveItem })
     this.handleSidebarToggle()
     this.props.sidebar.handleItemChange(sidebarActiveItem)
@@ -143,5 +143,8 @@ class StudentLayout extends Component {
     )
   }
 }
+
+StudentLayout.propTypes = propTypes
+StudentLayout.defaultProps = defaultProps
 
 export default StudentLayout

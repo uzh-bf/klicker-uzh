@@ -1,16 +1,21 @@
-// @flow
-
 import React from 'react'
+import PropTypes from 'prop-types'
 import { Button } from 'semantic-ui-react'
 
-type Props = {
-  items: Array<{
-    label: string,
-    handleClick: () => mixed,
-  }>,
+const propTypes = {
+  items: PropTypes.arrayOf(
+    PropTypes.shape({
+      handleClick: PropTypes.func.isRequired,
+      label: PropTypes.string.isRequired,
+    }),
+  ),
 }
 
-const ActionButton = ({ items }: Props) => (
+const defaultProps = {
+  items: [],
+}
+
+const ActionButton = ({ items }) => (
   <div className="actionButtonWrapper">
     <div className="actionButton">
       <Button circular primary icon="plus" size="large" />
@@ -65,5 +70,8 @@ const ActionButton = ({ items }: Props) => (
     `}</style>
   </div>
 )
+
+ActionButton.propTypes = propTypes
+ActionButton.defaultProps = defaultProps
 
 export default ActionButton
