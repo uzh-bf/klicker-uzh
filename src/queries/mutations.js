@@ -62,3 +62,19 @@ export const CreateSessionMutation = gql`
     }
   }
 `
+
+export const StartSessionMutation = gql`
+  mutation StartSession($id: ID!) {
+    startSession(id: $id) {
+      id
+    }
+  }
+`
+
+export const EndSessionMutation = gql`
+  mutation EndSession($id: ID!) {
+    endSession(id: $id) {
+      id
+    }
+  }
+`

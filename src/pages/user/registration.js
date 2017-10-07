@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import { compose } from 'recompose'
 import { intlShape, FormattedMessage } from 'react-intl'
 import { graphql } from 'react-apollo'
 
@@ -88,13 +89,10 @@ class Registration extends React.Component {
 
 Registration.propTypes = propTypes
 
-export default withData(
-  pageWithIntl(
-    graphql(RegistrationMutation, {
-      props: ({ mutate }) => ({
-        createUser: (email, password, shortname) =>
-          mutate({ variables: { email, password, shortname } }),
-      }),
-    })(Registration),
-  ),
-)
+const withRegistrationMutation = graphql(RegistrationMutation, {
+  props: ({ mutate }) => ({
+    createUser: (email, password, shortname) =>
+      mutate({ variables: { email, password, shortname } }),
+  }),
+})
+export default compose(withData, pageWithIntl, withRegistrationMutation)(Registration)

@@ -1,5 +1,6 @@
 import React from 'react'
 import classNames from 'classnames'
+import { compose } from 'recompose'
 import { Button } from 'semantic-ui-react'
 import { intlShape, FormattedMessage } from 'react-intl'
 
@@ -228,4 +229,4 @@ class Session extends React.Component {
 
 Session.propTypes = propTypes
 
-export default withData(pageWithIntl(Session))
+export default compose(withData, pageWithIntl)(Session)

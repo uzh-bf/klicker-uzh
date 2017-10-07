@@ -1,6 +1,7 @@
 import React from 'react'
 import Router from 'next/router'
 import PropTypes from 'prop-types'
+import { compose } from 'recompose'
 import { intlShape, FormattedMessage } from 'react-intl'
 import { graphql } from 'react-apollo'
 
@@ -87,12 +88,10 @@ class Login extends React.Component {
 
 Login.propTypes = propTypes
 
-export default withData(
-  pageWithIntl(
-    graphql(LoginMutation, {
-      props: ({ mutate }) => ({
-        login: (email, password) => mutate({ variables: { email, password } }),
-      }),
-    })(Login),
-  ),
-)
+const withLoginMutation = graphql(LoginMutation, {
+  props: ({ mutate }) => ({
+    login: (email, password) => mutate({ variables: { email, password } }),
+  }),
+})
+
+export default compose(withData, pageWithIntl, withLoginMutation)(Login)

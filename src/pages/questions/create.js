@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import Router from 'next/router'
+import { compose } from 'recompose'
 import { graphql } from 'react-apollo'
 import { intlShape } from 'react-intl'
 
@@ -71,8 +72,6 @@ class CreateQuestion extends Component {
 
 CreateQuestion.propTypes = propTypes
 
-const withTags = graphql(TagListQuery)
-
 const withCreateQuestionMutation = graphql(CreateQuestionMutation, {
   props: ({ mutate }) => ({
     createQuestion: ({
@@ -91,4 +90,6 @@ const withCreateQuestionMutation = graphql(CreateQuestionMutation, {
   }),
 })
 
-export default withData(pageWithIntl(withTags(withCreateQuestionMutation(CreateQuestion))))
+export default compose(withData, pageWithIntl, graphql(TagListQuery), withCreateQuestionMutation)(
+  CreateQuestion,
+)

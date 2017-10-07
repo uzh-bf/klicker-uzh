@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
+import { compose } from 'recompose'
 import { graphql } from 'react-apollo'
 import { intlShape } from 'react-intl'
 
@@ -158,4 +159,4 @@ class Running extends Component {
 
 Running.propTypes = propTypes
 
-export default withData(pageWithIntl(graphql(RunningSessionQuery)(Running)))
+export default compose(withData, pageWithIntl, graphql(RunningSessionQuery))(Running)

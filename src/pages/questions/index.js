@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
+import { compose } from 'recompose'
 import { intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
@@ -8,7 +9,7 @@ import { FaPlus } from 'react-icons/lib/fa'
 
 import { pageWithIntl, withData } from '../../lib'
 import { SessionListQuery } from '../../queries/queries'
-import { CreateSessionMutation } from '../../queries/mutations'
+import { CreateSessionMutation, StartSessionMutation } from '../../queries/mutations'
 import SessionCreationForm from '../../components/forms/SessionCreationForm'
 import QuestionList from '../../components/questions/QuestionList'
 import TagList from '../../components/questions/TagList'
@@ -263,4 +264,15 @@ const withCreateSessionMutation = graphql(CreateSessionMutation, {
   }),
 })
 
-export default withData(pageWithIntl(withCreateSessionMutation(Index)))
+const withStartSessionMutation = graphql(StartSessionMutation, {
+  props: ({ mutate }) => ({
+    startSession: ({ id }) =>
+      mutate({
+        variables: { id },
+      }),
+  }),
+})
+
+export default compose(withData, pageWithIntl, withCreateSessionMutation, withStartSessionMutation)(
+  Index,
+)

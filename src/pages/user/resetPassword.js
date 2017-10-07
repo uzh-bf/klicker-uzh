@@ -1,4 +1,5 @@
 import React from 'react'
+import { compose } from 'recompose'
 import { intlShape, FormattedMessage } from 'react-intl'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
@@ -55,4 +56,4 @@ class ResetPassword extends React.Component {
 
 ResetPassword.propTypes = propTypes
 
-export default withData(pageWithIntl(ResetPassword))
+export default compose(withData, pageWithIntl)(ResetPassword)

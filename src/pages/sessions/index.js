@@ -1,4 +1,5 @@
 import React, { Component } from 'react'
+import { compose } from 'recompose'
 import { intlShape } from 'react-intl'
 import { pageWithIntl, withData } from '../../lib'
 
@@ -78,4 +79,4 @@ class Index extends Component {
 
 Index.propTypes = propTypes
 
-export default withData(pageWithIntl(Index))
+export default compose(withData, pageWithIntl)(Index)
