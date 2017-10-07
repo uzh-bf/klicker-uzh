@@ -16,6 +16,7 @@ export const QuestionListQuery = gql`
       title
       type
       instances {
+        id
         createdAt
       }
       tags {
@@ -34,6 +35,7 @@ export const QuestionListQuery = gql`
 export const QrGeneratorQuery = gql`
   {
     user {
+      id
       shortname
     }
   }
@@ -64,7 +66,9 @@ export const SessionListQuery = gql`
 export const RunningSessionQuery = gql`
   {
     user {
+      id
       runningSession {
+        id
         feedbacks {
           key
           content
@@ -76,6 +80,7 @@ export const RunningSessionQuery = gql`
           instances {
             id
             question {
+              id
               title
               type
             }
