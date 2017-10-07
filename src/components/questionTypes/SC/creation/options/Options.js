@@ -13,6 +13,15 @@ const propTypes = {
   }).isRequired,
 }
 
+// TODO: further recompose example
+const enhance = compose(
+  withHandlers({
+    handleUpdateOrder: ({ input: { onChange, value } }) => ({ oldIndex, newIndex }) =>
+      onChange(arrayMove(value, oldIndex, newIndex)),
+    handleNewOption:
+  }),
+)
+
 class Options extends React.Component {
   handleUpdateOrder = ({ oldIndex, newIndex }) => {
     this.props.input.onChange(arrayMove(this.props.input.value, oldIndex, newIndex))
