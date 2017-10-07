@@ -89,10 +89,13 @@ class Registration extends React.Component {
 
 Registration.propTypes = propTypes
 
-const withRegistrationMutation = graphql(RegistrationMutation, {
-  props: ({ mutate }) => ({
-    createUser: (email, password, shortname) =>
-      mutate({ variables: { email, password, shortname } }),
+export default compose(
+  withData,
+  pageWithIntl,
+  graphql(RegistrationMutation, {
+    props: ({ mutate }) => ({
+      createUser: (email, password, shortname) =>
+        mutate({ variables: { email, password, shortname } }),
+    }),
   }),
-})
-export default compose(withData, pageWithIntl, withRegistrationMutation)(Registration)
+)(Registration)

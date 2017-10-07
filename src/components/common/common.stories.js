@@ -3,6 +3,7 @@
 import React from 'react'
 import { storiesOf } from '@storybook/react'
 import { action } from '@storybook/addon-actions'
+import { compose, withState, withHandlers } from 'recompose'
 
 import { intlMock } from '../../../.storybook/utils'
 
@@ -24,22 +25,12 @@ const sidebarItems = [
 ]
 
 // create a stateful wrapper for the component
-class CollapserWrapper extends React.Component {
-  state = {
-    collapsed: true,
-  }
-  render() {
-    return (
-      <Collapser
-        collapsed={this.state.collapsed}
-        handleCollapseToggle={() =>
-          this.setState(prevState => ({ collapsed: !prevState.collapsed }))}
-      >
-        {this.props.children}
-      </Collapser>
-    )
-  }
-}
+const CollapserWithState = compose(
+  withState('collapsed', 'setCollapsed', true),
+  withHandlers({
+    handleCollapseToggle: ({ setCollapsed }) => () => setCollapsed(collapsed => !collapsed),
+  }),
+)(Collapser)
 
 // specify some example content
 const collapserContent = (
@@ -49,11 +40,6 @@ const collapserContent = (
       fact very very long. the end is even hidden at the beginning.
     </p>
 
-    <p>wow, is this a long question. i could never have imagined seeing such a question.</p>
-    <p>
-      hello this is a very short question that is getting longer and longer as we speak. it is in
-      fact very very long. the end is even hidden at the beginning.
-    </p>
     <p>wow, is this a long question. i could never have imagined seeing such a question.</p>
   </div>
 )
@@ -70,9 +56,15 @@ storiesOf('common/components', module)
   .add('ListWithHeader', () => (
     <ListWithHeader items={['abcd', 'cdef']}>hello world</ListWithHeader>
   ))
-  .add('Collapser', () => <CollapserWrapper>{collapserContent}</CollapserWrapper>)
+  .add('Collapser', () => (
+    <CollapserWithState>
+      {collapserContent}
+      {collapserContent}
+    </CollapserWithState>
+  ))
   .add('Collapser (extended)', () => (
     <Collapser handleCollapseToggle={() => action('collapser-clicked')}>
+      {collapserContent}
       {collapserContent}
     </Collapser>
   ))

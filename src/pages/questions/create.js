@@ -72,24 +72,25 @@ class CreateQuestion extends React.Component {
 
 CreateQuestion.propTypes = propTypes
 
-const withCreateQuestionMutation = graphql(CreateQuestionMutation, {
-  props: ({ mutate }) => ({
-    createQuestion: ({
-      description, options, tags, title, type,
-    }) =>
-      mutate({
-        refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
-        variables: {
-          description,
-          options,
-          tags,
-          title,
-          type,
-        },
-      }),
+export default compose(
+  withData,
+  pageWithIntl,
+  graphql(TagListQuery),
+  graphql(CreateQuestionMutation, {
+    props: ({ mutate }) => ({
+      createQuestion: ({
+        description, options, tags, title, type,
+      }) =>
+        mutate({
+          refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
+          variables: {
+            description,
+            options,
+            tags,
+            title,
+            type,
+          },
+        }),
+    }),
   }),
-})
-
-export default compose(withData, pageWithIntl, graphql(TagListQuery), withCreateQuestionMutation)(
-  CreateQuestion,
-)
+)(CreateQuestion)

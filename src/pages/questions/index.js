@@ -254,25 +254,24 @@ class Index extends React.Component {
 
 Index.propTypes = propTypes
 
-const withCreateSessionMutation = graphql(CreateSessionMutation, {
-  props: ({ mutate }) => ({
-    createSession: ({ blocks, name }) =>
-      mutate({
-        refetchQueries: [{ query: SessionListQuery }],
-        variables: { blocks, name },
-      }),
+export default compose(
+  withData,
+  pageWithIntl,
+  graphql(CreateSessionMutation, {
+    props: ({ mutate }) => ({
+      createSession: ({ blocks, name }) =>
+        mutate({
+          refetchQueries: [{ query: SessionListQuery }],
+          variables: { blocks, name },
+        }),
+    }),
   }),
-})
-
-const withStartSessionMutation = graphql(StartSessionMutation, {
-  props: ({ mutate }) => ({
-    startSession: ({ id }) =>
-      mutate({
-        variables: { id },
-      }),
+  graphql(StartSessionMutation, {
+    props: ({ mutate }) => ({
+      startSession: ({ id }) =>
+        mutate({
+          variables: { id },
+        }),
+    }),
   }),
-})
-
-export default compose(withData, pageWithIntl, withCreateSessionMutation, withStartSessionMutation)(
-  Index,
-)
+)(Index)

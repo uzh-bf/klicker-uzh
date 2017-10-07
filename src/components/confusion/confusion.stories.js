@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { storiesOf } from '@storybook/react'
+import { compose, withState, withHandlers } from 'recompose'
 
 import ConfusionBarometer from './ConfusionBarometer'
 import ConfusionSection from './ConfusionSection'
@@ -9,40 +10,23 @@ import ConfusionSlider from './ConfusionSlider'
 import { intlMock } from '../../../.storybook/utils'
 
 // create a stateful wrapper for the component
-class BarometerWrapper extends React.Component {
-  state = {
-    isActive: false,
-  }
-  render() {
-    return (
-      <ConfusionBarometer
-        intl={intlMock}
-        isActive={this.state.isActive}
-        handleActiveToggle={() => this.setState(prevState => ({ isActive: !prevState.isActive }))}
-      />
-    )
-  }
-}
+const BarometerWithState = compose(
+  withState('isActive', 'setIsActive', false),
+  withHandlers({
+    handleActiveToggle: ({ setIsActive }) => () => setIsActive(isActive => !isActive),
+  }),
+)(ConfusionBarometer)
 
-// create a stateful wrapper for the component
-class SliderWrapper extends React.Component {
-  state = {
-    value: 10,
-  }
-  render() {
-    return (
-      <ConfusionSlider
-        title={<h2>Speed</h2>}
-        value={this.state.value}
-        handleChange={value => this.setState({ value })}
-      />
-    )
-  }
-}
+const SliderWithState = compose(
+  withState('value', 'setValue', 10),
+  withHandlers({
+    handleChange: ({ setValue }) => newValue => setValue(() => newValue),
+  }),
+)(ConfusionSlider)
 
 storiesOf('confusion', module)
-  .add('ConfusionSlider', () => <SliderWrapper />)
-  .add('ConfusionBarometer', () => <BarometerWrapper />)
+  .add('ConfusionSlider', () => <SliderWithState title={<h2>Speed</h2>} />)
+  .add('ConfusionBarometer', () => <BarometerWithState intl={intlMock} />)
   // HACK: disable test as recharts breaks => https://github.com/recharts/recharts/issues/765
   .add('ConfusionBarometer (isActive) [NoTest]', () => (
     <ConfusionBarometer isActive intl={intlMock} handleActiveToggle={() => null} />

@@ -2,6 +2,8 @@
 
 import React from 'react'
 import { storiesOf } from '@storybook/react'
+import { compose, withState, withHandlers, mapProps } from 'recompose'
+
 import { intlMock } from '../../../.storybook/utils'
 
 import TypeChooser from './TypeChooser'
@@ -14,42 +16,26 @@ import {
   SCCreationPreview,
 } from './SC'
 
-class SCAnswerWrapper extends React.Component {
-  state = {
-    activeOption: 1,
-  }
-  render() {
-    return (
-      <SCAnswerOptions
-        activeOption={this.state.activeOption}
-        options={[
-          { correct: false, name: 'answer 1' },
-          { correct: true, name: 'antwort 2' },
-          { correct: false, name: 'option 3' },
-        ]}
-        onOptionClick={index => () => this.setState({ activeOption: index })}
-      />
-    )
-  }
-}
+const options = [
+  { correct: false, name: 'answer 1' },
+  { correct: true, name: 'antwort 2' },
+  { correct: false, name: 'option 3' },
+]
 
-class SCCreationWrapper extends React.Component {
-  state = {
-    options: [{ correct: true, name: 'Correct option' }, { correct: false, name: 'This is false' }],
-  }
+const SCAnswerOptionsWithState = compose(
+  withState('activeOption', 'setActiveOption', 1),
+  withHandlers({
+    onOptionClick: ({ setActiveOption }) => index => () => setActiveOption(index),
+  }),
+)(SCAnswerOptions)
 
-  render() {
-    return (
-      <SCCreationOptions
-        input={{
-          onChange: options => this.setState({ options }),
-          value: this.state.options,
-        }}
-        intl={intlMock}
-      />
-    )
-  }
-}
+const SCCreationOptionsWithState = compose(
+  withState('options', 'setOptions', options),
+  withHandlers({
+    onChange: ({ setOptions }) => newOptions => setOptions(newOptions),
+  }),
+  mapProps(({ onChange, options: value }) => ({ input: { onChange, value } })),
+)(SCCreationOptions)
 
 storiesOf('questionTypes/components', module).add('TypeChooser', () => (
   <TypeChooser
@@ -69,9 +55,9 @@ storiesOf('questionTypes/components', module).add('TypeChooser', () => (
 ))
 
 storiesOf('questionTypes/SC', module)
-  .add('SC Answering Options', () => <SCAnswerWrapper />)
+  .add('SC Answering Options', () => <SCAnswerOptionsWithState options={options} />)
   .add('SC Creation Content', () => <SCCreationContent input={{ value: 'hello world' }} />)
-  .add('SC Creation Options [NoTest]', () => <SCCreationWrapper />)
+  .add('SC Creation Options [NoTest]', () => <SCCreationOptionsWithState intl={intlMock} />)
   .add('SC Creation Option (correct)', () => <SCCreationOption correct name="That's true!" />)
   .add('SC Creation Option (incorrect)', () => (
     <SCCreationOption correct={false} name="So wrong!" />
