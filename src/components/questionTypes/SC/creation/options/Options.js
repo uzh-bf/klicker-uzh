@@ -43,31 +43,31 @@ class Options extends React.Component {
     const SortableOption = SortableElement(props => (
       <div className="option">
         <Option {...props} />
-        <style jsx>{`
-          .option {
-            cursor: grab;
-            margin-bottom: 0.5rem;
-          }
-        `}</style>
+        <style jsx>
+          {`
+            .option {
+              cursor: grab;
+              margin-bottom: 0.5rem;
+            }
+          `}
+        </style>
       </div>
     ))
 
-    const SortableOptions = SortableContainer(
-      ({ sortableOptions, handleCorrectToggle, handleDelete }) => (
-        <div className="options">
-          {sortableOptions.map(({ correct, name }, index) => (
-            <SortableOption
-              key={`sortable-${name}`}
-              index={index}
-              name={name}
-              correct={correct}
-              handleCorrectToggle={handleCorrectToggle(index)}
-              handleDelete={handleDelete(index)}
-            />
+    const SortableOptions = SortableContainer(({ sortableOptions, handleCorrectToggle, handleDelete }) => (
+      <div className="options">
+        {sortableOptions.map(({ correct, name }, index) => (
+          <SortableOption
+            key={`sortable-${name}`}
+            index={index}
+            name={name}
+            correct={correct}
+            handleCorrectToggle={handleCorrectToggle(index)}
+            handleDelete={handleDelete(index)}
+          />
           ))}
-        </div>
-      ),
-    )
+      </div>
+    ))
 
     const { input: { value } } = this.props
 

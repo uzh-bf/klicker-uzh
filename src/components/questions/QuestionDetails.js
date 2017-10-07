@@ -26,32 +26,34 @@ const QuestionDetails = ({ lastUsed }) => (
       </div>
     )}
 
-    <style jsx>{`
-      .container {
-        background-color: lightgrey;
-        border: 1px solid grey;
-        display: flex;
-        flex-flow: column nowrap;
-      }
-      .column {
-        text-align: center;
-      }
-
-      @media all and (min-width: 768px) {
+    <style jsx>
+      {`
         .container {
-          flex-flow: row nowrap;
-          min-height: 7rem;
+          background-color: lightgrey;
+          border: 1px solid grey;
+          display: flex;
+          flex-flow: column nowrap;
         }
         .column {
-          flex: 1;
-          padding: 1rem;
-          text-align: left;
+          text-align: center;
         }
-        .column:not(:last-child) {
-          border-right: 1px solid grey;
+
+        @media all and (min-width: 768px) {
+          .container {
+            flex-flow: row nowrap;
+            min-height: 7rem;
+          }
+          .column {
+            flex: 1;
+            padding: 1rem;
+            text-align: left;
+          }
+          .column:not(:last-child) {
+            border-right: 1px solid grey;
+          }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

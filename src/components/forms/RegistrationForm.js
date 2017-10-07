@@ -10,7 +10,9 @@ import { Button } from 'semantic-ui-react'
 
 import { SemanticInput } from './components'
 
-const validate = ({ firstName, lastName, email, shortname, password, passwordRepeat, useCase }) => {
+const validate = ({
+  firstName, lastName, email, shortname, password, passwordRepeat, useCase,
+}) => {
   const errors = {}
 
   if (!firstName || !isAlpha(firstName) || isEmpty(firstName)) {
@@ -136,39 +138,41 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
       </Button>
     </div>
 
-    <style jsx>{`
-      .form {
-        display: flex;
-        flex-direction: column;
-      }
-      .account {
-        margin-top: 1rem;
-      }
-
-      @media all and (min-width: 768px) {
+    <style jsx>
+      {`
         .form {
-          flex-flow: row wrap;
-        }
-        .personal,
-        .account {
-          flex: 1 1 50%;
-        }
-        .personal {
-          padding-right: 0.5rem;
+          display: flex;
+          flex-direction: column;
         }
         .account {
-          margin: 0;
-          padding-left: 0.5rem;
+          margin-top: 1rem;
         }
-      }
 
-      @media all and (min-width: 991px) {
-        .form {
-          border: 1px solid lightgrey;
-          padding: 1rem;
+        @media all and (min-width: 768px) {
+          .form {
+            flex-flow: row wrap;
+          }
+          .personal,
+          .account {
+            flex: 1 1 50%;
+          }
+          .personal {
+            padding-right: 0.5rem;
+          }
+          .account {
+            margin: 0;
+            padding-left: 0.5rem;
+          }
         }
-      }
-    `}</style>
+
+        @media all and (min-width: 991px) {
+          .form {
+            border: 1px solid lightgrey;
+            padding: 1rem;
+          }
+        }
+      `}
+    </style>
   </form>
 )
 

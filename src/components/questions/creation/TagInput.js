@@ -11,11 +11,9 @@ const propTypes = {
     onChange: PropTypes.func.isRequired,
     value: PropTypes.array,
   }).isRequired,
-  tags: PropTypes.arrayOf(
-    PropTypes.shape({
-      name: PropTypes.string.isRequired,
-    }),
-  ),
+  tags: PropTypes.arrayOf(PropTypes.shape({
+    name: PropTypes.string.isRequired,
+  })),
 }
 
 const defaultProps = {

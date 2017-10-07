@@ -31,33 +31,35 @@ const Preview = ({ title, description, options }) => (
       <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
     </div>
 
-    <style jsx>{`
-      .preview {
-        display: flex;
-        flex-direction: column;
+    <style jsx>
+      {`
+        .preview {
+          display: flex;
+          flex-direction: column;
 
-        border: 1px solid lightgrey;
-        height: 100%;
-        padding: 1rem;
-      }
+          border: 1px solid lightgrey;
+          height: 100%;
+          padding: 1rem;
+        }
 
-      .title,
-      .description,
-      .options {
-        margin-bottom: 1rem;
-      }
+        .title,
+        .description,
+        .options {
+          margin-bottom: 1rem;
+        }
 
-      .title {
-        font-weight: bold;
-      }
+        .title {
+          font-weight: bold;
+        }
 
-      .button {
-        align-self: flex-end;
+        .button {
+          align-self: flex-end;
 
-        border: 1px solid lightgrey;
-        padding: 0.5rem;
-      }
-    `}</style>
+          border: 1px solid lightgrey;
+          padding: 0.5rem;
+        }
+      `}
+    </style>
   </div>
 )
 

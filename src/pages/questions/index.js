@@ -155,21 +155,23 @@ class Index extends Component {
           onDiscard={this.toggleCreationMode}
         />
 
-        <style jsx>{`
-          .creationForm {
-            animation-name: slide-in;
-            animation-duration: 0.5s;
-          }
+        <style jsx>
+          {`
+            .creationForm {
+              animation-name: slide-in;
+              animation-duration: 0.5s;
+            }
 
-          @keyframes slide-in {
-            0% {
-              transform: translateY(300px);
+            @keyframes slide-in {
+              0% {
+                transform: translateY(300px);
+              }
+              100% {
+                transform: translateY(0);
+              }
             }
-            100% {
-              transform: translateY(0);
-            }
-          }
-        `}</style>
+          `}
+        </style>
       </div>
     )
 
@@ -198,51 +200,53 @@ class Index extends Component {
           </div>
         </div>
 
-        <style jsx>{`
-          .questionPool {
-            display: flex;
-            flex-direction: column;
-
-            padding: 1rem;
-          }
-
-          .tagList {
-            flex: 1;
-
-            margin-bottom: 1rem;
-          }
-
-          .actionButton {
-            display: flex;
-            flex-direction: row;
-            justify-items: flex-end;
-          }
-
-          @media all and (min-width: 768px) {
+        <style jsx>
+          {`
             .questionPool {
-              flex-flow: row wrap;
+              display: flex;
+              flex-direction: column;
 
-              padding: 2rem;
+              padding: 1rem;
             }
 
             .tagList {
-              flex: 0 0 auto;
-
-              margin: 0;
-              margin-right: 2rem;
-            }
-
-            .questionList {
               flex: 1;
-            }
-          }
 
-          @media all and (min-width: 991px) {
-            .questionPool {
-              padding: 2rem 10% 2rem 2rem;
+              margin-bottom: 1rem;
             }
-          }
-        `}</style>
+
+            .actionButton {
+              display: flex;
+              flex-direction: row;
+              justify-items: flex-end;
+            }
+
+            @media all and (min-width: 768px) {
+              .questionPool {
+                flex-flow: row wrap;
+
+                padding: 2rem;
+              }
+
+              .tagList {
+                flex: 0 0 auto;
+
+                margin: 0;
+                margin-right: 2rem;
+              }
+
+              .questionList {
+                flex: 1;
+              }
+            }
+
+            @media all and (min-width: 991px) {
+              .questionPool {
+                padding: 2rem 10% 2rem 2rem;
+              }
+            }
+          `}
+        </style>
       </TeacherLayout>
     )
   }

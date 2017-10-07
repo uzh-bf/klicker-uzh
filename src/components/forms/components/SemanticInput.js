@@ -41,7 +41,12 @@ const SemanticInput = ({
 }) => {
   // construct field props
   // define an erroneous field as a field that has been touched and is invalid
-  const fieldProps = { disabled, error: touched && invalid, required, width }
+  const fieldProps = {
+    disabled,
+    error: touched && invalid,
+    required,
+    width,
+  }
 
   // construct input props
   // define the default placeholder to be equal to the label
@@ -62,18 +67,20 @@ const SemanticInput = ({
         </div>
       )}
 
-      <style jsx>{`
-        .errorMessage {
-          // TODO: improve styling
-          background-color: #fff6f6;
-          border: 1px solid #e0b4b4;
-          border-top: none;
-          box-shadow: 2px 2px 3px 0px rgba(0, 0, 0, 0.05);
-          color: #9f3a38;
-          font-size: 0.9rem;
-          padding: 0.3rem 0.5rem;
-        }
-      `}</style>
+      <style jsx>
+        {`
+          .errorMessage {
+            // TODO: improve styling
+            background-color: #fff6f6;
+            border: 1px solid #e0b4b4;
+            border-top: none;
+            box-shadow: 2px 2px 3px 0px rgba(0, 0, 0, 0.05);
+            color: #9f3a38;
+            font-size: 0.9rem;
+            padding: 0.3rem 0.5rem;
+          }
+        `}
+      </style>
     </Form.Field>
   )
 }

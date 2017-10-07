@@ -62,78 +62,80 @@ const SessionTimeline = ({ blocks, intl }) => (
         size="large"
       />
     </div>
-    <style jsx>{`
-      .sessionTimeline {
-        display: flex;
-        flex-direction: column;
-      }
-
-      .topRow {
-        flex: 1;
-
-        display: flex;
-
-        background: grey;
-        padding: 1rem;
-      }
-
-      .runningTime {
-        margin-left: 2rem;
-      }
-
-      .blocks {
-        flex: 1;
-
-        display: flex;
-        flex-direction: column;
-
-        border: 1px solid grey;
-        padding: 1rem;
-      }
-
-      .block:not(:first-child) {
-        margin-top: 1rem;
-      }
-
-      .buttons {
-        flex: 1;
-
-        display: flex;
-        flex-flow: row wrap;
-        justify-content: space-between;
-
-        margin-top: 1rem;
-      }
-
-      .buttons > :global(button) {
-        margin-right: 0;
-      }
-
-      @media all and (min-width: 768px) {
+    <style jsx>
+      {`
         .sessionTimeline {
-          flex-flow: row wrap;
+          display: flex;
+          flex-direction: column;
         }
 
         .topRow {
-          flex: 0 0 100%;
+          flex: 1;
 
-          padding: 0.5rem;
+          display: flex;
+
+          background: grey;
+          padding: 1rem;
+        }
+
+        .runningTime {
+          margin-left: 2rem;
         }
 
         .blocks {
-          flex: 0 0 100%;
+          flex: 1;
 
-          flex-direction: row;
+          display: flex;
+          flex-direction: column;
 
-          padding: 0.5rem;
+          border: 1px solid grey;
+          padding: 1rem;
         }
 
-        .block,
         .block:not(:first-child) {
-          margin: 0.3rem;
+          margin-top: 1rem;
         }
-      }
-    `}</style>
+
+        .buttons {
+          flex: 1;
+
+          display: flex;
+          flex-flow: row wrap;
+          justify-content: space-between;
+
+          margin-top: 1rem;
+        }
+
+        .buttons > :global(button) {
+          margin-right: 0;
+        }
+
+        @media all and (min-width: 768px) {
+          .sessionTimeline {
+            flex-flow: row wrap;
+          }
+
+          .topRow {
+            flex: 0 0 100%;
+
+            padding: 0.5rem;
+          }
+
+          .blocks {
+            flex: 0 0 100%;
+
+            flex-direction: row;
+
+            padding: 0.5rem;
+          }
+
+          .block,
+          .block:not(:first-child) {
+            margin: 0.3rem;
+          }
+        }
+      `}
+    </style>
   </div>
 )
 

@@ -15,9 +15,7 @@ const autocompleteRenderInput = tags => ({ addTag, ...props }) => {
   const inputValue = (props.value && props.value.trim().toLowerCase()) || ''
   const inputLength = inputValue.length
 
-  const suggestions = tags.filter(
-    tag => tag.name.toLowerCase().slice(0, inputLength) === inputValue,
-  )
+  const suggestions = tags.filter(tag => tag.name.toLowerCase().slice(0, inputLength) === inputValue)
 
   const getSuggestionValue = suggestion => suggestion.name
   const renderSuggestion = suggestion => <span>{suggestion.name}</span>

@@ -31,18 +31,20 @@ const ConfusionSection = ({ data, title }) => (
       </ResponsiveContainer>
     </div>
 
-    <style jsx>{`
-      .confusionSection {
-        display: flex;
-        flex-direction: column;
-      }
+    <style jsx>
+      {`
+        .confusionSection {
+          display: flex;
+          flex-direction: column;
+        }
 
-      .chart {
-        flex: 1;
+        .chart {
+          flex: 1;
 
-        height: 10rem;
-      }
-    `}</style>
+          height: 10rem;
+        }
+      `}
+    </style>
   </div>
 )
 

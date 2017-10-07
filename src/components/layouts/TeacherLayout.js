@@ -44,7 +44,9 @@ class TeacherLayout extends Component {
   }
 
   render() {
-    const { actionArea, children, intl, navbar, pageTitle, sidebar } = this.props
+    const {
+      actionArea, children, intl, navbar, pageTitle, sidebar,
+    } = this.props
 
     const sidebarItems = [
       {
@@ -105,47 +107,51 @@ class TeacherLayout extends Component {
 
         {actionArea && <div className="actionArea">{actionArea}</div>}
 
-        <style jsx global>{`
-          * {
-            font-family: 'Open Sans', sans-serif;
-          }
+        <style jsx global>
+          {`
+            * {
+              font-family: 'Open Sans', sans-serif;
+            }
 
-          html,
-          body {
-            font-size: 14px;
-          }
+            html,
+            body {
+              font-size: 14px;
+            }
 
-          input,
-          .noBorder {
-            border-radius: 0 !important;
-          }
+            input,
+            .noBorder {
+              border-radius: 0 !important;
+            }
 
-          .noBorder {
-            border: 0 !important;
-            box-shadow: none !important;
-          }
-        `}</style>
+            .noBorder {
+              border: 0 !important;
+              box-shadow: none !important;
+            }
+          `}
+        </style>
 
-        <style jsx>{`
-          .teacherLayout {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-          }
+        <style jsx>
+          {`
+            .teacherLayout {
+              display: flex;
+              flex-direction: column;
+              min-height: 100vh;
+            }
 
-          .content {
-            flex: 1;
+            .content {
+              flex: 1;
 
-            display: flex;
-          }
+              display: flex;
+            }
 
-          .actionArea {
-            position: fixed;
-            bottom: 0;
-            right: 0;
-            left: 0;
-          }
-        `}</style>
+            .actionArea {
+              position: fixed;
+              bottom: 0;
+              right: 0;
+              left: 0;
+            }
+          `}
+        </style>
       </div>
     )
   }

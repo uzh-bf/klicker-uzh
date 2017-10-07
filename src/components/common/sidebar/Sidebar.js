@@ -8,13 +8,11 @@ const propTypes = {
   activeItem: PropTypes.string,
   children: PropTypes.node.isRequired,
   handleSidebarItemClick: PropTypes.func.isRequired,
-  items: PropTypes.arrayOf(
-    PropTypes.shape({
-      href: PropTypes.string.isRequired,
-      label: PropTypes.element.isRequired,
-      name: PropTypes.string.isRequired,
-    }),
-  ),
+  items: PropTypes.arrayOf(PropTypes.shape({
+    href: PropTypes.string.isRequired,
+    label: PropTypes.element.isRequired,
+    name: PropTypes.string.isRequired,
+  })),
   visible: PropTypes.bool,
 }
 
@@ -24,7 +22,9 @@ const defaultProps = {
   visible: false,
 }
 
-const Sidebar = ({ activeItem, children, items, visible, handleSidebarItemClick }) => (
+const Sidebar = ({
+  activeItem, children, items, visible, handleSidebarItemClick,
+}) => (
   <div className="sidebar">
     <SemanticSidebar.Pushable>
       <SemanticSidebar
@@ -52,32 +52,34 @@ const Sidebar = ({ activeItem, children, items, visible, handleSidebarItemClick 
       <SemanticSidebar.Pusher>{children}</SemanticSidebar.Pusher>
     </SemanticSidebar.Pushable>
 
-    <style jsx>{`
-      .sidebar {
-        display: flex;
-        flex-direction: column;
+    <style jsx>
+      {`
+        .sidebar {
+          display: flex;
+          flex-direction: column;
 
-        height: 100%;
-        width: 100%;
-      }
-
-      :global(.sidebarMenu) {
-        text-align: left;
-        width: 75% !important;
-      }
-
-      @media all and (min-width: 768px) {
-        :global(.sidebarMenu) {
-          width: 20% !important;
+          height: 100%;
+          width: 100%;
         }
-      }
 
-      @media all and (min-width: 991px) {
         :global(.sidebarMenu) {
-          width: 15% !important;
+          text-align: left;
+          width: 75% !important;
         }
-      }
-    `}</style>
+
+        @media all and (min-width: 768px) {
+          :global(.sidebarMenu) {
+            width: 20% !important;
+          }
+        }
+
+        @media all and (min-width: 991px) {
+          :global(.sidebarMenu) {
+            width: 15% !important;
+          }
+        }
+      `}
+    </style>
   </div>
 )
 

@@ -106,49 +106,51 @@ class Running extends Component {
           </div>
         </div>
 
-        <style jsx>{`
-          .runningSession {
-            display: flex;
-            flex-direction: column;
-
-            padding: 1rem;
-          }
-
-          .sessionProgress,
-          .confusionBarometer,
-          .feedbackChannel {
-            flex: 1;
-
-            margin-bottom: 1rem;
-          }
-
-          @media all and (min-width: 768px) {
+        <style jsx>
+          {`
             .runningSession {
-              flex-flow: row wrap;
+              display: flex;
+              flex-direction: column;
 
-              padding: 2rem;
+              padding: 1rem;
             }
 
             .sessionProgress,
             .confusionBarometer,
             .feedbackChannel {
-              padding: 0.5rem;
+              flex: 1;
+
+              margin-bottom: 1rem;
             }
 
-            .sessionProgress {
-              flex: 0 0 100%;
-            }
-            .confusionBarometer {
-              flex: 0 0 30%;
-            }
-          }
+            @media all and (min-width: 768px) {
+              .runningSession {
+                flex-flow: row wrap;
 
-          @media all and (min-width: 991px) {
-            .runningSession {
-              padding: 2rem 10%;
+                padding: 2rem;
+              }
+
+              .sessionProgress,
+              .confusionBarometer,
+              .feedbackChannel {
+                padding: 0.5rem;
+              }
+
+              .sessionProgress {
+                flex: 0 0 100%;
+              }
+              .confusionBarometer {
+                flex: 0 0 30%;
+              }
             }
-          }
-        `}</style>
+
+            @media all and (min-width: 991px) {
+              .runningSession {
+                padding: 2rem 10%;
+              }
+            }
+          `}
+        </style>
       </TeacherLayout>
     )
   }

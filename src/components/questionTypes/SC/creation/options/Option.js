@@ -12,7 +12,9 @@ const propTypes = {
   name: PropTypes.string.isRequired,
 }
 
-const Option = ({ correct, name, handleCorrectToggle, handleDelete }) => (
+const Option = ({
+  correct, name, handleCorrectToggle, handleDelete,
+}) => (
   <div className={classNames('option', { correct })}>
     <button className="leftAction" onClick={handleDelete}>
       <FaTrash />

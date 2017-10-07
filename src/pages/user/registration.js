@@ -54,30 +54,32 @@ class Registration extends React.Component {
 
           <RegistrationForm intl={intl} onSubmit={this.handleSubmit} />
 
-          <style jsx>{`
-            .registration {
-              padding: 1rem;
-            }
-            h1 {
-              margin-top: 0;
-            }
-
-            .message {
-              font-weight: bold;
-            }
-            .errorMessage {
-              color: red;
-            }
-            .successMessage {
-              color: green;
-            }
-
-            @media all and (min-width: 991px) {
+          <style jsx>
+            {`
               .registration {
-                margin: 0 15%;
+                padding: 1rem;
               }
-            }
-          `}</style>
+              h1 {
+                margin-top: 0;
+              }
+
+              .message {
+                font-weight: bold;
+              }
+              .errorMessage {
+                color: red;
+              }
+              .successMessage {
+                color: green;
+              }
+
+              @media all and (min-width: 991px) {
+                .registration {
+                  margin: 0 15%;
+                }
+              }
+            `}
+          </style>
         </div>
       </StaticLayout>
     )
@@ -86,13 +88,9 @@ class Registration extends React.Component {
 
 Registration.propTypes = propTypes
 
-export default withData(
-  pageWithIntl(
-    graphql(RegistrationMutation, {
-      props: ({ mutate }) => ({
-        createUser: (email, password, shortname) =>
-          mutate({ variables: { email, password, shortname } }),
-      }),
-    })(Registration),
-  ),
-)
+export default withData(pageWithIntl(graphql(RegistrationMutation, {
+  props: ({ mutate }) => ({
+    createUser: (email, password, shortname) =>
+      mutate({ variables: { email, password, shortname } }),
+  }),
+})(Registration)))

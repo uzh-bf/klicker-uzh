@@ -30,7 +30,9 @@ const propTypes = {
   onStart: PropTypes.func.isRequired,
 }
 
-const SessionCreationForm = ({ invalid, handleSubmit, onSave, onDiscard, onStart }) => (
+const SessionCreationForm = ({
+  invalid, handleSubmit, onSave, onDiscard, onStart,
+}) => (
   <form className="ui form sessionCreation" onSubmit={handleSubmit(onSave)}>
     <div className="sessionName">
       <Field name="sessionName" label="Name" component={SemanticInput} />
@@ -60,51 +62,53 @@ const SessionCreationForm = ({ invalid, handleSubmit, onSave, onDiscard, onStart
       </button>
     </div>
 
-    <style jsx>{`
-      .sessionCreation {
-        display: flex;
-        flex-flow: row wrap;
+    <style jsx>
+      {`
+        .sessionCreation {
+          display: flex;
+          flex-flow: row wrap;
 
-        background-color: white;
-      }
+          background-color: white;
+        }
 
-      .sessionName {
-        flex: 0 0 100%;
+        .sessionName {
+          flex: 0 0 100%;
 
-        border: 1px solid lightgrey;
-        padding: 0.5rem;
-        text-align: center;
-      }
+          border: 1px solid lightgrey;
+          padding: 0.5rem;
+          text-align: center;
+        }
 
-      .sessionName > .editButton {
-        margin-left: 0.5rem;
-      }
+        .sessionName > .editButton {
+          margin-left: 0.5rem;
+        }
 
-      .sessionTimeline {
-        flex: 1;
-      }
+        .sessionTimeline {
+          flex: 1;
+        }
 
-      .actionArea {
-        flex: 0 0 10rem;
+        .actionArea {
+          flex: 0 0 10rem;
 
-        border: 1px solid lightgrey;
-        border-top: 0;
-        padding: 0.5rem;
-      }
+          border: 1px solid lightgrey;
+          border-top: 0;
+          padding: 0.5rem;
+        }
 
-      .actionArea > .button:not(:last-child) {
-        margin-bottom: 0.5rem;
-      }
+        .actionArea > .button:not(:last-child) {
+          margin-bottom: 0.5rem;
+        }
 
-      .actionArea > .button:first-child {
-        margin-bottom: 2rem;
-      }
+        .actionArea > .button:first-child {
+          margin-bottom: 2rem;
+        }
 
-      .actionArea > .button > :global(svg) {
-        margin-right: 0.4rem;
-        margin-top: -3px;
-      }
-    `}</style>
+        .actionArea > .button > :global(svg) {
+          margin-right: 0.4rem;
+          margin-top: -3px;
+        }
+      `}
+    </style>
   </form>
 )
 

@@ -10,12 +10,10 @@ const propTypes = {
     onSubmit: PropTypes.func.isRequired,
   }).isRequired,
   children: PropTypes.node.isRequired,
-  links: PropTypes.arrayOf(
-    PropTypes.shape({
-      href: PropTypes.string.isRequired,
-      label: PropTypes.string.isRequired,
-    }),
-  ),
+  links: PropTypes.arrayOf(PropTypes.shape({
+    href: PropTypes.string.isRequired,
+    label: PropTypes.string.isRequired,
+  })),
 }
 
 const defaultProps = {
@@ -50,48 +48,50 @@ const FormWithLinks = ({ button, children, links }) => (
       </div>
     </div>
 
-    <style jsx>{`
-      .form,
-      .actionArea {
-        display: flex;
-        flex-direction: column;
-      }
-
-      .links {
-        margin-top: 1rem;
-      }
-
-      .form :global(.semanticButton) {
-        flex: 0 0 100%;
-
-        margin-right: 0;
-      }
-
-      @media all and (min-width: 768px) {
+    <style jsx>
+      {`
+        .form,
         .actionArea {
-          flex-direction: row;
-          justify-content: space-between;
+          display: flex;
+          flex-direction: column;
         }
 
         .links {
-          order: 0;
-
-          margin-top: 0;
+          margin-top: 1rem;
         }
 
         .form :global(.semanticButton) {
-          flex: 0 0 auto;
-          order: 1;
-        }
-      }
+          flex: 0 0 100%;
 
-      @media all and (min-width: 991px) {
-        .form {
-          border: 1px solid lightgrey;
-          padding: 1rem;
+          margin-right: 0;
         }
-      }
-    `}</style>
+
+        @media all and (min-width: 768px) {
+          .actionArea {
+            flex-direction: row;
+            justify-content: space-between;
+          }
+
+          .links {
+            order: 0;
+
+            margin-top: 0;
+          }
+
+          .form :global(.semanticButton) {
+            flex: 0 0 auto;
+            order: 1;
+          }
+        }
+
+        @media all and (min-width: 991px) {
+          .form {
+            border: 1px solid lightgrey;
+            padding: 1rem;
+          }
+        }
+      `}
+    </style>
   </form>
 )
 

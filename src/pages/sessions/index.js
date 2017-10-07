@@ -52,23 +52,25 @@ class Index extends Component {
           <SessionList intl={intl} />
         </div>
 
-        <style jsx>{`
-          .sessionHistory {
-            padding: 1rem 0.7rem;
-          }
-
-          @media all and (min-width: 768px) {
+        <style jsx>
+          {`
             .sessionHistory {
-              padding: 2rem;
+              padding: 1rem 0.7rem;
             }
-          }
 
-          @media all and (min-width: 991px) {
-            .sessionHistory {
-              padding: 2rem 10%;
+            @media all and (min-width: 768px) {
+              .sessionHistory {
+                padding: 2rem;
+              }
             }
-          }
-        `}</style>
+
+            @media all and (min-width: 991px) {
+              .sessionHistory {
+                padding: 2rem 10%;
+              }
+            }
+          `}
+        </style>
       </TeacherLayout>
     )
   }

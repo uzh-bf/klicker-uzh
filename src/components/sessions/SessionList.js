@@ -30,11 +30,13 @@ const SessionList = ({ data }) => {
         </div>
       ))}
 
-      <style jsx>{`
-        .session {
-          margin-bottom: 2rem;
-        }
-      `}</style>
+      <style jsx>
+        {`
+          .session {
+            margin-bottom: 2rem;
+          }
+        `}
+      </style>
     </div>
   )
 }

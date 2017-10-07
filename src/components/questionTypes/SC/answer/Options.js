@@ -6,11 +6,9 @@ import { Button } from 'semantic-ui-react'
 const propTypes = {
   activeOption: PropTypes.number.isRequired,
   onOptionClick: PropTypes.func.isRequired,
-  options: PropTypes.arrayOf(
-    PropTypes.shape({
-      name: PropTypes.string.isRequired,
-    }),
-  ),
+  options: PropTypes.arrayOf(PropTypes.shape({
+    name: PropTypes.string.isRequired,
+  })),
 }
 
 const defaultProps = {
@@ -27,28 +25,30 @@ const Options = ({ activeOption, options, onOptionClick }) => (
       </div>
     ))}
 
-    <style jsx>{`
-      :global(.option:not(:last-child)) {
-        margin-bottom: 0.5rem;
-      }
-
-      .option.active :global(button) {
-        border: 1px solid green !important;
-
-        animation: bounce 0.5s;
-      }
-
-      // TODO: improve animation
-      @keyframes bounce {
-        0%,
-        100% {
-          transform: translateX(0);
+    <style jsx>
+      {`
+        :global(.option:not(:last-child)) {
+          margin-bottom: 0.5rem;
         }
-        50% {
-          transform: translateY(-2px);
+
+        .option.active :global(button) {
+          border: 1px solid green !important;
+
+          animation: bounce 0.5s;
         }
-      }
-    `}</style>
+
+        // TODO: improve animation
+        @keyframes bounce {
+          0%,
+          100% {
+            transform: translateX(0);
+          }
+          50% {
+            transform: translateY(-2px);
+          }
+        }
+      `}
+    </style>
   </div>
 )
 

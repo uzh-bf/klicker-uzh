@@ -71,39 +71,41 @@ const ConfusionBarometer = ({ intl, isActive, handleActiveToggle }) => (
       />
     )}
 
-    <style jsx>{`
-      .confusionBarometer {
-        display: flex;
-        flex-direction: column;
-      }
+    <style jsx>
+      {`
+        .confusionBarometer {
+          display: flex;
+          flex-direction: column;
+        }
 
-      h2 {
-        margin-bottom: 1rem;
-      }
+        h2 {
+          margin-bottom: 1rem;
+        }
 
-      h3 {
-        margin: 0 0 0.5rem 0;
-      }
+        h3 {
+          margin: 0 0 0.5rem 0;
+        }
 
-      .confusionSection {
-        flex: 1;
-
-        background: lightgrey;
-        border: 1px solid grey;
-        margin-top: 1rem;
-        padding: 1rem;
-      }
-
-      @media all and (min-width: 768px) {
         .confusionSection {
-          padding: 0.5rem;
+          flex: 1;
+
+          background: lightgrey;
+          border: 1px solid grey;
+          margin-top: 1rem;
+          padding: 1rem;
         }
 
-        .confusionSection:last-child {
-          margin-top: 0.5rem;
+        @media all and (min-width: 768px) {
+          .confusionSection {
+            padding: 0.5rem;
+          }
+
+          .confusionSection:last-child {
+            margin-top: 0.5rem;
+          }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

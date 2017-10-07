@@ -38,7 +38,8 @@
         ]
       }
     ],
-    "react/no-unused-prop-types": 0
+    "react/no-unused-prop-types": 0,
+    "react/jsx-curly-brace-presence": 0
   },
   "env": {
     "browser": true,

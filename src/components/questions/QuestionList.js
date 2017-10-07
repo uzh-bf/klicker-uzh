@@ -24,7 +24,9 @@ const defaultProps = {
   dropped: [],
 }
 
-const QuestionList = ({ data, filters, dropped, onQuestionDropped, creationMode }) => {
+const QuestionList = ({
+  data, filters, dropped, onQuestionDropped, creationMode,
+}) => {
   if (data.loading) {
     return <div>Loading</div>
   }
@@ -45,8 +47,7 @@ const QuestionList = ({ data, filters, dropped, onQuestionDropped, creationMode 
               key={question.id}
               id={question.id}
               lastUsed={question.instances.map(instance =>
-                moment(instance.createdAt).format('DD.MM.YYYY HH:MM:SS'),
-              )}
+                moment(instance.createdAt).format('DD.MM.YYYY HH:MM:SS'))}
               tags={question.tags.map(tag => tag.name)}
               title={question.title}
               type={question.type}
@@ -59,11 +60,13 @@ const QuestionList = ({ data, filters, dropped, onQuestionDropped, creationMode 
         </div>
       ))}
 
-      <style jsx>{`
-        .question {
-          margin-bottom: 2rem;
-        }
-      `}</style>
+      <style jsx>
+        {`
+          .question {
+            margin-bottom: 2rem;
+          }
+        `}
+      </style>
     </div>
   )
 }

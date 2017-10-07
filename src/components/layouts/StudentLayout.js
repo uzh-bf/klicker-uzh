@@ -41,7 +41,9 @@ class StudentLayout extends Component {
   }
 
   render() {
-    const { children, pageTitle, sidebar, title } = this.props
+    const {
+      children, pageTitle, sidebar, title,
+    } = this.props
 
     const sidebarItems = [
       {
@@ -89,56 +91,60 @@ class StudentLayout extends Component {
           </Sidebar>
         </div>
 
-        <style jsx global>{`
-          * {
-            font-family: 'Open Sans', sans-serif;
-          }
-
-          html {
-            font-size: 16px;
-          }
-
-          body {
-            font-size: 1rem;
-          }
-        `}</style>
-
-        <style jsx>{`
-          .studentLayout {
-            display: flex;
-            flex-direction: column;
-
-            min-height: 100vh;
-          }
-
-          .header {
-            flex: 0 0 auto;
-
-            display: flex;
-            align-items: center;
-
-            border-bottom: 1px solid lightgrey;
-            padding: 0.5rem;
-          }
-
-          .header > h1 {
-            font-size: 1.5rem;
-            margin: 0;
-            margin-left: 1rem;
-          }
-
-          .content {
-            flex: 1;
-
-            display: flex;
-          }
-
-          @media all and (min-width: 768px) {
-            .header {
-              display: none;
+        <style jsx global>
+          {`
+            * {
+              font-family: 'Open Sans', sans-serif;
             }
-          }
-        `}</style>
+
+            html {
+              font-size: 16px;
+            }
+
+            body {
+              font-size: 1rem;
+            }
+          `}
+        </style>
+
+        <style jsx>
+          {`
+            .studentLayout {
+              display: flex;
+              flex-direction: column;
+
+              min-height: 100vh;
+            }
+
+            .header {
+              flex: 0 0 auto;
+
+              display: flex;
+              align-items: center;
+
+              border-bottom: 1px solid lightgrey;
+              padding: 0.5rem;
+            }
+
+            .header > h1 {
+              font-size: 1.5rem;
+              margin: 0;
+              margin-left: 1rem;
+            }
+
+            .content {
+              flex: 1;
+
+              display: flex;
+            }
+
+            @media all and (min-width: 768px) {
+              .header {
+                display: none;
+              }
+            }
+          `}
+        </style>
       </div>
     )
   }

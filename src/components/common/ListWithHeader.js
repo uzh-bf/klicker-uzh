@@ -21,20 +21,22 @@ const ListWithHeader = ({ children, items }) => (
       ))}
     </ul>
 
-    <style jsx>{`
-      .list {
-        margin: 0;
-        margin-top: 1rem;
-        padding: 0;
-      }
-      .listHeader {
-        font-size: 1rem;
-        margin: 0;
-      }
-      .listItem {
-        list-style: none;
-      }
-    `}</style>
+    <style jsx>
+      {`
+        .list {
+          margin: 0;
+          margin-top: 1rem;
+          padding: 0;
+        }
+        .listHeader {
+          font-size: 1rem;
+          margin: 0;
+        }
+        .listItem {
+          list-style: none;
+        }
+      `}
+    </style>
   </div>
 )
 
