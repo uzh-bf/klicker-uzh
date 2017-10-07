@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React from 'react'
 import PropTypes from 'prop-types'
 import { compose } from 'recompose'
 import { graphql } from 'react-apollo'
@@ -17,7 +17,7 @@ const propTypes = {
   intl: intlShape.isRequired,
 }
 
-class Running extends Component {
+class Running extends React.Component {
   state = {
     confusionActive: false,
     feedbacksActive: false,

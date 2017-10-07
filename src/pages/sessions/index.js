@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React from 'react'
 import { compose } from 'recompose'
 import { intlShape } from 'react-intl'
 import { pageWithIntl, withData } from '../../lib'
@@ -10,7 +10,7 @@ const propTypes = {
   intl: intlShape.isRequired,
 }
 
-class Index extends Component {
+class Index extends React.Component {
   // handle searching in the navbar search area
   handleSearch = (query) => {
     console.log(`Searched... for ${query}`)

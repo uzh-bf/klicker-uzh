@@ -1,6 +1,6 @@
 /* eslint-disable import/no-extraneous-dependencies, react/prop-types */
 
-import React, { Component } from 'react'
+import React from 'react'
 import { storiesOf } from '@storybook/react'
 import { action } from '@storybook/addon-actions'
 
@@ -9,7 +9,7 @@ import Feedback from './Feedback'
 import { intlMock } from '../../../.storybook/utils'
 
 // create a stateful wrapper for the component
-class Wrapper extends Component {
+class Wrapper extends React.Component {
   state = {
     isActive: false,
     isPublic: false,

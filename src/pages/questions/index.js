@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React from 'react'
 import PropTypes from 'prop-types'
 import { compose } from 'recompose'
 import { intlShape } from 'react-intl'
@@ -20,7 +20,7 @@ const propTypes = {
   intl: intlShape.isRequired,
 }
 
-class Index extends Component {
+class Index extends React.Component {
   state = {
     creationMode: false,
     dropped: [],

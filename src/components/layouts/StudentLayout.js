@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React from 'react'
 import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 import { Helmet } from 'react-helmet'
@@ -19,7 +19,7 @@ const defaultProps = {
   pageTitle: 'StudentLayout',
 }
 
-class StudentLayout extends Component {
+class StudentLayout extends React.Component {
   state = {
     sidebarVisible: false,
   }

@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React from 'react'
 import PropTypes from 'prop-types'
 import Router from 'next/router'
 import { compose } from 'recompose'
@@ -19,7 +19,7 @@ const propTypes = {
   intl: intlShape.isRequired,
 }
 
-class CreateQuestion extends Component {
+class CreateQuestion extends React.Component {
   handleDiscard = () => {
     Router.push('/questions')
   }

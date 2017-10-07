@@ -1,11 +1,6 @@
-/*
-  eslint-disable
-  import/no-extraneous-dependencies, import/no-unresolved, import/extensions,
-  react/jsx-max-props-per-line, react/jsx-indent-props, react/jsx-first-prop-new-line,
-  react/prop-types, react/no-multi-comp
-*/
+/* eslint-disable import/no-extraneous-dependencies, react/no-multi-comp */
 
-import React, { Component } from 'react'
+import React from 'react'
 import { storiesOf } from '@storybook/react'
 import { intlMock } from '../../../.storybook/utils'
 
@@ -19,7 +14,7 @@ import {
   SCCreationPreview,
 } from './SC'
 
-class SCAnswerWrapper extends Component {
+class SCAnswerWrapper extends React.Component {
   state = {
     activeOption: 1,
   }
@@ -38,7 +33,7 @@ class SCAnswerWrapper extends Component {
   }
 }
 
-class SCCreationWrapper extends Component {
+class SCCreationWrapper extends React.Component {
   state = {
     options: [{ correct: true, name: 'Correct option' }, { correct: false, name: 'This is false' }],
   }

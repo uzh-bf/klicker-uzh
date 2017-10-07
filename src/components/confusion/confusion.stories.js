@@ -1,6 +1,6 @@
 /* eslint-disable import/no-extraneous-dependencies, react/no-multi-comp */
 
-import React, { Component } from 'react'
+import React from 'react'
 import { storiesOf } from '@storybook/react'
 
 import ConfusionBarometer from './ConfusionBarometer'
@@ -9,7 +9,7 @@ import ConfusionSlider from './ConfusionSlider'
 import { intlMock } from '../../../.storybook/utils'
 
 // create a stateful wrapper for the component
-class BarometerWrapper extends Component {
+class BarometerWrapper extends React.Component {
   state = {
     isActive: false,
   }
@@ -25,7 +25,7 @@ class BarometerWrapper extends Component {
 }
 
 // create a stateful wrapper for the component
-class SliderWrapper extends Component {
+class SliderWrapper extends React.Component {
   state = {
     value: 10,
   }

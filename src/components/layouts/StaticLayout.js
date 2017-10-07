@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React from 'react'
 import PropTypes from 'prop-types'
 import { Helmet } from 'react-helmet'
 
@@ -13,7 +13,7 @@ const defaultProps = {
   pageTitle: 'StaticLayout',
 }
 
-class StaticLayout extends Component {
+class StaticLayout extends React.Component {
   state = {}
 
   componentWillMount() {
