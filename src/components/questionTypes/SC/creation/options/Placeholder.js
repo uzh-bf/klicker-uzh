@@ -1,6 +1,9 @@
+/* eslint-disable react/prop-types */
+
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
+import { compose, withState, withHandlers } from 'recompose'
 import { FaFloppyO, FaPlus, FaTrash } from 'react-icons/lib/fa'
 
 import styles from './styles'
@@ -9,95 +12,101 @@ const propTypes = {
   handleSave: PropTypes.func.isRequired,
 }
 
-class Placeholder extends React.Component {
-  state = {
-    correct: false,
-    inputMode: false,
-    name: '',
-  }
+// TODO: this is an example for recompose usage
+const enhance = compose(
+  withState('correct', 'setCorrect', false),
+  withState('inputMode', 'setInputMode', false),
+  withState('name', 'setName', ''),
+  withHandlers({
+    handleCorrectToggle: ({ setCorrect }) => () => setCorrect(correct => !correct),
+    handleModeToggle: ({ setInputMode }) => () => setInputMode(inputMode => !inputMode),
+    handleNameChange: ({ setName }) => e => setName(e.target.value),
+    handleSave: ({
+      correct, name, handleSave, setCorrect, setInputMode, setName,
+    }) => () => {
+      setCorrect(false)
+      setInputMode(false)
+      setName('')
+      handleSave({ correct, name })
+    },
+  }),
+)
 
-  handleModeToggle = () => {
-    this.setState(prevState => ({ inputMode: !prevState.inputMode }))
-  }
+// TODO: this is a purely presentational component due to usage of recompose above!
+const Placeholder = ({
+  correct,
+  inputMode,
+  name,
+  handleCorrectToggle,
+  handleModeToggle,
+  handleNameChange,
+  handleSave,
+}) => (
+  <div className={classNames('option', { inputMode })}>
+    <button className="leftAction" type="button" onClick={handleModeToggle}>
+      {inputMode ? <FaTrash /> : <FaPlus />}
+    </button>
 
-  handleSave = () => {
-    this.setState({ correct: false, inputMode: false, name: '' })
-    this.props.handleSave({ correct: this.state.correct, name: this.state.name })
-  }
+    <button
+      className={classNames('toggle', { correct })}
+      type="button"
+      onClick={handleCorrectToggle}
+    >
+      {correct ? 'TRUE' : 'FALSE'}
+    </button>
 
-  handleNameChange = (e) => {
-    this.setState({ name: e.target.value })
-  }
+    <input type="text" value={name} onChange={handleNameChange} />
 
-  render() {
-    const { correct, inputMode } = this.state
-    return (
-      <div className={classNames('option', { inputMode })}>
-        <button className="leftAction" type="button" onClick={this.handleModeToggle}>
-          {inputMode ? <FaTrash /> : <FaPlus />}
-        </button>
+    <button className="rightAction" type="button" onClick={handleSave}>
+      <FaFloppyO />
+    </button>
 
-        <button
-          className={classNames('toggle', { correct })}
-          type="button"
-          onClick={() => this.setState({ correct: !correct })}
-        >
-          {correct ? 'TRUE' : 'FALSE'}
-        </button>
+    <style jsx>{styles}</style>
+    <style jsx>
+      {`
+        .leftAction {
+          flex: 0 0 100%;
 
-        <input type="text" value={this.state.name} onChange={this.handleNameChange} />
+          border-right: none;
+          transition: flex-basis 0.3s;
+        }
 
-        <button className="rightAction" type="button" onClick={this.handleSave}>
-          <FaFloppyO />
-        </button>
+        input,
+        .toggle,
+        .rightAction {
+          flex: 1;
 
-        <style jsx>{styles}</style>
-        <style jsx>
-          {`
-            .leftAction {
-              flex: 0 0 100%;
+          opacity: 0;
+        }
 
-              border-right: none;
-              transition: flex-basis 0.3s;
-            }
+        .inputMode > input,
+        .inputMode > .toggle,
+        .inputMode > .rightAction {
+          opacity: 1;
+        }
 
-            input,
-            .toggle,
-            .rightAction {
-              flex: 1;
+        .inputMode > .leftAction,
+        .inputMode > .rightAction {
+          flex: 0 0 3rem;
+        }
 
-              opacity: 0;
-            }
+        .inputMode > .leftAction {
+          border-right: 1px solid grey;
+        }
 
-            .inputMode > input,
-            .inputMode > .toggle,
-            .inputMode > .rightAction {
-              opacity: 1;
-            }
+        .inputMode > .toggle {
+          flex: 0 0 5rem;
+        }
 
-            .inputMode > .leftAction,
-            .inputMode > .rightAction {
-              flex: 0 0 3rem;
-            }
+        .inputMode > input {
+          flex: 1;
+        }
+      `}
+    </style>
+  </div>
+)
 
-            .inputMode > .leftAction {
-              border-right: 1px solid grey;
-            }
+const Enhanced = enhance(Placeholder)
+Enhanced.propTypes = propTypes
 
-            .inputMode > .toggle {
-              flex: 0 0 5rem;
-            }
-
-            .inputMode > input {
-              flex: 1;
-            }
-          `}
-        </style>
-      </div>
-    )
-  }
-}
-
-Placeholder.propTypes = propTypes
-
-export default Placeholder
+export default Enhanced

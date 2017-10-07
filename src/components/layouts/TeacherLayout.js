@@ -2,6 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import Router from 'next/router'
 import HTML5Backend from 'react-dnd-html5-backend'
+import { compose } from 'recompose'
 import { intlShape, FormattedMessage } from 'react-intl'
 import { Helmet } from 'react-helmet'
 import { DragDropContext } from 'react-dnd'
@@ -160,6 +161,4 @@ class TeacherLayout extends React.Component {
 TeacherLayout.propTypes = propTypes
 TeacherLayout.defaultProps = defaultProps
 
-const withDnD = DragDropContext(HTML5Backend)
-
-export default withDnD(TeacherLayout)
+export default compose(DragDropContext(HTML5Backend))(TeacherLayout)
