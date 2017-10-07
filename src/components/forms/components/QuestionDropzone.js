@@ -16,11 +16,12 @@ const defaultProps = {
 }
 
 const QuestionDropzone = ({ canDrop, isOver, connectDropTarget }) =>
-  connectDropTarget(<div className={classNames('dropzone', { canDrop, isOver })}>
-    <FaPlus />
+  connectDropTarget(
+    <div className={classNames('dropzone', { canDrop, isOver })}>
+      <FaPlus />
 
-    <style jsx>
-      {`
+      <style jsx>
+        {`
           .dropzone {
             display: flex;
             align-items: center;
@@ -44,8 +45,9 @@ const QuestionDropzone = ({ canDrop, isOver, connectDropTarget }) =>
             border-color: blue;
           }
         `}
-    </style>
-                    </div>)
+      </style>
+    </div>,
+  )
 
 // define the target for DnD
 const target = {

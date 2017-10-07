@@ -10,8 +10,8 @@ const propTypes = {
   handleActiveToggle: PropTypes.func.isRequired,
   handlePublicToggle: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  isActive: PropTypes.bool.isRequired,
-  isPublic: PropTypes.bool.isRequired,
+  isActive: PropTypes.bool,
+  isPublic: PropTypes.bool,
 }
 
 const defaultProps = {

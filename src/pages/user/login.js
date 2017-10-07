@@ -87,8 +87,12 @@ class Login extends React.Component {
 
 Login.propTypes = propTypes
 
-export default withData(pageWithIntl(graphql(LoginMutation, {
-  props: ({ mutate }) => ({
-    login: (email, password) => mutate({ variables: { email, password } }),
-  }),
-})(Login)))
+export default withData(
+  pageWithIntl(
+    graphql(LoginMutation, {
+      props: ({ mutate }) => ({
+        login: (email, password) => mutate({ variables: { email, password } }),
+      }),
+    })(Login),
+  ),
+)

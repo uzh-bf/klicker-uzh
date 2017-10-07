@@ -41,16 +41,18 @@ const validate = ({
 }
 
 const propTypes = {
-  content: PropTypes.string.isRequired,
+  content: PropTypes.string,
   handleSubmit: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   invalid: PropTypes.bool.isRequired,
   onDiscard: PropTypes.func.isRequired,
   options: PropTypes.array,
-  tags: PropTypes.arrayOf(PropTypes.shape({
-    name: PropTypes.string.isRequired,
-  })),
-  title: PropTypes.string.isRequired,
+  tags: PropTypes.arrayOf(
+    PropTypes.shape({
+      name: PropTypes.string.isRequired,
+    }),
+  ),
+  title: PropTypes.string,
 }
 
 const defaultProps = {

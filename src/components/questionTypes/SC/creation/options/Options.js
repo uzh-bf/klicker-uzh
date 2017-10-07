@@ -54,20 +54,22 @@ class Options extends React.Component {
       </div>
     ))
 
-    const SortableOptions = SortableContainer(({ sortableOptions, handleCorrectToggle, handleDelete }) => (
-      <div className="options">
-        {sortableOptions.map(({ correct, name }, index) => (
-          <SortableOption
-            key={`sortable-${name}`}
-            index={index}
-            name={name}
-            correct={correct}
-            handleCorrectToggle={handleCorrectToggle(index)}
-            handleDelete={handleDelete(index)}
-          />
+    const SortableOptions = SortableContainer(
+      ({ sortableOptions, handleCorrectToggle, handleDelete }) => (
+        <div className="options">
+          {sortableOptions.map(({ correct, name }, index) => (
+            <SortableOption
+              key={`sortable-${name}`}
+              index={index}
+              name={name}
+              correct={correct}
+              handleCorrectToggle={handleCorrectToggle(index)}
+              handleDelete={handleDelete(index)}
+            />
           ))}
-      </div>
-    ))
+        </div>
+      ),
+    )
 
     const { input: { value } } = this.props
 

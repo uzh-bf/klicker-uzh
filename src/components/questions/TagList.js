@@ -10,10 +10,12 @@ const propTypes = {
   data: PropTypes.shape({
     error: PropTypes.string,
     loading: PropTypes.bool.isRequired,
-    tags: PropTypes.arrayOf(PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-    })),
+    tags: PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        name: PropTypes.string.isRequired,
+      }),
+    ),
   }).isRequired,
   handleTagClick: PropTypes.func.isRequired,
 }

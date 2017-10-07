@@ -21,7 +21,8 @@ export default function initLogging() {
             extra: {
               sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef
             },
-          }))
+          }),
+        )
       }
     }
   }

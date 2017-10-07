@@ -6,11 +6,13 @@ import QuestionSingle from '../../questions/QuestionSingle'
 const propTypes = {
   input: PropTypes.shape({
     onChange: PropTypes.func.isRequired,
-    value: PropTypes.arrayOf(PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      title: PropTypes.string.isRequired,
-      type: PropTypes.string.isRequired,
-    })),
+    value: PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        title: PropTypes.string.isRequired,
+        type: PropTypes.string.isRequired,
+      }),
+    ),
   }).isRequired,
 }
 

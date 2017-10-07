@@ -10,10 +10,12 @@ const propTypes = {
     onSubmit: PropTypes.func.isRequired,
   }).isRequired,
   children: PropTypes.node.isRequired,
-  links: PropTypes.arrayOf(PropTypes.shape({
-    href: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
-  })),
+  links: PropTypes.arrayOf(
+    PropTypes.shape({
+      href: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+    }),
+  ),
 }
 
 const defaultProps = {

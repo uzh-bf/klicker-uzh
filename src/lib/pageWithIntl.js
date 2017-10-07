@@ -1,4 +1,4 @@
-/* eslint-disable no-underscore-dangle */
+/* eslint-disable no-underscore-dangle, react/prop-types */
 
 import React, { Component } from 'react'
 import { IntlProvider, addLocaleData, injectIntl } from 'react-intl'

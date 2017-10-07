@@ -47,7 +47,8 @@ const QuestionList = ({
               key={question.id}
               id={question.id}
               lastUsed={question.instances.map(instance =>
-                moment(instance.createdAt).format('DD.MM.YYYY HH:MM:SS'))}
+                moment(instance.createdAt).format('DD.MM.YYYY HH:MM:SS'),
+              )}
               tags={question.tags.map(tag => tag.name)}
               title={question.title}
               type={question.type}

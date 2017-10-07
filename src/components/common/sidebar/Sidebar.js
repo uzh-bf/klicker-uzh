@@ -8,11 +8,13 @@ const propTypes = {
   activeItem: PropTypes.string,
   children: PropTypes.node.isRequired,
   handleSidebarItemClick: PropTypes.func.isRequired,
-  items: PropTypes.arrayOf(PropTypes.shape({
-    href: PropTypes.string.isRequired,
-    label: PropTypes.element.isRequired,
-    name: PropTypes.string.isRequired,
-  })),
+  items: PropTypes.arrayOf(
+    PropTypes.shape({
+      href: PropTypes.string.isRequired,
+      label: PropTypes.element.isRequired,
+      name: PropTypes.string.isRequired,
+    }),
+  ),
   visible: PropTypes.bool,
 }
 

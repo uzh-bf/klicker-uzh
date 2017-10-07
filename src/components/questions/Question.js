@@ -40,35 +40,36 @@ const Question = ({
   isDragging,
   connectDragSource,
 }) =>
-  connectDragSource(<div className={classNames('question', { creationMode, draggable, isDragging })}>
-    {creationMode && (
-    <div className={classNames('sessionMembership', { active: !draggable })}>
-      <input
-        type="checkbox"
-        className="ui checkbox"
-        name={`check-${id}`}
-        checked={!draggable}
-        onClick={() => null}
-      />
-    </div>
+  connectDragSource(
+    <div className={classNames('question', { creationMode, draggable, isDragging })}>
+      {creationMode && (
+        <div className={classNames('sessionMembership', { active: !draggable })}>
+          <input
+            type="checkbox"
+            className="ui checkbox"
+            name={`check-${id}`}
+            checked={!draggable}
+            onClick={() => null}
+          />
+        </div>
       )}
 
-    <div className="wrapper">
-      <h2 className="title">
+      <div className="wrapper">
+        <h2 className="title">
           #{id.substring(0, 7)} - {title} {version && version > 1 && `(v${version})`}
-      </h2>
+        </h2>
 
-      <div className="tags">
-        <QuestionTags tags={tags} type={type} />
+        <div className="tags">
+          <QuestionTags tags={tags} type={type} />
+        </div>
+
+        <div className="details">
+          <QuestionDetails lastUsed={lastUsed} />
+        </div>
       </div>
 
-      <div className="details">
-        <QuestionDetails lastUsed={lastUsed} />
-      </div>
-    </div>
-
-    <style jsx>
-      {`
+      <style jsx>
+        {`
           .question,
           .wrapper {
             display: flex;
@@ -136,8 +137,9 @@ const Question = ({
             }
           }
         `}
-    </style>
-                    </div>)
+      </style>
+    </div>,
+  )
 
 Question.propTypes = propTypes
 Question.defaultProps = defaultProps

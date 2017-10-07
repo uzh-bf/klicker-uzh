@@ -3,10 +3,12 @@ import PropTypes from 'prop-types'
 import { Button } from 'semantic-ui-react'
 
 const propTypes = {
-  items: PropTypes.arrayOf(PropTypes.shape({
-    handleClick: PropTypes.func.isRequired,
-    label: PropTypes.string.isRequired,
-  })),
+  items: PropTypes.arrayOf(
+    PropTypes.shape({
+      handleClick: PropTypes.func.isRequired,
+      label: PropTypes.string.isRequired,
+    }),
+  ),
 }
 
 const defaultProps = {

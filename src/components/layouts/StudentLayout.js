@@ -21,7 +21,6 @@ const defaultProps = {
 
 class StudentLayout extends Component {
   state = {
-    sidebarActiveItem: 'activeQuestion',
     sidebarVisible: false,
   }
 
@@ -31,7 +30,6 @@ class StudentLayout extends Component {
   }
 
   handleSidebarItemClick = sidebarActiveItem => () => {
-    this.setState({ sidebarActiveItem })
     this.handleSidebarToggle()
     this.props.sidebar.handleItemChange(sidebarActiveItem)
   }

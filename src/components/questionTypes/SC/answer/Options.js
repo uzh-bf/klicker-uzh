@@ -6,9 +6,11 @@ import { Button } from 'semantic-ui-react'
 const propTypes = {
   activeOption: PropTypes.number.isRequired,
   onOptionClick: PropTypes.func.isRequired,
-  options: PropTypes.arrayOf(PropTypes.shape({
-    name: PropTypes.string.isRequired,
-  })),
+  options: PropTypes.arrayOf(
+    PropTypes.shape({
+      name: PropTypes.string.isRequired,
+    }),
+  ),
 }
 
 const defaultProps = {

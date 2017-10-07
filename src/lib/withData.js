@@ -39,7 +39,8 @@ export default ComposedComponent =>
             // because Apollo sets up the store for us
             <ApolloProvider client={apollo} store={redux}>
               <ComposedComponent url={url} {...composedInitialProps} />
-            </ApolloProvider>)
+            </ApolloProvider>,
+          )
         } catch (error) {
           // Prevent Apollo Client GraphQL errors from crashing SSR.
           // Handle them in components via the data.error prop:
