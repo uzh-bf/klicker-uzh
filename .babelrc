@@ -2,15 +2,12 @@
   "env": {
     "development": {
       "presets": "next/babel",
-      "plugins": [
-        "inline-dotenv",
-        "add-react-displayname",
-        "react-intl"
-      ]
+      "plugins": ["inline-dotenv", "add-react-displayname", "react-intl"]
     },
     "production": {
       "presets": "next/babel",
       "plugins": [
+        ["lodash", { "id": ["lodash", "recompose"] }],
         "transform-inline-environment-variables",
         "add-react-displayname",
         [
