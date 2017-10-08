@@ -9,7 +9,6 @@ import QuestionBlock from '../questions/QuestionBlock'
 const propTypes = {
   blocks: PropTypes.array,
   button: PropTypes.shape({
-    disabled: PropTypes.bool.isRequired,
     icon: PropTypes.oneOf(['copy', 'play']).isRequired,
     message: PropTypes.element.isRequired,
     onClick: PropTypes.func.isRequired,
@@ -50,7 +49,7 @@ const Session = ({
         </div>
       ))}
       <div className="actionArea">
-        <Button icon disabled={button.disabled} labelPosition="left" onClick={button.onClick}>
+        <Button icon labelPosition="left" onClick={button.onClick}>
           <Icon name={button.icon} />
           {button.message}
         </Button>

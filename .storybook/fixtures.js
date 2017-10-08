@@ -36,6 +36,10 @@ const session = {
   id: '4c821db7-0940-4a24-b31a-7969104bbc9f',
   name: 'Long session',
   status: 'CREATED',
+  button: {
+    icon: 'play',
+    message: 'Start',
+  },
 }
 
 const questions = [
