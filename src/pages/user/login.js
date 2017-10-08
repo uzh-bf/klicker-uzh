@@ -27,6 +27,7 @@ class Login extends React.Component {
       // redirect to question pool
       Router.push('/questions')
     } catch ({ message }) {
+      console.error(message)
       this.setState({ error: message })
     }
   }

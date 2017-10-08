@@ -9,6 +9,7 @@ import { SessionListQuery } from '../../queries/queries'
 
 const propTypes = {
   error: PropTypes.string,
+  handleStartSession: PropTypes.func.isRequired,
   sessions: PropTypes.array,
 }
 
@@ -17,7 +18,7 @@ const defaultProps = {
   sessions: [],
 }
 
-export const SessionListPres = ({ error, sessions }) => {
+export const SessionListPres = ({ error, handleStartSession, sessions }) => {
   if (error) {
     return <div>{error}</div>
   }
@@ -26,7 +27,7 @@ export const SessionListPres = ({ error, sessions }) => {
     <div>
       {sessions.map(session => (
         <div key={session.id} className="session">
-          <Session {...session} />
+          <Session {...session} handleStartSession={handleStartSession(session.id)} />
         </div>
       ))}
 

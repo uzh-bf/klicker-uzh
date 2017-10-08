@@ -37,7 +37,7 @@ class CreateQuestion extends React.Component {
       })
       Router.push('/questions')
     } catch ({ message }) {
-      console.dir(message)
+      console.error(message)
     }
   }
 

@@ -25,6 +25,7 @@ class Registration extends React.Component {
       const result = await this.props.createUser(email, password, shortname)
       this.setState({ error: null, success: result.data.createUser.email })
     } catch ({ message }) {
+      console.error(message)
       this.setState({ error: message, success: null })
     }
   }

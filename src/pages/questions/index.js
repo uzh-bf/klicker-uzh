@@ -105,9 +105,9 @@ class Index extends React.Component {
 
       // disable creation mode
       this.toggleCreationMode()
-    } catch (e) {
+    } catch ({ message }) {
       // TODO: if anything fails, display the error in the form
-      console.log(e)
+      console.error(message)
     }
   }
 

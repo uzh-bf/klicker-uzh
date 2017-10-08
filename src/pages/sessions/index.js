@@ -1,13 +1,17 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import { compose } from 'recompose'
 import { intlShape } from 'react-intl'
-import { pageWithIntl, withData } from '../../lib'
+import { graphql } from 'react-apollo'
 
+import { pageWithIntl, withData } from '../../lib'
+import { RunningSessionQuery, StartSessionMutation } from '../../queries'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import SessionList from '../../components/sessions/SessionList'
 
 const propTypes = {
   intl: intlShape.isRequired,
+  startSession: PropTypes.func.isRequired,
 }
 
 class Index extends React.Component {
@@ -19,6 +23,15 @@ class Index extends React.Component {
   // handle sorting via navbar search area
   handleSort = (by, order) => {
     console.log(`sorted by ${by} in ${order} order`)
+  }
+
+  handleStartSession = id => async () => {
+    try {
+      const result = await this.props.startSession({ id })
+      console.dir(result)
+    } catch ({ message }) {
+      console.error(message)
+    }
   }
 
   render() {
@@ -50,7 +63,7 @@ class Index extends React.Component {
         sidebar={{ activeItem: 'sessionHistory' }}
       >
         <div className="sessionHistory">
-          <SessionList intl={intl} />
+          <SessionList intl={intl} handleStartSession={this.handleStartSession} />
         </div>
 
         <style jsx>
@@ -79,4 +92,16 @@ class Index extends React.Component {
 
 Index.propTypes = propTypes
 
-export default compose(withData, pageWithIntl)(Index)
+export default compose(
+  withData,
+  pageWithIntl,
+  graphql(StartSessionMutation, {
+    props: ({ mutate }) => ({
+      startSession: ({ id }) =>
+        mutate({
+          refetchQueries: [{ query: RunningSessionQuery }],
+          variables: { id },
+        }),
+    }),
+  }),
+)(Index)

@@ -9,6 +9,7 @@ import QuestionBlock from '../questions/QuestionBlock'
 const propTypes = {
   blocks: PropTypes.array,
   createdAt: PropTypes.string.isRequired,
+  handleStartSession: PropTypes.func.isRequired,
   id: PropTypes.string.isRequired,
   name: PropTypes.string.isRequired,
 }
@@ -18,7 +19,7 @@ const defaultProps = {
 }
 
 const Session = ({
-  createdAt, name, blocks, id,
+  createdAt, handleStartSession, name, blocks, id,
 }) => {
   const statusCases = {
     COMPLETED: {
@@ -65,7 +66,12 @@ const Session = ({
           </div>
         ))}
         <div className="actionArea">
-          <Button icon disabled={buttonStatus.disabled} labelPosition="left">
+          <Button
+            icon
+            disabled={buttonStatus.disabled}
+            labelPosition="left"
+            onClick={handleStartSession}
+          >
             <Icon name={buttonStatus.icon} />
             {buttonStatus.message}
           </Button>
