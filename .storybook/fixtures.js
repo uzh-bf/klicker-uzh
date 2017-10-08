@@ -61,5 +61,6 @@ export default {
   question,
   questions,
   questionBlock,
+  questionBlock2,
   session,
 }

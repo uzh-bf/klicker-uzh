@@ -26,9 +26,8 @@ const SessionTimeline = ({ blocks, intl }) => (
     </div>
     <div className="blocks">
       {blocks.map(block => (
-        <div className="block">
+        <div key={block.key} className="block">
           <QuestionBlock
-            // key={block.id}
             showSolutions
             timeLimit={60}
             status={block.status}
