@@ -12,15 +12,18 @@ const propTypes = {
   handleSave: PropTypes.func.isRequired,
 }
 
-// TODO: this is an example for recompose usage
+// compose state and handlers for the option creation placeholder
 const enhance = compose(
   withState('correct', 'setCorrect', false),
   withState('inputMode', 'setInputMode', false),
   withState('name', 'setName', ''),
   withHandlers({
     handleCorrectToggle: ({ setCorrect }) => () => setCorrect(correct => !correct),
+
     handleModeToggle: ({ setInputMode }) => () => setInputMode(inputMode => !inputMode),
+
     handleNameChange: ({ setName }) => e => setName(e.target.value),
+
     handleSave: ({
       correct, name, handleSave, setCorrect, setInputMode, setName,
     }) => () => {
@@ -32,7 +35,7 @@ const enhance = compose(
   }),
 )
 
-// TODO: this is a purely presentational component due to usage of recompose above!
+// create the purely functional component
 const Placeholder = ({
   correct,
   inputMode,

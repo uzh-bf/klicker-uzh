@@ -4,7 +4,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { SortableContainer, SortableElement, arrayMove } from 'react-sortable-hoc'
 import { FormattedMessage } from 'react-intl'
-import { compose, withHandlers } from 'recompose'
+import { compose, mapProps, withHandlers } from 'recompose'
 
 import Placeholder from './Placeholder'
 import Option from './Option'
@@ -16,23 +16,33 @@ const propTypes = {
   }).isRequired,
 }
 
-// TODO: further recompose example
+// compose handlers for the sortable list of options
 const enhance = compose(
+  mapProps(({ input: { onChange, value } }) => ({
+    onChange,
+    value,
+  })),
   withHandlers({
-    handleDeleteOption: ({ onChange, value }) => index =>
+    handleDeleteOption: ({ onChange, value }) => index => () =>
       onChange([...value.slice(0, index), ...value.slice(index + 1)]),
-    handleNewOption: ({ input: { onChange, value } }) => option => onChange([...value, option]),
-    handleOptionToggleCorrect: ({ onChange, value }) => index =>
+
+    handleNewOption: ({ onChange, value }) => newOption => onChange([...value, newOption]),
+
+    handleOptionToggleCorrect: ({ onChange, value }) => index => () => {
+      const option = value[index]
       onChange([
         ...value.slice(0, index),
-        { ...value[index], correct: !value[index].correct },
-        ...value.slice(index),
-      ]),
-    handleUpdateOrder: ({ input: { onChange, value } }) => ({ oldIndex, newIndex }) =>
+        { ...option, correct: !option.correct },
+        ...value.slice(index + 1),
+      ])
+    },
+
+    handleUpdateOrder: ({ onChange, value }) => ({ oldIndex, newIndex }) =>
       onChange(arrayMove(value, oldIndex, newIndex)),
   }),
 )
 
+// create the purely functional component
 const Options = ({
   handleNewOption,
   handleDeleteOption,
@@ -76,6 +86,7 @@ const Options = ({
       <label htmlFor="options">
         <FormattedMessage defaultMessage="Options" id="teacher.createQuestion.options" />
       </label>
+
       <SortableOptions
         sortableOptions={value || []}
         handleCorrectToggle={handleOptionToggleCorrect}
