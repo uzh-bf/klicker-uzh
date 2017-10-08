@@ -4,15 +4,15 @@ import _get from 'lodash/get'
 import isEmpty from 'validator/lib/isEmpty'
 import { connect } from 'react-redux'
 import { Field, reduxForm } from 'redux-form'
-import { intlShape, FormattedMessage } from 'react-intl'
+import { FormattedMessage, intlShape } from 'react-intl'
 
 import TitleInput from '../questions/creation/TitleInput'
 import TagInput from '../questions/creation/TagInput'
 import TypeChooser from '../questionTypes/TypeChooser'
 import {
+  SCCreationContent,
   SCCreationOptions,
   SCCreationPreview,
-  SCCreationContent,
 } from '../../components/questionTypes/SC'
 
 // form validation

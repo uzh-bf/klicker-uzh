@@ -2,13 +2,13 @@ import React from 'react'
 import Router from 'next/router'
 import PropTypes from 'prop-types'
 import { compose } from 'recompose'
-import { intlShape, FormattedMessage } from 'react-intl'
+import { FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import LoginForm from '../../components/forms/LoginForm'
 import { LoginMutation } from '../../queries/mutations'
-import { withData, pageWithIntl } from '../../lib'
+import { pageWithIntl, withData } from '../../lib'
 
 const propTypes = {
   intl: intlShape.isRequired,

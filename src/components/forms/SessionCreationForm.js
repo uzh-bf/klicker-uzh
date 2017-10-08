@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import isEmpty from 'validator/lib/isEmpty'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage } from 'react-intl'
-import { FaTrash, FaPlay, FaFloppyO } from 'react-icons/lib/fa'
+import { FaFloppyO, FaPlay, FaTrash } from 'react-icons/lib/fa'
 
 import { SemanticInput, SessionTimeline } from './components'
 

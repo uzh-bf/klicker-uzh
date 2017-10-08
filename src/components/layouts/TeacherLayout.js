@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import Router from 'next/router'
 import HTML5Backend from 'react-dnd-html5-backend'
 import { compose } from 'recompose'
-import { intlShape, FormattedMessage } from 'react-intl'
+import { FormattedMessage, intlShape } from 'react-intl'
 import { Helmet } from 'react-helmet'
 import { DragDropContext } from 'react-dnd'
 

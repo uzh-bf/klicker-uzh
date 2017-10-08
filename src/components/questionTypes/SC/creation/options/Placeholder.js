@@ -3,7 +3,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import { compose, withState, withHandlers } from 'recompose'
+import { compose, withHandlers, withState } from 'recompose'
 import { FaFloppyO, FaPlus, FaTrash } from 'react-icons/lib/fa'
 
 import styles from './styles'
@@ -106,7 +106,7 @@ const Placeholder = ({
   </div>
 )
 
-const Enhanced = enhance(Placeholder)
-Enhanced.propTypes = propTypes
+const EnhancedPlaceholder = enhance(Placeholder)
+EnhancedPlaceholder.propTypes = propTypes
 
-export default Enhanced
+export default EnhancedPlaceholder

@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { storiesOf } from '@storybook/react'
-import { compose, withState, withHandlers, mapProps } from 'recompose'
+import { compose, mapProps, withHandlers, withState } from 'recompose'
 
 import { intlMock } from '../../../.storybook/utils'
 
@@ -10,8 +10,8 @@ import TypeChooser from './TypeChooser'
 import {
   SCAnswerOptions,
   SCCreationContent,
-  SCCreationOptions,
   SCCreationOption,
+  SCCreationOptions,
   SCCreationPlaceholder,
   SCCreationPreview,
 } from './SC'

@@ -1,10 +1,10 @@
 import React from 'react'
 import { compose } from 'recompose'
-import { intlShape, FormattedMessage } from 'react-intl'
+import { FormattedMessage, intlShape } from 'react-intl'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import PasswordResetForm from '../../components/forms/PasswordResetForm'
-import { withData, pageWithIntl } from '../../lib'
+import { pageWithIntl, withData } from '../../lib'
 
 const propTypes = {
   intl: intlShape.isRequired,

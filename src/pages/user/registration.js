@@ -1,13 +1,13 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { compose } from 'recompose'
-import { intlShape, FormattedMessage } from 'react-intl'
+import { FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import RegistrationForm from '../../components/forms/RegistrationForm'
 import { RegistrationMutation } from '../../queries/mutations'
-import { withData, pageWithIntl } from '../../lib'
+import { pageWithIntl, withData } from '../../lib'
 
 const propTypes = {
   createUser: PropTypes.func.isRequired,

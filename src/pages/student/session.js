@@ -2,9 +2,9 @@ import React from 'react'
 import classNames from 'classnames'
 import { compose } from 'recompose'
 import { Button } from 'semantic-ui-react'
-import { intlShape, FormattedMessage } from 'react-intl'
+import { FormattedMessage, intlShape } from 'react-intl'
 
-import { withData, pageWithIntl } from '../../lib'
+import { pageWithIntl, withData } from '../../lib'
 
 import Collapser from '../../components/common/Collapser'
 import ConfusionSlider from '../../components/confusion/ConfusionSlider'

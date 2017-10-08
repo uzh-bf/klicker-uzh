@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { storiesOf } from '@storybook/react'
-import { compose, withState, withHandlers } from 'recompose'
+import { compose, withHandlers, withState } from 'recompose'
 
 import ConfusionBarometer from './ConfusionBarometer'
 import ConfusionSection from './ConfusionSection'
