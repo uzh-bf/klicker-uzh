@@ -3116,11 +3116,11 @@ exports[`Storyshots questions TitleInput 1`] = `
 exports[`Storyshots sessions Session 1`] = `
 <div
   className="session"
-  data-jsx={2105702694}
+  data-jsx={563880998}
 >
   <h2
     className="title"
-    data-jsx={2105702694}
+    data-jsx={563880998}
   >
     4c821db
      - 
@@ -3128,7 +3128,7 @@ exports[`Storyshots sessions Session 1`] = `
   </h2>
   <div
     className="date"
-    data-jsx={2105702694}
+    data-jsx={563880998}
   >
     <span>
       Created on
@@ -3138,11 +3138,11 @@ exports[`Storyshots sessions Session 1`] = `
   </div>
   <div
     className="details"
-    data-jsx={2105702694}
+    data-jsx={563880998}
   >
     <div
       className="block"
-      data-jsx={2105702694}
+      data-jsx={563880998}
     >
       <div
         className="questionBlock"
@@ -3261,7 +3261,7 @@ exports[`Storyshots sessions Session 1`] = `
     </div>
     <div
       className="actionArea"
-      data-jsx={2105702694}
+      data-jsx={563880998}
     >
       <button
         className="ui icon left labeled button"
@@ -3274,9 +3274,7 @@ exports[`Storyshots sessions Session 1`] = `
           aria-hidden="true"
           className="play icon"
         />
-        <span>
-          Start
-        </span>
+        Start
       </button>
     </div>
   </div>
@@ -3285,19 +3283,25 @@ exports[`Storyshots sessions Session 1`] = `
 
 exports[`Storyshots sessions SessionList 1`] = `
 <div
-  data-jsx={4112446694}
+  data-jsx={365290873}
 >
   <div
     className="session"
-    data-jsx={4112446694}
+    data-jsx={365290873}
+  >
+    No session is currently running.
+  </div>
+  <div
+    className="session"
+    data-jsx={365290873}
   >
     <div
       className="session"
-      data-jsx={2105702694}
+      data-jsx={563880998}
     >
       <h2
         className="title"
-        data-jsx={2105702694}
+        data-jsx={563880998}
       >
         4c821db
          - 
@@ -3305,7 +3309,7 @@ exports[`Storyshots sessions SessionList 1`] = `
       </h2>
       <div
         className="date"
-        data-jsx={2105702694}
+        data-jsx={563880998}
       >
         <span>
           Created on
@@ -3315,11 +3319,11 @@ exports[`Storyshots sessions SessionList 1`] = `
       </div>
       <div
         className="details"
-        data-jsx={2105702694}
+        data-jsx={563880998}
       >
         <div
           className="block"
-          data-jsx={2105702694}
+          data-jsx={563880998}
         >
           <div
             className="questionBlock"
@@ -3438,7 +3442,7 @@ exports[`Storyshots sessions SessionList 1`] = `
         </div>
         <div
           className="actionArea"
-          data-jsx={2105702694}
+          data-jsx={563880998}
         >
           <button
             className="ui icon left labeled button"
@@ -3451,9 +3455,7 @@ exports[`Storyshots sessions SessionList 1`] = `
               aria-hidden="true"
               className="play icon"
             />
-            <span>
-              Start
-            </span>
+            Start
           </button>
         </div>
       </div>
