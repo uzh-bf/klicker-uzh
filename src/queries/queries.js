@@ -1,5 +1,6 @@
 import { gql } from 'react-apollo'
 
+// Used in: TagList
 export const TagListQuery = gql`
   {
     tags: allTags {
@@ -9,6 +10,7 @@ export const TagListQuery = gql`
   }
 `
 
+// Used in: QuestionList
 export const QuestionListQuery = gql`
   {
     questions: allQuestions {
@@ -32,6 +34,7 @@ export const QuestionListQuery = gql`
   }
 `
 
+// Used in: SessionList
 export const SessionListQuery = gql`
   {
     sessions: allSessions {
@@ -54,6 +57,7 @@ export const SessionListQuery = gql`
   }
 `
 
+// Used in: RunningSession
 export const RunningSessionQuery = gql`
   {
     user {
@@ -82,6 +86,7 @@ export const RunningSessionQuery = gql`
   }
 `
 
+// Used in: SessionArea
 export const RunningSessionSummaryQuery = gql`
   {
     user {
@@ -89,6 +94,16 @@ export const RunningSessionSummaryQuery = gql`
       runningSession {
         id
       }
+    }
+  }
+`
+
+// Used in: AccountArea
+export const AccountSummaryQuery = gql`
+  {
+    user {
+      id
+      shortname
     }
   }
 `

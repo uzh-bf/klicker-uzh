@@ -5,7 +5,7 @@ import { Icon, Menu } from 'semantic-ui-react'
 
 import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'
-import SessionArea from './SessionArea'
+import SessionAreaConnected from './SessionArea'
 
 const propTypes = {
   accountShort: PropTypes.string.isRequired,
@@ -46,7 +46,7 @@ const Navbar = ({
     <div className="accountArea">
       <Menu borderless className="noBorder">
         <Menu.Menu position="right">
-          <SessionArea sessionId={accountShort} />
+          <SessionAreaConnected />
           <AccountArea accountShort={accountShort} />
         </Menu.Menu>
       </Menu>

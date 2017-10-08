@@ -12,9 +12,9 @@ import ListWithHeader from './ListWithHeader'
 import Collapser from './Collapser'
 
 import Navbar from './navbar/Navbar'
-import AccountArea from './navbar/AccountArea'
+import { AccountAreaPres } from './navbar/AccountArea'
 import SearchArea from './navbar/SearchArea'
-import { SessionArea } from './navbar/SessionArea'
+import { SessionAreaPres } from './navbar/SessionArea'
 
 import Sidebar from './sidebar/Sidebar'
 import SidebarItem from './sidebar/SidebarItem'
@@ -81,11 +81,12 @@ storiesOf('common/navbar', module)
       title="Example page"
     />
   ))
-  .add('AccountArea', () => <AccountArea accountShort="AW" />)
+  .add('AccountArea', () => <AccountAreaPres accountShort="AW" />)
   .add('SearchArea', () => (
     <SearchArea intl={intlMock} handleSearch={query => action(`search ${query}`)} />
   ))
-  .add('SessionArea', () => <SessionArea sessionId="AW" />)
+  .add('SessionArea (loading', () => <SessionAreaPres loading />)
+  .add('SessionArea (ready)', () => <SessionAreaPres loading={false} sessionId="a7s7d" />)
 
 storiesOf('common/sidebar', module)
   .add('Sidebar (visible)', () => (
