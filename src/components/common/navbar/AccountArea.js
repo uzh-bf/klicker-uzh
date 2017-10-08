@@ -2,17 +2,12 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { Dropdown } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import { graphql } from 'react-apollo'
-import { compose, mapProps } from 'recompose'
-import _get from 'lodash/get'
-
-import { AccountSummaryQuery } from '../../../queries/queries'
 
 const propTypes = {
   accountShort: PropTypes.string.isRequired,
 }
 
-export const AccountAreaPres = ({ accountShort }) => (
+const AccountArea = ({ accountShort }) => (
   <Dropdown item simple text={accountShort.toUpperCase()}>
     <Dropdown.Menu>
       <Dropdown.Item>
@@ -25,11 +20,6 @@ export const AccountAreaPres = ({ accountShort }) => (
   </Dropdown>
 )
 
-AccountAreaPres.propTypes = propTypes
+AccountArea.propTypes = propTypes
 
-export default compose(
-  graphql(AccountSummaryQuery),
-  mapProps(({ data }) => ({
-    accountShort: _get(data, 'user.shortname') || 'ANON',
-  })),
-)(AccountAreaPres)
+export default AccountArea

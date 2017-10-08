@@ -86,24 +86,15 @@ export const RunningSessionQuery = gql`
   }
 `
 
-// Used in: SessionArea
-export const RunningSessionSummaryQuery = gql`
-  {
-    user {
-      id
-      runningSession {
-        id
-      }
-    }
-  }
-`
-
-// Used in: AccountArea
+// Used in: Navbar
 export const AccountSummaryQuery = gql`
   {
     user {
       id
       shortname
+      runningSession {
+        id
+      }
     }
   }
 `

@@ -1,24 +1,13 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import _get from 'lodash/get'
 import { Button, Divider, Icon, Image, Menu, Popup } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import { graphql } from 'react-apollo'
-import { compose, mapProps } from 'recompose'
-
-import { RunningSessionSummaryQuery } from '../../../queries/queries'
 
 const propTypes = {
-  loading: PropTypes.bool.isRequired,
   sessionId: PropTypes.string.isRequired,
 }
 
-export const SessionAreaPres = ({ loading, sessionId }) => {
-  // if data is still loading, display a placeholder
-  if (loading) {
-    return null
-  }
-
+const SessionArea = ({ sessionId }) => {
   // if a session is currently running, display details
   if (sessionId) {
     return (
@@ -55,12 +44,6 @@ export const SessionAreaPres = ({ loading, sessionId }) => {
   return <button>Create session</button>
 }
 
-SessionAreaPres.propTypes = propTypes
+SessionArea.propTypes = propTypes
 
-export default compose(
-  graphql(RunningSessionSummaryQuery),
-  mapProps(({ data }) => ({
-    loading: data.loading,
-    sessionId: _get(data, 'user.runningSession.id'),
-  })),
-)(SessionAreaPres)
+export default SessionArea
