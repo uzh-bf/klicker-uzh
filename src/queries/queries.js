@@ -32,15 +32,6 @@ export const QuestionListQuery = gql`
   }
 `
 
-export const QrGeneratorQuery = gql`
-  {
-    user {
-      id
-      shortname
-    }
-  }
-`
-
 export const SessionListQuery = gql`
   {
     sessions: allSessions {
@@ -86,6 +77,17 @@ export const RunningSessionQuery = gql`
             }
           }
         }
+      }
+    }
+  }
+`
+
+export const RunningSessionSummaryQuery = gql`
+  {
+    user {
+      id
+      runningSession {
+        id
       }
     }
   }

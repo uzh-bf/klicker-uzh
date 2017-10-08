@@ -8,7 +8,7 @@ import classNames from 'classnames'
 import { FaPlus } from 'react-icons/lib/fa'
 
 import { pageWithIntl, withData } from '../../lib'
-import { SessionListQuery } from '../../queries/queries'
+import { SessionListQuery, RunningSessionQuery } from '../../queries/queries'
 import { CreateSessionMutation, StartSessionMutation } from '../../queries/mutations'
 import SessionCreationForm from '../../components/forms/SessionCreationForm'
 import QuestionList from '../../components/questions/QuestionList'
@@ -268,6 +268,7 @@ export default compose(
     props: ({ mutate }) => ({
       startSession: ({ id }) =>
         mutate({
+          refetchQueries: [{ query: RunningSessionQuery }],
           variables: { id },
         }),
     }),

@@ -16,6 +16,9 @@ export const LoginMutation = gql`
       id
       email
       shortname
+      runningSession {
+        id
+      }
     }
   }
 `

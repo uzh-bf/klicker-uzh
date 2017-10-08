@@ -14,7 +14,7 @@ import Collapser from './Collapser'
 import Navbar from './navbar/Navbar'
 import AccountArea from './navbar/AccountArea'
 import SearchArea from './navbar/SearchArea'
-import SessionArea from './navbar/SessionArea'
+import { SessionArea } from './navbar/SessionArea'
 
 import Sidebar from './sidebar/Sidebar'
 import SidebarItem from './sidebar/SidebarItem'
