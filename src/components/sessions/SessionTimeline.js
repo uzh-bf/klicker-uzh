@@ -7,6 +7,8 @@ import QuestionBlock from '../questions/QuestionBlock'
 
 const propTypes = {
   blocks: PropTypes.array, // TODO: extend
+  handleLeftActionClick: PropTypes.func.isRequired,
+  handleRightActionClick: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
 }
 
@@ -14,7 +16,9 @@ const defaultProps = {
   blocks: [],
 }
 
-const SessionTimeline = ({ blocks, intl }) => (
+const SessionTimeline = ({
+  blocks, intl, handleLeftActionClick, handleRightActionClick,
+}) => (
   <div className="sessionTimeline">
     <div className="topRow">
       <div className="startingTime">
@@ -49,6 +53,7 @@ const SessionTimeline = ({ blocks, intl }) => (
         icon="left arrow"
         labelPosition="left"
         size="large"
+        onClick={handleLeftActionClick}
       />
       <Button
         primary
@@ -59,6 +64,7 @@ const SessionTimeline = ({ blocks, intl }) => (
         icon="right arrow"
         labelPosition="right"
         size="large"
+        onClick={handleRightActionClick}
       />
     </div>
     <style jsx>

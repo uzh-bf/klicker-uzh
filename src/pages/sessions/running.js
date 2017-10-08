@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import { compose } from 'recompose'
 import { graphql } from 'react-apollo'
 import { intlShape } from 'react-intl'
+import Router from 'next/router'
 
 import { pageWithIntl, withData } from '../../lib'
 
@@ -10,10 +11,11 @@ import ConfusionBarometer from '../../components/confusion/ConfusionBarometer'
 import FeedbackChannel from '../../components/feedbacks/FeedbackChannel'
 import SessionTimeline from '../../components/sessions/SessionTimeline'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
-import { RunningSessionQuery } from '../../queries/queries'
+import { RunningSessionQuery, EndSessionMutation } from '../../queries'
 
 const propTypes = {
   data: PropTypes.object.isRequired,
+  endSession: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
 }
 
@@ -40,6 +42,15 @@ class Running extends React.Component {
     // TODO: trigger mutation instead of updating state
     // TODO: trigger refetch and update values
     this.setState(prevState => ({ feedbacksPublic: !prevState.feedbacksPublic }))
+  }
+
+  handleEndSession = id => async () => {
+    try {
+      await this.props.endSession({ id })
+      Router.push('/questions')
+    } catch ({ message }) {
+      console.error(message)
+    }
   }
 
   render() {
@@ -83,7 +94,11 @@ class Running extends React.Component {
       >
         <div className="runningSession">
           <div className="sessionProgress">
-            <SessionTimeline intl={intl} blocks={runningSession.blocks} />
+            <SessionTimeline
+              intl={intl}
+              blocks={runningSession.blocks}
+              handleRightActionClick={this.handleEndSession(runningSession.id)}
+            />
           </div>
 
           <div className="confusionBarometer">
@@ -159,4 +174,17 @@ class Running extends React.Component {
 
 Running.propTypes = propTypes
 
-export default compose(withData, pageWithIntl, graphql(RunningSessionQuery))(Running)
+export default compose(
+  withData,
+  pageWithIntl,
+  graphql(RunningSessionQuery),
+  graphql(EndSessionMutation, {
+    props: ({ mutate }) => ({
+      endSession: ({ id }) =>
+        mutate({
+          refetchQueries: [{ query: RunningSessionQuery }],
+          variables: { id },
+        }),
+    }),
+  }),
+)(Running)

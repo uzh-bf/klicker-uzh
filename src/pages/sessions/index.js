@@ -25,6 +25,10 @@ class Index extends React.Component {
     console.log(`sorted by ${by} in ${order} order`)
   }
 
+  handleCopySession = id => async () => {
+    console.log(`copy session ${id}`)
+  }
+
   handleStartSession = id => async () => {
     try {
       const result = await this.props.startSession({ id })
@@ -63,7 +67,11 @@ class Index extends React.Component {
         sidebar={{ activeItem: 'sessionHistory' }}
       >
         <div className="sessionHistory">
-          <SessionList intl={intl} handleStartSession={this.handleStartSession} />
+          <SessionList
+            intl={intl}
+            handleCopySession={this.handleCopySession}
+            handleStartSession={this.handleStartSession}
+          />
         </div>
 
         <style jsx>

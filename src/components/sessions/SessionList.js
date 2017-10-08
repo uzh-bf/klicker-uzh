@@ -99,11 +99,13 @@ export default compose(
         return () => null
       }
 
+      const runningSession = sessions.filter(session => session.status === 1)
+
       // return the newly composed props
       return {
         error,
-        runningSession: {
-          ...sessions.filter(session => session.status === 1)[0],
+        runningSession: runningSession.length === 1 && {
+          ...runningSession,
           button: {
             ...statusCases[1],
             onClick: () => Router.push('/sessions/running'),
