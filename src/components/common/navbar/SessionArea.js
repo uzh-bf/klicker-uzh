@@ -4,7 +4,7 @@ import { Button, Divider, Icon, Image, Menu, Popup } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 const propTypes = {
-  sessionId: PropTypes.string.isRequired,
+  sessionId: PropTypes.oneOfType([PropTypes.string, undefined]).isRequired,
 }
 
 const SessionArea = ({ sessionId }) => {

@@ -2,6 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import moment from 'moment'
 import { graphql } from 'react-apollo'
+import { compose, withPropsOnChange } from 'recompose'
 
 import Question from './Question'
 import { filterQuestions } from '../../lib/utils/filters'
@@ -9,34 +10,35 @@ import { QuestionListQuery } from '../../queries/queries'
 
 const propTypes = {
   creationMode: PropTypes.bool,
-  data: PropTypes.shape({
-    error: PropTypes.string,
-    loading: PropTypes.bool.isRequired,
-    questions: PropTypes.array, // TODO: extend proptypes with schema
-  }).isRequired,
   dropped: PropTypes.arrayOf(PropTypes.string),
-  filters: PropTypes.object.isRequired,
+  error: PropTypes.string,
+  loading: PropTypes.bool.isRequired,
   onQuestionDropped: PropTypes.func.isRequired,
+  questions: PropTypes.array,
 }
 
 const defaultProps = {
   creationMode: false,
   dropped: [],
+  error: undefined,
+  questions: [],
 }
 
-const QuestionList = ({
-  data, filters, dropped, onQuestionDropped, creationMode,
+export const QuestionListPres = ({
+  error,
+  loading,
+  questions,
+  dropped,
+  onQuestionDropped,
+  creationMode,
 }) => {
-  if (data.loading) {
+  if (loading) {
     return <div>Loading</div>
   }
 
-  if (data.error) {
-    return <div>{data.error}</div>
+  if (error) {
+    return <div>{error}</div>
   }
-
-  // calculate questions to show based on filter criteria
-  const questions = filters ? filterQuestions(data.questions, filters) : data.questions
 
   return (
     <div>
@@ -72,7 +74,14 @@ const QuestionList = ({
   )
 }
 
-QuestionList.propTypes = propTypes
-QuestionList.defaultProps = defaultProps
+QuestionListPres.propTypes = propTypes
+QuestionListPres.defaultProps = defaultProps
 
-export default graphql(QuestionListQuery)(QuestionList)
+export default compose(
+  graphql(QuestionListQuery),
+  withPropsOnChange(['data', 'filters'], ({ data: { loading, error, questions }, filters }) => ({
+    error,
+    loading,
+    questions: questions && (filters ? filterQuestions(questions, filters) : questions),
+  })),
+)(QuestionListPres)

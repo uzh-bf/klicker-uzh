@@ -2,51 +2,46 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { graphql } from 'react-apollo'
 import { List } from 'semantic-ui-react'
-
+import { compose, withPropsOnChange, setPropTypes } from 'recompose'
 import { TagListQuery } from '../../queries/queries'
 
 const propTypes = {
-  activeTags: PropTypes.arrayOf(PropTypes.string),
-  data: PropTypes.shape({
-    error: PropTypes.string,
-    loading: PropTypes.bool.isRequired,
-    tags: PropTypes.arrayOf(
-      PropTypes.shape({
-        id: PropTypes.string.isRequired,
-        name: PropTypes.string.isRequired,
-      }),
-    ),
-  }).isRequired,
+  error: PropTypes.oneOfType([PropTypes.string, undefined]).isRequired,
   handleTagClick: PropTypes.func.isRequired,
+  loading: PropTypes.bool.isRequired,
+  tags: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+    }),
+  ),
 }
 
 const defaultProps = {
-  activeTags: [],
+  tags: [],
 }
 
-const TagList = ({ activeTags, data, handleTagClick }) => {
-  if (data.loading) {
+export const TagListPres = ({
+  loading, error, tags, handleTagClick,
+}) => {
+  if (loading) {
     return <div>Loading</div>
   }
 
-  if (data.error) {
-    return <div>{data.error}</div>
+  if (error) {
+    return <div>{error}</div>
   }
 
   return (
     <List selection size="large">
-      {data.tags.map(({ id, name }) => {
-        const isActive = activeTags.length > 0 && activeTags.includes(name)
-
-        return (
-          <List.Item key={id} className="listItem" onClick={() => handleTagClick(name)}>
-            <List.Icon name={isActive ? 'folder' : 'folder outline'} />
-            <List.Content>
-              <span className={isActive ? 'active' : 'inactive'}>{name}</span>
-            </List.Content>
-          </List.Item>
-        )
-      })}
+      {tags.map(({ isActive, id, name }) => (
+        <List.Item key={id} className="listItem" onClick={() => handleTagClick(name)}>
+          <List.Icon name={isActive ? 'folder' : 'folder outline'} />
+          <List.Content>
+            <span className={isActive ? 'active' : 'inactive'}>{name}</span>
+          </List.Content>
+        </List.Item>
+      ))}
 
       <style jsx>
         {`
@@ -59,7 +54,17 @@ const TagList = ({ activeTags, data, handleTagClick }) => {
   )
 }
 
-TagList.propTypes = propTypes
-TagList.defaultProps = defaultProps
+TagListPres.propTypes = propTypes
+TagListPres.defaultProps = defaultProps
 
-export default graphql(TagListQuery)(TagList)
+export default compose(
+  graphql(TagListQuery),
+  withPropsOnChange(['data', 'activeTags'], ({ activeTags, data: { loading, error, tags } }) => ({
+    error,
+    loading,
+    tags: tags && tags.map(tag => ({ ...tag, isActive: activeTags.includes(tag.name) })),
+  })),
+  setPropTypes({
+    activeTags: PropTypes.arrayOf(PropTypes.string),
+  }),
+)(TagListPres)

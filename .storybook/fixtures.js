@@ -38,8 +38,28 @@ const session = {
   status: 'CREATED',
 }
 
+const questions = [
+  {
+    id: '1',
+    title: 'question1',
+    tags: [{ name: 'tag1' }, { name: 'tag2' }],
+    instances: [{ createdAt: '06.12.1993' }],
+    type: 'SC',
+    versions: [0],
+  },
+  {
+    id: '2',
+    title: 'question2',
+    tags: [{ name: 'tag3' }, { name: 'tag2' }],
+    instances: [{ createdAt: '07.12.1993' }, { createdAt: '07.12.1994' }],
+    type: 'MC',
+    versions: [0, 1],
+  },
+]
+
 export default {
   question,
+  questions,
   questionBlock,
   session,
 }
