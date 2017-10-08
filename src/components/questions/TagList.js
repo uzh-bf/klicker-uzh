@@ -2,13 +2,14 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { graphql } from 'react-apollo'
 import { List } from 'semantic-ui-react'
-import { compose, withPropsOnChange, setPropTypes } from 'recompose'
+import { compose, withProps, branch, renderComponent } from 'recompose'
+
+import Loading from '../common/Loading'
 import { TagListQuery } from '../../queries/queries'
 
 const propTypes = {
-  error: PropTypes.oneOfType([PropTypes.string, undefined]).isRequired,
+  error: PropTypes.string,
   handleTagClick: PropTypes.func.isRequired,
-  loading: PropTypes.bool.isRequired,
   tags: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.string.isRequired,
@@ -18,16 +19,11 @@ const propTypes = {
 }
 
 const defaultProps = {
+  error: undefined,
   tags: [],
 }
 
-export const TagListPres = ({
-  loading, error, tags, handleTagClick,
-}) => {
-  if (loading) {
-    return <div>Loading</div>
-  }
-
+export const TagListPres = ({ error, tags, handleTagClick }) => {
   if (error) {
     return <div>{error}</div>
   }
@@ -59,12 +55,10 @@ TagListPres.defaultProps = defaultProps
 
 export default compose(
   graphql(TagListQuery),
-  withPropsOnChange(['data', 'activeTags'], ({ activeTags, data: { loading, error, tags } }) => ({
+  branch(props => props.data.loading, renderComponent(Loading)),
+  withProps(({ activeTags, data: { loading, error, tags } }) => ({
     error,
     loading,
     tags: tags && tags.map(tag => ({ ...tag, isActive: activeTags.includes(tag.name) })),
   })),
-  setPropTypes({
-    activeTags: PropTypes.arrayOf(PropTypes.string),
-  }),
 )(TagListPres)

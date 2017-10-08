@@ -4,7 +4,11 @@ import { Button, Divider, Icon, Image, Menu, Popup } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 const propTypes = {
-  sessionId: PropTypes.oneOfType([PropTypes.string, undefined]).isRequired,
+  sessionId: PropTypes.string,
+}
+
+const defaultProps = {
+  sessionId: undefined,
 }
 
 const SessionArea = ({ sessionId }) => {
@@ -45,5 +49,6 @@ const SessionArea = ({ sessionId }) => {
 }
 
 SessionArea.propTypes = propTypes
+SessionArea.defaultProps = defaultProps
 
 export default SessionArea

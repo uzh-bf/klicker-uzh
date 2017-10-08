@@ -2,9 +2,10 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import moment from 'moment'
 import { graphql } from 'react-apollo'
-import { compose, withPropsOnChange } from 'recompose'
+import { compose, withProps, branch, renderComponent } from 'recompose'
 
 import Question from './Question'
+import Loading from '../common/Loading'
 import { filterQuestions } from '../../lib/utils/filters'
 import { QuestionListQuery } from '../../queries/queries'
 
@@ -12,7 +13,6 @@ const propTypes = {
   creationMode: PropTypes.bool,
   dropped: PropTypes.arrayOf(PropTypes.string),
   error: PropTypes.string,
-  loading: PropTypes.bool.isRequired,
   onQuestionDropped: PropTypes.func.isRequired,
   questions: PropTypes.array,
 }
@@ -26,16 +26,11 @@ const defaultProps = {
 
 export const QuestionListPres = ({
   error,
-  loading,
   questions,
   dropped,
   onQuestionDropped,
   creationMode,
 }) => {
-  if (loading) {
-    return <div>Loading</div>
-  }
-
   if (error) {
     return <div>{error}</div>
   }
@@ -79,9 +74,9 @@ QuestionListPres.defaultProps = defaultProps
 
 export default compose(
   graphql(QuestionListQuery),
-  withPropsOnChange(['data', 'filters'], ({ data: { loading, error, questions }, filters }) => ({
+  branch(props => props.data.loading, renderComponent(Loading)),
+  withProps(({ data: { error, questions }, filters }) => ({
     error,
-    loading,
     questions: questions && (filters ? filterQuestions(questions, filters) : questions),
   })),
 )(QuestionListPres)

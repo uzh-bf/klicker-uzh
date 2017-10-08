@@ -1,32 +1,32 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { graphql } from 'react-apollo'
+import { compose, withProps, branch, renderComponent } from 'recompose'
 
 import Session from './Session'
+import Loading from '../common/Loading'
 import { SessionListQuery } from '../../queries/queries'
 
 const propTypes = {
-  data: PropTypes.shape({
-    error: PropTypes.string,
-    loading: PropTypes.bool.isRequired,
-    sessions: PropTypes.array,
-  }).isRequired,
+  error: PropTypes.string,
+  sessions: PropTypes.array,
 }
 
-const SessionList = ({ data }) => {
-  if (data.loading) {
-    return <div>Loading</div>
-  }
+const defaultProps = {
+  error: undefined,
+  sessions: [],
+}
 
-  if (data.error) {
-    return <div>{data.error}</div>
+export const SessionListPres = ({ error, sessions }) => {
+  if (error) {
+    return <div>{error}</div>
   }
 
   return (
     <div>
-      {data.sessions.map(session => (
-        <div className="session">
-          <Session key={session.id} {...session} />
+      {sessions.map(session => (
+        <div key={session.id} className="session">
+          <Session {...session} />
         </div>
       ))}
 
@@ -41,6 +41,14 @@ const SessionList = ({ data }) => {
   )
 }
 
-SessionList.propTypes = propTypes
+SessionListPres.propTypes = propTypes
+SessionListPres.defaultProps = defaultProps
 
-export default graphql(SessionListQuery)(SessionList)
+export default compose(
+  graphql(SessionListQuery),
+  branch(props => props.data.loading, renderComponent(Loading)),
+  withProps(({ data: { error, sessions } }) => ({
+    error,
+    sessions,
+  })),
+)(SessionListPres)
