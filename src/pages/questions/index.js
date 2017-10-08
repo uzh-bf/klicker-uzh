@@ -18,6 +18,7 @@ import TeacherLayout from '../../components/layouts/TeacherLayout'
 const propTypes = {
   createSession: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
+  startSession: PropTypes.func.isRequired,
 }
 
 class Index extends React.Component {
@@ -89,35 +90,30 @@ class Index extends React.Component {
     })
   }
 
-  handleNewSession = type => ({ sessionName, questions }) => {
-    console.log(type)
-
+  handleNewSession = type => async ({ sessionName, questions }) => {
     // HACK: map each question into a separate question block
     const blocks = questions.map(question => ({ questions: [{ id: question.id }] }))
 
-    // create a new session
-    this.props
-      .createSession({ blocks, name: sessionName })
-      .then(() => {
-        // return to normal mode
-        this.toggleCreationMode()
-      })
-      .catch((e) => {
-        // TODO: show an error in the session creation form
-        console.log(e)
-      })
+    try {
+      // create a new session
+      const result = await this.props.createSession({ blocks, name: sessionName })
 
-    /* if (type === 'save') {
-      this.props.createSession({ blocks, name: sessionName })
+      // start the session immediately if the respective button was clicked
+      if (type === 'start') {
+        await this.props.startSession({ id: result.data.createSession.id })
+      }
+
+      // disable creation mode
+      this.toggleCreationMode()
+    } catch (e) {
+      // TODO: if anything fails, display the error in the form
+      console.log(e)
     }
-
-    if (type === 'start') {
-      this.props.createSession({ blocks, name: sessionName })
-    } */
   }
 
   render() {
     const { intl } = this.props
+    const { creationMode, dropped, filters } = this.state
 
     const navbarConfig = {
       accountShort: 'AW',
@@ -134,11 +130,12 @@ class Index extends React.Component {
       }),
     }
 
-    const actionButton = ( // : any = (
+    // TODO: replace with the action button component
+    const actionButton = (
       <div className="actionButton">
         <button
           className={classNames('ui huge circular primary icon button', {
-            active: this.state.creationMode,
+            active: creationMode,
           })}
           onClick={this.toggleCreationMode}
         >
@@ -147,7 +144,8 @@ class Index extends React.Component {
       </div>
     )
 
-    const actionArea = ( // : any = (
+    // TODO: create a component for this?
+    const actionArea = (
       <div className="creationForm">
         <SessionCreationForm
           onSave={this.handleNewSession('save')}
@@ -177,7 +175,7 @@ class Index extends React.Component {
 
     return (
       <TeacherLayout
-        actionArea={this.state.creationMode ? actionArea : actionButton}
+        actionArea={creationMode ? actionArea : actionButton}
         intl={intl}
         navbar={navbarConfig}
         pageTitle={intl.formatMessage({
@@ -188,13 +186,13 @@ class Index extends React.Component {
       >
         <div className="questionPool">
           <div className="tagList">
-            <TagList activeTags={this.state.filters.tags} handleTagClick={this.handleTagClick} />
+            <TagList activeTags={filters.tags} handleTagClick={this.handleTagClick} />
           </div>
           <div className="questionList">
             <QuestionList
-              dropped={this.state.dropped}
-              filters={this.state.filters}
-              creationMode={this.state.creationMode}
+              dropped={dropped}
+              filters={filters}
+              creationMode={creationMode}
               onQuestionDropped={this.handleDropped}
             />
           </div>
