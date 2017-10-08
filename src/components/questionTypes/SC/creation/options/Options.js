@@ -22,7 +22,7 @@ const enhance = compose(
     handleDeleteOption: ({ onChange, value }) => index =>
       onChange([...value.slice(0, index), ...value.slice(index + 1)]),
     handleNewOption: ({ input: { onChange, value } }) => option => onChange([...value, option]),
-    handleOptionToggleCorrect: ({ onChange, value }) => index => () =>
+    handleOptionToggleCorrect: ({ onChange, value }) => index =>
       onChange([
         ...value.slice(0, index),
         { ...value[index], correct: !value[index].correct },
