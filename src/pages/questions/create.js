@@ -24,18 +24,21 @@ class CreateQuestion extends React.Component {
     Router.push('/questions')
   }
 
-  handleSave = ({
+  handleSave = async ({
     content, options, tags, title, type,
   }) => {
-    this.props
-      .createQuestion({
+    try {
+      await this.props.createQuestion({
         description: content,
         options,
         tags,
         title,
         type,
       })
-      .then(() => Router.push('/questions'))
+      Router.push('/questions')
+    } catch ({ message }) {
+      console.dir(message)
+    }
   }
 
   render() {

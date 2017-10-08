@@ -11,7 +11,7 @@ const propTypes = {
 }
 
 class ResetPassword extends React.Component {
-  handleSubmit = () => {
+  handleSubmit = async () => {
     console.log('reset password...')
   }
 

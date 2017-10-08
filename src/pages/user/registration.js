@@ -20,15 +20,13 @@ class Registration extends React.Component {
     success: null,
   }
 
-  handleSubmit = (values) => {
-    this.props
-      .createUser(values.email, values.password, values.shortname)
-      .then(({ data }) => {
-        this.setState({ error: null, success: data.createUser.email })
-      })
-      .catch(({ message }) => {
-        this.setState({ error: message, success: null })
-      })
+  handleSubmit = async ({ email, password, shortname }) => {
+    try {
+      const result = await this.props.createUser(email, password, shortname)
+      this.setState({ error: null, success: result.data.createUser.email })
+    } catch ({ message }) {
+      this.setState({ error: message, success: null })
+    }
   }
 
   render() {

@@ -20,17 +20,15 @@ class Login extends React.Component {
     error: null,
   }
 
-  handleSubmit = (values) => {
-    this.props
-      .login(values.email, values.password)
-      .then(() => {
-        // redirect to question pool
-        Router.push('/questions')
-        // this.setState({ error: null, success: data.login.email })
-      })
-      .catch(({ message }) => {
-        this.setState({ error: message })
-      })
+  handleSubmit = async ({ email, password }) => {
+    try {
+      await this.props.login(email, password)
+
+      // redirect to question pool
+      Router.push('/questions')
+    } catch ({ message }) {
+      this.setState({ error: message })
+    }
   }
 
   render() {
