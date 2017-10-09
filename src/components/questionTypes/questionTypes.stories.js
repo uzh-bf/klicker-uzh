@@ -8,8 +8,8 @@ import TypeChooser from './TypeChooser'
 import {
   SCAnswerOptions,
   SCCreationContent,
-  SCCreationOptions,
   SCCreationOption,
+  SCCreationOptions,
   SCCreationPlaceholder,
   SCCreationPreview,
 } from './SC'
@@ -19,6 +19,7 @@ class SCAnswerWrapper extends Component {
   state = {
     activeOption: 1,
   }
+
   render() {
     return (
       <SCAnswerOptions
@@ -82,6 +83,21 @@ storiesOf('questionTypes/SC', module)
     <SCCreationPreview title="Hello question" description="abcd" options={[]} />
   ))
 
-storiesOf('questionTypes/FREE', module).add('FREE Creation Preview (unrestricted)', () => (
-  <FREECreationPreview />
-))
+storiesOf('questionTypes/FREE', module)
+  .add('FREE Creation Preview (unrestricted)', () => (
+    <FREECreationPreview title="Hello" description="World!" />
+  ))
+  .add('FREE Creation Preview (Lower bound restriction)', () => (
+    <FREECreationPreview
+      title="Hello"
+      options={{ restrictions: { max: null, min: 90, type: 'NUMBERS' } }}
+      description="World!"
+    />
+  ))
+  .add('FREE Creation Preview (Number-Range)', () => (
+    <FREECreationPreview
+      title="Hello"
+      options={{ restrictions: { max: 900, min: 90, type: 'NUMBERS' } }}
+      description="World!"
+    />
+  ))
