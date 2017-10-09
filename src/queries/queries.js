@@ -42,6 +42,7 @@ export const SessionListQuery = gql`
       name
       status
       blocks {
+        key
         instances {
           id
           question {

@@ -62,6 +62,19 @@ export const CreateSessionMutation = gql`
   mutation CreateSession($name: String!, $blocks: [Session_QuestionBlockInput]!) {
     createSession(session: { name: $name, blocks: $blocks }) {
       id
+      title
+      type
+      tags {
+        id
+      }
+      versions {
+        description
+        options {
+          correct
+          name
+        }
+        createdAt
+      }
     }
   }
 `
@@ -70,6 +83,7 @@ export const StartSessionMutation = gql`
   mutation StartSession($id: ID!) {
     startSession(id: $id) {
       id
+      status
     }
   }
 `
@@ -78,6 +92,7 @@ export const EndSessionMutation = gql`
   mutation EndSession($id: ID!) {
     endSession(id: $id) {
       id
+      status
     }
   }
 `
