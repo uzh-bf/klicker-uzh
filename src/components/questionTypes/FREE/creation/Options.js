@@ -3,7 +3,6 @@ import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { FormattedMessage, intlShape } from 'react-intl'
 
-
 const propTypes = {
   input: PropTypes.shape({
     onChange: PropTypes.func.isRequired,
@@ -13,7 +12,7 @@ const propTypes = {
 }
 
 class Options extends React.Component {
-  handleMaxChange = e => {
+  handleMaxChange = (e) => {
     const { input: { value, onChange } } = this.props
 
     let newMax = e.target.value
@@ -30,7 +29,7 @@ class Options extends React.Component {
     })
   }
 
-  handleMinChange = e => {
+  handleMinChange = (e) => {
     const { input: { value, onChange } } = this.props
 
     let newMin = e.target.value

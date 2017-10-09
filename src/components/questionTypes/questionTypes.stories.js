@@ -13,7 +13,7 @@ import {
   SCCreationPlaceholder,
   SCCreationPreview,
 } from './SC'
-import { FREECreationPreview } from './FREE'
+import { FREEAnswerOptions, FREECreationPreview } from './FREE'
 
 class SCAnswerWrapper extends Component {
   state = {
@@ -84,6 +84,18 @@ storiesOf('questionTypes/SC', module)
   ))
 
 storiesOf('questionTypes/FREE', module)
+  .add('FREE Answering Options (unrestricted)', () => (
+    <FREEAnswerOptions options={{ restrictions: { max: null, min: null, type: 'NONE' } }} />
+  ))
+  .add('FREE Answering Options (lower bound restriction)', () => (
+    <FREEAnswerOptions options={{ restrictions: { max: null, min: 9, type: 'NUMBERS' } }} />
+  ))
+  .add('FREE Answering Options (upper bound restriction)', () => (
+    <FREEAnswerOptions options={{ restrictions: { max: 87, min: null, type: 'NUMBERS' } }} />
+  ))
+  .add('FREE Answering Options (Number restriction)', () => (
+    <FREEAnswerOptions options={{ restrictions: { max: 87, min: 900, type: 'NUMBERS' } }} />
+  ))
   .add('FREE Creation Preview (unrestricted)', () => (
     <FREECreationPreview title="Hello" description="World!" />
   ))

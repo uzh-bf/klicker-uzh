@@ -1,54 +1,44 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import classNames from 'classnames'
-import { Button } from 'semantic-ui-react'
+import { FormattedMessage } from 'react-intl'
 
 const propTypes = {
-  activeOption: PropTypes.number.isRequired,
-  onOptionClick: PropTypes.func.isRequired,
-  options: PropTypes.arrayOf(
-    PropTypes.shape({
-      name: PropTypes.string.isRequired,
+  options: PropTypes.shape({
+    restrictions: PropTypes.shape({
+      max: PropTypes.number,
+      min: PropTypes.number,
+      type: PropTypes.string,
     }),
-  ),
+  }),
 }
 
 const defaultProps = {
   options: [],
 }
 
-const Options = ({ activeOption, options, onOptionClick }) => (
+const Options = ({ options }) => (
   <div className="options">
-    {options.map((option, index) => (
-      <div key={option.name} className={classNames('option', { active: index === activeOption })}>
-        <Button basic fluid onClick={onOptionClick && onOptionClick(index)}>
-          {option.name}
-        </Button>
-      </div>
-    ))}
-
-    <style jsx>{`
-      :global(.option:not(:last-child)) {
-        margin-bottom: 0.5rem;
-      }
-
-      .option.active :global(button) {
-        border: 1px solid green !important;
-
-        animation: bounce 0.5s;
-      }
-
-      // TODO: improve animation
-      @keyframes bounce {
-        0%,
-        100% {
-          transform: translateX(0);
-        }
-        50% {
-          transform: translateY(-2px);
-        }
-      }
-    `}</style>
+    {options.restrictions.type === 'NUMBERS' &&
+    options.restrictions.min !== null &&
+    options.restrictions.max !== null ? (
+      <div>Slider {/* TODO Slider */}</div>
+      ) : (
+        <div>
+          <textarea />
+          {options.restrictions.min !== null && (
+            <div>
+              <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />:{' '}
+              {options.restrictions.min}
+            </div>
+          )}
+          {options.restrictions.max !== null && (
+            <div>
+              <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />:{' '}
+              {options.restrictions.max}
+            </div>
+          )}
+        </div>
+      )}
   </div>
 )
 
