@@ -33,7 +33,6 @@ class Index extends React.Component {
   }
 
   toggleCreationMode = () => {
-    // : void => {
     this.setState((prevState) => {
       // toggle creation mode
       const creationMode = !prevState.creationMode
@@ -48,13 +47,11 @@ class Index extends React.Component {
   }
 
   handleDropped = id => () => {
-    // (id: string) => () => {
     this.setState(prevState => ({ dropped: [...prevState.dropped, id] }))
   }
 
   // handle searching in the navbar search area
   handleSearch = (title) => {
-    // (title: string): void => {
     this.setState(prevState => ({
       filters: { ...prevState.filters, title },
     }))
@@ -62,13 +59,11 @@ class Index extends React.Component {
 
   // handle sorting via navbar search area
   handleSort = (by, order) => {
-    // (by: string, order: string): void => {
     console.log(`sorted by ${by} in ${order} order`)
   }
 
   // handle clicking on a tag in the tag list
   handleTagClick = (tagName) => {
-    // (tagName: string): void => {
     this.setState((prevState) => {
       // remove the tag from active tags
       if (prevState.filters.tags.includes(tagName)) {

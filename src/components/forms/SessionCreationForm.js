@@ -43,7 +43,7 @@ const SessionCreationForm = ({
     </div>
 
     <div className="actionArea">
-      <button className="ui fluid button" type="button" onClick={handleSubmit(onDiscard)}>
+      <button className="ui fluid button" type="button" onClick={onDiscard}>
         <FaTrash />
         <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
       </button>
