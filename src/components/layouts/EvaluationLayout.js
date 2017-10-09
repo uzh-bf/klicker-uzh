@@ -39,22 +39,57 @@ class EvaluationLayout extends Component {
           <title>{pageTitle}</title>
         </Helmet>
 
-        <div className="content">
-          <div><b>{data.title}</b></div>
-          <div>{data.questionText}</div>
-          <hr />
-          <div className="graph">Graph</div>
-          <div className="possibilities">Possibilities</div>
-          <div className="sampleSolution">Sample Solution</div>
-          <div className="Visualization">Visualization</div>
+        <div className="box title">
+          <b>{data.title}</b>
         </div>
+        <div className="box questionText">{data.questionText}</div>
+        <hr />
+        <div className="box graph">Graph</div>
+        <div className="box possibilities">Possibilities</div>
+        <div className="box sampleSolution">Sample Solution</div>
+        <div className="box visualization">Visualization</div>
+
 
         <style jsx>{`
-          .evaluationLayout {
-            display: flex;
-            flex-direction: column;
+          .box {
+            padding: 0.5rem;
+          }
 
-            padding: 1rem;
+          @supports (grid-gap: 1rem) {
+            @media all and (min-width: 768px) {
+              .evaluationLayout {
+                display: grid;
+
+                grid-template-columns: 0.5 0.5;
+                grid-template-rows: auto;
+                grid-template-areas: 'title title' 'question question' 'graph possibilities'
+                  'graph solution' 'graph visualization';
+              }
+
+              .title {
+                grid-area: title;
+              }
+
+              .questionText {
+                grid-area: question;
+              }
+
+              .graph {
+                grid-area: graph;
+              }
+
+              .possibilities {
+                grid-area: possibilities;
+              }
+
+              .sampleSolution {
+                grid-area: solution;
+              }
+
+              .visualization {
+                grid-area: visualization;
+              }
+            }
           }
         `}</style>
       </div>
