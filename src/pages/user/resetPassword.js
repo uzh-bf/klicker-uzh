@@ -52,6 +52,7 @@ export default compose(
   withState('error', 'setError', null),
   withState('success', 'setSuccess', null),
   withHandlers({
+    // TODO: handle form submission
     handleSubmit: () => () => console.log('submit'),
   }),
 )(ResetPassword)
