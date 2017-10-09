@@ -124,7 +124,9 @@ Running.propTypes = propTypes
 export default compose(
   withData,
   pageWithIntl,
-  graphql(RunningSessionQuery),
+  graphql(RunningSessionQuery, {
+    options: { pollInterval: 10000 },
+  }),
   graphql(EndSessionMutation),
   // TODO: get rid of this branch?
   branch(
