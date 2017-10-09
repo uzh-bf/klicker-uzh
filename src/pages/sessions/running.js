@@ -21,13 +21,6 @@ const propTypes = {
 }
 
 const Running = ({ data, intl, handleEndSession }) => {
-  const navbarConfig = {
-    title: intl.formatMessage({
-      defaultMessage: 'Running Session',
-      id: 'teacher.runningSession.title',
-    }),
-  }
-
   const { runningSession } = data.user
   const {
     isConfusionBarometerActive,
@@ -38,7 +31,12 @@ const Running = ({ data, intl, handleEndSession }) => {
   return (
     <TeacherLayout
       intl={intl}
-      navbar={navbarConfig}
+      navbar={{
+        title: intl.formatMessage({
+          defaultMessage: 'Running Session',
+          id: 'teacher.runningSession.title',
+        }),
+      }}
       pageTitle={intl.formatMessage({
         defaultMessage: 'Running Session',
         id: 'teacher.runningSession.pageTitle',

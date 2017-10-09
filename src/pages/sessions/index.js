@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { compose, withProps, withHandlers } from 'recompose'
+import { compose, withHandlers } from 'recompose'
 import { intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 
@@ -19,60 +19,55 @@ const propTypes = {
 
 const Index = ({
   intl, handleCopySession, handleSearch, handleSort, handleStartSession,
-}) => {
-  const navbarConfig = {
-    accountShort: 'AW',
-    search: {
-      handleSearch,
-      handleSort,
-      query: '',
-      sortBy: '',
-      sortOrder: '',
-    },
-    title: intl.formatMessage({
-      defaultMessage: 'Session History',
-      id: 'teacher.sessionHistory.title',
-    }),
-  }
-
-  return (
-    <TeacherLayout
-      intl={intl}
-      navbar={navbarConfig}
-      pageTitle={intl.formatMessage({
+}) => (
+  <TeacherLayout
+    intl={intl}
+    navbar={{
+      search: {
+        handleSearch,
+        handleSort,
+        query: '',
+        sortBy: '',
+        sortOrder: '',
+      },
+      title: intl.formatMessage({
         defaultMessage: 'Session History',
-        id: 'teacher.sessionHistory.pageTitle',
-      })}
-      sidebar={{ activeItem: 'sessionHistory' }}
-    >
-      <div className="sessionHistory">
-        <SessionList
-          intl={intl}
-          handleCopySession={handleCopySession}
-          handleStartSession={handleStartSession}
-        />
-      </div>
+        id: 'teacher.sessionHistory.title',
+      }),
+    }}
+    pageTitle={intl.formatMessage({
+      defaultMessage: 'Session History',
+      id: 'teacher.sessionHistory.pageTitle',
+    })}
+    sidebar={{ activeItem: 'sessionHistory' }}
+  >
+    <div className="sessionHistory">
+      <SessionList
+        intl={intl}
+        handleCopySession={handleCopySession}
+        handleStartSession={handleStartSession}
+      />
+    </div>
 
-      <style jsx>{`
+    <style jsx>{`
+      .sessionHistory {
+        padding: 1rem 0.7rem;
+      }
+
+      @media all and (min-width: 768px) {
         .sessionHistory {
-          padding: 1rem 0.7rem;
+          padding: 2rem;
         }
+      }
 
-        @media all and (min-width: 768px) {
-          .sessionHistory {
-            padding: 2rem;
-          }
+      @media all and (min-width: 991px) {
+        .sessionHistory {
+          padding: 2rem 10%;
         }
-
-        @media all and (min-width: 991px) {
-          .sessionHistory {
-            padding: 2rem 10%;
-          }
-        }
-      `}</style>
-    </TeacherLayout>
-  )
-}
+      }
+    `}</style>
+  </TeacherLayout>
+)
 
 Index.propTypes = propTypes
 
@@ -80,16 +75,8 @@ export default compose(
   withData, // { props }
   pageWithIntl, // { props, intl }
   graphql(StartSessionMutation), // { props, intl, mutate }
-  withProps(({ mutate }) => ({
-    // { props, intl, mutate, startSession }
-    startSession: ({ id }) =>
-      mutate({
-        refetchQueries: [{ query: RunningSessionQuery }],
-        variables: { id },
-      }),
-  })),
   withHandlers({
-    // { props, intl, mutate, startSession, handleCopySession...}
+    // { props, intl, mutate, handleCopySession...}
     handleCopySession: () => id => async () => {
       console.log(`copy session ${id}`)
     },
@@ -99,9 +86,12 @@ export default compose(
     handleSort: () => (by, order) => {
       console.log(`sorted by ${by} in ${order} order`)
     },
-    handleStartSession: ({ startSession }) => async (id) => {
+    handleStartSession: ({ mutate }) => async (id) => {
       try {
-        const result = await startSession({ id })
+        const result = await mutate({
+          refetchQueries: [{ query: RunningSessionQuery }],
+          variables: { id },
+        })
         console.dir(result)
       } catch ({ message }) {
         console.error(message)
