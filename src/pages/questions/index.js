@@ -20,12 +20,12 @@ const propTypes = {
   droppedQuestions: PropTypes.arrayOf(PropTypes.string).isRequired,
   filters: PropTypes.object.isRequired,
   handleCreateSession: PropTypes.func.isRequired,
+  handleCreationModeToggle: PropTypes.func.isRequired,
   handleQuestionDropped: PropTypes.func.isRequired,
   handleSearch: PropTypes.func.isRequired,
   handleSort: PropTypes.func.isRequired,
   handleTagClick: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  toggleCreationMode: PropTypes.func.isRequired,
 }
 
 const Index = ({
@@ -38,7 +38,7 @@ const Index = ({
   handleSort,
   handleTagClick,
   handleQuestionDropped,
-  toggleCreationMode,
+  handleCreationModeToggle,
 }) => {
   // TODO: replace with the action button component
   const actionButton = (
@@ -47,7 +47,7 @@ const Index = ({
         className={classNames('ui huge circular primary icon button', {
           active: creationMode,
         })}
-        onClick={toggleCreationMode}
+        onClick={handleCreationModeToggle}
       >
         <FaPlus />
       </button>
@@ -60,7 +60,7 @@ const Index = ({
       <SessionCreationForm
         onSave={handleCreateSession('save')}
         onStart={handleCreateSession('start')}
-        onDiscard={toggleCreationMode}
+        onDiscard={handleCreationModeToggle}
       />
 
       <style jsx>

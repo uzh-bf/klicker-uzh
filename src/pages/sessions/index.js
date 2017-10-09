@@ -93,7 +93,7 @@ export default compose(
     },
 
     // handle starting an already created session
-    handleStartSession: ({ mutate }) => async (id) => {
+    handleStartSession: ({ mutate }) => id => async () => {
       try {
         await mutate({
           refetchQueries: [{ query: RunningSessionQuery }],
