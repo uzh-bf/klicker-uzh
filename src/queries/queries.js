@@ -82,6 +82,11 @@ export const RunningSessionQuery = gql`
             }
           }
         }
+        settings {
+          isConfusionBarometerActive
+          isFeedbackChannelActive
+          isFeedbackChannelPublic
+        }
       }
     }
   }
