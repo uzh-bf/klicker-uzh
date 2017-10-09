@@ -46,7 +46,7 @@
     "react-tagsinput": "3.18.0",
     "recharts": "1.0.0-apha.5",
     "redux": "3.7.2",
-    "redux-form": "7.0.3",
+    "redux-form": "7.1.0",
     "semantic-ui-react": "0.74.2",
     "validator": "9.0.0"
   },
