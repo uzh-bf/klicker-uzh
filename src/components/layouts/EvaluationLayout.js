@@ -1,11 +1,13 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { Helmet } from 'react-helmet'
+import { intlShape } from 'react-intl'
 
 import { createLinks, initLogging } from '../../lib'
 
 const propTypes = {
   children: PropTypes.node.isRequired,
+  intl: intlShape.isRequired,
   pageTitle: PropTypes.string,
 }
 
@@ -13,7 +15,7 @@ const defaultProps = {
   pageTitle: 'EvaluationLayout',
 }
 
-class StaticLayout extends Component {
+class EvaluationLayout extends Component {
   state = {}
 
   componentWillMount() {
@@ -34,21 +36,9 @@ class StaticLayout extends Component {
           <title>{pageTitle}</title>
         </Helmet>
 
-        <div className="content">{children}</div>
-
-        <footer>&copy; IBF</footer>
-
-        <style jsx global>{`
-          * {
-            font-family: 'Open Sans', sans-serif;
-          }
-          html {
-            font-size: 16px;
-          }
-          body {
-            font-size: 1rem;
-          }
-        `}</style>
+        <div className="content">
+          {children}
+        </div>
 
         <style jsx>{`
           .evaluationLayout {
@@ -56,19 +46,13 @@ class StaticLayout extends Component {
             flex-direction: column;
             min-height: 100vh;
           }
-
-          footer {
-            background-color: lightgrey;
-            border-top: 2px solid orange;
-            padding: 1rem;
-          }
         `}</style>
       </div>
     )
   }
 }
 
-StaticLayout.propTypes = propTypes
-StaticLayout.defaultProps = defaultProps
+EvaluationLayout.propTypes = propTypes
+EvaluationLayout.defaultProps = defaultProps
 
-export default StaticLayout
+export default EvaluationLayout

@@ -15,19 +15,18 @@ const propTypes = {
 
 class Evaluation extends Component {
   render() {
-    const { data, intl } = this.props
+    const { intl } = this.props
 
     return (
       <EvaluationLayout
+        intl={intl}
         pageTitle={intl.formatMessage({
-          defaultMessage: 'Running Session',
-          id: 'teacher.runningSession.pageTitle',
+          defaultMessage: 'Evaluation',
+          id: 'teacher.evaluation.pageTitle',
         })}
-        sidebar={{ activeItem: 'runningSession' }}
       >
-        <div className="runningSession">
-          <div className="sessionProgress">hello
-          </div>
+        <div className="evaluation">
+          Hello i am evaluation
         </div>
 
         <style jsx>{`
@@ -36,30 +35,6 @@ class Evaluation extends Component {
             flex-direction: column;
 
             padding: 1rem;
-          }
-
-          @media all and (min-width: 768px) {
-            .runningSession {
-              flex-flow: row wrap;
-
-              padding: 2rem;
-            }
-
-            .sessionProgress,
-            .feedbackChannel {
-              padding: 0.5rem;
-            }
-
-            .sessionProgress {
-              flex: 0 0 100%;
-            }
-
-          }
-
-          @media all and (min-width: 991px) {
-            .runningSession {
-              padding: 2rem 10%;
-            }
           }
         `}</style>
       </EvaluationLayout>
