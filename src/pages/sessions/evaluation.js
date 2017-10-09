@@ -7,8 +7,10 @@ import { pageWithIntl, withData } from '../../lib'
 
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
 import SampleSolution from '../../components/evaluations/SampleSolution'
-import { RunningSessionQuery } from '../../queries/queries'
 import Visualization from '../../components/evaluations/Visualization'
+import Possibilities from '../../components/evaluations/Possibilities'
+import { RunningSessionQuery } from '../../queries/queries'
+
 
 const propTypes = {
   data: PropTypes.object.isRequired,
@@ -20,6 +22,7 @@ class Evaluation extends Component {
     const { intl } = this.props
 
     const data = {
+      possibilities: <Possibilities intl={intl} />,
       questionText:
         'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
       sampleSolution: <SampleSolution intl={intl} />,
