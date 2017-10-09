@@ -1,30 +1,19 @@
-// @flow
-
 import React from 'react'
+import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import { FormattedMessage } from 'react-intl'
+import { FormattedMessage, intlShape } from 'react-intl'
 
-import type { FREEOptionsType, ReduxFormInputType } from '../../../../../types'
 
-type Props = {
-  intl: $IntlShape,
-  input: ReduxFormInputType<FREEOptionsType>,
+const propTypes = {
+  input: PropTypes.shape({
+    onChange: PropTypes.func.isRequired,
+    value: PropTypes.arrayOf(PropTypes.shape(Option.propTypes)).isRequired,
+  }).isRequired,
+  intl: intlShape.isRequired,
 }
 
 class Options extends React.Component {
-  props: Props
-
-  static defaultProps = {
-    value: {
-      restrictions: {
-        max: null,
-        min: null,
-        type: 'NONE',
-      },
-    },
-  }
-
-  handleMaxChange = (e: SyntheticInputEvent) => {
+  handleMaxChange = e => {
     const { input: { value, onChange } } = this.props
 
     let newMax = e.target.value
@@ -41,7 +30,7 @@ class Options extends React.Component {
     })
   }
 
-  handleMinChange = (e: SyntheticInputEvent) => {
+  handleMinChange = e => {
     const { input: { value, onChange } } = this.props
 
     let newMin = e.target.value
@@ -58,7 +47,7 @@ class Options extends React.Component {
     })
   }
 
-  handleTypeChange = (type: string) => () => {
+  handleTypeChange = type => () => {
     const { input: { value, onChange } } = this.props
 
     onChange({
@@ -71,7 +60,7 @@ class Options extends React.Component {
   }
 
   render() {
-    const { intl, input: { value } } = this.props
+    const { input: { value }, intl } = this.props
 
     // TODO: extract to FormattedMessage
     const optionsData = [
@@ -167,5 +156,7 @@ class Options extends React.Component {
     )
   }
 }
+
+Options.propTypes = propTypes
 
 export default Options

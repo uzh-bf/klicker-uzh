@@ -1,14 +1,17 @@
-// @flow
-
 import React from 'react'
 import { FormattedMessage } from 'react-intl'
+import PropTypes from 'prop-types'
 
-import type { FREEOptionsType } from '../../../../types'
-
-type Props = {
-  description: string,
-  options: FREEOptionsType,
-  title: string,
+const propTypes = {
+  description: PropTypes.string,
+  options: PropTypes.shape({
+    restrictions: PropTypes.shape({
+      max: PropTypes.number,
+      min: PropTypes.number,
+      type: PropTypes.string,
+    }),
+  }),
+  title: PropTypes.string,
 }
 
 const defaultProps = {
@@ -23,7 +26,7 @@ const defaultProps = {
   title: 'TITLE',
 }
 
-const Preview = ({ title, options, description }: Props) => {
+const Preview = ({ title, options, description }) => {
   const restrictedToNumbers =
     options.restrictions.type === 'NUMBERS' &&
     options.restrictions.min !== null &&
@@ -155,6 +158,7 @@ const Preview = ({ title, options, description }: Props) => {
   )
 }
 
+Preview.propTypes = propTypes
 Preview.defaultProps = defaultProps
 
 export default Preview
