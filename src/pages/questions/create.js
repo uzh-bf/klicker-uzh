@@ -47,12 +47,12 @@ export default compose(
   graphql(TagListQuery),
   graphql(CreateQuestionMutation),
   withHandlers({
-    // discarding a new question
+    // handle discarding a new question
     handleDiscard: () => () => {
       Router.push('/questions')
     },
 
-    // saving a new question
+    // handle saving a new question
     handleSave: ({ mutate }) => async ({
       content, options, tags, title, type,
     }) => {

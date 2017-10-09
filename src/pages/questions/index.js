@@ -181,12 +181,30 @@ export default compose(
     type: null,
   }),
   withHandlers({
+    // handle toggling creation mode (display of session creation form)
+    handleCreationModeToggle: ({ creationMode, setCreationMode, setDroppedQuestions }) => () => {
+      // if the creation mode was activated before, reset dropped questions on toggle
+      if (creationMode) {
+        setDroppedQuestions([])
+      }
+
+      // toggle creation mode
+      setCreationMode(prevState => !prevState)
+    },
+
+    // handle a new question that gets dropped on the session creation timeline
     handleQuestionDropped: ({ setDroppedQuestions }) => id => () =>
       setDroppedQuestions(prevState => [...prevState, id]),
+
+    // handle an update in the search bar
     handleSearch: ({ setFilters }) => title => setFilters(prevState => ({ ...prevState, title })),
+
+    // handle updated sort settings
     handleSort: () => (by, order) => {
       console.log(`sorted by ${by} in ${order} order`)
     },
+
+    // handle clicking on a tag in the tag list
     handleTagClick: ({ setFilters }) => tagName =>
       setFilters((prevState) => {
         // remove the tag from active tags
@@ -203,18 +221,10 @@ export default compose(
           tags: [...prevState.tags, tagName],
         }
       }),
-    toggleCreationMode: ({ creationMode, setCreationMode, setDroppedQuestions }) => () => {
-      // if the creation mode was activated before, reset dropped questions on toggle
-      if (creationMode) {
-        setDroppedQuestions([])
-      }
-
-      // toggle creation mode
-      setCreationMode(prevState => !prevState)
-    },
   }),
   graphql(StartSessionMutation),
   withHandlers({
+    // handle starting an existing or newly created session
     handleStartSession: ({ mutate }) => id =>
       mutate({
         refetchQueries: [{ query: RunningSessionQuery }],
@@ -223,10 +233,12 @@ export default compose(
   }),
   graphql(CreateSessionMutation),
   withHandlers({
-    handleCreateSession: ({ mutate, toggleCreationMode }) => type => async ({
-      sessionName,
-      questions,
-    }) => {
+    // handle creating a new session
+    handleCreateSession: ({
+      mutate,
+      handleCreationModeToggle,
+      handleStartSession,
+    }) => type => async ({ sessionName, questions }) => {
       try {
         // HACK: map each question into a separate question block
         const blocks = questions.map(question => ({ questions: [{ id: question.id }] }))
@@ -239,11 +251,11 @@ export default compose(
 
         // start the session immediately if the respective button was clicked
         if (type === 'start') {
-          await this.props.startSession({ id: result.data.createSession.id })
+          await handleStartSession({ id: result.data.createSession.id })
         }
 
         // disable creation mode
-        toggleCreationMode()
+        handleCreationModeToggle()
       } catch ({ message }) {
         // TODO: if anything fails, display the error in the form
         console.error(message)

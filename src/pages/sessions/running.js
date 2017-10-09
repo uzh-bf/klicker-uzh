@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { compose, withHandlers, branch, renderComponent } from 'recompose'
+import { compose, withHandlers, branch, renderComponent, withProps } from 'recompose'
 import { graphql } from 'react-apollo'
 import { intlShape } from 'react-intl'
 import Router from 'next/router'
@@ -15,109 +15,108 @@ import { RunningSessionQuery, EndSessionMutation } from '../../queries'
 import { LoadingTeacherLayout } from '../../components/common/Loading'
 
 const propTypes = {
-  data: PropTypes.object.isRequired,
+  blocks: PropTypes.array.isRequired,
+  feedbacks: PropTypes.array.isRequired,
   handleEndSession: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
+  isConfusionBarometerActive: PropTypes.bool.isRequired,
+  isFeedbackChannelActive: PropTypes.bool.isRequired,
+  isFeedbackChannelPublic: PropTypes.bool.isRequired,
 }
 
-const Running = ({ data, intl, handleEndSession }) => {
-  const { runningSession } = data.user
-  const {
-    isConfusionBarometerActive,
-    isFeedbackChannelActive,
-    isFeedbackChannelPublic,
-  } = runningSession.settings
-
-  return (
-    <TeacherLayout
-      intl={intl}
-      navbar={{
-        title: intl.formatMessage({
-          defaultMessage: 'Running Session',
-          id: 'teacher.runningSession.title',
-        }),
-      }}
-      pageTitle={intl.formatMessage({
+const Running = ({
+  intl,
+  blocks,
+  feedbacks,
+  isConfusionBarometerActive,
+  isFeedbackChannelActive,
+  isFeedbackChannelPublic,
+  handleEndSession,
+}) => (
+  <TeacherLayout
+    intl={intl}
+    navbar={{
+      title: intl.formatMessage({
         defaultMessage: 'Running Session',
-        id: 'teacher.runningSession.pageTitle',
-      })}
-      sidebar={{ activeItem: 'runningSession' }}
-    >
-      <div className="runningSession">
-        <div className="sessionProgress">
-          <SessionTimeline
-            intl={intl}
-            blocks={runningSession.blocks}
-            handleRightActionClick={handleEndSession}
-          />
-        </div>
-
-        <div className="confusionBarometer">
-          <ConfusionBarometer
-            intl={intl}
-            isActive={isConfusionBarometerActive}
-            handleActiveToggle={() => null}
-          />
-        </div>
-
-        <div className="feedbackChannel">
-          <FeedbackChannel
-            intl={intl}
-            data={runningSession.feedbacks}
-            isActive={isFeedbackChannelActive}
-            isPublic={isFeedbackChannelPublic}
-            handleActiveToggle={() => null}
-            handlePublicToggle={() => null}
-          />
-        </div>
+        id: 'teacher.runningSession.title',
+      }),
+    }}
+    pageTitle={intl.formatMessage({
+      defaultMessage: 'Running Session',
+      id: 'teacher.runningSession.pageTitle',
+    })}
+    sidebar={{ activeItem: 'runningSession' }}
+  >
+    <div className="runningSession">
+      <div className="sessionProgress">
+        <SessionTimeline intl={intl} blocks={blocks} handleRightActionClick={handleEndSession} />
       </div>
 
-      <style jsx>{`
-        .runningSession {
-          display: flex;
-          flex-direction: column;
+      <div className="confusionBarometer">
+        <ConfusionBarometer
+          intl={intl}
+          isActive={isConfusionBarometerActive}
+          handleActiveToggle={() => null}
+        />
+      </div>
 
-          padding: 1rem;
+      <div className="feedbackChannel">
+        <FeedbackChannel
+          intl={intl}
+          data={feedbacks}
+          isActive={isFeedbackChannelActive}
+          isPublic={isFeedbackChannelPublic}
+          handleActiveToggle={() => null}
+          handlePublicToggle={() => null}
+        />
+      </div>
+    </div>
+
+    <style jsx>{`
+      .runningSession {
+        display: flex;
+        flex-direction: column;
+
+        padding: 1rem;
+      }
+
+      .sessionProgress,
+      .confusionBarometer,
+      .feedbackChannel {
+        flex: 1;
+
+        margin-bottom: 1rem;
+      }
+
+      @media all and (min-width: 768px) {
+        .runningSession {
+          flex-flow: row wrap;
+
+          padding: 2rem;
         }
 
         .sessionProgress,
         .confusionBarometer,
         .feedbackChannel {
-          flex: 1;
-
-          margin-bottom: 1rem;
+          padding: 0.5rem;
         }
 
-        @media all and (min-width: 768px) {
-          .runningSession {
-            flex-flow: row wrap;
-
-            padding: 2rem;
-          }
-
-          .sessionProgress,
-          .confusionBarometer,
-          .feedbackChannel {
-            padding: 0.5rem;
-          }
-
-          .sessionProgress {
-            flex: 0 0 100%;
-          }
-          .confusionBarometer {
-            flex: 0 0 30%;
-          }
+        .sessionProgress {
+          flex: 0 0 100%;
         }
-
-        @media all and (min-width: 991px) {
-          .runningSession {
-            padding: 2rem 10%;
-          }
+        .confusionBarometer {
+          flex: 0 0 30%;
         }
-      `}</style>
-    </TeacherLayout>
-  )
-}
+      }
+
+      @media all and (min-width: 991px) {
+        .runningSession {
+          padding: 2rem 10%;
+        }
+      }
+    `}</style>
+  </TeacherLayout>
+)
 
 Running.propTypes = propTypes
 
@@ -126,6 +125,7 @@ export default compose(
   pageWithIntl,
   graphql(RunningSessionQuery),
   graphql(EndSessionMutation),
+  // TODO: get rid of this branch?
   branch(
     ({ data }) => data.loading || !data.user,
     renderComponent(({ intl }) => (
@@ -133,16 +133,27 @@ export default compose(
     )),
   ),
   withHandlers({
+    // handle ending the currently running session
     handleEndSession: ({ data, mutate }) => async () => {
       try {
+        // run the mutation
         await mutate({
           refetchQueries: [{ query: RunningSessionQuery }],
           variables: { id: data.user.runningSession.id },
         })
+
+        // redirect to the question pool
+        // TODO: redirect to a session summary or overview page
         Router.push('/questions')
       } catch ({ message }) {
         console.error(message)
       }
     },
   }),
+  // flatten out the relevant data props
+  withProps(({ data }) => ({
+    blocks: data.user.runningSession.blocks,
+    feedbacks: data.user.runningSession.feedbacks,
+    ...data.user.runningSession.settings,
+  })),
 )(Running)

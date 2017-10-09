@@ -72,27 +72,32 @@ const Index = ({
 Index.propTypes = propTypes
 
 export default compose(
-  withData, // { props }
-  pageWithIntl, // { props, intl }
-  graphql(StartSessionMutation), // { props, intl, mutate }
+  withData,
+  pageWithIntl,
+  graphql(StartSessionMutation),
   withHandlers({
-    // { props, intl, mutate, handleCopySession...}
+    // handle copying an existing session
     handleCopySession: () => id => async () => {
       console.log(`copy session ${id}`)
     },
+
+    // handle updating the search bar
     handleSearch: () => (query) => {
       console.log(`Searched... for ${query}`)
     },
+
+    // handle modifying sort settings
     handleSort: () => (by, order) => {
       console.log(`sorted by ${by} in ${order} order`)
     },
+
+    // handle starting an already created session
     handleStartSession: ({ mutate }) => async (id) => {
       try {
-        const result = await mutate({
+        await mutate({
           refetchQueries: [{ query: RunningSessionQuery }],
           variables: { id },
         })
-        console.dir(result)
       } catch ({ message }) {
         console.error(message)
       }
