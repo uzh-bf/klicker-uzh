@@ -7,7 +7,7 @@ import { compose, withProps, branch, renderComponent } from 'recompose'
 import Question from './Question'
 import { LoadingDiv } from '../common/Loading'
 import { filterQuestions } from '../../lib/utils/filters'
-import { QuestionListQuery } from '../../queries/queries'
+import { QuestionListQuery } from '../../graphql/queries'
 
 const propTypes = {
   creationMode: PropTypes.bool,

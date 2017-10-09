@@ -7,7 +7,7 @@ import { FormattedMessage } from 'react-intl'
 
 import Session from './Session'
 import { LoadingDiv } from '../common/Loading'
-import { SessionListQuery } from '../../queries/queries'
+import { SessionListQuery } from '../../graphql/queries'
 
 const propTypes = {
   error: PropTypes.string,

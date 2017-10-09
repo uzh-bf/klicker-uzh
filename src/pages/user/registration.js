@@ -1,12 +1,12 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { compose } from 'recompose'
-import { FormattedMessage, intlShape, withState, withHandlers } from 'react-intl'
+import { compose, withState, withHandlers } from 'recompose'
+import { FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import RegistrationForm from '../../components/forms/RegistrationForm'
-import { RegistrationMutation } from '../../queries/mutations'
+import { RegistrationMutation } from '../../graphql/mutations'
 import { pageWithIntl, withData } from '../../lib'
 
 const propTypes = {

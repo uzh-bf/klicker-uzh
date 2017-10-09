@@ -7,7 +7,7 @@ import { graphql } from 'react-apollo'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import LoginForm from '../../components/forms/LoginForm'
-import { LoginMutation } from '../../queries/mutations'
+import { LoginMutation } from '../../graphql/mutations'
 import { pageWithIntl, withData } from '../../lib'
 
 const propTypes = {

@@ -11,7 +11,8 @@ import ConfusionBarometer from '../../components/confusion/ConfusionBarometer'
 import FeedbackChannel from '../../components/feedbacks/FeedbackChannel'
 import SessionTimeline from '../../components/sessions/SessionTimeline'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
-import { RunningSessionQuery, EndSessionMutation } from '../../queries'
+import { RunningSessionQuery } from '../../graphql/queries'
+import { EndSessionMutation } from '../../graphql/mutations'
 import { LoadingTeacherLayout } from '../../components/common/Loading'
 
 const propTypes = {

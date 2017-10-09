@@ -6,7 +6,7 @@ import { Icon, Menu } from 'semantic-ui-react'
 import { graphql } from 'react-apollo'
 import { compose, withProps } from 'recompose'
 
-import { AccountSummaryQuery } from '../../../queries/queries'
+import { AccountSummaryQuery } from '../../../graphql/queries'
 
 import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'

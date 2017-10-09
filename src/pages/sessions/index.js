@@ -5,7 +5,8 @@ import { intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 
 import { pageWithIntl, withData } from '../../lib'
-import { RunningSessionQuery, StartSessionMutation } from '../../queries'
+import { RunningSessionQuery } from '../../graphql/queries'
+import { StartSessionMutation } from '../../graphql/mutations'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import SessionList from '../../components/sessions/SessionList'
 
