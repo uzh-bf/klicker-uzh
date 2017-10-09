@@ -652,91 +652,6 @@ exports[`Storyshots feedbacks FeedbackChannel (isActive) 1`] = `
       </label>
     </div>
   </div>
-  <div
-    className="feedbacks"
-    data-jsx={3242351590}
-  >
-    <div
-      className="feedback"
-      data-jsx={3242351590}
-    >
-      <div
-        className="feedback"
-        data-jsx={3449085289}
-      >
-        <div
-          className="content"
-          data-jsx={3449085289}
-        >
-          hello alex!
-        </div>
-        <div
-          className="delete"
-          data-jsx={3449085289}
-        >
-          <button
-            className="ui basic fluid icon button"
-            disabled={undefined}
-            onClick={[Function]}
-            role="button"
-            tabIndex={undefined}
-          >
-            <i
-              aria-hidden="true"
-              className="trash outline icon"
-            />
-          </button>
-        </div>
-        <div
-          className="votes"
-          data-jsx={3449085289}
-        >
-          +
-          100
-        </div>
-      </div>
-    </div>
-    <div
-      className="feedback"
-      data-jsx={3242351590}
-    >
-      <div
-        className="feedback"
-        data-jsx={3449085289}
-      >
-        <div
-          className="content"
-          data-jsx={3449085289}
-        >
-          bla bleh
-        </div>
-        <div
-          className="delete"
-          data-jsx={3449085289}
-        >
-          <button
-            className="ui basic fluid icon button"
-            disabled={undefined}
-            onClick={[Function]}
-            role="button"
-            tabIndex={undefined}
-          >
-            <i
-              aria-hidden="true"
-              className="trash outline icon"
-            />
-          </button>
-        </div>
-        <div
-          className="votes"
-          data-jsx={3449085289}
-        >
-          +
-          40
-        </div>
-      </div>
-    </div>
-  </div>
 </div>
 `;
 
@@ -800,6 +715,69 @@ exports[`Storyshots feedbacks FeedbackChannel (isPublic) 1`] = `
       </label>
     </div>
   </div>
+</div>
+`;
+
+exports[`Storyshots feedbacks FeedbackChannel 1`] = `
+<div
+  className="feedbackChannel"
+  data-jsx={3242351590}
+>
+  <h2
+    data-jsx={3242351590}
+  >
+    <span>
+      Feedback-Channel
+    </span>
+  </h2>
+  <div
+    className="toggle"
+    data-jsx={3242351590}
+  >
+    <div
+      className="ui toggle checkbox"
+      onChange={[Function]}
+      onClick={[Function]}
+      onMouseDown={[Function]}
+    >
+      <input
+        checked={false}
+        className="hidden"
+        name={undefined}
+        readOnly={true}
+        tabIndex={0}
+        type="checkbox"
+        value={false}
+      />
+      <label>
+        Activated
+      </label>
+    </div>
+  </div>
+  <div
+    className="toggle publicationToggle"
+    data-jsx={3242351590}
+  >
+    <div
+      className="ui disabled toggle checkbox publishCheckbox"
+      onChange={[Function]}
+      onClick={[Function]}
+      onMouseDown={[Function]}
+    >
+      <input
+        checked={false}
+        className="hidden"
+        name={undefined}
+        readOnly={true}
+        tabIndex={-1}
+        type="checkbox"
+        value={false}
+      />
+      <label>
+        Publish questions
+      </label>
+    </div>
+  </div>
   <div
     className="feedbacks"
     data-jsx={3242351590}
@@ -883,69 +861,6 @@ exports[`Storyshots feedbacks FeedbackChannel (isPublic) 1`] = `
           40
         </div>
       </div>
-    </div>
-  </div>
-</div>
-`;
-
-exports[`Storyshots feedbacks FeedbackChannel 1`] = `
-<div
-  className="feedbackChannel"
-  data-jsx={3242351590}
->
-  <h2
-    data-jsx={3242351590}
-  >
-    <span>
-      Feedback-Channel
-    </span>
-  </h2>
-  <div
-    className="toggle"
-    data-jsx={3242351590}
-  >
-    <div
-      className="ui toggle checkbox"
-      onChange={[Function]}
-      onClick={[Function]}
-      onMouseDown={[Function]}
-    >
-      <input
-        checked={false}
-        className="hidden"
-        name={undefined}
-        readOnly={true}
-        tabIndex={0}
-        type="checkbox"
-        value={false}
-      />
-      <label>
-        Activated
-      </label>
-    </div>
-  </div>
-  <div
-    className="toggle publicationToggle"
-    data-jsx={3242351590}
-  >
-    <div
-      className="ui disabled toggle checkbox publishCheckbox"
-      onChange={[Function]}
-      onClick={[Function]}
-      onMouseDown={[Function]}
-    >
-      <input
-        checked={false}
-        className="hidden"
-        name={undefined}
-        readOnly={true}
-        tabIndex={-1}
-        type="checkbox"
-        value={false}
-      />
-      <label>
-        Publish questions
-      </label>
     </div>
   </div>
 </div>

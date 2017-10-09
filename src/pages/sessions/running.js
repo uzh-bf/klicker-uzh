@@ -64,7 +64,7 @@ const Running = ({
       <div className="feedbackChannel">
         <FeedbackChannel
           intl={intl}
-          data={feedbacks}
+          feedbacks={feedbacks}
           isActive={isFeedbackChannelActive}
           isPublic={isFeedbackChannelPublic}
           handleActiveToggle={() => null}

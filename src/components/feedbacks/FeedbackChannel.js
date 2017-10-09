@@ -62,7 +62,8 @@ const FeedbackChannel = ({
       />
     </div>
 
-    {isActive && (
+    {!isActive && (
+      // TODO: reactivate isActive check
       <div className="feedbacks">
         {feedbacks.map(({ content, key, votes }) => (
           <div className="feedback">
