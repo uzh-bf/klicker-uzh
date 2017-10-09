@@ -1,7 +1,7 @@
 import React from 'react'
 import Router from 'next/router'
 import PropTypes from 'prop-types'
-import { compose } from 'recompose'
+import { compose, withState, withHandlers } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 
@@ -11,86 +11,75 @@ import { LoginMutation } from '../../queries/mutations'
 import { pageWithIntl, withData } from '../../lib'
 
 const propTypes = {
+  error: PropTypes.oneOfType(PropTypes.string, null).isRequired,
+  handleSubmit: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  login: PropTypes.func.isRequired,
 }
 
-class Login extends React.Component {
-  state = {
-    error: null,
-  }
+const Login = ({ intl, error, handleSubmit }) => (
+  <StaticLayout
+    pageTitle={intl.formatMessage({
+      defaultMessage: 'Login',
+      id: 'user.login.pageTitle',
+    })}
+  >
+    <div className="login">
+      <h1>
+        <FormattedMessage id="user.login.title" defaultMessage="Login" />
+      </h1>
 
-  handleSubmit = async ({ email, password }) => {
-    try {
-      await this.props.login(email, password)
+      {/* TODO: improve message handling */}
+      {error && <div className="errorMessage message">Login failed: {error}</div>}
 
-      // redirect to question pool
-      Router.push('/questions')
-    } catch ({ message }) {
-      console.error(message)
-      this.setState({ error: message })
-    }
-  }
+      <LoginForm intl={intl} onSubmit={handleSubmit} />
 
-  render() {
-    const { intl } = this.props
-    const { error } = this.state
+      <style jsx>{`
+        .login {
+          padding: 1rem;
+        }
+        h1 {
+          margin-top: 0;
+        }
 
-    return (
-      <StaticLayout
-        pageTitle={intl.formatMessage({
-          defaultMessage: 'Login',
-          id: 'user.login.pageTitle',
-        })}
-      >
-        <div className="login">
-          <h1>
-            <FormattedMessage id="user.login.title" defaultMessage="Login" />
-          </h1>
+        .message {
+          font-weight: bold;
+        }
+        .errorMessage {
+          color: red;
+        }
+        .successMessage {
+          color: green;
+        }
 
-          {/* TODO: improve message handling */}
-          {error && <div className="errorMessage message">Login failed: {error}</div>}
-
-          <LoginForm intl={intl} onSubmit={this.handleSubmit} />
-
-          <style jsx>{`
-            .login {
-              padding: 1rem;
-            }
-            h1 {
-              margin-top: 0;
-            }
-
-            .message {
-              font-weight: bold;
-            }
-            .errorMessage {
-              color: red;
-            }
-            .successMessage {
-              color: green;
-            }
-
-            @media all and (min-width: 991px) {
-              .login {
-                margin: 0 15%;
-              }
-            }
-          `}</style>
-        </div>
-      </StaticLayout>
-    )
-  }
-}
+        @media all and (min-width: 991px) {
+          .login {
+            margin: 0 15%;
+          }
+        }
+      `}</style>
+    </div>
+  </StaticLayout>
+)
 
 Login.propTypes = propTypes
 
 export default compose(
   withData,
   pageWithIntl,
-  graphql(LoginMutation, {
-    props: ({ mutate }) => ({
-      login: (email, password) => mutate({ variables: { email, password } }),
-    }),
+  graphql(LoginMutation),
+  withState('error', 'setError', null),
+  withHandlers({
+    // handle form submission
+    handleSubmit: ({ mutate, setError }) => async ({ email, password }) => {
+      try {
+        await mutate({ variables: { email, password } })
+
+        // redirect to question pool
+        Router.push('/questions')
+      } catch ({ message }) {
+        console.error(message)
+        setError(message)
+      }
+    },
   }),
 )(Login)
