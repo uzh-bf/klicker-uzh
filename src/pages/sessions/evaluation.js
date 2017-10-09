@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { graphql } from 'react-apollo'
-import { intlShape } from 'react-intl'
+import { intlShape, FormattedMessage } from 'react-intl'
 
 import { pageWithIntl, withData } from '../../lib'
 
@@ -26,11 +26,12 @@ class Evaluation extends Component {
         })}
       >
         <div className="evaluation">
+          <b><FormattedMessage id="teacher.evaluation.title" defaultMessage="Evaluation" /></b>
           Hello i am evaluation
         </div>
 
         <style jsx>{`
-          .runningSession {
+          .evaluation{
             display: flex;
             flex-direction: column;
 
