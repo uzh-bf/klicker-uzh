@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Button, Divider, Icon, Image, Menu, Popup } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
+import QRCode from 'qrcode.react'
+import { Icon, Menu, Popup } from 'semantic-ui-react'
 
 const propTypes = {
   sessionId: PropTypes.string,
@@ -28,16 +28,7 @@ const SessionArea = ({ sessionId }) => {
         }
       >
         <Popup.Content>
-          {/* TODO: QR code creation from session url */}
-          <Image
-            fluid
-            src="http://www.rd.com/wp-content/uploads/sites/2/2016/02/06-train-cat-shake-hands.jpg"
-          />
-          <Divider />
-          <Button fluid primary>
-            <Icon name="download" />
-            <FormattedMessage id="common.button.download" defaultMessage="Download" />
-          </Button>
+          <QRCode value={`https://www.klicker.uzh.ch/sessions/${sessionId}`} />
         </Popup.Content>
       </Popup>
     )
