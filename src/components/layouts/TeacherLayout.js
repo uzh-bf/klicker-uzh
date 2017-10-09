@@ -108,8 +108,7 @@ class TeacherLayout extends React.Component {
 
         {actionArea && <div className="actionArea">{actionArea}</div>}
 
-        <style jsx global>
-          {`
+        <style jsx global>{`
             * {
               font-family: 'Open Sans', sans-serif;
             }
@@ -128,11 +127,9 @@ class TeacherLayout extends React.Component {
               border: 0 !important;
               box-shadow: none !important;
             }
-          `}
-        </style>
+          `}</style>
 
-        <style jsx>
-          {`
+        <style jsx>{`
             .teacherLayout {
               display: flex;
               flex-direction: column;
@@ -151,8 +148,7 @@ class TeacherLayout extends React.Component {
               right: 0;
               left: 0;
             }
-          `}
-        </style>
+          `}</style>
       </div>
     )
   }

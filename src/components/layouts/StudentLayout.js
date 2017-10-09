@@ -89,8 +89,7 @@ class StudentLayout extends React.Component {
           </Sidebar>
         </div>
 
-        <style jsx global>
-          {`
+        <style jsx global>{`
             * {
               font-family: 'Open Sans', sans-serif;
             }
@@ -102,11 +101,9 @@ class StudentLayout extends React.Component {
             body {
               font-size: 1rem;
             }
-          `}
-        </style>
+          `}</style>
 
-        <style jsx>
-          {`
+        <style jsx>{`
             .studentLayout {
               display: flex;
               flex-direction: column;
@@ -141,8 +138,7 @@ class StudentLayout extends React.Component {
                 display: none;
               }
             }
-          `}
-        </style>
+          `}</style>
       </div>
     )
   }

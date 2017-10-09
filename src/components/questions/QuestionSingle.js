@@ -13,8 +13,7 @@ const QuestionSingle = ({ id, type, title }) => (
     <div className="type">{type}</div>
     <div className="content">{title}</div>
 
-    <style jsx>
-      {`
+    <style jsx>{`
         .questionSingle {
           background-color: white;
           display: flex;
@@ -34,8 +33,7 @@ const QuestionSingle = ({ id, type, title }) => (
           flex: 0 0 100%;
           padding-top: 0.3rem;
         }
-      `}
-    </style>
+      `}</style>
   </div>
 )
 

@@ -31,8 +31,7 @@ const Preview = ({ title, description, options }) => (
       <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
     </div>
 
-    <style jsx>
-      {`
+    <style jsx>{`
         .preview {
           display: flex;
           flex-direction: column;
@@ -58,8 +57,7 @@ const Preview = ({ title, description, options }) => (
           border: 1px solid lightgrey;
           padding: 0.5rem;
         }
-      `}
-    </style>
+      `}</style>
   </div>
 )
 

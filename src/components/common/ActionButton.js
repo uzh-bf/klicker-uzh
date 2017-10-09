@@ -28,8 +28,7 @@ const ActionButton = ({ items }) => (
       ))}
     </div>
 
-    <style jsx>
-      {`
+    <style jsx>{`
         .actionButtonWrapper {
           display: flex;
           flex-direction: column;
@@ -68,8 +67,7 @@ const ActionButton = ({ items }) => (
         .actionButton :global(button) {
           margin-right: 0;
         }
-      `}
-    </style>
+      `}</style>
   </div>
 )
 

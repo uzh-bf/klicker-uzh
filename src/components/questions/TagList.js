@@ -39,13 +39,11 @@ export const TagListPres = ({ error, tags, handleTagClick }) => {
         </List.Item>
       ))}
 
-      <style jsx>
-        {`
+      <style jsx>{`
           .active {
             font-weight: bold;
           }
-        `}
-      </style>
+        `}</style>
     </List>
   )
 }

@@ -193,8 +193,7 @@ class Index extends React.Component {
           </div>
         </div>
 
-        <style jsx>
-          {`
+        <style jsx>{`
             .questionPool {
               display: flex;
               flex-direction: column;
@@ -238,8 +237,7 @@ class Index extends React.Component {
                 padding: 2rem 10% 2rem 2rem;
               }
             }
-          `}
-        </style>
+          `}</style>
       </TeacherLayout>
     )
   }

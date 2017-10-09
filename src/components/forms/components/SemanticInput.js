@@ -67,8 +67,7 @@ const SemanticInput = ({
         </div>
       )}
 
-      <style jsx>
-        {`
+      <style jsx>{`
           .errorMessage {
             // TODO: improve styling
             background-color: #fff6f6;
@@ -79,8 +78,7 @@ const SemanticInput = ({
             font-size: 0.9rem;
             padding: 0.3rem 0.5rem;
           }
-        `}
-      </style>
+        `}</style>
     </Form.Field>
   )
 }

@@ -21,8 +21,7 @@ const ListWithHeader = ({ children, items }) => (
       ))}
     </ul>
 
-    <style jsx>
-      {`
+    <style jsx>{`
         .list {
           margin: 0;
           margin-top: 1rem;
@@ -35,8 +34,7 @@ const ListWithHeader = ({ children, items }) => (
         .listItem {
           list-style: none;
         }
-      `}
-    </style>
+      `}</style>
   </div>
 )
 

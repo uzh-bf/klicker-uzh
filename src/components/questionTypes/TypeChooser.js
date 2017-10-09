@@ -56,8 +56,7 @@ const TypeChooser = ({ intl, input: { value, onChange } }) => {
         ))}
       </div>
 
-      <style jsx>
-        {`
+      <style jsx>{`
           button {
             background-color: white;
             border: 1px solid lightgrey;
@@ -78,8 +77,7 @@ const TypeChooser = ({ intl, input: { value, onChange } }) => {
             display: flex;
             flex-direction: column;
           }
-        `}
-      </style>
+        `}</style>
     </div>
   )
 }

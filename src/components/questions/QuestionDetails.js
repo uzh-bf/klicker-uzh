@@ -26,8 +26,7 @@ const QuestionDetails = ({ lastUsed }) => (
       </div>
     )}
 
-    <style jsx>
-      {`
+    <style jsx>{`
         .container {
           background-color: lightgrey;
           border: 1px solid grey;
@@ -52,8 +51,7 @@ const QuestionDetails = ({ lastUsed }) => (
             border-right: 1px solid grey;
           }
         }
-      `}
-    </style>
+      `}</style>
   </div>
 )
 

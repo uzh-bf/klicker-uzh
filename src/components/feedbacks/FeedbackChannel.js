@@ -72,8 +72,7 @@ const FeedbackChannel = ({
       </div>
     )}
 
-    <style jsx>
-      {`
+    <style jsx>{`
         .feedbackChannel {
           display: flex;
           flex-direction: column;
@@ -123,8 +122,7 @@ const FeedbackChannel = ({
             margin-bottom: 0.5rem;
           }
         }
-      `}
-    </style>
+      `}</style>
   </div>
 )
 

@@ -50,8 +50,7 @@ const FormWithLinks = ({ button, children, links }) => (
       </div>
     </div>
 
-    <style jsx>
-      {`
+    <style jsx>{`
         .form,
         .actionArea {
           display: flex;
@@ -92,8 +91,7 @@ const FormWithLinks = ({ button, children, links }) => (
             padding: 1rem;
           }
         }
-      `}
-    </style>
+      `}</style>
   </form>
 )
 

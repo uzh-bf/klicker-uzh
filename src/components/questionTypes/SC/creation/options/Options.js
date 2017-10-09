@@ -53,14 +53,12 @@ const Options = ({
   const SortableOption = SortableElement(props => (
     <div className="option">
       <Option {...props} />
-      <style jsx>
-        {`
-          .option {
-            cursor: grab;
-            margin-bottom: 0.5rem;
-          }
-        `}
-      </style>
+      <style jsx>{`
+        .option {
+          cursor: grab;
+          margin-bottom: 0.5rem;
+        }
+      `}</style>
     </div>
   ))
 

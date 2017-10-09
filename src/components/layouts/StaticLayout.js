@@ -38,8 +38,7 @@ class StaticLayout extends React.Component {
 
         <footer>&copy; IBF</footer>
 
-        <style jsx global>
-          {`
+        <style jsx global>{`
             * {
               font-family: 'Open Sans', sans-serif;
             }
@@ -49,11 +48,9 @@ class StaticLayout extends React.Component {
             body {
               font-size: 1rem;
             }
-          `}
-        </style>
+          `}</style>
 
-        <style jsx>
-          {`
+        <style jsx>{`
             .staticLayout {
               display: flex;
               flex-direction: column;
@@ -65,8 +62,7 @@ class StaticLayout extends React.Component {
               border-top: 2px solid orange;
               padding: 1rem;
             }
-          `}
-        </style>
+          `}</style>
       </div>
     )
   }

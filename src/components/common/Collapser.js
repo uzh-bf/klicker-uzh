@@ -23,8 +23,7 @@ const Collapser = ({ children, collapsed, handleCollapseToggle }) => (
       />
     </div>
 
-    <style jsx>
-      {`
+    <style jsx>{`
         .collapser {
           display: flex;
           flex-direction: column;
@@ -56,8 +55,7 @@ const Collapser = ({ children, collapsed, handleCollapseToggle }) => (
           margin: auto;
           margin-bottom: 0.3rem;
         }
-      `}
-    </style>
+      `}</style>
   </div>
 )
 

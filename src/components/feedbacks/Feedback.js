@@ -23,8 +23,7 @@ const Feedback = ({ content, showDelete, votes }) => (
 
     <div className="votes">+{votes}</div>
 
-    <style jsx>
-      {`
+    <style jsx>{`
         .feedback {
           display: flex;
 
@@ -62,8 +61,7 @@ const Feedback = ({ content, showDelete, votes }) => (
             padding: 0.5rem;
           }
         }
-      `}
-    </style>
+      `}</style>
   </div>
 )
 

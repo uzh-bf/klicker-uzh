@@ -27,8 +27,7 @@ const Options = ({ activeOption, options, onOptionClick }) => (
       </div>
     ))}
 
-    <style jsx>
-      {`
+    <style jsx>{`
         :global(.option:not(:last-child)) {
           margin-bottom: 0.5rem;
         }
@@ -49,8 +48,7 @@ const Options = ({ activeOption, options, onOptionClick }) => (
             transform: translateY(-2px);
           }
         }
-      `}
-    </style>
+      `}</style>
   </div>
 )
 

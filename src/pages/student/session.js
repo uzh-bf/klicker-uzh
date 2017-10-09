@@ -163,8 +163,7 @@ class Session extends React.Component {
             </div>
           </div>
 
-          <style jsx>
-            {`
+          <style jsx>{`
               .student {
                 display: flex;
               }
@@ -219,8 +218,7 @@ class Session extends React.Component {
                   margin-top: 1rem;
                 }
               }
-            `}
-          </style>
+            `}</style>
         </div>
       </StudentLayout>
     )

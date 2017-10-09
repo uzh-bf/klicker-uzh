@@ -31,8 +31,7 @@ const ConfusionSection = ({ data, title }) => (
       </ResponsiveContainer>
     </div>
 
-    <style jsx>
-      {`
+    <style jsx>{`
         .confusionSection {
           display: flex;
           flex-direction: column;
@@ -43,8 +42,7 @@ const ConfusionSection = ({ data, title }) => (
 
           height: 10rem;
         }
-      `}
-    </style>
+      `}</style>
   </div>
 )
 

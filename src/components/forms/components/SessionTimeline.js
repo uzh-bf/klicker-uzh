@@ -31,8 +31,7 @@ const SessionTimeline = ({ input: { value, onChange } }) => {
       <div className="timelineItem">
         <QuestionDropzone onDrop={handleNewQuestion} />
       </div>
-      <style jsx>
-        {`
+      <style jsx>{`
           .sessionTimeline {
             display: flex;
             flex-direction: row;
@@ -51,8 +50,7 @@ const SessionTimeline = ({ input: { value, onChange } }) => {
           .sessionTimeline > .timelineItem:not(:last-child) {
             margin-right: 0.5rem;
           }
-        `}
-      </style>
+        `}</style>
     </div>
   )
 }

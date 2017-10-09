@@ -68,8 +68,7 @@ const Question = ({
         </div>
       </div>
 
-      <style jsx>
-        {`
+      <style jsx>{`
           .question,
           .wrapper {
             display: flex;
@@ -136,8 +135,7 @@ const Question = ({
               flex: 0 0 100%;
             }
           }
-        `}
-      </style>
+        `}</style>
     </div>,
   )
 

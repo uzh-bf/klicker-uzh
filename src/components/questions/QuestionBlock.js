@@ -31,8 +31,7 @@ const QuestionBlock = ({ questions, showSolutions, timeLimit }) => (
         </div>
       ))}
     </div>
-    <style jsx>
-      {`
+    <style jsx>{`
         .questionBlock,
         .questions {
           display: flex;
@@ -62,8 +61,7 @@ const QuestionBlock = ({ questions, showSolutions, timeLimit }) => (
         .question:not(:first-child) {
           margin-top: 0.2rem;
         }
-      `}
-    </style>
+      `}</style>
   </div>
 )
 

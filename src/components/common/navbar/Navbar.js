@@ -65,71 +65,69 @@ export const NavbarPres = ({
       </Menu>
     </div>
 
-    <style jsx>
-      {`
+    <style jsx>{`
+      .navbar {
+        display: flex;
+        align-items: center;
+        flex-flow: row wrap;
+        justify-content: space-between;
+
+        border-bottom: 1px solid lightgrey;
+      }
+
+      h1 {
+        // TODO: optimize font sizes
+        font-size: 1.3rem;
+        margin-left: 1rem;
+      }
+
+      .sideArea {
+        flex: 1;
+        order: 0;
+      }
+
+      .searchArea {
+        flex: 0 0 100%;
+        order: 1;
+
+        padding: 1rem;
+        padding-top: 0.5rem;
+      }
+
+      .accountArea {
+        display: none;
+      }
+
+      @media all and (min-width: 768px) {
         .navbar {
-          display: flex;
-          align-items: center;
-          flex-flow: row wrap;
-          justify-content: space-between;
-
-          border-bottom: 1px solid lightgrey;
-        }
-
-        h1 {
-          // TODO: optimize font sizes
-          font-size: 1.3rem;
-          margin-left: 1rem;
+          flex-wrap: nowrap;
         }
 
         .sideArea {
-          flex: 1;
-          order: 0;
+          flex: 0 0 auto;
         }
 
         .searchArea {
-          flex: 0 0 100%;
+          flex: 1 1 50%;
           order: 1;
 
-          padding: 1rem;
-          padding-top: 0.5rem;
+          padding: 0.2rem 2rem;
         }
 
         .accountArea {
-          display: none;
+          flex: 0 0 auto;
+          order: 2;
+
+          display: block;
         }
+      }
 
-        @media all and (min-width: 768px) {
-          .navbar {
-            flex-wrap: nowrap;
-          }
-
-          .sideArea {
-            flex: 0 0 auto;
-          }
-
-          .searchArea {
-            flex: 1 1 50%;
-            order: 1;
-
-            padding: 0.2rem 2rem;
-          }
-
-          .accountArea {
-            flex: 0 0 auto;
-            order: 2;
-
-            display: block;
-          }
+      @media all and (min-width: 991px) {
+        .searchArea {
+          padding: 0.2rem 3rem;
         }
-
-        @media all and (min-width: 991px) {
-          .searchArea {
-            padding: 0.2rem 3rem;
-          }
-        }
-      `}
-    </style>
+      }
+    `}</style>
   </div>
 )
 

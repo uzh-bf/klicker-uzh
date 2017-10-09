@@ -104,8 +104,7 @@ const QuestionCreationForm = ({
       <FormattedMessage defaultMessage="Save" id="common.button.save" />
     </button>
 
-    <style jsx>
-      {`
+    <style jsx>{`
         form {
           display: flex;
           flex-direction: column;
@@ -177,8 +176,7 @@ const QuestionCreationForm = ({
             }
           }
         }
-      `}
-    </style>
+      `}</style>
   </form>
 )
 

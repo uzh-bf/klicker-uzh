@@ -122,8 +122,7 @@ class Running extends React.Component {
           </div>
         </div>
 
-        <style jsx>
-          {`
+        <style jsx>{`
             .runningSession {
               display: flex;
               flex-direction: column;
@@ -165,8 +164,7 @@ class Running extends React.Component {
                 padding: 2rem 10%;
               }
             }
-          `}
-        </style>
+          `}</style>
       </TeacherLayout>
     )
   }

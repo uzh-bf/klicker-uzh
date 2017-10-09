@@ -15,8 +15,7 @@ const QuestionTags = ({ tags, type }) => (
       </div>
     ))}
 
-    <style jsx>
-      {`
+    <style jsx>{`
         .container {
           display: flex;
           flex-flow: row wrap;
@@ -48,8 +47,7 @@ const QuestionTags = ({ tags, type }) => (
             border-right: solid 1px;
           }
         }
-      `}
-    </style>
+      `}</style>
   </div>
 )
 

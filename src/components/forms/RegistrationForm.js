@@ -138,8 +138,7 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
       </Button>
     </div>
 
-    <style jsx>
-      {`
+    <style jsx>{`
         .form {
           display: flex;
           flex-direction: column;
@@ -171,8 +170,7 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
             padding: 1rem;
           }
         }
-      `}
-    </style>
+      `}</style>
   </form>
 )
 

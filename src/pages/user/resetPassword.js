@@ -32,8 +32,7 @@ class ResetPassword extends React.Component {
 
           <PasswordResetForm intl={intl} onSubmit={this.handleSubmit} />
 
-          <style jsx>
-            {`
+          <style jsx>{`
               .login {
                 padding: 1rem;
               }
@@ -46,8 +45,7 @@ class ResetPassword extends React.Component {
                   margin: 0 15%;
                 }
               }
-            `}
-          </style>
+            `}</style>
         </div>
       </StaticLayout>
     )

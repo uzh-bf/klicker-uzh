@@ -71,8 +71,7 @@ const ConfusionBarometer = ({ intl, isActive, handleActiveToggle }) => (
       />
     )}
 
-    <style jsx>
-      {`
+    <style jsx>{`
         .confusionBarometer {
           display: flex;
           flex-direction: column;
@@ -104,8 +103,7 @@ const ConfusionBarometer = ({ intl, isActive, handleActiveToggle }) => (
             margin-top: 0.5rem;
           }
         }
-      `}
-    </style>
+      `}</style>
   </div>
 )
 

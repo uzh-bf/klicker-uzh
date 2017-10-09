@@ -65,8 +65,7 @@ const Placeholder = ({
     </button>
 
     <style jsx>{styles}</style>
-    <style jsx>
-      {`
+    <style jsx>{`
         .leftAction {
           flex: 0 0 100%;
 
@@ -104,8 +103,7 @@ const Placeholder = ({
         .inputMode > input {
           flex: 1;
         }
-      `}
-    </style>
+      `}</style>
   </div>
 )
 

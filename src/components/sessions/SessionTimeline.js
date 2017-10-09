@@ -67,8 +67,7 @@ const SessionTimeline = ({
         onClick={handleRightActionClick}
       />
     </div>
-    <style jsx>
-      {`
+    <style jsx>{`
         .sessionTimeline {
           display: flex;
           flex-direction: column;
@@ -139,8 +138,7 @@ const SessionTimeline = ({
             margin: 0.3rem;
           }
         }
-      `}
-    </style>
+      `}</style>
   </div>
 )
 

@@ -54,34 +54,32 @@ const Sidebar = ({
       <SemanticSidebar.Pusher>{children}</SemanticSidebar.Pusher>
     </SemanticSidebar.Pushable>
 
-    <style jsx>
-      {`
-        .sidebar {
-          display: flex;
-          flex-direction: column;
+    <style jsx>{`
+      .sidebar {
+        display: flex;
+        flex-direction: column;
 
-          height: 100%;
-          width: 100%;
-        }
+        height: 100%;
+        width: 100%;
+      }
 
+      :global(.sidebarMenu) {
+        text-align: left;
+        width: 75% !important;
+      }
+
+      @media all and (min-width: 768px) {
         :global(.sidebarMenu) {
-          text-align: left;
-          width: 75% !important;
+          width: 20% !important;
         }
+      }
 
-        @media all and (min-width: 768px) {
-          :global(.sidebarMenu) {
-            width: 20% !important;
-          }
+      @media all and (min-width: 991px) {
+        :global(.sidebarMenu) {
+          width: 15% !important;
         }
-
-        @media all and (min-width: 991px) {
-          :global(.sidebarMenu) {
-            width: 15% !important;
-          }
-        }
-      `}
-    </style>
+      }
+    `}</style>
   </div>
 )
 

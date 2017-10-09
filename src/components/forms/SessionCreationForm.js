@@ -62,8 +62,7 @@ const SessionCreationForm = ({
       </button>
     </div>
 
-    <style jsx>
-      {`
+    <style jsx>{`
         .sessionCreation {
           display: flex;
           flex-flow: row wrap;
@@ -107,8 +106,7 @@ const SessionCreationForm = ({
           margin-right: 0.4rem;
           margin-top: -3px;
         }
-      `}
-    </style>
+      `}</style>
   </form>
 )
 

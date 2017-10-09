@@ -54,8 +54,7 @@ class Registration extends React.Component {
 
           <RegistrationForm intl={intl} onSubmit={this.handleSubmit} />
 
-          <style jsx>
-            {`
+          <style jsx>{`
               .registration {
                 padding: 1rem;
               }
@@ -78,8 +77,7 @@ class Registration extends React.Component {
                   margin: 0 15%;
                 }
               }
-            `}
-          </style>
+            `}</style>
         </div>
       </StaticLayout>
     )

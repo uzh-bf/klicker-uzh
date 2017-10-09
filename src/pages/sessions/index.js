@@ -74,8 +74,7 @@ class Index extends React.Component {
           />
         </div>
 
-        <style jsx>
-          {`
+        <style jsx>{`
             .sessionHistory {
               padding: 1rem 0.7rem;
             }
@@ -91,8 +90,7 @@ class Index extends React.Component {
                 padding: 2rem 10%;
               }
             }
-          `}
-        </style>
+          `}</style>
       </TeacherLayout>
     )
   }

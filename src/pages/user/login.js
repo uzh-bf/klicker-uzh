@@ -53,8 +53,7 @@ class Login extends React.Component {
 
           <LoginForm intl={intl} onSubmit={this.handleSubmit} />
 
-          <style jsx>
-            {`
+          <style jsx>{`
               .login {
                 padding: 1rem;
               }
@@ -77,8 +76,7 @@ class Login extends React.Component {
                   margin: 0 15%;
                 }
               }
-            `}
-          </style>
+            `}</style>
         </div>
       </StaticLayout>
     )

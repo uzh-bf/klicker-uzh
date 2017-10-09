@@ -44,15 +44,13 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
         </div>
       ))}
 
-      <style jsx>
-        {`
+      <style jsx>{`
           .session {
             margin-bottom: 2rem;
           }
           .session.running {
           }
-        `}
-      </style>
+        `}</style>
     </div>
   )
 }

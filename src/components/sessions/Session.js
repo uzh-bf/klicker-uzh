@@ -56,8 +56,7 @@ const Session = ({
       </div>
     </div>
 
-    <style jsx>
-      {`
+    <style jsx>{`
         .session,
         .details {
           display: flex;
@@ -107,8 +106,7 @@ const Session = ({
             margin: 0 0 0.3rem 0.3rem;
           }
         }
-      `}
-    </style>
+      `}</style>
   </div>
 )
 
