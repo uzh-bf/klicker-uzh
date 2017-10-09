@@ -90,55 +90,55 @@ class StudentLayout extends React.Component {
         </div>
 
         <style jsx global>{`
-            * {
-              font-family: 'Open Sans', sans-serif;
-            }
+          * {
+            font-family: 'Open Sans', sans-serif;
+          }
 
-            html {
-              font-size: 16px;
-            }
+          html {
+            font-size: 16px;
+          }
 
-            body {
-              font-size: 1rem;
-            }
-          `}</style>
+          body {
+            font-size: 1rem;
+          }
+        `}</style>
 
         <style jsx>{`
-            .studentLayout {
-              display: flex;
-              flex-direction: column;
+          .studentLayout {
+            display: flex;
+            flex-direction: column;
 
-              min-height: 100vh;
-            }
+            min-height: 100vh;
+          }
 
+          .header {
+            flex: 0 0 auto;
+
+            display: flex;
+            align-items: center;
+
+            border-bottom: 1px solid lightgrey;
+            padding: 0.5rem;
+          }
+
+          .header > h1 {
+            font-size: 1.5rem;
+            margin: 0;
+            margin-left: 1rem;
+          }
+
+          .content {
+            flex: 1;
+
+            display: flex;
+          }
+
+          @media all and (min-width: 768px) {
             .header {
-              flex: 0 0 auto;
-
-              display: flex;
-              align-items: center;
-
-              border-bottom: 1px solid lightgrey;
-              padding: 0.5rem;
+              display: none;
             }
-
-            .header > h1 {
-              font-size: 1.5rem;
-              margin: 0;
-              margin-left: 1rem;
-            }
-
-            .content {
-              flex: 1;
-
-              display: flex;
-            }
-
-            @media all and (min-width: 768px) {
-              .header {
-                display: none;
-              }
-            }
-          `}</style>
+          }
+        `}</style>
       </div>
     )
   }

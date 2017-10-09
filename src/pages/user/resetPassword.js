@@ -33,19 +33,19 @@ class ResetPassword extends React.Component {
           <PasswordResetForm intl={intl} onSubmit={this.handleSubmit} />
 
           <style jsx>{`
-              .login {
-                padding: 1rem;
-              }
-              h1 {
-                margin-top: 0;
-              }
+            .login {
+              padding: 1rem;
+            }
+            h1 {
+              margin-top: 0;
+            }
 
-              @media all and (min-width: 991px) {
-                .login {
-                  margin: 0 15%;
-                }
+            @media all and (min-width: 991px) {
+              .login {
+                margin: 0 15%;
               }
-            `}</style>
+            }
+          `}</style>
         </div>
       </StaticLayout>
     )

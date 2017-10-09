@@ -68,77 +68,77 @@ const SessionTimeline = ({
       />
     </div>
     <style jsx>{`
+      .sessionTimeline {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .topRow {
+        flex: 1;
+
+        display: flex;
+
+        background: grey;
+        padding: 1rem;
+      }
+
+      .runningTime {
+        margin-left: 2rem;
+      }
+
+      .blocks {
+        flex: 1;
+
+        display: flex;
+        flex-direction: column;
+
+        border: 1px solid grey;
+        padding: 1rem;
+      }
+
+      .block:not(:first-child) {
+        margin-top: 1rem;
+      }
+
+      .buttons {
+        flex: 1;
+
+        display: flex;
+        flex-flow: row wrap;
+        justify-content: space-between;
+
+        margin-top: 1rem;
+      }
+
+      .buttons > :global(button) {
+        margin-right: 0;
+      }
+
+      @media all and (min-width: 768px) {
         .sessionTimeline {
-          display: flex;
-          flex-direction: column;
+          flex-flow: row wrap;
         }
 
         .topRow {
-          flex: 1;
+          flex: 0 0 100%;
 
-          display: flex;
-
-          background: grey;
-          padding: 1rem;
-        }
-
-        .runningTime {
-          margin-left: 2rem;
+          padding: 0.5rem;
         }
 
         .blocks {
-          flex: 1;
+          flex: 0 0 100%;
 
-          display: flex;
-          flex-direction: column;
+          flex-direction: row;
 
-          border: 1px solid grey;
-          padding: 1rem;
+          padding: 0.5rem;
         }
 
+        .block,
         .block:not(:first-child) {
-          margin-top: 1rem;
+          margin: 0.3rem;
         }
-
-        .buttons {
-          flex: 1;
-
-          display: flex;
-          flex-flow: row wrap;
-          justify-content: space-between;
-
-          margin-top: 1rem;
-        }
-
-        .buttons > :global(button) {
-          margin-right: 0;
-        }
-
-        @media all and (min-width: 768px) {
-          .sessionTimeline {
-            flex-flow: row wrap;
-          }
-
-          .topRow {
-            flex: 0 0 100%;
-
-            padding: 0.5rem;
-          }
-
-          .blocks {
-            flex: 0 0 100%;
-
-            flex-direction: row;
-
-            padding: 0.5rem;
-          }
-
-          .block,
-          .block:not(:first-child) {
-            margin: 0.3rem;
-          }
-        }
-      `}</style>
+      }
+    `}</style>
   </div>
 )
 

@@ -66,44 +66,44 @@ const Placeholder = ({
 
     <style jsx>{styles}</style>
     <style jsx>{`
-        .leftAction {
-          flex: 0 0 100%;
+      .leftAction {
+        flex: 0 0 100%;
 
-          border-right: none;
-          transition: flex-basis 0.3s;
-        }
+        border-right: none;
+        transition: flex-basis 0.3s;
+      }
 
-        input,
-        .toggle,
-        .rightAction {
-          flex: 1;
+      input,
+      .toggle,
+      .rightAction {
+        flex: 1;
 
-          opacity: 0;
-        }
+        opacity: 0;
+      }
 
-        .inputMode > input,
-        .inputMode > .toggle,
-        .inputMode > .rightAction {
-          opacity: 1;
-        }
+      .inputMode > input,
+      .inputMode > .toggle,
+      .inputMode > .rightAction {
+        opacity: 1;
+      }
 
-        .inputMode > .leftAction,
-        .inputMode > .rightAction {
-          flex: 0 0 3rem;
-        }
+      .inputMode > .leftAction,
+      .inputMode > .rightAction {
+        flex: 0 0 3rem;
+      }
 
-        .inputMode > .leftAction {
-          border-right: 1px solid grey;
-        }
+      .inputMode > .leftAction {
+        border-right: 1px solid grey;
+      }
 
-        .inputMode > .toggle {
-          flex: 0 0 5rem;
-        }
+      .inputMode > .toggle {
+        flex: 0 0 5rem;
+      }
 
-        .inputMode > input {
-          flex: 1;
-        }
-      `}</style>
+      .inputMode > input {
+        flex: 1;
+      }
+    `}</style>
   </div>
 )
 

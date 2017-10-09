@@ -75,22 +75,22 @@ class Index extends React.Component {
         </div>
 
         <style jsx>{`
+          .sessionHistory {
+            padding: 1rem 0.7rem;
+          }
+
+          @media all and (min-width: 768px) {
             .sessionHistory {
-              padding: 1rem 0.7rem;
+              padding: 2rem;
             }
+          }
 
-            @media all and (min-width: 768px) {
-              .sessionHistory {
-                padding: 2rem;
-              }
+          @media all and (min-width: 991px) {
+            .sessionHistory {
+              padding: 2rem 10%;
             }
-
-            @media all and (min-width: 991px) {
-              .sessionHistory {
-                padding: 2rem 10%;
-              }
-            }
-          `}</style>
+          }
+        `}</style>
       </TeacherLayout>
     )
   }

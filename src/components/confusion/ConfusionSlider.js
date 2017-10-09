@@ -29,11 +29,11 @@ const ConfusionSlider = ({ title, value, handleChange }) => (
     </div>
 
     <style jsx>{`
-        .title > :global(*:first-child) {
-          font-size: 1rem;
-          margin: 0;
-        }
-      `}</style>
+      .title > :global(*:first-child) {
+        font-size: 1rem;
+        margin: 0;
+      }
+    `}</style>
   </div>
 )
 

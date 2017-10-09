@@ -54,29 +54,29 @@ class Login extends React.Component {
           <LoginForm intl={intl} onSubmit={this.handleSubmit} />
 
           <style jsx>{`
+            .login {
+              padding: 1rem;
+            }
+            h1 {
+              margin-top: 0;
+            }
+
+            .message {
+              font-weight: bold;
+            }
+            .errorMessage {
+              color: red;
+            }
+            .successMessage {
+              color: green;
+            }
+
+            @media all and (min-width: 991px) {
               .login {
-                padding: 1rem;
+                margin: 0 15%;
               }
-              h1 {
-                margin-top: 0;
-              }
-
-              .message {
-                font-weight: bold;
-              }
-              .errorMessage {
-                color: red;
-              }
-              .successMessage {
-                color: green;
-              }
-
-              @media all and (min-width: 991px) {
-                .login {
-                  margin: 0 15%;
-                }
-              }
-            `}</style>
+            }
+          `}</style>
         </div>
       </StaticLayout>
     )

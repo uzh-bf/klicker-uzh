@@ -69,73 +69,73 @@ const Question = ({
       </div>
 
       <style jsx>{`
+        .question,
+        .wrapper {
+          display: flex;
+          flex-flow: column nowrap;
+        }
+
+        .question.draggable {
+          cursor: grab;
+        }
+
+        .question.draggable:hover {
+          box-shadow: 3px 3px 5px grey;
+        }
+
+        .question.isDragging {
+          opacity: 0.5;
+        }
+
+        .sessionMembership {
+          flex: 0 0 auto;
+          display: flex;
+
+          color: darkred;
+          padding: 0.5rem;
+          text-align: left;
+        }
+
+        .sessionMembership.active {
+          color: green;
+        }
+
+        .title {
+          font-size: 1.2rem;
+          margin: 0;
+          margin-bottom: 0.5rem;
+        }
+
+        @media all and (min-width: 768px) {
           .question,
           .wrapper {
-            display: flex;
-            flex-flow: column nowrap;
-          }
-
-          .question.draggable {
-            cursor: grab;
-          }
-
-          .question.draggable:hover {
-            box-shadow: 3px 3px 5px grey;
-          }
-
-          .question.isDragging {
-            opacity: 0.5;
+            flex-flow: row wrap;
           }
 
           .sessionMembership {
-            flex: 0 0 auto;
+            flex: 0 0 1rem;
             display: flex;
+            align-items: center;
 
-            color: darkred;
-            padding: 0.5rem;
-            text-align: left;
+            padding: 1rem;
           }
 
-          .sessionMembership.active {
-            color: green;
+          .wrapper {
+            flex: 1;
           }
 
-          .title {
-            font-size: 1.2rem;
-            margin: 0;
-            margin-bottom: 0.5rem;
+          .title,
+          .tags {
+            flex: 1 1 auto;
           }
-
-          @media all and (min-width: 768px) {
-            .question,
-            .wrapper {
-              flex-flow: row wrap;
-            }
-
-            .sessionMembership {
-              flex: 0 0 1rem;
-              display: flex;
-              align-items: center;
-
-              padding: 1rem;
-            }
-
-            .wrapper {
-              flex: 1;
-            }
-
-            .title,
-            .tags {
-              flex: 1 1 auto;
-            }
-            .tags {
-              align-self: flex-end;
-            }
-            .details {
-              flex: 0 0 100%;
-            }
+          .tags {
+            align-self: flex-end;
           }
-        `}</style>
+          .details {
+            flex: 0 0 100%;
+          }
+        }
+      `}</style>
     </div>,
   )
 

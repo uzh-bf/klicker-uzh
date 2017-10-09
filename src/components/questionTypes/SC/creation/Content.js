@@ -17,12 +17,12 @@ const Content = ({ input: { value, onChange } }) => (
     <textarea name="content" value={value} onChange={onChange} />
 
     <style jsx>{`
-        textarea {
-          border: 1px solid lightgrey;
-          height: 20rem;
-          padding: 1rem;
-        }
-      `}</style>
+      textarea {
+        border: 1px solid lightgrey;
+        height: 20rem;
+        padding: 1rem;
+      }
+    `}</style>
   </div>
 )
 

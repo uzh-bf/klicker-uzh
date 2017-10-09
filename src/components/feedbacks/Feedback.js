@@ -24,44 +24,44 @@ const Feedback = ({ content, showDelete, votes }) => (
     <div className="votes">+{votes}</div>
 
     <style jsx>{`
-        .feedback {
-          display: flex;
+      .feedback {
+        display: flex;
 
-          background: lightgrey;
-          border: 1px solid grey;
-        }
+        background: lightgrey;
+        border: 1px solid grey;
+      }
 
+      .content,
+      .delete {
+        padding: 1rem;
+      }
+
+      .content {
+        flex: 1;
+      }
+
+      .delete {
+        flex: 0 0 1rem;
+        align-self: center;
+      }
+
+      .votes {
+        flex: 0 0 5rem;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        border-left: 1px solid grey;
+      }
+
+      @media all and (min-width: 768px) {
         .content,
         .delete {
-          padding: 1rem;
+          padding: 0.5rem;
         }
-
-        .content {
-          flex: 1;
-        }
-
-        .delete {
-          flex: 0 0 1rem;
-          align-self: center;
-        }
-
-        .votes {
-          flex: 0 0 5rem;
-
-          display: flex;
-          align-items: center;
-          justify-content: center;
-
-          border-left: 1px solid grey;
-        }
-
-        @media all and (min-width: 768px) {
-          .content,
-          .delete {
-            padding: 0.5rem;
-          }
-        }
-      `}</style>
+      }
+    `}</style>
   </div>
 )
 

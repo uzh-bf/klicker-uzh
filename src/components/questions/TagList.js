@@ -40,10 +40,10 @@ export const TagListPres = ({ error, tags, handleTagClick }) => {
       ))}
 
       <style jsx>{`
-          .active {
-            font-weight: bold;
-          }
-        `}</style>
+        .active {
+          font-weight: bold;
+        }
+      `}</style>
     </List>
   )
 }

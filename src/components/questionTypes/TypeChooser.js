@@ -57,27 +57,27 @@ const TypeChooser = ({ intl, input: { value, onChange } }) => {
       </div>
 
       <style jsx>{`
-          button {
-            background-color: white;
-            border: 1px solid lightgrey;
-            cursor: pointer;
-            padding: 1rem;
-            outline: none;
-          }
+        button {
+          background-color: white;
+          border: 1px solid lightgrey;
+          cursor: pointer;
+          padding: 1rem;
+          outline: none;
+        }
 
-          button.active {
-            border-color: orange;
-          }
+        button.active {
+          border-color: orange;
+        }
 
-          button:not(:last-child) {
-            margin-bottom: 0.5rem;
-          }
+        button:not(:last-child) {
+          margin-bottom: 0.5rem;
+        }
 
-          .typeChooser {
-            display: flex;
-            flex-direction: column;
-          }
-        `}</style>
+        .typeChooser {
+          display: flex;
+          flex-direction: column;
+        }
+      `}</style>
     </div>
   )
 }

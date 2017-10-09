@@ -24,38 +24,38 @@ const Collapser = ({ children, collapsed, handleCollapseToggle }) => (
     </div>
 
     <style jsx>{`
-        .collapser {
-          display: flex;
-          flex-direction: column;
-        }
+      .collapser {
+        display: flex;
+        flex-direction: column;
+      }
 
-        .content {
-          flex: 0 0 auto;
+      .content {
+        flex: 0 0 auto;
 
-          line-height: 1.2rem;
-          margin: 0.5rem;
-          margin-bottom: 0.3rem;
-          overflow: hidden;
-        }
+        line-height: 1.2rem;
+        margin: 0.5rem;
+        margin-bottom: 0.3rem;
+        overflow: hidden;
+      }
 
-        .content.collapsed {
-          flex: 1 0 4.2rem;
-        }
+      .content.collapsed {
+        flex: 1 0 4.2rem;
+      }
 
-        .content :global(p) {
-          margin-top: 0;
-          margin-bottom: 0.6rem;
-        }
+      .content :global(p) {
+        margin-top: 0;
+        margin-bottom: 0.6rem;
+      }
 
-        .content :global(p:last-child) {
-          margin-bottom: 0;
-        }
+      .content :global(p:last-child) {
+        margin-bottom: 0;
+      }
 
-        .collapse {
-          margin: auto;
-          margin-bottom: 0.3rem;
-        }
-      `}</style>
+      .collapse {
+        margin: auto;
+        margin-bottom: 0.3rem;
+      }
+    `}</style>
   </div>
 )
 

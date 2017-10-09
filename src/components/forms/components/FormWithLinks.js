@@ -51,47 +51,47 @@ const FormWithLinks = ({ button, children, links }) => (
     </div>
 
     <style jsx>{`
-        .form,
+      .form,
+      .actionArea {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .links {
+        margin-top: 1rem;
+      }
+
+      .form :global(.semanticButton) {
+        flex: 0 0 100%;
+
+        margin-right: 0;
+      }
+
+      @media all and (min-width: 768px) {
         .actionArea {
-          display: flex;
-          flex-direction: column;
+          flex-direction: row;
+          justify-content: space-between;
         }
 
         .links {
-          margin-top: 1rem;
+          order: 0;
+
+          margin-top: 0;
         }
 
         .form :global(.semanticButton) {
-          flex: 0 0 100%;
-
-          margin-right: 0;
+          flex: 0 0 auto;
+          order: 1;
         }
+      }
 
-        @media all and (min-width: 768px) {
-          .actionArea {
-            flex-direction: row;
-            justify-content: space-between;
-          }
-
-          .links {
-            order: 0;
-
-            margin-top: 0;
-          }
-
-          .form :global(.semanticButton) {
-            flex: 0 0 auto;
-            order: 1;
-          }
+      @media all and (min-width: 991px) {
+        .form {
+          border: 1px solid lightgrey;
+          padding: 1rem;
         }
-
-        @media all and (min-width: 991px) {
-          .form {
-            border: 1px solid lightgrey;
-            padding: 1rem;
-          }
-        }
-      `}</style>
+      }
+    `}</style>
   </form>
 )
 

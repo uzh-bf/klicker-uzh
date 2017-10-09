@@ -164,61 +164,61 @@ class Session extends React.Component {
           </div>
 
           <style jsx>{`
-              .student {
-                display: flex;
-              }
+            .student {
+              display: flex;
+            }
 
+            .questionArea,
+            .feedbackArea {
+              display: none;
+              flex-direction: column;
+
+              flex: 1;
+
+              padding: 0.5rem;
+            }
+
+            .questionArea.active,
+            .feedbackArea.active {
+              display: flex;
+            }
+
+            .confusion {
+              margin-bottom: 0.5rem;
+              padding: 0.5rem;
+
+              border: 1px solid grey;
+            }
+
+            .feedback:not(:last-child) {
+              margin-bottom: 0.5rem;
+            }
+
+            .actionButton {
+              position: fixed;
+
+              bottom: 1rem;
+              right: 1rem;
+            }
+
+            .actionButton :global(button) {
+              margin-right: 0;
+            }
+
+            @media all and (min-width: 768px) {
               .questionArea,
               .feedbackArea {
-                display: none;
-                flex-direction: column;
-
-                flex: 1;
-
-                padding: 0.5rem;
-              }
-
-              .questionArea.active,
-              .feedbackArea.active {
                 display: flex;
-              }
-
-              .confusion {
-                margin-bottom: 0.5rem;
-                padding: 0.5rem;
-
-                border: 1px solid grey;
-              }
-
-              .feedback:not(:last-child) {
-                margin-bottom: 0.5rem;
               }
 
               .actionButton {
-                position: fixed;
+                align-self: flex-end;
+                position: inherit;
 
-                bottom: 1rem;
-                right: 1rem;
+                margin-top: 1rem;
               }
-
-              .actionButton :global(button) {
-                margin-right: 0;
-              }
-
-              @media all and (min-width: 768px) {
-                .questionArea,
-                .feedbackArea {
-                  display: flex;
-                }
-
-                .actionButton {
-                  align-self: flex-end;
-                  position: inherit;
-
-                  margin-top: 1rem;
-                }
-              }
-            `}</style>
+            }
+          `}</style>
         </div>
       </StudentLayout>
     )

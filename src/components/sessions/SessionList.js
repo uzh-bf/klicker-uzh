@@ -45,12 +45,12 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
       ))}
 
       <style jsx>{`
-          .session {
-            margin-bottom: 2rem;
-          }
-          .session.running {
-          }
-        `}</style>
+        .session {
+          margin-bottom: 2rem;
+        }
+        .session.running {
+        }
+      `}</style>
     </div>
   )
 }

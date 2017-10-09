@@ -32,36 +32,36 @@ const QuestionBlock = ({ questions, showSolutions, timeLimit }) => (
       ))}
     </div>
     <style jsx>{`
-        .questionBlock,
-        .questions {
-          display: flex;
-        }
-        .questionBlock {
-          background-color: lightgrey;
-          border: 1px solid grey;
-          flex-flow: row wrap;
-          padding: 0.2rem;
-        }
-        .questions {
-          flex-flow: column nowrap;
-        }
-        .timeLimit,
-        .showSolution {
-          flex: 1 1 50%;
-          margin-bottom: 0.2rem;
-        }
-        .showSolution {
-          text-align: right;
-        }
-        .question {
-          background-color: lightgrey;
-          border: 1px solid grey;
-          flex: 1;
-        }
-        .question:not(:first-child) {
-          margin-top: 0.2rem;
-        }
-      `}</style>
+      .questionBlock,
+      .questions {
+        display: flex;
+      }
+      .questionBlock {
+        background-color: lightgrey;
+        border: 1px solid grey;
+        flex-flow: row wrap;
+        padding: 0.2rem;
+      }
+      .questions {
+        flex-flow: column nowrap;
+      }
+      .timeLimit,
+      .showSolution {
+        flex: 1 1 50%;
+        margin-bottom: 0.2rem;
+      }
+      .showSolution {
+        text-align: right;
+      }
+      .question {
+        background-color: lightgrey;
+        border: 1px solid grey;
+        flex: 1;
+      }
+      .question:not(:first-child) {
+        margin-top: 0.2rem;
+      }
+    `}</style>
   </div>
 )
 

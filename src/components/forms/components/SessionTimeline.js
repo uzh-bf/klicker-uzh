@@ -32,25 +32,25 @@ const SessionTimeline = ({ input: { value, onChange } }) => {
         <QuestionDropzone onDrop={handleNewQuestion} />
       </div>
       <style jsx>{`
-          .sessionTimeline {
-            display: flex;
-            flex-direction: row;
+        .sessionTimeline {
+          display: flex;
+          flex-direction: row;
 
-            border-left: 1px solid lightgrey;
-            border-bottom: 1px solid lightgrey;
-            height: 100%;
-            padding: 0.5rem;
-          }
+          border-left: 1px solid lightgrey;
+          border-bottom: 1px solid lightgrey;
+          height: 100%;
+          padding: 0.5rem;
+        }
 
-          .sessionTimeline > .timelineItem {
-            border: 1px solid lightgrey;
-            width: 12rem;
-          }
+        .sessionTimeline > .timelineItem {
+          border: 1px solid lightgrey;
+          width: 12rem;
+        }
 
-          .sessionTimeline > .timelineItem:not(:last-child) {
-            margin-right: 0.5rem;
-          }
-        `}</style>
+        .sessionTimeline > .timelineItem:not(:last-child) {
+          margin-right: 0.5rem;
+        }
+      `}</style>
     </div>
   )
 }

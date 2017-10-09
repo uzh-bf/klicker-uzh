@@ -139,38 +139,38 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
     </div>
 
     <style jsx>{`
+      .form {
+        display: flex;
+        flex-direction: column;
+      }
+      .account {
+        margin-top: 1rem;
+      }
+
+      @media all and (min-width: 768px) {
         .form {
-          display: flex;
-          flex-direction: column;
+          flex-flow: row wrap;
+        }
+        .personal,
+        .account {
+          flex: 1 1 50%;
+        }
+        .personal {
+          padding-right: 0.5rem;
         }
         .account {
-          margin-top: 1rem;
+          margin: 0;
+          padding-left: 0.5rem;
         }
+      }
 
-        @media all and (min-width: 768px) {
-          .form {
-            flex-flow: row wrap;
-          }
-          .personal,
-          .account {
-            flex: 1 1 50%;
-          }
-          .personal {
-            padding-right: 0.5rem;
-          }
-          .account {
-            margin: 0;
-            padding-left: 0.5rem;
-          }
+      @media all and (min-width: 991px) {
+        .form {
+          border: 1px solid lightgrey;
+          padding: 1rem;
         }
-
-        @media all and (min-width: 991px) {
-          .form {
-            border: 1px solid lightgrey;
-            padding: 1rem;
-          }
-        }
-      `}</style>
+      }
+    `}</style>
   </form>
 )
 

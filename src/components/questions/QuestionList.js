@@ -59,10 +59,10 @@ export const QuestionListPres = ({
       ))}
 
       <style jsx>{`
-          .question {
-            margin-bottom: 2rem;
-          }
-        `}</style>
+        .question {
+          margin-bottom: 2rem;
+        }
+      `}</style>
     </div>
   )
 }

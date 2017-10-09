@@ -21,29 +21,29 @@ const QuestionDropzone = ({ canDrop, isOver, connectDropTarget }) =>
       <FaPlus />
 
       <style jsx>{`
-          .dropzone {
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .dropzone {
+          display: flex;
+          align-items: center;
+          justify-content: center;
 
-            background-color: #f2f2f2;
-            border: 1px solid lightgrey;
-            color: lightgrey;
-            font-size: 1.5rem;
-            height: 100%;
-            width: 100%;
-          }
+          background-color: #f2f2f2;
+          border: 1px solid lightgrey;
+          color: lightgrey;
+          font-size: 1.5rem;
+          height: 100%;
+          width: 100%;
+        }
 
-          .dropzone.canDrop {
-            background-color: lightgrey;
-            border-color: grey;
-            color: grey;
-          }
+        .dropzone.canDrop {
+          background-color: lightgrey;
+          border-color: grey;
+          color: grey;
+        }
 
-          .dropzone.isOver {
-            border-color: blue;
-          }
-        `}</style>
+        .dropzone.isOver {
+          border-color: blue;
+        }
+      `}</style>
     </div>,
   )
 

@@ -32,17 +32,17 @@ const ConfusionSection = ({ data, title }) => (
     </div>
 
     <style jsx>{`
-        .confusionSection {
-          display: flex;
-          flex-direction: column;
-        }
+      .confusionSection {
+        display: flex;
+        flex-direction: column;
+      }
 
-        .chart {
-          flex: 1;
+      .chart {
+        flex: 1;
 
-          height: 10rem;
-        }
-      `}</style>
+        height: 10rem;
+      }
+    `}</style>
   </div>
 )
 

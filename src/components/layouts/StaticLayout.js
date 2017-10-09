@@ -39,30 +39,30 @@ class StaticLayout extends React.Component {
         <footer>&copy; IBF</footer>
 
         <style jsx global>{`
-            * {
-              font-family: 'Open Sans', sans-serif;
-            }
-            html {
-              font-size: 16px;
-            }
-            body {
-              font-size: 1rem;
-            }
-          `}</style>
+          * {
+            font-family: 'Open Sans', sans-serif;
+          }
+          html {
+            font-size: 16px;
+          }
+          body {
+            font-size: 1rem;
+          }
+        `}</style>
 
         <style jsx>{`
-            .staticLayout {
-              display: flex;
-              flex-direction: column;
-              min-height: 100vh;
-            }
+          .staticLayout {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+          }
 
-            footer {
-              background-color: lightgrey;
-              border-top: 2px solid orange;
-              padding: 1rem;
-            }
-          `}</style>
+          footer {
+            background-color: lightgrey;
+            border-top: 2px solid orange;
+            padding: 1rem;
+          }
+        `}</style>
       </div>
     )
   }

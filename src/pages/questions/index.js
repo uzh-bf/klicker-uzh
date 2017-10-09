@@ -194,50 +194,50 @@ class Index extends React.Component {
         </div>
 
         <style jsx>{`
-            .questionPool {
-              display: flex;
-              flex-direction: column;
+          .questionPool {
+            display: flex;
+            flex-direction: column;
 
-              padding: 1rem;
+            padding: 1rem;
+          }
+
+          .tagList {
+            flex: 1;
+
+            margin-bottom: 1rem;
+          }
+
+          .actionButton {
+            display: flex;
+            flex-direction: row;
+            justify-items: flex-end;
+          }
+
+          @media all and (min-width: 768px) {
+            .questionPool {
+              flex-flow: row wrap;
+
+              padding: 2rem;
             }
 
             .tagList {
+              flex: 0 0 auto;
+
+              margin: 0;
+              margin-right: 2rem;
+            }
+
+            .questionList {
               flex: 1;
-
-              margin-bottom: 1rem;
             }
+          }
 
-            .actionButton {
-              display: flex;
-              flex-direction: row;
-              justify-items: flex-end;
+          @media all and (min-width: 991px) {
+            .questionPool {
+              padding: 2rem 10% 2rem 2rem;
             }
-
-            @media all and (min-width: 768px) {
-              .questionPool {
-                flex-flow: row wrap;
-
-                padding: 2rem;
-              }
-
-              .tagList {
-                flex: 0 0 auto;
-
-                margin: 0;
-                margin-right: 2rem;
-              }
-
-              .questionList {
-                flex: 1;
-              }
-            }
-
-            @media all and (min-width: 991px) {
-              .questionPool {
-                padding: 2rem 10% 2rem 2rem;
-              }
-            }
-          `}</style>
+          }
+        `}</style>
       </TeacherLayout>
     )
   }

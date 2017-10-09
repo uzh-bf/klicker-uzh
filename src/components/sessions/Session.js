@@ -57,56 +57,56 @@ const Session = ({
     </div>
 
     <style jsx>{`
+      .session,
+      .details {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+      }
+      .title,
+      .date {
+        margin: auto;
+        margin-bottom: 0.5rem;
+      }
+      .block {
+        margin: 0 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+      .actionArea {
+        margin: auto;
+      }
+
+      @media all and (min-width: 768px) {
         .session,
         .details {
-          display: flex;
-          flex-direction: column;
-          flex: 1;
+          flex-flow: row wrap;
         }
         .title,
         .date {
-          margin: auto;
+          flex: 0 0 50%;
+          margin: 0;
+        }
+        .title {
+          font-size: 1.2rem;
           margin-bottom: 0.5rem;
+        }
+        .date {
+          align-self: center;
+          text-align: right;
+        }
+        .details {
+          border: 1px solid lightgrey;
         }
         .block {
-          margin: 0 0.5rem;
-          margin-bottom: 0.5rem;
+          flex: 1;
+          margin: 0.3rem;
         }
         .actionArea {
-          margin: auto;
+          align-self: flex-end;
+          margin: 0 0 0.3rem 0.3rem;
         }
-
-        @media all and (min-width: 768px) {
-          .session,
-          .details {
-            flex-flow: row wrap;
-          }
-          .title,
-          .date {
-            flex: 0 0 50%;
-            margin: 0;
-          }
-          .title {
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
-          }
-          .date {
-            align-self: center;
-            text-align: right;
-          }
-          .details {
-            border: 1px solid lightgrey;
-          }
-          .block {
-            flex: 1;
-            margin: 0.3rem;
-          }
-          .actionArea {
-            align-self: flex-end;
-            margin: 0 0 0.3rem 0.3rem;
-          }
-        }
-      `}</style>
+      }
+    `}</style>
   </div>
 )
 

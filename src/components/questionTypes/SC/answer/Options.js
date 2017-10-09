@@ -28,27 +28,27 @@ const Options = ({ activeOption, options, onOptionClick }) => (
     ))}
 
     <style jsx>{`
-        :global(.option:not(:last-child)) {
-          margin-bottom: 0.5rem;
-        }
+      :global(.option:not(:last-child)) {
+        margin-bottom: 0.5rem;
+      }
 
-        .option.active :global(button) {
-          border: 1px solid green !important;
+      .option.active :global(button) {
+        border: 1px solid green !important;
 
-          animation: bounce 0.5s;
-        }
+        animation: bounce 0.5s;
+      }
 
-        // TODO: improve animation
-        @keyframes bounce {
-          0%,
-          100% {
-            transform: translateX(0);
-          }
-          50% {
-            transform: translateY(-2px);
-          }
+      // TODO: improve animation
+      @keyframes bounce {
+        0%,
+        100% {
+          transform: translateX(0);
         }
-      `}</style>
+        50% {
+          transform: translateY(-2px);
+        }
+      }
+    `}</style>
   </div>
 )
 

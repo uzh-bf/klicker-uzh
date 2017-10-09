@@ -55,29 +55,29 @@ class Registration extends React.Component {
           <RegistrationForm intl={intl} onSubmit={this.handleSubmit} />
 
           <style jsx>{`
+            .registration {
+              padding: 1rem;
+            }
+            h1 {
+              margin-top: 0;
+            }
+
+            .message {
+              font-weight: bold;
+            }
+            .errorMessage {
+              color: red;
+            }
+            .successMessage {
+              color: green;
+            }
+
+            @media all and (min-width: 991px) {
               .registration {
-                padding: 1rem;
+                margin: 0 15%;
               }
-              h1 {
-                margin-top: 0;
-              }
-
-              .message {
-                font-weight: bold;
-              }
-              .errorMessage {
-                color: red;
-              }
-              .successMessage {
-                color: green;
-              }
-
-              @media all and (min-width: 991px) {
-                .registration {
-                  margin: 0 15%;
-                }
-              }
-            `}</style>
+            }
+          `}</style>
         </div>
       </StaticLayout>
     )
