@@ -14,16 +14,25 @@ const defaultProps = {}
 const SampleSolution = ({ intl }) => (
   <div className="solution">
     <div className="title">
-      <FormattedMessage id="teacher.evaluation.sampleSolution.title" defaultMessage="Sample Solution" />
+      <FormattedMessage
+        id="teacher.evaluation.sampleSolution.title"
+        defaultMessage="Sample Solution"
+      />
     </div>
-    <Checkbox toggle label={intl.formatMessage({ defaultMessage: 'Show', id: 'teacher.evaluation.sampleSolution.show' })} />
+    <Checkbox
+      toggle
+      label={intl.formatMessage({
+        defaultMessage: 'Show',
+        id: 'teacher.evaluation.sampleSolution.show',
+      })}
+    />
 
     <style jsx>{`
-          .title {
-            font-weight: bold;
-            margin-bottom: 1rem;
-          }
-        `}</style>
+      .title {
+        font-weight: bold;
+        margin-bottom: 1rem;
+      }
+    `}</style>
   </div>
 )
 

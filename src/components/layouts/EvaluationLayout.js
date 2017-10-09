@@ -8,8 +8,9 @@ import { createLinks, initLogging } from '../../lib'
 const propTypes = {
   data: PropTypes.shape({
     questionText: PropTypes.string,
-    sampleSolution: PropTypes.node,
+    sampleSolution: PropTypes.component,
     title: PropTypes.string,
+    visualization: PropTypes.component,
   }).isRequired,
   intl: intlShape.isRequired,
   pageTitle: PropTypes.string,
@@ -48,7 +49,7 @@ class EvaluationLayout extends Component {
         <div className="box graph">Graph</div>
         <div className="box possibilities">Possibilities</div>
         <div className="box sampleSolution">{data.sampleSolution}</div>
-        <div className="box visualization">Visualization</div>
+        <div className="box visualization">{data.visualization}</div>
 
         <style jsx>{`
           .box {
@@ -60,7 +61,7 @@ class EvaluationLayout extends Component {
               .evaluationLayout {
                 display: grid;
 
-                grid-template-columns: 0.5 0.5;
+                grid-template-columns: 60% 40%;
                 grid-template-rows: auto;
                 grid-template-areas: 'title title' 'question question' 'graph possibilities'
                   'graph solution' 'graph visualization';
