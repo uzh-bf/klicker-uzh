@@ -8,6 +8,7 @@ import { createLinks, initLogging } from '../../lib'
 const propTypes = {
   data: PropTypes.shape({
     questionText: PropTypes.string,
+    sampleSolution: PropTypes.node,
     title: PropTypes.string,
   }).isRequired,
   intl: intlShape.isRequired,
@@ -46,9 +47,8 @@ class EvaluationLayout extends Component {
         <hr />
         <div className="box graph">Graph</div>
         <div className="box possibilities">Possibilities</div>
-        <div className="box sampleSolution">Sample Solution</div>
+        <div className="box sampleSolution">{data.sampleSolution}</div>
         <div className="box visualization">Visualization</div>
-
 
         <style jsx>{`
           .box {
