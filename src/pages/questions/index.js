@@ -40,21 +40,6 @@ const Index = ({
   handleQuestionDropped,
   toggleCreationMode,
 }) => {
-  const navbarConfig = {
-    accountShort: 'AW',
-    search: {
-      handleSearch: _debounce(handleSearch, 200),
-      handleSort,
-      query: '',
-      sortBy: '',
-      sortOrder: '',
-    },
-    title: intl.formatMessage({
-      defaultMessage: 'Question Pool',
-      id: 'teacher.questionPool.title',
-    }),
-  }
-
   // TODO: replace with the action button component
   const actionButton = (
     <div className="actionButton">
@@ -102,7 +87,18 @@ const Index = ({
     <TeacherLayout
       actionArea={creationMode ? actionArea : actionButton}
       intl={intl}
-      navbar={navbarConfig}
+      navbar={{
+        search: {
+          handleSearch: _debounce(handleSearch, 200),
+          handleSort,
+          sortBy: '',
+          sortOrder: '',
+        },
+        title: intl.formatMessage({
+          defaultMessage: 'Question Pool',
+          id: 'teacher.questionPool.title',
+        }),
+      }}
       pageTitle={intl.formatMessage({
         defaultMessage: 'Question Pool',
         id: 'teacher.questionPool.pageTitle',
