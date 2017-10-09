@@ -6,7 +6,7 @@ import { FormattedMessage, intlShape } from 'react-intl'
 import Feedback from './Feedback'
 
 const propTypes = {
-  data: PropTypes.arrayOf(Feedback.propTypes),
+  feedbacks: PropTypes.arrayOf(Feedback.propTypes),
   handleActiveToggle: PropTypes.func.isRequired,
   handlePublicToggle: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
@@ -15,13 +15,13 @@ const propTypes = {
 }
 
 const defaultProps = {
-  data: [],
+  feedbacks: [],
   isActive: false,
   isPublic: false,
 }
 
 const FeedbackChannel = ({
-  data,
+  feedbacks,
   intl,
   isActive,
   isPublic,
@@ -64,7 +64,7 @@ const FeedbackChannel = ({
 
     {isActive && (
       <div className="feedbacks">
-        {data.map(({ content, key, votes }) => (
+        {feedbacks.map(({ content, key, votes }) => (
           <div className="feedback">
             <Feedback key={key} content={content} votes={votes} />
           </div>

@@ -65,6 +65,10 @@ export const RunningSessionQuery = gql`
       id
       runningSession {
         id
+        confusionTS {
+          difficulty
+          speed
+        }
         feedbacks {
           key
           content

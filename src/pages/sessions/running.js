@@ -125,6 +125,7 @@ export default compose(
   withData,
   pageWithIntl,
   graphql(RunningSessionQuery, {
+    // refetch the running session query every 10s
     options: { pollInterval: 10000 },
   }),
   graphql(EndSessionMutation),

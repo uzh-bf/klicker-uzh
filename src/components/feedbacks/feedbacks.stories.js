@@ -24,11 +24,11 @@ const data = [
 ]
 
 storiesOf('feedbacks', module)
-  .add('FeedbackChannel', () => <FeedbackChannelWithState data={data} intl={intlMock} />)
+  .add('FeedbackChannel', () => <FeedbackChannelWithState feedbacks={data} intl={intlMock} />)
   .add('FeedbackChannel (isActive)', () => (
     <FeedbackChannel
       isActive
-      data={data}
+      feedbacks={data}
       intl={intlMock}
       handleActiveToggle={() => action('active-toggle')}
       handlePublicToggle={() => action('public-toggle')}
@@ -38,7 +38,7 @@ storiesOf('feedbacks', module)
     <FeedbackChannel
       isActive
       isPublic
-      data={data}
+      feedbacks={data}
       intl={intlMock}
       handleActiveToggle={() => action('active-toggle')}
       handlePublicToggle={() => action('public-toggle')}
