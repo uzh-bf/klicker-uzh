@@ -97,13 +97,14 @@ export default compose(
         return () => null
       }
 
+      // extract the running session from all sessions
       const runningSession = sessions.filter(session => session.status === 1)
 
       // return the newly composed props
       return {
         error,
         runningSession: runningSession.length === 1 && {
-          ...runningSession,
+          ...runningSession[0],
           button: {
             ...statusCases[1],
             onClick: () => Router.push('/sessions/running'),
