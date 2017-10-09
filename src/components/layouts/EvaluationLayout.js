@@ -6,7 +6,10 @@ import { intlShape } from 'react-intl'
 import { createLinks, initLogging } from '../../lib'
 
 const propTypes = {
-  children: PropTypes.node.isRequired,
+  data: PropTypes.shape({
+    questionText: PropTypes.string,
+    title: PropTypes.string,
+  }).isRequired,
   intl: intlShape.isRequired,
   pageTitle: PropTypes.string,
 }
@@ -24,7 +27,7 @@ class EvaluationLayout extends Component {
   }
 
   render() {
-    const { children, pageTitle } = this.props
+    const { pageTitle, data } = this.props
 
     return (
       <div className="evaluationLayout">
@@ -37,14 +40,21 @@ class EvaluationLayout extends Component {
         </Helmet>
 
         <div className="content">
-          {children}
+          <div><b>{data.title}</b></div>
+          <div>{data.questionText}</div>
+          <hr />
+          <div className="graph">Graph</div>
+          <div className="possibilities">Possibilities</div>
+          <div className="sampleSolution">Sample Solution</div>
+          <div className="Visualization">Visualization</div>
         </div>
 
         <style jsx>{`
           .evaluationLayout {
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
+
+            padding: 1rem;
           }
         `}</style>
       </div>
