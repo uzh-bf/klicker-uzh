@@ -4,7 +4,7 @@ import { graphql } from 'react-apollo'
 import { List } from 'semantic-ui-react'
 import { compose, withProps, branch, renderComponent } from 'recompose'
 
-import Loading from '../common/Loading'
+import { LoadingDiv } from '../common/Loading'
 import { TagListQuery } from '../../queries/queries'
 
 const propTypes = {
@@ -53,7 +53,7 @@ TagListPres.defaultProps = defaultProps
 
 export default compose(
   graphql(TagListQuery),
-  branch(props => props.data.loading, renderComponent(Loading)),
+  branch(props => props.data.loading, renderComponent(LoadingDiv)),
   withProps(({ activeTags, data: { loading, error, tags } }) => ({
     error,
     loading,

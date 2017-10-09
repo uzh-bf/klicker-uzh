@@ -62,18 +62,27 @@ export const CreateSessionMutation = gql`
   mutation CreateSession($name: String!, $blocks: [Session_QuestionBlockInput]!) {
     createSession(session: { name: $name, blocks: $blocks }) {
       id
-      title
-      type
-      tags {
-        id
+      feedbacks {
+        key
+        content
+        votes
       }
-      versions {
-        description
-        options {
-          correct
-          name
+      blocks {
+        key
+        status
+        instances {
+          id
+          question {
+            id
+            title
+            type
+          }
         }
-        createdAt
+      }
+      settings {
+        isConfusionBarometerActive
+        isFeedbackChannelActive
+        isFeedbackChannelPublic
       }
     }
   }

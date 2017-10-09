@@ -12,36 +12,11 @@ import FeedbackChannel from '../../components/feedbacks/FeedbackChannel'
 import SessionTimeline from '../../components/sessions/SessionTimeline'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import { RunningSessionQuery, EndSessionMutation } from '../../queries'
+import { LoadingTeacherLayout } from '../../components/common/Loading'
 
 const propTypes = {
   data: PropTypes.object.isRequired,
   handleEndSession: PropTypes.func.isRequired,
-  intl: intlShape.isRequired,
-}
-
-const Loading = ({ intl }) => {
-  const navbarConfig = {
-    title: intl.formatMessage({
-      defaultMessage: 'Running Session',
-      id: 'teacher.runningSession.title',
-    }),
-  }
-
-  return (
-    <TeacherLayout
-      intl={intl}
-      navbar={navbarConfig}
-      pageTitle={intl.formatMessage({
-        defaultMessage: 'Running Session',
-        id: 'teacher.runningSession.pageTitle',
-      })}
-      sidebar={{ activeItem: 'runningSession' }}
-    >
-      Loading
-    </TeacherLayout>
-  )
-}
-Loading.propTypes = {
   intl: intlShape.isRequired,
 }
 
@@ -153,7 +128,12 @@ export default compose(
   pageWithIntl,
   graphql(RunningSessionQuery),
   graphql(EndSessionMutation),
-  branch(({ data }) => data.loading || !data.user, renderComponent(Loading)),
+  branch(
+    ({ data }) => data.loading || !data.user,
+    renderComponent(({ intl }) => (
+      <LoadingTeacherLayout intl={intl} pageId="runningSession" title="Running Session" />
+    )),
+  ),
   withHandlers({
     handleEndSession: ({ data, mutate }) => async () => {
       try {

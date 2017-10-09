@@ -5,7 +5,7 @@ import { graphql } from 'react-apollo'
 import { compose, withProps, branch, renderComponent } from 'recompose'
 
 import Question from './Question'
-import Loading from '../common/Loading'
+import { LoadingDiv } from '../common/Loading'
 import { filterQuestions } from '../../lib/utils/filters'
 import { QuestionListQuery } from '../../queries/queries'
 
@@ -72,7 +72,7 @@ QuestionListPres.defaultProps = defaultProps
 
 export default compose(
   graphql(QuestionListQuery),
-  branch(props => props.data.loading, renderComponent(Loading)),
+  branch(props => props.data.loading, renderComponent(LoadingDiv)),
   withProps(({ data: { error, questions }, filters }) => ({
     error,
     questions: questions && (filters ? filterQuestions(questions, filters) : questions),

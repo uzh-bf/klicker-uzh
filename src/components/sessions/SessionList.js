@@ -6,7 +6,7 @@ import { compose, withPropsOnChange, branch, renderComponent } from 'recompose'
 import { FormattedMessage } from 'react-intl'
 
 import Session from './Session'
-import Loading from '../common/Loading'
+import { LoadingDiv } from '../common/Loading'
 import { SessionListQuery } from '../../queries/queries'
 
 const propTypes = {
@@ -76,7 +76,7 @@ const statusCases = [
 
 export default compose(
   graphql(SessionListQuery),
-  branch(props => props.data.loading, renderComponent(Loading)),
+  branch(props => props.data.loading, renderComponent(LoadingDiv)),
   withPropsOnChange(
     ['data'],
     ({ data: { error, sessions }, handleCopySession, handleStartSession }) => {
