@@ -26,6 +26,10 @@ class Evaluation extends Component {
     }
   }
 
+  onChangeVisualizationType = (newType) => {
+    this.setState({ visualization: newType })
+  }
+
   render() {
     const { intl } = this.props
 
@@ -41,7 +45,13 @@ class Evaluation extends Component {
         'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
       sampleSolution: <SampleSolution intl={intl} />,
       title: <FormattedMessage id="teacher.evaluation.title" defaultMessage="Evaluation" />,
-      visualization: <Visualization intl={intl} />,
+      visualization: (
+        <Visualization
+          intl={intl}
+          onChangeType={this.onChangeVisualizationType}
+          visualization={this.state.visualization}
+        />
+      ),
     }
 
     return (

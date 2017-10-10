@@ -11,8 +11,8 @@ const propTypes = {
 const defaultProps = {}
 
 const dropDownOptions = [
-  { text: 'Pie Chart', value: 'pie' },
-  { text: 'Bar Chart', value: 'bar' },
+  { text: 'Pie Chart', value: 'pieChart' },
+  { text: 'Bar Chart', value: 'barChart' },
   { text: 'Word cloud', value: 'cloud' },
   { text: 'Table', value: 'table' },
   { text: 'Historgamm', value: 'histogramm' },
@@ -20,7 +20,7 @@ const dropDownOptions = [
 ]
 
 // TODO default value
-const Visualization = ({ intl }) => (
+const Visualization = ({ intl, onChangeType }) => (
   <div className="visualization">
     <div className="title">
       <FormattedMessage
@@ -32,6 +32,7 @@ const Visualization = ({ intl }) => (
       search
       selection
       options={dropDownOptions}
+      onChange={(param, data) => onChangeType(data.value)}
       placeholder={intl.formatMessage({
         defaultMessage: 'Visualization',
         id: 'teacher.evaluation.visualization.title',
