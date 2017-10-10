@@ -23,9 +23,12 @@ const Possibilities = ({ intl, options, type }) => (
       />
     </div>
     {console.dir(options)}
-    {
-      options && options.map((option, key) => <div><b>{key}</b> {option.text}</div>)
-    }
+    {options &&
+      options.map((option, key) => (
+        <div>
+          <b>{key}</b> {option.text}
+        </div>
+      ))}
     <style jsx>{`
       .title {
         font-weight: bold;
