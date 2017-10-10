@@ -62,7 +62,7 @@ class EvaluationLayout extends Component {
               .evaluationLayout {
                 display: grid;
 
-                grid-template-columns: 60% 40%;
+                grid-template-columns: 70% 30%;
                 grid-template-rows: auto;
                 grid-template-areas: 'title title' 'question question' 'graph possibilities'
                   'graph solution' 'graph visualization';
