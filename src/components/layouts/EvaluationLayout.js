@@ -66,6 +66,8 @@ class EvaluationLayout extends Component {
                 grid-template-rows: auto;
                 grid-template-areas: 'title title' 'question question' 'graph possibilities'
                   'graph solution' 'graph visualization';
+
+                margin: 2rem 8rem 0;
               }
 
               .title {
