@@ -28,7 +28,7 @@ class Evaluation extends Component {
     const { intl } = this.props
 
     const data = {
-      graph: <Graph intl={intl} />,
+      graph: <Graph intl={intl} graphType="bar" />,
       possibilities: (
         <Possibilities
           intl={intl}
