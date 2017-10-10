@@ -7,6 +7,7 @@ import { createLinks, initLogging } from '../../lib'
 
 const propTypes = {
   data: PropTypes.shape({
+    graph: PropTypes.component,
     possibilities: PropTypes.component,
     questionText: PropTypes.string,
     sampleSolution: PropTypes.component,
@@ -47,7 +48,7 @@ class EvaluationLayout extends Component {
         </div>
         <div className="box questionText">{data.questionText}</div>
         <hr />
-        <div className="box graph">Graph</div>
+        <div className="box graph">{data.graph}</div>
         <div className="box possibilities">{data.possibilities}</div>
         <div className="box sampleSolution">{data.sampleSolution}</div>
         <div className="box visualization">{data.visualization}</div>

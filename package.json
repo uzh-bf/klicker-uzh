@@ -44,7 +44,7 @@
     "react-redux": "5.0.6",
     "react-sortable-hoc": "0.6.8",
     "react-tagsinput": "3.18.0",
-    "recharts": "1.0.0-apha.5",
+    "recharts": "^1.0.0-apha.5",
     "redux": "3.7.2",
     "redux-form": "7.0.3",
     "semantic-ui-react": "0.74.2",
@@ -83,8 +83,7 @@
     "dev": "nodemon -w .env -w package.json -w yarn.lock server.js",
     "dev:inspect": "nodemon -w .env -w package.json -w yarn.lock --inspect server.js",
     "format": "prettier-eslint --single-quote --no-semi --write server.js \"src/**/*.js\"",
-    "format:ci":
-      "prettier-eslint --single-quote --no-semi --list-different server.js \"src/**/*.js\"",
+    "format:ci": "prettier-eslint --single-quote --no-semi --list-different server.js \"src/**/*.js\"",
     "lint": "eslint server.js \"src/**/*.js\"",
     "start": "cross-env NODE_ENV=production node server.js",
     "start:inspect": "cross-env NODE_ENV=production node --inspect server.js",
@@ -94,10 +93,19 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "roots": ["src/"]
+    "roots": [
+      "src/"
+    ]
   },
   "lint-staged": {
-    "*.js": ["prettier-eslint --single-quote --no-semi --write", "eslint", "git add"],
-    "*.json": ["prettier-eslint --single-quote --no-semi --write", "git add"]
+    "*.js": [
+      "prettier-eslint --single-quote --no-semi --write",
+      "eslint",
+      "git add"
+    ],
+    "*.json": [
+      "prettier-eslint --single-quote --no-semi --write",
+      "git add"
+    ]
   }
 }
