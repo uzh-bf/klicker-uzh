@@ -21,14 +21,16 @@ class Evaluation extends Component {
   constructor(props) {
     super(props)
 
-    this.state = {}
+    this.state = {
+      visualization: 'pieChart',
+    }
   }
 
   render() {
     const { intl } = this.props
 
     const data = {
-      graph: <Graph intl={intl} graphType="bar" />,
+      graph: <Graph intl={intl} visualization={this.state.visualization} />,
       possibilities: (
         <Possibilities
           intl={intl}
