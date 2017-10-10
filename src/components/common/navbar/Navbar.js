@@ -78,7 +78,10 @@ export const NavbarPres = ({
       h1 {
         // TODO: optimize font sizes
         font-size: 1.3rem;
+        margin: 0;
         margin-left: 1rem;
+        display: felx;
+        align-items: center;
       }
 
       .sideArea {
