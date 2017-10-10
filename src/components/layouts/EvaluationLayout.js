@@ -81,7 +81,8 @@ class EvaluationLayout extends Component {
 
               .graph {
                 grid-area: graph;
-                border: 1px solid;
+                align-self: center;
+                justify-self: center;
               }
 
               .possibilities {
