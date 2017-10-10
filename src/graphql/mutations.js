@@ -109,3 +109,29 @@ export const EndSessionMutation = gql`
     }
   }
 `
+
+export const AddFeedbackMutation = gql`
+  mutation AddFeedback() {
+    addFeedback() {
+      id
+      feedbacks {
+        key
+        content
+        votes
+      }
+    }
+  }
+`
+
+export const UpdateSessionSettingsMutation = gql`
+  mutation UpdateSessionSettings() {
+    updateSessionSettings() {
+      id
+      settings {
+        isConfusionBarometerActive
+        isFeedbackChannelActive
+        isFeedbackChannelPublic
+      }
+    }
+  }
+`
