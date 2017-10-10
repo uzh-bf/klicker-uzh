@@ -25,14 +25,18 @@ const Possibilities = ({ intl, options, type }) => (
     {console.dir(options)}
     {options &&
       options.map((option, key) => (
-        <div>
-          <b>{key}</b> {option.text}
+        <div className="item">
+          <b>{key + 1}</b> {option.text}
         </div>
       ))}
     <style jsx>{`
       .title {
         font-weight: bold;
         margin-bottom: 0.5rem;
+      }
+
+      .item {
+        padding: 0.3rem 0;
       }
     `}</style>
   </div>

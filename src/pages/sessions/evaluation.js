@@ -38,7 +38,12 @@ class Evaluation extends Component {
       possibilities: (
         <Possibilities
           intl={intl}
-          options={[{ text: 'Hello Text' }, { text: 'Hello other Text' }]}
+          options={[
+            { text: 'This is the first possible answer' },
+            { text: 'This is the second possible answer' },
+            { text: 'This is the third possible answer' },
+            { text: 'This is the fourth possible answer' },
+          ]}
         />
       ),
       questionText:
