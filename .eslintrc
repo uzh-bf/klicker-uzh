@@ -46,7 +46,8 @@
       "when": "never",
       "children": true
     }],
-    "react/jsx-closing-tag-location": 0
+    "react/jsx-closing-tag-location": 0,
+    "import/extensions": 0
   },
   "env": {
     "browser": true,
