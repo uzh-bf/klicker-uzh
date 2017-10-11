@@ -12,7 +12,7 @@ import FeedbackChannel from '../../components/feedbacks/FeedbackChannel'
 import SessionTimeline from '../../components/sessions/SessionTimeline'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import { RunningSessionQuery } from '../../graphql/queries'
-import { EndSessionMutation, UpdateSettingsMutation } from '../../graphql/mutations'
+import { EndSessionMutation, UpdateSessionSettingsMutation } from '../../graphql/mutations'
 import { LoadingTeacherLayout } from '../../components/common/Loading'
 
 const propTypes = {
@@ -162,7 +162,7 @@ export default compose(
       }
     },
   }),
-  graphql(UpdateSettingsMutation),
+  graphql(UpdateSessionSettingsMutation),
   withHandlers({
     handleUpdateSettings: ({ data, mutate }) => ({ settings }) => async () => {
       try {
