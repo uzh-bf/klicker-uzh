@@ -69,7 +69,14 @@ const Graph = ({ intl, showSolution, visualization }) => (
           <CartesianGrid strokeDasharray="3 3" />
           <Tooltip />
           <Legend />
-          <Bar dataKey="numberOfVotes" fill="#8884d8" />
+          <Bar dataKey="numberOfVotes">
+            {data.map((entry, index) => (
+              <Cell
+                key={index}
+                fill={((entry.name === correctSolution) && showSolution) ? '#00FF00' : '#8884d8'}
+              />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     )}
