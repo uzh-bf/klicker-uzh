@@ -1,25 +1,27 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Checkbox } from 'semantic-ui-react'
-import { intlShape, FormattedMessage } from 'react-intl'
+import { FormattedMessage, intlShape } from 'react-intl'
 
 import Feedback from './Feedback'
 
 const propTypes = {
-  data: PropTypes.arrayOf(Feedback.propTypes),
+  feedbacks: PropTypes.arrayOf(Feedback.propTypes),
   handleActiveToggle: PropTypes.func.isRequired,
   handlePublicToggle: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  isActive: PropTypes.bool.isRequired,
-  isPublic: PropTypes.bool.isRequired,
+  isActive: PropTypes.bool,
+  isPublic: PropTypes.bool,
 }
 
 const defaultProps = {
-  data: [],
+  feedbacks: [],
+  isActive: false,
+  isPublic: false,
 }
 
 const FeedbackChannel = ({
-  data,
+  feedbacks,
   intl,
   isActive,
   isPublic,
@@ -62,9 +64,9 @@ const FeedbackChannel = ({
 
     {isActive && (
       <div className="feedbacks">
-        {data.map(({ content, id, votes }) => (
+        {feedbacks.map(({ content, key, votes }) => (
           <div className="feedback">
-            <Feedback key={id} content={content} votes={votes} />
+            <Feedback key={key} content={content} votes={votes} />
           </div>
         ))}
       </div>

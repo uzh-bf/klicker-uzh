@@ -1,96 +1,85 @@
 import React from 'react'
 import Router from 'next/router'
 import PropTypes from 'prop-types'
-import { intlShape, FormattedMessage } from 'react-intl'
+import { compose, withState, withHandlers } from 'recompose'
+import { FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import LoginForm from '../../components/forms/LoginForm'
-import { LoginMutation } from '../../queries/mutations'
-import { withData, pageWithIntl } from '../../lib'
+import { LoginMutation } from '../../graphql/mutations'
+import { pageWithIntl, withData } from '../../lib'
 
 const propTypes = {
+  error: PropTypes.oneOfType(PropTypes.string, null).isRequired,
+  handleSubmit: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  login: PropTypes.func.isRequired,
 }
 
-class Login extends React.Component {
-  state = {
-    error: null,
-  }
+const Login = ({ intl, error, handleSubmit }) => (
+  <StaticLayout
+    pageTitle={intl.formatMessage({
+      defaultMessage: 'Login',
+      id: 'user.login.pageTitle',
+    })}
+  >
+    <div className="login">
+      <h1>
+        <FormattedMessage id="user.login.title" defaultMessage="Login" />
+      </h1>
 
-  handleSubmit = (values) => {
-    this.props
-      .login(values.email, values.password)
-      .then(() => {
-        // redirect to question pool
-        Router.push('/questions')
-        // this.setState({ error: null, success: data.login.email })
-      })
-      .catch(({ message }) => {
-        this.setState({ error: message })
-      })
-  }
+      {/* TODO: improve message handling */}
+      {error && <div className="errorMessage message">Login failed: {error}</div>}
 
-  render() {
-    const { intl } = this.props
-    const { error } = this.state
+      <LoginForm intl={intl} onSubmit={handleSubmit} />
 
-    return (
-      <StaticLayout
-        pageTitle={intl.formatMessage({
-          defaultMessage: 'Login',
-          id: 'user.login.pageTitle',
-        })}
-      >
-        <div className="login">
-          <h1>
-            <FormattedMessage id="user.login.title" defaultMessage="Login" />
-          </h1>
+      <style jsx>{`
+        .login {
+          padding: 1rem;
+        }
+        h1 {
+          margin-top: 0;
+        }
 
-          {/* TODO: improve message handling */}
-          {error && <div className="errorMessage message">Login failed: {error}</div>}
+        .message {
+          font-weight: bold;
+        }
+        .errorMessage {
+          color: red;
+        }
+        .successMessage {
+          color: green;
+        }
 
-          <LoginForm intl={intl} onSubmit={this.handleSubmit} />
-
-          <style jsx>{`
-            .login {
-              padding: 1rem;
-            }
-            h1 {
-              margin-top: 0;
-            }
-
-            .message {
-              font-weight: bold;
-            }
-            .errorMessage {
-              color: red;
-            }
-            .successMessage {
-              color: green;
-            }
-
-            @media all and (min-width: 991px) {
-              .login {
-                margin: 0 15%;
-              }
-            }
-          `}</style>
-        </div>
-      </StaticLayout>
-    )
-  }
-}
+        @media all and (min-width: 991px) {
+          .login {
+            margin: 0 15%;
+          }
+        }
+      `}</style>
+    </div>
+  </StaticLayout>
+)
 
 Login.propTypes = propTypes
 
-export default withData(
-  pageWithIntl(
-    graphql(LoginMutation, {
-      props: ({ mutate }) => ({
-        login: (email, password) => mutate({ variables: { email, password } }),
-      }),
-    })(Login),
-  ),
-)
+export default compose(
+  withData,
+  pageWithIntl,
+  graphql(LoginMutation),
+  withState('error', 'setError', null),
+  withHandlers({
+    // handle form submission
+    handleSubmit: ({ mutate, setError }) => async ({ email, password }) => {
+      try {
+        await mutate({ variables: { email, password } })
+
+        // redirect to question pool
+        Router.push('/questions')
+      } catch ({ message }) {
+        console.error(message)
+        setError(message)
+      }
+    },
+  }),
+)(Login)

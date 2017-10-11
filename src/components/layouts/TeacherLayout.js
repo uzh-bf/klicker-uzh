@@ -1,8 +1,9 @@
-import React, { Component } from 'react'
+import React from 'react'
 import PropTypes from 'prop-types'
 import Router from 'next/router'
 import HTML5Backend from 'react-dnd-html5-backend'
-import { intlShape, FormattedMessage } from 'react-intl'
+import { compose } from 'recompose'
+import { FormattedMessage, intlShape } from 'react-intl'
 import { Helmet } from 'react-helmet'
 import { DragDropContext } from 'react-dnd'
 
@@ -25,7 +26,7 @@ const defaultProps = {
   pageTitle: 'TeacherLayout',
 }
 
-class TeacherLayout extends Component {
+class TeacherLayout extends React.Component {
   state = {
     sidebarVisible: false,
   }
@@ -156,6 +157,4 @@ class TeacherLayout extends Component {
 TeacherLayout.propTypes = propTypes
 TeacherLayout.defaultProps = defaultProps
 
-const withDnD = DragDropContext(HTML5Backend)
-
-export default withDnD(TeacherLayout)
+export default compose(DragDropContext(HTML5Backend))(TeacherLayout)

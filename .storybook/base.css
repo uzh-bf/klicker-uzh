@@ -5,3 +5,18 @@
 #root {
   height: 100%;
 }
+
+html,
+body {
+  font-size: 14px;
+}
+
+input,
+.noBorder {
+  border-radius: 0 !important;
+}
+
+.noBorder {
+  border: 0 !important;
+  box-shadow: none !important;
+}
