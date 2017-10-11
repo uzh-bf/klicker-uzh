@@ -5,6 +5,7 @@ const { ObjectId } = mongoose.Schema.Types
 const QuestionOption = require('./QuestionOption')
 
 const QuestionVersion = new mongoose.Schema({
+  key: { type: Number, min: 0, required: true },
   description: { type: String, required: true },
   options: [{ type: QuestionOption, required: true }],
   solution: { type: Object, required: true },

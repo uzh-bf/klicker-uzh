@@ -10,7 +10,7 @@ exports[`QuestionService createQuestion allows creating a valid question 1`] = `
     Versions: 
       Description: blabla
       Instances: []
-      Options: []
+      Options: [option1 false,option2 true]
     
   
 `;

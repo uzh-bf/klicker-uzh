@@ -9,9 +9,17 @@ const {
   questionInstancesByPV,
 } = require('./resolvers/questions')
 const {
-  allSessions, createSession, endSession, sessionsByPV, startSession,
+  addFeedback,
+  addConfusionTS,
+  allSessions,
+  createSession,
+  endSession,
+  sessionByPV,
+  sessionsByPV,
+  startSession,
+  updateSessionSettings,
 } = require('./resolvers/sessions')
-const { allTags, createTag, tags } = require('./resolvers/tags')
+const { allTags, tags } = require('./resolvers/tags')
 const {
   createUser, login, user, authUser,
 } = require('./resolvers/users')
@@ -35,16 +43,21 @@ const typeDefs = [
   }
 
   type Mutation {
+    createUser(user: UserInput): User
+    login(email: String, password: String): User
+
     createQuestion(question: QuestionInput): Question
 
     createSession(session: SessionInput): Session
     startSession(id: ID): Session
     endSession(id: ID): Session
+    addFeedback(sessionId: ID!, content: String!): Session
+    addConfusionTS(sessionId: ID!, difficulty: Int!, speed: Int!): Session
+    updateSessionSettings(sessionId: ID!, settings: SessionSettingsInput!): Session
+  }
 
-    createTag(tag: TagInput): Tag
-
-    createUser(user: UserInput): User
-    login(email: String, password: String): User
+  type Subscription {
+    getResults(id: ID): QuestionInstance
   }
 `,
   ...allTypes,
@@ -60,13 +73,15 @@ const resolvers = {
     user: requireAuth(authUser),
   },
   Mutation: {
+    addFeedback,
+    addConfusionTS,
     createQuestion: requireAuth(createQuestion),
     createSession: requireAuth(createSession),
-    createTag: requireAuth(createTag),
     createUser,
     endSession: requireAuth(endSession),
     login,
     startSession: requireAuth(startSession),
+    updateSessionSettings: requireAuth(updateSessionSettings),
   },
   Question: {
     tags,
@@ -87,6 +102,7 @@ const resolvers = {
   },
   User: {
     questions: questionsByPV,
+    runningSession: sessionByPV,
     sessions: sessionsByPV,
     tags,
   },

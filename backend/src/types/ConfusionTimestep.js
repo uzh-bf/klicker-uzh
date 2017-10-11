@@ -1,13 +1,12 @@
 /* eslint-disable no-use-before-define */
 
 // HACK: export before require such that circular dependencies can be handled
-module.exports = () => [Feedback]
+module.exports = () => [ConfusionTimestep]
 
-const Feedback = `
-  type Feedback {
-    key: Int
-    content: String!
-    votes: Int
+const ConfusionTimestep = `
+  type ConfusionTimestep {
+    difficulty: Int!
+    speed: Int!
 
     createdAt: String
   }

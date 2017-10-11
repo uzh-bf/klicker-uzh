@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 const { ObjectId } = mongoose.Schema.Types
 
 const QuestionBlock = new mongoose.Schema({
+  key: { type: Number, min: 0, required: true },
   // question block status (enum) => 0: PLANNED, 1: ACTIVE, 2: EXECUTED
   status: {
     type: Number,
