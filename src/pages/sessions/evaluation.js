@@ -21,8 +21,13 @@ class Evaluation extends Component {
     super(props)
 
     this.state = {
+      showSolution: false,
       visualization: 'pieChart', // initial visualization type
     }
+  }
+
+  onChangeShowSolution = () => {
+    this.setState({ ...this.state, showSolution: !this.state.showSolution })
   }
 
   onChangeVisualizationType = (newType) => {
@@ -37,7 +42,13 @@ class Evaluation extends Component {
     }
 
     const data = {
-      graph: <Graph intl={intl} visualization={this.state.visualization} />,
+      graph: (
+        <Graph
+          intl={intl}
+          showSolution={this.state.showSolution}
+          visualization={this.state.visualization}
+        />
+      ),
       possibilities: (
         <Possibilities
           intl={intl}
@@ -51,7 +62,7 @@ class Evaluation extends Component {
       ),
       questionText:
         'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
-      sampleSolution: <SampleSolution intl={intl} />,
+      sampleSolution: <SampleSolution intl={intl} onChange={this.onChangeShowSolution} />,
       title: <FormattedMessage id="teacher.evaluation.title" defaultMessage="Evaluation" />,
       visualization: (
         <Visualization
@@ -78,4 +89,4 @@ class Evaluation extends Component {
 
 Evaluation.propTypes = propTypes
 
-export default withData(pageWithIntl((Evaluation)))
+export default withData(pageWithIntl(Evaluation))

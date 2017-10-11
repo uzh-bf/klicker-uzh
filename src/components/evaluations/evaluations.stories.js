@@ -29,5 +29,9 @@ storiesOf('evaluations', module)
   ))
   .add('SampleSolution', () => <SampleSolution intl={intlMock} />)
   .add('Visualization', () => (
-    <Visualization intl={intlMock} onChangeType={console.log('State changed')} type={objectIGet.type} />
+    <Visualization
+      intl={intlMock}
+      onChangeType={console.log('State changed')}
+      type={objectIGet.type}
+    />
   ))

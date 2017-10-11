@@ -1,17 +1,18 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import { Checkbox } from 'semantic-ui-react'
 import { intlShape, FormattedMessage } from 'react-intl'
 
-// TODO default toggle as props
 const propTypes = {
   intl: intlShape.isRequired,
+  onChange: PropTypes.func.isRequired,
 }
 
 // TODO default toggle as props
 const defaultProps = {}
 
 // TODO default toggle as props
-const SampleSolution = ({ intl }) => (
+const SampleSolution = ({ intl, onChange }) => (
   <div className="solution">
     <div className="title">
       <FormattedMessage
@@ -25,6 +26,7 @@ const SampleSolution = ({ intl }) => (
         defaultMessage: 'Show',
         id: 'teacher.evaluation.sampleSolution.show',
       })}
+      onChange={(param, data) => onChange(data.value)}
     />
 
     <style jsx>{`
