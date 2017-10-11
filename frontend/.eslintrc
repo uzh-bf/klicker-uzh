@@ -43,10 +43,11 @@
     "jsx-a11y/anchor-is-valid": 0,
     "function-paren-newline": 0,
     "react/jsx-curly-spacing": [1, {
-    "when": "never",
-    "children": true
+      "when": "never",
+      "children": true
     }],
-    "react/jsx-closing-tag-location": 0
+    "react/jsx-closing-tag-location": 0,
+    "import/extensions": 0
   },
   "env": {
     "browser": true,

@@ -1,7 +1,9 @@
-import React, { Component } from 'react'
+import React from 'react'
 import PropTypes from 'prop-types'
+import { compose, withHandlers, branch, renderComponent, withProps } from 'recompose'
 import { graphql } from 'react-apollo'
 import { intlShape } from 'react-intl'
+import Router from 'next/router'
 
 import { pageWithIntl, withData } from '../../lib'
 
@@ -9,153 +11,177 @@ import ConfusionBarometer from '../../components/confusion/ConfusionBarometer'
 import FeedbackChannel from '../../components/feedbacks/FeedbackChannel'
 import SessionTimeline from '../../components/sessions/SessionTimeline'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
-import { RunningSessionQuery } from '../../queries/queries'
+import { RunningSessionQuery } from '../../graphql/queries'
+import { EndSessionMutation, UpdateSessionSettingsMutation } from '../../graphql/mutations'
+import { LoadingTeacherLayout } from '../../components/common/Loading'
 
 const propTypes = {
-  data: PropTypes.object.isRequired,
+  blocks: PropTypes.array.isRequired,
+  confusionTS: PropTypes.array.isRequired,
+  feedbacks: PropTypes.array.isRequired,
+  handleEndSession: PropTypes.func.isRequired,
+  handleUpdateSettings: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
+  isConfusionBarometerActive: PropTypes.bool.isRequired,
+  isFeedbackChannelActive: PropTypes.bool.isRequired,
+  isFeedbackChannelPublic: PropTypes.bool.isRequired,
 }
 
-class Running extends Component {
-  state = {
-    confusionActive: false,
-    feedbacksActive: false,
-    feedbacksPublic: false,
-  }
-
-  handleConfusionActiveToggle = () => {
-    // TODO: trigger mutation instead of updating state
-    // TODO: trigger refetch and update values
-    this.setState(prevState => ({ confusionActive: !prevState.confusionActive }))
-  }
-
-  handleFeedbacksActiveToggle = () => {
-    // TODO: trigger mutation instead of updating state
-    // TODO: trigger refetch and update values
-    this.setState(prevState => ({ feedbacksActive: !prevState.feedbacksActive }))
-  }
-
-  handleFeedbacksPublicToggle = () => {
-    // TODO: trigger mutation instead of updating state
-    // TODO: trigger refetch and update values
-    this.setState(prevState => ({ feedbacksPublic: !prevState.feedbacksPublic }))
-  }
-
-  render() {
-    const { data, intl } = this.props
-
-    const navbarConfig = {
-      accountShort: 'AW',
+const Running = ({
+  intl,
+  blocks,
+  confusionTS,
+  feedbacks,
+  isConfusionBarometerActive,
+  isFeedbackChannelActive,
+  isFeedbackChannelPublic,
+  handleEndSession,
+  handleUpdateSettings,
+}) => (
+  <TeacherLayout
+    intl={intl}
+    navbar={{
       title: intl.formatMessage({
         defaultMessage: 'Running Session',
         id: 'teacher.runningSession.title',
       }),
-    }
+    }}
+    pageTitle={intl.formatMessage({
+      defaultMessage: 'Running Session',
+      id: 'teacher.runningSession.pageTitle',
+    })}
+    sidebar={{ activeItem: 'runningSession' }}
+  >
+    <div className="runningSession">
+      <div className="sessionProgress">
+        <SessionTimeline intl={intl} blocks={blocks} handleRightActionClick={handleEndSession} />
+      </div>
 
-    if (data.loading) {
-      return (
-        <TeacherLayout
+      <div className="confusionBarometer">
+        <ConfusionBarometer
           intl={intl}
-          navbar={navbarConfig}
-          pageTitle={intl.formatMessage({
-            defaultMessage: 'Running Session',
-            id: 'teacher.runningSession.pageTitle',
+          confusionTS={confusionTS}
+          isActive={isConfusionBarometerActive}
+          handleActiveToggle={handleUpdateSettings({
+            settings: { isConfusionBarometerActive: !isConfusionBarometerActive },
           })}
-          sidebar={{ activeItem: 'runningSession' }}
-        >
-          Loading
-        </TeacherLayout>
-      )
-    }
+        />
+      </div>
 
-    // HACK: use the first of all users in the database
-    // TODO: replace this with the data of the currently logged in user
-    const activeUser = data.allUsers[0]
+      <div className="feedbackChannel">
+        <FeedbackChannel
+          intl={intl}
+          feedbacks={feedbacks}
+          isActive={isFeedbackChannelActive}
+          isPublic={isFeedbackChannelPublic}
+          handleActiveToggle={handleUpdateSettings({
+            settings: { isFeedbackChannelActive: !isFeedbackChannelActive },
+          })}
+          handlePublicToggle={handleUpdateSettings({
+            settings: { isFeedbackChannelPublic: !isFeedbackChannelPublic },
+          })}
+        />
+      </div>
+    </div>
 
-    return (
-      <TeacherLayout
-        intl={intl}
-        navbar={navbarConfig}
-        pageTitle={intl.formatMessage({
-          defaultMessage: 'Running Session',
-          id: 'teacher.runningSession.pageTitle',
-        })}
-        sidebar={{ activeItem: 'runningSession' }}
-      >
-        <div className="runningSession">
-          <div className="sessionProgress">
-            <SessionTimeline intl={intl} blocks={activeUser.activeSession.blocks} />
-          </div>
+    <style jsx>{`
+      .runningSession {
+        display: flex;
+        flex-direction: column;
 
-          <div className="confusionBarometer">
-            <ConfusionBarometer
-              intl={intl}
-              data={activeUser.activeSession.confusion}
-              isActive={this.state.confusionActive}
-              handleActiveToggle={this.handleConfusionActiveToggle}
-            />
-          </div>
+        padding: 1rem;
+      }
 
-          <div className="feedbackChannel">
-            <FeedbackChannel
-              intl={intl}
-              data={activeUser.activeSession.feedbacks}
-              isActive={this.state.feedbacksActive}
-              isPublic={this.state.feedbacksPublic}
-              handleActiveToggle={this.handleFeedbacksActiveToggle}
-              handlePublicToggle={this.handleFeedbacksPublicToggle}
-            />
-          </div>
-        </div>
+      .sessionProgress,
+      .confusionBarometer,
+      .feedbackChannel {
+        flex: 1;
 
-        <style jsx>{`
-          .runningSession {
-            display: flex;
-            flex-direction: column;
+        margin-bottom: 1rem;
+      }
 
-            padding: 1rem;
-          }
+      @media all and (min-width: 768px) {
+        .runningSession {
+          flex-flow: row wrap;
 
-          .sessionProgress,
-          .confusionBarometer,
-          .feedbackChannel {
-            flex: 1;
+          padding: 2rem;
+        }
 
-            margin-bottom: 1rem;
-          }
+        .sessionProgress,
+        .confusionBarometer,
+        .feedbackChannel {
+          padding: 0.5rem;
+        }
 
-          @media all and (min-width: 768px) {
-            .runningSession {
-              flex-flow: row wrap;
+        .sessionProgress {
+          flex: 0 0 100%;
+        }
+        .confusionBarometer {
+          flex: 0 0 30%;
+        }
+      }
 
-              padding: 2rem;
-            }
-
-            .sessionProgress,
-            .confusionBarometer,
-            .feedbackChannel {
-              padding: 0.5rem;
-            }
-
-            .sessionProgress {
-              flex: 0 0 100%;
-            }
-            .confusionBarometer {
-              flex: 0 0 30%;
-            }
-          }
-
-          @media all and (min-width: 991px) {
-            .runningSession {
-              padding: 2rem 10%;
-            }
-          }
-        `}</style>
-      </TeacherLayout>
-    )
-  }
-}
+      @media all and (min-width: 991px) {
+        .runningSession {
+          padding: 2rem 10%;
+        }
+      }
+    `}</style>
+  </TeacherLayout>
+)
 
 Running.propTypes = propTypes
 
-export default withData(pageWithIntl(graphql(RunningSessionQuery)(Running)))
+export default compose(
+  withData,
+  pageWithIntl,
+  graphql(RunningSessionQuery, {
+    // refetch the running session query every 10s
+    options: { pollInterval: 10000 },
+  }),
+  // TODO: get rid of this branch?
+  branch(
+    ({ data }) => data.loading || !data.user,
+    renderComponent(({ intl }) => (
+      <LoadingTeacherLayout intl={intl} pageId="runningSession" title="Running Session" />
+    )),
+  ),
+  graphql(EndSessionMutation),
+  withHandlers({
+    // handle ending the currently running session
+    handleEndSession: ({ data, mutate }) => async () => {
+      try {
+        // run the mutation
+        await mutate({
+          refetchQueries: [{ query: RunningSessionQuery }],
+          variables: { id: data.user.runningSession.id },
+        })
+
+        // redirect to the question pool
+        // TODO: redirect to a session summary or overview page
+        Router.push('/questions')
+      } catch ({ message }) {
+        console.error(message)
+      }
+    },
+  }),
+  graphql(UpdateSessionSettingsMutation),
+  withHandlers({
+    handleUpdateSettings: ({ data, mutate }) => ({ settings }) => async () => {
+      try {
+        await mutate({
+          variables: { sessionId: data.user.runningSession.id, settings },
+        })
+      } catch ({ message }) {
+        console.error(message)
+      }
+    },
+  }),
+  // flatten out the relevant data props
+  withProps(({ data }) => ({
+    blocks: data.user.runningSession.blocks,
+    confusionTS: data.user.runningSession.confusionTS,
+    feedbacks: data.user.runningSession.feedbacks,
+    ...data.user.runningSession.settings,
+  })),
+)(Running)

@@ -11,6 +11,8 @@ import QuestionBlock from './QuestionBlock'
 import QuestionDetails from './QuestionDetails'
 import QuestionSingle from './QuestionSingle'
 import QuestionTags from './QuestionTags'
+import { TagListPres } from './TagList'
+import { QuestionListPres } from './QuestionList'
 
 import TagInput from './creation/TagInput'
 import TitleInput from './creation/TitleInput'
@@ -27,6 +29,9 @@ storiesOf('questions', module)
   .add('QuestionDetails', () => (
     <QuestionDetails lastUsed={['20.12.2017', '19.12.2017', '10.10.2017']} />
   ))
+  .add('QuestionList', () => (
+    <QuestionListPres questions={fixtures.questions} onQuestionDropped={() => null} />
+  ))
   .add('QuestionBlock', () => (
     <QuestionBlock {...fixtures.questionBlock} showSolutions={false} timeLimit={60} />
   ))
@@ -40,6 +45,20 @@ storiesOf('questions', module)
   ))
   .add('QuestionSingle', () => <QuestionSingle {...fixtures.question} />)
   .add('QuestionTags', () => <QuestionTags tags={['tag1', 'tag2']} type="SC" />)
+  .add('TagList', () => (
+    <TagListPres
+      tags={[{ id: '1', isActive: false, name: 'CAPM' }, { id: '2', isActive: true, name: 'CF' }]}
+      handleTagClick={() => null}
+    />
+  ))
   // HACK: disable test for TagInput as autosuggest breaks...
-  .add('TagInput [NoTest]', () => <TagInput input={{ value: ['tag1', 'tag2'] }} />)
-  .add('TitleInput', () => <TitleInput input={{ value: 'my title' }} />)
+  .add('TagInput [NoTest]', () => (
+    <form className="ui form">
+      <TagInput input={{ value: ['tag1', 'tag2'] }} />
+    </form>
+  ))
+  .add('TitleInput', () => (
+    <form className="ui form">
+      <TitleInput input={{ value: 'my title' }} />
+    </form>
+  ))

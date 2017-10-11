@@ -1,98 +1,89 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { intlShape, FormattedMessage } from 'react-intl'
+import { compose, withState, withHandlers } from 'recompose'
+import { FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
 import RegistrationForm from '../../components/forms/RegistrationForm'
-import { RegistrationMutation } from '../../queries/mutations'
-import { withData, pageWithIntl } from '../../lib'
+import { RegistrationMutation } from '../../graphql/mutations'
+import { pageWithIntl, withData } from '../../lib'
 
 const propTypes = {
-  createUser: PropTypes.func.isRequired,
+  error: PropTypes.oneOfType(PropTypes.string, null).isRequired,
+  handleSubmit: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
+  success: PropTypes.oneOfType(PropTypes.string, null).isRequired,
 }
 
-class Registration extends React.Component {
-  state = {
-    error: null,
-    success: null,
-  }
+const Registration = ({
+  intl, error, success, handleSubmit,
+}) => (
+  <StaticLayout
+    pageTitle={intl.formatMessage({
+      defaultMessage: 'Registration',
+      id: 'user.registration.pageTitle',
+    })}
+  >
+    <div className="registration">
+      <h1>
+        <FormattedMessage id="user.registration.title" defaultMessage="Registration" />
+      </h1>
 
-  handleSubmit = (values) => {
-    this.props
-      .createUser(values.email, values.password, values.shortname)
-      .then(({ data }) => {
-        this.setState({ error: null, success: data.createUser.email })
-      })
-      .catch(({ message }) => {
-        this.setState({ error: message, success: null })
-      })
-  }
+      {/* TODO: improve message handling */}
+      {error && <div className="errorMessage message">Registration failed: {error}</div>}
+      {success && (
+        <div className="successMessage message">Successfully registered as {success}</div>
+      )}
 
-  render() {
-    const { intl } = this.props
-    const { error, success } = this.state
+      <RegistrationForm intl={intl} onSubmit={handleSubmit} />
 
-    return (
-      <StaticLayout
-        pageTitle={intl.formatMessage({
-          defaultMessage: 'Registration',
-          id: 'user.registration.pageTitle',
-        })}
-      >
-        <div className="registration">
-          <h1>
-            <FormattedMessage id="user.registration.title" defaultMessage="Registration" />
-          </h1>
+      <style jsx>{`
+        .registration {
+          padding: 1rem;
+        }
+        h1 {
+          margin-top: 0;
+        }
 
-          {/* TODO: improve message handling */}
-          {error && <div className="errorMessage message">Registration failed: {error}</div>}
-          {success && (
-            <div className="successMessage message">Successfully registered as {success}</div>
-          )}
+        .message {
+          font-weight: bold;
+        }
+        .errorMessage {
+          color: red;
+        }
+        .successMessage {
+          color: green;
+        }
 
-          <RegistrationForm intl={intl} onSubmit={this.handleSubmit} />
-
-          <style jsx>{`
-            .registration {
-              padding: 1rem;
-            }
-            h1 {
-              margin-top: 0;
-            }
-
-            .message {
-              font-weight: bold;
-            }
-            .errorMessage {
-              color: red;
-            }
-            .successMessage {
-              color: green;
-            }
-
-            @media all and (min-width: 991px) {
-              .registration {
-                margin: 0 15%;
-              }
-            }
-          `}</style>
-        </div>
-      </StaticLayout>
-    )
-  }
-}
+        @media all and (min-width: 991px) {
+          .registration {
+            margin: 0 15%;
+          }
+        }
+      `}</style>
+    </div>
+  </StaticLayout>
+)
 
 Registration.propTypes = propTypes
 
-export default withData(
-  pageWithIntl(
-    graphql(RegistrationMutation, {
-      props: ({ mutate }) => ({
-        createUser: (email, password, shortname) =>
-          mutate({ variables: { email, password, shortname } }),
-      }),
-    })(Registration),
-  ),
-)
+export default compose(
+  withData,
+  pageWithIntl,
+  graphql(RegistrationMutation),
+  withState('error', 'setError', null),
+  withState('success', 'setSuccess', null),
+  withHandlers({
+    // handle form submission
+    handleSubmit: ({ mutate, setError, setSuccess }) => async ({ email, password, shortname }) => {
+      try {
+        const result = await mutate({ variables: { email, password, shortname } })
+        setSuccess(result.data.createUser.email)
+      } catch ({ message }) {
+        console.error(message)
+        setError(message)
+      }
+    },
+  }),
+)(Registration)
