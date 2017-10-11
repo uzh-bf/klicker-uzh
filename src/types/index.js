@@ -1,3 +1,4 @@
+const ConfusionTimestep = require('./ConfusionTimestep')
 const Feedback = require('./Feedback')
 const Question = require('./Question')
 const QuestionInstance = require('./QuestionInstance')
@@ -8,7 +9,18 @@ const Tag = require('./Tag')
 const User = require('./User')
 
 module.exports = {
-  allTypes: [Feedback, Question, QuestionInstance, QuestionOption, QuestionVersion, Session, Tag, User],
+  allTypes: [
+    ConfusionTimestep,
+    Feedback,
+    Question,
+    QuestionInstance,
+    QuestionOption,
+    QuestionVersion,
+    Session,
+    Tag,
+    User,
+  ],
+  ConfusionTimestep,
   Feedback,
   Question,
   QuestionInstance,

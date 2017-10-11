@@ -5,8 +5,13 @@ const createQuestion = async ({
   title, type, description, options, tags, userId,
 }) => {
   // if no tags have been assigned, throw
-  if (tags.length === 0) {
+  if (!tags || tags.length === 0) {
     throw new Error('NO_TAGS_SPECIFIED')
+  }
+
+  // if no options have been assigned, throw
+  if (!options || options.length === 0) {
+    throw new Error('NO_OPTIONS_SPECIFIED')
   }
 
   // find the corresponding user
@@ -32,7 +37,14 @@ const createQuestion = async ({
     title,
     type,
     user: userId,
-    versions: [{ description, options, solution: {} }],
+    versions: [
+      {
+        key: 0,
+        description,
+        options: options.map((option, index) => ({ key: index, ...option })),
+        solution: {},
+      },
+    ],
   })
 
   const allTagsUpdate = allTags.map((tag) => {

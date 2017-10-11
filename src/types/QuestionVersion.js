@@ -8,6 +8,7 @@ const QuestionOption = require('./QuestionOption')
 
 const QuestionVersion = `
   type QuestionVersion {
+    key: Int
     description: String!
 
     instances: [QuestionInstance]

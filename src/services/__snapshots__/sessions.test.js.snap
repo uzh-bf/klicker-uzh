@@ -1,11 +1,121 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`SessionService addConfusionTS allows adding new timesteps 1`] = `
+
+    Name: testing session
+    Status: 1
+
+    Blocks: [
+      Show solutions: false
+      Status: 0
+      Time limit: -1
+      Number of instances: 1
+    ]
+
+    ConfusionTS: [
+      Difficulty: 20
+      Speed: 10
+    ]
+
+    Feedbacks: []
+
+    Settings:
+      ConfusionActive: true
+      FeedbacksActive: false
+      FeedbacksPublic: false
+    
+`;
+
+exports[`SessionService addConfusionTS allows adding new timesteps 2`] = `
+
+    Name: testing session
+    Status: 1
+
+    Blocks: [
+      Show solutions: false
+      Status: 0
+      Time limit: -1
+      Number of instances: 1
+    ]
+
+    ConfusionTS: [
+      Difficulty: 20
+      Speed: 10
+    ,
+      Difficulty: 40
+      Speed: -10
+    ]
+
+    Feedbacks: []
+
+    Settings:
+      ConfusionActive: true
+      FeedbacksActive: false
+      FeedbacksPublic: false
+    
+`;
+
+exports[`SessionService addFeedback allows adding new feedbacks to a running session 1`] = `
+
+    Name: testing session
+    Status: 1
+
+    Blocks: [
+      Show solutions: false
+      Status: 0
+      Time limit: -1
+      Number of instances: 1
+    ]
+
+    ConfusionTS: []
+
+    Feedbacks: [
+      Content: feedback1
+      Votes: 0
+    ]
+
+    Settings:
+      ConfusionActive: false
+      FeedbacksActive: true
+      FeedbacksPublic: false
+    
+`;
+
+exports[`SessionService addFeedback allows adding new feedbacks to a running session 2`] = `
+
+    Name: testing session
+    Status: 1
+
+    Blocks: [
+      Show solutions: false
+      Status: 0
+      Time limit: -1
+      Number of instances: 1
+    ]
+
+    ConfusionTS: []
+
+    Feedbacks: [
+      Content: feedback1
+      Votes: 0
+    ,
+      Content: feedback2
+      Votes: 0
+    ]
+
+    Settings:
+      ConfusionActive: false
+      FeedbacksActive: true
+      FeedbacksPublic: false
+    
+`;
+
 exports[`SessionService createSession allows creating a valid session 1`] = `
 
     Name: hello world
     Status: 0
 
-    Blocks: 
+    Blocks: [
       Show solutions: false
       Status: 0
       Time limit: -1
@@ -15,13 +125,17 @@ exports[`SessionService createSession allows creating a valid session 1`] = `
       Status: 0
       Time limit: -1
       Number of instances: 1
-    
+    ]
+
+    ConfusionTS: []
+
+    Feedbacks: []
 
     Settings:
-      { isConfusionBarometerActive: false,
-  isFeedbackChannelActive: false,
-  isFeedbackChannelPublic: false }
-  
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: false
+    
 `;
 
 exports[`SessionService createSession skips over question blocks without questions 1`] = `
@@ -29,7 +143,7 @@ exports[`SessionService createSession skips over question blocks without questio
     Name: session with an empty block
     Status: 0
 
-    Blocks: 
+    Blocks: [
       Show solutions: false
       Status: 0
       Time limit: -1
@@ -39,13 +153,17 @@ exports[`SessionService createSession skips over question blocks without questio
       Status: 0
       Time limit: -1
       Number of instances: 1
-    
+    ]
+
+    ConfusionTS: []
+
+    Feedbacks: []
 
     Settings:
-      { isConfusionBarometerActive: false,
-  isFeedbackChannelActive: false,
-  isFeedbackChannelPublic: false }
-  
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: false
+    
 `;
 
 exports[`SessionService endSession allows ending a running session 1`] = `
@@ -53,18 +171,22 @@ exports[`SessionService endSession allows ending a running session 1`] = `
     Name: testing session
     Status: 2
 
-    Blocks: 
+    Blocks: [
       Show solutions: false
       Status: 0
       Time limit: -1
       Number of instances: 1
-    
+    ]
+
+    ConfusionTS: []
+
+    Feedbacks: []
 
     Settings:
-      { isConfusionBarometerActive: false,
-  isFeedbackChannelActive: false,
-  isFeedbackChannelPublic: false }
-  
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: false
+    
 `;
 
 exports[`SessionService endSession returns on an already completed session 1`] = `
@@ -72,18 +194,22 @@ exports[`SessionService endSession returns on an already completed session 1`] =
     Name: testing session
     Status: 2
 
-    Blocks: 
+    Blocks: [
       Show solutions: false
       Status: 0
       Time limit: -1
       Number of instances: 1
-    
+    ]
+
+    ConfusionTS: []
+
+    Feedbacks: []
 
     Settings:
-      { isConfusionBarometerActive: false,
-  isFeedbackChannelActive: false,
-  isFeedbackChannelPublic: false }
-  
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: false
+    
 `;
 
 exports[`SessionService startSession allows starting a created session 1`] = `
@@ -91,16 +217,158 @@ exports[`SessionService startSession allows starting a created session 1`] = `
     Name: testing session
     Status: 1
 
-    Blocks: 
+    Blocks: [
       Show solutions: false
       Status: 0
       Time limit: -1
       Number of instances: 1
-    
+    ]
+
+    ConfusionTS: []
+
+    Feedbacks: []
 
     Settings:
-      { isConfusionBarometerActive: false,
-  isFeedbackChannelActive: false,
-  isFeedbackChannelPublic: false }
-  
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: false
+    
+`;
+
+exports[`SessionService updateSessionSettings allows changing all settings at once 1`] = `
+
+    Name: testing session
+    Status: 1
+
+    Blocks: [
+      Show solutions: false
+      Status: 0
+      Time limit: -1
+      Number of instances: 1
+    ]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Settings:
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: false
+    
+`;
+
+exports[`SessionService updateSessionSettings allows changing each setting seperately 1`] = `
+
+    Name: testing session
+    Status: 1
+
+    Blocks: [
+      Show solutions: false
+      Status: 0
+      Time limit: -1
+      Number of instances: 1
+    ]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Settings:
+      ConfusionActive: true
+      FeedbacksActive: false
+      FeedbacksPublic: false
+    
+`;
+
+exports[`SessionService updateSessionSettings allows changing each setting seperately 2`] = `
+
+    Name: testing session
+    Status: 1
+
+    Blocks: [
+      Show solutions: false
+      Status: 0
+      Time limit: -1
+      Number of instances: 1
+    ]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Settings:
+      ConfusionActive: true
+      FeedbacksActive: true
+      FeedbacksPublic: false
+    
+`;
+
+exports[`SessionService updateSessionSettings allows changing each setting seperately 3`] = `
+
+    Name: testing session
+    Status: 1
+
+    Blocks: [
+      Show solutions: false
+      Status: 0
+      Time limit: -1
+      Number of instances: 1
+    ]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Settings:
+      ConfusionActive: true
+      FeedbacksActive: true
+      FeedbacksPublic: true
+    
+`;
+
+exports[`SessionService updateSessionSettings allows changing each setting seperately 4`] = `
+
+    Name: testing session
+    Status: 1
+
+    Blocks: [
+      Show solutions: false
+      Status: 0
+      Time limit: -1
+      Number of instances: 1
+    ]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Settings:
+      ConfusionActive: false
+      FeedbacksActive: true
+      FeedbacksPublic: true
+    
+`;
+
+exports[`SessionService updateSessionSettings allows changing each setting seperately 5`] = `
+
+    Name: testing session
+    Status: 1
+
+    Blocks: [
+      Show solutions: false
+      Status: 0
+      Time limit: -1
+      Number of instances: 1
+    ]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Settings:
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: false
+    
 `;

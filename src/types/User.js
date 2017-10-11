@@ -28,6 +28,8 @@ const User = `
     sessions: [Session]
     tags: [Tag]
 
+    runningSession: Session
+
     createdAt: String
     updatedAt: String
   }

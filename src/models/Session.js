@@ -2,7 +2,7 @@ const mongoose = require('mongoose')
 
 const { ObjectId } = mongoose.Schema.Types
 
-const ConfusionTimeStep = require('./ConfusionTimeStep')
+const ConfusionTimestep = require('./ConfusionTimestep')
 const Feedback = require('./Feedback')
 const QuestionBlock = require('./QuestionBlock')
 
@@ -24,7 +24,7 @@ const Session = new mongoose.Schema({
   user: { type: ObjectId, ref: 'User', required: true },
 
   blocks: [QuestionBlock],
-  confusionTS: [ConfusionTimeStep],
+  confusionTS: [ConfusionTimestep],
   feedbacks: [Feedback],
 
   activeInstance: { type: ObjectId, ref: 'QuestionInstance' },

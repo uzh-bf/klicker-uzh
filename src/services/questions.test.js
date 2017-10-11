@@ -52,6 +52,7 @@ describe('QuestionService', () => {
     it('prevents creating a question without tags', () => {
       expect(QuestionService.createQuestion({
         description: 'blabla',
+        options: [{ correct: false, name: 'option1' }, { correct: true, name: 'option2' }],
         tags: [],
         title: 'question without tags',
         type: 'SC',
@@ -59,9 +60,21 @@ describe('QuestionService', () => {
       })).rejects.toEqual(new Error('NO_TAGS_SPECIFIED'))
     })
 
+    it('prevents creating a question without options', () => {
+      expect(QuestionService.createQuestion({
+        description: 'blabla',
+        options: [],
+        tags: ['ABCD', 'test'],
+        title: 'valid question',
+        type: 'SC',
+        userId: user.id,
+      })).rejects.toEqual(new Error('NO_OPTIONS_SPECIFIED'))
+    })
+
     it('allows creating a valid question', async () => {
       const newQuestion = await QuestionService.createQuestion({
         description: 'blabla',
+        options: [{ correct: false, name: 'option1' }, { correct: true, name: 'option2' }],
         tags: ['ABCD', 'test'],
         title: 'valid question',
         type: 'SC',
