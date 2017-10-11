@@ -74,7 +74,7 @@
     "react-dnd-test-backend": "2.5.3",
     "react-test-renderer": "15.6.1",
     "semantic-ui-css": "2.2.12",
-    "storybook-addon-intl": "2.1.1"
+    "storybook-addon-intl": "2.1.2"
   },
   "scripts": {
     "precommit": "lint-staged",
