@@ -54,6 +54,17 @@ class EvaluationLayout extends Component {
         <div className="box possibilities">{data.possibilities}</div>
 
         <style jsx>{`
+          :global(
+            html {
+              font-size: 25px;
+            }
+          )
+
+          :global(
+          body {
+            font-size: 1rem;
+          })
+
           .box {
             padding: 0.5rem;
           }
