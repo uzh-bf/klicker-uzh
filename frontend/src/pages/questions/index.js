@@ -28,7 +28,6 @@ class Index extends Component {
       title: null,
       type: null,
     },
-    sidebarVisible: false,
   }
 
   toggleCreationMode = () => {

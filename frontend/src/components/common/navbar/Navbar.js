@@ -24,7 +24,9 @@ const defaultProps = {
   sidebarVisible: false,
 }
 
-const Navbar = ({ accountShort, intl, search, sidebarVisible, title, handleSidebarToggle }) => (
+const Navbar = ({
+  accountShort, intl, search, sidebarVisible, title, handleSidebarToggle,
+}) => (
   <div className="navbar">
     <div className="sideArea">
       <Menu borderless className="noBorder">

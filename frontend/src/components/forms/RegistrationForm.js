@@ -10,7 +10,9 @@ import { Button } from 'semantic-ui-react'
 
 import { SemanticInput } from './components'
 
-const validate = ({ firstName, lastName, email, shortname, password, passwordRepeat, useCase }) => {
+const validate = ({
+  firstName, lastName, email, shortname, password, passwordRepeat, useCase,
+}) => {
   const errors = {}
 
   if (!firstName || !isAlpha(firstName) || isEmpty(firstName)) {

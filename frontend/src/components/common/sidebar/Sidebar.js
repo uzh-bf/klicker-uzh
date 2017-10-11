@@ -24,7 +24,9 @@ const defaultProps = {
   visible: false,
 }
 
-const Sidebar = ({ activeItem, children, items, visible, handleSidebarItemClick }) => (
+const Sidebar = ({
+  activeItem, children, items, visible, handleSidebarItemClick,
+}) => (
   <div className="sidebar">
     <SemanticSidebar.Pushable>
       <SemanticSidebar

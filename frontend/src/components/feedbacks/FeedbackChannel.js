@@ -16,8 +16,6 @@ const propTypes = {
 
 const defaultProps = {
   data: [],
-  isActive: false,
-  isPublic: false,
 }
 
 const FeedbackChannel = ({
