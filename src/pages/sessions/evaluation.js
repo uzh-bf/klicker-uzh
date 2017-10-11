@@ -10,7 +10,6 @@ import Graph from '../../components/evaluations/Graph'
 import SampleSolution from '../../components/evaluations/SampleSolution'
 import Visualization from '../../components/evaluations/Visualization'
 import Possibilities from '../../components/evaluations/Possibilities'
-import { RunningSessionQuery } from '../../queries/queries'
 
 const propTypes = {
   data: PropTypes.object.isRequired,
@@ -79,4 +78,4 @@ class Evaluation extends Component {
 
 Evaluation.propTypes = propTypes
 
-export default withData(pageWithIntl(graphql(RunningSessionQuery)(Evaluation)))
+export default withData(pageWithIntl((Evaluation)))
