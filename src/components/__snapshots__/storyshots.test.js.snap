@@ -208,12 +208,10 @@ exports[`Storyshots common/navbar AccountArea 1`] = `
 
 exports[`Storyshots common/navbar Navbar 1`] = `
 <div
-  className="navbar"
-  data-jsx={2070704589}
+  className="jsx-3363386375 navbar"
 >
   <div
-    className="sideArea"
-    data-jsx={2070704589}
+    className="jsx-3363386375 sideArea"
   >
     <div
       className="ui borderless noBorder menu"
@@ -228,15 +226,14 @@ exports[`Storyshots common/navbar Navbar 1`] = `
         />
       </div>
       <h1
-        data-jsx={2070704589}
+        className="jsx-3363386375"
       >
         Example page
       </h1>
     </div>
   </div>
   <div
-    className="searchArea"
-    data-jsx={2070704589}
+    className="jsx-3363386375 searchArea"
   >
     <div
       className="ui fluid icon input"
@@ -255,8 +252,7 @@ exports[`Storyshots common/navbar Navbar 1`] = `
     </div>
   </div>
   <div
-    className="accountArea"
-    data-jsx={2070704589}
+    className="jsx-3363386375 accountArea"
   >
     <div
       className="ui borderless noBorder menu"
@@ -380,8 +376,7 @@ exports[`Storyshots common/navbar SessionArea 1`] = `
 
 exports[`Storyshots common/sidebar Sidebar (invisible) 1`] = `
 <div
-  className="sidebar"
-  data-jsx={213114463}
+  className="jsx-3632125840 sidebar"
 >
   <div
     className="pushable"
@@ -413,8 +408,7 @@ exports[`Storyshots common/sidebar Sidebar (invisible) 1`] = `
 
 exports[`Storyshots common/sidebar Sidebar (visible) 1`] = `
 <div
-  className="sidebar"
-  data-jsx={213114463}
+  className="jsx-3632125840 sidebar"
 >
   <div
     className="pushable"
@@ -590,19 +584,17 @@ exports[`Storyshots feedbacks Feedback 1`] = `
 
 exports[`Storyshots feedbacks FeedbackChannel (isActive) 1`] = `
 <div
-  className="feedbackChannel"
-  data-jsx={3242351590}
+  className="jsx-980406985 feedbackChannel"
 >
   <h2
-    data-jsx={3242351590}
+    className="jsx-980406985"
   >
     <span>
       Feedback-Channel
     </span>
   </h2>
   <div
-    className="toggle"
-    data-jsx={3242351590}
+    className="jsx-980406985 toggle"
   >
     <div
       className="ui checked toggle checkbox"
@@ -625,8 +617,7 @@ exports[`Storyshots feedbacks FeedbackChannel (isActive) 1`] = `
     </div>
   </div>
   <div
-    className="toggle publicationToggle"
-    data-jsx={3242351590}
+    className="jsx-980406985 toggle publicationToggle"
   >
     <div
       className="ui toggle checkbox publishCheckbox"
@@ -641,7 +632,7 @@ exports[`Storyshots feedbacks FeedbackChannel (isActive) 1`] = `
         readOnly={true}
         tabIndex={0}
         type="checkbox"
-        value={false}
+        value={undefined}
       />
       <label>
         Publish questions
@@ -649,12 +640,10 @@ exports[`Storyshots feedbacks FeedbackChannel (isActive) 1`] = `
     </div>
   </div>
   <div
-    className="feedbacks"
-    data-jsx={3242351590}
+    className="jsx-980406985 feedbacks"
   >
     <div
-      className="feedback"
-      data-jsx={3242351590}
+      className="jsx-980406985 feedback"
     >
       <div
         className="feedback"
@@ -693,8 +682,7 @@ exports[`Storyshots feedbacks FeedbackChannel (isActive) 1`] = `
       </div>
     </div>
     <div
-      className="feedback"
-      data-jsx={3242351590}
+      className="jsx-980406985 feedback"
     >
       <div
         className="feedback"
@@ -738,19 +726,17 @@ exports[`Storyshots feedbacks FeedbackChannel (isActive) 1`] = `
 
 exports[`Storyshots feedbacks FeedbackChannel (isPublic) 1`] = `
 <div
-  className="feedbackChannel"
-  data-jsx={3242351590}
+  className="jsx-980406985 feedbackChannel"
 >
   <h2
-    data-jsx={3242351590}
+    className="jsx-980406985"
   >
     <span>
       Feedback-Channel
     </span>
   </h2>
   <div
-    className="toggle"
-    data-jsx={3242351590}
+    className="jsx-980406985 toggle"
   >
     <div
       className="ui checked toggle checkbox"
@@ -773,8 +759,7 @@ exports[`Storyshots feedbacks FeedbackChannel (isPublic) 1`] = `
     </div>
   </div>
   <div
-    className="toggle publicationToggle"
-    data-jsx={3242351590}
+    className="jsx-980406985 toggle publicationToggle"
   >
     <div
       className="ui checked toggle checkbox publishCheckbox"
@@ -797,12 +782,10 @@ exports[`Storyshots feedbacks FeedbackChannel (isPublic) 1`] = `
     </div>
   </div>
   <div
-    className="feedbacks"
-    data-jsx={3242351590}
+    className="jsx-980406985 feedbacks"
   >
     <div
-      className="feedback"
-      data-jsx={3242351590}
+      className="jsx-980406985 feedback"
     >
       <div
         className="feedback"
@@ -841,8 +824,7 @@ exports[`Storyshots feedbacks FeedbackChannel (isPublic) 1`] = `
       </div>
     </div>
     <div
-      className="feedback"
-      data-jsx={3242351590}
+      className="jsx-980406985 feedback"
     >
       <div
         className="feedback"
@@ -886,19 +868,17 @@ exports[`Storyshots feedbacks FeedbackChannel (isPublic) 1`] = `
 
 exports[`Storyshots feedbacks FeedbackChannel 1`] = `
 <div
-  className="feedbackChannel"
-  data-jsx={3242351590}
+  className="jsx-980406985 feedbackChannel"
 >
   <h2
-    data-jsx={3242351590}
+    className="jsx-980406985"
   >
     <span>
       Feedback-Channel
     </span>
   </h2>
   <div
-    className="toggle"
-    data-jsx={3242351590}
+    className="jsx-980406985 toggle"
   >
     <div
       className="ui toggle checkbox"
@@ -921,8 +901,7 @@ exports[`Storyshots feedbacks FeedbackChannel 1`] = `
     </div>
   </div>
   <div
-    className="toggle publicationToggle"
-    data-jsx={3242351590}
+    className="jsx-980406985 toggle publicationToggle"
   >
     <div
       className="ui disabled toggle checkbox publishCheckbox"
@@ -956,13 +935,13 @@ exports[`Storyshots forms/components LoginForm 1`] = `
     className="required field"
   >
     <label
-      data-jsx={1632341904}
+      className="jsx-1447640616"
       forHtml="email"
     >
       Email
     </label>
     <input
-      data-jsx={1632341904}
+      className="jsx-1447640616 "
       name="email"
       onBlur={[Function]}
       onChange={[Function]}
@@ -978,13 +957,13 @@ exports[`Storyshots forms/components LoginForm 1`] = `
     className="required field"
   >
     <label
-      data-jsx={1632341904}
+      className="jsx-1447640616"
       forHtml="password"
     >
       Password
     </label>
     <input
-      data-jsx={1632341904}
+      className="jsx-1447640616 "
       name="password"
       onBlur={[Function]}
       onChange={[Function]}
@@ -1061,13 +1040,13 @@ exports[`Storyshots forms/components PasswortResetForm 1`] = `
     className="required field"
   >
     <label
-      data-jsx={1632341904}
+      className="jsx-1447640616"
       forHtml="email"
     >
       Email
     </label>
     <input
-      data-jsx={1632341904}
+      className="jsx-1447640616 "
       name="email"
       onBlur={[Function]}
       onChange={[Function]}
@@ -1123,25 +1102,23 @@ exports[`Storyshots forms/components PasswortResetForm 1`] = `
 
 exports[`Storyshots forms/components RegistrationForm 1`] = `
 <form
-  className="ui form error"
-  data-jsx={1683376726}
+  className="jsx-4011255336 ui form error"
   onSubmit={[Function]}
 >
   <div
-    className="personal"
-    data-jsx={1683376726}
+    className="jsx-4011255336 personal"
   >
     <div
       className="field"
     >
       <label
-        data-jsx={1632341904}
+        className="jsx-1447640616"
         forHtml="firstName"
       >
         First name
       </label>
       <input
-        data-jsx={1632341904}
+        className="jsx-1447640616 "
         name="firstName"
         onBlur={[Function]}
         onChange={[Function]}
@@ -1157,13 +1134,13 @@ exports[`Storyshots forms/components RegistrationForm 1`] = `
       className="field"
     >
       <label
-        data-jsx={1632341904}
+        className="jsx-1447640616"
         forHtml="lastName"
       >
         Last name
       </label>
       <input
-        data-jsx={1632341904}
+        className="jsx-1447640616 "
         name="lastName"
         onBlur={[Function]}
         onChange={[Function]}
@@ -1179,13 +1156,13 @@ exports[`Storyshots forms/components RegistrationForm 1`] = `
       className="required field"
     >
       <label
-        data-jsx={1632341904}
+        className="jsx-1447640616"
         forHtml="email"
       >
         Email
       </label>
       <input
-        data-jsx={1632341904}
+        className="jsx-1447640616 "
         name="email"
         onBlur={[Function]}
         onChange={[Function]}
@@ -1199,20 +1176,19 @@ exports[`Storyshots forms/components RegistrationForm 1`] = `
     </div>
   </div>
   <div
-    className="account"
-    data-jsx={1683376726}
+    className="jsx-4011255336 account"
   >
     <div
       className="required field"
     >
       <label
-        data-jsx={1632341904}
+        className="jsx-1447640616"
         forHtml="shortname"
       >
         Shortname
       </label>
       <input
-        data-jsx={1632341904}
+        className="jsx-1447640616 "
         name="shortname"
         onBlur={[Function]}
         onChange={[Function]}
@@ -1228,13 +1204,13 @@ exports[`Storyshots forms/components RegistrationForm 1`] = `
       className="required field"
     >
       <label
-        data-jsx={1632341904}
+        className="jsx-1447640616"
         forHtml="password"
       >
         Password
       </label>
       <input
-        data-jsx={1632341904}
+        className="jsx-1447640616 "
         name="password"
         onBlur={[Function]}
         onChange={[Function]}
@@ -1250,13 +1226,13 @@ exports[`Storyshots forms/components RegistrationForm 1`] = `
       className="required field"
     >
       <label
-        data-jsx={1632341904}
+        className="jsx-1447640616"
         forHtml="passwordRepeat"
       >
         Repeat password
       </label>
       <input
-        data-jsx={1632341904}
+        className="jsx-1447640616 "
         name="passwordRepeat"
         onBlur={[Function]}
         onChange={[Function]}
@@ -1269,11 +1245,10 @@ exports[`Storyshots forms/components RegistrationForm 1`] = `
       />
     </div>
     <div
-      className="field"
-      data-jsx={1683376726}
+      className="jsx-4011255336 field"
     >
       <label
-        data-jsx={1683376726}
+        className="jsx-4011255336"
         htmlFor="useCase"
       >
         <span>
@@ -1309,25 +1284,23 @@ exports[`Storyshots forms/components RegistrationForm 1`] = `
 
 exports[`Storyshots forms/components SessionCreationForm 1`] = `
 <form
-  className="ui form sessionCreation"
-  data-jsx={3156297394}
+  className="jsx-833882662 ui form sessionCreation"
   onSubmit={null}
 >
   <div
-    className="sessionName"
-    data-jsx={3156297394}
+    className="jsx-833882662 sessionName"
   >
     <div
       className="field"
     >
       <label
-        data-jsx={1632341904}
+        className="jsx-1447640616"
         forHtml="sessionName"
       >
         Name
       </label>
       <input
-        data-jsx={1632341904}
+        className="jsx-1447640616 "
         name="sessionName"
         onBlur={[Function]}
         onChange={[Function]}
@@ -1340,8 +1313,7 @@ exports[`Storyshots forms/components SessionCreationForm 1`] = `
     </div>
   </div>
   <div
-    className="sessionTimeline"
-    data-jsx={3156297394}
+    className="jsx-833882662 sessionTimeline"
   >
     <div
       className="sessionTimeline"
@@ -1379,12 +1351,10 @@ exports[`Storyshots forms/components SessionCreationForm 1`] = `
     </div>
   </div>
   <div
-    className="actionArea"
-    data-jsx={3156297394}
+    className="jsx-833882662 actionArea"
   >
     <button
-      className="ui fluid button"
-      data-jsx={3156297394}
+      className="jsx-833882662 ui fluid button"
       onClick={null}
       type="button"
     >
@@ -1412,8 +1382,7 @@ exports[`Storyshots forms/components SessionCreationForm 1`] = `
       </span>
     </button>
     <button
-      className="ui fluid button"
-      data-jsx={3156297394}
+      className="jsx-833882662 ui fluid button"
       disabled={true}
       type="submit"
     >
@@ -1441,8 +1410,7 @@ exports[`Storyshots forms/components SessionCreationForm 1`] = `
       </span>
     </button>
     <button
-      className="ui fluid primary button"
-      data-jsx={3156297394}
+      className="jsx-833882662 ui fluid primary button"
       disabled={true}
       onClick={null}
       type="button"
@@ -1591,18 +1559,17 @@ exports[`Storyshots forms/helpers SemanticInput (with error) 1`] = `
   className="error field"
 >
   <label
-    data-jsx={1632341904}
+    className="jsx-1447640616"
     forHtml={undefined}
   >
     label
   </label>
   <input
-    data-jsx={1632341904}
+    className="jsx-1447640616 "
     placeholder="label"
   />
   <div
-    className="errorMessage"
-    data-jsx={1632341904}
+    className="jsx-1447640616 errorMessage"
   >
     <i
       aria-hidden="true"
@@ -1620,13 +1587,13 @@ exports[`Storyshots forms/helpers SemanticInput 1`] = `
   className="field"
 >
   <label
-    data-jsx={1632341904}
+    className="jsx-1447640616"
     forHtml={undefined}
   >
     label
   </label>
   <input
-    data-jsx={1632341904}
+    className="jsx-1447640616 "
     placeholder="label"
   />
 </div>
@@ -1746,12 +1713,10 @@ exports[`Storyshots layouts StaticLayout 1`] = `
 
 exports[`Storyshots layouts StudentLayout 1`] = `
 <div
-  className="studentLayout"
-  data-jsx={3095557183}
+  className="jsx-1608068761 studentLayout"
 >
   <div
-    className="header"
-    data-jsx={3095557183}
+    className="jsx-1608068761 header"
   >
     <button
       className="ui basic icon button"
@@ -1766,18 +1731,16 @@ exports[`Storyshots layouts StudentLayout 1`] = `
       />
     </button>
     <h1
-      data-jsx={3095557183}
+      className="jsx-1608068761"
     >
       title
     </h1>
   </div>
   <div
-    className="content"
-    data-jsx={3095557183}
+    className="jsx-1608068761 content"
   >
     <div
-      className="sidebar"
-      data-jsx={213114463}
+      className="jsx-3632125840 sidebar"
     >
       <div
         className="pushable"
@@ -1815,16 +1778,13 @@ exports[`Storyshots layouts StudentLayout 1`] = `
 
 exports[`Storyshots layouts TeacherLayout 1`] = `
 <div
-  className="teacherLayout"
-  data-jsx={416738783}
+  className="jsx-2581836202 teacherLayout"
 >
   <div
-    className="content"
-    data-jsx={416738783}
+    className="jsx-2581836202 content"
   >
     <div
-      className="sidebar"
-      data-jsx={213114463}
+      className="jsx-3632125840 sidebar"
     >
       <div
         className="pushable"
@@ -1942,12 +1902,10 @@ exports[`Storyshots questionTypes/SC SC Creation Content 1`] = `
 
 exports[`Storyshots questionTypes/SC SC Creation Option (correct) 1`] = `
 <div
-  className="option correct"
-  data-jsx-ext="2247491703"
+  className="jsx-2247491703 option correct"
 >
   <button
-    className="leftAction"
-    data-jsx-ext="2247491703"
+    className="jsx-2247491703 leftAction"
     onClick={undefined}
   >
     <svg
@@ -1971,15 +1929,13 @@ exports[`Storyshots questionTypes/SC SC Creation Option (correct) 1`] = `
     </svg>
   </button>
   <button
-    className="toggle correct"
-    data-jsx-ext="2247491703"
+    className="jsx-2247491703 toggle correct"
     onClick={undefined}
   >
     TRUE
   </button>
   <div
-    className="name"
-    data-jsx-ext="2247491703"
+    className="jsx-2247491703 name"
   >
     That's true!
   </div>
@@ -1988,12 +1944,10 @@ exports[`Storyshots questionTypes/SC SC Creation Option (correct) 1`] = `
 
 exports[`Storyshots questionTypes/SC SC Creation Option (incorrect) 1`] = `
 <div
-  className="option"
-  data-jsx-ext="2247491703"
+  className="jsx-2247491703 option"
 >
   <button
-    className="leftAction"
-    data-jsx-ext="2247491703"
+    className="jsx-2247491703 leftAction"
     onClick={undefined}
   >
     <svg
@@ -2017,15 +1971,13 @@ exports[`Storyshots questionTypes/SC SC Creation Option (incorrect) 1`] = `
     </svg>
   </button>
   <button
-    className="toggle"
-    data-jsx-ext="2247491703"
+    className="jsx-2247491703 toggle"
     onClick={undefined}
   >
     FALSE
   </button>
   <div
-    className="name"
-    data-jsx-ext="2247491703"
+    className="jsx-2247491703 name"
   >
     So wrong!
   </div>
@@ -2825,20 +2777,17 @@ exports[`Storyshots questions TitleInput 1`] = `
 
 exports[`Storyshots sessions Session 1`] = `
 <div
-  className="session"
-  data-jsx={563880998}
+  className="jsx-4286346365 session"
 >
   <h2
-    className="title"
-    data-jsx={563880998}
+    className="jsx-4286346365 title"
   >
     4c821db
      - 
     Long session
   </h2>
   <div
-    className="date"
-    data-jsx={563880998}
+    className="jsx-4286346365 date"
   >
     <span>
       Created on
@@ -2847,12 +2796,10 @@ exports[`Storyshots sessions Session 1`] = `
     08.02.2015 14:02:00
   </div>
   <div
-    className="details"
-    data-jsx={563880998}
+    className="jsx-4286346365 details"
   >
     <div
-      className="block"
-      data-jsx={563880998}
+      className="jsx-4286346365 block"
     >
       <div
         className="questionBlock"
@@ -2970,8 +2917,7 @@ exports[`Storyshots sessions Session 1`] = `
       </div>
     </div>
     <div
-      className="actionArea"
-      data-jsx={563880998}
+      className="jsx-4286346365 actionArea"
     >
       <button
         className="ui icon left labeled button"
