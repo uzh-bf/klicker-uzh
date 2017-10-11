@@ -16,7 +16,9 @@ import {
 } from '../../components/questionTypes/SC'
 
 // form validation
-const validate = ({ content, options, tags, title }) => {
+const validate = ({
+  content, options, tags, title,
+}) => {
   const errors = {}
 
   if (!title || isEmpty(title)) {
@@ -54,10 +56,8 @@ const propTypes = {
 }
 
 const defaultProps = {
-  content: '',
   options: [],
   tags: [],
-  title: '',
 }
 
 const QuestionCreationForm = ({

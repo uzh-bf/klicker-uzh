@@ -24,7 +24,9 @@ const defaultProps = {
   dropped: [],
 }
 
-const QuestionList = ({ data, filters, dropped, onQuestionDropped, creationMode }) => {
+const QuestionList = ({
+  data, filters, dropped, onQuestionDropped, creationMode,
+}) => {
   if (data.loading) {
     return <div>Loading</div>
   }

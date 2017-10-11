@@ -44,7 +44,9 @@ class TeacherLayout extends Component {
   }
 
   render() {
-    const { actionArea, children, intl, navbar, pageTitle, sidebar } = this.props
+    const {
+      actionArea, children, intl, navbar, pageTitle, sidebar,
+    } = this.props
 
     const sidebarItems = [
       {
