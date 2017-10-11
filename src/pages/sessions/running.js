@@ -12,13 +12,14 @@ import FeedbackChannel from '../../components/feedbacks/FeedbackChannel'
 import SessionTimeline from '../../components/sessions/SessionTimeline'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import { RunningSessionQuery } from '../../graphql/queries'
-import { EndSessionMutation } from '../../graphql/mutations'
+import { EndSessionMutation, UpdateSettingsMutation } from '../../graphql/mutations'
 import { LoadingTeacherLayout } from '../../components/common/Loading'
 
 const propTypes = {
   blocks: PropTypes.array.isRequired,
   feedbacks: PropTypes.array.isRequired,
   handleEndSession: PropTypes.func.isRequired,
+  handleUpdateSettings: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   isConfusionBarometerActive: PropTypes.bool.isRequired,
   isFeedbackChannelActive: PropTypes.bool.isRequired,
@@ -33,6 +34,7 @@ const Running = ({
   isFeedbackChannelActive,
   isFeedbackChannelPublic,
   handleEndSession,
+  handleUpdateSettings,
 }) => (
   <TeacherLayout
     intl={intl}
@@ -57,7 +59,9 @@ const Running = ({
         <ConfusionBarometer
           intl={intl}
           isActive={isConfusionBarometerActive}
-          handleActiveToggle={() => null}
+          handleActiveToggle={handleUpdateSettings({
+            settings: { isConfusionBarometerActive: !isConfusionBarometerActive },
+          })}
         />
       </div>
 
@@ -67,8 +71,12 @@ const Running = ({
           feedbacks={feedbacks}
           isActive={isFeedbackChannelActive}
           isPublic={isFeedbackChannelPublic}
-          handleActiveToggle={() => null}
-          handlePublicToggle={() => null}
+          handleActiveToggle={handleUpdateSettings({
+            settings: { isFeedbackChannelActive: !isFeedbackChannelActive },
+          })}
+          handlePublicToggle={handleUpdateSettings({
+            settings: { isFeedbackChannelPublic: !isFeedbackChannelPublic },
+          })}
         />
       </div>
     </div>
@@ -128,7 +136,6 @@ export default compose(
     // refetch the running session query every 10s
     options: { pollInterval: 10000 },
   }),
-  graphql(EndSessionMutation),
   // TODO: get rid of this branch?
   branch(
     ({ data }) => data.loading || !data.user,
@@ -136,6 +143,7 @@ export default compose(
       <LoadingTeacherLayout intl={intl} pageId="runningSession" title="Running Session" />
     )),
   ),
+  graphql(EndSessionMutation),
   withHandlers({
     // handle ending the currently running session
     handleEndSession: ({ data, mutate }) => async () => {
@@ -149,6 +157,18 @@ export default compose(
         // redirect to the question pool
         // TODO: redirect to a session summary or overview page
         Router.push('/questions')
+      } catch ({ message }) {
+        console.error(message)
+      }
+    },
+  }),
+  graphql(UpdateSettingsMutation),
+  withHandlers({
+    handleUpdateSettings: ({ data, mutate }) => ({ settings }) => async () => {
+      try {
+        await mutate({
+          variables: { sessionId: data.user.runningSession.id, settings },
+        })
       } catch ({ message }) {
         console.error(message)
       }
