@@ -1862,11 +1862,11 @@ exports[`Storyshots questionTypes/SC SC Creation Content 1`] = `
 exports[`Storyshots questionTypes/SC SC Creation Option (correct) 1`] = `
 <div
   className="option correct"
-  data-jsx-ext="23361152147"
+  data-jsx-ext="2247491703"
 >
   <button
     className="leftAction"
-    data-jsx-ext="23361152147"
+    data-jsx-ext="2247491703"
     onClick={undefined}
   >
     <svg
@@ -1891,14 +1891,14 @@ exports[`Storyshots questionTypes/SC SC Creation Option (correct) 1`] = `
   </button>
   <button
     className="toggle correct"
-    data-jsx-ext="23361152147"
+    data-jsx-ext="2247491703"
     onClick={undefined}
   >
     TRUE
   </button>
   <div
     className="name"
-    data-jsx-ext="23361152147"
+    data-jsx-ext="2247491703"
   >
     That's true!
   </div>
@@ -1908,11 +1908,11 @@ exports[`Storyshots questionTypes/SC SC Creation Option (correct) 1`] = `
 exports[`Storyshots questionTypes/SC SC Creation Option (incorrect) 1`] = `
 <div
   className="option"
-  data-jsx-ext="23361152147"
+  data-jsx-ext="2247491703"
 >
   <button
     className="leftAction"
-    data-jsx-ext="23361152147"
+    data-jsx-ext="2247491703"
     onClick={undefined}
   >
     <svg
@@ -1937,14 +1937,14 @@ exports[`Storyshots questionTypes/SC SC Creation Option (incorrect) 1`] = `
   </button>
   <button
     className="toggle"
-    data-jsx-ext="23361152147"
+    data-jsx-ext="2247491703"
     onClick={undefined}
   >
     FALSE
   </button>
   <div
     className="name"
-    data-jsx-ext="23361152147"
+    data-jsx-ext="2247491703"
   >
     So wrong!
   </div>
@@ -1955,12 +1955,12 @@ exports[`Storyshots questionTypes/SC SC Creation Placeholder 1`] = `
 <div
   className="option"
   data-jsx={1434219740}
-  data-jsx-ext="23361152147"
+  data-jsx-ext="2247491703"
 >
   <button
     className="leftAction"
     data-jsx={1434219740}
-    data-jsx-ext="23361152147"
+    data-jsx-ext="2247491703"
     onClick={[Function]}
     type="button"
   >
@@ -1987,7 +1987,7 @@ exports[`Storyshots questionTypes/SC SC Creation Placeholder 1`] = `
   <button
     className="toggle"
     data-jsx={1434219740}
-    data-jsx-ext="23361152147"
+    data-jsx-ext="2247491703"
     onClick={[Function]}
     type="button"
   >
@@ -1995,7 +1995,7 @@ exports[`Storyshots questionTypes/SC SC Creation Placeholder 1`] = `
   </button>
   <input
     data-jsx={1434219740}
-    data-jsx-ext="23361152147"
+    data-jsx-ext="2247491703"
     onChange={[Function]}
     type="text"
     value=""
@@ -2003,7 +2003,7 @@ exports[`Storyshots questionTypes/SC SC Creation Placeholder 1`] = `
   <button
     className="rightAction"
     data-jsx={1434219740}
-    data-jsx-ext="23361152147"
+    data-jsx-ext="2247491703"
     onClick={[Function]}
     type="button"
   >
@@ -2180,30 +2180,25 @@ exports[`Storyshots questions Question (MC, >1 versions) 1`] = `
       data-jsx={2749202759}
     >
       <div
-        className="container"
-        data-jsx={2119890886}
+        className="jsx-267673385 container"
       >
         <div
-          className="column"
-          data-jsx={2119890886}
+          className="jsx-267673385 column"
         >
           Test1
         </div>
         <div
-          className="column"
-          data-jsx={2119890886}
+          className="jsx-267673385 column"
         >
           Test2
         </div>
         <div
-          className="column"
-          data-jsx={2119890886}
+          className="jsx-267673385 column"
         >
           Test3
         </div>
         <div
-          className="column"
-          data-jsx={2119890886}
+          className="jsx-267673385 column"
         >
           <div
             data-jsx={3358450463}
@@ -2281,30 +2276,25 @@ exports[`Storyshots questions Question (MC, no tags) 1`] = `
       data-jsx={2749202759}
     >
       <div
-        className="container"
-        data-jsx={2119890886}
+        className="jsx-267673385 container"
       >
         <div
-          className="column"
-          data-jsx={2119890886}
+          className="jsx-267673385 column"
         >
           Test1
         </div>
         <div
-          className="column"
-          data-jsx={2119890886}
+          className="jsx-267673385 column"
         >
           Test2
         </div>
         <div
-          className="column"
-          data-jsx={2119890886}
+          className="jsx-267673385 column"
         >
           Test3
         </div>
         <div
-          className="column"
-          data-jsx={2119890886}
+          className="jsx-267673385 column"
         >
           <div
             data-jsx={3358450463}
@@ -2394,30 +2384,25 @@ exports[`Storyshots questions Question (SC, 1 version) 1`] = `
       data-jsx={2749202759}
     >
       <div
-        className="container"
-        data-jsx={2119890886}
+        className="jsx-267673385 container"
       >
         <div
-          className="column"
-          data-jsx={2119890886}
+          className="jsx-267673385 column"
         >
           Test1
         </div>
         <div
-          className="column"
-          data-jsx={2119890886}
+          className="jsx-267673385 column"
         >
           Test2
         </div>
         <div
-          className="column"
-          data-jsx={2119890886}
+          className="jsx-267673385 column"
         >
           Test3
         </div>
         <div
-          className="column"
-          data-jsx={2119890886}
+          className="jsx-267673385 column"
         >
           <div
             data-jsx={3358450463}
@@ -2606,30 +2591,25 @@ exports[`Storyshots questions QuestionBlock 1`] = `
 
 exports[`Storyshots questions QuestionDetails 1`] = `
 <div
-  className="container"
-  data-jsx={2119890886}
+  className="jsx-267673385 container"
 >
   <div
-    className="column"
-    data-jsx={2119890886}
+    className="jsx-267673385 column"
   >
     Test1
   </div>
   <div
-    className="column"
-    data-jsx={2119890886}
+    className="jsx-267673385 column"
   >
     Test2
   </div>
   <div
-    className="column"
-    data-jsx={2119890886}
+    className="jsx-267673385 column"
   >
     Test3
   </div>
   <div
-    className="column"
-    data-jsx={2119890886}
+    className="jsx-267673385 column"
   >
     <div
       data-jsx={3358450463}
@@ -2729,30 +2709,25 @@ exports[`Storyshots questions QuestionList 1`] = `
           data-jsx={2749202759}
         >
           <div
-            className="container"
-            data-jsx={2119890886}
+            className="jsx-267673385 container"
           >
             <div
-              className="column"
-              data-jsx={2119890886}
+              className="jsx-267673385 column"
             >
               Test1
             </div>
             <div
-              className="column"
-              data-jsx={2119890886}
+              className="jsx-267673385 column"
             >
               Test2
             </div>
             <div
-              className="column"
-              data-jsx={2119890886}
+              className="jsx-267673385 column"
             >
               Test3
             </div>
             <div
-              className="column"
-              data-jsx={2119890886}
+              className="jsx-267673385 column"
             >
               <div
                 data-jsx={3358450463}
@@ -2839,30 +2814,25 @@ exports[`Storyshots questions QuestionList 1`] = `
           data-jsx={2749202759}
         >
           <div
-            className="container"
-            data-jsx={2119890886}
+            className="jsx-267673385 container"
           >
             <div
-              className="column"
-              data-jsx={2119890886}
+              className="jsx-267673385 column"
             >
               Test1
             </div>
             <div
-              className="column"
-              data-jsx={2119890886}
+              className="jsx-267673385 column"
             >
               Test2
             </div>
             <div
-              className="column"
-              data-jsx={2119890886}
+              className="jsx-267673385 column"
             >
               Test3
             </div>
             <div
-              className="column"
-              data-jsx={2119890886}
+              className="jsx-267673385 column"
             >
               <div
                 data-jsx={3358450463}
@@ -3205,6 +3175,176 @@ exports[`Storyshots sessions SessionList 1`] = `
     data-jsx={1174626681}
   >
     No session is currently running.
+  </div>
+  <div
+    className="session"
+    data-jsx={1174626681}
+  >
+    <div
+      className="session"
+      data-jsx={725225254}
+    >
+      <h2
+        className="title"
+        data-jsx={725225254}
+      >
+        4c821db
+         - 
+        Long session
+      </h2>
+      <div
+        className="date"
+        data-jsx={725225254}
+      >
+        <span>
+          Created on
+        </span>
+         
+        08.02.2015 14:02:00
+      </div>
+      <div
+        className="details"
+        data-jsx={725225254}
+      >
+        <div
+          className="block"
+          data-jsx={725225254}
+        >
+          <div
+            className="questionBlock"
+            data-jsx={1012223770}
+          >
+            <div
+              className="timeLimit"
+              data-jsx={1012223770}
+            >
+              <i
+                aria-hidden="true"
+                className="clock icon"
+              />
+              60
+              s
+            </div>
+            <div
+              className="showSolution"
+              data-jsx={1012223770}
+            >
+              <i
+                aria-hidden="true"
+                className="hide icon"
+              />
+            </div>
+            <div
+              className="questions"
+              data-jsx={1012223770}
+            >
+              <div
+                className="question"
+                data-jsx={1012223770}
+              >
+                <div
+                  className="questionSingle"
+                  data-jsx={1928862230}
+                >
+                  <div
+                    className="id"
+                    data-jsx={1928862230}
+                  >
+                    #4c821db
+                  </div>
+                  <div
+                    className="type"
+                    data-jsx={1928862230}
+                  >
+                    SC
+                  </div>
+                  <div
+                    className="content"
+                    data-jsx={1928862230}
+                  >
+                    This is a long question
+                  </div>
+                </div>
+              </div>
+              <div
+                className="question"
+                data-jsx={1012223770}
+              >
+                <div
+                  className="questionSingle"
+                  data-jsx={1928862230}
+                >
+                  <div
+                    className="id"
+                    data-jsx={1928862230}
+                  >
+                    #4c821db
+                  </div>
+                  <div
+                    className="type"
+                    data-jsx={1928862230}
+                  >
+                    SC
+                  </div>
+                  <div
+                    className="content"
+                    data-jsx={1928862230}
+                  >
+                    This is a long question
+                  </div>
+                </div>
+              </div>
+              <div
+                className="question"
+                data-jsx={1012223770}
+              >
+                <div
+                  className="questionSingle"
+                  data-jsx={1928862230}
+                >
+                  <div
+                    className="id"
+                    data-jsx={1928862230}
+                  >
+                    #4c821db
+                  </div>
+                  <div
+                    className="type"
+                    data-jsx={1928862230}
+                  >
+                    SC
+                  </div>
+                  <div
+                    className="content"
+                    data-jsx={1928862230}
+                  >
+                    This is a long question
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          className="actionArea"
+          data-jsx={725225254}
+        >
+          <button
+            className="ui icon left labeled button"
+            disabled={undefined}
+            onClick={[Function]}
+            role="button"
+            tabIndex={undefined}
+          >
+            <i
+              aria-hidden="true"
+              className="play icon"
+            />
+            Start
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
   <div
     className="session"

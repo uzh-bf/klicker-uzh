@@ -111,8 +111,8 @@ export const EndSessionMutation = gql`
 `
 
 export const AddFeedbackMutation = gql`
-  mutation AddFeedback() {
-    addFeedback() {
+  mutation AddFeedback($sessionId: ID!, $content: String!) {
+    addFeedback(sessionId: $sessionId, content: $content) {
       id
       feedbacks {
         key
@@ -124,8 +124,8 @@ export const AddFeedbackMutation = gql`
 `
 
 export const UpdateSessionSettingsMutation = gql`
-  mutation UpdateSessionSettings() {
-    updateSessionSettings() {
+  mutation UpdateSessionSettings($sessionId: ID!, $settings: SessionSettingsInput!) {
+    updateSessionSettings(sessionId: $sessionId, settings: $settings) {
       id
       settings {
         isConfusionBarometerActive

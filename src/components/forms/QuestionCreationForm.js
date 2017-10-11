@@ -41,7 +41,7 @@ const validate = ({
 }
 
 const propTypes = {
-  content: PropTypes.string,
+  content: PropTypes.string.isRequired,
   handleSubmit: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   invalid: PropTypes.bool.isRequired,
@@ -52,14 +52,12 @@ const propTypes = {
       name: PropTypes.string.isRequired,
     }),
   ),
-  title: PropTypes.string,
+  title: PropTypes.string.isRequired,
 }
 
 const defaultProps = {
-  content: '',
   options: [],
   tags: [],
-  title: '',
 }
 
 const QuestionCreationForm = ({
