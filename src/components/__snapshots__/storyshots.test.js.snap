@@ -1943,11 +1943,11 @@ exports[`Storyshots questionTypes/SC SC Creation Content 1`] = `
 exports[`Storyshots questionTypes/SC SC Creation Option (correct) 1`] = `
 <div
   className="option correct"
-  data-jsx-ext="23361152147"
+  data-jsx-ext="2247491703"
 >
   <button
     className="leftAction"
-    data-jsx-ext="23361152147"
+    data-jsx-ext="2247491703"
     onClick={undefined}
   >
     <svg
@@ -1972,14 +1972,14 @@ exports[`Storyshots questionTypes/SC SC Creation Option (correct) 1`] = `
   </button>
   <button
     className="toggle correct"
-    data-jsx-ext="23361152147"
+    data-jsx-ext="2247491703"
     onClick={undefined}
   >
     TRUE
   </button>
   <div
     className="name"
-    data-jsx-ext="23361152147"
+    data-jsx-ext="2247491703"
   >
     That's true!
   </div>
@@ -1989,11 +1989,11 @@ exports[`Storyshots questionTypes/SC SC Creation Option (correct) 1`] = `
 exports[`Storyshots questionTypes/SC SC Creation Option (incorrect) 1`] = `
 <div
   className="option"
-  data-jsx-ext="23361152147"
+  data-jsx-ext="2247491703"
 >
   <button
     className="leftAction"
-    data-jsx-ext="23361152147"
+    data-jsx-ext="2247491703"
     onClick={undefined}
   >
     <svg
@@ -2018,14 +2018,14 @@ exports[`Storyshots questionTypes/SC SC Creation Option (incorrect) 1`] = `
   </button>
   <button
     className="toggle"
-    data-jsx-ext="23361152147"
+    data-jsx-ext="2247491703"
     onClick={undefined}
   >
     FALSE
   </button>
   <div
     className="name"
-    data-jsx-ext="23361152147"
+    data-jsx-ext="2247491703"
   >
     So wrong!
   </div>
@@ -2036,12 +2036,12 @@ exports[`Storyshots questionTypes/SC SC Creation Placeholder 1`] = `
 <div
   className="option"
   data-jsx={3520221148}
-  data-jsx-ext="23361152147"
+  data-jsx-ext="2247491703"
 >
   <button
     className="leftAction"
     data-jsx={3520221148}
-    data-jsx-ext="23361152147"
+    data-jsx-ext="2247491703"
     onClick={[Function]}
     type="button"
   >
@@ -2068,7 +2068,7 @@ exports[`Storyshots questionTypes/SC SC Creation Placeholder 1`] = `
   <button
     className="toggle"
     data-jsx={3520221148}
-    data-jsx-ext="23361152147"
+    data-jsx-ext="2247491703"
     onClick={[Function]}
     type="button"
   >
@@ -2076,7 +2076,7 @@ exports[`Storyshots questionTypes/SC SC Creation Placeholder 1`] = `
   </button>
   <input
     data-jsx={3520221148}
-    data-jsx-ext="23361152147"
+    data-jsx-ext="2247491703"
     onChange={[Function]}
     type="text"
     value=""
@@ -2084,7 +2084,7 @@ exports[`Storyshots questionTypes/SC SC Creation Placeholder 1`] = `
   <button
     className="rightAction"
     data-jsx={3520221148}
-    data-jsx-ext="23361152147"
+    data-jsx-ext="2247491703"
     onClick={[Function]}
     type="button"
   >
