@@ -91,6 +91,7 @@ class EvaluationLayout extends Component {
 
               .sampleSolution {
                 grid-area: solution;
+                margin-top: auto;
               }
 
               .visualization {
