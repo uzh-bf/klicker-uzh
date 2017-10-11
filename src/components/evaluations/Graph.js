@@ -7,6 +7,7 @@ import {
   Legend,
   Pie,
   PieChart,
+  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -32,37 +33,44 @@ const data = [
 
 // TODO default value
 const Graph = ({ intl, visualization }) => (
-  <div className="visualization">
+  <div className="graph">
     {visualization === 'pieChart' && (
-      <PieChart className="chart" width={500} height={450}>
-        <Pie
-          label
-          data={data}
-          cx="50%"
-          cy="50%"
-          innerRadius={60}
-          outerRadius={150}
-          fill="#8884d8"
-        />
-      </PieChart>
+      <ResponsiveContainer>
+        <PieChart>
+          <Pie
+            label
+            data={data}
+            innerRadius={60}
+            outerRadius={150}
+            fill="#8884d8"
+          />
+        </PieChart>
+      </ResponsiveContainer>
     )}
     {visualization === 'barChart' && (
-      <BarChart width={500} height={450} data={data}>
-        <XAxis dataKey="name" />
-        <YAxis />
-        <CartesianGrid strokeDasharray="3 3" />
-        <Tooltip />
-        <Legend />
-        <Bar dataKey="value" fill="#8884d8" />
-      </BarChart>
+      <ResponsiveContainer>
+        <BarChart data={data}>
+          <XAxis dataKey="name" />
+          <YAxis />
+          <CartesianGrid strokeDasharray="3 3" />
+          <Tooltip />
+          <Legend />
+          <Bar dataKey="value" fill="#8884d8" />
+        </BarChart>
+      </ResponsiveContainer>
     )}
     {visualization !== 'barChart' &&
-      visualization !== 'pieChart' && <div>This type of graph is not implemented yet!</div>}
+    visualization !== 'pieChart' && <div>This type of graph is not implemented yet!</div>}
 
     <style jsx>{`
       .title {
         font-weight: bold;
         margin-bottom: 0.5rem;
+      }
+
+      .graph {
+        height: 30rem;
+        width: 50rem;
       }
     `}</style>
   </div>
