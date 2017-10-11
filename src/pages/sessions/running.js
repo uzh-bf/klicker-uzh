@@ -17,6 +17,7 @@ import { LoadingTeacherLayout } from '../../components/common/Loading'
 
 const propTypes = {
   blocks: PropTypes.array.isRequired,
+  confusionTS: PropTypes.array.isRequired,
   feedbacks: PropTypes.array.isRequired,
   handleEndSession: PropTypes.func.isRequired,
   handleUpdateSettings: PropTypes.func.isRequired,
@@ -29,6 +30,7 @@ const propTypes = {
 const Running = ({
   intl,
   blocks,
+  confusionTS,
   feedbacks,
   isConfusionBarometerActive,
   isFeedbackChannelActive,
@@ -58,6 +60,7 @@ const Running = ({
       <div className="confusionBarometer">
         <ConfusionBarometer
           intl={intl}
+          confusionTS={confusionTS}
           isActive={isConfusionBarometerActive}
           handleActiveToggle={handleUpdateSettings({
             settings: { isConfusionBarometerActive: !isConfusionBarometerActive },
@@ -177,6 +180,7 @@ export default compose(
   // flatten out the relevant data props
   withProps(({ data }) => ({
     blocks: data.user.runningSession.blocks,
+    confusionTS: data.user.runningSession.confusionTS,
     feedbacks: data.user.runningSession.feedbacks,
     ...data.user.runningSession.settings,
   })),
