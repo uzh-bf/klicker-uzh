@@ -620,6 +620,80 @@ exports[`Storyshots feedbacks FeedbackChannel (isActive) 1`] = `
       </label>
     </div>
   </div>
+  <div
+    className="jsx-980406985 feedbacks"
+  >
+    <div
+      className="jsx-980406985 feedback"
+    >
+      <div
+        className="jsx-908384001 feedback"
+      >
+        <div
+          className="jsx-908384001 content"
+        >
+          hello alex!
+        </div>
+        <div
+          className="jsx-908384001 delete"
+        >
+          <button
+            className="ui basic fluid icon button"
+            disabled={undefined}
+            onClick={[Function]}
+            role="button"
+            tabIndex={undefined}
+          >
+            <i
+              aria-hidden="true"
+              className="trash outline icon"
+            />
+          </button>
+        </div>
+        <div
+          className="jsx-908384001 votes"
+        >
+          +
+          100
+        </div>
+      </div>
+    </div>
+    <div
+      className="jsx-980406985 feedback"
+    >
+      <div
+        className="jsx-908384001 feedback"
+      >
+        <div
+          className="jsx-908384001 content"
+        >
+          bla bleh
+        </div>
+        <div
+          className="jsx-908384001 delete"
+        >
+          <button
+            className="ui basic fluid icon button"
+            disabled={undefined}
+            onClick={[Function]}
+            role="button"
+            tabIndex={undefined}
+          >
+            <i
+              aria-hidden="true"
+              className="trash outline icon"
+            />
+          </button>
+        </div>
+        <div
+          className="jsx-908384001 votes"
+        >
+          +
+          40
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 `;
 
@@ -674,66 +748,6 @@ exports[`Storyshots feedbacks FeedbackChannel (isPublic) 1`] = `
         tabIndex={0}
         type="checkbox"
         value={true}
-      />
-      <label>
-        Publish questions
-      </label>
-    </div>
-  </div>
-</div>
-`;
-
-exports[`Storyshots feedbacks FeedbackChannel 1`] = `
-<div
-  className="jsx-980406985 feedbackChannel"
->
-  <h2
-    className="jsx-980406985"
-  >
-    <span>
-      Feedback-Channel
-    </span>
-  </h2>
-  <div
-    className="jsx-980406985 toggle"
-  >
-    <div
-      className="ui toggle checkbox"
-      onChange={[Function]}
-      onClick={[Function]}
-      onMouseDown={[Function]}
-    >
-      <input
-        checked={false}
-        className="hidden"
-        name={undefined}
-        readOnly={true}
-        tabIndex={0}
-        type="checkbox"
-        value={false}
-      />
-      <label>
-        Activated
-      </label>
-    </div>
-  </div>
-  <div
-    className="jsx-980406985 toggle publicationToggle"
-  >
-    <div
-      className="ui disabled toggle checkbox publishCheckbox"
-      onChange={[Function]}
-      onClick={[Function]}
-      onMouseDown={[Function]}
-    >
-      <input
-        checked={false}
-        className="hidden"
-        name={undefined}
-        readOnly={true}
-        tabIndex={-1}
-        type="checkbox"
-        value={false}
       />
       <label>
         Publish questions
@@ -812,6 +826,66 @@ exports[`Storyshots feedbacks FeedbackChannel 1`] = `
           40
         </div>
       </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots feedbacks FeedbackChannel 1`] = `
+<div
+  className="jsx-980406985 feedbackChannel"
+>
+  <h2
+    className="jsx-980406985"
+  >
+    <span>
+      Feedback-Channel
+    </span>
+  </h2>
+  <div
+    className="jsx-980406985 toggle"
+  >
+    <div
+      className="ui toggle checkbox"
+      onChange={[Function]}
+      onClick={[Function]}
+      onMouseDown={[Function]}
+    >
+      <input
+        checked={false}
+        className="hidden"
+        name={undefined}
+        readOnly={true}
+        tabIndex={0}
+        type="checkbox"
+        value={false}
+      />
+      <label>
+        Activated
+      </label>
+    </div>
+  </div>
+  <div
+    className="jsx-980406985 toggle publicationToggle"
+  >
+    <div
+      className="ui disabled toggle checkbox publishCheckbox"
+      onChange={[Function]}
+      onClick={[Function]}
+      onMouseDown={[Function]}
+    >
+      <input
+        checked={false}
+        className="hidden"
+        name={undefined}
+        readOnly={true}
+        tabIndex={-1}
+        type="checkbox"
+        value={false}
+      />
+      <label>
+        Publish questions
+      </label>
     </div>
   </div>
 </div>
