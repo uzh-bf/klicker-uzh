@@ -1648,9 +1648,9 @@ graceful-fs@^4.1.11, graceful-fs@^4.1.2:
   version "4.1.11"
   resolved "https://registry.yarnpkg.com/graceful-fs/-/graceful-fs-4.1.11.tgz#0e8bdfe4d1ddb8854d64e04ea7c00e2a026e5658"
 
-graphql-tools@2.2.0:
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/graphql-tools/-/graphql-tools-2.2.0.tgz#5dba21ff8da01015035bc5c6a5bd9f8dc419c998"
+graphql-tools@2.2.1:
+  version "2.2.1"
+  resolved "https://registry.yarnpkg.com/graphql-tools/-/graphql-tools-2.2.1.tgz#ff4d73d3e52e09b38b3f2f4ed53c29d4baa122b1"
   dependencies:
     apollo-link "^0.7.0"
     deprecated-decorator "^0.1.6"
