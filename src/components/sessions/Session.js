@@ -17,7 +17,9 @@ const defaultProps = {
   blocks: [],
 }
 
-const Session = ({ createdAt, name, blocks, id }) => {
+const Session = ({
+  createdAt, name, blocks, id,
+}) => {
   const statusCases = {
     COMPLETED: {
       disabled: false,

@@ -23,7 +23,9 @@ class CreateQuestion extends Component {
     Router.push('/questions')
   }
 
-  handleSave = ({ content, options, tags, title, type }) => {
+  handleSave = ({
+    content, options, tags, title, type,
+  }) => {
     this.props
       .createQuestion({
         description: content,
@@ -73,10 +75,18 @@ const withTags = graphql(TagListQuery)
 
 const withCreateQuestionMutation = graphql(CreateQuestionMutation, {
   props: ({ mutate }) => ({
-    createQuestion: ({ description, options, tags, title, type }) =>
+    createQuestion: ({
+      description, options, tags, title, type,
+    }) =>
       mutate({
         refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
-        variables: { description, options, tags, title, type },
+        variables: {
+          description,
+          options,
+          tags,
+          title,
+          type,
+        },
       }),
   }),
 })

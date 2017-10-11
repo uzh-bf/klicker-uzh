@@ -30,7 +30,9 @@ const propTypes = {
   onStart: PropTypes.func.isRequired,
 }
 
-const SessionCreationForm = ({ invalid, handleSubmit, onSave, onDiscard, onStart }) => (
+const SessionCreationForm = ({
+  invalid, handleSubmit, onSave, onDiscard, onStart,
+}) => (
   <form className="ui form sessionCreation" onSubmit={handleSubmit(onSave)}>
     <div className="sessionName">
       <Field name="sessionName" label="Name" component={SemanticInput} />
