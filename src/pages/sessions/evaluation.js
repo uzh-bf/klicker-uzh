@@ -34,7 +34,7 @@ class Evaluation extends Component {
     const { intl } = this.props
 
     const objectIGet = {
-      type: 'SC', // SC, FREE ... // TODO where do I get this data from?
+      type: 'SC', // SC, FREE ...
     }
 
     const data = {
