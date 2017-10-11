@@ -1,26 +1,28 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import { Dropdown } from 'semantic-ui-react'
 import { FormattedMessage, intlShape } from 'react-intl'
 
 // TODO
 const propTypes = {
   intl: intlShape.isRequired,
+  onChangeType: PropTypes.func.isRequired,
+  type: PropTypes.string,
 }
 
 // TODO
 const defaultProps = {}
 
 const dropDownOptions = [
-  { text: 'Pie Chart', value: 'pieChart' },
-  { text: 'Bar Chart', value: 'barChart' },
-  { text: 'Word cloud', value: 'cloud' },
-  { text: 'Table', value: 'table' },
-  { text: 'Historgamm', value: 'histogramm' },
-  { text: 'Ranking', value: 'ranking' },
+  { text: 'Pie Chart', value: 'pieChart', withinType: ['SC'] },
+  { text: 'Bar Chart', value: 'barChart', withinType: ['SC'] },
+  { text: 'Word cloud', value: 'cloud', withinType: ['FREE'] },
+  { text: 'Table', value: 'table', withinType: ['FREE'] },
+  { text: 'Historgamm', value: 'histogramm', withinType: ['NUMBER_RANGE'] },
+  { text: 'Ranking', value: 'ranking', withinType: ['NUMBER_RANGE'] },
 ]
 
-// TODO default value
-const Visualization = ({ intl, onChangeType }) => (
+const Visualization = ({ intl, onChangeType, type }) => (
   <div className="visualization">
     <div className="title">
       <FormattedMessage
@@ -31,7 +33,7 @@ const Visualization = ({ intl, onChangeType }) => (
     <Dropdown
       search
       selection
-      options={dropDownOptions}
+      options={dropDownOptions.filter(o => o.withinType.indexOf(type) > -1)}
       onChange={(param, data) => onChangeType(data.value)}
       placeholder={intl.formatMessage({
         defaultMessage: 'Visualization',

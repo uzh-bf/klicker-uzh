@@ -49,9 +49,9 @@ class EvaluationLayout extends Component {
         <div className="box questionText">{data.questionText}</div>
         <hr />
         <div className="box graph">{data.graph}</div>
-        <div className="box possibilities">{data.possibilities}</div>
         <div className="box sampleSolution">{data.sampleSolution}</div>
         <div className="box visualization">{data.visualization}</div>
+        <div className="box possibilities">{data.possibilities}</div>
 
         <style jsx>{`
           .box {

@@ -22,16 +22,20 @@ class Evaluation extends Component {
     super(props)
 
     this.state = {
-      visualization: 'pieChart',
+      visualization: 'pieChart', // initial visualization type
     }
   }
 
   onChangeVisualizationType = (newType) => {
-    this.setState({ visualization: newType })
+    this.setState({ ...this.state, visualization: newType })
   }
 
   render() {
     const { intl } = this.props
+
+    const objectIGet = {
+      type: 'SC', // SC, FREE ... // TODO where do I get this data from?
+    }
 
     const data = {
       graph: <Graph intl={intl} visualization={this.state.visualization} />,
@@ -54,6 +58,7 @@ class Evaluation extends Component {
         <Visualization
           intl={intl}
           onChangeType={this.onChangeVisualizationType}
+          type={objectIGet.type}
           visualization={this.state.visualization}
         />
       ),
