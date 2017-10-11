@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import { intlShape, FormattedMessage } from 'react-intl'
+import { FormattedMessage, intlShape } from 'react-intl'
 
 const propTypes = {
   input: PropTypes.shape({

@@ -1,5 +1,6 @@
-import React, { Component } from 'react'
+import React from 'react'
 import PropTypes from 'prop-types'
+import { compose, withState, withHandlers } from 'recompose'
 import { intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
@@ -7,155 +8,63 @@ import classNames from 'classnames'
 import { FaPlus } from 'react-icons/lib/fa'
 
 import { pageWithIntl, withData } from '../../lib'
-import { SessionListQuery } from '../../queries/queries'
-import { CreateSessionMutation } from '../../queries/mutations'
+import { SessionListQuery, RunningSessionQuery } from '../../graphql/queries'
+import { CreateSessionMutation, StartSessionMutation } from '../../graphql/mutations'
 import SessionCreationForm from '../../components/forms/SessionCreationForm'
 import QuestionList from '../../components/questions/QuestionList'
 import TagList from '../../components/questions/TagList'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 
 const propTypes = {
-  createSession: PropTypes.func.isRequired,
+  creationMode: PropTypes.bool.isRequired,
+  droppedQuestions: PropTypes.arrayOf(PropTypes.string).isRequired,
+  filters: PropTypes.object.isRequired,
+  handleCreateSession: PropTypes.func.isRequired,
+  handleCreationModeToggle: PropTypes.func.isRequired,
+  handleQuestionDropped: PropTypes.func.isRequired,
+  handleSearch: PropTypes.func.isRequired,
+  handleSort: PropTypes.func.isRequired,
+  handleTagClick: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
 }
 
-class Index extends Component {
-  state = {
-    creationMode: false,
-    dropped: [],
-    filters: {
-      tags: [],
-      title: null,
-      type: null,
-    },
-    sidebarVisible: false,
-  }
+const Index = ({
+  creationMode,
+  droppedQuestions,
+  intl,
+  filters,
+  handleCreateSession,
+  handleSearch,
+  handleSort,
+  handleTagClick,
+  handleQuestionDropped,
+  handleCreationModeToggle,
+}) => {
+  // TODO: replace with the action button component
+  const actionButton = (
+    <div className="actionButton">
+      <button
+        className={classNames('ui huge circular primary icon button', {
+          active: creationMode,
+        })}
+        onClick={handleCreationModeToggle}
+      >
+        <FaPlus />
+      </button>
+    </div>
+  )
 
-  toggleCreationMode = () => {
-    // : void => {
-    this.setState((prevState) => {
-      // toggle creation mode
-      const creationMode = !prevState.creationMode
+  // TODO: create a component for this?
+  const actionArea = (
+    <div className="creationForm">
+      <SessionCreationForm
+        onSave={handleCreateSession('save')}
+        onStart={handleCreateSession('start')}
+        onDiscard={handleCreationModeToggle}
+      />
 
-      // if the creation mode was activated before, reset dropped questions on discard
-      if (!creationMode) {
-        return { creationMode, dropped: [] }
-      }
-
-      return { creationMode }
-    })
-  }
-
-  handleDropped = id => () => {
-    // (id: string) => () => {
-    this.setState(prevState => ({ dropped: [...prevState.dropped, id] }))
-  }
-
-  // handle searching in the navbar search area
-  handleSearch = (title) => {
-    // (title: string): void => {
-    this.setState(prevState => ({
-      filters: { ...prevState.filters, title },
-    }))
-  }
-
-  // handle sorting via navbar search area
-  handleSort = (by, order) => {
-    // (by: string, order: string): void => {
-    console.log(`sorted by ${by} in ${order} order`)
-  }
-
-  // handle clicking on a tag in the tag list
-  handleTagClick = (tagName) => {
-    // (tagName: string): void => {
-    this.setState((prevState) => {
-      // remove the tag from active tags
-      if (prevState.filters.tags.includes(tagName)) {
-        return {
-          filters: {
-            ...prevState.filters,
-            tags: prevState.filters.tags.filter(tag => tag !== tagName),
-          },
-        }
-      }
-
-      // add the tag to active tags
-      return {
-        filters: {
-          ...prevState.filters,
-          tags: [...prevState.filters.tags, tagName],
-        },
-      }
-    })
-  }
-
-  handleNewSession = type => ({ sessionName, questions }) => {
-    console.log(type)
-
-    // HACK: map each question into a separate question block
-    const blocks = questions.map(question => ({ questions: [{ id: question.id }] }))
-
-    // create a new session
-    this.props
-      .createSession({ blocks, name: sessionName })
-      .then(() => {
-        // return to normal mode
-        this.toggleCreationMode()
-      })
-      .catch((e) => {
-        // TODO: show an error in the session creation form
-        console.log(e)
-      })
-
-    /* if (type === 'save') {
-      this.props.createSession({ blocks, name: sessionName })
-    }
-
-    if (type === 'start') {
-      this.props.createSession({ blocks, name: sessionName })
-    } */
-  }
-
-  render() {
-    const { intl } = this.props
-
-    const navbarConfig = {
-      accountShort: 'AW',
-      search: {
-        handleSearch: _debounce(this.handleSearch, 200),
-        handleSort: this.handleSort,
-        query: '',
-        sortBy: '',
-        sortOrder: '',
-      },
-      title: intl.formatMessage({
-        defaultMessage: 'Question Pool',
-        id: 'teacher.questionPool.title',
-      }),
-    }
-
-    const actionButton = ( // : any = (
-      <div className="actionButton">
-        <button
-          className={classNames('ui huge circular primary icon button', {
-            active: this.state.creationMode,
-          })}
-          onClick={this.toggleCreationMode}
-        >
-          <FaPlus />
-        </button>
-      </div>
-    )
-
-    const actionArea = ( // : any = (
-      <div className="creationForm">
-        <SessionCreationForm
-          onSave={this.handleNewSession('save')}
-          onStart={this.handleNewSession('start')}
-          onDiscard={this.toggleCreationMode}
-        />
-
-        <style jsx>{`
+      <style jsx>
+        {`
           .creationForm {
             animation-name: slide-in;
             animation-duration: 0.5s;
@@ -169,95 +78,188 @@ class Index extends Component {
               transform: translateY(0);
             }
           }
-        `}</style>
-      </div>
-    )
+        `}
+      </style>
+    </div>
+  )
 
-    return (
-      <TeacherLayout
-        actionArea={this.state.creationMode ? actionArea : actionButton}
-        intl={intl}
-        navbar={navbarConfig}
-        pageTitle={intl.formatMessage({
+  return (
+    <TeacherLayout
+      actionArea={creationMode ? actionArea : actionButton}
+      intl={intl}
+      navbar={{
+        search: {
+          handleSearch: _debounce(handleSearch, 200),
+          handleSort,
+          sortBy: '',
+          sortOrder: '',
+        },
+        title: intl.formatMessage({
           defaultMessage: 'Question Pool',
-          id: 'teacher.questionPool.pageTitle',
-        })}
-        sidebar={{ activeItem: 'questionPool' }}
-      >
-        <div className="questionPool">
-          <div className="tagList">
-            <TagList activeTags={this.state.filters.tags} handleTagClick={this.handleTagClick} />
-          </div>
-          <div className="questionList">
-            <QuestionList
-              dropped={this.state.dropped}
-              filters={this.state.filters}
-              creationMode={this.state.creationMode}
-              onQuestionDropped={this.handleDropped}
-            />
-          </div>
+          id: 'teacher.questionPool.title',
+        }),
+      }}
+      pageTitle={intl.formatMessage({
+        defaultMessage: 'Question Pool',
+        id: 'teacher.questionPool.pageTitle',
+      })}
+      sidebar={{ activeItem: 'questionPool' }}
+    >
+      <div className="questionPool">
+        <div className="tagList">
+          <TagList activeTags={filters.tags} handleTagClick={handleTagClick} />
         </div>
+        <div className="questionList">
+          <QuestionList
+            dropped={droppedQuestions}
+            filters={filters}
+            creationMode={creationMode}
+            onQuestionDropped={handleQuestionDropped}
+          />
+        </div>
+      </div>
 
-        <style jsx>{`
+      <style jsx>{`
+        .questionPool {
+          display: flex;
+          flex-direction: column;
+
+          padding: 1rem;
+        }
+
+        .tagList {
+          flex: 1;
+
+          margin-bottom: 1rem;
+        }
+
+        .actionButton {
+          display: flex;
+          flex-direction: row;
+          justify-items: flex-end;
+        }
+
+        @media all and (min-width: 768px) {
           .questionPool {
-            display: flex;
-            flex-direction: column;
+            flex-flow: row wrap;
 
-            padding: 1rem;
+            padding: 2rem;
           }
 
           .tagList {
+            flex: 0 0 auto;
+
+            margin: 0;
+            margin-right: 2rem;
+          }
+
+          .questionList {
             flex: 1;
-
-            margin-bottom: 1rem;
           }
+        }
 
-          .actionButton {
-            display: flex;
-            flex-direction: row;
-            justify-items: flex-end;
+        @media all and (min-width: 991px) {
+          .questionPool {
+            padding: 2rem 10% 2rem 2rem;
           }
-
-          @media all and (min-width: 768px) {
-            .questionPool {
-              flex-flow: row wrap;
-
-              padding: 2rem;
-            }
-
-            .tagList {
-              flex: 0 0 auto;
-
-              margin: 0;
-              margin-right: 2rem;
-            }
-
-            .questionList {
-              flex: 1;
-            }
-          }
-
-          @media all and (min-width: 991px) {
-            .questionPool {
-              padding: 2rem 10% 2rem 2rem;
-            }
-          }
-        `}</style>
-      </TeacherLayout>
-    )
-  }
+        }
+      `}</style>
+    </TeacherLayout>
+  )
 }
 
 Index.propTypes = propTypes
 
-const withCreateSessionMutation = graphql(CreateSessionMutation, {
-  props: ({ mutate }) => ({
-    createSession: ({ blocks, name }) =>
-      mutate({
-        refetchQueries: [{ query: SessionListQuery }],
-        variables: { blocks, name },
+export default compose(
+  withData,
+  pageWithIntl,
+  withState('creationMode', 'setCreationMode', false),
+  withState('droppedQuestions', 'setDroppedQuestions', []),
+  withState('filters', 'setFilters', {
+    tags: [],
+    title: null,
+    type: null,
+  }),
+  withHandlers({
+    // handle toggling creation mode (display of session creation form)
+    handleCreationModeToggle: ({ creationMode, setCreationMode, setDroppedQuestions }) => () => {
+      // if the creation mode was activated before, reset dropped questions on toggle
+      if (creationMode) {
+        setDroppedQuestions([])
+      }
+
+      // toggle creation mode
+      setCreationMode(prevState => !prevState)
+    },
+
+    // handle a new question that gets dropped on the session creation timeline
+    handleQuestionDropped: ({ setDroppedQuestions }) => id => () =>
+      setDroppedQuestions(prevState => [...prevState, id]),
+
+    // handle an update in the search bar
+    handleSearch: ({ setFilters }) => title => setFilters(prevState => ({ ...prevState, title })),
+
+    // handle updated sort settings
+    handleSort: () => (by, order) => {
+      console.log(`sorted by ${by} in ${order} order`)
+    },
+
+    // handle clicking on a tag in the tag list
+    handleTagClick: ({ setFilters }) => tagName =>
+      setFilters((prevState) => {
+        // remove the tag from active tags
+        if (prevState.tags.includes(tagName)) {
+          return {
+            ...prevState,
+            tags: prevState.tags.filter(tag => tag !== tagName),
+          }
+        }
+
+        // add the tag to active tags
+        return {
+          ...prevState,
+          tags: [...prevState.tags, tagName],
+        }
       }),
   }),
-})
+  graphql(StartSessionMutation),
+  withHandlers({
+    // handle starting an existing or newly created session
+    handleStartSession: ({ mutate }) => id =>
+      mutate({
+        refetchQueries: [{ query: RunningSessionQuery }],
+        variables: { id },
+      }),
+  }),
+  graphql(CreateSessionMutation),
+  withHandlers({
+    // handle creating a new session
+    handleCreateSession: ({
+      mutate,
+      handleCreationModeToggle,
+      handleStartSession,
+    }) => type => async ({ sessionName, questions }) => {
+      try {
+        // HACK: map each question into a separate question block
+        const blocks = questions.map(question => ({ questions: [{ id: question.id }] }))
 
-export default withData(pageWithIntl(withCreateSessionMutation(Index)))
+        // create a new session
+        const result = await mutate({
+          refetchQueries: [{ query: SessionListQuery }],
+          variables: { blocks, name: sessionName },
+        })
+
+        // start the session immediately if the respective button was clicked
+        if (type === 'start') {
+          await handleStartSession({ id: result.data.createSession.id })
+        }
+
+        // disable creation mode
+        handleCreationModeToggle()
+      } catch ({ message }) {
+        // TODO: if anything fails, display the error in the form
+        console.error(message)
+      }
+    },
+  }),
+)(Index)

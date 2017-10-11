@@ -8,7 +8,7 @@ const propTypes = {
 }
 
 const AccountArea = ({ accountShort }) => (
-  <Dropdown item simple text={accountShort}>
+  <Dropdown item simple text={accountShort.toUpperCase()}>
     <Dropdown.Menu>
       <Dropdown.Item>
         <FormattedMessage id="common.string.settings" defaultMessage="Settings" />

@@ -1,5 +1,6 @@
 import { gql } from 'react-apollo'
 
+// Used in: TagList
 export const TagListQuery = gql`
   {
     tags: allTags {
@@ -9,6 +10,7 @@ export const TagListQuery = gql`
   }
 `
 
+// Used in: QuestionList
 export const QuestionListQuery = gql`
   {
     questions: allQuestions {
@@ -16,6 +18,7 @@ export const QuestionListQuery = gql`
       title
       type
       instances {
+        id
         createdAt
       }
       tags {
@@ -31,14 +34,7 @@ export const QuestionListQuery = gql`
   }
 `
 
-export const QrGeneratorQuery = gql`
-  {
-    user {
-      shortname
-    }
-  }
-`
-
+// Used in: SessionList
 export const SessionListQuery = gql`
   {
     sessions: allSessions {
@@ -46,6 +42,7 @@ export const SessionListQuery = gql`
       name
       status
       blocks {
+        key
         instances {
           id
           question {
@@ -61,31 +58,54 @@ export const SessionListQuery = gql`
   }
 `
 
+// Used in: RunningSession
 export const RunningSessionQuery = gql`
   {
-    allUsers {
-      activeSession {
-        confusion(orderBy: createdAt_DESC) {
-          comprehensibility
+    user {
+      id
+      runningSession {
+        id
+        confusionTS {
           difficulty
+          speed
           createdAt
         }
-        feedbacks(orderBy: votes_DESC) {
-          id
+        feedbacks {
+          key
           content
           votes
+          createdAt
         }
         blocks {
-          id
+          key
           status
           instances {
             id
             question {
+              id
               title
               type
             }
           }
         }
+        settings {
+          isConfusionBarometerActive
+          isFeedbackChannelActive
+          isFeedbackChannelPublic
+        }
+      }
+    }
+  }
+`
+
+// Used in: Navbar
+export const AccountSummaryQuery = gql`
+  {
+    user {
+      id
+      shortname
+      runningSession {
+        id
       }
     }
   }

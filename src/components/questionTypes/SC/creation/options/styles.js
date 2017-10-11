@@ -1,4 +1,7 @@
-export default `
+/* eslint-disable import/no-unresolved, import/extensions, import/no-extraneous-dependencies */
+import css from 'styled-jsx/css'
+
+export default css`
   button {
     border: none;
     box-shadow: none;

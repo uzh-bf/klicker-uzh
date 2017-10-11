@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React from 'react'
 import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 import { Helmet } from 'react-helmet'
@@ -19,9 +19,8 @@ const defaultProps = {
   pageTitle: 'StudentLayout',
 }
 
-class StudentLayout extends Component {
+class StudentLayout extends React.Component {
   state = {
-    sidebarActiveItem: 'activeQuestion',
     sidebarVisible: false,
   }
 
@@ -31,7 +30,6 @@ class StudentLayout extends Component {
   }
 
   handleSidebarItemClick = sidebarActiveItem => () => {
-    this.setState({ sidebarActiveItem })
     this.handleSidebarToggle()
     this.props.sidebar.handleItemChange(sidebarActiveItem)
   }
@@ -41,7 +39,9 @@ class StudentLayout extends Component {
   }
 
   render() {
-    const { children, pageTitle, sidebar, title } = this.props
+    const {
+      children, pageTitle, sidebar, title,
+    } = this.props
 
     const sidebarItems = [
       {
