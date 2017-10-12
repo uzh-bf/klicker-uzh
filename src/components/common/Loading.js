@@ -1,10 +1,12 @@
 import React from 'react'
+import PropTypes from 'prop-types'
+import { intlShape } from 'react-intl'
 
 import TeacherLayout from '../layouts/TeacherLayout'
 
-export const LoadingDiv = () => <div className="ui indeterminate text loader">Loading</div>
+const LoadingDiv = () => <div className="ui indeterminate text loader">Loading</div>
 
-export const LoadingTeacherLayout = ({ intl, pageId, title }) => {
+const LoadingTeacherLayout = ({ intl, pageId, title }) => {
   const navbarConfig = {
     title: intl.formatMessage({
       defaultMessage: title,
@@ -26,3 +28,10 @@ export const LoadingTeacherLayout = ({ intl, pageId, title }) => {
     </TeacherLayout>
   )
 }
+LoadingTeacherLayout.propTypes = {
+  intl: intlShape.isRequired,
+  pageId: PropTypes.string.isRequired,
+  title: PropTypes.string.isRequired,
+}
+
+export { LoadingDiv, LoadingTeacherLayout }

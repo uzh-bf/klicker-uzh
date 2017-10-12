@@ -109,3 +109,29 @@ export const EndSessionMutation = gql`
     }
   }
 `
+
+export const AddFeedbackMutation = gql`
+  mutation AddFeedback($sessionId: ID!, $content: String!) {
+    addFeedback(sessionId: $sessionId, content: $content) {
+      id
+      feedbacks {
+        key
+        content
+        votes
+      }
+    }
+  }
+`
+
+export const UpdateSessionSettingsMutation = gql`
+  mutation UpdateSessionSettings($sessionId: ID!, $settings: SessionSettingsInput!) {
+    updateSessionSettings(sessionId: $sessionId, settings: $settings) {
+      id
+      settings {
+        isConfusionBarometerActive
+        isFeedbackChannelActive
+        isFeedbackChannelPublic
+      }
+    }
+  }
+`

@@ -68,11 +68,13 @@ export const RunningSessionQuery = gql`
         confusionTS {
           difficulty
           speed
+          createdAt
         }
         feedbacks {
           key
           content
           votes
+          createdAt
         }
         blocks {
           key

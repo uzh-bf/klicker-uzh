@@ -12,13 +12,15 @@ import FeedbackChannel from '../../components/feedbacks/FeedbackChannel'
 import SessionTimeline from '../../components/sessions/SessionTimeline'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import { RunningSessionQuery } from '../../graphql/queries'
-import { EndSessionMutation } from '../../graphql/mutations'
+import { EndSessionMutation, UpdateSessionSettingsMutation } from '../../graphql/mutations'
 import { LoadingTeacherLayout } from '../../components/common/Loading'
 
 const propTypes = {
   blocks: PropTypes.array.isRequired,
+  confusionTS: PropTypes.array.isRequired,
   feedbacks: PropTypes.array.isRequired,
   handleEndSession: PropTypes.func.isRequired,
+  handleUpdateSettings: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   isConfusionBarometerActive: PropTypes.bool.isRequired,
   isFeedbackChannelActive: PropTypes.bool.isRequired,
@@ -28,11 +30,13 @@ const propTypes = {
 const Running = ({
   intl,
   blocks,
+  confusionTS,
   feedbacks,
   isConfusionBarometerActive,
   isFeedbackChannelActive,
   isFeedbackChannelPublic,
   handleEndSession,
+  handleUpdateSettings,
 }) => (
   <TeacherLayout
     intl={intl}
@@ -56,8 +60,11 @@ const Running = ({
       <div className="confusionBarometer">
         <ConfusionBarometer
           intl={intl}
+          confusionTS={confusionTS}
           isActive={isConfusionBarometerActive}
-          handleActiveToggle={() => null}
+          handleActiveToggle={handleUpdateSettings({
+            settings: { isConfusionBarometerActive: !isConfusionBarometerActive },
+          })}
         />
       </div>
 
@@ -67,8 +74,12 @@ const Running = ({
           feedbacks={feedbacks}
           isActive={isFeedbackChannelActive}
           isPublic={isFeedbackChannelPublic}
-          handleActiveToggle={() => null}
-          handlePublicToggle={() => null}
+          handleActiveToggle={handleUpdateSettings({
+            settings: { isFeedbackChannelActive: !isFeedbackChannelActive },
+          })}
+          handlePublicToggle={handleUpdateSettings({
+            settings: { isFeedbackChannelPublic: !isFeedbackChannelPublic },
+          })}
         />
       </div>
     </div>
@@ -128,7 +139,6 @@ export default compose(
     // refetch the running session query every 10s
     options: { pollInterval: 10000 },
   }),
-  graphql(EndSessionMutation),
   // TODO: get rid of this branch?
   branch(
     ({ data }) => data.loading || !data.user,
@@ -136,6 +146,7 @@ export default compose(
       <LoadingTeacherLayout intl={intl} pageId="runningSession" title="Running Session" />
     )),
   ),
+  graphql(EndSessionMutation),
   withHandlers({
     // handle ending the currently running session
     handleEndSession: ({ data, mutate }) => async () => {
@@ -154,9 +165,22 @@ export default compose(
       }
     },
   }),
+  graphql(UpdateSessionSettingsMutation),
+  withHandlers({
+    handleUpdateSettings: ({ data, mutate }) => ({ settings }) => async () => {
+      try {
+        await mutate({
+          variables: { sessionId: data.user.runningSession.id, settings },
+        })
+      } catch ({ message }) {
+        console.error(message)
+      }
+    },
+  }),
   // flatten out the relevant data props
   withProps(({ data }) => ({
     blocks: data.user.runningSession.blocks,
+    confusionTS: data.user.runningSession.confusionTS,
     feedbacks: data.user.runningSession.feedbacks,
     ...data.user.runningSession.settings,
   })),
