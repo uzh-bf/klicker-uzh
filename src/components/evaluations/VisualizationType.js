@@ -24,16 +24,17 @@ const dropDownOptions = [
 
 const VisualizationType = ({ intl, onChangeType, type }) => (
   <div className="visualization">
-    <div className="title">
+    <h2>
       <FormattedMessage
         id="teacher.evaluation.visualization.title"
         defaultMessage="Visualization"
       />
-    </div>
+    </h2>
+
     <Dropdown
       search
       selection
-      options={dropDownOptions.filter(o => o.withinType.indexOf(type) > -1)}
+      options={dropDownOptions.filter(o => o.withinType.includes(type))}
       onChange={(param, data) => onChangeType(data.value)}
       placeholder={intl.formatMessage({
         defaultMessage: 'Visualization',
@@ -42,7 +43,7 @@ const VisualizationType = ({ intl, onChangeType, type }) => (
     />
 
     <style jsx>{`
-      .title {
+      h2 {
         font-weight: bold;
         margin-bottom: 1rem;
       }

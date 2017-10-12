@@ -15,21 +15,20 @@ const defaultProps = {
 // TODO default value
 const Possibilities = ({ options, type }) => (
   <div className="visualization">
-    <div className="title">
+    <h2>
       <FormattedMessage
         id="teacher.evaluation.possibilities.title"
         defaultMessage="Possibilities"
       />
-    </div>
-    {console.dir(options)}
-    {options &&
-      options.map((option, index) => (
-        <div className="item">
-          <b>{index + 1}</b> {option.name}
-        </div>
-      ))}
+    </h2>
+
+    {options.map((option, index) => (
+      <div className="item">
+        <b>{index + 1}</b> {option.name}
+      </div>
+    ))}
     <style jsx>{`
-      .title {
+      h2 {
         font-weight: bold;
         margin-bottom: 0.5rem;
       }

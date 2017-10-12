@@ -20,4 +20,12 @@ storiesOf('layouts', module)
       some teacher content
     </TeacherLayout>
   ))
-  .add('EvaluationLayout', () => <EvaluationLayout intl={intlMock} />)
+  .add('EvaluationLayout', () => (
+    <EvaluationLayout
+      intl={intlMock}
+      title="some title"
+      description="asdasd asd asd  asdasdasdasd"
+      type="SC"
+      options={[{ correct: false, name: 'asdasd' }, { correct: true, name: 'asaaa' }]}
+    />
+  ))

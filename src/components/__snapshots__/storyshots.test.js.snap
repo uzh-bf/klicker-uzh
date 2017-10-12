@@ -529,6 +529,180 @@ exports[`Storyshots confusion ConfusionSlider 1`] = `
 </div>
 `;
 
+exports[`Storyshots evaluations Graph 1`] = `
+<div
+  className="jsx-1681477929 graph"
+>
+  <div
+    className="jsx-1681477929"
+  >
+    This type of graph is not implemented yet!
+  </div>
+</div>
+`;
+
+exports[`Storyshots evaluations Possibilities 1`] = `
+<div
+  className="jsx-37351210 visualization"
+>
+  <h2
+    className="jsx-37351210"
+  >
+    <span>
+      Possibilities
+    </span>
+  </h2>
+  <div
+    className="jsx-37351210 item"
+  >
+    <b
+      className="jsx-37351210"
+    >
+      1
+    </b>
+     
+  </div>
+  <div
+    className="jsx-37351210 item"
+  >
+    <b
+      className="jsx-37351210"
+    >
+      2
+    </b>
+     
+  </div>
+  <div
+    className="jsx-37351210 item"
+  >
+    <b
+      className="jsx-37351210"
+    >
+      3
+    </b>
+     
+  </div>
+  <div
+    className="jsx-37351210 item"
+  >
+    <b
+      className="jsx-37351210"
+    >
+      4
+    </b>
+     
+  </div>
+</div>
+`;
+
+exports[`Storyshots evaluations Visualization 1`] = `
+<div
+  className="jsx-704040651 visualization"
+>
+  <h2
+    className="jsx-704040651"
+  >
+    <span>
+      Visualization
+    </span>
+  </h2>
+  <div
+    aria-busy={undefined}
+    aria-disabled={undefined}
+    aria-expanded={false}
+    className="ui search selection dropdown"
+    onBlur={[Function]}
+    onChange={[Function]}
+    onClick={[Function]}
+    onFocus={[Function]}
+    onMouseDown={[Function]}
+    role="combobox"
+    tabIndex={undefined}
+  >
+    <input
+      aria-autocomplete="list"
+      autoComplete="off"
+      className="search"
+      onChange={[Function]}
+      style={
+        Object {
+          "width": undefined,
+        }
+      }
+      tabIndex={0}
+      type="text"
+      value=""
+    />
+    <div
+      aria-live="polite"
+      className="default text"
+      role="alert"
+    >
+      Visualization
+    </div>
+    <i
+      aria-hidden="true"
+      className="dropdown icon"
+      onClick={[Function]}
+    />
+    <div
+      aria-multiselectable={undefined}
+      className="menu transition"
+      role="listbox"
+    >
+      <div
+        aria-checked={false}
+        aria-disabled={undefined}
+        aria-selected={true}
+        className="selected item"
+        onClick={[Function]}
+        role="option"
+        style={
+          Object {
+            "pointerEvents": "all",
+          }
+        }
+        withinType={
+          Array [
+            "SC",
+          ]
+        }
+      >
+        <span
+          className="text"
+        >
+          Pie Chart
+        </span>
+      </div>
+      <div
+        aria-checked={false}
+        aria-disabled={undefined}
+        aria-selected={false}
+        className="item"
+        onClick={[Function]}
+        role="option"
+        style={
+          Object {
+            "pointerEvents": "all",
+          }
+        }
+        withinType={
+          Array [
+            "SC",
+          ]
+        }
+      >
+        <span
+          className="text"
+        >
+          Bar Chart
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
 exports[`Storyshots feedbacks Feedback 1`] = `
 <div
   className="jsx-908384001 feedback"
@@ -1626,6 +1800,207 @@ exports[`Storyshots forms/helpers SessionTimeline 1`] = `
           />
         </g>
       </svg>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots layouts EvaluationLayout 1`] = `
+<div
+  className="jsx-1638827600 evaluationLayout"
+>
+  <div
+    className="jsx-1638827600 box title"
+  >
+    <h1
+      className="jsx-1638827600"
+    >
+      some title
+    </h1>
+  </div>
+  <div
+    className="jsx-1638827600 box questionText"
+  >
+    asdasd asd asd  asdasdasdasd
+  </div>
+  <hr
+    className="jsx-1638827600"
+  />
+  <div
+    className="jsx-1638827600 box graph"
+  />
+  <div
+    className="jsx-1638827600 box sampleSolution"
+  >
+    <h2
+      className="jsx-1638827600"
+    >
+      <span>
+        Sample Solution
+      </span>
+    </h2>
+    <div
+      className="ui toggle checkbox"
+      onChange={[Function]}
+      onClick={[Function]}
+      onMouseDown={[Function]}
+    >
+      <input
+        checked={false}
+        className="hidden"
+        name={undefined}
+        readOnly={true}
+        tabIndex={0}
+        type="checkbox"
+        value={undefined}
+      />
+      <label>
+        Show
+      </label>
+    </div>
+  </div>
+  <div
+    className="jsx-1638827600 box visualization"
+  >
+    <div
+      className="jsx-704040651 visualization"
+    >
+      <h2
+        className="jsx-704040651"
+      >
+        <span>
+          Visualization
+        </span>
+      </h2>
+      <div
+        aria-busy={undefined}
+        aria-disabled={undefined}
+        aria-expanded={false}
+        className="ui search selection dropdown"
+        onBlur={[Function]}
+        onChange={[Function]}
+        onClick={[Function]}
+        onFocus={[Function]}
+        onMouseDown={[Function]}
+        role="combobox"
+        tabIndex={undefined}
+      >
+        <input
+          aria-autocomplete="list"
+          autoComplete="off"
+          className="search"
+          onChange={[Function]}
+          style={
+            Object {
+              "width": undefined,
+            }
+          }
+          tabIndex={0}
+          type="text"
+          value=""
+        />
+        <div
+          aria-live="polite"
+          className="default text"
+          role="alert"
+        >
+          Visualization
+        </div>
+        <i
+          aria-hidden="true"
+          className="dropdown icon"
+          onClick={[Function]}
+        />
+        <div
+          aria-multiselectable={undefined}
+          className="menu transition"
+          role="listbox"
+        >
+          <div
+            aria-checked={false}
+            aria-disabled={undefined}
+            aria-selected={true}
+            className="selected item"
+            onClick={[Function]}
+            role="option"
+            style={
+              Object {
+                "pointerEvents": "all",
+              }
+            }
+            withinType={
+              Array [
+                "SC",
+              ]
+            }
+          >
+            <span
+              className="text"
+            >
+              Pie Chart
+            </span>
+          </div>
+          <div
+            aria-checked={false}
+            aria-disabled={undefined}
+            aria-selected={false}
+            className="item"
+            onClick={[Function]}
+            role="option"
+            style={
+              Object {
+                "pointerEvents": "all",
+              }
+            }
+            withinType={
+              Array [
+                "SC",
+              ]
+            }
+          >
+            <span
+              className="text"
+            >
+              Bar Chart
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    className="jsx-1638827600 box possibilities"
+  >
+    <div
+      className="jsx-37351210 visualization"
+    >
+      <h2
+        className="jsx-37351210"
+      >
+        <span>
+          Possibilities
+        </span>
+      </h2>
+      <div
+        className="jsx-37351210 item"
+      >
+        <b
+          className="jsx-37351210"
+        >
+          1
+        </b>
+         
+      </div>
+      <div
+        className="jsx-37351210 item"
+      >
+        <b
+          className="jsx-37351210"
+        >
+          2
+        </b>
+         
+      </div>
     </div>
   </div>
 </div>
