@@ -1,6 +1,6 @@
-/* eslint-disable no-underscore-dangle */
+/* eslint-disable no-underscore-dangle, react/prop-types */
 
-import React, { Component } from 'react'
+import React from 'react'
 import { IntlProvider, addLocaleData, injectIntl } from 'react-intl'
 
 // Register React Intl's locale data for the user's locale in the browser. This
@@ -15,7 +15,7 @@ if (typeof window !== 'undefined' && window.ReactIntlLocaleData) {
 export default (Page) => {
   const IntlPage = injectIntl(Page)
 
-  return class PageWithIntl extends Component {
+  return class PageWithIntl extends React.Component {
     static async getInitialProps(context) {
       let props
       if (typeof Page.getInitialProps === 'function') {
@@ -31,11 +31,18 @@ export default (Page) => {
       // <IntlProvider> will be a new instance even with pushState routing.
       const now = Date.now()
 
-      return { ...props, locale, messages, now }
+      return {
+        ...props,
+        locale,
+        messages,
+        now,
+      }
     }
 
     render() {
-      const { locale, messages, now, ...props } = this.props // eslint-disable-line react/prop-types
+      const {
+        locale, messages, now, ...props
+      } = this.props // eslint-disable-line react/prop-types
       return (
         <IntlProvider locale={locale} messages={messages} initialNow={now}>
           <IntlPage {...props} />

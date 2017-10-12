@@ -3,6 +3,7 @@
 import React from 'react'
 import { storiesOf } from '@storybook/react'
 import { action } from '@storybook/addon-actions'
+import { compose, withHandlers, withState } from 'recompose'
 
 import { intlMock } from '../../../.storybook/utils'
 
@@ -10,7 +11,11 @@ import ActionButton from './ActionButton'
 import ListWithHeader from './ListWithHeader'
 import Collapser from './Collapser'
 
+
 import Navbar from './navbar/Navbar'
+
+import { NavbarPres } from './navbar/Navbar'
+
 import AccountArea from './navbar/AccountArea'
 import SearchArea from './navbar/SearchArea'
 import SessionArea from './navbar/SessionArea'
@@ -24,22 +29,12 @@ const sidebarItems = [
 ]
 
 // create a stateful wrapper for the component
-class CollapserWrapper extends React.Component {
-  state = {
-    collapsed: true,
-  }
-  render() {
-    return (
-      <Collapser
-        collapsed={this.state.collapsed}
-        handleCollapseToggle={() =>
-          this.setState(prevState => ({ collapsed: !prevState.collapsed }))}
-      >
-        {this.props.children}
-      </Collapser>
-    )
-  }
-}
+const CollapserWithState = compose(
+  withState('collapsed', 'setCollapsed', true),
+  withHandlers({
+    handleCollapseToggle: ({ setCollapsed }) => () => setCollapsed(collapsed => !collapsed),
+  }),
+)(Collapser)
 
 // specify some example content
 const collapserContent = (
@@ -49,11 +44,6 @@ const collapserContent = (
       fact very very long. the end is even hidden at the beginning.
     </p>
 
-    <p>wow, is this a long question. i could never have imagined seeing such a question.</p>
-    <p>
-      hello this is a very short question that is getting longer and longer as we speak. it is in
-      fact very very long. the end is even hidden at the beginning.
-    </p>
     <p>wow, is this a long question. i could never have imagined seeing such a question.</p>
   </div>
 )
@@ -70,18 +60,25 @@ storiesOf('common/components', module)
   .add('ListWithHeader', () => (
     <ListWithHeader items={['abcd', 'cdef']}>hello world</ListWithHeader>
   ))
-  .add('Collapser', () => <CollapserWrapper>{collapserContent}</CollapserWrapper>)
+  .add('Collapser', () => (
+    <CollapserWithState>
+      {collapserContent}
+      {collapserContent}
+    </CollapserWithState>
+  ))
   .add('Collapser (extended)', () => (
     <Collapser handleCollapseToggle={() => action('collapser-clicked')}>
+      {collapserContent}
       {collapserContent}
     </Collapser>
   ))
 
 storiesOf('common/navbar', module)
   .add('Navbar', () => (
-    <Navbar
+    <NavbarPres
       accountShort="AW"
       intl={intlMock}
+      runningSessionId="a2sd5"
       search={{
         handleSearch: query => action(`search ${query}`),
         handleSort: () => action('sort'),
@@ -93,7 +90,7 @@ storiesOf('common/navbar', module)
   .add('SearchArea', () => (
     <SearchArea intl={intlMock} handleSearch={query => action(`search ${query}`)} />
   ))
-  .add('SessionArea', () => <SessionArea sessionId="AW" />)
+  .add('SessionArea', () => <SessionArea sessionId="a7s7d" />)
 
 storiesOf('common/sidebar', module)
   .add('Sidebar (visible)', () => (

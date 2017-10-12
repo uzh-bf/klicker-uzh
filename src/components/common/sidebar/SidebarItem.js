@@ -14,7 +14,9 @@ const defaultProps = {
   active: false,
 }
 
-const SidebarItem = ({ active, children, href, name, handleSidebarItemClick }) => (
+const SidebarItem = ({
+  active, children, href, name, handleSidebarItemClick,
+}) => (
   <Menu.Item active={active} name={name} onClick={handleSidebarItemClick(href)}>
     {children}
   </Menu.Item>

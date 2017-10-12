@@ -1,32 +1,46 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import Router from 'next/router'
 import { graphql } from 'react-apollo'
+import { compose, withPropsOnChange, branch, renderComponent } from 'recompose'
+import { FormattedMessage } from 'react-intl'
 
 import Session from './Session'
-import { SessionListQuery } from '../../queries/queries'
+import { LoadingDiv } from '../common/Loading'
+import { SessionListQuery } from '../../graphql/queries'
 
 const propTypes = {
-  data: PropTypes.shape({
-    error: PropTypes.string,
-    loading: PropTypes.bool.isRequired,
-    sessions: PropTypes.array,
-  }).isRequired,
+  error: PropTypes.string,
+  runningSession: PropTypes.object,
+  sessions: PropTypes.array,
 }
 
-const SessionList = ({ data }) => {
-  if (data.loading) {
-    return <div>Loading</div>
-  }
+const defaultProps = {
+  error: undefined,
+  runningSession: undefined,
+  sessions: [],
+}
 
-  if (data.error) {
-    return <div>{data.error}</div>
+export const SessionListPres = ({ error, runningSession, sessions }) => {
+  if (error) {
+    return <div>{error}</div>
   }
 
   return (
     <div>
-      {data.sessions.map(session => (
-        <div className="session">
-          <Session key={session.id} {...session} />
+      {runningSession ? (
+        <div className="session running">
+          <h2>Running session</h2>
+          <Session {...runningSession} />
+        </div>
+      ) : (
+        <div className="session">No session is currently running.</div>
+      )}
+
+      {runningSession && <h2>Remaining sessions</h2>}
+      {sessions.map(session => (
+        <div key={session.id} className="session">
+          <Session {...session} />
         </div>
       ))}
 
@@ -34,11 +48,76 @@ const SessionList = ({ data }) => {
         .session {
           margin-bottom: 2rem;
         }
+        .session.running {
+        }
       `}</style>
     </div>
   )
 }
 
-SessionList.propTypes = propTypes
+SessionListPres.propTypes = propTypes
+SessionListPres.defaultProps = defaultProps
 
-export default graphql(SessionListQuery)(SessionList)
+// prepare possible status messages for different session stati
+const statusCases = [
+  {
+    icon: 'play',
+    message: <FormattedMessage id="session.button.created.content" defaultMessage="Start" />,
+  },
+  {
+    icon: 'play',
+    message: <FormattedMessage id="session.button.running.content" defaultMessage="Running" />,
+  },
+  {
+    icon: 'copy',
+    message: <FormattedMessage id="session.button.completed.content" defaultMessage="Copy" />,
+  },
+]
+
+export default compose(
+  graphql(SessionListQuery),
+  branch(props => props.data.loading, renderComponent(LoadingDiv)),
+  withPropsOnChange(
+    ['data'],
+    ({ data: { error, sessions }, handleCopySession, handleStartSession }) => {
+      // calculate what action to take on button click based on session status
+      const handleSessionAction = (sessionId, status) => {
+        if (status === 0) {
+          return handleStartSession(sessionId)
+        }
+
+        if (status === 1) {
+          return () => Router.push('/sessions/running')
+        }
+
+        if (status === 2) {
+          return handleCopySession(sessionId)
+        }
+
+        return () => null
+      }
+
+      // extract the running session from all sessions
+      const runningSession = sessions.filter(session => session.status === 1)
+
+      // return the newly composed props
+      return {
+        error,
+        runningSession: runningSession.length === 1 && {
+          ...runningSession[0],
+          button: {
+            ...statusCases[1],
+            onClick: () => Router.push('/sessions/running'),
+          },
+        },
+        sessions: sessions.map(session => ({
+          ...session,
+          button: {
+            ...statusCases[session.status],
+            onClick: handleSessionAction(session.id, session.status),
+          },
+        })),
+      }
+    },
+  ),
+)(SessionListPres)

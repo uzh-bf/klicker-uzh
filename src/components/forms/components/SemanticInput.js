@@ -3,7 +3,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Form, Icon } from 'semantic-ui-react'
-import { intlShape, FormattedMessage } from 'react-intl'
+import { FormattedMessage, intlShape } from 'react-intl'
 
 const propTypes = {
   disabled: PropTypes.bool,
@@ -41,7 +41,12 @@ const SemanticInput = ({
 }) => {
   // construct field props
   // define an erroneous field as a field that has been touched and is invalid
-  const fieldProps = { disabled, error: touched && invalid, required, width }
+  const fieldProps = {
+    disabled,
+    error: touched && invalid,
+    required,
+    width,
+  }
 
   // construct input props
   // define the default placeholder to be equal to the label

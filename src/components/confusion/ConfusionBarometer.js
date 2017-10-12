@@ -1,21 +1,31 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Checkbox } from 'semantic-ui-react'
-import { intlShape, FormattedMessage } from 'react-intl'
+import { FormattedMessage, intlShape } from 'react-intl'
 
 import ConfusionSection from './ConfusionSection'
 
 const propTypes = {
+  confusionTS: PropTypes.arrayOf(
+    PropTypes.shape({
+      createdAt: PropTypes.string.isRequired,
+      difficulty: PropTypes.number.isRequired,
+      speed: PropTypes.number.isRequired,
+    }),
+  ),
   handleActiveToggle: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   isActive: PropTypes.bool,
 }
 
 const defaultProps = {
+  confusionTS: [],
   isActive: false,
 }
 
-const ConfusionBarometer = ({ intl, isActive, handleActiveToggle }) => (
+const ConfusionBarometer = ({
+  confusionTS, intl, isActive, handleActiveToggle,
+}) => (
   <div className="confusionBarometer">
     <h2>
       <FormattedMessage
@@ -41,15 +51,10 @@ const ConfusionBarometer = ({ intl, isActive, handleActiveToggle }) => (
           defaultMessage: 'Difficulty',
           id: 'runningSession.confusionBarometer.string.difficulty',
         })}
-        data={[
-          { timestamp: '11:55', value: -10 },
-          { timestamp: '11:56', value: 0 },
-          { timestamp: '11:57', value: 10 },
-          { timestamp: '11:58', value: 25 },
-          { timestamp: '11:59', value: 50 },
-          { timestamp: '12:00', value: 0 },
-          { timestamp: '12:01', value: -50 },
-        ]}
+        data={confusionTS.map(({ createdAt, difficulty }) => ({
+          timestamp: createdAt,
+          value: difficulty,
+        }))}
       />
     )}
 
@@ -59,15 +64,10 @@ const ConfusionBarometer = ({ intl, isActive, handleActiveToggle }) => (
           defaultMessage: 'Comprehensibility',
           id: 'runningSession.confusionBarometer.string.comprehensibility',
         })}
-        data={[
-          { timestamp: '11:55', value: 40 },
-          { timestamp: '11:56', value: 30 },
-          { timestamp: '11:57', value: 35 },
-          { timestamp: '11:58', value: 20 },
-          { timestamp: '11:59', value: 25 },
-          { timestamp: '12:00', value: 50 },
-          { timestamp: '12:01', value: 10 },
-        ]}
+        data={confusionTS.map(({ createdAt, speed }) => ({
+          timestamp: createdAt,
+          value: speed,
+        }))}
       />
     )}
 

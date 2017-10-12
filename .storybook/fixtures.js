@@ -8,6 +8,7 @@ const question = {
 }
 
 const questionBlock = {
+  key: 0,
   questions: [question, question, question],
   showSolutions: false,
   timeLimit: 60,
@@ -23,7 +24,7 @@ const question2 = {
 }
 
 const questionBlock2 = {
-  id: '4c821db7-0940-4a24-b31a-7969104bbc9f',
+  key: 1,
   instances: [question2, question2, question2],
   showSolutions: false,
   timeLimit: 60,
@@ -35,10 +36,35 @@ const session = {
   id: '4c821db7-0940-4a24-b31a-7969104bbc9f',
   name: 'Long session',
   status: 'CREATED',
+  button: {
+    icon: 'play',
+    message: 'Start',
+  },
 }
+
+const questions = [
+  {
+    id: '1',
+    title: 'question1',
+    tags: [{ name: 'tag1' }, { name: 'tag2' }],
+    instances: [{ createdAt: '06.12.1993' }],
+    type: 'SC',
+    versions: [0],
+  },
+  {
+    id: '2',
+    title: 'question2',
+    tags: [{ name: 'tag3' }, { name: 'tag2' }],
+    instances: [{ createdAt: '07.12.1993' }, { createdAt: '07.12.1994' }],
+    type: 'MC',
+    versions: [0, 1],
+  },
+]
 
 export default {
   question,
+  questions,
   questionBlock,
+  questionBlock2,
   session,
 }
