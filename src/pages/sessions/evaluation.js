@@ -13,17 +13,24 @@ import Possibilities from '../../components/evaluations/Possibilities'
 
 const propTypes = {
   data: PropTypes.object.isRequired,
+  handleChangeVisualizationType: PropTypes.func.isRequired,
+  handleToggleShowSolution: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
+  showSolution: PropTypes.bool.isRequired,
+  visualizationType: PropTypes.string.isRequired,
 }
 
 const Evaluation = ({
+  data,
   intl,
   showSolution,
   visualizationType,
   handleToggleShowSolution,
   handleChangeVisualizationType,
 }) => {
-  const data = {
+  const { type } = data
+
+  const components = {
     graph: <Graph intl={intl} showSolution={showSolution} visualization={visualizationType} />,
     possibilities: (
       <Possibilities
@@ -44,7 +51,7 @@ const Evaluation = ({
       <Visualization
         intl={intl}
         onChangeType={handleChangeVisualizationType}
-        type="SC"
+        type={type}
         visualization={visualizationType}
       />
     ),
@@ -52,7 +59,7 @@ const Evaluation = ({
 
   return (
     <EvaluationLayout
-      data={data}
+      data={components}
       intl={intl}
       pageTitle={intl.formatMessage({
         defaultMessage: 'Evaluation',
@@ -83,6 +90,7 @@ export default compose(
       setVisualizationActive(true),
   }),
   withProps({
+    // TODO: fill with the fake data the component is going to get
     data: {
       type: 'SC',
     },
