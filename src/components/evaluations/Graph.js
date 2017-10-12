@@ -54,7 +54,7 @@ const Graph = ({ intl, showSolution, visualization }) => (
             {data.map((entry, index) => (
               <Cell
                 key={index}
-                fill={((entry.name === correctSolution) && showSolution) ? '#00FF00' : '#8884d8'}
+                fill={entry.name === correctSolution && showSolution ? '#00FF00' : '#8884d8'}
               />
             ))}
           </Pie>
@@ -73,7 +73,7 @@ const Graph = ({ intl, showSolution, visualization }) => (
             {data.map((entry, index) => (
               <Cell
                 key={index}
-                fill={((entry.name === correctSolution) && showSolution) ? '#00FF00' : '#8884d8'}
+                fill={entry.name === correctSolution && showSolution ? '#00FF00' : '#8884d8'}
               />
             ))}
           </Bar>
