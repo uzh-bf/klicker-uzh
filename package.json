@@ -23,7 +23,7 @@
     "lodash": "4.17.4",
     "logrocket": "0.5.5",
     "logrocket-react": "0.0.4",
-    "moment": "2.18.1",
+    "moment": "2.19.1",
     "next": "4.0.3",
     "prop-types": "15.6.0",
     "prosemirror-schema-basic": "0.24.0",
