@@ -25,7 +25,7 @@ const propTypes = {
 // TODO
 const defaultProps = {
   showSolution: true,
-  visualization: 'pieChart',
+  visualization: 'PIE_CHART',
 }
 
 const data = [
@@ -40,7 +40,7 @@ const correctSolution = 'Group B'
 // TODO default value
 const Graph = ({ intl, showSolution, visualization }) => (
   <div className="graph">
-    {visualization === 'pieChart' && (
+    {visualization === 'PIE_CHART' && (
       <ResponsiveContainer>
         <PieChart>
           <Pie
@@ -61,7 +61,7 @@ const Graph = ({ intl, showSolution, visualization }) => (
         </PieChart>
       </ResponsiveContainer>
     )}
-    {visualization === 'barChart' && (
+    {visualization === 'BAR_CHART' && (
       <ResponsiveContainer>
         <BarChart data={data}>
           <XAxis dataKey="name" />
@@ -80,8 +80,8 @@ const Graph = ({ intl, showSolution, visualization }) => (
         </BarChart>
       </ResponsiveContainer>
     )}
-    {visualization !== 'barChart' &&
-      visualization !== 'pieChart' && <div>This type of graph is not implemented yet!</div>}
+    {visualization !== 'BAR_CHART' &&
+      visualization !== 'PIE_CHART' && <div>This type of graph is not implemented yet!</div>}
 
     <style jsx>{`
       .title {

@@ -1,7 +1,7 @@
-import React, { Component } from 'react'
+import React from 'react'
 import PropTypes from 'prop-types'
-import { graphql } from 'react-apollo'
 import { FormattedMessage, intlShape } from 'react-intl'
+import { compose, withState, withHandlers, withProps } from 'recompose'
 
 import { pageWithIntl, withData } from '../../lib'
 
@@ -16,77 +16,77 @@ const propTypes = {
   intl: intlShape.isRequired,
 }
 
-class Evaluation extends Component {
-  constructor(props) {
-    super(props)
-
-    this.state = {
-      showSolution: false,
-      visualization: 'pieChart', // initial visualization type
-    }
-  }
-
-  onChangeShowSolution = () => {
-    this.setState({ ...this.state, showSolution: !this.state.showSolution })
-  }
-
-  onChangeVisualizationType = (newType) => {
-    this.setState({ ...this.state, visualization: newType })
-  }
-
-  render() {
-    const { intl } = this.props
-
-    const objectIGet = {
-      type: 'SC', // SC, FREE ...
-    }
-
-    const data = {
-      graph: (
-        <Graph
-          intl={intl}
-          showSolution={this.state.showSolution}
-          visualization={this.state.visualization}
-        />
-      ),
-      possibilities: (
-        <Possibilities
-          intl={intl}
-          options={[
-            { text: 'This is the first possible answer' },
-            { text: 'This is the second possible answer' },
-            { text: 'This is the third possible answer' },
-            { text: 'This is the fourth possible answer' },
-          ]}
-        />
-      ),
-      questionText:
-        'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
-      sampleSolution: <SampleSolution intl={intl} onChange={this.onChangeShowSolution} />,
-      title: <FormattedMessage id="teacher.evaluation.title" defaultMessage="Evaluation" />,
-      visualization: (
-        <Visualization
-          intl={intl}
-          onChangeType={this.onChangeVisualizationType}
-          type={objectIGet.type}
-          visualization={this.state.visualization}
-        />
-      ),
-    }
-
-    return (
-      <EvaluationLayout
-        data={data}
+const Evaluation = ({
+  intl,
+  showSolution,
+  visualizationType,
+  handleToggleShowSolution,
+  handleChangeVisualizationType,
+}) => {
+  const data = {
+    graph: <Graph intl={intl} showSolution={showSolution} visualization={visualizationType} />,
+    possibilities: (
+      <Possibilities
         intl={intl}
-        pageTitle={intl.formatMessage({
-          defaultMessage: 'Evaluation',
-          id: 'teacher.evaluation.pageTitle',
-        })}
+        options={[
+          { text: 'This is the first possible answer' },
+          { text: 'This is the second possible answer' },
+          { text: 'This is the third possible answer' },
+          { text: 'This is the fourth possible answer' },
+        ]}
       />
-    )
+    ),
+    questionText:
+      'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
+    sampleSolution: <SampleSolution intl={intl} onChange={handleToggleShowSolution} />,
+    title: <FormattedMessage id="teacher.evaluation.title" defaultMessage="Evaluation" />,
+    visualization: (
+      <Visualization
+        intl={intl}
+        onChangeType={handleChangeVisualizationType}
+        type="SC"
+        visualization={visualizationType}
+      />
+    ),
   }
+
+  return (
+    <EvaluationLayout
+      data={data}
+      intl={intl}
+      pageTitle={intl.formatMessage({
+        defaultMessage: 'Evaluation',
+        id: 'teacher.evaluation.pageTitle',
+      })}
+    />
+  )
 }
 
 Evaluation.propTypes = propTypes
 
-export default withData(pageWithIntl(Evaluation))
+export default compose(
+  withData,
+  pageWithIntl,
+  withState('showSolution', 'setShowSolution', false),
+  // TODO: visualizationActive should decide whether the graph is shown
+  // if it is false, a placeholder should be shown
+  // a click on said placeholder should then trigger display of the real graph
+  withState('visualizationActive', 'setVisualizationActive', false),
+  withState('visualizationType', 'setVisualizationType', 'PIE_CHART'),
+  withHandlers({
+    handleChangeVisualizationType: ({ setVisualizationType }) => newType =>
+      setVisualizationType(newType),
+    handleToggleShowSolution: ({ setShowSolution }) => () =>
+      setShowSolution(showSolution => !showSolution),
+    // the visualization display can only be toggled once, so only allow setting to true
+    handleToggleVisualizationActive: ({ setVisualizationActive }) => () =>
+      setVisualizationActive(true),
+  }),
+  withProps({
+    data: {
+      type: 'SC',
+    },
+  }),
+)(Evaluation)
+
+withData(pageWithIntl(Evaluation))
