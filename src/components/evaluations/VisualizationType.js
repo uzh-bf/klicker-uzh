@@ -14,15 +14,15 @@ const propTypes = {
 const defaultProps = {}
 
 const dropDownOptions = [
-  { text: 'Pie Chart', value: 'pieChart', withinType: ['SC'] },
-  { text: 'Bar Chart', value: 'barChart', withinType: ['SC'] },
-  { text: 'Word cloud', value: 'cloud', withinType: ['FREE'] },
-  { text: 'Table', value: 'table', withinType: ['FREE'] },
-  { text: 'Historgamm', value: 'histogramm', withinType: ['NUMBER_RANGE'] },
-  { text: 'Ranking', value: 'ranking', withinType: ['NUMBER_RANGE'] },
+  { text: 'Pie Chart', value: 'PIE_CHART', withinType: ['SC'] },
+  { text: 'Bar Chart', value: 'BAR_CHART', withinType: ['SC'] },
+  { text: 'Word cloud', value: 'WORD_CLOUD', withinType: ['FREE'] },
+  { text: 'Table', value: 'TABULAR', withinType: ['FREE'] },
+  { text: 'Histogramm', value: 'HISTOGRAM', withinType: ['NUMBER_RANGE'] },
+  { text: 'Ranking', value: 'RANKING', withinType: ['NUMBER_RANGE'] },
 ]
 
-const Visualization = ({ intl, onChangeType, type }) => (
+const VisualizationType = ({ intl, onChangeType, type }) => (
   <div className="visualization">
     <div className="title">
       <FormattedMessage
@@ -50,7 +50,7 @@ const Visualization = ({ intl, onChangeType, type }) => (
   </div>
 )
 
-Visualization.propTypes = propTypes
-Visualization.defaultProps = defaultProps
+VisualizationType.propTypes = propTypes
+VisualizationType.defaultProps = defaultProps
 
-export default Visualization
+export default VisualizationType

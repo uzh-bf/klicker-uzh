@@ -1,24 +1,33 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { Helmet } from 'react-helmet'
-import { intlShape } from 'react-intl'
+import { intlShape, FormattedMessage } from 'react-intl'
+import { Checkbox } from 'semantic-ui-react'
 
 import { createLinks, initLogging } from '../../lib'
+import Possibilities from '../evaluations/Possibilities'
+import VisualizationType from '../evaluations/VisualizationType'
 
 const propTypes = {
-  data: PropTypes.shape({
-    graph: PropTypes.component,
-    possibilities: PropTypes.component,
-    questionText: PropTypes.string,
-    sampleSolution: PropTypes.component,
-    title: PropTypes.string,
-    visualization: PropTypes.component,
-  }).isRequired,
+  children: PropTypes.element.isRequired,
+  description: PropTypes.string,
   intl: intlShape.isRequired,
+  onChangeVisualizationType: PropTypes.func.isRequired,
+  onToggleShowSolution: PropTypes.func.isRequired,
+  options: PropTypes.arrayOf(
+    PropTypes.shape({
+      correct: PropTypes.bool,
+      name: PropTypes.string.isRequired,
+    }),
+  ).isRequired,
   pageTitle: PropTypes.string,
+  title: PropTypes.string.isRequired,
+  type: PropTypes.string.isRequired,
+  visualizationType: PropTypes.string.isRequired,
 }
 
 const defaultProps = {
+  description: undefined,
   pageTitle: 'EvaluationLayout',
 }
 
@@ -31,7 +40,18 @@ class EvaluationLayout extends Component {
   }
 
   render() {
-    const { pageTitle, data } = this.props
+    const {
+      intl,
+      pageTitle,
+      onToggleShowSolution,
+      children,
+      title,
+      type,
+      description,
+      visualizationType,
+      onChangeVisualizationType,
+      options,
+    } = this.props
 
     return (
       <div className="evaluationLayout">
@@ -44,27 +64,49 @@ class EvaluationLayout extends Component {
         </Helmet>
 
         <div className="box title">
-          <b>{data.title}</b>
+          <h1>{title}</h1>
         </div>
-        <div className="box questionText">{data.questionText}</div>
+        <div className="box questionText">{description}</div>
         <hr />
-        <div className="box graph">{data.graph}</div>
-        <div className="box sampleSolution">{data.sampleSolution}</div>
-        <div className="box visualization">{data.visualization}</div>
-        <div className="box possibilities">{data.possibilities}</div>
+        <div className="box graph">{children}</div>
+        <div className="box sampleSolution">
+          <h2>
+            <FormattedMessage
+              id="teacher.evaluation.sampleSolution.title"
+              defaultMessage="Sample Solution"
+            />
+          </h2>
+          <Checkbox
+            toggle
+            label={intl.formatMessage({
+              defaultMessage: 'Show',
+              id: 'teacher.evaluation.sampleSolution.show',
+            })}
+            onChange={onToggleShowSolution}
+          />
+        </div>
+        <div className="box visualization">
+          <VisualizationType
+            intl={intl}
+            onChangeType={onChangeVisualizationType}
+            type={type}
+            visualization={visualizationType}
+          />
+        </div>
+        <div className="box possibilities">
+          <Possibilities intl={intl} options={options.map(({ value }) => ({ text: value }))} />
+        </div>
 
-        <style jsx>{`
-          :global(
-            html {
-              font-size: 25px;
-            }
-          )
-
-          :global(
+        <style jsx global>{`
+          html {
+            font-size: 25px;
+          }
           body {
             font-size: 1rem;
-          })
+          }
+        `}</style>
 
+        <style jsx>{`
           .box {
             padding: 0.5rem;
           }

@@ -1,15 +1,12 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { intlShape } from 'react-intl'
 import { compose, withState, withHandlers, withProps } from 'recompose'
 
 import { pageWithIntl, withData } from '../../lib'
 
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
 import Graph from '../../components/evaluations/Graph'
-import SampleSolution from '../../components/evaluations/SampleSolution'
-import Visualization from '../../components/evaluations/Visualization'
-import Possibilities from '../../components/evaluations/Possibilities'
 
 const propTypes = {
   data: PropTypes.object.isRequired,
@@ -26,48 +23,27 @@ const Evaluation = ({
   showSolution,
   visualizationType,
   handleToggleShowSolution,
+  handleToggleVisualizationActive,
   handleChangeVisualizationType,
-}) => {
-  const { type } = data
-
-  const components = {
-    graph: <Graph intl={intl} showSolution={showSolution} visualization={visualizationType} />,
-    possibilities: (
-      <Possibilities
-        intl={intl}
-        options={[
-          { text: 'This is the first possible answer' },
-          { text: 'This is the second possible answer' },
-          { text: 'This is the third possible answer' },
-          { text: 'This is the fourth possible answer' },
-        ]}
-      />
-    ),
-    questionText:
-      'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
-    sampleSolution: <SampleSolution intl={intl} onChange={handleToggleShowSolution} />,
-    title: <FormattedMessage id="teacher.evaluation.title" defaultMessage="Evaluation" />,
-    visualization: (
-      <Visualization
-        intl={intl}
-        onChangeType={handleChangeVisualizationType}
-        type={type}
-        visualization={visualizationType}
-      />
-    ),
-  }
-
-  return (
-    <EvaluationLayout
-      data={components}
-      intl={intl}
-      pageTitle={intl.formatMessage({
-        defaultMessage: 'Evaluation',
-        id: 'teacher.evaluation.pageTitle',
-      })}
-    />
-  )
-}
+}) => (
+  <EvaluationLayout
+    intl={intl}
+    pageTitle={intl.formatMessage({
+      defaultMessage: 'Evaluation',
+      id: 'teacher.evaluation.pageTitle',
+    })}
+    title={data.question.title}
+    description={data.version.description}
+    type={data.question.type}
+    options={data.version.options}
+    showSolution={showSolution}
+    visualizationType={visualizationType}
+    onToggleShowSolution={handleToggleShowSolution}
+    onChangeVisualizationType={handleChangeVisualizationType}
+  >
+    <Graph intl={intl} showSolution={showSolution} visualization={visualizationType} />
+  </EvaluationLayout>
+)
 
 Evaluation.propTypes = propTypes
 
@@ -90,9 +66,25 @@ export default compose(
       setVisualizationActive(true),
   }),
   withProps({
-    // TODO: fill with the fake data the component is going to get
+    // fake data the component is going to get
     data: {
-      type: 'SC',
+      question: {
+        title: 'some question title',
+        type: 'SC',
+      },
+      result: {
+        options: [56, 344, 9],
+        totalResponses: 409,
+      },
+      version: {
+        description:
+          'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
+        options: [
+          { correct: false, name: 'option 1' },
+          { correct: true, name: 'option 2' },
+          { correct: false, name: 'some other option' },
+        ],
+      },
     },
   }),
 )(Evaluation)

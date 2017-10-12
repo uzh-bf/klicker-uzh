@@ -5,14 +5,9 @@ import { storiesOf } from '@storybook/react'
 
 import Graph from './Graph'
 import Possibilities from './Possibilities'
-import SampleSolution from './SampleSolution'
-import Visualization from './Visualization'
+import VisualizationType from './VisualizationType'
 
 import { intlMock } from '../../../.storybook/utils'
-
-const objectIGet = {
-  type: 'SC', // SC, FREE ...
-}
 
 storiesOf('evaluations', module)
   .add('Graph', () => <Graph intl={intlMock} visualization={'pieChart'} />)
@@ -27,11 +22,6 @@ storiesOf('evaluations', module)
       ]}
     />
   ))
-  .add('SampleSolution', () => <SampleSolution intl={intlMock} />)
   .add('Visualization', () => (
-    <Visualization
-      intl={intlMock}
-      onChangeType={console.log('State changed')}
-      type={objectIGet.type}
-    />
+    <VisualizationType intl={intlMock} onChangeType={console.log('State changed')} type="SC" />
   ))

@@ -1,10 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { FormattedMessage } from 'react-intl'
 
 // TODO
 const propTypes = {
-  intl: intlShape.isRequired,
   options: PropTypes.array,
 }
 
@@ -14,7 +13,7 @@ const defaultProps = {
 }
 
 // TODO default value
-const Possibilities = ({ intl, options, type }) => (
+const Possibilities = ({ options, type }) => (
   <div className="visualization">
     <div className="title">
       <FormattedMessage
@@ -24,9 +23,9 @@ const Possibilities = ({ intl, options, type }) => (
     </div>
     {console.dir(options)}
     {options &&
-      options.map((option, key) => (
+      options.map((option, index) => (
         <div className="item">
-          <b>{key + 1}</b> {option.text}
+          <b>{index + 1}</b> {option.name}
         </div>
       ))}
     <style jsx>{`
