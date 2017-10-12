@@ -15,7 +15,7 @@
     "classnames": "2.2.5",
     "cross-env": "5.0.5",
     "dotenv": "4.0.0",
-    "express": "4.16.1",
+    "express": "4.16.2",
     "glob": "7.1.2",
     "graphql": "0.11.7",
     "intl": "1.2.5",
@@ -23,7 +23,7 @@
     "lodash": "4.17.4",
     "logrocket": "0.5.5",
     "logrocket-react": "0.0.4",
-    "moment": "2.18.1",
+    "moment": "2.19.1",
     "next": "4.0.3",
     "prop-types": "15.6.0",
     "prosemirror-schema-basic": "0.24.0",
@@ -86,7 +86,8 @@
     "dev": "nodemon -w .env -w package.json -w yarn.lock server.js",
     "dev:inspect": "nodemon -w .env -w package.json -w yarn.lock --inspect server.js",
     "format": "prettier-eslint --single-quote --no-semi --write server.js \"src/**/*.js\"",
-    "format:ci": "prettier-eslint --single-quote --no-semi --list-different server.js \"src/**/*.js\"",
+    "format:ci":
+      "prettier-eslint --single-quote --no-semi --list-different server.js \"src/**/*.js\"",
     "lint": "eslint server.js \"src/**/*.js\"",
     "start": "cross-env NODE_ENV=production node server.js",
     "start:inspect": "cross-env NODE_ENV=production node --inspect server.js",
@@ -96,19 +97,10 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "roots": [
-      "src/"
-    ]
+    "roots": ["src/"]
   },
   "lint-staged": {
-    "*.js": [
-      "prettier-eslint --single-quote --no-semi --write",
-      "eslint",
-      "git add"
-    ],
-    "*.json": [
-      "prettier-eslint --single-quote --no-semi --write",
-      "git add"
-    ]
+    "*.js": ["prettier-eslint --single-quote --no-semi --write", "eslint", "git add"],
+    "*.json": ["prettier-eslint --single-quote --no-semi --write", "git add"]
   }
 }
