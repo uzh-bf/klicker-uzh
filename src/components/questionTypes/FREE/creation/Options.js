@@ -6,7 +6,8 @@ import { FormattedMessage, intlShape } from 'react-intl'
 const propTypes = {
   input: PropTypes.shape({
     onChange: PropTypes.func.isRequired,
-    value: PropTypes.arrayOf(PropTypes.shape(Option.propTypes)).isRequired,
+    // TODO: fill value with expected shape
+    value: PropTypes.shape({}).isRequired,
   }).isRequired,
   intl: intlShape.isRequired,
 }

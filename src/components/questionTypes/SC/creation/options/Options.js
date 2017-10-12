@@ -19,8 +19,9 @@ const propTypes = {
 // compose handlers for the sortable list of options
 const enhance = compose(
   mapProps(({ input: { onChange, value } }) => ({
-    onChange,
-    value,
+    // HACK: mapping as a workaround for the value.choices problem
+    onChange: choices => onChange({ ...value, choices }),
+    value: value.choices,
   })),
   withHandlers({
     handleDeleteOption: ({ onChange, value }) => index => () =>
