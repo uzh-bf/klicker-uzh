@@ -10,10 +10,7 @@ import ContentInput from '../questions/creation/ContentInput'
 import TitleInput from '../questions/creation/TitleInput'
 import TagInput from '../questions/creation/TagInput'
 import TypeChooser from '../questionTypes/TypeChooser'
-import {
-  SCCreationOptions,
-  SCCreationPreview,
-} from '../../components/questionTypes/SC'
+import { SCCreationOptions, SCCreationPreview } from '../../components/questionTypes/SC'
 import { FREECreationOptions, FREECreationPreview } from '../../components/questionTypes/FREE'
 
 // form validation

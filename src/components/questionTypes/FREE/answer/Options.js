@@ -22,23 +22,23 @@ const Options = ({ options }) => (
     options.restrictions.min !== null &&
     options.restrictions.max !== null ? (
       <div>Slider {/* TODO Slider */}</div>
-      ) : (
-        <div>
-          <textarea />
-          {options.restrictions.min !== null && (
-            <div>
-              <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />:{' '}
-              {options.restrictions.min}
-            </div>
-          )}
-          {options.restrictions.max !== null && (
-            <div>
-              <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />:{' '}
-              {options.restrictions.max}
-            </div>
-          )}
-        </div>
-      )}
+    ) : (
+      <div>
+        <textarea />
+        {options.restrictions.min !== null && (
+          <div>
+            <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />:{' '}
+            {options.restrictions.min}
+          </div>
+        )}
+        {options.restrictions.max !== null && (
+          <div>
+            <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />:{' '}
+            {options.restrictions.max}
+          </div>
+        )}
+      </div>
+    )}
   </div>
 )
 
