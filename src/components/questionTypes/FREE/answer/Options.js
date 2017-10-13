@@ -1,8 +1,10 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import Slider from 'react-rangeslider'
 import { FormattedMessage } from 'react-intl'
 
 const propTypes = {
+  handleChange: PropTypes.func.isRequired,
   options: PropTypes.shape({
     restrictions: PropTypes.shape({
       max: PropTypes.number,
@@ -10,18 +12,30 @@ const propTypes = {
       type: PropTypes.string,
     }),
   }),
+  value: PropTypes.number,
 }
 
 const defaultProps = {
   options: [],
+  value: undefined,
 }
 
-const Options = ({ options }) => (
+const Options = ({ handleChange, options, value }) => (
   <div className="options">
     {options.restrictions.type === 'NUMBERS' &&
     options.restrictions.min !== null &&
     options.restrictions.max !== null ? (
-      <div>Slider {/* TODO Slider */}</div>
+      <div className="slider">
+        <p>{options.restrictions.min}</p>
+        <p>{options.restrictions.max}</p>
+        <Slider
+          min={options.restrictions.min}
+          max={options.restrictions.max}
+          orientation="horizontal"
+          value={value}
+          onChange={handleChange}
+        />
+      </div>
     ) : (
       <div>
         <textarea />

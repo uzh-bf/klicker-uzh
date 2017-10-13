@@ -93,7 +93,13 @@ storiesOf('questionTypes/FREE', module)
     <FREEAnswerOptions options={{ restrictions: { max: 87, min: null, type: 'NUMBERS' } }} />
   ))
   .add('FREE Answering Options (Number restriction)', () => (
-    <FREEAnswerOptions options={{ restrictions: { max: 87, min: 900, type: 'NUMBERS' } }} />
+    <FREEAnswerOptions
+      options={{ restrictions: { max: 87, min: 900, type: 'NUMBERS' } }}
+      handleChange={(a) => {
+        console.log(a)
+      }}
+      value={555}
+    />
   ))
   .add('FREE Creation Options', () => <FREECreationOptionsWithState />)
   .add('FREE Creation Preview (unrestricted)', () => (
