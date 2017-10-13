@@ -1564,6 +1564,87 @@ exports[`Storyshots questionTypes/FREE FREE Answering Options (upper bound restr
 </div>
 `;
 
+exports[`Storyshots questionTypes/FREE FREE Creation Options 1`] = `
+<div
+  className="jsx-2761489864 field"
+>
+  <label
+    className="jsx-2761489864"
+    htmlFor="options"
+  >
+    <span>
+      Options
+    </span>
+  </label>
+  <div
+    className="jsx-2761489864 optionsChooser"
+  >
+    <button
+      className="jsx-2761489864 option"
+      onClick={[Function]}
+      type="button"
+    >
+      <span>
+        No Limitations
+      </span>
+    </button>
+    <button
+      className="jsx-2761489864 option active"
+      onClick={[Function]}
+      type="button"
+    >
+      <span>
+        Number Range
+      </span>
+    </button>
+  </div>
+  <div
+    className="jsx-2761489864 range"
+  >
+    <div
+      className="jsx-2761489864 rangeField"
+    >
+      <label
+        className="jsx-2761489864"
+        htmlFor="min"
+      >
+        <span>
+          Min
+        </span>
+      </label>
+      <input
+        className="jsx-2761489864"
+        max={null}
+        name="min"
+        onChange={[Function]}
+        type="number"
+        value={null}
+      />
+    </div>
+    <div
+      className="jsx-2761489864 rangeField"
+    >
+      <label
+        className="jsx-2761489864"
+        htmlFor="max"
+      >
+        <span>
+          Max
+        </span>
+      </label>
+      <input
+        className="jsx-2761489864"
+        min={null}
+        name="max"
+        onChange={[Function]}
+        type="number"
+        value={null}
+      />
+    </div>
+  </div>
+</div>
+`;
+
 exports[`Storyshots questionTypes/FREE FREE Creation Preview (Lower bound restriction) 1`] = `
 <div
   className="jsx-2332170339 preview"

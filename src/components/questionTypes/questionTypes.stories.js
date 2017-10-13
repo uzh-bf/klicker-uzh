@@ -15,6 +15,7 @@ import {
   SCCreationPreview,
   FREEAnswerOptions,
   FREECreationPreview,
+  FREECreationOptions,
 } from '.'
 
 const options = [
@@ -37,6 +38,20 @@ const SCCreationOptionsWithState = compose(
   }),
   mapProps(({ onChange, options: value }) => ({ input: { onChange, value } })),
 )(SCCreationOptions)
+
+const FREECreationOptionsWithState = compose(
+  withState('value', 'setValue', {
+    restrictions: {
+      max: null,
+      min: null,
+      type: 'NUMBERS',
+    },
+  }),
+  withHandlers({
+    onChange: ({ setValue }) => newValue => setValue(newValue),
+  }),
+  mapProps(({ onChange, value }) => ({ input: { onChange, value } })),
+)(FREECreationOptions)
 
 storiesOf('questionTypes/components', module).add('TypeChooser', () => (
   <TypeChooser
@@ -80,6 +95,7 @@ storiesOf('questionTypes/FREE', module)
   .add('FREE Answering Options (Number restriction)', () => (
     <FREEAnswerOptions options={{ restrictions: { max: 87, min: 900, type: 'NUMBERS' } }} />
   ))
+  .add('FREE Creation Options', () => <FREECreationOptionsWithState />)
   .add('FREE Creation Preview (unrestricted)', () => (
     <FREECreationPreview title="Hello" description="World!" />
   ))
