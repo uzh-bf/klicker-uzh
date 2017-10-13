@@ -93,6 +93,7 @@
     "start:inspect": "cross-env NODE_ENV=production node --inspect server.js",
     "storybook": "start-storybook -p 6006",
     "test": "jest",
+    "test:ci": "jest --coverage",
     "test:watch": "jest --watch"
   },
   "jest": {
