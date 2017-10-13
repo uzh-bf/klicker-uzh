@@ -16,7 +16,7 @@ const propTypes = {
   }).isRequired,
 }
 
-const SessionTimeline = ({ input: { value, onChange } }) => {
+const SessionTimelineInput = ({ input: { value, onChange } }) => {
   const handleNewQuestion = (newQuestion) => {
     onChange([...value, newQuestion])
   }
@@ -55,6 +55,6 @@ const SessionTimeline = ({ input: { value, onChange } }) => {
   )
 }
 
-SessionTimeline.propTypes = propTypes
+SessionTimelineInput.propTypes = propTypes
 
-export default SessionTimeline
+export default SessionTimelineInput

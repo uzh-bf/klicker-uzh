@@ -622,78 +622,7 @@ exports[`Storyshots feedbacks FeedbackChannel (isActive) 1`] = `
   </div>
   <div
     className="jsx-980406985 feedbacks"
-  >
-    <div
-      className="jsx-980406985 feedback"
-    >
-      <div
-        className="jsx-908384001 feedback"
-      >
-        <div
-          className="jsx-908384001 content"
-        >
-          hello alex!
-        </div>
-        <div
-          className="jsx-908384001 delete"
-        >
-          <button
-            className="ui basic fluid icon button"
-            disabled={undefined}
-            onClick={[Function]}
-            role="button"
-            tabIndex={undefined}
-          >
-            <i
-              aria-hidden="true"
-              className="trash outline icon"
-            />
-          </button>
-        </div>
-        <div
-          className="jsx-908384001 votes"
-        >
-          +
-          100
-        </div>
-      </div>
-    </div>
-    <div
-      className="jsx-980406985 feedback"
-    >
-      <div
-        className="jsx-908384001 feedback"
-      >
-        <div
-          className="jsx-908384001 content"
-        >
-          bla bleh
-        </div>
-        <div
-          className="jsx-908384001 delete"
-        >
-          <button
-            className="ui basic fluid icon button"
-            disabled={undefined}
-            onClick={[Function]}
-            role="button"
-            tabIndex={undefined}
-          >
-            <i
-              aria-hidden="true"
-              className="trash outline icon"
-            />
-          </button>
-        </div>
-        <div
-          className="jsx-908384001 votes"
-        >
-          +
-          40
-        </div>
-      </div>
-    </div>
-  </div>
+  />
 </div>
 `;
 
@@ -756,78 +685,7 @@ exports[`Storyshots feedbacks FeedbackChannel (isPublic) 1`] = `
   </div>
   <div
     className="jsx-980406985 feedbacks"
-  >
-    <div
-      className="jsx-980406985 feedback"
-    >
-      <div
-        className="jsx-908384001 feedback"
-      >
-        <div
-          className="jsx-908384001 content"
-        >
-          hello alex!
-        </div>
-        <div
-          className="jsx-908384001 delete"
-        >
-          <button
-            className="ui basic fluid icon button"
-            disabled={undefined}
-            onClick={[Function]}
-            role="button"
-            tabIndex={undefined}
-          >
-            <i
-              aria-hidden="true"
-              className="trash outline icon"
-            />
-          </button>
-        </div>
-        <div
-          className="jsx-908384001 votes"
-        >
-          +
-          100
-        </div>
-      </div>
-    </div>
-    <div
-      className="jsx-980406985 feedback"
-    >
-      <div
-        className="jsx-908384001 feedback"
-      >
-        <div
-          className="jsx-908384001 content"
-        >
-          bla bleh
-        </div>
-        <div
-          className="jsx-908384001 delete"
-        >
-          <button
-            className="ui basic fluid icon button"
-            disabled={undefined}
-            onClick={[Function]}
-            role="button"
-            tabIndex={undefined}
-          >
-            <i
-              aria-hidden="true"
-              className="trash outline icon"
-            />
-          </button>
-        </div>
-        <div
-          className="jsx-908384001 votes"
-        >
-          +
-          40
-        </div>
-      </div>
-    </div>
-  </div>
+  />
 </div>
 `;
 
@@ -1471,41 +1329,6 @@ exports[`Storyshots forms/helpers FormWithLinks 1`] = `
 </form>
 `;
 
-exports[`Storyshots forms/helpers QuestionDropzone 1`] = `
-<div
-  style={
-    Object {
-      "height": 100,
-      "width": 100,
-    }
-  }
->
-  <div
-    className="jsx-663420075 dropzone"
-  >
-    <svg
-      fill="currentColor"
-      height="1em"
-      preserveAspectRatio="xMidYMid meet"
-      style={
-        Object {
-          "color": undefined,
-          "verticalAlign": "middle",
-        }
-      }
-      viewBox="0 0 40 40"
-      width="1em"
-    >
-      <g>
-        <path
-          d="m35.9 16.4v4.3q0 0.9-0.6 1.5t-1.5 0.7h-9.3v9.2q0 0.9-0.6 1.6t-1.5 0.6h-4.3q-0.9 0-1.5-0.6t-0.7-1.6v-9.2h-9.3q-0.9 0-1.5-0.7t-0.6-1.5v-4.3q0-0.9 0.6-1.5t1.5-0.6h9.3v-9.3q0-0.9 0.7-1.5t1.5-0.6h4.3q0.9 0 1.5 0.6t0.6 1.5v9.3h9.3q0.9 0 1.5 0.6t0.6 1.5z"
-        />
-      </g>
-    </svg>
-  </div>
-</div>
-`;
-
 exports[`Storyshots forms/helpers SemanticInput (with error) 1`] = `
 <div
   className="error field"
@@ -1548,86 +1371,6 @@ exports[`Storyshots forms/helpers SemanticInput 1`] = `
     className="jsx-1447640616 "
     placeholder="label"
   />
-</div>
-`;
-
-exports[`Storyshots forms/helpers SessionTimeline 1`] = `
-<div
-  className="jsx-3047766213 sessionTimeline"
->
-  <div
-    className="jsx-3047766213 timelineItem"
-  >
-    <div
-      className="jsx-2420337898 questionSingle"
-    >
-      <div
-        className="jsx-2420337898 id"
-      >
-        #id1
-      </div>
-      <div
-        className="jsx-2420337898 type"
-      >
-        SC
-      </div>
-      <div
-        className="jsx-2420337898 content"
-      >
-        question1
-      </div>
-    </div>
-  </div>
-  <div
-    className="jsx-3047766213 timelineItem"
-  >
-    <div
-      className="jsx-2420337898 questionSingle"
-    >
-      <div
-        className="jsx-2420337898 id"
-      >
-        #id2
-      </div>
-      <div
-        className="jsx-2420337898 type"
-      >
-        FREE
-      </div>
-      <div
-        className="jsx-2420337898 content"
-      >
-        question2
-      </div>
-    </div>
-  </div>
-  <div
-    className="jsx-3047766213 timelineItem"
-  >
-    <div
-      className="jsx-663420075 dropzone"
-    >
-      <svg
-        fill="currentColor"
-        height="1em"
-        preserveAspectRatio="xMidYMid meet"
-        style={
-          Object {
-            "color": undefined,
-            "verticalAlign": "middle",
-          }
-        }
-        viewBox="0 0 40 40"
-        width="1em"
-      >
-        <g>
-          <path
-            d="m35.9 16.4v4.3q0 0.9-0.6 1.5t-1.5 0.7h-9.3v9.2q0 0.9-0.6 1.6t-1.5 0.6h-4.3q-0.9 0-1.5-0.6t-0.7-1.6v-9.2h-9.3q-0.9 0-1.5-0.7t-0.6-1.5v-4.3q0-0.9 0.6-1.5t1.5-0.6h9.3v-9.3q0-0.9 0.7-1.5t1.5-0.6h4.3q0.9 0 1.5 0.6t0.6 1.5v9.3h9.3q0.9 0 1.5 0.6t0.6 1.5z"
-          />
-        </g>
-      </svg>
-    </div>
-  </div>
 </div>
 `;
 
@@ -1765,6 +1508,354 @@ exports[`Storyshots layouts TeacherLayout 1`] = `
 </div>
 `;
 
+exports[`Storyshots questionTypes/FREE FREE Answering Options (Number restriction) 1`] = `
+<div
+  className="options"
+>
+  <div
+    className="slider"
+  >
+    <p>
+      900
+    </p>
+    <p>
+      87
+    </p>
+    <div
+      aria-orientation="horizontal"
+      aria-valuemax={87}
+      aria-valuemin={900}
+      aria-valuenow={555}
+      className="rangeslider rangeslider-horizontal"
+      onMouseDown={[Function]}
+      onMouseUp={[Function]}
+      onTouchEnd={[Function]}
+      onTouchStart={[Function]}
+    >
+      <div
+        className="rangeslider__fill"
+        style={
+          Object {
+            "width": "0px",
+          }
+        }
+      />
+      <div
+        className="rangeslider__handle"
+        onKeyDown={[Function]}
+        onMouseDown={[Function]}
+        onTouchEnd={[Function]}
+        onTouchMove={[Function]}
+        style={
+          Object {
+            "left": "0px",
+          }
+        }
+        tabIndex={0}
+      >
+        <div
+          className="rangeslider__handle-label"
+        >
+          
+        </div>
+      </div>
+      <ul
+        className="rangeslider__labels"
+      />
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots questionTypes/FREE FREE Answering Options (lower bound restriction) 1`] = `
+<div
+  className="options"
+>
+  <div>
+    <textarea />
+    <div>
+      <span>
+        Min
+      </span>
+      :
+       
+      9
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots questionTypes/FREE FREE Answering Options (unrestricted) 1`] = `
+<div
+  className="options"
+>
+  <div>
+    <textarea />
+  </div>
+</div>
+`;
+
+exports[`Storyshots questionTypes/FREE FREE Answering Options (upper bound restriction) 1`] = `
+<div
+  className="options"
+>
+  <div>
+    <textarea />
+    <div>
+      <span>
+        Max
+      </span>
+      :
+       
+      87
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots questionTypes/FREE FREE Creation Options 1`] = `
+<div
+  className="field"
+>
+  <label
+    className="jsx-1330628297"
+    htmlFor="options"
+  >
+    <span>
+      Options
+    </span>
+  </label>
+  <div
+    className="jsx-1330628297 optionsChooser"
+  >
+    <button
+      className="ui button option"
+      disabled={undefined}
+      onClick={[Function]}
+      role="button"
+      tabIndex={undefined}
+    >
+      <span>
+        No Limitations
+      </span>
+    </button>
+    <button
+      className="ui button option active"
+      disabled={undefined}
+      onClick={[Function]}
+      role="button"
+      tabIndex={undefined}
+    >
+      <span>
+        Number Range
+      </span>
+    </button>
+  </div>
+  <div
+    className="jsx-1330628297 range"
+  >
+    <div
+      className="jsx-1330628297 rangeField"
+    >
+      <label
+        className="jsx-1330628297"
+        htmlFor="min"
+      >
+        <span>
+          Min
+        </span>
+      </label>
+      <div
+        className="ui input"
+      >
+        <input
+          disabled={undefined}
+          name="min"
+          onChange={[Function]}
+          tabIndex={undefined}
+          type="number"
+          value={null}
+        />
+      </div>
+    </div>
+    <div
+      className="jsx-1330628297 rangeField"
+    >
+      <label
+        className="jsx-1330628297"
+        htmlFor="max"
+      >
+        <span>
+          Max
+        </span>
+      </label>
+      <div
+        className="ui input"
+      >
+        <input
+          disabled={undefined}
+          name="max"
+          onChange={[Function]}
+          tabIndex={undefined}
+          type="number"
+          value={null}
+        />
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots questionTypes/FREE FREE Creation Preview (Lower bound restriction) 1`] = `
+<div
+  className="jsx-2332170339 preview"
+>
+  <div
+    className="jsx-2332170339 title"
+  >
+    Hello
+  </div>
+  <div
+    className="jsx-2332170339 description"
+  >
+    World!
+  </div>
+  <div
+    className="jsx-2332170339"
+  >
+    <div
+      className="jsx-2332170339 freeText"
+    >
+      <div
+        className="jsx-2332170339 box"
+      />
+    </div>
+    <div
+      className="jsx-2332170339"
+    >
+      <span>
+        Min
+      </span>
+      :
+       
+      90
+    </div>
+  </div>
+  <div
+    className="jsx-2332170339 button"
+  >
+    <span>
+      Submit
+    </span>
+  </div>
+</div>
+`;
+
+exports[`Storyshots questionTypes/FREE FREE Creation Preview (Number-Range) 1`] = `
+<div
+  className="jsx-2332170339 preview"
+>
+  <div
+    className="jsx-2332170339 title"
+  >
+    Hello
+  </div>
+  <div
+    className="jsx-2332170339 description"
+  >
+    World!
+  </div>
+  <div
+    className="jsx-2332170339 diagram"
+  >
+    <div
+      className="jsx-2332170339 min"
+    >
+      <span>
+        Min
+      </span>
+      :
+       
+      90
+    </div>
+    <div
+      className="jsx-2332170339 max"
+    >
+      <span>
+        Max
+      </span>
+      :
+       
+      900
+    </div>
+    <div
+      className="jsx-2332170339 line"
+    />
+    <div
+      className="jsx-2332170339 box"
+    />
+  </div>
+  <div
+    className="jsx-2332170339 selection"
+  >
+    <b
+      className="jsx-2332170339 title"
+    >
+      <span>
+        Selection
+      </span>
+    </b>
+    <div
+      className="jsx-2332170339 box"
+    >
+      495
+    </div>
+  </div>
+  <div
+    className="jsx-2332170339 button"
+  >
+    <span>
+      Submit
+    </span>
+  </div>
+</div>
+`;
+
+exports[`Storyshots questionTypes/FREE FREE Creation Preview (unrestricted) 1`] = `
+<div
+  className="jsx-2332170339 preview"
+>
+  <div
+    className="jsx-2332170339 title"
+  >
+    Hello
+  </div>
+  <div
+    className="jsx-2332170339 description"
+  >
+    World!
+  </div>
+  <div
+    className="jsx-2332170339"
+  >
+    <div
+      className="jsx-2332170339 freeText"
+    >
+      <div
+        className="jsx-2332170339 box"
+      />
+    </div>
+  </div>
+  <div
+    className="jsx-2332170339 button"
+  >
+    <span>
+      Submit
+    </span>
+  </div>
+</div>
+`;
+
 exports[`Storyshots questionTypes/SC SC Answering Options 1`] = `
 <div
   className="jsx-3454815952 options"
@@ -1808,27 +1899,6 @@ exports[`Storyshots questionTypes/SC SC Answering Options 1`] = `
       option 3
     </button>
   </div>
-</div>
-`;
-
-exports[`Storyshots questionTypes/SC SC Creation Content 1`] = `
-<div
-  className="jsx-375425943 field"
->
-  <label
-    className="jsx-375425943"
-    htmlFor="content"
-  >
-    <span>
-      Content
-    </span>
-  </label>
-  <textarea
-    className="jsx-375425943"
-    name="content"
-    onChange={undefined}
-    value="hello world"
-  />
 </div>
 `;
 
@@ -2033,10 +2103,10 @@ exports[`Storyshots questionTypes/SC SC Creation Preview 1`] = `
 
 exports[`Storyshots questionTypes/components TypeChooser 1`] = `
 <div
-  className="jsx-1741889839 field"
+  className="field"
 >
   <label
-    className="jsx-1741889839"
+    className="jsx-910700654"
     htmlFor="types"
   >
     <span>
@@ -2044,31 +2114,62 @@ exports[`Storyshots questionTypes/components TypeChooser 1`] = `
     </span>
   </label>
   <div
-    className="jsx-1741889839 typeChooser"
+    className="jsx-910700654 typeChooser"
   >
     <button
-      className="jsx-1741889839 type active"
+      className="ui button type active"
+      disabled={undefined}
       onClick={[Function]}
-      type="button"
+      role="button"
+      tabIndex={undefined}
     >
       Single-Choice
     </button>
     <button
-      className="jsx-1741889839 type"
+      className="ui button type"
+      disabled={undefined}
       onClick={[Function]}
-      type="button"
+      role="button"
+      tabIndex={undefined}
     >
       Multiple-Choice
     </button>
     <button
-      className="jsx-1741889839 type"
+      className="ui button type"
+      disabled={undefined}
       onClick={[Function]}
-      type="button"
+      role="button"
+      tabIndex={undefined}
     >
       Free-Form
     </button>
   </div>
 </div>
+`;
+
+exports[`Storyshots questions ContentInput 1`] = `
+<form
+  className="ui form"
+>
+  <div
+    className="jsx-375425943 field"
+  >
+    <label
+      className="jsx-375425943"
+      htmlFor="content"
+    >
+      <span>
+        Content
+      </span>
+    </label>
+    <textarea
+      className="jsx-375425943"
+      name="content"
+      onChange={[Function]}
+      value="hello world"
+    />
+  </div>
+</form>
 `;
 
 exports[`Storyshots questions Question (MC, >1 versions) 1`] = `
@@ -2832,12 +2933,47 @@ exports[`Storyshots questions TitleInput 1`] = `
     </label>
     <input
       name="questionTitle"
-      onChange={undefined}
+      onChange={[Function]}
       type="text"
       value="my title"
     />
   </div>
 </form>
+`;
+
+exports[`Storyshots sessions QuestionDropzone 1`] = `
+<div
+  style={
+    Object {
+      "height": 100,
+      "width": 100,
+    }
+  }
+>
+  <div
+    className="jsx-663420075 dropzone"
+  >
+    <svg
+      fill="currentColor"
+      height="1em"
+      preserveAspectRatio="xMidYMid meet"
+      style={
+        Object {
+          "color": undefined,
+          "verticalAlign": "middle",
+        }
+      }
+      viewBox="0 0 40 40"
+      width="1em"
+    >
+      <g>
+        <path
+          d="m35.9 16.4v4.3q0 0.9-0.6 1.5t-1.5 0.7h-9.3v9.2q0 0.9-0.6 1.6t-1.5 0.6h-4.3q-0.9 0-1.5-0.6t-0.7-1.6v-9.2h-9.3q-0.9 0-1.5-0.7t-0.6-1.5v-4.3q0-0.9 0.6-1.5t1.5-0.6h9.3v-9.3q0-0.9 0.7-1.5t1.5-0.6h4.3q0.9 0 1.5 0.6t0.6 1.5v9.3h9.3q0.9 0 1.5 0.6t0.6 1.5z"
+        />
+      </g>
+    </svg>
+  </div>
+</div>
 `;
 
 exports[`Storyshots sessions Session 1`] = `
@@ -3441,6 +3577,86 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
       />
       Next
     </button>
+  </div>
+</div>
+`;
+
+exports[`Storyshots sessions SessionTimelineInput 1`] = `
+<div
+  className="jsx-3047766213 sessionTimeline"
+>
+  <div
+    className="jsx-3047766213 timelineItem"
+  >
+    <div
+      className="jsx-2420337898 questionSingle"
+    >
+      <div
+        className="jsx-2420337898 id"
+      >
+        #id1
+      </div>
+      <div
+        className="jsx-2420337898 type"
+      >
+        SC
+      </div>
+      <div
+        className="jsx-2420337898 content"
+      >
+        question1
+      </div>
+    </div>
+  </div>
+  <div
+    className="jsx-3047766213 timelineItem"
+  >
+    <div
+      className="jsx-2420337898 questionSingle"
+    >
+      <div
+        className="jsx-2420337898 id"
+      >
+        #id2
+      </div>
+      <div
+        className="jsx-2420337898 type"
+      >
+        FREE
+      </div>
+      <div
+        className="jsx-2420337898 content"
+      >
+        question2
+      </div>
+    </div>
+  </div>
+  <div
+    className="jsx-3047766213 timelineItem"
+  >
+    <div
+      className="jsx-663420075 dropzone"
+    >
+      <svg
+        fill="currentColor"
+        height="1em"
+        preserveAspectRatio="xMidYMid meet"
+        style={
+          Object {
+            "color": undefined,
+            "verticalAlign": "middle",
+          }
+        }
+        viewBox="0 0 40 40"
+        width="1em"
+      >
+        <g>
+          <path
+            d="m35.9 16.4v4.3q0 0.9-0.6 1.5t-1.5 0.7h-9.3v9.2q0 0.9-0.6 1.6t-1.5 0.6h-4.3q-0.9 0-1.5-0.6t-0.7-1.6v-9.2h-9.3q-0.9 0-1.5-0.7t-0.6-1.5v-4.3q0-0.9 0.6-1.5t1.5-0.6h9.3v-9.3q0-0.9 0.7-1.5t1.5-0.6h4.3q0.9 0 1.5 0.6t0.6 1.5v9.3h9.3q0.9 0 1.5 0.6t0.6 1.5z"
+          />
+        </g>
+      </svg>
+    </div>
   </div>
 </div>
 `;

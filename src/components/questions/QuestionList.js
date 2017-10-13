@@ -5,8 +5,8 @@ import { graphql } from 'react-apollo'
 import { compose, withProps, branch, renderComponent } from 'recompose'
 
 import Question from './Question'
-import { LoadingDiv } from '../common/Loading'
-import { filterQuestions } from '../../lib/utils/filters'
+import { LoadingDiv } from '../common'
+import { filterQuestions } from '../../lib'
 import { QuestionListQuery } from '../../graphql/queries'
 
 const propTypes = {

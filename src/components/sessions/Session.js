@@ -4,7 +4,7 @@ import moment from 'moment'
 import { Button, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
-import QuestionBlock from '../questions/QuestionBlock'
+import { QuestionBlock } from '../questions'
 
 const propTypes = {
   blocks: PropTypes.array,

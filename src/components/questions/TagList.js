@@ -4,7 +4,7 @@ import { graphql } from 'react-apollo'
 import { List } from 'semantic-ui-react'
 import { compose, withProps, branch, renderComponent } from 'recompose'
 
-import { LoadingDiv } from '../common/Loading'
+import { LoadingDiv } from '../common'
 import { TagListQuery } from '../../graphql/queries'
 
 const propTypes = {

@@ -3,8 +3,8 @@ import PropTypes from 'prop-types'
 import { compose, withState, withHandlers } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
 
-import StaticLayout from '../../components/layouts/StaticLayout'
-import PasswordResetForm from '../../components/forms/PasswordResetForm'
+import { StaticLayout } from '../../components/layouts'
+import { PasswordResetForm } from '../../components/forms'
 import { pageWithIntl, withData } from '../../lib'
 
 const propTypes = {

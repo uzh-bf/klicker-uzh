@@ -6,16 +6,18 @@ import { DragDropContextProvider } from 'react-dnd'
 import HTML5Backend from 'react-dnd-html5-backend'
 
 import fixtures from '../../../.storybook/fixtures'
-import Question from './Question'
-import QuestionBlock from './QuestionBlock'
-import QuestionDetails from './QuestionDetails'
-import QuestionSingle from './QuestionSingle'
-import QuestionTags from './QuestionTags'
+import {
+  Question,
+  QuestionBlock,
+  QuestionDetails,
+  QuestionSingle,
+  QuestionTags,
+  TagInput,
+  TitleInput,
+  ContentInput,
+} from '.'
 import { TagListPres } from './TagList'
 import { QuestionListPres } from './QuestionList'
-
-import TagInput from './creation/TagInput'
-import TitleInput from './creation/TitleInput'
 
 storiesOf('questions', module)
   .addDecorator(getStory => (
@@ -54,11 +56,16 @@ storiesOf('questions', module)
   // HACK: disable test for TagInput as autosuggest breaks...
   .add('TagInput [NoTest]', () => (
     <form className="ui form">
-      <TagInput input={{ value: ['tag1', 'tag2'] }} />
+      <TagInput input={{ onChange: () => null, value: ['tag1', 'tag2'] }} />
     </form>
   ))
   .add('TitleInput', () => (
     <form className="ui form">
-      <TitleInput input={{ value: 'my title' }} />
+      <TitleInput input={{ onChange: () => null, value: 'my title' }} />
+    </form>
+  ))
+  .add('ContentInput', () => (
+    <form className="ui form">
+      <ContentInput input={{ onChange: () => null, value: 'hello world' }} />
     </form>
   ))

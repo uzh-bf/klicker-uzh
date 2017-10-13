@@ -1,6 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
+import { Form, Button } from 'semantic-ui-react'
 import { FormattedMessage, intlShape } from 'react-intl'
 
 const propTypes = {
@@ -39,46 +40,37 @@ const TypeChooser = ({ intl, input: { value, onChange } }) => {
   const handleClick = newValue => () => onChange(newValue)
 
   return (
-    <div className="field">
+    <Form.Field>
       <label htmlFor="types">
         <FormattedMessage defaultMessage="Question type" id="teacher.createQuestion.questionType" />
       </label>
       <div className="typeChooser">
         {types.map(({ name, value: typeValue }) => (
-          <button
+          <Button
             key={typeValue}
             className={classNames('type', { active: typeValue === value })}
-            type="button"
             onClick={handleClick(typeValue)}
           >
             {name}
-          </button>
+          </Button>
         ))}
       </div>
 
       <style jsx>{`
-        button {
-          background-color: white;
-          border: 1px solid lightgrey;
-          cursor: pointer;
-          padding: 1rem;
-          outline: none;
-        }
-
-        button.active {
-          border-color: orange;
-        }
-
-        button:not(:last-child) {
-          margin-bottom: 0.5rem;
-        }
-
         .typeChooser {
           display: flex;
           flex-direction: column;
         }
+
+        .typeChooser > :global(button) {
+          border-radius: 0;
+        }
+
+        .typeChooser > :global(button:not(:last-child)) {
+          margin-bottom: 0.5rem;
+        }
       `}</style>
-    </div>
+    </Form.Field>
   )
 }
 
