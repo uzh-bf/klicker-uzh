@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import { Input } from 'semantic-ui-react'
+import { Form, Button, Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import { compose, withHandlers, setPropTypes } from 'recompose'
 
@@ -39,21 +39,20 @@ const Options = ({
   ]
 
   return (
-    <div className="field">
+    <Form.Field>
       <label htmlFor="options">
         <FormattedMessage defaultMessage="Options" id="teacher.createQuestion.options" />
       </label>
 
       <div className="optionsChooser">
         {optionsData.map(({ name, value: optionValue }) => (
-          <button
+          <Button
             key={optionValue}
             className={classNames('option', { active: optionValue === value.restrictions.type })}
             onClick={handleTypeChange(optionValue)}
-            type="button"
           >
             {name}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -86,19 +85,7 @@ const Options = ({
       )}
 
       <style jsx>{`
-        button {
-          background-color: white;
-          border: 1px solid lightgrey;
-          cursor: pointer;
-          padding: 1rem;
-          outline: none;
-        }
-
-        button.active {
-          border-color: orange;
-        }
-
-        button:not(:last-child) {
+        .optionsChooser > :global(button:not(:last-child)) {
           margin-right: 1rem;
         }
 
@@ -111,7 +98,7 @@ const Options = ({
           width: 50%;
         }
       `}</style>
-    </div>
+    </Form.Field>
   )
 }
 

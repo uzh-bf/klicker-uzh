@@ -1615,10 +1615,10 @@ exports[`Storyshots questionTypes/FREE FREE Answering Options (upper bound restr
 
 exports[`Storyshots questionTypes/FREE FREE Creation Options 1`] = `
 <div
-  className="jsx-2761489864 field"
+  className="field"
 >
   <label
-    className="jsx-2761489864"
+    className="jsx-1330628297"
     htmlFor="options"
   >
     <span>
@@ -1626,21 +1626,25 @@ exports[`Storyshots questionTypes/FREE FREE Creation Options 1`] = `
     </span>
   </label>
   <div
-    className="jsx-2761489864 optionsChooser"
+    className="jsx-1330628297 optionsChooser"
   >
     <button
-      className="jsx-2761489864 option"
+      className="ui button option"
+      disabled={undefined}
       onClick={[Function]}
-      type="button"
+      role="button"
+      tabIndex={undefined}
     >
       <span>
         No Limitations
       </span>
     </button>
     <button
-      className="jsx-2761489864 option active"
+      className="ui button option active"
+      disabled={undefined}
       onClick={[Function]}
-      type="button"
+      role="button"
+      tabIndex={undefined}
     >
       <span>
         Number Range
@@ -1648,47 +1652,55 @@ exports[`Storyshots questionTypes/FREE FREE Creation Options 1`] = `
     </button>
   </div>
   <div
-    className="jsx-2761489864 range"
+    className="jsx-1330628297 range"
   >
     <div
-      className="jsx-2761489864 rangeField"
+      className="jsx-1330628297 rangeField"
     >
       <label
-        className="jsx-2761489864"
+        className="jsx-1330628297"
         htmlFor="min"
       >
         <span>
           Min
         </span>
       </label>
-      <input
-        className="jsx-2761489864"
-        max={null}
-        name="min"
-        onChange={[Function]}
-        type="number"
-        value={null}
-      />
+      <div
+        className="ui input"
+      >
+        <input
+          disabled={undefined}
+          name="min"
+          onChange={[Function]}
+          tabIndex={undefined}
+          type="number"
+          value={null}
+        />
+      </div>
     </div>
     <div
-      className="jsx-2761489864 rangeField"
+      className="jsx-1330628297 rangeField"
     >
       <label
-        className="jsx-2761489864"
+        className="jsx-1330628297"
         htmlFor="max"
       >
         <span>
           Max
         </span>
       </label>
-      <input
-        className="jsx-2761489864"
-        min={null}
-        name="max"
-        onChange={[Function]}
-        type="number"
-        value={null}
-      />
+      <div
+        className="ui input"
+      >
+        <input
+          disabled={undefined}
+          name="max"
+          onChange={[Function]}
+          tabIndex={undefined}
+          type="number"
+          value={null}
+        />
+      </div>
     </div>
   </div>
 </div>
@@ -2091,10 +2103,10 @@ exports[`Storyshots questionTypes/SC SC Creation Preview 1`] = `
 
 exports[`Storyshots questionTypes/components TypeChooser 1`] = `
 <div
-  className="jsx-1741889839 field"
+  className="field"
 >
   <label
-    className="jsx-1741889839"
+    className="jsx-910700654"
     htmlFor="types"
   >
     <span>
@@ -2102,26 +2114,32 @@ exports[`Storyshots questionTypes/components TypeChooser 1`] = `
     </span>
   </label>
   <div
-    className="jsx-1741889839 typeChooser"
+    className="jsx-910700654 typeChooser"
   >
     <button
-      className="jsx-1741889839 type active"
+      className="ui button type active"
+      disabled={undefined}
       onClick={[Function]}
-      type="button"
+      role="button"
+      tabIndex={undefined}
     >
       Single-Choice
     </button>
     <button
-      className="jsx-1741889839 type"
+      className="ui button type"
+      disabled={undefined}
       onClick={[Function]}
-      type="button"
+      role="button"
+      tabIndex={undefined}
     >
       Multiple-Choice
     </button>
     <button
-      className="jsx-1741889839 type"
+      className="ui button type"
+      disabled={undefined}
       onClick={[Function]}
-      type="button"
+      role="button"
+      tabIndex={undefined}
     >
       Free-Form
     </button>
