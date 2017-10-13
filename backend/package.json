@@ -49,6 +49,7 @@
     "start": "cross-env NODE_ENV=production node src/server.js",
     "start:inspect": "cross-env NODE_ENV=production node --inspect src/server.js",
     "test": "jest",
+    "test:ci": "jest --coverage",
     "test:watch": "jest --watch"
   },
   "jest": {

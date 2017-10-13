@@ -1,5 +1,9 @@
 const {
-  QuestionModel, QuestionInstanceModel, SessionModel, TagModel, UserModel,
+  QuestionModel,
+  QuestionInstanceModel,
+  SessionModel,
+  TagModel,
+  UserModel,
 } = require('../models')
 const AuthService = require('../services/auth')
 

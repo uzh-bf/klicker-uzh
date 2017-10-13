@@ -76,7 +76,10 @@ server.use(
   // setup Apollo Optics if enabled
   withOptics ? opticsAgent.middleware() : f => f,
   // delegate to the GraphQL API
-  graphqlExpress((req, res) => ({ context: { auth: req.auth, res, opticsContext: opticsAgent.context(req) }, schema })),
+  graphqlExpress((req, res) => ({
+    context: { auth: req.auth, res, opticsContext: opticsAgent.context(req) },
+    schema,
+  })),
 )
 
 server.listen(process.env.APP_PORT, (err) => {

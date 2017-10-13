@@ -38,7 +38,11 @@ describe('QuestionService', () => {
       useMongoClient: true,
     })
 
-    await setupTestEnv({ email: 'testQuestions@bf.uzh.ch', password: 'somePassword', shortname: 'questi' })
+    await setupTestEnv({
+      email: 'testQuestions@bf.uzh.ch',
+      password: 'somePassword',
+      shortname: 'questi',
+    })
 
     // login as a test user
     user = await AuthService.login(null, 'testQuestions@bf.uzh.ch', 'somePassword')

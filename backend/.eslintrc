@@ -4,8 +4,7 @@
   "plugins": ["import"],
   "rules": {
     "semi": 0,
-    "no-console": 0,
-    "max-len": [1, 120]
+    "no-console": 0
   },
   "env": {
     "node": true,
