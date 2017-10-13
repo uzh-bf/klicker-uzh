@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import TagsInput from 'react-tagsinput'
 import { FormattedMessage } from 'react-intl'
 
-import { autocompleteRenderInput } from '../../common/Autosuggest'
+import { autocompleteRenderInput } from '../../common'
 import styles from './styles-tagsinput'
 
 const propTypes = {

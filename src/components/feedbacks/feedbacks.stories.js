@@ -5,8 +5,7 @@ import { storiesOf } from '@storybook/react'
 import { action } from '@storybook/addon-actions'
 import { compose, withHandlers, withState } from 'recompose'
 
-import FeedbackChannel from './FeedbackChannel'
-import Feedback from './Feedback'
+import { FeedbackChannel, Feedback } from '.'
 import { intlMock } from '../../../.storybook/utils'
 
 // create a stateful wrapper for the component

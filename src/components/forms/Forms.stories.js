@@ -12,14 +12,15 @@ import { reducer as formReducer } from 'redux-form'
 
 import { intlMock } from '../../../.storybook/utils'
 
-import LoginForm from './LoginForm'
-import PasswordResetForm from './PasswordResetForm'
-import RegistrationForm from './RegistrationForm'
-import QuestionCreationForm from './QuestionCreationForm'
-import SessionCreationForm from './SessionCreationForm'
-
-import FormWithLinks from './components/FormWithLinks'
-import SemanticInput from './components/SemanticInput'
+import {
+  LoginForm,
+  PasswordResetForm,
+  RegistrationForm,
+  QuestionCreationForm,
+  SessionCreationForm,
+  FormWithLinks,
+  SemanticInput,
+} from '.'
 
 const rootReducer = combineReducers({
   form: formReducer,

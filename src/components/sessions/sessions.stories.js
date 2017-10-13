@@ -7,12 +7,9 @@ import HTML5Backend from 'react-dnd-html5-backend'
 
 import { intlMock } from '../../../.storybook/utils'
 
-import Session from './Session'
-import SessionTimeline from './SessionTimeline'
+import { Session, SessionTimeline, QuestionDropzone, SessionTimelineInput } from '.'
 import { SessionListPres } from './SessionList'
 import fixtures from '../../../.storybook/fixtures'
-import SessionTimelineInput from './creation/SessionTimelineInput'
-import QuestionDropzone from './creation/QuestionDropzone'
 
 storiesOf('sessions', module)
   .addDecorator(getStory => (
@@ -31,6 +28,7 @@ storiesOf('sessions', module)
   .add('SessionTimelineInput', () => (
     <SessionTimelineInput
       input={{
+        onChange: () => null,
         value: [
           { id: 'id1', title: 'question1', type: 'SC' },
           { id: 'id2', title: 'question2', type: 'FREE' },

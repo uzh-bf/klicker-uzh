@@ -13,8 +13,9 @@ import {
   SCCreationOptions,
   SCCreationPlaceholder,
   SCCreationPreview,
-} from './SC'
-import { FREEAnswerOptions, FREECreationPreview } from './FREE'
+  FREEAnswerOptions,
+  FREECreationPreview,
+} from '.'
 
 const options = [
   { correct: false, name: 'answer 1' },

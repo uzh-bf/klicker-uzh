@@ -6,12 +6,14 @@ import { connect } from 'react-redux'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage, intlShape } from 'react-intl'
 
-import ContentInput from '../questions/creation/ContentInput'
-import TitleInput from '../questions/creation/TitleInput'
-import TagInput from '../questions/creation/TagInput'
-import TypeChooser from '../questionTypes/TypeChooser'
-import { SCCreationOptions, SCCreationPreview } from '../../components/questionTypes/SC'
-import { FREECreationOptions, FREECreationPreview } from '../../components/questionTypes/FREE'
+import { ContentInput, TitleInput, TagInput } from '../questions'
+import {
+  TypeChooser,
+  SCCreationOptions,
+  SCCreationPreview,
+  FREECreationOptions,
+  FREECreationPreview,
+} from '../../components/questionTypes'
 
 // form validation
 const validate = ({

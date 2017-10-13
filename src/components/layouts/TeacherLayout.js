@@ -7,8 +7,8 @@ import { FormattedMessage, intlShape } from 'react-intl'
 import { Helmet } from 'react-helmet'
 import { DragDropContext } from 'react-dnd'
 
-import Navbar from '../../components/common/navbar/Navbar'
-import Sidebar from '../../components/common/sidebar/Sidebar'
+import { Navbar } from '../../components/common/navbar'
+import { Sidebar } from '../../components/common/sidebar'
 import { createLinks, initLogging } from '../../lib'
 
 const propTypes = {

@@ -10,10 +10,9 @@ import { FaPlus } from 'react-icons/lib/fa'
 import { pageWithIntl, withData } from '../../lib'
 import { SessionListQuery, RunningSessionQuery } from '../../graphql/queries'
 import { CreateSessionMutation, StartSessionMutation } from '../../graphql/mutations'
-import SessionCreationForm from '../../components/forms/SessionCreationForm'
-import QuestionList from '../../components/questions/QuestionList'
-import TagList from '../../components/questions/TagList'
-import TeacherLayout from '../../components/layouts/TeacherLayout'
+import { SessionCreationForm } from '../../components/forms'
+import { QuestionList, TagList } from '../../components/questions'
+import { TeacherLayout } from '../../components/layouts'
 
 const propTypes = {
   creationMode: PropTypes.bool.isRequired,

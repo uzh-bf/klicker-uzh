@@ -6,7 +6,7 @@ import { compose, withPropsOnChange, branch, renderComponent } from 'recompose'
 import { FormattedMessage } from 'react-intl'
 
 import Session from './Session'
-import { LoadingDiv } from '../common/Loading'
+import { LoadingDiv } from '../common'
 import { SessionListQuery } from '../../graphql/queries'
 
 const propTypes = {

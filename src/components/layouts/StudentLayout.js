@@ -6,7 +6,7 @@ import { Button } from 'semantic-ui-react'
 
 import { createLinks, initLogging } from '../../lib'
 
-import Sidebar from '../common/sidebar/Sidebar'
+import { Sidebar } from '../common/sidebar'
 
 const propTypes = {
   children: PropTypes.node.isRequired,

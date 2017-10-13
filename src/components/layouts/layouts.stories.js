@@ -2,9 +2,7 @@
 import React from 'react'
 import { storiesOf } from '@storybook/react'
 
-import StaticLayout from './StaticLayout'
-import TeacherLayout from './TeacherLayout'
-import StudentLayout from './StudentLayout'
+import { StaticLayout, TeacherLayout, StudentLayout } from '.'
 
 storiesOf('layouts', module)
   .add('StaticLayout', () => <StaticLayout>some static content</StaticLayout>)

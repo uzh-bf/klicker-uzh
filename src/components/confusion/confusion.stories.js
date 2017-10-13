@@ -4,9 +4,7 @@ import React from 'react'
 import { storiesOf } from '@storybook/react'
 import { compose, withHandlers, withState } from 'recompose'
 
-import ConfusionBarometer from './ConfusionBarometer'
-import ConfusionSection from './ConfusionSection'
-import ConfusionSlider from './ConfusionSlider'
+import { ConfusionBarometer, ConfusionSection, ConfusionSlider } from '.'
 import { intlMock } from '../../../.storybook/utils'
 
 // create a stateful wrapper for the component

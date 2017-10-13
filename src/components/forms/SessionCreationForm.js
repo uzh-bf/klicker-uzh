@@ -5,8 +5,8 @@ import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage } from 'react-intl'
 import { FaFloppyO, FaPlay, FaTrash } from 'react-icons/lib/fa'
 
-import { SemanticInput } from './components'
-import SessionTimelineInput from '../sessions/creation/SessionTimelineInput'
+import { SemanticInput } from '.'
+import { SessionTimelineInput } from '../sessions'
 
 // form validation
 const validate = ({ sessionName, questions }) => {
