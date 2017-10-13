@@ -2017,7 +2017,7 @@ exports[`Storyshots questions ContentInput 1`] = `
     <textarea
       className="jsx-375425943"
       name="content"
-      onChange={undefined}
+      onChange={[Function]}
       value="hello world"
     />
   </div>
@@ -2785,7 +2785,7 @@ exports[`Storyshots questions TitleInput 1`] = `
     </label>
     <input
       name="questionTitle"
-      onChange={undefined}
+      onChange={[Function]}
       type="text"
       value="my title"
     />
