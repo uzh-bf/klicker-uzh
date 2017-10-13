@@ -44,12 +44,7 @@ exports[`Storyshots common/components Collapser (extended) 1`] = `
   className="jsx-51013090 collapser"
 >
   <div
-<<<<<<< HEAD
-    className="content"
-    data-jsx={1840183473}
-=======
     className="jsx-51013090 content"
->>>>>>> master
   >
     <div>
       <p>
@@ -117,39 +112,6 @@ exports[`Storyshots common/components Collapser 1`] = `
 `;
 
 exports[`Storyshots common/components ListWithHeader 1`] = `
-<<<<<<< HEAD
-<div
-  data-jsx={3358450463}
->
-  <h3
-    className="listHeader"
-    data-jsx={3358450463}
-  >
-    hello world
-  </h3>
-  <ul
-    className="list"
-    data-jsx={3358450463}
-  >
-    <li
-      className="listItem"
-      data-jsx={3358450463}
-    >
-      abcd
-    </li>
-    <li
-      className="listItem"
-      data-jsx={3358450463}
-    >
-      cdef
-    </li>
-  </ul>
-</div>
-`;
-
-exports[`Storyshots common/navbar AccountArea 1`] = `
-<div
-=======
 <div
   className="jsx-319169000"
 >
@@ -177,7 +139,6 @@ exports[`Storyshots common/navbar AccountArea 1`] = `
 
 exports[`Storyshots common/navbar AccountArea 1`] = `
 <div
->>>>>>> master
   aria-busy={undefined}
   aria-disabled={undefined}
   aria-expanded={false}
@@ -236,19 +197,10 @@ exports[`Storyshots common/navbar AccountArea 1`] = `
 
 exports[`Storyshots common/navbar Navbar 1`] = `
 <div
-<<<<<<< HEAD
-  className="navbar"
-  data-jsx={2070704589}
->
-  <div
-    className="sideArea"
-    data-jsx={2070704589}
-=======
   className="jsx-3363386375 navbar"
 >
   <div
     className="jsx-3363386375 sideArea"
->>>>>>> master
   >
     <div
       className="ui borderless noBorder menu"
@@ -263,23 +215,14 @@ exports[`Storyshots common/navbar Navbar 1`] = `
         />
       </div>
       <h1
-<<<<<<< HEAD
-        data-jsx={2070704589}
-=======
         className="jsx-3363386375"
->>>>>>> master
       >
         Example page
       </h1>
     </div>
   </div>
   <div
-<<<<<<< HEAD
-    className="searchArea"
-    data-jsx={2070704589}
-=======
     className="jsx-3363386375 searchArea"
->>>>>>> master
   >
     <div
       className="ui fluid icon input"
@@ -298,12 +241,7 @@ exports[`Storyshots common/navbar Navbar 1`] = `
     </div>
   </div>
   <div
-<<<<<<< HEAD
-    className="accountArea"
-    data-jsx={2070704589}
-=======
     className="jsx-3363386375 accountArea"
->>>>>>> master
   >
     <div
       className="ui borderless noBorder menu"
@@ -320,11 +258,7 @@ exports[`Storyshots common/navbar Navbar 1`] = `
           onMouseLeave={[Function]}
         >
           /sessions/
-<<<<<<< HEAD
-          AW
-=======
           a2sd5
->>>>>>> master
            
           <i
             aria-hidden="true"
@@ -420,11 +354,7 @@ exports[`Storyshots common/navbar SessionArea 1`] = `
   onMouseLeave={[Function]}
 >
   /sessions/
-<<<<<<< HEAD
-  AW
-=======
   a7s7d
->>>>>>> master
    
   <i
     aria-hidden="true"
@@ -435,12 +365,7 @@ exports[`Storyshots common/navbar SessionArea 1`] = `
 
 exports[`Storyshots common/sidebar Sidebar (invisible) 1`] = `
 <div
-<<<<<<< HEAD
-  className="sidebar"
-  data-jsx={213114463}
-=======
   className="jsx-3632125840 sidebar"
->>>>>>> master
 >
   <div
     className="pushable"
@@ -472,12 +397,7 @@ exports[`Storyshots common/sidebar Sidebar (invisible) 1`] = `
 
 exports[`Storyshots common/sidebar Sidebar (visible) 1`] = `
 <div
-<<<<<<< HEAD
-  className="sidebar"
-  data-jsx={213114463}
-=======
   className="jsx-3632125840 sidebar"
->>>>>>> master
 >
   <div
     className="pushable"
@@ -611,29 +531,15 @@ exports[`Storyshots confusion ConfusionSlider 1`] = `
 
 exports[`Storyshots feedbacks Feedback 1`] = `
 <div
-<<<<<<< HEAD
-  className="feedback"
-  data-jsx={3449085289}
->
-  <div
-    className="content"
-    data-jsx={3449085289}
-=======
   className="jsx-908384001 feedback"
 >
   <div
     className="jsx-908384001 content"
->>>>>>> master
   >
     hello world
   </div>
   <div
-<<<<<<< HEAD
-    className="delete"
-    data-jsx={3449085289}
-=======
     className="jsx-908384001 delete"
->>>>>>> master
   >
     <button
       className="ui basic fluid icon button"
@@ -649,12 +555,7 @@ exports[`Storyshots feedbacks Feedback 1`] = `
     </button>
   </div>
   <div
-<<<<<<< HEAD
-    className="votes"
-    data-jsx={3449085289}
-=======
     className="jsx-908384001 votes"
->>>>>>> master
   >
     +
     100
@@ -721,78 +622,7 @@ exports[`Storyshots feedbacks FeedbackChannel (isActive) 1`] = `
   </div>
   <div
     className="jsx-980406985 feedbacks"
-  >
-    <div
-      className="jsx-980406985 feedback"
-    >
-      <div
-        className="jsx-908384001 feedback"
-      >
-        <div
-          className="jsx-908384001 content"
-        >
-          hello alex!
-        </div>
-        <div
-          className="jsx-908384001 delete"
-        >
-          <button
-            className="ui basic fluid icon button"
-            disabled={undefined}
-            onClick={[Function]}
-            role="button"
-            tabIndex={undefined}
-          >
-            <i
-              aria-hidden="true"
-              className="trash outline icon"
-            />
-          </button>
-        </div>
-        <div
-          className="jsx-908384001 votes"
-        >
-          +
-          100
-        </div>
-      </div>
-    </div>
-    <div
-      className="jsx-980406985 feedback"
-    >
-      <div
-        className="jsx-908384001 feedback"
-      >
-        <div
-          className="jsx-908384001 content"
-        >
-          bla bleh
-        </div>
-        <div
-          className="jsx-908384001 delete"
-        >
-          <button
-            className="ui basic fluid icon button"
-            disabled={undefined}
-            onClick={[Function]}
-            role="button"
-            tabIndex={undefined}
-          >
-            <i
-              aria-hidden="true"
-              className="trash outline icon"
-            />
-          </button>
-        </div>
-        <div
-          className="jsx-908384001 votes"
-        >
-          +
-          40
-        </div>
-      </div>
-    </div>
-  </div>
+  />
 </div>
 `;
 
@@ -855,185 +685,12 @@ exports[`Storyshots feedbacks FeedbackChannel (isPublic) 1`] = `
   </div>
   <div
     className="jsx-980406985 feedbacks"
-  >
-    <div
-      className="jsx-980406985 feedback"
-    >
-      <div
-        className="jsx-908384001 feedback"
-      >
-        <div
-          className="jsx-908384001 content"
-        >
-          hello alex!
-        </div>
-        <div
-          className="jsx-908384001 delete"
-        >
-          <button
-            className="ui basic fluid icon button"
-            disabled={undefined}
-            onClick={[Function]}
-            role="button"
-            tabIndex={undefined}
-          >
-            <i
-              aria-hidden="true"
-              className="trash outline icon"
-            />
-          </button>
-        </div>
-        <div
-          className="jsx-908384001 votes"
-        >
-          +
-          100
-        </div>
-      </div>
-    </div>
-    <div
-      className="jsx-980406985 feedback"
-    >
-      <div
-        className="jsx-908384001 feedback"
-      >
-        <div
-          className="jsx-908384001 content"
-        >
-          bla bleh
-        </div>
-        <div
-          className="jsx-908384001 delete"
-        >
-          <button
-            className="ui basic fluid icon button"
-            disabled={undefined}
-            onClick={[Function]}
-            role="button"
-            tabIndex={undefined}
-          >
-            <i
-              aria-hidden="true"
-              className="trash outline icon"
-            />
-          </button>
-        </div>
-        <div
-          className="jsx-908384001 votes"
-        >
-          +
-          40
-        </div>
-      </div>
-    </div>
-  </div>
+  />
 </div>
 `;
 
 exports[`Storyshots feedbacks FeedbackChannel 1`] = `
 <div
-<<<<<<< HEAD
-  className="feedbackChannel"
-  data-jsx={3242351590}
->
-  <h2
-    data-jsx={3242351590}
-  >
-    <span>
-      Feedback-Channel
-    </span>
-  </h2>
-  <div
-    className="toggle"
-    data-jsx={3242351590}
-  >
-    <div
-      className="ui toggle checkbox"
-      onChange={[Function]}
-      onClick={[Function]}
-      onMouseDown={[Function]}
-    >
-      <input
-        checked={false}
-        className="hidden"
-        name={undefined}
-        readOnly={true}
-        tabIndex={0}
-        type="checkbox"
-        value={false}
-      />
-      <label>
-        Activated
-      </label>
-    </div>
-  </div>
-  <div
-    className="toggle publicationToggle"
-    data-jsx={3242351590}
-  >
-    <div
-      className="ui disabled toggle checkbox publishCheckbox"
-      onChange={[Function]}
-      onClick={[Function]}
-      onMouseDown={[Function]}
-    >
-      <input
-        checked={false}
-        className="hidden"
-        name={undefined}
-        readOnly={true}
-        tabIndex={-1}
-        type="checkbox"
-        value={false}
-      />
-      <label>
-        Publish questions
-      </label>
-    </div>
-  </div>
-</div>
-`;
-
-exports[`Storyshots forms/components LoginForm 1`] = `
-<form
-  className="ui form error"
-  data-jsx={2063282003}
->
-  <div
-    className="required field"
-  >
-    <label
-      data-jsx={1632341904}
-      forHtml="email"
-    >
-      Email
-    </label>
-    <input
-      data-jsx={1632341904}
-      name="email"
-      onBlur={[Function]}
-      onChange={[Function]}
-      onDragStart={[Function]}
-      onDrop={[Function]}
-      onFocus={[Function]}
-      placeholder="Email"
-      type="email"
-      value=""
-    />
-  </div>
-  <div
-    className="required field"
-  >
-    <label
-      data-jsx={1632341904}
-      forHtml="password"
-    >
-      Password
-    </label>
-    <input
-      data-jsx={1632341904}
-      name="password"
-=======
   className="jsx-980406985 feedbackChannel"
 >
   <h2
@@ -1108,28 +765,17 @@ exports[`Storyshots forms/components LoginForm 1`] = `
     <input
       className="jsx-1447640616 "
       name="email"
->>>>>>> master
       onBlur={[Function]}
       onChange={[Function]}
       onDragStart={[Function]}
       onDrop={[Function]}
       onFocus={[Function]}
-<<<<<<< HEAD
-      placeholder="Password"
-      type="password"
-=======
       placeholder="Email"
       type="email"
->>>>>>> master
       value=""
     />
   </div>
   <div
-<<<<<<< HEAD
-    className="actionArea"
-    data-jsx={2063282003}
-  >
-=======
     className="required field"
   >
     <label
@@ -1154,7 +800,6 @@ exports[`Storyshots forms/components LoginForm 1`] = `
   <div
     className="jsx-2700787081 actionArea"
   >
->>>>>>> master
     <button
       className="ui primary disabled button semanticButton"
       disabled={true}
@@ -1162,14 +807,6 @@ exports[`Storyshots forms/components LoginForm 1`] = `
       role="button"
       tabIndex={-1}
       type="submit"
-<<<<<<< HEAD
-    >
-      Submit
-    </button>
-    <div
-      className="links"
-      data-jsx={2063282003}
-=======
     >
       Submit
     </button>
@@ -1255,7 +892,6 @@ exports[`Storyshots forms/components PasswortResetForm 1`] = `
     </button>
     <div
       className="jsx-2700787081 links"
->>>>>>> master
     >
       <div
         className="ui list"
@@ -1266,29 +902,6 @@ exports[`Storyshots forms/components PasswortResetForm 1`] = `
           data-value={undefined}
           onClick={[Function]}
           role="listitem"
-<<<<<<< HEAD
-        >
-          <a
-            data-jsx={2063282003}
-            href="/user/resetPassword"
-            onClick={[Function]}
-          >
-            Forgot password?
-          </a>
-        </div>
-        <div
-          className="item"
-          data-value={undefined}
-          onClick={[Function]}
-          role="listitem"
-        >
-          <a
-            data-jsx={2063282003}
-            href="/user/aaiLogin"
-            onClick={[Function]}
-          >
-            Login with AAI
-=======
         >
           <a
             className="jsx-2700787081"
@@ -1296,7 +909,6 @@ exports[`Storyshots forms/components PasswortResetForm 1`] = `
             onClick={[Function]}
           >
             Back to login
->>>>>>> master
           </a>
         </div>
       </div>
@@ -1305,41 +917,6 @@ exports[`Storyshots forms/components PasswortResetForm 1`] = `
 </form>
 `;
 
-<<<<<<< HEAD
-exports[`Storyshots forms/components PasswortResetForm 1`] = `
-<form
-  className="ui form error"
-  data-jsx={2063282003}
->
-  <div
-    className="required field"
-  >
-    <label
-      data-jsx={1632341904}
-      forHtml="email"
-    >
-      Email
-    </label>
-    <input
-      data-jsx={1632341904}
-      name="email"
-      onBlur={[Function]}
-      onChange={[Function]}
-      onDragStart={[Function]}
-      onDrop={[Function]}
-      onFocus={[Function]}
-      placeholder="Email"
-      type="email"
-      value=""
-    />
-  </div>
-  <div
-    className="actionArea"
-    data-jsx={2063282003}
-  >
-    <button
-      className="ui primary disabled button semanticButton"
-=======
 exports[`Storyshots forms/components RegistrationForm 1`] = `
 <form
   className="jsx-4011255336 ui form error"
@@ -1508,132 +1085,20 @@ exports[`Storyshots forms/components RegistrationForm 1`] = `
     </div>
     <button
       className="ui primary disabled right floated button"
->>>>>>> master
       disabled={true}
       onClick={[Function]}
       role="button"
       tabIndex={-1}
       type="submit"
     >
-<<<<<<< HEAD
-      Submit
-    </button>
-    <div
-      className="links"
-      data-jsx={2063282003}
-    >
-      <div
-        className="ui list"
-        role="list"
-      >
-        <div
-          className="item"
-          data-value={undefined}
-          onClick={[Function]}
-          role="listitem"
-        >
-          <a
-            data-jsx={2063282003}
-            href="/user/login"
-            onClick={[Function]}
-          >
-            Back to login
-          </a>
-        </div>
-      </div>
-    </div>
-=======
       <span>
         Submit
       </span>
     </button>
->>>>>>> master
   </div>
 </form>
 `;
 
-<<<<<<< HEAD
-exports[`Storyshots forms/components RegistrationForm 1`] = `
-<form
-  className="ui form error"
-  data-jsx={1683376726}
-  onSubmit={[Function]}
->
-  <div
-    className="personal"
-    data-jsx={1683376726}
-  >
-    <div
-      className="field"
-    >
-      <label
-        data-jsx={1632341904}
-        forHtml="firstName"
-      >
-        First name
-      </label>
-      <input
-        data-jsx={1632341904}
-        name="firstName"
-        onBlur={[Function]}
-        onChange={[Function]}
-        onDragStart={[Function]}
-        onDrop={[Function]}
-        onFocus={[Function]}
-        placeholder="First name"
-        type="text"
-        value=""
-      />
-    </div>
-    <div
-      className="field"
-    >
-      <label
-        data-jsx={1632341904}
-        forHtml="lastName"
-      >
-        Last name
-      </label>
-      <input
-        data-jsx={1632341904}
-        name="lastName"
-        onBlur={[Function]}
-        onChange={[Function]}
-        onDragStart={[Function]}
-        onDrop={[Function]}
-        onFocus={[Function]}
-        placeholder="Last name"
-        type="text"
-        value=""
-      />
-    </div>
-    <div
-      className="required field"
-    >
-      <label
-        data-jsx={1632341904}
-        forHtml="email"
-      >
-        Email
-      </label>
-      <input
-        data-jsx={1632341904}
-        name="email"
-        onBlur={[Function]}
-        onChange={[Function]}
-        onDragStart={[Function]}
-        onDrop={[Function]}
-        onFocus={[Function]}
-        placeholder="Email"
-        type="email"
-        value=""
-      />
-    </div>
-  </div>
-  <div
-    className="account"
-    data-jsx={1683376726}
-=======
 exports[`Storyshots forms/components SessionCreationForm 1`] = `
 <form
   className="jsx-833882662 ui form sessionCreation"
@@ -1798,111 +1263,8 @@ exports[`Storyshots forms/helpers FormWithLinks 1`] = `
   form fields
   <div
     className="jsx-2700787081 actionArea"
->>>>>>> master
   >
-    <div
-      className="required field"
-    >
-      <label
-        data-jsx={1632341904}
-        forHtml="shortname"
-      >
-        Shortname
-      </label>
-      <input
-        data-jsx={1632341904}
-        name="shortname"
-        onBlur={[Function]}
-        onChange={[Function]}
-        onDragStart={[Function]}
-        onDrop={[Function]}
-        onFocus={[Function]}
-        placeholder="Shortname"
-        type="text"
-        value=""
-      />
-    </div>
-    <div
-      className="required field"
-    >
-      <label
-        data-jsx={1632341904}
-        forHtml="password"
-      >
-        Password
-      </label>
-      <input
-        data-jsx={1632341904}
-        name="password"
-        onBlur={[Function]}
-        onChange={[Function]}
-        onDragStart={[Function]}
-        onDrop={[Function]}
-        onFocus={[Function]}
-        placeholder="Password"
-        type="password"
-        value=""
-      />
-    </div>
-    <div
-      className="required field"
-    >
-      <label
-        data-jsx={1632341904}
-        forHtml="passwordRepeat"
-      >
-        Repeat password
-      </label>
-      <input
-        data-jsx={1632341904}
-        name="passwordRepeat"
-        onBlur={[Function]}
-        onChange={[Function]}
-        onDragStart={[Function]}
-        onDrop={[Function]}
-        onFocus={[Function]}
-        placeholder="Repeat password"
-        type="password"
-        value=""
-      />
-    </div>
-    <div
-      className="field"
-      data-jsx={1683376726}
-    >
-      <label
-        data-jsx={1683376726}
-        htmlFor="useCase"
-      >
-        <span>
-          Use case description
-        </span>
-      </label>
-      <textarea
-        name="useCase"
-        onBlur={[Function]}
-        onChange={[Function]}
-        onDragStart={[Function]}
-        onDrop={[Function]}
-        onFocus={[Function]}
-        type="text"
-        value=""
-      />
-    </div>
     <button
-<<<<<<< HEAD
-      className="ui primary disabled right floated button"
-      disabled={true}
-      onClick={[Function]}
-      role="button"
-      tabIndex={-1}
-      type="submit"
-    >
-      <span>
-        Submit
-      </span>
-    </button>
-=======
       className="ui primary button semanticButton"
       disabled={undefined}
       onClick={[Function]}
@@ -1963,113 +1325,8 @@ exports[`Storyshots forms/helpers FormWithLinks 1`] = `
         </div>
       </div>
     </div>
->>>>>>> master
   </div>
 </form>
-`;
-
-<<<<<<< HEAD
-exports[`Storyshots forms/components SessionCreationForm 1`] = `
-<form
-  className="ui form sessionCreation"
-  data-jsx={3156297394}
-  onSubmit={null}
->
-  <div
-    className="sessionName"
-    data-jsx={3156297394}
-  >
-    <div
-      className="field"
-    >
-      <label
-        data-jsx={1632341904}
-        forHtml="sessionName"
-      >
-        Name
-      </label>
-      <input
-        data-jsx={1632341904}
-        name="sessionName"
-        onBlur={[Function]}
-        onChange={[Function]}
-        onDragStart={[Function]}
-        onDrop={[Function]}
-        onFocus={[Function]}
-        placeholder="Name"
-        value=""
-      />
-    </div>
-  </div>
-  <div
-    className="sessionTimeline"
-    data-jsx={3156297394}
-  >
-    <div
-      className="sessionTimeline"
-      data-jsx={1648436831}
-    >
-      <div
-        className="timelineItem"
-        data-jsx={1648436831}
-      >
-        <div
-          className="dropzone"
-          data-jsx={2892037957}
-        >
-          <svg
-            fill="currentColor"
-            height="1em"
-            preserveAspectRatio="xMidYMid meet"
-            style={
-              Object {
-                "color": undefined,
-                "verticalAlign": "middle",
-              }
-            }
-            viewBox="0 0 40 40"
-            width="1em"
-          >
-            <g>
-              <path
-                d="m35.9 16.4v4.3q0 0.9-0.6 1.5t-1.5 0.7h-9.3v9.2q0 0.9-0.6 1.6t-1.5 0.6h-4.3q-0.9 0-1.5-0.6t-0.7-1.6v-9.2h-9.3q-0.9 0-1.5-0.7t-0.6-1.5v-4.3q0-0.9 0.6-1.5t1.5-0.6h9.3v-9.3q0-0.9 0.7-1.5t1.5-0.6h4.3q0.9 0 1.5 0.6t0.6 1.5v9.3h9.3q0.9 0 1.5 0.6t0.6 1.5z"
-              />
-            </g>
-          </svg>
-=======
-exports[`Storyshots forms/helpers QuestionDropzone 1`] = `
-<div
-  style={
-    Object {
-      "height": 100,
-      "width": 100,
-    }
-  }
->
-  <div
-    className="jsx-663420075 dropzone"
-  >
-    <svg
-      fill="currentColor"
-      height="1em"
-      preserveAspectRatio="xMidYMid meet"
-      style={
-        Object {
-          "color": undefined,
-          "verticalAlign": "middle",
-        }
-      }
-      viewBox="0 0 40 40"
-      width="1em"
-    >
-      <g>
-        <path
-          d="m35.9 16.4v4.3q0 0.9-0.6 1.5t-1.5 0.7h-9.3v9.2q0 0.9-0.6 1.6t-1.5 0.6h-4.3q-0.9 0-1.5-0.6t-0.7-1.6v-9.2h-9.3q-0.9 0-1.5-0.7t-0.6-1.5v-4.3q0-0.9 0.6-1.5t1.5-0.6h9.3v-9.3q0-0.9 0.7-1.5t1.5-0.6h4.3q0.9 0 1.5 0.6t0.6 1.5v9.3h9.3q0.9 0 1.5 0.6t0.6 1.5z"
-        />
-      </g>
-    </svg>
-  </div>
-</div>
 `;
 
 exports[`Storyshots forms/helpers SemanticInput (with error) 1`] = `
@@ -2114,86 +1371,6 @@ exports[`Storyshots forms/helpers SemanticInput 1`] = `
     className="jsx-1447640616 "
     placeholder="label"
   />
-</div>
-`;
-
-exports[`Storyshots forms/helpers SessionTimeline 1`] = `
-<div
-  className="jsx-3047766213 sessionTimeline"
->
-  <div
-    className="jsx-3047766213 timelineItem"
-  >
-    <div
-      className="jsx-2420337898 questionSingle"
-    >
-      <div
-        className="jsx-2420337898 id"
-      >
-        #id1
-      </div>
-      <div
-        className="jsx-2420337898 type"
-      >
-        SC
-      </div>
-      <div
-        className="jsx-2420337898 content"
-      >
-        question1
-      </div>
-    </div>
-  </div>
-  <div
-    className="jsx-3047766213 timelineItem"
-  >
-    <div
-      className="jsx-2420337898 questionSingle"
-    >
-      <div
-        className="jsx-2420337898 id"
-      >
-        #id2
-      </div>
-      <div
-        className="jsx-2420337898 type"
-      >
-        FREE
-      </div>
-      <div
-        className="jsx-2420337898 content"
-      >
-        question2
-      </div>
-    </div>
-  </div>
-  <div
-    className="jsx-3047766213 timelineItem"
-  >
-    <div
-      className="jsx-663420075 dropzone"
-    >
-      <svg
-        fill="currentColor"
-        height="1em"
-        preserveAspectRatio="xMidYMid meet"
-        style={
-          Object {
-            "color": undefined,
-            "verticalAlign": "middle",
-          }
-        }
-        viewBox="0 0 40 40"
-        width="1em"
-      >
-        <g>
-          <path
-            d="m35.9 16.4v4.3q0 0.9-0.6 1.5t-1.5 0.7h-9.3v9.2q0 0.9-0.6 1.6t-1.5 0.6h-4.3q-0.9 0-1.5-0.6t-0.7-1.6v-9.2h-9.3q-0.9 0-1.5-0.7t-0.6-1.5v-4.3q0-0.9 0.6-1.5t1.5-0.6h9.3v-9.3q0-0.9 0.7-1.5t1.5-0.6h4.3q0.9 0 1.5 0.6t0.6 1.5v9.3h9.3q0.9 0 1.5 0.6t0.6 1.5z"
-          />
-        </g>
-      </svg>
-    </div>
-  </div>
 </div>
 `;
 
@@ -2324,22 +1501,216 @@ exports[`Storyshots layouts TeacherLayout 1`] = `
           className="pusher"
         >
           some teacher content
->>>>>>> master
         </div>
       </div>
     </div>
   </div>
-<<<<<<< HEAD
+</div>
+`;
+
+exports[`Storyshots questionTypes/FREE FREE Answering Options (Number restriction) 1`] = `
+<div
+  className="options"
+>
+  <div>
+    Slider 
+  </div>
+</div>
+`;
+
+exports[`Storyshots questionTypes/FREE FREE Answering Options (lower bound restriction) 1`] = `
+<div
+  className="options"
+>
+  <div>
+    <textarea />
+    <div>
+      <span>
+        Min
+      </span>
+      :
+       
+      9
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots questionTypes/FREE FREE Answering Options (unrestricted) 1`] = `
+<div
+  className="options"
+>
+  <div>
+    <textarea />
+  </div>
+</div>
+`;
+
+exports[`Storyshots questionTypes/FREE FREE Answering Options (upper bound restriction) 1`] = `
+<div
+  className="options"
+>
+  <div>
+    <textarea />
+    <div>
+      <span>
+        Max
+      </span>
+      :
+       
+      87
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots questionTypes/FREE FREE Creation Preview (Lower bound restriction) 1`] = `
+<div
+  className="jsx-2332170339 preview"
+>
   <div
-    className="actionArea"
-    data-jsx={3156297394}
+    className="jsx-2332170339 title"
   >
-    <button
-      className="ui fluid button"
-      data-jsx={3156297394}
-      onClick={null}
-      type="button"
-=======
+    Hello
+  </div>
+  <div
+    className="jsx-2332170339 description"
+  >
+    World!
+  </div>
+  <div
+    className="jsx-2332170339"
+  >
+    <div
+      className="jsx-2332170339 freeText"
+    >
+      <div
+        className="jsx-2332170339 box"
+      />
+    </div>
+    <div
+      className="jsx-2332170339"
+    >
+      <span>
+        Min
+      </span>
+      :
+       
+      90
+    </div>
+  </div>
+  <div
+    className="jsx-2332170339 button"
+  >
+    <span>
+      Submit
+    </span>
+  </div>
+</div>
+`;
+
+exports[`Storyshots questionTypes/FREE FREE Creation Preview (Number-Range) 1`] = `
+<div
+  className="jsx-2332170339 preview"
+>
+  <div
+    className="jsx-2332170339 title"
+  >
+    Hello
+  </div>
+  <div
+    className="jsx-2332170339 description"
+  >
+    World!
+  </div>
+  <div
+    className="jsx-2332170339 diagram"
+  >
+    <div
+      className="jsx-2332170339 min"
+    >
+      <span>
+        Min
+      </span>
+      :
+       
+      90
+    </div>
+    <div
+      className="jsx-2332170339 max"
+    >
+      <span>
+        Max
+      </span>
+      :
+       
+      900
+    </div>
+    <div
+      className="jsx-2332170339 line"
+    />
+    <div
+      className="jsx-2332170339 box"
+    />
+  </div>
+  <div
+    className="jsx-2332170339 selection"
+  >
+    <b
+      className="jsx-2332170339 title"
+    >
+      <span>
+        Selection
+      </span>
+    </b>
+    <div
+      className="jsx-2332170339 box"
+    >
+      495
+    </div>
+  </div>
+  <div
+    className="jsx-2332170339 button"
+  >
+    <span>
+      Submit
+    </span>
+  </div>
+</div>
+`;
+
+exports[`Storyshots questionTypes/FREE FREE Creation Preview (unrestricted) 1`] = `
+<div
+  className="jsx-2332170339 preview"
+>
+  <div
+    className="jsx-2332170339 title"
+  >
+    Hello
+  </div>
+  <div
+    className="jsx-2332170339 description"
+  >
+    World!
+  </div>
+  <div
+    className="jsx-2332170339"
+  >
+    <div
+      className="jsx-2332170339 freeText"
+    >
+      <div
+        className="jsx-2332170339 box"
+      />
+    </div>
+  </div>
+  <div
+    className="jsx-2332170339 button"
+  >
+    <span>
+      Submit
+    </span>
+  </div>
 </div>
 `;
 
@@ -2369,209 +1740,23 @@ exports[`Storyshots questionTypes/SC SC Answering Options 1`] = `
       onClick={[Function]}
       role="button"
       tabIndex={undefined}
->>>>>>> master
     >
-      <svg
-        fill="currentColor"
-        height="1em"
-        preserveAspectRatio="xMidYMid meet"
-        style={
-          Object {
-            "color": undefined,
-            "verticalAlign": "middle",
-          }
-        }
-        viewBox="0 0 40 40"
-        width="1em"
-      >
-        <g>
-          <path
-            d="m15.9 30.7v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.7 0v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.8 0v-15.7q0-0.3-0.2-0.5t-0.6-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.4 0 0.6-0.2t0.2-0.5z m-12.2-22.1h10l-1.1-2.6q-0.1-0.2-0.3-0.3h-7.1q-0.2 0.1-0.4 0.3z m20.7 0.7v1.4q0 0.3-0.2 0.5t-0.5 0.2h-2.1v21.2q0 1.8-1.1 3.2t-2.5 1.3h-18.6q-1.4 0-2.5-1.3t-1-3.1v-21.3h-2.2q-0.3 0-0.5-0.2t-0.2-0.5v-1.4q0-0.3 0.2-0.5t0.5-0.2h6.9l1.6-3.8q0.3-0.8 1.2-1.4t1.7-0.5h7.2q0.9 0 1.8 0.5t1.2 1.4l1.5 3.8h6.9q0.3 0 0.5 0.2t0.2 0.5z"
-          />
-        </g>
-      </svg>
-      <span>
-        Discard
-      </span>
-    </button>
-    <button
-      className="ui fluid button"
-      data-jsx={3156297394}
-      disabled={true}
-      type="submit"
-    >
-      <svg
-        fill="currentColor"
-        height="1em"
-        preserveAspectRatio="xMidYMid meet"
-        style={
-          Object {
-            "color": undefined,
-            "verticalAlign": "middle",
-          }
-        }
-        viewBox="0 0 40 40"
-        width="1em"
-      >
-        <g>
-          <path
-            d="m11.6 34.3h17.1v-8.6h-17.1v8.6z m20 0h2.8v-20q0-0.3-0.2-0.9t-0.4-0.7l-6.3-6.3q-0.2-0.2-0.8-0.5t-0.8-0.2v9.3q0 0.9-0.7 1.5t-1.5 0.6h-12.8q-0.9 0-1.6-0.6t-0.6-1.5v-9.3h-2.8v28.6h2.8v-9.3q0-0.9 0.6-1.5t1.6-0.6h18.5q0.9 0 1.5 0.6t0.7 1.5v9.3z m-8.6-20.7v-7.2q0-0.3-0.2-0.5t-0.5-0.2h-4.3q-0.3 0-0.5 0.2t-0.2 0.5v7.2q0 0.3 0.2 0.5t0.5 0.2h4.3q0.3 0 0.5-0.2t0.2-0.5z m14.3 0.7v20.7q0 0.9-0.6 1.5t-1.6 0.6h-30q-0.8 0-1.5-0.6t-0.6-1.5v-30q0-0.9 0.6-1.5t1.5-0.6h20.8q0.9 0 1.9 0.4t1.7 1.1l6.3 6.2q0.6 0.6 1 1.7t0.5 2z"
-          />
-        </g>
-      </svg>
-      <span>
-        Save
-      </span>
-    </button>
-    <button
-      className="ui fluid primary button"
-      data-jsx={3156297394}
-      disabled={true}
-      onClick={null}
-      type="button"
-    >
-      <svg
-        fill="currentColor"
-        height="1em"
-        preserveAspectRatio="xMidYMid meet"
-        style={
-          Object {
-            "color": undefined,
-            "verticalAlign": "middle",
-          }
-        }
-        viewBox="0 0 40 40"
-        width="1em"
-      >
-        <g>
-          <path
-            d="m35.4 20.7l-29.6 16.5q-0.6 0.3-0.9 0t-0.4-0.8v-32.8q0-0.6 0.4-0.8t0.9 0l29.6 16.5q0.5 0.3 0.5 0.7t-0.5 0.7z"
-          />
-        </g>
-      </svg>
-      <span>
-        Start
-      </span>
+      antwort 2
     </button>
   </div>
-</form>
-`;
-
-exports[`Storyshots forms/helpers FormWithLinks 1`] = `
-<form
-  className="ui form error"
-  data-jsx={2063282003}
->
-  form fields
   <div
-<<<<<<< HEAD
-    className="actionArea"
-    data-jsx={2063282003}
-=======
     className="jsx-3454815952 option"
->>>>>>> master
   >
     <button
-      className="ui primary button semanticButton"
+      className="ui basic fluid button"
       disabled={undefined}
       onClick={[Function]}
       role="button"
       tabIndex={undefined}
-      type="submit"
     >
-      button
+      option 3
     </button>
-    <div
-      className="links"
-      data-jsx={2063282003}
-    >
-      <div
-        className="ui list"
-        role="list"
-      >
-        <div
-          className="item"
-          data-value={undefined}
-          onClick={[Function]}
-          role="listitem"
-        >
-          <a
-            data-jsx={2063282003}
-            href="href1"
-            onClick={[Function]}
-          >
-            link1
-          </a>
-        </div>
-        <div
-          className="item"
-          data-value={undefined}
-          onClick={[Function]}
-          role="listitem"
-        >
-          <a
-            data-jsx={2063282003}
-            href="href2"
-            onClick={[Function]}
-          >
-            link2
-          </a>
-        </div>
-        <div
-          className="item"
-          data-value={undefined}
-          onClick={[Function]}
-          role="listitem"
-        >
-          <a
-            data-jsx={2063282003}
-            href="href3"
-            onClick={[Function]}
-          >
-            link3
-          </a>
-        </div>
-      </div>
-    </div>
   </div>
-<<<<<<< HEAD
-</form>
-`;
-
-exports[`Storyshots forms/helpers QuestionDropzone 1`] = `
-<div
-  style={
-    Object {
-      "height": 100,
-      "width": 100,
-    }
-  }
->
-  <div
-    className="dropzone"
-    data-jsx={2892037957}
-=======
-</div>
-`;
-
-exports[`Storyshots questionTypes/SC SC Creation Content 1`] = `
-<div
-  className="jsx-375425943 field"
->
-  <label
-    className="jsx-375425943"
-    htmlFor="content"
-  >
-    <span>
-      Content
-    </span>
-  </label>
-  <textarea
-    className="jsx-375425943"
-    name="content"
-    onChange={undefined}
-    value="hello world"
-  />
 </div>
 `;
 
@@ -2582,7 +1767,6 @@ exports[`Storyshots questionTypes/SC SC Creation Option (correct) 1`] = `
   <button
     className="jsx-2247491703 leftAction"
     onClick={undefined}
->>>>>>> master
   >
     <svg
       fill="currentColor"
@@ -2599,12 +1783,10 @@ exports[`Storyshots questionTypes/SC SC Creation Option (correct) 1`] = `
     >
       <g>
         <path
-          d="m35.9 16.4v4.3q0 0.9-0.6 1.5t-1.5 0.7h-9.3v9.2q0 0.9-0.6 1.6t-1.5 0.6h-4.3q-0.9 0-1.5-0.6t-0.7-1.6v-9.2h-9.3q-0.9 0-1.5-0.7t-0.6-1.5v-4.3q0-0.9 0.6-1.5t1.5-0.6h9.3v-9.3q0-0.9 0.7-1.5t1.5-0.6h4.3q0.9 0 1.5 0.6t0.6 1.5v9.3h9.3q0.9 0 1.5 0.6t0.6 1.5z"
+          d="m15.9 30.7v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.7 0v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.8 0v-15.7q0-0.3-0.2-0.5t-0.6-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.4 0 0.6-0.2t0.2-0.5z m-12.2-22.1h10l-1.1-2.6q-0.1-0.2-0.3-0.3h-7.1q-0.2 0.1-0.4 0.3z m20.7 0.7v1.4q0 0.3-0.2 0.5t-0.5 0.2h-2.1v21.2q0 1.8-1.1 3.2t-2.5 1.3h-18.6q-1.4 0-2.5-1.3t-1-3.1v-21.3h-2.2q-0.3 0-0.5-0.2t-0.2-0.5v-1.4q0-0.3 0.2-0.5t0.5-0.2h6.9l1.6-3.8q0.3-0.8 1.2-1.4t1.7-0.5h7.2q0.9 0 1.8 0.5t1.2 1.4l1.5 3.8h6.9q0.3 0 0.5 0.2t0.2 0.5z"
         />
       </g>
     </svg>
-<<<<<<< HEAD
-=======
   </button>
   <button
     className="jsx-2247491703 toggle correct"
@@ -2616,20 +1798,10 @@ exports[`Storyshots questionTypes/SC SC Creation Option (correct) 1`] = `
     className="jsx-2247491703 name"
   >
     That's true!
->>>>>>> master
   </div>
 </div>
 `;
 
-<<<<<<< HEAD
-exports[`Storyshots forms/helpers SemanticInput (with error) 1`] = `
-<div
-  className="error field"
->
-  <label
-    data-jsx={1632341904}
-    forHtml={undefined}
-=======
 exports[`Storyshots questionTypes/SC SC Creation Option (incorrect) 1`] = `
 <div
   className="jsx-2247491703 option"
@@ -2661,42 +1833,17 @@ exports[`Storyshots questionTypes/SC SC Creation Option (incorrect) 1`] = `
   <button
     className="jsx-2247491703 toggle"
     onClick={undefined}
->>>>>>> master
   >
-    label
-  </label>
-  <input
-    data-jsx={1632341904}
-    placeholder="label"
-  />
+    FALSE
+  </button>
   <div
-<<<<<<< HEAD
-    className="errorMessage"
-    data-jsx={1632341904}
-=======
     className="jsx-2247491703 name"
->>>>>>> master
   >
-    <i
-      aria-hidden="true"
-      className="hand pointer icon"
-    />
-    <span>
-      fail
-    </span>
+    So wrong!
   </div>
 </div>
 `;
 
-<<<<<<< HEAD
-exports[`Storyshots forms/helpers SemanticInput 1`] = `
-<div
-  className="field"
->
-  <label
-    data-jsx={1632341904}
-    forHtml={undefined}
-=======
 exports[`Storyshots questionTypes/SC SC Creation Placeholder 1`] = `
 <div
   className="jsx-327855630 jsx-2247491703 option"
@@ -2705,83 +1852,20 @@ exports[`Storyshots questionTypes/SC SC Creation Placeholder 1`] = `
     className="jsx-327855630 jsx-2247491703 leftAction"
     onClick={[Function]}
     type="button"
->>>>>>> master
   >
-    label
-  </label>
-  <input
-    data-jsx={1632341904}
-    placeholder="label"
-  />
-</div>
-`;
-
-exports[`Storyshots forms/helpers SessionTimeline 1`] = `
-<div
-  className="sessionTimeline"
-  data-jsx={1648436831}
->
-  <div
-    className="timelineItem"
-    data-jsx={1648436831}
-  >
-    <div
-      className="questionSingle"
-      data-jsx={1928862230}
+    <svg
+      fill="currentColor"
+      height="1em"
+      preserveAspectRatio="xMidYMid meet"
+      style={
+        Object {
+          "color": undefined,
+          "verticalAlign": "middle",
+        }
+      }
+      viewBox="0 0 40 40"
+      width="1em"
     >
-<<<<<<< HEAD
-      <div
-        className="id"
-        data-jsx={1928862230}
-      >
-        #id1
-      </div>
-      <div
-        className="type"
-        data-jsx={1928862230}
-      >
-        SC
-      </div>
-      <div
-        className="content"
-        data-jsx={1928862230}
-      >
-        question1
-      </div>
-    </div>
-  </div>
-  <div
-    className="timelineItem"
-    data-jsx={1648436831}
-  >
-    <div
-      className="questionSingle"
-      data-jsx={1928862230}
-    >
-      <div
-        className="id"
-        data-jsx={1928862230}
-      >
-        #id2
-      </div>
-      <div
-        className="type"
-        data-jsx={1928862230}
-      >
-        FREE
-      </div>
-      <div
-        className="content"
-        data-jsx={1928862230}
-      >
-        question2
-      </div>
-    </div>
-  </div>
-  <div
-    className="timelineItem"
-    data-jsx={1648436831}
-=======
       <g>
         <path
           d="m35.9 16.4v4.3q0 0.9-0.6 1.5t-1.5 0.7h-9.3v9.2q0 0.9-0.6 1.6t-1.5 0.6h-4.3q-0.9 0-1.5-0.6t-0.7-1.6v-9.2h-9.3q-0.9 0-1.5-0.7t-0.6-1.5v-4.3q0-0.9 0.6-1.5t1.5-0.6h9.3v-9.3q0-0.9 0.7-1.5t1.5-0.6h4.3q0.9 0 1.5 0.6t0.6 1.5v9.3h9.3q0.9 0 1.5 0.6t0.6 1.5z"
@@ -2806,197 +1890,30 @@ exports[`Storyshots forms/helpers SessionTimeline 1`] = `
     className="jsx-327855630 jsx-2247491703 rightAction"
     onClick={[Function]}
     type="button"
->>>>>>> master
   >
-    <div
-      className="dropzone"
-      data-jsx={2892037957}
-    >
-      <svg
-        fill="currentColor"
-        height="1em"
-        preserveAspectRatio="xMidYMid meet"
-        style={
-          Object {
-            "color": undefined,
-            "verticalAlign": "middle",
-          }
+    <svg
+      fill="currentColor"
+      height="1em"
+      preserveAspectRatio="xMidYMid meet"
+      style={
+        Object {
+          "color": undefined,
+          "verticalAlign": "middle",
         }
-        viewBox="0 0 40 40"
-        width="1em"
-      >
-        <g>
-          <path
-            d="m35.9 16.4v4.3q0 0.9-0.6 1.5t-1.5 0.7h-9.3v9.2q0 0.9-0.6 1.6t-1.5 0.6h-4.3q-0.9 0-1.5-0.6t-0.7-1.6v-9.2h-9.3q-0.9 0-1.5-0.7t-0.6-1.5v-4.3q0-0.9 0.6-1.5t1.5-0.6h9.3v-9.3q0-0.9 0.7-1.5t1.5-0.6h4.3q0.9 0 1.5 0.6t0.6 1.5v9.3h9.3q0.9 0 1.5 0.6t0.6 1.5z"
-          />
-        </g>
-      </svg>
-    </div>
-  </div>
+      }
+      viewBox="0 0 40 40"
+      width="1em"
+    >
+      <g>
+        <path
+          d="m11.6 34.3h17.1v-8.6h-17.1v8.6z m20 0h2.8v-20q0-0.3-0.2-0.9t-0.4-0.7l-6.3-6.3q-0.2-0.2-0.8-0.5t-0.8-0.2v9.3q0 0.9-0.7 1.5t-1.5 0.6h-12.8q-0.9 0-1.6-0.6t-0.6-1.5v-9.3h-2.8v28.6h2.8v-9.3q0-0.9 0.6-1.5t1.6-0.6h18.5q0.9 0 1.5 0.6t0.7 1.5v9.3z m-8.6-20.7v-7.2q0-0.3-0.2-0.5t-0.5-0.2h-4.3q-0.3 0-0.5 0.2t-0.2 0.5v7.2q0 0.3 0.2 0.5t0.5 0.2h4.3q0.3 0 0.5-0.2t0.2-0.5z m14.3 0.7v20.7q0 0.9-0.6 1.5t-1.6 0.6h-30q-0.8 0-1.5-0.6t-0.6-1.5v-30q0-0.9 0.6-1.5t1.5-0.6h20.8q0.9 0 1.9 0.4t1.7 1.1l6.3 6.2q0.6 0.6 1 1.7t0.5 2z"
+        />
+      </g>
+    </svg>
+  </button>
 </div>
 `;
 
-exports[`Storyshots layouts StaticLayout 1`] = `
-<div
-  className="staticLayout"
-  data-jsx={2161656035}
->
-  <div
-    className="content"
-    data-jsx={2161656035}
-  >
-    some static content
-  </div>
-  <footer
-    data-jsx={2161656035}
-  >
-    © IBF
-  </footer>
-</div>
-`;
-
-exports[`Storyshots layouts StudentLayout 1`] = `
-<div
-  className="studentLayout"
-  data-jsx={3095557183}
->
-  <div
-    className="header"
-    data-jsx={3095557183}
-  >
-    <button
-      className="ui basic icon button"
-      disabled={undefined}
-      onClick={[Function]}
-      role="button"
-      tabIndex={undefined}
-    >
-      <i
-        aria-hidden="true"
-        className="content icon"
-      />
-    </button>
-    <h1
-      data-jsx={3095557183}
-    >
-      title
-    </h1>
-  </div>
-  <div
-    className="content"
-    data-jsx={3095557183}
-  >
-    <div
-      className="sidebar"
-      data-jsx={213114463}
-    >
-      <div
-        className="pushable"
-      >
-        <div
-          className="ui vertical labeled icon ui overlay left wide visible sidebar sidebarMenu menu"
-        >
-          <a
-            className="item"
-            onClick={[Function]}
-          >
-            <span>
-              Active Question
-            </span>
-          </a>
-          <a
-            className="item"
-            onClick={[Function]}
-          >
-            <span>
-              Feedback-Channel
-            </span>
-          </a>
-        </div>
-        <div
-          className="pusher"
-        >
-          some student content
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-`;
-
-exports[`Storyshots layouts TeacherLayout 1`] = `
-<div
-  className="teacherLayout"
-  data-jsx={416738783}
->
-  <div
-    className="content"
-    data-jsx={416738783}
-  >
-    <div
-      className="sidebar"
-      data-jsx={213114463}
-    >
-      <div
-        className="pushable"
-      >
-        <div
-          className="ui vertical labeled icon ui overlay left wide visible sidebar sidebarMenu menu"
-        >
-          <a
-            className="active item"
-            onClick={[Function]}
-          >
-            <span>
-              Question Pool
-            </span>
-          </a>
-          <a
-            className="item"
-            onClick={[Function]}
-          >
-            <span>
-              Session History
-            </span>
-          </a>
-          <a
-            className="item"
-            onClick={[Function]}
-          >
-            <span>
-              Running Session
-            </span>
-          </a>
-        </div>
-        <div
-          className="pusher"
-        >
-          some teacher content
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-`;
-
-<<<<<<< HEAD
-exports[`Storyshots questionTypes/FREE FREE Creation Preview (unrestricted) 1`] = `
-<div
-  className="preview"
-  data-jsx={2911428003}
->
-  <div
-    className="title"
-    data-jsx={2911428003}
-  >
-    TITLE
-  </div>
-  <div
-    className="description"
-    data-jsx={2911428003}
-  >
-    DESCRIPTION
-=======
 exports[`Storyshots questionTypes/SC SC Creation Preview 1`] = `
 <div
   className="jsx-1303707464 preview"
@@ -3080,6 +1997,31 @@ exports[`Storyshots questionTypes/components TypeChooser 1`] = `
     </button>
   </div>
 </div>
+`;
+
+exports[`Storyshots questions ContentInput 1`] = `
+<form
+  className="ui form"
+>
+  <div
+    className="jsx-375425943 field"
+  >
+    <label
+      className="jsx-375425943"
+      htmlFor="content"
+    >
+      <span>
+        Content
+      </span>
+    </label>
+    <textarea
+      className="jsx-375425943"
+      name="content"
+      onChange={undefined}
+      value="hello world"
+    />
+  </div>
+</form>
 `;
 
 exports[`Storyshots questions Question (MC, >1 versions) 1`] = `
@@ -3775,7 +2717,6 @@ exports[`Storyshots questions QuestionTags 1`] = `
     className="jsx-2790931470 tag"
   >
     tag2
->>>>>>> master
   </div>
 </div>
 `;
@@ -3786,34 +2727,16 @@ exports[`Storyshots questions TagList 1`] = `
   role="list"
 >
   <div
-<<<<<<< HEAD
-    data-jsx={2911428003}
-=======
     className="item listItem"
     data-value={undefined}
     onClick={[Function]}
     role="listitem"
->>>>>>> master
   >
     <i
       aria-hidden="true"
       className="folder outline icon"
     />
     <div
-<<<<<<< HEAD
-      className="freeText"
-      data-jsx={2911428003}
-    >
-      <div
-        className="box"
-        data-jsx={2911428003}
-      />
-    </div>
-  </div>
-  <div
-    className="button"
-    data-jsx={2911428003}
-=======
       className="content"
     >
       <span
@@ -3828,7 +2751,6 @@ exports[`Storyshots questions TagList 1`] = `
     data-value={undefined}
     onClick={[Function]}
     role="listitem"
->>>>>>> master
   >
     <i
       aria-hidden="true"
@@ -3847,54 +2769,6 @@ exports[`Storyshots questions TagList 1`] = `
 </div>
 `;
 
-<<<<<<< HEAD
-exports[`Storyshots questionTypes/SC SC Answering Options 1`] = `
-<div
-  className="options"
-  data-jsx={964719302}
->
-  <div
-    className="option"
-    data-jsx={964719302}
-  >
-    <button
-      className="ui basic fluid button"
-      disabled={undefined}
-      onClick={[Function]}
-      role="button"
-      tabIndex={undefined}
-    >
-      answer 1
-    </button>
-  </div>
-  <div
-    className="option active"
-    data-jsx={964719302}
-  >
-    <button
-      className="ui basic fluid button"
-      disabled={undefined}
-      onClick={[Function]}
-      role="button"
-      tabIndex={undefined}
-    >
-      antwort 2
-    </button>
-  </div>
-  <div
-    className="option"
-    data-jsx={964719302}
-  >
-    <button
-      className="ui basic fluid button"
-      disabled={undefined}
-      onClick={[Function]}
-      role="button"
-      tabIndex={undefined}
-    >
-      option 3
-    </button>
-=======
 exports[`Storyshots questions TitleInput 1`] = `
 <form
   className="ui form"
@@ -3915,138 +2789,21 @@ exports[`Storyshots questions TitleInput 1`] = `
       type="text"
       value="my title"
     />
->>>>>>> master
   </div>
 </form>
 `;
 
-<<<<<<< HEAD
-exports[`Storyshots questionTypes/SC SC Creation Content 1`] = `
+exports[`Storyshots sessions QuestionDropzone 1`] = `
 <div
-  className="field"
-  data-jsx={281623178}
+  style={
+    Object {
+      "height": 100,
+      "width": 100,
+    }
+  }
 >
-  <label
-    data-jsx={281623178}
-    htmlFor="content"
-  >
-    <span>
-      Content
-    </span>
-  </label>
-  <textarea
-    data-jsx={281623178}
-    name="content"
-    onChange={undefined}
-    value="hello world"
-  />
-</div>
-`;
-
-exports[`Storyshots questionTypes/SC SC Creation Option (correct) 1`] = `
-<div
-  className="option correct"
-  data-jsx-ext="23361152147"
->
-  <button
-    className="leftAction"
-    data-jsx-ext="23361152147"
-    onClick={undefined}
-  >
-    <svg
-      fill="currentColor"
-      height="1em"
-      preserveAspectRatio="xMidYMid meet"
-      style={
-        Object {
-          "color": undefined,
-          "verticalAlign": "middle",
-        }
-      }
-      viewBox="0 0 40 40"
-      width="1em"
-    >
-      <g>
-        <path
-          d="m15.9 30.7v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.7 0v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.8 0v-15.7q0-0.3-0.2-0.5t-0.6-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.4 0 0.6-0.2t0.2-0.5z m-12.2-22.1h10l-1.1-2.6q-0.1-0.2-0.3-0.3h-7.1q-0.2 0.1-0.4 0.3z m20.7 0.7v1.4q0 0.3-0.2 0.5t-0.5 0.2h-2.1v21.2q0 1.8-1.1 3.2t-2.5 1.3h-18.6q-1.4 0-2.5-1.3t-1-3.1v-21.3h-2.2q-0.3 0-0.5-0.2t-0.2-0.5v-1.4q0-0.3 0.2-0.5t0.5-0.2h6.9l1.6-3.8q0.3-0.8 1.2-1.4t1.7-0.5h7.2q0.9 0 1.8 0.5t1.2 1.4l1.5 3.8h6.9q0.3 0 0.5 0.2t0.2 0.5z"
-        />
-      </g>
-    </svg>
-  </button>
-  <button
-    className="toggle correct"
-    data-jsx-ext="23361152147"
-    onClick={undefined}
-  >
-    TRUE
-  </button>
   <div
-    className="name"
-    data-jsx-ext="23361152147"
-  >
-    That's true!
-  </div>
-</div>
-`;
-
-exports[`Storyshots questionTypes/SC SC Creation Option (incorrect) 1`] = `
-<div
-  className="option"
-  data-jsx-ext="23361152147"
->
-  <button
-    className="leftAction"
-    data-jsx-ext="23361152147"
-    onClick={undefined}
-  >
-    <svg
-      fill="currentColor"
-      height="1em"
-      preserveAspectRatio="xMidYMid meet"
-      style={
-        Object {
-          "color": undefined,
-          "verticalAlign": "middle",
-        }
-      }
-      viewBox="0 0 40 40"
-      width="1em"
-    >
-      <g>
-        <path
-          d="m15.9 30.7v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.7 0v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.8 0v-15.7q0-0.3-0.2-0.5t-0.6-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.4 0 0.6-0.2t0.2-0.5z m-12.2-22.1h10l-1.1-2.6q-0.1-0.2-0.3-0.3h-7.1q-0.2 0.1-0.4 0.3z m20.7 0.7v1.4q0 0.3-0.2 0.5t-0.5 0.2h-2.1v21.2q0 1.8-1.1 3.2t-2.5 1.3h-18.6q-1.4 0-2.5-1.3t-1-3.1v-21.3h-2.2q-0.3 0-0.5-0.2t-0.2-0.5v-1.4q0-0.3 0.2-0.5t0.5-0.2h6.9l1.6-3.8q0.3-0.8 1.2-1.4t1.7-0.5h7.2q0.9 0 1.8 0.5t1.2 1.4l1.5 3.8h6.9q0.3 0 0.5 0.2t0.2 0.5z"
-        />
-      </g>
-    </svg>
-  </button>
-  <button
-    className="toggle"
-    data-jsx-ext="23361152147"
-    onClick={undefined}
-  >
-    FALSE
-  </button>
-  <div
-    className="name"
-    data-jsx-ext="23361152147"
-  >
-    So wrong!
-  </div>
-</div>
-`;
-
-exports[`Storyshots questionTypes/SC SC Creation Placeholder 1`] = `
-<div
-  className="option"
-  data-jsx={3520221148}
-  data-jsx-ext="23361152147"
->
-  <button
-    className="leftAction"
-    data-jsx={3520221148}
-    data-jsx-ext="23361152147"
-    onClick={[Function]}
-    type="button"
+    className="jsx-663420075 dropzone"
   >
     <svg
       fill="currentColor"
@@ -4067,767 +2824,10 @@ exports[`Storyshots questionTypes/SC SC Creation Placeholder 1`] = `
         />
       </g>
     </svg>
-  </button>
-  <button
-    className="toggle"
-    data-jsx={3520221148}
-    data-jsx-ext="23361152147"
-    onClick={[Function]}
-    type="button"
-  >
-    FALSE
-  </button>
-  <input
-    data-jsx={3520221148}
-    data-jsx-ext="23361152147"
-    onChange={[Function]}
-    type="text"
-    value=""
-  />
-  <button
-    className="rightAction"
-    data-jsx={3520221148}
-    data-jsx-ext="23361152147"
-    onClick={[Function]}
-    type="button"
-  >
-    <svg
-      fill="currentColor"
-      height="1em"
-      preserveAspectRatio="xMidYMid meet"
-      style={
-        Object {
-          "color": undefined,
-          "verticalAlign": "middle",
-        }
-      }
-      viewBox="0 0 40 40"
-      width="1em"
-    >
-      <g>
-        <path
-          d="m11.6 34.3h17.1v-8.6h-17.1v8.6z m20 0h2.8v-20q0-0.3-0.2-0.9t-0.4-0.7l-6.3-6.3q-0.2-0.2-0.8-0.5t-0.8-0.2v9.3q0 0.9-0.7 1.5t-1.5 0.6h-12.8q-0.9 0-1.6-0.6t-0.6-1.5v-9.3h-2.8v28.6h2.8v-9.3q0-0.9 0.6-1.5t1.6-0.6h18.5q0.9 0 1.5 0.6t0.7 1.5v9.3z m-8.6-20.7v-7.2q0-0.3-0.2-0.5t-0.5-0.2h-4.3q-0.3 0-0.5 0.2t-0.2 0.5v7.2q0 0.3 0.2 0.5t0.5 0.2h4.3q0.3 0 0.5-0.2t0.2-0.5z m14.3 0.7v20.7q0 0.9-0.6 1.5t-1.6 0.6h-30q-0.8 0-1.5-0.6t-0.6-1.5v-30q0-0.9 0.6-1.5t1.5-0.6h20.8q0.9 0 1.9 0.4t1.7 1.1l6.3 6.2q0.6 0.6 1 1.7t0.5 2z"
-        />
-      </g>
-    </svg>
-  </button>
-</div>
-`;
-
-exports[`Storyshots questionTypes/SC SC Creation Preview 1`] = `
-<div
-  className="preview"
-  data-jsx={3520869439}
->
-  <div
-    className="title"
-    data-jsx={3520869439}
-  >
-    Hello question
-  </div>
-  <div
-    className="description"
-    data-jsx={3520869439}
-  >
-    abcd
-  </div>
-  <div
-    className="options"
-    data-jsx={3520869439}
-  >
-    <div
-      className="options"
-      data-jsx={964719302}
-    >
-      <div
-        className="option"
-        data-jsx={964719302}
-      >
-        <button
-          className="ui basic fluid button"
-          disabled={undefined}
-          onClick={[Function]}
-          role="button"
-          tabIndex={undefined}
-        >
-          OPTION
-        </button>
-      </div>
-    </div>
-  </div>
-  <div
-    className="button"
-    data-jsx={3520869439}
-  >
-    <span>
-      Submit
-    </span>
   </div>
 </div>
 `;
 
-exports[`Storyshots questionTypes/components TypeChooser 1`] = `
-<div
-  className="field"
-  data-jsx={1200278040}
->
-  <label
-    data-jsx={1200278040}
-    htmlFor="types"
-  >
-    <span>
-      Question type
-    </span>
-  </label>
-  <div
-    className="typeChooser"
-    data-jsx={1200278040}
-  >
-    <button
-      className="type active"
-      data-jsx={1200278040}
-      onClick={[Function]}
-      type="button"
-    >
-      Single-Choice
-    </button>
-    <button
-      className="type"
-      data-jsx={1200278040}
-      onClick={[Function]}
-      type="button"
-    >
-      Multiple-Choice
-    </button>
-    <button
-      className="type"
-      data-jsx={1200278040}
-      onClick={[Function]}
-      type="button"
-    >
-      Free-Form
-    </button>
-  </div>
-</div>
-`;
-
-exports[`Storyshots questions Question (MC, >1 versions) 1`] = `
-<div
-  className="question"
-  data-jsx={2749202759}
->
-  <div
-    className="wrapper"
-    data-jsx={2749202759}
-  >
-    <h2
-      className="title"
-      data-jsx={2749202759}
-    >
-      #
-      4c821db
-       - 
-      This is a long question
-       
-      (v2)
-    </h2>
-    <div
-      className="tags"
-      data-jsx={2749202759}
-    >
-      <div
-        className="container"
-        data-jsx={4150526596}
-      >
-        <div
-          className="type tag"
-          data-jsx={4150526596}
-        >
-          MC
-        </div>
-        <div
-          className="tag"
-          data-jsx={4150526596}
-        >
-          CAPM
-        </div>
-        <div
-          className="tag"
-          data-jsx={4150526596}
-        >
-          Risk
-        </div>
-      </div>
-    </div>
-    <div
-      className="details"
-      data-jsx={2749202759}
-    >
-      <div
-        className="container"
-        data-jsx={2119890886}
-      >
-        <div
-          className="column"
-          data-jsx={2119890886}
-        >
-          Test1
-        </div>
-        <div
-          className="column"
-          data-jsx={2119890886}
-        >
-          Test2
-        </div>
-        <div
-          className="column"
-          data-jsx={2119890886}
-        >
-          Test3
-        </div>
-        <div
-          className="column"
-          data-jsx={2119890886}
-        >
-          <div
-            data-jsx={3358450463}
-          >
-            <h3
-              className="listHeader"
-              data-jsx={3358450463}
-            >
-              <span>
-                Last used
-              </span>
-            </h3>
-            <ul
-              className="list"
-              data-jsx={3358450463}
-            >
-              <li
-                className="listItem"
-                data-jsx={3358450463}
-              >
-                2015-02-08 14:32:11
-              </li>
-              <li
-                className="listItem"
-                data-jsx={3358450463}
-              >
-                2016-09-09 15:22:09
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-`;
-
-exports[`Storyshots questions Question (MC, no tags) 1`] = `
-<div
-  className="question"
-  data-jsx={2749202759}
->
-  <div
-    className="wrapper"
-    data-jsx={2749202759}
-  >
-    <h2
-      className="title"
-      data-jsx={2749202759}
-    >
-      #
-      4c821db
-       - 
-      This is a long question
-       
-    </h2>
-    <div
-      className="tags"
-      data-jsx={2749202759}
-    >
-      <div
-        className="container"
-        data-jsx={4150526596}
-      >
-        <div
-          className="type tag"
-          data-jsx={4150526596}
-        >
-          MC
-        </div>
-      </div>
-    </div>
-    <div
-      className="details"
-      data-jsx={2749202759}
-    >
-      <div
-        className="container"
-        data-jsx={2119890886}
-      >
-        <div
-          className="column"
-          data-jsx={2119890886}
-        >
-          Test1
-        </div>
-        <div
-          className="column"
-          data-jsx={2119890886}
-        >
-          Test2
-        </div>
-        <div
-          className="column"
-          data-jsx={2119890886}
-        >
-          Test3
-        </div>
-        <div
-          className="column"
-          data-jsx={2119890886}
-        >
-          <div
-            data-jsx={3358450463}
-          >
-            <h3
-              className="listHeader"
-              data-jsx={3358450463}
-            >
-              <span>
-                Last used
-              </span>
-            </h3>
-            <ul
-              className="list"
-              data-jsx={3358450463}
-            >
-              <li
-                className="listItem"
-                data-jsx={3358450463}
-              >
-                2015-02-08 14:32:11
-              </li>
-              <li
-                className="listItem"
-                data-jsx={3358450463}
-              >
-                2016-09-09 15:22:09
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-`;
-
-exports[`Storyshots questions Question (SC, 1 version) 1`] = `
-<div
-  className="question"
-  data-jsx={2749202759}
->
-  <div
-    className="wrapper"
-    data-jsx={2749202759}
-  >
-    <h2
-      className="title"
-      data-jsx={2749202759}
-    >
-      #
-      4c821db
-       - 
-      This is a long question
-       
-    </h2>
-    <div
-      className="tags"
-      data-jsx={2749202759}
-    >
-      <div
-        className="container"
-        data-jsx={4150526596}
-      >
-        <div
-          className="type tag"
-          data-jsx={4150526596}
-        >
-          SC
-        </div>
-        <div
-          className="tag"
-          data-jsx={4150526596}
-        >
-          CAPM
-        </div>
-        <div
-          className="tag"
-          data-jsx={4150526596}
-        >
-          Risk
-        </div>
-      </div>
-    </div>
-    <div
-      className="details"
-      data-jsx={2749202759}
-    >
-      <div
-        className="container"
-        data-jsx={2119890886}
-      >
-        <div
-          className="column"
-          data-jsx={2119890886}
-        >
-          Test1
-        </div>
-        <div
-          className="column"
-          data-jsx={2119890886}
-        >
-          Test2
-        </div>
-        <div
-          className="column"
-          data-jsx={2119890886}
-        >
-          Test3
-        </div>
-        <div
-          className="column"
-          data-jsx={2119890886}
-        >
-          <div
-            data-jsx={3358450463}
-          >
-            <h3
-              className="listHeader"
-              data-jsx={3358450463}
-            >
-              <span>
-                Last used
-              </span>
-            </h3>
-            <ul
-              className="list"
-              data-jsx={3358450463}
-            >
-              <li
-                className="listItem"
-                data-jsx={3358450463}
-              >
-                2015-02-08 14:32:11
-              </li>
-              <li
-                className="listItem"
-                data-jsx={3358450463}
-              >
-                2016-09-09 15:22:09
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-`;
-
-exports[`Storyshots questions QuestionBlock (empty) 1`] = `
-<div
-  className="questionBlock"
-  data-jsx={1012223770}
->
-  <div
-    className="timeLimit"
-    data-jsx={1012223770}
-  >
-    <i
-      aria-hidden="true"
-      className="clock icon"
-    />
-    60
-    s
-  </div>
-  <div
-    className="showSolution"
-    data-jsx={1012223770}
-  >
-    <i
-      aria-hidden="true"
-      className="hide icon"
-    />
-  </div>
-  <div
-    className="questions"
-    data-jsx={1012223770}
-  />
-</div>
-`;
-
-exports[`Storyshots questions QuestionBlock 1`] = `
-<div
-  className="questionBlock"
-  data-jsx={1012223770}
->
-  <div
-    className="timeLimit"
-    data-jsx={1012223770}
-  >
-    <i
-      aria-hidden="true"
-      className="clock icon"
-    />
-    60
-    s
-  </div>
-  <div
-    className="showSolution"
-    data-jsx={1012223770}
-  >
-    <i
-      aria-hidden="true"
-      className="hide icon"
-    />
-  </div>
-  <div
-    className="questions"
-    data-jsx={1012223770}
-  >
-    <div
-      className="question"
-      data-jsx={1012223770}
-    >
-      <div
-        className="questionSingle"
-        data-jsx={1928862230}
-      >
-        <div
-          className="id"
-          data-jsx={1928862230}
-        >
-          #4c821db
-        </div>
-        <div
-          className="type"
-          data-jsx={1928862230}
-        >
-          SC
-        </div>
-        <div
-          className="content"
-          data-jsx={1928862230}
-        >
-          This is a long question
-        </div>
-      </div>
-    </div>
-    <div
-      className="question"
-      data-jsx={1012223770}
-    >
-      <div
-        className="questionSingle"
-        data-jsx={1928862230}
-      >
-        <div
-          className="id"
-          data-jsx={1928862230}
-        >
-          #4c821db
-        </div>
-        <div
-          className="type"
-          data-jsx={1928862230}
-        >
-          SC
-        </div>
-        <div
-          className="content"
-          data-jsx={1928862230}
-        >
-          This is a long question
-        </div>
-      </div>
-    </div>
-    <div
-      className="question"
-      data-jsx={1012223770}
-    >
-      <div
-        className="questionSingle"
-        data-jsx={1928862230}
-      >
-        <div
-          className="id"
-          data-jsx={1928862230}
-        >
-          #4c821db
-        </div>
-        <div
-          className="type"
-          data-jsx={1928862230}
-        >
-          SC
-        </div>
-        <div
-          className="content"
-          data-jsx={1928862230}
-        >
-          This is a long question
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-`;
-
-exports[`Storyshots questions QuestionDetails 1`] = `
-<div
-  className="container"
-  data-jsx={2119890886}
->
-  <div
-    className="column"
-    data-jsx={2119890886}
-  >
-    Test1
-  </div>
-  <div
-    className="column"
-    data-jsx={2119890886}
-  >
-    Test2
-  </div>
-  <div
-    className="column"
-    data-jsx={2119890886}
-  >
-    Test3
-  </div>
-  <div
-    className="column"
-    data-jsx={2119890886}
-  >
-    <div
-      data-jsx={3358450463}
-    >
-      <h3
-        className="listHeader"
-        data-jsx={3358450463}
-      >
-        <span>
-          Last used
-        </span>
-      </h3>
-      <ul
-        className="list"
-        data-jsx={3358450463}
-      >
-        <li
-          className="listItem"
-          data-jsx={3358450463}
-        >
-          20.12.2017
-        </li>
-        <li
-          className="listItem"
-          data-jsx={3358450463}
-        >
-          19.12.2017
-        </li>
-        <li
-          className="listItem"
-          data-jsx={3358450463}
-        >
-          10.10.2017
-        </li>
-      </ul>
-    </div>
-  </div>
-</div>
-`;
-
-exports[`Storyshots questions QuestionSingle 1`] = `
-<div
-  className="questionSingle"
-  data-jsx={1928862230}
->
-  <div
-    className="id"
-    data-jsx={1928862230}
-  >
-    #4c821db
-  </div>
-  <div
-    className="type"
-    data-jsx={1928862230}
-  >
-    SC
-  </div>
-  <div
-    className="content"
-    data-jsx={1928862230}
-  >
-    This is a long question
-  </div>
-</div>
-`;
-
-exports[`Storyshots questions QuestionTags 1`] = `
-<div
-  className="container"
-  data-jsx={4150526596}
->
-  <div
-    className="type tag"
-    data-jsx={4150526596}
-  >
-    SC
-  </div>
-  <div
-    className="tag"
-    data-jsx={4150526596}
-  >
-    tag1
-  </div>
-  <div
-    className="tag"
-    data-jsx={4150526596}
-  >
-    tag2
-  </div>
-</div>
-`;
-
-exports[`Storyshots questions TitleInput 1`] = `
-<div
-  className="field"
->
-  <label
-    htmlFor="questionTitle"
-  >
-    <span>
-      Question title
-    </span>
-  </label>
-  <input
-    name="questionTitle"
-    onChange={undefined}
-    type="text"
-    value="my title"
-  />
-</div>
-`;
-
-=======
->>>>>>> master
 exports[`Storyshots sessions Session 1`] = `
 <div
   className="jsx-3780831379 session"
@@ -5429,6 +3429,86 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
       />
       Next
     </button>
+  </div>
+</div>
+`;
+
+exports[`Storyshots sessions SessionTimelineInput 1`] = `
+<div
+  className="jsx-3047766213 sessionTimeline"
+>
+  <div
+    className="jsx-3047766213 timelineItem"
+  >
+    <div
+      className="jsx-2420337898 questionSingle"
+    >
+      <div
+        className="jsx-2420337898 id"
+      >
+        #id1
+      </div>
+      <div
+        className="jsx-2420337898 type"
+      >
+        SC
+      </div>
+      <div
+        className="jsx-2420337898 content"
+      >
+        question1
+      </div>
+    </div>
+  </div>
+  <div
+    className="jsx-3047766213 timelineItem"
+  >
+    <div
+      className="jsx-2420337898 questionSingle"
+    >
+      <div
+        className="jsx-2420337898 id"
+      >
+        #id2
+      </div>
+      <div
+        className="jsx-2420337898 type"
+      >
+        FREE
+      </div>
+      <div
+        className="jsx-2420337898 content"
+      >
+        question2
+      </div>
+    </div>
+  </div>
+  <div
+    className="jsx-3047766213 timelineItem"
+  >
+    <div
+      className="jsx-663420075 dropzone"
+    >
+      <svg
+        fill="currentColor"
+        height="1em"
+        preserveAspectRatio="xMidYMid meet"
+        style={
+          Object {
+            "color": undefined,
+            "verticalAlign": "middle",
+          }
+        }
+        viewBox="0 0 40 40"
+        width="1em"
+      >
+        <g>
+          <path
+            d="m35.9 16.4v4.3q0 0.9-0.6 1.5t-1.5 0.7h-9.3v9.2q0 0.9-0.6 1.6t-1.5 0.6h-4.3q-0.9 0-1.5-0.6t-0.7-1.6v-9.2h-9.3q-0.9 0-1.5-0.7t-0.6-1.5v-4.3q0-0.9 0.6-1.5t1.5-0.6h9.3v-9.3q0-0.9 0.7-1.5t1.5-0.6h4.3q0.9 0 1.5 0.6t0.6 1.5v9.3h9.3q0.9 0 1.5 0.6t0.6 1.5z"
+          />
+        </g>
+      </svg>
+    </div>
   </div>
 </div>
 `;

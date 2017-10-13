@@ -9,7 +9,6 @@ import { intlMock } from '../../../.storybook/utils'
 import TypeChooser from './TypeChooser'
 import {
   SCAnswerOptions,
-  SCCreationContent,
   SCCreationOption,
   SCCreationOptions,
   SCCreationPlaceholder,
