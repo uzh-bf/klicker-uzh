@@ -66,7 +66,11 @@ describe('SessionService', () => {
       useMongoClient: true,
     })
 
-    await setupTestEnv({ email: 'testSessions@bf.uzh.ch', password: 'somePassword', shortname: 'sessio' })
+    await setupTestEnv({
+      email: 'testSessions@bf.uzh.ch',
+      password: 'somePassword',
+      shortname: 'sessio',
+    })
 
     // login as a test user
     user = await AuthService.login(null, 'testSessions@bf.uzh.ch', 'somePassword')
@@ -398,7 +402,11 @@ describe('SessionService', () => {
           isFeedbackChannelPublic: false,
         },
       })
-      const { isConfusionBarometerActive, isFeedbackChannelActive, isFeedbackChannelPublic } = session.settings
+      const {
+        isConfusionBarometerActive,
+        isFeedbackChannelActive,
+        isFeedbackChannelPublic,
+      } = session.settings
       expect(isConfusionBarometerActive).toBeFalsy()
       expect(isFeedbackChannelActive).toBeFalsy()
       expect(isFeedbackChannelPublic).toBeFalsy()

@@ -19,11 +19,14 @@ const createSessionMutation = (parentValue, { session: { name, blocks } }, { aut
     userId: auth.sub,
   })
 
-const startSessionMutation = (parentValue, { id }, { auth }) => SessionService.startSession({ id, userId: auth.sub })
+const startSessionMutation = (parentValue, { id }, { auth }) =>
+  SessionService.startSession({ id, userId: auth.sub })
 
-const endSessionMutation = (parentValue, { id }, { auth }) => SessionService.endSession({ id, userId: auth.sub })
+const endSessionMutation = (parentValue, { id }, { auth }) =>
+  SessionService.endSession({ id, userId: auth.sub })
 
-const addFeedbackMutation = (parentValue, { sessionId, content }) => SessionService.addFeedback({ sessionId, content })
+const addFeedbackMutation = (parentValue, { sessionId, content }) =>
+  SessionService.addFeedback({ sessionId, content })
 
 const addConfusionTSMutation = (parentValue, { sessionId, difficulty, speed }) =>
   SessionService.addConfusionTS({ sessionId, difficulty, speed })
