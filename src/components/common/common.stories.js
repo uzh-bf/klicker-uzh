@@ -11,11 +11,7 @@ import ActionButton from './ActionButton'
 import ListWithHeader from './ListWithHeader'
 import Collapser from './Collapser'
 
-
-import Navbar from './navbar/Navbar'
-
 import { NavbarPres } from './navbar/Navbar'
-
 import AccountArea from './navbar/AccountArea'
 import SearchArea from './navbar/SearchArea'
 import SessionArea from './navbar/SessionArea'

@@ -54,6 +54,7 @@ const propTypes = {
     }),
   ),
   title: PropTypes.string.isRequired,
+  type: PropTypes.string.isRequired,
 }
 
 const defaultProps = {

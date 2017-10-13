@@ -1,31 +1,23 @@
 /* eslint-disable import/no-extraneous-dependencies, react/prop-types */
 
-import React, { Component } from 'react'
+import React from 'react'
 import { storiesOf } from '@storybook/react'
 import { action } from '@storybook/addon-actions'
+import { compose, withHandlers, withState } from 'recompose'
 
 import FeedbackChannel from './FeedbackChannel'
 import Feedback from './Feedback'
 import { intlMock } from '../../../.storybook/utils'
 
 // create a stateful wrapper for the component
-class Wrapper extends Component {
-  state = {
-    isActive: false,
-    isPublic: false,
-  }
-  render() {
-    return (
-      <FeedbackChannel
-        data={this.props.data}
-        intl={intlMock}
-        isActive={this.state.isActive}
-        handleActiveToggle={() => this.setState(prevState => ({ isActive: !prevState.isActive }))}
-        handlePublicToggle={() => this.setState(prevState => ({ isPublic: !prevState.isPublic }))}
-      />
-    )
-  }
-}
+const FeedbackChannelWithState = compose(
+  withState('isActive', 'setIsActive', false),
+  withState('isPublic', 'setIsPublic', false),
+  withHandlers({
+    handleActiveToggle: ({ setIsActive }) => () => setIsActive(isActive => !isActive),
+    handlePublicToggle: ({ setIsPublic }) => () => setIsPublic(isPublic => !isPublic),
+  }),
+)(FeedbackChannel)
 
 const data = [
   { content: 'hello alex!', id: 'abcd', votes: 100 },
@@ -33,7 +25,7 @@ const data = [
 ]
 
 storiesOf('feedbacks', module)
-  .add('FeedbackChannel', () => <Wrapper data={data} />)
+  .add('FeedbackChannel', () => <FeedbackChannelWithState feedbacks={data} intl={intlMock} />)
   .add('FeedbackChannel (isActive)', () => (
     <FeedbackChannel
       isActive
