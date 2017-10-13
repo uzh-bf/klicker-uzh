@@ -21,6 +21,7 @@
       0,
       {
         "callbacksLast": true,
+        "reservedFirst": ["key"],
         "shorthandFirst": true
       }
     ],
