@@ -1,6 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
+import { Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import { compose, withHandlers, setPropTypes } from 'recompose'
 
@@ -62,8 +63,7 @@ const Options = ({
             <label htmlFor="min">
               <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />
             </label>
-            <input
-              max={value.restrictions.max}
+            <Input
               name="min"
               type="number"
               value={value.restrictions.min}
@@ -75,8 +75,7 @@ const Options = ({
             <label htmlFor="max">
               <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />
             </label>
-            <input
-              min={value.restrictions.min}
+            <Input
               name="max"
               type="number"
               value={value.restrictions.max}

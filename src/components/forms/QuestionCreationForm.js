@@ -5,6 +5,7 @@ import isEmpty from 'validator/lib/isEmpty'
 import { connect } from 'react-redux'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage, intlShape } from 'react-intl'
+import { Button, Form } from 'semantic-ui-react'
 
 import { ContentInput, TitleInput, TagInput } from '../questions'
 import {
@@ -17,7 +18,7 @@ import {
 
 // form validation
 const validate = ({
-  content, options, tags, title,
+  content, options, tags, title, type,
 }) => {
   const errors = {}
 
@@ -29,12 +30,27 @@ const validate = ({
     errors.content = 'form.createQuestion.content.empty'
   }
 
-  if (!options || options.length === 0) {
-    errors.options = 'form.createQuestion.options.empty'
-  }
-
   if (!tags || tags.length === 0) {
     errors.tags = 'form.createQuestion.tags.empty'
+  }
+
+  if (!type || isEmpty(type)) {
+    errors.type = 'form.createQuestion.type.empty'
+  }
+
+  // validation of SC answer options
+  if (type === 'SC') {
+    // SC questions need at least one answer option to be valid
+    if (!options || options.length === 0) {
+      errors.options = 'form.createQuestion.options.empty'
+    }
+  }
+
+  // validation of FREE answer options
+  if (type === 'FREE') {
+    if (options && options.restrictions && options.restrictions.min >= options.restrictions.max) {
+      errors.options = 'form.createQuestion.options.minGteMax'
+    }
   }
 
   return errors
@@ -72,48 +88,50 @@ const QuestionCreationForm = ({
   handleSubmit: onSubmit,
   onDiscard,
 }) => (
-  <form className="ui form" onSubmit={onSubmit}>
-    <div className="questionInput questionTitle">
-      <Field name="title" component={TitleInput} />
-    </div>
+  <div className="questionCreationForm">
+    <Form onSubmit={onSubmit}>
+      <div className="questionInput questionTitle">
+        <Field name="title" component={TitleInput} />
+      </div>
 
-    <div className="questionInput questionType">
-      <Field name="type" component={TypeChooser} intl={intl} />
-    </div>
+      <div className="questionInput questionType">
+        <Field name="type" component={TypeChooser} intl={intl} />
+      </div>
 
-    <div className="questionInput questionTags">
-      <Field name="tags" component={TagInput} tags={tags} />
-    </div>
+      <div className="questionInput questionTags">
+        <Field name="tags" component={TagInput} tags={tags} />
+      </div>
 
-    <div className="questionInput questionContent">
-      <Field name="content" component={ContentInput} />
-    </div>
+      <div className="questionInput questionContent">
+        <Field name="content" component={ContentInput} />
+      </div>
 
-    <div className="questionInput questionOptions">
-      <Field
-        name="options"
-        component={type === 'SC' || type === 'MC' ? SCCreationOptions : FREECreationOptions}
-        intl={intl}
-      />
-    </div>
+      <div className="questionInput questionOptions">
+        <Field
+          name="options"
+          component={type === 'SC' || type === 'MC' ? SCCreationOptions : FREECreationOptions}
+          intl={intl}
+        />
+      </div>
 
-    <div className="questionPreview">
-      {type === 'SC' || type === 'MC' ? (
-        <SCCreationPreview title={title} description={content} options={options.choices} />
-      ) : (
-        <FREECreationPreview title={title} description={content} options={options} />
-      )}
-    </div>
+      <div className="questionPreview">
+        {type === 'SC' || type === 'MC' ? (
+          <SCCreationPreview title={title} description={content} options={options.choices} />
+        ) : (
+          <FREECreationPreview title={title} description={content} options={options} />
+        )}
+      </div>
 
-    <button className="ui button discard" type="reset" onClick={onDiscard}>
-      <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
-    </button>
-    <button className="ui primary button save" disabled={invalid} type="submit">
-      <FormattedMessage defaultMessage="Save" id="common.button.save" />
-    </button>
+      <Button className="discard" type="reset" onClick={onDiscard}>
+        <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+      </Button>
+      <Button primary className="save" disabled={invalid} type="submit">
+        <FormattedMessage defaultMessage="Save" id="common.button.save" />
+      </Button>
+    </Form>
 
     <style jsx>{`
-      form {
+      .questionCreationForm > :global(form) {
         display: flex;
         flex-direction: column;
 
@@ -131,7 +149,7 @@ const QuestionCreationForm = ({
 
       @supports (grid-gap: 1rem) {
         @media all and (min-width: 768px) {
-          form {
+          .questionCreationForm > :global(form) {
             display: grid;
 
             grid-gap: 1rem;
@@ -171,21 +189,17 @@ const QuestionCreationForm = ({
           .questionOptions {
             grid-area: options;
           }
-
-          .save {
-            align-self: center;
-          }
         }
 
         @media all and (min-width: 991px) {
-          form {
+          .questionCreationForm > :global(form) {
             margin: 0 20%;
             padding: 1rem 0;
           }
         }
       }
     `}</style>
-  </form>
+  </div>
 )
 
 QuestionCreationForm.propTypes = propTypes
