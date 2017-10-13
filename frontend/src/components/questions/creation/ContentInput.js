@@ -9,7 +9,7 @@ const propTypes = {
   }).isRequired,
 }
 
-const Content = ({ input: { value, onChange } }) => (
+const ContentInput = ({ input: { value, onChange } }) => (
   <div className="field">
     <label htmlFor="content">
       <FormattedMessage defaultMessage="Content" id="teacher.createQuestion.content" />
@@ -26,6 +26,6 @@ const Content = ({ input: { value, onChange } }) => (
   </div>
 )
 
-Content.propTypes = propTypes
+ContentInput.propTypes = propTypes
 
-export default Content
+export default ContentInput

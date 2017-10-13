@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 
-import ListWithHeader from '../common/ListWithHeader'
+import { ListWithHeader } from '../common'
 
 const propTypes = {
   lastUsed: PropTypes.array,

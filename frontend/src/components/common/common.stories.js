@@ -7,17 +7,9 @@ import { compose, withHandlers, withState } from 'recompose'
 
 import { intlMock } from '../../../.storybook/utils'
 
-import ActionButton from './ActionButton'
-import ListWithHeader from './ListWithHeader'
-import Collapser from './Collapser'
-
-import { NavbarPres } from './navbar/Navbar'
-import AccountArea from './navbar/AccountArea'
-import SearchArea from './navbar/SearchArea'
-import SessionArea from './navbar/SessionArea'
-
-import Sidebar from './sidebar/Sidebar'
-import SidebarItem from './sidebar/SidebarItem'
+import { ActionButton, ListWithHeader, Collapser } from '.'
+import { AccountArea, SearchArea, SessionArea, NavbarPres } from './navbar'
+import { Sidebar, SidebarItem } from './sidebar'
 
 const sidebarItems = [
   { href: 'i1', label: 'Item 1', name: 'item1' },

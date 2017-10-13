@@ -4,8 +4,8 @@ import React from 'react'
 import { storiesOf } from '@storybook/react'
 import { action } from '@storybook/addon-actions'
 import { compose, withHandlers, withState } from 'recompose'
-import FeedbackChannel from './FeedbackChannel'
-import Feedback from './Feedback'
+
+import { FeedbackChannel, Feedback } from '.'
 import { intlMock } from '../../../.storybook/utils'
 
 // create a stateful wrapper for the component
@@ -19,8 +19,8 @@ const FeedbackChannelWithState = compose(
 )(FeedbackChannel)
 
 const data = [
-  { content: 'hello alex!', key: 0, votes: 100 },
-  { content: 'bla bleh', key: 1, votes: 40 },
+  { content: 'hello alex!', id: 'abcd', votes: 100 },
+  { content: 'bla bleh', id: 'defg', votes: 40 },
 ]
 
 storiesOf('feedbacks', module)
@@ -28,7 +28,7 @@ storiesOf('feedbacks', module)
   .add('FeedbackChannel (isActive)', () => (
     <FeedbackChannel
       isActive
-      feedbacks={data}
+      data={data}
       intl={intlMock}
       handleActiveToggle={() => action('active-toggle')}
       handlePublicToggle={() => action('public-toggle')}
@@ -38,7 +38,7 @@ storiesOf('feedbacks', module)
     <FeedbackChannel
       isActive
       isPublic
-      feedbacks={data}
+      data={data}
       intl={intlMock}
       handleActiveToggle={() => action('active-toggle')}
       handlePublicToggle={() => action('public-toggle')}
