@@ -25,7 +25,7 @@ jobs:
       script:
         - yarn test:ci
       after_script:
-        - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then bash -c "./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT"; fi
+        - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
       cache:
         yarn: true
         directories:
