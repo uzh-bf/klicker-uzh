@@ -1512,8 +1512,57 @@ exports[`Storyshots questionTypes/FREE FREE Answering Options (Number restrictio
 <div
   className="options"
 >
-  <div>
-    Slider 
+  <div
+    className="slider"
+  >
+    <p>
+      900
+    </p>
+    <p>
+      87
+    </p>
+    <div
+      aria-orientation="horizontal"
+      aria-valuemax={87}
+      aria-valuemin={900}
+      aria-valuenow={555}
+      className="rangeslider rangeslider-horizontal"
+      onMouseDown={[Function]}
+      onMouseUp={[Function]}
+      onTouchEnd={[Function]}
+      onTouchStart={[Function]}
+    >
+      <div
+        className="rangeslider__fill"
+        style={
+          Object {
+            "width": "0px",
+          }
+        }
+      />
+      <div
+        className="rangeslider__handle"
+        onKeyDown={[Function]}
+        onMouseDown={[Function]}
+        onTouchEnd={[Function]}
+        onTouchMove={[Function]}
+        style={
+          Object {
+            "left": "0px",
+          }
+        }
+        tabIndex={0}
+      >
+        <div
+          className="rangeslider__handle-label"
+        >
+          
+        </div>
+      </div>
+      <ul
+        className="rangeslider__labels"
+      />
+    </div>
   </div>
 </div>
 `;
