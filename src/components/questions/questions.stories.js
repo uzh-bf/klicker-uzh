@@ -16,6 +16,7 @@ import { QuestionListPres } from './QuestionList'
 
 import TagInput from './creation/TagInput'
 import TitleInput from './creation/TitleInput'
+import ContentInput from './creation/ContentInput'
 
 storiesOf('questions', module)
   .addDecorator(getStory => (
@@ -60,5 +61,10 @@ storiesOf('questions', module)
   .add('TitleInput', () => (
     <form className="ui form">
       <TitleInput input={{ value: 'my title' }} />
+    </form>
+  ))
+  .add('ContentInput', () => (
+    <form className="ui form">
+      <ContentInput input={{ value: 'hello world' }} />
     </form>
   ))

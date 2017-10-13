@@ -57,7 +57,6 @@ storiesOf('questionTypes/components', module).add('TypeChooser', () => (
 
 storiesOf('questionTypes/SC', module)
   .add('SC Answering Options', () => <SCAnswerOptionsWithState options={options} />)
-  .add('SC Creation Content', () => <SCCreationContent input={{ value: 'hello world' }} />)
   .add('SC Creation Options [NoTest]', () => <SCCreationOptionsWithState intl={intlMock} />)
   .add('SC Creation Option (correct)', () => <SCCreationOption correct name="That's true!" />)
   .add('SC Creation Option (incorrect)', () => (

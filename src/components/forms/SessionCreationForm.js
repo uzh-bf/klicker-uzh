@@ -5,7 +5,8 @@ import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage } from 'react-intl'
 import { FaFloppyO, FaPlay, FaTrash } from 'react-icons/lib/fa'
 
-import { SemanticInput, SessionTimeline } from './components'
+import { SemanticInput } from './components'
+import SessionTimelineInput from '../sessions/creation/SessionTimelineInput'
 
 // form validation
 const validate = ({ sessionName, questions }) => {
@@ -39,7 +40,7 @@ const SessionCreationForm = ({
     </div>
 
     <div className="sessionTimeline">
-      <Field name="questions" component={SessionTimeline} />
+      <Field name="questions" component={SessionTimelineInput} />
     </div>
 
     <div className="actionArea">

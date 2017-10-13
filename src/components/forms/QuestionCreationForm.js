@@ -6,11 +6,11 @@ import { connect } from 'react-redux'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage, intlShape } from 'react-intl'
 
+import ContentInput from '../questions/creation/ContentInput'
 import TitleInput from '../questions/creation/TitleInput'
 import TagInput from '../questions/creation/TagInput'
 import TypeChooser from '../questionTypes/TypeChooser'
 import {
-  SCCreationContent,
   SCCreationOptions,
   SCCreationPreview,
 } from '../../components/questionTypes/SC'
@@ -87,7 +87,7 @@ const QuestionCreationForm = ({
     </div>
 
     <div className="questionInput questionContent">
-      <Field name="content" component={SCCreationContent} />
+      <Field name="content" component={ContentInput} />
     </div>
 
     <div className="questionInput questionOptions">
