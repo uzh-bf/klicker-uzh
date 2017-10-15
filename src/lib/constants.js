@@ -5,6 +5,8 @@ export const SessionStatus = {
 }
 
 export const QuestionBlockStatus = {
+  ACTIVE: 'ACTIVE',
+  EXECUTED: 'EXECUTED',
   PLANNED: 'PLANNED',
 }
 
@@ -15,5 +17,6 @@ export const QuestionTypes = {
 }
 
 export const FREERestrictionTypes = {
+  NONE: 'NONE',
   RANGE: 'RANGE',
 }
