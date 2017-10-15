@@ -1,9 +1,10 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
+import _get from 'lodash/get'
 import { Form, Button, Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import { compose, withHandlers, setPropTypes } from 'recompose'
+import { compose, withHandlers, mapProps } from 'recompose'
 
 import { FREERestrictionTypes } from '../../../lib/constants'
 
@@ -11,19 +12,24 @@ const propTypes = {
   handleMaxChange: PropTypes.func.isRequired,
   handleMinChange: PropTypes.func.isRequired,
   handleTypeChange: PropTypes.func.isRequired,
-  input: PropTypes.shape({
-    value: PropTypes.object,
-  }).isRequired,
+  max: PropTypes.number,
+  min: PropTypes.number,
+  type: PropTypes.string.isRequired,
+}
+
+const defaultProps = {
+  max: undefined,
+  min: undefined,
 }
 
 const FREECreationOptions = ({
-  input: { value },
+  max,
+  min,
+  type,
   handleMaxChange,
   handleMinChange,
   handleTypeChange,
 }) => {
-  const activeType = value.restrictions ? value.restrictions.type : FREERestrictionTypes.NONE
-
   const buttons = [
     {
       message: (
@@ -52,41 +58,32 @@ const FREECreationOptions = ({
       </label>
 
       <div className="optionsChooser">
-        {buttons.map(({ message, type }) => (
+        {buttons.map(({ message, type: buttonType }) => (
           <Button
-            key={type}
-            className={classNames('option', { active: type === activeType })}
-            onClick={handleTypeChange(type)}
+            key={buttonType}
+            className={classNames('option', { active: buttonType === type })}
+            type="button"
+            onClick={handleTypeChange(buttonType)}
           >
             {message}
           </Button>
         ))}
       </div>
 
-      {activeType === FREERestrictionTypes.RANGE && (
+      {type === FREERestrictionTypes.RANGE && (
         <div className="range">
           <div className="rangeField">
             <label htmlFor="min">
               <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />
             </label>
-            <Input
-              name="min"
-              type="number"
-              value={value.restrictions.min}
-              onChange={handleMinChange}
-            />
+            <Input name="min" type="number" value={min} onChange={handleMinChange} />
           </div>
 
           <div className="rangeField">
             <label htmlFor="max">
               <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />
             </label>
-            <Input
-              name="max"
-              type="number"
-              value={value.restrictions.max}
-              onChange={handleMaxChange}
-            />
+            <Input name="max" type="number" value={max} onChange={handleMaxChange} />
           </div>
         </div>
       )}
@@ -110,12 +107,20 @@ const FREECreationOptions = ({
 }
 
 FREECreationOptions.propTypes = propTypes
+FREECreationOptions.defaultProps = defaultProps
 
 export default compose(
+  mapProps(({ input: { onChange, value } }) => ({
+    max: _get(value, 'restrictions.max'),
+    min: _get(value, 'restrictions.min'),
+    onChange,
+    type: _get(value, 'restrictions.type'),
+    value,
+  })),
   withHandlers({
     // handle a change in the maximum allowed numerical value
-    handleMaxChange: ({ input: { onChange, value } }) => (e) => {
-      const max = e.target.value === '' ? null : e.target.value
+    handleMaxChange: ({ onChange, value }) => (e) => {
+      const max = e.target.value === '' ? null : +e.target.value
       onChange({
         ...value,
         restrictions: { ...value.restrictions, max },
@@ -123,8 +128,8 @@ export default compose(
     },
 
     // handle a change in the minimum allowed numerical value
-    handleMinChange: ({ input: { onChange, value } }) => (e) => {
-      const min = e.target.value === '' ? null : e.target.value
+    handleMinChange: ({ onChange, value }) => (e) => {
+      const min = e.target.value === '' ? null : +e.target.value
       onChange({
         ...value,
         restrictions: { ...value.restrictions, min },
@@ -132,15 +137,11 @@ export default compose(
     },
 
     // handle a change in the type of restriction for the answer format
-    handleTypeChange: ({ input: { onChange, value } }) => type => () => {
+    handleTypeChange: ({ onChange, value }) => type => () => {
       onChange({
         ...value,
         restrictions: { type },
       })
     },
-  }),
-  setPropTypes({
-    onChange: PropTypes.func.isRequired,
-    value: PropTypes.object.isRequired,
   }),
 )(FREECreationOptions)
