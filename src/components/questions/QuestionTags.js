@@ -2,7 +2,12 @@ import React from 'react'
 import PropTypes from 'prop-types'
 
 const propTypes = {
-  tags: PropTypes.arrayOf(PropTypes.string).isRequired,
+  tags: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+    }),
+  ).isRequired,
   type: PropTypes.string.isRequired,
 }
 
@@ -10,8 +15,8 @@ const QuestionTags = ({ tags, type }) => (
   <div className="container">
     <div className="type tag">{type}</div>
     {tags.map(tag => (
-      <div key={tag} className="tag">
-        {tag}
+      <div key={tag.id} className="tag">
+        {tag.name}
       </div>
     ))}
 

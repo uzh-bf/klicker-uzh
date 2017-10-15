@@ -30,7 +30,7 @@ const SessionTimeline = ({
     </div>
     <div className="blocks">
       {blocks.map(block => (
-        <div key={block.key} className="block">
+        <div key={block.id} className="block">
           <QuestionBlock
             showSolutions
             timeLimit={60}

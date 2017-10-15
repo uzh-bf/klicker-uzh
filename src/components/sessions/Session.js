@@ -36,7 +36,7 @@ const Session = ({
 
     <div className="details">
       {blocks.map(block => (
-        <div key={block.key} className="block">
+        <div key={block.id} className="block">
           <QuestionBlock
             questions={block.instances.map(instance => ({
               id: instance.id,

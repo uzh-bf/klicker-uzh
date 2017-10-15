@@ -179,9 +179,6 @@ export default compose(
   }),
   // flatten out the relevant data props
   withProps(({ data }) => ({
-    blocks: data.user.runningSession.blocks,
-    confusionTS: data.user.runningSession.confusionTS,
-    feedbacks: data.user.runningSession.feedbacks,
-    ...data.user.runningSession.settings,
+    ...data.user.runningSession,
   })),
 )(Running)

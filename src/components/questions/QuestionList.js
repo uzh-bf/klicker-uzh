@@ -46,7 +46,7 @@ export const QuestionListPres = ({
               lastUsed={question.instances.map(instance =>
                 moment(instance.createdAt).format('DD.MM.YYYY HH:MM:SS'),
               )}
-              tags={question.tags.map(tag => tag.name)}
+              tags={question.tags}
               title={question.title}
               type={question.type}
               version={question.versions.length}
