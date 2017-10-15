@@ -13,3 +13,7 @@ export const QuestionTypes = {
   MC: 'MC',
   SC: 'SC',
 }
+
+export const FREERestrictionTypes = {
+  RANGE: 'RANGE',
+}

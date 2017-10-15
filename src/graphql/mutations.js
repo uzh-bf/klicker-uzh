@@ -27,7 +27,7 @@ export const CreateQuestionMutation = gql`
   mutation CreateQuestion(
     $title: String!
     $description: String
-    $options: Question_OptionsInput!
+    $options: QuestionOptionsInput!
     $type: String!
     $tags: [ID]
   ) {

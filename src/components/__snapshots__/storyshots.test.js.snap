@@ -1640,7 +1640,7 @@ exports[`Storyshots questionTypes/FREE FREE Creation Options 1`] = `
       </span>
     </button>
     <button
-      className="ui button option active"
+      className="ui button option"
       disabled={undefined}
       onClick={[Function]}
       role="button"
@@ -1650,58 +1650,6 @@ exports[`Storyshots questionTypes/FREE FREE Creation Options 1`] = `
         Number Range
       </span>
     </button>
-  </div>
-  <div
-    className="jsx-1330628297 range"
-  >
-    <div
-      className="jsx-1330628297 rangeField"
-    >
-      <label
-        className="jsx-1330628297"
-        htmlFor="min"
-      >
-        <span>
-          Min
-        </span>
-      </label>
-      <div
-        className="ui input"
-      >
-        <input
-          disabled={undefined}
-          name="min"
-          onChange={[Function]}
-          tabIndex={undefined}
-          type="number"
-          value={null}
-        />
-      </div>
-    </div>
-    <div
-      className="jsx-1330628297 rangeField"
-    >
-      <label
-        className="jsx-1330628297"
-        htmlFor="max"
-      >
-        <span>
-          Max
-        </span>
-      </label>
-      <div
-        className="ui input"
-      >
-        <input
-          disabled={undefined}
-          name="max"
-          onChange={[Function]}
-          tabIndex={undefined}
-          type="number"
-          value={null}
-        />
-      </div>
-    </div>
   </div>
 </div>
 `;
@@ -1766,10 +1714,17 @@ exports[`Storyshots questionTypes/FREE FREE Creation Preview (Number-Range) 1`] 
     World!
   </div>
   <div
-    className="jsx-2332170339 diagram"
+    className="jsx-2332170339"
   >
     <div
-      className="jsx-2332170339 min"
+      className="jsx-2332170339 freeText"
+    >
+      <div
+        className="jsx-2332170339 box"
+      />
+    </div>
+    <div
+      className="jsx-2332170339"
     >
       <span>
         Min
@@ -1779,7 +1734,7 @@ exports[`Storyshots questionTypes/FREE FREE Creation Preview (Number-Range) 1`] 
       90
     </div>
     <div
-      className="jsx-2332170339 max"
+      className="jsx-2332170339"
     >
       <span>
         Max
@@ -1787,28 +1742,6 @@ exports[`Storyshots questionTypes/FREE FREE Creation Preview (Number-Range) 1`] 
       :
        
       900
-    </div>
-    <div
-      className="jsx-2332170339 line"
-    />
-    <div
-      className="jsx-2332170339 box"
-    />
-  </div>
-  <div
-    className="jsx-2332170339 selection"
-  >
-    <b
-      className="jsx-2332170339 title"
-    >
-      <span>
-        Selection
-      </span>
-    </b>
-    <div
-      className="jsx-2332170339 box"
-    >
-      495
     </div>
   </div>
   <div
@@ -2086,7 +2019,33 @@ exports[`Storyshots questionTypes/SC SC Creation Preview 1`] = `
           role="button"
           tabIndex={undefined}
         >
-          OPTION
+          answer 1
+        </button>
+      </div>
+      <div
+        className="jsx-3454815952 option"
+      >
+        <button
+          className="ui basic fluid button"
+          disabled={undefined}
+          onClick={[Function]}
+          role="button"
+          tabIndex={undefined}
+        >
+          antwort 2
+        </button>
+      </div>
+      <div
+        className="jsx-3454815952 option"
+      >
+        <button
+          className="ui basic fluid button"
+          disabled={undefined}
+          onClick={[Function]}
+          role="button"
+          tabIndex={undefined}
+        >
+          option 3
         </button>
       </div>
     </div>
