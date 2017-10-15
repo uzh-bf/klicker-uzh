@@ -1,5 +1,11 @@
 const { QuestionModel, TagModel, UserModel } = require('../models')
 
+const QuestionTypes = {
+  SC: 'SC',
+  MC: 'MC',
+  FREE: 'FREE',
+}
+
 // create a new question
 const createQuestion = async ({
   title, type, description, options, tags, userId,
@@ -10,7 +16,7 @@ const createQuestion = async ({
   }
 
   // if no options have been assigned, throw
-  if (!options || options.length === 0) {
+  if (!options) {
     throw new Error('NO_OPTIONS_SPECIFIED')
   }
 
@@ -25,36 +31,42 @@ const createQuestion = async ({
   const newTags = [...new Set(tags)]
     .filter(name => !existingTagNames.includes(name))
     .map(name => new TagModel({ name, user: userId }))
+  const newTagIds = newTags.map(tag => tag.id)
 
   // append the newly created tags to the list of tag ids
   const allTags = [...existingTags, ...newTags]
+  const allTagIds = allTags.map(tag => tag.id)
 
   // create a new question
   // pass the list of tag ids for reference
   // create an initial version "0" containing the description, options and solution
   const newQuestion = new QuestionModel({
-    tags: [...allTags],
+    tags: allTagIds,
     title,
     type,
     user: userId,
     versions: [
       {
-        key: 0,
         description,
-        options: options.map((option, index) => ({ key: index, ...option })),
+        options: {
+          // reduce options to only the necessary properties for the respective type
+          ...options,
+          choices: type === QuestionTypes.SC ? options.choices : null,
+          restrictions: type === QuestionTypes.FREE ? options.restrictions : null,
+        },
         solution: {},
       },
     ],
   })
 
   const allTagsUpdate = allTags.map((tag) => {
-    tag.questions.push(newQuestion)
+    tag.questions.push(newQuestion.id)
     return tag.save()
   })
 
   // push the new question and possibly tags into the user model
-  user.questions.push(newQuestion)
-  user.tags = user.tags.concat(newTags)
+  user.questions.push(newQuestion.id)
+  user.tags = user.tags.concat(newTagIds)
   user.updatedAt = Date.now()
 
   // wait until the question and user both have been saved

@@ -1,15 +1,21 @@
 const { QuestionInstanceModel, SessionModel, UserModel } = require('../models')
 
+const SessionStatus = {
+  CREATED: 'CREATED',
+  RUNNING: 'RUNNING',
+  COMPLETED: 'COMPLETED',
+}
+
 const getRunningSession = async (sessionId) => {
   const session = await SessionModel.findById(sessionId)
 
   // if the session is not yet running, throw an error
-  if (session.status === 0) {
+  if (session.status === SessionStatus.CREATED) {
     throw new Error('SESSION_NOT_STARTED')
   }
 
   // if the session has already finished, throw an error
-  if (session.status === 2) {
+  if (session.status === SessionStatus.COMPLETED) {
     throw new Error('SESSION_FINISHED')
   }
 
@@ -29,13 +35,11 @@ const createSession = async ({ name, questionBlocks, userId }) => {
   // pass through all the question blocks in params
   // skip any blocks that are empty (erroneous blocks)
   // create question instances for all questions within
-  const blocks = questionBlocks.filter(block => block.questions.length > 0).map((block, index) => ({
-    key: index,
-    status: 0,
+  const blocks = questionBlocks.filter(block => block.questions.length > 0).map(block => ({
     instances: block.questions.map((question) => {
       // create a new question instance model
       const instance = new QuestionInstanceModel({
-        question: question.id,
+        question,
         user: userId,
         version: 0,
       })
@@ -90,17 +94,17 @@ const startSession = async ({ id, userId }) => {
   }
 
   // if the session is already running, return it
-  if (session.status === 1) {
+  if (session.status === SessionStatus.RUNNING) {
     return session
   }
 
   // if the session was already completed, throw an error
-  if (session.status === 2) {
+  if (session.status === SessionStatus.COMPLETED) {
     throw new Error('SESSION_ALREADY_COMPLETED')
   }
 
   // update the session status to RUNNING
-  session.status = 1
+  session.status = SessionStatus.RUNNING
 
   const updatedUser = UserModel.findByIdAndUpdate(userId, {
     runningSession: session.id,
@@ -129,17 +133,17 @@ const endSession = async ({ id, userId }) => {
   }
 
   // if the session is not yet running, throw an error
-  if (session.status === 0) {
+  if (session.status === SessionStatus.CREATED) {
     throw new Error('SESSION_NOT_STARTED')
   }
 
   // if the session was already completed, return it
-  if (session.status === 2) {
+  if (session.status === SessionStatus.COMPLETED) {
     return session
   }
 
   // update the session status to COMPLETED
-  session.status = 2
+  session.status = SessionStatus.COMPLETED
 
   // reset the running session id on the user
   const updatedUser = UserModel.findByIdAndUpdate(userId, {
@@ -147,10 +151,7 @@ const endSession = async ({ id, userId }) => {
     $currentDate: { updatedAt: true },
   })
 
-  // TODO: $currentDate ...
-  const savedSession = session.save()
-
-  await Promise.all([updatedUser, savedSession])
+  await Promise.all([updatedUser, session.save()])
 
   return session
 }
@@ -169,7 +170,7 @@ const addFeedback = async ({ sessionId, content }) => {
   }
 
   // push a new feedback into the array
-  session.feedbacks.push({ key: session.feedbacks.length, content })
+  session.feedbacks.push({ content })
 
   // save the updated session
   await session.save()
@@ -239,4 +240,5 @@ module.exports = {
   addFeedback,
   addConfusionTS,
   updateSettings,
+  SessionStatus,
 }

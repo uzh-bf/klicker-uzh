@@ -8,12 +8,10 @@ const QuestionBlock = require('./QuestionBlock')
 
 const Session = new mongoose.Schema({
   name: { type: String, default: Date.now(), index: true },
-  // session status (enum) => 0: CREATED, 1: RUNNING, 2: COMPLETED
   status: {
-    type: Number,
-    default: 0,
-    min: 0,
-    max: 2,
+    type: String,
+    enum: ['CREATED', 'RUNNING', 'COMPLETED'],
+    default: 'CREATED',
     index: true,
   },
   settings: {
@@ -23,7 +21,7 @@ const Session = new mongoose.Schema({
   },
   user: { type: ObjectId, ref: 'User', required: true },
 
-  blocks: [QuestionBlock],
+  blocks: [{ type: QuestionBlock, required: true }],
   confusionTS: [ConfusionTimestep],
   feedbacks: [Feedback],
 

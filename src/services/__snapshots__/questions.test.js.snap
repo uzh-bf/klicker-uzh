@@ -1,16 +1,50 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`QuestionService createQuestion allows creating a valid question 1`] = `
+exports[`QuestionService createQuestion allows creating a valid FREE question 1`] = `
 
-    Title: valid question
+    Title: question without tags
+    Type: FREE
+
+    Instances: []
+    Tags: [,]
+    Versions: [
+      Description: blabla
+      Instances: []
+      Options: {
+        Choices: null
+        Randomized: false
+        Restrictions: {
+          Max: 100
+          Min: 10
+          Type: RANGE
+        }
+      }
+    ]
+  
+`;
+
+exports[`QuestionService createQuestion allows creating a valid SC question 1`] = `
+
+    Title: question without tags
     Type: SC
 
     Instances: []
-    Tags: [ABCD,test]
-    Versions: 
+    Tags: [,]
+    Versions: [
       Description: blabla
       Instances: []
-      Options: [option1 false,option2 true]
-    
+      Options: {
+        Choices: [
+            Correct: false
+            Name: option1
+          ,
+            Correct: true
+            Name: option2
+          
+        ]
+        Randomized: true
+        Restrictions: null
+      }
+    ]
   
 `;

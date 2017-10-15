@@ -1,63 +1,78 @@
 /* eslint-disable no-use-before-define */
 
 // HACK: export before require such that circular dependencies can be handled
-module.exports = () => [Session, Feedback, ConfusionTimestep, QuestionInstance]
+module.exports = () => [Session, QuestionInstance]
 
-const ConfusionTimestep = require('./ConfusionTimestep')
-const Feedback = require('./Feedback')
 const QuestionInstance = require('./QuestionInstance')
 
 const Session = `
-  enum SessionStatus {
+  enum Session_Status {
     CREATED
     RUNNING
     COMPLETED
   }
 
-  input Session_QuestionInput {
-    id: ID!
-  }
-
-  input Session_QuestionBlockInput {
-    questions: [Session_QuestionInput]
+  enum Session_QuestionBlockStatus {
+    PLANNED
+    ACTIVE
+    EXECUTED
   }
 
   input SessionInput {
     name: String!
     blocks: [Session_QuestionBlockInput]!
   }
-
-  input SessionSettingsInput {
-    isConfusionBarometerActive: Boolean
-    isFeedbackChannelActive: Boolean
-    isFeedbackChannelPublic: Boolean
-  }
-
-  type SessionSettings {
-    isConfusionBarometerActive: Boolean
-    isFeedbackChannelActive: Boolean
-    isFeedbackChannelPublic: Boolean
-  }
-
-  type QuestionBlock {
-    key: Int
-    status: Int!
-    instances: [QuestionInstance]
-  }
-
   type Session {
     id: ID!
-
     name: String!
-    status: Int!
-    settings: SessionSettings
+
+    status: Session_Status!
+    settings: Session_Settings!
     user: User!
 
-    blocks: [QuestionBlock]
-    confusionTS: [ConfusionTimestep]
-    feedbacks: [Feedback]
+    blocks: [Session_QuestionBlock!]!
+    confusionTS: [Session_ConfusionTimestep!]!
+    feedbacks: [Session_Feedback!]!
 
-    createdAt: String
-    updatedAt: String
+    createdAt: String!
+    updatedAt: String!
+  }
+
+  input Session_SettingsInput {
+    isConfusionBarometerActive: Boolean
+    isFeedbackChannelActive: Boolean
+    isFeedbackChannelPublic: Boolean
+  }
+  type Session_Settings {
+    isConfusionBarometerActive: Boolean!
+    isFeedbackChannelActive: Boolean!
+    isFeedbackChannelPublic: Boolean!
+  }
+
+  input Session_QuestionBlockInput {
+    questions: [ID!]!
+  }
+  type Session_QuestionBlock {
+    id: ID!
+
+    status: Session_QuestionBlockStatus!
+
+    instances: [QuestionInstance!]!
+  }
+
+  type Session_ConfusionTimestep {
+    id: ID!
+    difficulty: Int!
+    speed: Int!
+
+    createdAt: String!
+  }
+
+  type Session_Feedback {
+    id: ID!
+    content: String!
+    votes: Int!
+
+    createdAt: String!
   }
 `
