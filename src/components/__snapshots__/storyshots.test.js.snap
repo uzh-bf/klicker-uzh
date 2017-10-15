@@ -2859,12 +2859,12 @@ exports[`Storyshots questions QuestionTags 1`] = `
   <div
     className="jsx-2790931470 tag"
   >
-    tag1
+    CAPM
   </div>
   <div
     className="jsx-2790931470 tag"
   >
-    tag2
+    Risk
   </div>
 </div>
 `;
