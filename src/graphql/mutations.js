@@ -26,10 +26,10 @@ export const LoginMutation = gql`
 export const CreateQuestionMutation = gql`
   mutation CreateQuestion(
     $title: String!
-    $description: String
+    $description: String!
     $options: QuestionOptionsInput!
     $type: String!
-    $tags: [ID]
+    $tags: [ID!]!
   ) {
     createQuestion(
       question: {
@@ -51,15 +51,19 @@ export const CreateQuestionMutation = gql`
         id
         description
         options {
-          choices {
-            name
-            correct
+          ... on SCQuestionOptions {
+            choices {
+              correct
+              name
+            }
+            randomized
           }
-          randomized
-          restrictions {
-            min
-            max
-            kind
+          ... on FREEQuestionOptions {
+            restrictions {
+              min
+              max
+              type
+            }
           }
         }
         createdAt
