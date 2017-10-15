@@ -8,6 +8,7 @@ const propTypes = {
   onOptionClick: PropTypes.func.isRequired,
   options: PropTypes.arrayOf(
     PropTypes.shape({
+      id: PropTypes.string.isRequired,
       name: PropTypes.string.isRequired,
     }),
   ),
@@ -20,7 +21,7 @@ const defaultProps = {
 const Options = ({ activeOption, options, onOptionClick }) => (
   <div className="options">
     {options.map((option, index) => (
-      <div key={option.name} className={classNames('option', { active: index === activeOption })}>
+      <div key={option.id} className={classNames('option', { active: index === activeOption })}>
         <Button basic fluid onClick={onOptionClick && onOptionClick(index)}>
           {option.name}
         </Button>
