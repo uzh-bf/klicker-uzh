@@ -3,11 +3,11 @@
 exports[`SessionService addConfusionTS allows adding new timesteps 1`] = `
 
     Name: testing session
-    Status: 1
+    Status: RUNNING
 
     Blocks: [
       Show solutions: false
-      Status: 0
+      Status: PLANNED
       Time limit: -1
       Number of instances: 1
     ]
@@ -29,11 +29,11 @@ exports[`SessionService addConfusionTS allows adding new timesteps 1`] = `
 exports[`SessionService addConfusionTS allows adding new timesteps 2`] = `
 
     Name: testing session
-    Status: 1
+    Status: RUNNING
 
     Blocks: [
       Show solutions: false
-      Status: 0
+      Status: PLANNED
       Time limit: -1
       Number of instances: 1
     ]
@@ -58,11 +58,11 @@ exports[`SessionService addConfusionTS allows adding new timesteps 2`] = `
 exports[`SessionService addFeedback allows adding new feedbacks to a running session 1`] = `
 
     Name: testing session
-    Status: 1
+    Status: RUNNING
 
     Blocks: [
       Show solutions: false
-      Status: 0
+      Status: PLANNED
       Time limit: -1
       Number of instances: 1
     ]
@@ -84,11 +84,11 @@ exports[`SessionService addFeedback allows adding new feedbacks to a running ses
 exports[`SessionService addFeedback allows adding new feedbacks to a running session 2`] = `
 
     Name: testing session
-    Status: 1
+    Status: RUNNING
 
     Blocks: [
       Show solutions: false
-      Status: 0
+      Status: PLANNED
       Time limit: -1
       Number of instances: 1
     ]
@@ -113,16 +113,16 @@ exports[`SessionService addFeedback allows adding new feedbacks to a running ses
 exports[`SessionService createSession allows creating a valid session 1`] = `
 
     Name: hello world
-    Status: 0
+    Status: CREATED
 
     Blocks: [
       Show solutions: false
-      Status: 0
+      Status: PLANNED
       Time limit: -1
       Number of instances: 2
     ,
       Show solutions: false
-      Status: 0
+      Status: PLANNED
       Time limit: -1
       Number of instances: 1
     ]
@@ -141,16 +141,16 @@ exports[`SessionService createSession allows creating a valid session 1`] = `
 exports[`SessionService createSession skips over question blocks without questions 1`] = `
 
     Name: session with an empty block
-    Status: 0
+    Status: CREATED
 
     Blocks: [
       Show solutions: false
-      Status: 0
+      Status: PLANNED
       Time limit: -1
       Number of instances: 2
     ,
       Show solutions: false
-      Status: 0
+      Status: PLANNED
       Time limit: -1
       Number of instances: 1
     ]
@@ -169,11 +169,11 @@ exports[`SessionService createSession skips over question blocks without questio
 exports[`SessionService endSession allows ending a running session 1`] = `
 
     Name: testing session
-    Status: 2
+    Status: COMPLETED
 
     Blocks: [
       Show solutions: false
-      Status: 0
+      Status: PLANNED
       Time limit: -1
       Number of instances: 1
     ]
@@ -192,11 +192,11 @@ exports[`SessionService endSession allows ending a running session 1`] = `
 exports[`SessionService endSession returns on an already completed session 1`] = `
 
     Name: testing session
-    Status: 2
+    Status: COMPLETED
 
     Blocks: [
       Show solutions: false
-      Status: 0
+      Status: PLANNED
       Time limit: -1
       Number of instances: 1
     ]
@@ -215,11 +215,11 @@ exports[`SessionService endSession returns on an already completed session 1`] =
 exports[`SessionService startSession allows starting a created session 1`] = `
 
     Name: testing session
-    Status: 1
+    Status: RUNNING
 
     Blocks: [
       Show solutions: false
-      Status: 0
+      Status: PLANNED
       Time limit: -1
       Number of instances: 1
     ]
@@ -238,11 +238,11 @@ exports[`SessionService startSession allows starting a created session 1`] = `
 exports[`SessionService updateSessionSettings allows changing all settings at once 1`] = `
 
     Name: testing session
-    Status: 1
+    Status: RUNNING
 
     Blocks: [
       Show solutions: false
-      Status: 0
+      Status: PLANNED
       Time limit: -1
       Number of instances: 1
     ]
@@ -261,11 +261,11 @@ exports[`SessionService updateSessionSettings allows changing all settings at on
 exports[`SessionService updateSessionSettings allows changing each setting seperately 1`] = `
 
     Name: testing session
-    Status: 1
+    Status: RUNNING
 
     Blocks: [
       Show solutions: false
-      Status: 0
+      Status: PLANNED
       Time limit: -1
       Number of instances: 1
     ]
@@ -284,11 +284,11 @@ exports[`SessionService updateSessionSettings allows changing each setting seper
 exports[`SessionService updateSessionSettings allows changing each setting seperately 2`] = `
 
     Name: testing session
-    Status: 1
+    Status: RUNNING
 
     Blocks: [
       Show solutions: false
-      Status: 0
+      Status: PLANNED
       Time limit: -1
       Number of instances: 1
     ]
@@ -307,11 +307,11 @@ exports[`SessionService updateSessionSettings allows changing each setting seper
 exports[`SessionService updateSessionSettings allows changing each setting seperately 3`] = `
 
     Name: testing session
-    Status: 1
+    Status: RUNNING
 
     Blocks: [
       Show solutions: false
-      Status: 0
+      Status: PLANNED
       Time limit: -1
       Number of instances: 1
     ]
@@ -330,11 +330,11 @@ exports[`SessionService updateSessionSettings allows changing each setting seper
 exports[`SessionService updateSessionSettings allows changing each setting seperately 4`] = `
 
     Name: testing session
-    Status: 1
+    Status: RUNNING
 
     Blocks: [
       Show solutions: false
-      Status: 0
+      Status: PLANNED
       Time limit: -1
       Number of instances: 1
     ]
@@ -353,11 +353,11 @@ exports[`SessionService updateSessionSettings allows changing each setting seper
 exports[`SessionService updateSessionSettings allows changing each setting seperately 5`] = `
 
     Name: testing session
-    Status: 1
+    Status: RUNNING
 
     Blocks: [
       Show solutions: false
-      Status: 0
+      Status: PLANNED
       Time limit: -1
       Number of instances: 1
     ]

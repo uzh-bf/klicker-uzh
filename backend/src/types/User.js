@@ -15,22 +15,20 @@ const User = `
     password: String
     shortname: String
   }
-
   type User {
     id: ID!
-
     email: String!
-    isActive: Boolean
-    isAAI: Boolean
+    isActive: Boolean!
+    isAAI: Boolean!
     shortname: String!
-
-    questions: [Question]
-    sessions: [Session]
-    tags: [Tag]
 
     runningSession: Session
 
-    createdAt: String
-    updatedAt: String
+    questions: [Question!]!
+    sessions: [Session!]!
+    tags: [Tag!]!
+
+    createdAt: String!
+    updatedAt: String!
   }
 `

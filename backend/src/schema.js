@@ -36,24 +36,24 @@ const typeDefs = [
   }
 
   type Query {
-    allQuestions: [Question]
-    allSessions: [Session]
-    allTags: [Tag]
+    allQuestions: [Question]!
+    allSessions: [Session]!
+    allTags: [Tag]!
     user: User
   }
 
   type Mutation {
-    createUser(user: UserInput): User
-    login(email: String, password: String): User
+    createUser(user: UserInput!): User
+    login(email: String!, password: String!): User
 
-    createQuestion(question: QuestionInput): Question
+    createQuestion(question: QuestionInput!): Question!
 
-    createSession(session: SessionInput): Session
-    startSession(id: ID): Session
-    endSession(id: ID): Session
-    addFeedback(sessionId: ID!, content: String!): Session
-    addConfusionTS(sessionId: ID!, difficulty: Int!, speed: Int!): Session
-    updateSessionSettings(sessionId: ID!, settings: SessionSettingsInput!): Session
+    createSession(session: SessionInput!): Session!
+    startSession(id: ID!): Session!
+    endSession(id: ID!): Session!
+    addFeedback(sessionId: ID!, content: String!): Session!
+    addConfusionTS(sessionId: ID!, difficulty: Int!, speed: Int!): Session!
+    updateSessionSettings(sessionId: ID!, settings: Session_SettingsInput!): Session!
   }
 
   type Subscription {
@@ -87,7 +87,18 @@ const resolvers = {
     tags,
     user,
   },
-  QuestionBlock: {
+  QuestionOptions: {
+    __resolveType(obj) {
+      if (obj.restrictions) {
+        return 'FREEQuestionOptions'
+      }
+      if (obj.choices) {
+        return 'SCQuestionOptions'
+      }
+      return null
+    },
+  },
+  Session_QuestionBlock: {
     instances: questionInstancesByPV,
   },
   QuestionInstance: {

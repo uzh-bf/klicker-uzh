@@ -7,19 +7,18 @@ const Question = require('./Question')
 
 const Tag = `
   input TagInput {
-    name: String
-    question: ID
+    name: String!
+    question: ID!
   }
-
   type Tag {
     id: ID!
-
     name: String!
+
     user: User!
 
-    questions: [Question]!
+    questions: [Question!]!
 
-    createdAt: String
-    updatedAt: String
+    createdAt: String!
+    updatedAt: String!
   }
 `
