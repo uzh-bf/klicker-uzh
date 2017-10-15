@@ -15,7 +15,7 @@ import {
   FREECreationOptions,
   FREECreationPreview,
 } from '../../components/questionTypes'
-import { QuestionTypes } from '../../lib/constants'
+import { FREERestrictionTypes, QuestionTypes } from '../../lib'
 
 // form validation
 const validate = ({
@@ -61,19 +61,22 @@ const propTypes = {
   intl: intlShape.isRequired,
   invalid: PropTypes.bool.isRequired,
   onDiscard: PropTypes.func.isRequired,
-  options: PropTypes.array,
+  options: PropTypes.object,
   tags: PropTypes.arrayOf(
     PropTypes.shape({
       name: PropTypes.string.isRequired,
     }),
   ),
   title: PropTypes.string.isRequired,
-  type: PropTypes.string.isRequired,
+  type: PropTypes.string,
 }
 
 const defaultProps = {
-  options: [],
+  options: {
+    choices: [],
+  },
   tags: [],
+  type: QuestionTypes.SC,
 }
 
 const QuestionCreationForm = ({
@@ -228,7 +231,9 @@ export default reduxForm({
     options: {
       choices: [],
       randomized: false,
-      restrictions: null,
+      restrictions: {
+        type: FREERestrictionTypes.NONE,
+      },
     },
     tags: [],
     title: '',
