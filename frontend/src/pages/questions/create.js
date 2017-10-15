@@ -57,7 +57,6 @@ export default compose(
       content, options, tags, title, type,
     }) => {
       try {
-        // call the mutation
         await mutate({
           // reload the list of questions and tags after creation
           // TODO: replace with optimistic updates

@@ -26,10 +26,10 @@ export const LoginMutation = gql`
 export const CreateQuestionMutation = gql`
   mutation CreateQuestion(
     $title: String!
-    $description: String
-    $options: [QuestionOptionInput]!
+    $description: String!
+    $options: QuestionOptionsInput!
     $type: String!
-    $tags: [ID]
+    $tags: [ID!]!
   ) {
     createQuestion(
       question: {
@@ -45,12 +45,26 @@ export const CreateQuestionMutation = gql`
       type
       tags {
         id
+        name
       }
       versions {
+        id
         description
         options {
-          correct
-          name
+          ... on SCQuestionOptions {
+            choices {
+              correct
+              name
+            }
+            randomized
+          }
+          ... on FREEQuestionOptions {
+            restrictions {
+              min
+              max
+              type
+            }
+          }
         }
         createdAt
       }
@@ -67,12 +81,12 @@ export const CreateSessionMutation = gql`
         speed
       }
       feedbacks {
-        key
+        id
         content
         votes
       }
       blocks {
-        key
+        id
         status
         instances {
           id
@@ -115,7 +129,7 @@ export const AddFeedbackMutation = gql`
     addFeedback(sessionId: $sessionId, content: $content) {
       id
       feedbacks {
-        key
+        id
         content
         votes
       }

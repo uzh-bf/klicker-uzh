@@ -20,7 +20,7 @@ const defaultProps = {
   value: undefined,
 }
 
-const Options = ({ handleChange, options, value }) => (
+const FREEAnswerOptions = ({ handleChange, options, value }) => (
   <div className="options">
     {options.restrictions.type === 'NUMBERS' &&
     options.restrictions.min !== null &&
@@ -56,7 +56,7 @@ const Options = ({ handleChange, options, value }) => (
   </div>
 )
 
-Options.propTypes = propTypes
-Options.defaultProps = defaultProps
+FREEAnswerOptions.propTypes = propTypes
+FREEAnswerOptions.defaultProps = defaultProps
 
-export default Options
+export default FREEAnswerOptions

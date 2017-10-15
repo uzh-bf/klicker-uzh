@@ -240,7 +240,7 @@ export default compose(
     }) => type => async ({ sessionName, questions }) => {
       try {
         // HACK: map each question into a separate question block
-        const blocks = questions.map(question => ({ questions: [{ id: question.id }] }))
+        const blocks = questions.map(question => ({ questions: [question.id] }))
 
         // create a new session
         const result = await mutate({
