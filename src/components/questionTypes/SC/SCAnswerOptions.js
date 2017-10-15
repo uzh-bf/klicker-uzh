@@ -18,7 +18,7 @@ const defaultProps = {
   options: [],
 }
 
-const Options = ({ activeOption, options, onOptionClick }) => (
+const SCAnswerOptions = ({ activeOption, options, onOptionClick }) => (
   <div className="options">
     {options.map((option, index) => (
       <div key={option.id} className={classNames('option', { active: index === activeOption })}>
@@ -53,7 +53,7 @@ const Options = ({ activeOption, options, onOptionClick }) => (
   </div>
 )
 
-Options.propTypes = propTypes
-Options.defaultProps = defaultProps
+SCAnswerOptions.propTypes = propTypes
+SCAnswerOptions.defaultProps = defaultProps
 
-export default Options
+export default SCAnswerOptions

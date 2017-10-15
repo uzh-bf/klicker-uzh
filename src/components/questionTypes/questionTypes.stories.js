@@ -79,7 +79,7 @@ storiesOf('questionTypes/SC', module)
   ))
   .add('SC Creation Placeholder', () => <SCCreationPlaceholder />)
   .add('SC Creation Preview', () => (
-    <SCCreationPreview title="Hello question" description="abcd" options={[]} />
+    <SCCreationPreview title="Hello question" description="abcd" options={{ choices: options }} />
   ))
 
 storiesOf('questionTypes/FREE', module)

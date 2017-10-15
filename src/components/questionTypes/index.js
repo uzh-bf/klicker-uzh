@@ -2,13 +2,13 @@
 export { default as TypeChooser } from './TypeChooser'
 
 // SC-MC
-export { default as SCAnswerOptions } from './SC/answer/Options'
-export { default as SCCreationOptions } from './SC/creation/Options'
-export { default as SCCreationOption } from './SC/creation/Option'
-export { default as SCCreationPlaceholder } from './SC/creation/Placeholder'
-export { default as SCCreationPreview } from './SC/creation/Preview'
+export { default as SCAnswerOptions } from './SC/SCAnswerOptions'
+export { default as SCCreationOptions } from './SC/SCCreationOptions'
+export { default as SCCreationOption } from './SC/SCCreationOption'
+export { default as SCCreationPlaceholder } from './SC/SCCreationPlaceholder'
+export { default as SCCreationPreview } from './SC/SCCreationPreview'
 
 // FREE
-export { default as FREEAnswerOptions } from './FREE/answer/Options'
-export { default as FREECreationPreview } from './FREE/creation/Preview'
-export { default as FREECreationOptions } from './FREE/creation/Options'
+export { default as FREEAnswerOptions } from './FREE/FREEAnswerOptions'
+export { default as FREECreationPreview } from './FREE/FREECreationPreview'
+export { default as FREECreationOptions } from './FREE/FREECreationOptions'

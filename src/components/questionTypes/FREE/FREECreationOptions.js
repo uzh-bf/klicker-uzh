@@ -5,36 +5,43 @@ import { Form, Button, Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import { compose, withHandlers, setPropTypes } from 'recompose'
 
+import { FREERestrictionTypes } from '../../../lib/constants'
+
 const propTypes = {
   handleMaxChange: PropTypes.func.isRequired,
   handleMinChange: PropTypes.func.isRequired,
   handleTypeChange: PropTypes.func.isRequired,
   input: PropTypes.shape({
-    value: PropTypes.object.isRequired,
+    value: PropTypes.object,
   }).isRequired,
 }
 
-const Options = ({
-  input: { value }, handleMaxChange, handleMinChange, handleTypeChange,
+const FREECreationOptions = ({
+  input: { value },
+  handleMaxChange,
+  handleMinChange,
+  handleTypeChange,
 }) => {
-  const optionsData = [
+  const activeType = value.restrictions ? value.restrictions.type : FREERestrictionTypes.NONE
+
+  const buttons = [
     {
-      name: (
+      message: (
         <FormattedMessage
           defaultMessage="No Limitations"
           id="teacher.createQuestion.options.noLimitations"
         />
       ),
-      value: 'NONE',
+      type: FREERestrictionTypes.NONE,
     },
     {
-      name: (
+      message: (
         <FormattedMessage
           defaultMessage="Number Range"
           id="teacher.createQuestion.options.numberRange"
         />
       ),
-      value: 'NUMBERS',
+      type: FREERestrictionTypes.RANGE,
     },
   ]
 
@@ -45,18 +52,18 @@ const Options = ({
       </label>
 
       <div className="optionsChooser">
-        {optionsData.map(({ name, value: optionValue }) => (
+        {buttons.map(({ message, type }) => (
           <Button
-            key={optionValue}
-            className={classNames('option', { active: optionValue === value.restrictions.type })}
-            onClick={handleTypeChange(optionValue)}
+            key={type}
+            className={classNames('option', { active: type === activeType })}
+            onClick={handleTypeChange(type)}
           >
-            {name}
+            {message}
           </Button>
         ))}
       </div>
 
-      {value.restrictions.type === 'NUMBERS' && (
+      {activeType === FREERestrictionTypes.RANGE && (
         <div className="range">
           <div className="rangeField">
             <label htmlFor="min">
@@ -102,7 +109,7 @@ const Options = ({
   )
 }
 
-Options.propTypes = propTypes
+FREECreationOptions.propTypes = propTypes
 
 export default compose(
   withHandlers({
@@ -128,7 +135,7 @@ export default compose(
     handleTypeChange: ({ input: { onChange, value } }) => type => () => {
       onChange({
         ...value,
-        restrictions: { ...value.restrictions, type },
+        restrictions: { type },
       })
     },
   }),
@@ -136,4 +143,4 @@ export default compose(
     onChange: PropTypes.func.isRequired,
     value: PropTypes.object.isRequired,
   }),
-)(Options)
+)(FREECreationOptions)

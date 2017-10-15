@@ -2,6 +2,8 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 
+import { FREERestrictionTypes } from '../../../lib/constants'
+
 const propTypes = {
   description: PropTypes.string,
   options: PropTypes.shape({
@@ -17,20 +19,16 @@ const propTypes = {
 const defaultProps = {
   description: 'DESCRIPTION',
   options: {
-    restrictions: {
-      max: null,
-      min: null,
-      type: 'NONE',
-    },
+    restrictions: null,
   },
   title: 'TITLE',
 }
 
-const Preview = ({ title, options, description }) => {
+const FREECreationPreview = ({ title, options: { restrictions }, description }) => {
   const restrictedToNumbers =
-    options.restrictions.type === 'NUMBERS' &&
-    options.restrictions.min !== null &&
-    options.restrictions.max !== null
+    restrictions &&
+    restrictions.type === FREERestrictionTypes.RANGE &&
+    (restrictions.min || restrictions.max)
 
   return (
     <div className="preview">
@@ -40,11 +38,11 @@ const Preview = ({ title, options, description }) => {
         <div className="diagram">
           <div className="min">
             <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />:{' '}
-            {options.restrictions.min}
+            {restrictions.min}
           </div>
           <div className="max">
             <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />:{' '}
-            {options.restrictions.max}
+            {restrictions.max}
           </div>
           <div className="line" />
           <div className="box" />
@@ -56,25 +54,27 @@ const Preview = ({ title, options, description }) => {
           <b className="title">
             <FormattedMessage defaultMessage="Selection" id="teacher.createQuestion.selection" />
           </b>
-          <div className="box">{(+options.restrictions.min + +options.restrictions.max) / 2}</div>
+          <div className="box">{(+restrictions.min + +restrictions.max) / 2}</div>
         </div>
       ) : (
         <div>
           <div className="freeText">
             <div className="box" />
           </div>
-          {options.restrictions.min !== null && (
-            <div>
-              <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />:{' '}
-              {options.restrictions.min}
-            </div>
-          )}
-          {options.restrictions.max !== null && (
-            <div>
-              <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />:{' '}
-              {options.restrictions.max}
-            </div>
-          )}
+          {restrictions &&
+            restrictions.min && (
+              <div>
+                <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />:{' '}
+                {restrictions.min}
+              </div>
+            )}
+          {restrictions &&
+            restrictions.max && (
+              <div>
+                <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />:{' '}
+                {restrictions.max}
+              </div>
+            )}
         </div>
       )}
       <div className="button">
@@ -158,7 +158,7 @@ const Preview = ({ title, options, description }) => {
   )
 }
 
-Preview.propTypes = propTypes
-Preview.defaultProps = defaultProps
+FREECreationPreview.propTypes = propTypes
+FREECreationPreview.defaultProps = defaultProps
 
-export default Preview
+export default FREECreationPreview
