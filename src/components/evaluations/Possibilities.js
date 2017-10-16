@@ -4,16 +4,16 @@ import { FormattedMessage } from 'react-intl'
 
 // TODO
 const propTypes = {
-  options: PropTypes.array,
+  choices: PropTypes.array,
 }
 
 // TODO
 const defaultProps = {
-  options: [],
+  choices: [],
 }
 
 // TODO default value
-const Possibilities = ({ options, type }) => (
+const Possibilities = ({ choices, type }) => (
   <div className="visualization">
     <h2>
       <FormattedMessage
@@ -22,9 +22,9 @@ const Possibilities = ({ options, type }) => (
       />
     </h2>
 
-    {options.map((option, index) => (
+    {choices.map((choice, index) => (
       <div className="item">
-        <b>{index + 1}</b> {option.name}
+        <b>{index + 1}</b> {choice.name}
       </div>
     ))}
     <style jsx>{`

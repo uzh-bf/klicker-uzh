@@ -14,7 +14,7 @@ const propTypes = {
   intl: intlShape.isRequired,
   onChangeVisualizationType: PropTypes.func.isRequired,
   onToggleShowSolution: PropTypes.func.isRequired,
-  options: PropTypes.arrayOf(
+  choices: PropTypes.arrayOf(
     PropTypes.shape({
       correct: PropTypes.bool,
       name: PropTypes.string.isRequired,
@@ -50,7 +50,7 @@ class EvaluationLayout extends Component {
       description,
       visualizationType,
       onChangeVisualizationType,
-      options,
+      choices,
     } = this.props
 
     return (
@@ -94,7 +94,7 @@ class EvaluationLayout extends Component {
           />
         </div>
         <div className="box possibilities">
-          <Possibilities intl={intl} options={options.map(({ value }) => ({ text: value }))} />
+          <Possibilities intl={intl} choices={choices} />
         </div>
 
         <style jsx global>{`

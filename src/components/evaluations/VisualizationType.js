@@ -14,8 +14,8 @@ const propTypes = {
 const defaultProps = {}
 
 const dropDownOptions = [
-  { text: 'Pie Chart', value: 'PIE_CHART', withinType: ['SC'] },
-  { text: 'Bar Chart', value: 'BAR_CHART', withinType: ['SC'] },
+  { text: 'Pie Chart', value: 'PIE_CHART', withinType: ['SC', 'MC'] },
+  { text: 'Bar Chart', value: 'BAR_CHART', withinType: ['SC', 'MC'] },
   { text: 'Word cloud', value: 'WORD_CLOUD', withinType: ['FREE'] },
   { text: 'Table', value: 'TABULAR', withinType: ['FREE'] },
   { text: 'Histogramm', value: 'HISTOGRAM', withinType: ['NUMBER_RANGE'] },

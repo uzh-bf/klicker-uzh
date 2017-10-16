@@ -35,7 +35,7 @@ const Evaluation = ({
     title={data.question.title}
     description={data.version.description}
     type={data.question.type}
-    options={data.version.options}
+    choices={data.version.options.choices}
     showSolution={showSolution}
     visualizationType={visualizationType}
     onToggleShowSolution={handleToggleShowSolution}
@@ -79,11 +79,13 @@ export default compose(
       version: {
         description:
           'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
-        options: [
-          { correct: false, name: 'option 1' },
-          { correct: true, name: 'option 2' },
-          { correct: false, name: 'some other option' },
-        ],
+        options: {
+          choices: [{ correct: false, name: 'option 1' },
+            { correct: true, name: 'option 2' },
+            { correct: false, name: 'some other option' }],
+          randomized: true,
+          restrictions: null,
+        },
       },
     },
   }),
