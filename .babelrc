@@ -1,11 +1,25 @@
 {
   "env": {
     "development": {
-      "presets": "next/babel",
+      "presets": [
+        "next/babel",
+        {
+          "styled-jsx": {
+            "plugins": ["styled-jsx-plugin-sass"]
+          }
+        }
+      ],
       "plugins": ["inline-dotenv", "add-react-displayname", "react-intl"]
     },
     "production": {
-      "presets": "next/babel",
+      "presets": [
+        "next/babel",
+        {
+          "styled-jsx": {
+            "plugins": ["styled-jsx-plugin-sass"]
+          }
+        }
+      ],
       "plugins": [
         ["lodash", { "id": ["lodash", "recompose"] }],
         "transform-inline-environment-variables",
@@ -26,7 +40,12 @@
             "modules": "commonjs"
           }
         ],
-        "next/babel"
+        "next/babel",
+        {
+          "styled-jsx": {
+            "plugins": ["styled-jsx-plugin-sass"]
+          }
+        }
       ]
     }
   }
