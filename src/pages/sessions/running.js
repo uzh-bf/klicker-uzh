@@ -146,13 +146,14 @@ export default compose(
       <LoadingTeacherLayout intl={intl} pageId="runningSession" title="Running Session" />
     )),
   ),
-  graphql(EndSessionMutation),
+  graphql(EndSessionMutation, { name: 'endSession' }),
+  graphql(UpdateSessionSettingsMutation, { name: 'updateSessionSettings' }),
   withHandlers({
     // handle ending the currently running session
-    handleEndSession: ({ data, mutate }) => async () => {
+    handleEndSession: ({ data, endSession }) => async () => {
       try {
         // run the mutation
-        await mutate({
+        await endSession({
           refetchQueries: [{ query: RunningSessionQuery }],
           variables: { id: data.user.runningSession.id },
         })
@@ -164,12 +165,11 @@ export default compose(
         console.error(message)
       }
     },
-  }),
-  graphql(UpdateSessionSettingsMutation),
-  withHandlers({
-    handleUpdateSettings: ({ data, mutate }) => ({ settings }) => async () => {
+
+    // handle session settings updates
+    handleUpdateSettings: ({ data, updateSessionSettings }) => ({ settings }) => async () => {
       try {
-        await mutate({
+        await updateSessionSettings({
           variables: { sessionId: data.user.runningSession.id, settings },
         })
       } catch ({ message }) {

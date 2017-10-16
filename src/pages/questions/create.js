@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import Router from 'next/router'
-import { compose, withHandlers, withProps } from 'recompose'
+import { compose, withHandlers, mapProps } from 'recompose'
 import { graphql } from 'react-apollo'
 import { intlShape } from 'react-intl'
 
@@ -18,7 +18,7 @@ const propTypes = {
   tags: PropTypes.array.isRequired,
 }
 
-const CreateQuestion = ({
+export const CreateQuestion = ({
   tags, intl, handleDiscard, handleSave,
 }) => (
   <TeacherLayout
@@ -43,8 +43,10 @@ CreateQuestion.propTypes = propTypes
 
 export default compose(
   withData,
-  pageWithIntl,
   graphql(TagListQuery),
+  mapProps(({ data }) => ({
+    tags: data.tags,
+  })),
   graphql(CreateQuestionMutation),
   withHandlers({
     // handle discarding a new question
@@ -77,7 +79,5 @@ export default compose(
       }
     },
   }),
-  withProps(({ data }) => ({
-    tags: data.tags,
-  })),
+  pageWithIntl,
 )(CreateQuestion)
