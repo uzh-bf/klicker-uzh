@@ -2,7 +2,7 @@
 
 !src/
 !.babelrc
-!.env
+!.env.prod
 !CHANGELOG.md
 !Dockerfile
 !entrypoint.sh

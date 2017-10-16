@@ -36,7 +36,7 @@ sed -i 's;__SENTRY__;'"$SENTRY"';g' "$APP_PATH/.env"
 sed -i 's;__LOGROCKET__;'"$LOGROCKET"';g' "$APP_PATH/.env"
 
 echo "Building application sources..."
-# yarn run build
+yarn run build
 
 echo "Saving lockfiles..."
 echo "LOCK" > "$APP_PATH/klicker.lock"

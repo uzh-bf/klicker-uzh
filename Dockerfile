@@ -20,7 +20,6 @@ WORKDIR $KLICKER_DIR
 # update permissions for klicker dir
 # install yarn packages
 RUN set -x \
-  && chmod g+rwx $KLICKER_DIR/ \
   && yarn install --frozen-lockfile
 
 # inject application sources and entrypoint
@@ -28,10 +27,11 @@ COPY --chown=1000:0 . $KLICKER_DIR/
 
 # make the entrypoint executable
 RUN chmod u+x $KLICKER_DIR/entrypoint.sh \
+  && mv .env.prod .env \\
   && yarn run build
 
 # configure the entrypoint script
-ENTRYPOINT ["/app/entrypoint.sh"]
+# ENTRYPOINT ["/app/entrypoint.sh"]
 
 # run next in production mode
 CMD ["yarn", "start"]
