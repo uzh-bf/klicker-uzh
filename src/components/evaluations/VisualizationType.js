@@ -7,11 +7,8 @@ import { FormattedMessage, intlShape } from 'react-intl'
 const propTypes = {
   intl: intlShape.isRequired,
   onChangeType: PropTypes.func.isRequired,
-  type: PropTypes.string,
+  type: PropTypes.string.isRequired,
 }
-
-// TODO
-const defaultProps = {}
 
 const dropDownOptions = [
   { text: 'Pie Chart', value: 'PIE_CHART', withinType: ['SC', 'MC'] },
@@ -52,6 +49,5 @@ const VisualizationType = ({ intl, onChangeType, type }) => (
 )
 
 VisualizationType.propTypes = propTypes
-VisualizationType.defaultProps = defaultProps
 
 export default VisualizationType

@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { FormattedMessage, intlShape } from 'react-intl'
-import { Button, Icon } from 'semantic-ui-react'
+import { Button } from 'semantic-ui-react'
 import {
   Bar,
   BarChart,
@@ -20,6 +20,14 @@ import {
 const propTypes = {
   handleShowGraph: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
+  result: PropTypes.shape({
+    options: PropTypes.arrayOf({
+      correct: PropTypes.bool,
+      name: PropTypes.string,
+      numberOfVotes: PropTypes.number,
+    }),
+    totalResponses: PropTypes.number,
+  }),
   showGraph: PropTypes.bool,
   showSolution: PropTypes.bool,
   visualization: PropTypes.string,
@@ -27,23 +35,15 @@ const propTypes = {
 
 // TODO
 const defaultProps = {
+  result: null,
   showGraph: false,
   showSolution: true,
   visualization: 'PIE_CHART',
 }
 
-const data = [
-  { name: 'Group A', numberOfVotes: 400 },
-  { name: 'Group B', numberOfVotes: 300 },
-  { name: 'Group C', numberOfVotes: 300 },
-  { name: 'Group D', numberOfVotes: 200 },
-]
-
-const correctSolution = 'Group B'
-
 // TODO default value
 const Graph = ({
-  intl, handleShowGraph, showGraph, showSolution, visualization,
+  intl, handleShowGraph, result, showGraph, showSolution, visualization,
 }) => (
   <div className="graph">
     {// if it is false, a placeholder should be shown
@@ -59,16 +59,16 @@ const Graph = ({
           <PieChart>
             <Pie
               label
-              data={data}
+              data={result.options}
               innerRadius={120}
               outerRadius={300}
               valueKey="numberOfVotes"
               fill="#8884d8"
             >
-              {data.map((entry, index) => (
+              {result.options.map((entry, index) => (
                 <Cell
                   key={index}
-                  fill={entry.name === correctSolution && showSolution ? '#00FF00' : '#8884d8'}
+                  fill={entry.correct && showSolution ? '#00FF00' : '#8884d8'}
                 />
               ))}
             </Pie>
@@ -78,17 +78,17 @@ const Graph = ({
     {visualization === 'BAR_CHART' &&
       showGraph && (
         <ResponsiveContainer>
-          <BarChart data={data}>
+          <BarChart data={result.options}>
             <XAxis dataKey="name" />
             <YAxis />
             <CartesianGrid strokeDasharray="3 3" />
             <Tooltip />
             <Legend />
             <Bar dataKey="numberOfVotes">
-              {data.map((entry, index) => (
+              {result.options.map((entry, index) => (
                 <Cell
                   key={index}
-                  fill={entry.name === correctSolution && showSolution ? '#00FF00' : '#8884d8'}
+                  fill={entry.name && showSolution ? '#00FF00' : '#8884d8'}
                 />
               ))}
             </Bar>

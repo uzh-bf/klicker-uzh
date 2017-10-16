@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { intlShape } from 'react-intl'
-import { compose, withState, withHandlers, withProps } from 'recompose'
+import { compose, withHandlers, withProps, withState } from 'recompose'
 
 import { pageWithIntl, withData } from '../../lib'
 
@@ -48,6 +48,7 @@ const Evaluation = ({
     <Graph
       intl={intl}
       handleShowGraph={handleShowGraph}
+      result={data.result}
       showGraph={showGraph}
       showSolution={showSolution}
       visualization={visualizationType}
@@ -82,7 +83,15 @@ export default compose(
         type: 'SC',
       },
       result: {
-        options: [56, 344, 9],
+        options: [
+          { correct: false, name: 'option 1', numberOfVotes: 56 },
+          {
+            correct: true,
+            name: 'option 2',
+            numberOfVotes: 344,
+          },
+          { correct: false, name: 'some other option', numberOfVotes: 9 },
+        ],
         totalResponses: 409,
       },
       version: {
