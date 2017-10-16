@@ -36,30 +36,26 @@ export const QuestionListPres = ({
   }
 
   return (
-    <div>
+    <div className="questionList">
       {questions.map(question => (
-        <div className="question">
-          {
-            <Question
-              key={question.id}
-              id={question.id}
-              lastUsed={question.instances.map(instance =>
-                moment(instance.createdAt).format('DD.MM.YYYY HH:MM:SS'),
-              )}
-              tags={question.tags}
-              title={question.title}
-              type={question.type}
-              version={question.versions.length}
-              draggable={creationMode && !dropped.includes(question.id)}
-              creationMode={creationMode}
-              onDrop={onQuestionDropped(question.id)}
-            />
-          }
-        </div>
+        <Question
+          key={question.id}
+          id={question.id}
+          lastUsed={question.instances.map(instance =>
+            moment(instance.createdAt).format('DD.MM.YYYY HH:MM:SS'),
+          )}
+          tags={question.tags}
+          title={question.title}
+          type={question.type}
+          version={question.versions.length}
+          draggable={creationMode && !dropped.includes(question.id)}
+          creationMode={creationMode}
+          onDrop={onQuestionDropped(question.id)}
+        />
       ))}
 
       <style jsx>{`
-        .question {
+        .questionList > :global(*) {
           margin-bottom: 2rem;
         }
       `}</style>

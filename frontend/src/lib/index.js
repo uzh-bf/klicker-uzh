@@ -10,4 +10,4 @@ export {
   QuestionBlockStatus,
   QuestionTypes,
   FREERestrictionTypes,
-} from './constants'
+} from '../constants'
