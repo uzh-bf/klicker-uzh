@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { Helmet } from 'react-helmet'
-import { intlShape, FormattedMessage } from 'react-intl'
+import { FormattedMessage, intlShape } from 'react-intl'
 import { Checkbox } from 'semantic-ui-react'
 
 import { createLinks, initLogging } from '../../lib'
@@ -126,6 +126,22 @@ class EvaluationLayout extends Component {
             padding: 0.1rem;
           }
 
+          .title {
+            text-align: center;
+          }
+
+          .possibilities {
+            text-align: center;
+          }
+
+          .sampleSolution {
+          text-align: center;
+          }
+
+          .visualization {
+          text-align: center;
+          }
+
           @supports (grid-gap: 1rem) {
             @media all and (min-width: 768px) {
               .evaluationLayout {
@@ -146,6 +162,8 @@ class EvaluationLayout extends Component {
 
               .questionText {
                 grid-area: question;
+
+                border-bottom: 1px solid;
               }
 
               .graph {
