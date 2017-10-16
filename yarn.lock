@@ -1610,9 +1610,9 @@ babel-runtime@6.26.0, babel-runtime@6.x.x, babel-runtime@^6.11.6, babel-runtime@
     core-js "^2.4.0"
     regenerator-runtime "^0.11.0"
 
-babel-runtime@7.0.0-beta.2:
-  version "7.0.0-beta.2"
-  resolved "https://registry.yarnpkg.com/babel-runtime/-/babel-runtime-7.0.0-beta.2.tgz#301bf53290c45d2fbd01ed654cde7cc73c8164d6"
+babel-runtime@7.0.0-beta.3:
+  version "7.0.0-beta.3"
+  resolved "https://registry.yarnpkg.com/babel-runtime/-/babel-runtime-7.0.0-beta.3.tgz#7c750de5514452c27612172506b49085a4a630f2"
   dependencies:
     core-js "^2.4.0"
     regenerator-runtime "^0.11.0"
