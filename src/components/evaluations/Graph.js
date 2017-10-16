@@ -46,8 +46,8 @@ const Graph = ({ intl, showSolution, visualization }) => (
           <Pie
             label
             data={data}
-            innerRadius={60}
-            outerRadius={150}
+            innerRadius={120}
+            outerRadius={300}
             valueKey="numberOfVotes"
             fill="#8884d8"
           >
@@ -90,8 +90,8 @@ const Graph = ({ intl, showSolution, visualization }) => (
       }
 
       .graph {
-        height: 30rem;
-        width: 50rem;
+        height: 50rem;
+        width: 100rem;
       }
     `}</style>
   </div>
