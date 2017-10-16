@@ -56,4 +56,4 @@ jobs:
         - docker pull quay.io/uzh-bf/klicker-react:nightly
         - docker build --cache-from quay.io/uzh-bf/klicker-react:nightly -t quay.io/uzh-bf/klicker-react:nightly -t quay.io/uzh-bf/klicker-react:nightly-$TRAVIS_PULL_REQUEST .
         - docker push quay.io/uzh-bf/klicker-react:nightly
-        - docker push quay.io/uzh-bf/klicker-react:nightly-$TRAVIS_PULL_REQUEST"
+        - docker push quay.io/uzh-bf/klicker-react:nightly-$TRAVIS_PULL_REQUEST
