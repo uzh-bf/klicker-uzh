@@ -23,30 +23,33 @@ const SCAnswerOptions = ({ activeOption, options, onOptionClick }) => (
     {options.map((option, index) => (
       <div key={option.id} className={classNames('option', { active: index === activeOption })}>
         <Button basic fluid onClick={onOptionClick && onOptionClick(index)}>
-          {option.name}
+          {option.label}
         </Button>
       </div>
     ))}
 
     <style jsx>{`
-      :global(.option:not(:last-child)) {
-        margin-bottom: 0.5rem;
-      }
+      .options {
+        .option {
+          :global(&:not(:last-child)) {
+            margin-bottom: 0.5rem;
+          }
 
-      .option.active :global(button) {
-        border: 1px solid green !important;
+          &.active :global(button) {
+            border: 1px solid green !important;
 
-        animation: bounce 0.5s;
-      }
-
-      // TODO: improve animation
-      @keyframes bounce {
-        0%,
-        100% {
-          transform: translateX(0);
+            animation: bounce 0.5s;
+          }
         }
-        50% {
-          transform: translateY(-2px);
+        // TODO: improve animation
+        @keyframes bounce {
+          0%,
+          100% {
+            transform: translateX(0);
+          }
+          50% {
+            transform: translateY(-2px);
+          }
         }
       }
     `}</style>
