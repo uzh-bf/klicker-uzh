@@ -27,7 +27,7 @@ RUN set -x \
   && yarn install --frozen-lockfile
 
 # configure the entrypoint script
-ENTRYPOINT ["$KLICKER_DIR/entrypoint.sh"]
+ENTRYPOINT ["/app/entrypoint.sh"]
 
 # run next in production mode
 CMD ["yarn", "start"]
