@@ -9,6 +9,11 @@ EXPOSE 3000
 # root application directory
 ENV KLICKER_DIR /app
 
+# TODO: extract these environment variables
+ENV API_URL "https://klicker-api-appuio-demo9888.appuioapp.ch/graphql"
+ENV SENTRY "https://16014e4cbb9e48a39a439e2c076ccc4f@sentry.ibf-devops.ch/6"
+ENV LOGROCKET "vqm2qj/klicker"
+
 # inject the application dependencies
 COPY --chown=1000:0 package.json yarn.lock $KLICKER_DIR/
 
@@ -26,8 +31,9 @@ RUN set -x \
 COPY --chown=1000:0 . $KLICKER_DIR/
 
 # make the entrypoint executable
-RUN chmod u+x $KLICKER_DIR/entrypoint.sh \
-  && mv .env.prod .env \
+# RUN chmod u+x $KLICKER_DIR/entrypoint.sh \
+#  && yarn run build
+RUN set -x \
   && yarn run build
 
 # configure the entrypoint script
