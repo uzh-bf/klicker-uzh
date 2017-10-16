@@ -10,16 +10,16 @@ import VisualizationType from '../evaluations/VisualizationType'
 
 const propTypes = {
   children: PropTypes.element.isRequired,
-  description: PropTypes.string,
-  intl: intlShape.isRequired,
-  onChangeVisualizationType: PropTypes.func.isRequired,
-  onToggleShowSolution: PropTypes.func.isRequired,
   choices: PropTypes.arrayOf(
     PropTypes.shape({
       correct: PropTypes.bool,
       name: PropTypes.string.isRequired,
     }),
   ).isRequired,
+  description: PropTypes.string,
+  intl: intlShape.isRequired,
+  onChangeVisualizationType: PropTypes.func.isRequired,
+  onToggleShowSolution: PropTypes.func.isRequired,
   pageTitle: PropTypes.string,
   title: PropTypes.string.isRequired,
   type: PropTypes.string.isRequired,

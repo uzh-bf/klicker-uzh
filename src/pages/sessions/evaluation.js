@@ -11,8 +11,10 @@ import Graph from '../../components/evaluations/Graph'
 const propTypes = {
   data: PropTypes.object.isRequired,
   handleChangeVisualizationType: PropTypes.func.isRequired,
+  handleShowGraph: PropTypes.func.isRequired,
   handleToggleShowSolution: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
+  showGraph: PropTypes.bool.isRequired,
   showSolution: PropTypes.bool.isRequired,
   visualizationType: PropTypes.string.isRequired,
 }
@@ -20,8 +22,10 @@ const propTypes = {
 const Evaluation = ({
   data,
   intl,
+  showGraph,
   showSolution,
   visualizationType,
+  handleShowGraph,
   handleToggleShowSolution,
   handleToggleVisualizationActive,
   handleChangeVisualizationType,
@@ -41,7 +45,13 @@ const Evaluation = ({
     onToggleShowSolution={handleToggleShowSolution}
     onChangeVisualizationType={handleChangeVisualizationType}
   >
-    <Graph intl={intl} showSolution={showSolution} visualization={visualizationType} />
+    <Graph
+      intl={intl}
+      handleShowGraph={handleShowGraph}
+      showGraph={showGraph}
+      showSolution={showSolution}
+      visualization={visualizationType}
+    />
   </EvaluationLayout>
 )
 
@@ -50,15 +60,14 @@ Evaluation.propTypes = propTypes
 export default compose(
   withData,
   pageWithIntl,
+  withState('showGraph', 'setShowGraph', false),
   withState('showSolution', 'setShowSolution', false),
-  // TODO: visualizationActive should decide whether the graph is shown
-  // if it is false, a placeholder should be shown
-  // a click on said placeholder should then trigger display of the real graph
   withState('visualizationActive', 'setVisualizationActive', false),
   withState('visualizationType', 'setVisualizationType', 'PIE_CHART'),
   withHandlers({
     handleChangeVisualizationType: ({ setVisualizationType }) => newType =>
       setVisualizationType(newType),
+    handleShowGraph: ({ setShowGraph }) => () => setShowGraph(showGraph => !showGraph),
     handleToggleShowSolution: ({ setShowSolution }) => () =>
       setShowSolution(showSolution => !showSolution),
     // the visualization display can only be toggled once, so only allow setting to true
@@ -80,9 +89,11 @@ export default compose(
         description:
           'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.',
         options: {
-          choices: [{ correct: false, name: 'option 1' },
+          choices: [
+            { correct: false, name: 'option 1' },
             { correct: true, name: 'option 2' },
-            { correct: false, name: 'some other option' }],
+            { correct: false, name: 'some other option' },
+          ],
           randomized: true,
           restrictions: null,
         },

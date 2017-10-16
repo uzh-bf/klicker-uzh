@@ -1,6 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { intlShape } from 'react-intl'
+import { FormattedMessage, intlShape } from 'react-intl'
+import { Button, Icon } from 'semantic-ui-react'
 import {
   Bar,
   BarChart,
@@ -17,13 +18,16 @@ import {
 
 // TODO
 const propTypes = {
+  handleShowGraph: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  showSolution: PropTypes.BOOLEAN,
+  showGraph: PropTypes.bool,
+  showSolution: PropTypes.bool,
   visualization: PropTypes.string,
 }
 
 // TODO
 const defaultProps = {
+  showGraph: false,
   showSolution: true,
   visualization: 'PIE_CHART',
 }
@@ -38,48 +42,59 @@ const data = [
 const correctSolution = 'Group B'
 
 // TODO default value
-const Graph = ({ intl, showSolution, visualization }) => (
+const Graph = ({
+  intl, handleShowGraph, showGraph, showSolution, visualization,
+}) => (
   <div className="graph">
-    {visualization === 'PIE_CHART' && (
-      <ResponsiveContainer>
-        <PieChart>
-          <Pie
-            label
-            data={data}
-            innerRadius={120}
-            outerRadius={300}
-            valueKey="numberOfVotes"
-            fill="#8884d8"
-          >
-            {data.map((entry, index) => (
-              <Cell
-                key={index}
-                fill={entry.name === correctSolution && showSolution ? '#00FF00' : '#8884d8'}
-              />
-            ))}
-          </Pie>
-        </PieChart>
-      </ResponsiveContainer>
+    {// if it is false, a placeholder should be shown
+    // a click on said placeholder should then trigger display of the real graph
+    !showGraph && (
+      <Button className="showGraphButton" onClick={handleShowGraph}>
+        <FormattedMessage id="teacher.evaluation.graph.showGraph" defaultMessage="Show Graph" />
+      </Button>
     )}
-    {visualization === 'BAR_CHART' && (
-      <ResponsiveContainer>
-        <BarChart data={data}>
-          <XAxis dataKey="name" />
-          <YAxis />
-          <CartesianGrid strokeDasharray="3 3" />
-          <Tooltip />
-          <Legend />
-          <Bar dataKey="numberOfVotes">
-            {data.map((entry, index) => (
-              <Cell
-                key={index}
-                fill={entry.name === correctSolution && showSolution ? '#00FF00' : '#8884d8'}
-              />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    )}
+    {visualization === 'PIE_CHART' &&
+      showGraph && (
+        <ResponsiveContainer>
+          <PieChart>
+            <Pie
+              label
+              data={data}
+              innerRadius={120}
+              outerRadius={300}
+              valueKey="numberOfVotes"
+              fill="#8884d8"
+            >
+              {data.map((entry, index) => (
+                <Cell
+                  key={index}
+                  fill={entry.name === correctSolution && showSolution ? '#00FF00' : '#8884d8'}
+                />
+              ))}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+      )}
+    {visualization === 'BAR_CHART' &&
+      showGraph && (
+        <ResponsiveContainer>
+          <BarChart data={data}>
+            <XAxis dataKey="name" />
+            <YAxis />
+            <CartesianGrid strokeDasharray="3 3" />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="numberOfVotes">
+              {data.map((entry, index) => (
+                <Cell
+                  key={index}
+                  fill={entry.name === correctSolution && showSolution ? '#00FF00' : '#8884d8'}
+                />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      )}
     {visualization !== 'BAR_CHART' &&
       visualization !== 'PIE_CHART' && <div>This type of graph is not implemented yet!</div>}
 
@@ -89,9 +104,14 @@ const Graph = ({ intl, showSolution, visualization }) => (
         margin-bottom: 0.5rem;
       }
 
+      .showGraphButton {
+        align-self: center;
+      }
+
       .graph {
+        border: 1px solid;
         height: 50rem;
-        width: 100rem;
+        width: 50rem;
       }
     `}</style>
   </div>
