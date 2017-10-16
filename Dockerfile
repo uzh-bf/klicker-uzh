@@ -27,7 +27,7 @@ COPY --chown=1000:0 . $KLICKER_DIR/
 
 # make the entrypoint executable
 RUN chmod u+x $KLICKER_DIR/entrypoint.sh \
-  && mv .env.prod .env \\
+  && mv .env.prod .env \
   && yarn run build
 
 # configure the entrypoint script
