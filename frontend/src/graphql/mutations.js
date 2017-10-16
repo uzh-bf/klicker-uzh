@@ -138,7 +138,7 @@ export const AddFeedbackMutation = gql`
 `
 
 export const UpdateSessionSettingsMutation = gql`
-  mutation UpdateSessionSettings($sessionId: ID!, $settings: SessionSettingsInput!) {
+  mutation UpdateSessionSettings($sessionId: ID!, $settings: Session_SettingsInput!) {
     updateSessionSettings(sessionId: $sessionId, settings: $settings) {
       id
       settings {
