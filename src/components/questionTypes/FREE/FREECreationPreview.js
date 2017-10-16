@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 
-import { FREERestrictionTypes } from '../../../lib/constants'
+import { FREERestrictionTypes } from '../../../constants'
 
 const propTypes = {
   description: PropTypes.string,

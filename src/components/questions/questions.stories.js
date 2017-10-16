@@ -34,6 +34,9 @@ storiesOf('questions', module)
   .add('QuestionList', () => (
     <QuestionListPres questions={fixtures.questions} onQuestionDropped={() => null} />
   ))
+  .add('QuestionList (creation mode)', () => (
+    <QuestionListPres creationMode questions={fixtures.questions} onQuestionDropped={() => null} />
+  ))
   .add('QuestionBlock', () => (
     <QuestionBlock {...fixtures.questionBlock} showSolutions={false} timeLimit={60} />
   ))

@@ -26,40 +26,41 @@ const QuestionBlock = ({ questions, showSolutions, timeLimit }) => (
     </div>
     <div className="questions">
       {questions.map(({ id, title, type }) => (
-        <div className="question">
-          <QuestionSingle id={id} title={title} type={type} />
-        </div>
+        <QuestionSingle key={id} id={id} title={title} type={type} />
       ))}
     </div>
     <style jsx>{`
-      .questionBlock,
-      .questions {
-        display: flex;
-      }
       .questionBlock {
+        display: flex;
+
         background-color: lightgrey;
         border: 1px solid grey;
         flex-flow: row wrap;
         padding: 0.2rem;
-      }
-      .questions {
-        flex-flow: column nowrap;
-      }
-      .timeLimit,
-      .showSolution {
-        flex: 1 1 50%;
-        margin-bottom: 0.2rem;
-      }
-      .showSolution {
-        text-align: right;
-      }
-      .question {
-        background-color: lightgrey;
-        border: 1px solid grey;
-        flex: 1;
-      }
-      .question:not(:first-child) {
-        margin-top: 0.2rem;
+
+        .timeLimit,
+        .showSolution {
+          flex: 1 1 50%;
+          margin-bottom: 0.2rem;
+        }
+
+        .showSolution {
+          text-align: right;
+        }
+
+        .questions {
+          display: flex;
+          flex-flow: column nowrap;
+
+          > :global(*) {
+            border: 1px solid grey;
+            flex: 1;
+
+            &:not(:first-child) {
+              margin-top: 0.2rem;
+            }
+          }
+        }
       }
     `}</style>
   </div>

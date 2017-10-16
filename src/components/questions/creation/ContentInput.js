@@ -10,14 +10,14 @@ const propTypes = {
 }
 
 const ContentInput = ({ input: { value, onChange } }) => (
-  <div className="field">
+  <div className="field contentInput">
     <label htmlFor="content">
       <FormattedMessage defaultMessage="Content" id="teacher.createQuestion.content" />
     </label>
     <textarea name="content" value={value} onChange={onChange} />
 
     <style jsx>{`
-      textarea {
+      .contentInput textarea {
         border: 1px solid lightgrey;
         height: 20rem;
         padding: 1rem;
