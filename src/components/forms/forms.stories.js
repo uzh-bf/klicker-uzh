@@ -4,23 +4,23 @@ import React from 'react'
 import { Provider as ReduxProvider } from 'react-redux'
 import { storiesOf } from '@storybook/react'
 import { action } from '@storybook/addon-actions'
-import { combineReducers, createStore } from 'redux'
-import { reducer as formReducer } from 'redux-form'
 import { DragDropContextProvider } from 'react-dnd'
 import HTML5Backend from 'react-dnd-html5-backend'
 
+import { combineReducers, createStore } from 'redux'
+import { reducer as formReducer } from 'redux-form'
+
 import { intlMock } from '../../../.storybook/utils'
 
-import LoginForm from './LoginForm'
-import PasswordResetForm from './PasswordResetForm'
-import RegistrationForm from './RegistrationForm'
-import QuestionCreationForm from './QuestionCreationForm'
-import SessionCreationForm from './SessionCreationForm'
-
-import FormWithLinks from './components/FormWithLinks'
-import QuestionDropzone from './components/QuestionDropzone'
-import SemanticInput from './components/SemanticInput'
-import SessionTimeline from './components/SessionTimeline'
+import {
+  LoginForm,
+  PasswordResetForm,
+  RegistrationForm,
+  QuestionCreationForm,
+  SessionCreationForm,
+  FormWithLinks,
+  SemanticInput,
+} from '.'
 
 const rootReducer = combineReducers({
   form: formReducer,
@@ -44,9 +44,6 @@ storiesOf('forms/components', module)
 
 storiesOf('forms/helpers', module)
   .addDecorator(getStory => <ReduxProvider store={store}>{getStory()}</ReduxProvider>)
-  .addDecorator(getStory => (
-    <DragDropContextProvider backend={HTML5Backend}>{getStory()}</DragDropContextProvider>
-  ))
   .add('FormWithLinks', () => (
     <FormWithLinks
       button={{
@@ -66,26 +63,11 @@ storiesOf('forms/helpers', module)
       form fields
     </FormWithLinks>
   ))
-  .add('QuestionDropzone', () => (
-    <div style={{ height: 100, width: 100 }}>
-      <QuestionDropzone />
-    </div>
-  ))
   .add('SemanticInput', () => <SemanticInput label="label" meta={{}} input={{}} />)
   .add('SemanticInput (with error)', () => (
     <SemanticInput
       label="label"
       meta={{ error: 'fail', invalid: true, touched: true }}
       input={{}}
-    />
-  ))
-  .add('SessionTimeline', () => (
-    <SessionTimeline
-      input={{
-        value: [
-          { id: 'id1', title: 'question1', type: 'SC' },
-          { id: 'id2', title: 'question2', type: 'FREE' },
-        ],
-      }}
     />
   ))

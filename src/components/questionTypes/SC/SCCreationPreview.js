@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 
-import AnswerOptions from '../answer/Options'
+import SCAnswerOptions from './SCAnswerOptions'
 
 const propTypes = {
   description: PropTypes.string,
@@ -16,14 +16,16 @@ const defaultProps = {
   title: 'TITLE',
 }
 
-const Preview = ({ title, description, options }) => (
+const SCCreationPreview = ({ title, description, options }) => (
   <div className="preview">
     <div className="title">{title || 'TITLE'}</div>
     <div className="description">{description || 'DESCRIPTION'}</div>
     <div className="options">
-      <AnswerOptions
+      <SCAnswerOptions
         activeOption={-1}
-        options={(options.length === 0 && [{ name: 'OPTION' }]) || options}
+        options={
+          ((!options || options.choices.length === 0) && [{ name: 'OPTION' }]) || options.choices
+        }
         onOptionClick={f => () => f}
       />
     </div>
@@ -61,7 +63,7 @@ const Preview = ({ title, description, options }) => (
   </div>
 )
 
-Preview.propTypes = propTypes
-Preview.defaultProps = defaultProps
+SCCreationPreview.propTypes = propTypes
+SCCreationPreview.defaultProps = defaultProps
 
-export default Preview
+export default SCCreationPreview

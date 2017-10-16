@@ -4,7 +4,7 @@ import isEmail from 'validator/lib/isEmail'
 import { Field, reduxForm } from 'redux-form'
 import { intlShape } from 'react-intl'
 
-import { FormWithLinks, SemanticInput } from './components'
+import { FormWithLinks, SemanticInput } from '.'
 
 const validate = ({ email }) => {
   const errors = {}

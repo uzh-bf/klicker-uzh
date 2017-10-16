@@ -7,8 +7,8 @@ import { graphql } from 'react-apollo'
 import { pageWithIntl, withData } from '../../lib'
 import { RunningSessionQuery } from '../../graphql/queries'
 import { StartSessionMutation } from '../../graphql/mutations'
-import TeacherLayout from '../../components/layouts/TeacherLayout'
-import SessionList from '../../components/sessions/SessionList'
+import { TeacherLayout } from '../../components/layouts'
+import { SessionList } from '../../components/sessions'
 
 const propTypes = {
   handleCopySession: PropTypes.func.isRequired,

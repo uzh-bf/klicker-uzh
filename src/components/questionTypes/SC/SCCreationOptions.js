@@ -1,49 +1,22 @@
-/* eslint-disable react/prop-types */
-
 import React from 'react'
 import PropTypes from 'prop-types'
 import { SortableContainer, SortableElement, arrayMove } from 'react-sortable-hoc'
 import { FormattedMessage } from 'react-intl'
 import { compose, mapProps, withHandlers } from 'recompose'
 
-import Placeholder from './Placeholder'
-import Option from './Option'
+import SCCreationPlaceholder from './SCCreationPlaceholder'
+import SCCreationOption from './SCCreationOption'
 
 const propTypes = {
-  input: PropTypes.shape({
-    onChange: PropTypes.func.isRequired,
-    value: PropTypes.arrayOf(PropTypes.shape(Option.propTypes)).isRequired,
-  }).isRequired,
+  handleDeleteOption: PropTypes.func.isRequired,
+  handleNewOption: PropTypes.func.isRequired,
+  handleOptionToggleCorrect: PropTypes.func.isRequired,
+  handleUpdateOrder: PropTypes.func.isRequired,
+  value: PropTypes.arrayOf(PropTypes.shape(SCCreationOption.propTypes)).isRequired,
 }
 
-// compose handlers for the sortable list of options
-const enhance = compose(
-  mapProps(({ input: { onChange, value } }) => ({
-    onChange,
-    value,
-  })),
-  withHandlers({
-    handleDeleteOption: ({ onChange, value }) => index => () =>
-      onChange([...value.slice(0, index), ...value.slice(index + 1)]),
-
-    handleNewOption: ({ onChange, value }) => newOption => onChange([...value, newOption]),
-
-    handleOptionToggleCorrect: ({ onChange, value }) => index => () => {
-      const option = value[index]
-      onChange([
-        ...value.slice(0, index),
-        { ...option, correct: !option.correct },
-        ...value.slice(index + 1),
-      ])
-    },
-
-    handleUpdateOrder: ({ onChange, value }) => ({ oldIndex, newIndex }) =>
-      onChange(arrayMove(value, oldIndex, newIndex)),
-  }),
-)
-
 // create the purely functional component
-const Options = ({
+const SCCreationOptions = ({
   handleNewOption,
   handleDeleteOption,
   handleUpdateOrder,
@@ -52,7 +25,7 @@ const Options = ({
 }) => {
   const SortableOption = SortableElement(props => (
     <div className="option">
-      <Option {...props} />
+      <SCCreationOption {...props} />
       <style jsx>{`
         .option {
           cursor: grab;
@@ -92,12 +65,35 @@ const Options = ({
         onSortEnd={handleUpdateOrder}
       />
 
-      <Placeholder handleSave={handleNewOption} />
+      <SCCreationPlaceholder handleSave={handleNewOption} />
     </div>
   )
 }
 
-const EnhancedOptions = enhance(Options)
-EnhancedOptions.propTypes = propTypes
+SCCreationOptions.propTypes = propTypes
 
-export default EnhancedOptions
+export default compose(
+  mapProps(({ input: { onChange, value } }) => ({
+    // HACK: mapping as a workaround for the value.choices problem
+    onChange: choices => onChange({ ...value, choices }),
+    value: value.choices,
+  })),
+  withHandlers({
+    handleDeleteOption: ({ onChange, value }) => index => () =>
+      onChange([...value.slice(0, index), ...value.slice(index + 1)]),
+
+    handleNewOption: ({ onChange, value }) => newOption => onChange([...value, newOption]),
+
+    handleOptionToggleCorrect: ({ onChange, value }) => index => () => {
+      const option = value[index]
+      onChange([
+        ...value.slice(0, index),
+        { ...option, correct: !option.correct },
+        ...value.slice(index + 1),
+      ])
+    },
+
+    handleUpdateOrder: ({ onChange, value }) => ({ oldIndex, newIndex }) =>
+      onChange(arrayMove(value, oldIndex, newIndex)),
+  }),
+)(SCCreationOptions)

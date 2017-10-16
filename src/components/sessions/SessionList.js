@@ -6,8 +6,9 @@ import { compose, withPropsOnChange, branch, renderComponent } from 'recompose'
 import { FormattedMessage } from 'react-intl'
 
 import Session from './Session'
-import { LoadingDiv } from '../common/Loading'
+import { LoadingDiv } from '../common'
 import { SessionListQuery } from '../../graphql/queries'
+import { SessionStatus } from '../../constants'
 
 const propTypes = {
   error: PropTypes.string,
@@ -59,20 +60,20 @@ SessionListPres.propTypes = propTypes
 SessionListPres.defaultProps = defaultProps
 
 // prepare possible status messages for different session stati
-const statusCases = [
-  {
-    icon: 'play',
-    message: <FormattedMessage id="session.button.created.content" defaultMessage="Start" />,
-  },
-  {
-    icon: 'play',
-    message: <FormattedMessage id="session.button.running.content" defaultMessage="Running" />,
-  },
-  {
+const statusCases = {
+  [SessionStatus.COMPLETED]: {
     icon: 'copy',
     message: <FormattedMessage id="session.button.completed.content" defaultMessage="Copy" />,
   },
-]
+  [SessionStatus.CREATED]: {
+    icon: 'play',
+    message: <FormattedMessage id="session.button.created.content" defaultMessage="Start" />,
+  },
+  [SessionStatus.RUNNING]: {
+    icon: 'play',
+    message: <FormattedMessage id="session.button.running.content" defaultMessage="Running" />,
+  },
+}
 
 export default compose(
   graphql(SessionListQuery),
@@ -82,15 +83,15 @@ export default compose(
     ({ data: { error, sessions }, handleCopySession, handleStartSession }) => {
       // calculate what action to take on button click based on session status
       const handleSessionAction = (sessionId, status) => {
-        if (status === 0) {
+        if (status === SessionStatus.CREATED) {
           return handleStartSession(sessionId)
         }
 
-        if (status === 1) {
+        if (status === SessionStatus.RUNNING) {
           return () => Router.push('/sessions/running')
         }
 
-        if (status === 2) {
+        if (status === SessionStatus.COMPLETED) {
           return handleCopySession(sessionId)
         }
 
@@ -98,7 +99,7 @@ export default compose(
       }
 
       // extract the running session from all sessions
-      const runningSession = sessions.filter(session => session.status === 1)
+      const runningSession = sessions.filter(session => session.status === SessionStatus.RUNNING)
 
       // return the newly composed props
       return {
@@ -106,7 +107,7 @@ export default compose(
         runningSession: runningSession.length === 1 && {
           ...runningSession[0],
           button: {
-            ...statusCases[1],
+            ...statusCases[SessionStatus.RUNNING],
             onClick: () => Router.push('/sessions/running'),
           },
         },

@@ -8,7 +8,7 @@ import { FormattedMessage, intlShape } from 'react-intl'
 import { Field, reduxForm } from 'redux-form'
 import { Button } from 'semantic-ui-react'
 
-import { SemanticInput } from './components'
+import { SemanticInput } from '.'
 
 const validate = ({
   firstName, lastName, email, shortname, password, passwordRepeat, useCase,

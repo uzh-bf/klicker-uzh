@@ -5,19 +5,21 @@ import isEmpty from 'validator/lib/isEmpty'
 import { connect } from 'react-redux'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage, intlShape } from 'react-intl'
+import { Button, Form } from 'semantic-ui-react'
 
-import TitleInput from '../questions/creation/TitleInput'
-import TagInput from '../questions/creation/TagInput'
-import TypeChooser from '../questionTypes/TypeChooser'
+import { ContentInput, TitleInput, TagInput } from '../questions'
 import {
-  SCCreationContent,
+  TypeChooser,
   SCCreationOptions,
   SCCreationPreview,
-} from '../../components/questionTypes/SC'
+  FREECreationOptions,
+  FREECreationPreview,
+} from '../../components/questionTypes'
+import { FREERestrictionTypes, QuestionTypes } from '../../lib'
 
 // form validation
 const validate = ({
-  content, options, tags, title,
+  content, options, tags, title, type,
 }) => {
   const errors = {}
 
@@ -29,12 +31,25 @@ const validate = ({
     errors.content = 'form.createQuestion.content.empty'
   }
 
-  if (!options || options.length === 0) {
-    errors.options = 'form.createQuestion.options.empty'
-  }
-
   if (!tags || tags.length === 0) {
     errors.tags = 'form.createQuestion.tags.empty'
+  }
+
+  if (!type || isEmpty(type)) {
+    errors.type = 'form.createQuestion.type.empty'
+  }
+
+  // validation of SC answer options
+  if (type === QuestionTypes.SC) {
+    // SC questions need at least one answer option to be valid
+    if (!options || options.length === 0) {
+      errors.options = 'form.createQuestion.options.empty'
+    }
+    // validation of FREE answer options
+  } else if (type === QuestionTypes.FREE) {
+    if (options && options.restrictions && options.restrictions.min >= options.restrictions.max) {
+      errors.options = 'form.createQuestion.options.minGteMax'
+    }
   }
 
   return errors
@@ -46,18 +61,22 @@ const propTypes = {
   intl: intlShape.isRequired,
   invalid: PropTypes.bool.isRequired,
   onDiscard: PropTypes.func.isRequired,
-  options: PropTypes.array,
+  options: PropTypes.object,
   tags: PropTypes.arrayOf(
     PropTypes.shape({
       name: PropTypes.string.isRequired,
     }),
   ),
   title: PropTypes.string.isRequired,
+  type: PropTypes.string,
 }
 
 const defaultProps = {
-  options: [],
+  options: {
+    choices: [],
+  },
   tags: [],
+  type: QuestionTypes.SC,
 }
 
 const QuestionCreationForm = ({
@@ -67,116 +86,133 @@ const QuestionCreationForm = ({
   options,
   tags,
   title,
+  type,
   handleSubmit: onSubmit,
   onDiscard,
-}) => (
-  <form className="ui form" onSubmit={onSubmit}>
-    <div className="questionInput questionTitle">
-      <Field name="title" component={TitleInput} />
-    </div>
+}) => {
+  const typeComponents = {
+    [QuestionTypes.SC]: {
+      input: SCCreationOptions,
+      preview: SCCreationPreview,
+    },
+    [QuestionTypes.MC]: {
+      input: SCCreationOptions,
+      preview: SCCreationPreview,
+    },
+    [QuestionTypes.FREE]: {
+      input: FREECreationOptions,
+      preview: FREECreationPreview,
+    },
+  }
+  const Preview = typeComponents[type].preview
 
-    <div className="questionInput questionType">
-      <Field name="type" component={TypeChooser} intl={intl} />
-    </div>
+  return (
+    <div className="questionCreationForm">
+      <Form onSubmit={onSubmit}>
+        <div className="questionInput questionTitle">
+          <Field name="title" component={TitleInput} />
+        </div>
 
-    <div className="questionInput questionTags">
-      <Field name="tags" component={TagInput} tags={tags} />
-    </div>
+        <div className="questionInput questionType">
+          <Field name="type" component={TypeChooser} intl={intl} />
+        </div>
 
-    <div className="questionInput questionContent">
-      <Field name="content" component={SCCreationContent} />
-    </div>
+        <div className="questionInput questionTags">
+          <Field name="tags" component={TagInput} tags={tags} />
+        </div>
 
-    <div className="questionInput questionOptions">
-      <Field name="options" component={SCCreationOptions} />
-    </div>
+        <div className="questionInput questionContent">
+          <Field name="content" component={ContentInput} />
+        </div>
 
-    <div className="questionPreview">
-      <SCCreationPreview title={title} description={content} options={options} />
-    </div>
+        <div className="questionInput questionOptions">
+          <Field name="options" component={typeComponents[type].input} intl={intl} />
+        </div>
 
-    <button className="ui button discard" type="reset" onClick={onDiscard}>
-      <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
-    </button>
-    <button className="ui primary button save" disabled={invalid} type="submit">
-      <FormattedMessage defaultMessage="Save" id="common.button.save" />
-    </button>
+        <div className="questionPreview">
+          <Preview title={title} description={content} options={options} />
+        </div>
 
-    <style jsx>{`
-      form {
-        display: flex;
-        flex-direction: column;
+        <Button className="discard" type="reset" onClick={onDiscard}>
+          <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+        </Button>
+        <Button primary className="save" disabled={invalid} type="submit">
+          <FormattedMessage defaultMessage="Save" id="common.button.save" />
+        </Button>
+      </Form>
 
-        padding: 1rem;
-      }
+      <style jsx>{`
+        .questionCreationForm > :global(form) {
+          display: flex;
+          flex-direction: column;
 
-      .questionInput,
-      .questionPreview {
-        margin-bottom: 1rem;
-      }
-
-      .questionInput > :global(.field > label) {
-        font-size: 1.2rem;
-      }
-
-      @supports (grid-gap: 1rem) {
-        @media all and (min-width: 768px) {
-          form {
-            display: grid;
-
-            grid-gap: 1rem;
-            grid-template-columns: repeat(6, 1fr);
-            grid-template-rows: auto;
-            grid-template-areas: 'title title title title preview preview'
-              'type type tags tags preview preview'
-              'content content content content content content'
-              'options options options options options options';
-          }
-
-          .questionInput {
-            margin-bottom: 0;
-          }
-
-          .questionTitle {
-            grid-area: title;
-          }
-
-          .questionType {
-            grid-area: type;
-          }
-
-          .questionTags {
-            grid-area: tags;
-          }
-
-          .questionPreview {
-            grid-area: preview;
-            margin-bottom: 0;
-          }
-
-          .questionContent {
-            grid-area: content;
-          }
-
-          .questionOptions {
-            grid-area: options;
-          }
-
-          .save {
-            align-self: center;
-          }
+          padding: 1rem;
         }
 
-        @media all and (min-width: 991px) {
-          form {
-            margin: 0 20%;
-            padding: 1rem 0;
+        .questionInput,
+        .questionPreview {
+          margin-bottom: 1rem;
+        }
+
+        .questionInput > :global(.field > label) {
+          font-size: 1.2rem;
+        }
+
+        @supports (grid-gap: 1rem) {
+          @media all and (min-width: 768px) {
+            .questionCreationForm > :global(form) {
+              display: grid;
+
+              grid-gap: 1rem;
+              grid-template-columns: repeat(6, 1fr);
+              grid-template-rows: auto;
+              grid-template-areas: 'title title title title preview preview'
+                'type type tags tags preview preview'
+                'content content content content content content'
+                'options options options options options options';
+            }
+
+            .questionInput {
+              margin-bottom: 0;
+            }
+
+            .questionTitle {
+              grid-area: title;
+            }
+
+            .questionType {
+              grid-area: type;
+            }
+
+            .questionTags {
+              grid-area: tags;
+            }
+
+            .questionPreview {
+              grid-area: preview;
+              margin-bottom: 0;
+            }
+
+            .questionContent {
+              grid-area: content;
+            }
+
+            .questionOptions {
+              grid-area: options;
+            }
+          }
+
+          @media all and (min-width: 991px) {
+            .questionCreationForm > :global(form) {
+              margin: 0 20%;
+              padding: 1rem 0;
+            }
           }
         }
-      }
-    `}</style>
-  </form>
-)
+      `}</style>
+    </div>
+  )
+}
 
 QuestionCreationForm.propTypes = propTypes
 QuestionCreationForm.defaultProps = defaultProps
@@ -185,9 +221,23 @@ const withState = connect(state => ({
   content: _get(state, 'form.createQuestion.values.content'),
   options: _get(state, 'form.createQuestion.values.options'),
   title: _get(state, 'form.createQuestion.values.title'),
+  type: _get(state, 'form.createQuestion.values.type'),
 }))
 
 export default reduxForm({
   form: 'createQuestion',
+  initialValues: {
+    content: '',
+    options: {
+      choices: [],
+      randomized: false,
+      restrictions: {
+        type: FREERestrictionTypes.NONE,
+      },
+    },
+    tags: [],
+    title: '',
+    type: 'SC',
+  },
   validate,
 })(withState(QuestionCreationForm))

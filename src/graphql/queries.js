@@ -26,6 +26,7 @@ export const QuestionListQuery = gql`
         name
       }
       versions {
+        id
         createdAt
       }
       createdAt
@@ -42,7 +43,7 @@ export const SessionListQuery = gql`
       name
       status
       blocks {
-        key
+        id
         instances {
           id
           question {
@@ -71,13 +72,13 @@ export const RunningSessionQuery = gql`
           createdAt
         }
         feedbacks {
-          key
+          id
           content
           votes
           createdAt
         }
         blocks {
-          key
+          id
           status
           instances {
             id
