@@ -67,7 +67,6 @@ class EvaluationLayout extends Component {
           <h1>{title}</h1>
         </div>
         <div className="box questionText">{description}</div>
-        <hr />
         <div className="box graph">{children}</div>
         <div className="box sampleSolution">
           <h2>
@@ -86,6 +85,12 @@ class EvaluationLayout extends Component {
           />
         </div>
         <div className="box visualization">
+          <h2>
+            <FormattedMessage
+              id="teacher.evaluation.visualization.title"
+              defaultMessage="Visualization"
+            />
+          </h2>
           <VisualizationType
             intl={intl}
             onChangeType={onChangeVisualizationType}
@@ -94,21 +99,31 @@ class EvaluationLayout extends Component {
           />
         </div>
         <div className="box possibilities">
+          <h2>
+            <FormattedMessage
+              id="teacher.evaluation.possibilities.title"
+              defaultMessage="Possibilities"
+            />
+          </h2>
           <Possibilities intl={intl} choices={choices} />
         </div>
 
         <style jsx global>{`
           html {
-            font-size: 25px;
+            font-size: 25px !important;
           }
           body {
-            font-size: 1rem;
+            font-size: 1rem !important;
           }
         `}</style>
 
         <style jsx>{`
+          h2 {
+            font-size: 1.2rem;
+          }
+
           .box {
-            padding: 0.5rem;
+            padding: 0.1rem;
           }
 
           @supports (grid-gap: 1rem) {
@@ -116,12 +131,13 @@ class EvaluationLayout extends Component {
               .evaluationLayout {
                 display: grid;
 
-                grid-template-columns: 70% 30%;
-                grid-template-rows: auto;
+                grid-template-columns: 80% 20%;
+                grid-template-rows: 3rem 15% auto 8rem 8rem 3rem;
                 grid-template-areas: 'title title' 'question question' 'graph possibilities'
-                  'graph solution' 'graph visualization';
+                  'graph solution' 'graph visualization' 'info info';
 
-                margin: 2rem 8rem 0;
+                height: 100vh;
+                padding: 1rem;
               }
 
               .title {
@@ -134,8 +150,6 @@ class EvaluationLayout extends Component {
 
               .graph {
                 grid-area: graph;
-                align-self: center;
-                justify-self: center;
               }
 
               .possibilities {

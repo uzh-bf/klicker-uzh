@@ -15,13 +15,6 @@ const defaultProps = {
 // TODO default value
 const Possibilities = ({ choices, type }) => (
   <div className="visualization">
-    <h2>
-      <FormattedMessage
-        id="teacher.evaluation.possibilities.title"
-        defaultMessage="Possibilities"
-      />
-    </h2>
-
     {choices.map((choice, index) => (
       <div className="item">
         <b>{index + 1}</b> {choice.name}

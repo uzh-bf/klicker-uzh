@@ -33,7 +33,6 @@ const propTypes = {
   visualization: PropTypes.string,
 }
 
-// TODO
 const defaultProps = {
   result: null,
   showGraph: false,
@@ -57,19 +56,9 @@ const Graph = ({
       showGraph && (
         <ResponsiveContainer>
           <PieChart>
-            <Pie
-              label
-              data={result.options}
-              innerRadius={120}
-              outerRadius={300}
-              valueKey="numberOfVotes"
-              fill="#8884d8"
-            >
+            <Pie label data={result.options} valueKey="numberOfVotes" fill="#8884d8">
               {result.options.map((entry, index) => (
-                <Cell
-                  key={index}
-                  fill={entry.correct && showSolution ? '#00FF00' : '#8884d8'}
-                />
+                <Cell key={index} fill={entry.correct && showSolution ? '#00FF00' : '#8884d8'} />
               ))}
             </Pie>
           </PieChart>
@@ -77,7 +66,7 @@ const Graph = ({
       )}
     {visualization === 'BAR_CHART' &&
       showGraph && (
-        <ResponsiveContainer>
+        <ResponsiveContainer width="80%">
           <BarChart data={result.options}>
             <XAxis dataKey="name" />
             <YAxis />
@@ -86,10 +75,7 @@ const Graph = ({
             <Legend />
             <Bar dataKey="numberOfVotes">
               {result.options.map((entry, index) => (
-                <Cell
-                  key={index}
-                  fill={entry.name && showSolution ? '#00FF00' : '#8884d8'}
-                />
+                <Cell key={index} fill={entry.name && showSolution ? '#00FF00' : '#8884d8'} />
               ))}
             </Bar>
           </BarChart>
@@ -104,14 +90,13 @@ const Graph = ({
         margin-bottom: 0.5rem;
       }
 
-      .showGraphButton {
-        align-self: center;
-      }
-
       .graph {
-        border: 1px solid;
-        height: 50rem;
-        width: 50rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        height: 100%;
+        width: 100%;
       }
     `}</style>
   </div>

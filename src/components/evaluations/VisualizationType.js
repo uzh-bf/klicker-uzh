@@ -21,13 +21,6 @@ const dropDownOptions = [
 
 const VisualizationType = ({ intl, onChangeType, type }) => (
   <div className="visualization">
-    <h2>
-      <FormattedMessage
-        id="teacher.evaluation.visualization.title"
-        defaultMessage="Visualization"
-      />
-    </h2>
-
     <Dropdown
       search
       selection
