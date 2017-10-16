@@ -47,8 +47,14 @@ const validate = ({
     }
     // validation of FREE answer options
   } else if (type === QuestionTypes.FREE) {
-    if (options && options.restrictions && options.restrictions.min >= options.restrictions.max) {
-      errors.options = 'form.createQuestion.options.minGteMax'
+    if (options && options.restrictions) {
+      if (!options.restrictions.min && !options.restrictions.max) {
+        errors.options = 'form.createQuestion.options.noMinMax'
+      }
+
+      if (options.restrictions.min >= options.restrictions.max) {
+        errors.options = 'form.createQuestion.options.minGteMax'
+      }
     }
   }
 
