@@ -6,7 +6,7 @@ import { Form, Button, Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import { compose, withHandlers, mapProps } from 'recompose'
 
-import { FREERestrictionTypes } from '../../../lib/constants'
+import { FREERestrictionTypes } from '../../../constants'
 
 const propTypes = {
   handleMaxChange: PropTypes.func.isRequired,
