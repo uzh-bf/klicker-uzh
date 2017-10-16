@@ -1,6 +1,7 @@
 *
 
 !src/
+!.babelrc
 !.env
 !CHANGELOG.md
 !Dockerfile
