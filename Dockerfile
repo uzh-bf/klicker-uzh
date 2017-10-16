@@ -13,25 +13,21 @@ WORKDIR $KLICKER_DIR
 # inject the application dependencies
 COPY package.json yarn.lock $KLICKER_DIR/
 
-# install yarn packages
-RUN set -x \
-  && yarn install --frozen-lockfile
-
-# inject the entrypoint and make it runnable
-COPY entrypoint.sh /entrypoint.sh
-RUN chown 1000:1000 /entrypoint.sh \
-  && chmod u+x /entrypoint.sh
-
-# inject application sources
+# inject application sources and entrypoint
 COPY . $KLICKER_DIR/
 
 # switch to the node user (uid 1000)
 # non-root as provided by the base image
-RUN chown -R 1000:1000 "$KLICKER_DIR/"
+RUN chown -R 1000:1000 "$KLICKER_DIR/" \
+  && chmod u+x $KLICKER_DIR/entrypoint.sh
 USER 1000
 
+# install yarn packages
+RUN set -x \
+  && yarn install --frozen-lockfile
+
 # configure the entrypoint script
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["$KLICKER_DIR/entrypoint.sh"]
 
 # run next in production mode
 CMD ["yarn", "start"]
