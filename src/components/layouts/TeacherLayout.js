@@ -119,6 +119,7 @@ class TeacherLayout extends React.Component {
           }
 
           input,
+          button,
           .noBorder {
             border-radius: 0 !important;
           }

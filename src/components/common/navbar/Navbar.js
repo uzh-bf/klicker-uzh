@@ -80,6 +80,8 @@ export const NavbarPres = ({
         flex-flow: row wrap;
         justify-content: space-between;
 
+        padding: 3px 0 3px 0;
+
         background-color: $background-color;
         box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
 
