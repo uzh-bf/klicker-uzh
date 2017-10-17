@@ -5,7 +5,7 @@ import { Button } from 'semantic-ui-react'
 
 const propTypes = {
   activeOption: PropTypes.number.isRequired,
-  onOptionClick: PropTypes.func.isRequired,
+  handleOptionClick: PropTypes.func.isRequired,
   options: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.string.isRequired,
@@ -18,11 +18,11 @@ const defaultProps = {
   options: [],
 }
 
-const SCAnswerOptions = ({ activeOption, options, onOptionClick }) => (
+const SCAnswerOptions = ({ activeOption, options, handleOptionClick }) => (
   <div className="options">
     {options.map((option, index) => (
       <div key={option.id} className={classNames('option', { active: index === activeOption })}>
-        <Button basic fluid onClick={onOptionClick && onOptionClick(index)}>
+        <Button basic fluid onClick={handleOptionClick && handleOptionClick(index)}>
           {option.label}
         </Button>
       </div>
