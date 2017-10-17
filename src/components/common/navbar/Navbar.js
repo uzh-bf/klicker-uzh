@@ -82,6 +82,8 @@ export const NavbarPres = ({
             font-size: 1.3rem;
             margin: 0;
             margin-left: 1rem;
+            display: flex;
+            align-items: center;
           }
         }
 
