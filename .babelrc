@@ -1,22 +1,32 @@
 {
-  "presets": [
-    [
-      "next/babel",
-      {
-        "styled-jsx": {
-          "plugins": ["styled-jsx-plugin-sass"]
-        }
-      }
-    ]
-  ],
   "env": {
     "development": {
+      "presets": [
+        [
+          "next/babel",
+          {
+            "styled-jsx": {
+              "plugins": ["styled-jsx-plugin-sass"]
+            }
+          }
+        ]
+      ],
       "plugins": ["inline-dotenv", "add-react-displayname", "react-intl"]
     },
     "production": {
+      "presets": [
+        [
+          "next/babel",
+          {
+            "styled-jsx": {
+              "plugins": ["styled-jsx-plugin-sass"]
+            }
+          }
+        ]
+      ],
       "plugins": [
-        ["lodash", { "id": ["lodash", "recompose"] }],
         "transform-inline-environment-variables",
+        ["lodash", { "id": ["lodash", "recompose"] }],
         "add-react-displayname",
         [
           "react-intl",
@@ -29,17 +39,17 @@
     "test": {
       "presets": [
         [
+          "env",
+          {
+            "modules": "commonjs"
+          }
+        ],
+        [
           "next/babel",
           {
             "styled-jsx": {
               "plugins": ["styled-jsx-plugin-sass"]
             }
-          }
-        ],
-        [
-          "env",
-          {
-            "modules": "commonjs"
           }
         ]
       ]
