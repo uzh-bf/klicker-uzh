@@ -13,6 +13,9 @@ ENV KLICKER_DIR /app
 ENV API_URL "https://klicker-api-appuio-demo9888.appuioapp.ch/graphql"
 ENV SENTRY "https://16014e4cbb9e48a39a439e2c076ccc4f@sentry.ibf-devops.ch/6"
 ENV LOGROCKET "vqm2qj/klicker"
+# ENV API_URL '__API_URL__'
+# ENV SENTRY '__SENTRY__'
+# ENV LOGROCKET '__LOGROCKET__'
 
 # inject the application dependencies
 COPY --chown=1000:0 package.json yarn.lock $KLICKER_DIR/

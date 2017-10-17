@@ -1,7 +1,7 @@
 import { ApolloClient, createNetworkInterface } from 'react-apollo'
 import fetch from 'isomorphic-fetch'
 
-const dev = process.env.NODE_ENV !== 'production'
+// const dev = process.env.NODE_ENV !== 'production'
 
 let apolloClient = null
 
