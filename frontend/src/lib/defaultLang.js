@@ -9,9 +9,10 @@ const defaultMessages = glob
   .reduce((messages, descriptors) => {
     descriptors.forEach(({ id, defaultMessage }) => {
       if (Object.prototype.hasOwnProperty.call(messages, id)) {
-        throw new Error(`Duplicate message id: ${id}`)
+        console.error(`Duplicate message id: ${id}`)
+      } else {
+        messages[id] = defaultMessage // eslint-disable-line no-param-reassign
       }
-      messages[id] = defaultMessage // eslint-disable-line no-param-reassign
     })
     return messages
   }, {})
