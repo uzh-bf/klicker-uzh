@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import { compose, withState, withHandlers } from 'recompose'
+import { compose, withHandlers, withProps, withState } from 'recompose'
 import { Button } from 'semantic-ui-react'
 import { FormattedMessage, intlShape } from 'react-intl'
 
@@ -28,6 +28,7 @@ const propTypes = {
 }
 
 const Session = ({
+  data,
   intl,
   questionCollapsed,
   feedbackDifficulty,
@@ -136,18 +137,11 @@ const Session = ({
           </div>
 
           <div className="feedbacks">
-            <div className="feedback">
-              <Feedback content="hello world" showDelete={false} votes={100} />
-            </div>
-            <div className="feedback">
-              <Feedback content="blablbla" showDelete={false} votes={50} />
-            </div>
-            <div className="feedback">
-              <Feedback content="hello" showDelete={false} votes={25} />
-            </div>
-            <div className="feedback">
-              <Feedback content="hooi" showDelete={false} votes={10} />
-            </div>
+            {data.feedbacks.map(({ content, showDelete, votes }) => (
+              <div className="feedback">
+                <Feedback content={content} showDelete={showDelete} votes={votes} />
+              </div>
+            ))}
           </div>
 
           <div className="actionButton">
@@ -246,6 +240,17 @@ export default compose(
     // handle a change in the active sidebar item
     handleSidebarActiveItemChange: ({ setSidebarActiveItem }) => (sidebarItem) => {
       setSidebarActiveItem(sidebarItem)
+    },
+  }),
+  withProps({
+    // fake data the component is going to get
+    data: {
+      feedbacks: [
+        { content: 'Hallo du bist lustig!', showDelete: false, votes: 190 },
+        { content: 'Gute Vorlesung', showDelete: false, votes: 63 },
+        { content: 'bla bla bla', showDelete: false, votes: 131 },
+        { content: 'Hahahahahaha', showDelete: false, votes: 10 },
+      ],
     },
   }),
 )(Session)
