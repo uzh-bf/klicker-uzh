@@ -6,6 +6,7 @@ import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
 import classNames from 'classnames'
 import { FaPlus } from 'react-icons/lib/fa'
+import { Button } from 'semantic-ui-react'
 
 import { pageWithIntl, withData } from '../../lib'
 import { SessionListQuery, RunningSessionQuery } from '../../graphql/queries'
@@ -109,6 +110,10 @@ const Index = ({
           <TagList activeTags={filters.tags} handleTagClick={handleTagClick} />
         </div>
         <div className="questionList">
+          <div className="buttons">
+            <Button>Create Session</Button>
+            <Button>Create Question</Button>
+          </div>
           <QuestionList
             dropped={droppedQuestions}
             filters={filters}
@@ -119,6 +124,10 @@ const Index = ({
       </div>
 
       <style jsx>{`
+        .buttons {
+          margin-bottom: 5px;
+        }
+
         .questionPool {
           display: flex;
           flex-direction: column;
