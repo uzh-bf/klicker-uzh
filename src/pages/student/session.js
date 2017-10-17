@@ -14,9 +14,16 @@ import { StudentLayout } from '../../components/layouts'
 import { SCAnswerOptions } from '../../components/questionTypes'
 
 const propTypes = {
+  addNewFeedbackMode: PropTypes.bool.isRequired,
+  dataFeedbacks: PropTypes.arrayOf({
+    content: PropTypes.string.isRequired,
+    showDelete: PropTypes.bool.isRequired,
+    votes: PropTypes.number.isRequired,
+  }),
   feedbackDifficulty: PropTypes.oneOfType(PropTypes.number, null).isRequired,
   feedbackSpeed: PropTypes.oneOfType(PropTypes.number, null).isRequired,
   handleFeedbackDifficultyChange: PropTypes.func.isRequired,
+  handleFeedbackModeChange: PropTypes.func.isRequired,
   handleFeedbackSpeedChange: PropTypes.func.isRequired,
   handleQuestionActiveOptionChange: PropTypes.func.isRequired,
   handleQuestionCollapsedToggle: PropTypes.func.isRequired,
@@ -27,16 +34,20 @@ const propTypes = {
   sidebarActiveItem: PropTypes.string.isRequired,
 }
 
+const defaultProps = {
+  dataFeedbacks: [],
+}
+
 const Session = ({
   addNewFeedbackMode,
-  data,
+  dataFeedbacks,
   intl,
   questionCollapsed,
   feedbackDifficulty,
   feedbackSpeed,
   questionActiveOption,
   sidebarActiveItem,
-  handleChangingFeedbackMode,
+  handleFeedbackModeChange,
   handleQuestionCollapsedToggle,
   handleFeedbackDifficultyChange,
   handleFeedbackSpeedChange,
@@ -139,27 +150,31 @@ const Session = ({
           </div>
 
           <div className="feedbacks">
-            {data.feedbacks.map(({ content, showDelete, votes }) => (
+            {dataFeedbacks && dataFeedbacks.map(({ content, showDelete, votes }) => (
               <div className="feedback">
                 <Feedback content={content} showDelete={showDelete} votes={votes} />
               </div>
             ))}
-            {
-              addNewFeedbackMode &&
+            {addNewFeedbackMode && (
               <div>
                 <input />
-                <Button onClick={handleChangingFeedbackMode}>Cancel</Button>
-                <Button onClick={handleChangingFeedbackMode}>Submit</Button>
+                <Button onClick={handleFeedbackModeChange}>Cancel</Button>
+                <Button onClick={handleFeedbackModeChange}>Submit</Button>
               </div>
-            }
+            )}
           </div>
 
-          {
-            !addNewFeedbackMode &&
+          {!addNewFeedbackMode && (
             <div className="actionButton">
-              <Button circular primary icon="plus" onClick={handleChangingFeedbackMode} size="large" />
+              <Button
+                circular
+                primary
+                icon="plus"
+                onClick={handleFeedbackModeChange}
+                size="large"
+              />
             </div>
-          }
+          )}
         </div>
 
         <style jsx>{`
@@ -224,24 +239,31 @@ const Session = ({
 }
 
 Session.propTypes = propTypes
+Session.defaultProps = defaultProps
 
 export default compose(
   withData,
   pageWithIntl,
   withState('addNewFeedbackMode', 'setNewFeedbackMode', false),
+  withState('dataFeedbacks', 'setFeedbacks', [
+    { content: 'Hallo du bist lustig!', showDelete: false, votes: 190 },
+    { content: 'Gute Vorlesung', showDelete: false, votes: 63 },
+    { content: 'bla bla bla', showDelete: false, votes: 131 },
+    { content: 'Hahahahahaha', showDelete: false, votes: 10 },
+  ]),
   withState('questionCollapsed', 'setQuestionCollapsed', true),
   withState('feedbackDifficulty', 'setFeedbackDifficulty', null),
   withState('feedbackSpeed', 'setFeedbackSpeed', null),
   withState('questionActiveOption', 'setQuestionActiveOption', -1),
   withState('sidebarActiveItem', 'setSidebarActiveItem', 'activeQuestion'),
   withHandlers({
-    // handle entering and leaving mode for adding new feedback
-    handleChangingFeedbackMode: ({ setNewFeedbackMode }) => () =>
-      setNewFeedbackMode(prevState => !prevState),
-
     // handle value change for difficulty
     handleFeedbackDifficultyChange: ({ setFeedbackDifficulty }) => newValue =>
       setFeedbackDifficulty(newValue),
+
+    // handle entering and leaving mode for adding new feedback
+    handleFeedbackModeChange: ({ setNewFeedbackMode }) => () =>
+      setNewFeedbackMode(prevState => !prevState),
 
     // handle value change for speed
     handleFeedbackSpeedChange: ({ setFeedbackSpeed }) => newValue => setFeedbackSpeed(newValue),
@@ -262,13 +284,6 @@ export default compose(
   }),
   withProps({
     // fake data the component is going to get
-    data: {
-      feedbacks: [
-        { content: 'Hallo du bist lustig!', showDelete: false, votes: 190 },
-        { content: 'Gute Vorlesung', showDelete: false, votes: 63 },
-        { content: 'bla bla bla', showDelete: false, votes: 131 },
-        { content: 'Hahahahahaha', showDelete: false, votes: 10 },
-      ],
-    },
+    data: {},
   }),
 )(Session)

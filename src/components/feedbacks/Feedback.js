@@ -21,7 +21,10 @@ const Feedback = ({ content, showDelete, votes }) => (
       </div>
     )}
 
-    <div className="votes"><Icon name={'thumbs outline up'} />{votes}</div>
+    <div className="votes">
+      <Icon name={'thumbs outline up'} />
+      {votes}
+    </div>
 
     <style jsx>{`
       .feedback {
