@@ -197,17 +197,10 @@ exports[`Storyshots common/navbar AccountArea 1`] = `
 
 exports[`Storyshots common/navbar Navbar 1`] = `
 <div
-<<<<<<< HEAD
-  className="jsx-585776808 navbar"
+  className="jsx-3499389583 navbar"
 >
   <div
-    className="jsx-585776808 sideArea"
-=======
-  className="jsx-4211984751 navbar"
->
-  <div
-    className="jsx-4211984751 sideArea"
->>>>>>> ff6fe3993328c03814917194d27e8fc1a648637f
+    className="jsx-3499389583 sideArea"
   >
     <div
       className="ui borderless noBorder menu"
@@ -222,22 +215,14 @@ exports[`Storyshots common/navbar Navbar 1`] = `
         />
       </div>
       <h1
-<<<<<<< HEAD
-        className="jsx-585776808"
-=======
-        className="jsx-4211984751"
->>>>>>> ff6fe3993328c03814917194d27e8fc1a648637f
+        className="jsx-3499389583"
       >
         Example page
       </h1>
     </div>
   </div>
   <div
-<<<<<<< HEAD
-    className="jsx-585776808 searchArea"
-=======
-    className="jsx-4211984751 searchArea"
->>>>>>> ff6fe3993328c03814917194d27e8fc1a648637f
+    className="jsx-3499389583 searchArea"
   >
     <div
       className="ui fluid icon input"
@@ -256,11 +241,7 @@ exports[`Storyshots common/navbar Navbar 1`] = `
     </div>
   </div>
   <div
-<<<<<<< HEAD
-    className="jsx-585776808 accountArea"
-=======
-    className="jsx-4211984751 accountArea"
->>>>>>> ff6fe3993328c03814917194d27e8fc1a648637f
+    className="jsx-3499389583 accountArea"
   >
     <div
       className="ui borderless noBorder menu"
@@ -654,7 +635,6 @@ exports[`Storyshots feedbacks FeedbackChannel (isPublic) 1`] = `
     </span>
   </h2>
   <div
-<<<<<<< HEAD
     className="jsx-980406985 toggle"
   >
     <div
@@ -700,10 +680,6 @@ exports[`Storyshots feedbacks FeedbackChannel (isPublic) 1`] = `
       </label>
     </div>
   </div>
-=======
-    className="jsx-980406985 feedbacks"
-  />
->>>>>>> ff6fe3993328c03814917194d27e8fc1a648637f
 </div>
 `;
 
@@ -766,7 +742,78 @@ exports[`Storyshots feedbacks FeedbackChannel 1`] = `
   </div>
   <div
     className="jsx-980406985 feedbacks"
-  />
+  >
+    <div
+      className="jsx-980406985 feedback"
+    >
+      <div
+        className="jsx-908384001 feedback"
+      >
+        <div
+          className="jsx-908384001 content"
+        >
+          hello alex!
+        </div>
+        <div
+          className="jsx-908384001 delete"
+        >
+          <button
+            className="ui basic fluid icon button"
+            disabled={undefined}
+            onClick={[Function]}
+            role="button"
+            tabIndex={undefined}
+          >
+            <i
+              aria-hidden="true"
+              className="trash outline icon"
+            />
+          </button>
+        </div>
+        <div
+          className="jsx-908384001 votes"
+        >
+          +
+          100
+        </div>
+      </div>
+    </div>
+    <div
+      className="jsx-980406985 feedback"
+    >
+      <div
+        className="jsx-908384001 feedback"
+      >
+        <div
+          className="jsx-908384001 content"
+        >
+          bla bleh
+        </div>
+        <div
+          className="jsx-908384001 delete"
+        >
+          <button
+            className="ui basic fluid icon button"
+            disabled={undefined}
+            onClick={[Function]}
+            role="button"
+            tabIndex={undefined}
+          >
+            <i
+              aria-hidden="true"
+              className="trash outline icon"
+            />
+          </button>
+        </div>
+        <div
+          className="jsx-908384001 votes"
+        >
+          +
+          40
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 `;
 
