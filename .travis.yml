@@ -1,50 +1,58 @@
 sudo: required
 
-language: node_js
-node_js:
-  - "8"
-
-before_install:
-  - 'curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 1.2.0'
-  - export PATH="$HOME/.yarn/bin:$PATH"
-
 branches:
   only:
     - master
 
-services:
-  - docker
-  - mongodb
-
 jobs:
   include:
-    - stage: test
+    - &test-setup
+      stage: test
+      language: node_js
+      node_js:
+        - "8"
+      cache:
+        yarn: true
+        directories:
+          - node_modules
+      before_install:
+        - 'curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 1.2.0'
+        - export PATH="$HOME/.yarn/bin:$PATH"
+      script:
+        - yarn run format:ci
+
+    - <<: *test-setup
+      services:
+        - mongodb
       before_script:
         - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
         - chmod +x ./cc-test-reporter
         - ./cc-test-reporter before-build
+      script:
         - mv .env .env.dev
         - mv .env.travis .env
-      script:
         - yarn test:ci
       after_script:
         - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
-      cache:
-        yarn: true
-        directories:
-          - node_modules
 
-    - stage: test
+    - &build-setup
+      stage: build
+      if: type = push
+      addons:
+        apt:
+          packages:
+            - docker-ce
+      before_script:
+        - docker login -u$DOCKER_USER -p$DOCKER_PASSWORD
       script:
-        - yarn run format:ci
-      cache:
-        yarn: true
-        directories:
-          - node_modules
+        - docker pull uzhbf/klicker-api:latest
+        - docker build --cache-from uzhbf/klicker-api:latest -t uzhbf/klicker-api:latest .
+        - docker push uzhbf/klicker-api:latest
 
-    - stage: build
+    - <<: *build-setup
+      if: type = pull_request
       script:
-        - docker login -u$QUAY_USER -p$QUAY_TOKEN quay.io/uzh-bf/klicker-api
-        - if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then bash -c "docker pull quay.io/uzh-bf/klicker-api:latest;docker build --cache-from quay.io/uzh-bf/klicker-api:latest -t quay.io/uzh-bf/klicker-api:latest .;docker push quay.io/uzh-bf/klicker-api:latest"; fi
-        - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then bash -c "docker pull quay.io/uzh-bf/klicker-api:nightly;docker build --cache-from quay.io/uzh-bf/klicker-api:nightly -t quay.io/uzh-bf/klicker-api:nightly -t quay.io/uzh-bf/klicker-api:nightly-$TRAVIS_PULL_REQUEST .;docker push quay.io/uzh-bf/klicker-api:nightly; docker push quay.io/uzh-bf/klicker-api:nightly-$TRAVIS_PULL_REQUEST"; fi
-
+        - docker pull uzhbf/klicker-api:nightly
+        - docker build --cache-from uzhbf/klicker-api:nightly -t uzhbf/klicker-api:nightly -t uzhbf/klicker-api:nightly-$TRAVIS_PULL_REQUEST .
+        - docker push uzhbf/klicker-api:nightly
+        - docker push uzhbf/klicker-api:nightly-$TRAVIS_PULL_REQUEST
