@@ -98,6 +98,10 @@ export const NavbarPres = ({
             background: $background-color;
           }
 
+          :global(.menu) {
+            background-color: $background-color;
+          }
+
           :global(.sidebar) {
             border-radius: 0;
             background-color: $background-color;
