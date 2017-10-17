@@ -29,19 +29,27 @@ export const TagListPres = ({ error, tags, handleTagClick }) => {
   }
 
   return (
-    <List selection size="large">
-      {tags.map(({ isActive, id, name }) => (
-        <List.Item
-          key={id}
-          active={isActive}
-          className="listItem"
-          onClick={() => handleTagClick(name)}
-        >
-          <List.Icon name={isActive ? 'folder' : 'folder outline'} />
-          <List.Content>{name}</List.Content>
-        </List.Item>
-      ))}
-    </List>
+    <div className="tagList">
+      <List selection size="large" className="list">
+        {tags.map(({ isActive, id, name }) => (
+          <List.Item
+            key={id}
+            active={isActive}
+            className="listItem"
+            onClick={() => handleTagClick(name)}
+          >
+            <List.Icon name={isActive ? 'folder' : 'folder outline'} />
+            <List.Content>{name}</List.Content>
+          </List.Item>
+        ))}
+      </List>
+
+      <style jsx>{`
+        .tagList :global(.listItem:hover .content, .listItem:hover i) {
+          color: #2185d0;
+        }
+      `}</style>
+    </div>
   )
 }
 

@@ -122,12 +122,11 @@ const Index = ({
         .questionPool {
           display: flex;
           flex-direction: column;
-
-          padding: 1rem;
         }
 
         .tagList {
           flex: 1;
+          background: #ebebeb;
 
           margin-bottom: 1rem;
         }
@@ -140,26 +139,46 @@ const Index = ({
 
         @media all and (min-width: 768px) {
           .questionPool {
+            // workaround for tag list 100%
+            position: absolute;
+            height: 100%;
+            width: 100%;
+
             flex-flow: row wrap;
 
-            padding: 2rem;
+            padding: 0;
           }
 
           .tagList {
             flex: 0 0 auto;
 
             margin: 0;
-            margin-right: 2rem;
+            padding: 2rem 0 2rem 0;
           }
 
           .questionList {
             flex: 1;
+            padding: 2rem 0 2rem 1rem;
           }
         }
 
         @media all and (min-width: 991px) {
           .questionPool {
-            padding: 2rem 10% 2rem 2rem;
+            // workaround for tag list 100%
+            position: absolute;
+            height: 100%;
+            width: 100%;
+
+            padding: 0;
+          }
+
+          .tagList {
+            margin: 0;
+            padding: 2rem;
+          }
+
+          .questionList {
+            padding: 2rem 2rem 2rem 1rem;
           }
         }
       `}</style>
