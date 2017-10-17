@@ -27,10 +27,10 @@ RUN set -x \
 COPY --chown=1000:1000 . $KLICKER_DIR/
 
 # make the entrypoint executable
-RUN chmod u+x $KLICKER_DIR/entrypoint.sh
+# RUN chmod u+x $KLICKER_DIR/entrypoint.sh
 
 # configure the entrypoint script
-ENTRYPOINT ["/app/entrypoint.sh"]
+# ENTRYPOINT ["/app/entrypoint.sh"]
 
 # run next in production mode
 CMD ["yarn", "start"]
