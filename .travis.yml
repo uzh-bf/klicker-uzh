@@ -44,16 +44,16 @@ jobs:
     - stage: build
       if: type = push
       script:
-        - docker login -u$QUAY_USER -p$QUAY_TOKEN quay.io/uzh-bf/klicker-react
-        - docker pull quay.io/uzh-bf/klicker-react:latest
-        - docker build --cache-from quay.io/uzh-bf/klicker-react:latest -t quay.io/uzh-bf/klicker-react:latest .
-        - docker push quay.io/uzh-bf/klicker-react:latest
+        - docker login -u$DOCKER_USER -p$DOCKER_PASSWORD uzh-bf/klicker-react
+        - docker pull uzh-bf/klicker-react:latest
+        - docker build --cache-from uzh-bf/klicker-react:latest -t uzh-bf/klicker-react:latest .
+        - docker push uzh-bf/klicker-react:latest
 
     - stage: build
       if: type = pull_request
       script:
-        - docker login -u$QUAY_USER -p$QUAY_TOKEN quay.io/uzh-bf/klicker-react
-        - docker pull quay.io/uzh-bf/klicker-react:nightly
-        - docker build --cache-from quay.io/uzh-bf/klicker-react:nightly -t quay.io/uzh-bf/klicker-react:nightly -t quay.io/uzh-bf/klicker-react:nightly-$TRAVIS_PULL_REQUEST .
-        - docker push quay.io/uzh-bf/klicker-react:nightly
-        - docker push quay.io/uzh-bf/klicker-react:nightly-$TRAVIS_PULL_REQUEST"
+        - docker login -u$DOCKER_USER -p$DOCKER_PASSWORD uzh-bf/klicker-react
+        - docker pull uzh-bf/klicker-react:nightly
+        - docker build --cache-from uzh-bf/klicker-react:nightly -t uzh-bf/klicker-react:nightly -t uzh-bf/klicker-react:nightly-$TRAVIS_PULL_REQUEST .
+        - docker push uzh-bf/klicker-react:nightly
+        - docker push uzh-bf/klicker-react:nightly-$TRAVIS_PULL_REQUEST"
