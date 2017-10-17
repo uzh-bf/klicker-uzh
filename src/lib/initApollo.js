@@ -1,7 +1,7 @@
 import { ApolloClient, createNetworkInterface } from 'react-apollo'
 import fetch from 'isomorphic-fetch'
 
-const dev = process.env.NODE_ENV !== 'production'
+// const dev = process.env.NODE_ENV !== 'production'
 
 let apolloClient = null
 
@@ -15,7 +15,9 @@ function create() {
     networkInterface: createNetworkInterface({
       opts: {
         // Additional fetch() options like `credentials` or `headers`
-        credentials: dev ? 'include' : 'same-origin',
+        // credentials: dev ? 'include' : 'same-origin',
+        // HACK: temporarily always include credentials
+        credentials: 'include',
       },
       // Server URL (must be absolute)
       // https://api.graph.cool/simple/v1/klicker

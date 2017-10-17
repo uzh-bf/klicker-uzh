@@ -25,6 +25,7 @@
     "logrocket-react": "0.0.4",
     "moment": "2.19.1",
     "next": "4.1.0",
+    "node-sass": "4.5.3",
     "prop-types": "15.6.0",
     "prosemirror-schema-basic": "1.0.0",
     "prosemirror-state": "1.0.0",
@@ -50,6 +51,7 @@
     "redux": "3.7.2",
     "redux-form": "7.1.1",
     "semantic-ui-react": "0.75.0",
+    "styled-jsx-plugin-sass": "0.1.0",
     "validator": "9.0.0"
   },
   "devDependencies": {
@@ -69,7 +71,6 @@
     "husky": "0.14.3",
     "jest": "21.2.1",
     "lint-staged": "4.2.3",
-    "node-sass": "4.5.3",
     "nodemon": "1.12.1",
     "prettier": "1.7.4",
     "prettier-eslint": "8.2.1",
@@ -78,8 +79,7 @@
     "react-dnd-test-backend": "2.5.4",
     "react-test-renderer": "16.0.0",
     "semantic-ui-css": "2.2.12",
-    "storybook-addon-intl": "2.1.2",
-    "styled-jsx-plugin-sass": "0.1.0"
+    "storybook-addon-intl": "2.1.2"
   },
   "scripts": {
     "precommit": "lint-staged",
