@@ -73,16 +73,6 @@ export const NavbarPres = ({
         justify-content: space-between;
 
         border-bottom: 1px solid lightgrey;
-      }
-
-      h1 {
-        // TODO: optimize font sizes
-        font-size: 1.3rem;
-        margin: 0;
-        margin-left: 1rem;
-        display: flex;
-        align-items: center;
-      }
 
         .sideArea {
           flex: 1;
@@ -90,6 +80,7 @@ export const NavbarPres = ({
 
           h1 {
             font-size: 1.3rem;
+            margin: 0;
             margin-left: 1rem;
           }
         }
