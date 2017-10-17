@@ -9,8 +9,8 @@ jobs:
     - &test-setup
       stage: test
       language: node_js
-        node_js:
-          - "8"
+      node_js:
+        - "8"
       cache:
         yarn: true
         directories:
