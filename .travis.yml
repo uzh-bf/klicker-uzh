@@ -44,16 +44,16 @@ jobs:
     - stage: build
       if: type = push
       script:
-        - docker login -u$DOCKER_USER -p$DOCKER_PASSWORD uzh-bf/klicker-react
-        - docker pull uzh-bf/klicker-react:latest
-        - docker build --cache-from uzh-bf/klicker-react:latest -t uzh-bf/klicker-react:latest .
-        - docker push uzh-bf/klicker-react:latest
+        - docker login -u$DOCKER_USER -p$DOCKER_PASSWORD uzhbf/klicker-react
+        - docker pull uzhbf/klicker-react:latest
+        - docker build --cache-from uzhbf/klicker-react:latest -t uzhbf/klicker-react:latest .
+        - docker push uzhbf/klicker-react:latest
 
     - stage: build
       if: type = pull_request
       script:
-        - docker login -u$DOCKER_USER -p$DOCKER_PASSWORD uzh-bf/klicker-react
-        - docker pull uzh-bf/klicker-react:nightly
-        - docker build --cache-from uzh-bf/klicker-react:nightly -t uzh-bf/klicker-react:nightly -t uzh-bf/klicker-react:nightly-$TRAVIS_PULL_REQUEST .
-        - docker push uzh-bf/klicker-react:nightly
-        - docker push uzh-bf/klicker-react:nightly-$TRAVIS_PULL_REQUEST
+        - docker login -u$DOCKER_USER -p$DOCKER_PASSWORD uzhbf/klicker-react
+        - docker pull uzhbf/klicker-react:nightly
+        - docker build --cache-from uzhbf/klicker-react:nightly -t uzhbf/klicker-react:nightly -t uzhbf/klicker-react:nightly-$TRAVIS_PULL_REQUEST .
+        - docker push uzhbf/klicker-react:nightly
+        - docker push uzhbf/klicker-react:nightly-$TRAVIS_PULL_REQUEST
