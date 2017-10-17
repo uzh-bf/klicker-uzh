@@ -1,9 +1,13 @@
-node_modules/
+*
 
-.editorconfig
-.eslintrc
-.gitattributes
-.gitignore
-.travis.yml
-docker-compose.yml
-*.log
+!src/
+!.babelrc
+!.env.prod
+!CHANGELOG.md
+!Dockerfile
+!entrypoint.sh
+!LICENSE.md
+!package.json
+!README.md
+!server.js
+!yarn.lock

@@ -1,16 +1,21 @@
+let logrocket = false
+let sentry = false
+
 export default function initLogging() {
   // restrict code execution for trackers to clientside
   if (typeof window !== 'undefined') {
     // embed logrocket if enabled
-    if (process.env.LOGROCKET !== '__LOGROCKET__') {
+    if (!logrocket && process.env.LOGROCKET !== '__LOGROCKET__') {
       const LogRocket = require('logrocket')
       const LogRocketReact = require('logrocket-react')
       LogRocket.init(process.env.LOGROCKET)
       LogRocketReact(LogRocket)
+
+      logrocket = true
     }
 
     // embed sentry if enabled
-    if (process.env.SENTRY !== '__SENTRY__') {
+    if (!sentry && process.env.SENTRY !== '__SENTRY__') {
       const Raven = require('raven-js')
 
       Raven.config(process.env.SENTRY).install()
@@ -24,6 +29,8 @@ export default function initLogging() {
           }),
         )
       }
+
+      sentry = true
     }
   }
 }
