@@ -28,6 +28,7 @@ const propTypes = {
 }
 
 const Session = ({
+  addNewFeedbackMode,
   data,
   intl,
   questionCollapsed,
@@ -35,6 +36,7 @@ const Session = ({
   feedbackSpeed,
   questionActiveOption,
   sidebarActiveItem,
+  handleChangingFeedbackMode,
   handleQuestionCollapsedToggle,
   handleFeedbackDifficultyChange,
   handleFeedbackSpeedChange,
@@ -142,11 +144,22 @@ const Session = ({
                 <Feedback content={content} showDelete={showDelete} votes={votes} />
               </div>
             ))}
+            {
+              addNewFeedbackMode &&
+              <div>
+                <input />
+                <Button onClick={handleChangingFeedbackMode}>Cancel</Button>
+                <Button onClick={handleChangingFeedbackMode}>Submit</Button>
+              </div>
+            }
           </div>
 
-          <div className="actionButton">
-            <Button circular primary icon="plus" size="large" />
-          </div>
+          {
+            !addNewFeedbackMode &&
+            <div className="actionButton">
+              <Button circular primary icon="plus" onClick={handleChangingFeedbackMode} size="large" />
+            </div>
+          }
         </div>
 
         <style jsx>{`
@@ -215,12 +228,17 @@ Session.propTypes = propTypes
 export default compose(
   withData,
   pageWithIntl,
+  withState('addNewFeedbackMode', 'setNewFeedbackMode', false),
   withState('questionCollapsed', 'setQuestionCollapsed', true),
   withState('feedbackDifficulty', 'setFeedbackDifficulty', null),
   withState('feedbackSpeed', 'setFeedbackSpeed', null),
   withState('questionActiveOption', 'setQuestionActiveOption', -1),
   withState('sidebarActiveItem', 'setSidebarActiveItem', 'activeQuestion'),
   withHandlers({
+    // handle entering and leaving mode for adding new feedback
+    handleChangingFeedbackMode: ({ setNewFeedbackMode }) => () =>
+      setNewFeedbackMode(prevState => !prevState),
+
     // handle value change for difficulty
     handleFeedbackDifficultyChange: ({ setFeedbackDifficulty }) => newValue =>
       setFeedbackDifficulty(newValue),
