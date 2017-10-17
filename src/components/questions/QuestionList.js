@@ -48,6 +48,7 @@ export const QuestionListPres = ({
           title={question.title}
           type={question.type}
           version={question.versions.length}
+          description={question.versions[question.versions.length - 1].description}
           draggable={creationMode && !dropped.includes(question.id)}
           creationMode={creationMode}
           onDrop={onQuestionDropped(question.id)}

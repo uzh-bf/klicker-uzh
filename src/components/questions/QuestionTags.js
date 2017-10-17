@@ -13,12 +13,12 @@ const propTypes = {
 
 const QuestionTags = ({ tags, type }) => (
   <div className="questionTags">
-    <div className="type tag">{type}</div>
     {tags.map(tag => (
       <div key={tag.id} className="tag">
         {tag.name}
       </div>
     ))}
+    <div className="type tag">{type}</div>
 
     <style jsx>{`
       .questionTags {
