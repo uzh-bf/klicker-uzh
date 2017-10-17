@@ -43,7 +43,13 @@ export const NavbarPres = ({
   <div className="navbar">
     <div className="sideArea">
       <Menu borderless className="noBorder">
-        <Menu.Item icon active={sidebarVisible} name="sidebar" onClick={handleSidebarToggle}>
+        <Menu.Item
+          icon
+          active={sidebarVisible}
+          name="sidebar"
+          className="sidebar"
+          onClick={handleSidebarToggle}
+        >
           <Icon name="sidebar" />
         </Menu.Item>
         <h1>{title}</h1>
@@ -57,7 +63,7 @@ export const NavbarPres = ({
     )}
 
     <div className="accountArea">
-      <Menu borderless className="noBorder">
+      <Menu borderless className="menu noBorder">
         <Menu.Menu position="right">
           <SessionArea sessionId={runningSessionId} />
           <AccountArea accountShort={accountShort} />
@@ -66,13 +72,16 @@ export const NavbarPres = ({
     </div>
 
     <style jsx>{`
+      $background-color: #f5f5f5;
+
       .navbar {
         display: flex;
         align-items: center;
         flex-flow: row wrap;
         justify-content: space-between;
 
-        border-bottom: 1px solid lightgrey;
+        background-color: $background-color;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
 
         .sideArea {
           flex: 1;
@@ -81,9 +90,15 @@ export const NavbarPres = ({
           h1 {
             font-size: 1.3rem;
             margin: 0;
-            margin-left: 1rem;
+            padding-left: 1rem;
             display: flex;
             align-items: center;
+            background: $background-color;
+          }
+
+          :global(.sidebar) {
+            border-radius: 0;
+            background-color: $background-color;
           }
         }
 
@@ -101,6 +116,10 @@ export const NavbarPres = ({
 
         .accountArea {
           display: none;
+
+          :global(.menu) {
+            background-color: $background-color;
+          }
         }
 
         @media all and (min-width: 768px) {
