@@ -4,7 +4,7 @@ import moment from 'moment'
 import { Button, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
-import QuestionBlock from '../questions/QuestionBlock'
+import { QuestionBlock } from '../questions'
 
 const propTypes = {
   blocks: PropTypes.array,
@@ -36,7 +36,7 @@ const Session = ({
 
     <div className="details">
       {blocks.map(block => (
-        <div key={block.key} className="block">
+        <div key={block.id} className="block">
           <QuestionBlock
             questions={block.instances.map(instance => ({
               id: instance.id,

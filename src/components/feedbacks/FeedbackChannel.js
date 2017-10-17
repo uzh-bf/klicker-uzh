@@ -65,9 +65,9 @@ const FeedbackChannel = ({
     {!isActive && (
       // TODO: reactivate isActive check
       <div className="feedbacks">
-        {feedbacks.map(({ content, key, votes }) => (
+        {feedbacks.map(({ id, content, votes }) => (
           <div className="feedback">
-            <Feedback key={key} content={content} votes={votes} />
+            <Feedback key={id} content={content} votes={votes} />
           </div>
         ))}
       </div>

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { intlShape } from 'react-intl'
 import { Button, Icon } from 'semantic-ui-react'
 
-import QuestionBlock from '../questions/QuestionBlock'
+import { QuestionBlock } from '../questions'
 
 const propTypes = {
   blocks: PropTypes.array, // TODO: extend
@@ -30,7 +30,7 @@ const SessionTimeline = ({
     </div>
     <div className="blocks">
       {blocks.map(block => (
-        <div key={block.key} className="block">
+        <div key={block.id} className="block">
           <QuestionBlock
             showSolutions
             timeLimit={60}

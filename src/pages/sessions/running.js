@@ -7,10 +7,10 @@ import Router from 'next/router'
 
 import { pageWithIntl, withData } from '../../lib'
 
-import ConfusionBarometer from '../../components/confusion/ConfusionBarometer'
-import FeedbackChannel from '../../components/feedbacks/FeedbackChannel'
-import SessionTimeline from '../../components/sessions/SessionTimeline'
-import TeacherLayout from '../../components/layouts/TeacherLayout'
+import { ConfusionBarometer } from '../../components/confusion'
+import { FeedbackChannel } from '../../components/feedbacks'
+import { SessionTimeline } from '../../components/sessions'
+import { TeacherLayout } from '../../components/layouts'
 import { RunningSessionQuery } from '../../graphql/queries'
 import { EndSessionMutation, UpdateSessionSettingsMutation } from '../../graphql/mutations'
 import { LoadingTeacherLayout } from '../../components/common/Loading'
@@ -179,9 +179,6 @@ export default compose(
   }),
   // flatten out the relevant data props
   withProps(({ data }) => ({
-    blocks: data.user.runningSession.blocks,
-    confusionTS: data.user.runningSession.confusionTS,
-    feedbacks: data.user.runningSession.feedbacks,
-    ...data.user.runningSession.settings,
+    ...data.user.runningSession,
   })),
 )(Running)

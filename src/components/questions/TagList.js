@@ -4,7 +4,7 @@ import { graphql } from 'react-apollo'
 import { List } from 'semantic-ui-react'
 import { compose, withProps, branch, renderComponent } from 'recompose'
 
-import { LoadingDiv } from '../common/Loading'
+import { LoadingDiv } from '../common'
 import { TagListQuery } from '../../graphql/queries'
 
 const propTypes = {
@@ -31,19 +31,16 @@ export const TagListPres = ({ error, tags, handleTagClick }) => {
   return (
     <List selection size="large">
       {tags.map(({ isActive, id, name }) => (
-        <List.Item key={id} className="listItem" onClick={() => handleTagClick(name)}>
+        <List.Item
+          key={id}
+          active={isActive}
+          className="listItem"
+          onClick={() => handleTagClick(name)}
+        >
           <List.Icon name={isActive ? 'folder' : 'folder outline'} />
-          <List.Content>
-            <span className={isActive ? 'active' : 'inactive'}>{name}</span>
-          </List.Content>
+          <List.Content>{name}</List.Content>
         </List.Item>
       ))}
-
-      <style jsx>{`
-        .active {
-          font-weight: bold;
-        }
-      `}</style>
     </List>
   )
 }

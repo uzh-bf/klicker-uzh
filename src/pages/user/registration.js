@@ -4,8 +4,8 @@ import { compose, withState, withHandlers } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 
-import StaticLayout from '../../components/layouts/StaticLayout'
-import RegistrationForm from '../../components/forms/RegistrationForm'
+import { StaticLayout } from '../../components/layouts'
+import { RegistrationForm } from '../../components/forms'
 import { RegistrationMutation } from '../../graphql/mutations'
 import { pageWithIntl, withData } from '../../lib'
 

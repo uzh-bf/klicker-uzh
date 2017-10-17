@@ -12,7 +12,7 @@ const propTypes = {
   name: PropTypes.string.isRequired,
 }
 
-const Option = ({
+const SCCreationOption = ({
   correct, name, handleCorrectToggle, handleDelete,
 }) => (
   <div className={classNames('option', { correct })}>
@@ -30,6 +30,6 @@ const Option = ({
   </div>
 )
 
-Option.propTypes = propTypes
+SCCreationOption.propTypes = propTypes
 
-export default Option
+export default SCCreationOption

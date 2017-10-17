@@ -1,3 +1,4 @@
+coverage/
 node_modules/
 
 src/.next
@@ -5,3 +6,4 @@ src/lang/.messages
 *.log
 
 .idea/
+.DS_Store

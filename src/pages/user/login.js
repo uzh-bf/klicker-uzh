@@ -5,8 +5,8 @@ import { compose, withState, withHandlers } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 
-import StaticLayout from '../../components/layouts/StaticLayout'
-import LoginForm from '../../components/forms/LoginForm'
+import { StaticLayout } from '../../components/layouts'
+import { LoginForm } from '../../components/forms'
 import { LoginMutation } from '../../graphql/mutations'
 import { pageWithIntl, withData } from '../../lib'
 

@@ -80,54 +80,56 @@ export const NavbarPres = ({
         font-size: 1.3rem;
         margin: 0;
         margin-left: 1rem;
-        display: felx;
+        display: flex;
         align-items: center;
       }
 
-      .sideArea {
-        flex: 1;
-        order: 0;
-      }
-
-      .searchArea {
-        flex: 0 0 100%;
-        order: 1;
-
-        padding: 1rem;
-        padding-top: 0.5rem;
-      }
-
-      .accountArea {
-        display: none;
-      }
-
-      @media all and (min-width: 768px) {
-        .navbar {
-          flex-wrap: nowrap;
-        }
-
         .sideArea {
-          flex: 0 0 auto;
+          flex: 1;
+          order: 0;
+
+          h1 {
+            font-size: 1.3rem;
+            margin-left: 1rem;
+          }
         }
 
         .searchArea {
-          flex: 1 1 50%;
+          flex: 0 0 100%;
           order: 1;
 
-          padding: 0.2rem 2rem;
+          padding: 1rem;
+          padding-top: 0.5rem;
+
+          @media all and (min-width: 991px) {
+            padding: 0.2rem 3rem;
+          }
         }
 
         .accountArea {
-          flex: 0 0 auto;
-          order: 2;
-
-          display: block;
+          display: none;
         }
-      }
 
-      @media all and (min-width: 991px) {
-        .searchArea {
-          padding: 0.2rem 3rem;
+        @media all and (min-width: 768px) {
+          flex-wrap: nowrap;
+
+          .sideArea {
+            flex: 0 0 auto;
+          }
+
+          .searchArea {
+            flex: 1 1 50%;
+            order: 1;
+
+            padding: 0.2rem 2rem;
+          }
+
+          .accountArea {
+            flex: 0 0 auto;
+            order: 2;
+
+            display: block;
+          }
         }
       }
     `}</style>

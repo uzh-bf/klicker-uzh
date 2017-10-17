@@ -7,11 +7,11 @@ import { FormattedMessage, intlShape } from 'react-intl'
 
 import { pageWithIntl, withData } from '../../lib'
 
-import Collapser from '../../components/common/Collapser'
-import ConfusionSlider from '../../components/confusion/ConfusionSlider'
-import Feedback from '../../components/feedbacks/Feedback'
-import StudentLayout from '../../components/layouts/StudentLayout'
-import { SCAnswerOptions } from '../../components/questionTypes/SC'
+import { Collapser } from '../../components/common'
+import { ConfusionSlider } from '../../components/confusion'
+import { Feedback } from '../../components/feedbacks'
+import { StudentLayout } from '../../components/layouts'
+import { SCAnswerOptions } from '../../components/questionTypes'
 
 const propTypes = {
   feedbackDifficulty: PropTypes.oneOfType(PropTypes.number, null).isRequired,

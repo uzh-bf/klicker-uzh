@@ -1,5 +1,3 @@
-/* eslint-disable react/prop-types */
-
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
@@ -9,34 +7,17 @@ import { FaFloppyO, FaPlus, FaTrash } from 'react-icons/lib/fa'
 import styles from './styles'
 
 const propTypes = {
+  correct: PropTypes.bool.isRequired,
+  handleCorrectToggle: PropTypes.func.isRequired,
+  handleModeToggle: PropTypes.func.isRequired,
+  handleNameChange: PropTypes.func.isRequired,
   handleSave: PropTypes.func.isRequired,
+  inputMode: PropTypes.string.isRequired,
+  name: PropTypes.string.isRequired,
 }
 
-// compose state and handlers for the option creation placeholder
-const enhance = compose(
-  withState('correct', 'setCorrect', false),
-  withState('inputMode', 'setInputMode', false),
-  withState('name', 'setName', ''),
-  withHandlers({
-    handleCorrectToggle: ({ setCorrect }) => () => setCorrect(correct => !correct),
-
-    handleModeToggle: ({ setInputMode }) => () => setInputMode(inputMode => !inputMode),
-
-    handleNameChange: ({ setName }) => e => setName(e.target.value),
-
-    handleSave: ({
-      correct, name, handleSave, setCorrect, setInputMode, setName,
-    }) => () => {
-      setCorrect(false)
-      setInputMode(false)
-      setName('')
-      handleSave({ correct, name })
-    },
-  }),
-)
-
 // create the purely functional component
-const Placeholder = ({
+const SCCreationPlaceholder = ({
   correct,
   inputMode,
   name,
@@ -107,7 +88,26 @@ const Placeholder = ({
   </div>
 )
 
-const EnhancedPlaceholder = enhance(Placeholder)
-EnhancedPlaceholder.propTypes = propTypes
+SCCreationPlaceholder.propTypes = propTypes
 
-export default EnhancedPlaceholder
+export default compose(
+  withState('correct', 'setCorrect', false),
+  withState('inputMode', 'setInputMode', false),
+  withState('name', 'setName', ''),
+  withHandlers({
+    handleCorrectToggle: ({ setCorrect }) => () => setCorrect(correct => !correct),
+
+    handleModeToggle: ({ setInputMode }) => () => setInputMode(inputMode => !inputMode),
+
+    handleNameChange: ({ setName }) => e => setName(e.target.value),
+
+    handleSave: ({
+      correct, name, handleSave, setCorrect, setInputMode, setName,
+    }) => () => {
+      setCorrect(false)
+      setInputMode(false)
+      setName('')
+      handleSave({ correct, name })
+    },
+  }),
+)(SCCreationPlaceholder)
