@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { compose, withHandlers, withProps, withState } from 'recompose'
-import { Button } from 'semantic-ui-react'
+import { Button, Input } from 'semantic-ui-react'
 import { FormattedMessage, intlShape } from 'react-intl'
 
 import { pageWithIntl, withData } from '../../lib'
@@ -14,6 +14,7 @@ import { StudentLayout } from '../../components/layouts'
 import { SCAnswerOptions } from '../../components/questionTypes'
 
 const propTypes = {
+  addNewFeedback: PropTypes.func.isRequired,
   addNewFeedbackMode: PropTypes.bool.isRequired,
   dataFeedbacks: PropTypes.arrayOf({
     content: PropTypes.string.isRequired,
@@ -25,10 +26,12 @@ const propTypes = {
   handleFeedbackDifficultyChange: PropTypes.func.isRequired,
   handleFeedbackModeChange: PropTypes.func.isRequired,
   handleFeedbackSpeedChange: PropTypes.func.isRequired,
+  handleNewFeedbackInput: PropTypes.func.isRequired,
   handleQuestionActiveOptionChange: PropTypes.func.isRequired,
   handleQuestionCollapsedToggle: PropTypes.func.isRequired,
   handleSidebarActiveItemChange: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
+  newFeedbackInput: PropTypes.string.isRequired,
   questionActiveOption: PropTypes.number.isRequired,
   questionCollapsed: PropTypes.bool.isRequired,
   sidebarActiveItem: PropTypes.string.isRequired,
@@ -39,21 +42,24 @@ const defaultProps = {
 }
 
 const Session = ({
-  addNewFeedbackMode,
-  dataFeedbacks,
-  intl,
-  questionCollapsed,
-  feedbackDifficulty,
-  feedbackSpeed,
-  questionActiveOption,
-  sidebarActiveItem,
-  handleFeedbackModeChange,
-  handleQuestionCollapsedToggle,
-  handleFeedbackDifficultyChange,
-  handleFeedbackSpeedChange,
-  handleSidebarActiveItemChange,
-  handleQuestionActiveOptionChange,
-}) => {
+                   addNewFeedback,
+                   addNewFeedbackMode,
+                   dataFeedbacks,
+                   intl,
+                   questionCollapsed,
+                   feedbackDifficulty,
+                   feedbackSpeed,
+                   questionActiveOption,
+                   sidebarActiveItem,
+                   handleFeedbackModeChange,
+                   handleQuestionCollapsedToggle,
+                   handleFeedbackDifficultyChange,
+                   handleFeedbackSpeedChange,
+                   handleSidebarActiveItemChange,
+                   handleQuestionActiveOptionChange,
+                   handleNewFeedbackInputChange,
+                   newFeedbackInput,
+                 }) => {
   const title =
     sidebarActiveItem === 'activeQuestion'
       ? intl.formatMessage({
@@ -157,9 +163,9 @@ const Session = ({
             ))}
             {addNewFeedbackMode && (
               <div>
-                <input />
+                <Input defaultValue={newFeedbackInput} onChange={handleNewFeedbackInputChange} />
                 <Button onClick={handleFeedbackModeChange}>Cancel</Button>
-                <Button onClick={handleFeedbackModeChange}>Submit</Button>
+                <Button onClick={() => addNewFeedback(newFeedbackInput)}>Submit</Button>
               </div>
             )}
           </div>
@@ -256,7 +262,15 @@ export default compose(
   withState('feedbackSpeed', 'setFeedbackSpeed', null),
   withState('questionActiveOption', 'setQuestionActiveOption', -1),
   withState('sidebarActiveItem', 'setSidebarActiveItem', 'activeQuestion'),
+  withState('newFeedbackInput', 'setNewFeedbackInput', ''),
   withHandlers({
+    // handle adding a new feedback
+    addNewFeedback: ({ dataFeedbacks, setFeedbacks }) => (newFeedback) => {
+      const array = dataFeedbacks.slice()
+      array.push({ content: newFeedback, showDelete: false, votes: 0 })
+      setFeedbacks(array)
+    },
+
     // handle value change for difficulty
     handleFeedbackDifficultyChange: ({ setFeedbackDifficulty }) => newValue =>
       setFeedbackDifficulty(newValue),
@@ -267,6 +281,9 @@ export default compose(
 
     // handle value change for speed
     handleFeedbackSpeedChange: ({ setFeedbackSpeed }) => newValue => setFeedbackSpeed(newValue),
+
+    // handle input change
+    handleNewFeedbackInputChange: ({ setNewFeedbackInput }) => newInput => setNewFeedbackInput(newInput.target.value),
 
     // handle a change in the active answer option
     handleQuestionActiveOptionChange: ({ setQuestionActiveOption }) => option => () => {
