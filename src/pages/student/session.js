@@ -35,6 +35,7 @@ const propTypes = {
   questionActiveOption: PropTypes.number.isRequired,
   questionCollapsed: PropTypes.bool.isRequired,
   sidebarActiveItem: PropTypes.string.isRequired,
+  updateVotes: PropTypes.func.isRequired,
 }
 
 const defaultProps = {
@@ -59,6 +60,7 @@ const Session = ({
                    handleQuestionActiveOptionChange,
                    handleNewFeedbackInputChange,
                    newFeedbackInput,
+                   updateVotes,
                  }) => {
   const title =
     sidebarActiveItem === 'activeQuestion'
@@ -156,9 +158,9 @@ const Session = ({
           </div>
 
           <div className="feedbacks">
-            {dataFeedbacks && dataFeedbacks.map(({ content, showDelete, votes }) => (
+            {dataFeedbacks && dataFeedbacks.map(({ content, showDelete, votes }, index) => (
               <div className="feedback">
-                <Feedback content={content} showDelete={showDelete} votes={votes} />
+                <Feedback index={index} content={content} showDelete={showDelete} votes={votes} updateVotes={updateVotes} />
               </div>
             ))}
             {addNewFeedbackMode && (
@@ -252,10 +254,10 @@ export default compose(
   pageWithIntl,
   withState('addNewFeedbackMode', 'setNewFeedbackMode', false),
   withState('dataFeedbacks', 'setFeedbacks', [
-    { content: 'Hallo du bist lustig!', showDelete: false, votes: 190 },
-    { content: 'Gute Vorlesung', showDelete: false, votes: 63 },
-    { content: 'bla bla bla', showDelete: false, votes: 131 },
-    { content: 'Hahahahahaha', showDelete: false, votes: 10 },
+    { alreadyVoted: false, content: 'Hallo du bist lustig!', showDelete: false, votes: 190 },
+    { alreadyVotes: false, content: 'Gute Vorlesung', showDelete: false, votes: 63 },
+    { alreadyVotes: false, content: 'bla bla bla', showDelete: false, votes: 131 },
+    { alreadyVotes: false, content: 'Hahahahahaha', showDelete: false, votes: 10 },
   ]),
   withState('questionCollapsed', 'setQuestionCollapsed', true),
   withState('feedbackDifficulty', 'setFeedbackDifficulty', null),
@@ -269,6 +271,7 @@ export default compose(
       const array = dataFeedbacks.slice()
       array.push({ content: newFeedback, showDelete: false, votes: 0 })
       setFeedbacks(array)
+      // TODO change feedbackMode
     },
 
     // handle value change for difficulty
@@ -298,6 +301,13 @@ export default compose(
     handleSidebarActiveItemChange: ({ setSidebarActiveItem }) => (sidebarItem) => {
       setSidebarActiveItem(sidebarItem)
     },
+
+    // updating vote
+    updateVotes: ({ dataFeedbacks, setFeedbacks }) => (itemNumber) => {
+      const array = dataFeedbacks.slice()
+      array[itemNumber].votes += 1
+      setFeedbacks(array)
+    }
   }),
   withProps({
     // fake data the component is going to get
