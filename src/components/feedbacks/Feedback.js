@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import { Button, Icon } from 'semantic-ui-react'
 
 const propTypes = {
+  alreadyVoted: PropTypes.bool.isRequired,
   content: PropTypes.string.isRequired,
   index: PropTypes.number.isRequired,
   showDelete: PropTypes.bool,
@@ -14,7 +15,9 @@ const defaultProps = {
   showDelete: true,
 }
 
-const Feedback = ({ content, index, showDelete, updateVotes, votes }) => (
+const Feedback = ({
+  alreadyVoted, content, index, showDelete, updateVotes, votes,
+}) => (
   <div className="feedback">
     <div className="content">{content}</div>
     {showDelete && (
@@ -24,7 +27,7 @@ const Feedback = ({ content, index, showDelete, updateVotes, votes }) => (
     )}
 
     <div className="votes" onClick={() => updateVotes(index)}>
-      <Icon name={'thumbs outline up'} />
+      <Icon name={alreadyVoted ? 'thumbs up' : 'thumbs outline up'} />
       {votes}
     </div>
 

@@ -43,25 +43,25 @@ const defaultProps = {
 }
 
 const Session = ({
-                   addNewFeedback,
-                   addNewFeedbackMode,
-                   dataFeedbacks,
-                   intl,
-                   questionCollapsed,
-                   feedbackDifficulty,
-                   feedbackSpeed,
-                   questionActiveOption,
-                   sidebarActiveItem,
-                   handleFeedbackModeChange,
-                   handleQuestionCollapsedToggle,
-                   handleFeedbackDifficultyChange,
-                   handleFeedbackSpeedChange,
-                   handleSidebarActiveItemChange,
-                   handleQuestionActiveOptionChange,
-                   handleNewFeedbackInputChange,
-                   newFeedbackInput,
-                   updateVotes,
-                 }) => {
+  addNewFeedback,
+  addNewFeedbackMode,
+  dataFeedbacks,
+  intl,
+  questionCollapsed,
+  feedbackDifficulty,
+  feedbackSpeed,
+  questionActiveOption,
+  sidebarActiveItem,
+  handleFeedbackModeChange,
+  handleQuestionCollapsedToggle,
+  handleFeedbackDifficultyChange,
+  handleFeedbackSpeedChange,
+  handleSidebarActiveItemChange,
+  handleQuestionActiveOptionChange,
+  handleNewFeedbackInputChange,
+  newFeedbackInput,
+  updateVotes,
+}) => {
   const title =
     sidebarActiveItem === 'activeQuestion'
       ? intl.formatMessage({
@@ -158,11 +158,21 @@ const Session = ({
           </div>
 
           <div className="feedbacks">
-            {dataFeedbacks && dataFeedbacks.map(({ content, showDelete, votes }, index) => (
-              <div className="feedback">
-                <Feedback index={index} content={content} showDelete={showDelete} votes={votes} updateVotes={updateVotes} />
-              </div>
-            ))}
+            {dataFeedbacks &&
+              dataFeedbacks.map(({
+ alreadyVoted, content, showDelete, votes,
+}, index) => (
+  <div className="feedback">
+    <Feedback
+      index={index}
+      alreadyVoted={alreadyVoted}
+      content={content}
+      showDelete={showDelete}
+      votes={votes}
+      updateVotes={updateVotes}
+    />
+  </div>
+              ))}
             {addNewFeedbackMode && (
               <div>
                 <Input defaultValue={newFeedbackInput} onChange={handleNewFeedbackInputChange} />
@@ -254,10 +264,18 @@ export default compose(
   pageWithIntl,
   withState('addNewFeedbackMode', 'setNewFeedbackMode', false),
   withState('dataFeedbacks', 'setFeedbacks', [
-    { alreadyVoted: false, content: 'Hallo du bist lustig!', showDelete: false, votes: 190 },
-    { alreadyVotes: false, content: 'Gute Vorlesung', showDelete: false, votes: 63 },
-    { alreadyVotes: false, content: 'bla bla bla', showDelete: false, votes: 131 },
-    { alreadyVotes: false, content: 'Hahahahahaha', showDelete: false, votes: 10 },
+    {
+      alreadyVoted: false, content: 'Hallo du bist lustig!', showDelete: false, votes: 190,
+    },
+    {
+      alreadyVotes: false, content: 'Gute Vorlesung', showDelete: false, votes: 63,
+    },
+    {
+      alreadyVotes: false, content: 'bla bla bla', showDelete: false, votes: 131,
+    },
+    {
+      alreadyVotes: false, content: 'Hahahahahaha', showDelete: false, votes: 10,
+    },
   ]),
   withState('questionCollapsed', 'setQuestionCollapsed', true),
   withState('feedbackDifficulty', 'setFeedbackDifficulty', null),
@@ -286,7 +304,8 @@ export default compose(
     handleFeedbackSpeedChange: ({ setFeedbackSpeed }) => newValue => setFeedbackSpeed(newValue),
 
     // handle input change
-    handleNewFeedbackInputChange: ({ setNewFeedbackInput }) => newInput => setNewFeedbackInput(newInput.target.value),
+    handleNewFeedbackInputChange: ({ setNewFeedbackInput }) => newInput =>
+      setNewFeedbackInput(newInput.target.value),
 
     // handle a change in the active answer option
     handleQuestionActiveOptionChange: ({ setQuestionActiveOption }) => option => () => {
@@ -302,12 +321,18 @@ export default compose(
       setSidebarActiveItem(sidebarItem)
     },
 
-    // updating vote
+    // updating number of votes and update alreadyVoted variable of this item for this user
     updateVotes: ({ dataFeedbacks, setFeedbacks }) => (itemNumber) => {
       const array = dataFeedbacks.slice()
-      array[itemNumber].votes += 1
+      if (!array[itemNumber].alreadyVoted) {
+        array[itemNumber].votes += 1
+        array[itemNumber].alreadyVoted = true
+      } else {
+        array[itemNumber].votes -= 1
+        array[itemNumber].alreadyVoted = false
+      }
       setFeedbacks(array)
-    }
+    },
   }),
   withProps({
     // fake data the component is going to get
