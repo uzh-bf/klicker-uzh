@@ -43,25 +43,25 @@ const defaultProps = {
 }
 
 const Session = ({
-  addNewFeedback,
-  addNewFeedbackMode,
-  dataFeedbacks,
-  intl,
-  questionCollapsed,
-  feedbackDifficulty,
-  feedbackSpeed,
-  questionActiveOption,
-  sidebarActiveItem,
-  handleFeedbackModeChange,
-  handleQuestionCollapsedToggle,
-  handleFeedbackDifficultyChange,
-  handleFeedbackSpeedChange,
-  handleSidebarActiveItemChange,
-  handleQuestionActiveOptionChange,
-  handleNewFeedbackInputChange,
-  newFeedbackInput,
-  updateVotes,
-}) => {
+                   addNewFeedback,
+                   addNewFeedbackMode,
+                   dataFeedbacks,
+                   intl,
+                   questionCollapsed,
+                   feedbackDifficulty,
+                   feedbackSpeed,
+                   questionActiveOption,
+                   sidebarActiveItem,
+                   handleFeedbackModeChange,
+                   handleQuestionCollapsedToggle,
+                   handleFeedbackDifficultyChange,
+                   handleFeedbackSpeedChange,
+                   handleSidebarActiveItemChange,
+                   handleQuestionActiveOptionChange,
+                   handleNewFeedbackInputChange,
+                   newFeedbackInput,
+                   updateVotes,
+                 }) => {
   const title =
     sidebarActiveItem === 'activeQuestion'
       ? intl.formatMessage({
@@ -159,22 +159,22 @@ const Session = ({
 
           <div className="feedbacks">
             {dataFeedbacks &&
-              dataFeedbacks.map(({
- alreadyVoted, content, showDelete, votes,
-}, index) => (
-  <div className="feedback">
-    <Feedback
-      index={index}
-      alreadyVoted={alreadyVoted}
-      content={content}
-      showDelete={showDelete}
-      votes={votes}
-      updateVotes={updateVotes}
-    />
-  </div>
-              ))}
+            dataFeedbacks.map(({
+                                 alreadyVoted, content, showDelete, votes,
+                               }, index) => (
+              <div className="feedback">
+                <Feedback
+                  index={index}
+                  alreadyVoted={alreadyVoted}
+                  content={content}
+                  showDelete={showDelete}
+                  votes={votes}
+                  updateVotes={updateVotes}
+                />
+              </div>
+            ))}
             {addNewFeedbackMode && (
-              <div>
+              <div className="newFeedbackRow">
                 <Input defaultValue={newFeedbackInput} onChange={handleNewFeedbackInputChange} />
                 <Button onClick={handleFeedbackModeChange}>Cancel</Button>
                 <Button onClick={() => addNewFeedback(newFeedbackInput)}>Submit</Button>
@@ -226,6 +226,19 @@ const Session = ({
             margin-bottom: 0.5rem;
           }
 
+          .newFeedbackRow {
+            display: flex;
+
+            > .ui.input {
+              // TODO formatting
+            }
+
+            > :global(button) {
+              flex: 1 1 5%;
+              align-self: flex-end;
+            }
+          }
+
           .actionButton {
             position: fixed;
 
@@ -265,16 +278,28 @@ export default compose(
   withState('addNewFeedbackMode', 'setNewFeedbackMode', false),
   withState('dataFeedbacks', 'setFeedbacks', [
     {
-      alreadyVoted: false, content: 'Hallo du bist lustig!', showDelete: false, votes: 190,
+      alreadyVoted: false,
+      content: 'Hallo du bist lustig!',
+      showDelete: false,
+      votes: 190,
     },
     {
-      alreadyVotes: false, content: 'Gute Vorlesung', showDelete: false, votes: 63,
+      alreadyVotes: false,
+      content: 'Gute Vorlesung',
+      showDelete: false,
+      votes: 63,
     },
     {
-      alreadyVotes: false, content: 'bla bla bla', showDelete: false, votes: 131,
+      alreadyVotes: false,
+      content: 'bla bla bla',
+      showDelete: false,
+      votes: 131,
     },
     {
-      alreadyVotes: false, content: 'Hahahahahaha', showDelete: false, votes: 10,
+      alreadyVotes: false,
+      content: 'Hahahahahaha',
+      showDelete: false,
+      votes: 10,
     },
   ]),
   withState('questionCollapsed', 'setQuestionCollapsed', true),
