@@ -116,36 +116,35 @@ anymatch@^1.3.0:
     micromatch "^2.1.5"
     normalize-path "^2.0.0"
 
-apollo-link@^0.7.0:
-  version "0.7.0"
-  resolved "https://registry.yarnpkg.com/apollo-link/-/apollo-link-0.7.0.tgz#a8f09069b31821c27285584264356b1b6e6be6f2"
+apollo-link@^0.8.0:
+  version "0.8.0"
+  resolved "https://registry.yarnpkg.com/apollo-link/-/apollo-link-0.8.0.tgz#efce6b35ae9ea5f6966a87054ba4893a5b6d960a"
   dependencies:
     apollo-utilities "^0.2.0-beta.0"
-    graphql "^0.11.3"
-    zen-observable-ts "^0.5.0"
+    zen-observable "^0.6.0"
 
-apollo-server-core@^1.1.6:
-  version "1.1.6"
-  resolved "https://registry.yarnpkg.com/apollo-server-core/-/apollo-server-core-1.1.6.tgz#be45833e15a6fa28e52bc7e853cd77dfb2558da7"
+apollo-server-core@^1.1.7:
+  version "1.1.7"
+  resolved "https://registry.yarnpkg.com/apollo-server-core/-/apollo-server-core-1.1.7.tgz#4d7df340a44e949e98ab6ca405f54e862ef5416e"
   dependencies:
-    apollo-tracing "^0.0.7"
+    apollo-tracing "^0.0.x"
 
-apollo-server-express@1.1.6:
-  version "1.1.6"
-  resolved "https://registry.yarnpkg.com/apollo-server-express/-/apollo-server-express-1.1.6.tgz#57360d9dd87dea4913da27f41b7d6eb422e0a3c0"
+apollo-server-express@1.1.7:
+  version "1.1.7"
+  resolved "https://registry.yarnpkg.com/apollo-server-express/-/apollo-server-express-1.1.7.tgz#6cdf88a742be5bf7d02a40e7f7720e311d6545fa"
   dependencies:
-    apollo-server-core "^1.1.6"
+    apollo-server-core "^1.1.7"
     apollo-server-module-graphiql "^1.1.6"
 
 apollo-server-module-graphiql@^1.1.6:
   version "1.1.6"
   resolved "https://registry.yarnpkg.com/apollo-server-module-graphiql/-/apollo-server-module-graphiql-1.1.6.tgz#9a0c8ff7ed7c4fff313065db388f08b1e7b6f9b9"
 
-apollo-tracing@^0.0.7:
-  version "0.0.7"
-  resolved "https://registry.yarnpkg.com/apollo-tracing/-/apollo-tracing-0.0.7.tgz#78466cfefdb52a0802a57b488d26a1a67a25909f"
+apollo-tracing@^0.0.x:
+  version "0.0.9"
+  resolved "https://registry.yarnpkg.com/apollo-tracing/-/apollo-tracing-0.0.9.tgz#37fd4a7f5340f6e2ac9437d284f10ae2b1c85ad1"
   dependencies:
-    graphql-tools "^1.1.0"
+    graphql-tools "^2.2.0"
 
 apollo-utilities@^0.2.0-beta.0:
   version "0.2.0-rc.0"
@@ -1715,15 +1714,15 @@ graphql-subscriptions@0.5.4:
     es6-promise "^4.1.1"
     iterall "^1.1.3"
 
-graphql-tools@2.5.0:
-  version "2.5.0"
-  resolved "https://registry.yarnpkg.com/graphql-tools/-/graphql-tools-2.5.0.tgz#b072faf8e1d621550598a681c08504bae13b1904"
+graphql-tools@2.5.1, graphql-tools@^2.2.0:
+  version "2.5.1"
+  resolved "https://registry.yarnpkg.com/graphql-tools/-/graphql-tools-2.5.1.tgz#542c48d4f9a532e09280ae216084813ea7ba4b18"
   dependencies:
-    apollo-link "^0.7.0"
+    apollo-link "^0.8.0"
     deprecated-decorator "^0.1.6"
     uuid "^3.1.0"
 
-graphql-tools@^1, graphql-tools@^1.1.0:
+graphql-tools@^1:
   version "1.2.3"
   resolved "https://registry.yarnpkg.com/graphql-tools/-/graphql-tools-1.2.3.tgz#079bf4d157e46c0a0bae9fec117e0eea6e03ba2c"
   dependencies:
@@ -1732,7 +1731,7 @@ graphql-tools@^1, graphql-tools@^1.1.0:
   optionalDependencies:
     "@types/graphql" "^0.9.0"
 
-graphql@0.11.7, graphql@^0.11.3:
+graphql@0.11.7:
   version "0.11.7"
   resolved "https://registry.yarnpkg.com/graphql/-/graphql-0.11.7.tgz#e5abaa9cb7b7cccb84e9f0836bf4370d268750c6"
   dependencies:
@@ -4626,6 +4625,6 @@ yargs@~3.10.0:
     decamelize "^1.0.0"
     window-size "0.1.0"
 
-zen-observable-ts@^0.5.0:
-  version "0.5.0"
-  resolved "https://registry.yarnpkg.com/zen-observable-ts/-/zen-observable-ts-0.5.0.tgz#c5021e7ac486fc281f6126d574673cfb6daf0069"
+zen-observable@^0.6.0:
+  version "0.6.0"
+  resolved "https://registry.yarnpkg.com/zen-observable/-/zen-observable-0.6.0.tgz#8a6157ed15348d185d948cfc4a59d90a2c0f70ee"
