@@ -21,7 +21,7 @@
     "jsonwebtoken": "8.1.0",
     "lodash": "4.17.4",
     "mongodb": "2.2.33",
-    "mongoose": "4.12.2",
+    "mongoose": "4.12.3",
     "optics-agent": "1.1.7",
     "subscriptions-transport-ws": "0.9.1"
   },
