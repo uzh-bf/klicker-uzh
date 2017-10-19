@@ -43,25 +43,25 @@ const defaultProps = {
 }
 
 const Session = ({
-                   addNewFeedback,
-                   addNewFeedbackMode,
-                   dataFeedbacks,
-                   intl,
-                   questionCollapsed,
-                   feedbackDifficulty,
-                   feedbackSpeed,
-                   questionActiveOption,
-                   sidebarActiveItem,
-                   handleFeedbackModeChange,
-                   handleQuestionCollapsedToggle,
-                   handleFeedbackDifficultyChange,
-                   handleFeedbackSpeedChange,
-                   handleSidebarActiveItemChange,
-                   handleQuestionActiveOptionChange,
-                   handleNewFeedbackInputChange,
-                   newFeedbackInput,
-                   updateVotes,
-                 }) => {
+  addNewFeedback,
+  addNewFeedbackMode,
+  dataFeedbacks,
+  intl,
+  questionCollapsed,
+  feedbackDifficulty,
+  feedbackSpeed,
+  questionActiveOption,
+  sidebarActiveItem,
+  handleFeedbackModeChange,
+  handleQuestionCollapsedToggle,
+  handleFeedbackDifficultyChange,
+  handleFeedbackSpeedChange,
+  handleSidebarActiveItemChange,
+  handleQuestionActiveOptionChange,
+  handleNewFeedbackInputChange,
+  newFeedbackInput,
+  updateVotes,
+}) => {
   const title =
     sidebarActiveItem === 'activeQuestion'
       ? intl.formatMessage({
@@ -159,20 +159,20 @@ const Session = ({
 
           <div className="feedbacks">
             {dataFeedbacks &&
-            dataFeedbacks.map(({
-                                 alreadyVoted, content, showDelete, votes,
-                               }, index) => (
-              <div className="feedback">
-                <Feedback
-                  index={index}
-                  alreadyVoted={alreadyVoted}
-                  content={content}
-                  showDelete={showDelete}
-                  votes={votes}
-                  updateVotes={updateVotes}
-                />
-              </div>
-            ))}
+              dataFeedbacks.map(({
+ alreadyVoted, content, showDelete, votes,
+}, index) => (
+  <div className="feedback">
+    <Feedback
+      index={index}
+      alreadyVoted={alreadyVoted}
+      content={content}
+      showDelete={showDelete}
+      votes={votes}
+      updateVotes={updateVotes}
+    />
+  </div>
+              ))}
             {addNewFeedbackMode && (
               <div className="newFeedbackRow">
                 <Input defaultValue={newFeedbackInput} onChange={handleNewFeedbackInputChange} />
