@@ -531,7 +531,7 @@ exports[`Storyshots confusion ConfusionSlider 1`] = `
 
 exports[`Storyshots evaluation/components Chart 1`] = `
 <div
-  className="jsx-3934556491 chart"
+  className="jsx-3921678912 chart"
 />
 `;
 
@@ -549,20 +549,20 @@ exports[`Storyshots evaluation/components Info 1`] = `
 
 exports[`Storyshots evaluation/components Possibilities (FREE) 1`] = `
 <div
-  className="jsx-3532866319 possibilities"
+  className="jsx-2154886852 possibilities"
 >
   <h2
-    className="jsx-3532866319"
+    className="jsx-2154886852"
   />
 </div>
 `;
 
 exports[`Storyshots evaluation/components Possibilities (SC) 1`] = `
 <div
-  className="jsx-3532866319 possibilities"
+  className="jsx-2154886852 possibilities"
 >
   <h2
-    className="jsx-3532866319"
+    className="jsx-2154886852"
   />
 </div>
 `;
