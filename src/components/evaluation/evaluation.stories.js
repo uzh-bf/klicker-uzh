@@ -3,14 +3,24 @@
 import React from 'react'
 import { storiesOf } from '@storybook/react'
 
-import Graph from './Graph'
-import Possibilities from './Possibilities'
-import VisualizationType from './VisualizationType'
+import { Chart, Possibilities, VisualizationType, BarChart, PieChart } from '.'
 
 import { intlMock } from '../../../.storybook/utils'
 
+const results = {
+  options: [
+    { correct: false, name: 'option 1', numberOfVotes: 56 },
+    {
+      correct: true,
+      name: 'option 2',
+      numberOfVotes: 344,
+    },
+    { correct: false, name: 'some other option', numberOfVotes: 9 },
+  ],
+  totalResponses: 409,
+}
+
 storiesOf('evaluations', module)
-  .add('Graph', () => <Graph intl={intlMock} visualization={'pieChart'} />)
   .add('Possibilities', () => (
     <Possibilities
       intl={intlMock}
@@ -25,3 +35,8 @@ storiesOf('evaluations', module)
   .add('Visualization', () => (
     <VisualizationType intl={intlMock} onChangeType={console.log('State changed')} type="SC" />
   ))
+  .add('Chart', () => <Chart />)
+  .add('BarChart', () => <BarChart results={results} />)
+  .add('PieChart', () => <PieChart results={results} />)
+  .add('BarChart (with solution)', () => <BarChart isSolutionShown results={results} />)
+  .add('PieChart (with solution)', () => <PieChart isSolutionShown results={results} />)

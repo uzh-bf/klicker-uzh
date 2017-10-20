@@ -6,7 +6,7 @@ import { compose, withHandlers, withProps, withState } from 'recompose'
 import { pageWithIntl, withData } from '../../lib'
 
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
-import Graph from '../../components/evaluations/Graph'
+import Chart from '../../components/evaluation/Chart'
 
 const propTypes = {
   data: PropTypes.object.isRequired,
@@ -27,7 +27,6 @@ const Evaluation = ({
   visualizationType,
   handleShowGraph,
   handleToggleShowSolution,
-  handleToggleVisualizationActive,
   handleChangeVisualizationType,
 }) => (
   <EvaluationLayout
@@ -45,7 +44,7 @@ const Evaluation = ({
     onToggleShowSolution={handleToggleShowSolution}
     onChangeVisualizationType={handleChangeVisualizationType}
   >
-    <Graph
+    <Chart
       intl={intl}
       handleShowGraph={handleShowGraph}
       result={data.result}
@@ -63,17 +62,17 @@ export default compose(
   pageWithIntl,
   withState('showGraph', 'setShowGraph', false),
   withState('showSolution', 'setShowSolution', false),
-  withState('visualizationActive', 'setVisualizationActive', false),
   withState('visualizationType', 'setVisualizationType', 'PIE_CHART'),
   withHandlers({
+    // handle change of the visualization type
     handleChangeVisualizationType: ({ setVisualizationType }) => newType =>
       setVisualizationType(newType),
-    handleShowGraph: ({ setShowGraph }) => () => setShowGraph(showGraph => !showGraph),
+    // handle toggle of the visualization display
+    // the visualization display can only be toggled once, so only allow setting to true
+    handleShowGraph: ({ setShowGraph }) => () => setShowGraph(true),
+    // handle toggle of the solution overlay
     handleToggleShowSolution: ({ setShowSolution }) => () =>
       setShowSolution(showSolution => !showSolution),
-    // the visualization display can only be toggled once, so only allow setting to true
-    handleToggleVisualizationActive: ({ setVisualizationActive }) => () =>
-      setVisualizationActive(true),
   }),
   withProps({
     // fake data the component is going to get

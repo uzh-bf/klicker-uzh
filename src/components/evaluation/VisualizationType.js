@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Dropdown } from 'semantic-ui-react'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { intlShape } from 'react-intl'
 
 // TODO
 const propTypes = {

@@ -5,8 +5,8 @@ import { FormattedMessage, intlShape } from 'react-intl'
 import { Checkbox } from 'semantic-ui-react'
 
 import { createLinks, initLogging } from '../../lib'
-import Possibilities from '../evaluations/Possibilities'
-import VisualizationType from '../evaluations/VisualizationType'
+import Possibilities from '../evaluation/Possibilities'
+import VisualizationType from '../evaluation/VisualizationType'
 
 const propTypes = {
   children: PropTypes.element.isRequired,
@@ -135,11 +135,11 @@ class EvaluationLayout extends Component {
           }
 
           .sampleSolution {
-          text-align: center;
+            text-align: center;
           }
 
           .visualization {
-          text-align: center;
+            text-align: center;
           }
 
           @supports (grid-gap: 1rem) {
