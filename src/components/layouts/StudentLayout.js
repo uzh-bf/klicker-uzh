@@ -5,8 +5,8 @@ import { Helmet } from 'react-helmet'
 import { Button } from 'semantic-ui-react'
 
 import { createLinks, initLogging } from '../../lib'
-
 import { Sidebar } from '../common/sidebar'
+import { SemanticVersion } from '../../constants'
 
 const propTypes = {
   children: PropTypes.node.isRequired,
@@ -68,7 +68,7 @@ class StudentLayout extends React.Component {
         <Helmet defer={false}>
           {createLinks([
             'https://fonts.googleapis.com/css?family=Open Sans',
-            'https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.13/semantic.min.css',
+            `https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/${SemanticVersion}/semantic.min.css`,
           ])}
           <title>{pageTitle}</title>
         </Helmet>

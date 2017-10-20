@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import { Helmet } from 'react-helmet'
 
 import { createLinks, initLogging } from '../../lib'
+import { SemanticVersion } from '../../constants'
 
 const propTypes = {
   children: PropTypes.node.isRequired,
@@ -29,7 +30,7 @@ class StaticLayout extends React.Component {
         <Helmet defer={false}>
           {createLinks([
             'https://fonts.googleapis.com/css?family=Open Sans',
-            'https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.13/semantic.min.css',
+            `https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/${SemanticVersion}/semantic.min.css`,
           ])}
           <title>{pageTitle}</title>
         </Helmet>
