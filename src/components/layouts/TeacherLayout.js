@@ -114,6 +114,14 @@ class TeacherLayout extends React.Component {
             font-family: 'Open Sans', sans-serif;
           }
 
+          html {
+            font-size: 14px;
+          }
+
+          body {
+            font-size: 1rem;
+          }
+
           input,
           .noBorder {
             border-radius: 0 !important;

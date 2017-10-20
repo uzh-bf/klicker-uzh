@@ -64,34 +64,22 @@ class EvaluationLayout extends Component {
           <title>{pageTitle}</title>
         </Helmet>
 
-        <div className="box title">
+        <div className="questionDetails">
           <h1>{title}</h1>
+          <p>{description}</p>
         </div>
-        <div className="box questionText">{description}</div>
-        <div className="box graph">{children}</div>
-        <div className="box sampleSolution">
-          <h2>
-            <FormattedMessage
-              id="teacher.evaluation.sampleSolution.title"
-              defaultMessage="Sample Solution"
-            />
-          </h2>
+        <div className="chart">{children}</div>
+        <div className="settings">
           <Checkbox
             toggle
             label={intl.formatMessage({
-              defaultMessage: 'Show',
-              id: 'teacher.evaluation.sampleSolution.show',
+              defaultMessage: 'Show solution',
+              id: 'teacher.evaluation.showSolution.label',
             })}
             onChange={onToggleShowSolution}
           />
         </div>
-        <div className="box visualization">
-          <h2>
-            <FormattedMessage
-              id="teacher.evaluation.visualization.title"
-              defaultMessage="Visualization"
-            />
-          </h2>
+        <div className="chartType">
           <VisualizationType
             intl={intl}
             onChangeType={onChangeVisualizationType}
@@ -99,7 +87,7 @@ class EvaluationLayout extends Component {
             visualization={visualizationType}
           />
         </div>
-        <div className="box possibilities">
+        <div className="optionDisplay">
           <h2>
             <FormattedMessage
               id="teacher.evaluation.possibilities.title"
@@ -110,78 +98,87 @@ class EvaluationLayout extends Component {
         </div>
 
         <style jsx global>{`
-          html {
-            font-size: 25px !important;
+          * {
+            font-family: 'Open Sans', sans-serif;
           }
+
+          html {
+            font-size: 22px !important;
+          }
+
           body {
             font-size: 1rem !important;
           }
         `}</style>
 
         <style jsx>{`
-          h2 {
-            font-size: 1.2rem;
-          }
+          @import 'src/theme';
 
-          .box {
-            padding: 0.1rem;
-          }
-
-          .title {
-            text-align: center;
-          }
-
-          .possibilities {
-            text-align: center;
-          }
-
-          .sampleSolution {
-            text-align: center;
-          }
-
-          .visualization {
-            text-align: center;
-          }
-
-          @supports (grid-gap: 1rem) {
-            @media all and (min-width: 768px) {
-              .evaluationLayout {
+          .evaluationLayout {
+            @supports (grid-gap: 1rem) {
+              @include desktop-tablet-only {
                 display: grid;
 
-                grid-template-columns: 80% 20%;
-                grid-template-rows: 3rem 15% auto 8rem 8rem 3rem;
-                grid-template-areas: 'title title' 'question question' 'graph possibilities'
-                  'graph solution' 'graph visualization' 'info info';
+                grid-template-columns: auto 17rem;
+                grid-template-rows: minmax(auto, 2rem) auto 10rem 5rem;
+                grid-template-areas: 'questionDetails questionDetails' 'graph optionDisplay'
+                  'graph settings' 'info chartType';
 
                 height: 100vh;
-                padding: 1rem;
-              }
 
-              .title {
-                grid-area: title;
-              }
+                .questionDetails {
+                  grid-area: questionDetails;
+                  align-self: start;
 
-              .questionText {
-                grid-area: question;
+                  background-color: lightgrey;
+                  border-bottom: 1px solid grey;
+                  padding: 1rem;
+                  text-align: left;
 
-                border-bottom: 1px solid;
-              }
+                  h1 {
+                    font-size: 1.5rem;
+                    line-height: 1.5rem;
+                    margin-bottom: 0.5rem;
+                  }
+                }
 
-              .graph {
-                grid-area: graph;
-              }
+                .chart {
+                  grid-area: graph;
 
-              .possibilities {
-                grid-area: possibilities;
-              }
+                  padding: 1rem;
 
-              .sampleSolution {
-                grid-area: solution;
-                margin-top: auto;
-              }
+                  :global(> *) {
+                    border: 1px solid lightgrey;
+                  }
+                }
 
-              .visualization {
-                grid-area: visualization;
+                .chartType,
+                .optionDisplay,
+                .settings {
+                  padding: 1rem;
+                }
+
+                .chartType {
+                  grid-area: chartType;
+
+                  align-self: center;
+                }
+
+                .optionDisplay {
+                  grid-area: optionDisplay;
+
+                  h2 {
+                    font-size: 1.5rem;
+                    line-height: 1.5rem;
+                    margin-bottom: 0.5rem;
+                  }
+                }
+
+                .settings {
+                  grid-area: settings;
+
+                  align-self: end;
+                }
               }
             }
           }

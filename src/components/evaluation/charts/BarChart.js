@@ -30,8 +30,8 @@ const BarChart = ({ isSolutionShown, results }) => (
       <Tooltip />
       <Legend />
       <Bar dataKey="numberOfVotes">
-        {results.options.map((option, index) => (
-          <Cell key={index} fill={isSolutionShown && option.correct ? '#00FF00' : '#8884d8'} />
+        {results.options.map(option => (
+          <Cell key={option.id} fill={isSolutionShown && option.correct ? '#00FF00' : '#8884d8'} />
         ))}
       </Bar>
     </BarChartComponent>

@@ -1,6 +1,5 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { FormattedMessage } from 'react-intl'
 
 // TODO
 const propTypes = {
@@ -13,10 +12,10 @@ const defaultProps = {
 }
 
 // TODO default value
-const Possibilities = ({ choices, type }) => (
+const Possibilities = ({ choices }) => (
   <div className="visualization">
     {choices.map((choice, index) => (
-      <div className="item">
+      <div key={choice.id} className="item">
         <b>{index + 1}</b> {choice.name}
       </div>
     ))}

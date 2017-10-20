@@ -14,7 +14,7 @@ const dropDownOptions = [
   { text: 'Pie Chart', value: 'PIE_CHART', withinType: ['SC', 'MC'] },
   { text: 'Bar Chart', value: 'BAR_CHART', withinType: ['SC', 'MC'] },
   { text: 'Word cloud', value: 'WORD_CLOUD', withinType: ['FREE'] },
-  { text: 'Table', value: 'TABULAR', withinType: ['FREE'] },
+  { text: 'Table', value: 'TABULAR', withinType: ['SC', 'MC', 'FREE'] },
   { text: 'Histogramm', value: 'HISTOGRAM', withinType: ['NUMBER_RANGE'] },
   { text: 'Ranking', value: 'RANKING', withinType: ['NUMBER_RANGE'] },
 ]
@@ -22,6 +22,7 @@ const dropDownOptions = [
 const VisualizationType = ({ intl, onChangeType, type }) => (
   <div className="visualization">
     <Dropdown
+      upward
       search
       selection
       options={dropDownOptions.filter(o => o.withinType.includes(type))}

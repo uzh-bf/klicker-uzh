@@ -47,7 +47,7 @@ const Evaluation = ({
     <Chart
       intl={intl}
       handleShowGraph={handleShowGraph}
-      result={data.result}
+      results={data.results}
       showGraph={showGraph}
       showSolution={showSolution}
       visualization={visualizationType}
@@ -81,7 +81,7 @@ export default compose(
         title: 'some question title',
         type: 'SC',
       },
-      result: {
+      results: {
         options: [
           { correct: false, name: 'option 1', numberOfVotes: 56 },
           {

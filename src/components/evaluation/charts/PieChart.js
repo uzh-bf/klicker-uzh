@@ -15,8 +15,8 @@ const PieChart = ({ isSolutionShown, results }) => (
   <ResponsiveContainer>
     <PieChartComponent>
       <Pie label data={results.options} valueKey="numberOfVotes" fill="#8884d8">
-        {results.options.map((option, index) => (
-          <Cell key={index} fill={isSolutionShown && option.correct ? '#00FF00' : '#8884d8'} />
+        {results.options.map(option => (
+          <Cell key={option.id} fill={isSolutionShown && option.correct ? '#00FF00' : '#8884d8'} />
         ))}
       </Pie>
     </PieChartComponent>
