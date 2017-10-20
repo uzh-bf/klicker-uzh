@@ -43,8 +43,7 @@ const Sidebar = ({
             key={item.name}
             active={item.name === activeItem}
             name={item.name}
-            href={item.href}
-            handleSidebarItemClick={handleSidebarItemClick}
+            handleSidebarItemClick={handleSidebarItemClick(item.href)}
           >
             {item.label}
           </SidebarItem>

@@ -21,10 +21,12 @@ const propTypes = {
   handleQuestionActiveOptionChange: PropTypes.func.isRequired,
   handleQuestionCollapsedToggle: PropTypes.func.isRequired,
   handleSidebarActiveItemChange: PropTypes.func.isRequired,
+  handleToggleSidebarVisible: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   questionActiveOption: PropTypes.number.isRequired,
   questionCollapsed: PropTypes.bool.isRequired,
   sidebarActiveItem: PropTypes.string.isRequired,
+  sidebarVisible: PropTypes.bool.isRequired,
 }
 
 const Session = ({
@@ -34,11 +36,13 @@ const Session = ({
   feedbackSpeed,
   questionActiveOption,
   sidebarActiveItem,
+  sidebarVisible,
   handleQuestionCollapsedToggle,
   handleFeedbackDifficultyChange,
   handleFeedbackSpeedChange,
   handleSidebarActiveItemChange,
   handleQuestionActiveOptionChange,
+  handleToggleSidebarVisible,
 }) => {
   const title =
     sidebarActiveItem === 'activeQuestion'
@@ -56,7 +60,9 @@ const Session = ({
       pageTitle="Session #1762"
       sidebar={{
         activeItem: sidebarActiveItem,
-        handleItemChange: handleSidebarActiveItemChange,
+        handleSidebarActiveItemChange,
+        handleToggleSidebarVisible,
+        sidebarVisible,
       }}
       title={title}
     >
@@ -228,6 +234,7 @@ export default compose(
   withState('feedbackSpeed', 'setFeedbackSpeed', null),
   withState('questionActiveOption', 'setQuestionActiveOption', -1),
   withState('sidebarActiveItem', 'setSidebarActiveItem', 'activeQuestion'),
+  withState('sidebarVisible', 'setSidebarVisible', false),
   withHandlers({
     // handle value change for difficulty
     handleFeedbackDifficultyChange: ({ setFeedbackDifficulty }) => newValue =>
@@ -246,8 +253,17 @@ export default compose(
       setQuestionCollapsed(prevState => !prevState),
 
     // handle a change in the active sidebar item
-    handleSidebarActiveItemChange: ({ setSidebarActiveItem }) => (sidebarItem) => {
+    handleSidebarActiveItemChange: ({
+      setSidebarActiveItem,
+      setSidebarVisible,
+    }) => sidebarItem => () => {
       setSidebarActiveItem(sidebarItem)
+      setSidebarVisible(false)
+    },
+
+    // handle toggling the sidebar visibility
+    handleToggleSidebarVisible: ({ setSidebarVisible }) => () => {
+      setSidebarVisible(prevState => !prevState)
     },
   }),
 )(Session)

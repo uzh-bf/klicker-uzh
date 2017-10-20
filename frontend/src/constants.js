@@ -1,3 +1,5 @@
+export const SemanticVersion = '2.2.13'
+
 export const SessionStatus = {
   COMPLETED: 'COMPLETED',
   CREATED: 'CREATED',
