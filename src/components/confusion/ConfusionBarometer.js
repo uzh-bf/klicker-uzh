@@ -72,6 +72,8 @@ const ConfusionBarometer = ({
     )}
 
     <style jsx>{`
+      @import 'src/theme';
+
       .confusionBarometer {
         display: flex;
         flex-direction: column;
@@ -94,7 +96,7 @@ const ConfusionBarometer = ({
         padding: 1rem;
       }
 
-      @media all and (min-width: 768px) {
+      @include desktop-tablet-only {
         .confusionSection {
           padding: 0.5rem;
         }

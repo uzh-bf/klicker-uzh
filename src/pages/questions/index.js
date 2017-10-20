@@ -119,6 +119,8 @@ const Index = ({
       </div>
 
       <style jsx>{`
+        @import 'src/theme';
+
         .questionPool {
           display: flex;
           flex-direction: column;
@@ -138,7 +140,7 @@ const Index = ({
           justify-items: flex-end;
         }
 
-        @media all and (min-width: 768px) {
+        @include desktop-tablet-only {
           .questionPool {
             flex-flow: row wrap;
 
@@ -157,7 +159,7 @@ const Index = ({
           }
         }
 
-        @media all and (min-width: 991px) {
+        @include desktop-only {
           .questionPool {
             padding: 2rem 10% 2rem 2rem;
           }

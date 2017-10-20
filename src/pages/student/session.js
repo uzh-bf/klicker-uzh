@@ -156,6 +156,8 @@ const Session = ({
         </div>
 
         <style jsx>{`
+          @import 'src/theme';
+
           .student {
             display: flex;
           }
@@ -197,7 +199,7 @@ const Session = ({
             margin-right: 0;
           }
 
-          @media all and (min-width: 768px) {
+          @include desktop-tablet-only {
             .questionArea,
             .feedbackArea {
               display: flex;

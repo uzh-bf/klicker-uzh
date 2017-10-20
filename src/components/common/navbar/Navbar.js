@@ -66,6 +66,8 @@ export const NavbarPres = ({
     </div>
 
     <style jsx>{`
+      @import 'src/theme';
+
       .navbar {
         display: flex;
         align-items: center;
@@ -91,7 +93,7 @@ export const NavbarPres = ({
           padding: 1rem;
           padding-top: 0.5rem;
 
-          @media all and (min-width: 991px) {
+          @include desktop-only {
             padding: 0.2rem 3rem;
           }
         }
@@ -100,7 +102,7 @@ export const NavbarPres = ({
           display: none;
         }
 
-        @media all and (min-width: 768px) {
+        @include desktop-tablet-only {
           flex-wrap: nowrap;
 
           .sideArea {

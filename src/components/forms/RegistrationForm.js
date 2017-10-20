@@ -139,6 +139,8 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
     </div>
 
     <style jsx>{`
+      @import 'src/theme';
+
       .form {
         display: flex;
         flex-direction: column;
@@ -147,7 +149,7 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
         margin-top: 1rem;
       }
 
-      @media all and (min-width: 768px) {
+      @include desktop-tablet-only {
         .form {
           flex-flow: row wrap;
         }
@@ -164,7 +166,7 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
         }
       }
 
-      @media all and (min-width: 991px) {
+      @include desktop-only {
         .form {
           border: 1px solid lightgrey;
           padding: 1rem;

@@ -39,6 +39,8 @@ const Registration = ({
       <RegistrationForm intl={intl} onSubmit={handleSubmit} />
 
       <style jsx>{`
+        @import 'src/theme';
+
         .registration {
           padding: 1rem;
         }
@@ -50,13 +52,13 @@ const Registration = ({
           font-weight: bold;
         }
         .errorMessage {
-          color: red;
+          color: $color-error;
         }
         .successMessage {
-          color: green;
+          color: $color-success;
         }
 
-        @media all and (min-width: 991px) {
+        @include desktop-tablet-only {
           .registration {
             margin: 0 15%;
           }

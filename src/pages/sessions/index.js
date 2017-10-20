@@ -51,17 +51,19 @@ const Index = ({
     </div>
 
     <style jsx>{`
+      @import 'src/theme';
+
       .sessionHistory {
         padding: 1rem 0.7rem;
       }
 
-      @media all and (min-width: 768px) {
+      @include desktop-tablet-only {
         .sessionHistory {
           padding: 2rem;
         }
       }
 
-      @media all and (min-width: 991px) {
+      @include desktop-only {
         .sessionHistory {
           padding: 2rem 10%;
         }
