@@ -68,6 +68,8 @@ const SessionTimeline = ({
       />
     </div>
     <style jsx>{`
+      @import 'src/theme';
+
       .sessionTimeline {
         display: flex;
         flex-direction: column;
@@ -114,7 +116,7 @@ const SessionTimeline = ({
         margin-right: 0;
       }
 
-      @media all and (min-width: 768px) {
+      @include desktop-tablet-only {
         .sessionTimeline {
           flex-flow: row wrap;
         }

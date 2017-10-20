@@ -55,6 +55,8 @@ const Sidebar = ({
     </SemanticSidebar.Pushable>
 
     <style jsx>{`
+      @import 'src/theme';
+
       .sidebar {
         display: flex;
         flex-direction: column;
@@ -68,13 +70,13 @@ const Sidebar = ({
         width: 75% !important;
       }
 
-      @media all and (min-width: 768px) {
+      @include desktop-tablet-only {
         :global(.sidebarMenu) {
           width: 20% !important;
         }
       }
 
-      @media all and (min-width: 991px) {
+      @include desktop-only {
         :global(.sidebarMenu) {
           width: 15% !important;
         }

@@ -51,6 +51,8 @@ const FormWithLinks = ({ button, children, links }) => (
     </div>
 
     <style jsx>{`
+      @import 'src/theme';
+
       .form,
       .actionArea {
         display: flex;
@@ -67,7 +69,7 @@ const FormWithLinks = ({ button, children, links }) => (
         margin-right: 0;
       }
 
-      @media all and (min-width: 768px) {
+      @include desktop-tablet-only {
         .actionArea {
           flex-direction: row;
           justify-content: space-between;
@@ -85,7 +87,7 @@ const FormWithLinks = ({ button, children, links }) => (
         }
       }
 
-      @media all and (min-width: 991px) {
+      @include desktop-only {
         .form {
           border: 1px solid lightgrey;
           padding: 1rem;

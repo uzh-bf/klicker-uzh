@@ -1,0 +1,34 @@
+// breakpoints
+$breakpoint-tablet: 768px;
+$breakpoint-desktop: 991px;
+
+// colors
+$color-primary: grey;
+$color-secondary: lightgrey;
+$color-error: red;
+$color-success: green;
+
+// font definitions
+$font-base-mobile: 20px;
+$font-base-tablet: 16px;
+$font-base-desktop: 14px;
+$font-size-h1: 1.3rem;
+$font-size-h2: 1.2rem;
+$font-size-h3: 1.1rem;
+
+// mixins
+@mixin desktop-only {
+  @media screen and (min-width: $breakpoint-desktop) {
+    @content;
+  }
+}
+@mixin desktop-tablet-only {
+  @media screen and (min-width: $breakpoint-tablet) {
+    @content;
+  }
+}
+@mixin mobile-only {
+  @media screen and (max-width: $breakpoint-mobile) {
+    @content;
+  }
+}

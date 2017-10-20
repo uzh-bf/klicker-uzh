@@ -73,6 +73,8 @@ const FeedbackChannel = ({
     )}
 
     <style jsx>{`
+      @import 'src/theme';
+
       .feedbackChannel {
         display: flex;
         flex-direction: column;
@@ -100,7 +102,7 @@ const FeedbackChannel = ({
         margin-bottom: 1rem;
       }
 
-      @media all and (min-width: 768px) {
+      @include desktop-tablet-only {
         .feedbackChannel {
           flex-flow: row wrap;
         }
