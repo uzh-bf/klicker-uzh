@@ -143,7 +143,7 @@ export default compose(
   }),
   // TODO: get rid of this branch?
   branch(
-    ({ data }) => data.loading || !data.user,
+    ({ data }) => data.loading || !data.runningSession,
     renderComponent(({ intl }) => (
       <LoadingTeacherLayout intl={intl} pageId="runningSession" title="Running Session" />
     )),
@@ -156,7 +156,7 @@ export default compose(
         // run the mutation
         await mutate({
           refetchQueries: [{ query: RunningSessionQuery }],
-          variables: { id: data.user.runningSession.id },
+          variables: { id: data.runningSession.id },
         })
 
         // redirect to the question pool
@@ -172,7 +172,7 @@ export default compose(
     handleUpdateSettings: ({ data, mutate }) => ({ settings }) => async () => {
       try {
         await mutate({
-          variables: { sessionId: data.user.runningSession.id, settings },
+          variables: { sessionId: data.runningSession.id, settings },
         })
       } catch ({ message }) {
         console.error(message)
@@ -181,6 +181,6 @@ export default compose(
   }),
   // flatten out the relevant data props
   withProps(({ data }) => ({
-    ...data.user.runningSession,
+    ...data.runningSession,
   })),
 )(Running)

@@ -62,38 +62,53 @@ export const SessionListQuery = gql`
 // Used in: RunningSession
 export const RunningSessionQuery = gql`
   {
-    user {
+    runningSession {
       id
-      runningSession {
+      confusionTS {
+        difficulty
+        speed
+        createdAt
+      }
+      feedbacks {
         id
-        confusionTS {
-          difficulty
-          speed
-          createdAt
-        }
-        feedbacks {
+        content
+        votes
+        createdAt
+      }
+      blocks {
+        id
+        status
+        instances {
           id
-          content
-          votes
-          createdAt
-        }
-        blocks {
-          id
-          status
-          instances {
+          question {
             id
-            question {
-              id
-              title
-              type
-            }
+            title
+            type
           }
         }
-        settings {
-          isConfusionBarometerActive
-          isFeedbackChannelActive
-          isFeedbackChannelPublic
-        }
+      }
+      settings {
+        isConfusionBarometerActive
+        isFeedbackChannelActive
+        isFeedbackChannelPublic
+      }
+    }
+  }
+`
+
+// Used in: Evaluation
+export const SessionEvaluationQuery = gql`
+  {
+    activeInstance {
+      id
+      question {
+        title
+        type
+      }
+      responses {
+        id
+        value
+        createdAt
       }
     }
   }
@@ -111,7 +126,3 @@ export const AccountSummaryQuery = gql`
     }
   }
 `
-
-/* export const ActiveInstanceQuery = gql`
-
-` */
