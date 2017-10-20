@@ -1,13 +1,10 @@
-import React, { Component } from 'react'
+import React from 'react'
 import PropTypes from 'prop-types'
-import { Helmet } from 'react-helmet'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Checkbox } from 'semantic-ui-react'
 
-import { createLinks, initLogging } from '../../lib'
-import Possibilities from '../evaluation/Possibilities'
+import { CommonLayout } from '.'
 import VisualizationType from '../evaluation/VisualizationType'
-import { SemanticVersion } from '../../constants'
 
 const propTypes = {
   children: PropTypes.element.isRequired,
@@ -32,161 +29,139 @@ const defaultProps = {
   pageTitle: 'EvaluationLayout',
 }
 
-class EvaluationLayout extends Component {
-  state = {}
+const EvaluationLayout = ({
+  intl,
+  pageTitle,
+  onToggleShowSolution,
+  chart,
+  title,
+  type,
+  description,
+  visualizationType,
+  onChangeVisualizationType,
+  options,
+}) => (
+  <CommonLayout baseFontSize="22px" pageTitle={pageTitle}>
+    <div className="evaluationLayout">
+      <div className="questionDetails">
+        <h1>{title}</h1>
+        <p>{description}</p>
+      </div>
+      <div className="info">
+        <FormattedMessage
+          defaultMessage="Total responses:"
+          id="teacher.evaluation.totalResponses.label"
+        />
+        {}
+      </div>
+      <div className="chart">{chart}</div>
+      <div className="settings">
+        <Checkbox
+          toggle
+          label={intl.formatMessage({
+            defaultMessage: 'Show solution',
+            id: 'teacher.evaluation.showSolution.label',
+          })}
+          onChange={onToggleShowSolution}
+        />
+      </div>
+      <div className="chartType">
+        <VisualizationType
+          intl={intl}
+          onChangeType={onChangeVisualizationType}
+          type={type}
+          visualization={visualizationType}
+        />
+      </div>
+      <div className="optionDisplay">
+        <h2>Options</h2>
+        {options}
+      </div>
 
-  componentWillMount() {
-    // initialize sentry and logrocket (if appropriately configured)
-    initLogging()
-  }
+      <style jsx>{`
+        @import 'src/theme';
 
-  render() {
-    const {
-      intl,
-      pageTitle,
-      onToggleShowSolution,
-      children,
-      title,
-      type,
-      description,
-      visualizationType,
-      onChangeVisualizationType,
-      choices,
-    } = this.props
+        .evaluationLayout {
+          @supports (grid-gap: 1rem) {
+            @include desktop-tablet-only {
+              display: grid;
 
-    return (
-      <div className="evaluationLayout">
-        <Helmet defer={false}>
-          {createLinks([
-            'https://fonts.googleapis.com/css?family=Open Sans',
-            `https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/${SemanticVersion}/semantic.min.css`,
-          ])}
-          <title>{pageTitle}</title>
-        </Helmet>
+              grid-template-columns: auto 17rem;
+              grid-template-rows: minmax(auto, 2rem) auto 10rem 5rem;
+              grid-template-areas: 'questionDetails questionDetails' 'graph optionDisplay'
+                'graph settings' 'info chartType';
 
-        <div className="questionDetails">
-          <h1>{title}</h1>
-          <p>{description}</p>
-        </div>
-        <div className="chart">{children}</div>
-        <div className="settings">
-          <Checkbox
-            toggle
-            label={intl.formatMessage({
-              defaultMessage: 'Show solution',
-              id: 'teacher.evaluation.showSolution.label',
-            })}
-            onChange={onToggleShowSolution}
-          />
-        </div>
-        <div className="chartType">
-          <VisualizationType
-            intl={intl}
-            onChangeType={onChangeVisualizationType}
-            type={type}
-            visualization={visualizationType}
-          />
-        </div>
-        <div className="optionDisplay">
-          <h2>
-            <FormattedMessage
-              id="teacher.evaluation.possibilities.title"
-              defaultMessage="Possibilities"
-            />
-          </h2>
-          <Possibilities intl={intl} choices={choices} />
-        </div>
+              height: 100vh;
 
-        <style jsx global>{`
-          * {
-            font-family: 'Open Sans', sans-serif;
-          }
+              .questionDetails {
+                grid-area: questionDetails;
+                align-self: start;
 
-          html {
-            font-size: 22px !important;
-          }
+                background-color: lightgrey;
+                border-bottom: 1px solid grey;
+                padding: 1rem;
+                text-align: left;
 
-          body {
-            font-size: 1rem !important;
-          }
-        `}</style>
-
-        <style jsx>{`
-          @import 'src/theme';
-
-          .evaluationLayout {
-            @supports (grid-gap: 1rem) {
-              @include desktop-tablet-only {
-                display: grid;
-
-                grid-template-columns: auto 17rem;
-                grid-template-rows: minmax(auto, 2rem) auto 10rem 5rem;
-                grid-template-areas: 'questionDetails questionDetails' 'graph optionDisplay'
-                  'graph settings' 'info chartType';
-
-                height: 100vh;
-
-                .questionDetails {
-                  grid-area: questionDetails;
-                  align-self: start;
-
-                  background-color: lightgrey;
-                  border-bottom: 1px solid grey;
-                  padding: 1rem;
-                  text-align: left;
-
-                  h1 {
-                    font-size: 1.5rem;
-                    line-height: 1.5rem;
-                    margin-bottom: 0.5rem;
-                  }
+                h1 {
+                  font-size: 1.5rem;
+                  line-height: 1.5rem;
+                  margin-bottom: 0.5rem;
                 }
+              }
 
-                .chart {
-                  grid-area: graph;
+              .chart {
+                grid-area: graph;
 
-                  padding: 1rem;
+                padding: 1rem;
 
-                  :global(> *) {
-                    border: 1px solid lightgrey;
-                  }
+                :global(> *) {
+                  border: 1px solid lightgrey;
                 }
+              }
 
-                .chartType,
-                .optionDisplay,
-                .settings {
-                  padding: 1rem;
+              .chartType,
+              .optionDisplay,
+              .settings,
+              .info {
+                padding: 1rem;
+              }
+
+              .info {
+                grid-area: info;
+
+                align-self: center;
+                padding-top: 0;
+              }
+
+              .chartType {
+                grid-area: chartType;
+
+                align-self: center;
+                padding-top: 0;
+              }
+
+              .optionDisplay {
+                grid-area: optionDisplay;
+
+                h2 {
+                  font-size: 1.5rem;
+                  line-height: 1.5rem;
+                  margin-bottom: 0.5rem;
                 }
+              }
 
-                .chartType {
-                  grid-area: chartType;
+              .settings {
+                grid-area: settings;
 
-                  align-self: center;
-                }
-
-                .optionDisplay {
-                  grid-area: optionDisplay;
-
-                  h2 {
-                    font-size: 1.5rem;
-                    line-height: 1.5rem;
-                    margin-bottom: 0.5rem;
-                  }
-                }
-
-                .settings {
-                  grid-area: settings;
-
-                  align-self: end;
-                }
+                align-self: end;
               }
             }
           }
-        `}</style>
-      </div>
-    )
-  }
-}
+        }
+      `}</style>
+    </div>
+  </CommonLayout>
+)
 
 EvaluationLayout.propTypes = propTypes
 EvaluationLayout.defaultProps = defaultProps
