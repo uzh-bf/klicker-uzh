@@ -1,13 +1,12 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
 import { BarChart, PieChart } from '.'
 
 // TODO
 const propTypes = {
   handleShowGraph: PropTypes.func.isRequired,
-  intl: intlShape.isRequired,
   results: PropTypes.shape({
     options: PropTypes.arrayOf({
       correct: PropTypes.bool,
@@ -30,7 +29,7 @@ const defaultProps = {
 
 // TODO default value
 const Chart = ({
-  intl, handleShowGraph, results, showGraph, showSolution, visualization,
+  handleShowGraph, results, showGraph, showSolution, visualization,
 }) => {
   const getChart = () => {
     // if the chart display has not already been toggled

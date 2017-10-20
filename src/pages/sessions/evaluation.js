@@ -49,20 +49,20 @@ const Evaluation = ({
   )
 
   const layoutProps = {
+    chart,
+    description: data.version.description,
+    intl,
+    onChangeVisualizationType: handleChangeVisualizationType,
+    onToggleShowSolution: handleToggleShowSolution,
+    options,
     pageTitle: intl.formatMessage({
       defaultMessage: 'Evaluation',
       id: 'teacher.evaluation.pageTitle',
     }),
-    intl,
-    title: data.question.title,
-    description: data.version.description,
-    type: data.question.type,
     showSolution,
+    title: data.question.title,
+    type: data.question.type,
     visualizationType,
-    onToggleShowSolution: handleToggleShowSolution,
-    onChangeVisualizationType: handleChangeVisualizationType,
-    chart,
-    options,
   }
 
   return <EvaluationLayout {...layoutProps} />

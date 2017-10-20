@@ -7,7 +7,7 @@ import { CommonLayout } from '.'
 import VisualizationType from '../evaluation/VisualizationType'
 
 const propTypes = {
-  children: PropTypes.element.isRequired,
+  chart: PropTypes.element.isRequired,
   choices: PropTypes.arrayOf(
     PropTypes.shape({
       correct: PropTypes.bool,
@@ -18,6 +18,7 @@ const propTypes = {
   intl: intlShape.isRequired,
   onChangeVisualizationType: PropTypes.func.isRequired,
   onToggleShowSolution: PropTypes.func.isRequired,
+  options: PropTypes.object.isRequired,
   pageTitle: PropTypes.string,
   title: PropTypes.string.isRequired,
   type: PropTypes.string.isRequired,

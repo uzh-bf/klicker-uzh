@@ -21,10 +21,12 @@ const propTypes = {
   handleQuestionActiveOptionChange: PropTypes.func.isRequired,
   handleQuestionCollapsedToggle: PropTypes.func.isRequired,
   handleSidebarActiveItemChange: PropTypes.func.isRequired,
+  handleToggleSidebarVisible: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   questionActiveOption: PropTypes.number.isRequired,
   questionCollapsed: PropTypes.bool.isRequired,
   sidebarActiveItem: PropTypes.string.isRequired,
+  sidebarVisible: PropTypes.bool.isRequired,
 }
 
 const Session = ({
