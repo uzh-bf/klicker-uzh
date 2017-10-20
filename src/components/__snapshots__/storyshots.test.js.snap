@@ -529,9 +529,9 @@ exports[`Storyshots confusion ConfusionSlider 1`] = `
 </div>
 `;
 
-exports[`Storyshots evaluations Graph 1`] = `
+exports[`Storyshots evaluation/components Chart 1`] = `
 <div
-  className="jsx-464345458 graph"
+  className="jsx-3934556491 chart"
 >
   <button
     className="ui button showGraphButton"
@@ -544,44 +544,74 @@ exports[`Storyshots evaluations Graph 1`] = `
       Show Graph
     </span>
   </button>
-  <div
-    className="jsx-464345458"
-  >
-    This type of graph is not implemented yet!
+</div>
+`;
+
+exports[`Storyshots evaluation/components Possibilities (FREE) 1`] = `
+<div
+  className="jsx-94025046 possibilities"
+>
+  <div>
+    10
+    -
+    20
   </div>
 </div>
 `;
 
-exports[`Storyshots evaluations Possibilities 1`] = `
+exports[`Storyshots evaluation/components Possibilities (SC) 1`] = `
 <div
-  className="jsx-37351210 visualization"
+  className="jsx-94025046 possibilities"
 >
-  <h2
-    className="jsx-37351210"
+  <div
+    className="ui list"
+    role="list"
   >
-    <span>
-      Possibilities
-    </span>
-  </h2>
+    <div
+      className="item"
+      data-value={undefined}
+      onClick={[Function]}
+      role="listitem"
+    >
+      This is the first possible answer
+    </div>
+    <div
+      className="item"
+      data-value={undefined}
+      onClick={[Function]}
+      role="listitem"
+    >
+      This is the second possible answer
+    </div>
+    <div
+      className="item"
+      data-value={undefined}
+      onClick={[Function]}
+      role="listitem"
+    >
+      This is the third possible answer
+    </div>
+    <div
+      className="item"
+      data-value={undefined}
+      onClick={[Function]}
+      role="listitem"
+    >
+      This is the fourth possible answer
+    </div>
+  </div>
 </div>
 `;
 
-exports[`Storyshots evaluations Visualization 1`] = `
+exports[`Storyshots evaluation/components Visualization 1`] = `
 <div
   className="jsx-704040651 visualization"
 >
-  <h2
-    className="jsx-704040651"
-  >
-    <span>
-      Visualization
-    </span>
-  </h2>
   <div
     aria-busy={undefined}
     aria-disabled={undefined}
     aria-expanded={false}
-    className="ui search selection dropdown"
+    className="ui search selection upward dropdown"
     onBlur={[Function]}
     onChange={[Function]}
     onClick={[Function]}
@@ -669,6 +699,32 @@ exports[`Storyshots evaluations Visualization 1`] = `
           className="text"
         >
           Bar Chart
+        </span>
+      </div>
+      <div
+        aria-checked={false}
+        aria-disabled={undefined}
+        aria-selected={false}
+        className="item"
+        onClick={[Function]}
+        role="option"
+        style={
+          Object {
+            "pointerEvents": "all",
+          }
+        }
+        withinType={
+          Array [
+            "SC",
+            "MC",
+            "FREE",
+          ]
+        }
+      >
+        <span
+          className="text"
+        >
+          Table
         </span>
       </div>
     </div>
@@ -1518,323 +1574,6 @@ exports[`Storyshots forms/helpers SemanticInput 1`] = `
     className="jsx-1447640616 "
     placeholder="label"
   />
-</div>
-`;
-
-exports[`Storyshots layouts EvaluationLayout 1`] = `
-<div
-  className="jsx-1638827600 evaluationLayout"
->
-  <div
-    className="jsx-1638827600 box title"
-  >
-    <h1
-      className="jsx-1638827600"
-    >
-      some title
-    </h1>
-  </div>
-  <div
-    className="jsx-1638827600 box questionText"
-  >
-    asdasd asd asd  asdasdasdasd
-  </div>
-  <hr
-    className="jsx-1638827600"
-  />
-  <div
-    className="jsx-1638827600 box graph"
-  />
-  <div
-    className="jsx-1638827600 box sampleSolution"
-  >
-    <h2
-      className="jsx-1638827600"
-    >
-      <span>
-        Sample Solution
-      </span>
-    </h2>
-    <div
-      className="ui toggle checkbox"
-      onChange={[Function]}
-      onClick={[Function]}
-      onMouseDown={[Function]}
-    >
-      <input
-        checked={false}
-        className="hidden"
-        name={undefined}
-        readOnly={true}
-        tabIndex={0}
-        type="checkbox"
-        value={undefined}
-      />
-      <label>
-        Show
-      </label>
-    </div>
-  </div>
-  <div
-    className="jsx-1638827600 box visualization"
-  >
-    <div
-      className="jsx-704040651 visualization"
-    >
-      <h2
-        className="jsx-704040651"
-      >
-        <span>
-          Visualization
-        </span>
-      </h2>
-      <div
-        aria-busy={undefined}
-        aria-disabled={undefined}
-        aria-expanded={false}
-        className="ui search selection dropdown"
-        onBlur={[Function]}
-        onChange={[Function]}
-        onClick={[Function]}
-        onFocus={[Function]}
-        onMouseDown={[Function]}
-        role="combobox"
-        tabIndex={undefined}
-      >
-        <input
-          aria-autocomplete="list"
-          autoComplete="off"
-          className="search"
-          onChange={[Function]}
-          style={
-            Object {
-              "width": undefined,
-            }
-          }
-          tabIndex={0}
-          type="text"
-          value=""
-        />
-        <div
-          aria-live="polite"
-          className="default text"
-          role="alert"
-        >
-          Visualization
-        </div>
-        <i
-          aria-hidden="true"
-          className="dropdown icon"
-          onClick={[Function]}
-        />
-        <div
-          aria-multiselectable={undefined}
-          className="menu transition"
-          role="listbox"
-        >
-          <div
-            aria-checked={false}
-            aria-disabled={undefined}
-            aria-selected={true}
-            className="selected item"
-            onClick={[Function]}
-            role="option"
-            style={
-              Object {
-                "pointerEvents": "all",
-              }
-            }
-            withinType={
-              Array [
-                "SC",
-                "MC",
-              ]
-            }
-          >
-            <span
-              className="text"
-            >
-              Pie Chart
-            </span>
-          </div>
-          <div
-            aria-checked={false}
-            aria-disabled={undefined}
-            aria-selected={false}
-            className="item"
-            onClick={[Function]}
-            role="option"
-            style={
-              Object {
-                "pointerEvents": "all",
-              }
-            }
-            withinType={
-              Array [
-                "SC",
-                "MC",
-              ]
-            }
-          >
-            <span
-              className="text"
-            >
-              Bar Chart
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div
-    className="jsx-1638827600 box possibilities"
-  >
-    <div
-      className="jsx-37351210 visualization"
-    >
-      <h2
-        className="jsx-37351210"
-      >
-        <span>
-          Possibilities
-        </span>
-      </h2>
-    </div>
-  </div>
-</div>
-`;
-
-exports[`Storyshots layouts StaticLayout 1`] = `
-<div
-  className="jsx-980208132 staticLayout"
->
-  <div
-    className="jsx-980208132 content"
-  >
-    some static content
-  </div>
-  <footer
-    className="jsx-980208132"
-  >
-    © IBF
-  </footer>
-</div>
-`;
-
-exports[`Storyshots layouts StudentLayout 1`] = `
-<div
-  className="jsx-3738437786 studentLayout"
->
-  <div
-    className="jsx-3738437786 header"
-  >
-    <button
-      className="ui basic icon button"
-      disabled={undefined}
-      onClick={[Function]}
-      role="button"
-      tabIndex={undefined}
-    >
-      <i
-        aria-hidden="true"
-        className="content icon"
-      />
-    </button>
-    <h1
-      className="jsx-3738437786"
-    >
-      title
-    </h1>
-  </div>
-  <div
-    className="jsx-3738437786 content"
-  >
-    <div
-      className="jsx-4218096801 sidebar"
-    >
-      <div
-        className="pushable"
-      >
-        <div
-          className="ui vertical labeled icon ui overlay left wide visible sidebar sidebarMenu menu"
-        >
-          <a
-            className="item"
-            onClick={[Function]}
-          >
-            <span>
-              Active Question
-            </span>
-          </a>
-          <a
-            className="item"
-            onClick={[Function]}
-          >
-            <span>
-              Feedback-Channel
-            </span>
-          </a>
-        </div>
-        <div
-          className="pusher"
-        >
-          some student content
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-`;
-
-exports[`Storyshots layouts TeacherLayout 1`] = `
-<div
-  className="jsx-960068550 teacherLayout"
->
-  <div
-    className="jsx-960068550 content"
-  >
-    <div
-      className="jsx-4218096801 sidebar"
-    >
-      <div
-        className="pushable"
-      >
-        <div
-          className="ui vertical labeled icon ui overlay left wide visible sidebar sidebarMenu menu"
-        >
-          <a
-            className="active item"
-            onClick={[Function]}
-          >
-            <span>
-              Question Pool
-            </span>
-          </a>
-          <a
-            className="item"
-            onClick={[Function]}
-          >
-            <span>
-              Session History
-            </span>
-          </a>
-          <a
-            className="item"
-            onClick={[Function]}
-          >
-            <span>
-              Running Session
-            </span>
-          </a>
-        </div>
-        <div
-          className="pusher"
-        >
-          some teacher content
-        </div>
-      </div>
-    </div>
-  </div>
 </div>
 `;
 

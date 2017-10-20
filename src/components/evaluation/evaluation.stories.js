@@ -8,7 +8,7 @@ import { Chart, Possibilities, VisualizationType, BarChart, PieChart } from '.'
 import { intlMock } from '../../../.storybook/utils'
 
 const results = {
-  options: [
+  choices: [
     { correct: false, name: 'option 1', numberOfVotes: 56 },
     {
       correct: true,
@@ -20,23 +20,41 @@ const results = {
   totalResponses: 409,
 }
 
-storiesOf('evaluations', module)
-  .add('Possibilities', () => (
+storiesOf('evaluation/components', module)
+  .add('Possibilities (SC)', () => (
     <Possibilities
       intl={intlMock}
-      options={[
-        { text: 'This is the first possible answer' },
-        { text: 'This is the second possible answer' },
-        { text: 'This is the third possible answer' },
-        { text: 'This is the fourth possible answer' },
-      ]}
+      questionOptions={{
+        choices: [
+          { name: 'This is the first possible answer' },
+          { name: 'This is the second possible answer' },
+          { name: 'This is the third possible answer' },
+          { name: 'This is the fourth possible answer' },
+        ],
+      }}
+      questionType="SC"
+    />
+  ))
+  .add('Possibilities (FREE)', () => (
+    <Possibilities
+      intl={intlMock}
+      questionOptions={{
+        restrictions: {
+          max: 20,
+          min: 10,
+          type: 'RANGE',
+        },
+      }}
+      questionType="FREE"
     />
   ))
   .add('Visualization', () => (
     <VisualizationType intl={intlMock} onChangeType={console.log('State changed')} type="SC" />
   ))
   .add('Chart', () => <Chart />)
-  .add('BarChart', () => <BarChart results={results} />)
-  .add('PieChart', () => <PieChart results={results} />)
-  .add('BarChart (with solution)', () => <BarChart isSolutionShown results={results} />)
-  .add('PieChart (with solution)', () => <PieChart isSolutionShown results={results} />)
+
+storiesOf('evaluation/charts', module)
+  .add('BarChart [NoTest]', () => <BarChart results={results} />)
+  .add('BarChart (with solution) [NoTest]', () => <BarChart isSolutionShown results={results} />)
+  .add('PieChart [NoTest]', () => <PieChart results={results} />)
+  .add('PieChart (with solution) [NoTest]', () => <PieChart isSolutionShown results={results} />)
