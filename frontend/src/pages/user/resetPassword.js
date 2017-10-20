@@ -27,6 +27,8 @@ const ResetPassword = ({ intl, handleSubmit }) => (
       <PasswordResetForm intl={intl} onSubmit={handleSubmit} />
 
       <style jsx>{`
+        @import 'src/theme';
+
         .login {
           padding: 1rem;
         }
@@ -34,7 +36,7 @@ const ResetPassword = ({ intl, handleSubmit }) => (
           margin-top: 0;
         }
 
-        @media all and (min-width: 991px) {
+        @include desktop-tablet-only {
           .login {
             margin: 0 15%;
           }

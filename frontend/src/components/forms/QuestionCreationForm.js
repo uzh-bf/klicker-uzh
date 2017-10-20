@@ -148,6 +148,8 @@ const QuestionCreationForm = ({
       </Form>
 
       <style jsx>{`
+        @import 'src/theme';
+
         .questionCreationForm > :global(form) {
           display: flex;
           flex-direction: column;
@@ -165,7 +167,7 @@ const QuestionCreationForm = ({
         }
 
         @supports (grid-gap: 1rem) {
-          @media all and (min-width: 768px) {
+          @include desktop-tablet-only {
             .questionCreationForm > :global(form) {
               display: grid;
 
@@ -208,7 +210,7 @@ const QuestionCreationForm = ({
             }
           }
 
-          @media all and (min-width: 991px) {
+          @include desktop-only {
             .questionCreationForm > :global(form) {
               margin: 0 20%;
               padding: 1rem 0;

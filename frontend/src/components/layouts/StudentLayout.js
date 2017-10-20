@@ -104,6 +104,8 @@ class StudentLayout extends React.Component {
         `}</style>
 
         <style jsx>{`
+          @import 'src/theme';
+
           .studentLayout {
             display: flex;
             flex-direction: column;
@@ -133,7 +135,7 @@ class StudentLayout extends React.Component {
             display: flex;
           }
 
-          @media all and (min-width: 768px) {
+          @include desktop-tablet-only {
             .header {
               display: none;
             }

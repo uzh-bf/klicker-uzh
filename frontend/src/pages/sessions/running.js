@@ -85,6 +85,8 @@ const Running = ({
     </div>
 
     <style jsx>{`
+      @import 'src/theme';
+
       .runningSession {
         display: flex;
         flex-direction: column;
@@ -100,7 +102,7 @@ const Running = ({
         margin-bottom: 1rem;
       }
 
-      @media all and (min-width: 768px) {
+      @include desktop-tablet-only {
         .runningSession {
           flex-flow: row wrap;
 
@@ -121,7 +123,7 @@ const Running = ({
         }
       }
 
-      @media all and (min-width: 991px) {
+      @include desktop-only {
         .runningSession {
           padding: 2rem 10%;
         }
