@@ -57,6 +57,8 @@ const Session = ({
     </div>
 
     <style jsx>{`
+      @import 'src/theme';
+
       .session,
       .details {
         display: flex;
@@ -76,7 +78,7 @@ const Session = ({
         margin: auto;
       }
 
-      @media all and (min-width: 768px) {
+      @include desktop-tablet-only {
         .session,
         .details {
           flex-flow: row wrap;

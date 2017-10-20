@@ -69,6 +69,8 @@ const Question = ({
       </div>
 
       <style jsx>{`
+        @import 'src/theme';
+
         .question {
           display: flex;
           flex-flow: column nowrap;
@@ -109,7 +111,7 @@ const Question = ({
             }
           }
 
-          @media all and (min-width: 768px) {
+          @include desktop-tablet-only {
             flex-flow: row wrap;
 
             .sessionMembership {

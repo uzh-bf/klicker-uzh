@@ -34,6 +34,8 @@ const Login = ({ intl, error, handleSubmit }) => (
       <LoginForm intl={intl} onSubmit={handleSubmit} />
 
       <style jsx>{`
+        @import 'src/theme';
+
         .login {
           padding: 1rem;
         }
@@ -45,13 +47,13 @@ const Login = ({ intl, error, handleSubmit }) => (
           font-weight: bold;
         }
         .errorMessage {
-          color: red;
+          color: $color-error;
         }
         .successMessage {
-          color: green;
+          color: $color-success;
         }
 
-        @media all and (min-width: 991px) {
+        @include screen-tablet-only {
           .login {
             margin: 0 15%;
           }
