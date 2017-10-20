@@ -23,15 +23,15 @@ const defaultProps = {
 
 const BarChart = ({ isSolutionShown, results }) => (
   <ResponsiveContainer width="80%">
-    <BarChartComponent data={results.options}>
+    <BarChartComponent data={results.choices}>
       <XAxis dataKey="name" />
       <YAxis />
       <CartesianGrid strokeDasharray="3 3" />
       <Tooltip />
       <Legend />
       <Bar dataKey="numberOfVotes">
-        {results.options.map(option => (
-          <Cell key={option.id} fill={isSolutionShown && option.correct ? '#00FF00' : '#8884d8'} />
+        {results.choices.map(choice => (
+          <Cell key={choice.id} fill={isSolutionShown && choice.correct ? '#00FF00' : '#8884d8'} />
         ))}
       </Bar>
     </BarChartComponent>

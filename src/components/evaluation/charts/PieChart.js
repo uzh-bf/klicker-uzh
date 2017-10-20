@@ -14,9 +14,9 @@ const defaultProps = {
 const PieChart = ({ isSolutionShown, results }) => (
   <ResponsiveContainer>
     <PieChartComponent>
-      <Pie label data={results.options} valueKey="numberOfVotes" fill="#8884d8">
-        {results.options.map(option => (
-          <Cell key={option.id} fill={isSolutionShown && option.correct ? '#00FF00' : '#8884d8'} />
+      <Pie label data={results.choices} valueKey="numberOfVotes" fill="#8884d8">
+        {results.choices.map(choice => (
+          <Cell key={choice.id} fill={isSolutionShown && choice.correct ? '#00FF00' : '#8884d8'} />
         ))}
       </Pie>
     </PieChartComponent>
