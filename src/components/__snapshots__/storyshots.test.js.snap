@@ -529,6 +529,173 @@ exports[`Storyshots confusion ConfusionSlider 1`] = `
 </div>
 `;
 
+exports[`Storyshots evaluation/components Chart 1`] = `
+<div
+  className="jsx-3921678912 chart"
+/>
+`;
+
+exports[`Storyshots evaluation/components Info 1`] = `
+<div
+  className="jsx-565540709 info"
+>
+  <span>
+    Total responses:
+  </span>
+   
+  0
+</div>
+`;
+
+exports[`Storyshots evaluation/components Possibilities (FREE) 1`] = `
+<div
+  className="jsx-2154886852 possibilities"
+>
+  <h2
+    className="jsx-2154886852"
+  />
+</div>
+`;
+
+exports[`Storyshots evaluation/components Possibilities (SC) 1`] = `
+<div
+  className="jsx-2154886852 possibilities"
+>
+  <h2
+    className="jsx-2154886852"
+  />
+</div>
+`;
+
+exports[`Storyshots evaluation/components Visualization 1`] = `
+<div
+  className="jsx-704040651 visualization"
+>
+  <div
+    aria-busy={undefined}
+    aria-disabled={undefined}
+    aria-expanded={false}
+    className="ui search selection upward dropdown"
+    onBlur={[Function]}
+    onChange={[Function]}
+    onClick={[Function]}
+    onFocus={[Function]}
+    onMouseDown={[Function]}
+    role="combobox"
+    tabIndex={undefined}
+  >
+    <input
+      aria-autocomplete="list"
+      autoComplete="off"
+      className="search"
+      onChange={[Function]}
+      style={
+        Object {
+          "width": undefined,
+        }
+      }
+      tabIndex={0}
+      type="text"
+      value=""
+    />
+    <div
+      aria-live="polite"
+      className="default text"
+      role="alert"
+    >
+      Visualization
+    </div>
+    <i
+      aria-hidden="true"
+      className="dropdown icon"
+      onClick={[Function]}
+    />
+    <div
+      aria-multiselectable={undefined}
+      className="menu transition"
+      role="listbox"
+    >
+      <div
+        aria-checked={false}
+        aria-disabled={undefined}
+        aria-selected={true}
+        className="selected item"
+        onClick={[Function]}
+        role="option"
+        style={
+          Object {
+            "pointerEvents": "all",
+          }
+        }
+        withinType={
+          Array [
+            "SC",
+            "MC",
+          ]
+        }
+      >
+        <span
+          className="text"
+        >
+          Pie Chart
+        </span>
+      </div>
+      <div
+        aria-checked={false}
+        aria-disabled={undefined}
+        aria-selected={false}
+        className="item"
+        onClick={[Function]}
+        role="option"
+        style={
+          Object {
+            "pointerEvents": "all",
+          }
+        }
+        withinType={
+          Array [
+            "SC",
+            "MC",
+          ]
+        }
+      >
+        <span
+          className="text"
+        >
+          Bar Chart
+        </span>
+      </div>
+      <div
+        aria-checked={false}
+        aria-disabled={undefined}
+        aria-selected={false}
+        className="item"
+        onClick={[Function]}
+        role="option"
+        style={
+          Object {
+            "pointerEvents": "all",
+          }
+        }
+        withinType={
+          Array [
+            "SC",
+            "MC",
+            "FREE",
+          ]
+        }
+      >
+        <span
+          className="text"
+        >
+          Table
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
 exports[`Storyshots feedbacks Feedback 1`] = `
 <div
   className="jsx-22459915 feedback"
@@ -1371,140 +1538,6 @@ exports[`Storyshots forms/helpers SemanticInput 1`] = `
     className="jsx-1447640616 "
     placeholder="label"
   />
-</div>
-`;
-
-exports[`Storyshots layouts StaticLayout 1`] = `
-<div
-  className="jsx-980208132 staticLayout"
->
-  <div
-    className="jsx-980208132 content"
-  >
-    some static content
-  </div>
-  <footer
-    className="jsx-980208132"
-  >
-    © IBF
-  </footer>
-</div>
-`;
-
-exports[`Storyshots layouts StudentLayout 1`] = `
-<div
-  className="jsx-3738437786 studentLayout"
->
-  <div
-    className="jsx-3738437786 header"
-  >
-    <button
-      className="ui basic icon button"
-      disabled={undefined}
-      onClick={[Function]}
-      role="button"
-      tabIndex={undefined}
-    >
-      <i
-        aria-hidden="true"
-        className="content icon"
-      />
-    </button>
-    <h1
-      className="jsx-3738437786"
-    >
-      title
-    </h1>
-  </div>
-  <div
-    className="jsx-3738437786 content"
-  >
-    <div
-      className="jsx-4218096801 sidebar"
-    >
-      <div
-        className="pushable"
-      >
-        <div
-          className="ui vertical labeled icon ui overlay left wide visible sidebar sidebarMenu menu"
-        >
-          <a
-            className="item"
-            onClick={[Function]}
-          >
-            <span>
-              Active Question
-            </span>
-          </a>
-          <a
-            className="item"
-            onClick={[Function]}
-          >
-            <span>
-              Feedback-Channel
-            </span>
-          </a>
-        </div>
-        <div
-          className="pusher"
-        >
-          some student content
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-`;
-
-exports[`Storyshots layouts TeacherLayout 1`] = `
-<div
-  className="jsx-960068550 teacherLayout"
->
-  <div
-    className="jsx-960068550 content"
-  >
-    <div
-      className="jsx-4218096801 sidebar"
-    >
-      <div
-        className="pushable"
-      >
-        <div
-          className="ui vertical labeled icon ui overlay left wide visible sidebar sidebarMenu menu"
-        >
-          <a
-            className="active item"
-            onClick={[Function]}
-          >
-            <span>
-              Question Pool
-            </span>
-          </a>
-          <a
-            className="item"
-            onClick={[Function]}
-          >
-            <span>
-              Session History
-            </span>
-          </a>
-          <a
-            className="item"
-            onClick={[Function]}
-          >
-            <span>
-              Running Session
-            </span>
-          </a>
-        </div>
-        <div
-          className="pusher"
-        >
-          some teacher content
-        </div>
-      </div>
-    </div>
-  </div>
 </div>
 `;
 
