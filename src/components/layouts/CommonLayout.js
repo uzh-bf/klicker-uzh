@@ -30,7 +30,7 @@ const CommonLayout = ({ baseFontSize, children, pageTitle }) => (
     {children}
 
     <style jsx global>{`
-      * {
+      *:not(i) {
         font-family: 'Open Sans', sans-serif !important;
       }
 
