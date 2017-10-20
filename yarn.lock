@@ -8557,9 +8557,9 @@ style-loader@^0.18.2:
     loader-utils "^1.0.2"
     schema-utils "^0.3.0"
 
-styled-jsx-plugin-sass@0.1.0:
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/styled-jsx-plugin-sass/-/styled-jsx-plugin-sass-0.1.0.tgz#0173e007d2ea9e6e3924b36b02fa9995e3f95de1"
+styled-jsx-plugin-sass@0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/styled-jsx-plugin-sass/-/styled-jsx-plugin-sass-0.2.0.tgz#18209d7385a551ef37cc7a01accbfcfa725d6752"
 
 styled-jsx@2.1.1:
   version "2.1.1"
