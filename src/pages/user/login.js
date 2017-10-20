@@ -53,7 +53,7 @@ const Login = ({ intl, error, handleSubmit }) => (
           color: $color-success;
         }
 
-        @include screen-tablet-only {
+        @include desktop-tablet-only {
           .login {
             margin: 0 15%;
           }
