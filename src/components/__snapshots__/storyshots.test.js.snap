@@ -532,19 +532,7 @@ exports[`Storyshots confusion ConfusionSlider 1`] = `
 exports[`Storyshots evaluation/components Chart 1`] = `
 <div
   className="jsx-3934556491 chart"
->
-  <button
-    className="ui button showGraphButton"
-    disabled={undefined}
-    onClick={[Function]}
-    role="button"
-    tabIndex={undefined}
-  >
-    <span>
-      Show Graph
-    </span>
-  </button>
-</div>
+/>
 `;
 
 exports[`Storyshots evaluation/components Info 1`] = `
@@ -565,42 +553,7 @@ exports[`Storyshots evaluation/components Possibilities (FREE) 1`] = `
 >
   <h2
     className="jsx-3532866319"
-  >
-    <span>
-      Restrictions
-    </span>
-  </h2>
-  <div
-    className="ui celled list"
-    role="list"
-  >
-    <div
-      className="item"
-      data-value={undefined}
-      onClick={[Function]}
-      role="listitem"
-    >
-      <div
-        className="header"
-      >
-        Minimum
-      </div>
-      10
-    </div>
-    <div
-      className="item"
-      data-value={undefined}
-      onClick={[Function]}
-      role="listitem"
-    >
-      <div
-        className="header"
-      >
-        Maximum
-      </div>
-      20
-    </div>
-  </div>
+  />
 </div>
 `;
 
@@ -610,48 +563,7 @@ exports[`Storyshots evaluation/components Possibilities (SC) 1`] = `
 >
   <h2
     className="jsx-3532866319"
-  >
-    <span>
-      Choices
-    </span>
-  </h2>
-  <div
-    className="ui celled ordered list"
-    role="list"
-  >
-    <div
-      className="item"
-      data-value={undefined}
-      onClick={[Function]}
-      role="listitem"
-    >
-      This is the first possible answer
-    </div>
-    <div
-      className="item"
-      data-value={undefined}
-      onClick={[Function]}
-      role="listitem"
-    >
-      This is the second possible answer
-    </div>
-    <div
-      className="item"
-      data-value={undefined}
-      onClick={[Function]}
-      role="listitem"
-    >
-      This is the third possible answer
-    </div>
-    <div
-      className="item"
-      data-value={undefined}
-      onClick={[Function]}
-      role="listitem"
-    >
-      This is the fourth possible answer
-    </div>
-  </div>
+  />
 </div>
 `;
 

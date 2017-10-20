@@ -30,48 +30,44 @@ const defaultProps = {
 // TODO default value
 const Chart = ({
   handleShowGraph, results, showGraph, showSolution, visualization,
-}) => {
-  const getChart = () => {
-    // if the chart display has not already been toggled
-    if (!showGraph) {
-      return (
-        <Button className="showGraphButton" onClick={handleShowGraph}>
-          <FormattedMessage id="teacher.evaluation.graph.showGraph" defaultMessage="Show Graph" />
-        </Button>
-      )
-    }
+}) => (
+  <div className="chart">
+    {() => {
+      // if the chart display has not already been toggled
+      if (!showGraph) {
+        return (
+          <Button className="showGraphButton" onClick={handleShowGraph}>
+            <FormattedMessage id="teacher.evaluation.graph.showGraph" defaultMessage="Show Graph" />
+          </Button>
+        )
+      }
 
-    // pie charts
-    if (visualization === 'PIE_CHART') {
-      return <PieChart isSolutionShown={showSolution} results={results} />
-    }
+      // pie charts
+      if (visualization === 'PIE_CHART') {
+        return <PieChart isSolutionShown={showSolution} results={results} />
+      }
 
-    // bar charts
-    if (visualization === 'BAR_CHART') {
-      return <BarChart isSolutionShown={showSolution} results={results} />
-    }
+      // bar charts
+      if (visualization === 'BAR_CHART') {
+        return <BarChart isSolutionShown={showSolution} results={results} />
+      }
 
-    // default
-    return <div>This type of graph is not implemented yet!</div>
-  }
+      // default
+      return <div>This type of graph is not implemented yet!</div>
+    }}
 
-  return (
-    <div className="chart">
-      {getChart()}
+    <style jsx>{`
+      .chart {
+        display: flex;
+        justify-content: center;
+        align-items: center;
 
-      <style jsx>{`
-        .chart {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-
-          height: 100%;
-          width: 100%;
-        }
-      `}</style>
-    </div>
-  )
-}
+        height: 100%;
+        width: 100%;
+      }
+    `}</style>
+  </div>
+)
 
 Chart.propTypes = propTypes
 Chart.defaultProps = defaultProps
