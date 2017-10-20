@@ -6,7 +6,7 @@ import { compose, withHandlers, withProps, withState } from 'recompose'
 import { pageWithIntl, withData } from '../../lib'
 
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
-import { Chart, Possibilities } from '../../components/evaluation'
+import { Chart } from '../../components/evaluation'
 
 const propTypes = {
   data: PropTypes.object.isRequired,
@@ -29,39 +29,32 @@ const Evaluation = ({
   handleToggleShowSolution,
   handleChangeVisualizationType,
 }) => {
+  const { results, question, version } = data
   const chart = (
     <Chart
       intl={intl}
       handleShowGraph={handleShowGraph}
-      results={data.results}
+      results={results}
       showGraph={showGraph}
       showSolution={showSolution}
       visualization={visualizationType}
     />
   )
 
-  const options = (
-    <Possibilities
-      intl={intl}
-      questionType={data.question.type}
-      questionOptions={data.version.options}
-    />
-  )
-
   const layoutProps = {
     chart,
-    description: data.version.description,
+    description: version.description,
     intl,
     onChangeVisualizationType: handleChangeVisualizationType,
     onToggleShowSolution: handleToggleShowSolution,
-    options,
+    options: version.options,
     pageTitle: intl.formatMessage({
       defaultMessage: 'Evaluation',
       id: 'teacher.evaluation.pageTitle',
     }),
     showSolution,
-    title: data.question.title,
-    type: data.question.type,
+    title: question.title,
+    type: question.type,
     visualizationType,
   }
 

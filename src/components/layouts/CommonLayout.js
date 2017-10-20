@@ -31,7 +31,7 @@ const CommonLayout = ({ baseFontSize, children, pageTitle }) => (
 
     <style jsx global>{`
       * {
-        font-family: 'Open Sans', sans-serif;
+        font-family: 'Open Sans', sans-serif !important;
       }
 
       html {

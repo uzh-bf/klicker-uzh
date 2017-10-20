@@ -1,10 +1,10 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { intlShape } from 'react-intl'
 import { Checkbox } from 'semantic-ui-react'
 
 import { CommonLayout } from '.'
-import VisualizationType from '../evaluation/VisualizationType'
+import { Info, Possibilities, VisualizationType } from '../evaluation'
 
 const propTypes = {
   chart: PropTypes.element.isRequired,
@@ -49,11 +49,7 @@ const EvaluationLayout = ({
         <p>{description}</p>
       </div>
       <div className="info">
-        <FormattedMessage
-          defaultMessage="Total responses:"
-          id="teacher.evaluation.totalResponses.label"
-        />
-        {}
+        <Info />
       </div>
       <div className="chart">{chart}</div>
       <div className="settings">
@@ -75,8 +71,7 @@ const EvaluationLayout = ({
         />
       </div>
       <div className="optionDisplay">
-        <h2>Options</h2>
-        {options}
+        <Possibilities questionType={type} questionOptions={options} />
       </div>
 
       <style jsx>{`

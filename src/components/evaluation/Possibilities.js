@@ -1,6 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { List } from 'semantic-ui-react'
+import { FormattedMessage } from 'react-intl'
 
 import { QuestionTypes } from '../../constants'
 
@@ -10,10 +11,29 @@ const propTypes = {
 }
 
 const Possibilities = ({ questionOptions, questionType }) => {
+  const getTitle = () => {
+    if ([QuestionTypes.SC, QuestionTypes.MC].includes(questionType)) {
+      return (
+        <FormattedMessage defaultMessage="Choices" id="teacher.evaluation.possibilities.choices" />
+      )
+    }
+
+    if (questionType === QuestionTypes.FREE) {
+      return (
+        <FormattedMessage
+          defaultMessage="Restrictions"
+          id="teacher.evaluation.possibilities.restrictions"
+        />
+      )
+    }
+
+    return 'fail'
+  }
+
   const getDisplay = () => {
     if ([QuestionTypes.SC, QuestionTypes.MC].includes(questionType)) {
       return (
-        <List>
+        <List celled ordered>
           {questionOptions.choices.map(choice => (
             <List.Item key={choice.id}>{choice.name}</List.Item>
           ))}
@@ -23,10 +43,22 @@ const Possibilities = ({ questionOptions, questionType }) => {
 
     if (questionType === QuestionTypes.FREE) {
       const { restrictions } = questionOptions
+
       return (
-        <div>
-          {restrictions.min}-{restrictions.max}
-        </div>
+        <List celled>
+          {restrictions.min && (
+            <List.Item>
+              <List.Header>Minimum</List.Header>
+              {restrictions.min}
+            </List.Item>
+          )}
+          {restrictions.max && (
+            <List.Item>
+              <List.Header>Maximum</List.Header>
+              {restrictions.max}
+            </List.Item>
+          )}
+        </List>
       )
     }
 
@@ -35,14 +67,16 @@ const Possibilities = ({ questionOptions, questionType }) => {
 
   return (
     <div className="possibilities">
+      <h2>{getTitle()}</h2>
+
       {getDisplay()}
 
       <style jsx>{`
         .possibilities {
-        }
-
-        .item {
-          padding: 0.3rem 0;
+          h2 {
+            font-size: 1.3rem;
+            line-height: 1.3rem;
+          }
         }
       `}</style>
     </div>
