@@ -547,24 +547,76 @@ exports[`Storyshots evaluation/components Chart 1`] = `
 </div>
 `;
 
+exports[`Storyshots evaluation/components Info 1`] = `
+<div
+  className="jsx-565540709 info"
+>
+  <span>
+    Total responses:
+  </span>
+   
+  0
+</div>
+`;
+
 exports[`Storyshots evaluation/components Possibilities (FREE) 1`] = `
 <div
-  className="jsx-94025046 possibilities"
+  className="jsx-3532866319 possibilities"
 >
-  <div>
-    10
-    -
-    20
+  <h2
+    className="jsx-3532866319"
+  >
+    <span>
+      Restrictions
+    </span>
+  </h2>
+  <div
+    className="ui celled list"
+    role="list"
+  >
+    <div
+      className="item"
+      data-value={undefined}
+      onClick={[Function]}
+      role="listitem"
+    >
+      <div
+        className="header"
+      >
+        Minimum
+      </div>
+      10
+    </div>
+    <div
+      className="item"
+      data-value={undefined}
+      onClick={[Function]}
+      role="listitem"
+    >
+      <div
+        className="header"
+      >
+        Maximum
+      </div>
+      20
+    </div>
   </div>
 </div>
 `;
 
 exports[`Storyshots evaluation/components Possibilities (SC) 1`] = `
 <div
-  className="jsx-94025046 possibilities"
+  className="jsx-3532866319 possibilities"
 >
+  <h2
+    className="jsx-3532866319"
+  >
+    <span>
+      Choices
+    </span>
+  </h2>
   <div
-    className="ui list"
+    className="ui celled ordered list"
     role="list"
   >
     <div
