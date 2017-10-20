@@ -6,7 +6,7 @@ import { compose, withHandlers, withProps, withState } from 'recompose'
 import { pageWithIntl, withData } from '../../lib'
 
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
-import Chart from '../../components/evaluation/Chart'
+import { Chart, Possibilities } from '../../components/evaluation'
 
 const propTypes = {
   data: PropTypes.object.isRequired,
@@ -28,22 +28,8 @@ const Evaluation = ({
   handleShowGraph,
   handleToggleShowSolution,
   handleChangeVisualizationType,
-}) => (
-  <EvaluationLayout
-    intl={intl}
-    pageTitle={intl.formatMessage({
-      defaultMessage: 'Evaluation',
-      id: 'teacher.evaluation.pageTitle',
-    })}
-    title={data.question.title}
-    description={data.version.description}
-    type={data.question.type}
-    choices={data.version.options.choices}
-    showSolution={showSolution}
-    visualizationType={visualizationType}
-    onToggleShowSolution={handleToggleShowSolution}
-    onChangeVisualizationType={handleChangeVisualizationType}
-  >
+}) => {
+  const chart = (
     <Chart
       intl={intl}
       handleShowGraph={handleShowGraph}
@@ -52,8 +38,35 @@ const Evaluation = ({
       showSolution={showSolution}
       visualization={visualizationType}
     />
-  </EvaluationLayout>
-)
+  )
+
+  const options = (
+    <Possibilities
+      intl={intl}
+      questionType={data.question.type}
+      questionOptions={data.version.options}
+    />
+  )
+
+  const layoutProps = {
+    pageTitle: intl.formatMessage({
+      defaultMessage: 'Evaluation',
+      id: 'teacher.evaluation.pageTitle',
+    }),
+    intl,
+    title: data.question.title,
+    description: data.version.description,
+    type: data.question.type,
+    showSolution,
+    visualizationType,
+    onToggleShowSolution: handleToggleShowSolution,
+    onChangeVisualizationType: handleChangeVisualizationType,
+    chart,
+    options,
+  }
+
+  return <EvaluationLayout {...layoutProps} />
+}
 
 Evaluation.propTypes = propTypes
 
@@ -82,7 +95,7 @@ export default compose(
         type: 'SC',
       },
       results: {
-        options: [
+        choices: [
           { correct: false, name: 'option 1', numberOfVotes: 56 },
           {
             correct: true,
