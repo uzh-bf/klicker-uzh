@@ -3,7 +3,7 @@
 import React from 'react'
 import { storiesOf } from '@storybook/react'
 
-import { Chart, Possibilities, VisualizationType, BarChart, PieChart } from '.'
+import { Chart, Info, Possibilities, VisualizationType, BarChart, PieChart } from '.'
 
 import { intlMock } from '../../../.storybook/utils'
 
@@ -21,6 +21,8 @@ const results = {
 }
 
 storiesOf('evaluation/components', module)
+  .add('Chart', () => <Chart />)
+  .add('Info', () => <Info />)
   .add('Possibilities (SC)', () => (
     <Possibilities
       intl={intlMock}
@@ -51,7 +53,6 @@ storiesOf('evaluation/components', module)
   .add('Visualization', () => (
     <VisualizationType intl={intlMock} onChangeType={console.log('State changed')} type="SC" />
   ))
-  .add('Chart', () => <Chart />)
 
 storiesOf('evaluation/charts', module)
   .add('BarChart [NoTest]', () => <BarChart results={results} />)
