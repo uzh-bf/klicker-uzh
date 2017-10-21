@@ -80,6 +80,7 @@ export const RunningSessionQuery = gql`
         status
         instances {
           id
+          isOpen
           question {
             id
             title
@@ -122,6 +123,43 @@ export const AccountSummaryQuery = gql`
       shortname
       runningSession {
         id
+      }
+    }
+  }
+`
+
+export const ActiveInstancesQuery = gql`
+  {
+    activeInstances {
+      id
+      isOpen
+      responses {
+        id
+        value
+        createdAt
+      }
+      question {
+        title
+        type
+      }
+      versions {
+        description
+        options {
+          ... on SCQuestionOptions {
+            choices {
+              correct
+              name
+            }
+            randomized
+          }
+          ... on FREEQuestionOptions {
+            restrictions {
+              min
+              max
+              type
+            }
+          }
+        }
       }
     }
   }
