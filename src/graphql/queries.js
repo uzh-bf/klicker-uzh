@@ -139,6 +139,11 @@ export const ActiveInstancesQuery = gql`
         value
         createdAt
       }
+      results {
+        ... on SCQuestionResults {
+          choices
+        }
+      }
       question {
         title
         type

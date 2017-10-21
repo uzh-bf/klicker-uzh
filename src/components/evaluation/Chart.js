@@ -8,10 +8,10 @@ import { BarChart, PieChart } from '.'
 const propTypes = {
   handleShowGraph: PropTypes.func.isRequired,
   results: PropTypes.shape({
-    options: PropTypes.arrayOf({
+    choices: PropTypes.arrayOf({
       correct: PropTypes.bool,
+      count: PropTypes.number,
       name: PropTypes.string,
-      numberOfVotes: PropTypes.number,
     }),
     totalResponses: PropTypes.number,
   }),
@@ -47,12 +47,12 @@ function Chart({
 
         // pie charts
         if (visualization === 'PIE_CHART') {
-          return <PieChart isSolutionShown={showSolution} results={results} />
+          return <PieChart isSolutionShown={showSolution} choices={results.choices} />
         }
 
         // bar charts
         if (visualization === 'BAR_CHART') {
-          return <BarChart isSolutionShown={showSolution} results={results} />
+          return <BarChart isSolutionShown={showSolution} choices={results.choices} />
         }
 
         // default

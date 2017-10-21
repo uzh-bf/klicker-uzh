@@ -98,23 +98,22 @@ export default compose(
     ({ data }) => !(data.activeInstances && data.activeInstances.length > 0),
     renderComponent(() => <Message info>No evaluation currently active.</Message>),
   ),
-  withProps(({ data }) => ({
-    activeInstances: [
-      {
-        ...data.activeInstances[0],
-        results: {
-          choices: [
-            { correct: false, name: 'option 1', numberOfVotes: 56 },
-            {
-              correct: true,
-              name: 'option 2',
-              numberOfVotes: 344,
-            },
-            { correct: false, name: 'some other option', numberOfVotes: 9 },
-          ],
-          totalResponses: data.activeInstances[0].responses.length,
+  withProps(({ data }) => {
+    const activeInstance = data.activeInstances[0]
+
+    return {
+      activeInstances: [
+        {
+          ...activeInstance,
+          results: {
+            choices: activeInstance.question.versions[0].options.choices.map((choice, index) => ({
+              ...choice,
+              count: activeInstance.results ? activeInstance.results.choices[index] : 0,
+            })),
+            totalResponses: activeInstance.responses.length,
+          },
         },
-      },
-    ],
-  })),
+      ],
+    }
+  }),
 )(Evaluation)

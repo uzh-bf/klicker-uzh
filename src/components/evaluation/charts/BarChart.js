@@ -13,24 +13,25 @@ import {
 } from 'recharts'
 
 const propTypes = {
+  choices: PropTypes.array,
   isSolutionShown: PropTypes.bool,
-  results: PropTypes.object.isRequired,
 }
 
 const defaultProps = {
+  choices: [],
   isSolutionShown: false,
 }
 
-const BarChart = ({ isSolutionShown, results }) => (
+const BarChart = ({ isSolutionShown, choices }) => (
   <ResponsiveContainer width="80%">
-    <BarChartComponent data={results.choices}>
+    <BarChartComponent data={choices}>
       <XAxis dataKey="name" />
       <YAxis />
       <CartesianGrid strokeDasharray="3 3" />
       <Tooltip />
       <Legend />
-      <Bar dataKey="numberOfVotes">
-        {results.choices.map(choice => (
+      <Bar dataKey="count">
+        {choices.map(choice => (
           <Cell key={choice.id} fill={isSolutionShown && choice.correct ? '#00FF00' : '#8884d8'} />
         ))}
       </Bar>
