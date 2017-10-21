@@ -1,8 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { intlShape } from 'react-intl'
-import { compose, withHandlers, withProps, withState } from 'recompose'
+import { compose, withHandlers, withProps, withState, branch, renderComponent } from 'recompose'
 import { graphql } from 'react-apollo'
+import { Message } from 'semantic-ui-react'
 
 import { pageWithIntl, withData } from '../../lib'
 
@@ -11,7 +12,7 @@ import { Chart } from '../../components/evaluation'
 import { ActiveInstancesQuery } from '../../graphql/queries'
 
 const propTypes = {
-  data: PropTypes.object.isRequired,
+  activeInstances: PropTypes.array.isRequired,
   handleChangeVisualizationType: PropTypes.func.isRequired,
   handleShowGraph: PropTypes.func.isRequired,
   handleToggleShowSolution: PropTypes.func.isRequired,
@@ -22,7 +23,7 @@ const propTypes = {
 }
 
 const Evaluation = ({
-  data,
+  activeInstances,
   intl,
   showGraph,
   showSolution,
@@ -31,7 +32,10 @@ const Evaluation = ({
   handleToggleShowSolution,
   handleChangeVisualizationType,
 }) => {
-  const { results, question, version } = data
+  const { results, question } = activeInstances[0]
+  const { title, type } = question
+  const { description, options } = question.versions[0]
+
   const chart = (
     <Chart
       intl={intl}
@@ -45,18 +49,18 @@ const Evaluation = ({
 
   const layoutProps = {
     chart,
-    description: version.description,
+    description,
     intl,
     onChangeVisualizationType: handleChangeVisualizationType,
     onToggleShowSolution: handleToggleShowSolution,
-    options: version.options,
+    options,
     pageTitle: intl.formatMessage({
       defaultMessage: 'Evaluation',
       id: 'teacher.evaluation.pageTitle',
     }),
     showSolution,
-    title: question.title,
-    type: question.type,
+    title,
+    type,
     visualizationType,
   }
 
@@ -68,10 +72,6 @@ Evaluation.propTypes = propTypes
 export default compose(
   withData,
   pageWithIntl,
-  graphql(ActiveInstancesQuery, {
-    // refetch the running session query every 10s
-    options: { pollInterval: 10000 },
-  }),
   withState('showGraph', 'setShowGraph', false),
   withState('showSolution', 'setShowSolution', false),
   withState('visualizationType', 'setVisualizationType', 'PIE_CHART'),
@@ -86,40 +86,34 @@ export default compose(
     handleToggleShowSolution: ({ setShowSolution }) => () =>
       setShowSolution(showSolution => !showSolution),
   }),
-  withProps({
-    // fake data the component is going to get
-    data: {
-      question: {
-        title: 'some question title',
-        type: 'SC',
-      },
-      results: {
-        choices: [
-          { correct: false, name: 'option 1', numberOfVotes: 56 },
-          {
-            correct: true,
-            name: 'option 2',
-            numberOfVotes: 344,
-          },
-          { correct: false, name: 'some other option', numberOfVotes: 9 },
-        ],
-        totalResponses: 409,
-      },
-      version: {
-        description:
-          'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.',
-        options: {
+  graphql(ActiveInstancesQuery, {
+    // refetch the active instances query every 10s
+    options: { pollInterval: 10000 },
+  }),
+  // if the query is still loading, display nothing
+  branch(({ data }) => data.loading, renderComponent(() => null)),
+  // if the query has finished loading but there are no active instances, show a simple message
+  branch(
+    ({ data }) => !(data.activeInstances && data.activeInstances.length > 0),
+    renderComponent(() => <Message>No evaluation currently active.</Message>),
+  ),
+  withProps(({ data }) => ({
+    activeInstances: [
+      {
+        ...data.activeInstances[0],
+        results: {
           choices: [
-            { correct: false, name: 'option 1' },
-            { correct: true, name: 'option 2' },
-            { correct: false, name: 'some other option' },
+            { correct: false, name: 'option 1', numberOfVotes: 56 },
+            {
+              correct: true,
+              name: 'option 2',
+              numberOfVotes: 344,
+            },
+            { correct: false, name: 'some other option', numberOfVotes: 9 },
           ],
-          randomized: true,
-          restrictions: null,
+          totalResponses: 409,
         },
       },
-    },
-  }),
+    ],
+  })),
 )(Evaluation)
-
-withData(pageWithIntl(Evaluation))

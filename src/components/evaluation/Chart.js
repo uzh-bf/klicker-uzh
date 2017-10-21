@@ -32,7 +32,7 @@ const Chart = ({
   handleShowGraph, results, showGraph, showSolution, visualization,
 }) => (
   <div className="chart">
-    {() => {
+    {(() => {
       // if the chart display has not already been toggled
       if (!showGraph) {
         return (
@@ -54,7 +54,7 @@ const Chart = ({
 
       // default
       return <div>This type of graph is not implemented yet!</div>
-    }}
+    })()}
 
     <style jsx>{`
       .chart {

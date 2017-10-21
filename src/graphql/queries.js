@@ -133,6 +133,7 @@ export const ActiveInstancesQuery = gql`
     activeInstances {
       id
       isOpen
+      version
       responses {
         id
         value
@@ -141,22 +142,22 @@ export const ActiveInstancesQuery = gql`
       question {
         title
         type
-      }
-      versions {
-        description
-        options {
-          ... on SCQuestionOptions {
-            choices {
-              correct
-              name
+        versions {
+          description
+          options {
+            ... on SCQuestionOptions {
+              choices {
+                correct
+                name
+              }
+              randomized
             }
-            randomized
-          }
-          ... on FREEQuestionOptions {
-            restrictions {
-              min
-              max
-              type
+            ... on FREEQuestionOptions {
+              restrictions {
+                min
+                max
+                type
+              }
             }
           }
         }

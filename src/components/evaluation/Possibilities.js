@@ -13,7 +13,7 @@ const propTypes = {
 const Possibilities = ({ questionOptions, questionType }) => (
   <div className="possibilities">
     <h2>
-      {() => {
+      {(() => {
         if ([QuestionTypes.SC, QuestionTypes.MC].includes(questionType)) {
           return (
             <FormattedMessage
@@ -33,10 +33,10 @@ const Possibilities = ({ questionOptions, questionType }) => (
         }
 
         return 'fail'
-      }}
+      })()}
     </h2>
 
-    {() => {
+    {(() => {
       if ([QuestionTypes.SC, QuestionTypes.MC].includes(questionType)) {
         return (
           <List celled ordered>
@@ -69,7 +69,7 @@ const Possibilities = ({ questionOptions, questionType }) => (
       }
 
       return <div>Not yet implemented.</div>
-    }}
+    })()}
 
     <style jsx>{`
       .possibilities {
