@@ -5,9 +5,8 @@ import { compose, withHandlers, withProps, withState, branch, renderComponent } 
 import { graphql } from 'react-apollo'
 import { Message } from 'semantic-ui-react'
 
-import { pageWithIntl, withData } from '../../lib'
-
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
+import { pageWithIntl, withData } from '../../lib'
 import { Chart } from '../../components/evaluation'
 import { ActiveInstancesQuery } from '../../graphql/queries'
 
@@ -22,7 +21,7 @@ const propTypes = {
   visualizationType: PropTypes.string.isRequired,
 }
 
-const Evaluation = ({
+function Evaluation({
   activeInstances,
   intl,
   showGraph,
@@ -31,9 +30,10 @@ const Evaluation = ({
   handleShowGraph,
   handleToggleShowSolution,
   handleChangeVisualizationType,
-}) => {
+}) {
   const { results, question } = activeInstances[0]
   const { title, type } = question
+  const { totalResponses } = results
   const { description, options } = question.versions[0]
 
   const chart = (
@@ -60,6 +60,7 @@ const Evaluation = ({
     }),
     showSolution,
     title,
+    totalResponses,
     type,
     visualizationType,
   }
@@ -95,7 +96,7 @@ export default compose(
   // if the query has finished loading but there are no active instances, show a simple message
   branch(
     ({ data }) => !(data.activeInstances && data.activeInstances.length > 0),
-    renderComponent(() => <Message>No evaluation currently active.</Message>),
+    renderComponent(() => <Message info>No evaluation currently active.</Message>),
   ),
   withProps(({ data }) => ({
     activeInstances: [
@@ -111,7 +112,7 @@ export default compose(
             },
             { correct: false, name: 'some other option', numberOfVotes: 9 },
           ],
-          totalResponses: 409,
+          totalResponses: data.activeInstances[0].responses.length,
         },
       },
     ],
