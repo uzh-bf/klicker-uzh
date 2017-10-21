@@ -6,7 +6,9 @@ import TeacherLayout from '../layouts/TeacherLayout'
 
 const LoadingDiv = () => <div className="ui indeterminate text loader">Loading</div>
 
-const LoadingTeacherLayout = ({ intl, pageId, title }) => {
+const LoadingTeacherLayout = ({
+  intl, pageId, title, children,
+}) => {
   const navbarConfig = {
     title: intl.formatMessage({
       defaultMessage: title,
@@ -24,7 +26,7 @@ const LoadingTeacherLayout = ({ intl, pageId, title }) => {
       })}
       sidebar={{ activeItem: pageId }}
     >
-      Loading
+      {children}
     </TeacherLayout>
   )
 }
@@ -32,6 +34,7 @@ LoadingTeacherLayout.propTypes = {
   intl: intlShape.isRequired,
   pageId: PropTypes.string.isRequired,
   title: PropTypes.string.isRequired,
+  children: PropTypes.element.isRequired,
 }
 
 export { LoadingDiv, LoadingTeacherLayout }
