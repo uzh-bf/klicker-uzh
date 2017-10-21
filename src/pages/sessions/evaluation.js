@@ -2,11 +2,13 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { intlShape } from 'react-intl'
 import { compose, withHandlers, withProps, withState } from 'recompose'
+import { graphql } from 'react-apollo'
 
 import { pageWithIntl, withData } from '../../lib'
 
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
 import { Chart } from '../../components/evaluation'
+import { ActiveInstancesQuery } from '../../graphql/queries'
 
 const propTypes = {
   data: PropTypes.object.isRequired,
@@ -66,6 +68,10 @@ Evaluation.propTypes = propTypes
 export default compose(
   withData,
   pageWithIntl,
+  graphql(ActiveInstancesQuery, {
+    // refetch the running session query every 10s
+    options: { pollInterval: 10000 },
+  }),
   withState('showGraph', 'setShowGraph', false),
   withState('showSolution', 'setShowSolution', false),
   withState('visualizationType', 'setVisualizationType', 'PIE_CHART'),
