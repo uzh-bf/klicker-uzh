@@ -11,8 +11,7 @@ import { Collapser } from '../../components/common'
 import { ConfusionSlider } from '../../components/confusion'
 import { Feedback } from '../../components/feedbacks'
 import { StudentLayout } from '../../components/layouts'
-import { SCAnswerOptions } from '../../components/questionTypes'
-import { FREEAnswerOptions } from '../../components/questionTypes/index'
+import { SCAnswerOptions, FREEAnswerOptions } from '../../components/questionTypes'
 
 const propTypes = {
   addNewFeedback: PropTypes.func.isRequired,
@@ -22,6 +21,13 @@ const propTypes = {
     content: PropTypes.string.isRequired,
     showDelete: PropTypes.bool.isRequired,
     votes: PropTypes.number.isRequired,
+  }),
+  dataQuestion: PropTypes.shape({
+    restrictions: PropTypes.arrayOf({
+      max: PropTypes.number,
+      min: PropTypes.number,
+    }),
+    type: PropTypes.string,
   }),
   feedbackDifficulty: PropTypes.oneOfType(PropTypes.number, null).isRequired,
   feedbackSpeed: PropTypes.oneOfType(PropTypes.number, null).isRequired,
@@ -43,6 +49,10 @@ const propTypes = {
 
 const defaultProps = {
   dataFeedbacks: [],
+  dataQuestion: {
+    restrictions: [],
+    tpye: 'NONE',
+  },
 }
 
 const Session = ({
@@ -50,6 +60,7 @@ const Session = ({
   addNewFeedbackMode,
   answerSliderValue,
   dataFeedbacks,
+  dataQuestion,
   intl,
   questionCollapsed,
   feedbackDifficulty,
@@ -291,6 +302,7 @@ export default compose(
   pageWithIntl,
   withState('addNewFeedbackMode', 'setNewFeedbackMode', false),
   withState('answerSliderValue', 'setAnswerSliderValue', 500),
+  withState('dataQuestion', 'setDataQuestions', { restrictions: [], type: 'NONE' }),
   withState('dataFeedbacks', 'setFeedbacks', [
     {
       alreadyVoted: false,
