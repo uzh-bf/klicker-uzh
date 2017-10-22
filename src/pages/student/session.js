@@ -127,25 +127,27 @@ const Session = ({
           </div>
 
           <div className="options">
-            <FREEAnswerOptions
-              handleChange={handleAnswerSliderChange}
-              options={{ restrictions: { max: 900, min: 90, type: 'NUMBERS' } }}
-              value={answerSliderValue}
-            />
-            <FREEAnswerOptions
-              handleChange={handleAnswerSliderChange}
-              options={{ restrictions: { max: null, min: 0, type: 'NUMBERS' } }}
-            />
-            <SCAnswerOptions
-              activeOption={questionActiveOption}
-              options={[
-                { label: 'answer1' },
-                { label: 'antwort 2' },
-                { label: 'option 3' },
-                { label: 'tschege' },
-              ]}
-              handleOptionClick={handleQuestionActiveOptionChange}
-            />
+            {
+              dataQuestion.type === 'NONE' &&
+              <SCAnswerOptions
+                activeOption={questionActiveOption}
+                options={[
+                  { label: 'answer1' },
+                  { label: 'antwort 2' },
+                  { label: 'option 3' },
+                  { label: 'tschege' },
+                ]}
+                handleOptionClick={handleQuestionActiveOptionChange}
+              />
+            }
+            {
+              dataQuestion.type === 'NUMBERS' &&
+              <FREEAnswerOptions
+                handleChange={handleAnswerSliderChange}
+                options={{ restrictions: dataQuestion.restrictions }}
+                value={answerSliderValue}
+              />
+            }
           </div>
 
           <div className="actionButton">
