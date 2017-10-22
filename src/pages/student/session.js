@@ -152,7 +152,7 @@ const Session = ({
 
           <div className="actionButton">
             <Button primary className="submitButton">
-              <FormattedMessage id="common.string.send" defaultMessage="Send" />
+              <FormattedMessage id="common.string.send" defaultMessage="Send" onClick={console.dir('Hello')} />
             </Button>
           </div>
         </div>
