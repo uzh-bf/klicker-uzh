@@ -12,10 +12,12 @@ import { ConfusionSlider } from '../../components/confusion'
 import { Feedback } from '../../components/feedbacks'
 import { StudentLayout } from '../../components/layouts'
 import { SCAnswerOptions } from '../../components/questionTypes'
+import { FREEAnswerOptions } from '../../components/questionTypes/index'
 
 const propTypes = {
   addNewFeedback: PropTypes.func.isRequired,
   addNewFeedbackMode: PropTypes.bool.isRequired,
+  answerSliderValue: PropTypes.number.isRequired,
   dataFeedbacks: PropTypes.arrayOf({
     content: PropTypes.string.isRequired,
     showDelete: PropTypes.bool.isRequired,
@@ -23,10 +25,11 @@ const propTypes = {
   }),
   feedbackDifficulty: PropTypes.oneOfType(PropTypes.number, null).isRequired,
   feedbackSpeed: PropTypes.oneOfType(PropTypes.number, null).isRequired,
+  handleAnswerSliderChange: PropTypes.func.isRequired,
   handleFeedbackDifficultyChange: PropTypes.func.isRequired,
   handleFeedbackModeChange: PropTypes.func.isRequired,
   handleFeedbackSpeedChange: PropTypes.func.isRequired,
-  handleNewFeedbackInput: PropTypes.func.isRequired,
+  handleNewFeedbackInputChange: PropTypes.func.isRequired,
   handleQuestionActiveOptionChange: PropTypes.func.isRequired,
   handleQuestionCollapsedToggle: PropTypes.func.isRequired,
   handleSidebarActiveItemChange: PropTypes.func.isRequired,
@@ -45,6 +48,7 @@ const defaultProps = {
 const Session = ({
   addNewFeedback,
   addNewFeedbackMode,
+  answerSliderValue,
   dataFeedbacks,
   intl,
   questionCollapsed,
@@ -52,6 +56,7 @@ const Session = ({
   feedbackSpeed,
   questionActiveOption,
   sidebarActiveItem,
+  handleAnswerSliderChange,
   handleFeedbackModeChange,
   handleQuestionCollapsedToggle,
   handleFeedbackDifficultyChange,
@@ -111,6 +116,15 @@ const Session = ({
           </div>
 
           <div className="options">
+            <FREEAnswerOptions
+              handleChange={handleAnswerSliderChange}
+              options={{ restrictions: { max: 900, min: 90, type: 'NUMBERS' } }}
+              value={answerSliderValue}
+            />
+            <FREEAnswerOptions
+              handleChange={handleAnswerSliderChange}
+              options={{ restrictions: { max: null, min: 0, type: 'NUMBERS' } }}
+            />
             <SCAnswerOptions
               activeOption={questionActiveOption}
               options={[
@@ -276,6 +290,7 @@ export default compose(
   withData,
   pageWithIntl,
   withState('addNewFeedbackMode', 'setNewFeedbackMode', false),
+  withState('answerSliderValue', 'setAnswerSliderValue', 500),
   withState('dataFeedbacks', 'setFeedbacks', [
     {
       alreadyVoted: false,
@@ -316,6 +331,10 @@ export default compose(
       setFeedbacks(array)
       // TODO change feedbackMode
     },
+
+    // handle change of slider in answer section
+    handleAnswerSliderChange: ({ setAnswerSliderValue }) => newValue =>
+      setAnswerSliderValue(newValue),
 
     // handle value change for difficulty
     handleFeedbackDifficultyChange: ({ setFeedbackDifficulty }) => newValue =>

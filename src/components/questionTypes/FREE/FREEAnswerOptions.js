@@ -2,6 +2,9 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import Slider from 'react-rangeslider'
 import { FormattedMessage } from 'react-intl'
+import { Helmet } from 'react-helmet'
+
+import { createLinks } from '../../../lib'
 
 const propTypes = {
   handleChange: PropTypes.func.isRequired,
@@ -22,12 +25,13 @@ const defaultProps = {
 
 const FREEAnswerOptions = ({ handleChange, options, value }) => (
   <div className="options">
+    <Helmet defer={false}>
+      {createLinks(['https://unpkg.com/react-rangeslider/umd/rangeslider.min.css'])}
+    </Helmet>
     {options.restrictions.type === 'NUMBERS' &&
     options.restrictions.min !== null &&
     options.restrictions.max !== null ? (
       <div className="slider">
-        <p>{options.restrictions.min}</p>
-        <p>{options.restrictions.max}</p>
         <Slider
           min={options.restrictions.min}
           max={options.restrictions.max}
