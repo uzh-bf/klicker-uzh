@@ -7,13 +7,13 @@ import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Button, Form } from 'semantic-ui-react'
 
-import { ContentInput, TitleInput, TagInput } from '../questions'
+import { ContentInput, TagInput } from '../questions'
 import {
-  TypeChooser,
-  SCCreationOptions,
-  SCCreationPreview,
   FREECreationOptions,
   FREECreationPreview,
+  SCCreationOptions,
+  SCCreationPreview,
+  TypeChooser,
 } from '../../components/questionTypes'
 import { FREERestrictionTypes, QuestionTypes } from '../../lib'
 
@@ -88,8 +88,6 @@ const defaultProps = {
 const QuestionEditForm = ({
   intl,
   invalid,
-  content,
-  options,
   tags,
   title,
   type,
@@ -110,18 +108,13 @@ const QuestionEditForm = ({
       preview: FREECreationPreview,
     },
   }
-  const Preview = typeComponents[type].preview
 
   return (
-    <div className="questionCreationForm">
+    <div className="questionEditForm">
       <Form onSubmit={onSubmit}>
-        <div className="questionInput questionTitle">
-          <Field name="title" component={TitleInput} />
-        </div>
+        <div className="questionInput questionTitle">{title}</div>
 
-        <div className="questionInput questionType">
-          <Field name="type" component={TypeChooser} intl={intl} />
-        </div>
+        <div className="questionInput questionType">{type}</div>
 
         <div className="questionInput questionTags">
           <Field name="tags" component={TagInput} tags={tags} />
@@ -133,10 +126,6 @@ const QuestionEditForm = ({
 
         <div className="questionInput questionOptions">
           <Field name="options" component={typeComponents[type].input} intl={intl} />
-        </div>
-
-        <div className="questionPreview">
-          <Preview title={title} description={content} options={options} />
         </div>
 
         <Button className="discard" type="reset" onClick={onDiscard}>
@@ -172,12 +161,9 @@ const QuestionEditForm = ({
               display: grid;
 
               grid-gap: 1rem;
-              grid-template-columns: repeat(6, 1fr);
+              grid-template-columns: repeat(2, 1fr);
               grid-template-rows: auto;
-              grid-template-areas: 'title title title title preview preview'
-                'type type tags tags preview preview'
-                'content content content content content content'
-                'options options options options options options';
+              grid-template-areas: 'title type' 'tags tags' 'content content' 'options options';
             }
 
             .questionInput {
