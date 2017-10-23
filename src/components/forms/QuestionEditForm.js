@@ -24,36 +24,36 @@ const validate = ({
   const errors = {}
 
   if (!title || isEmpty(title)) {
-    errors.title = 'form.createQuestion.title.empty'
+    errors.title = 'form.editQuestion.title.empty'
   }
 
   if (!content || isEmpty(content)) {
-    errors.content = 'form.createQuestion.content.empty'
+    errors.content = 'form.editQuestion.content.empty'
   }
 
   if (!tags || tags.length === 0) {
-    errors.tags = 'form.createQuestion.tags.empty'
+    errors.tags = 'form.editQuestion.tags.empty'
   }
 
   if (!type || isEmpty(type)) {
-    errors.type = 'form.createQuestion.type.empty'
+    errors.type = 'form.editQuestion.type.empty'
   }
 
   // validation of SC answer options
   if (type === QuestionTypes.SC) {
     // SC questions need at least one answer option to be valid
     if (!options || options.length === 0) {
-      errors.options = 'form.createQuestion.options.empty'
+      errors.options = 'form.editQuestion.options.empty'
     }
     // validation of FREE answer options
   } else if (type === QuestionTypes.FREE) {
     if (options && options.restrictions) {
       if (!options.restrictions.min && !options.restrictions.max) {
-        errors.options = 'form.createQuestion.options.noMinMax'
+        errors.options = 'form.editQuestion.options.noMinMax'
       }
 
       if (options.restrictions.min >= options.restrictions.max) {
-        errors.options = 'form.createQuestion.options.minGteMax'
+        errors.options = 'form.editQuestion.options.minGteMax'
       }
     }
   }
@@ -226,14 +226,14 @@ QuestionEditForm.propTypes = propTypes
 QuestionEditForm.defaultProps = defaultProps
 
 const withState = connect(state => ({
-  content: _get(state, 'form.createQuestion.values.content'),
-  options: _get(state, 'form.createQuestion.values.options'),
-  title: _get(state, 'form.createQuestion.values.title'),
-  type: _get(state, 'form.createQuestion.values.type'),
+  content: _get(state, 'form.editQuestion.values.content'),
+  options: _get(state, 'form.editQuestion.values.options'),
+  title: _get(state, 'form.editQuestion.values.title'),
+  type: _get(state, 'form.editQuestion.values.type'),
 }))
 
 export default reduxForm({
-  form: 'createQuestion',
+  form: 'editQuestion',
   initialValues: {
     content: '',
     options: {
