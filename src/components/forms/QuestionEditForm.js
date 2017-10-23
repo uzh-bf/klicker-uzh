@@ -1,8 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import _get from 'lodash/get'
 import isEmpty from 'validator/lib/isEmpty'
-import { connect } from 'react-redux'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Button, Form } from 'semantic-ui-react'
@@ -13,14 +11,13 @@ import {
   FREECreationPreview,
   SCCreationOptions,
   SCCreationPreview,
-  TypeChooser,
 } from '../../components/questionTypes'
-import { FREERestrictionTypes, QuestionTypes } from '../../lib'
+import { QuestionTypes } from '../../lib'
 
 // form validation
 const validate = ({
-  content, options, tags, title, type,
-}) => {
+                    content, options, tags, title, type,
+                  }) => {
   const errors = {}
 
   if (!title || isEmpty(title)) {
@@ -86,14 +83,14 @@ const defaultProps = {
 }
 
 const QuestionEditForm = ({
-  intl,
-  invalid,
-  tags,
-  title,
-  type,
-  handleSubmit: onSubmit,
-  onDiscard,
-}) => {
+                            intl,
+                            invalid,
+                            tags,
+                            title,
+                            type,
+                            handleSubmit: onSubmit,
+                            onDiscard,
+                          }) => {
   const typeComponents = {
     [QuestionTypes.SC]: {
       input: SCCreationOptions,
@@ -112,9 +109,19 @@ const QuestionEditForm = ({
   return (
     <div className="questionEditForm">
       <Form onSubmit={onSubmit}>
-        <div className="questionInput questionTitle">{title}</div>
+        <div className="questionInput questionTitle field">
+          <label htmlFor="title">
+            <FormattedMessage defaultMessage="Title" id="teacher.editQuestion.title" />
+          </label>
+          <div className="title">{title}</div>
+        </div>
 
-        <div className="questionInput questionType">{type}</div>
+        <div className="questionInput questionType field">
+          <label htmlFor="type">
+            <FormattedMessage defaultMessage="Question Type" id="teacher.editQuestion.type" />
+          </label>
+          <div className="type">{type}</div>
+        </div>
 
         <div className="questionInput questionTags">
           <Field name="tags" component={TagInput} tags={tags} />
@@ -211,27 +218,7 @@ const QuestionEditForm = ({
 QuestionEditForm.propTypes = propTypes
 QuestionEditForm.defaultProps = defaultProps
 
-const withState = connect(state => ({
-  content: _get(state, 'form.editQuestion.values.content'),
-  options: _get(state, 'form.editQuestion.values.options'),
-  title: _get(state, 'form.editQuestion.values.title'),
-  type: _get(state, 'form.editQuestion.values.type'),
-}))
-
 export default reduxForm({
   form: 'editQuestion',
-  initialValues: {
-    content: '',
-    options: {
-      choices: [],
-      randomized: false,
-      restrictions: {
-        type: FREERestrictionTypes.NONE,
-      },
-    },
-    tags: [],
-    title: '',
-    type: 'SC',
-  },
   validate,
-})(withState(QuestionEditForm))
+})(QuestionEditForm)

@@ -40,7 +40,7 @@ storiesOf('forms/components', module)
   // HACK: disable test for QuestionCreationForm as autosuggest breaks...
   .add('QuestionCreationForm [NoTest]', () => <QuestionCreationForm intl={intlMock} />)
   .add('QuestionEditForm', () => (
-    <QuestionEditForm intl={intlMock} data={{ title: 'Was ist das denn für eine Frage?' }} />
+    <QuestionEditForm intl={intlMock} title={'Was ist das denn für eine Frage?'} type={'SC'} />
   ))
   .add('SessionCreationForm', () => (
     <SessionCreationForm intl={intlMock} handleSubmit={() => null} />
