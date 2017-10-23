@@ -101,19 +101,37 @@ export default compose(
   withProps(({ data }) => {
     const activeInstance = data.activeInstances[0]
 
-    return {
-      activeInstances: [
-        {
-          ...activeInstance,
-          results: {
-            choices: activeInstance.question.versions[0].options.choices.map((choice, index) => ({
-              ...choice,
-              count: activeInstance.results ? activeInstance.results.choices[index] : 0,
-            })),
-            totalResponses: activeInstance.responses.length,
+    if (activeInstance.question.type === 'SC') {
+      return {
+        activeInstances: [
+          {
+            ...activeInstance,
+            results: {
+              choices: activeInstance.question.versions[0].options.choices.map((choice, index) => ({
+                ...choice,
+                count: activeInstance.results ? activeInstance.results.choices[index] : 0,
+              })),
+              totalResponses: activeInstance.responses.length,
+            },
           },
-        },
-      ],
+        ],
+      }
     }
+
+    if (activeInstance.question.type === 'FREE') {
+      return {
+        activeInstances: [
+          {
+            ...activeInstance,
+            results: {
+              ...activeInstance.results,
+              totalResponses: activeInstance.responses.length,
+            },
+          },
+        ],
+      }
+    }
+
+    return data.activeInstances
   }),
 )(Evaluation)
