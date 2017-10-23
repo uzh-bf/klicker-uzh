@@ -117,8 +117,9 @@ export default compose(
             ...activeInstance,
             results: {
               data: activeInstance.question.versions[0].options.choices.map((choice, index) => ({
-                ...choice,
+                correct: choice.correct,
                 count: activeInstance.results ? activeInstance.results.choices[index] : 0,
+                value: choice.name,
               })),
               totalResponses: activeInstance.responses.length,
             },
