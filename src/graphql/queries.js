@@ -143,6 +143,14 @@ export const ActiveInstancesQuery = gql`
         ... on SCQuestionResults {
           choices
         }
+        ... on FREEQuestionResults {
+          free {
+            count
+            key
+            text
+            value
+          }
+        }
       }
       question {
         title
@@ -155,7 +163,6 @@ export const ActiveInstancesQuery = gql`
                 correct
                 name
               }
-              randomized
             }
             ... on FREEQuestionOptions {
               restrictions {
