@@ -8,6 +8,7 @@ import { CommonLayout } from '.'
 import { Info, Possibilities, VisualizationType } from '../evaluation'
 
 const propTypes = {
+  activeInstance: PropTypes.number,
   chart: PropTypes.element.isRequired,
   choices: PropTypes.arrayOf(
     PropTypes.shape({
@@ -17,6 +18,8 @@ const propTypes = {
   ).isRequired,
   description: PropTypes.string,
   intl: intlShape.isRequired,
+  numInstances: PropTypes.number,
+  onChangeActiveInstance: PropTypes.func.isRequired,
   onChangeVisualizationType: PropTypes.func.isRequired,
   onToggleShowSolution: PropTypes.func.isRequired,
   options: PropTypes.object.isRequired,
@@ -28,7 +31,9 @@ const propTypes = {
 }
 
 const defaultProps = {
+  activeInstance: 0,
   description: undefined,
+  numInstances: 1,
   pageTitle: 'EvaluationLayout',
   totalResponses: undefined,
 }

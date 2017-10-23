@@ -529,9 +529,9 @@ exports[`Storyshots confusion ConfusionSlider 1`] = `
 </div>
 `;
 
-exports[`Storyshots evaluation/charts TableChart 1`] = `
+exports[`Storyshots evaluation/charts TableChart (FREE) 1`] = `
 <div
-  className="jsx-144321687 tableChart"
+  className="jsx-2550815555 tableChart"
 >
   <div>
     <table
@@ -578,6 +578,21 @@ exports[`Storyshots evaluation/charts TableChart 1`] = `
               </span>
             </span>
           </th>
+          <th
+            className="griddle-table-heading-cell solutionColumn"
+            onClick={[Function]}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "cursor": "pointer",
+              }
+            }
+          >
+            <span>
+              T/F
+            </span>
+          </th>
         </tr>
       </thead>
       <tbody
@@ -596,27 +611,38 @@ exports[`Storyshots evaluation/charts TableChart 1`] = `
             onClick={undefined}
             onMouseEnter={undefined}
             onMouseLeave={undefined}
-            style={
-              Object {
-                "width": "80%",
-              }
-            }
+            style={undefined}
           >
             hehe
           </td>
           <td
-            className="griddle-cell"
+            className="griddle-cell countColumn"
             onClick={undefined}
             onMouseEnter={undefined}
             onMouseLeave={undefined}
             style={
               Object {
-                "width": "20%",
+                "width": "3rem",
               }
             }
           >
             100
           </td>
+          <td
+            className="griddle-cell solutionColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "1rem",
+              }
+            }
+          >
+            <span>
+              F
+            </span>
+          </td>
         </tr>
         <tr
           className="griddle-row"
@@ -630,26 +656,37 @@ exports[`Storyshots evaluation/charts TableChart 1`] = `
             onClick={undefined}
             onMouseEnter={undefined}
             onMouseLeave={undefined}
-            style={
-              Object {
-                "width": "80%",
-              }
-            }
+            style={undefined}
           >
             hello world
           </td>
           <td
-            className="griddle-cell"
+            className="griddle-cell countColumn"
             onClick={undefined}
             onMouseEnter={undefined}
             onMouseLeave={undefined}
             style={
               Object {
-                "width": "20%",
+                "width": "3rem",
               }
             }
           >
             10
+          </td>
+          <td
+            className="griddle-cell solutionColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "1rem",
+              }
+            }
+          >
+            <span>
+              F
+            </span>
           </td>
         </tr>
         <tr
@@ -664,27 +701,38 @@ exports[`Storyshots evaluation/charts TableChart 1`] = `
             onClick={undefined}
             onMouseEnter={undefined}
             onMouseLeave={undefined}
-            style={
-              Object {
-                "width": "80%",
-              }
-            }
+            style={undefined}
           >
             hello worlds
           </td>
           <td
-            className="griddle-cell"
+            className="griddle-cell countColumn"
             onClick={undefined}
             onMouseEnter={undefined}
             onMouseLeave={undefined}
             style={
               Object {
-                "width": "20%",
+                "width": "3rem",
               }
             }
           >
             10
           </td>
+          <td
+            className="griddle-cell solutionColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "1rem",
+              }
+            }
+          >
+            <span>
+              F
+            </span>
+          </td>
         </tr>
         <tr
           className="griddle-row"
@@ -698,26 +746,37 @@ exports[`Storyshots evaluation/charts TableChart 1`] = `
             onClick={undefined}
             onMouseEnter={undefined}
             onMouseLeave={undefined}
-            style={
-              Object {
-                "width": "80%",
-              }
-            }
+            style={undefined}
           >
             blablabla 
           </td>
           <td
-            className="griddle-cell"
+            className="griddle-cell countColumn"
             onClick={undefined}
             onMouseEnter={undefined}
             onMouseLeave={undefined}
             style={
               Object {
-                "width": "20%",
+                "width": "3rem",
               }
             }
           >
             5
+          </td>
+          <td
+            className="griddle-cell solutionColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "1rem",
+              }
+            }
+          >
+            <span>
+              F
+            </span>
           </td>
         </tr>
         <tr
@@ -732,26 +791,37 @@ exports[`Storyshots evaluation/charts TableChart 1`] = `
             onClick={undefined}
             onMouseEnter={undefined}
             onMouseLeave={undefined}
-            style={
-              Object {
-                "width": "80%",
-              }
-            }
+            style={undefined}
           >
             blaaaali 
           </td>
           <td
-            className="griddle-cell"
+            className="griddle-cell countColumn"
             onClick={undefined}
             onMouseEnter={undefined}
             onMouseLeave={undefined}
             style={
               Object {
-                "width": "20%",
+                "width": "3rem",
               }
             }
           >
             5
+          </td>
+          <td
+            className="griddle-cell solutionColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "1rem",
+              }
+            }
+          >
+            <span>
+              F
+            </span>
           </td>
         </tr>
         <tr
@@ -766,26 +836,37 @@ exports[`Storyshots evaluation/charts TableChart 1`] = `
             onClick={undefined}
             onMouseEnter={undefined}
             onMouseLeave={undefined}
-            style={
-              Object {
-                "width": "80%",
-              }
-            }
+            style={undefined}
           >
             asdasd
           </td>
           <td
-            className="griddle-cell"
+            className="griddle-cell countColumn"
             onClick={undefined}
             onMouseEnter={undefined}
             onMouseLeave={undefined}
             style={
               Object {
-                "width": "20%",
+                "width": "3rem",
               }
             }
           >
             1
+          </td>
+          <td
+            className="griddle-cell solutionColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "1rem",
+              }
+            }
+          >
+            <span>
+              F
+            </span>
           </td>
         </tr>
       </tbody>
@@ -813,19 +894,23 @@ exports[`Storyshots evaluation/charts TableChart 1`] = `
 
 exports[`Storyshots evaluation/components Chart 1`] = `
 <div
-  className="jsx-3934556491 chart"
+  className="jsx-1161725731 chart"
 >
-  <button
-    className="ui button showGraphButton"
-    disabled={undefined}
-    onClick={[Function]}
-    role="button"
-    tabIndex={undefined}
+  <div
+    className="jsx-1161725731 noChart"
   >
-    <span>
-      Show Graph
-    </span>
-  </button>
+    <button
+      className="ui button showGraphButton"
+      disabled={undefined}
+      onClick={[Function]}
+      role="button"
+      tabIndex={undefined}
+    >
+      <span>
+        Show Graph
+      </span>
+    </button>
+  </div>
 </div>
 `;
 
@@ -939,7 +1024,7 @@ exports[`Storyshots evaluation/components Possibilities (SC) 1`] = `
 
 exports[`Storyshots evaluation/components Visualization 1`] = `
 <div
-  className="jsx-704040651 visualization"
+  className="jsx-704040651 visualizationType"
 >
   <div
     aria-busy={undefined}
@@ -1001,6 +1086,8 @@ exports[`Storyshots evaluation/components Visualization 1`] = `
           Array [
             "SC",
             "MC",
+            "FREE",
+            "FREE:RANGE",
           ]
         }
       >
@@ -1026,6 +1113,8 @@ exports[`Storyshots evaluation/components Visualization 1`] = `
           Array [
             "SC",
             "MC",
+            "FREE",
+            "FREE:RANGE",
           ]
         }
       >
@@ -1052,6 +1141,7 @@ exports[`Storyshots evaluation/components Visualization 1`] = `
             "SC",
             "MC",
             "FREE",
+            "FREE:RANGE",
           ]
         }
       >
