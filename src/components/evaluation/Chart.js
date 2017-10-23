@@ -27,6 +27,13 @@ const defaultProps = {
   visualizationType: 'TABLE',
 }
 
+const chartTypes = {
+  BAR_CHART: BarChart,
+  PIE_CHART: PieChart,
+  TABLE: TableChart,
+  WORD_CLOUD: CloudChart,
+}
+
 function Chart({
   results, handleShowGraph, showGraph, showSolution, visualizationType,
 }) {
@@ -36,41 +43,37 @@ function Chart({
         // if the chart display has not already been toggled
         if (!showGraph) {
           return (
-            <Button className="showGraphButton" onClick={handleShowGraph}>
-              <FormattedMessage
-                id="teacher.evaluation.graph.showGraph"
-                defaultMessage="Show Graph"
-              />
-            </Button>
+            <div className="noChart">
+              <Button className="showGraphButton" onClick={handleShowGraph}>
+                <FormattedMessage
+                  id="teacher.evaluation.graph.showGraph"
+                  defaultMessage="Show Graph"
+                />
+              </Button>
+            </div>
           )
         }
 
-        switch (visualizationType) {
-          case 'TABLE':
-            return <TableChart data={results.data} />
-
-          case 'PIE_CHART':
-            return <PieChart isSolutionShown={showSolution} data={results.data} />
-
-          case 'BAR_CHART':
-            return <BarChart isSolutionShown={showSolution} data={results.data} />
-
-          case 'WORD_CLOUD':
-            return <CloudChart data={results.data} />
-
-          default:
-            return <div>This type of graph is not implemented yet!</div>
+        const ChartComponent = chartTypes[visualizationType]
+        if (ChartComponent) {
+          return <ChartComponent isSolutionShown={showSolution} data={results.data} />
         }
+
+        return <div>This chart type is not implemented yet.</div>
       })()}
 
       <style jsx>{`
         .chart {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-
           height: 100%;
           width: 100%;
+
+          .noChart {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            height: 100%;
+          }
         }
       `}</style>
     </div>

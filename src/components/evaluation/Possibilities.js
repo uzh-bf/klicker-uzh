@@ -52,18 +52,32 @@ const Possibilities = ({ questionOptions, questionType }) => (
 
         return (
           <List celled>
-            {restrictions.min && (
-              <List.Item>
-                <List.Header>Minimum</List.Header>
-                {restrictions.min}
-              </List.Item>
-            )}
-            {restrictions.max && (
-              <List.Item>
-                <List.Header>Maximum</List.Header>
-                {restrictions.max}
-              </List.Item>
-            )}
+            {(() => {
+              const comp = []
+              if (restrictions.min) {
+                comp.push(
+                  <List.Item>
+                    <List.Header>Minimum</List.Header>
+                    {restrictions.min}
+                  </List.Item>,
+                )
+              }
+
+              if (restrictions.max) {
+                comp.push(
+                  <List.Item>
+                    <List.Header>Maximum</List.Header>
+                    {restrictions.max}
+                  </List.Item>,
+                )
+              }
+
+              if (comp.length > 0) {
+                return comp
+              }
+
+              return <div>No restrictions.</div>
+            })()}
           </List>
         )
       }

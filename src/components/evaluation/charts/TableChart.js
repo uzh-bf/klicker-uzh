@@ -9,10 +9,12 @@ const propTypes = {
       value: PropTypes.string.isRequired,
     }),
   ),
+  isSolutionShown: PropTypes.bool,
 }
 
 const defaultProps = {
   data: [],
+  isSolutionShown: false,
 }
 
 // define a custom layout
@@ -31,7 +33,7 @@ Layout.propTypes = {
 }
 
 // virtual scrolling: use plugins.PositionPlugin({ tableHeight: 500 })?
-function TableChart({ data }) {
+function TableChart({ data, isSolutionShown }) {
   return (
     <div className="tableChart">
       <Griddle
@@ -49,14 +51,19 @@ function TableChart({ data }) {
       </Griddle>
 
       <style jsx>{`
-        .tableChart :global(.griddle-table) {
+        .tableChart {
           width: 100%;
+
+          :global(.griddle-table) {
+            width: 100%;
+          }
 
           :global(.griddle-table-heading) {
             background-color: lightgrey;
           }
 
           :global(.griddle-table-heading-cell, .griddle-cell) {
+            font-size: 1.25rem;
             padding: 0.5rem;
             text-align: left;
           }

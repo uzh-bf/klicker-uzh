@@ -16,7 +16,6 @@ const options = [
   { text: 'Word cloud', value: 'WORD_CLOUD', withinType: ['FREE'] },
   { text: 'Table', value: 'TABULAR', withinType: ['SC', 'MC', 'FREE'] },
   { text: 'Histogramm', value: 'HISTOGRAM', withinType: ['FREE:RANGE'] },
-  { text: 'Ranking', value: 'RANKING', withinType: ['FREE:RANGE'] },
 ]
 
 const VisualizationType = ({ intl, onChangeType, type }) => (
