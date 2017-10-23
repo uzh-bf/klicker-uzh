@@ -97,24 +97,6 @@ export const RunningSessionQuery = gql`
   }
 `
 
-// Used in: Evaluation
-export const SessionEvaluationQuery = gql`
-  {
-    activeInstance {
-      id
-      question {
-        title
-        type
-      }
-      responses {
-        id
-        value
-        createdAt
-      }
-    }
-  }
-`
-
 // Used in: Navbar
 export const AccountSummaryQuery = gql`
   {
@@ -147,12 +129,12 @@ export const ActiveInstancesQuery = gql`
           free {
             count
             key
-            text
             value
           }
         }
       }
       question {
+        id
         title
         type
         versions {
