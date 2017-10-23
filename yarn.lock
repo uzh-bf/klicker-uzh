@@ -3756,6 +3756,9 @@ fs.realpath@^1.0.0:
 fsevents@^1.0.0, fsevents@^1.1.1:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/fsevents/-/fsevents-1.1.2.tgz#3282b713fb3ad80ede0e9fcf4611b5aa6fc033f4"
+  dependencies:
+    nan "^2.3.0"
+    node-pre-gyp "^0.6.36"
 
 fstream@^1.0.0, fstream@^1.0.2:
   version "1.0.11"
@@ -7426,9 +7429,9 @@ react-style-proptype@^3.0.0:
   dependencies:
     prop-types "^15.5.4"
 
-react-tagsinput@3.18.0:
-  version "3.18.0"
-  resolved "https://registry.yarnpkg.com/react-tagsinput/-/react-tagsinput-3.18.0.tgz#40e036fc0f4c3d6b4689858189ab02926717a818"
+react-tagsinput@3.19.0:
+  version "3.19.0"
+  resolved "https://registry.yarnpkg.com/react-tagsinput/-/react-tagsinput-3.19.0.tgz#6e3b45595f2d295d4657bf194491988f948caabf"
 
 react-test-renderer@16.0.0:
   version "16.0.0"
