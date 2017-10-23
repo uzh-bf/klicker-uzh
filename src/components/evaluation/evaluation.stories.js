@@ -16,20 +16,13 @@ import {
 
 import { intlMock } from '../../../.storybook/utils'
 
-const results = {
-  choices: [
-    { correct: false, name: 'option 1', numberOfVotes: 56 },
-    {
-      correct: true,
-      name: 'option 2',
-      numberOfVotes: 344,
-    },
-    { correct: false, name: 'some other option', numberOfVotes: 9 },
-  ],
-  totalResponses: 409,
-}
+const dataSC = [
+  { value: 'option1', count: 56, correct: false },
+  { value: 'option2', count: 344, correct: true },
+  { value: 'some other option', count: 9, correct: false },
+]
 
-const data = [
+const dataFREE = [
   { count: 10, value: 'hello world' },
   { count: 5, value: 'blablabla ' },
   { count: 100, value: 'hehe' },
@@ -73,9 +66,9 @@ storiesOf('evaluation/components', module)
   ))
 
 storiesOf('evaluation/charts', module)
-  .add('BarChart [NoTest]', () => <BarChart results={results} />)
-  .add('BarChart (with solution) [NoTest]', () => <BarChart isSolutionShown results={results} />)
-  .add('PieChart [NoTest]', () => <PieChart results={results} />)
-  .add('PieChart (with solution) [NoTest]', () => <PieChart isSolutionShown results={results} />)
-  .add('TableChart', () => <TableChart data={data} />)
-  .add('CloudChart', () => <CloudChart data={data} />)
+  .add('BarChart [NoTest]', () => <BarChart data={dataSC} />)
+  .add('BarChart (with solution) [NoTest]', () => <BarChart isSolutionShown data={dataSC} />)
+  .add('PieChart [NoTest]', () => <PieChart data={dataSC} />)
+  .add('PieChart (with solution) [NoTest]', () => <PieChart isSolutionShown data={dataSC} />)
+  .add('TableChart (FREE)', () => <TableChart data={dataFREE} />)
+  .add('CloudChart (FREE) [NoTest]', () => <CloudChart data={dataFREE} />)

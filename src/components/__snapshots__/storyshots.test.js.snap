@@ -529,6 +529,288 @@ exports[`Storyshots confusion ConfusionSlider 1`] = `
 </div>
 `;
 
+exports[`Storyshots evaluation/charts TableChart 1`] = `
+<div
+  className="jsx-144321687 tableChart"
+>
+  <div>
+    <table
+      className="griddle-table"
+      style={undefined}
+    >
+      <thead
+        className="griddle-table-heading"
+        style={undefined}
+      >
+        <tr>
+          <th
+            className="griddle-table-heading-cell"
+            onClick={[Function]}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "cursor": "pointer",
+              }
+            }
+          >
+            <span>
+              Value
+            </span>
+          </th>
+          <th
+            className="griddle-table-heading-cell"
+            onClick={[Function]}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "cursor": "pointer",
+              }
+            }
+          >
+            <span>
+              Count
+              <span
+                className="griddle-heading-descending"
+              >
+                ▼
+              </span>
+            </span>
+          </th>
+        </tr>
+      </thead>
+      <tbody
+        className="griddle-table-body"
+        style={undefined}
+      >
+        <tr
+          className="griddle-row"
+          onClick={undefined}
+          onMouseEnter={undefined}
+          onMouseLeave={undefined}
+          style={undefined}
+        >
+          <td
+            className="griddle-cell"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "80%",
+              }
+            }
+          >
+            hehe
+          </td>
+          <td
+            className="griddle-cell"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "20%",
+              }
+            }
+          >
+            100
+          </td>
+        </tr>
+        <tr
+          className="griddle-row"
+          onClick={undefined}
+          onMouseEnter={undefined}
+          onMouseLeave={undefined}
+          style={undefined}
+        >
+          <td
+            className="griddle-cell"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "80%",
+              }
+            }
+          >
+            hello world
+          </td>
+          <td
+            className="griddle-cell"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "20%",
+              }
+            }
+          >
+            10
+          </td>
+        </tr>
+        <tr
+          className="griddle-row"
+          onClick={undefined}
+          onMouseEnter={undefined}
+          onMouseLeave={undefined}
+          style={undefined}
+        >
+          <td
+            className="griddle-cell"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "80%",
+              }
+            }
+          >
+            hello worlds
+          </td>
+          <td
+            className="griddle-cell"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "20%",
+              }
+            }
+          >
+            10
+          </td>
+        </tr>
+        <tr
+          className="griddle-row"
+          onClick={undefined}
+          onMouseEnter={undefined}
+          onMouseLeave={undefined}
+          style={undefined}
+        >
+          <td
+            className="griddle-cell"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "80%",
+              }
+            }
+          >
+            blablabla 
+          </td>
+          <td
+            className="griddle-cell"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "20%",
+              }
+            }
+          >
+            5
+          </td>
+        </tr>
+        <tr
+          className="griddle-row"
+          onClick={undefined}
+          onMouseEnter={undefined}
+          onMouseLeave={undefined}
+          style={undefined}
+        >
+          <td
+            className="griddle-cell"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "80%",
+              }
+            }
+          >
+            blaaaali 
+          </td>
+          <td
+            className="griddle-cell"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "20%",
+              }
+            }
+          >
+            5
+          </td>
+        </tr>
+        <tr
+          className="griddle-row"
+          onClick={undefined}
+          onMouseEnter={undefined}
+          onMouseLeave={undefined}
+          style={undefined}
+        >
+          <td
+            className="griddle-cell"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "80%",
+              }
+            }
+          >
+            asdasd
+          </td>
+          <td
+            className="griddle-cell"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "20%",
+              }
+            }
+          >
+            1
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div
+      className="griddle-pagination"
+      style={undefined}
+    >
+      <select
+        className="griddle-page-select"
+        onChange={[Function]}
+        style={undefined}
+        value={1}
+      >
+        <option
+          value={1}
+        >
+          1
+        </option>
+      </select>
+    </div>
+  </div>
+</div>
+`;
+
 exports[`Storyshots evaluation/components Chart 1`] = `
 <div
   className="jsx-3934556491 chart"
