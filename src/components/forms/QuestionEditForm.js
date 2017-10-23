@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import isEmpty from 'validator/lib/isEmpty'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage, intlShape } from 'react-intl'
-import { Button, Form } from 'semantic-ui-react'
+import { Button, Dropdown, Form } from 'semantic-ui-react'
 
 import { ContentInput, TagInput } from '../questions'
 import {
@@ -72,6 +72,7 @@ const propTypes = {
   ),
   title: PropTypes.string.isRequired,
   type: PropTypes.string,
+  versions: PropTypes.arrayOf(PropTypes.number),
 }
 
 const defaultProps = {
@@ -80,6 +81,7 @@ const defaultProps = {
   },
   tags: [],
   type: QuestionTypes.SC,
+  versions: [],
 }
 
 const QuestionEditForm = ({
@@ -90,6 +92,7 @@ const QuestionEditForm = ({
                             type,
                             handleSubmit: onSubmit,
                             onDiscard,
+                            versions,
                           }) => {
   const typeComponents = {
     [QuestionTypes.SC]: {
@@ -106,28 +109,48 @@ const QuestionEditForm = ({
     },
   }
 
+  // iterate through versions to map values to dropdown preferred option set
+  const versionOptions = []
+  versions.forEach(value => versionOptions.push({ text: value, value }))
+
   return (
     <div className="questionEditForm">
       <Form onSubmit={onSubmit}>
-        <div className="questionInput questionTitle field">
-          <label htmlFor="title">
-            <FormattedMessage defaultMessage="Title" id="teacher.editQuestion.title" />
-          </label>
-          <div className="title">{title}</div>
+        <div className="questionInput questionTitle">
+          <div className="field">
+            <label htmlFor="title">
+              <FormattedMessage defaultMessage="Title" id="teacher.editQuestion.title" />
+            </label>
+            <div className="title">{title}</div>
+          </div>
         </div>
 
-        <div className="questionInput questionType field">
-          <label htmlFor="type">
-            <FormattedMessage defaultMessage="Question Type" id="teacher.editQuestion.type" />
-          </label>
-          <div className="type">{type}</div>
+        <div className="questionInput questionType">
+          <div className="field">
+            <label htmlFor="type">
+              <FormattedMessage defaultMessage="Question Type" id="teacher.editQuestion.type" />
+            </label>
+            <div className="type">{type}</div>
+          </div>
         </div>
 
-        <div className="questionInput questionVersion field">
-          <label htmlFor="version">
-            <FormattedMessage defaultMessage="Version" id="teacher.editQuestion.version" />
-          </label>
-          <div className="version">Hello I am version #1</div>
+        <div className="questionInput questionVersion">
+          <div className="field">
+            <label htmlFor="version">
+              <FormattedMessage defaultMessage="Version" id="teacher.editQuestion.version" />
+            </label>
+            <div className="version">
+              <Dropdown
+                placeholder={intl.formatMessage({
+                  defaultMessage: 'Select version',
+                  id: 'form.questionEditForm.versionDropdown.placeholder',
+                })}
+                fluid
+                selection
+                options={versionOptions}
+              />
+            </div>
+          </div>
         </div>
 
         <div className="questionInput questionTags">
@@ -165,6 +188,7 @@ const QuestionEditForm = ({
           margin-bottom: 1rem;
         }
 
+        // HACK: currently one field item in question div to full-fill bigger font-size
         .questionInput > :global(.field > label) {
           font-size: 1.2rem;
         }
