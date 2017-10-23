@@ -31,10 +31,10 @@ const LoadingTeacherLayout = ({
   )
 }
 LoadingTeacherLayout.propTypes = {
+  children: PropTypes.element.isRequired,
   intl: intlShape.isRequired,
   pageId: PropTypes.string.isRequired,
   title: PropTypes.string.isRequired,
-  children: PropTypes.element.isRequired,
 }
 
 export { LoadingDiv, LoadingTeacherLayout }
