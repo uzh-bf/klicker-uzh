@@ -12,11 +12,11 @@ import { ActiveInstancesQuery } from '../../graphql/queries'
 const propTypes = {
   activeInstance: PropTypes.number,
   activeInstances: PropTypes.array.isRequired,
-
   handleChangeActiveInstance: PropTypes.func.isRequired,
   handleChangeVisualizationType: PropTypes.func.isRequired,
   handleShowGraph: PropTypes.func.isRequired,
   handleToggleShowSolution: PropTypes.func.isRequired,
+  instanceTitles: PropTypes.arrayOf(PropTypes.string),
   intl: intlShape.isRequired,
   showGraph: PropTypes.bool.isRequired,
   showSolution: PropTypes.bool.isRequired,
@@ -24,6 +24,7 @@ const propTypes = {
 }
 const defaultProps = {
   activeInstance: 0,
+  instanceTitles: [],
 }
 
 const mapActiveInstance = (activeInstance) => {
@@ -57,6 +58,7 @@ const mapActiveInstance = (activeInstance) => {
 function Evaluation({
   activeInstances,
   activeInstance,
+  instanceTitles,
   intl,
   handleChangeActiveInstance,
   showGraph,
@@ -86,8 +88,8 @@ function Evaluation({
     activeInstance,
     chart,
     description,
+    instanceTitles,
     intl,
-    numInstances: activeInstances.length,
     onChangeActiveInstance: handleChangeActiveInstance,
     onChangeVisualizationType: handleChangeVisualizationType,
     onToggleShowSolution: handleToggleShowSolution,
@@ -139,5 +141,6 @@ export default compose(
   ),
   withProps(({ data }) => ({
     activeInstances: data.activeInstances.map(mapActiveInstance),
+    instanceTitles: data.activeInstances.map(instance => instance.question.title),
   })),
 )(Evaluation)

@@ -2,7 +2,6 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { intlShape } from 'react-intl'
 import { Checkbox, Menu } from 'semantic-ui-react'
-import _range from 'lodash/range'
 
 import { CommonLayout } from '.'
 import { Info, Possibilities, VisualizationType } from '../evaluation'
@@ -17,8 +16,8 @@ const propTypes = {
     }),
   ).isRequired,
   description: PropTypes.string,
+  instanceTitles: PropTypes.arrayOf(PropTypes.string),
   intl: intlShape.isRequired,
-  numInstances: PropTypes.number,
   onChangeActiveInstance: PropTypes.func.isRequired,
   onChangeVisualizationType: PropTypes.func.isRequired,
   onToggleShowSolution: PropTypes.func.isRequired,
@@ -33,7 +32,7 @@ const propTypes = {
 const defaultProps = {
   activeInstance: 0,
   description: undefined,
-  numInstances: 1,
+  instanceTitles: [],
   pageTitle: 'EvaluationLayout',
   totalResponses: undefined,
 }
@@ -50,23 +49,23 @@ function EvaluationLayout({
   onChangeVisualizationType,
   totalResponses,
   options,
-  numInstances,
   activeInstance,
   onChangeActiveInstance,
+  instanceTitles,
 }) {
   return (
     <CommonLayout baseFontSize="22px" pageTitle={pageTitle}>
       <div className="evaluationLayout">
-        {numInstances > 0 && (
+        {instanceTitles.length > 1 && (
           <div className="instanceChooser">
             <Menu fitted tabular>
-              {_range(numInstances).map(num => (
+              {instanceTitles.map((instanceTitle, index) => (
                 <Menu.Item
                   fitted
-                  active={num === activeInstance}
-                  onClick={onChangeActiveInstance(num)}
+                  active={index === activeInstance}
+                  onClick={onChangeActiveInstance(index)}
                 >
-                  {num}
+                  {instanceTitle}
                 </Menu.Item>
               ))}
             </Menu>
@@ -130,6 +129,7 @@ function EvaluationLayout({
                   padding-bottom: 0;
 
                   :global(.menu .item) {
+                    font-size: 0.7rem;
                     padding: 0 1rem;
                     margin-bottom: 0;
                   }
