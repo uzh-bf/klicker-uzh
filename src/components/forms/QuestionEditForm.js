@@ -123,6 +123,13 @@ const QuestionEditForm = ({
           <div className="type">{type}</div>
         </div>
 
+        <div className="questionInput questionVersion field">
+          <label htmlFor="version">
+            <FormattedMessage defaultMessage="Version" id="teacher.editQuestion.version" />
+          </label>
+          <div className="version">Hello I am version #1</div>
+        </div>
+
         <div className="questionInput questionTags">
           <Field name="tags" component={TagInput} tags={tags} />
         </div>
@@ -170,7 +177,7 @@ const QuestionEditForm = ({
               grid-gap: 1rem;
               grid-template-columns: repeat(2, 1fr);
               grid-template-rows: auto;
-              grid-template-areas: 'title type' 'tags tags' 'content content' 'options options';
+              grid-template-areas: 'title type' 'version tags' 'content content' 'options options';
             }
 
             .questionInput {
@@ -183,6 +190,10 @@ const QuestionEditForm = ({
 
             .questionType {
               grid-area: type;
+            }
+
+            .questionVersion {
+              grid-area: version;
             }
 
             .questionTags {
