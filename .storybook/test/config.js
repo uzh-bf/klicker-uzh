@@ -6,7 +6,7 @@ import { IntlProvider } from 'react-intl'
 // import TestBackend from 'react-dnd-test-backend';
 
 // add global decorator for react-intl
-addDecorator(story => <IntlProvider>{story()}</IntlProvider>)
+addDecorator(story => <IntlProvider locale="en">{story()}</IntlProvider>)
 
 // addDecorator(story => DragDropContext(TestBackend)(<div>{story()}</div>))
 

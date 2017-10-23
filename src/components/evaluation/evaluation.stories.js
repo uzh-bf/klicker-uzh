@@ -3,7 +3,16 @@
 import React from 'react'
 import { storiesOf } from '@storybook/react'
 
-import { Chart, Info, Possibilities, VisualizationType, BarChart, PieChart } from '.'
+import {
+  Chart,
+  Info,
+  Possibilities,
+  VisualizationType,
+  BarChart,
+  PieChart,
+  TableChart,
+  CloudChart,
+} from '.'
 
 import { intlMock } from '../../../.storybook/utils'
 
@@ -19,6 +28,15 @@ const results = {
   ],
   totalResponses: 409,
 }
+
+const data = [
+  { count: 10, value: 'hello world' },
+  { count: 5, value: 'blablabla ' },
+  { count: 100, value: 'hehe' },
+  { count: 1, value: 'asdasd' },
+  { count: 10, value: 'hello worlds' },
+  { count: 5, value: 'blaaaali ' },
+]
 
 storiesOf('evaluation/components', module)
   .add('Chart', () => <Chart />)
@@ -59,3 +77,5 @@ storiesOf('evaluation/charts', module)
   .add('BarChart (with solution) [NoTest]', () => <BarChart isSolutionShown results={results} />)
   .add('PieChart [NoTest]', () => <PieChart results={results} />)
   .add('PieChart (with solution) [NoTest]', () => <PieChart isSolutionShown results={results} />)
+  .add('TableChart', () => <TableChart data={data} />)
+  .add('CloudChart', () => <CloudChart data={data} />)
