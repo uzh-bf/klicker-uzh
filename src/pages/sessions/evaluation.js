@@ -26,6 +26,34 @@ const defaultProps = {
   activeInstance: 0,
 }
 
+const mapActiveInstance = (activeInstance) => {
+  if (activeInstance.question.type === 'SC') {
+    return {
+      ...activeInstance,
+      results: {
+        data: activeInstance.question.versions[0].options.choices.map((choice, index) => ({
+          correct: choice.correct,
+          count: activeInstance.results ? activeInstance.results.choices[index] : 0,
+          value: choice.name,
+        })),
+        totalResponses: activeInstance.responses.length,
+      },
+    }
+  }
+
+  if (activeInstance.question.type === 'FREE') {
+    return {
+      ...activeInstance,
+      results: {
+        data: activeInstance.results ? activeInstance.results.free : [],
+        totalResponses: activeInstance.responses.length,
+      },
+    }
+  }
+
+  return activeInstance
+}
+
 function Evaluation({
   activeInstances,
   activeInstance,
@@ -87,8 +115,10 @@ export default compose(
   withState('showGraph', 'setShowGraph', false),
   withState('showSolution', 'setShowSolution', false),
   withState('visualizationType', 'handleChangeVisualizationType', 'PIE_CHART'),
-  withState('activeInstance', 'handleChangeActiveInstance', 0),
+  withState('activeInstance', 'setActiveInstance', 0),
   withHandlers({
+    handleChangeActiveInstance: ({ setActiveInstance }) => newInstance => () =>
+      setActiveInstance(newInstance),
     // handle toggle of the visualization display
     // the visualization display can only be toggled once, so only allow setting to true
     handleShowGraph: ({ setShowGraph }) => () => setShowGraph(true),
@@ -107,41 +137,7 @@ export default compose(
     ({ data }) => !(data.activeInstances && data.activeInstances.length > 0),
     renderComponent(() => <div>No evaluation currently active.</div>),
   ),
-  withProps(({ data }) => {
-    const activeInstance = data.activeInstances[0]
-
-    if (activeInstance.question.type === 'SC') {
-      return {
-        activeInstances: [
-          {
-            ...activeInstance,
-            results: {
-              data: activeInstance.question.versions[0].options.choices.map((choice, index) => ({
-                correct: choice.correct,
-                count: activeInstance.results ? activeInstance.results.choices[index] : 0,
-                value: choice.name,
-              })),
-              totalResponses: activeInstance.responses.length,
-            },
-          },
-        ],
-      }
-    }
-
-    if (activeInstance.question.type === 'FREE') {
-      return {
-        activeInstances: [
-          {
-            ...activeInstance,
-            results: {
-              data: activeInstance.results ? activeInstance.results.free : [],
-              totalResponses: activeInstance.responses.length,
-            },
-          },
-        ],
-      }
-    }
-
-    return data.activeInstances
-  }),
+  withProps(({ data }) => ({
+    activeInstances: data.activeInstances.map(mapActiveInstance),
+  })),
 )(Evaluation)

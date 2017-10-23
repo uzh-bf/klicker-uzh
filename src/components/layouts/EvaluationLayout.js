@@ -2,6 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { intlShape } from 'react-intl'
 import { Checkbox, Menu } from 'semantic-ui-react'
+import _range from 'lodash/range'
 
 import { CommonLayout } from '.'
 import { Info, Possibilities, VisualizationType } from '../evaluation'
@@ -51,9 +52,19 @@ function EvaluationLayout({
   return (
     <CommonLayout baseFontSize="22px" pageTitle={pageTitle}>
       <div className="evaluationLayout">
-        {numInstances > 1 && (
+        {numInstances > 0 && (
           <div className="instanceChooser">
-            <Menu>asdasd</Menu>
+            <Menu fitted tabular>
+              {_range(numInstances).map(num => (
+                <Menu.Item
+                  fitted
+                  active={num === activeInstance}
+                  onClick={onChangeActiveInstance(num)}
+                >
+                  {num}
+                </Menu.Item>
+              ))}
+            </Menu>
           </div>
         )}
 
@@ -110,6 +121,13 @@ function EvaluationLayout({
 
                 .instanceChooser {
                   grid-area: instanceChooser;
+                  padding: 0.3rem;
+                  padding-bottom: 0;
+
+                  :global(.menu .item) {
+                    padding: 0 1rem;
+                    margin-bottom: 0;
+                  }
                 }
 
                 .questionDetails {
