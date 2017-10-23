@@ -146,6 +146,10 @@ apollo-tracing@^0.0.x:
   dependencies:
     graphql-tools "^2.2.0"
 
+apollo-utilities@^0.1.1-0:
+  version "0.1.1-1"
+  resolved "https://registry.yarnpkg.com/apollo-utilities/-/apollo-utilities-0.1.1-1.tgz#a637c2a5b49e06f20dd9adf7c55ec1ff69a97592"
+
 apollo-utilities@^0.2.0-beta.0:
   version "0.2.0-rc.0"
   resolved "https://registry.yarnpkg.com/apollo-utilities/-/apollo-utilities-0.2.0-rc.0.tgz#5ac93a839c5688e8f655dc7d5789a5d878f4351f"
@@ -1714,11 +1718,11 @@ graphql-subscriptions@0.5.4:
     es6-promise "^4.1.1"
     iterall "^1.1.3"
 
-graphql-tools@2.5.1, graphql-tools@^2.2.0:
-  version "2.5.1"
-  resolved "https://registry.yarnpkg.com/graphql-tools/-/graphql-tools-2.5.1.tgz#542c48d4f9a532e09280ae216084813ea7ba4b18"
+graphql-tools@2.6.1:
+  version "2.6.1"
+  resolved "https://registry.yarnpkg.com/graphql-tools/-/graphql-tools-2.6.1.tgz#9f6d1600951a05b18b83c52986c42eee4fd3cb1b"
   dependencies:
-    apollo-link "^0.8.0"
+    apollo-utilities "^0.1.1-0"
     deprecated-decorator "^0.1.6"
     uuid "^3.1.0"
 
@@ -1730,6 +1734,14 @@ graphql-tools@^1:
     uuid "^3.0.1"
   optionalDependencies:
     "@types/graphql" "^0.9.0"
+
+graphql-tools@^2.2.0:
+  version "2.5.1"
+  resolved "https://registry.yarnpkg.com/graphql-tools/-/graphql-tools-2.5.1.tgz#542c48d4f9a532e09280ae216084813ea7ba4b18"
+  dependencies:
+    apollo-link "^0.8.0"
+    deprecated-decorator "^0.1.6"
+    uuid "^3.1.0"
 
 graphql@0.11.7:
   version "0.11.7"
