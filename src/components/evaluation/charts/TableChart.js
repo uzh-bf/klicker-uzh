@@ -32,6 +32,13 @@ Layout.propTypes = {
   Table: PropTypes.element.isRequired,
 }
 
+function ColumnWithSolution({ value }) {
+  return <span>{value ? 'T' : 'F'}</span>
+}
+ColumnWithSolution.propTypes = {
+  value: PropTypes.bool.isRequired,
+}
+
 // virtual scrolling: use plugins.PositionPlugin({ tableHeight: 500 })?
 function TableChart({ data, isSolutionShown }) {
   return (
@@ -45,8 +52,21 @@ function TableChart({ data, isSolutionShown }) {
         }}
       >
         <RowDefinition>
-          <ColumnDefinition id="value" title="Value" width="80%" />
-          <ColumnDefinition id="count" title="Count" width="20%" />
+          <ColumnDefinition id="value" title="Value" />
+          <ColumnDefinition
+            id="count"
+            title="Count"
+            width="3rem"
+            cssClassName="griddle-cell countColumn"
+          />
+          <ColumnDefinition
+            cssClassName="griddle-cell solutionColumn"
+            headerCssClassName="griddle-table-heading-cell solutionColumn"
+            id="correct"
+            title="T/F"
+            customComponent={ColumnWithSolution}
+            width="1rem"
+          />
         </RowDefinition>
       </Griddle>
 
@@ -66,6 +86,14 @@ function TableChart({ data, isSolutionShown }) {
             font-size: 1.25rem;
             padding: 0.5rem;
             text-align: left;
+          }
+
+          :global(.countColumn, .solutionColumn) {
+            text-align: center;
+          }
+
+          :global(.solutionColumn) {
+            display: ${isSolutionShown ? 'table-cell' : 'none'};
           }
         }
       `}</style>
