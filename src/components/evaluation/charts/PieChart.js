@@ -6,7 +6,7 @@ const propTypes = {
   data: PropTypes.arrayOf(
     PropTypes.shape({
       count: PropTypes.number.isRequired,
-      text: PropTypes.string.isRequired,
+      value: PropTypes.string.isRequired,
     }),
   ),
   isSolutionShown: PropTypes.bool,
