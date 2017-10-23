@@ -173,9 +173,8 @@ Index.propTypes = propTypes
 
 export default compose(
   withData,
-  pageWithIntl,
-  withState('creationMode', 'setCreationMode', false),
-  withState('droppedQuestions', 'setDroppedQuestions', []),
+  withState('creationMode', 'setCreationMode', false), // creationMode, setCreationMode
+  withState('droppedQuestions', 'setDroppedQuestions', []), // creationMode, setCreationMode, droppedQuestions, setDroppedQuestions
   withState('filters', 'setFilters', {
     tags: [],
     title: null,
@@ -223,20 +222,20 @@ export default compose(
         }
       }),
   }),
-  graphql(StartSessionMutation),
+  graphql(StartSessionMutation, { name: 'startSession' }),
+  graphql(CreateSessionMutation, { name: 'createSession' }),
   withHandlers({
     // handle starting an existing or newly created session
-    handleStartSession: ({ mutate }) => id =>
-      mutate({
+    handleStartSession: ({ startSession }) => id =>
+      startSession({
         refetchQueries: [{ query: RunningSessionQuery }],
         variables: { id },
       }),
   }),
-  graphql(CreateSessionMutation),
   withHandlers({
     // handle creating a new session
     handleCreateSession: ({
-      mutate,
+      createSession,
       handleCreationModeToggle,
       handleStartSession,
     }) => type => async ({ sessionName, questions }) => {
@@ -245,7 +244,7 @@ export default compose(
         const blocks = questions.map(question => ({ questions: [question.id] }))
 
         // create a new session
-        const result = await mutate({
+        const result = await createSession({
           refetchQueries: [{ query: SessionListQuery }],
           variables: { blocks, name: sessionName },
         })
@@ -263,4 +262,5 @@ export default compose(
       }
     },
   }),
+  pageWithIntl,
 )(Index)
