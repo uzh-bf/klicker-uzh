@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { intlShape } from 'react-intl'
-import { Checkbox } from 'semantic-ui-react'
+import { Checkbox, Menu } from 'semantic-ui-react'
 
 import { CommonLayout } from '.'
 import { Info, Possibilities, VisualizationType } from '../evaluation'
@@ -44,18 +44,30 @@ function EvaluationLayout({
   onChangeVisualizationType,
   totalResponses,
   options,
+  numInstances,
+  activeInstance,
+  onChangeActiveInstance,
 }) {
   return (
     <CommonLayout baseFontSize="22px" pageTitle={pageTitle}>
       <div className="evaluationLayout">
+        {numInstances > 1 && (
+          <div className="instanceChooser">
+            <Menu>asdasd</Menu>
+          </div>
+        )}
+
         <div className="questionDetails">
           <h1>{title}</h1>
           <p>{description}</p>
         </div>
+
         <div className="info">
           <Info totalResponses={totalResponses} />
         </div>
+
         <div className="chart">{chart}</div>
+
         <div className="settings">
           <Checkbox
             toggle
@@ -66,6 +78,7 @@ function EvaluationLayout({
             onChange={onToggleShowSolution}
           />
         </div>
+
         <div className="chartType">
           <VisualizationType
             intl={intl}
@@ -74,6 +87,7 @@ function EvaluationLayout({
             visualization={visualizationType}
           />
         </div>
+
         <div className="optionDisplay">
           <Possibilities questionType={type} questionOptions={options} />
         </div>
@@ -87,11 +101,16 @@ function EvaluationLayout({
                 display: grid;
 
                 grid-template-columns: auto 17rem;
-                grid-template-rows: minmax(auto, 2rem) auto 10rem 5rem;
-                grid-template-areas: 'questionDetails questionDetails' 'graph optionDisplay'
-                  'graph settings' 'info chartType';
+                grid-template-rows: minmax(auto, 0) minmax(auto, 2rem) auto 10rem 5rem;
+                grid-template-areas: 'instanceChooser instanceChooser'
+                  'questionDetails questionDetails' 'graph optionDisplay' 'graph settings'
+                  'info chartType';
 
                 height: 100vh;
+
+                .instanceChooser {
+                  grid-area: instanceChooser;
+                }
 
                 .questionDetails {
                   grid-area: questionDetails;

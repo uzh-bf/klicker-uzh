@@ -10,11 +10,12 @@ const propTypes = {
   type: PropTypes.string.isRequired,
 }
 
+// FIXME: only activate bar and pie charts for FREE:RANGE
 const options = [
-  { text: 'Pie Chart', value: 'PIE_CHART', withinType: ['SC', 'MC'] },
-  { text: 'Bar Chart', value: 'BAR_CHART', withinType: ['SC', 'MC'] },
+  { text: 'Pie Chart', value: 'PIE_CHART', withinType: ['SC', 'MC', 'FREE', 'FREE:RANGE'] },
+  { text: 'Bar Chart', value: 'BAR_CHART', withinType: ['SC', 'MC', 'FREE', 'FREE:RANGE'] },
   { text: 'Word cloud', value: 'WORD_CLOUD', withinType: ['FREE'] },
-  { text: 'Table', value: 'TABULAR', withinType: ['SC', 'MC', 'FREE'] },
+  { text: 'Table', value: 'TABLE', withinType: ['SC', 'MC', 'FREE', 'FREE:RANGE'] },
   { text: 'Histogramm', value: 'HISTOGRAM', withinType: ['FREE:RANGE'] },
 ]
 

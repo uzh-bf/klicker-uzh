@@ -3,7 +3,6 @@ import PropTypes from 'prop-types'
 import { intlShape } from 'react-intl'
 import { compose, withHandlers, withProps, withState, branch, renderComponent } from 'recompose'
 import { graphql } from 'react-apollo'
-import { Message } from 'semantic-ui-react'
 
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
 import { pageWithIntl, withData } from '../../lib'
@@ -11,7 +10,10 @@ import { Chart } from '../../components/evaluation'
 import { ActiveInstancesQuery } from '../../graphql/queries'
 
 const propTypes = {
+  activeInstance: PropTypes.number,
   activeInstances: PropTypes.array.isRequired,
+
+  handleChangeActiveInstance: PropTypes.func.isRequired,
   handleChangeVisualizationType: PropTypes.func.isRequired,
   handleShowGraph: PropTypes.func.isRequired,
   handleToggleShowSolution: PropTypes.func.isRequired,
@@ -20,10 +22,15 @@ const propTypes = {
   showSolution: PropTypes.bool.isRequired,
   visualizationType: PropTypes.string.isRequired,
 }
+const defaultProps = {
+  activeInstance: 0,
+}
 
 function Evaluation({
   activeInstances,
+  activeInstance,
   intl,
+  handleChangeActiveInstance,
   showGraph,
   showSolution,
   visualizationType,
@@ -31,10 +38,10 @@ function Evaluation({
   handleToggleShowSolution,
   handleChangeVisualizationType,
 }) {
-  const { results, question } = activeInstances[0]
+  const { results, question, version } = activeInstances[activeInstance]
   const { title, type } = question
   const { totalResponses } = results
-  const { description, options } = question.versions[0]
+  const { description, options } = question.versions[version]
 
   const chart = (
     <Chart
@@ -43,14 +50,17 @@ function Evaluation({
       results={results}
       showGraph={showGraph}
       showSolution={showSolution}
-      visualization={visualizationType}
+      visualizationType={visualizationType}
     />
   )
 
   const layoutProps = {
+    activeInstance,
     chart,
     description,
     intl,
+    numInstances: activeInstances.length,
+    onChangeActiveInstance: handleChangeActiveInstance,
     onChangeVisualizationType: handleChangeVisualizationType,
     onToggleShowSolution: handleToggleShowSolution,
     options,
@@ -69,17 +79,16 @@ function Evaluation({
 }
 
 Evaluation.propTypes = propTypes
+Evaluation.defaultProps = defaultProps
 
 export default compose(
   withData,
   pageWithIntl,
   withState('showGraph', 'setShowGraph', false),
   withState('showSolution', 'setShowSolution', false),
-  withState('visualizationType', 'setVisualizationType', 'PIE_CHART'),
+  withState('visualizationType', 'handleChangeVisualizationType', 'PIE_CHART'),
+  withState('activeInstance', 'handleChangeActiveInstance', 0),
   withHandlers({
-    // handle change of the visualization type
-    handleChangeVisualizationType: ({ setVisualizationType }) => newType =>
-      setVisualizationType(newType),
     // handle toggle of the visualization display
     // the visualization display can only be toggled once, so only allow setting to true
     handleShowGraph: ({ setShowGraph }) => () => setShowGraph(true),
@@ -96,7 +105,7 @@ export default compose(
   // if the query has finished loading but there are no active instances, show a simple message
   branch(
     ({ data }) => !(data.activeInstances && data.activeInstances.length > 0),
-    renderComponent(() => <Message info>No evaluation currently active.</Message>),
+    renderComponent(() => <div>No evaluation currently active.</div>),
   ),
   withProps(({ data }) => {
     const activeInstance = data.activeInstances[0]
