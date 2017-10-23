@@ -13,13 +13,14 @@ import { reducer as formReducer } from 'redux-form'
 import { intlMock } from '../../../.storybook/utils'
 
 import {
+  FormWithLinks,
   LoginForm,
   PasswordResetForm,
-  RegistrationForm,
   QuestionCreationForm,
-  SessionCreationForm,
-  FormWithLinks,
+  RegistrationForm,
   SemanticInput,
+  SessionCreationForm,
+  QuestionEditForm,
 } from '.'
 
 const rootReducer = combineReducers({
@@ -38,10 +39,10 @@ storiesOf('forms/components', module)
   .add('RegistrationForm', () => <RegistrationForm intl={intlMock} />)
   // HACK: disable test for QuestionCreationForm as autosuggest breaks...
   .add('QuestionCreationForm [NoTest]', () => <QuestionCreationForm intl={intlMock} />)
+  .add('QuestionEditForm', () => (<QuestionEditForm intl={intlMock} />))
   .add('SessionCreationForm', () => (
     <SessionCreationForm intl={intlMock} handleSubmit={() => null} />
   ))
-
 storiesOf('forms/helpers', module)
   .addDecorator(getStory => <ReduxProvider store={store}>{getStory()}</ReduxProvider>)
   .add('FormWithLinks', () => (
