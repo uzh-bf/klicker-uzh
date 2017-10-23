@@ -42,6 +42,13 @@ storiesOf('forms/components', module)
   .add('QuestionEditForm', () => (
     <QuestionEditForm
       intl={intlMock}
+      options={{
+        choices: ['Hello', 'You are small', 'You are big'],
+        randomized: false,
+        restrictions: {
+          type: 'NONE',
+        },
+      }}
       title={'Was ist das denn für eine Frage?'}
       // tags={['Hallo Tag', 'CAPM', 'Internet']}
       type={'SC'}
