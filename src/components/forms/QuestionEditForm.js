@@ -16,8 +16,8 @@ import { QuestionTypes } from '../../lib'
 
 // form validation
 const validate = ({
-                    content, options, tags, title, type,
-                  }) => {
+  content, options, tags, title, type,
+}) => {
   const errors = {}
 
   if (!title || isEmpty(title)) {
@@ -85,15 +85,15 @@ const defaultProps = {
 }
 
 const QuestionEditForm = ({
-                            intl,
-                            invalid,
-                            tags,
-                            title,
-                            type,
-                            handleSubmit: onSubmit,
-                            onDiscard,
-                            versions,
-                          }) => {
+  intl,
+  invalid,
+  tags,
+  title,
+  type,
+  handleSubmit: onSubmit,
+  onDiscard,
+  versions,
+}) => {
   const typeComponents = {
     [QuestionTypes.SC]: {
       input: SCCreationOptions,
@@ -112,6 +112,8 @@ const QuestionEditForm = ({
   // iterate through versions to map values to dropdown preferred option set
   const versionOptions = []
   versions.forEach(value => versionOptions.push({ text: value, value }))
+
+  console.log(tags)
 
   return (
     <div className="questionEditForm">
