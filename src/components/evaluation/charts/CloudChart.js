@@ -14,10 +14,10 @@ const defaultProps = {
   data: [],
 }
 
-function CloudChart({ data }) {
-  const fontSizeMapper = word => Math.log2(word.value) * 5
-  const rotate = word => word.value % 360
+const fontSizeMapper = word => Math.log2(word.value) * 5
+const rotate = word => word.value % 360
 
+function CloudChart({ data }) {
   return (
     <div className="cloudChart">
       <WordCloud

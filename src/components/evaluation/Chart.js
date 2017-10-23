@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
-import { BarChart, PieChart } from '.'
+import { BarChart, PieChart, TableChart, CloudChart } from '.'
 
 // TODO
 const propTypes = {
@@ -17,18 +17,18 @@ const propTypes = {
   }),
   showGraph: PropTypes.bool,
   showSolution: PropTypes.bool,
-  visualization: PropTypes.string,
+  visualizationType: PropTypes.string,
 }
 
 const defaultProps = {
   results: undefined,
   showGraph: false,
   showSolution: true,
-  visualization: 'PIE_CHART',
+  visualizationType: 'TABLE',
 }
 
 function Chart({
-  handleShowGraph, results, showGraph, showSolution, visualization,
+  results, handleShowGraph, showGraph, showSolution, visualizationType,
 }) {
   return (
     <div className="chart">
@@ -45,18 +45,22 @@ function Chart({
           )
         }
 
-        // pie charts
-        if (visualization === 'PIE_CHART') {
-          return <PieChart isSolutionShown={showSolution} choices={results.choices} />
-        }
+        switch (visualizationType) {
+          case 'TABLE':
+            return <TableChart data={results.data} />
 
-        // bar charts
-        if (visualization === 'BAR_CHART') {
-          return <BarChart isSolutionShown={showSolution} choices={results.choices} />
-        }
+          case 'PIE_CHART':
+            return <PieChart isSolutionShown={showSolution} data={results.data} />
 
-        // default
-        return <div>This type of graph is not implemented yet!</div>
+          case 'BAR_CHART':
+            return <BarChart isSolutionShown={showSolution} data={results.data} />
+
+          case 'WORD_CLOUD':
+            return <CloudChart data={results.data} />
+
+          default:
+            return <div>This type of graph is not implemented yet!</div>
+        }
       })()}
 
       <style jsx>{`

@@ -17,9 +17,9 @@ import {
 import { intlMock } from '../../../.storybook/utils'
 
 const dataSC = [
-  { value: 'option1', count: 56, correct: false },
-  { value: 'option2', count: 344, correct: true },
-  { value: 'some other option', count: 9, correct: false },
+  { correct: false, count: 56, value: 'option1' },
+  { correct: true, count: 344, value: 'option2' },
+  { correct: false, count: 9, value: 'some other option' },
 ]
 
 const dataFREE = [
