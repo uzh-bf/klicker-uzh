@@ -50,7 +50,7 @@ storiesOf('forms/components', module)
         },
       }}
       title={'Was ist das denn für eine Frage?'}
-      // tags={['Hallo Tag', 'CAPM', 'Internet']}
+      tags={['Hallo Tag', 'CAPM', 'Internet']}
       type={'SC'}
       versions={[1, 2, 3, 4, 5]}
     />

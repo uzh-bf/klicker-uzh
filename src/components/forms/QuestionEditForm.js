@@ -5,19 +5,14 @@ import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Button, Dropdown, Form } from 'semantic-ui-react'
 
-import { ContentInput, TagInput } from '../questions'
-import {
-  FREECreationOptions,
-  FREECreationPreview,
-  SCCreationOptions,
-  SCCreationPreview,
-} from '../../components/questionTypes'
+import { ContentInput } from '../questions'
+import { FREECreationOptions, SCCreationOptions, } from '../../components/questionTypes'
 import { QuestionTypes } from '../../lib'
 
 // form validation
 const validate = ({
-  content, options, tags, title, type,
-}) => {
+                    content, options, tags, title, type,
+                  }) => {
   const errors = {}
 
   if (!title || isEmpty(title)) {
@@ -85,27 +80,24 @@ const defaultProps = {
 }
 
 const QuestionEditForm = ({
-  intl,
-  invalid,
-  tags,
-  title,
-  type,
-  handleSubmit: onSubmit,
-  onDiscard,
-  versions,
-}) => {
+                            intl,
+                            invalid,
+                            tags,
+                            title,
+                            type,
+                            handleSubmit: onSubmit,
+                            onDiscard,
+                            versions,
+                          }) => {
   const typeComponents = {
-    [QuestionTypes.SC]: {
-      input: SCCreationOptions,
-      preview: SCCreationPreview,
-    },
-    [QuestionTypes.MC]: {
-      input: SCCreationOptions,
-      preview: SCCreationPreview,
-    },
-    [QuestionTypes.FREE]: {
+    FREE: {
       input: FREECreationOptions,
-      preview: FREECreationPreview,
+    },
+    MC: {
+      input: SCCreationOptions,
+    },
+    SC: {
+      input: SCCreationOptions,
     },
   }
 
@@ -156,7 +148,8 @@ const QuestionEditForm = ({
         </div>
 
         <div className="questionInput questionTags">
-          <Field name="tags" component={TagInput} tags={tags} />
+          {tags.map(value => <div>{value}</div>)}
+          {/* <Field name="tags" component={TagInput} tags={tags} /> */}
         </div>
 
         <div className="questionInput questionContent">
