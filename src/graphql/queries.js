@@ -183,7 +183,6 @@ export const JoinSessionQuery = gql`
           }
           ... on SCQuestionOptions {
             choices {
-              id
               correct
               name
             }
