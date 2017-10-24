@@ -39,11 +39,13 @@ const propTypes = {
   handleQuestionActiveOptionChange: PropTypes.func.isRequired,
   handleQuestionCollapsedToggle: PropTypes.func.isRequired,
   handleSidebarActiveItemChange: PropTypes.func.isRequired,
+  handleToggleSidebarVisible: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   newFeedbackInput: PropTypes.string.isRequired,
   questionActiveOption: PropTypes.number.isRequired,
   questionCollapsed: PropTypes.bool.isRequired,
   sidebarActiveItem: PropTypes.string.isRequired,
+  sidebarVisible: PropTypes.bool.isRequired,
   updateVotes: PropTypes.func.isRequired,
 }
 
@@ -69,6 +71,7 @@ const Session = ({
   sidebarActiveItem,
   handleAnswerSliderChange,
   handleFeedbackModeChange,
+  sidebarVisible,
   handleQuestionCollapsedToggle,
   handleFeedbackDifficultyChange,
   handleFeedbackSpeedChange,
@@ -77,6 +80,7 @@ const Session = ({
   handleNewFeedbackInputChange,
   newFeedbackInput,
   updateVotes,
+  handleToggleSidebarVisible,
 }) => {
   const title =
     sidebarActiveItem === 'activeQuestion'
@@ -94,7 +98,9 @@ const Session = ({
       pageTitle="Session #1762"
       sidebar={{
         activeItem: sidebarActiveItem,
-        handleItemChange: handleSidebarActiveItemChange,
+        handleSidebarActiveItemChange,
+        handleToggleSidebarVisible,
+        sidebarVisible,
       }}
       title={title}
     >
@@ -127,8 +133,7 @@ const Session = ({
           </div>
 
           <div className="options">
-            {
-              dataQuestion.type === 'NONE' &&
+            {dataQuestion.type === 'NONE' && (
               <SCAnswerOptions
                 activeOption={questionActiveOption}
                 options={[
@@ -139,20 +144,23 @@ const Session = ({
                 ]}
                 handleOptionClick={handleQuestionActiveOptionChange}
               />
-            }
-            {
-              dataQuestion.type === 'NUMBERS' &&
+            )}
+            {dataQuestion.type === 'NUMBERS' && (
               <FREEAnswerOptions
                 handleChange={handleAnswerSliderChange}
                 options={{ restrictions: dataQuestion.restrictions }}
                 value={answerSliderValue}
               />
-            }
+            )}
           </div>
 
           <div className="actionButton">
             <Button primary className="submitButton">
-              <FormattedMessage id="common.string.send" defaultMessage="Send" onClick={console.dir('Hello')} />
+              <FormattedMessage
+                id="common.string.send"
+                defaultMessage="Send"
+                onClick={console.dir('Hello')}
+              />
             </Button>
           </div>
         </div>
@@ -223,6 +231,8 @@ const Session = ({
         </div>
 
         <style jsx>{`
+          @import 'src/theme';
+
           .student {
             display: flex;
           }
@@ -277,7 +287,7 @@ const Session = ({
             margin-right: 0;
           }
 
-          @media all and (min-width: 768px) {
+          @include desktop-tablet-only {
             .questionArea,
             .feedbackArea {
               display: flex;
@@ -337,6 +347,7 @@ export default compose(
   withState('questionActiveOption', 'setQuestionActiveOption', -1),
   withState('sidebarActiveItem', 'setSidebarActiveItem', 'activeQuestion'),
   withState('newFeedbackInput', 'setNewFeedbackInput', ''),
+  withState('sidebarVisible', 'setSidebarVisible', false),
   withHandlers({
     // handle adding a new feedback
     addNewFeedback: ({ dataFeedbacks, setFeedbacks }) => (newFeedback) => {
@@ -375,8 +386,17 @@ export default compose(
       setQuestionCollapsed(prevState => !prevState),
 
     // handle a change in the active sidebar item
-    handleSidebarActiveItemChange: ({ setSidebarActiveItem }) => (sidebarItem) => {
+    handleSidebarActiveItemChange: ({
+      setSidebarActiveItem,
+      setSidebarVisible,
+    }) => sidebarItem => () => {
       setSidebarActiveItem(sidebarItem)
+      setSidebarVisible(false)
+    },
+
+    // handle toggling the sidebar visibility
+    handleToggleSidebarVisible: ({ setSidebarVisible }) => () => {
+      setSidebarVisible(prevState => !prevState)
     },
 
     // updating number of votes and update alreadyVoted variable of this item for this user

@@ -27,6 +27,8 @@ const QuestionDetails = ({ lastUsed }) => (
     )}
 
     <style jsx>{`
+      @import 'src/theme';
+
       .questionDetails {
         display: flex;
         flex-direction: column;
@@ -38,7 +40,7 @@ const QuestionDetails = ({ lastUsed }) => (
           text-align: center;
         }
 
-        @media all and (min-width: 768px) {
+        @include desktop-tablet-only {
           flex-direction: row;
           min-height: 7rem;
 

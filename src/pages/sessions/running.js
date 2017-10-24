@@ -12,13 +12,18 @@ import { FeedbackChannel } from '../../components/feedbacks'
 import { SessionTimeline } from '../../components/sessions'
 import { TeacherLayout } from '../../components/layouts'
 import { RunningSessionQuery } from '../../graphql/queries'
-import { EndSessionMutation, UpdateSessionSettingsMutation } from '../../graphql/mutations'
-import { LoadingTeacherLayout } from '../../components/common/Loading'
+import {
+  EndSessionMutation,
+  UpdateSessionSettingsMutation,
+  ActivateNextBlockMutation,
+} from '../../graphql/mutations'
+import { LoadingTeacherLayout, Messager } from '../../components/common'
 
 const propTypes = {
   blocks: PropTypes.array.isRequired,
   confusionTS: PropTypes.array.isRequired,
   feedbacks: PropTypes.array.isRequired,
+  handleActivateNextBlock: PropTypes.func.isRequired,
   handleEndSession: PropTypes.func.isRequired,
   handleUpdateSettings: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
@@ -35,6 +40,7 @@ const Running = ({
   isConfusionBarometerActive,
   isFeedbackChannelActive,
   isFeedbackChannelPublic,
+  handleActivateNextBlock,
   handleEndSession,
   handleUpdateSettings,
 }) => (
@@ -54,7 +60,12 @@ const Running = ({
   >
     <div className="runningSession">
       <div className="sessionProgress">
-        <SessionTimeline intl={intl} blocks={blocks} handleRightActionClick={handleEndSession} />
+        <SessionTimeline
+          intl={intl}
+          blocks={blocks}
+          handleLeftActionClick={handleEndSession}
+          handleRightActionClick={handleActivateNextBlock}
+        />
       </div>
 
       <div className="confusionBarometer">
@@ -85,6 +96,8 @@ const Running = ({
     </div>
 
     <style jsx>{`
+      @import 'src/theme';
+
       .runningSession {
         display: flex;
         flex-direction: column;
@@ -100,7 +113,7 @@ const Running = ({
         margin-bottom: 1rem;
       }
 
-      @media all and (min-width: 768px) {
+      @include desktop-tablet-only {
         .runningSession {
           flex-flow: row wrap;
 
@@ -121,7 +134,7 @@ const Running = ({
         }
       }
 
-      @media all and (min-width: 991px) {
+      @include desktop-only {
         .runningSession {
           padding: 2rem 10%;
         }
@@ -141,20 +154,34 @@ export default compose(
   }),
   // TODO: get rid of this branch?
   branch(
-    ({ data }) => data.loading || !data.user,
+    ({ data }) => data.loading || !data.runningSession,
     renderComponent(({ intl }) => (
-      <LoadingTeacherLayout intl={intl} pageId="runningSession" title="Running Session" />
+      <LoadingTeacherLayout intl={intl} pageId="runningSession">
+        <Messager intl={intl} message="No currently running session..." />
+      </LoadingTeacherLayout>
     )),
   ),
-  graphql(EndSessionMutation),
+  graphql(EndSessionMutation, { name: 'endSession' }),
+  graphql(UpdateSessionSettingsMutation, { name: 'updateSessionSettings' }),
+  graphql(ActivateNextBlockMutation, { name: 'activateNextBlock' }),
   withHandlers({
+    // handle activation of the next block in the session
+    handleActivateNextBlock: ({ activateNextBlock }) => async () => {
+      try {
+        await activateNextBlock({
+          refetchQueries: [{ query: RunningSessionQuery }],
+        })
+      } catch ({ message }) {
+        console.error(message)
+      }
+    },
     // handle ending the currently running session
-    handleEndSession: ({ data, mutate }) => async () => {
+    handleEndSession: ({ data, endSession }) => async () => {
       try {
         // run the mutation
-        await mutate({
+        await endSession({
           refetchQueries: [{ query: RunningSessionQuery }],
-          variables: { id: data.user.runningSession.id },
+          variables: { id: data.runningSession.id },
         })
 
         // redirect to the question pool
@@ -164,13 +191,11 @@ export default compose(
         console.error(message)
       }
     },
-  }),
-  graphql(UpdateSessionSettingsMutation),
-  withHandlers({
-    handleUpdateSettings: ({ data, mutate }) => ({ settings }) => async () => {
+    // handle a session settings update
+    handleUpdateSettings: ({ data, updateSessionSettings }) => ({ settings }) => async () => {
       try {
-        await mutate({
-          variables: { sessionId: data.user.runningSession.id, settings },
+        await updateSessionSettings({
+          variables: { sessionId: data.runningSession.id, settings },
         })
       } catch ({ message }) {
         console.error(message)
@@ -179,6 +204,6 @@ export default compose(
   }),
   // flatten out the relevant data props
   withProps(({ data }) => ({
-    ...data.user.runningSession,
+    ...data.runningSession,
   })),
 )(Running)

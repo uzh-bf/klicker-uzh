@@ -5,7 +5,6 @@ import { Button, Icon } from 'semantic-ui-react'
 const propTypes = {
   alreadyVoted: PropTypes.bool.isRequired,
   content: PropTypes.string.isRequired,
-  index: PropTypes.number.isRequired,
   showDelete: PropTypes.bool,
   updateVotes: PropTypes.func.isRequired,
   votes: PropTypes.number.isRequired,
@@ -16,7 +15,7 @@ const defaultProps = {
 }
 
 const Feedback = ({
-  alreadyVoted, content, index, showDelete, updateVotes, votes,
+  alreadyVoted, content, showDelete, updateVotes, votes,
 }) => (
   <div className="feedback">
     <div className="content">{content}</div>
@@ -26,12 +25,14 @@ const Feedback = ({
       </div>
     )}
 
-    <div className="votes" onClick={() => updateVotes(index)}>
+    <Button className="votes" onClick={updateVotes}>
       <Icon name={alreadyVoted ? 'thumbs up' : 'thumbs outline up'} />
       {votes}
-    </div>
+    </Button>
 
     <style jsx>{`
+      @import 'src/theme';
+
       .feedback {
         display: flex;
 
@@ -62,11 +63,10 @@ const Feedback = ({
           border-left: 1px solid grey;
         }
 
-        @media all and (min-width: 768px) {
-          .content,
-          .delete {
-            padding: 0.5rem;
-          }
+      @include desktop-tablet-only {
+        .content,
+        .delete {
+          padding: 0.5rem;
         }
       }
     `}</style>

@@ -62,38 +62,36 @@ export const SessionListQuery = gql`
 // Used in: RunningSession
 export const RunningSessionQuery = gql`
   {
-    user {
+    runningSession {
       id
-      runningSession {
+      confusionTS {
+        difficulty
+        speed
+        createdAt
+      }
+      feedbacks {
         id
-        confusionTS {
-          difficulty
-          speed
-          createdAt
-        }
-        feedbacks {
+        content
+        votes
+        createdAt
+      }
+      blocks {
+        id
+        status
+        instances {
           id
-          content
-          votes
-          createdAt
-        }
-        blocks {
-          id
-          status
-          instances {
+          isOpen
+          question {
             id
-            question {
-              id
-              title
-              type
-            }
+            title
+            type
           }
         }
-        settings {
-          isConfusionBarometerActive
-          isFeedbackChannelActive
-          isFeedbackChannelPublic
-        }
+      }
+      settings {
+        isConfusionBarometerActive
+        isFeedbackChannelActive
+        isFeedbackChannelPublic
       }
     }
   }
@@ -107,6 +105,56 @@ export const AccountSummaryQuery = gql`
       shortname
       runningSession {
         id
+      }
+    }
+  }
+`
+
+export const ActiveInstancesQuery = gql`
+  {
+    activeInstances {
+      id
+      isOpen
+      version
+      responses {
+        id
+        value
+        createdAt
+      }
+      results {
+        ... on SCQuestionResults {
+          choices
+        }
+        ... on FREEQuestionResults {
+          free {
+            count
+            key
+            value
+          }
+        }
+      }
+      question {
+        id
+        title
+        type
+        versions {
+          description
+          options {
+            ... on SCQuestionOptions {
+              choices {
+                correct
+                name
+              }
+            }
+            ... on FREEQuestionOptions {
+              restrictions {
+                min
+                max
+                type
+              }
+            }
+          }
+        }
       }
     }
   }

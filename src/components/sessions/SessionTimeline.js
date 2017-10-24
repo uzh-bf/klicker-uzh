@@ -46,11 +46,12 @@ const SessionTimeline = ({
     </div>
     <div className="buttons">
       <Button
+        color="red"
         content={intl.formatMessage({
-          defaultMessage: 'Previous',
-          id: 'runningSession.button.previous',
+          defaultMessage: 'Cancel',
+          id: 'runningSession.button.cancel',
         })}
-        icon="left arrow"
+        icon="remove"
         labelPosition="left"
         size="large"
         onClick={handleLeftActionClick}
@@ -68,6 +69,8 @@ const SessionTimeline = ({
       />
     </div>
     <style jsx>{`
+      @import 'src/theme';
+
       .sessionTimeline {
         display: flex;
         flex-direction: column;
@@ -114,7 +117,7 @@ const SessionTimeline = ({
         margin-right: 0;
       }
 
-      @media all and (min-width: 768px) {
+      @include desktop-tablet-only {
         .sessionTimeline {
           flex-flow: row wrap;
         }
