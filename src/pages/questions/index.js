@@ -124,7 +124,9 @@ const Index = ({
 
             .buttons {
               margin-bottom: 1rem;
-              text-align: center;
+
+              display: flex;
+              justify-content: center;
             }
           }
         }
@@ -141,6 +143,13 @@ const Index = ({
             flex-flow: row wrap;
 
             padding: 0;
+
+            .questionList {
+              .buttons {
+                display: flex;
+                justify-content: flex-end;
+              }
+            }
           }
 
           .tagList {
