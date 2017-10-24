@@ -113,13 +113,14 @@ const Index = ({
       <style jsx>{`
         @import 'src/theme';
 
-        .buttons {
-          margin-bottom: 5px;
-        }
-
         .questionPool {
           display: flex;
           flex-direction: column;
+          height: 100%;
+
+          .buttons {
+            margin-bottom: 5px;
+          }
         }
 
         .tagList {
