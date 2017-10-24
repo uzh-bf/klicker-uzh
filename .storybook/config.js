@@ -4,7 +4,7 @@ import { addDecorator, configure } from '@storybook/react'
 
 // integrate storybook-addon-intl for react-intl
 import { setIntlConfig, withIntl } from 'storybook-addon-intl'
-import { addLocaleData } from 'react-intl'
+import { IntlProvider, addLocaleData } from 'react-intl'
 // import { DragDropContext } from 'react-dnd'
 // import HTML5Backend from 'react-dnd-html5-backend'
 
@@ -15,15 +15,19 @@ import deLocaleData from 'react-intl/locale-data/de'
 addLocaleData(enLocaleData)
 addLocaleData(deLocaleData)
 
+// HACK: disable react-intl plugin as it breaks storybook...
 // set the config for react-intl
-setIntlConfig({
+/* setIntlConfig({
   defaultLocale: 'en',
   getMessages: locale => require(`../src/lang/${locale}.json`),
   locales: ['en', 'de'],
-})
+}) */
 
 // add global decorators
-addDecorator(withIntl)
+// addDecorator(withIntl)
+
+// add a react-intl provider such that components can render
+addDecorator(story => <IntlProvider locale="en">{story()}</IntlProvider>)
 
 // addDecorator(story => DragDropContext(HTML5Backend)(<div>{story()}</div>))
 

@@ -3,20 +3,26 @@ import PropTypes from 'prop-types'
 import { Cell, Pie, PieChart as PieChartComponent, ResponsiveContainer } from 'recharts'
 
 const propTypes = {
+  data: PropTypes.arrayOf(
+    PropTypes.shape({
+      count: PropTypes.number.isRequired,
+      value: PropTypes.string.isRequired,
+    }),
+  ),
   isSolutionShown: PropTypes.bool,
-  results: PropTypes.object.isRequired,
 }
 
 const defaultProps = {
+  data: [],
   isSolutionShown: false,
 }
 
-const PieChart = ({ isSolutionShown, results }) => (
+const PieChart = ({ isSolutionShown, data }) => (
   <ResponsiveContainer>
     <PieChartComponent>
-      <Pie label data={results.choices} valueKey="numberOfVotes" fill="#8884d8">
-        {results.choices.map(choice => (
-          <Cell key={choice.id} fill={isSolutionShown && choice.correct ? '#00FF00' : '#8884d8'} />
+      <Pie label data={data} valueKey="count" fill="#8884d8">
+        {data.map(row => (
+          <Cell key={row.value} fill={isSolutionShown && row.correct ? '#00FF00' : '#8884d8'} />
         ))}
       </Pie>
     </PieChartComponent>

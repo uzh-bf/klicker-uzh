@@ -26,7 +26,7 @@
       ],
       "plugins": [
         "transform-inline-environment-variables",
-        ["lodash", { "id": ["lodash", "recompose"] }],
+        ["lodash", { "id": ["lodash", "recompose", "semantic-ui-react"] }],
         "add-react-displayname",
         [
           "react-intl",
