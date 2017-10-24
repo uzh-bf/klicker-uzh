@@ -1,12 +1,13 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { intlShape } from 'react-intl'
-import { Checkbox } from 'semantic-ui-react'
+import { Checkbox, Menu } from 'semantic-ui-react'
 
 import { CommonLayout } from '.'
 import { Info, Possibilities, VisualizationType } from '../evaluation'
 
 const propTypes = {
+  activeInstance: PropTypes.number,
   chart: PropTypes.element.isRequired,
   choices: PropTypes.arrayOf(
     PropTypes.shape({
@@ -15,22 +16,28 @@ const propTypes = {
     }),
   ).isRequired,
   description: PropTypes.string,
+  instanceTitles: PropTypes.arrayOf(PropTypes.string),
   intl: intlShape.isRequired,
+  onChangeActiveInstance: PropTypes.func.isRequired,
   onChangeVisualizationType: PropTypes.func.isRequired,
   onToggleShowSolution: PropTypes.func.isRequired,
   options: PropTypes.object.isRequired,
   pageTitle: PropTypes.string,
   title: PropTypes.string.isRequired,
+  totalResponses: PropTypes.number,
   type: PropTypes.string.isRequired,
   visualizationType: PropTypes.string.isRequired,
 }
 
 const defaultProps = {
+  activeInstance: 0,
   description: undefined,
+  instanceTitles: [],
   pageTitle: 'EvaluationLayout',
+  totalResponses: undefined,
 }
 
-const EvaluationLayout = ({
+function EvaluationLayout({
   intl,
   pageTitle,
   onToggleShowSolution,
@@ -40,124 +47,164 @@ const EvaluationLayout = ({
   description,
   visualizationType,
   onChangeVisualizationType,
+  totalResponses,
   options,
-}) => (
-  <CommonLayout baseFontSize="22px" pageTitle={pageTitle}>
-    <div className="evaluationLayout">
-      <div className="questionDetails">
-        <h1>{title}</h1>
-        <p>{description}</p>
-      </div>
-      <div className="info">
-        <Info />
-      </div>
-      <div className="chart">{chart}</div>
-      <div className="settings">
-        <Checkbox
-          toggle
-          label={intl.formatMessage({
-            defaultMessage: 'Show solution',
-            id: 'teacher.evaluation.showSolution.label',
-          })}
-          onChange={onToggleShowSolution}
-        />
-      </div>
-      <div className="chartType">
-        <VisualizationType
-          intl={intl}
-          onChangeType={onChangeVisualizationType}
-          type={type}
-          visualization={visualizationType}
-        />
-      </div>
-      <div className="optionDisplay">
-        <Possibilities questionType={type} questionOptions={options} />
-      </div>
+  activeInstance,
+  onChangeActiveInstance,
+  instanceTitles,
+}) {
+  return (
+    <CommonLayout baseFontSize="22px" pageTitle={pageTitle}>
+      <div className="evaluationLayout">
+        {instanceTitles.length > 1 && (
+          <div className="instanceChooser">
+            <Menu fitted tabular>
+              {instanceTitles.map((instanceTitle, index) => (
+                <Menu.Item
+                  fitted
+                  active={index === activeInstance}
+                  onClick={onChangeActiveInstance(index)}
+                >
+                  {instanceTitle}
+                </Menu.Item>
+              ))}
+            </Menu>
+          </div>
+        )}
 
-      <style jsx>{`
-        @import 'src/theme';
+        <div className="questionDetails">
+          <h1>{title}</h1>
+          <p>{description}</p>
+        </div>
 
-        .evaluationLayout {
-          @supports (grid-gap: 1rem) {
-            @include desktop-tablet-only {
-              display: grid;
+        <div className="info">
+          <Info totalResponses={totalResponses} />
+        </div>
 
-              grid-template-columns: auto 17rem;
-              grid-template-rows: minmax(auto, 2rem) auto 10rem 5rem;
-              grid-template-areas: 'questionDetails questionDetails' 'graph optionDisplay'
-                'graph settings' 'info chartType';
+        <div className="chart">{chart}</div>
 
-              height: 100vh;
+        <div className="settings">
+          <Checkbox
+            toggle
+            label={intl.formatMessage({
+              defaultMessage: 'Show solution',
+              id: 'teacher.evaluation.showSolution.label',
+            })}
+            onChange={onToggleShowSolution}
+          />
+        </div>
 
-              .questionDetails {
-                grid-area: questionDetails;
-                align-self: start;
+        <div className="chartType">
+          <VisualizationType
+            intl={intl}
+            onChangeType={onChangeVisualizationType}
+            type={type}
+            visualization={visualizationType}
+          />
+        </div>
 
-                background-color: lightgrey;
-                border-bottom: 1px solid grey;
-                padding: 1rem;
-                text-align: left;
+        <div className="optionDisplay">
+          <Possibilities questionType={type} questionOptions={options} />
+        </div>
 
-                h1 {
-                  font-size: 1.5rem;
-                  line-height: 1.5rem;
-                  margin-bottom: 0.5rem;
+        <style jsx>{`
+          @import 'src/theme';
+
+          .evaluationLayout {
+            @supports (grid-gap: 1rem) {
+              @include desktop-tablet-only {
+                display: grid;
+
+                grid-template-columns: auto 17rem;
+                grid-template-rows: minmax(auto, 0) minmax(auto, 2rem) auto 10rem 5rem;
+                grid-template-areas: 'instanceChooser instanceChooser'
+                  'questionDetails questionDetails' 'graph optionDisplay' 'graph settings'
+                  'info chartType';
+
+                height: 100vh;
+
+                .instanceChooser {
+                  grid-area: instanceChooser;
+                  padding: 0.3rem;
+                  padding-bottom: 0;
+
+                  :global(.menu .item) {
+                    font-size: 0.7rem;
+                    padding: 0 1rem;
+                    margin-bottom: 0;
+                  }
                 }
-              }
 
-              .chart {
-                grid-area: graph;
+                .questionDetails {
+                  grid-area: questionDetails;
+                  align-self: start;
 
-                padding: 1rem;
+                  background-color: lightgrey;
+                  border-bottom: 1px solid grey;
+                  padding: 1rem;
+                  text-align: left;
 
-                :global(> *) {
-                  border: 1px solid lightgrey;
+                  h1 {
+                    font-size: 1.5rem;
+                    line-height: 1.5rem;
+                    margin-bottom: 0.5rem;
+                  }
                 }
-              }
 
-              .chartType,
-              .optionDisplay,
-              .settings,
-              .info {
-                padding: 1rem;
-              }
+                .chart {
+                  grid-area: graph;
 
-              .info {
-                grid-area: info;
+                  padding: 1rem;
 
-                align-self: center;
-                padding-top: 0;
-              }
-
-              .chartType {
-                grid-area: chartType;
-
-                align-self: center;
-                padding-top: 0;
-              }
-
-              .optionDisplay {
-                grid-area: optionDisplay;
-
-                h2 {
-                  font-size: 1.5rem;
-                  line-height: 1.5rem;
-                  margin-bottom: 0.5rem;
+                  :global(> *) {
+                    border: 1px solid lightgrey;
+                  }
                 }
-              }
 
-              .settings {
-                grid-area: settings;
+                .chartType,
+                .optionDisplay,
+                .settings,
+                .info {
+                  padding: 1rem;
+                }
 
-                align-self: end;
+                .info {
+                  grid-area: info;
+
+                  align-self: center;
+                  padding-top: 0;
+                }
+
+                .chartType {
+                  grid-area: chartType;
+
+                  align-self: center;
+                  padding-top: 0;
+                }
+
+                .optionDisplay {
+                  grid-area: optionDisplay;
+
+                  h2 {
+                    font-size: 1.5rem;
+                    line-height: 1.5rem;
+                    margin-bottom: 0.5rem;
+                  }
+                }
+
+                .settings {
+                  grid-area: settings;
+
+                  align-self: end;
+                }
               }
             }
           }
-        }
-      `}</style>
-    </div>
-  </CommonLayout>
-)
+        `}</style>
+      </div>
+    </CommonLayout>
+  )
+}
 
 EvaluationLayout.propTypes = propTypes
 EvaluationLayout.defaultProps = defaultProps

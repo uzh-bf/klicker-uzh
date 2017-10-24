@@ -1,35 +1,78 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { intlShape } from 'react-intl'
-import { compose, withHandlers, withProps, withState } from 'recompose'
-
-import { pageWithIntl, withData } from '../../lib'
+import { compose, withHandlers, withProps, withState, branch, renderComponent } from 'recompose'
+import { graphql } from 'react-apollo'
 
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
+import { pageWithIntl, withData } from '../../lib'
 import { Chart } from '../../components/evaluation'
+import { ActiveInstancesQuery } from '../../graphql/queries'
 
 const propTypes = {
-  data: PropTypes.object.isRequired,
+  activeInstance: PropTypes.number,
+  activeInstances: PropTypes.array.isRequired,
+  handleChangeActiveInstance: PropTypes.func.isRequired,
   handleChangeVisualizationType: PropTypes.func.isRequired,
   handleShowGraph: PropTypes.func.isRequired,
   handleToggleShowSolution: PropTypes.func.isRequired,
+  instanceTitles: PropTypes.arrayOf(PropTypes.string),
   intl: intlShape.isRequired,
   showGraph: PropTypes.bool.isRequired,
   showSolution: PropTypes.bool.isRequired,
   visualizationType: PropTypes.string.isRequired,
 }
+const defaultProps = {
+  activeInstance: 0,
+  instanceTitles: [],
+}
 
-const Evaluation = ({
-  data,
+const mapActiveInstance = (activeInstance) => {
+  if (activeInstance.question.type === 'SC') {
+    return {
+      ...activeInstance,
+      results: {
+        data: activeInstance.question.versions[0].options.choices.map((choice, index) => ({
+          correct: choice.correct,
+          count: activeInstance.results ? activeInstance.results.choices[index] : 0,
+          value: choice.name,
+        })),
+        totalResponses: activeInstance.responses.length,
+      },
+    }
+  }
+
+  if (activeInstance.question.type === 'FREE') {
+    return {
+      ...activeInstance,
+      results: {
+        data: activeInstance.results ? activeInstance.results.free : [],
+        totalResponses: activeInstance.responses.length,
+      },
+    }
+  }
+
+  return activeInstance
+}
+
+function Evaluation({
+  activeInstances,
+  activeInstance,
+  instanceTitles,
   intl,
+  handleChangeActiveInstance,
   showGraph,
   showSolution,
   visualizationType,
   handleShowGraph,
   handleToggleShowSolution,
   handleChangeVisualizationType,
-}) => {
-  const { results, question, version } = data
+}) {
+  const { results, question, version } = activeInstances[activeInstance]
+  const { title, type } = question
+  const { totalResponses } = results
+  const { description, options } = question.versions[version]
+
   const chart = (
     <Chart
       intl={intl}
@@ -37,24 +80,28 @@ const Evaluation = ({
       results={results}
       showGraph={showGraph}
       showSolution={showSolution}
-      visualization={visualizationType}
+      visualizationType={visualizationType}
     />
   )
 
   const layoutProps = {
+    activeInstance,
     chart,
-    description: version.description,
+    description,
+    instanceTitles,
     intl,
+    onChangeActiveInstance: handleChangeActiveInstance,
     onChangeVisualizationType: handleChangeVisualizationType,
     onToggleShowSolution: handleToggleShowSolution,
-    options: version.options,
+    options,
     pageTitle: intl.formatMessage({
       defaultMessage: 'Evaluation',
       id: 'teacher.evaluation.pageTitle',
     }),
     showSolution,
-    title: question.title,
-    type: question.type,
+    title,
+    totalResponses,
+    type,
     visualizationType,
   }
 
@@ -62,17 +109,18 @@ const Evaluation = ({
 }
 
 Evaluation.propTypes = propTypes
+Evaluation.defaultProps = defaultProps
 
 export default compose(
   withData,
   pageWithIntl,
   withState('showGraph', 'setShowGraph', false),
   withState('showSolution', 'setShowSolution', false),
-  withState('visualizationType', 'setVisualizationType', 'PIE_CHART'),
+  withState('visualizationType', 'handleChangeVisualizationType', 'PIE_CHART'),
+  withState('activeInstance', 'setActiveInstance', 0),
   withHandlers({
-    // handle change of the visualization type
-    handleChangeVisualizationType: ({ setVisualizationType }) => newType =>
-      setVisualizationType(newType),
+    handleChangeActiveInstance: ({ setActiveInstance }) => newInstance => () =>
+      setActiveInstance(newInstance),
     // handle toggle of the visualization display
     // the visualization display can only be toggled once, so only allow setting to true
     handleShowGraph: ({ setShowGraph }) => () => setShowGraph(true),
@@ -80,40 +128,19 @@ export default compose(
     handleToggleShowSolution: ({ setShowSolution }) => () =>
       setShowSolution(showSolution => !showSolution),
   }),
-  withProps({
-    // fake data the component is going to get
-    data: {
-      question: {
-        title: 'some question title',
-        type: 'SC',
-      },
-      results: {
-        choices: [
-          { correct: false, name: 'option 1', numberOfVotes: 56 },
-          {
-            correct: true,
-            name: 'option 2',
-            numberOfVotes: 344,
-          },
-          { correct: false, name: 'some other option', numberOfVotes: 9 },
-        ],
-        totalResponses: 409,
-      },
-      version: {
-        description:
-          'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.',
-        options: {
-          choices: [
-            { correct: false, name: 'option 1' },
-            { correct: true, name: 'option 2' },
-            { correct: false, name: 'some other option' },
-          ],
-          randomized: true,
-          restrictions: null,
-        },
-      },
-    },
+  graphql(ActiveInstancesQuery, {
+    // refetch the active instances query every 10s
+    options: { pollInterval: 10000 },
   }),
+  // if the query is still loading, display nothing
+  branch(({ data }) => data.loading, renderComponent(() => null)),
+  // if the query has finished loading but there are no active instances, show a simple message
+  branch(
+    ({ data }) => !(data.activeInstances && data.activeInstances.length > 0),
+    renderComponent(() => <div>No evaluation currently active.</div>),
+  ),
+  withProps(({ data }) => ({
+    activeInstances: data.activeInstances.map(mapActiveInstance),
+    instanceTitles: data.activeInstances.map(instance => instance.question.title),
+  })),
 )(Evaluation)
-
-withData(pageWithIntl(Evaluation))

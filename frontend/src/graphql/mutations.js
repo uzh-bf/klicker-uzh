@@ -73,7 +73,7 @@ export const CreateQuestionMutation = gql`
 `
 
 export const CreateSessionMutation = gql`
-  mutation CreateSession($name: String!, $blocks: [Session_QuestionBlockInput]!) {
+  mutation CreateSession($name: String!, $blocks: [Session_QuestionBlockInput!]!) {
     createSession(session: { name: $name, blocks: $blocks }) {
       id
       confusionTS {
@@ -145,6 +145,35 @@ export const UpdateSessionSettingsMutation = gql`
         isConfusionBarometerActive
         isFeedbackChannelActive
         isFeedbackChannelPublic
+      }
+    }
+  }
+`
+
+export const AddResponseMutation = gql`
+  mutation AddResponse($instanceId: ID!, $response: QuestionInstance_ResponseInput!) {
+    addResponse(instanceId: $instanceId, response: $response) {
+      id
+      responses {
+        id
+        value
+        createdAt
+      }
+    }
+  }
+`
+
+export const ActivateNextBlockMutation = gql`
+  mutation ActivateNextBlock {
+    activateNextBlock {
+      id
+      blocks {
+        id
+        status
+        instances {
+          id
+          isOpen
+        }
       }
     }
   }

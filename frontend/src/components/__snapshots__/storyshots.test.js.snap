@@ -529,10 +529,389 @@ exports[`Storyshots confusion ConfusionSlider 1`] = `
 </div>
 `;
 
+exports[`Storyshots evaluation/charts TableChart (FREE) 1`] = `
+<div
+  className="jsx-2550815555 tableChart"
+>
+  <div>
+    <table
+      className="griddle-table"
+      style={undefined}
+    >
+      <thead
+        className="griddle-table-heading"
+        style={undefined}
+      >
+        <tr>
+          <th
+            className="griddle-table-heading-cell"
+            onClick={[Function]}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "cursor": "pointer",
+              }
+            }
+          >
+            <span>
+              Value
+            </span>
+          </th>
+          <th
+            className="griddle-table-heading-cell"
+            onClick={[Function]}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "cursor": "pointer",
+              }
+            }
+          >
+            <span>
+              Count
+              <span
+                className="griddle-heading-descending"
+              >
+                ▼
+              </span>
+            </span>
+          </th>
+          <th
+            className="griddle-table-heading-cell solutionColumn"
+            onClick={[Function]}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "cursor": "pointer",
+              }
+            }
+          >
+            <span>
+              T/F
+            </span>
+          </th>
+        </tr>
+      </thead>
+      <tbody
+        className="griddle-table-body"
+        style={undefined}
+      >
+        <tr
+          className="griddle-row"
+          onClick={undefined}
+          onMouseEnter={undefined}
+          onMouseLeave={undefined}
+          style={undefined}
+        >
+          <td
+            className="griddle-cell"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={undefined}
+          >
+            hehe
+          </td>
+          <td
+            className="griddle-cell countColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "3rem",
+              }
+            }
+          >
+            100
+          </td>
+          <td
+            className="griddle-cell solutionColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "1rem",
+              }
+            }
+          >
+            <span>
+              F
+            </span>
+          </td>
+        </tr>
+        <tr
+          className="griddle-row"
+          onClick={undefined}
+          onMouseEnter={undefined}
+          onMouseLeave={undefined}
+          style={undefined}
+        >
+          <td
+            className="griddle-cell"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={undefined}
+          >
+            hello world
+          </td>
+          <td
+            className="griddle-cell countColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "3rem",
+              }
+            }
+          >
+            10
+          </td>
+          <td
+            className="griddle-cell solutionColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "1rem",
+              }
+            }
+          >
+            <span>
+              F
+            </span>
+          </td>
+        </tr>
+        <tr
+          className="griddle-row"
+          onClick={undefined}
+          onMouseEnter={undefined}
+          onMouseLeave={undefined}
+          style={undefined}
+        >
+          <td
+            className="griddle-cell"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={undefined}
+          >
+            hello worlds
+          </td>
+          <td
+            className="griddle-cell countColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "3rem",
+              }
+            }
+          >
+            10
+          </td>
+          <td
+            className="griddle-cell solutionColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "1rem",
+              }
+            }
+          >
+            <span>
+              F
+            </span>
+          </td>
+        </tr>
+        <tr
+          className="griddle-row"
+          onClick={undefined}
+          onMouseEnter={undefined}
+          onMouseLeave={undefined}
+          style={undefined}
+        >
+          <td
+            className="griddle-cell"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={undefined}
+          >
+            blablabla 
+          </td>
+          <td
+            className="griddle-cell countColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "3rem",
+              }
+            }
+          >
+            5
+          </td>
+          <td
+            className="griddle-cell solutionColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "1rem",
+              }
+            }
+          >
+            <span>
+              F
+            </span>
+          </td>
+        </tr>
+        <tr
+          className="griddle-row"
+          onClick={undefined}
+          onMouseEnter={undefined}
+          onMouseLeave={undefined}
+          style={undefined}
+        >
+          <td
+            className="griddle-cell"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={undefined}
+          >
+            blaaaali 
+          </td>
+          <td
+            className="griddle-cell countColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "3rem",
+              }
+            }
+          >
+            5
+          </td>
+          <td
+            className="griddle-cell solutionColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "1rem",
+              }
+            }
+          >
+            <span>
+              F
+            </span>
+          </td>
+        </tr>
+        <tr
+          className="griddle-row"
+          onClick={undefined}
+          onMouseEnter={undefined}
+          onMouseLeave={undefined}
+          style={undefined}
+        >
+          <td
+            className="griddle-cell"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={undefined}
+          >
+            asdasd
+          </td>
+          <td
+            className="griddle-cell countColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "3rem",
+              }
+            }
+          >
+            1
+          </td>
+          <td
+            className="griddle-cell solutionColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "1rem",
+              }
+            }
+          >
+            <span>
+              F
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div
+      className="griddle-pagination"
+      style={undefined}
+    >
+      <select
+        className="griddle-page-select"
+        onChange={[Function]}
+        style={undefined}
+        value={1}
+      >
+        <option
+          value={1}
+        >
+          1
+        </option>
+      </select>
+    </div>
+  </div>
+</div>
+`;
+
 exports[`Storyshots evaluation/components Chart 1`] = `
 <div
-  className="jsx-3921678912 chart"
-/>
+  className="jsx-1161725731 chart"
+>
+  <div
+    className="jsx-1161725731 noChart"
+  >
+    <button
+      className="ui button showGraphButton"
+      disabled={undefined}
+      onClick={[Function]}
+      role="button"
+      tabIndex={undefined}
+    >
+      <span>
+        Show Graph
+      </span>
+    </button>
+  </div>
+</div>
 `;
 
 exports[`Storyshots evaluation/components Info 1`] = `
@@ -553,7 +932,42 @@ exports[`Storyshots evaluation/components Possibilities (FREE) 1`] = `
 >
   <h2
     className="jsx-2154886852"
-  />
+  >
+    <span>
+      Restrictions
+    </span>
+  </h2>
+  <div
+    className="ui celled list"
+    role="list"
+  >
+    <div
+      className="item"
+      data-value={undefined}
+      onClick={[Function]}
+      role="listitem"
+    >
+      <div
+        className="header"
+      >
+        Minimum
+      </div>
+      10
+    </div>
+    <div
+      className="item"
+      data-value={undefined}
+      onClick={[Function]}
+      role="listitem"
+    >
+      <div
+        className="header"
+      >
+        Maximum
+      </div>
+      20
+    </div>
+  </div>
 </div>
 `;
 
@@ -563,13 +977,54 @@ exports[`Storyshots evaluation/components Possibilities (SC) 1`] = `
 >
   <h2
     className="jsx-2154886852"
-  />
+  >
+    <span>
+      Choices
+    </span>
+  </h2>
+  <div
+    className="ui celled ordered list"
+    role="list"
+  >
+    <div
+      className="item"
+      data-value={undefined}
+      onClick={[Function]}
+      role="listitem"
+    >
+      This is the first possible answer
+    </div>
+    <div
+      className="item"
+      data-value={undefined}
+      onClick={[Function]}
+      role="listitem"
+    >
+      This is the second possible answer
+    </div>
+    <div
+      className="item"
+      data-value={undefined}
+      onClick={[Function]}
+      role="listitem"
+    >
+      This is the third possible answer
+    </div>
+    <div
+      className="item"
+      data-value={undefined}
+      onClick={[Function]}
+      role="listitem"
+    >
+      This is the fourth possible answer
+    </div>
+  </div>
 </div>
 `;
 
 exports[`Storyshots evaluation/components Visualization 1`] = `
 <div
-  className="jsx-704040651 visualization"
+  className="jsx-704040651 visualizationType"
 >
   <div
     aria-busy={undefined}
@@ -631,6 +1086,8 @@ exports[`Storyshots evaluation/components Visualization 1`] = `
           Array [
             "SC",
             "MC",
+            "FREE",
+            "FREE:RANGE",
           ]
         }
       >
@@ -656,6 +1113,8 @@ exports[`Storyshots evaluation/components Visualization 1`] = `
           Array [
             "SC",
             "MC",
+            "FREE",
+            "FREE:RANGE",
           ]
         }
       >
@@ -682,6 +1141,7 @@ exports[`Storyshots evaluation/components Visualization 1`] = `
             "SC",
             "MC",
             "FREE",
+            "FREE:RANGE",
           ]
         }
       >
@@ -2444,10 +2904,10 @@ exports[`Storyshots questions Question (SC, 1 version) 1`] = `
 
 exports[`Storyshots questions QuestionBlock (empty) 1`] = `
 <div
-  className="jsx-3449966730 questionBlock"
+  className="jsx-1552646468 questionBlock"
 >
   <div
-    className="jsx-3449966730 timeLimit"
+    className="jsx-1552646468 timeLimit"
   >
     <i
       aria-hidden="true"
@@ -2457,7 +2917,7 @@ exports[`Storyshots questions QuestionBlock (empty) 1`] = `
     s
   </div>
   <div
-    className="jsx-3449966730 showSolution"
+    className="jsx-1552646468 showSolution"
   >
     <i
       aria-hidden="true"
@@ -2465,17 +2925,22 @@ exports[`Storyshots questions QuestionBlock (empty) 1`] = `
     />
   </div>
   <div
-    className="jsx-3449966730 questions"
+    className="jsx-1552646468 sessionStatus"
+  >
+    PLANNED
+  </div>
+  <div
+    className="jsx-1552646468 questions"
   />
 </div>
 `;
 
 exports[`Storyshots questions QuestionBlock 1`] = `
 <div
-  className="jsx-3449966730 questionBlock"
+  className="jsx-1552646468 questionBlock"
 >
   <div
-    className="jsx-3449966730 timeLimit"
+    className="jsx-1552646468 timeLimit"
   >
     <i
       aria-hidden="true"
@@ -2485,7 +2950,7 @@ exports[`Storyshots questions QuestionBlock 1`] = `
     s
   </div>
   <div
-    className="jsx-3449966730 showSolution"
+    className="jsx-1552646468 showSolution"
   >
     <i
       aria-hidden="true"
@@ -2493,7 +2958,12 @@ exports[`Storyshots questions QuestionBlock 1`] = `
     />
   </div>
   <div
-    className="jsx-3449966730 questions"
+    className="jsx-1552646468 sessionStatus"
+  >
+    PLANNED
+  </div>
+  <div
+    className="jsx-1552646468 questions"
   >
     <div
       className="jsx-2849987926 questionSingle"
@@ -3178,10 +3648,10 @@ exports[`Storyshots sessions Session 1`] = `
       className="jsx-1670121988 block"
     >
       <div
-        className="jsx-3449966730 questionBlock"
+        className="jsx-1552646468 questionBlock"
       >
         <div
-          className="jsx-3449966730 timeLimit"
+          className="jsx-1552646468 timeLimit"
         >
           <i
             aria-hidden="true"
@@ -3191,7 +3661,7 @@ exports[`Storyshots sessions Session 1`] = `
           s
         </div>
         <div
-          className="jsx-3449966730 showSolution"
+          className="jsx-1552646468 showSolution"
         >
           <i
             aria-hidden="true"
@@ -3199,7 +3669,12 @@ exports[`Storyshots sessions Session 1`] = `
           />
         </div>
         <div
-          className="jsx-3449966730 questions"
+          className="jsx-1552646468 sessionStatus"
+        >
+          PLANNED
+        </div>
+        <div
+          className="jsx-1552646468 questions"
         >
           <div
             className="jsx-2849987926 questionSingle"
@@ -3320,10 +3795,10 @@ exports[`Storyshots sessions SessionList 1`] = `
           className="jsx-1670121988 block"
         >
           <div
-            className="jsx-3449966730 questionBlock"
+            className="jsx-1552646468 questionBlock"
           >
             <div
-              className="jsx-3449966730 timeLimit"
+              className="jsx-1552646468 timeLimit"
             >
               <i
                 aria-hidden="true"
@@ -3333,7 +3808,7 @@ exports[`Storyshots sessions SessionList 1`] = `
               s
             </div>
             <div
-              className="jsx-3449966730 showSolution"
+              className="jsx-1552646468 showSolution"
             >
               <i
                 aria-hidden="true"
@@ -3341,7 +3816,12 @@ exports[`Storyshots sessions SessionList 1`] = `
               />
             </div>
             <div
-              className="jsx-3449966730 questions"
+              className="jsx-1552646468 sessionStatus"
+            >
+              PLANNED
+            </div>
+            <div
+              className="jsx-1552646468 questions"
             >
               <div
                 className="jsx-2849987926 questionSingle"
@@ -3452,10 +3932,10 @@ exports[`Storyshots sessions SessionList 1`] = `
           className="jsx-1670121988 block"
         >
           <div
-            className="jsx-3449966730 questionBlock"
+            className="jsx-1552646468 questionBlock"
           >
             <div
-              className="jsx-3449966730 timeLimit"
+              className="jsx-1552646468 timeLimit"
             >
               <i
                 aria-hidden="true"
@@ -3465,7 +3945,7 @@ exports[`Storyshots sessions SessionList 1`] = `
               s
             </div>
             <div
-              className="jsx-3449966730 showSolution"
+              className="jsx-1552646468 showSolution"
             >
               <i
                 aria-hidden="true"
@@ -3473,7 +3953,12 @@ exports[`Storyshots sessions SessionList 1`] = `
               />
             </div>
             <div
-              className="jsx-3449966730 questions"
+              className="jsx-1552646468 sessionStatus"
+            >
+              PLANNED
+            </div>
+            <div
+              className="jsx-1552646468 questions"
             >
               <div
                 className="jsx-2849987926 questionSingle"
@@ -3591,10 +4076,10 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
       className="jsx-265954221 block"
     >
       <div
-        className="jsx-3449966730 questionBlock"
+        className="jsx-1552646468 questionBlock"
       >
         <div
-          className="jsx-3449966730 timeLimit"
+          className="jsx-1552646468 timeLimit"
         >
           <i
             aria-hidden="true"
@@ -3604,7 +4089,7 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
           s
         </div>
         <div
-          className="jsx-3449966730 showSolution"
+          className="jsx-1552646468 showSolution"
         >
           <i
             aria-hidden="true"
@@ -3612,7 +4097,12 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
           />
         </div>
         <div
-          className="jsx-3449966730 questions"
+          className="jsx-1552646468 sessionStatus"
+        >
+          PLANNED
+        </div>
+        <div
+          className="jsx-1552646468 questions"
         >
           <div
             className="jsx-2849987926 questionSingle"
@@ -3679,7 +4169,7 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
     className="jsx-265954221 buttons"
   >
     <button
-      className="ui large icon left labeled button"
+      className="ui red large icon left labeled button"
       disabled={undefined}
       onClick={[Function]}
       role="button"
@@ -3687,9 +4177,9 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
     >
       <i
         aria-hidden="true"
-        className="left arrow icon"
+        className="remove icon"
       />
-      Previous
+      Cancel
     </button>
     <button
       className="ui large icon primary right labeled button"
