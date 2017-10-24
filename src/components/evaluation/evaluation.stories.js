@@ -3,22 +3,33 @@
 import React from 'react'
 import { storiesOf } from '@storybook/react'
 
-import { Chart, Info, Possibilities, VisualizationType, BarChart, PieChart } from '.'
+import {
+  Chart,
+  Info,
+  Possibilities,
+  VisualizationType,
+  BarChart,
+  PieChart,
+  TableChart,
+  CloudChart,
+} from '.'
 
 import { intlMock } from '../../../.storybook/utils'
 
-const results = {
-  choices: [
-    { correct: false, name: 'option 1', numberOfVotes: 56 },
-    {
-      correct: true,
-      name: 'option 2',
-      numberOfVotes: 344,
-    },
-    { correct: false, name: 'some other option', numberOfVotes: 9 },
-  ],
-  totalResponses: 409,
-}
+const dataSC = [
+  { correct: false, count: 56, value: 'option1' },
+  { correct: true, count: 344, value: 'option2' },
+  { correct: false, count: 9, value: 'some other option' },
+]
+
+const dataFREE = [
+  { count: 10, value: 'hello world' },
+  { count: 5, value: 'blablabla ' },
+  { count: 100, value: 'hehe' },
+  { count: 1, value: 'asdasd' },
+  { count: 10, value: 'hello worlds' },
+  { count: 5, value: 'blaaaali ' },
+]
 
 storiesOf('evaluation/components', module)
   .add('Chart', () => <Chart />)
@@ -55,7 +66,9 @@ storiesOf('evaluation/components', module)
   ))
 
 storiesOf('evaluation/charts', module)
-  .add('BarChart [NoTest]', () => <BarChart results={results} />)
-  .add('BarChart (with solution) [NoTest]', () => <BarChart isSolutionShown results={results} />)
-  .add('PieChart [NoTest]', () => <PieChart results={results} />)
-  .add('PieChart (with solution) [NoTest]', () => <PieChart isSolutionShown results={results} />)
+  .add('BarChart [NoTest]', () => <BarChart data={dataSC} />)
+  .add('BarChart (with solution) [NoTest]', () => <BarChart isSolutionShown data={dataSC} />)
+  .add('PieChart [NoTest]', () => <PieChart data={dataSC} />)
+  .add('PieChart (with solution) [NoTest]', () => <PieChart isSolutionShown data={dataSC} />)
+  .add('TableChart (FREE)', () => <TableChart data={dataFREE} />)
+  .add('CloudChart (FREE) [NoTest]', () => <CloudChart data={dataFREE} />)

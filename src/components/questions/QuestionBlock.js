@@ -7,15 +7,19 @@ import QuestionSingle from './QuestionSingle'
 const propTypes = {
   questions: PropTypes.arrayOf(PropTypes.shape(QuestionSingle.propTypes)).isRequired,
   showSolutions: PropTypes.bool,
+  status: PropTypes.string,
   timeLimit: PropTypes.number,
 }
 
 const defaultProps = {
   showSolutions: false,
+  status: 'PLANNED',
   timeLimit: 0,
 }
 
-const QuestionBlock = ({ questions, showSolutions, timeLimit }) => (
+const QuestionBlock = ({
+  status, questions, showSolutions, timeLimit,
+}) => (
   <div className="questionBlock">
     <div className="timeLimit">
       <Icon name="clock" />
@@ -24,6 +28,7 @@ const QuestionBlock = ({ questions, showSolutions, timeLimit }) => (
     <div className="showSolution">
       <Icon name={showSolutions ? 'unhide' : 'hide'} />
     </div>
+    <div className="sessionStatus">{status}</div>
     <div className="questions">
       {questions.map(({ id, title, type }) => (
         <QuestionSingle key={id} id={id} title={title} type={type} />
@@ -34,27 +39,30 @@ const QuestionBlock = ({ questions, showSolutions, timeLimit }) => (
         display: flex;
 
         background-color: lightgrey;
-        border: 1px solid grey;
+        border: ${status === 'ACTIVE' ? '2px solid green' : '1px solid grey'};
         flex-flow: row wrap;
         padding: 0.2rem;
 
         .timeLimit,
-        .showSolution {
-          flex: 1 1 50%;
+        .showSolution,
+        .sessionStatus {
+          flex: 1 1 33%;
           margin-bottom: 0.2rem;
         }
 
         .showSolution {
+          text-align: center;
+        }
+
+        .sessionStatus {
           text-align: right;
         }
 
         .questions {
-          display: flex;
-          flex-flow: column nowrap;
+          flex: 0 0 100%;
 
           > :global(*) {
             border: 1px solid grey;
-            flex: 1;
 
             &:not(:first-child) {
               margin-top: 0.2rem;
