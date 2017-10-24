@@ -5,6 +5,7 @@ import { intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
 import { Button } from 'semantic-ui-react'
+import Link from 'next/link'
 
 import { pageWithIntl, withData } from '../../lib'
 import { SessionListQuery, RunningSessionQuery } from '../../graphql/queries'
@@ -96,7 +97,9 @@ const Index = ({
         <div className="questionList">
           <div className="buttons">
             <Button onClick={handleCreationModeToggle}>Create Session</Button>
-            <Button>Create Question</Button>
+            <Link href="/questions/create">
+              <Button>Create Question</Button>
+            </Link>
           </div>
           <QuestionList
             dropped={droppedQuestions}
