@@ -123,7 +123,8 @@ const Index = ({
             padding-bottom: 235px;
 
             .buttons {
-              margin-bottom: 5px;
+              margin-bottom: 1rem;
+              text-align: center;
             }
           }
         }
@@ -146,12 +147,12 @@ const Index = ({
             flex: 0 0 auto;
 
             margin: 0;
-            padding: 2rem 0 2rem 0;
+            padding: 1rem;
           }
 
           .questionList {
             flex: 1;
-            padding: 2rem 0 2rem 1rem;
+            padding: 1rem;
           }
         }
 
@@ -166,7 +167,7 @@ const Index = ({
           }
 
           .questionList {
-            padding: 2rem 2rem 2rem 1rem;
+            padding: 2rem;
           }
         }
       `}</style>
