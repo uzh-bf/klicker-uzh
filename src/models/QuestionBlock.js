@@ -1,18 +1,28 @@
 const mongoose = require('mongoose')
+const _values = require('lodash/values')
 
 const { ObjectId } = mongoose.Schema.Types
 
-module.exports = new mongoose.Schema({
-  status: {
-    type: String,
-    enum: ['PLANNED', 'ACTIVE', 'EXECUTED'],
-    default: 'PLANNED',
-  },
-  timeLimit: { type: Number, default: -1, min: -1 },
-  showSolutions: { type: Boolean, default: false },
+const QuestionBlockStatus = {
+  PLANNED: 'PLANNED',
+  ACTIVE: 'ACTIVE',
+  EXECUTED: 'EXECUTED',
+}
 
-  instances: [{ type: ObjectId, ref: 'QuestionInstance', required: true }],
+module.exports = {
+  QuestionBlock: new mongoose.Schema({
+    status: {
+      type: String,
+      enum: _values(QuestionBlockStatus),
+      default: QuestionBlockStatus.PLANNED,
+    },
+    timeLimit: { type: Number, default: -1, min: -1 },
+    showSolutions: { type: Boolean, default: false },
 
-  createdAt: { type: Date, default: Date.now() },
-  updatedAt: { type: Date, default: Date.now() },
-})
+    instances: [{ type: ObjectId, ref: 'QuestionInstance', required: true }],
+
+    createdAt: { type: Date, default: Date.now() },
+    updatedAt: { type: Date, default: Date.now() },
+  }),
+  QuestionBlockStatus,
+}

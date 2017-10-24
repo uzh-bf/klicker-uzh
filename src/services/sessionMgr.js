@@ -1,10 +1,6 @@
-const { QuestionInstanceModel, SessionModel, UserModel } = require('../models')
-
-const SessionStatus = {
-  CREATED: 'CREATED',
-  RUNNING: 'RUNNING',
-  COMPLETED: 'COMPLETED',
-}
+const {
+  QuestionInstanceModel, SessionModel, SessionStatus, UserModel, QuestionBlockStatus,
+} = require('../models')
 
 const getRunningSession = async (sessionId) => {
   const session = await SessionModel.findById(sessionId)
@@ -156,52 +152,6 @@ const endSession = async ({ id, userId }) => {
   return session
 }
 
-// add a new feedback to a session
-const addFeedback = async ({ sessionId, content }) => {
-  // TODO: security
-  // TODO: rate limiting
-  // TODO: ...
-
-  const session = await getRunningSession(sessionId)
-
-  // if the feedback channel is not activated, do not allow new additions
-  if (!session.settings.isFeedbackChannelActive) {
-    throw new Error('SESSION_FEEDBACKS_DEACTIVATED')
-  }
-
-  // push a new feedback into the array
-  session.feedbacks.push({ content })
-
-  // save the updated session
-  await session.save()
-
-  // return the updated session
-  return session
-}
-
-// add a new confusion timestep to the session
-const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
-  // TODO: security
-  // TODO: rate limiting
-  // TODO: ...
-
-  const session = await getRunningSession(sessionId)
-
-  // if the confusion barometer is not activated, do not allow new additions
-  if (!session.settings.isConfusionBarometerActive) {
-    throw new Error('SESSION_CONFUSION_DEACTIVATED')
-  }
-
-  // push a new timestep into the array
-  session.confusionTS.push({ difficulty, speed })
-
-  // save the updated session
-  await session.save()
-
-  // return the updated session
-  return session
-}
-
 // update session settings
 const updateSettings = async ({ sessionId, userId, settings }) => {
   // TODO: security
@@ -233,12 +183,68 @@ const updateSettings = async ({ sessionId, userId, settings }) => {
   return session
 }
 
+// activate the next question block
+const activateNextBlock = async ({ userId }) => {
+  const user = await UserModel.findById(userId).populate(['activeInstances', 'runningSession'])
+  const { runningSession } = user
+
+  if (!runningSession) {
+    throw new Error('NO_RUNNING_SESSION')
+  }
+
+  // if all the blocks have already been activated, simply return the session
+  if (runningSession.activeBlock === runningSession.blocks.length) {
+    return user.runningSession
+  }
+
+  const prevBlockIndex = runningSession.activeBlock
+  const nextBlockIndex = runningSession.activeBlock + 1
+
+  // while there is still a next session
+  if (nextBlockIndex < runningSession.blocks.length) {
+    // find the next block for the running session
+    const nextBlock = runningSession.blocks[nextBlockIndex]
+
+    // update the instances in the new active block to be open
+    await QuestionInstanceModel.update({ _id: { $in: nextBlock.instances } }, { isOpen: true }, { multi: true })
+
+    // set the status of the instances in the next block to active
+    runningSession.blocks[nextBlockIndex].status = QuestionBlockStatus.ACTIVE
+
+    // set the instances of the next block to be the users active instances
+    runningSession.activeInstances = nextBlock.instances
+  } else {
+    // if the final block was reached above, reset the users active instances
+    runningSession.activeInstances = []
+  }
+
+  // increase the index of the currently active block
+  runningSession.activeBlock += 1
+
+  // if the newly activated block had a predecessor, close it
+  if (runningSession.activeBlock > 0) {
+    // find the currently active block
+    const previousBlock = runningSession.blocks[prevBlockIndex]
+
+    // update the instances in the currently active block to be closed
+    await QuestionInstanceModel.update({ _id: { $in: previousBlock.instances } }, { isOpen: false }, { multi: true })
+
+    // set the status of the previous block to executed
+    runningSession.blocks[prevBlockIndex].status = QuestionBlockStatus.EXECUTED
+  }
+
+  // save the updates for the running session and the user
+  await Promise.all([runningSession.save(), user.save()])
+
+  return user.runningSession
+}
+
 module.exports = {
   createSession,
   startSession,
   endSession,
-  addFeedback,
-  addConfusionTS,
   updateSettings,
   SessionStatus,
+  activateNextBlock,
+  getRunningSession,
 }

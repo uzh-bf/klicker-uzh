@@ -2,6 +2,8 @@
 
 exports[`QuestionService createQuestion allows creating a valid FREE question 1`] = `
 
+    QUESTION
+
     Title: question without tags
     Type: FREE
 
@@ -12,7 +14,7 @@ exports[`QuestionService createQuestion allows creating a valid FREE question 1`
       Instances: []
       Options: {
         Choices: null
-        Randomized: false
+        Randomized: undefined
         Restrictions: {
           Max: 100
           Min: 10
@@ -25,6 +27,8 @@ exports[`QuestionService createQuestion allows creating a valid FREE question 1`
 
 exports[`QuestionService createQuestion allows creating a valid SC question 1`] = `
 
+    QUESTION
+
     Title: question without tags
     Type: SC
 
@@ -34,13 +38,13 @@ exports[`QuestionService createQuestion allows creating a valid SC question 1`] 
       Description: blabla
       Instances: []
       Options: {
-        Choices: [
+        Choices: [{
             Correct: false
             Name: option1
-          ,
+          },{
             Correct: true
             Name: option2
-          
+          }
         ]
         Randomized: true
         Restrictions: null

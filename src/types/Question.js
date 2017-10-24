@@ -32,7 +32,7 @@ const Question = `
 
     user: User!
 
-    instances: [QuestionInstance!]
+    instances: [QuestionInstance!]!
     tags: [Tag!]!
     versions: [Question_Version!]!
 

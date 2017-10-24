@@ -2,22 +2,27 @@ const { makeExecutableSchema } = require('graphql-tools')
 
 const { requireAuth } = require('./services/auth')
 const {
-  allQuestions,
-  createQuestion,
-  questionsByPV,
-  questionByPV,
-  questionInstancesByPV,
+  allQuestions, createQuestion, questionsByPV, questionByPV,
 } = require('./resolvers/questions')
+const {
+  activeInstances,
+  questionInstancesByPV,
+  addResponse,
+  responsesByPV,
+  resultsByPV,
+} = require('./resolvers/questionInstances')
 const {
   addFeedback,
   addConfusionTS,
   allSessions,
   createSession,
   endSession,
+  runningSession,
   sessionByPV,
   sessionsByPV,
   startSession,
   updateSessionSettings,
+  activateNextBlock,
 } = require('./resolvers/sessions')
 const { allTags, tags } = require('./resolvers/tags')
 const {
@@ -39,6 +44,8 @@ const typeDefs = [
     allQuestions: [Question]!
     allSessions: [Session]!
     allTags: [Tag]!
+    activeInstances: [QuestionInstance]
+    runningSession: Session
     user: User
   }
 
@@ -50,10 +57,13 @@ const typeDefs = [
 
     createSession(session: SessionInput!): Session!
     startSession(id: ID!): Session!
+    activateNextBlock: Session!
     endSession(id: ID!): Session!
     addFeedback(sessionId: ID!, content: String!): Session!
     addConfusionTS(sessionId: ID!, difficulty: Int!, speed: Int!): Session!
     updateSessionSettings(sessionId: ID!, settings: Session_SettingsInput!): Session!
+
+    addResponse(instanceId: ID!, response: QuestionInstance_ResponseInput!): QuestionInstance!
   }
 
   type Subscription {
@@ -70,11 +80,14 @@ const resolvers = {
     allQuestions: requireAuth(allQuestions),
     allSessions: requireAuth(allSessions),
     allTags: requireAuth(allTags),
+    activeInstances: requireAuth(activeInstances),
+    runningSession: requireAuth(runningSession),
     user: requireAuth(authUser),
   },
   Mutation: {
     addFeedback,
     addConfusionTS,
+    addResponse,
     createQuestion: requireAuth(createQuestion),
     createSession: requireAuth(createSession),
     createUser,
@@ -82,6 +95,7 @@ const resolvers = {
     login,
     startSession: requireAuth(startSession),
     updateSessionSettings: requireAuth(updateSessionSettings),
+    activateNextBlock: requireAuth(activateNextBlock),
   },
   Question: {
     tags,
@@ -98,14 +112,29 @@ const resolvers = {
       return null
     },
   },
-  Session_QuestionBlock: {
-    instances: questionInstancesByPV,
-  },
   QuestionInstance: {
     question: questionByPV,
+    responses: responsesByPV,
+    results: resultsByPV,
+  },
+  QuestionInstance_Results: {
+    __resolveType(obj) {
+      if (obj.free) {
+        return 'FREEQuestionResults'
+      }
+
+      if (obj.choices) {
+        return 'SCQuestionResults'
+      }
+
+      return null
+    },
   },
   Session: {
     user,
+  },
+  Session_QuestionBlock: {
+    instances: questionInstancesByPV,
   },
   Tag: {
     questions: questionsByPV,

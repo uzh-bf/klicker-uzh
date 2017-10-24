@@ -2,64 +2,26 @@ require('dotenv').config()
 
 const mongoose = require('mongoose')
 
-const AuthService = require('./auth')
 const QuestionService = require('./questions')
-
-const { setupTestEnv } = require('../utils/testHelpers')
+const { initializeDb } = require('../lib/test/setup')
+const { questionSerializer } = require('../lib/test/serializers')
 
 mongoose.Promise = Promise
 
 // define how jest should serialize objects into snapshots
 // we need to strip ids and dates as they are always changing
-expect.addSnapshotSerializer({
-  test: val => val.id && val.instances && val.tags && val.title && val.type && val.versions,
-  print: val => `
-    Title: ${val.title}
-    Type: ${val.type}
-
-    Instances: [${val.instances}]
-    Tags: [${val.tags.map(tag => tag.name)}]
-    Versions: [${val.versions.map(({ description, instances, options }) => `
-      Description: ${description}
-      Instances: [${instances}]
-      Options: {
-        Choices: ${options.choices &&
-          `[${options.choices.map(({ correct, name }) => `
-            Correct: ${correct}
-            Name: ${name}
-          `)}
-        ]`}
-        Randomized: ${options.randomized}
-        Restrictions: ${options.restrictions &&
-          `{
-          Max: ${options.restrictions.max}
-          Min: ${options.restrictions.min}
-          Type: ${options.restrictions.type}
-        }`}
-      }
-    `)}]
-  `,
-})
+expect.addSnapshotSerializer(questionSerializer)
 
 describe('QuestionService', () => {
   let user
 
   beforeAll(async () => {
-    // connect to the database
-    await mongoose.connect(`mongodb://${process.env.MONGO_URL}`, {
-      keepAlive: true,
-      reconnectTries: 10,
-      useMongoClient: true,
-    })
-
-    await setupTestEnv({
+    ({ user } = await initializeDb({
+      mongoose,
       email: 'testQuestions@bf.uzh.ch',
-      password: 'somePassword',
       shortname: 'questi',
-    })
-
-    // login as a test user
-    user = await AuthService.login(null, 'testQuestions@bf.uzh.ch', 'somePassword')
+      withLogin: true,
+    }))
   })
   afterAll((done) => {
     mongoose.disconnect(done)
