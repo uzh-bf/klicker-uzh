@@ -118,8 +118,13 @@ const Index = ({
           flex-direction: column;
           height: 100%;
 
-          .buttons {
-            margin-bottom: 5px;
+          .questionList {
+            // workaround for creating session div overlapping the question list
+            padding-bottom: 235px;
+
+            .buttons {
+              margin-bottom: 5px;
+            }
           }
         }
 
