@@ -64,23 +64,15 @@ const QuestionDetails = ({ description, lastUsed }) => {
         </Button>
       </div>
 
-    <style jsx>{`
-      @import 'src/theme';
+      <style jsx>{`
+        @import 'src/theme';
 
-      .questionDetails {
-        display: flex;
-        flex-direction: column;
+        .questionDetails {
+          display: flex;
+          flex-direction: column;
 
-        background-color: lightgrey;
-        border: 1px solid grey;
-
-        @include desktop-tablet-only {
-          flex-direction: row;
-          min-height: 7rem;
-
-          .column {
-            text-align: center;
-          }
+          background-color: lightgrey;
+          border: 1px solid grey;
 
           @media all and (min-width: 768px) {
             flex-direction: row;
