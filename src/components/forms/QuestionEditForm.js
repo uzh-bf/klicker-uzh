@@ -11,13 +11,9 @@ import { QuestionTypes } from '../../lib'
 
 // form validation
 const validate = ({
-  content, options, tags, title, type,
+  content, options, tags, type,
 }) => {
   const errors = {}
-
-  if (!title || isEmpty(title)) {
-    errors.title = 'form.editQuestion.title.empty'
-  }
 
   if (!content || isEmpty(content)) {
     errors.content = 'form.editQuestion.content.empty'
@@ -25,10 +21,6 @@ const validate = ({
 
   if (!tags || tags.length === 0) {
     errors.tags = 'form.editQuestion.tags.empty'
-  }
-
-  if (!type || isEmpty(type)) {
-    errors.type = 'form.editQuestion.type.empty'
   }
 
   // validation of SC answer options
