@@ -1,6 +1,8 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import isEmpty from 'validator/lib/isEmpty'
+import { compose, withProps } from 'recompose'
+import { connect } from 'react-redux'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Button, Dropdown, Form } from 'semantic-ui-react'
@@ -11,8 +13,8 @@ import { QuestionTypes } from '../../lib'
 
 // form validation
 const validate = ({
-  content, options, tags, type,
-}) => {
+                    content, options, tags, type,
+                  }) => {
   const errors = {}
 
   if (!content || isEmpty(content)) {
@@ -72,16 +74,16 @@ const defaultProps = {
 }
 
 const QuestionEditForm = ({
-  content,
-  intl,
-  invalid,
-  tags,
-  title,
-  type,
-  handleSubmit: onSubmit,
-  onDiscard,
-  versions,
-}) => {
+                            content,
+                            intl,
+                            invalid,
+                            tags,
+                            title,
+                            type,
+                            handleSubmit: onSubmit,
+                            onDiscard,
+                            versions,
+                          }) => {
   const typeComponents = {
     FREE: {
       input: FREECreationOptions,
@@ -239,7 +241,15 @@ const QuestionEditForm = ({
 QuestionEditForm.propTypes = propTypes
 QuestionEditForm.defaultProps = defaultProps
 
-export default reduxForm({
-  form: 'editQuestion',
-  validate,
-})(QuestionEditForm)
+export default compose(
+  reduxForm({
+    enableReinitialize: true,
+    form: 'editQuestion',
+    validate,
+  }),
+  withProps(content => ({
+    initialValues: {
+      content,
+    },
+  })),
+)(QuestionEditForm)
