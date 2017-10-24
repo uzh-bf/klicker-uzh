@@ -9,19 +9,13 @@ const {
   isAuthenticated, isValidJWT, signup, login, requireAuth, getToken,
 } = require('./auth')
 const { UserModel } = require('../models')
-const { setupTestEnv } = require('../utils/testHelpers')
+const { initializeDb } = require('../lib/test/setup')
 
 const appSecret = process.env.APP_SECRET
 
 describe('AuthService', () => {
   beforeAll(async () => {
-    await mongoose.connect(`mongodb://${process.env.MONGO_URL}`, {
-      keepAlive: true,
-      reconnectTries: 10,
-      useMongoClient: true,
-    })
-
-    await setupTestEnv({ email: 'testAuth@bf.uzh.ch', password: 'somePassword', shortname: 'auth' })
+    await initializeDb({ mongoose, email: 'testAuth@bf.uzh.ch', shortname: 'auth' })
   })
   afterAll((done) => {
     mongoose.disconnect(done)

@@ -1,0 +1,345 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SessionExecService addConfusionTS allows adding new timesteps 1`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: RUNNING
+
+    ActiveBlock: -1
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 1
+    }]
+
+    ConfusionTS: [{
+      Difficulty: 20
+      Speed: 10
+    }]
+
+    Feedbacks: []
+
+    Settings: {
+      ConfusionActive: true
+      FeedbacksActive: false
+      FeedbacksPublic: false
+    }
+`;
+
+exports[`SessionExecService addConfusionTS allows adding new timesteps 2`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: RUNNING
+
+    ActiveBlock: -1
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 1
+    }]
+
+    ConfusionTS: [{
+      Difficulty: 20
+      Speed: 10
+    },{
+      Difficulty: 40
+      Speed: -10
+    }]
+
+    Feedbacks: []
+
+    Settings: {
+      ConfusionActive: true
+      FeedbacksActive: false
+      FeedbacksPublic: false
+    }
+`;
+
+exports[`SessionExecService addFeedback allows adding new feedbacks to a running session 1`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: RUNNING
+
+    ActiveBlock: -1
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 1
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: [{
+      Content: feedback1
+      Votes: 0
+    }]
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: true
+      FeedbacksPublic: false
+    }
+`;
+
+exports[`SessionExecService addFeedback allows adding new feedbacks to a running session 2`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: RUNNING
+
+    ActiveBlock: -1
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 1
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: [{
+      Content: feedback1
+      Votes: 0
+    },{
+      Content: feedback2
+      Votes: 0
+    }]
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: true
+      FeedbacksPublic: false
+    }
+`;
+
+exports[`SessionExecService addResponse allows adding responses [FREE:NONE] 1`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: RUNNING
+
+    ActiveBlock: 0
+    ActiveInstances: 3
+
+    Blocks: [{
+      Show solutions: false
+      Status: ACTIVE
+      Time limit: -1
+      Number of instances: 3
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: false
+    }
+`;
+
+exports[`SessionExecService addResponse allows adding responses [FREE:NONE] 2`] = `
+Object {
+  "c7cd24ea4ea9d3eaab020517ed1babb7": Object {
+    "count": 1,
+    "value": "SCHWEIZ",
+  },
+}
+`;
+
+exports[`SessionExecService addResponse allows adding responses [FREE:NONE] 3`] = `
+
+    QUESTION_INSTANCE
+
+    isOpen: true
+    version: 0
+
+    responses: [
+      ip: some ip
+      fingerprint: some fingerprint
+      value: {
+        choices: undefined
+        text: undefined
+        value: SCHWEIZ
+      }
+    ,
+      ip: some ip
+      fingerprint: some fingerprint
+      value: {
+        choices: undefined
+        text: undefined
+        value: schwiiz...
+      }
+    ,
+      ip: some ip
+      fingerprint: some fingerprint
+      value: {
+        choices: undefined
+        text: undefined
+        value: SCHWEIZ
+      }
+    ]
+
+    results: {
+      choices: []
+      free: [object Object]
+    }
+  
+`;
+
+exports[`SessionExecService addResponse allows adding responses [FREE:RANGE] 1`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: RUNNING
+
+    ActiveBlock: 0
+    ActiveInstances: 3
+
+    Blocks: [{
+      Show solutions: false
+      Status: ACTIVE
+      Time limit: -1
+      Number of instances: 3
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: false
+    }
+`;
+
+exports[`SessionExecService addResponse allows adding responses [FREE:RANGE] 2`] = `
+Object {
+  "10": Object {
+    "count": 1,
+    "value": 10,
+  },
+}
+`;
+
+exports[`SessionExecService addResponse allows adding responses [FREE:RANGE] 3`] = `
+
+    QUESTION_INSTANCE
+
+    isOpen: true
+    version: 0
+
+    responses: [
+      ip: some ip
+      fingerprint: some fingerprint
+      value: {
+        choices: undefined
+        text: undefined
+        value: 10
+      }
+    ,
+      ip: some ip
+      fingerprint: some fingerprint
+      value: {
+        choices: undefined
+        text: undefined
+        value: 14
+      }
+    ,
+      ip: some ip
+      fingerprint: some fingerprint
+      value: {
+        choices: undefined
+        text: undefined
+        value: 10
+      }
+    ]
+
+    results: {
+      choices: []
+      free: [object Object]
+    }
+  
+`;
+
+exports[`SessionExecService addResponse allows adding responses [SC] 1`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: RUNNING
+
+    ActiveBlock: 0
+    ActiveInstances: 3
+
+    Blocks: [{
+      Show solutions: false
+      Status: ACTIVE
+      Time limit: -1
+      Number of instances: 3
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: false
+    }
+`;
+
+exports[`SessionExecService addResponse allows adding responses [SC] 2`] = `
+
+    QUESTION_INSTANCE
+
+    isOpen: true
+    version: 0
+
+    responses: [
+      ip: some ip
+      fingerprint: some fingerprint
+      value: {
+        choices: 0
+        text: undefined
+        value: undefined
+      }
+    ,
+      ip: some ip
+      fingerprint: some fingerprint
+      value: {
+        choices: 0,1
+        text: undefined
+        value: undefined
+      }
+    ]
+
+    results: {
+      choices: [2,1]
+      free: undefined
+    }
+  
+`;

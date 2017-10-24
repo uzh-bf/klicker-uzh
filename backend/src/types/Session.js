@@ -20,16 +20,18 @@ const Session = `
 
   input SessionInput {
     name: String!
-    blocks: [Session_QuestionBlockInput]!
+    blocks: [Session_QuestionBlockInput!]!
   }
   type Session {
     id: ID!
     name: String!
+    activeBlock: Int!
 
     status: Session_Status!
     settings: Session_Settings!
     user: User!
 
+    activeInstances: [QuestionInstance!]!
     blocks: [Session_QuestionBlock!]!
     confusionTS: [Session_ConfusionTimestep!]!
     feedbacks: [Session_Feedback!]!

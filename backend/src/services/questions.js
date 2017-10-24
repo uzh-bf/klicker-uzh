@@ -1,10 +1,6 @@
-const { QuestionModel, TagModel, UserModel } = require('../models')
-
-const QuestionTypes = {
-  SC: 'SC',
-  MC: 'MC',
-  FREE: 'FREE',
-}
+const {
+  QuestionModel, QuestionTypes, TagModel, UserModel,
+} = require('../models')
 
 // create a new question
 const createQuestion = async ({

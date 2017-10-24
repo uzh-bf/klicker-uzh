@@ -20,6 +20,7 @@
     "graphql-tools": "2.6.1",
     "jsonwebtoken": "8.1.0",
     "lodash": "4.17.4",
+    "md5": "2.2.1",
     "mongodb": "2.2.33",
     "mongoose": "4.12.4",
     "optics-agent": "1.1.7",
@@ -50,6 +51,7 @@
     "start:inspect": "cross-env NODE_ENV=production node --inspect src/server.js",
     "test": "jest",
     "test:ci": "jest --coverage",
+    "test:snap": "jest -u",
     "test:watch": "jest --watch"
   },
   "jest": {

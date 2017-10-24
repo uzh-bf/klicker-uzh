@@ -1,4 +1,10 @@
 const mongoose = require('mongoose')
+const _values = require('lodash/values')
+
+const FREERestrictionTypes = {
+  NONE: 'NONE',
+  RANGE: 'RANGE',
+}
 
 // for SC and MC questions, define the choices and related settings
 const Choice = new mongoose.Schema({
@@ -10,12 +16,14 @@ const Choice = new mongoose.Schema({
 const Restrictions = new mongoose.Schema({
   min: { type: Number },
   max: { type: Number },
-  // RANGE: numerical range with defined min and/or max values
-  type: { type: String, enum: ['NONE', 'RANGE'], default: 'NONE' },
+  type: { type: String, enum: _values(FREERestrictionTypes), default: FREERestrictionTypes.NONE },
 })
 
-module.exports = new mongoose.Schema({
-  choices: [{ type: Choice }],
-  randomized: { type: Boolean, default: false },
-  restrictions: { type: Restrictions },
-})
+module.exports = {
+  QuestionOptions: new mongoose.Schema({
+    choices: [{ type: Choice }],
+    randomized: { type: Boolean, default: false },
+    restrictions: { type: Restrictions },
+  }),
+  FREERestrictionTypes,
+}
