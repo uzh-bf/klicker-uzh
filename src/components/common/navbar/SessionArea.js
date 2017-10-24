@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import QRCode from 'qrcode.react'
-import { Button, Icon, Menu, Popup } from 'semantic-ui-react'
+import { Icon, Menu, Popup } from 'semantic-ui-react'
 
 const propTypes = {
   sessionId: PropTypes.string,
@@ -36,7 +36,8 @@ const SessionArea = ({ sessionId }) => {
 
   // if no session is running, return a button allowing to start one
   // TODO: this should redirect to the question pool and activate creation mode
-  return <Button>Create session</Button>
+  // return <Button>Create session</Button>
+  return null
 }
 
 SessionArea.propTypes = propTypes

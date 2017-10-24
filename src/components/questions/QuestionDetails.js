@@ -65,14 +65,14 @@ const QuestionDetails = ({ description, lastUsed }) => {
       </div>
 
       <style jsx>{`
-        @import 'src/theme';
+        @import 'src/_theme';
 
         .questionDetails {
           display: flex;
           flex-direction: column;
 
-          background-color: lightgrey;
-          border: 1px solid grey;
+          background-color: white;
+          border: 1px solid $color-primary;
 
           @media all and (min-width: 768px) {
             flex-direction: row;
@@ -85,25 +85,32 @@ const QuestionDetails = ({ description, lastUsed }) => {
 
               &.description {
                 word-wrap: break-word;
+                background-color: rgba(124, 184, 228, 0.12);
               }
 
               &.buttons {
                 padding: 0;
                 flex: none;
+                padding: 0.3rem;
 
                 :global(.button) {
                   margin: 0;
-                  margin-bottom: 5px;
+                  margin-bottom: 0.3rem;
                   display: block;
+                  background-color: rgba(224, 225, 226, 0.73);
                 }
 
-                :global(.button:last) {
+                :global(.button:last-child) {
                   margin-bottom: 0;
+                }
+
+                :global(.button:hover) {
+                  color: $color-primary !important;
                 }
               }
 
               &:not(:last-child) {
-                border-right: 1px solid grey;
+                border-right: 1px solid $color-primary;
               }
             }
           }

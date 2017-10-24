@@ -21,21 +21,24 @@ const QuestionTags = ({ tags, type }) => (
     <div className="type tag">{type}</div>
 
     <style jsx>{`
-      @import 'src/theme';
+      @import 'src/_theme';
 
       .questionTags {
         display: flex;
         flex-flow: row wrap;
-
-        .type {
-          font-weight: bold;
-        }
+        background-color: white;
 
         .tag {
-          background-color: lightgrey;
+          background-color: #f1f1f1;
           padding: 0.3rem 0.5rem;
           flex: 1;
           text-align: center;
+        }
+
+        .type {
+          font-weight: bold;
+          background-color: rgba(33, 133, 208, 0.36);
+          // rgba(33, 133, 208, 0.36) // rgba(242, 113, 28, 0.58)
         }
 
         @include desktop-tablet-only {
@@ -44,14 +47,14 @@ const QuestionTags = ({ tags, type }) => (
           justify-content: flex-end;
 
           .tag {
-            background: none;
-            border-left: solid 1px;
-            border-top: 1px solid grey;
+            //background: none;
+            border-left: solid 1px $color-primary;
+            border-top: 1px solid $color-primary;
             padding: 0.5rem 1rem;
             flex: 0 1 auto;
 
             &:last-child {
-              border-right: solid 1px;
+              border-right: solid 1px $color-primary;
             }
           }
         }

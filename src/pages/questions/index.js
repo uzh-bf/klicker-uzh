@@ -121,6 +121,7 @@ const Index = ({
           .questionList {
             // workaround for creating session div overlapping the question list
             padding-bottom: 235px;
+            background-color: #f5f5f5;
 
             .buttons {
               margin-bottom: 1rem;

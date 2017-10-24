@@ -72,22 +72,30 @@ const Question = ({
       </div>
 
       <style jsx>{`
-        @import 'src/theme';
+        @import 'src/_theme';
 
         .question {
           display: flex;
           flex-flow: column nowrap;
 
+          padding: 10px;
+          background-color: white;
+          border: 1px solid lightgray;
+
           &.draggable {
             cursor: grab;
 
             &:hover {
-              box-shadow: 3px 3px 5px grey;
+              box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.1);
             }
           }
 
           &.isDragging {
             opacity: 0.5;
+          }
+
+          .title {
+            //color: #2a99ea;
           }
 
           .sessionMembership {
@@ -110,6 +118,7 @@ const Question = ({
             .title {
               font-size: 1.2rem;
               margin: 0;
+              background-color: white;
               //margin-bottom: 0.5rem;
             }
           }
