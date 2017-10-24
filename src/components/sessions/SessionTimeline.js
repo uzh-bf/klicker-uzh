@@ -46,11 +46,12 @@ const SessionTimeline = ({
     </div>
     <div className="buttons">
       <Button
+        color="red"
         content={intl.formatMessage({
-          defaultMessage: 'Previous',
-          id: 'runningSession.button.previous',
+          defaultMessage: 'Cancel',
+          id: 'runningSession.button.cancel',
         })}
-        icon="left arrow"
+        icon="remove"
         labelPosition="left"
         size="large"
         onClick={handleLeftActionClick}
