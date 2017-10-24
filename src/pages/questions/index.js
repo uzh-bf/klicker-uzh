@@ -125,7 +125,7 @@ const Index = ({
 
       <style jsx>{`
         @import 'src/theme';
-        
+
         .buttons {
           margin-bottom: 5px;
         }
@@ -150,11 +150,6 @@ const Index = ({
 
         @include desktop-tablet-only {
           .questionPool {
-            // workaround for tag list 100%
-            position: absolute;
-            height: 100%;
-            width: 100%;
-
             flex-flow: row wrap;
 
             padding: 0;
@@ -175,11 +170,6 @@ const Index = ({
 
         @include desktop-only {
           .questionPool {
-            // workaround for tag list 100%
-            position: absolute;
-            height: 100%;
-            width: 100%;
-
             padding: 0;
           }
 
