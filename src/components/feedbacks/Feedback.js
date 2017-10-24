@@ -25,7 +25,7 @@ const Feedback = ({
       </div>
     )}
 
-    <Button className="votes" onClick={updateVotes}>
+    <Button className="votes" onClick={updateVotes()}>
       <Icon name={alreadyVoted ? 'thumbs up' : 'thumbs outline up'} />
       {votes}
     </Button>
@@ -63,10 +63,11 @@ const Feedback = ({
           border-left: 1px solid grey;
         }
 
-      @include desktop-tablet-only {
-        .content,
-        .delete {
-          padding: 0.5rem;
+        @include desktop-tablet-only {
+          .content,
+          .delete {
+            padding: 0.5rem;
+          }
         }
       }
     `}</style>
