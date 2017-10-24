@@ -3784,6 +3784,9 @@ fs.realpath@^1.0.0:
 fsevents@^1.0.0, fsevents@^1.1.1:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/fsevents/-/fsevents-1.1.2.tgz#3282b713fb3ad80ede0e9fcf4611b5aa6fc033f4"
+  dependencies:
+    nan "^2.3.0"
+    node-pre-gyp "^0.6.36"
 
 fstream@^1.0.0, fstream@^1.0.2:
   version "1.0.11"
@@ -5891,6 +5894,12 @@ netrc@^0.1.4:
   version "0.1.4"
   resolved "https://registry.yarnpkg.com/netrc/-/netrc-0.1.4.tgz#6be94fcaca8d77ade0a9670dc460914c94472444"
 
+next-routes@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/next-routes/-/next-routes-1.1.0.tgz#8b924603b553b905ab285e47d710d4dc3fa5962e"
+  dependencies:
+    path-to-regexp "^1.7.0"
+
 next@4.1.3:
   version "4.1.3"
   resolved "https://registry.yarnpkg.com/next/-/next-4.1.3.tgz#ff4d9c1d1bbe3ac50fc927515e3eb858ac7d6b69"
@@ -6504,7 +6513,7 @@ path-to-regexp@0.1.7:
   version "0.1.7"
   resolved "https://registry.yarnpkg.com/path-to-regexp/-/path-to-regexp-0.1.7.tgz#df604178005f522f15eb4490e7247a1bfaa67f8c"
 
-path-to-regexp@^1.0.0:
+path-to-regexp@^1.0.0, path-to-regexp@^1.7.0:
   version "1.7.0"
   resolved "https://registry.yarnpkg.com/path-to-regexp/-/path-to-regexp-1.7.0.tgz#59fde0f435badacba103a84e9d3bc64e96b9937d"
   dependencies:
