@@ -4,8 +4,6 @@ import { compose, withState, withHandlers } from 'recompose'
 import { intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
-import classNames from 'classnames'
-import { FaPlus } from 'react-icons/lib/fa'
 import { Button } from 'semantic-ui-react'
 
 import { pageWithIntl, withData } from '../../lib'
@@ -40,20 +38,6 @@ const Index = ({
   handleQuestionDropped,
   handleCreationModeToggle,
 }) => {
-  // TODO: replace with the action button component
-  const actionButton = (
-    <div className="actionButton">
-      <button
-        className={classNames('ui huge circular primary icon button', {
-          active: creationMode,
-        })}
-        onClick={handleCreationModeToggle}
-      >
-        <FaPlus />
-      </button>
-    </div>
-  )
-
   // TODO: create a component for this?
   const actionArea = (
     <div className="creationForm">
@@ -85,7 +69,7 @@ const Index = ({
 
   return (
     <TeacherLayout
-      actionArea={creationMode ? actionArea : actionButton}
+      actionArea={creationMode ? actionArea : null}
       intl={intl}
       navbar={{
         search: {
@@ -111,7 +95,7 @@ const Index = ({
         </div>
         <div className="questionList">
           <div className="buttons">
-            <Button>Create Session</Button>
+            <Button onClick={handleCreationModeToggle}>Create Session</Button>
             <Button>Create Question</Button>
           </div>
           <QuestionList
@@ -140,12 +124,6 @@ const Index = ({
           background: #ebebeb;
 
           margin-bottom: 1rem;
-        }
-
-        .actionButton {
-          display: flex;
-          flex-direction: row;
-          justify-items: flex-end;
         }
 
         @include desktop-tablet-only {
