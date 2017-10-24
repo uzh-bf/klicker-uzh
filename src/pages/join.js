@@ -1,12 +1,14 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import { compose, withHandlers, withProps, withState } from 'recompose'
-import { Button, Input } from 'semantic-ui-react'
+import { compose, withHandlers, withState, withProps, branch, renderComponent } from 'recompose'
+import { Menu, Button, Input } from 'semantic-ui-react'
 import { FormattedMessage, intlShape } from 'react-intl'
+import { graphql } from 'react-apollo'
+import _range from 'lodash/range'
 
 import { pageWithIntl, withData } from '../lib'
-
+import { JoinSessionQuery } from '../graphql/queries'
 import { Collapser } from '../components/common'
 import { ConfusionSlider } from '../components/confusion'
 import { Feedback } from '../components/feedbacks'
@@ -17,9 +19,8 @@ const propTypes = {
   addNewFeedback: PropTypes.func.isRequired,
   addNewFeedbackMode: PropTypes.bool.isRequired,
   answerSliderValue: PropTypes.number.isRequired,
-  dataFeedbacks: PropTypes.arrayOf({
+  feedbacks: PropTypes.arrayOf({
     content: PropTypes.string.isRequired,
-    showDelete: PropTypes.bool.isRequired,
     votes: PropTypes.number.isRequired,
   }),
   dataQuestion: PropTypes.shape({
@@ -50,7 +51,7 @@ const propTypes = {
 }
 
 const defaultProps = {
-  dataFeedbacks: [],
+  feedbacks: [],
   dataQuestion: {
     restrictions: [],
     tpye: 'NONE',
@@ -58,12 +59,14 @@ const defaultProps = {
 }
 
 const Join = ({
+  intl,
+  feedbacks,
+  activeQuestions,
+  shortname,
   addNewFeedback,
   addNewFeedbackMode,
   answerSliderValue,
-  dataFeedbacks,
   dataQuestion,
-  intl,
   questionCollapsed,
   feedbackDifficulty,
   feedbackSpeed,
@@ -76,11 +79,12 @@ const Join = ({
   handleFeedbackDifficultyChange,
   handleFeedbackSpeedChange,
   handleSidebarActiveItemChange,
-  handleQuestionActiveOptionChange,
+  handleQuestionActiveOptionsChange,
   handleNewFeedbackInputChange,
   newFeedbackInput,
-  updateVotes,
   handleToggleSidebarVisible,
+  activeQuestionIndex,
+  setActiveQuestionIndex,
 }) => {
   const title =
     sidebarActiveItem === 'activeQuestion'
@@ -93,9 +97,11 @@ const Join = ({
         id: 'student.feedbackChannel.title',
       })
 
+  const activeQuestion = activeQuestions[activeQuestionIndex]
+
   return (
     <StudentLayout
-      pageTitle="Join #1762"
+      pageTitle={`Join ${shortname}`}
       sidebar={{
         activeItem: sidebarActiveItem,
         handleSidebarActiveItemChange,
@@ -115,43 +121,34 @@ const Join = ({
               collapsed={questionCollapsed}
               handleCollapseToggle={handleQuestionCollapsedToggle}
             >
-              <p>
-                hello this is a very short question that is getting longer and longer as we speak.
-                it is in fact very very long. the end is even hidden at the beginning.
-              </p>
-              <p>
-                wow, is this a long question. i could never have imagined seeing such a question.
-              </p>
-              <p>
-                hello this is a very short question that is getting longer and longer as we speak.
-                it is in fact very very long. the end is even hidden at the beginning.
-              </p>
-              <p>
-                wow, is this a long question. i could never have imagined seeing such a question.
-              </p>
+              {activeQuestion.description}
             </Collapser>
           </div>
 
           <div className="options">
-            {dataQuestion.type === 'FREE:NONE' && (
-              <SCAnswerOptions
-                activeOption={questionActiveOption}
-                options={[
-                  { label: 'answer1' },
-                  { label: 'antwort 2' },
-                  { label: 'option 3' },
-                  { label: 'tschege' },
-                ]}
-                handleOptionClick={handleQuestionActiveOptionChange}
-              />
-            )}
-            {true && (
-              <FREEAnswerOptions
-                handleChange={handleAnswerSliderChange}
-                options={{ restrictions: dataQuestion.restrictions }}
-                value={answerSliderValue}
-              />
-            )}
+            {(() => {
+              if (activeQuestion.type === 'SC') {
+                return (
+                  <SCAnswerOptions
+                    activeOptions={questionActiveOption}
+                    options={activeQuestion.options.choices}
+                    handleOptionClick={handleQuestionActiveOptionsChange}
+                  />
+                )
+              }
+
+              if (activeQuestion.type === 'FREE') {
+                return (
+                  <FREEAnswerOptions
+                    handleChange={handleAnswerSliderChange}
+                    options={activeQuestion.options}
+                    value={answerSliderValue}
+                  />
+                )
+              }
+
+              return null
+            })()}
           </div>
 
           <div className="actionButton">
@@ -159,10 +156,23 @@ const Join = ({
               <FormattedMessage
                 id="common.string.send"
                 defaultMessage="Send"
-                onClick={console.dir('Hello')}
+                onClick={() => null}
               />
             </Button>
           </div>
+
+          {activeQuestions.length > 1 && (
+            <Menu text>
+              {_range(activeQuestions.length).map(index => (
+                <Menu.Item
+                  active={index === activeQuestionIndex}
+                  onClick={() => setActiveQuestionIndex(index)}
+                >
+                  {index}
+                </Menu.Item>
+              ))}
+            </Menu>
+          )}
         </div>
 
         <div
@@ -193,26 +203,22 @@ const Join = ({
           </div>
 
           <div className="feedbacks">
-            {dataFeedbacks &&
-              dataFeedbacks.map(({
- alreadyVoted, content, showDelete, votes,
-}, index) => (
-  <div className="feedback">
-    <Feedback
-      index={index}
-      alreadyVoted={alreadyVoted}
-      content={content}
-      showDelete={showDelete}
-      votes={votes}
-      updateVotes={() => null}
-    />
-  </div>
-              ))}
+            {feedbacks.map(({ content, votes }, index) => (
+              <div key={index} className="feedback">
+                <Feedback
+                  alreadyVoted={false}
+                  content={content}
+                  showDelete={false}
+                  votes={votes}
+                  updateVotes={() => null}
+                />
+              </div>
+            ))}
             {addNewFeedbackMode && (
               <div className="newFeedbackRow">
                 <Input defaultValue={newFeedbackInput} onChange={handleNewFeedbackInputChange} />
                 <Button onClick={handleFeedbackModeChange}>Cancel</Button>
-                <Button onClick={addNewFeedback(newFeedbackInput)}>Submit</Button>
+                <Button onClick={() => null}>Submit</Button>
               </div>
             )}
           </div>
@@ -312,54 +318,17 @@ Join.defaultProps = defaultProps
 export default compose(
   withData,
   pageWithIntl,
-  withState('addNewFeedbackMode', 'setNewFeedbackMode', false),
   withState('answerSliderValue', 'setAnswerSliderValue', 500),
-  withState('dataQuestion', 'setDataQuestions', {
-    restrictions: { min: 0, max: 10 },
-    type: 'NONE',
-  }),
-  withState('dataFeedbacks', 'setFeedbacks', [
-    {
-      alreadyVoted: false,
-      content: 'Hallo du bist lustig!',
-      showDelete: false,
-      votes: 190,
-    },
-    {
-      alreadyVotes: false,
-      content: 'Gute Vorlesung',
-      showDelete: false,
-      votes: 63,
-    },
-    {
-      alreadyVotes: false,
-      content: 'bla bla bla',
-      showDelete: false,
-      votes: 131,
-    },
-    {
-      alreadyVotes: false,
-      content: 'Hahahahahaha',
-      showDelete: false,
-      votes: 10,
-    },
-  ]),
-  withState('questionCollapsed', 'setQuestionCollapsed', true),
   withState('feedbackDifficulty', 'setFeedbackDifficulty', null),
   withState('feedbackSpeed', 'setFeedbackSpeed', null),
-  withState('questionActiveOption', 'setQuestionActiveOption', -1),
+  withState('questionCollapsed', 'setQuestionCollapsed', true),
+  withState('addNewFeedbackMode', 'setNewFeedbackMode', false),
+  withState('questionActiveOptions', 'setQuestionActiveOptions', []),
   withState('sidebarActiveItem', 'setSidebarActiveItem', 'activeQuestion'),
   withState('newFeedbackInput', 'setNewFeedbackInput', ''),
   withState('sidebarVisible', 'setSidebarVisible', false),
+  withState('activeQuestionIndex', 'setActiveQuestionIndex', 0),
   withHandlers({
-    // handle adding a new feedback
-    addNewFeedback: ({ dataFeedbacks, setFeedbacks }) => newFeedback => () => {
-      const array = dataFeedbacks.slice()
-      array.push({ content: newFeedback, showDelete: false, votes: 0 })
-      setFeedbacks(array)
-      // TODO change feedbackMode
-    },
-
     // handle change of slider in answer section
     handleAnswerSliderChange: ({ setAnswerSliderValue }) => newValue =>
       setAnswerSliderValue(newValue),
@@ -380,8 +349,8 @@ export default compose(
       setNewFeedbackInput(newInput.target.value),
 
     // handle a change in the active answer option
-    handleQuestionActiveOptionChange: ({ setQuestionActiveOption }) => option => () => {
-      setQuestionActiveOption(option)
+    handleQuestionActiveOptionsChange: ({ setQuestionActiveOptions }) => option => () => {
+      setQuestionActiveOptions([option])
     },
 
     // handle collapsing and uncollapsing the question content
@@ -401,22 +370,13 @@ export default compose(
     handleToggleSidebarVisible: ({ setSidebarVisible }) => () => {
       setSidebarVisible(prevState => !prevState)
     },
-
-    // updating number of votes and update alreadyVoted variable of this item for this user
-    updateVotes: ({ dataFeedbacks, setFeedbacks }) => itemNumber => () => {
-      const array = dataFeedbacks.slice()
-      if (!array[itemNumber].alreadyVoted) {
-        array[itemNumber].votes += 1
-        array[itemNumber].alreadyVoted = true
-      } else {
-        array[itemNumber].votes -= 1
-        array[itemNumber].alreadyVoted = false
-      }
-      setFeedbacks(array)
-    },
   }),
-  withProps({
-    // fake data the component is going to get
-    data: {},
+  graphql(JoinSessionQuery, {
+    options: props => ({ variables: { shortname: props.url.query.shortname } }),
   }),
+  branch(({ loading }) => loading, renderComponent(<div />)),
+  withProps(({ data: { joinSession }, url }) => ({
+    ...joinSession,
+    shortname: url.query.shortname,
+  })),
 )(Join)
