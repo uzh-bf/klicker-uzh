@@ -124,6 +124,8 @@ const Index = ({
       </div>
 
       <style jsx>{`
+        @import 'src/theme';
+        
         .buttons {
           margin-bottom: 5px;
         }
@@ -146,7 +148,7 @@ const Index = ({
           justify-items: flex-end;
         }
 
-        @media all and (min-width: 768px) {
+        @include desktop-tablet-only {
           .questionPool {
             // workaround for tag list 100%
             position: absolute;
@@ -171,7 +173,7 @@ const Index = ({
           }
         }
 
-        @media all and (min-width: 991px) {
+        @include desktop-only {
           .questionPool {
             // workaround for tag list 100%
             position: absolute;

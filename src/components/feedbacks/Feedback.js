@@ -24,6 +24,8 @@ const Feedback = ({ content, showDelete, votes }) => (
     <div className="votes">+{votes}</div>
 
     <style jsx>{`
+      @import 'src/theme';
+
       .feedback {
         display: flex;
 
@@ -55,7 +57,7 @@ const Feedback = ({ content, showDelete, votes }) => (
         border-left: 1px solid grey;
       }
 
-      @media all and (min-width: 768px) {
+      @include desktop-tablet-only {
         .content,
         .delete {
           padding: 0.5rem;

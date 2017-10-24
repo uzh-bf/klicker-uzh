@@ -112,3 +112,7 @@ export const AccountSummaryQuery = gql`
     }
   }
 `
+
+/* export const ActiveInstanceQuery = gql`
+
+` */

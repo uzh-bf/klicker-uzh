@@ -21,6 +21,8 @@ const QuestionTags = ({ tags, type }) => (
     <div className="type tag">{type}</div>
 
     <style jsx>{`
+      @import 'src/theme';
+
       .questionTags {
         display: flex;
         flex-flow: row wrap;
@@ -36,7 +38,7 @@ const QuestionTags = ({ tags, type }) => (
           text-align: center;
         }
 
-        @media all and (min-width: 768px) {
+        @include desktop-tablet-only {
           align-items: flex-end;
           flex-flow: row nowrap;
           justify-content: flex-end;
