@@ -3811,9 +3811,6 @@ fs.realpath@^1.0.0:
 fsevents@^1.0.0, fsevents@^1.1.1:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/fsevents/-/fsevents-1.1.2.tgz#3282b713fb3ad80ede0e9fcf4611b5aa6fc033f4"
-  dependencies:
-    nan "^2.3.0"
-    node-pre-gyp "^0.6.36"
 
 fstream-ignore@^1.0.5:
   version "1.0.5"
@@ -4142,9 +4139,9 @@ graphql@^0.10.0, graphql@^0.10.3:
   dependencies:
     iterall "^1.1.0"
 
-griddle-react@1.10.1:
-  version "1.10.1"
-  resolved "https://registry.yarnpkg.com/griddle-react/-/griddle-react-1.10.1.tgz#663dc51cc0aaeb88f8af6713a58f357beec72e69"
+griddle-react@1.9.0:
+  version "1.9.0"
+  resolved "https://registry.yarnpkg.com/griddle-react/-/griddle-react-1.9.0.tgz#04586bf0267a8d3560d05ed4e4850a4e4292d538"
   dependencies:
     immutable "^3.8.1"
     lodash "^4.17.4"

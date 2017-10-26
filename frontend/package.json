@@ -18,7 +18,7 @@
     "express": "4.16.2",
     "glob": "7.1.2",
     "graphql": "0.11.7",
-    "griddle-react": "1.10.1",
+    "griddle-react": "1.9.0",
     "intl": "1.2.5",
     "isomorphic-fetch": "2.2.1",
     "lodash": "4.17.4",
