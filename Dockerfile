@@ -1,5 +1,5 @@
 # extend the node alpine base
-FROM node:8.7.0-alpine
+FROM node:8.7.0-alpine@sha256:9c6fab2e870c3dac999ae2bae0eeb4e4831aa25561da03cadcf736f4ba9f9cca
 
 LABEL maintainer="Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
 LABEL name="klicker-api"
