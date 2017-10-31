@@ -124,7 +124,7 @@ const Index = ({
             background-color: #f5f5f5;
 
             .buttons {
-              margin-bottom: 1rem;
+              margin: 1rem 0;
 
               display: flex;
               justify-content: center;
@@ -135,8 +135,6 @@ const Index = ({
         .tagList {
           flex: 1;
           background: #ebebeb;
-
-          margin-bottom: 1rem;
         }
 
         @include desktop-tablet-only {

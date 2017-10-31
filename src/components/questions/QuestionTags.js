@@ -33,6 +33,12 @@ const QuestionTags = ({ tags, type }) => (
           padding: 0.3rem 0.5rem;
           flex: 1;
           text-align: center;
+          border-left: solid 1px $color-primary;
+          border-top: 1px solid $color-primary;
+
+          &:last-child {
+            border-right: solid 1px $color-primary;
+          }
         }
 
         .type {
@@ -48,14 +54,8 @@ const QuestionTags = ({ tags, type }) => (
 
           .tag {
             //background: none;
-            border-left: solid 1px $color-primary;
-            border-top: 1px solid $color-primary;
             padding: 0.5rem 1rem;
             flex: 0 1 auto;
-
-            &:last-child {
-              border-right: solid 1px $color-primary;
-            }
           }
         }
       }

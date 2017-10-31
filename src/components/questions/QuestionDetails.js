@@ -67,12 +67,45 @@ const QuestionDetails = ({ description, lastUsed }) => {
       <style jsx>{`
         @import 'src/_theme';
 
+        $color_background: rgba(124, 184, 228, 0.12);
+
         .questionDetails {
           display: flex;
           flex-direction: column;
 
           background-color: white;
           border: 1px solid $color-primary;
+
+          .column {
+            padding: 0.25rem;
+
+            &.description {
+              border-bottom: 1px solid $color-primary;
+              background-color: $color_background;
+            }
+
+            &.col2 {
+              border-bottom: 1px solid $color-primary;
+            }
+
+            &.col3 {
+              border-bottom: 1px solid $color-primary;
+            }
+
+            &.buttons {
+              display: flex;
+              padding: 0;
+
+              :global(.button) {
+                flex: 1;
+                margin-right: 0.5rem;
+              }
+
+              :global(.button:last-child) {
+                margin-right: 0;
+              }
+            }
+          }
 
           @include desktop-tablet-only {
             flex-direction: row;
@@ -84,12 +117,19 @@ const QuestionDetails = ({ description, lastUsed }) => {
               text-align: left;
 
               &.description {
-                word-wrap: break-word;
-                background-color: rgba(124, 184, 228, 0.12);
+                border-bottom: none;
+              }
+
+              &.col2 {
+                border-bottom: none;
+              }
+
+              &.col3 {
+                border-bottom: none;
               }
 
               &.buttons {
-                padding: 0;
+                display: block;
                 flex: none;
                 padding: 0.3rem;
 
