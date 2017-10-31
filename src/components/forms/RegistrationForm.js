@@ -4,9 +4,11 @@ import isAlpha from 'validator/lib/isAlpha'
 import isEmail from 'validator/lib/isEmail'
 import isLength from 'validator/lib/isLength'
 import isEmpty from 'validator/lib/isEmpty'
+import ReactTooltip from 'react-tooltip'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Field, reduxForm } from 'redux-form'
 import { Button } from 'semantic-ui-react'
+import { FaQuestionCircle } from 'react-icons/lib/fa'
 
 import { SemanticInput } from '.'
 
@@ -95,6 +97,10 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
     </div>
 
     <div className="account">
+      {/* TODO: add tooltip in field component */}
+      <a data-tip data-for="titleHelp">
+        <FaQuestionCircle className="icon" />
+      </a>
       <Field
         required
         component={SemanticInput}
@@ -142,8 +148,24 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
       </Button>
     </div>
 
+    <ReactTooltip id="titleHelp" delayHide={250} place="right">
+      <span>The shortname needs to have 3 to 6 characters.</span>
+    </ReactTooltip>
+
     <style jsx>{`
       @import 'src/theme';
+      :global(label) {
+        display: inline !important;
+      }
+
+      a {
+        color: gray;
+
+        :global(.icon) {
+          font-size: 1.25rem;
+          margin-bottom: 0.2rem;
+        }
+      }
 
       .form {
         display: flex;
