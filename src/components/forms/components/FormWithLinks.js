@@ -87,10 +87,11 @@ const FormWithLinks = ({ button, children, links }) => (
         }
       }
 
-      @include desktop-only {
+      @include desktop-tablet-only {
         .form {
-          border: 1px solid lightgrey;
+          border: 1px solid $color-primary;
           padding: 1rem;
+          background-color: rgba(124, 184, 228, 0.12);
         }
       }
     `}</style>
