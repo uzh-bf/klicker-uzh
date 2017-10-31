@@ -18,7 +18,7 @@ const defaultProps = {
 }
 
 const QuestionDetails = ({ description, lastUsed }) => {
-  const maxDescLength = 30
+  const maxDescLength = 250
   let newDescription = ''
   let newLastUsed = []
 
@@ -37,7 +37,7 @@ const QuestionDetails = ({ description, lastUsed }) => {
   return (
     <div className="questionDetails">
       <div className="column description">{newDescription}</div>
-      <div className="column">
+      <div className="column col2">
         <p>
           Antworten Total: <strong>999</strong>
         </p>
@@ -46,7 +46,7 @@ const QuestionDetails = ({ description, lastUsed }) => {
         </p>
       </div>
 
-      <div className="column">
+      <div className="column col3">
         <ListWithHeader items={newLastUsed}>
           <FormattedMessage id="questionPool.question.lastUsed" defaultMessage="Last used" />
         </ListWithHeader>
@@ -74,7 +74,7 @@ const QuestionDetails = ({ description, lastUsed }) => {
           background-color: white;
           border: 1px solid $color-primary;
 
-          @media all and (min-width: 768px) {
+          @include desktop-tablet-only {
             flex-direction: row;
             min-height: 7rem;
 
@@ -96,6 +96,7 @@ const QuestionDetails = ({ description, lastUsed }) => {
                 :global(.button) {
                   margin: 0;
                   margin-bottom: 0.3rem;
+                  padding: 7px 12px;
                   display: block;
                   background-color: rgba(224, 225, 226, 0.73);
                 }
@@ -111,6 +112,18 @@ const QuestionDetails = ({ description, lastUsed }) => {
 
               &:not(:last-child) {
                 border-right: 1px solid $color-primary;
+              }
+            }
+          }
+
+          @include desktop-only {
+            .column {
+              &.col2 {
+                flex: 0 0 250px;
+              }
+
+              &.col3 {
+                flex: 0 0 250px;
               }
             }
           }
