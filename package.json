@@ -51,7 +51,7 @@
     "recharts": "1.0.0-beta.0",
     "recompose": "0.26.0",
     "redux": "3.7.2",
-    "redux-form": "7.1.1",
+    "redux-form": "7.1.2",
     "semantic-ui-react": "0.75.1",
     "styled-jsx-plugin-sass": "0.2.0",
     "validator": "9.1.1"
