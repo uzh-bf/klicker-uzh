@@ -60,6 +60,7 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
   <form className="ui form error" onSubmit={onSubmit}>
     <div className="personal">
       <Field
+        required
         component={SemanticInput}
         intl={intl}
         label={intl.formatMessage({
@@ -70,6 +71,7 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
         type="text"
       />
       <Field
+        required
         component={SemanticInput}
         intl={intl}
         label={intl.formatMessage({
@@ -126,6 +128,8 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
         name="passwordRepeat"
         type="password"
       />
+    </div>
+    <div className="use">
       <div className="field">
         <label htmlFor="useCase">
           <FormattedMessage defaultMessage="Use case description" id="form.useCase.label" />
@@ -148,10 +152,16 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
       .account {
         margin-top: 1rem;
       }
+      .use {
+        margin-top: 1rem;
+      }
 
       @include desktop-tablet-only {
         .form {
           flex-flow: row wrap;
+          border: 1px solid $color-primary;
+          padding: 1rem;
+          background-color: rgba(124, 184, 228, 0.12);
         }
         .personal,
         .account {
@@ -164,12 +174,8 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
           margin: 0;
           padding-left: 0.5rem;
         }
-      }
-
-      @include desktop-only {
-        .form {
-          border: 1px solid lightgrey;
-          padding: 1rem;
+        .use {
+          flex: 1 1 100%;
         }
       }
     `}</style>

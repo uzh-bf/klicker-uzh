@@ -38,7 +38,6 @@ const StaticLayout = ({ children, pageTitle }) => (
 
           @include desktop-tablet-only {
             .content {
-              width: 500px;
               margin: auto;
             }
           }

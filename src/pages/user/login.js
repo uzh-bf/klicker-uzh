@@ -39,6 +39,7 @@ const Login = ({ intl, error, handleSubmit }) => (
         .login {
           padding: 1rem;
         }
+
         h1 {
           margin-top: 0;
         }
@@ -55,7 +56,7 @@ const Login = ({ intl, error, handleSubmit }) => (
 
         @include desktop-tablet-only {
           .login {
-            margin: 0 15%;
+            width: 500px;
           }
         }
       `}</style>

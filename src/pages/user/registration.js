@@ -60,7 +60,7 @@ const Registration = ({
 
         @include desktop-tablet-only {
           .registration {
-            margin: 0 15%;
+            width: 750px;
           }
         }
       `}</style>
