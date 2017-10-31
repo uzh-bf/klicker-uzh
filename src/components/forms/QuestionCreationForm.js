@@ -136,6 +136,9 @@ const QuestionCreationForm = ({
         </div>
 
         <div className="questionPreview">
+          <div>
+            <strong>Student Preview:</strong>
+          </div>
           <Preview title={title} description={content} options={options} />
         </div>
 
