@@ -122,7 +122,7 @@ apollo-cache-control@^0.0.x:
   dependencies:
     graphql-extensions "^0.0.x"
 
-apollo-server-core@^1.1.7:
+apollo-server-core@^1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/apollo-server-core/-/apollo-server-core-1.2.0.tgz#e851c47444991b6f89f88529237076b83e01e8ee"
   dependencies:
@@ -130,14 +130,14 @@ apollo-server-core@^1.1.7:
     apollo-tracing "^0.1.0"
     graphql-extensions "^0.0.x"
 
-apollo-server-express@1.1.7:
-  version "1.1.7"
-  resolved "https://registry.yarnpkg.com/apollo-server-express/-/apollo-server-express-1.1.7.tgz#6cdf88a742be5bf7d02a40e7f7720e311d6545fa"
+apollo-server-express@1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/apollo-server-express/-/apollo-server-express-1.2.0.tgz#026b12b453b8ecac6044b205b6a85fe596fb5f9e"
   dependencies:
-    apollo-server-core "^1.1.7"
-    apollo-server-module-graphiql "^1.1.6"
+    apollo-server-core "^1.2.0"
+    apollo-server-module-graphiql "^1.2.0"
 
-apollo-server-module-graphiql@^1.1.6:
+apollo-server-module-graphiql@^1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/apollo-server-module-graphiql/-/apollo-server-module-graphiql-1.2.0.tgz#899d84f3b747795dbbfc8354aa51622ef038151c"
 
