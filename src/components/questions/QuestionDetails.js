@@ -85,10 +85,12 @@ const QuestionDetails = ({ description, lastUsed }) => {
             }
 
             &.col2 {
+              display: none;
               border-bottom: 1px solid $color-primary;
             }
 
             &.col3 {
+              display: none;
               border-bottom: 1px solid $color-primary;
             }
 
@@ -121,10 +123,12 @@ const QuestionDetails = ({ description, lastUsed }) => {
               }
 
               &.col2 {
+                display: block;
                 border-bottom: none;
               }
 
               &.col3 {
+                display: block;
                 border-bottom: none;
               }
 
