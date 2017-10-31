@@ -64,10 +64,15 @@ const TypeChooser = ({ intl, input: { value, onChange } }) => {
 
         .typeChooser > :global(button) {
           border-radius: 0;
+          border: 2px solid #e0e1e2;
         }
 
         .typeChooser > :global(button:not(:last-child)) {
           margin-bottom: 0.5rem;
+        }
+
+        .typeChooser > :global(button.active) {
+          border: 2px solid black;
         }
       `}</style>
     </Form.Field>
