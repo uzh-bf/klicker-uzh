@@ -4295,10 +4295,10 @@ exports[`Storyshots questions QuestionTags 1`] = `
 
 exports[`Storyshots questions TagList 1`] = `
 <div
-  className="jsx-4071995525 tagList"
+  className="jsx-2512117089 tagList"
 >
   <div
-    className="ui large selection list list"
+    className="ui large selection list"
     role="list"
   >
     <div
