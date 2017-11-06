@@ -86,6 +86,8 @@ export const NavbarPres = ({
         background-color: $background-color;
         box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
 
+        z-index: 100;
+
         .sideArea {
           flex: 1;
           order: 0;

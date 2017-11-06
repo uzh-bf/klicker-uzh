@@ -109,10 +109,6 @@ const TeacherLayout = ({
             border: 0 !important;
             box-shadow: none !important;
           }
-
-          .navbar {
-            z-index: 100;
-          }
         `}</style>
 
         <style jsx>{`

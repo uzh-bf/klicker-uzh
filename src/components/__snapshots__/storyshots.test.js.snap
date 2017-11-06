@@ -197,10 +197,10 @@ exports[`Storyshots common/navbar AccountArea 1`] = `
 
 exports[`Storyshots common/navbar Navbar 1`] = `
 <div
-  className="jsx-1653100460 navbar"
+  className="jsx-1400096577 navbar"
 >
   <div
-    className="jsx-1653100460 sideArea"
+    className="jsx-1400096577 sideArea"
   >
     <div
       className="ui borderless noBorder menu"
@@ -215,14 +215,14 @@ exports[`Storyshots common/navbar Navbar 1`] = `
         />
       </div>
       <h1
-        className="jsx-1653100460"
+        className="jsx-1400096577"
       >
         Example page
       </h1>
     </div>
   </div>
   <div
-    className="jsx-1653100460 searchArea"
+    className="jsx-1400096577 searchArea"
   >
     <div
       className="ui fluid icon input"
@@ -241,10 +241,10 @@ exports[`Storyshots common/navbar Navbar 1`] = `
     </div>
   </div>
   <div
-    className="jsx-1653100460 accountArea"
+    className="jsx-1400096577 accountArea"
   >
     <div
-      className="ui borderless menu noBorder menu"
+      className="ui borderless loginArea noBorder menu"
     >
       <div
         className="right menu"
@@ -1247,6 +1247,9 @@ exports[`Storyshots feedbacks FeedbackChannel (isActive) 1`] = `
       </label>
     </div>
   </div>
+  <div
+    className="jsx-901584548 feedbacks"
+  />
 </div>
 `;
 
@@ -1307,6 +1310,9 @@ exports[`Storyshots feedbacks FeedbackChannel (isPublic) 1`] = `
       </label>
     </div>
   </div>
+  <div
+    className="jsx-901584548 feedbacks"
+  />
 </div>
 `;
 
@@ -1365,80 +1371,6 @@ exports[`Storyshots feedbacks FeedbackChannel 1`] = `
       <label>
         Publish questions
       </label>
-    </div>
-  </div>
-  <div
-    className="jsx-901584548 feedbacks"
-  >
-    <div
-      className="jsx-901584548 feedback"
-    >
-      <div
-        className="jsx-22459915 feedback"
-      >
-        <div
-          className="jsx-22459915 content"
-        >
-          hello alex!
-        </div>
-        <div
-          className="jsx-22459915 delete"
-        >
-          <button
-            className="ui basic fluid icon button"
-            disabled={undefined}
-            onClick={[Function]}
-            role="button"
-            tabIndex={undefined}
-          >
-            <i
-              aria-hidden="true"
-              className="trash outline icon"
-            />
-          </button>
-        </div>
-        <div
-          className="jsx-22459915 votes"
-        >
-          +
-          100
-        </div>
-      </div>
-    </div>
-    <div
-      className="jsx-901584548 feedback"
-    >
-      <div
-        className="jsx-22459915 feedback"
-      >
-        <div
-          className="jsx-22459915 content"
-        >
-          bla bleh
-        </div>
-        <div
-          className="jsx-22459915 delete"
-        >
-          <button
-            className="ui basic fluid icon button"
-            disabled={undefined}
-            onClick={[Function]}
-            role="button"
-            tabIndex={undefined}
-          >
-            <i
-              aria-hidden="true"
-              className="trash outline icon"
-            />
-          </button>
-        </div>
-        <div
-          className="jsx-22459915 votes"
-        >
-          +
-          40
-        </div>
-      </div>
     </div>
   </div>
 </div>
@@ -2735,39 +2667,39 @@ exports[`Storyshots questions Question (MC, >1 versions) 1`] = `
       className="jsx-327939533 details"
     >
       <div
-        className="jsx-2882485593 questionDetails"
+        className="jsx-3583757676 questionDetails"
       >
         <div
-          className="jsx-2882485593 column description"
+          className="jsx-3583757676 column description"
         >
           -
         </div>
         <div
-          className="jsx-2882485593 column col2"
+          className="jsx-3583757676 column col2"
         >
           <p
-            className="jsx-2882485593"
+            className="jsx-3583757676"
           >
             Antworten Total: 
             <strong
-              className="jsx-2882485593"
+              className="jsx-3583757676"
             >
               999
             </strong>
           </p>
           <p
-            className="jsx-2882485593"
+            className="jsx-3583757676"
           >
             Korrekte Antworten: 
             <strong
-              className="jsx-2882485593"
+              className="jsx-3583757676"
             >
               88%
             </strong>
           </p>
         </div>
         <div
-          className="jsx-2882485593 column col3"
+          className="jsx-3583757676 column col3"
         >
           <div
             className="jsx-319169000"
@@ -2796,7 +2728,7 @@ exports[`Storyshots questions Question (MC, >1 versions) 1`] = `
           </div>
         </div>
         <div
-          className="jsx-2882485593 column buttons"
+          className="jsx-3583757676 column buttons"
         >
           <button
             className="ui button button"
@@ -2916,39 +2848,39 @@ exports[`Storyshots questions Question (MC, no tags) 1`] = `
       className="jsx-327939533 details"
     >
       <div
-        className="jsx-2882485593 questionDetails"
+        className="jsx-3583757676 questionDetails"
       >
         <div
-          className="jsx-2882485593 column description"
+          className="jsx-3583757676 column description"
         >
           -
         </div>
         <div
-          className="jsx-2882485593 column col2"
+          className="jsx-3583757676 column col2"
         >
           <p
-            className="jsx-2882485593"
+            className="jsx-3583757676"
           >
             Antworten Total: 
             <strong
-              className="jsx-2882485593"
+              className="jsx-3583757676"
             >
               999
             </strong>
           </p>
           <p
-            className="jsx-2882485593"
+            className="jsx-3583757676"
           >
             Korrekte Antworten: 
             <strong
-              className="jsx-2882485593"
+              className="jsx-3583757676"
             >
               88%
             </strong>
           </p>
         </div>
         <div
-          className="jsx-2882485593 column col3"
+          className="jsx-3583757676 column col3"
         >
           <div
             className="jsx-319169000"
@@ -2977,7 +2909,7 @@ exports[`Storyshots questions Question (MC, no tags) 1`] = `
           </div>
         </div>
         <div
-          className="jsx-2882485593 column buttons"
+          className="jsx-3583757676 column buttons"
         >
           <button
             className="ui button button"
@@ -3107,39 +3039,39 @@ exports[`Storyshots questions Question (SC, 1 version) 1`] = `
       className="jsx-327939533 details"
     >
       <div
-        className="jsx-2882485593 questionDetails"
+        className="jsx-3583757676 questionDetails"
       >
         <div
-          className="jsx-2882485593 column description"
+          className="jsx-3583757676 column description"
         >
           -
         </div>
         <div
-          className="jsx-2882485593 column col2"
+          className="jsx-3583757676 column col2"
         >
           <p
-            className="jsx-2882485593"
+            className="jsx-3583757676"
           >
             Antworten Total: 
             <strong
-              className="jsx-2882485593"
+              className="jsx-3583757676"
             >
               999
             </strong>
           </p>
           <p
-            className="jsx-2882485593"
+            className="jsx-3583757676"
           >
             Korrekte Antworten: 
             <strong
-              className="jsx-2882485593"
+              className="jsx-3583757676"
             >
               88%
             </strong>
           </p>
         </div>
         <div
-          className="jsx-2882485593 column col3"
+          className="jsx-3583757676 column col3"
         >
           <div
             className="jsx-319169000"
@@ -3168,7 +3100,7 @@ exports[`Storyshots questions Question (SC, 1 version) 1`] = `
           </div>
         </div>
         <div
-          className="jsx-2882485593 column buttons"
+          className="jsx-3583757676 column buttons"
         >
           <button
             className="ui button button"
@@ -3384,39 +3316,39 @@ exports[`Storyshots questions QuestionBlock 1`] = `
 
 exports[`Storyshots questions QuestionDetails 1`] = `
 <div
-  className="jsx-2882485593 questionDetails"
+  className="jsx-3583757676 questionDetails"
 >
   <div
-    className="jsx-2882485593 column description"
+    className="jsx-3583757676 column description"
   >
     hello world blabla
   </div>
   <div
-    className="jsx-2882485593 column col2"
+    className="jsx-3583757676 column col2"
   >
     <p
-      className="jsx-2882485593"
+      className="jsx-3583757676"
     >
       Antworten Total: 
       <strong
-        className="jsx-2882485593"
+        className="jsx-3583757676"
       >
         999
       </strong>
     </p>
     <p
-      className="jsx-2882485593"
+      className="jsx-3583757676"
     >
       Korrekte Antworten: 
       <strong
-        className="jsx-2882485593"
+        className="jsx-3583757676"
       >
         88%
       </strong>
     </p>
   </div>
   <div
-    className="jsx-2882485593 column col3"
+    className="jsx-3583757676 column col3"
   >
     <div
       className="jsx-319169000"
@@ -3450,7 +3382,7 @@ exports[`Storyshots questions QuestionDetails 1`] = `
     </div>
   </div>
   <div
-    className="jsx-2882485593 column buttons"
+    className="jsx-3583757676 column buttons"
   >
     <button
       className="ui button button"
@@ -3591,39 +3523,39 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
         className="jsx-327939533 details"
       >
         <div
-          className="jsx-2882485593 questionDetails"
+          className="jsx-3583757676 questionDetails"
         >
           <div
-            className="jsx-2882485593 column description"
+            className="jsx-3583757676 column description"
           >
             -
           </div>
           <div
-            className="jsx-2882485593 column col2"
+            className="jsx-3583757676 column col2"
           >
             <p
-              className="jsx-2882485593"
+              className="jsx-3583757676"
             >
               Antworten Total: 
               <strong
-                className="jsx-2882485593"
+                className="jsx-3583757676"
               >
                 999
               </strong>
             </p>
             <p
-              className="jsx-2882485593"
+              className="jsx-3583757676"
             >
               Korrekte Antworten: 
               <strong
-                className="jsx-2882485593"
+                className="jsx-3583757676"
               >
                 88%
               </strong>
             </p>
           </div>
           <div
-            className="jsx-2882485593 column col3"
+            className="jsx-3583757676 column col3"
           >
             <div
               className="jsx-319169000"
@@ -3647,7 +3579,7 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
             </div>
           </div>
           <div
-            className="jsx-2882485593 column buttons"
+            className="jsx-3583757676 column buttons"
           >
             <button
               className="ui button button"
@@ -3786,39 +3718,39 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
         className="jsx-327939533 details"
       >
         <div
-          className="jsx-2882485593 questionDetails"
+          className="jsx-3583757676 questionDetails"
         >
           <div
-            className="jsx-2882485593 column description"
+            className="jsx-3583757676 column description"
           >
             -
           </div>
           <div
-            className="jsx-2882485593 column col2"
+            className="jsx-3583757676 column col2"
           >
             <p
-              className="jsx-2882485593"
+              className="jsx-3583757676"
             >
               Antworten Total: 
               <strong
-                className="jsx-2882485593"
+                className="jsx-3583757676"
               >
                 999
               </strong>
             </p>
             <p
-              className="jsx-2882485593"
+              className="jsx-3583757676"
             >
               Korrekte Antworten: 
               <strong
-                className="jsx-2882485593"
+                className="jsx-3583757676"
               >
                 88%
               </strong>
             </p>
           </div>
           <div
-            className="jsx-2882485593 column col3"
+            className="jsx-3583757676 column col3"
           >
             <div
               className="jsx-319169000"
@@ -3847,7 +3779,7 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
             </div>
           </div>
           <div
-            className="jsx-2882485593 column buttons"
+            className="jsx-3583757676 column buttons"
           >
             <button
               className="ui button button"
@@ -3981,39 +3913,39 @@ exports[`Storyshots questions QuestionList 1`] = `
         className="jsx-327939533 details"
       >
         <div
-          className="jsx-2882485593 questionDetails"
+          className="jsx-3583757676 questionDetails"
         >
           <div
-            className="jsx-2882485593 column description"
+            className="jsx-3583757676 column description"
           >
             -
           </div>
           <div
-            className="jsx-2882485593 column col2"
+            className="jsx-3583757676 column col2"
           >
             <p
-              className="jsx-2882485593"
+              className="jsx-3583757676"
             >
               Antworten Total: 
               <strong
-                className="jsx-2882485593"
+                className="jsx-3583757676"
               >
                 999
               </strong>
             </p>
             <p
-              className="jsx-2882485593"
+              className="jsx-3583757676"
             >
               Korrekte Antworten: 
               <strong
-                className="jsx-2882485593"
+                className="jsx-3583757676"
               >
                 88%
               </strong>
             </p>
           </div>
           <div
-            className="jsx-2882485593 column col3"
+            className="jsx-3583757676 column col3"
           >
             <div
               className="jsx-319169000"
@@ -4037,7 +3969,7 @@ exports[`Storyshots questions QuestionList 1`] = `
             </div>
           </div>
           <div
-            className="jsx-2882485593 column buttons"
+            className="jsx-3583757676 column buttons"
           >
             <button
               className="ui button button"
@@ -4165,39 +4097,39 @@ exports[`Storyshots questions QuestionList 1`] = `
         className="jsx-327939533 details"
       >
         <div
-          className="jsx-2882485593 questionDetails"
+          className="jsx-3583757676 questionDetails"
         >
           <div
-            className="jsx-2882485593 column description"
+            className="jsx-3583757676 column description"
           >
             -
           </div>
           <div
-            className="jsx-2882485593 column col2"
+            className="jsx-3583757676 column col2"
           >
             <p
-              className="jsx-2882485593"
+              className="jsx-3583757676"
             >
               Antworten Total: 
               <strong
-                className="jsx-2882485593"
+                className="jsx-3583757676"
               >
                 999
               </strong>
             </p>
             <p
-              className="jsx-2882485593"
+              className="jsx-3583757676"
             >
               Korrekte Antworten: 
               <strong
-                className="jsx-2882485593"
+                className="jsx-3583757676"
               >
                 88%
               </strong>
             </p>
           </div>
           <div
-            className="jsx-2882485593 column col3"
+            className="jsx-3583757676 column col3"
           >
             <div
               className="jsx-319169000"
@@ -4226,7 +4158,7 @@ exports[`Storyshots questions QuestionList 1`] = `
             </div>
           </div>
           <div
-            className="jsx-2882485593 column buttons"
+            className="jsx-3583757676 column buttons"
           >
             <button
               className="ui button button"
