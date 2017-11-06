@@ -197,16 +197,16 @@ exports[`Storyshots common/navbar AccountArea 1`] = `
 
 exports[`Storyshots common/navbar Navbar 1`] = `
 <div
-  className="jsx-33321685 navbar"
+  className="jsx-1400096577 navbar"
 >
   <div
-    className="jsx-33321685 sideArea"
+    className="jsx-1400096577 sideArea"
   >
     <div
       className="ui borderless noBorder menu"
     >
       <div
-        className="icon item"
+        className="icon item sidebar"
         onClick={[Function]}
       >
         <i
@@ -215,14 +215,14 @@ exports[`Storyshots common/navbar Navbar 1`] = `
         />
       </div>
       <h1
-        className="jsx-33321685"
+        className="jsx-1400096577"
       >
         Example page
       </h1>
     </div>
   </div>
   <div
-    className="jsx-33321685 searchArea"
+    className="jsx-1400096577 searchArea"
   >
     <div
       className="ui fluid icon input"
@@ -241,10 +241,10 @@ exports[`Storyshots common/navbar Navbar 1`] = `
     </div>
   </div>
   <div
-    className="jsx-33321685 accountArea"
+    className="jsx-1400096577 accountArea"
   >
     <div
-      className="ui borderless noBorder menu"
+      className="ui borderless loginArea noBorder menu"
     >
       <div
         className="right menu"
@@ -365,7 +365,7 @@ exports[`Storyshots common/navbar SessionArea 1`] = `
 
 exports[`Storyshots common/sidebar Sidebar (invisible) 1`] = `
 <div
-  className="jsx-4218096801 sidebar"
+  className="jsx-511432160 sidebar"
 >
   <div
     className="pushable"
@@ -397,7 +397,7 @@ exports[`Storyshots common/sidebar Sidebar (invisible) 1`] = `
 
 exports[`Storyshots common/sidebar Sidebar (visible) 1`] = `
 <div
-  className="jsx-4218096801 sidebar"
+  className="jsx-511432160 sidebar"
 >
   <div
     className="pushable"
@@ -2628,67 +2628,78 @@ exports[`Storyshots questions ContentInput 1`] = `
 
 exports[`Storyshots questions Question (MC, >1 versions) 1`] = `
 <div
-  className="jsx-1793873737 question"
+  className="jsx-327939533 question"
 >
   <div
-    className="jsx-1793873737 wrapper"
+    className="jsx-327939533 wrapper"
   >
     <h2
-      className="jsx-1793873737 title"
+      className="jsx-327939533 title"
     >
-      #
-      4c821db
-       - 
       This is a long question
        
       (v2)
     </h2>
     <div
-      className="jsx-1793873737 tags"
+      className="jsx-327939533 tags"
     >
       <div
-        className="jsx-3461493153 questionTags"
+        className="jsx-2503063879 questionTags"
       >
         <div
-          className="jsx-3461493153 type tag"
-        >
-          MC
-        </div>
-        <div
-          className="jsx-3461493153 tag"
+          className="jsx-2503063879 tag"
         >
           CAPM
         </div>
         <div
-          className="jsx-3461493153 tag"
+          className="jsx-2503063879 tag"
         >
           Risk
+        </div>
+        <div
+          className="jsx-2503063879 type tag"
+        >
+          MC
         </div>
       </div>
     </div>
     <div
-      className="jsx-1793873737 details"
+      className="jsx-327939533 details"
     >
       <div
-        className="jsx-3832213538 questionDetails"
+        className="jsx-3583757676 questionDetails"
       >
         <div
-          className="jsx-3832213538 column"
+          className="jsx-3583757676 column description"
         >
-          Test1
+          -
         </div>
         <div
-          className="jsx-3832213538 column"
+          className="jsx-3583757676 column col2"
         >
-          Test2
+          <p
+            className="jsx-3583757676"
+          >
+            Antworten Total: 
+            <strong
+              className="jsx-3583757676"
+            >
+              999
+            </strong>
+          </p>
+          <p
+            className="jsx-3583757676"
+          >
+            Korrekte Antworten: 
+            <strong
+              className="jsx-3583757676"
+            >
+              88%
+            </strong>
+          </p>
         </div>
         <div
-          className="jsx-3832213538 column"
-        >
-          Test3
-        </div>
-        <div
-          className="jsx-3832213538 column"
+          className="jsx-3583757676 column col3"
         >
           <div
             className="jsx-319169000"
@@ -2715,6 +2726,91 @@ exports[`Storyshots questions Question (MC, >1 versions) 1`] = `
               </li>
             </ul>
           </div>
+        </div>
+        <div
+          className="jsx-3583757676 column buttons"
+        >
+          <button
+            className="ui button button"
+            disabled={undefined}
+            onClick={[Function]}
+            role="button"
+            tabIndex={undefined}
+          >
+            <svg
+              fill="currentColor"
+              height="1em"
+              preserveAspectRatio="xMidYMid meet"
+              style={
+                Object {
+                  "color": undefined,
+                  "verticalAlign": "middle",
+                }
+              }
+              viewBox="0 0 40 40"
+              width="1em"
+            >
+              <g>
+                <path
+                  d="m37.1 21.4q-3.3-5.2-8.5-7.8 1.4 2.3 1.4 5 0 4.1-2.9 7t-7.1 3-7.1-3-2.9-7q0-2.7 1.4-5.1-5.1 2.7-8.5 7.9 2.9 4.6 7.4 7.3t9.7 2.7 9.7-2.7 7.4-7.3z m-16-8.5q0-0.5-0.3-0.8t-0.8-0.3q-2.8 0-4.8 2t-2 4.8q0 0.4 0.3 0.7t0.8 0.3 0.7-0.3 0.4-0.7q0-2 1.3-3.3t3.3-1.4q0.4 0 0.8-0.3t0.3-0.7z m18.9 8.5q0 0.8-0.4 1.6-3.2 5.1-8.4 8.2t-11.2 3.1-11.2-3.1-8.4-8.2q-0.4-0.8-0.4-1.6t0.4-1.5q3.2-5.1 8.4-8.2t11.2-3.1 11.1 3.1 8.5 8.2q0.4 0.8 0.4 1.5z"
+                />
+              </g>
+            </svg>
+          </button>
+          <button
+            className="ui button button"
+            disabled={undefined}
+            onClick={[Function]}
+            role="button"
+            tabIndex={undefined}
+          >
+            <svg
+              fill="currentColor"
+              height="1em"
+              preserveAspectRatio="xMidYMid meet"
+              style={
+                Object {
+                  "color": undefined,
+                  "verticalAlign": "middle",
+                }
+              }
+              viewBox="0 0 40 40"
+              width="1em"
+            >
+              <g>
+                <path
+                  d="m11.1 34.3l2-2-5.2-5.3-2 2v2.4h2.8v2.9h2.4z m11.7-20.7q0-0.5-0.5-0.5-0.2 0-0.4 0.1l-12.1 12.1q-0.1 0.2-0.1 0.4 0 0.5 0.4 0.5 0.3 0 0.4-0.2l12.1-12.1q0.2-0.1 0.2-0.3z m-1.2-4.3l9.3 9.3-18.6 18.5h-9.3v-9.2z m15.2 2.1q0 1.2-0.8 2l-3.7 3.7-9.3-9.2 3.7-3.7q0.8-0.9 2-0.9 1.2 0 2 0.9l5.3 5.2q0.8 0.9 0.8 2z"
+                />
+              </g>
+            </svg>
+          </button>
+          <button
+            className="ui button button"
+            disabled={undefined}
+            onClick={[Function]}
+            role="button"
+            tabIndex={undefined}
+          >
+            <svg
+              fill="currentColor"
+              height="1em"
+              preserveAspectRatio="xMidYMid meet"
+              style={
+                Object {
+                  "color": undefined,
+                  "verticalAlign": "middle",
+                }
+              }
+              viewBox="0 0 40 40"
+              width="1em"
+            >
+              <g>
+                <path
+                  d="m15.9 30.7v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.7 0v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.8 0v-15.7q0-0.3-0.2-0.5t-0.6-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.4 0 0.6-0.2t0.2-0.5z m-12.2-22.1h10l-1.1-2.6q-0.1-0.2-0.3-0.3h-7.1q-0.2 0.1-0.4 0.3z m20.7 0.7v1.4q0 0.3-0.2 0.5t-0.5 0.2h-2.1v21.2q0 1.8-1.1 3.2t-2.5 1.3h-18.6q-1.4 0-2.5-1.3t-1-3.1v-21.3h-2.2q-0.3 0-0.5-0.2t-0.2-0.5v-1.4q0-0.3 0.2-0.5t0.5-0.2h6.9l1.6-3.8q0.3-0.8 1.2-1.4t1.7-0.5h7.2q0.9 0 1.8 0.5t1.2 1.4l1.5 3.8h6.9q0.3 0 0.5 0.2t0.2 0.5z"
+                />
+              </g>
+            </svg>
+          </button>
         </div>
       </div>
     </div>
@@ -2724,56 +2820,67 @@ exports[`Storyshots questions Question (MC, >1 versions) 1`] = `
 
 exports[`Storyshots questions Question (MC, no tags) 1`] = `
 <div
-  className="jsx-1793873737 question"
+  className="jsx-327939533 question"
 >
   <div
-    className="jsx-1793873737 wrapper"
+    className="jsx-327939533 wrapper"
   >
     <h2
-      className="jsx-1793873737 title"
+      className="jsx-327939533 title"
     >
-      #
-      4c821db
-       - 
       This is a long question
        
     </h2>
     <div
-      className="jsx-1793873737 tags"
+      className="jsx-327939533 tags"
     >
       <div
-        className="jsx-3461493153 questionTags"
+        className="jsx-2503063879 questionTags"
       >
         <div
-          className="jsx-3461493153 type tag"
+          className="jsx-2503063879 type tag"
         >
           MC
         </div>
       </div>
     </div>
     <div
-      className="jsx-1793873737 details"
+      className="jsx-327939533 details"
     >
       <div
-        className="jsx-3832213538 questionDetails"
+        className="jsx-3583757676 questionDetails"
       >
         <div
-          className="jsx-3832213538 column"
+          className="jsx-3583757676 column description"
         >
-          Test1
+          -
         </div>
         <div
-          className="jsx-3832213538 column"
+          className="jsx-3583757676 column col2"
         >
-          Test2
+          <p
+            className="jsx-3583757676"
+          >
+            Antworten Total: 
+            <strong
+              className="jsx-3583757676"
+            >
+              999
+            </strong>
+          </p>
+          <p
+            className="jsx-3583757676"
+          >
+            Korrekte Antworten: 
+            <strong
+              className="jsx-3583757676"
+            >
+              88%
+            </strong>
+          </p>
         </div>
         <div
-          className="jsx-3832213538 column"
-        >
-          Test3
-        </div>
-        <div
-          className="jsx-3832213538 column"
+          className="jsx-3583757676 column col3"
         >
           <div
             className="jsx-319169000"
@@ -2800,6 +2907,91 @@ exports[`Storyshots questions Question (MC, no tags) 1`] = `
               </li>
             </ul>
           </div>
+        </div>
+        <div
+          className="jsx-3583757676 column buttons"
+        >
+          <button
+            className="ui button button"
+            disabled={undefined}
+            onClick={[Function]}
+            role="button"
+            tabIndex={undefined}
+          >
+            <svg
+              fill="currentColor"
+              height="1em"
+              preserveAspectRatio="xMidYMid meet"
+              style={
+                Object {
+                  "color": undefined,
+                  "verticalAlign": "middle",
+                }
+              }
+              viewBox="0 0 40 40"
+              width="1em"
+            >
+              <g>
+                <path
+                  d="m37.1 21.4q-3.3-5.2-8.5-7.8 1.4 2.3 1.4 5 0 4.1-2.9 7t-7.1 3-7.1-3-2.9-7q0-2.7 1.4-5.1-5.1 2.7-8.5 7.9 2.9 4.6 7.4 7.3t9.7 2.7 9.7-2.7 7.4-7.3z m-16-8.5q0-0.5-0.3-0.8t-0.8-0.3q-2.8 0-4.8 2t-2 4.8q0 0.4 0.3 0.7t0.8 0.3 0.7-0.3 0.4-0.7q0-2 1.3-3.3t3.3-1.4q0.4 0 0.8-0.3t0.3-0.7z m18.9 8.5q0 0.8-0.4 1.6-3.2 5.1-8.4 8.2t-11.2 3.1-11.2-3.1-8.4-8.2q-0.4-0.8-0.4-1.6t0.4-1.5q3.2-5.1 8.4-8.2t11.2-3.1 11.1 3.1 8.5 8.2q0.4 0.8 0.4 1.5z"
+                />
+              </g>
+            </svg>
+          </button>
+          <button
+            className="ui button button"
+            disabled={undefined}
+            onClick={[Function]}
+            role="button"
+            tabIndex={undefined}
+          >
+            <svg
+              fill="currentColor"
+              height="1em"
+              preserveAspectRatio="xMidYMid meet"
+              style={
+                Object {
+                  "color": undefined,
+                  "verticalAlign": "middle",
+                }
+              }
+              viewBox="0 0 40 40"
+              width="1em"
+            >
+              <g>
+                <path
+                  d="m11.1 34.3l2-2-5.2-5.3-2 2v2.4h2.8v2.9h2.4z m11.7-20.7q0-0.5-0.5-0.5-0.2 0-0.4 0.1l-12.1 12.1q-0.1 0.2-0.1 0.4 0 0.5 0.4 0.5 0.3 0 0.4-0.2l12.1-12.1q0.2-0.1 0.2-0.3z m-1.2-4.3l9.3 9.3-18.6 18.5h-9.3v-9.2z m15.2 2.1q0 1.2-0.8 2l-3.7 3.7-9.3-9.2 3.7-3.7q0.8-0.9 2-0.9 1.2 0 2 0.9l5.3 5.2q0.8 0.9 0.8 2z"
+                />
+              </g>
+            </svg>
+          </button>
+          <button
+            className="ui button button"
+            disabled={undefined}
+            onClick={[Function]}
+            role="button"
+            tabIndex={undefined}
+          >
+            <svg
+              fill="currentColor"
+              height="1em"
+              preserveAspectRatio="xMidYMid meet"
+              style={
+                Object {
+                  "color": undefined,
+                  "verticalAlign": "middle",
+                }
+              }
+              viewBox="0 0 40 40"
+              width="1em"
+            >
+              <g>
+                <path
+                  d="m15.9 30.7v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.7 0v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.8 0v-15.7q0-0.3-0.2-0.5t-0.6-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.4 0 0.6-0.2t0.2-0.5z m-12.2-22.1h10l-1.1-2.6q-0.1-0.2-0.3-0.3h-7.1q-0.2 0.1-0.4 0.3z m20.7 0.7v1.4q0 0.3-0.2 0.5t-0.5 0.2h-2.1v21.2q0 1.8-1.1 3.2t-2.5 1.3h-18.6q-1.4 0-2.5-1.3t-1-3.1v-21.3h-2.2q-0.3 0-0.5-0.2t-0.2-0.5v-1.4q0-0.3 0.2-0.5t0.5-0.2h6.9l1.6-3.8q0.3-0.8 1.2-1.4t1.7-0.5h7.2q0.9 0 1.8 0.5t1.2 1.4l1.5 3.8h6.9q0.3 0 0.5 0.2t0.2 0.5z"
+                />
+              </g>
+            </svg>
+          </button>
         </div>
       </div>
     </div>
@@ -2809,66 +3001,77 @@ exports[`Storyshots questions Question (MC, no tags) 1`] = `
 
 exports[`Storyshots questions Question (SC, 1 version) 1`] = `
 <div
-  className="jsx-1793873737 question"
+  className="jsx-327939533 question"
 >
   <div
-    className="jsx-1793873737 wrapper"
+    className="jsx-327939533 wrapper"
   >
     <h2
-      className="jsx-1793873737 title"
+      className="jsx-327939533 title"
     >
-      #
-      4c821db
-       - 
       This is a long question
        
     </h2>
     <div
-      className="jsx-1793873737 tags"
+      className="jsx-327939533 tags"
     >
       <div
-        className="jsx-3461493153 questionTags"
+        className="jsx-2503063879 questionTags"
       >
         <div
-          className="jsx-3461493153 type tag"
-        >
-          SC
-        </div>
-        <div
-          className="jsx-3461493153 tag"
+          className="jsx-2503063879 tag"
         >
           CAPM
         </div>
         <div
-          className="jsx-3461493153 tag"
+          className="jsx-2503063879 tag"
         >
           Risk
+        </div>
+        <div
+          className="jsx-2503063879 type tag"
+        >
+          SC
         </div>
       </div>
     </div>
     <div
-      className="jsx-1793873737 details"
+      className="jsx-327939533 details"
     >
       <div
-        className="jsx-3832213538 questionDetails"
+        className="jsx-3583757676 questionDetails"
       >
         <div
-          className="jsx-3832213538 column"
+          className="jsx-3583757676 column description"
         >
-          Test1
+          -
         </div>
         <div
-          className="jsx-3832213538 column"
+          className="jsx-3583757676 column col2"
         >
-          Test2
+          <p
+            className="jsx-3583757676"
+          >
+            Antworten Total: 
+            <strong
+              className="jsx-3583757676"
+            >
+              999
+            </strong>
+          </p>
+          <p
+            className="jsx-3583757676"
+          >
+            Korrekte Antworten: 
+            <strong
+              className="jsx-3583757676"
+            >
+              88%
+            </strong>
+          </p>
         </div>
         <div
-          className="jsx-3832213538 column"
-        >
-          Test3
-        </div>
-        <div
-          className="jsx-3832213538 column"
+          className="jsx-3583757676 column col3"
         >
           <div
             className="jsx-319169000"
@@ -2895,6 +3098,91 @@ exports[`Storyshots questions Question (SC, 1 version) 1`] = `
               </li>
             </ul>
           </div>
+        </div>
+        <div
+          className="jsx-3583757676 column buttons"
+        >
+          <button
+            className="ui button button"
+            disabled={undefined}
+            onClick={[Function]}
+            role="button"
+            tabIndex={undefined}
+          >
+            <svg
+              fill="currentColor"
+              height="1em"
+              preserveAspectRatio="xMidYMid meet"
+              style={
+                Object {
+                  "color": undefined,
+                  "verticalAlign": "middle",
+                }
+              }
+              viewBox="0 0 40 40"
+              width="1em"
+            >
+              <g>
+                <path
+                  d="m37.1 21.4q-3.3-5.2-8.5-7.8 1.4 2.3 1.4 5 0 4.1-2.9 7t-7.1 3-7.1-3-2.9-7q0-2.7 1.4-5.1-5.1 2.7-8.5 7.9 2.9 4.6 7.4 7.3t9.7 2.7 9.7-2.7 7.4-7.3z m-16-8.5q0-0.5-0.3-0.8t-0.8-0.3q-2.8 0-4.8 2t-2 4.8q0 0.4 0.3 0.7t0.8 0.3 0.7-0.3 0.4-0.7q0-2 1.3-3.3t3.3-1.4q0.4 0 0.8-0.3t0.3-0.7z m18.9 8.5q0 0.8-0.4 1.6-3.2 5.1-8.4 8.2t-11.2 3.1-11.2-3.1-8.4-8.2q-0.4-0.8-0.4-1.6t0.4-1.5q3.2-5.1 8.4-8.2t11.2-3.1 11.1 3.1 8.5 8.2q0.4 0.8 0.4 1.5z"
+                />
+              </g>
+            </svg>
+          </button>
+          <button
+            className="ui button button"
+            disabled={undefined}
+            onClick={[Function]}
+            role="button"
+            tabIndex={undefined}
+          >
+            <svg
+              fill="currentColor"
+              height="1em"
+              preserveAspectRatio="xMidYMid meet"
+              style={
+                Object {
+                  "color": undefined,
+                  "verticalAlign": "middle",
+                }
+              }
+              viewBox="0 0 40 40"
+              width="1em"
+            >
+              <g>
+                <path
+                  d="m11.1 34.3l2-2-5.2-5.3-2 2v2.4h2.8v2.9h2.4z m11.7-20.7q0-0.5-0.5-0.5-0.2 0-0.4 0.1l-12.1 12.1q-0.1 0.2-0.1 0.4 0 0.5 0.4 0.5 0.3 0 0.4-0.2l12.1-12.1q0.2-0.1 0.2-0.3z m-1.2-4.3l9.3 9.3-18.6 18.5h-9.3v-9.2z m15.2 2.1q0 1.2-0.8 2l-3.7 3.7-9.3-9.2 3.7-3.7q0.8-0.9 2-0.9 1.2 0 2 0.9l5.3 5.2q0.8 0.9 0.8 2z"
+                />
+              </g>
+            </svg>
+          </button>
+          <button
+            className="ui button button"
+            disabled={undefined}
+            onClick={[Function]}
+            role="button"
+            tabIndex={undefined}
+          >
+            <svg
+              fill="currentColor"
+              height="1em"
+              preserveAspectRatio="xMidYMid meet"
+              style={
+                Object {
+                  "color": undefined,
+                  "verticalAlign": "middle",
+                }
+              }
+              viewBox="0 0 40 40"
+              width="1em"
+            >
+              <g>
+                <path
+                  d="m15.9 30.7v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.7 0v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.8 0v-15.7q0-0.3-0.2-0.5t-0.6-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.4 0 0.6-0.2t0.2-0.5z m-12.2-22.1h10l-1.1-2.6q-0.1-0.2-0.3-0.3h-7.1q-0.2 0.1-0.4 0.3z m20.7 0.7v1.4q0 0.3-0.2 0.5t-0.5 0.2h-2.1v21.2q0 1.8-1.1 3.2t-2.5 1.3h-18.6q-1.4 0-2.5-1.3t-1-3.1v-21.3h-2.2q-0.3 0-0.5-0.2t-0.2-0.5v-1.4q0-0.3 0.2-0.5t0.5-0.2h6.9l1.6-3.8q0.3-0.8 1.2-1.4t1.7-0.5h7.2q0.9 0 1.8 0.5t1.2 1.4l1.5 3.8h6.9q0.3 0 0.5 0.2t0.2 0.5z"
+                />
+              </g>
+            </svg>
+          </button>
         </div>
       </div>
     </div>
@@ -3028,25 +3316,39 @@ exports[`Storyshots questions QuestionBlock 1`] = `
 
 exports[`Storyshots questions QuestionDetails 1`] = `
 <div
-  className="jsx-3832213538 questionDetails"
+  className="jsx-3583757676 questionDetails"
 >
   <div
-    className="jsx-3832213538 column"
+    className="jsx-3583757676 column description"
   >
-    Test1
+    hello world blabla
   </div>
   <div
-    className="jsx-3832213538 column"
+    className="jsx-3583757676 column col2"
   >
-    Test2
+    <p
+      className="jsx-3583757676"
+    >
+      Antworten Total: 
+      <strong
+        className="jsx-3583757676"
+      >
+        999
+      </strong>
+    </p>
+    <p
+      className="jsx-3583757676"
+    >
+      Korrekte Antworten: 
+      <strong
+        className="jsx-3583757676"
+      >
+        88%
+      </strong>
+    </p>
   </div>
   <div
-    className="jsx-3832213538 column"
-  >
-    Test3
-  </div>
-  <div
-    className="jsx-3832213538 column"
+    className="jsx-3583757676 column col3"
   >
     <div
       className="jsx-319169000"
@@ -3079,85 +3381,181 @@ exports[`Storyshots questions QuestionDetails 1`] = `
       </ul>
     </div>
   </div>
+  <div
+    className="jsx-3583757676 column buttons"
+  >
+    <button
+      className="ui button button"
+      disabled={undefined}
+      onClick={[Function]}
+      role="button"
+      tabIndex={undefined}
+    >
+      <svg
+        fill="currentColor"
+        height="1em"
+        preserveAspectRatio="xMidYMid meet"
+        style={
+          Object {
+            "color": undefined,
+            "verticalAlign": "middle",
+          }
+        }
+        viewBox="0 0 40 40"
+        width="1em"
+      >
+        <g>
+          <path
+            d="m37.1 21.4q-3.3-5.2-8.5-7.8 1.4 2.3 1.4 5 0 4.1-2.9 7t-7.1 3-7.1-3-2.9-7q0-2.7 1.4-5.1-5.1 2.7-8.5 7.9 2.9 4.6 7.4 7.3t9.7 2.7 9.7-2.7 7.4-7.3z m-16-8.5q0-0.5-0.3-0.8t-0.8-0.3q-2.8 0-4.8 2t-2 4.8q0 0.4 0.3 0.7t0.8 0.3 0.7-0.3 0.4-0.7q0-2 1.3-3.3t3.3-1.4q0.4 0 0.8-0.3t0.3-0.7z m18.9 8.5q0 0.8-0.4 1.6-3.2 5.1-8.4 8.2t-11.2 3.1-11.2-3.1-8.4-8.2q-0.4-0.8-0.4-1.6t0.4-1.5q3.2-5.1 8.4-8.2t11.2-3.1 11.1 3.1 8.5 8.2q0.4 0.8 0.4 1.5z"
+          />
+        </g>
+      </svg>
+    </button>
+    <button
+      className="ui button button"
+      disabled={undefined}
+      onClick={[Function]}
+      role="button"
+      tabIndex={undefined}
+    >
+      <svg
+        fill="currentColor"
+        height="1em"
+        preserveAspectRatio="xMidYMid meet"
+        style={
+          Object {
+            "color": undefined,
+            "verticalAlign": "middle",
+          }
+        }
+        viewBox="0 0 40 40"
+        width="1em"
+      >
+        <g>
+          <path
+            d="m11.1 34.3l2-2-5.2-5.3-2 2v2.4h2.8v2.9h2.4z m11.7-20.7q0-0.5-0.5-0.5-0.2 0-0.4 0.1l-12.1 12.1q-0.1 0.2-0.1 0.4 0 0.5 0.4 0.5 0.3 0 0.4-0.2l12.1-12.1q0.2-0.1 0.2-0.3z m-1.2-4.3l9.3 9.3-18.6 18.5h-9.3v-9.2z m15.2 2.1q0 1.2-0.8 2l-3.7 3.7-9.3-9.2 3.7-3.7q0.8-0.9 2-0.9 1.2 0 2 0.9l5.3 5.2q0.8 0.9 0.8 2z"
+          />
+        </g>
+      </svg>
+    </button>
+    <button
+      className="ui button button"
+      disabled={undefined}
+      onClick={[Function]}
+      role="button"
+      tabIndex={undefined}
+    >
+      <svg
+        fill="currentColor"
+        height="1em"
+        preserveAspectRatio="xMidYMid meet"
+        style={
+          Object {
+            "color": undefined,
+            "verticalAlign": "middle",
+          }
+        }
+        viewBox="0 0 40 40"
+        width="1em"
+      >
+        <g>
+          <path
+            d="m15.9 30.7v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.7 0v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.8 0v-15.7q0-0.3-0.2-0.5t-0.6-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.4 0 0.6-0.2t0.2-0.5z m-12.2-22.1h10l-1.1-2.6q-0.1-0.2-0.3-0.3h-7.1q-0.2 0.1-0.4 0.3z m20.7 0.7v1.4q0 0.3-0.2 0.5t-0.5 0.2h-2.1v21.2q0 1.8-1.1 3.2t-2.5 1.3h-18.6q-1.4 0-2.5-1.3t-1-3.1v-21.3h-2.2q-0.3 0-0.5-0.2t-0.2-0.5v-1.4q0-0.3 0.2-0.5t0.5-0.2h6.9l1.6-3.8q0.3-0.8 1.2-1.4t1.7-0.5h7.2q0.9 0 1.8 0.5t1.2 1.4l1.5 3.8h6.9q0.3 0 0.5 0.2t0.2 0.5z"
+          />
+        </g>
+      </svg>
+    </button>
+  </div>
 </div>
 `;
 
 exports[`Storyshots questions QuestionList (creation mode) 1`] = `
 <div
-  className="jsx-1561297864 questionList"
+  className="jsx-3968520247 questionList"
 >
   <div
-    className="jsx-1793873737 question creationMode draggable"
+    className="jsx-327939533 question creationMode draggable"
   >
     <div
-      className="jsx-1793873737 sessionMembership"
+      className="jsx-327939533 sessionMembership"
     >
       <input
         checked={false}
-        className="jsx-1793873737 ui checkbox"
+        className="jsx-327939533 ui checkbox"
         name="check-1"
         onClick={[Function]}
         type="checkbox"
       />
     </div>
     <div
-      className="jsx-1793873737 wrapper"
+      className="jsx-327939533 wrapper"
     >
       <h2
-        className="jsx-1793873737 title"
+        className="jsx-327939533 title"
       >
-        #
-        1
-         - 
         question1
          
       </h2>
       <div
-        className="jsx-1793873737 tags"
+        className="jsx-327939533 tags"
       >
         <div
-          className="jsx-3461493153 questionTags"
+          className="jsx-2503063879 questionTags"
         >
           <div
-            className="jsx-3461493153 type tag"
-          >
-            SC
-          </div>
-          <div
-            className="jsx-3461493153 tag"
+            className="jsx-2503063879 tag"
           >
             tag1
           </div>
           <div
-            className="jsx-3461493153 tag"
+            className="jsx-2503063879 tag"
           >
             tag2
+          </div>
+          <div
+            className="jsx-2503063879 type tag"
+          >
+            SC
           </div>
         </div>
       </div>
       <div
-        className="jsx-1793873737 details"
+        className="jsx-327939533 details"
       >
         <div
-          className="jsx-3832213538 questionDetails"
+          className="jsx-3583757676 questionDetails"
         >
           <div
-            className="jsx-3832213538 column"
+            className="jsx-3583757676 column description"
           >
-            Test1
+            -
           </div>
           <div
-            className="jsx-3832213538 column"
+            className="jsx-3583757676 column col2"
           >
-            Test2
+            <p
+              className="jsx-3583757676"
+            >
+              Antworten Total: 
+              <strong
+                className="jsx-3583757676"
+              >
+                999
+              </strong>
+            </p>
+            <p
+              className="jsx-3583757676"
+            >
+              Korrekte Antworten: 
+              <strong
+                className="jsx-3583757676"
+              >
+                88%
+              </strong>
+            </p>
           </div>
           <div
-            className="jsx-3832213538 column"
-          >
-            Test3
-          </div>
-          <div
-            className="jsx-3832213538 column"
+            className="jsx-3583757676 column col3"
           >
             <div
               className="jsx-319169000"
@@ -3180,83 +3578,179 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
               </ul>
             </div>
           </div>
+          <div
+            className="jsx-3583757676 column buttons"
+          >
+            <button
+              className="ui button button"
+              disabled={undefined}
+              onClick={[Function]}
+              role="button"
+              tabIndex={undefined}
+            >
+              <svg
+                fill="currentColor"
+                height="1em"
+                preserveAspectRatio="xMidYMid meet"
+                style={
+                  Object {
+                    "color": undefined,
+                    "verticalAlign": "middle",
+                  }
+                }
+                viewBox="0 0 40 40"
+                width="1em"
+              >
+                <g>
+                  <path
+                    d="m37.1 21.4q-3.3-5.2-8.5-7.8 1.4 2.3 1.4 5 0 4.1-2.9 7t-7.1 3-7.1-3-2.9-7q0-2.7 1.4-5.1-5.1 2.7-8.5 7.9 2.9 4.6 7.4 7.3t9.7 2.7 9.7-2.7 7.4-7.3z m-16-8.5q0-0.5-0.3-0.8t-0.8-0.3q-2.8 0-4.8 2t-2 4.8q0 0.4 0.3 0.7t0.8 0.3 0.7-0.3 0.4-0.7q0-2 1.3-3.3t3.3-1.4q0.4 0 0.8-0.3t0.3-0.7z m18.9 8.5q0 0.8-0.4 1.6-3.2 5.1-8.4 8.2t-11.2 3.1-11.2-3.1-8.4-8.2q-0.4-0.8-0.4-1.6t0.4-1.5q3.2-5.1 8.4-8.2t11.2-3.1 11.1 3.1 8.5 8.2q0.4 0.8 0.4 1.5z"
+                  />
+                </g>
+              </svg>
+            </button>
+            <button
+              className="ui button button"
+              disabled={undefined}
+              onClick={[Function]}
+              role="button"
+              tabIndex={undefined}
+            >
+              <svg
+                fill="currentColor"
+                height="1em"
+                preserveAspectRatio="xMidYMid meet"
+                style={
+                  Object {
+                    "color": undefined,
+                    "verticalAlign": "middle",
+                  }
+                }
+                viewBox="0 0 40 40"
+                width="1em"
+              >
+                <g>
+                  <path
+                    d="m11.1 34.3l2-2-5.2-5.3-2 2v2.4h2.8v2.9h2.4z m11.7-20.7q0-0.5-0.5-0.5-0.2 0-0.4 0.1l-12.1 12.1q-0.1 0.2-0.1 0.4 0 0.5 0.4 0.5 0.3 0 0.4-0.2l12.1-12.1q0.2-0.1 0.2-0.3z m-1.2-4.3l9.3 9.3-18.6 18.5h-9.3v-9.2z m15.2 2.1q0 1.2-0.8 2l-3.7 3.7-9.3-9.2 3.7-3.7q0.8-0.9 2-0.9 1.2 0 2 0.9l5.3 5.2q0.8 0.9 0.8 2z"
+                  />
+                </g>
+              </svg>
+            </button>
+            <button
+              className="ui button button"
+              disabled={undefined}
+              onClick={[Function]}
+              role="button"
+              tabIndex={undefined}
+            >
+              <svg
+                fill="currentColor"
+                height="1em"
+                preserveAspectRatio="xMidYMid meet"
+                style={
+                  Object {
+                    "color": undefined,
+                    "verticalAlign": "middle",
+                  }
+                }
+                viewBox="0 0 40 40"
+                width="1em"
+              >
+                <g>
+                  <path
+                    d="m15.9 30.7v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.7 0v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.8 0v-15.7q0-0.3-0.2-0.5t-0.6-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.4 0 0.6-0.2t0.2-0.5z m-12.2-22.1h10l-1.1-2.6q-0.1-0.2-0.3-0.3h-7.1q-0.2 0.1-0.4 0.3z m20.7 0.7v1.4q0 0.3-0.2 0.5t-0.5 0.2h-2.1v21.2q0 1.8-1.1 3.2t-2.5 1.3h-18.6q-1.4 0-2.5-1.3t-1-3.1v-21.3h-2.2q-0.3 0-0.5-0.2t-0.2-0.5v-1.4q0-0.3 0.2-0.5t0.5-0.2h6.9l1.6-3.8q0.3-0.8 1.2-1.4t1.7-0.5h7.2q0.9 0 1.8 0.5t1.2 1.4l1.5 3.8h6.9q0.3 0 0.5 0.2t0.2 0.5z"
+                  />
+                </g>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
   </div>
   <div
-    className="jsx-1793873737 question creationMode draggable"
+    className="jsx-327939533 question creationMode draggable"
   >
     <div
-      className="jsx-1793873737 sessionMembership"
+      className="jsx-327939533 sessionMembership"
     >
       <input
         checked={false}
-        className="jsx-1793873737 ui checkbox"
+        className="jsx-327939533 ui checkbox"
         name="check-2"
         onClick={[Function]}
         type="checkbox"
       />
     </div>
     <div
-      className="jsx-1793873737 wrapper"
+      className="jsx-327939533 wrapper"
     >
       <h2
-        className="jsx-1793873737 title"
+        className="jsx-327939533 title"
       >
-        #
-        2
-         - 
         question2
          
         (v2)
       </h2>
       <div
-        className="jsx-1793873737 tags"
+        className="jsx-327939533 tags"
       >
         <div
-          className="jsx-3461493153 questionTags"
+          className="jsx-2503063879 questionTags"
         >
           <div
-            className="jsx-3461493153 type tag"
-          >
-            MC
-          </div>
-          <div
-            className="jsx-3461493153 tag"
+            className="jsx-2503063879 tag"
           >
             tag3
           </div>
           <div
-            className="jsx-3461493153 tag"
+            className="jsx-2503063879 tag"
           >
             tag2
+          </div>
+          <div
+            className="jsx-2503063879 type tag"
+          >
+            MC
           </div>
         </div>
       </div>
       <div
-        className="jsx-1793873737 details"
+        className="jsx-327939533 details"
       >
         <div
-          className="jsx-3832213538 questionDetails"
+          className="jsx-3583757676 questionDetails"
         >
           <div
-            className="jsx-3832213538 column"
+            className="jsx-3583757676 column description"
           >
-            Test1
+            -
           </div>
           <div
-            className="jsx-3832213538 column"
+            className="jsx-3583757676 column col2"
           >
-            Test2
+            <p
+              className="jsx-3583757676"
+            >
+              Antworten Total: 
+              <strong
+                className="jsx-3583757676"
+              >
+                999
+              </strong>
+            </p>
+            <p
+              className="jsx-3583757676"
+            >
+              Korrekte Antworten: 
+              <strong
+                className="jsx-3583757676"
+              >
+                88%
+              </strong>
+            </p>
           </div>
           <div
-            className="jsx-3832213538 column"
-          >
-            Test3
-          </div>
-          <div
-            className="jsx-3832213538 column"
+            className="jsx-3583757676 column col3"
           >
             <div
               className="jsx-319169000"
@@ -3283,6 +3777,91 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
                 </li>
               </ul>
             </div>
+          </div>
+          <div
+            className="jsx-3583757676 column buttons"
+          >
+            <button
+              className="ui button button"
+              disabled={undefined}
+              onClick={[Function]}
+              role="button"
+              tabIndex={undefined}
+            >
+              <svg
+                fill="currentColor"
+                height="1em"
+                preserveAspectRatio="xMidYMid meet"
+                style={
+                  Object {
+                    "color": undefined,
+                    "verticalAlign": "middle",
+                  }
+                }
+                viewBox="0 0 40 40"
+                width="1em"
+              >
+                <g>
+                  <path
+                    d="m37.1 21.4q-3.3-5.2-8.5-7.8 1.4 2.3 1.4 5 0 4.1-2.9 7t-7.1 3-7.1-3-2.9-7q0-2.7 1.4-5.1-5.1 2.7-8.5 7.9 2.9 4.6 7.4 7.3t9.7 2.7 9.7-2.7 7.4-7.3z m-16-8.5q0-0.5-0.3-0.8t-0.8-0.3q-2.8 0-4.8 2t-2 4.8q0 0.4 0.3 0.7t0.8 0.3 0.7-0.3 0.4-0.7q0-2 1.3-3.3t3.3-1.4q0.4 0 0.8-0.3t0.3-0.7z m18.9 8.5q0 0.8-0.4 1.6-3.2 5.1-8.4 8.2t-11.2 3.1-11.2-3.1-8.4-8.2q-0.4-0.8-0.4-1.6t0.4-1.5q3.2-5.1 8.4-8.2t11.2-3.1 11.1 3.1 8.5 8.2q0.4 0.8 0.4 1.5z"
+                  />
+                </g>
+              </svg>
+            </button>
+            <button
+              className="ui button button"
+              disabled={undefined}
+              onClick={[Function]}
+              role="button"
+              tabIndex={undefined}
+            >
+              <svg
+                fill="currentColor"
+                height="1em"
+                preserveAspectRatio="xMidYMid meet"
+                style={
+                  Object {
+                    "color": undefined,
+                    "verticalAlign": "middle",
+                  }
+                }
+                viewBox="0 0 40 40"
+                width="1em"
+              >
+                <g>
+                  <path
+                    d="m11.1 34.3l2-2-5.2-5.3-2 2v2.4h2.8v2.9h2.4z m11.7-20.7q0-0.5-0.5-0.5-0.2 0-0.4 0.1l-12.1 12.1q-0.1 0.2-0.1 0.4 0 0.5 0.4 0.5 0.3 0 0.4-0.2l12.1-12.1q0.2-0.1 0.2-0.3z m-1.2-4.3l9.3 9.3-18.6 18.5h-9.3v-9.2z m15.2 2.1q0 1.2-0.8 2l-3.7 3.7-9.3-9.2 3.7-3.7q0.8-0.9 2-0.9 1.2 0 2 0.9l5.3 5.2q0.8 0.9 0.8 2z"
+                  />
+                </g>
+              </svg>
+            </button>
+            <button
+              className="ui button button"
+              disabled={undefined}
+              onClick={[Function]}
+              role="button"
+              tabIndex={undefined}
+            >
+              <svg
+                fill="currentColor"
+                height="1em"
+                preserveAspectRatio="xMidYMid meet"
+                style={
+                  Object {
+                    "color": undefined,
+                    "verticalAlign": "middle",
+                  }
+                }
+                viewBox="0 0 40 40"
+                width="1em"
+              >
+                <g>
+                  <path
+                    d="m15.9 30.7v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.7 0v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.8 0v-15.7q0-0.3-0.2-0.5t-0.6-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.4 0 0.6-0.2t0.2-0.5z m-12.2-22.1h10l-1.1-2.6q-0.1-0.2-0.3-0.3h-7.1q-0.2 0.1-0.4 0.3z m20.7 0.7v1.4q0 0.3-0.2 0.5t-0.5 0.2h-2.1v21.2q0 1.8-1.1 3.2t-2.5 1.3h-18.6q-1.4 0-2.5-1.3t-1-3.1v-21.3h-2.2q-0.3 0-0.5-0.2t-0.2-0.5v-1.4q0-0.3 0.2-0.5t0.5-0.2h6.9l1.6-3.8q0.3-0.8 1.2-1.4t1.7-0.5h7.2q0.9 0 1.8 0.5t1.2 1.4l1.5 3.8h6.9q0.3 0 0.5 0.2t0.2 0.5z"
+                  />
+                </g>
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -3293,69 +3872,80 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
 
 exports[`Storyshots questions QuestionList 1`] = `
 <div
-  className="jsx-1561297864 questionList"
+  className="jsx-3968520247 questionList"
 >
   <div
-    className="jsx-1793873737 question"
+    className="jsx-327939533 question"
   >
     <div
-      className="jsx-1793873737 wrapper"
+      className="jsx-327939533 wrapper"
     >
       <h2
-        className="jsx-1793873737 title"
+        className="jsx-327939533 title"
       >
-        #
-        1
-         - 
         question1
          
       </h2>
       <div
-        className="jsx-1793873737 tags"
+        className="jsx-327939533 tags"
       >
         <div
-          className="jsx-3461493153 questionTags"
+          className="jsx-2503063879 questionTags"
         >
           <div
-            className="jsx-3461493153 type tag"
-          >
-            SC
-          </div>
-          <div
-            className="jsx-3461493153 tag"
+            className="jsx-2503063879 tag"
           >
             tag1
           </div>
           <div
-            className="jsx-3461493153 tag"
+            className="jsx-2503063879 tag"
           >
             tag2
+          </div>
+          <div
+            className="jsx-2503063879 type tag"
+          >
+            SC
           </div>
         </div>
       </div>
       <div
-        className="jsx-1793873737 details"
+        className="jsx-327939533 details"
       >
         <div
-          className="jsx-3832213538 questionDetails"
+          className="jsx-3583757676 questionDetails"
         >
           <div
-            className="jsx-3832213538 column"
+            className="jsx-3583757676 column description"
           >
-            Test1
+            -
           </div>
           <div
-            className="jsx-3832213538 column"
+            className="jsx-3583757676 column col2"
           >
-            Test2
+            <p
+              className="jsx-3583757676"
+            >
+              Antworten Total: 
+              <strong
+                className="jsx-3583757676"
+              >
+                999
+              </strong>
+            </p>
+            <p
+              className="jsx-3583757676"
+            >
+              Korrekte Antworten: 
+              <strong
+                className="jsx-3583757676"
+              >
+                88%
+              </strong>
+            </p>
           </div>
           <div
-            className="jsx-3832213538 column"
-          >
-            Test3
-          </div>
-          <div
-            className="jsx-3832213538 column"
+            className="jsx-3583757676 column col3"
           >
             <div
               className="jsx-319169000"
@@ -3378,72 +3968,168 @@ exports[`Storyshots questions QuestionList 1`] = `
               </ul>
             </div>
           </div>
+          <div
+            className="jsx-3583757676 column buttons"
+          >
+            <button
+              className="ui button button"
+              disabled={undefined}
+              onClick={[Function]}
+              role="button"
+              tabIndex={undefined}
+            >
+              <svg
+                fill="currentColor"
+                height="1em"
+                preserveAspectRatio="xMidYMid meet"
+                style={
+                  Object {
+                    "color": undefined,
+                    "verticalAlign": "middle",
+                  }
+                }
+                viewBox="0 0 40 40"
+                width="1em"
+              >
+                <g>
+                  <path
+                    d="m37.1 21.4q-3.3-5.2-8.5-7.8 1.4 2.3 1.4 5 0 4.1-2.9 7t-7.1 3-7.1-3-2.9-7q0-2.7 1.4-5.1-5.1 2.7-8.5 7.9 2.9 4.6 7.4 7.3t9.7 2.7 9.7-2.7 7.4-7.3z m-16-8.5q0-0.5-0.3-0.8t-0.8-0.3q-2.8 0-4.8 2t-2 4.8q0 0.4 0.3 0.7t0.8 0.3 0.7-0.3 0.4-0.7q0-2 1.3-3.3t3.3-1.4q0.4 0 0.8-0.3t0.3-0.7z m18.9 8.5q0 0.8-0.4 1.6-3.2 5.1-8.4 8.2t-11.2 3.1-11.2-3.1-8.4-8.2q-0.4-0.8-0.4-1.6t0.4-1.5q3.2-5.1 8.4-8.2t11.2-3.1 11.1 3.1 8.5 8.2q0.4 0.8 0.4 1.5z"
+                  />
+                </g>
+              </svg>
+            </button>
+            <button
+              className="ui button button"
+              disabled={undefined}
+              onClick={[Function]}
+              role="button"
+              tabIndex={undefined}
+            >
+              <svg
+                fill="currentColor"
+                height="1em"
+                preserveAspectRatio="xMidYMid meet"
+                style={
+                  Object {
+                    "color": undefined,
+                    "verticalAlign": "middle",
+                  }
+                }
+                viewBox="0 0 40 40"
+                width="1em"
+              >
+                <g>
+                  <path
+                    d="m11.1 34.3l2-2-5.2-5.3-2 2v2.4h2.8v2.9h2.4z m11.7-20.7q0-0.5-0.5-0.5-0.2 0-0.4 0.1l-12.1 12.1q-0.1 0.2-0.1 0.4 0 0.5 0.4 0.5 0.3 0 0.4-0.2l12.1-12.1q0.2-0.1 0.2-0.3z m-1.2-4.3l9.3 9.3-18.6 18.5h-9.3v-9.2z m15.2 2.1q0 1.2-0.8 2l-3.7 3.7-9.3-9.2 3.7-3.7q0.8-0.9 2-0.9 1.2 0 2 0.9l5.3 5.2q0.8 0.9 0.8 2z"
+                  />
+                </g>
+              </svg>
+            </button>
+            <button
+              className="ui button button"
+              disabled={undefined}
+              onClick={[Function]}
+              role="button"
+              tabIndex={undefined}
+            >
+              <svg
+                fill="currentColor"
+                height="1em"
+                preserveAspectRatio="xMidYMid meet"
+                style={
+                  Object {
+                    "color": undefined,
+                    "verticalAlign": "middle",
+                  }
+                }
+                viewBox="0 0 40 40"
+                width="1em"
+              >
+                <g>
+                  <path
+                    d="m15.9 30.7v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.7 0v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.8 0v-15.7q0-0.3-0.2-0.5t-0.6-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.4 0 0.6-0.2t0.2-0.5z m-12.2-22.1h10l-1.1-2.6q-0.1-0.2-0.3-0.3h-7.1q-0.2 0.1-0.4 0.3z m20.7 0.7v1.4q0 0.3-0.2 0.5t-0.5 0.2h-2.1v21.2q0 1.8-1.1 3.2t-2.5 1.3h-18.6q-1.4 0-2.5-1.3t-1-3.1v-21.3h-2.2q-0.3 0-0.5-0.2t-0.2-0.5v-1.4q0-0.3 0.2-0.5t0.5-0.2h6.9l1.6-3.8q0.3-0.8 1.2-1.4t1.7-0.5h7.2q0.9 0 1.8 0.5t1.2 1.4l1.5 3.8h6.9q0.3 0 0.5 0.2t0.2 0.5z"
+                  />
+                </g>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
   </div>
   <div
-    className="jsx-1793873737 question"
+    className="jsx-327939533 question"
   >
     <div
-      className="jsx-1793873737 wrapper"
+      className="jsx-327939533 wrapper"
     >
       <h2
-        className="jsx-1793873737 title"
+        className="jsx-327939533 title"
       >
-        #
-        2
-         - 
         question2
          
         (v2)
       </h2>
       <div
-        className="jsx-1793873737 tags"
+        className="jsx-327939533 tags"
       >
         <div
-          className="jsx-3461493153 questionTags"
+          className="jsx-2503063879 questionTags"
         >
           <div
-            className="jsx-3461493153 type tag"
-          >
-            MC
-          </div>
-          <div
-            className="jsx-3461493153 tag"
+            className="jsx-2503063879 tag"
           >
             tag3
           </div>
           <div
-            className="jsx-3461493153 tag"
+            className="jsx-2503063879 tag"
           >
             tag2
+          </div>
+          <div
+            className="jsx-2503063879 type tag"
+          >
+            MC
           </div>
         </div>
       </div>
       <div
-        className="jsx-1793873737 details"
+        className="jsx-327939533 details"
       >
         <div
-          className="jsx-3832213538 questionDetails"
+          className="jsx-3583757676 questionDetails"
         >
           <div
-            className="jsx-3832213538 column"
+            className="jsx-3583757676 column description"
           >
-            Test1
+            -
           </div>
           <div
-            className="jsx-3832213538 column"
+            className="jsx-3583757676 column col2"
           >
-            Test2
+            <p
+              className="jsx-3583757676"
+            >
+              Antworten Total: 
+              <strong
+                className="jsx-3583757676"
+              >
+                999
+              </strong>
+            </p>
+            <p
+              className="jsx-3583757676"
+            >
+              Korrekte Antworten: 
+              <strong
+                className="jsx-3583757676"
+              >
+                88%
+              </strong>
+            </p>
           </div>
           <div
-            className="jsx-3832213538 column"
-          >
-            Test3
-          </div>
-          <div
-            className="jsx-3832213538 column"
+            className="jsx-3583757676 column col3"
           >
             <div
               className="jsx-319169000"
@@ -3470,6 +4156,91 @@ exports[`Storyshots questions QuestionList 1`] = `
                 </li>
               </ul>
             </div>
+          </div>
+          <div
+            className="jsx-3583757676 column buttons"
+          >
+            <button
+              className="ui button button"
+              disabled={undefined}
+              onClick={[Function]}
+              role="button"
+              tabIndex={undefined}
+            >
+              <svg
+                fill="currentColor"
+                height="1em"
+                preserveAspectRatio="xMidYMid meet"
+                style={
+                  Object {
+                    "color": undefined,
+                    "verticalAlign": "middle",
+                  }
+                }
+                viewBox="0 0 40 40"
+                width="1em"
+              >
+                <g>
+                  <path
+                    d="m37.1 21.4q-3.3-5.2-8.5-7.8 1.4 2.3 1.4 5 0 4.1-2.9 7t-7.1 3-7.1-3-2.9-7q0-2.7 1.4-5.1-5.1 2.7-8.5 7.9 2.9 4.6 7.4 7.3t9.7 2.7 9.7-2.7 7.4-7.3z m-16-8.5q0-0.5-0.3-0.8t-0.8-0.3q-2.8 0-4.8 2t-2 4.8q0 0.4 0.3 0.7t0.8 0.3 0.7-0.3 0.4-0.7q0-2 1.3-3.3t3.3-1.4q0.4 0 0.8-0.3t0.3-0.7z m18.9 8.5q0 0.8-0.4 1.6-3.2 5.1-8.4 8.2t-11.2 3.1-11.2-3.1-8.4-8.2q-0.4-0.8-0.4-1.6t0.4-1.5q3.2-5.1 8.4-8.2t11.2-3.1 11.1 3.1 8.5 8.2q0.4 0.8 0.4 1.5z"
+                  />
+                </g>
+              </svg>
+            </button>
+            <button
+              className="ui button button"
+              disabled={undefined}
+              onClick={[Function]}
+              role="button"
+              tabIndex={undefined}
+            >
+              <svg
+                fill="currentColor"
+                height="1em"
+                preserveAspectRatio="xMidYMid meet"
+                style={
+                  Object {
+                    "color": undefined,
+                    "verticalAlign": "middle",
+                  }
+                }
+                viewBox="0 0 40 40"
+                width="1em"
+              >
+                <g>
+                  <path
+                    d="m11.1 34.3l2-2-5.2-5.3-2 2v2.4h2.8v2.9h2.4z m11.7-20.7q0-0.5-0.5-0.5-0.2 0-0.4 0.1l-12.1 12.1q-0.1 0.2-0.1 0.4 0 0.5 0.4 0.5 0.3 0 0.4-0.2l12.1-12.1q0.2-0.1 0.2-0.3z m-1.2-4.3l9.3 9.3-18.6 18.5h-9.3v-9.2z m15.2 2.1q0 1.2-0.8 2l-3.7 3.7-9.3-9.2 3.7-3.7q0.8-0.9 2-0.9 1.2 0 2 0.9l5.3 5.2q0.8 0.9 0.8 2z"
+                  />
+                </g>
+              </svg>
+            </button>
+            <button
+              className="ui button button"
+              disabled={undefined}
+              onClick={[Function]}
+              role="button"
+              tabIndex={undefined}
+            >
+              <svg
+                fill="currentColor"
+                height="1em"
+                preserveAspectRatio="xMidYMid meet"
+                style={
+                  Object {
+                    "color": undefined,
+                    "verticalAlign": "middle",
+                  }
+                }
+                viewBox="0 0 40 40"
+                width="1em"
+              >
+                <g>
+                  <path
+                    d="m15.9 30.7v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.7 0v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.8 0v-15.7q0-0.3-0.2-0.5t-0.6-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.4 0 0.6-0.2t0.2-0.5z m-12.2-22.1h10l-1.1-2.6q-0.1-0.2-0.3-0.3h-7.1q-0.2 0.1-0.4 0.3z m20.7 0.7v1.4q0 0.3-0.2 0.5t-0.5 0.2h-2.1v21.2q0 1.8-1.1 3.2t-2.5 1.3h-18.6q-1.4 0-2.5-1.3t-1-3.1v-21.3h-2.2q-0.3 0-0.5-0.2t-0.2-0.5v-1.4q0-0.3 0.2-0.5t0.5-0.2h6.9l1.6-3.8q0.3-0.8 1.2-1.4t1.7-0.5h7.2q0.9 0 1.8 0.5t1.2 1.4l1.5 3.8h6.9q0.3 0 0.5 0.2t0.2 0.5z"
+                  />
+                </g>
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -3502,61 +4273,65 @@ exports[`Storyshots questions QuestionSingle 1`] = `
 
 exports[`Storyshots questions QuestionTags 1`] = `
 <div
-  className="jsx-3461493153 questionTags"
+  className="jsx-2503063879 questionTags"
 >
   <div
-    className="jsx-3461493153 type tag"
-  >
-    SC
-  </div>
-  <div
-    className="jsx-3461493153 tag"
+    className="jsx-2503063879 tag"
   >
     CAPM
   </div>
   <div
-    className="jsx-3461493153 tag"
+    className="jsx-2503063879 tag"
   >
     Risk
+  </div>
+  <div
+    className="jsx-2503063879 type tag"
+  >
+    SC
   </div>
 </div>
 `;
 
 exports[`Storyshots questions TagList 1`] = `
 <div
-  className="ui large selection list"
-  role="list"
+  className="jsx-2512117089 tagList"
 >
   <div
-    className="item listItem"
-    data-value={undefined}
-    onClick={[Function]}
-    role="listitem"
+    className="ui large selection list"
+    role="list"
   >
-    <i
-      aria-hidden="true"
-      className="folder outline icon"
-    />
     <div
-      className="content"
+      className="item listItem"
+      data-value={undefined}
+      onClick={[Function]}
+      role="listitem"
     >
-      CAPM
+      <i
+        aria-hidden="true"
+        className="folder outline icon"
+      />
+      <div
+        className="content"
+      >
+        CAPM
+      </div>
     </div>
-  </div>
-  <div
-    className="active item listItem"
-    data-value={undefined}
-    onClick={[Function]}
-    role="listitem"
-  >
-    <i
-      aria-hidden="true"
-      className="folder icon"
-    />
     <div
-      className="content"
+      className="active item listItem"
+      data-value={undefined}
+      onClick={[Function]}
+      role="listitem"
     >
-      CF
+      <i
+        aria-hidden="true"
+        className="folder icon"
+      />
+      <div
+        className="content"
+      >
+        CF
+      </div>
     </div>
   </div>
 </div>
