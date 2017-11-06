@@ -43,7 +43,13 @@ export const NavbarPres = ({
   <div className="navbar">
     <div className="sideArea">
       <Menu borderless className="noBorder">
-        <Menu.Item icon active={sidebarVisible} name="sidebar" onClick={handleSidebarToggle}>
+        <Menu.Item
+          icon
+          active={sidebarVisible}
+          name="sidebar"
+          className="sidebar"
+          onClick={handleSidebarToggle}
+        >
           <Icon name="sidebar" />
         </Menu.Item>
         <h1>{title}</h1>
@@ -57,9 +63,9 @@ export const NavbarPres = ({
     )}
 
     <div className="accountArea">
-      <Menu borderless className="noBorder">
+      <Menu borderless className="loginArea noBorder">
         <Menu.Menu position="right">
-          <SessionArea sessionId={runningSessionId} />
+          {runningSessionId && <SessionArea sessionId={runningSessionId} />}
           <AccountArea accountShort={accountShort} />
         </Menu.Menu>
       </Menu>
@@ -67,6 +73,7 @@ export const NavbarPres = ({
 
     <style jsx>{`
       @import 'src/theme';
+      $background-color: #f5f5f5;
 
       .navbar {
         display: flex;
@@ -74,7 +81,12 @@ export const NavbarPres = ({
         flex-flow: row wrap;
         justify-content: space-between;
 
-        border-bottom: 1px solid lightgrey;
+        padding: 3px 0 3px 0;
+
+        background-color: $background-color;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+
+        z-index: 100;
 
         .sideArea {
           flex: 1;
@@ -82,7 +94,20 @@ export const NavbarPres = ({
 
           h1 {
             font-size: 1.3rem;
-            margin-left: 1rem;
+            margin: 0;
+            padding-left: 1rem;
+            display: flex;
+            align-items: center;
+            background: $background-color;
+          }
+
+          :global(.loginArea) {
+            background-color: $background-color;
+          }
+
+          :global(.sidebar) {
+            border-radius: 0;
+            background-color: $background-color;
           }
         }
 
@@ -100,6 +125,10 @@ export const NavbarPres = ({
 
         .accountArea {
           display: none;
+
+          :global(.menu) {
+            background-color: $background-color;
+          }
         }
 
         @include desktop-tablet-only {

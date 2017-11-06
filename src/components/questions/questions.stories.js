@@ -29,7 +29,10 @@ storiesOf('questions', module)
   ))
   .add('Question (MC, no tags)', () => <Question {...fixtures.question} tags={[]} type="MC" />)
   .add('QuestionDetails', () => (
-    <QuestionDetails lastUsed={['20.12.2017', '19.12.2017', '10.10.2017']} />
+    <QuestionDetails
+      description="hello world blabla"
+      lastUsed={['20.12.2017', '19.12.2017', '10.10.2017']}
+    />
   ))
   .add('QuestionList', () => (
     <QuestionListPres questions={fixtures.questions} onQuestionDropped={() => null} />

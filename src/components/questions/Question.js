@@ -9,6 +9,7 @@ import QuestionTags from './QuestionTags'
 const propTypes = {
   connectDragSource: PropTypes.func.isRequired,
   creationMode: PropTypes.bool,
+  description: PropTypes.string,
   draggable: PropTypes.bool,
   id: PropTypes.string.isRequired,
   isDragging: PropTypes.bool,
@@ -21,6 +22,7 @@ const propTypes = {
 
 const defaultProps = {
   creationMode: false,
+  description: '-',
   draggable: false,
   isDragging: false,
   lastUsed: [],
@@ -34,6 +36,7 @@ const Question = ({
   tags,
   title,
   type,
+  description,
   version,
   draggable,
   creationMode,
@@ -56,7 +59,7 @@ const Question = ({
 
       <div className="wrapper">
         <h2 className="title">
-          #{id.substring(0, 7)} - {title} {version && version > 1 && `(v${version})`}
+          {title} {version && version > 1 && `(v${version})`}
         </h2>
 
         <div className="tags">
@@ -64,27 +67,35 @@ const Question = ({
         </div>
 
         <div className="details">
-          <QuestionDetails lastUsed={lastUsed} />
+          <QuestionDetails description={description} lastUsed={lastUsed} />
         </div>
       </div>
 
       <style jsx>{`
-        @import 'src/theme';
+        @import 'src/_theme';
 
         .question {
           display: flex;
           flex-flow: column nowrap;
 
+          padding: 10px;
+          background-color: white;
+          border: 1px solid lightgray;
+
           &.draggable {
             cursor: grab;
 
             &:hover {
-              box-shadow: 3px 3px 5px grey;
+              box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.1);
             }
           }
 
           &.isDragging {
             opacity: 0.5;
+          }
+
+          .title {
+            //color: #2a99ea;
           }
 
           .sessionMembership {
@@ -107,7 +118,8 @@ const Question = ({
             .title {
               font-size: 1.2rem;
               margin: 0;
-              margin-bottom: 0.5rem;
+              background-color: white;
+              //margin-bottom: 0.5rem;
             }
           }
 
