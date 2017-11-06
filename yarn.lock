@@ -1546,9 +1546,6 @@ fs.realpath@^1.0.0:
 fsevents@^1.0.0, fsevents@^1.1.1:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/fsevents/-/fsevents-1.1.2.tgz#3282b713fb3ad80ede0e9fcf4611b5aa6fc033f4"
-  dependencies:
-    nan "^2.3.0"
-    node-pre-gyp "^0.6.36"
 
 fstream-ignore@^1.0.5:
   version "1.0.5"
@@ -2747,6 +2744,10 @@ lodash.defaults@^3.1.2:
     lodash.assign "^3.0.0"
     lodash.restparam "^3.0.0"
 
+lodash.get@4.4.2:
+  version "4.4.2"
+  resolved "https://registry.yarnpkg.com/lodash.get/-/lodash.get-4.4.2.tgz#2d177f652fa31e939b4438d5341499dfa3825e99"
+
 lodash.includes@^4.3.0:
   version "4.3.0"
   resolved "https://registry.yarnpkg.com/lodash.includes/-/lodash.includes-4.3.0.tgz#60bb98a87cb923c68ca1e51325483314849f553f"
@@ -3023,14 +3024,15 @@ mongodb@2.2.33:
     mongodb-core "2.1.17"
     readable-stream "2.2.7"
 
-mongoose@4.12.5:
-  version "4.12.5"
-  resolved "https://registry.yarnpkg.com/mongoose/-/mongoose-4.12.5.tgz#c5fecc40a48402120e9a2cf5bd27a674da9ce331"
+mongoose@4.13.0:
+  version "4.13.0"
+  resolved "https://registry.yarnpkg.com/mongoose/-/mongoose-4.13.0.tgz#81bb266e045d66ac8dfdd84fc6749c873d7a6ac4"
   dependencies:
     async "2.1.4"
     bson "~1.0.4"
     hooks-fixed "2.0.2"
     kareem "1.5.0"
+    lodash.get "4.4.2"
     mongodb "2.2.33"
     mpath "0.3.0"
     mpromise "0.5.5"
