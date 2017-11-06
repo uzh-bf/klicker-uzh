@@ -117,11 +117,13 @@ const Index = ({
           display: flex;
           flex-direction: column;
           height: 100%;
+          background-color: #f5f5f5;
 
           .questionList {
             // workaround for creating session div overlapping the question list
             padding-bottom: 235px;
-            background-color: #f5f5f5;
+            max-width: 1280px;
+            margin: auto;
 
             .buttons {
               margin: 1rem 0;
