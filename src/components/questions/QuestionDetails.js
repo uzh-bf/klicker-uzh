@@ -1,9 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import _truncate from 'lodash/truncate'
+
 import { FormattedMessage } from 'react-intl'
-
 import { FaEye, FaPencil, FaTrash } from 'react-icons/lib/fa'
-
 import { Button } from 'semantic-ui-react'
 
 import { ListWithHeader } from '../common'
@@ -18,25 +18,12 @@ const defaultProps = {
 }
 
 const QuestionDetails = ({ description, lastUsed }) => {
-  const maxDescLength = 250
-  let newDescription = ''
-  let newLastUsed = []
+  const truncatedDesc = _truncate(description, { length: 250 })
 
-  if (description.length > maxDescLength) {
-    newDescription = `${description.substring(0, maxDescLength - 4)} ...`
-  } else {
-    newDescription = description
-  }
-
-  if (lastUsed.length > 0) {
-    newLastUsed = lastUsed
-  } else {
-    newLastUsed = ['never used']
-  }
-
+  // TODO: internationalization
   return (
     <div className="questionDetails">
-      <div className="column description">{newDescription}</div>
+      <div className="column description">{truncatedDesc}</div>
       <div className="column col2">
         <p>
           Antworten Total: <strong>999</strong>
@@ -47,7 +34,7 @@ const QuestionDetails = ({ description, lastUsed }) => {
       </div>
 
       <div className="column col3">
-        <ListWithHeader items={newLastUsed}>
+        <ListWithHeader items={lastUsed.length > 0 ? lastUsed : ['Never used']}>
           <FormattedMessage id="questionPool.question.lastUsed" defaultMessage="Last used" />
         </ListWithHeader>
       </div>
@@ -65,9 +52,9 @@ const QuestionDetails = ({ description, lastUsed }) => {
       </div>
 
       <style jsx>{`
-        @import 'src/_theme';
+        // TODO: externalize colors
 
-        $color_background: rgba(124, 184, 228, 0.12);
+        @import 'src/_theme';
 
         .questionDetails {
           display: flex;
@@ -78,32 +65,34 @@ const QuestionDetails = ({ description, lastUsed }) => {
 
           .column {
             padding: 0.25rem;
+          }
 
-            &.description {
-              border-bottom: 1px solid $color-primary;
-              background-color: $color_background;
+          .description {
+            border-bottom: 1px solid $color-primary;
+            background-color: rgba(124, 184, 228, 0.12);
+          }
+
+          .col2 {
+            display: none;
+            border-bottom: 1px solid $color-primary;
+          }
+
+          .col3 {
+            display: none;
+            border-bottom: 1px solid $color-primary;
+          }
+
+          .buttons {
+            display: flex;
+            padding: 0;
+
+            :global(.button) {
+              flex: 1;
+              margin-right: 0.5rem;
             }
 
-            &.col2 {
-              border-bottom: 1px solid $color-primary;
-            }
-
-            &.col3 {
-              border-bottom: 1px solid $color-primary;
-            }
-
-            &.buttons {
-              display: flex;
-              padding: 0;
-
-              :global(.button) {
-                flex: 1;
-                margin-right: 0.5rem;
-              }
-
-              :global(.button:last-child) {
-                margin-right: 0;
-              }
+            :global(.button:last-child) {
+              margin-right: 0;
             }
           }
 
@@ -116,55 +105,55 @@ const QuestionDetails = ({ description, lastUsed }) => {
               padding: 1rem;
               text-align: left;
 
-              &.description {
-                border-bottom: none;
-              }
-
-              &.col2 {
-                border-bottom: none;
-              }
-
-              &.col3 {
-                border-bottom: none;
-              }
-
-              &.buttons {
-                display: block;
-                flex: none;
-                padding: 0.3rem;
-
-                :global(.button) {
-                  margin: 0;
-                  margin-bottom: 0.3rem;
-                  padding: 7px 12px;
-                  display: block;
-                  background-color: rgba(224, 225, 226, 0.73);
-                }
-
-                :global(.button:last-child) {
-                  margin-bottom: 0;
-                }
-
-                :global(.button:hover) {
-                  color: $color-primary !important;
-                }
-              }
-
               &:not(:last-child) {
                 border-right: 1px solid $color-primary;
+              }
+            }
+
+            .description {
+              border-bottom: none;
+            }
+
+            .col2 {
+              display: block;
+              border-bottom: none;
+            }
+
+            .col3 {
+              display: block;
+              border-bottom: none;
+            }
+
+            .buttons {
+              display: block;
+              flex: none;
+              padding: 0.3rem;
+
+              :global(.button) {
+                margin: 0;
+                margin-bottom: 0.3rem;
+                padding: 7px 12px;
+                display: block;
+                background-color: rgba(224, 225, 226, 0.73);
+              }
+
+              :global(.button:last-child) {
+                margin-bottom: 0;
+              }
+
+              :global(.button:hover) {
+                color: $color-primary !important;
               }
             }
           }
 
           @include desktop-only {
-            .column {
-              &.col2 {
-                flex: 0 0 250px;
-              }
+            .col2 {
+              flex: 0 0 250px;
+            }
 
-              &.col3 {
-                flex: 0 0 250px;
-              }
+            .col3 {
+              flex: 0 0 250px;
             }
           }
         }
