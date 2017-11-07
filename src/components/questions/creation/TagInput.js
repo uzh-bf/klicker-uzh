@@ -25,17 +25,19 @@ const defaultProps = {
 }
 
 const TagInput = ({ tags, input: { value, onChange } }) => (
-  <div className="field">
+  <div className="field tagInput">
     <label htmlFor="tags">
-      <FormattedMessage defaultMessage="Tags" id="teacher.createQuestion.tags" />
+      <FormattedMessage defaultMessage="Tags" id="teacher.createQuestion.tagInput.label" />{' '}
+      <a data-tip data-for="tagHelp">
+        <FaQuestionCircle />
+      </a>
     </label>
-    <a data-tip data-for="tagHelp">
-      {' '}
-      <FaQuestionCircle className="icon" />
-    </a>
 
     <ReactTooltip id="tagHelp" delayHide={250} place="right">
-      <span>Type in your tag and press enter to confirm.</span>
+      <FormattedMessage
+        defaultMessage="Type in your tag and press enter to confirm."
+        id="teacher.createQuestion.tagInput.tooltip"
+      />
     </ReactTooltip>
 
     <TagsInput
@@ -52,16 +54,14 @@ const TagInput = ({ tags, input: { value, onChange } }) => (
     <style jsx>{`
       @import 'src/_theme';
 
-      :global(label) {
-        display: inline !important;
-      }
+      .tagInput {
+        a {
+          color: gray;
 
-      a {
-        color: gray;
-
-        :global(.icon) {
-          font-size: 1.25rem;
-          margin-bottom: 0.2rem;
+          :global(svg) {
+            font-size: 1.25rem;
+            margin-bottom: 0.2rem;
+          }
         }
       }
     `}</style>

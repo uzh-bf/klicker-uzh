@@ -12,33 +12,37 @@ const propTypes = {
 }
 
 const TitleInput = ({ input: { value, onChange } }) => (
-  <div className="field">
+  <div className="field titleInput">
     <label htmlFor="questionTitle">
-      <FormattedMessage defaultMessage="Question title" id="teacher.createQuestion.questionTitle" />
+      <FormattedMessage
+        defaultMessage="Question title"
+        id="teacher.createQuestion.titleInput.label"
+      />{' '}
+      <a data-tip data-for="titleHelp">
+        <FaQuestionCircle />
+      </a>
     </label>
-    <a data-tip data-for="titleHelp">
-      {' '}
-      <FaQuestionCircle className="icon" />
-    </a>
-    <input name="questionTitle" type="text" value={value} onChange={onChange} />
 
     <ReactTooltip id="titleHelp" delayHide={250} place="right">
-      <span>Enter a short title for the question.</span>
+      <FormattedMessage
+        defaultMessage="Enter a short title for the question."
+        id="teacher.createQuestion.titleInput.tooltip"
+      />
     </ReactTooltip>
+
+    <input name="questionTitle" type="text" value={value} onChange={onChange} />
 
     <style jsx>{`
       @import 'src/_theme';
 
-      :global(label) {
-        display: inline !important;
-      }
+      .titleInput {
+        a {
+          color: gray;
 
-      a {
-        color: gray;
-
-        :global(.icon) {
-          font-size: 1.25rem;
-          margin-bottom: 0.2rem;
+          :global(svg) {
+            font-size: 1.25rem;
+            margin-bottom: 0.2rem;
+          }
         }
       }
     `}</style>

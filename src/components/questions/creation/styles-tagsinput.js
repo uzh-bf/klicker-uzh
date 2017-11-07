@@ -82,7 +82,7 @@ export default css`
       font-weight: bold;
     }
 
-    .react-tagsinput-tag a::before {
+    .react-tagsinput-remove::before {
       content: ' ×';
     }
 

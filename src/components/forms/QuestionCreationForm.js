@@ -6,6 +6,7 @@ import { connect } from 'react-redux'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Button, Form } from 'semantic-ui-react'
+import { compose } from 'recompose'
 
 import { ContentInput, TitleInput, TagInput } from '../questions'
 import {
@@ -136,9 +137,12 @@ const QuestionCreationForm = ({
         </div>
 
         <div className="questionPreview">
-          <div>
-            <strong>Audience preview:</strong>
-          </div>
+          <h2>
+            <FormattedMessage
+              defaultMessage="Audience Preview"
+              id="teacher.createQuestion.previewLabel"
+            />
+          </h2>
           <Preview title={title} description={content} options={options} />
         </div>
 
@@ -151,27 +155,28 @@ const QuestionCreationForm = ({
       </Form>
 
       <style jsx>{`
-        @import 'src/theme';
+        @import 'src/_theme';
 
         .questionCreationForm > :global(form) {
           display: flex;
           flex-direction: column;
 
           padding: 1rem;
-        }
 
-        .questionInput,
-        .questionPreview {
-          margin-bottom: 1rem;
-        }
+          .questionInput,
+          .questionPreview {
+            margin-bottom: 1rem;
+          }
 
-        .questionInput > :global(.field > label) {
-          font-size: 1.2rem;
-        }
+          .questionInput > :global(.field > label),
+          .questionPreview > h2 {
+            font-size: 1.2rem;
+            margin: 0;
+            margin-bottom: 0.5rem;
+          }
 
-        @supports (grid-gap: 1rem) {
-          @include desktop-tablet-only {
-            .questionCreationForm > :global(form) {
+          @supports (grid-gap: 1rem) {
+            @include desktop-tablet-only {
               display: grid;
 
               grid-gap: 1rem;
@@ -181,40 +186,38 @@ const QuestionCreationForm = ({
                 'type type tags tags preview preview'
                 'content content content content content content'
                 'options options options options options options';
+
+              .questionInput {
+                margin-bottom: 0;
+              }
+
+              .questionTitle {
+                grid-area: title;
+              }
+
+              .questionType {
+                grid-area: type;
+              }
+
+              .questionTags {
+                grid-area: tags;
+              }
+
+              .questionPreview {
+                grid-area: preview;
+                margin-bottom: 0;
+              }
+
+              .questionContent {
+                grid-area: content;
+              }
+
+              .questionOptions {
+                grid-area: options;
+              }
             }
 
-            .questionInput {
-              margin-bottom: 0;
-            }
-
-            .questionTitle {
-              grid-area: title;
-            }
-
-            .questionType {
-              grid-area: type;
-            }
-
-            .questionTags {
-              grid-area: tags;
-            }
-
-            .questionPreview {
-              grid-area: preview;
-              margin-bottom: 0;
-            }
-
-            .questionContent {
-              grid-area: content;
-            }
-
-            .questionOptions {
-              grid-area: options;
-            }
-          }
-
-          @include desktop-only {
-            .questionCreationForm > :global(form) {
+            @include desktop-only {
               margin: 0 20%;
               padding: 1rem 0;
             }
@@ -228,27 +231,28 @@ const QuestionCreationForm = ({
 QuestionCreationForm.propTypes = propTypes
 QuestionCreationForm.defaultProps = defaultProps
 
-const withState = connect(state => ({
-  content: _get(state, 'form.createQuestion.values.content'),
-  options: _get(state, 'form.createQuestion.values.options'),
-  title: _get(state, 'form.createQuestion.values.title'),
-  type: _get(state, 'form.createQuestion.values.type'),
-}))
-
-export default reduxForm({
-  form: 'createQuestion',
-  initialValues: {
-    content: '',
-    options: {
-      choices: [],
-      randomized: false,
-      restrictions: {
-        type: FREERestrictionTypes.NONE,
+export default compose(
+  reduxForm({
+    form: 'createQuestion',
+    initialValues: {
+      content: '',
+      options: {
+        choices: [],
+        randomized: false,
+        restrictions: {
+          type: FREERestrictionTypes.NONE,
+        },
       },
+      tags: [],
+      title: '',
+      type: 'SC',
     },
-    tags: [],
-    title: '',
-    type: 'SC',
-  },
-  validate,
-})(withState(QuestionCreationForm))
+    validate,
+  }),
+  connect(state => ({
+    content: _get(state, 'form.createQuestion.values.content'),
+    options: _get(state, 'form.createQuestion.values.options'),
+    title: _get(state, 'form.createQuestion.values.title'),
+    type: _get(state, 'form.createQuestion.values.type'),
+  })),
+)(QuestionCreationForm)
