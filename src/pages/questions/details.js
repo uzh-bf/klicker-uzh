@@ -14,9 +14,7 @@ const propTypes = {
   tags: PropTypes.array.isRequired,
 }
 
-const EditQuestion = ({
-  tags, intl, handleDiscard, handleSave,
-}) => (
+const EditQuestion = ({ intl, handleDiscard, handleSave }) => (
   <TeacherLayout
     intl={intl}
     navbar={{
@@ -31,7 +29,22 @@ const EditQuestion = ({
     })}
     sidebar={{ activeItem: 'editQuestion' }}
   >
-    <QuestionEditForm intl={intl} tags={tags} onSubmit={handleSave} onDiscard={handleDiscard} />
+    <QuestionEditForm
+      intl={intl}
+      options={{
+        choices: ['Hello', 'You are small', 'You are big'],
+        randomized: false,
+        restrictions: {
+          type: 'NONE',
+        },
+      }}
+      title={'Was ist das denn für eine Frage?'}
+      tags={['Hallo Tag', 'CAPM', 'Internet']}
+      type={'SC'}
+      versions={[1, 2, 3, 4, 5]}
+      onSubmit={handleSave}
+      onDiscard={handleDiscard}
+    />
   </TeacherLayout>
 )
 

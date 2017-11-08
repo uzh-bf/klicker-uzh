@@ -2,6 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import isEmpty from 'validator/lib/isEmpty'
 import { compose } from 'recompose'
+import { connect } from 'react-redux'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Button, Dropdown, Form } from 'semantic-ui-react'
@@ -240,19 +241,10 @@ QuestionEditForm.propTypes = propTypes
 QuestionEditForm.defaultProps = defaultProps
 
 export default compose(
-  /*
-  connect(state => ({
-    initialValues: _get(state, 'form.editQuestion'),
-  })),
-  */
+  connect((state, props) => ({ initialValues: props })),
   reduxForm({
     enableReinitialize: true,
     form: 'editQuestion',
     validate,
   }),
-  /*
-  connect(state => ({
-    form: state.form.editQuestion,
-  })),
-  */
 )(QuestionEditForm)
