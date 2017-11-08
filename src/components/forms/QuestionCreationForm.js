@@ -43,17 +43,41 @@ const validate = ({
   // validation of SC answer options
   if (type === QuestionTypes.SC) {
     // SC questions need at least one answer option to be valid
-    if (!options || options.length === 0) {
+    if (!options || options.choices.length === 0) {
       errors.options = 'form.createQuestion.options.empty'
+    } else {
+      const numCorrect = options.choices.filter(option => option.correct).length
+      if (numCorrect > 1) {
+        // validate that only one option is correct for SC questions
+        errors.options = 'form.createQuestion.options.tooManyCorrect'
+      } else if (numCorrect === 0) {
+        // validate that there is a correct choice
+        errors.options = 'form.createQuestion.options.notEnoughCorrect'
+      }
     }
     // validation of FREE answer options
+  } else if (type === QuestionTypes.MC) {
+    // MC questions need at least one answer option to be valid
+    if (!options || options.choices.length === 0) {
+      errors.options = 'form.createQuestion.options.empty'
+    } else {
+      const numCorrect = options.choices.filter(option => option.correct).length
+      if (numCorrect === 0) {
+        // validate that there is at least one correct choice
+        errors.options = 'form.createQuestion.options.notEnoughCorrect'
+      }
+    }
   } else if (type === QuestionTypes.FREE) {
     if (options && options.restrictions) {
       if (!options.restrictions.min && !options.restrictions.max) {
         errors.options = 'form.createQuestion.options.noMinMax'
       }
 
-      if (options.restrictions.min >= options.restrictions.max) {
+      if (
+        options.restrictions.min &&
+        options.restrictions.max &&
+        options.restrictions.min >= options.restrictions.max
+      ) {
         errors.options = 'form.createQuestion.options.minGteMax'
       }
     }
@@ -168,7 +192,7 @@ const QuestionCreationForm = ({
             margin-bottom: 1rem;
           }
 
-          .questionInput > :global(.field > label),
+          .questionInput :global(.field > label),
           .questionPreview > h2 {
             font-size: 1.2rem;
             margin: 0;
@@ -193,19 +217,21 @@ const QuestionCreationForm = ({
 
               .questionTitle {
                 grid-area: title;
+                align-self: flex-start;
               }
 
               .questionType {
                 grid-area: type;
+                align-self: flex-start;
               }
 
               .questionTags {
                 grid-area: tags;
+                align-self: flex-start;
               }
 
               .questionPreview {
                 grid-area: preview;
-                margin-bottom: 0;
               }
 
               .questionContent {

@@ -1,8 +1,10 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import classNames from 'classnames'
-import { Form, Button } from 'semantic-ui-react'
+import ReactTooltip from 'react-tooltip'
 import { FormattedMessage, intlShape } from 'react-intl'
+import { FaQuestionCircle } from 'react-icons/lib/fa'
+
+import { Button } from '../common'
 
 const propTypes = {
   input: PropTypes.shape({
@@ -40,42 +42,49 @@ const TypeChooser = ({ intl, input: { value, onChange } }) => {
   const handleClick = newValue => () => onChange(newValue)
 
   return (
-    <Form.Field>
+    <div className="required field typeChooser">
       <label htmlFor="types">
-        <FormattedMessage defaultMessage="Question type" id="teacher.createQuestion.questionType" />
+        <FormattedMessage
+          defaultMessage="Question Type"
+          id="teacher.createQuestion.questionType.label"
+        />
+        <a data-tip data-for="TypeChooserHelp">
+          <FaQuestionCircle />
+        </a>
       </label>
-      <div className="typeChooser">
+
+      <ReactTooltip id="TypeChooserHelp" delayHide={250} place="right">
+        <FormattedMessage
+          defaultMessage="Choose the type of question you would like to create."
+          id="teacher.createQuestion.questionType.tooltip"
+        />
+      </ReactTooltip>
+
+      <div className="types">
         {types.map(({ name, value: typeValue }) => (
-          <Button
-            key={typeValue}
-            className={classNames('type', { active: typeValue === value })}
-            onClick={handleClick(typeValue)}
-          >
+          <Button key={typeValue} active={typeValue === value} onClick={handleClick(typeValue)}>
             {name}
           </Button>
         ))}
       </div>
 
       <style jsx>{`
+        @import 'src/_theme';
+
         .typeChooser {
-          display: flex;
-          flex-direction: column;
-        }
+          @include tooltip-icon;
 
-        .typeChooser > :global(button) {
-          border-radius: 0;
-          border: 2px solid #e0e1e2;
-        }
+          .types {
+            display: flex;
+            flex-direction: column;
 
-        .typeChooser > :global(button:not(:last-child)) {
-          margin-bottom: 0.5rem;
-        }
-
-        .typeChooser > :global(button.active) {
-          border: 2px solid black;
+            > :global(*):not(:last-child) {
+              margin-bottom: 0.5rem;
+            }
+          }
         }
       `}</style>
-    </Form.Field>
+    </div>
   )
 }
 

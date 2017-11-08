@@ -4,10 +4,14 @@ $breakpoint-desktop: 991px;
 
 // colors
 $color-primary: rgb(124, 184, 228); //7cb8e4 // 7cb8e4 // ff9c5a
-$color-primary-50p: rgba(124, 184, 228, 0.5);
+$color-primary-50p: rgba($color-primary, 0.5);
+$color-primary-20p: rgba($color-primary, 0.2);
+$color-primary-10p: rgba($color-primary, 0.1);
 $color-secondary: rgb(245, 245, 245); // lightgrey
 $color-borders: rgb(245, 245, 245); // lightgrey
-$color-error: red;
+$color-error-font: #9f3a38;
+$color-error-border: #e0b4b4;
+$color-error-bg: #fff6f6;
 $color-success: green;
 $color-focus: rgb(133, 183, 217); // same as in semantic ui
 
@@ -21,7 +25,7 @@ $font-size-h3: 1.1rem;
 
 // mixins
 @mixin tooltip-icon {
-  a {
+  label > a {
     color: $color-primary;
     margin-left: 0.5rem;
 
@@ -29,6 +33,10 @@ $font-size-h3: 1.1rem;
       font-size: 1.3rem;
     }
   }
+}
+
+@mixin default-border {
+  border: 1px solid $color-borders;
 }
 
 @mixin desktop-only {
