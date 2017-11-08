@@ -47,9 +47,7 @@ const TeacherLayout = ({
     },
     {
       href: '/sessions',
-      label: (
-        <FormattedMessage id="teacher.sessionHistory.title" defaultMessage="Session History" />
-      ),
+      label: <FormattedMessage id="teacher.sessionHistory.title" defaultMessage="Sessions" />,
       name: 'sessionHistory',
     },
     {
@@ -90,6 +88,28 @@ const TeacherLayout = ({
         </div>
 
         {actionArea && <div className="actionArea">{actionArea}</div>}
+
+        <style jsx global>{`
+          * {
+            font-family: 'Open Sans', sans-serif;
+          }
+
+          html,
+          body {
+            font-size: 14px;
+          }
+
+          input,
+          button,
+          .noBorder {
+            border-radius: 0 !important;
+          }
+
+          .noBorder {
+            border: 0 !important;
+            box-shadow: none !important;
+          }
+        `}</style>
 
         <style jsx>{`
           .teacherLayout {
