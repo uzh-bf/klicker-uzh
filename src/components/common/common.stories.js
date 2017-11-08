@@ -7,7 +7,7 @@ import { compose, withHandlers, withState } from 'recompose'
 
 import { intlMock } from '../../../.storybook/utils'
 
-import { ActionButton, ListWithHeader, Collapser } from '.'
+import { ActionButton, Button, ListWithHeader, Collapser } from '.'
 import { AccountArea, SearchArea, SessionArea, NavbarPres } from './navbar'
 import { Sidebar, SidebarItem } from './sidebar'
 
@@ -45,9 +45,8 @@ storiesOf('common/components', module)
       ]}
     />
   ))
-  .add('ListWithHeader', () => (
-    <ListWithHeader items={['abcd', 'cdef']}>hello world</ListWithHeader>
-  ))
+  .add('Button', () => <Button>Hello World!</Button>)
+  .add('Button (active)', () => <Button active>Hello World!</Button>)
   .add('Collapser', () => (
     <CollapserWithState>
       {collapserContent}
@@ -59,6 +58,9 @@ storiesOf('common/components', module)
       {collapserContent}
       {collapserContent}
     </Collapser>
+  ))
+  .add('ListWithHeader', () => (
+    <ListWithHeader items={['abcd', 'cdef']}>hello world</ListWithHeader>
   ))
 
 storiesOf('common/navbar', module)
