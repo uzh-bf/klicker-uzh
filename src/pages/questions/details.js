@@ -35,7 +35,11 @@ const EditQuestion = ({ intl, handleDiscard, handleSave }) => (
         'Dies ist die lange Ausführung der Frage. Annahme du bist klein, wie möchtest du das mit deiner Grösse schaffen?'
       }
       options={{
-        choices: ['Hello', 'You are small', 'You are big'],
+        choices: [
+          { correct: false, name: 'Hello' },
+          { correct: true, name: 'You are small' },
+          { correct: false, name: 'You are big' },
+        ],
         randomized: false,
         restrictions: {
           type: 'NONE',
