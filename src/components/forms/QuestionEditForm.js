@@ -7,7 +7,7 @@ import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Button, Dropdown, Form } from 'semantic-ui-react'
 
-import { ContentInput } from '../questions'
+import { ContentInput, TagInput } from '../questions'
 import { FREECreationOptions, SCCreationOptions } from '../../components/questionTypes'
 import { QuestionTypes } from '../../lib'
 
@@ -76,7 +76,6 @@ const defaultProps = {
 const QuestionEditForm = ({
   intl,
   invalid,
-  tags,
   title,
   type,
   handleSubmit: onSubmit,
@@ -140,8 +139,7 @@ const QuestionEditForm = ({
         </div>
 
         <div className="questionInput questionTags">
-          {tags.map(value => <div>{value}</div>)}
-          {/* <Field name="tags" component={TagInput} tags={tags} /> */}
+          <Field name="tags" component={TagInput} />
         </div>
 
         <div className="questionInput questionContent">
