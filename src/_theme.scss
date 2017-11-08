@@ -20,6 +20,17 @@ $font-size-h2: 1.2rem;
 $font-size-h3: 1.1rem;
 
 // mixins
+@mixin tooltip-icon {
+  a {
+    color: $color-primary;
+    margin-left: 0.5rem;
+
+    :global(svg) {
+      font-size: 1.3rem;
+    }
+  }
+}
+
 @mixin desktop-only {
   @media all and (min-width: $breakpoint-desktop) {
     @content;
