@@ -39,6 +39,38 @@ exports[`Storyshots common/components ActionButton 1`] = `
 </div>
 `;
 
+exports[`Storyshots common/components Button (active) 1`] = `
+<div
+  className="jsx-1870081362 klicker-button"
+>
+  <button
+    className="ui active fluid button"
+    disabled={undefined}
+    onClick={[Function]}
+    role="button"
+    tabIndex={undefined}
+  >
+    Hello World!
+  </button>
+</div>
+`;
+
+exports[`Storyshots common/components Button 1`] = `
+<div
+  className="jsx-1870081362 klicker-button"
+>
+  <button
+    className="ui fluid button"
+    disabled={undefined}
+    onClick={[Function]}
+    role="button"
+    tabIndex={undefined}
+  >
+    Hello World!
+  </button>
+</div>
+`;
+
 exports[`Storyshots common/components Collapser (extended) 1`] = `
 <div
   className="jsx-51013090 collapser"
@@ -2106,75 +2138,25 @@ exports[`Storyshots questionTypes/FREE FREE Answering Options (upper bound restr
 </div>
 `;
 
-exports[`Storyshots questionTypes/FREE FREE Creation Options 1`] = `
-<div
-  className="field"
->
-  <label
-    className="jsx-1330628297"
-    htmlFor="options"
-  >
-    <span>
-      Options
-    </span>
-  </label>
-  <div
-    className="jsx-1330628297 optionsChooser"
-  >
-    <button
-      className="ui button option"
-      disabled={undefined}
-      onClick={[Function]}
-      role="button"
-      tabIndex={undefined}
-      type="button"
-    >
-      <span>
-        No Limitations
-      </span>
-    </button>
-    <button
-      className="ui button option"
-      disabled={undefined}
-      onClick={[Function]}
-      role="button"
-      tabIndex={undefined}
-      type="button"
-    >
-      <span>
-        Number Range
-      </span>
-    </button>
-  </div>
-</div>
-`;
-
 exports[`Storyshots questionTypes/FREE FREE Creation Preview (Lower bound restriction) 1`] = `
 <div
-  className="jsx-2332170339 preview"
+  className="jsx-2317544713 preview"
 >
   <div
-    className="jsx-2332170339 title"
+    className="jsx-2317544713 title"
   >
     Hello
   </div>
   <div
-    className="jsx-2332170339 description"
+    className="jsx-2317544713 description"
   >
     World!
   </div>
   <div
-    className="jsx-2332170339"
+    className="jsx-2317544713 diagram"
   >
     <div
-      className="jsx-2332170339 freeText"
-    >
-      <div
-        className="jsx-2332170339 box"
-      />
-    </div>
-    <div
-      className="jsx-2332170339"
+      className="jsx-2317544713 min"
     >
       <span>
         Min
@@ -2183,9 +2165,31 @@ exports[`Storyshots questionTypes/FREE FREE Creation Preview (Lower bound restri
        
       90
     </div>
+    <div
+      className="jsx-2317544713 line"
+    />
+    <div
+      className="jsx-2317544713 box"
+    />
   </div>
   <div
-    className="jsx-2332170339 button"
+    className="jsx-2317544713 selection"
+  >
+    <b
+      className="jsx-2317544713 title"
+    >
+      <span>
+        Selection
+      </span>
+    </b>
+    <div
+      className="jsx-2317544713 box"
+    >
+      45
+    </div>
+  </div>
+  <div
+    className="jsx-2317544713 button"
   >
     <span>
       Submit
@@ -2196,30 +2200,23 @@ exports[`Storyshots questionTypes/FREE FREE Creation Preview (Lower bound restri
 
 exports[`Storyshots questionTypes/FREE FREE Creation Preview (Number-Range) 1`] = `
 <div
-  className="jsx-2332170339 preview"
+  className="jsx-2317544713 preview"
 >
   <div
-    className="jsx-2332170339 title"
+    className="jsx-2317544713 title"
   >
     Hello
   </div>
   <div
-    className="jsx-2332170339 description"
+    className="jsx-2317544713 description"
   >
     World!
   </div>
   <div
-    className="jsx-2332170339"
+    className="jsx-2317544713 diagram"
   >
     <div
-      className="jsx-2332170339 freeText"
-    >
-      <div
-        className="jsx-2332170339 box"
-      />
-    </div>
-    <div
-      className="jsx-2332170339"
+      className="jsx-2317544713 min"
     >
       <span>
         Min
@@ -2229,7 +2226,7 @@ exports[`Storyshots questionTypes/FREE FREE Creation Preview (Number-Range) 1`] 
       90
     </div>
     <div
-      className="jsx-2332170339"
+      className="jsx-2317544713 max"
     >
       <span>
         Max
@@ -2238,9 +2235,31 @@ exports[`Storyshots questionTypes/FREE FREE Creation Preview (Number-Range) 1`] 
        
       900
     </div>
+    <div
+      className="jsx-2317544713 line"
+    />
+    <div
+      className="jsx-2317544713 box"
+    />
   </div>
   <div
-    className="jsx-2332170339 button"
+    className="jsx-2317544713 selection"
+  >
+    <b
+      className="jsx-2317544713 title"
+    >
+      <span>
+        Selection
+      </span>
+    </b>
+    <div
+      className="jsx-2317544713 box"
+    >
+      495
+    </div>
+  </div>
+  <div
+    className="jsx-2317544713 button"
   >
     <span>
       Submit
@@ -2251,31 +2270,31 @@ exports[`Storyshots questionTypes/FREE FREE Creation Preview (Number-Range) 1`] 
 
 exports[`Storyshots questionTypes/FREE FREE Creation Preview (unrestricted) 1`] = `
 <div
-  className="jsx-2332170339 preview"
+  className="jsx-2317544713 preview"
 >
   <div
-    className="jsx-2332170339 title"
+    className="jsx-2317544713 title"
   >
     Hello
   </div>
   <div
-    className="jsx-2332170339 description"
+    className="jsx-2317544713 description"
   >
     World!
   </div>
   <div
-    className="jsx-2332170339"
+    className="jsx-2317544713"
   >
     <div
-      className="jsx-2332170339 freeText"
+      className="jsx-2317544713 freeText"
     >
       <div
-        className="jsx-2332170339 box"
+        className="jsx-2317544713 box"
       />
     </div>
   </div>
   <div
-    className="jsx-2332170339 button"
+    className="jsx-2317544713 button"
   >
     <span>
       Submit
@@ -2486,20 +2505,20 @@ exports[`Storyshots questionTypes/SC SC Creation Placeholder 1`] = `
 
 exports[`Storyshots questionTypes/SC SC Creation Preview 1`] = `
 <div
-  className="jsx-1303707464 preview"
+  className="jsx-2626206721 preview"
 >
   <div
-    className="jsx-1303707464 title"
+    className="jsx-2626206721 title"
   >
     Hello question
   </div>
   <div
-    className="jsx-1303707464 description"
+    className="jsx-2626206721 description"
   >
     abcd
   </div>
   <div
-    className="jsx-1303707464 options"
+    className="jsx-2626206721 options"
   >
     <div
       className="jsx-3454815952 options"
@@ -2546,84 +2565,13 @@ exports[`Storyshots questionTypes/SC SC Creation Preview 1`] = `
     </div>
   </div>
   <div
-    className="jsx-1303707464 button"
+    className="jsx-2626206721 button"
   >
     <span>
       Submit
     </span>
   </div>
 </div>
-`;
-
-exports[`Storyshots questionTypes/components TypeChooser 1`] = `
-<div
-  className="field"
->
-  <label
-    className="jsx-910700654"
-    htmlFor="types"
-  >
-    <span>
-      Question type
-    </span>
-  </label>
-  <div
-    className="jsx-910700654 typeChooser"
-  >
-    <button
-      className="ui button type active"
-      disabled={undefined}
-      onClick={[Function]}
-      role="button"
-      tabIndex={undefined}
-    >
-      Single-Choice
-    </button>
-    <button
-      className="ui button type"
-      disabled={undefined}
-      onClick={[Function]}
-      role="button"
-      tabIndex={undefined}
-    >
-      Multiple-Choice
-    </button>
-    <button
-      className="ui button type"
-      disabled={undefined}
-      onClick={[Function]}
-      role="button"
-      tabIndex={undefined}
-    >
-      Free-Form
-    </button>
-  </div>
-</div>
-`;
-
-exports[`Storyshots questions ContentInput 1`] = `
-<form
-  className="ui form"
->
-  <div
-    className="jsx-718709431 field contentInput"
-  >
-    <label
-      className="jsx-718709431"
-      htmlFor="content"
-    >
-      <span>
-        Content
-      </span>
-    </label>
-    <textarea
-      className="jsx-718709431"
-      name="content"
-      onChange={[Function]}
-      value="hello world"
-    />
-  </div>
-</form>
 `;
 
 exports[`Storyshots questions Question (MC, >1 versions) 1`] = `
@@ -4335,30 +4283,6 @@ exports[`Storyshots questions TagList 1`] = `
     </div>
   </div>
 </div>
-`;
-
-exports[`Storyshots questions TitleInput 1`] = `
-<form
-  className="ui form"
->
-  <div
-    className="field"
-  >
-    <label
-      htmlFor="questionTitle"
-    >
-      <span>
-        Question title
-      </span>
-    </label>
-    <input
-      name="questionTitle"
-      onChange={[Function]}
-      type="text"
-      value="my title"
-    />
-  </div>
-</form>
 `;
 
 exports[`Storyshots sessions QuestionDropzone 1`] = `
