@@ -42,6 +42,9 @@ storiesOf('forms/components', module)
   .add('QuestionEditForm', () => (
     <QuestionEditForm
       intl={intlMock}
+      content={
+        'Dies ist die lange Ausführung der Frage. Annahme du bist klein, wie möchtest du das mit deiner Grösse schaffen?'
+      }
       options={{
         choices: ['Hello', 'You are small', 'You are big'],
         randomized: false,

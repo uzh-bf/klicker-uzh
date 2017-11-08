@@ -31,6 +31,9 @@ const EditQuestion = ({ intl, handleDiscard, handleSave }) => (
   >
     <QuestionEditForm
       intl={intl}
+      content={
+        'Dies ist die lange Ausführung der Frage. Annahme du bist klein, wie möchtest du das mit deiner Grösse schaffen?'
+      }
       options={{
         choices: ['Hello', 'You are small', 'You are big'],
         randomized: false,
