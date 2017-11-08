@@ -130,6 +130,7 @@ const QuestionEditForm = ({
                   defaultMessage: 'Select version',
                   id: 'form.questionEditForm.versionDropdown.placeholder',
                 })}
+                defaultValue={versionOptions[versionOptions.length - 1].value} // get last element
                 fluid
                 selection
                 options={versionOptions}
