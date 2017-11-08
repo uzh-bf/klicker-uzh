@@ -53,7 +53,7 @@ const TypeChooser = ({ intl, input: { value, onChange } }) => {
         </a>
       </label>
 
-      <ReactTooltip id="TypeChooserHelp" delayHide={250} place="right">
+      <ReactTooltip id="TypeChooserHelp" delayShow={250} delayHide={250} place="right">
         <FormattedMessage
           defaultMessage="Choose the type of question you would like to create."
           id="teacher.createQuestion.questionType.tooltip"

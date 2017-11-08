@@ -18,7 +18,6 @@ const propTypes = {
   meta: PropTypes.shape({
     dirty: PropTypes.bool,
     invalid: PropTypes.bool,
-    touched: PropTypes.bool,
   }).isRequired,
   min: PropTypes.number,
   type: PropTypes.string.isRequired,
@@ -36,7 +35,7 @@ const FREECreationOptions = ({
   handleMaxChange,
   handleMinChange,
   handleTypeChange,
-  meta: { dirty, invalid, touched },
+  meta: { dirty, invalid },
 }) => {
   const buttons = [
     {
@@ -61,7 +60,7 @@ const FREECreationOptions = ({
 
   return (
     <div className="FREECreationOptions">
-      <Form.Field required error={(dirty || touched) && invalid}>
+      <Form.Field required error={dirty && invalid}>
         <label htmlFor="options">
           <FormattedMessage
             defaultMessage="Input Restrictions"
@@ -72,7 +71,7 @@ const FREECreationOptions = ({
           </a>
         </label>
 
-        <ReactTooltip id="FREECreationHelp" delayHide={250} place="right">
+        <ReactTooltip id="FREECreationHelp" delayShow={250} delayHide={250} place="right">
           <FormattedMessage
             defaultMessage="Choose the allowed format of incoming responses."
             id="teacher.createQuestion.optionsFREE.tooltip"

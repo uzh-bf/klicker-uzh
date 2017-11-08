@@ -16,7 +16,6 @@ const propTypes = {
   meta: PropTypes.shape({
     dirty: PropTypes.bool,
     invalid: PropTypes.bool,
-    touched: PropTypes.bool,
   }).isRequired,
   tags: PropTypes.arrayOf(
     PropTypes.shape({
@@ -29,9 +28,9 @@ const defaultProps = {
   tags: [],
 }
 
-const TagInput = ({ tags, input: { value, onChange }, meta: { invalid, dirty, touched } }) => (
+const TagInput = ({ tags, input: { value, onChange }, meta: { invalid, dirty } }) => (
   <div className="tagInput">
-    <Form.Field required error={(dirty || touched) && invalid}>
+    <Form.Field required error={dirty && invalid}>
       <label htmlFor="tags">
         <FormattedMessage defaultMessage="Tags" id="teacher.createQuestion.tagInput.label" />
         <a data-tip data-for="tagHelp">
@@ -39,7 +38,7 @@ const TagInput = ({ tags, input: { value, onChange }, meta: { invalid, dirty, to
         </a>
       </label>
 
-      <ReactTooltip id="tagHelp" delayHide={250} place="right">
+      <ReactTooltip id="tagHelp" delayShow={250} delayHide={250} place="right">
         <FormattedMessage
           defaultMessage="Add tags to your question to improve organization and reusability (similar to the folders used previously)."
           id="teacher.createQuestion.tagInput.tooltip"

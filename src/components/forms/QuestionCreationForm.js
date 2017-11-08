@@ -202,14 +202,20 @@ const QuestionCreationForm = ({
           @supports (grid-gap: 1rem) {
             @include desktop-tablet-only {
               display: grid;
+              align-content: start;
 
               grid-gap: 1rem;
               grid-template-columns: repeat(6, 1fr);
-              grid-template-rows: auto;
+              grid-template-rows: 5rem auto auto auto;
               grid-template-areas: 'title title title title preview preview'
                 'type type tags tags preview preview'
                 'content content content content content content'
                 'options options options options options options';
+
+              .questionInput,
+              .questionPreview {
+                margin: 0;
+              }
 
               .questionInput {
                 margin-bottom: 0;
@@ -217,21 +223,19 @@ const QuestionCreationForm = ({
 
               .questionTitle {
                 grid-area: title;
-                align-self: flex-start;
               }
 
               .questionType {
                 grid-area: type;
-                align-self: flex-start;
               }
 
               .questionTags {
                 grid-area: tags;
-                align-self: flex-start;
               }
 
               .questionPreview {
                 grid-area: preview;
+                align-self: stretch;
               }
 
               .questionContent {
@@ -261,7 +265,7 @@ export default compose(
   reduxForm({
     form: 'createQuestion',
     initialValues: {
-      content: '',
+      content: null,
       options: {
         choices: [],
         randomized: false,
@@ -269,8 +273,8 @@ export default compose(
           type: FREERestrictionTypes.NONE,
         },
       },
-      tags: [],
-      title: '',
+      tags: null,
+      title: null,
       type: 'SC',
     },
     validate,

@@ -13,13 +13,12 @@ const propTypes = {
   meta: PropTypes.shape({
     dirty: PropTypes.bool,
     invalid: PropTypes.bool,
-    touched: PropTypes.bool,
   }).isRequired,
 }
 
-const ContentInput = ({ input: { value, onChange }, meta: { dirty, invalid, touched } }) => (
+const ContentInput = ({ input: { value, onChange }, meta: { dirty, invalid } }) => (
   <div className="contentInput">
-    <Form.Field required error={(dirty || touched) && invalid}>
+    <Form.Field required error={dirty && invalid}>
       <label htmlFor="content">
         <FormattedMessage
           defaultMessage="Question"
@@ -30,7 +29,7 @@ const ContentInput = ({ input: { value, onChange }, meta: { dirty, invalid, touc
         </a>
       </label>
 
-      <ReactTooltip id="contentHelp" delayHide={250} place="right">
+      <ReactTooltip id="contentHelp" delayShow={250} delayHide={250} place="right">
         <FormattedMessage
           defaultMessage="Enter the question you want to ask the audience."
           id="teacher.createQuestion.contentInput.tooltip"
@@ -47,7 +46,7 @@ const ContentInput = ({ input: { value, onChange }, meta: { dirty, invalid, touc
         @include tooltip-icon;
 
         textarea {
-          border: 1px solid $color-borders;
+          border: 1px solid lightgrey;
           height: 20rem;
           padding: 1rem;
 

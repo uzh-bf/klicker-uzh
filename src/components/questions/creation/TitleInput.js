@@ -13,13 +13,12 @@ const propTypes = {
   meta: PropTypes.shape({
     dirty: PropTypes.bool,
     invalid: PropTypes.bool,
-    touched: PropTypes.bool,
   }).isRequired,
 }
 
-const TitleInput = ({ input: { value, onChange }, meta: { dirty, invalid, touched } }) => (
+const TitleInput = ({ input: { value, onChange }, meta: { dirty, invalid } }) => (
   <div className="titleInput">
-    <Form.Field required error={(dirty || touched) && invalid}>
+    <Form.Field required error={dirty && invalid}>
       <label htmlFor="questionTitle">
         <FormattedMessage
           defaultMessage="Question Title"
@@ -30,7 +29,7 @@ const TitleInput = ({ input: { value, onChange }, meta: { dirty, invalid, touche
         </a>
       </label>
 
-      <ReactTooltip id="titleHelp" delayHide={250} place="right">
+      <ReactTooltip id="titleHelp" delayShow={250} delayHide={250} place="right">
         <FormattedMessage
           defaultMessage="Enter a short summarizing title for the question. This is only visible to you!"
           id="teacher.createQuestion.titleInput.tooltip"

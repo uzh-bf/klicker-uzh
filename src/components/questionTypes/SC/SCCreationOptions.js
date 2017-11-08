@@ -18,7 +18,6 @@ const propTypes = {
   meta: PropTypes.shape({
     dirty: PropTypes.bool,
     invalid: PropTypes.bool,
-    touched: PropTypes.bool,
   }).isRequired,
   value: PropTypes.arrayOf(PropTypes.shape(SCCreationOption.propTypes)).isRequired,
 }
@@ -30,7 +29,7 @@ const SCCreationOptions = ({
   handleUpdateOrder,
   handleOptionToggleCorrect,
   value,
-  meta: { dirty, invalid, touched },
+  meta: { dirty, invalid },
 }) => {
   const SortableOption = SortableElement(props => (
     <div className="option">
@@ -63,7 +62,7 @@ const SCCreationOptions = ({
 
   return (
     <div className="SCCreationOptions">
-      <Form.Field required error={(dirty || touched) && invalid}>
+      <Form.Field required error={dirty && invalid}>
         <label htmlFor="options">
           <FormattedMessage
             defaultMessage="Available Choices"
@@ -74,7 +73,7 @@ const SCCreationOptions = ({
           </a>
         </label>
 
-        <ReactTooltip id="SCCreationHelp" delayHide={250} place="right">
+        <ReactTooltip id="SCCreationHelp" delayShow={250} delayHide={250} place="right">
           <FormattedMessage
             defaultMessage="Add answering options the respondents can choose from."
             id="teacher.createQuestion.optionsSC.tooltip"
