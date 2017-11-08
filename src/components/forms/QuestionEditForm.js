@@ -161,7 +161,7 @@ const QuestionEditForm = ({
           className="save"
           disabled={invalid}
           type="submit"
-          onClick={console.dir('Hello')}
+          onClick={() => console.dir(this.props.form)}
         >
           <FormattedMessage defaultMessage="Save" id="common.button.save" />
         </Button>
