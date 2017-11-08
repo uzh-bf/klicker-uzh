@@ -1,5 +1,4 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import { compose } from 'recompose'
 import { intlShape } from 'react-intl'
 
@@ -8,13 +7,10 @@ import { QuestionEditForm } from '../../components/forms'
 import { pageWithIntl, withData } from '../../lib'
 
 const propTypes = {
-  handleDiscard: PropTypes.func.isRequired,
-  handleSave: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  tags: PropTypes.array.isRequired,
 }
 
-const EditQuestion = ({ intl, handleDiscard, handleSave }) => (
+const EditQuestion = ({ intl }) => (
   <TeacherLayout
     intl={intl}
     navbar={{
@@ -49,8 +45,6 @@ const EditQuestion = ({ intl, handleDiscard, handleSave }) => (
       tags={['Hallo Tag', 'CAPM', 'Internet']}
       type={'SC'}
       versions={[1, 2, 3, 4, 5]}
-      onSubmit={handleSave}
-      onDiscard={handleDiscard}
     />
   </TeacherLayout>
 )

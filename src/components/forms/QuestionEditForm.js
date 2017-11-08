@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import Link from 'next/link'
 import isEmpty from 'validator/lib/isEmpty'
 import { compose } from 'recompose'
 import { connect } from 'react-redux'
@@ -150,11 +151,18 @@ const QuestionEditForm = ({
         <div className="questionInput questionOptions">
           <Field name="options" component={typeComponents[type].input} intl={intl} />
         </div>
-
-        <Button className="discard" type="reset" onClick={onDiscard}>
-          <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
-        </Button>
-        <Button primary className="save" disabled={invalid} type="submit">
+        <Link href="/questions">
+          <Button className="discard" type="reset" onClick={onDiscard}>
+            <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+          </Button>
+        </Link>
+        <Button
+          primary
+          className="save"
+          disabled={invalid}
+          type="submit"
+          onClick={console.dir('Hello')}
+        >
           <FormattedMessage defaultMessage="Save" id="common.button.save" />
         </Button>
       </Form>
