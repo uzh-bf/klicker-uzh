@@ -36,6 +36,47 @@ export const QuestionListQuery = gql`
   }
 `
 
+// HACK: temporary query for question details display
+// TODO: replace by query for a single question's details
+export const QuestionDetailsQuery = gql`
+  {
+    questions: allQuestions {
+      id
+      title
+      type
+      instances {
+        id
+        createdAt
+      }
+      tags {
+        id
+        name
+      }
+      versions {
+        id
+        description
+        options {
+          ... on SCQuestionOptions {
+            choices {
+              correct
+              name
+            }
+          }
+          ... on FREEQuestionOptions {
+            restrictions {
+              min
+              max
+              type
+            }
+          }
+        }
+      }
+      createdAt
+      updatedAt
+    }
+  }
+`
+
 // Used in: SessionList
 export const SessionListQuery = gql`
   {
