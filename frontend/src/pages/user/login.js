@@ -47,7 +47,7 @@ const Login = ({ intl, error, handleSubmit }) => (
           font-weight: bold;
         }
         .errorMessage {
-          color: $color-error;
+          color: $color-error-font;
         }
         .successMessage {
           color: $color-success;

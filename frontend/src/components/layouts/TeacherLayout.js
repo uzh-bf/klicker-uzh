@@ -100,6 +100,7 @@ const TeacherLayout = ({
           }
 
           input,
+          textarea,
           button,
           .noBorder {
             border-radius: 0 !important;
