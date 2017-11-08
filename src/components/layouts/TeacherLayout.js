@@ -100,6 +100,7 @@ const TeacherLayout = ({
           }
 
           input,
+          textarea,
           button,
           .noBorder {
             border-radius: 0 !important;
@@ -108,10 +109,6 @@ const TeacherLayout = ({
           .noBorder {
             border: 0 !important;
             box-shadow: none !important;
-          }
-
-          .navbar {
-            z-index: 100;
           }
         `}</style>
 

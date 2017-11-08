@@ -36,14 +36,18 @@ const FREECreationPreview = ({ title, options: { restrictions }, description }) 
       <div className="description">{description || 'DESCRIPTION'}</div>
       {restrictedToNumbers && (
         <div className="diagram">
-          <div className="min">
-            <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />:{' '}
-            {restrictions.min}
-          </div>
-          <div className="max">
-            <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />:{' '}
-            {restrictions.max}
-          </div>
+          {restrictions.min && (
+            <div className="min">
+              <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />:{' '}
+              {restrictions.min}
+            </div>
+          )}
+          {restrictions.max && (
+            <div className="max">
+              <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />:{' '}
+              {restrictions.max}
+            </div>
+          )}
           <div className="line" />
           <div className="box" />
         </div>
@@ -82,6 +86,8 @@ const FREECreationPreview = ({ title, options: { restrictions }, description }) 
       </div>
 
       <style jsx>{`
+        @import 'src/_theme';
+
         .preview {
           display: flex;
           flex-direction: column;
@@ -89,6 +95,10 @@ const FREECreationPreview = ({ title, options: { restrictions }, description }) 
           border: 1px solid lightgrey;
           height: 100%;
           padding: 1rem;
+
+          @include desktop-tablet-only {
+            min-height: 18.5rem;
+          }
         }
 
         .title,

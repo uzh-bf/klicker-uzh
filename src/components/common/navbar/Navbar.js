@@ -63,9 +63,9 @@ export const NavbarPres = ({
     )}
 
     <div className="accountArea">
-      <Menu borderless className="menu noBorder">
+      <Menu borderless className="loginArea noBorder">
         <Menu.Menu position="right">
-          <SessionArea sessionId={runningSessionId} />
+          {runningSessionId && <SessionArea sessionId={runningSessionId} />}
           <AccountArea accountShort={accountShort} />
         </Menu.Menu>
       </Menu>
@@ -86,6 +86,8 @@ export const NavbarPres = ({
         background-color: $background-color;
         box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
 
+        z-index: 100;
+
         .sideArea {
           flex: 1;
           order: 0;
@@ -99,7 +101,7 @@ export const NavbarPres = ({
             background: $background-color;
           }
 
-          :global(.menu) {
+          :global(.loginArea) {
             background-color: $background-color;
           }
 
