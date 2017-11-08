@@ -3,10 +3,13 @@ $breakpoint-tablet: 768px;
 $breakpoint-desktop: 991px;
 
 // colors
-$color-primary: #7cb8e4;  //7cb8e4 // 7cb8e4 // ff9c5a
-$color-secondary: lightgrey;
+$color-primary: rgb(124, 184, 228); //7cb8e4 // 7cb8e4 // ff9c5a
+$color-primary-50p: rgba(124, 184, 228, 0.5);
+$color-secondary: rgb(245, 245, 245); // lightgrey
+$color-borders: rgb(245, 245, 245); // lightgrey
 $color-error: red;
 $color-success: green;
+$color-focus: rgb(133, 183, 217); // same as in semantic ui
 
 // font definitions
 $font-base-mobile: 20px;
@@ -18,17 +21,17 @@ $font-size-h3: 1.1rem;
 
 // mixins
 @mixin desktop-only {
-  @media screen and (min-width: $breakpoint-desktop) {
+  @media all and (min-width: $breakpoint-desktop) {
     @content;
   }
 }
 @mixin desktop-tablet-only {
-  @media screen and (min-width: $breakpoint-tablet) {
+  @media all and (min-width: $breakpoint-tablet) {
     @content;
   }
 }
 @mixin mobile-only {
-  @media screen and (max-width: $breakpoint-mobile) {
+  @media all and (max-width: $breakpoint-mobile) {
     @content;
   }
 }

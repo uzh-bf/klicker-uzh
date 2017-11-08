@@ -6,7 +6,6 @@ import { FormattedMessage } from 'react-intl'
 import { FaQuestionCircle } from 'react-icons/lib/fa'
 
 import { autocompleteRenderInput } from '../../common'
-import styles from './styles-tagsinput'
 
 const propTypes = {
   input: PropTypes.shape({
@@ -47,9 +46,103 @@ const TagInput = ({ tags, input: { value, onChange } }) => (
       onChange={onChange}
     />
 
-    <style global jsx>
-      {styles}
-    </style>
+    <style jsx global>{`
+      @import 'src/_theme';
+
+      .react-tagsinput {
+        border: 1px solid $color-borders;
+        overflow: hidden;
+        padding-left: 0.5rem;
+        padding-top: 0.5rem;
+        padding-right: 0.5rem;
+      }
+
+      .react-tagsinput--focused {
+        border-color: $color-focus;
+      }
+
+      .react-tagsinput-tag {
+        background-color: $color-secondary;
+        border-radius: 2px;
+        border: 1px solid grey;
+        color: white;
+        display: inline-block;
+        margin-bottom: 0.5rem;
+        margin-right: 0.5rem;
+        padding: 0.7rem;
+        text-align: center;
+        width: 100%;
+      }
+
+      .react-tagsinput-input {
+        background: transparent;
+        border: 0 !important;
+        color: #777;
+        font-weight: 400;
+        margin-bottom: 0.5rem !important;
+        margin-top: 1px !important;
+        outline: none;
+        padding: 0.7rem;
+      }
+
+      .react-autosuggest__container {
+        position: relative;
+        display: inline;
+      }
+
+      .react-autosuggest__suggestions-container {
+        position: relative;
+        top: -1px;
+        z-index: 2;
+      }
+
+      .react-autosuggest__suggestion {
+        cursor: pointer;
+        list-style-type: none;
+        padding: 0.5rem;
+      }
+
+      .react-autosuggest__suggestion--highlighted {
+        background-color: lightgrey;
+      }
+
+      .react-autosuggest__input {
+        padding: 0.5rem !important;
+        text-align: left;
+      }
+
+      .react-tagsinput-remove {
+        margin-left: 0.5rem;
+      }
+
+      .react-tagsinput-remove::after {
+        content: 'x';
+      }
+
+      @media all and (min-width: 768px) {
+        .react-tagsinput {
+          padding-right: 0;
+        }
+
+        .react-tagsinput-tag {
+          margin-bottom: 0.5rem;
+          margin-right: 0.5rem;
+          padding: 0.5rem;
+          text-align: left;
+          width: auto;
+        }
+
+        .react-tagsinput-remove {
+          cursor: pointer;
+          font-weight: bold;
+        }
+
+        .react-tagsinput-input {
+          padding: 0.5rem !important;
+          text-align: left;
+        }
+      }
+    `}</style>
 
     <style jsx>{`
       @import 'src/_theme';
