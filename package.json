@@ -23,7 +23,7 @@
     "md5": "2.2.1",
     "mongodb": "2.2.33",
     "mongoose": "4.13.1",
-    "optics-agent": "1.1.8",
+    "optics-agent": "1.1.9",
     "subscriptions-transport-ws": "0.9.1"
   },
   "devDependencies": {
