@@ -11,7 +11,14 @@ import { Button, Form } from 'semantic-ui-react'
 import { SemanticInput } from '.'
 
 const validate = ({
-  firstName, lastName, email, shortname, password, passwordRepeat, useCase,
+  firstName,
+  lastName,
+  institution,
+  email,
+  shortname,
+  password,
+  passwordRepeat,
+  useCase,
 }) => {
   const errors = {}
 
@@ -21,6 +28,10 @@ const validate = ({
 
   if (!lastName || !isAlpha(lastName) || isEmpty(lastName)) {
     errors.lastName = 'form.lastName.invalid'
+  }
+
+  if (!institution || !isAlpha(institution) || isEmpty(institution)) {
+    errors.institution = 'form.institution.invalid'
   }
 
   // the email address needs to be valid
@@ -140,12 +151,23 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
         />
       </div>
       <div className="use">
-        <div className="field">
+        <Field
+          required
+          component={SemanticInput}
+          icon="university"
+          label={intl.formatMessage({
+            defaultMessage: 'Institution',
+            id: 'form.institution.label',
+          })}
+          name="institution"
+          type="text"
+        />
+        <Form.Field>
           <label htmlFor="useCase">
             <FormattedMessage defaultMessage="Use case description" id="form.useCase.label" />
           </label>
-          <Field name="useCase" component="textarea" type="text" />
-        </div>
+          <Field name="useCase" component="textarea" icon="company" intl={intl} type="text" />
+        </Form.Field>
 
         <Button primary disabled={invalid} floated="right" type="submit">
           <FormattedMessage defaultMessage="Submit" id="form.button.submit" />
