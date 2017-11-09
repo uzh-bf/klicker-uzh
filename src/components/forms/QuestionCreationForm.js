@@ -217,10 +217,6 @@ const QuestionCreationForm = ({
                 margin: 0;
               }
 
-              .questionInput {
-                margin-bottom: 0;
-              }
-
               .questionTitle {
                 grid-area: title;
               }

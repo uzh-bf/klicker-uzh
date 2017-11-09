@@ -34,7 +34,7 @@ const Login = ({ intl, error, handleSubmit }) => (
       <LoginForm intl={intl} onSubmit={handleSubmit} />
 
       <style jsx>{`
-        @import 'src/theme';
+        @import 'src/_theme';
 
         .login {
           padding: 1rem;

@@ -4,11 +4,9 @@ import isAlpha from 'validator/lib/isAlpha'
 import isEmail from 'validator/lib/isEmail'
 import isLength from 'validator/lib/isLength'
 import isEmpty from 'validator/lib/isEmpty'
-import ReactTooltip from 'react-tooltip'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Field, reduxForm } from 'redux-form'
-import { Button } from 'semantic-ui-react'
-import { FaQuestionCircle } from 'react-icons/lib/fa'
+import { Button, Form } from 'semantic-ui-react'
 
 import { SemanticInput } from '.'
 
@@ -59,149 +57,136 @@ const propTypes = {
 }
 
 const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
-  <form className="ui form error" onSubmit={onSubmit}>
-    <div className="personal">
-      <Field
-        required
-        component={SemanticInput}
-        intl={intl}
-        label={intl.formatMessage({
-          defaultMessage: 'First name',
-          id: 'form.firstName.label',
-        })}
-        name="firstName"
-        type="text"
-      />
-      <Field
-        required
-        component={SemanticInput}
-        intl={intl}
-        label={intl.formatMessage({
-          defaultMessage: 'Last name',
-          id: 'form.lastName.label',
-        })}
-        name="lastName"
-        type="text"
-      />
-      <Field
-        required
-        component={SemanticInput}
-        intl={intl}
-        label={intl.formatMessage({
-          defaultMessage: 'Email',
-          id: 'form.email.label',
-        })}
-        name="email"
-        type="email"
-      />
-    </div>
-
-    <div className="account">
-      {/* TODO: add tooltip in field component */}
-      <a data-tip data-for="titleHelp">
-        <FaQuestionCircle className="icon" />
-      </a>
-      <Field
-        required
-        component={SemanticInput}
-        intl={intl}
-        label={intl.formatMessage({
-          defaultMessage: 'Shortname',
-          id: 'form.shortname.label',
-        })}
-        name="shortname"
-        type="text"
-      />
-      <Field
-        required
-        component={SemanticInput}
-        intl={intl}
-        label={intl.formatMessage({
-          defaultMessage: 'Password',
-          id: 'form.password.label',
-        })}
-        name="password"
-        type="password"
-      />
-      <Field
-        required
-        component={SemanticInput}
-        intl={intl}
-        label={intl.formatMessage({
-          defaultMessage: 'Repeat password',
-          id: 'form.passwordRepeat.label',
-        })}
-        name="passwordRepeat"
-        type="password"
-      />
-    </div>
-    <div className="use">
-      <div className="field">
-        <label htmlFor="useCase">
-          <FormattedMessage defaultMessage="Use case description" id="form.useCase.label" />
-        </label>
-        <Field name="useCase" component="textarea" type="text" />
+  <div className="registrationForm">
+    <Form error onSubmit={onSubmit}>
+      <div className="personal">
+        <Field
+          required
+          component={SemanticInput}
+          intl={intl}
+          label={intl.formatMessage({
+            defaultMessage: 'First name',
+            id: 'form.firstName.label',
+          })}
+          name="firstName"
+          type="text"
+        />
+        <Field
+          required
+          component={SemanticInput}
+          intl={intl}
+          label={intl.formatMessage({
+            defaultMessage: 'Last name',
+            id: 'form.lastName.label',
+          })}
+          name="lastName"
+          type="text"
+        />
+        <Field
+          required
+          component={SemanticInput}
+          intl={intl}
+          label={intl.formatMessage({
+            defaultMessage: 'Email',
+            id: 'form.email.label',
+          })}
+          name="email"
+          type="email"
+        />
       </div>
 
-      <Button primary disabled={invalid} floated="right" type="submit">
-        <FormattedMessage defaultMessage="Submit" id="form.button.submit" />
-      </Button>
-    </div>
+      <div className="account">
+        <Field
+          required
+          component={SemanticInput}
+          intl={intl}
+          label={intl.formatMessage({
+            defaultMessage: 'Account ID',
+            id: 'form.shortname.label',
+          })}
+          tooltip={intl.formatMessage({
+            defaultMessage:
+              'A unique identifier for your account. Must be between 3 and 6 characters long.',
+            id: 'tooltip',
+          })}
+          name="shortname"
+          type="text"
+        />
+        <Field
+          required
+          component={SemanticInput}
+          intl={intl}
+          label={intl.formatMessage({
+            defaultMessage: 'Password',
+            id: 'form.password.label',
+          })}
+          name="password"
+          type="password"
+        />
+        <Field
+          required
+          component={SemanticInput}
+          intl={intl}
+          label={intl.formatMessage({
+            defaultMessage: 'Repeat password',
+            id: 'form.passwordRepeat.label',
+          })}
+          name="passwordRepeat"
+          type="password"
+        />
+      </div>
+      <div className="use">
+        <div className="field">
+          <label htmlFor="useCase">
+            <FormattedMessage defaultMessage="Use case description" id="form.useCase.label" />
+          </label>
+          <Field name="useCase" component="textarea" type="text" />
+        </div>
 
-    <ReactTooltip id="titleHelp" delayHide={250} place="right">
-      <span>The shortname needs to have 3 to 6 characters.</span>
-    </ReactTooltip>
+        <Button primary disabled={invalid} floated="right" type="submit">
+          <FormattedMessage defaultMessage="Submit" id="form.button.submit" />
+        </Button>
+      </div>
+    </Form>
 
     <style jsx>{`
-      @import 'src/theme';
-      :global(label) {
-        display: inline !important;
-      }
+      @import 'src/_theme';
 
-      a {
-        color: gray;
-
-        :global(.icon) {
-          font-size: 1.25rem;
-          margin-bottom: 0.2rem;
-        }
-      }
-
-      .form {
+      .registrationForm > :global(form) {
         display: flex;
         flex-direction: column;
-      }
-      .account {
-        margin-top: 1rem;
-      }
-      .use {
-        margin-top: 1rem;
-      }
 
-      @include desktop-tablet-only {
-        .form {
+        .account {
+          margin-top: 1rem;
+        }
+        .use {
+          margin-top: 1rem;
+        }
+
+        @include desktop-tablet-only {
           flex-flow: row wrap;
           border: 1px solid $color-primary;
           padding: 1rem;
           background-color: rgba(124, 184, 228, 0.12);
-        }
-        .personal,
-        .account {
-          flex: 1 1 50%;
-        }
-        .personal {
-          padding-right: 0.5rem;
-        }
-        .account {
-          margin: 0;
-          padding-left: 0.5rem;
-        }
-        .use {
-          flex: 1 1 100%;
+
+          .personal,
+          .account {
+            flex: 1 1 50%;
+          }
+          .personal {
+            padding-right: 0.5rem;
+          }
+          .account {
+            margin: 0;
+            padding-left: 0.5rem;
+          }
+          .use {
+            flex: 1 1 100%;
+          }
         }
       }
     `}</style>
-  </form>
+  </div>
 )
 
 RegistrationForm.propTypes = propTypes
