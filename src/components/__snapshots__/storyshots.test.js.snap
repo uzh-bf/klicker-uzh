@@ -948,7 +948,7 @@ exports[`Storyshots evaluation/components Chart 1`] = `
 
 exports[`Storyshots evaluation/components Info 1`] = `
 <div
-  className="jsx-565540709 info"
+  className="info"
 >
   <span>
     Total responses:
@@ -4341,15 +4341,15 @@ exports[`Storyshots sessions Session 1`] = `
 
 exports[`Storyshots sessions SessionList 1`] = `
 <div
-  className="jsx-2309132107"
+  className="jsx-3883543457"
 >
   <div
-    className="jsx-2309132107 session"
+    className="jsx-3883543457 session"
   >
     No session is currently running.
   </div>
   <div
-    className="jsx-2309132107 session"
+    className="jsx-3883543457 session"
   >
     <div
       className="jsx-1670121988 session"
@@ -4486,7 +4486,7 @@ exports[`Storyshots sessions SessionList 1`] = `
     </div>
   </div>
   <div
-    className="jsx-2309132107 session"
+    className="jsx-3883543457 session"
   >
     <div
       className="jsx-1670121988 session"
