@@ -2,8 +2,10 @@
 
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Form, Icon } from 'semantic-ui-react'
+import ReactTooltip from 'react-tooltip'
+import { Form, Icon, Input } from 'semantic-ui-react'
 import { FormattedMessage, intlShape } from 'react-intl'
+import { FaQuestionCircle } from 'react-icons/lib/fa'
 
 const propTypes = {
   disabled: PropTypes.bool,
@@ -17,6 +19,7 @@ const propTypes = {
   }).isRequired,
   placeholder: PropTypes.string,
   required: PropTypes.bool,
+  tooltip: PropTypes.string,
   width: PropTypes.number,
 }
 
@@ -25,6 +28,7 @@ const defaultProps = {
   label: undefined,
   placeholder: undefined,
   required: false,
+  tooltip: undefined,
   width: undefined,
 }
 
@@ -36,6 +40,7 @@ const SemanticInput = ({
   meta: { error, invalid, touched },
   placeholder,
   required,
+  tooltip,
   width,
   ...rest
 }) => {
@@ -50,15 +55,30 @@ const SemanticInput = ({
 
   // construct input props
   // define the default placeholder to be equal to the label
-  const inputProps = { placeholder: label, ...rest }
+  const inputProps = { placeholder: placeholder || label, ...rest }
 
   const showError = touched && invalid && error
 
   return (
     <Form.Field {...fieldProps}>
-      {label && <label forHtml={input.name}>{label}</label>}
+      {label && (
+        <label forHtml={input.name}>
+          {label}
+          {tooltip && (
+            <a data-tip data-for={input.name}>
+              <FaQuestionCircle className="icon" />
+            </a>
+          )}
+        </label>
+      )}
 
-      <input {...input} {...inputProps} />
+      <Input {...input} {...inputProps} />
+
+      {tooltip && (
+        <ReactTooltip id={input.name} delayShow={250} delayHide={250} place="right">
+          {tooltip}
+        </ReactTooltip>
+      )}
 
       {showError && (
         <div className="errorMessage">
@@ -68,6 +88,10 @@ const SemanticInput = ({
       )}
 
       <style jsx>{`
+        @import 'src/_theme';
+
+        @include tooltip-icon;
+
         .errorMessage {
           // TODO: improve styling
           background-color: #fff6f6;

@@ -36,7 +36,7 @@ storiesOf('forms/components', module)
   ))
   .add('LoginForm', () => <LoginForm intl={intlMock} />)
   .add('PasswortResetForm', () => <PasswordResetForm intl={intlMock} />)
-  .add('RegistrationForm', () => <RegistrationForm intl={intlMock} />)
+  .add('RegistrationForm [NoTest]', () => <RegistrationForm intl={intlMock} />)
   // HACK: disable test for QuestionCreationForm as autosuggest breaks...
   .add('QuestionCreationForm [NoTest]', () => <QuestionCreationForm intl={intlMock} />)
   .add('SessionCreationForm', () => (
