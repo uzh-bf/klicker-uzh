@@ -229,10 +229,10 @@ exports[`Storyshots common/navbar AccountArea 1`] = `
 
 exports[`Storyshots common/navbar Navbar 1`] = `
 <div
-  className="jsx-1400096577 navbar"
+  className="jsx-1737371627 navbar"
 >
   <div
-    className="jsx-1400096577 sideArea"
+    className="jsx-1737371627 sideArea"
   >
     <div
       className="ui borderless noBorder menu"
@@ -247,14 +247,14 @@ exports[`Storyshots common/navbar Navbar 1`] = `
         />
       </div>
       <h1
-        className="jsx-1400096577"
+        className="jsx-1737371627"
       >
         Example page
       </h1>
     </div>
   </div>
   <div
-    className="jsx-1400096577 searchArea"
+    className="jsx-1737371627 searchArea"
   >
     <div
       className="ui fluid icon input"
@@ -273,7 +273,7 @@ exports[`Storyshots common/navbar Navbar 1`] = `
     </div>
   </div>
   <div
-    className="jsx-1400096577 accountArea"
+    className="jsx-1737371627 accountArea"
   >
     <div
       className="ui borderless loginArea noBorder menu"
@@ -397,7 +397,7 @@ exports[`Storyshots common/navbar SessionArea 1`] = `
 
 exports[`Storyshots common/sidebar Sidebar (invisible) 1`] = `
 <div
-  className="jsx-511432160 sidebar"
+  className="jsx-1124680459 sidebar"
 >
   <div
     className="pushable"
@@ -429,7 +429,7 @@ exports[`Storyshots common/sidebar Sidebar (invisible) 1`] = `
 
 exports[`Storyshots common/sidebar Sidebar (visible) 1`] = `
 <div
-  className="jsx-511432160 sidebar"
+  className="jsx-1124680459 sidebar"
 >
   <div
     className="pushable"
@@ -470,10 +470,10 @@ exports[`Storyshots common/sidebar SidebarItem 1`] = `
 
 exports[`Storyshots confusion ConfusionBarometer 1`] = `
 <div
-  className="jsx-891792633 confusionBarometer"
+  className="jsx-2703451211 confusionBarometer"
 >
   <h2
-    className="jsx-891792633"
+    className="jsx-2703451211"
   >
     <span>
       Confusion-Barometer
@@ -1190,15 +1190,15 @@ exports[`Storyshots evaluation/components Visualization 1`] = `
 
 exports[`Storyshots feedbacks Feedback 1`] = `
 <div
-  className="jsx-22459915 feedback"
+  className="jsx-2863726662 feedback"
 >
   <div
-    className="jsx-22459915 content"
+    className="jsx-2863726662 content"
   >
     hello world
   </div>
   <div
-    className="jsx-22459915 delete"
+    className="jsx-2863726662 delete"
   >
     <button
       className="ui basic fluid icon button"
@@ -1214,7 +1214,7 @@ exports[`Storyshots feedbacks Feedback 1`] = `
     </button>
   </div>
   <div
-    className="jsx-22459915 votes"
+    className="jsx-2863726662 votes"
   >
     +
     100
@@ -1224,17 +1224,17 @@ exports[`Storyshots feedbacks Feedback 1`] = `
 
 exports[`Storyshots feedbacks FeedbackChannel (isActive) 1`] = `
 <div
-  className="jsx-901584548 feedbackChannel"
+  className="jsx-1745898464 feedbackChannel"
 >
   <h2
-    className="jsx-901584548"
+    className="jsx-1745898464"
   >
     <span>
       Feedback-Channel
     </span>
   </h2>
   <div
-    className="jsx-901584548 toggle"
+    className="jsx-1745898464 toggle"
   >
     <div
       className="ui checked toggle checkbox"
@@ -1257,7 +1257,7 @@ exports[`Storyshots feedbacks FeedbackChannel (isActive) 1`] = `
     </div>
   </div>
   <div
-    className="jsx-901584548 toggle publicationToggle"
+    className="jsx-1745898464 toggle publicationToggle"
   >
     <div
       className="ui toggle checkbox publishCheckbox"
@@ -1280,24 +1280,24 @@ exports[`Storyshots feedbacks FeedbackChannel (isActive) 1`] = `
     </div>
   </div>
   <div
-    className="jsx-901584548 feedbacks"
+    className="jsx-1745898464 feedbacks"
   />
 </div>
 `;
 
 exports[`Storyshots feedbacks FeedbackChannel (isPublic) 1`] = `
 <div
-  className="jsx-901584548 feedbackChannel"
+  className="jsx-1745898464 feedbackChannel"
 >
   <h2
-    className="jsx-901584548"
+    className="jsx-1745898464"
   >
     <span>
       Feedback-Channel
     </span>
   </h2>
   <div
-    className="jsx-901584548 toggle"
+    className="jsx-1745898464 toggle"
   >
     <div
       className="ui checked toggle checkbox"
@@ -1320,7 +1320,7 @@ exports[`Storyshots feedbacks FeedbackChannel (isPublic) 1`] = `
     </div>
   </div>
   <div
-    className="jsx-901584548 toggle publicationToggle"
+    className="jsx-1745898464 toggle publicationToggle"
   >
     <div
       className="ui checked toggle checkbox publishCheckbox"
@@ -1343,24 +1343,24 @@ exports[`Storyshots feedbacks FeedbackChannel (isPublic) 1`] = `
     </div>
   </div>
   <div
-    className="jsx-901584548 feedbacks"
+    className="jsx-1745898464 feedbacks"
   />
 </div>
 `;
 
 exports[`Storyshots feedbacks FeedbackChannel 1`] = `
 <div
-  className="jsx-901584548 feedbackChannel"
+  className="jsx-1745898464 feedbackChannel"
 >
   <h2
-    className="jsx-901584548"
+    className="jsx-1745898464"
   >
     <span>
       Feedback-Channel
     </span>
   </h2>
   <div
-    className="jsx-901584548 toggle"
+    className="jsx-1745898464 toggle"
   >
     <div
       className="ui toggle checkbox"
@@ -1383,7 +1383,7 @@ exports[`Storyshots feedbacks FeedbackChannel 1`] = `
     </div>
   </div>
   <div
-    className="jsx-901584548 toggle publicationToggle"
+    className="jsx-1745898464 toggle publicationToggle"
   >
     <div
       className="ui disabled toggle checkbox publishCheckbox"
@@ -1409,353 +1409,210 @@ exports[`Storyshots feedbacks FeedbackChannel 1`] = `
 `;
 
 exports[`Storyshots forms/components LoginForm 1`] = `
-<form
-  className="jsx-2997166766 ui form error"
+<div
+  className="jsx-2909454565 formWithLinks"
 >
-  <div
-    className="required field"
+  <form
+    action={undefined}
+    className="ui error form"
+    onSubmit={[Function]}
   >
-    <label
-      className="jsx-1447640616"
-      forHtml="email"
-    >
-      Email
-    </label>
-    <input
-      className="jsx-1447640616 "
-      name="email"
-      onBlur={[Function]}
-      onChange={[Function]}
-      onDragStart={[Function]}
-      onDrop={[Function]}
-      onFocus={[Function]}
-      placeholder="Email"
-      type="email"
-      value=""
-    />
-  </div>
-  <div
-    className="required field"
-  >
-    <label
-      className="jsx-1447640616"
-      forHtml="password"
-    >
-      Password
-    </label>
-    <input
-      className="jsx-1447640616 "
-      name="password"
-      onBlur={[Function]}
-      onChange={[Function]}
-      onDragStart={[Function]}
-      onDrop={[Function]}
-      onFocus={[Function]}
-      placeholder="Password"
-      type="password"
-      value=""
-    />
-  </div>
-  <div
-    className="jsx-2997166766 actionArea"
-  >
-    <button
-      className="ui primary disabled button semanticButton"
-      disabled={true}
-      onClick={[Function]}
-      role="button"
-      tabIndex={-1}
-      type="submit"
-    >
-      Submit
-    </button>
-    <div
-      className="jsx-2997166766 links"
-    >
-      <div
-        className="ui list"
-        role="list"
-      >
-        <div
-          className="item"
-          data-value={undefined}
-          onClick={[Function]}
-          role="listitem"
-        >
-          <a
-            className="jsx-2997166766"
-            href="/user/resetPassword"
-            onClick={[Function]}
-          >
-            Forgot password?
-          </a>
-        </div>
-        <div
-          className="item"
-          data-value={undefined}
-          onClick={[Function]}
-          role="listitem"
-        >
-          <a
-            className="jsx-2997166766"
-            href="/user/aaiLogin"
-            onClick={[Function]}
-          >
-            Login with AAI
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-</form>
-`;
-
-exports[`Storyshots forms/components PasswortResetForm 1`] = `
-<form
-  className="jsx-2997166766 ui form error"
->
-  <div
-    className="required field"
-  >
-    <label
-      className="jsx-1447640616"
-      forHtml="email"
-    >
-      Email
-    </label>
-    <input
-      className="jsx-1447640616 "
-      name="email"
-      onBlur={[Function]}
-      onChange={[Function]}
-      onDragStart={[Function]}
-      onDrop={[Function]}
-      onFocus={[Function]}
-      placeholder="Email"
-      type="email"
-      value=""
-    />
-  </div>
-  <div
-    className="jsx-2997166766 actionArea"
-  >
-    <button
-      className="ui primary disabled button semanticButton"
-      disabled={true}
-      onClick={[Function]}
-      role="button"
-      tabIndex={-1}
-      type="submit"
-    >
-      Submit
-    </button>
-    <div
-      className="jsx-2997166766 links"
-    >
-      <div
-        className="ui list"
-        role="list"
-      >
-        <div
-          className="item"
-          data-value={undefined}
-          onClick={[Function]}
-          role="listitem"
-        >
-          <a
-            className="jsx-2997166766"
-            href="/user/login"
-            onClick={[Function]}
-          >
-            Back to login
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-</form>
-`;
-
-exports[`Storyshots forms/components RegistrationForm 1`] = `
-<form
-  className="jsx-3805768436 ui form error"
-  onSubmit={[Function]}
->
-  <div
-    className="jsx-3805768436 personal"
-  >
-    <div
-      className="field"
-    >
-      <label
-        className="jsx-1447640616"
-        forHtml="firstName"
-      >
-        First name
-      </label>
-      <input
-        className="jsx-1447640616 "
-        name="firstName"
-        onBlur={[Function]}
-        onChange={[Function]}
-        onDragStart={[Function]}
-        onDrop={[Function]}
-        onFocus={[Function]}
-        placeholder="First name"
-        type="text"
-        value=""
-      />
-    </div>
-    <div
-      className="field"
-    >
-      <label
-        className="jsx-1447640616"
-        forHtml="lastName"
-      >
-        Last name
-      </label>
-      <input
-        className="jsx-1447640616 "
-        name="lastName"
-        onBlur={[Function]}
-        onChange={[Function]}
-        onDragStart={[Function]}
-        onDrop={[Function]}
-        onFocus={[Function]}
-        placeholder="Last name"
-        type="text"
-        value=""
-      />
-    </div>
     <div
       className="required field"
     >
       <label
-        className="jsx-1447640616"
+        className="jsx-3230233227"
         forHtml="email"
       >
         Email
       </label>
-      <input
-        className="jsx-1447640616 "
-        name="email"
-        onBlur={[Function]}
-        onChange={[Function]}
-        onDragStart={[Function]}
-        onDrop={[Function]}
-        onFocus={[Function]}
-        placeholder="Email"
-        type="email"
-        value=""
-      />
+      <div
+        className="ui icon input"
+      >
+        <input
+          disabled={undefined}
+          name="email"
+          onBlur={[Function]}
+          onChange={[Function]}
+          onDragStart={[Function]}
+          onDrop={[Function]}
+          onFocus={[Function]}
+          placeholder="Email"
+          tabIndex={undefined}
+          type="email"
+          value=""
+        />
+        <i
+          aria-hidden="true"
+          className="mail icon"
+        />
+      </div>
     </div>
-  </div>
-  <div
-    className="jsx-3805768436 account"
+    <div
+      className="required field"
+    >
+      <label
+        className="jsx-3230233227"
+        forHtml="password"
+      >
+        Password
+      </label>
+      <div
+        className="ui icon input"
+      >
+        <input
+          disabled={undefined}
+          name="password"
+          onBlur={[Function]}
+          onChange={[Function]}
+          onDragStart={[Function]}
+          onDrop={[Function]}
+          onFocus={[Function]}
+          placeholder="Password"
+          tabIndex={undefined}
+          type="password"
+          value=""
+        />
+        <i
+          aria-hidden="true"
+          className="privacy icon"
+        />
+      </div>
+    </div>
+    <div
+      className="jsx-2909454565 actionArea"
+    >
+      <button
+        className="ui primary disabled button semanticButton"
+        disabled={true}
+        onClick={[Function]}
+        role="button"
+        tabIndex={-1}
+        type="submit"
+      >
+        Submit
+      </button>
+      <div
+        className="jsx-2909454565 links"
+      >
+        <div
+          className="ui list"
+          role="list"
+        >
+          <div
+            className="item"
+            data-value={undefined}
+            onClick={[Function]}
+            role="listitem"
+          >
+            <a
+              className="jsx-2909454565"
+              href="/user/resetPassword"
+              onClick={[Function]}
+            >
+              Forgot password?
+            </a>
+          </div>
+          <div
+            className="item"
+            data-value={undefined}
+            onClick={[Function]}
+            role="listitem"
+          >
+            <a
+              className="jsx-2909454565"
+              href="/user/aaiLogin"
+              onClick={[Function]}
+            >
+              Login with AAI
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+`;
+
+exports[`Storyshots forms/components PasswortResetForm 1`] = `
+<div
+  className="jsx-2909454565 formWithLinks"
+>
+  <form
+    action={undefined}
+    className="ui error form"
+    onSubmit={[Function]}
   >
     <div
       className="required field"
     >
       <label
-        className="jsx-1447640616"
-        forHtml="shortname"
+        className="jsx-3230233227"
+        forHtml="email"
       >
-        Shortname
+        Email
       </label>
-      <input
-        className="jsx-1447640616 "
-        name="shortname"
-        onBlur={[Function]}
-        onChange={[Function]}
-        onDragStart={[Function]}
-        onDrop={[Function]}
-        onFocus={[Function]}
-        placeholder="Shortname"
-        type="text"
-        value=""
-      />
+      <div
+        className="ui icon input"
+      >
+        <input
+          disabled={undefined}
+          name="email"
+          onBlur={[Function]}
+          onChange={[Function]}
+          onDragStart={[Function]}
+          onDrop={[Function]}
+          onFocus={[Function]}
+          placeholder="Email"
+          tabIndex={undefined}
+          type="email"
+          value=""
+        />
+        <i
+          aria-hidden="true"
+          className="mail icon"
+        />
+      </div>
     </div>
     <div
-      className="required field"
+      className="jsx-2909454565 actionArea"
     >
-      <label
-        className="jsx-1447640616"
-        forHtml="password"
+      <button
+        className="ui primary disabled button semanticButton"
+        disabled={true}
+        onClick={[Function]}
+        role="button"
+        tabIndex={-1}
+        type="submit"
       >
-        Password
-      </label>
-      <input
-        className="jsx-1447640616 "
-        name="password"
-        onBlur={[Function]}
-        onChange={[Function]}
-        onDragStart={[Function]}
-        onDrop={[Function]}
-        onFocus={[Function]}
-        placeholder="Password"
-        type="password"
-        value=""
-      />
-    </div>
-    <div
-      className="required field"
-    >
-      <label
-        className="jsx-1447640616"
-        forHtml="passwordRepeat"
-      >
-        Repeat password
-      </label>
-      <input
-        className="jsx-1447640616 "
-        name="passwordRepeat"
-        onBlur={[Function]}
-        onChange={[Function]}
-        onDragStart={[Function]}
-        onDrop={[Function]}
-        onFocus={[Function]}
-        placeholder="Repeat password"
-        type="password"
-        value=""
-      />
-    </div>
-    <div
-      className="jsx-3805768436 field"
-    >
-      <label
-        className="jsx-3805768436"
-        htmlFor="useCase"
-      >
-        <span>
-          Use case description
-        </span>
-      </label>
-      <textarea
-        name="useCase"
-        onBlur={[Function]}
-        onChange={[Function]}
-        onDragStart={[Function]}
-        onDrop={[Function]}
-        onFocus={[Function]}
-        type="text"
-        value=""
-      />
-    </div>
-    <button
-      className="ui primary disabled right floated button"
-      disabled={true}
-      onClick={[Function]}
-      role="button"
-      tabIndex={-1}
-      type="submit"
-    >
-      <span>
         Submit
-      </span>
-    </button>
-  </div>
-</form>
+      </button>
+      <div
+        className="jsx-2909454565 links"
+      >
+        <div
+          className="ui list"
+          role="list"
+        >
+          <div
+            className="item"
+            data-value={undefined}
+            onClick={[Function]}
+            role="listitem"
+          >
+            <a
+              className="jsx-2909454565"
+              href="/user/login"
+              onClick={[Function]}
+            >
+              Back to login
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
 `;
 
 exports[`Storyshots forms/components SessionCreationForm 1`] = `
@@ -1770,22 +1627,28 @@ exports[`Storyshots forms/components SessionCreationForm 1`] = `
       className="field"
     >
       <label
-        className="jsx-1447640616"
+        className="jsx-3230233227"
         forHtml="sessionName"
       >
         Name
       </label>
-      <input
-        className="jsx-1447640616 "
-        name="sessionName"
-        onBlur={[Function]}
-        onChange={[Function]}
-        onDragStart={[Function]}
-        onDrop={[Function]}
-        onFocus={[Function]}
-        placeholder="Name"
-        value=""
-      />
+      <div
+        className="ui input"
+      >
+        <input
+          disabled={undefined}
+          name="sessionName"
+          onBlur={[Function]}
+          onChange={[Function]}
+          onDragStart={[Function]}
+          onDrop={[Function]}
+          onFocus={[Function]}
+          placeholder="Name"
+          tabIndex={undefined}
+          type="text"
+          value=""
+        />
+      </div>
     </div>
   </div>
   <div
@@ -1916,76 +1779,82 @@ exports[`Storyshots forms/components SessionCreationForm 1`] = `
 `;
 
 exports[`Storyshots forms/helpers FormWithLinks 1`] = `
-<form
-  className="jsx-2997166766 ui form error"
+<div
+  className="jsx-2909454565 formWithLinks"
 >
-  form fields
-  <div
-    className="jsx-2997166766 actionArea"
+  <form
+    action={undefined}
+    className="ui error form"
+    onSubmit={[Function]}
   >
-    <button
-      className="ui primary button semanticButton"
-      disabled={undefined}
-      onClick={[Function]}
-      role="button"
-      tabIndex={undefined}
-      type="submit"
-    >
-      button
-    </button>
+    form fields
     <div
-      className="jsx-2997166766 links"
+      className="jsx-2909454565 actionArea"
     >
+      <button
+        className="ui primary button semanticButton"
+        disabled={undefined}
+        onClick={[Function]}
+        role="button"
+        tabIndex={undefined}
+        type="submit"
+      >
+        button
+      </button>
       <div
-        className="ui list"
-        role="list"
+        className="jsx-2909454565 links"
       >
         <div
-          className="item"
-          data-value={undefined}
-          onClick={[Function]}
-          role="listitem"
+          className="ui list"
+          role="list"
         >
-          <a
-            className="jsx-2997166766"
-            href="href1"
+          <div
+            className="item"
+            data-value={undefined}
             onClick={[Function]}
+            role="listitem"
           >
-            link1
-          </a>
-        </div>
-        <div
-          className="item"
-          data-value={undefined}
-          onClick={[Function]}
-          role="listitem"
-        >
-          <a
-            className="jsx-2997166766"
-            href="href2"
+            <a
+              className="jsx-2909454565"
+              href="href1"
+              onClick={[Function]}
+            >
+              link1
+            </a>
+          </div>
+          <div
+            className="item"
+            data-value={undefined}
             onClick={[Function]}
+            role="listitem"
           >
-            link2
-          </a>
-        </div>
-        <div
-          className="item"
-          data-value={undefined}
-          onClick={[Function]}
-          role="listitem"
-        >
-          <a
-            className="jsx-2997166766"
-            href="href3"
+            <a
+              className="jsx-2909454565"
+              href="href2"
+              onClick={[Function]}
+            >
+              link2
+            </a>
+          </div>
+          <div
+            className="item"
+            data-value={undefined}
             onClick={[Function]}
+            role="listitem"
           >
-            link3
-          </a>
+            <a
+              className="jsx-2909454565"
+              href="href3"
+              onClick={[Function]}
+            >
+              link3
+            </a>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</form>
+  </form>
+</div>
 `;
 
 exports[`Storyshots forms/helpers SemanticInput (with error) 1`] = `
@@ -1993,17 +1862,24 @@ exports[`Storyshots forms/helpers SemanticInput (with error) 1`] = `
   className="error field"
 >
   <label
-    className="jsx-1447640616"
+    className="jsx-3230233227"
     forHtml={undefined}
   >
     label
   </label>
-  <input
-    className="jsx-1447640616 "
-    placeholder="label"
-  />
   <div
-    className="jsx-1447640616 errorMessage"
+    className="ui input"
+  >
+    <input
+      disabled={undefined}
+      onChange={[Function]}
+      placeholder="label"
+      tabIndex={undefined}
+      type="text"
+    />
+  </div>
+  <div
+    className="jsx-3230233227 errorMessage"
   >
     <i
       aria-hidden="true"
@@ -2021,15 +1897,22 @@ exports[`Storyshots forms/helpers SemanticInput 1`] = `
   className="field"
 >
   <label
-    className="jsx-1447640616"
+    className="jsx-3230233227"
     forHtml={undefined}
   >
     label
   </label>
-  <input
-    className="jsx-1447640616 "
-    placeholder="label"
-  />
+  <div
+    className="ui input"
+  >
+    <input
+      disabled={undefined}
+      onChange={[Function]}
+      placeholder="label"
+      tabIndex={undefined}
+      type="text"
+    />
+  </div>
 </div>
 `;
 
@@ -4322,17 +4205,17 @@ exports[`Storyshots sessions QuestionDropzone 1`] = `
 
 exports[`Storyshots sessions Session 1`] = `
 <div
-  className="jsx-1670121988 session"
+  className="jsx-2542207044 session"
 >
   <h2
-    className="jsx-1670121988 title"
+    className="jsx-2542207044 title"
   >
     4c821db
      - 
     Long session
   </h2>
   <div
-    className="jsx-1670121988 date"
+    className="jsx-2542207044 date"
   >
     <span>
       Created on
@@ -4341,10 +4224,10 @@ exports[`Storyshots sessions Session 1`] = `
     08.02.2015 14:02:00
   </div>
   <div
-    className="jsx-1670121988 details"
+    className="jsx-2542207044 details"
   >
     <div
-      className="jsx-1670121988 block"
+      className="jsx-2542207044 block"
     >
       <div
         className="jsx-1552646468 questionBlock"
@@ -4436,7 +4319,7 @@ exports[`Storyshots sessions Session 1`] = `
       </div>
     </div>
     <div
-      className="jsx-1670121988 actionArea"
+      className="jsx-2542207044 actionArea"
     >
       <button
         className="ui icon left labeled button"
@@ -4469,17 +4352,17 @@ exports[`Storyshots sessions SessionList 1`] = `
     className="jsx-2309132107 session"
   >
     <div
-      className="jsx-1670121988 session"
+      className="jsx-2542207044 session"
     >
       <h2
-        className="jsx-1670121988 title"
+        className="jsx-2542207044 title"
       >
         4c821db
          - 
         Long session
       </h2>
       <div
-        className="jsx-1670121988 date"
+        className="jsx-2542207044 date"
       >
         <span>
           Created on
@@ -4488,10 +4371,10 @@ exports[`Storyshots sessions SessionList 1`] = `
         08.02.2015 14:02:00
       </div>
       <div
-        className="jsx-1670121988 details"
+        className="jsx-2542207044 details"
       >
         <div
-          className="jsx-1670121988 block"
+          className="jsx-2542207044 block"
         >
           <div
             className="jsx-1552646468 questionBlock"
@@ -4583,7 +4466,7 @@ exports[`Storyshots sessions SessionList 1`] = `
           </div>
         </div>
         <div
-          className="jsx-1670121988 actionArea"
+          className="jsx-2542207044 actionArea"
         >
           <button
             className="ui icon left labeled button"
@@ -4606,17 +4489,17 @@ exports[`Storyshots sessions SessionList 1`] = `
     className="jsx-2309132107 session"
   >
     <div
-      className="jsx-1670121988 session"
+      className="jsx-2542207044 session"
     >
       <h2
-        className="jsx-1670121988 title"
+        className="jsx-2542207044 title"
       >
         4c821db
          - 
         Long session
       </h2>
       <div
-        className="jsx-1670121988 date"
+        className="jsx-2542207044 date"
       >
         <span>
           Created on
@@ -4625,10 +4508,10 @@ exports[`Storyshots sessions SessionList 1`] = `
         08.02.2015 14:02:00
       </div>
       <div
-        className="jsx-1670121988 details"
+        className="jsx-2542207044 details"
       >
         <div
-          className="jsx-1670121988 block"
+          className="jsx-2542207044 block"
         >
           <div
             className="jsx-1552646468 questionBlock"
@@ -4720,7 +4603,7 @@ exports[`Storyshots sessions SessionList 1`] = `
           </div>
         </div>
         <div
-          className="jsx-1670121988 actionArea"
+          className="jsx-2542207044 actionArea"
         >
           <button
             className="ui icon left labeled button"
@@ -4744,13 +4627,13 @@ exports[`Storyshots sessions SessionList 1`] = `
 
 exports[`Storyshots sessions SessionTimeline 1`] = `
 <div
-  className="jsx-265954221 sessionTimeline"
+  className="jsx-4158944301 sessionTimeline"
 >
   <div
-    className="jsx-265954221 topRow"
+    className="jsx-4158944301 topRow"
   >
     <div
-      className="jsx-265954221 startingTime"
+      className="jsx-4158944301 startingTime"
     >
       <i
         aria-hidden="true"
@@ -4759,7 +4642,7 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
        18:17:22
     </div>
     <div
-      className="jsx-265954221 runningTime"
+      className="jsx-4158944301 runningTime"
     >
       <i
         aria-hidden="true"
@@ -4769,10 +4652,10 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
     </div>
   </div>
   <div
-    className="jsx-265954221 blocks"
+    className="jsx-4158944301 blocks"
   >
     <div
-      className="jsx-265954221 block"
+      className="jsx-4158944301 block"
     >
       <div
         className="jsx-1552646468 questionBlock"
@@ -4865,7 +4748,7 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
     </div>
   </div>
   <div
-    className="jsx-265954221 buttons"
+    className="jsx-4158944301 buttons"
   >
     <button
       className="ui red large icon left labeled button"

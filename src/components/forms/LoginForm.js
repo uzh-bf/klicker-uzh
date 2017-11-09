@@ -57,6 +57,7 @@ const LoginForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
       <Field
         required
         component={SemanticInput}
+        icon="mail"
         intl={intl}
         label={intl.formatMessage({
           defaultMessage: 'Email',
@@ -68,6 +69,7 @@ const LoginForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
       <Field
         required
         component={SemanticInput}
+        icon="privacy"
         intl={intl}
         label={intl.formatMessage({
           defaultMessage: 'Password',
