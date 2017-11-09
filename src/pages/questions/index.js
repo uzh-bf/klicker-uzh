@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { compose, withState, withHandlers } from 'recompose'
-import { intlShape } from 'react-intl'
+import { FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
 import { Button } from 'semantic-ui-react'
@@ -96,9 +96,19 @@ const Index = ({
         </div>
         <div className="questionList">
           <div className="buttons">
-            <Button onClick={handleCreationModeToggle}>Create Session</Button>
+            <Button onClick={handleCreationModeToggle}>
+              <FormattedMessage
+                defaultMessage="Create Session"
+                id="questionPool.button.createSession"
+              />
+            </Button>
             <Link href="/questions/create">
-              <Button>Create Question</Button>
+              <Button>
+                <FormattedMessage
+                  defaultMessage="Create Question"
+                  id="questionPool.button.createQuestion"
+                />
+              </Button>
             </Link>
           </div>
           <QuestionList
@@ -117,33 +127,43 @@ const Index = ({
           display: flex;
           flex-direction: column;
           height: 100%;
+          background-color: #f5f5f5;
 
           .questionList {
-            // workaround for creating session div overlapping the question list
+            // HACK: workaround for creating session div overlapping the question list
+            padding: 1rem;
             padding-bottom: 235px;
-            background-color: #f5f5f5;
 
             .buttons {
-              margin: 1rem 0;
+              margin: 0 0 1rem 0;
 
               display: flex;
               justify-content: center;
+
+              > :global(button:last-child) {
+                margin-right: 0;
+              }
             }
           }
-        }
 
-        .tagList {
-          flex: 1;
-          background: #ebebeb;
-        }
+          .tagList {
+            flex: 1;
+            background: #ebebeb;
+            padding: 0.5rem;
+          }
 
-        @include desktop-tablet-only {
-          .questionPool {
+          @include desktop-tablet-only {
             flex-flow: row wrap;
 
-            padding: 0;
+            .tagList {
+              flex: 0 0 auto;
+              padding: 1rem;
+            }
 
             .questionList {
+              flex: 1;
+              padding: 1rem;
+
               .buttons {
                 display: flex;
                 justify-content: flex-end;
@@ -151,31 +171,16 @@ const Index = ({
             }
           }
 
-          .tagList {
-            flex: 0 0 auto;
-
-            margin: 0;
-            padding: 1rem;
-          }
-
-          .questionList {
-            flex: 1;
-            padding: 1rem;
-          }
-        }
-
-        @include desktop-only {
-          .questionPool {
+          @include desktop-only {
             padding: 0;
-          }
 
-          .tagList {
-            margin: 0;
-            padding: 2rem;
-          }
+            .tagList {
+              padding: 2rem;
+            }
 
-          .questionList {
-            padding: 2rem;
+            .questionList {
+              padding: 2rem;
+            }
           }
         }
       `}</style>

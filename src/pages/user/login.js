@@ -34,7 +34,7 @@ const Login = ({ intl, error, handleSubmit }) => (
       <LoginForm intl={intl} onSubmit={handleSubmit} />
 
       <style jsx>{`
-        @import 'src/theme';
+        @import 'src/_theme';
 
         .login {
           padding: 1rem;
@@ -48,7 +48,7 @@ const Login = ({ intl, error, handleSubmit }) => (
           font-weight: bold;
         }
         .errorMessage {
-          color: $color-error;
+          color: $color-error-font;
         }
         .successMessage {
           color: $color-success;

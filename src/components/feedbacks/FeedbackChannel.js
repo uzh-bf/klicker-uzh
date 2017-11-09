@@ -74,7 +74,7 @@ const FeedbackChannel = ({
     )}
 
     <style jsx>{`
-      @import 'src/theme';
+      @import 'src/_theme';
 
       .feedbackChannel {
         display: flex;

@@ -72,7 +72,7 @@ const ConfusionBarometer = ({
     )}
 
     <style jsx>{`
-      @import 'src/theme';
+      @import 'src/_theme';
 
       .confusionBarometer {
         display: flex;

@@ -162,7 +162,7 @@ const Session = ({
         </div>
 
         <style jsx>{`
-          @import 'src/theme';
+          @import 'src/_theme';
 
           .student {
             display: flex;

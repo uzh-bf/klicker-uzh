@@ -32,12 +32,12 @@ const Index = ({
         sortOrder: '',
       },
       title: intl.formatMessage({
-        defaultMessage: 'Session History',
+        defaultMessage: 'Sessions',
         id: 'teacher.sessionHistory.title',
       }),
     }}
     pageTitle={intl.formatMessage({
-      defaultMessage: 'Session History',
+      defaultMessage: 'Sessions',
       id: 'teacher.sessionHistory.pageTitle',
     })}
     sidebar={{ activeItem: 'sessionHistory' }}
@@ -51,7 +51,7 @@ const Index = ({
     </div>
 
     <style jsx>{`
-      @import 'src/theme';
+      @import 'src/_theme';
 
       .sessionHistory {
         padding: 1rem 0.7rem;

@@ -39,7 +39,7 @@ const Registration = ({
       <RegistrationForm intl={intl} onSubmit={handleSubmit} />
 
       <style jsx>{`
-        @import 'src/theme';
+        @import 'src/_theme';
 
         .registration {
           padding: 1rem;
@@ -52,7 +52,7 @@ const Registration = ({
           font-weight: bold;
         }
         .errorMessage {
-          color: $color-error;
+          color: $color-error-font;
         }
         .successMessage {
           color: $color-success;
