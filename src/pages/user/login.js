@@ -38,24 +38,22 @@ const Login = ({ intl, error, handleSubmit }) => (
 
         .login {
           padding: 1rem;
-        }
 
-        h1 {
-          margin-top: 0;
-        }
+          h1 {
+            margin-top: 0;
+          }
 
-        .message {
-          font-weight: bold;
-        }
-        .errorMessage {
-          color: $color-error-font;
-        }
-        .successMessage {
-          color: $color-success;
-        }
+          .message {
+            font-weight: bold;
+          }
+          .errorMessage {
+            color: $color-error-font;
+          }
+          .successMessage {
+            color: $color-success;
+          }
 
-        @include desktop-tablet-only {
-          .login {
+          @include desktop-tablet-only {
             width: 500px;
           }
         }

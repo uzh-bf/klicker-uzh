@@ -43,23 +43,22 @@ const Registration = ({
 
         .registration {
           padding: 1rem;
-        }
-        h1 {
-          margin-top: 0;
-        }
 
-        .message {
-          font-weight: bold;
-        }
-        .errorMessage {
-          color: $color-error-font;
-        }
-        .successMessage {
-          color: $color-success;
-        }
+          h1 {
+            margin-top: 0;
+          }
 
-        @include desktop-tablet-only {
-          .registration {
+          .message {
+            font-weight: bold;
+          }
+          .errorMessage {
+            color: $color-error-font;
+          }
+          .successMessage {
+            color: $color-success;
+          }
+
+          @include desktop-tablet-only {
             width: 750px;
           }
         }
