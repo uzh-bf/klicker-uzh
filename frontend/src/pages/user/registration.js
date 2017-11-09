@@ -39,7 +39,7 @@ const Registration = ({
       <RegistrationForm intl={intl} onSubmit={handleSubmit} />
 
       <style jsx>{`
-        @import 'src/theme';
+        @import 'src/_theme';
 
         .registration {
           padding: 1rem;
@@ -60,7 +60,7 @@ const Registration = ({
 
         @include desktop-tablet-only {
           .registration {
-            margin: 0 15%;
+            width: 750px;
           }
         }
       `}</style>

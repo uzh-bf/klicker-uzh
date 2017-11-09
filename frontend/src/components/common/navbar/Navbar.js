@@ -72,7 +72,7 @@ export const NavbarPres = ({
     </div>
 
     <style jsx>{`
-      @import 'src/theme';
+      @import 'src/_theme';
       $background-color: #f5f5f5;
 
       .navbar {
