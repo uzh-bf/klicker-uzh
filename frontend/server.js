@@ -9,6 +9,7 @@ const glob = require('glob')
 const accepts = require('accepts')
 const express = require('express')
 const next = require('next')
+const compression = require('compression')
 
 // Polyfill Node with `Intl` that has data for all locales.
 // See: https://formatjs.io/guides/runtime-environments/#server
@@ -54,6 +55,9 @@ app
     /* server.get('/', (req, res) => {
       res.redirect('/questions/')
     }) */
+
+    // compress using gzip
+    server.use(compression())
 
     server.get('*', (req, res) => {
       const accept = accepts(req)
