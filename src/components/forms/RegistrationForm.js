@@ -85,6 +85,7 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
         <Field
           required
           component={SemanticInput}
+          icon="mail"
           intl={intl}
           label={intl.formatMessage({
             defaultMessage: 'Email',
@@ -99,6 +100,7 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
         <Field
           required
           component={SemanticInput}
+          icon="hashtag"
           intl={intl}
           label={intl.formatMessage({
             defaultMessage: 'Account ID',
@@ -115,6 +117,7 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
         <Field
           required
           component={SemanticInput}
+          icon="privacy"
           intl={intl}
           label={intl.formatMessage({
             defaultMessage: 'Password',
@@ -126,6 +129,7 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
         <Field
           required
           component={SemanticInput}
+          icon="privacy"
           intl={intl}
           label={intl.formatMessage({
             defaultMessage: 'Repeat password',
