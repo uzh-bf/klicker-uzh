@@ -17,10 +17,6 @@ const Info = ({ totalResponses }) => (
       id="teacher.evaluation.totalResponses.label"
     />{' '}
     {totalResponses}
-    <style jsx>{`
-      .info {
-      }
-    `}</style>
   </div>
 )
 

@@ -48,23 +48,21 @@ const Index = ({
         onDiscard={handleCreationModeToggle}
       />
 
-      <style jsx>
-        {`
-          .creationForm {
-            animation-name: slide-in;
-            animation-duration: 0.5s;
-          }
+      <style jsx>{`
+        .creationForm {
+          animation-name: slide-in;
+          animation-duration: 0.5s;
+        }
 
-          @keyframes slide-in {
-            0% {
-              transform: translateY(300px);
-            }
-            100% {
-              transform: translateY(0);
-            }
+        @keyframes slide-in {
+          0% {
+            transform: translateY(300px);
           }
-        `}
-      </style>
+          100% {
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   )
 

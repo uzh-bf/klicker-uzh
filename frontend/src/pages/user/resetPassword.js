@@ -19,7 +19,7 @@ const ResetPassword = ({ intl, handleSubmit }) => (
       id: 'user.resetPassword.pageTitle',
     })}
   >
-    <div className="login">
+    <div className="resetPassword">
       <h1>
         <FormattedMessage id="user.resetPassword.title" defaultMessage="Reset password" />
       </h1>
@@ -29,15 +29,14 @@ const ResetPassword = ({ intl, handleSubmit }) => (
       <style jsx>{`
         @import 'src/theme';
 
-        .login {
+        .resetPassword {
           padding: 1rem;
-        }
-        h1 {
-          margin-top: 0;
-        }
 
-        @include desktop-tablet-only {
-          .login {
+          h1 {
+            margin-top: 0;
+          }
+
+          @include desktop-tablet-only {
             margin: 0 15%;
             width: 500px;
           }
