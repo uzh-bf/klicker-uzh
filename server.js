@@ -51,9 +51,9 @@ app
 
     // redirect the root route to the question pool page
     // TODO: redirect location depending on login status
-    server.get('/', (req, res) => {
+    /* server.get('/', (req, res) => {
       res.redirect('/questions/')
-    })
+    }) */
 
     server.get('*', (req, res) => {
       const accept = accepts(req)

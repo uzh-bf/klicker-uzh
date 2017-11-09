@@ -86,7 +86,7 @@ const FREECreationPreview = ({ title, options: { restrictions }, description }) 
       </div>
 
       <style jsx>{`
-        @import 'src/_theme';
+        @import 'src/theme';
 
         .preview {
           display: flex;

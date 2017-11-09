@@ -40,7 +40,7 @@ const TitleInput = ({ input: { value, onChange }, meta: { dirty, invalid } }) =>
     </Form.Field>
 
     <style jsx>{`
-      @import 'src/_theme';
+      @import 'src/theme';
 
       .titleInput > :global(.field) {
         @include tooltip-icon;

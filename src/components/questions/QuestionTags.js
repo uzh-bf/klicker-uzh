@@ -21,7 +21,7 @@ const QuestionTags = ({ tags, type }) => (
     <div className="type tag">{type}</div>
 
     <style jsx>{`
-      @import 'src/_theme';
+      @import 'src/theme';
 
       .questionTags {
         display: flex;

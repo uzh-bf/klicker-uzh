@@ -24,7 +24,7 @@ const Feedback = ({ content, showDelete, votes }) => (
     <div className="votes">+{votes}</div>
 
     <style jsx>{`
-      @import 'src/_theme';
+      @import 'src/theme';
 
       .feedback {
         display: flex;

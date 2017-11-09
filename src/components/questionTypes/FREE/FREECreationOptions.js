@@ -122,7 +122,7 @@ const FREECreationOptions = ({
       </Form.Field>
 
       <style jsx>{`
-        @import 'src/_theme';
+        @import 'src/theme';
 
         .FREECreationOptions {
           @include tooltip-icon;

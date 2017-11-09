@@ -179,7 +179,7 @@ const QuestionCreationForm = ({
       </Form>
 
       <style jsx>{`
-        @import 'src/_theme';
+        @import 'src/theme';
 
         .questionCreationForm > :global(form) {
           display: flex;

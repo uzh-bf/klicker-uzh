@@ -28,7 +28,7 @@ const StaticLayout = ({ children, pageTitle }) => (
       </footer>
 
       <style jsx>{`
-        @import 'src/_theme';
+        @import 'src/theme';
 
         .staticLayout {
           display: flex;
