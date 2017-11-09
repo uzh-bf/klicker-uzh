@@ -58,19 +58,6 @@ const ContentInput = ({ input: { value, onChange }, meta: { dirty, invalid } }) 
           }
         }
       }
-
-      :global(label) {
-        display: inline !important;
-      }
-
-      a {
-        color: gray;
-
-        :global(.icon) {
-          font-size: 1.25rem;
-          margin-bottom: 0.2rem;
-        }
-      }
     `}</style>
   </div>
 )
