@@ -4,7 +4,7 @@
   "assignees": ["rschlaefli"],
   "labels": ["dependencies"],
   "reviewers": ["rschlaefli"],
-  "schedule": ["after 10am and before 2pm on monday and thursday"],
+  "schedule": ["after 10am and before 4pm on monday and thursday"],
   "semanticCommits": false,
   "timezone": "Europe/Zurich",
   "packageRules": [
@@ -18,7 +18,13 @@
       "automerge": "minor"
     },
     {
-      "packageNames": ["apollo-server-express", "graphql", "graphql-tools"],
+      "packageNames": [
+        "apollo-server-express",
+        "graphql",
+        "graphql-tools",
+        "graphql-subscriptions",
+        "subscriptions-transport-ws"
+      ],
       "groupName": "graphql"
     },
     {
