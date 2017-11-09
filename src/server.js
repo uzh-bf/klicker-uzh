@@ -91,7 +91,6 @@ if (apolloEngine) {
 // expose the GraphQL API endpoint
 // parse JWT that are passed as a header and attach their content to req.user
 server.use(
-  '/graphql',
   ...middleware,
   // delegate to the GraphQL API
   graphqlExpress((req, res) => ({
