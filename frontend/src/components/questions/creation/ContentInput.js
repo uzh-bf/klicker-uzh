@@ -43,7 +43,7 @@ const ContentInput = ({ input: { value, onChange }, meta: { dirty, invalid } }) 
       <span>Enter the question to ask the audience.</span>
     </ReactTooltip>
     <style jsx>{`
-      @import 'src/_theme';
+      @import 'src/theme';
 
       .contentInput {
         @include tooltip-icon;

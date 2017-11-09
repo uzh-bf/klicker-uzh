@@ -54,7 +54,7 @@ const Sidebar = ({
     </SemanticSidebar.Pushable>
 
     <style jsx>{`
-      @import 'src/_theme';
+      @import 'src/theme';
 
       .sidebar {
         width: 100%;

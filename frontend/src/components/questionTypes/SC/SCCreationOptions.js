@@ -91,7 +91,7 @@ const SCCreationOptions = ({
       </Form.Field>
 
       <style jsx>{`
-        @import 'src/_theme';
+        @import 'src/theme';
         .SCCreationOptions {
           @include tooltip-icon;
         }
