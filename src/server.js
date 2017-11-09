@@ -58,9 +58,9 @@ let middleware = [
   '/graphql',
   compression(),
   // secure the server with helmet
-  server.use(helmet({
+  helmet({
     hsts: false,
-  })),
+  }),
   // setup CORS
   cors({
     // HACK: temporarily always allow sending credentials over CORS
