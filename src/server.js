@@ -7,6 +7,7 @@ const express = require('express')
 const expressJWT = require('express-jwt')
 const mongoose = require('mongoose')
 const opticsAgent = require('optics-agent')
+const helmet = require('helmet')
 const { graphqlExpress } = require('apollo-server-express')
 
 const schema = require('./schema')
@@ -54,6 +55,10 @@ const server = express()
 
 let middleware = [
   '/graphql',
+  // secure the server with helmet
+  server.use(helmet({
+    hsts: false,
+  })),
   // setup CORS
   cors({
     // HACK: temporarily always allow sending credentials over CORS
