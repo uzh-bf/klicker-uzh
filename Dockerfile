@@ -28,7 +28,7 @@ WORKDIR $KLICKER_DIR
 # update permissions for klicker dir
 # install yarn packages
 RUN set -x \
-  && yarn install --frozen-lockfile
+  && yarn install --production --frozen-lockfile
 
 # inject application sources and entrypoint
 COPY --chown=1000:0 . $KLICKER_DIR/
