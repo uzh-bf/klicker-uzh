@@ -34,13 +34,6 @@ const StaticLayout = ({ children, pageTitle }) => (
           display: flex;
           flex-direction: column;
           min-height: 100vh;
-          background-color: #f5f5f5;
-
-          @include desktop-tablet-only {
-            .content {
-              margin: auto;
-            }
-          }
 
           @include desktop-tablet-only {
             .content {
