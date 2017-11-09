@@ -75,7 +75,7 @@
     "jest": "21.2.1",
     "lint-staged": "4.3.0",
     "nodemon": "1.12.1",
-    "prettier": "1.7.4",
+    "prettier": "1.8.2",
     "prettier-eslint": "8.2.1",
     "prettier-eslint-cli": "4.4.0",
     "react-addons-test-utils": "15.6.2",
