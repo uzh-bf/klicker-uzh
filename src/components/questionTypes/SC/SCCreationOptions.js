@@ -1,8 +1,11 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import ReactTooltip from 'react-tooltip'
 import { SortableContainer, SortableElement, arrayMove } from 'react-sortable-hoc'
 import { FormattedMessage } from 'react-intl'
 import { compose, mapProps, withHandlers } from 'recompose'
+import { FaQuestionCircle } from 'react-icons/lib/fa'
+import { Form } from 'semantic-ui-react'
 
 import SCCreationPlaceholder from './SCCreationPlaceholder'
 import SCCreationOption from './SCCreationOption'
@@ -12,6 +15,10 @@ const propTypes = {
   handleNewOption: PropTypes.func.isRequired,
   handleOptionToggleCorrect: PropTypes.func.isRequired,
   handleUpdateOrder: PropTypes.func.isRequired,
+  meta: PropTypes.shape({
+    dirty: PropTypes.bool,
+    invalid: PropTypes.bool,
+  }).isRequired,
   value: PropTypes.arrayOf(PropTypes.shape(SCCreationOption.propTypes)).isRequired,
 }
 
@@ -22,6 +29,7 @@ const SCCreationOptions = ({
   handleUpdateOrder,
   handleOptionToggleCorrect,
   value,
+  meta: { dirty, invalid },
 }) => {
   const SortableOption = SortableElement(props => (
     <div className="option">
@@ -53,19 +61,41 @@ const SCCreationOptions = ({
   )
 
   return (
-    <div className="field">
-      <label htmlFor="options">
-        <FormattedMessage defaultMessage="Options" id="teacher.createQuestion.options" />
-      </label>
+    <div className="SCCreationOptions">
+      <Form.Field required error={dirty && invalid}>
+        <label htmlFor="options">
+          <FormattedMessage
+            defaultMessage="Available Choices"
+            id="teacher.createQuestion.optionsSC.label"
+          />
+          <a data-tip data-for="SCCreationHelp">
+            <FaQuestionCircle />
+          </a>
+        </label>
 
-      <SortableOptions
-        sortableOptions={value || []}
-        handleCorrectToggle={handleOptionToggleCorrect}
-        handleDelete={handleDeleteOption}
-        onSortEnd={handleUpdateOrder}
-      />
+        <ReactTooltip id="SCCreationHelp" delayShow={250} delayHide={250} place="right">
+          <FormattedMessage
+            defaultMessage="Add answering options the respondents can choose from."
+            id="teacher.createQuestion.optionsSC.tooltip"
+          />
+        </ReactTooltip>
 
-      <SCCreationPlaceholder handleSave={handleNewOption} />
+        <SortableOptions
+          sortableOptions={value || []}
+          handleCorrectToggle={handleOptionToggleCorrect}
+          handleDelete={handleDeleteOption}
+          onSortEnd={handleUpdateOrder}
+        />
+
+        <SCCreationPlaceholder handleSave={handleNewOption} />
+      </Form.Field>
+
+      <style jsx>{`
+        @import 'src/theme';
+        .SCCreationOptions {
+          @include tooltip-icon;
+        }
+      `}</style>
     </div>
   )
 }
@@ -73,8 +103,9 @@ const SCCreationOptions = ({
 SCCreationOptions.propTypes = propTypes
 
 export default compose(
-  mapProps(({ input: { onChange, value } }) => ({
+  mapProps(({ input: { onChange, value }, meta }) => ({
     // HACK: mapping as a workaround for the value.choices problem
+    meta,
     onChange: choices => onChange({ ...value, choices }),
     value: value.choices,
   })),

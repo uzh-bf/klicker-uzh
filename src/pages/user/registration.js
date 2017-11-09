@@ -52,7 +52,7 @@ const Registration = ({
           font-weight: bold;
         }
         .errorMessage {
-          color: $color-error;
+          color: $color-error-font;
         }
         .successMessage {
           color: $color-success;
@@ -60,7 +60,7 @@ const Registration = ({
 
         @include desktop-tablet-only {
           .registration {
-            margin: 0 15%;
+            width: 750px;
           }
         }
       `}</style>

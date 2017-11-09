@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { storiesOf } from '@storybook/react'
-import { compose, mapProps, withHandlers, withState } from 'recompose'
+import { compose, mapProps, withHandlers, withState, withProps } from 'recompose'
 
 import { intlMock } from '../../../.storybook/utils'
 
@@ -37,6 +37,9 @@ const SCCreationOptionsWithState = compose(
     onChange: ({ setOptions }) => newOptions => setOptions(newOptions),
   }),
   mapProps(({ onChange, options: value }) => ({ input: { onChange, value } })),
+  withProps({
+    meta: {},
+  }),
 )(SCCreationOptions)
 
 const FREECreationOptionsWithState = compose(
@@ -51,9 +54,12 @@ const FREECreationOptionsWithState = compose(
     onChange: ({ setValue }) => newValue => setValue(newValue),
   }),
   mapProps(({ onChange, value }) => ({ input: { onChange, value } })),
+  withProps({
+    meta: {},
+  }),
 )(FREECreationOptions)
 
-storiesOf('questionTypes/components', module).add('TypeChooser', () => (
+storiesOf('questionTypes/components', module).add('TypeChooser [NoTest]', () => (
   <TypeChooser
     input={{
       onChange: (a) => {
@@ -62,11 +68,6 @@ storiesOf('questionTypes/components', module).add('TypeChooser', () => (
       value: 'SC',
     }}
     intl={intlMock}
-    types={[
-      { name: 'Single Choice', value: 'SC' },
-      { name: 'Multiple Choice', value: 'MC' },
-      { name: 'Free-Form', value: 'FREE' },
-    ]}
   />
 ))
 
@@ -101,21 +102,21 @@ storiesOf('questionTypes/FREE', module)
       value={555}
     />
   ))
-  .add('FREE Creation Options', () => <FREECreationOptionsWithState />)
+  .add('FREE Creation Options [NoTest]', () => <FREECreationOptionsWithState />)
   .add('FREE Creation Preview (unrestricted)', () => (
     <FREECreationPreview title="Hello" description="World!" />
   ))
   .add('FREE Creation Preview (Lower bound restriction)', () => (
     <FREECreationPreview
       title="Hello"
-      options={{ restrictions: { max: null, min: 90, type: 'NUMBERS' } }}
+      options={{ restrictions: { max: null, min: 90, type: 'RANGE' } }}
       description="World!"
     />
   ))
   .add('FREE Creation Preview (Number-Range)', () => (
     <FREECreationPreview
       title="Hello"
-      options={{ restrictions: { max: 900, min: 90, type: 'NUMBERS' } }}
+      options={{ restrictions: { max: 900, min: 90, type: 'RANGE' } }}
       description="World!"
     />
   ))

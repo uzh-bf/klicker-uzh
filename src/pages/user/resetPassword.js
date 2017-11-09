@@ -39,6 +39,7 @@ const ResetPassword = ({ intl, handleSubmit }) => (
         @include desktop-tablet-only {
           .login {
             margin: 0 15%;
+            width: 500px;
           }
         }
       `}</style>

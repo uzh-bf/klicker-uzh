@@ -6,6 +6,7 @@ import { connect } from 'react-redux'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Button, Form } from 'semantic-ui-react'
+import { compose } from 'recompose'
 
 import { ContentInput, TitleInput, TagInput } from '../questions'
 import {
@@ -42,17 +43,41 @@ const validate = ({
   // validation of SC answer options
   if (type === QuestionTypes.SC) {
     // SC questions need at least one answer option to be valid
-    if (!options || options.length === 0) {
+    if (!options || options.choices.length === 0) {
       errors.options = 'form.createQuestion.options.empty'
+    } else {
+      const numCorrect = options.choices.filter(option => option.correct).length
+      if (numCorrect > 1) {
+        // validate that only one option is correct for SC questions
+        errors.options = 'form.createQuestion.options.tooManyCorrect'
+      } else if (numCorrect === 0) {
+        // validate that there is a correct choice
+        errors.options = 'form.createQuestion.options.notEnoughCorrect'
+      }
     }
     // validation of FREE answer options
+  } else if (type === QuestionTypes.MC) {
+    // MC questions need at least one answer option to be valid
+    if (!options || options.choices.length === 0) {
+      errors.options = 'form.createQuestion.options.empty'
+    } else {
+      const numCorrect = options.choices.filter(option => option.correct).length
+      if (numCorrect === 0) {
+        // validate that there is at least one correct choice
+        errors.options = 'form.createQuestion.options.notEnoughCorrect'
+      }
+    }
   } else if (type === QuestionTypes.FREE) {
     if (options && options.restrictions) {
       if (!options.restrictions.min && !options.restrictions.max) {
         errors.options = 'form.createQuestion.options.noMinMax'
       }
 
-      if (options.restrictions.min >= options.restrictions.max) {
+      if (
+        options.restrictions.min &&
+        options.restrictions.max &&
+        options.restrictions.min >= options.restrictions.max
+      ) {
         errors.options = 'form.createQuestion.options.minGteMax'
       }
     }
@@ -136,6 +161,12 @@ const QuestionCreationForm = ({
         </div>
 
         <div className="questionPreview">
+          <h2>
+            <FormattedMessage
+              defaultMessage="Audience Preview"
+              id="teacher.createQuestion.previewLabel"
+            />
+          </h2>
           <Preview title={title} description={content} options={options} />
         </div>
 
@@ -155,63 +186,64 @@ const QuestionCreationForm = ({
           flex-direction: column;
 
           padding: 1rem;
-        }
 
-        .questionInput,
-        .questionPreview {
-          margin-bottom: 1rem;
-        }
+          .questionInput,
+          .questionPreview {
+            margin-bottom: 1rem;
+          }
 
-        .questionInput > :global(.field > label) {
-          font-size: 1.2rem;
-        }
+          .questionInput :global(.field > label),
+          .questionPreview > h2 {
+            font-size: 1.2rem;
+            margin: 0;
+            margin-bottom: 0.5rem;
+          }
 
-        @supports (grid-gap: 1rem) {
-          @include desktop-tablet-only {
-            .questionCreationForm > :global(form) {
+          @supports (grid-gap: 1rem) {
+            @include desktop-tablet-only {
               display: grid;
+              align-content: start;
 
               grid-gap: 1rem;
               grid-template-columns: repeat(6, 1fr);
-              grid-template-rows: auto;
+              grid-template-rows: 5rem auto auto auto;
               grid-template-areas: 'title title title title preview preview'
                 'type type tags tags preview preview'
                 'content content content content content content'
                 'options options options options options options';
+
+              .questionInput,
+              .questionPreview {
+                margin: 0;
+              }
+
+              .questionTitle {
+                grid-area: title;
+              }
+
+              .questionType {
+                grid-area: type;
+              }
+
+              .questionTags {
+                grid-area: tags;
+              }
+
+              .questionPreview {
+                grid-area: preview;
+                align-self: stretch;
+              }
+
+              .questionContent {
+                grid-area: content;
+              }
+
+              .questionOptions {
+                grid-area: options;
+              }
             }
 
-            .questionInput {
-              margin-bottom: 0;
-            }
-
-            .questionTitle {
-              grid-area: title;
-            }
-
-            .questionType {
-              grid-area: type;
-            }
-
-            .questionTags {
-              grid-area: tags;
-            }
-
-            .questionPreview {
-              grid-area: preview;
-              margin-bottom: 0;
-            }
-
-            .questionContent {
-              grid-area: content;
-            }
-
-            .questionOptions {
-              grid-area: options;
-            }
-          }
-
-          @include desktop-only {
-            .questionCreationForm > :global(form) {
+            @include desktop-only {
               margin: 0 20%;
               padding: 1rem 0;
             }
@@ -225,27 +257,28 @@ const QuestionCreationForm = ({
 QuestionCreationForm.propTypes = propTypes
 QuestionCreationForm.defaultProps = defaultProps
 
-const withState = connect(state => ({
-  content: _get(state, 'form.createQuestion.values.content'),
-  options: _get(state, 'form.createQuestion.values.options'),
-  title: _get(state, 'form.createQuestion.values.title'),
-  type: _get(state, 'form.createQuestion.values.type'),
-}))
-
-export default reduxForm({
-  form: 'createQuestion',
-  initialValues: {
-    content: '',
-    options: {
-      choices: [],
-      randomized: false,
-      restrictions: {
-        type: FREERestrictionTypes.NONE,
+export default compose(
+  reduxForm({
+    form: 'createQuestion',
+    initialValues: {
+      content: null,
+      options: {
+        choices: [],
+        randomized: false,
+        restrictions: {
+          type: FREERestrictionTypes.NONE,
+        },
       },
+      tags: null,
+      title: null,
+      type: 'SC',
     },
-    tags: [],
-    title: '',
-    type: 'SC',
-  },
-  validate,
-})(withState(QuestionCreationForm))
+    validate,
+  }),
+  connect(state => ({
+    content: _get(state, 'form.createQuestion.values.content'),
+    options: _get(state, 'form.createQuestion.values.options'),
+    title: _get(state, 'form.createQuestion.values.title'),
+    type: _get(state, 'form.createQuestion.values.type'),
+  })),
+)(QuestionCreationForm)
