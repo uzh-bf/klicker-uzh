@@ -171,6 +171,29 @@ apollo-cache-control@^0.0.x:
   dependencies:
     graphql-extensions "^0.0.x"
 
+apollo-engine-binary-darwin@^0.2017.11-40-g9585bfc6:
+  version "0.2017.11-40-g9585bfc6"
+  resolved "https://registry.yarnpkg.com/apollo-engine-binary-darwin/-/apollo-engine-binary-darwin-0.2017.11-40-g9585bfc6.tgz#ab52f0bd35ab0635e9f5ecbbe9d605db3fab3da6"
+
+apollo-engine-binary-linux@^0.2017.11-40-g9585bfc6:
+  version "0.2017.11-40-g9585bfc6"
+  resolved "https://registry.yarnpkg.com/apollo-engine-binary-linux/-/apollo-engine-binary-linux-0.2017.11-40-g9585bfc6.tgz#3ce39418a30ae8ae8d4d10e359e605ad0efdddae"
+
+apollo-engine-binary-windows@^0.2017.11-40-g9585bfc6:
+  version "0.2017.11-40-g9585bfc6"
+  resolved "https://registry.yarnpkg.com/apollo-engine-binary-windows/-/apollo-engine-binary-windows-0.2017.11-40-g9585bfc6.tgz#26f1dfd90c90b230d97282c04cdc2fbee4b941ae"
+
+apollo-engine@^0.5.3:
+  version "0.5.3"
+  resolved "https://registry.yarnpkg.com/apollo-engine/-/apollo-engine-0.5.3.tgz#295aeda7b6694e1ddcfb945e00e39221e1496424"
+  dependencies:
+    request "^2.81.0"
+    stream-line-wrapper "^0.1.1"
+  optionalDependencies:
+    apollo-engine-binary-darwin "^0.2017.11-40-g9585bfc6"
+    apollo-engine-binary-linux "^0.2017.11-40-g9585bfc6"
+    apollo-engine-binary-windows "^0.2017.11-40-g9585bfc6"
+
 apollo-server-core@^1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/apollo-server-core/-/apollo-server-core-1.2.0.tgz#e851c47444991b6f89f88529237076b83e01e8ee"
@@ -302,6 +325,10 @@ async@^2.1.4:
   resolved "https://registry.yarnpkg.com/async/-/async-2.6.0.tgz#61a29abb6fcc026fea77e56d1c6ec53a795951f4"
   dependencies:
     lodash "^4.14.0"
+
+async@~0.2.10:
+  version "0.2.10"
+  resolved "https://registry.yarnpkg.com/async/-/async-0.2.10.tgz#b6bbe0b0674b9d719708ca38de8c237cb526c3d1"
 
 asynckit@^0.4.0:
   version "0.4.0"
@@ -603,12 +630,6 @@ buffer-shims@~1.0.0:
 builtin-modules@^1.0.0, builtin-modules@^1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/builtin-modules/-/builtin-modules-1.1.1.tgz#270f076c5a72c02f5b65a47df94c5fe3a278892f"
-
-bytebuffer@~5:
-  version "5.0.1"
-  resolved "https://registry.yarnpkg.com/bytebuffer/-/bytebuffer-5.0.1.tgz#582eea4b1a873b6d020a48d58df85f0bba6cfddd"
-  dependencies:
-    long "~3"
 
 bytes@3.0.0:
   version "3.0.0"
@@ -1589,9 +1610,6 @@ fs.realpath@^1.0.0:
 fsevents@^1.0.0, fsevents@^1.1.1:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/fsevents/-/fsevents-1.1.2.tgz#3282b713fb3ad80ede0e9fcf4611b5aa6fc033f4"
-  dependencies:
-    nan "^2.3.0"
-    node-pre-gyp "^0.6.36"
 
 fstream-ignore@^1.0.5:
   version "1.0.5"
@@ -1747,7 +1765,7 @@ graphql-subscriptions@0.5.4:
     es6-promise "^4.1.1"
     iterall "^1.1.3"
 
-graphql-tools@2.7.2, "graphql-tools@^1 || ^2":
+graphql-tools@2.7.2:
   version "2.7.2"
   resolved "https://registry.yarnpkg.com/graphql-tools/-/graphql-tools-2.7.2.tgz#03104a155b15f8441b0e5a7113b12b9512341a9e"
   dependencies:
@@ -2934,10 +2952,6 @@ loglevel@^1.4.1:
   version "1.5.1"
   resolved "https://registry.yarnpkg.com/loglevel/-/loglevel-1.5.1.tgz#189078c94ab9053ee215a0acdbf24244ea0f6502"
 
-long@~3:
-  version "3.2.0"
-  resolved "https://registry.yarnpkg.com/long/-/long-3.2.0.tgz#d821b7138ca1cb581c172990ef14db200b5c474b"
-
 longest@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/longest/-/longest-1.0.1.tgz#30a0b2da38f73770e8294a0d22e6625ed77d0097"
@@ -3309,7 +3323,7 @@ object.omit@^2.0.0:
     for-own "^0.1.4"
     is-extendable "^0.1.1"
 
-on-finished@^2.3.0, on-finished@~2.3.0:
+on-finished@~2.3.0:
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/on-finished/-/on-finished-2.3.0.tgz#20f1336481b083cd75337992a16971aa2d906947"
   dependencies:
@@ -3334,15 +3348,6 @@ onetime@^2.0.0:
   resolved "https://registry.yarnpkg.com/onetime/-/onetime-2.0.1.tgz#067428230fd67443b2794b22bba528b6867962d4"
   dependencies:
     mimic-fn "^1.0.0"
-
-optics-agent@1.1.9:
-  version "1.1.9"
-  resolved "https://registry.yarnpkg.com/optics-agent/-/optics-agent-1.1.9.tgz#5cdf3f88ac2fb664e4f0b7a11d38c5e780c4deb8"
-  dependencies:
-    graphql-tools "^1 || ^2"
-    on-finished "^2.3.0"
-    protobufjs-no-cli "^5.0.1"
-    request "^2.74.0"
 
 optimist@^0.6.1:
   version "0.6.1"
@@ -3619,12 +3624,6 @@ progress@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/progress/-/progress-2.0.0.tgz#8a1be366bf8fc23db2bd23f10c6fe920b4389d1f"
 
-protobufjs-no-cli@^5.0.1:
-  version "5.0.1"
-  resolved "https://registry.yarnpkg.com/protobufjs-no-cli/-/protobufjs-no-cli-5.0.1.tgz#17a527da0bc49f1f974f512d852950be26acbb82"
-  dependencies:
-    bytebuffer "~5"
-
 proxy-addr@~2.0.2:
   version "2.0.2"
   resolved "https://registry.yarnpkg.com/proxy-addr/-/proxy-addr-2.0.2.tgz#6571504f47bb988ec8180253f85dd7e14952bdec"
@@ -3830,7 +3829,7 @@ request@2.81.0:
     tunnel-agent "^0.6.0"
     uuid "^3.0.0"
 
-request@^2.74.0, request@^2.79.0:
+request@^2.79.0, request@^2.81.0:
   version "2.83.0"
   resolved "https://registry.yarnpkg.com/request/-/request-2.83.0.tgz#ca0b65da02ed62935887808e6f510381034e3356"
   dependencies:
@@ -4165,6 +4164,12 @@ stream-combiner@~0.0.4:
   resolved "https://registry.yarnpkg.com/stream-combiner/-/stream-combiner-0.0.4.tgz#4d5e433c185261dde623ca3f44c586bcf5c4ad14"
   dependencies:
     duplexer "~0.1.1"
+
+stream-line-wrapper@^0.1.1:
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/stream-line-wrapper/-/stream-line-wrapper-0.1.1.tgz#3e2be1d368c6356f90aeef64786683f3eee3eea7"
+  dependencies:
+    async "~0.2.10"
 
 stream-to-observable@^0.1.0:
   version "0.1.0"

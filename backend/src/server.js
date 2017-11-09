@@ -1,3 +1,5 @@
+/* eslint-disable global-require */
+
 require('dotenv').config()
 
 const bodyParser = require('body-parser')
@@ -6,7 +8,6 @@ const cookieParser = require('cookie-parser')
 const express = require('express')
 const expressJWT = require('express-jwt')
 const mongoose = require('mongoose')
-const opticsAgent = require('optics-agent')
 const compression = require('compression')
 const helmet = require('helmet')
 const { graphqlExpress } = require('apollo-server-express')
@@ -20,7 +21,7 @@ mongoose.Promise = Promise
 
 // require important environment variables to be present
 // otherwise exit the application
-const appSettings = ['APP_DOMAIN', 'APP_PORT', 'APP_SECRET', 'MONGO_URL', 'ORIGIN']
+const appSettings = ['APP_DOMAIN', 'PORT', 'APP_SECRET', 'MONGO_URL', 'ORIGIN']
 appSettings.forEach((envVar) => {
   if (!process.env[envVar]) {
     console.warn(`> Error: Please pass the ${envVar} as an environment variable.`)
@@ -37,12 +38,6 @@ if (process.env.MONGO_USER && process.env.MONGO_PASSWORD) {
   mongoose.connect(`mongodb://${process.env.MONGO_URL}`)
 }
 
-// setup Apollo Optics (GraphQL API metrics)
-const withOptics = !!process.env.OPTICS_API_KEY
-if (withOptics) {
-  opticsAgent.instrumentSchema(schema)
-}
-
 mongoose.connection
   .once('open', () => {
     console.log('> Connection to MongoDB established.')
@@ -55,7 +50,7 @@ mongoose.connection
 const server = express()
 
 let middleware = [
-  '/graphql',
+  // enable gzip compression
   compression(),
   // secure the server with helmet
   helmet({
@@ -82,23 +77,32 @@ let middleware = [
   bodyParser.json(),
 ]
 
-// setup Apollo Optics if enabled
-if (withOptics) {
-  middleware = [...middleware, opticsAgent.middleware()]
+// setup Apollo Engine (GraphQL API metrics)
+let apolloEngine = !!process.env.ENGINE_API_KEY
+if (apolloEngine) {
+  const { Engine } = require('apollo-engine')
+  apolloEngine = new Engine({ engineConfig: { apiKey: process.env.ENGINE_API_KEY } })
+  apolloEngine.start()
+
+  // if apollo engine is enabled, add the middleware to the stack
+  middleware = [apolloEngine.expressMiddleware(), ...middleware]
 }
 
 // expose the GraphQL API endpoint
 // parse JWT that are passed as a header and attach their content to req.user
 server.use(
+  '/graphql',
   ...middleware,
   // delegate to the GraphQL API
   graphqlExpress((req, res) => ({
-    context: { auth: req.auth, res, opticsContext: opticsAgent.context(req) },
+    context: { auth: req.auth, res },
     schema,
+    tracing: true,
+    cacheControl: true,
   })),
 )
 
-server.listen(process.env.APP_PORT, (err) => {
+server.listen(process.env.PORT, (err) => {
   if (err) throw err
-  console.log(`> API ready on http://localhost:${process.env.APP_PORT}!`)
+  console.log(`> API ready on http://localhost:${process.env.PORT}!`)
 })

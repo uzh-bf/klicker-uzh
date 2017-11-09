@@ -6,6 +6,7 @@
   "author": "Roland Schläfli <roland.schlaefli@bf.uzh.ch>",
   "license": "AGPL-3.0",
   "dependencies": {
+    "apollo-engine": "^0.5.3",
     "apollo-server-express": "1.2.0",
     "bcryptjs": "2.4.3",
     "body-parser": "1.18.2",
@@ -25,7 +26,6 @@
     "md5": "2.2.1",
     "mongodb": "2.2.33",
     "mongoose": "4.13.1",
-    "optics-agent": "1.1.9",
     "subscriptions-transport-ws": "0.9.1"
   },
   "devDependencies": {
