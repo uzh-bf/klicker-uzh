@@ -11,7 +11,7 @@ import { ConfusionBarometer } from '../../components/confusion'
 import { FeedbackChannel } from '../../components/feedbacks'
 import { SessionTimeline } from '../../components/sessions'
 import { TeacherLayout } from '../../components/layouts'
-import { RunningSessionQuery } from '../../graphql/queries'
+import { AccountSummaryQuery, RunningSessionQuery } from '../../graphql/queries'
 import {
   EndSessionMutation,
   UpdateSessionSettingsMutation,
@@ -180,7 +180,7 @@ export default compose(
       try {
         // run the mutation
         await endSession({
-          refetchQueries: [{ query: RunningSessionQuery }],
+          refetchQueries: [{ query: RunningSessionQuery }, { query: AccountSummaryQuery }],
           variables: { id: data.runningSession.id },
         })
 
@@ -195,6 +195,7 @@ export default compose(
     handleUpdateSettings: ({ data, updateSessionSettings }) => ({ settings }) => async () => {
       try {
         await updateSessionSettings({
+          refetchQueries: [{ query: RunningSessionQuery }],
           variables: { sessionId: data.runningSession.id, settings },
         })
       } catch ({ message }) {
