@@ -69,7 +69,7 @@ const TypeChooser = ({ intl, input: { value, onChange } }) => {
       </div>
 
       <style jsx>{`
-        @import 'src/_theme';
+        @import 'src/theme';
 
         .typeChooser {
           @include tooltip-icon;

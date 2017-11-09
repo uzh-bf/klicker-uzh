@@ -57,7 +57,7 @@ const StudentLayout = ({
         </div>
 
         <style jsx>{`
-          @import 'src/_theme';
+          @import 'src/theme';
 
           .studentLayout {
             display: flex;

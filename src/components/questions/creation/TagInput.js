@@ -55,7 +55,7 @@ const TagInput = ({ tags, input: { value, onChange }, meta: { invalid, dirty } }
     </Form.Field>
 
     <style jsx global>{`
-      @import 'src/_theme';
+      @import 'src/theme';
 
       .react-tagsinput {
         border: 1px solid $color-borders;
@@ -158,7 +158,7 @@ const TagInput = ({ tags, input: { value, onChange }, meta: { invalid, dirty } }
     `}</style>
 
     <style jsx>{`
-      @import 'src/_theme';
+      @import 'src/theme';
 
       .tagInput {
         > :global(.field) {

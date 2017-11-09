@@ -88,7 +88,7 @@ const SemanticInput = ({
       )}
 
       <style jsx>{`
-        @import 'src/_theme';
+        @import 'src/theme';
 
         @include tooltip-icon;
 

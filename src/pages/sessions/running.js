@@ -96,7 +96,7 @@ const Running = ({
     </div>
 
     <style jsx>{`
-      @import 'src/_theme';
+      @import 'src/theme';
 
       .runningSession {
         display: flex;

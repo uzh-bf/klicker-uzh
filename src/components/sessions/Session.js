@@ -57,7 +57,7 @@ const Session = ({
     </div>
 
     <style jsx>{`
-      @import 'src/_theme';
+      @import 'src/theme';
 
       .session,
       .details {
