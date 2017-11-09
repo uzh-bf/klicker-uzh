@@ -69,7 +69,7 @@ const SessionTimeline = ({
       />
     </div>
     <style jsx>{`
-      @import 'src/theme';
+      @import 'src/_theme';
 
       .sessionTimeline {
         display: flex;

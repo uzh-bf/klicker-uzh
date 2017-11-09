@@ -108,7 +108,7 @@ function EvaluationLayout({
         </div>
 
         <style jsx>{`
-          @import 'src/theme';
+          @import 'src/_theme';
 
           .evaluationLayout {
             @supports (grid-gap: 1rem) {
