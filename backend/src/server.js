@@ -7,6 +7,7 @@ const express = require('express')
 const expressJWT = require('express-jwt')
 const mongoose = require('mongoose')
 const opticsAgent = require('optics-agent')
+const compression = require('compression')
 const helmet = require('helmet')
 const { graphqlExpress } = require('apollo-server-express')
 
@@ -55,6 +56,7 @@ const server = express()
 
 let middleware = [
   '/graphql',
+  compression(),
   // secure the server with helmet
   server.use(helmet({
     hsts: false,
