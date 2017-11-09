@@ -27,7 +27,7 @@ const ResetPassword = ({ intl, handleSubmit }) => (
       <PasswordResetForm intl={intl} onSubmit={handleSubmit} />
 
       <style jsx>{`
-        @import 'src/_theme';
+        @import 'src/theme';
 
         .login {
           padding: 1rem;

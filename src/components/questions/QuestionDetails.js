@@ -54,7 +54,7 @@ const QuestionDetails = ({ description, lastUsed }) => {
       <style jsx>{`
         // TODO: externalize colors
 
-        @import 'src/_theme';
+        @import 'src/theme';
 
         .questionDetails {
           display: flex;

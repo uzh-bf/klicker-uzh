@@ -51,7 +51,7 @@ const Index = ({
     </div>
 
     <style jsx>{`
-      @import 'src/_theme';
+      @import 'src/theme';
 
       .sessionHistory {
         padding: 1rem 0.7rem;

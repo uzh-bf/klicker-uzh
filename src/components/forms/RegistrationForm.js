@@ -181,7 +181,7 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
     </ReactTooltip>
 
     <style jsx>{`
-      @import 'src/_theme';
+      @import 'src/theme';
 
       .registrationForm > :global(form) {
         display: flex;

@@ -34,7 +34,7 @@ const SCCreationPreview = ({ title, description, options }) => (
     </div>
 
     <style jsx>{`
-      @import 'src/_theme';
+      @import 'src/theme';
 
       .preview {
         display: flex;

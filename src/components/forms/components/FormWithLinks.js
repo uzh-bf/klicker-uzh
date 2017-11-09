@@ -53,7 +53,7 @@ const FormWithLinks = ({ button, children, links }) => (
     </Form>
 
     <style jsx>{`
-      @import 'src/_theme';
+      @import 'src/theme';
 
       .formWithLinks > :global(form) {
         display: flex;
