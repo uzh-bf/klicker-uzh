@@ -49,8 +49,6 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
         .session {
           margin-bottom: 2rem;
         }
-        .session.running {
-        }
       `}</style>
     </div>
   )
