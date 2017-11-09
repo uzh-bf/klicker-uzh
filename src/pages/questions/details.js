@@ -1,16 +1,20 @@
 import React from 'react'
 import { compose } from 'recompose'
 import { intlShape } from 'react-intl'
+import { graphql } from 'react-apollo'
+import { PropTypes } from 'prop-types'
 
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionEditForm } from '../../components/forms'
 import { pageWithIntl, withData } from '../../lib'
+import { QuestionDetailsQuery } from '../../graphql/queries'
 
 const propTypes = {
   intl: intlShape.isRequired,
+  questionDetail: PropTypes.shape({}).isRequired,
 }
 
-const EditQuestion = ({ intl }) => (
+const EditQuestion = ({ intl, questionDetail }) => (
   <TeacherLayout
     intl={intl}
     navbar={{
@@ -25,6 +29,7 @@ const EditQuestion = ({ intl }) => (
     })}
     sidebar={{ activeItem: 'editQuestion' }}
   >
+    {console.dir(questionDetail)}
     <QuestionEditForm
       intl={intl}
       content={
@@ -51,4 +56,17 @@ const EditQuestion = ({ intl }) => (
 
 EditQuestion.propTypes = propTypes
 
-export default compose(withData, pageWithIntl)(EditQuestion)
+export default compose(
+  withData,
+  pageWithIntl,
+  graphql(QuestionDetailsQuery, { name: 'questionDetails' }),
+  /*
+  branch(
+    ({ questionDetails }) => questionDetails.loading, renderComponent(() =>
+      <div>No data TODO</div>),
+  ),
+  withProps(({ questionDetails }) => ({
+    questionDetail: questionDetails.questions[0],
+  })),
+  */
+)(EditQuestion)
