@@ -89,32 +89,6 @@ const TeacherLayout = ({
 
         {actionArea && <div className="actionArea">{actionArea}</div>}
 
-        <style jsx global>{`
-          * {
-            font-family: 'Open Sans', sans-serif;
-          }
-
-          html,
-          body {
-            font-size: 14px;
-          }
-
-          input,
-          button,
-          .noBorder {
-            border-radius: 0 !important;
-          }
-
-          .noBorder {
-            border: 0 !important;
-            box-shadow: none !important;
-          }
-
-          .navbar {
-            z-index: 100;
-          }
-        `}</style>
-
         <style jsx>{`
           .teacherLayout {
             display: flex;

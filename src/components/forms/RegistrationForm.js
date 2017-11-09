@@ -4,7 +4,6 @@ import isAlpha from 'validator/lib/isAlpha'
 import isEmail from 'validator/lib/isEmail'
 import isLength from 'validator/lib/isLength'
 import isEmpty from 'validator/lib/isEmpty'
-import ReactTooltip from 'react-tooltip'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Field, reduxForm } from 'redux-form'
 import { Button, Form } from 'semantic-ui-react'
@@ -175,10 +174,6 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
         </Button>
       </div>
     </Form>
-
-    <ReactTooltip id="titleHelp" delayHide={250} place="right">
-      <span>The shortname needs to have 3 to 6 characters.</span>
-    </ReactTooltip>
 
     <style jsx>{`
       @import 'src/theme';

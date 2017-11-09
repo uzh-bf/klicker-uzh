@@ -1279,6 +1279,9 @@ exports[`Storyshots feedbacks FeedbackChannel (isActive) 1`] = `
       </label>
     </div>
   </div>
+  <div
+    className="jsx-901584548 feedbacks"
+  />
 </div>
 `;
 
@@ -1339,6 +1342,9 @@ exports[`Storyshots feedbacks FeedbackChannel (isPublic) 1`] = `
       </label>
     </div>
   </div>
+  <div
+    className="jsx-901584548 feedbacks"
+  />
 </div>
 `;
 
@@ -1397,80 +1403,6 @@ exports[`Storyshots feedbacks FeedbackChannel 1`] = `
       <label>
         Publish questions
       </label>
-    </div>
-  </div>
-  <div
-    className="jsx-901584548 feedbacks"
-  >
-    <div
-      className="jsx-901584548 feedback"
-    >
-      <div
-        className="jsx-22459915 feedback"
-      >
-        <div
-          className="jsx-22459915 content"
-        >
-          hello alex!
-        </div>
-        <div
-          className="jsx-22459915 delete"
-        >
-          <button
-            className="ui basic fluid icon button"
-            disabled={undefined}
-            onClick={[Function]}
-            role="button"
-            tabIndex={undefined}
-          >
-            <i
-              aria-hidden="true"
-              className="trash outline icon"
-            />
-          </button>
-        </div>
-        <div
-          className="jsx-22459915 votes"
-        >
-          +
-          100
-        </div>
-      </div>
-    </div>
-    <div
-      className="jsx-901584548 feedback"
-    >
-      <div
-        className="jsx-22459915 feedback"
-      >
-        <div
-          className="jsx-22459915 content"
-        >
-          bla bleh
-        </div>
-        <div
-          className="jsx-22459915 delete"
-        >
-          <button
-            className="ui basic fluid icon button"
-            disabled={undefined}
-            onClick={[Function]}
-            role="button"
-            tabIndex={undefined}
-          >
-            <i
-              aria-hidden="true"
-              className="trash outline icon"
-            />
-          </button>
-        </div>
-        <div
-          className="jsx-22459915 votes"
-        >
-          +
-          40
-        </div>
-      </div>
     </div>
   </div>
 </div>
