@@ -72,7 +72,7 @@ const Question = ({
       </div>
 
       <style jsx>{`
-        @import 'src/_theme';
+        @import 'src/theme';
 
         .question {
           display: flex;

@@ -39,7 +39,7 @@ const Registration = ({
       <RegistrationForm intl={intl} onSubmit={handleSubmit} />
 
       <style jsx>{`
-        @import 'src/_theme';
+        @import 'src/theme';
 
         .registration {
           padding: 1rem;
