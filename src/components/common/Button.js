@@ -14,7 +14,7 @@ function Button({ children, ...props }) {
       </SemanticButton>
 
       <style jsx>{`
-        @import 'src/_theme';
+        @import 'src/theme';
 
         .klicker-button {
           > :global(button) {

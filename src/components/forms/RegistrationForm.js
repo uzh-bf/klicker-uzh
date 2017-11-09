@@ -176,12 +176,11 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
     </Form>
 
     <style jsx>{`
-      @import 'src/_theme';
+      @import 'src/theme';
 
       .registrationForm > :global(form) {
         display: flex;
         flex-direction: column;
-
         .account {
           margin-top: 1rem;
         }
@@ -204,10 +203,6 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
           }
           .account {
             margin: 0;
-            padding-left: 0.5rem;
-          }
-          .use {
-            flex: 1 1 100%;
           }
         }
       }

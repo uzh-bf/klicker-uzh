@@ -179,7 +179,7 @@ const QuestionCreationForm = ({
       </Form>
 
       <style jsx>{`
-        @import 'src/_theme';
+        @import 'src/theme';
 
         .questionCreationForm > :global(form) {
           display: flex;
@@ -207,7 +207,8 @@ const QuestionCreationForm = ({
               grid-gap: 1rem;
               grid-template-columns: repeat(6, 1fr);
               grid-template-rows: 5rem auto auto auto;
-              grid-template-areas: 'title title title title preview preview'
+              grid-template-areas:
+                'title title title title preview preview'
                 'type type tags tags preview preview'
                 'content content content content content content'
                 'options options options options options options';

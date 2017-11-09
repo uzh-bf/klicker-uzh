@@ -108,7 +108,7 @@ function EvaluationLayout({
         </div>
 
         <style jsx>{`
-          @import 'src/_theme';
+          @import 'src/theme';
 
           .evaluationLayout {
             @supports (grid-gap: 1rem) {
@@ -117,7 +117,8 @@ function EvaluationLayout({
 
                 grid-template-columns: auto 17rem;
                 grid-template-rows: minmax(auto, 0) minmax(auto, 2rem) auto 10rem 5rem;
-                grid-template-areas: 'instanceChooser instanceChooser'
+                grid-template-areas:
+                  'instanceChooser instanceChooser'
                   'questionDetails questionDetails' 'graph optionDisplay' 'graph settings'
                   'info chartType';
 
