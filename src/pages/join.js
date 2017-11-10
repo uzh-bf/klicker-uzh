@@ -99,6 +99,16 @@ const Join = ({
       title={title}
     >
       <div className="student">
+        {!activeQuestion && (
+          <div
+            className={classNames('questionArea', {
+              active: sidebarActiveItem === 'activeQuestion',
+            })}
+          >
+            No evaluation active.
+          </div>
+        )}
+
         {activeQuestion && (
           <div
             className={classNames('questionArea', {
@@ -372,7 +382,7 @@ export default compose(
   branch(({ loading }) => loading, renderComponent(() => <div />)),
   branch(
     ({ data }) => data.errors || !data.joinSession,
-    renderComponent(() => <div>No evaluation active.</div>),
+    renderComponent(() => <div>No session active.</div>),
   ),
   withProps(({ data: { joinSession }, url }) => ({
     ...joinSession,
