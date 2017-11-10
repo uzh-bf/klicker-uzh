@@ -16,7 +16,7 @@ const propTypes = {
   }).isRequired,
 }
 
-const ContentInput = ({ input: { value, onChange }, meta: { dirty, invalid } }) => (
+const ContentInput = ({ input: { value, onChange }, meta: { dirty, invalid }, disabled }) => (
   <div className="contentInput">
     <Form.Field required error={dirty && invalid}>
       <label htmlFor="content">
@@ -36,7 +36,7 @@ const ContentInput = ({ input: { value, onChange }, meta: { dirty, invalid } }) 
         />
       </ReactTooltip>
 
-      <textarea name="content" value={value} onChange={onChange} />
+      <textarea disabled={disabled} name="content" value={value} onChange={onChange} />
     </Form.Field>
 
     <ReactTooltip id="contentHelp" delayHide={250} place="right">

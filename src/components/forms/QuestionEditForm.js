@@ -54,6 +54,7 @@ const propTypes = {
   handleSubmit: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   invalid: PropTypes.bool.isRequired,
+  isNewVersion: PropTypes.bool.isRequired,
   onDiscard: PropTypes.func.isRequired,
   options: PropTypes.object,
   tags: PropTypes.arrayOf(
@@ -77,6 +78,7 @@ const defaultProps = {
 
 const QuestionEditForm = ({
   intl,
+  isNewVersion,
   invalid,
   title,
   type,
@@ -144,7 +146,7 @@ const QuestionEditForm = ({
         </div>
 
         <div className="questionInput questionContent">
-          <Field name="content" component={ContentInput} />
+          <Field name="content" component={ContentInput} props={{ disabled: !isNewVersion }} />
         </div>
 
         <div className="questionInput questionOptions">
