@@ -25,13 +25,21 @@ const ConfusionSlider = ({ title, value, handleChange }) => (
     {title && <div className="title">{title}</div>}
 
     <div className="slider">
-      <Slider min={-50} max={50} orientation="horizontal" value={value} onChange={handleChange} />
+      <Slider
+        min={-10}
+        max={10}
+        orientation="horizontal"
+        value={value}
+        onChange={handleChange}
+      />
     </div>
 
     <style jsx>{`
-      .title > :global(*:first-child) {
-        font-size: 1rem;
-        margin: 0;
+      .confusionSlider {
+        .title > :global(*):first-child {
+          font-size: 1rem;
+          margin: 0;
+        }
       }
     `}</style>
   </div>

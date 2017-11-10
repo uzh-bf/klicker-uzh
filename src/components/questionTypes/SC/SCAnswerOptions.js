@@ -4,56 +4,61 @@ import classNames from 'classnames'
 import { Button } from 'semantic-ui-react'
 
 const propTypes = {
-  activeOptions: PropTypes.arrayOf(PropTypes.number),
-  handleOptionClick: PropTypes.func.isRequired,
+  disabled: PropTypes.bool,
+  onChange: PropTypes.func.isRequired,
   options: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.string.isRequired,
       name: PropTypes.string.isRequired,
     }),
   ),
+  value: PropTypes.arrayOf(PropTypes.number),
 }
 
 const defaultProps = {
-  activeOptions: [],
+  disabled: false,
   options: [],
+  value: [],
 }
 
-const SCAnswerOptions = ({ activeOptions, options, handleOptionClick }) => (
+const SCAnswerOptions = ({
+  value, disabled, options, onChange,
+}) => (
   <div className="options">
     {options.map((option, index) => (
-      <div
-        key={option.id}
-        className={classNames('option', { active: activeOptions.includes(index) })}
-      >
-        <Button basic fluid onClick={handleOptionClick && handleOptionClick(index)}>
+      <div key={option.id} className={classNames('option', { active: value.includes(index) })}>
+        <Button fluid disabled={disabled} onClick={onChange(index)}>
           {option.name}
         </Button>
       </div>
     ))}
 
     <style jsx>{`
-      .options {
-        .option {
-          :global(&:not(:last-child)) {
-            margin-bottom: 0.5rem;
-          }
+      @import 'src/theme';
 
-          &.active :global(button) {
+      .options > .option {
+        &:not(:last-child) {
+          margin-bottom: 0.5rem;
+        }
+
+        &.active {
+          :global(button),
+          :global(button.disabled) {
             border: 1px solid green !important;
 
             animation: bounce 0.5s;
           }
         }
-        // TODO: improve animation
-        @keyframes bounce {
-          0%,
-          100% {
-            transform: translateX(0);
-          }
-          50% {
-            transform: translateY(-2px);
-          }
+      }
+
+      // TODO: improve animation
+      @keyframes bounce {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        50% {
+          transform: translateY(-2px);
         }
       }
     `}</style>

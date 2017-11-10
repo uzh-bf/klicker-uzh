@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import _range from 'lodash/range'
-import { compose, withStateHandlers } from 'recompose'
+import { compose, withStateHandlers, withHandlers } from 'recompose'
 
 import { ActionMenu, Collapser } from '../../common'
 import { SCAnswerOptions, FREEAnswerOptions } from '../../questionTypes'
@@ -11,10 +11,13 @@ const propTypes = {
   active: PropTypes.bool,
   activeQuestion: PropTypes.number,
   completedQuestions: PropTypes.array,
+  handleActiveChoicesChange: PropTypes.func.isRequired,
   handleActiveQuestionChange: PropTypes.func.isRequired,
   handleCompleteQuestion: PropTypes.func.isRequired,
-  handleInputValueChange: PropTypes.func.isRequired,
-  inputValue: PropTypes.oneOf([PropTypes.string, PropTypes.number, PropTypes.object]).isRequired,
+  handleFreeValueChange: PropTypes.func.isRequired,
+  handleSubmit: PropTypes.func.isRequired,
+  inputValue: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.object])
+    .isRequired,
   isCollapsed: PropTypes.bool.isRequired,
   questions: PropTypes.array,
   toggleIsCollapsed: PropTypes.func.isRequired,
@@ -37,9 +40,14 @@ function QuestionArea({
   toggleIsCollapsed,
   handleActiveQuestionChange,
   handleCompleteQuestion,
-  handleInputValueChange,
+  handleActiveChoicesChange,
+  handleFreeValueChange,
+  handleSubmit,
 }) {
-  console.dir(questions)
+  if (activeQuestion === questions.length) {
+    return <div>You finished all active questions.</div>
+  }
+
   const currentQuestion = questions.length > 0 && questions[activeQuestion]
   const { description, options, type } = currentQuestion
 
@@ -57,9 +65,9 @@ function QuestionArea({
             return (
               <SCAnswerOptions
                 disabled={completedQuestions.includes(activeQuestion)}
-                value={inputValue}
+                onChange={handleActiveChoicesChange}
                 options={options.choices}
-                onChange={handleInputValueChange}
+                value={inputValue}
               />
             )
           }
@@ -68,9 +76,9 @@ function QuestionArea({
             return (
               <FREEAnswerOptions
                 disabled={completedQuestions.includes(activeQuestion)}
-                onChange={inputValue}
+                onChange={handleFreeValueChange}
                 options={options}
-                value={handleInputValueChange}
+                value={inputValue}
               />
             )
           }
@@ -86,6 +94,7 @@ function QuestionArea({
         }))}
         setActiveIndex={handleActiveQuestionChange}
         onCompleteQuestion={handleCompleteQuestion}
+        onSubmit={handleSubmit}
       />
 
       <style jsx>{`
@@ -142,15 +151,34 @@ export default compose(
       isCollapsed: true,
     },
     {
-      handleActiveQuestionChange: () => ({ activeQuestion }) => ({
+      handleActiveChoicesChange: ({ inputValue }) => choice => ({
+        inputValue: inputValue ? [...inputValue, choice] : [choice],
+      }),
+      handleActiveQuestionChange: () => activeQuestion => ({
         activeQuestion,
         inputValue: undefined,
       }),
-      handleCompleteQuestion: ({ completedQuestions }) => index => ({
-        completedQuestions: [...completedQuestions, index],
+      handleCompleteQuestion: ({ completedQuestions }) => completedIndex => ({
+        completedQuestions: [...completedQuestions, completedIndex],
       }),
-      handleInputValueChange: () => inputValue => ({ inputValue }),
+      handleFreeValueChange: () => inputValue => ({ inputValue }),
+      handleSubmit: ({ activeQuestion, completedQuestions }) => () => ({
+        activeQuestion: activeQuestion + 1,
+        completedQuestions: [...completedQuestions, activeQuestion],
+      }),
       toggleIsCollapsed: ({ isCollapsed }) => () => ({ isCollapsed: !isCollapsed }),
     },
   ),
+  withHandlers({
+    handleActiveChoicesChange: ({ handleActiveChoicesChange }) => choice => () =>
+      handleActiveChoicesChange(choice),
+    handleActiveQuestionChange: ({ handleActiveQuestionChange }) => index => () =>
+      handleActiveQuestionChange(index),
+    handleCompleteQuestion: ({ handleCompleteQuestion }) => index => () =>
+      handleCompleteQuestion(index),
+    handleSubmit: ({ handleSubmit, inputValue }) => () => {
+      console.dir(inputValue)
+      handleSubmit()
+    },
+  }),
 )(QuestionArea)
