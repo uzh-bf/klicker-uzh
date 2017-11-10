@@ -23,13 +23,6 @@ const propTypes = {
     content: PropTypes.string.isRequired,
     votes: PropTypes.number.isRequired,
   }),
-  dataQuestion: PropTypes.shape({
-    restrictions: PropTypes.arrayOf({
-      max: PropTypes.number,
-      min: PropTypes.number,
-    }),
-    type: PropTypes.string,
-  }),
   feedbackDifficulty: PropTypes.oneOfType(PropTypes.number, null).isRequired,
   feedbackSpeed: PropTypes.oneOfType(PropTypes.number, null).isRequired,
   handleAnswerSliderChange: PropTypes.func.isRequired,
@@ -52,10 +45,6 @@ const propTypes = {
 
 const defaultProps = {
   feedbacks: [],
-  dataQuestion: {
-    restrictions: [],
-    tpye: 'NONE',
-  },
 }
 
 const Join = ({
@@ -66,7 +55,6 @@ const Join = ({
   addNewFeedback,
   addNewFeedbackMode,
   answerSliderValue,
-  dataQuestion,
   questionCollapsed,
   feedbackDifficulty,
   feedbackSpeed,
@@ -97,7 +85,7 @@ const Join = ({
         id: 'student.feedbackChannel.title',
       })
 
-  const activeQuestion = activeQuestions[activeQuestionIndex]
+  const activeQuestion = activeQuestions.length > 0 && activeQuestions[activeQuestionIndex]
 
   return (
     <StudentLayout
@@ -111,69 +99,75 @@ const Join = ({
       title={title}
     >
       <div className="student">
-        <div
-          className={classNames('questionArea', {
-            active: sidebarActiveItem === 'activeQuestion',
-          })}
-        >
-          <div className="collapser">
-            <Collapser
-              collapsed={questionCollapsed}
-              handleCollapseToggle={handleQuestionCollapsedToggle}
-            >
-              {activeQuestion.description}
-            </Collapser>
+        {activeQuestion && (
+          <div
+            className={classNames('questionArea', {
+              active: sidebarActiveItem === 'activeQuestion',
+            })}
+          >
+            <div className="collapser">
+              <Collapser
+                collapsed={questionCollapsed}
+                handleCollapseToggle={handleQuestionCollapsedToggle}
+              >
+                {activeQuestion.description}
+              </Collapser>
+            </div>
+
+            <div className="options">
+              {(() => {
+                if (activeQuestion.type === 'SC') {
+                  return (
+                    <SCAnswerOptions
+                      activeOptions={questionActiveOption}
+                      options={activeQuestion.options.choices}
+                      handleOptionClick={handleQuestionActiveOptionsChange}
+                    />
+                  )
+                }
+
+                if (activeQuestion.type === 'MC') {
+                  return null
+                }
+
+                if (activeQuestion.type === 'FREE') {
+                  return (
+                    <FREEAnswerOptions
+                      handleChange={handleAnswerSliderChange}
+                      options={activeQuestion.options}
+                      value={answerSliderValue}
+                    />
+                  )
+                }
+
+                return null
+              })()}
+            </div>
+
+            <div className="actionButton">
+              <Button primary className="submitButton">
+                <FormattedMessage
+                  id="common.string.send"
+                  defaultMessage="Send"
+                  onClick={() => null}
+                />
+              </Button>
+            </div>
+
+            {activeQuestions.length > 1 && (
+              <Menu text>
+                {_range(activeQuestions.length).map(index => (
+                  <Menu.Item
+                    active={index === activeQuestionIndex}
+                    onClick={() => setActiveQuestionIndex(index)}
+                  >
+                    {index}
+                  </Menu.Item>
+                ))}
+              </Menu>
+            )}
           </div>
-
-          <div className="options">
-            {(() => {
-              if (activeQuestion.type === 'SC') {
-                return (
-                  <SCAnswerOptions
-                    activeOptions={questionActiveOption}
-                    options={activeQuestion.options.choices}
-                    handleOptionClick={handleQuestionActiveOptionsChange}
-                  />
-                )
-              }
-
-              if (activeQuestion.type === 'FREE') {
-                return (
-                  <FREEAnswerOptions
-                    handleChange={handleAnswerSliderChange}
-                    options={activeQuestion.options}
-                    value={answerSliderValue}
-                  />
-                )
-              }
-
-              return null
-            })()}
-          </div>
-
-          <div className="actionButton">
-            <Button primary className="submitButton">
-              <FormattedMessage
-                id="common.string.send"
-                defaultMessage="Send"
-                onClick={() => null}
-              />
-            </Button>
-          </div>
-
-          {activeQuestions.length > 1 && (
-            <Menu text>
-              {_range(activeQuestions.length).map(index => (
-                <Menu.Item
-                  active={index === activeQuestionIndex}
-                  onClick={() => setActiveQuestionIndex(index)}
-                >
-                  {index}
-                </Menu.Item>
-              ))}
-            </Menu>
-          )}
-        </div>
+        )}
 
         <div
           className={classNames('feedbackArea', {
@@ -203,17 +197,18 @@ const Join = ({
           </div>
 
           <div className="feedbacks">
-            {feedbacks.map(({ content, votes }, index) => (
-              <div key={index} className="feedback">
-                <Feedback
-                  alreadyVoted={false}
-                  content={content}
-                  showDelete={false}
-                  votes={votes}
-                  updateVotes={() => null}
-                />
-              </div>
-            ))}
+            {feedbacks &&
+              feedbacks.map(({ content, votes }, index) => (
+                <div key={index} className="feedback">
+                  <Feedback
+                    alreadyVoted={false}
+                    content={content}
+                    showDelete={false}
+                    votes={votes}
+                    updateVotes={() => null}
+                  />
+                </div>
+              ))}
             {addNewFeedbackMode && (
               <div className="newFeedbackRow">
                 <Input defaultValue={newFeedbackInput} onChange={handleNewFeedbackInputChange} />
@@ -374,7 +369,11 @@ export default compose(
   graphql(JoinSessionQuery, {
     options: props => ({ variables: { shortname: props.url.query.shortname } }),
   }),
-  branch(({ loading }) => loading, renderComponent(<div />)),
+  branch(({ loading }) => loading, renderComponent(() => <div />)),
+  branch(
+    ({ data }) => data.errors || !data.joinSession,
+    renderComponent(() => <div>No evaluation active.</div>),
+  ),
   withProps(({ data: { joinSession }, url }) => ({
     ...joinSession,
     shortname: url.query.shortname,
