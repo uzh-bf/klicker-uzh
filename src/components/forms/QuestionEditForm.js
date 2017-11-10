@@ -84,20 +84,16 @@ const QuestionEditForm = ({
   versions,
 }) => {
   const typeComponents = {
-    FREE: {
-      input: FREECreationOptions,
-    },
-    MC: {
-      input: SCCreationOptions,
-    },
-    SC: {
-      input: SCCreationOptions,
-    },
+    FREE: FREECreationOptions,
+    MC: SCCreationOptions,
+    SC: SCCreationOptions,
   }
 
   // iterate through versions to map values to dropdown preferred option set
   const versionOptions = []
-  versions.forEach(value => versionOptions.push({ text: value, value }))
+  versions.forEach(({ id }) => versionOptions.push({ text: id, value: id }))
+
+  console.dir(versionOptions)
 
   return (
     <div className="questionEditForm">
@@ -149,7 +145,8 @@ const QuestionEditForm = ({
         </div>
 
         <div className="questionInput questionOptions">
-          <Field name="options" component={typeComponents[type].input} intl={intl} />
+          {/* TODO */}
+          <Field name="options" component={typeComponents[type]} intl={intl} />
         </div>
         <Link href="/questions">
           <Button className="discard" type="reset" onClick={onDiscard}>
@@ -248,7 +245,16 @@ QuestionEditForm.propTypes = propTypes
 QuestionEditForm.defaultProps = defaultProps
 
 export default compose(
-  connect((state, props) => ({ initialValues: props })),
+  connect((state, props) => ({
+    initialValues: {
+      content: props.versions[props.versions.length - 1].description,
+      options: props.versions[props.versions.length - 1].options,
+      tags: props.tags,
+      title: props.title,
+      type: props.type,
+      versions: props.versions,
+    },
+  })),
   reduxForm({
     enableReinitialize: true,
     form: 'editQuestion',
