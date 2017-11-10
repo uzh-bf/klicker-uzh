@@ -8,7 +8,6 @@ import { LoadingDiv } from '../common'
 import { TagListQuery } from '../../graphql/queries'
 
 const propTypes = {
-  error: PropTypes.string,
   handleTagClick: PropTypes.func.isRequired,
   tags: PropTypes.arrayOf(
     PropTypes.shape({
@@ -19,16 +18,11 @@ const propTypes = {
 }
 
 const defaultProps = {
-  error: undefined,
   tags: [],
 }
 
-export const TagListPres = ({ error, tags, handleTagClick }) => {
-  if (error) {
-    return <div>{error}</div>
-  }
-
-  return (
+export const TagListPres = ({ tags, handleTagClick }) => (
+  <div className="tagList">
     <List selection size="large">
       {tags.map(({ isActive, id, name }) => (
         <List.Item
@@ -42,8 +36,17 @@ export const TagListPres = ({ error, tags, handleTagClick }) => {
         </List.Item>
       ))}
     </List>
-  )
-}
+
+    <style jsx>{`
+      .tagList {
+        :global(.listItem:hover .content),
+        :global(.listItem:hover i) {
+          color: #2185d0;
+        }
+      }
+    `}</style>
+  </div>
+)
 
 TagListPres.propTypes = propTypes
 TagListPres.defaultProps = defaultProps
@@ -51,8 +54,8 @@ TagListPres.defaultProps = defaultProps
 export default compose(
   graphql(TagListQuery),
   branch(props => props.data.loading, renderComponent(LoadingDiv)),
-  withProps(({ activeTags, data: { loading, error, tags } }) => ({
-    error,
+  branch(props => props.data.error, renderComponent(props => <div>{props.data.error}</div>)),
+  withProps(({ activeTags, data: { loading, tags } }) => ({
     loading,
     tags: tags && tags.map(tag => ({ ...tag, isActive: activeTags.includes(tag.name) })),
   })),

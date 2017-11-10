@@ -57,27 +57,27 @@ const Sidebar = ({
       @import 'src/theme';
 
       .sidebar {
-        display: flex;
-        flex-direction: column;
-
-        height: 100%;
         width: 100%;
-      }
 
-      :global(.sidebarMenu) {
-        text-align: left;
-        width: 75% !important;
-      }
-
-      @include desktop-tablet-only {
-        :global(.sidebarMenu) {
-          width: 20% !important;
+        :global(.pusher) {
+          height: 100%;
         }
-      }
 
-      @include desktop-only {
         :global(.sidebarMenu) {
-          width: 15% !important;
+          text-align: left;
+          width: 75% !important;
+        }
+
+        @include desktop-tablet-only {
+          :global(.sidebarMenu) {
+            width: 20% !important;
+          }
+        }
+
+        @include desktop-only {
+          :global(.sidebarMenu) {
+            width: 15% !important;
+          }
         }
       }
     `}</style>

@@ -34,6 +34,8 @@ const SCCreationPreview = ({ title, description, options }) => (
     </div>
 
     <style jsx>{`
+      @import 'src/theme';
+
       .preview {
         display: flex;
         flex-direction: column;
@@ -41,6 +43,10 @@ const SCCreationPreview = ({ title, description, options }) => (
         border: 1px solid lightgrey;
         height: 100%;
         padding: 1rem;
+
+        @include desktop-tablet-only {
+          min-height: 18.5rem;
+        }
       }
 
       .title,

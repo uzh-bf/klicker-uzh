@@ -3,10 +3,17 @@ $breakpoint-tablet: 768px;
 $breakpoint-desktop: 991px;
 
 // colors
-$color-primary: grey;
-$color-secondary: lightgrey;
-$color-error: red;
+$color-primary: rgb(124, 184, 228); //7cb8e4 // 7cb8e4 // ff9c5a
+$color-primary-50p: rgba($color-primary, 0.5);
+$color-primary-20p: rgba($color-primary, 0.2);
+$color-primary-10p: rgba($color-primary, 0.1);
+$color-secondary: rgb(211, 211, 211); // lightgrey
+$color-borders: rgb(211, 211, 211); // lightgrey
+$color-error-font: #9f3a38;
+$color-error-border: #e0b4b4;
+$color-error-bg: #fff6f6;
 $color-success: green;
+$color-focus: rgb(133, 183, 217); // same as in semantic ui
 
 // font definitions
 $font-base-mobile: 20px;
@@ -17,18 +24,33 @@ $font-size-h2: 1.2rem;
 $font-size-h3: 1.1rem;
 
 // mixins
+@mixin tooltip-icon {
+  label > a {
+    color: $color-primary;
+    margin-left: 0.5rem;
+
+    :global(svg) {
+      font-size: 1.3rem;
+    }
+  }
+}
+
+@mixin default-border {
+  border: 1px solid $color-borders;
+}
+
 @mixin desktop-only {
-  @media screen and (min-width: $breakpoint-desktop) {
+  @media all and (min-width: $breakpoint-desktop) {
     @content;
   }
 }
 @mixin desktop-tablet-only {
-  @media screen and (min-width: $breakpoint-tablet) {
+  @media all and (min-width: $breakpoint-tablet) {
     @content;
   }
 }
 @mixin mobile-only {
-  @media screen and (max-width: $breakpoint-mobile) {
+  @media all and (max-width: $breakpoint-mobile) {
     @content;
   }
 }

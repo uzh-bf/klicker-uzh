@@ -1,14 +1,14 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { compose, withState, withHandlers } from 'recompose'
-import { intlShape } from 'react-intl'
+import { FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
-import classNames from 'classnames'
-import { FaPlus } from 'react-icons/lib/fa'
+import { Button } from 'semantic-ui-react'
+import Link from 'next/link'
 
 import { pageWithIntl, withData } from '../../lib'
-import { SessionListQuery, RunningSessionQuery } from '../../graphql/queries'
+import { AccountSummaryQuery, SessionListQuery, RunningSessionQuery } from '../../graphql/queries'
 import { CreateSessionMutation, StartSessionMutation } from '../../graphql/mutations'
 import { SessionCreationForm } from '../../components/forms'
 import { QuestionList, TagList } from '../../components/questions'
@@ -39,20 +39,6 @@ const Index = ({
   handleQuestionDropped,
   handleCreationModeToggle,
 }) => {
-  // TODO: replace with the action button component
-  const actionButton = (
-    <div className="actionButton">
-      <button
-        className={classNames('ui huge circular primary icon button', {
-          active: creationMode,
-        })}
-        onClick={handleCreationModeToggle}
-      >
-        <FaPlus />
-      </button>
-    </div>
-  )
-
   // TODO: create a component for this?
   const actionArea = (
     <div className="creationForm">
@@ -62,29 +48,27 @@ const Index = ({
         onDiscard={handleCreationModeToggle}
       />
 
-      <style jsx>
-        {`
-          .creationForm {
-            animation-name: slide-in;
-            animation-duration: 0.5s;
-          }
+      <style jsx>{`
+        .creationForm {
+          animation-name: slide-in;
+          animation-duration: 0.5s;
+        }
 
-          @keyframes slide-in {
-            0% {
-              transform: translateY(300px);
-            }
-            100% {
-              transform: translateY(0);
-            }
+        @keyframes slide-in {
+          0% {
+            transform: translateY(300px);
           }
-        `}
-      </style>
+          100% {
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   )
 
   return (
     <TeacherLayout
-      actionArea={creationMode ? actionArea : actionButton}
+      actionArea={creationMode ? actionArea : null}
       intl={intl}
       navbar={{
         search: {
@@ -109,6 +93,22 @@ const Index = ({
           <TagList activeTags={filters.tags} handleTagClick={handleTagClick} />
         </div>
         <div className="questionList">
+          <div className="buttons">
+            <Button onClick={handleCreationModeToggle}>
+              <FormattedMessage
+                defaultMessage="Create Session"
+                id="questionPool.button.createSession"
+              />
+            </Button>
+            <Link href="/questions/create">
+              <Button>
+                <FormattedMessage
+                  defaultMessage="Create Question"
+                  id="questionPool.button.createQuestion"
+                />
+              </Button>
+            </Link>
+          </div>
           <QuestionList
             dropped={droppedQuestions}
             filters={filters}
@@ -124,44 +124,61 @@ const Index = ({
         .questionPool {
           display: flex;
           flex-direction: column;
+          height: 100%;
+          background-color: #f5f5f5;
 
-          padding: 1rem;
-        }
+          .questionList {
+            // HACK: workaround for creating session div overlapping the question list
+            padding: 1rem;
+            padding-bottom: 235px;
 
-        .tagList {
-          flex: 1;
+            .buttons {
+              margin: 0 0 1rem 0;
 
-          margin-bottom: 1rem;
-        }
+              display: flex;
+              justify-content: center;
 
-        .actionButton {
-          display: flex;
-          flex-direction: row;
-          justify-items: flex-end;
-        }
-
-        @include desktop-tablet-only {
-          .questionPool {
-            flex-flow: row wrap;
-
-            padding: 2rem;
+              > :global(button:last-child) {
+                margin-right: 0;
+              }
+            }
           }
 
           .tagList {
-            flex: 0 0 auto;
-
-            margin: 0;
-            margin-right: 2rem;
-          }
-
-          .questionList {
             flex: 1;
+            background: #ebebeb;
+            padding: 0.5rem;
           }
-        }
 
-        @include desktop-only {
-          .questionPool {
-            padding: 2rem 10% 2rem 2rem;
+          @include desktop-tablet-only {
+            flex-flow: row wrap;
+
+            .tagList {
+              flex: 0 0 auto;
+              padding: 1rem;
+            }
+
+            .questionList {
+              flex: 1;
+              padding: 1rem;
+
+              .buttons {
+                display: flex;
+                justify-content: flex-end;
+              }
+            }
+          }
+
+          @include desktop-only {
+            padding: 0;
+
+            .tagList {
+              padding: 2rem;
+            }
+
+            .questionList {
+              padding: 2rem;
+            }
           }
         }
       `}</style>
@@ -228,7 +245,7 @@ export default compose(
     // handle starting an existing or newly created session
     handleStartSession: ({ mutate }) => id =>
       mutate({
-        refetchQueries: [{ query: RunningSessionQuery }],
+        refetchQueries: [{ query: RunningSessionQuery }, { query: AccountSummaryQuery }],
         variables: { id },
       }),
   }),

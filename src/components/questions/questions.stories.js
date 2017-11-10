@@ -29,7 +29,10 @@ storiesOf('questions', module)
   ))
   .add('Question (MC, no tags)', () => <Question {...fixtures.question} tags={[]} type="MC" />)
   .add('QuestionDetails', () => (
-    <QuestionDetails lastUsed={['20.12.2017', '19.12.2017', '10.10.2017']} />
+    <QuestionDetails
+      description="hello world blabla"
+      lastUsed={['20.12.2017', '19.12.2017', '10.10.2017']}
+    />
   ))
   .add('QuestionList', () => (
     <QuestionListPres questions={fixtures.questions} onQuestionDropped={() => null} />
@@ -62,12 +65,12 @@ storiesOf('questions', module)
       <TagInput input={{ onChange: () => null, value: ['tag1', 'tag2'] }} />
     </form>
   ))
-  .add('TitleInput', () => (
+  .add('TitleInput [NoTest]', () => (
     <form className="ui form">
       <TitleInput input={{ onChange: () => null, value: 'my title' }} />
     </form>
   ))
-  .add('ContentInput', () => (
+  .add('ContentInput [NoTest]', () => (
     <form className="ui form">
       <ContentInput input={{ onChange: () => null, value: 'hello world' }} />
     </form>

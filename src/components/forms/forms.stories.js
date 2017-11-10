@@ -7,10 +7,7 @@ import { action } from '@storybook/addon-actions'
 import { DragDropContextProvider } from 'react-dnd'
 import HTML5Backend from 'react-dnd-html5-backend'
 
-import { combineReducers, createStore } from 'redux'
-import { reducer as formReducer } from 'redux-form'
-
-import { intlMock } from '../../../.storybook/utils'
+import { configureStore, intlMock } from '../../../.storybook/utils'
 
 import {
   LoginForm,
@@ -22,20 +19,24 @@ import {
   SemanticInput,
 } from '.'
 
-const rootReducer = combineReducers({
-  form: formReducer,
-})
+let store
+const getStoryWithRedux = (getStory) => {
+  // initialize the redux store
+  if (!store) {
+    store = configureStore()
+  }
 
-const store = createStore(rootReducer)
+  return <ReduxProvider store={store}>{getStory()}</ReduxProvider>
+}
 
 storiesOf('forms/components', module)
-  .addDecorator(getStory => <ReduxProvider store={store}>{getStory()}</ReduxProvider>)
+  .addDecorator(getStoryWithRedux)
   .addDecorator(getStory => (
     <DragDropContextProvider backend={HTML5Backend}>{getStory()}</DragDropContextProvider>
   ))
   .add('LoginForm', () => <LoginForm intl={intlMock} />)
   .add('PasswortResetForm', () => <PasswordResetForm intl={intlMock} />)
-  .add('RegistrationForm', () => <RegistrationForm intl={intlMock} />)
+  .add('RegistrationForm [NoTest]', () => <RegistrationForm intl={intlMock} />)
   // HACK: disable test for QuestionCreationForm as autosuggest breaks...
   .add('QuestionCreationForm [NoTest]', () => <QuestionCreationForm intl={intlMock} />)
   .add('SessionCreationForm', () => (
@@ -43,7 +44,7 @@ storiesOf('forms/components', module)
   ))
 
 storiesOf('forms/helpers', module)
-  .addDecorator(getStory => <ReduxProvider store={store}>{getStory()}</ReduxProvider>)
+  .addDecorator(getStoryWithRedux)
   .add('FormWithLinks', () => (
     <FormWithLinks
       button={{

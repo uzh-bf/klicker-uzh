@@ -27,6 +27,7 @@ export const QuestionListQuery = gql`
       }
       versions {
         id
+        description
         createdAt
       }
       createdAt

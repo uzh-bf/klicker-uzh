@@ -6,12 +6,19 @@ import isLength from 'validator/lib/isLength'
 import isEmpty from 'validator/lib/isEmpty'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Field, reduxForm } from 'redux-form'
-import { Button } from 'semantic-ui-react'
+import { Button, Form } from 'semantic-ui-react'
 
 import { SemanticInput } from '.'
 
 const validate = ({
-  firstName, lastName, email, shortname, password, passwordRepeat, useCase,
+  firstName,
+  lastName,
+  institution,
+  email,
+  shortname,
+  password,
+  passwordRepeat,
+  useCase,
 }) => {
   const errors = {}
 
@@ -21,6 +28,10 @@ const validate = ({
 
   if (!lastName || !isAlpha(lastName) || isEmpty(lastName)) {
     errors.lastName = 'form.lastName.invalid'
+  }
+
+  if (!institution || !isAlpha(institution) || isEmpty(institution)) {
+    errors.institution = 'form.institution.invalid'
   }
 
   // the email address needs to be valid
@@ -57,123 +68,146 @@ const propTypes = {
 }
 
 const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
-  <form className="ui form error" onSubmit={onSubmit}>
-    <div className="personal">
-      <Field
-        component={SemanticInput}
-        intl={intl}
-        label={intl.formatMessage({
-          defaultMessage: 'First name',
-          id: 'form.firstName.label',
-        })}
-        name="firstName"
-        type="text"
-      />
-      <Field
-        component={SemanticInput}
-        intl={intl}
-        label={intl.formatMessage({
-          defaultMessage: 'Last name',
-          id: 'form.lastName.label',
-        })}
-        name="lastName"
-        type="text"
-      />
-      <Field
-        required
-        component={SemanticInput}
-        intl={intl}
-        label={intl.formatMessage({
-          defaultMessage: 'Email',
-          id: 'form.email.label',
-        })}
-        name="email"
-        type="email"
-      />
-    </div>
-
-    <div className="account">
-      <Field
-        required
-        component={SemanticInput}
-        intl={intl}
-        label={intl.formatMessage({
-          defaultMessage: 'Shortname',
-          id: 'form.shortname.label',
-        })}
-        name="shortname"
-        type="text"
-      />
-      <Field
-        required
-        component={SemanticInput}
-        intl={intl}
-        label={intl.formatMessage({
-          defaultMessage: 'Password',
-          id: 'form.password.label',
-        })}
-        name="password"
-        type="password"
-      />
-      <Field
-        required
-        component={SemanticInput}
-        intl={intl}
-        label={intl.formatMessage({
-          defaultMessage: 'Repeat password',
-          id: 'form.passwordRepeat.label',
-        })}
-        name="passwordRepeat"
-        type="password"
-      />
-      <div className="field">
-        <label htmlFor="useCase">
-          <FormattedMessage defaultMessage="Use case description" id="form.useCase.label" />
-        </label>
-        <Field name="useCase" component="textarea" type="text" />
+  <div className="registrationForm">
+    <Form error onSubmit={onSubmit}>
+      <div className="personal">
+        <Field
+          required
+          component={SemanticInput}
+          intl={intl}
+          label={intl.formatMessage({
+            defaultMessage: 'First name',
+            id: 'form.firstName.label',
+          })}
+          name="firstName"
+          type="text"
+        />
+        <Field
+          required
+          component={SemanticInput}
+          intl={intl}
+          label={intl.formatMessage({
+            defaultMessage: 'Last name',
+            id: 'form.lastName.label',
+          })}
+          name="lastName"
+          type="text"
+        />
+        <Field
+          required
+          component={SemanticInput}
+          icon="mail"
+          intl={intl}
+          label={intl.formatMessage({
+            defaultMessage: 'Email',
+            id: 'form.email.label',
+          })}
+          name="email"
+          type="email"
+        />
       </div>
 
-      <Button primary disabled={invalid} floated="right" type="submit">
-        <FormattedMessage defaultMessage="Submit" id="form.button.submit" />
-      </Button>
-    </div>
+      <div className="account">
+        <Field
+          required
+          component={SemanticInput}
+          icon="hashtag"
+          intl={intl}
+          label={intl.formatMessage({
+            defaultMessage: 'Account ID',
+            id: 'form.shortname.label',
+          })}
+          tooltip={intl.formatMessage({
+            defaultMessage:
+              'A unique identifier for your account. Must be between 3 and 6 characters long.',
+            id: 'tooltip',
+          })}
+          name="shortname"
+          type="text"
+        />
+        <Field
+          required
+          component={SemanticInput}
+          icon="privacy"
+          intl={intl}
+          label={intl.formatMessage({
+            defaultMessage: 'Password',
+            id: 'form.password.label',
+          })}
+          name="password"
+          type="password"
+        />
+        <Field
+          required
+          component={SemanticInput}
+          icon="privacy"
+          intl={intl}
+          label={intl.formatMessage({
+            defaultMessage: 'Repeat password',
+            id: 'form.passwordRepeat.label',
+          })}
+          name="passwordRepeat"
+          type="password"
+        />
+      </div>
+      <div className="use">
+        <Field
+          required
+          component={SemanticInput}
+          icon="university"
+          label={intl.formatMessage({
+            defaultMessage: 'Institution',
+            id: 'form.institution.label',
+          })}
+          name="institution"
+          type="text"
+        />
+        <Form.Field>
+          <label htmlFor="useCase">
+            <FormattedMessage defaultMessage="Use case description" id="form.useCase.label" />
+          </label>
+          <Field name="useCase" component="textarea" icon="company" intl={intl} type="text" />
+        </Form.Field>
+
+        <Button primary disabled={invalid} floated="right" type="submit">
+          <FormattedMessage defaultMessage="Submit" id="form.button.submit" />
+        </Button>
+      </div>
+    </Form>
 
     <style jsx>{`
       @import 'src/theme';
 
-      .form {
+      .registrationForm > :global(form) {
         display: flex;
         flex-direction: column;
-      }
-      .account {
-        margin-top: 1rem;
-      }
+        .account {
+          margin-top: 1rem;
+        }
+        .use {
+          margin-top: 1rem;
+        }
 
-      @include desktop-tablet-only {
-        .form {
+        @include desktop-tablet-only {
           flex-flow: row wrap;
-        }
-        .personal,
-        .account {
-          flex: 1 1 50%;
-        }
-        .personal {
-          padding-right: 0.5rem;
-        }
-        .account {
-          margin: 0;
-          padding-left: 0.5rem;
-        }
-      }
-
-      @include desktop-only {
-        .form {
-          border: 1px solid lightgrey;
+          border: 1px solid $color-primary;
           padding: 1rem;
+          background-color: rgba(124, 184, 228, 0.12);
+
+          .personal,
+          .account {
+            flex: 1 1 50%;
+          }
+          .personal {
+            padding-right: 0.5rem;
+          }
+          .account {
+            margin: 0;
+          }
         }
       }
     `}</style>
-  </form>
+  </div>
 )
 
 RegistrationForm.propTypes = propTypes

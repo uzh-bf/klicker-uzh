@@ -47,9 +47,7 @@ const TeacherLayout = ({
     },
     {
       href: '/sessions',
-      label: (
-        <FormattedMessage id="teacher.sessionHistory.title" defaultMessage="Session History" />
-      ),
+      label: <FormattedMessage id="teacher.sessionHistory.title" defaultMessage="Sessions" />,
       name: 'sessionHistory',
     },
     {
