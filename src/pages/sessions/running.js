@@ -206,5 +206,6 @@ export default compose(
   // flatten out the relevant data props
   withProps(({ data }) => ({
     ...data.runningSession,
+    ...data.runningSession.settings,
   })),
 )(Running)
