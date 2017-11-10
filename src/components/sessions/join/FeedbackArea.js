@@ -9,11 +9,11 @@ import { ConfusionSlider } from '../../../components/confusion'
 import { Feedback } from '../../../components/feedbacks'
 
 const propTypes = {
-  active: PropTypes.bool.isRequired,
+  active: PropTypes.bool,
   confusionDifficulty: PropTypes.number.isRequired,
   confusionSpeed: PropTypes.number.isRequired,
   feedbackCreationMode: PropTypes.bool.isRequired,
-  feedbackInputValue: PropTypes.string,
+  feedbackInputValue: PropTypes.string.isRequired,
   feedbacks: PropTypes.array,
   handleConfusionDifficultyChange: PropTypes.func.isRequired,
   handleConfusionSpeedChange: PropTypes.func.isRequired,
@@ -22,7 +22,7 @@ const propTypes = {
 }
 
 const defaultProps = {
-  feedbackInputValue: undefined,
+  active: false,
   feedbacks: [],
 }
 
