@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import Link from 'next/link'
 import isEmpty from 'validator/lib/isEmpty'
-import { compose } from 'recompose'
+import { compose, withHandlers, withState } from 'recompose'
 import { connect } from 'react-redux'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage, intlShape } from 'react-intl'
@@ -50,6 +50,7 @@ const validate = ({
 
 const propTypes = {
   content: PropTypes.string.isRequired,
+  handleNewVersionToggle: PropTypes.func.isRequired,
   handleSubmit: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   invalid: PropTypes.bool.isRequired,
@@ -79,6 +80,7 @@ const QuestionEditForm = ({
   invalid,
   title,
   type,
+  handleNewVersionToggle,
   handleSubmit: onSubmit,
   onDiscard,
   versions,
@@ -133,7 +135,7 @@ const QuestionEditForm = ({
                 options={versionOptions}
               />
             </div>
-            <Button>New Version</Button>
+            <Button onClick={handleNewVersionToggle}>New Version</Button>
           </div>
         </div>
 
@@ -246,6 +248,12 @@ QuestionEditForm.propTypes = propTypes
 QuestionEditForm.defaultProps = defaultProps
 
 export default compose(
+  withState('isNewVersion', 'setToNewVersion', false),
+  withHandlers({
+    handleNewVersionToggle: ({ setToNewVersion }) => () => {
+      setToNewVersion(prevState => !prevState)
+    },
+  }),
   connect((state, props) => ({
     initialValues: {
       content: props.versions[props.versions.length - 1].description,
