@@ -133,6 +133,7 @@ const QuestionEditForm = ({
                 options={versionOptions}
               />
             </div>
+            <Button>New Version</Button>
           </div>
         </div>
 
