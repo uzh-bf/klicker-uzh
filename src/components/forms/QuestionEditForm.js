@@ -142,7 +142,7 @@ const QuestionEditForm = ({
         </div>
 
         <div className="questionInput questionTags">
-          <Field name="tags" component={TagInput} />
+          <Field name="tags" component={TagInput} props={{ disabled: !isNewVersion }} />
         </div>
 
         <div className="questionInput questionContent">

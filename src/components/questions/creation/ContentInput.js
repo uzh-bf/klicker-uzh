@@ -6,6 +6,7 @@ import { FormattedMessage } from 'react-intl'
 import { FaQuestionCircle } from 'react-icons/lib/fa'
 
 const propTypes = {
+  disabled: PropTypes.bool.isRequired,
   input: PropTypes.shape({
     onChange: PropTypes.func.isRequired,
     value: PropTypes.string.isRequired,
