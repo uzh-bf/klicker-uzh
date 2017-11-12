@@ -4,7 +4,6 @@ import classNames from 'classnames'
 import { FormattedMessage } from 'react-intl'
 import { compose, withStateHandlers, withHandlers } from 'recompose'
 import { Form, Button } from 'semantic-ui-react'
-import _throttle from 'lodash/throttle'
 
 import { ConfusionSlider } from '../../../components/confusion'
 import { Feedback } from '../../../components/feedbacks'

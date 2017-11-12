@@ -24,6 +24,7 @@ import {
 import { StudentLayout } from '../components/layouts'
 
 const propTypes = {
+  activeQuestions: PropTypes.array,
   feedbacks: PropTypes.arrayOf({
     content: PropTypes.string.isRequired,
     votes: PropTypes.number.isRequired,
@@ -34,13 +35,15 @@ const propTypes = {
   handleSidebarActiveItemChange: PropTypes.func.isRequired,
   handleToggleSidebarVisible: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  isFeedbackChannelActive: PropTypes.bool.isRequired,
   isConfusionBarometerActive: PropTypes.bool.isRequired,
+  isFeedbackChannelActive: PropTypes.bool.isRequired,
+  shortname: PropTypes.string.isRequired,
   sidebarActiveItem: PropTypes.string.isRequired,
   sidebarVisible: PropTypes.bool.isRequired,
 }
 
 const defaultProps = {
+  activeQuestions: [],
   feedbacks: [],
 }
 
@@ -115,8 +118,12 @@ const Join = ({
             display: flex;
             height: 100%;
 
-            .questionArea.inactive {
-              display: none;
+            .questionArea {
+              padding: 1rem;
+
+              &.inactive {
+                display: none;
+              }
             }
 
             @include desktop-tablet-only {
@@ -231,10 +238,10 @@ export default compose(
     },
 
     // handle creation of a new response
-    handleNewResponse: ({ data: { joinSession }, newResponse }) => async ({ response }) => {
+    handleNewResponse: ({ newResponse }) => async ({ instanceId, response }) => {
       try {
         await newResponse({
-          variables: { response, sessionId: joinSession.id },
+          variables: { instanceId, response },
         })
       } catch ({ message }) {
         console.error(message)

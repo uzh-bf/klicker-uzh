@@ -171,6 +171,8 @@ export const JoinSessionQuery = gql`
         isConfusionBarometerActive
       }
       activeQuestions {
+        id
+        instanceId
         title
         description
         type
