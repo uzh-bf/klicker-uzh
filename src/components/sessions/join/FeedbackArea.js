@@ -94,13 +94,17 @@ function FeedbackArea({
         {feedbackCreationMode && (
           <Form className="newFeedback">
             <Form.Field>
-              <label forHtml="feedbackInput">New Feedback</label>
-
-              <textarea
-                name="feedbackInput"
-                value={feedbackInputValue}
-                onChange={handleFeedbackInputValueChange}
-              />
+              <label htmlFor="feedbackInput">
+                <FormattedMessage
+                  defaultMessage="New Feedback"
+                  id="joinSession.newFeedbackInput.label"
+                />
+                <textarea
+                  name="feedbackInput"
+                  value={feedbackInputValue}
+                  onChange={handleFeedbackInputValueChange}
+                />
+              </label>
             </Form.Field>
 
             <Button onClick={toggleFeedbackCreationMode}>
