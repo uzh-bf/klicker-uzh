@@ -9,7 +9,7 @@ import {
   branch,
   renderComponent,
 } from 'recompose'
-import { intlShape } from 'react-intl'
+import { intlShape, FormattedMessage } from 'react-intl'
 import { graphql } from 'react-apollo'
 
 import FeedbackArea from '../components/sessions/join/FeedbackArea'
@@ -98,7 +98,10 @@ const Join = ({
               inactive: sidebarActiveItem !== 'activeQuestion',
             })}
           >
-            No evaluation active.
+            <FormattedMessage
+              defaultMessage="No evaluation active."
+              id="joinSession.noEvaluationActive"
+            />
           </div>
         )}
 
@@ -169,7 +172,11 @@ export default compose(
   branch(({ loading }) => loading, renderComponent(() => <div />)),
   branch(
     ({ data }) => data.errors || !data.joinSession,
-    renderComponent(() => <div>No session active.</div>),
+    renderComponent(() => (
+      <div>
+        <FormattedMessage defaultMessage="No session active." id="joinSession.noSessionActive" />
+      </div>
+    )),
   ),
   graphql(AddConfusionTSMutation, { name: 'newConfusionTS' }),
   graphql(AddFeedbackMutation, { name: 'newFeedback' }),
