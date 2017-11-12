@@ -16,7 +16,11 @@ import FeedbackArea from '../components/sessions/join/FeedbackArea'
 import QuestionArea from '../components/sessions/join/QuestionArea'
 import { pageWithIntl, withData } from '../lib'
 import { JoinSessionQuery } from '../graphql/queries'
-import { AddConfusionTSMutation, AddFeedbackMutation } from '../graphql/mutations'
+import {
+  AddConfusionTSMutation,
+  AddFeedbackMutation,
+  AddResponseMutation,
+} from '../graphql/mutations'
 import { StudentLayout } from '../components/layouts'
 
 const propTypes = {
@@ -148,6 +152,7 @@ export default compose(
   ),
   graphql(AddConfusionTSMutation, { name: 'newConfusionTS' }),
   graphql(AddFeedbackMutation, { name: 'newFeedback' }),
+  graphql(AddResponseMutation, { name: 'newResponse' }),
   withHandlers({
     handleNewConfusionTS: ({ data: { joinSession }, newConfusionTS }) => async ({
       difficulty,
@@ -161,15 +166,61 @@ export default compose(
         console.error(message)
       }
     },
-    handleNewFeedback: ({ data: { joinSession }, newFeedback }) => async ({ content }) => {
+    handleNewFeedback: ({ data: { joinSession }, newFeedback, url }) => async ({ content }) => {
       try {
-        await newFeedback({
-          variables: { sessionId: joinSession.id, content },
-        })
+        if (joinSession.settings.isFeedbackChannelPublic) {
+          await newFeedback({
+            // optimistically add the feedback to the array already
+            optimisticResponse: {
+              addFeedback: {
+                feedbacks: [
+                  ...joinSession.feedbacks,
+                  {
+                    __typename: 'Feedback',
+                    content,
+                    // randomly generate an id, will be replaced by server response
+                    id: Math.round(Math.random() * -1000000),
+                    votes: 0,
+                  },
+                ],
+              },
+            },
+            // update the cache after the mutation has completed
+            update: (store, { data: { addFeedback } }) => {
+              const query = {
+                query: JoinSessionQuery,
+                variables: { shortname: url.query.shortname },
+              }
+
+              // get the data from the store
+              // replace the feedbacks
+              const data = store.readQuery(query)
+              data.joinSession.feedbacks = addFeedback.feedbacks
+
+              // write the updated data to the store
+              store.writeQuery({
+                ...query,
+                data,
+              })
+            },
+            variables: { content, sessionId: joinSession.id },
+          })
+        } else {
+          await newFeedback({ variables: { content, sessionId: joinSession.id } })
+        }
       } catch ({ message }) {
         console.error(message)
       }
     },
+    /* handleNewResponse: ({ data: { joinSession }, newResponse }) => async ({ response }) => {
+      try {
+        await newResponse({
+          variables: { sessionId: joinSession.id,  },
+        })
+      } catch ({ message }) {
+        console.error(message)
+      }
+    }, */
   }),
   withProps(({ data: { joinSession }, url }) => ({
     ...joinSession,

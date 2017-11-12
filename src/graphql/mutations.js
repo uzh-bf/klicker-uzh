@@ -167,11 +167,6 @@ export const AddResponseMutation = gql`
   mutation AddResponse($instanceId: ID!, $response: QuestionInstance_ResponseInput!) {
     addResponse(instanceId: $instanceId, response: $response) {
       id
-      responses {
-        id
-        value
-        createdAt
-      }
     }
   }
 `

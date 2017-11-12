@@ -84,8 +84,8 @@ function FeedbackArea({
           ))}
 
         {feedbackCreationMode && (
-          <div className="newFeedbackRow">
-            <Input value={feedbackInputValue} onChange={handleFeedbackInputValueChange} />
+          <div className="newFeedback">
+            <textarea value={feedbackInputValue} onChange={handleFeedbackInputValueChange} />
             <Button onClick={toggleFeedbackCreationMode}>Cancel</Button>
             <Button onClick={handleNewFeedback}>Submit</Button>
           </div>
@@ -102,8 +102,12 @@ function FeedbackArea({
         @import 'src/theme';
 
         .feedbackArea {
+          position: relative;
+
           display: none;
           flex-direction: column;
+
+          padding-bottom: 10rem;
 
           flex: 1;
 
@@ -124,16 +128,26 @@ function FeedbackArea({
             margin-bottom: 0.5rem;
           }
 
-          .newFeedbackRow {
+          .newFeedback {
             display: flex;
+            flex-flow: row wrap;
+            justify-content: space-between;
 
-            > .ui.input {
-              // TODO formatting
+            position: absolute;
+            bottom: 0;
+            left: 1rem;
+            right: 0;
+
+            > textarea {
+              flex: 0 0 100%;
+
+              padding: 0.5rem;
             }
 
             > :global(button) {
-              flex: 1 1 5%;
-              align-self: flex-end;
+              flex: 0 0 auto;
+
+              margin-right: 0;
             }
           }
 
@@ -180,17 +194,31 @@ export default compose(
       handleFeedbackInputValueChange: () => e => ({
         feedbackInputValue: e.target.value,
       }),
-      toggleFeedbackCreationMode: ({ feedbackCreationMode }) => () => ({
-        feedbackCreationMode: !feedbackCreationMode,
-      }),
+      toggleFeedbackCreationMode: ({ feedbackCreationMode }) => () => {
+        if (feedbackCreationMode) {
+          return {
+            feedbackCreationMode: false,
+            feedbackInputValue: undefined,
+          }
+        }
+
+        return {
+          feedbackCreationMode: true,
+        }
+      },
     },
   ),
   withHandlers({
     handleNewConfusionTS: ({ confusionDifficulty, confusionSpeed, handleNewConfusionTS }) => () => {
       handleNewConfusionTS({ difficulty: confusionDifficulty, speed: confusionSpeed })
     },
-    handleNewFeedback: ({ feedbackInputValue, handleNewFeedback }) => () => {
+    handleNewFeedback: ({
+      feedbackInputValue,
+      handleNewFeedback,
+      toggleFeedbackCreationMode,
+    }) => () => {
       handleNewFeedback({ content: feedbackInputValue })
+      toggleFeedbackCreationMode()
     },
   }),
 )(FeedbackArea)
