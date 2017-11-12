@@ -26,10 +26,7 @@ function ActionMenu({
         ))}
         <Menu.Item className="submitButton" position="right">
           <Button fluid primary onClick={onSubmit}>
-            <FormattedMessage
-              id="common.string.submit"
-              defaultMessage="Submit"
-            />
+            <FormattedMessage id="common.string.submit" defaultMessage="Submit" />
           </Button>
         </Menu.Item>
       </Menu>
@@ -42,14 +39,14 @@ function ActionMenu({
 
           :global(.item.active) {
             background-color: $color-primary-50p;
+
+            &:hover {
+              background-color: $color-primary-50p;
+            }
           }
 
-          :global(.item.submitButton) {
-            padding: 0.5rem;
-
-            :global(button.button) {
-              margin: 0;
-            }
+          :global(.item.submitButton button.button) {
+            margin: 0;
           }
         }
       `}</style>

@@ -28,11 +28,14 @@ const propTypes = {
     content: PropTypes.string.isRequired,
     votes: PropTypes.number.isRequired,
   }),
-  handleSidebarActiveItemChange: PropTypes.func.isRequired,
-  handleToggleSidebarVisible: PropTypes.func.isRequired,
   handleNewConfusionTS: PropTypes.func.isRequired,
   handleNewFeedback: PropTypes.func.isRequired,
+  handleNewResponse: PropTypes.func.isRequired,
+  handleSidebarActiveItemChange: PropTypes.func.isRequired,
+  handleToggleSidebarVisible: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
+  isFeedbackChannelActive: PropTypes.bool.isRequired,
+  isConfusionBarometerActive: PropTypes.bool.isRequired,
   sidebarActiveItem: PropTypes.string.isRequired,
   sidebarVisible: PropTypes.bool.isRequired,
 }
@@ -42,16 +45,19 @@ const defaultProps = {
 }
 
 const Join = ({
+  activeQuestions,
   intl,
   feedbacks,
-  activeQuestions,
   shortname,
   sidebarActiveItem,
   sidebarVisible,
+  isFeedbackChannelActive,
+  isConfusionBarometerActive,
   handleSidebarActiveItemChange,
   handleToggleSidebarVisible,
   handleNewConfusionTS,
   handleNewFeedback,
+  handleNewResponse,
 }) => {
   const title =
     sidebarActiveItem === 'activeQuestion'
@@ -66,6 +72,7 @@ const Join = ({
 
   return (
     <StudentLayout
+      isInteractionEnabled={isConfusionBarometerActive || isFeedbackChannelActive}
       pageTitle={`Join ${shortname}`}
       sidebar={{
         activeItem: sidebarActiveItem,
@@ -80,11 +87,12 @@ const Join = ({
           <QuestionArea
             active={sidebarActiveItem === 'activeQuestion'}
             questions={activeQuestions}
+            handleNewResponse={handleNewResponse}
           />
         ) : (
           <div
             className={classNames('questionArea', {
-              active: sidebarActiveItem === 'activeQuestion',
+              inactive: sidebarActiveItem !== 'activeQuestion',
             })}
           >
             No evaluation active.
@@ -94,6 +102,8 @@ const Join = ({
         <FeedbackArea
           active={sidebarActiveItem === 'feedbackChannel'}
           feedbacks={feedbacks}
+          isConfusionBarometerActive={isConfusionBarometerActive}
+          isFeedbackChannelActive={isFeedbackChannelActive}
           handleNewConfusionTS={handleNewConfusionTS}
           handleNewFeedback={handleNewFeedback}
         />
@@ -104,6 +114,10 @@ const Join = ({
           .joinSession {
             display: flex;
             height: 100%;
+
+            .questionArea.inactive {
+              display: none;
+            }
 
             @include desktop-tablet-only {
               padding: 1rem;
@@ -154,18 +168,21 @@ export default compose(
   graphql(AddFeedbackMutation, { name: 'newFeedback' }),
   graphql(AddResponseMutation, { name: 'newResponse' }),
   withHandlers({
+    // handle creation of a new confusion timestep
     handleNewConfusionTS: ({ data: { joinSession }, newConfusionTS }) => async ({
       difficulty,
       speed,
     }) => {
       try {
         await newConfusionTS({
-          variables: { sessionId: joinSession.id, difficulty, speed },
+          variables: { difficulty, sessionId: joinSession.id, speed },
         })
       } catch ({ message }) {
         console.error(message)
       }
     },
+
+    // handle creation of a new feedback
     handleNewFeedback: ({ data: { joinSession }, newFeedback, url }) => async ({ content }) => {
       try {
         if (joinSession.settings.isFeedbackChannelPublic) {
@@ -212,18 +229,21 @@ export default compose(
         console.error(message)
       }
     },
-    /* handleNewResponse: ({ data: { joinSession }, newResponse }) => async ({ response }) => {
+
+    // handle creation of a new response
+    handleNewResponse: ({ data: { joinSession }, newResponse }) => async ({ response }) => {
       try {
         await newResponse({
-          variables: { sessionId: joinSession.id,  },
+          variables: { response, sessionId: joinSession.id },
         })
       } catch ({ message }) {
         console.error(message)
       }
-    }, */
+    },
   }),
   withProps(({ data: { joinSession }, url }) => ({
     ...joinSession,
+    ...joinSession.settings,
     shortname: url.query.shortname,
   })),
 )(Join)

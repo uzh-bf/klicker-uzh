@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { FormattedMessage } from 'react-intl'
 import { compose, withStateHandlers, withHandlers } from 'recompose'
-import { Input, Button } from 'semantic-ui-react'
+import { Form, Button } from 'semantic-ui-react'
 import _throttle from 'lodash/throttle'
 
 import { ConfusionSlider } from '../../../components/confusion'
@@ -21,18 +21,24 @@ const propTypes = {
   handleFeedbackInputValueChange: PropTypes.func.isRequired,
   handleNewConfusionTS: PropTypes.func.isRequired,
   handleNewFeedback: PropTypes.func.isRequired,
+  isConfusionBarometerActive: PropTypes.bool,
+  isFeedbackChannelActive: PropTypes.bool,
   toggleFeedbackCreationMode: PropTypes.func.isRequired,
 }
 
 const defaultProps = {
   active: false,
   feedbacks: [],
+  isConfusionBarometerActive: false,
+  isFeedbackChannelActive: false,
 }
 
 function FeedbackArea({
   active,
+  isConfusionBarometerActive,
   confusionDifficulty,
   confusionSpeed,
+  isFeedbackChannelActive,
   feedbacks,
   feedbackCreationMode,
   feedbackInputValue,
@@ -45,32 +51,35 @@ function FeedbackArea({
 }) {
   return (
     <div className={classNames('feedbackArea', { active })}>
-      <div className="confusion">
-        <ConfusionSlider
-          title={
-            <h2>
-              <FormattedMessage id="common.string.speed" defaultMessage="Speed" />
-            </h2>
-          }
-          value={confusionSpeed}
-          handleChange={newValue => handleConfusionSpeedChange(newValue)}
-          handleChangeComplete={handleNewConfusionTS}
-        />
+      {isConfusionBarometerActive && (
+        <div className="confusion">
+          <ConfusionSlider
+            title={
+              <h2>
+                <FormattedMessage id="common.string.speed" defaultMessage="Speed" />
+              </h2>
+            }
+            value={confusionSpeed}
+            handleChange={newValue => handleConfusionSpeedChange(newValue)}
+            handleChangeComplete={handleNewConfusionTS}
+          />
 
-        <ConfusionSlider
-          title={
-            <h2>
-              <FormattedMessage id="common.string.difficulty" defaultMessage="Difficulty" />
-            </h2>
-          }
-          value={confusionDifficulty}
-          handleChange={newValue => handleConfusionDifficultyChange(newValue)}
-          handleChangeComplete={handleNewConfusionTS}
-        />
-      </div>
+          <ConfusionSlider
+            title={
+              <h2>
+                <FormattedMessage id="common.string.difficulty" defaultMessage="Difficulty" />
+              </h2>
+            }
+            value={confusionDifficulty}
+            handleChange={newValue => handleConfusionDifficultyChange(newValue)}
+            handleChangeComplete={handleNewConfusionTS}
+          />
+        </div>
+      )}
 
       <div className="feedbacks">
-        {feedbacks &&
+        {isFeedbackChannelActive &&
+          feedbacks &&
           feedbacks.map(({ id, content, votes }) => (
             <div key={id} className="feedback">
               <Feedback
@@ -84,17 +93,38 @@ function FeedbackArea({
           ))}
 
         {feedbackCreationMode && (
-          <div className="newFeedback">
-            <textarea value={feedbackInputValue} onChange={handleFeedbackInputValueChange} />
-            <Button onClick={toggleFeedbackCreationMode}>Cancel</Button>
-            <Button onClick={handleNewFeedback}>Submit</Button>
-          </div>
+          <Form className="newFeedback">
+            <Form.Field>
+              <label forHtml="feedbackInput">New Feedback</label>
+
+              <textarea
+                name="feedbackInput"
+                value={feedbackInputValue}
+                onChange={handleFeedbackInputValueChange}
+              />
+            </Form.Field>
+
+            <Button onClick={toggleFeedbackCreationMode}>
+              <FormattedMessage defaultMessage="Cancel" id="common.form.cancel" />
+            </Button>
+
+            <Button primary floated="right" type="submit" onClick={handleNewFeedback}>
+              <FormattedMessage defaultMessage="Submit" id="common.form.submit" />
+            </Button>
+          </Form>
         )}
       </div>
 
       {!feedbackCreationMode && (
         <div className="actionButton">
-          <Button circular primary icon="plus" onClick={toggleFeedbackCreationMode} size="large" />
+          <Button
+            circular
+            primary
+            disabled={!isFeedbackChannelActive}
+            icon="plus"
+            onClick={toggleFeedbackCreationMode}
+            size="large"
+          />
         </div>
       )}
 
@@ -107,7 +137,8 @@ function FeedbackArea({
           display: none;
           flex-direction: column;
 
-          padding-bottom: 10rem;
+          padding: 1rem;
+          padding-bottom: 15rem;
 
           flex: 1;
 
@@ -119,43 +150,26 @@ function FeedbackArea({
             margin-bottom: 0.5rem;
           }
 
-          .confusion,
-          .feedbacks {
-            padding: 1rem;
-          }
-
           .feedback:not(:last-child) {
             margin-bottom: 0.5rem;
           }
 
-          .newFeedback {
-            display: flex;
-            flex-flow: row wrap;
-            justify-content: space-between;
-
+          :global(form.newFeedback) {
             position: absolute;
-            bottom: 0;
+            bottom: 1rem;
             left: 1rem;
-            right: 0;
+            right: 1rem;
 
-            > textarea {
-              flex: 0 0 100%;
-
-              padding: 0.5rem;
-            }
-
-            > :global(button) {
-              flex: 0 0 auto;
-
-              margin-right: 0;
+            textarea {
+              height: 7rem;
             }
           }
 
           .actionButton {
             position: fixed;
 
-            bottom: 1rem;
-            right: 1rem;
+            bottom: 2rem;
+            right: 2rem;
           }
 
           .actionButton :global(button) {

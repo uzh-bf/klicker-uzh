@@ -6,16 +6,18 @@ const propTypes = {
   alreadyVoted: PropTypes.bool.isRequired,
   content: PropTypes.string.isRequired,
   showDelete: PropTypes.bool,
+  showVotes: PropTypes.bool,
   updateVotes: PropTypes.func.isRequired,
   votes: PropTypes.number.isRequired,
 }
 
 const defaultProps = {
   showDelete: true,
+  showVotes: false,
 }
 
 const Feedback = ({
-  alreadyVoted, content, showDelete, updateVotes, votes,
+  alreadyVoted, content, showDelete, showVotes, updateVotes, votes,
 }) => (
   <div className="feedback">
     <div className="content">{content}</div>
@@ -25,10 +27,12 @@ const Feedback = ({
       </div>
     )}
 
-    <Button disabled={alreadyVoted} className="votes" onClick={updateVotes && updateVotes()}>
-      <Icon name={alreadyVoted ? 'thumbs up' : 'thumbs outline up'} />
-      {votes}
-    </Button>
+    {showVotes && (
+      <Button disabled={alreadyVoted} className="votes" onClick={updateVotes && updateVotes()}>
+        <Icon name={alreadyVoted ? 'thumbs up' : 'thumbs outline up'} />
+        {votes}
+      </Button>
+    )}
 
     <style jsx>{`
       @import 'src/theme';
@@ -41,7 +45,7 @@ const Feedback = ({
 
         .content,
         .delete {
-          padding: 1rem;
+          padding: 0.7rem;
         }
 
         .content {
@@ -61,13 +65,6 @@ const Feedback = ({
           justify-content: center;
 
           border-left: 1px solid grey;
-        }
-
-        @include desktop-tablet-only {
-          .content,
-          .delete {
-            padding: 0.5rem;
-          }
         }
       }
     `}</style>

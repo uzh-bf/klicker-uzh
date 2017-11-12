@@ -8,34 +8,38 @@ import { Sidebar } from '../common/sidebar'
 
 const propTypes = {
   children: PropTypes.node.isRequired,
+  isInteractionEnabled: PropTypes.bool,
   pageTitle: PropTypes.string,
   sidebar: PropTypes.shape(Sidebar.propTypes).isRequired,
   title: PropTypes.string.isRequired,
 }
 
 const defaultProps = {
+  isInteractionEnabled: false,
   pageTitle: 'StudentLayout',
 }
 
 const StudentLayout = ({
-  children, pageTitle, sidebar, title,
+  children, isInteractionEnabled, pageTitle, sidebar, title,
 }) => {
-  const sidebarItems = [
-    {
-      href: 'activeQuestion',
-      label: (
-        <FormattedMessage id="student.sidebar.activeQuestion" defaultMessage="Active Question" />
-      ),
-      name: 'activeQuestion',
-    },
-    {
-      href: 'feedbackChannel',
-      label: (
-        <FormattedMessage id="student.sidebar.feedbackChannel" defaultMessage="Feedback-Channel" />
-      ),
-      name: 'feedbackChannel',
-    },
-  ]
+  const activeQuestionItem = {
+    href: 'activeQuestion',
+    label: (
+      <FormattedMessage id="student.sidebar.activeQuestion" defaultMessage="Active Question" />
+    ),
+    name: 'activeQuestion',
+  }
+  const feedbackChannelItem = {
+    href: 'feedbackChannel',
+    label: (
+      <FormattedMessage id="student.sidebar.feedbackChannel" defaultMessage="Feedback-Channel" />
+    ),
+    name: 'feedbackChannel',
+  }
+
+  const sidebarItems = isInteractionEnabled
+    ? [activeQuestionItem, feedbackChannelItem]
+    : [activeQuestionItem]
 
   return (
     <CommonLayout baseFontSize="16px" pageTitle={pageTitle}>

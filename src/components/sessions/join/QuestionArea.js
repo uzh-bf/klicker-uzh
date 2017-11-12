@@ -44,67 +44,80 @@ function QuestionArea({
   handleFreeValueChange,
   handleSubmit,
 }) {
-  if (activeQuestion === questions.length) {
-    return <div>You finished all active questions.</div>
-  }
-
   const currentQuestion = questions.length > 0 && questions[activeQuestion]
   const { description, options, type } = currentQuestion
 
   return (
     <div className={classNames('questionArea', { active })}>
-      <div className="collapser">
-        <Collapser collapsed={isCollapsed} handleCollapseToggle={toggleIsCollapsed}>
-          {description}
-        </Collapser>
-      </div>
+      {(() => {
+        if (activeQuestion === questions.length) {
+          return <div>You finished all active questions.</div>
+        }
 
-      <div className="options">
-        {(() => {
-          if (['SC', 'MC'].includes(type)) {
-            return (
-              <SCAnswerOptions
-                disabled={completedQuestions.includes(activeQuestion)}
-                onChange={handleActiveChoicesChange}
-                options={options.choices}
-                value={inputValue}
-              />
-            )
-          }
+        return (
+          <div>
+            <div className="collapser">
+              <Collapser collapsed={isCollapsed} handleCollapseToggle={toggleIsCollapsed}>
+                {description}
+              </Collapser>
+            </div>
 
-          if (type === 'FREE') {
-            return (
-              <FREEAnswerOptions
-                disabled={completedQuestions.includes(activeQuestion)}
-                onChange={handleFreeValueChange}
-                options={options}
-                value={inputValue}
-              />
-            )
-          }
+            <div className="options">
+              {(() => {
+                if (['SC', 'MC'].includes(type)) {
+                  return (
+                    <SCAnswerOptions
+                      disabled={completedQuestions.includes(activeQuestion)}
+                      onChange={handleActiveChoicesChange}
+                      options={options.choices}
+                      value={inputValue}
+                    />
+                  )
+                }
 
-          return null
-        })()}
-      </div>
+                if (type === 'FREE') {
+                  return (
+                    <FREEAnswerOptions
+                      disabled={completedQuestions.includes(activeQuestion)}
+                      onChange={handleFreeValueChange}
+                      options={options}
+                      value={inputValue}
+                    />
+                  )
+                }
 
-      <ActionMenu
-        activeIndex={activeQuestion}
-        items={_range(questions.length).map(index => ({
-          done: completedQuestions.includes(index),
-        }))}
-        setActiveIndex={handleActiveQuestionChange}
-        onCompleteQuestion={handleCompleteQuestion}
-        onSubmit={handleSubmit}
-      />
+                return null
+              })()}
+            </div>
+
+            <ActionMenu
+              activeIndex={activeQuestion}
+              items={_range(questions.length).map(index => ({
+                done: completedQuestions.includes(index),
+              }))}
+              setActiveIndex={handleActiveQuestionChange}
+              onCompleteQuestion={handleCompleteQuestion}
+              onSubmit={handleSubmit}
+            />
+          </div>
+        )
+      })()}
 
       <style jsx>{`
         @import 'src/theme';
 
         .questionArea {
           display: none;
-          flex-direction: column;
 
           flex: 1;
+
+          > div {
+            display: flex;
+
+            flex-direction: column;
+
+            flex: 1;
+          }
 
           &.active {
             display: flex;
