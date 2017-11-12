@@ -1,0 +1,46 @@
+mutation CreateQuestion(
+  $title: String!
+  $description: String!
+  $options: QuestionOptionsInput!
+  $type: String!
+  $tags: [ID!]!
+) {
+  createQuestion(
+    question: {
+      title: $title
+      description: $description
+      options: $options
+      type: $type
+      tags: $tags
+    }
+  ) {
+    id
+    title
+    type
+    tags {
+      id
+      name
+    }
+    versions {
+      id
+      description
+      options {
+        ... on SCQuestionOptions {
+          choices {
+            correct
+            name
+          }
+          randomized
+        }
+        ... on FREEQuestionOptions {
+          restrictions {
+            min
+            max
+            type
+          }
+        }
+      }
+      createdAt
+    }
+  }
+}

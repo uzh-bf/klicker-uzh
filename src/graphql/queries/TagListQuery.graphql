@@ -1,0 +1,6 @@
+{
+  tags: allTags {
+    id
+    name
+  }
+}

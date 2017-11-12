@@ -1,0 +1,13 @@
+mutation UpdateSessionSettings(
+  $sessionId: ID!
+  $settings: Session_SettingsInput!
+) {
+  updateSessionSettings(sessionId: $sessionId, settings: $settings) {
+    id
+    settings {
+      isConfusionBarometerActive
+      isFeedbackChannelActive
+      isFeedbackChannelPublic
+    }
+  }
+}

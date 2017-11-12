@@ -1,0 +1,10 @@
+mutation AddFeedback($sessionId: ID!, $content: String!) {
+  addFeedback(sessionId: $sessionId, content: $content) {
+    id
+    feedbacks {
+      id
+      content
+      votes
+    }
+  }
+}

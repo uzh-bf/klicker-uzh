@@ -1,0 +1,22 @@
+{
+  questions: allQuestions {
+    id
+    title
+    type
+    instances {
+      id
+      createdAt
+    }
+    tags {
+      id
+      name
+    }
+    versions {
+      id
+      description
+      createdAt
+    }
+    createdAt
+    updatedAt
+  }
+}
