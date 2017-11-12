@@ -5,6 +5,7 @@ import _range from 'lodash/range'
 import _without from 'lodash/without'
 import { compose, withStateHandlers, withHandlers } from 'recompose'
 
+import { QuestionTypes } from '../../../constants'
 import { ActionMenu, Collapser } from '../../common'
 import { SCAnswerOptions, FREEAnswerOptions } from '../../questionTypes'
 
@@ -65,7 +66,7 @@ function QuestionArea({
 
             <div className="options">
               {(() => {
-                if (['SC', 'MC'].includes(type)) {
+                if ([QuestionTypes.SC, QuestionTypes.MC].includes(type)) {
                   return (
                     <SCAnswerOptions
                       disabled={!remainingQuestions.includes(activeQuestion)}
@@ -76,7 +77,7 @@ function QuestionArea({
                   )
                 }
 
-                if (type === 'FREE') {
+                if (type === QuestionTypes.FREE) {
                   return (
                     <FREEAnswerOptions
                       disabled={!remainingQuestions.includes(activeQuestion)}
@@ -192,7 +193,7 @@ export default compose(
       const { instanceId, type } = questions[activeQuestion]
 
       const response = {}
-      if (['SC', 'MC'].includes(type)) {
+      if ([QuestionTypes.SC, QuestionTypes.MC].includes(type)) {
         response.choices = inputValue
       } else if (type === 'FREE') {
         response.value = inputValue
