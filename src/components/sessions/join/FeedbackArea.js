@@ -20,6 +20,7 @@ const propTypes = {
   handleConfusionSpeedChange: PropTypes.func.isRequired,
   handleFeedbackInputValueChange: PropTypes.func.isRequired,
   handleNewConfusionTS: PropTypes.func.isRequired,
+  handleNewFeedback: PropTypes.func.isRequired,
   toggleFeedbackCreationMode: PropTypes.func.isRequired,
 }
 
@@ -39,6 +40,7 @@ function FeedbackArea({
   handleConfusionDifficultyChange,
   handleConfusionSpeedChange,
   handleNewConfusionTS,
+  handleNewFeedback,
   toggleFeedbackCreationMode,
 }) {
   return (
@@ -85,7 +87,7 @@ function FeedbackArea({
           <div className="newFeedbackRow">
             <Input value={feedbackInputValue} onChange={handleFeedbackInputValueChange} />
             <Button onClick={toggleFeedbackCreationMode}>Cancel</Button>
-            <Button onClick={() => console.log(feedbackInputValue)}>Submit</Button>
+            <Button onClick={handleNewFeedback}>Submit</Button>
           </div>
         )}
       </div>
@@ -111,6 +113,10 @@ function FeedbackArea({
 
           .confusion {
             margin-bottom: 0.5rem;
+          }
+
+          .confusion,
+          .feedbacks {
             padding: 1rem;
           }
 
@@ -182,6 +188,9 @@ export default compose(
   withHandlers({
     handleNewConfusionTS: ({ confusionDifficulty, confusionSpeed, handleNewConfusionTS }) => () => {
       handleNewConfusionTS({ difficulty: confusionDifficulty, speed: confusionSpeed })
+    },
+    handleNewFeedback: ({ feedbackInputValue, handleNewFeedback }) => () => {
+      handleNewFeedback({ content: feedbackInputValue })
     },
   }),
 )(FeedbackArea)

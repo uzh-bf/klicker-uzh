@@ -16,7 +16,7 @@ import FeedbackArea from '../components/sessions/join/FeedbackArea'
 import QuestionArea from '../components/sessions/join/QuestionArea'
 import { pageWithIntl, withData } from '../lib'
 import { JoinSessionQuery } from '../graphql/queries'
-import { AddConfusionTSMutation } from '../graphql/mutations'
+import { AddConfusionTSMutation, AddFeedbackMutation } from '../graphql/mutations'
 import { StudentLayout } from '../components/layouts'
 
 const propTypes = {
@@ -27,6 +27,7 @@ const propTypes = {
   handleSidebarActiveItemChange: PropTypes.func.isRequired,
   handleToggleSidebarVisible: PropTypes.func.isRequired,
   handleNewConfusionTS: PropTypes.func.isRequired,
+  handleNewFeedback: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   sidebarActiveItem: PropTypes.string.isRequired,
   sidebarVisible: PropTypes.bool.isRequired,
@@ -46,6 +47,7 @@ const Join = ({
   handleSidebarActiveItemChange,
   handleToggleSidebarVisible,
   handleNewConfusionTS,
+  handleNewFeedback,
 }) => {
   const title =
     sidebarActiveItem === 'activeQuestion'
@@ -89,6 +91,7 @@ const Join = ({
           active={sidebarActiveItem === 'feedbackChannel'}
           feedbacks={feedbacks}
           handleNewConfusionTS={handleNewConfusionTS}
+          handleNewFeedback={handleNewFeedback}
         />
 
         <style jsx>{`
@@ -143,12 +146,25 @@ export default compose(
     ({ data }) => data.errors || !data.joinSession,
     renderComponent(() => <div>No session active.</div>),
   ),
-  graphql(AddConfusionTSMutation),
+  graphql(AddConfusionTSMutation, { name: 'newConfusionTS' }),
+  graphql(AddFeedbackMutation, { name: 'newFeedback' }),
   withHandlers({
-    handleNewConfusionTS: ({ data: { joinSession }, mutate }) => async ({ difficulty, speed }) => {
+    handleNewConfusionTS: ({ data: { joinSession }, newConfusionTS }) => async ({
+      difficulty,
+      speed,
+    }) => {
       try {
-        await mutate({
+        await newConfusionTS({
           variables: { sessionId: joinSession.id, difficulty, speed },
+        })
+      } catch ({ message }) {
+        console.error(message)
+      }
+    },
+    handleNewFeedback: ({ data: { joinSession }, newFeedback }) => async ({ content }) => {
+      try {
+        await newFeedback({
+          variables: { sessionId: joinSession.id, content },
         })
       } catch ({ message }) {
         console.error(message)
