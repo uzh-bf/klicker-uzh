@@ -68,7 +68,11 @@ const FREEAnswerOptions = ({
         <div className="field">
           <label htmlFor="responseInput">
             Response
-            <textarea id="responseInput" disabled={disabled} onChange={e => onChange(e.target.value)} />
+            <textarea
+              id="responseInput"
+              disabled={disabled}
+              onChange={e => onChange(e.target.value)}
+            />
           </label>
 
           {options.restrictions.min !== null && (

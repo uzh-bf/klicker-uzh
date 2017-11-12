@@ -1190,15 +1190,15 @@ exports[`Storyshots evaluation/components Visualization 1`] = `
 
 exports[`Storyshots feedbacks Feedback 1`] = `
 <div
-  className="jsx-22459915 feedback"
+  className="jsx-1482035386 feedback"
 >
   <div
-    className="jsx-22459915 content"
+    className="jsx-1482035386 content"
   >
     hello world
   </div>
   <div
-    className="jsx-22459915 delete"
+    className="jsx-1482035386 delete"
   >
     <button
       className="ui basic fluid icon button"
@@ -1212,12 +1212,6 @@ exports[`Storyshots feedbacks Feedback 1`] = `
         className="trash outline icon"
       />
     </button>
-  </div>
-  <div
-    className="jsx-22459915 votes"
-  >
-    +
-    100
   </div>
 </div>
 `;
@@ -1921,39 +1915,74 @@ exports[`Storyshots questionTypes/FREE FREE Answering Options (Number restrictio
   className="jsx-2380687086 ui form freeAnswerOptions"
 >
   <div
-    className="jsx-2380687086 field"
+    className="jsx-2380687086 field slider"
   >
-    <label
-      className="jsx-2380687086"
-      htmlFor="responseInput"
+    <span
+      className="jsx-2380687086 min"
     >
-      Response
-      <textarea
-        className="jsx-2380687086"
-        disabled={false}
-        id="responseInput"
-        onChange={[Function]}
-      />
-    </label>
-    <div
-      className="jsx-2380687086"
-    >
-      <span>
-        Min
-      </span>
-      :
-       
+      Min: 
       900
+    </span>
+    <span
+      className="jsx-2380687086 max"
+    >
+      Max: 
+      87
+    </span>
+    <div
+      aria-orientation="horizontal"
+      aria-valuemax={87}
+      aria-valuemin={900}
+      aria-valuenow={555}
+      className="rangeslider rangeslider-horizontal"
+      onMouseDown={[Function]}
+      onMouseUp={[Function]}
+      onTouchEnd={[Function]}
+      onTouchStart={[Function]}
+    >
+      <div
+        className="rangeslider__fill"
+        style={
+          Object {
+            "width": "0px",
+          }
+        }
+      />
+      <div
+        className="rangeslider__handle"
+        onKeyDown={[Function]}
+        onMouseDown={[Function]}
+        onTouchEnd={[Function]}
+        onTouchMove={[Function]}
+        style={
+          Object {
+            "left": "0px",
+          }
+        }
+        tabIndex={0}
+      >
+        <div
+          className="rangeslider__handle-label"
+        >
+          
+        </div>
+      </div>
+      <ul
+        className="rangeslider__labels"
+      />
     </div>
     <div
-      className="jsx-2380687086"
+      className="ui input"
     >
-      <span>
-        Max
-      </span>
-      :
-       
-      87
+      <input
+        disabled={false}
+        max={87}
+        min={900}
+        onChange={[Function]}
+        tabIndex={undefined}
+        type="number"
+        value={555}
+      />
     </div>
   </div>
 </div>
@@ -2215,10 +2244,10 @@ exports[`Storyshots questionTypes/FREE FREE Creation Preview (unrestricted) 1`] 
 
 exports[`Storyshots questionTypes/SC SC Answering Options 1`] = `
 <div
-  className="jsx-3695553922 options"
+  className="jsx-362972621 options"
 >
   <div
-    className="jsx-3695553922 option"
+    className="jsx-362972621 option"
   >
     <button
       className="ui fluid button"
@@ -2231,7 +2260,7 @@ exports[`Storyshots questionTypes/SC SC Answering Options 1`] = `
     </button>
   </div>
   <div
-    className="jsx-3695553922 option"
+    className="jsx-362972621 option"
   >
     <button
       className="ui fluid button"
@@ -2244,7 +2273,7 @@ exports[`Storyshots questionTypes/SC SC Answering Options 1`] = `
     </button>
   </div>
   <div
-    className="jsx-3695553922 option"
+    className="jsx-362972621 option"
   >
     <button
       className="ui fluid button"
