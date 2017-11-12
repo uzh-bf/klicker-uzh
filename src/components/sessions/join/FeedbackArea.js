@@ -2,8 +2,9 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { FormattedMessage } from 'react-intl'
-import { compose, withStateHandlers } from 'recompose'
+import { compose, withStateHandlers, withHandlers } from 'recompose'
 import { Input, Button } from 'semantic-ui-react'
+import _throttle from 'lodash/throttle'
 
 import { ConfusionSlider } from '../../../components/confusion'
 import { Feedback } from '../../../components/feedbacks'
@@ -18,6 +19,7 @@ const propTypes = {
   handleConfusionDifficultyChange: PropTypes.func.isRequired,
   handleConfusionSpeedChange: PropTypes.func.isRequired,
   handleFeedbackInputValueChange: PropTypes.func.isRequired,
+  handleNewConfusionTS: PropTypes.func.isRequired,
   toggleFeedbackCreationMode: PropTypes.func.isRequired,
 }
 
@@ -36,6 +38,7 @@ function FeedbackArea({
   handleFeedbackInputValueChange,
   handleConfusionDifficultyChange,
   handleConfusionSpeedChange,
+  handleNewConfusionTS,
   toggleFeedbackCreationMode,
 }) {
   return (
@@ -49,6 +52,7 @@ function FeedbackArea({
           }
           value={confusionSpeed}
           handleChange={newValue => handleConfusionSpeedChange(newValue)}
+          handleChangeComplete={handleNewConfusionTS}
         />
 
         <ConfusionSlider
@@ -59,6 +63,7 @@ function FeedbackArea({
           }
           value={confusionDifficulty}
           handleChange={newValue => handleConfusionDifficultyChange(newValue)}
+          handleChangeComplete={handleNewConfusionTS}
         />
       </div>
 
@@ -174,4 +179,9 @@ export default compose(
       }),
     },
   ),
+  withHandlers({
+    handleNewConfusionTS: ({ confusionDifficulty, confusionSpeed, handleNewConfusionTS }) => () => {
+      handleNewConfusionTS({ difficulty: confusionDifficulty, speed: confusionSpeed })
+    },
+  }),
 )(FeedbackArea)

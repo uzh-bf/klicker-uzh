@@ -4,7 +4,6 @@ import classNames from 'classnames'
 import {
   compose,
   withHandlers,
-  withState,
   withStateHandlers,
   withProps,
   branch,
@@ -17,6 +16,7 @@ import FeedbackArea from '../components/sessions/join/FeedbackArea'
 import QuestionArea from '../components/sessions/join/QuestionArea'
 import { pageWithIntl, withData } from '../lib'
 import { JoinSessionQuery } from '../graphql/queries'
+import { AddConfusionTSMutation } from '../graphql/mutations'
 import { StudentLayout } from '../components/layouts'
 
 const propTypes = {
@@ -26,6 +26,7 @@ const propTypes = {
   }),
   handleSidebarActiveItemChange: PropTypes.func.isRequired,
   handleToggleSidebarVisible: PropTypes.func.isRequired,
+  handleNewConfusionTS: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   sidebarActiveItem: PropTypes.string.isRequired,
   sidebarVisible: PropTypes.bool.isRequired,
@@ -44,6 +45,7 @@ const Join = ({
   sidebarVisible,
   handleSidebarActiveItemChange,
   handleToggleSidebarVisible,
+  handleNewConfusionTS,
 }) => {
   const title =
     sidebarActiveItem === 'activeQuestion'
@@ -83,7 +85,11 @@ const Join = ({
           </div>
         )}
 
-        <FeedbackArea active={sidebarActiveItem === 'feedbackChannel'} feedbacks={feedbacks} />
+        <FeedbackArea
+          active={sidebarActiveItem === 'feedbackChannel'}
+          feedbacks={feedbacks}
+          handleNewConfusionTS={handleNewConfusionTS}
+        />
 
         <style jsx>{`
           @import 'src/theme';
@@ -137,6 +143,18 @@ export default compose(
     ({ data }) => data.errors || !data.joinSession,
     renderComponent(() => <div>No session active.</div>),
   ),
+  graphql(AddConfusionTSMutation),
+  withHandlers({
+    handleNewConfusionTS: ({ data: { joinSession }, mutate }) => async ({ difficulty, speed }) => {
+      try {
+        await mutate({
+          variables: { sessionId: joinSession.id, difficulty, speed },
+        })
+      } catch ({ message }) {
+        console.error(message)
+      }
+    },
+  }),
   withProps(({ data: { joinSession }, url }) => ({
     ...joinSession,
     shortname: url.query.shortname,

@@ -25,7 +25,7 @@ const Feedback = ({
       </div>
     )}
 
-    <Button className="votes" onClick={updateVotes()}>
+    <Button disabled={alreadyVoted} className="votes" onClick={updateVotes && updateVotes()}>
       <Icon name={alreadyVoted ? 'thumbs up' : 'thumbs outline up'} />
       {votes}
     </Button>

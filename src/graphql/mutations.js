@@ -137,6 +137,19 @@ export const AddFeedbackMutation = gql`
   }
 `
 
+export const AddConfusionTSMutation = gql`
+  mutation AddConfusionTS($sessionId: ID!, $difficulty: Int!, $speed: Int!) {
+    addConfusionTS(sessionId: $sessionId, difficulty: $difficulty, speed: $speed) {
+      id
+      confusionTS {
+        difficulty
+        speed
+        createdAt
+      }
+    }
+  }
+`
+
 export const UpdateSessionSettingsMutation = gql`
   mutation UpdateSessionSettings($sessionId: ID!, $settings: Session_SettingsInput!) {
     updateSessionSettings(sessionId: $sessionId, settings: $settings) {
