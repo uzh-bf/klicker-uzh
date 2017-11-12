@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import _range from 'lodash/range'
 import _without from 'lodash/without'
+import { FormattedMessage } from 'react-intl'
 import { compose, withStateHandlers, withHandlers } from 'recompose'
 
 import { QuestionTypes } from '../../../constants'
@@ -45,13 +46,21 @@ function QuestionArea({
   handleFreeValueChange,
   handleSubmit,
 }) {
-  const currentQuestion = questions.length > 0 && questions[activeQuestion]
+  const currentQuestion =
+    remainingQuestions.length > 0 && questions[remainingQuestions[activeQuestion]]
 
   return (
     <div className={classNames('questionArea', { active })}>
       {(() => {
-        if (activeQuestion === questions.length) {
-          return <div className="padded">You finished all active questions.</div>
+        if (remainingQuestions.length === 0) {
+          return (
+            <div className="padded">
+              <FormattedMessage
+                defaultMessage="You have completed all active questions."
+                id="joinSession.allQuestionsCompleted"
+              />
+            </div>
+          )
         }
 
         const { description, options, type } = currentQuestion
@@ -97,6 +106,7 @@ function QuestionArea({
               items={_range(questions.length).map(index => ({
                 done: !remainingQuestions.includes(index),
               }))}
+              isSkipModeActive={!inputValue}
               setActiveIndex={handleActiveQuestionChange}
               onSubmit={handleSubmit}
             />
@@ -170,7 +180,7 @@ export default compose(
       }),
       handleFreeValueChange: () => inputValue => ({ inputValue }),
       handleSubmit: ({ activeQuestion, remainingQuestions }) => () => ({
-        activeQuestion: activeQuestion + 1,
+        activeQuestion: 0,
         remainingQuestions: _without(remainingQuestions, activeQuestion),
       }),
       toggleIsCollapsed: ({ isCollapsed }) => () => ({ isCollapsed: !isCollapsed }),
