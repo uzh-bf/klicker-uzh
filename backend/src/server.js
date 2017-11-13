@@ -10,10 +10,12 @@ const expressJWT = require('express-jwt')
 const mongoose = require('mongoose')
 const compression = require('compression')
 const helmet = require('helmet')
+const _invert = require('lodash/invert')
 const { graphqlExpress } = require('apollo-server-express')
 
 const schema = require('./schema')
 const AuthService = require('./services/auth')
+const queryMap = require('./queryMap.json')
 
 mongoose.Promise = Promise
 
@@ -73,8 +75,6 @@ let middleware = [
     secret: process.env.APP_SECRET,
     getToken: AuthService.getToken,
   }),
-  // parse json contents
-  bodyParser.json(),
 ]
 
 // setup Apollo Engine (GraphQL API metrics)
@@ -91,6 +91,13 @@ if (apolloEngine) {
 // expose the GraphQL API endpoint
 // parse JWT that are passed as a header and attach their content to req.user
 server.use(
+  // parse json contents
+  bodyParser.json(),
+  (req, res, next) => {
+    const invertedMap = _invert(queryMap)
+    req.body.query = invertedMap[req.body.id]
+    next()
+  },
   ...middleware,
   // delegate to the GraphQL API
   graphqlExpress((req, res) => ({
