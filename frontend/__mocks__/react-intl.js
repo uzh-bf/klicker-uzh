@@ -8,6 +8,10 @@ const intl = {
   formatMessage: ({ defaultMessage }) => defaultMessage,
 }
 
-Intl.injectIntl = Node => props => <Node {...props} intl={intl} />
+Intl.injectIntl = (Node) => {
+  const renderWrapped = props => <Node {...props} intl={intl} />
+  renderWrapped.displayName = Node.displayName || Node.name || 'Component'
+  return renderWrapped
+}
 
 module.exports = Intl

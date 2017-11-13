@@ -13,8 +13,8 @@ const defaultProps = {
 const Info = ({ totalResponses }) => (
   <div className="info">
     <FormattedMessage
-      defaultMessage="Total responses:"
-      id="teacher.evaluation.totalResponses.label"
+      defaultMessage="Total participants:"
+      id="teacher.evaluation.totalParticipants.label"
     />{' '}
     {totalResponses}
   </div>

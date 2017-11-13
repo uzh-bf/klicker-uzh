@@ -39,6 +39,53 @@ exports[`Storyshots common/components ActionButton 1`] = `
 </div>
 `;
 
+exports[`Storyshots common/components ActionMenu 1`] = `
+<div
+  className="jsx-3174408904 actionMenu"
+>
+  <div
+    className="ui borderless noBorder menu"
+  >
+    <div
+      className="icon item"
+      onClick={[Function]}
+    >
+      <i
+        aria-hidden="true"
+        className="hand pointer icon"
+      />
+      
+    </div>
+    <a
+      className="disabled icon item"
+      onClick={[Function]}
+    >
+      <i
+        aria-hidden="true"
+        className="checkmark icon"
+      />
+      
+    </a>
+    <div
+      className="right item submitButton"
+      onClick={[Function]}
+    >
+      <button
+        className="ui fluid primary button"
+        disabled={undefined}
+        onClick={[Function]}
+        role="button"
+        tabIndex={undefined}
+      >
+        <span>
+          Skip
+        </span>
+      </button>
+    </div>
+  </div>
+</div>
+`;
+
 exports[`Storyshots common/components Button (active) 1`] = `
 <div
   className="jsx-3614910306 klicker-button"
@@ -73,10 +120,10 @@ exports[`Storyshots common/components Button 1`] = `
 
 exports[`Storyshots common/components Collapser (extended) 1`] = `
 <div
-  className="jsx-51013090 collapser"
+  className="jsx-329073836 collapser"
 >
   <div
-    className="jsx-51013090 content"
+    className="jsx-329073836 content"
   >
     <div>
       <p>
@@ -96,7 +143,7 @@ exports[`Storyshots common/components Collapser (extended) 1`] = `
     </div>
   </div>
   <div
-    className="jsx-51013090 collapse"
+    className="jsx-329073836 collapse"
   >
     <i
       aria-hidden="true"
@@ -109,10 +156,10 @@ exports[`Storyshots common/components Collapser (extended) 1`] = `
 
 exports[`Storyshots common/components Collapser 1`] = `
 <div
-  className="jsx-51013090 collapser"
+  className="jsx-329073836 collapser"
 >
   <div
-    className="jsx-51013090 content collapsed"
+    className="jsx-329073836 content collapsed"
   >
     <div>
       <p>
@@ -132,7 +179,7 @@ exports[`Storyshots common/components Collapser 1`] = `
     </div>
   </div>
   <div
-    className="jsx-51013090 collapse"
+    className="jsx-329073836 collapse"
   >
     <i
       aria-hidden="true"
@@ -503,22 +550,22 @@ exports[`Storyshots confusion ConfusionBarometer 1`] = `
 
 exports[`Storyshots confusion ConfusionSlider 1`] = `
 <div
-  className="jsx-1849731830 confusionSlider"
+  className="jsx-1078630351 confusionSlider"
 >
   <div
-    className="jsx-1849731830 title"
+    className="jsx-1078630351 title"
   >
     <h2>
       Speed
     </h2>
   </div>
   <div
-    className="jsx-1849731830 slider"
+    className="jsx-1078630351 slider"
   >
     <div
       aria-orientation="horizontal"
-      aria-valuemax={50}
-      aria-valuemin={-50}
+      aria-valuemax={10}
+      aria-valuemin={-10}
       aria-valuenow={10}
       className="rangeslider rangeslider-horizontal"
       onMouseDown={[Function]}
@@ -951,7 +998,7 @@ exports[`Storyshots evaluation/components Info 1`] = `
   className="info"
 >
   <span>
-    Total responses:
+    Total participants:
   </span>
    
   0
@@ -1190,15 +1237,15 @@ exports[`Storyshots evaluation/components Visualization 1`] = `
 
 exports[`Storyshots feedbacks Feedback 1`] = `
 <div
-  className="jsx-22459915 feedback"
+  className="jsx-1482035386 feedback"
 >
   <div
-    className="jsx-22459915 content"
+    className="jsx-1482035386 content"
   >
     hello world
   </div>
   <div
-    className="jsx-22459915 delete"
+    className="jsx-1482035386 delete"
   >
     <button
       className="ui basic fluid icon button"
@@ -1212,12 +1259,6 @@ exports[`Storyshots feedbacks Feedback 1`] = `
         className="trash outline icon"
       />
     </button>
-  </div>
-  <div
-    className="jsx-22459915 votes"
-  >
-    +
-    100
   </div>
 </div>
 `;
@@ -1918,17 +1959,37 @@ exports[`Storyshots forms/helpers SemanticInput 1`] = `
 
 exports[`Storyshots questionTypes/FREE FREE Answering Options (Number restriction) 1`] = `
 <div
-  className="options"
+  className="jsx-2380687086 ui form freeAnswerOptions"
 >
   <div
-    className="slider"
+    className="jsx-2380687086 field slider"
   >
-    <p>
+    <span
+      className="jsx-2380687086 min"
+    >
+      <strong
+        className="jsx-2380687086"
+      >
+        <span>
+          Min
+        </span>
+      </strong>
+      : 
       900
-    </p>
-    <p>
+    </span>
+    <span
+      className="jsx-2380687086 max"
+    >
+      <strong
+        className="jsx-2380687086"
+      >
+        <span>
+          Max
+        </span>
+      </strong>
+      : 
       87
-    </p>
+    </span>
     <div
       aria-orientation="horizontal"
       aria-valuemax={87}
@@ -1971,22 +2032,47 @@ exports[`Storyshots questionTypes/FREE FREE Answering Options (Number restrictio
         className="rangeslider__labels"
       />
     </div>
+    <div
+      className="ui input"
+    >
+      <input
+        disabled={false}
+        max={87}
+        min={900}
+        onChange={[Function]}
+        tabIndex={undefined}
+        type="number"
+        value={555}
+      />
+    </div>
   </div>
 </div>
 `;
 
 exports[`Storyshots questionTypes/FREE FREE Answering Options (lower bound restriction) 1`] = `
 <div
-  className="options"
+  className="jsx-2380687086 ui form freeAnswerOptions"
 >
-  <div>
-    <textarea />
-    <div>
-      <span>
-        Min
-      </span>
-      :
-       
+  <div
+    className="jsx-2380687086 field"
+  >
+    <textarea
+      className="jsx-2380687086"
+      disabled={false}
+      id="responseInput"
+      onChange={[Function]}
+    />
+    <div
+      className="jsx-2380687086"
+    >
+      <strong
+        className="jsx-2380687086"
+      >
+        <span>
+          Min
+        </span>
+      </strong>
+      : 
       9
     </div>
   </div>
@@ -1995,26 +2081,45 @@ exports[`Storyshots questionTypes/FREE FREE Answering Options (lower bound restr
 
 exports[`Storyshots questionTypes/FREE FREE Answering Options (unrestricted) 1`] = `
 <div
-  className="options"
+  className="jsx-2380687086 ui form freeAnswerOptions"
 >
-  <div>
-    <textarea />
+  <div
+    className="jsx-2380687086 field"
+  >
+    <textarea
+      className="jsx-2380687086"
+      disabled={false}
+      id="responseInput"
+      onChange={[Function]}
+    />
   </div>
 </div>
 `;
 
 exports[`Storyshots questionTypes/FREE FREE Answering Options (upper bound restriction) 1`] = `
 <div
-  className="options"
+  className="jsx-2380687086 ui form freeAnswerOptions"
 >
-  <div>
-    <textarea />
-    <div>
-      <span>
-        Max
-      </span>
-      :
-       
+  <div
+    className="jsx-2380687086 field"
+  >
+    <textarea
+      className="jsx-2380687086"
+      disabled={false}
+      id="responseInput"
+      onChange={[Function]}
+    />
+    <div
+      className="jsx-2380687086"
+    >
+      <strong
+        className="jsx-2380687086"
+      >
+        <span>
+          Max
+        </span>
+      </strong>
+      : 
       87
     </div>
   </div>
@@ -2188,13 +2293,13 @@ exports[`Storyshots questionTypes/FREE FREE Creation Preview (unrestricted) 1`] 
 
 exports[`Storyshots questionTypes/SC SC Answering Options 1`] = `
 <div
-  className="jsx-3454815952 options"
+  className="jsx-362972621 options"
 >
   <div
-    className="jsx-3454815952 option"
+    className="jsx-362972621 option"
   >
     <button
-      className="ui basic fluid button"
+      className="ui fluid button"
       disabled={undefined}
       onClick={[Function]}
       role="button"
@@ -2204,10 +2309,10 @@ exports[`Storyshots questionTypes/SC SC Answering Options 1`] = `
     </button>
   </div>
   <div
-    className="jsx-3454815952 option active"
+    className="jsx-362972621 option"
   >
     <button
-      className="ui basic fluid button"
+      className="ui fluid button"
       disabled={undefined}
       onClick={[Function]}
       role="button"
@@ -2217,10 +2322,10 @@ exports[`Storyshots questionTypes/SC SC Answering Options 1`] = `
     </button>
   </div>
   <div
-    className="jsx-3454815952 option"
+    className="jsx-362972621 option"
   >
     <button
-      className="ui basic fluid button"
+      className="ui fluid button"
       disabled={undefined}
       onClick={[Function]}
       role="button"
@@ -2404,13 +2509,13 @@ exports[`Storyshots questionTypes/SC SC Creation Preview 1`] = `
     className="jsx-42818339 options"
   >
     <div
-      className="jsx-3454815952 options"
+      className="jsx-362972621 options"
     >
       <div
-        className="jsx-3454815952 option"
+        className="jsx-362972621 option"
       >
         <button
-          className="ui basic fluid button"
+          className="ui fluid button"
           disabled={undefined}
           onClick={[Function]}
           role="button"
@@ -2420,10 +2525,10 @@ exports[`Storyshots questionTypes/SC SC Creation Preview 1`] = `
         </button>
       </div>
       <div
-        className="jsx-3454815952 option"
+        className="jsx-362972621 option"
       >
         <button
-          className="ui basic fluid button"
+          className="ui fluid button"
           disabled={undefined}
           onClick={[Function]}
           role="button"
@@ -2433,10 +2538,10 @@ exports[`Storyshots questionTypes/SC SC Creation Preview 1`] = `
         </button>
       </div>
       <div
-        className="jsx-3454815952 option"
+        className="jsx-362972621 option"
       >
         <button
-          className="ui basic fluid button"
+          className="ui fluid button"
           disabled={undefined}
           onClick={[Function]}
           role="button"
@@ -3036,14 +3141,6 @@ exports[`Storyshots questions QuestionBlock (empty) 1`] = `
     s
   </div>
   <div
-    className="jsx-1552646468 showSolution"
-  >
-    <i
-      aria-hidden="true"
-      className="hide icon"
-    />
-  </div>
-  <div
     className="jsx-1552646468 sessionStatus"
   >
     PLANNED
@@ -3067,14 +3164,6 @@ exports[`Storyshots questions QuestionBlock 1`] = `
     />
     60
     s
-  </div>
-  <div
-    className="jsx-1552646468 showSolution"
-  >
-    <i
-      aria-hidden="true"
-      className="hide icon"
-    />
   </div>
   <div
     className="jsx-1552646468 sessionStatus"
@@ -4243,14 +4332,6 @@ exports[`Storyshots sessions Session 1`] = `
           s
         </div>
         <div
-          className="jsx-1552646468 showSolution"
-        >
-          <i
-            aria-hidden="true"
-            className="hide icon"
-          />
-        </div>
-        <div
           className="jsx-1552646468 sessionStatus"
         >
           PLANNED
@@ -4390,14 +4471,6 @@ exports[`Storyshots sessions SessionList 1`] = `
               s
             </div>
             <div
-              className="jsx-1552646468 showSolution"
-            >
-              <i
-                aria-hidden="true"
-                className="hide icon"
-              />
-            </div>
-            <div
               className="jsx-1552646468 sessionStatus"
             >
               PLANNED
@@ -4525,14 +4598,6 @@ exports[`Storyshots sessions SessionList 1`] = `
               />
               60
               s
-            </div>
-            <div
-              className="jsx-1552646468 showSolution"
-            >
-              <i
-                aria-hidden="true"
-                className="hide icon"
-              />
             </div>
             <div
               className="jsx-1552646468 sessionStatus"
@@ -4669,14 +4734,6 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
           />
           60
           s
-        </div>
-        <div
-          className="jsx-1552646468 showSolution"
-        >
-          <i
-            aria-hidden="true"
-            className="unhide icon"
-          />
         </div>
         <div
           className="jsx-1552646468 sessionStatus"

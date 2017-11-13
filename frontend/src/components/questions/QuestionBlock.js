@@ -17,17 +17,15 @@ const defaultProps = {
   timeLimit: 0,
 }
 
-const QuestionBlock = ({
-  status, questions, showSolutions, timeLimit,
-}) => (
+const QuestionBlock = ({ status, questions, timeLimit }) => (
   <div className="questionBlock">
     <div className="timeLimit">
       <Icon name="clock" />
       {timeLimit}s
     </div>
-    <div className="showSolution">
+    {/* <div className="showSolution">
       <Icon name={showSolutions ? 'unhide' : 'hide'} />
-    </div>
+    </div> */}
     <div className="sessionStatus">{status}</div>
     <div className="questions">
       {questions.map(({ id, title, type }) => (
