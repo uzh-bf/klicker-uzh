@@ -72,10 +72,22 @@ function EvaluationLayout({
     return array.length % 2 ? valuesArray[half] : (valuesArray[half - 1] + valuesArray[half]) / 2.0
   }
 
+  const calculateMin = (array) => {
+    const valuesArray = []
+    array.map(({ value }) => valuesArray.push(+value))
+
+    return Math.min.apply(null, valuesArray)
+  }
+
+  const calculateMax = (array) => {
+    const valuesArray = []
+    array.map(({ value }) => valuesArray.push(+value))
+
+    return Math.max.apply(null, valuesArray)
+  }
+
   return (
     <CommonLayout baseFontSize="22px" pageTitle={pageTitle}>
-      {console.dir(data)}
-      {console.dir(type)}
       <div className="evaluationLayout">
         {instanceTitles.length > 1 && (
           <div className="instanceChooser">
@@ -125,8 +137,22 @@ function EvaluationLayout({
 
         {type === 'FREE' && (
           <div className="statistics">
-            <p>Average: {calculateAverage(data)}</p>
-            <p>Median: {calculateMedian(data)}</p>
+            <div>
+              <div className="value">{calculateAverage(data)}</div>
+              <div className="label">Average</div>
+            </div>
+            <div>
+              <div className="value">{calculateMedian(data)}</div>
+              <div className="label">Median</div>
+            </div>
+            <div>
+              <div className="value">{calculateMin(data)}</div>
+              <div className="label">Minimum</div>
+            </div>
+            <div>
+              <div className="value">{calculateMax(data)}</div>
+              <div className="label">Maximum</div>
+            </div>
           </div>
         )}
 
@@ -235,8 +261,35 @@ function EvaluationLayout({
 
                 .statistics {
                   grid-area: statistics;
-
                   align-self: center;
+
+                  display: flex;
+                  flex-direction: row;
+                  flex-wrap: wrap;
+                  justify-content: space-between;
+                }
+
+                .statistics > div {
+                  flex-basis: calc(50% - 14px);
+                  width: 50%;
+                  margin-bottom: 1rem;
+                }
+
+                .statistics > div > .value {
+                  font-size: 2rem;
+                  font-weight: 400;
+                  line-height: 1em;
+                  color: #1b1c1d;
+                  text-transform: uppercase;
+                  text-align: center;
+                }
+
+                .statistics > div > .label {
+                  font-size: 1em;
+                  font-weight: 700;
+                  color: rgba(0, 0, 0, 0.87);
+                  text-transform: uppercase;
+                  text-align: center;
                 }
               }
             }
