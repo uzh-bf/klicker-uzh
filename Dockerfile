@@ -21,7 +21,7 @@ WORKDIR $KLICKER_DIR
 # install yarn packages
 RUN set -x \
   && chmod g+rwx $KLICKER_DIR/ \
-  && yarn install --frozen-lockfile
+  && yarn install --production --frozen-lockfile
 
 # inject application sources and entrypoint
 COPY --chown=1000:1000 . $KLICKER_DIR/
