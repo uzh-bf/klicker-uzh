@@ -21,7 +21,7 @@ const SessionArea = ({ sessionId }) => (
     }
   >
     <Popup.Content>
-      <QRCode value={`https://www.klicker.uzh.ch/sessions/${sessionId}`} />
+      <QRCode value={`https://react-uniz-klicker.appuioapp.ch/sessions/${sessionId}`} />
     </Popup.Content>
   </Popup>
 )
