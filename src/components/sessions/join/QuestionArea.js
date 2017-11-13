@@ -170,9 +170,19 @@ export default compose(
       remainingQuestions: _range(questions.length),
     }),
     {
-      handleActiveChoicesChange: ({ inputValue }) => choice => ({
-        inputValue: inputValue ? [...inputValue, choice] : [choice],
-      }),
+      handleActiveChoicesChange: ({ inputValue }) => (choice) => {
+        // if the choice is already active, remove it
+        if (inputValue && inputValue.includes(choice)) {
+          return {
+            inputValue: _without(inputValue, choice),
+          }
+        }
+
+        // else add it to the active choices
+        return {
+          inputValue: inputValue ? [...inputValue, choice] : [choice],
+        }
+      },
       handleActiveQuestionChange: () => activeQuestion => ({
         activeQuestion,
         inputValue: undefined,
