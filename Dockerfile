@@ -11,6 +11,7 @@ ENV KLICKER_DIR /app
 
 # TODO: extract these environment variables
 ENV API_URL "https://api-uniz-klicker.appuioapp.ch/graphql"
+# ENV API_URL "http://localhost:4000/graphql"
 ENV SENTRY "https://16014e4cbb9e48a39a439e2c076ccc4f@sentry.ibf-devops.ch/6"
 ENV LOGROCKET "vqm2qj/klicker"
 # ENV API_URL '__API_URL__'

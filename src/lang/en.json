@@ -5,7 +5,7 @@
   "common.string.logout": "Logout",
   "runningSession.confusionBarometer.string.title": "Confusion-Barometer",
   "teacher.evaluation.graph.showGraph": "Show Graph",
-  "teacher.evaluation.totalResponses.label": "Total responses:",
+  "teacher.evaluation.totalParticipants.label": "Total participants:",
   "teacher.evaluation.possibilities.choices": "Choices",
   "teacher.evaluation.possibilities.restrictions": "Restrictions",
   "runningSession.feedbackChannel.string.title": "Feedback-Channel",
