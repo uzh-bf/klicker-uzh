@@ -55,8 +55,17 @@ function EvaluationLayout({
   instanceTitles,
 }) {
   const calculateAverage = (array) => {
-    const sum = array.reduce((a, b) => a.value + b.value)
+    const valuesArray = []
+    array.map(({ value }) => valuesArray.push(+value))
+    const sum = valuesArray.reduce((a, b) => a + b, 0)
     return sum / array.length
+  }
+
+  const calculateMedian = (array) => {
+    // TODO correct assumption that they are already sorted?
+    const half = Math.floor(array.length / 2)
+
+    return array.length % 2 ? array[half].value : (array[half - 1].value + array[half].value) / 2.0
   }
 
   return (
@@ -113,7 +122,7 @@ function EvaluationLayout({
         {type === 'FREE' && (
           <div className="statistics">
             <p>Average: {calculateAverage(data)}</p>
-            <p>Median</p>
+            <p>Median: {calculateMedian(data)}</p>
           </div>
         )}
 
