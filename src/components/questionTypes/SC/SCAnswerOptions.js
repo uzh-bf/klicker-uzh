@@ -5,7 +5,7 @@ import { Button } from 'semantic-ui-react'
 
 const propTypes = {
   disabled: PropTypes.bool,
-  onChange: PropTypes.func.isRequired,
+  onChange: PropTypes.func,
   options: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.string.isRequired,
@@ -17,6 +17,7 @@ const propTypes = {
 
 const defaultProps = {
   disabled: false,
+  onChange: f => f,
   options: [],
   value: [],
 }

@@ -185,6 +185,9 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
           margin-top: 1rem;
         }
         .use {
+          display: flex;
+          flex-direction: column;
+
           margin-top: 1rem;
         }
 
@@ -203,6 +206,9 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
           }
           .account {
             margin: 0;
+          }
+          .use {
+            flex: 1;
           }
         }
       }
