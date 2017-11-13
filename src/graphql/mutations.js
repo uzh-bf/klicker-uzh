@@ -2,7 +2,7 @@ import { gql } from 'react-apollo'
 
 export const RegistrationMutation = gql`
   mutation CreateUser($email: String!, $password: String!, $shortname: String!) {
-    createUser(user: { email: $email, password: $password, shortname: $shortname }) {
+    createUser(email: $email, password: $password, shortname: $shortname) {
       id
       email
       shortname

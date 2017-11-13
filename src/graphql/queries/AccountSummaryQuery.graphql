@@ -1,9 +1,0 @@
-{
-  user {
-    id
-    shortname
-    runningSession {
-      id
-    }
-  }
-}
