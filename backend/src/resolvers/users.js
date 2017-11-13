@@ -6,7 +6,7 @@ const authUserByIDQuery = (parentValue, args, { auth }) => UserModel.findById(au
 const userByIDQuery = parentValue => UserModel.findById(parentValue.user)
 
 /* ----- mutations ----- */
-const createUserMutation = (parentValue, { user: { email, password, shortname } }) =>
+const createUserMutation = (parentValue, { email, password, shortname }) =>
   AuthService.signup(email, password, shortname)
 
 const loginMutation = (parentValue, { email, password }, { res }) => AuthService.login(res, email, password)

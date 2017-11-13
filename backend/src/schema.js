@@ -55,7 +55,7 @@ const typeDefs = [
   }
 
   type Mutation {
-    createUser(user: UserInput!): User!
+    createUser(email: String!, password: String!, shortname: String!): User!
     login(email: String!, password: String!): User!
 
     createQuestion(question: QuestionInput!): Question!
