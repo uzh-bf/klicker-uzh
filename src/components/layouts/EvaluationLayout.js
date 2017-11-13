@@ -15,6 +15,7 @@ const propTypes = {
       name: PropTypes.string.isRequired,
     }),
   ).isRequired,
+  data: PropTypes.arrayOf().isRequired,
   description: PropTypes.string,
   instanceTitles: PropTypes.arrayOf(PropTypes.string),
   intl: intlShape.isRequired,
@@ -48,12 +49,20 @@ function EvaluationLayout({
   onChangeVisualizationType,
   totalResponses,
   options,
+  data,
   activeInstance,
   onChangeActiveInstance,
   instanceTitles,
 }) {
+  const calculateAverage = (array) => {
+    const sum = array.reduce((a, b) => a.value + b.value)
+    return sum / array.length
+  }
+
   return (
     <CommonLayout baseFontSize="22px" pageTitle={pageTitle}>
+      {console.dir(data)}
+      {console.dir(type)}
       <div className="evaluationLayout">
         {instanceTitles.length > 1 && (
           <div className="instanceChooser">
@@ -101,10 +110,12 @@ function EvaluationLayout({
           />
         </div>
 
-        <div className="statistics">
-          <p>Average</p>
-          <p>Median</p>
-        </div>
+        {type === 'FREE' && (
+          <div className="statistics">
+            <p>Average: {calculateAverage(data)}</p>
+            <p>Median</p>
+          </div>
+        )}
 
         <div className="optionDisplay">
           <Possibilities questionType={type} questionOptions={options} />

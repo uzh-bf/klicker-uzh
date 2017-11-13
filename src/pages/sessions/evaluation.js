@@ -71,7 +71,7 @@ function Evaluation({
 }) {
   const { results, question, version } = activeInstances[activeInstance]
   const { title, type } = question
-  const { totalResponses } = results
+  const { totalResponses, data } = results
   const { description, options } = question.versions[version]
 
   const chart = (
@@ -88,6 +88,7 @@ function Evaluation({
   const layoutProps = {
     activeInstance,
     chart,
+    data,
     description,
     instanceTitles,
     intl,
