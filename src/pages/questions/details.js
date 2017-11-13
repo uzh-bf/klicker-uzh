@@ -3,6 +3,7 @@ import { compose, branch, renderComponent, withProps } from 'recompose'
 import { intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import { PropTypes } from 'prop-types'
+import _pick from 'lodash/pick'
 
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionEditForm } from '../../components/forms'
@@ -14,12 +15,10 @@ const propTypes = {
   question: PropTypes.shape({}).isRequired,
 }
 
-const EditQuestion = ({ intl, question }) => {
-  const tagsArray = question.tags.map(tag => tag.name)
-  // eslint-disable-next-line no-unused-expressions
-  // question && question.tags.forEach(tag => tagsArray.push(tag.name))
-
-  console.dir(question)
+const EditQuestion = ({
+  intl, tags, title, type, versions,
+}) => {
+  const tagsArray = tags.map(tag => tag.name)
 
   return (
     <TeacherLayout
@@ -38,10 +37,10 @@ const EditQuestion = ({ intl, question }) => {
     >
       <QuestionEditForm
         intl={intl}
-        title={question && question.title}
-        tags={question && tagsArray}
-        type={question && question.type}
-        versions={question && question.versions}
+        title={title}
+        tags={tagsArray}
+        type={type}
+        versions={versions}
       />
     </TeacherLayout>
   )
@@ -61,6 +60,6 @@ export default compose(
   }),
   branch(({ data }) => data.loading || !data.question, renderComponent(() => <div />)),
   withProps(({ data }) => ({
-    question: data.question,
+    ..._pick(data.question, ['title', 'type', 'tags', 'versions']),
   })),
 )(EditQuestion)
