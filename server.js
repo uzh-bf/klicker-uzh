@@ -67,6 +67,11 @@ app
       }),
     )
 
+    server.get('/questions/:id', (req, res) => {
+      const params = { id: req.params.id }
+      return app.render(req, res, '/questions/details', params)
+    })
+
     server.get('*', (req, res) => {
       const accept = accepts(req)
       const locale = accept.language(dev ? ['en'] : languages)

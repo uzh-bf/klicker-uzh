@@ -1,6 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import _truncate from 'lodash/truncate'
+import Link from 'next/link'
 
 import { FormattedMessage } from 'react-intl'
 import { FaEye, FaPencil, FaTrash } from 'react-icons/lib/fa'
@@ -17,7 +18,7 @@ const defaultProps = {
   lastUsed: [],
 }
 
-const QuestionDetails = ({ description, lastUsed }) => {
+const QuestionDetails = ({ questionId, description, lastUsed }) => {
   const truncatedDesc = _truncate(description, { length: 250 })
 
   // TODO: internationalization
@@ -43,9 +44,11 @@ const QuestionDetails = ({ description, lastUsed }) => {
         <Button className="button">
           <FaEye />
         </Button>
-        <Button className="button">
-          <FaPencil />
-        </Button>
+        <Link prefetch href={`/questions/${questionId}`}>
+          <Button className="button">
+            <FaPencil />
+          </Button>
+        </Link>
         <Button className="button">
           <FaTrash />
         </Button>
