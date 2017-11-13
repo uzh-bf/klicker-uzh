@@ -52,6 +52,26 @@ function QuestionArea({
 }) {
   const currentQuestion = remainingQuestions.length > 0 && questions[activeQuestion]
 
+  const messages = {
+    [QuestionTypes.SC]: (
+      <p>
+        Please choose a <strong>single</strong> option below:
+      </p>
+    ),
+    [QuestionTypes.MC]: (
+      <p>
+        Please choose <strong>one or multiple</strong> of the options below:
+      </p>
+    ),
+    [QuestionTypes.FREE]:
+      currentQuestion.type === QuestionTypes.FREE &&
+      (currentQuestion.options.restrictions.type === 'RANGE' ? (
+        <p>Please choose a number from the given range below:</p>
+      ) : (
+        <p>Please enter your response below:</p>
+      )),
+  }
+
   return (
     <div className={classNames('questionArea', { active })}>
       {(() => {
@@ -77,6 +97,8 @@ function QuestionArea({
             </div>
 
             <div className="options">
+              {messages[type]}
+
               {(() => {
                 if ([QuestionTypes.SC, QuestionTypes.MC].includes(type)) {
                   return (
@@ -146,6 +168,9 @@ function QuestionArea({
 
           .collapser {
             flex: 0 0 auto;
+
+            background-color: $color-primary-20p;
+            border-bottom: 1px solid -color-primary-50p;
           }
 
           .options {

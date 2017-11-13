@@ -42,8 +42,16 @@ const FREEAnswerOptions = ({
       ) {
         return (
           <div className="field slider">
-            <span className="min">Min: {options.restrictions.min}</span>
-            <span className="max">Max: {options.restrictions.max}</span>
+            <span className="min">
+              <strong>
+                <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />
+              </strong>: {options.restrictions.min}
+            </span>
+            <span className="max">
+              <strong>
+                <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />
+              </strong>: {options.restrictions.max}
+            </span>
             <Slider
               disabled={disabled}
               min={options.restrictions.min}
@@ -66,25 +74,24 @@ const FREEAnswerOptions = ({
 
       return (
         <div className="field">
-          <label htmlFor="responseInput">
-            Response
-            <textarea
-              id="responseInput"
-              disabled={disabled}
-              onChange={e => onChange(e.target.value)}
-            />
-          </label>
+          <textarea
+            id="responseInput"
+            disabled={disabled}
+            onChange={e => onChange(e.target.value)}
+          />
 
           {options.restrictions.min !== null && (
             <div>
-              <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />:{' '}
-              {options.restrictions.min}
+              <strong>
+                <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />
+              </strong>: {options.restrictions.min}
             </div>
           )}
           {options.restrictions.max !== null && (
             <div>
-              <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />:{' '}
-              {options.restrictions.max}
+              <strong>
+                <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />
+              </strong>: {options.restrictions.max}
             </div>
           )}
         </div>

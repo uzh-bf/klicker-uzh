@@ -45,7 +45,12 @@ const StudentLayout = ({
     <CommonLayout baseFontSize="16px" pageTitle={pageTitle}>
       <div className="studentLayout">
         <div className="header">
-          <Button basic icon="content" onClick={sidebar.handleToggleSidebarVisible} />
+          <Button
+            basic
+            icon="content"
+            active={sidebar.sidebarVisible}
+            onClick={sidebar.handleToggleSidebarVisible}
+          />
           <h1>{title}</h1>
         </div>
 
