@@ -1,0 +1,20 @@
+{
+  sessions: allSessions {
+    id
+    name
+    status
+    blocks {
+      id
+      instances {
+        id
+        question {
+          id
+          title
+          type
+        }
+      }
+    }
+    createdAt
+    updatedAt
+  }
+}
