@@ -1,5 +1,5 @@
 # extend the node alpine base
-FROM node:8@sha256:552348163f074034ae75643c01e0ba301af936a898d778bb4fc16062917d0430
+FROM node:8-alpine
 
 LABEL maintainer="Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
 LABEL name="klicker-react"
