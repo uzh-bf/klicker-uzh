@@ -8,8 +8,10 @@ services:
       APP_DOMAIN: localhost
       APP_SECRET: hello-world
       MONGO_URL: mongodb/klicker
+      ORIGIN: http://localhost:3000
+      PORT: 3000
 
   mongodb:
-    image: mongo:3.4.5
+    image: mongo:3.2
     ports:
       - "27017:27017"
