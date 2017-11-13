@@ -23,6 +23,7 @@
     "helmet": "3.9.0",
     "intl": "1.2.5",
     "isomorphic-fetch": "2.2.1",
+    "js-cookie": "^2.2.0",
     "lodash": "4.17.4",
     "logrocket": "0.5.6",
     "logrocket-react": "0.0.4",

@@ -3,8 +3,9 @@ import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import _range from 'lodash/range'
 import _without from 'lodash/without'
+import Cookies from 'js-cookie'
 import { FormattedMessage } from 'react-intl'
-import { compose, withStateHandlers, withHandlers } from 'recompose'
+import { compose, withStateHandlers, withHandlers, withProps } from 'recompose'
 
 import { QuestionTypes } from '../../../constants'
 import { ActionMenu, Collapser } from '../../common'
@@ -52,6 +53,7 @@ function QuestionArea({
 }) {
   const currentQuestion = remainingQuestions.length > 0 && questions[activeQuestion]
 
+  // TODO: internationalization
   const messages = {
     [QuestionTypes.SC]: (
       <p>
@@ -192,14 +194,30 @@ QuestionArea.propTypes = propTypes
 QuestionArea.defaultProps = defaultProps
 
 export default compose(
+  withProps(({ questions }) => {
+    const storedResponses = Cookies.getJSON('responses') || []
+
+    return {
+      remainingQuestions: questions
+        .map(({ instanceId }, index) => {
+          if (storedResponses.includes(instanceId)) {
+            return -1
+          }
+
+          return index
+        })
+        .filter(index => index !== -1),
+      storedResponses,
+    }
+  }),
   withStateHandlers(
-    ({ questions }) => ({
-      activeQuestion: 0,
+    ({ remainingQuestions }) => ({
+      activeQuestion: remainingQuestions[0],
       inputEmpty: true,
       inputValid: false,
       inputValue: undefined,
       isCollapsed: true,
-      remainingQuestions: _range(questions.length),
+      remainingQuestions,
     }),
     {
       handleActiveChoicesChange: ({ inputValue }) => (choice, type) => {
@@ -274,11 +292,12 @@ export default compose(
       handleNewResponse,
       handleSubmit,
       inputValue,
+      storedResponses,
     }) => () => {
+      const { instanceId, type } = questions[activeQuestion]
+
       // if the question has been answered, add a response
       if (inputValue && (inputValue > 0 || inputValue.length > 0)) {
-        const { instanceId, type } = questions[activeQuestion]
-
         const response = {}
         if ([QuestionTypes.SC, QuestionTypes.MC].includes(type)) {
           response.choices = inputValue
@@ -288,6 +307,9 @@ export default compose(
 
         handleNewResponse({ instanceId, response })
       }
+
+      // update the stored responses
+      Cookies.set('responses', [...storedResponses, instanceId])
 
       handleSubmit()
     },
