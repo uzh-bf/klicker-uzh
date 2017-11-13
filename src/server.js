@@ -75,6 +75,14 @@ let middleware = [
     secret: process.env.APP_SECRET,
     getToken: AuthService.getToken,
   }),
+  // parse json contents
+  bodyParser.json(),
+  // persisted query middleware
+  (req, res, next) => {
+    const invertedMap = _invert(queryMap)
+    req.body.query = invertedMap[req.body.id]
+    next()
+  },
 ]
 
 // setup Apollo Engine (GraphQL API metrics)
@@ -85,19 +93,12 @@ if (apolloEngine) {
   apolloEngine.start()
 
   // if apollo engine is enabled, add the middleware to the stack
-  middleware = [apolloEngine.expressMiddleware(), ...middleware]
+  middleware = [...middleware, apolloEngine.expressMiddleware()]
 }
 
 // expose the GraphQL API endpoint
 // parse JWT that are passed as a header and attach their content to req.user
 server.use(
-  // parse json contents
-  bodyParser.json(),
-  (req, res, next) => {
-    const invertedMap = _invert(queryMap)
-    req.body.query = invertedMap[req.body.id]
-    next()
-  },
   ...middleware,
   // delegate to the GraphQL API
   graphqlExpress((req, res) => ({
