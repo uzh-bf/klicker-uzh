@@ -1,5 +1,8 @@
-import { ApolloClient, createNetworkInterface } from 'react-apollo'
+import { ApolloClient } from 'react-apollo'
+import { PersistedQueryNetworkInterface } from 'persistgraphql'
 import fetch from 'isomorphic-fetch'
+
+import queryMap from '../graphql/queryMap.json'
 
 // const dev = process.env.NODE_ENV !== 'production'
 
@@ -12,13 +15,14 @@ if (!process.browser) {
 
 function create() {
   return new ApolloClient({
-    networkInterface: createNetworkInterface({
+    networkInterface: new PersistedQueryNetworkInterface({
       opts: {
         // Additional fetch() options like `credentials` or `headers`
         // credentials: dev ? 'include' : 'same-origin',
         // HACK: temporarily always include credentials
         credentials: 'include',
       },
+      queryMap,
       // Server URL (must be absolute)
       // https://api.graph.cool/simple/v1/klicker
       // uri: 'http://localhost:4000/graphql',
