@@ -4,6 +4,7 @@ import { intlShape } from 'react-intl'
 import { compose, withHandlers, withProps, withState, branch, renderComponent } from 'recompose'
 import { graphql } from 'react-apollo'
 
+import { QuestionTypes } from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
 import { pageWithIntl, withData } from '../../lib'
 import { Chart } from '../../components/evaluation'
@@ -28,7 +29,7 @@ const defaultProps = {
 }
 
 const mapActiveInstance = (activeInstance) => {
-  if (activeInstance.question.type === 'SC') {
+  if ([QuestionTypes.SC, QuestionTypes.MC].includes(activeInstance.question.type)) {
     return {
       ...activeInstance,
       results: {
@@ -42,7 +43,7 @@ const mapActiveInstance = (activeInstance) => {
     }
   }
 
-  if (activeInstance.question.type === 'FREE') {
+  if (activeInstance.question.type === QuestionTypes.FREE) {
     return {
       ...activeInstance,
       results: {

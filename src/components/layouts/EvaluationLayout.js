@@ -42,7 +42,6 @@ function EvaluationLayout({
   pageTitle,
   onToggleShowSolution,
   chart,
-  title,
   type,
   description,
   visualizationType,
@@ -73,7 +72,6 @@ function EvaluationLayout({
         )}
 
         <div className="questionDetails">
-          <h1>{title}</h1>
           <p>{description}</p>
         </div>
 
@@ -149,6 +147,12 @@ function EvaluationLayout({
                     font-size: 1.5rem;
                     line-height: 1.5rem;
                     margin-bottom: 0.5rem;
+                  }
+
+                  p {
+                    font-size: 1.2rem;
+                    font-weight: bold;
+                    line-height: 1.2rem;
                   }
                 }
 
