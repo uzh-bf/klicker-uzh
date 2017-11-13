@@ -67,7 +67,7 @@ const Question = ({
         </div>
 
         <div className="details">
-          <QuestionDetails description={description} lastUsed={lastUsed} />
+          <QuestionDetails questionId={id} description={description} lastUsed={lastUsed} />
         </div>
       </div>
 

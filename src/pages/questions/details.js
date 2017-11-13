@@ -1,5 +1,5 @@
 import React from 'react'
-import { compose, branch, renderComponent } from 'recompose'
+import { compose, branch, renderComponent, withProps } from 'recompose'
 import { intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import { PropTypes } from 'prop-types'
@@ -11,14 +11,10 @@ import { QuestionDetailsQuery } from '../../graphql/queries'
 
 const propTypes = {
   intl: intlShape.isRequired,
-  questionDetails: PropTypes.shape({}).isRequired,
+  question: PropTypes.shape({}).isRequired,
 }
 
-const EditQuestion = ({ intl, data }) => {
-  console.dir(data)
-
-  const question = data.questions[0]
-
+const EditQuestion = ({ intl, question }) => {
   const tagsArray = question.tags.map(tag => tag.name)
   // eslint-disable-next-line no-unused-expressions
   // question && question.tags.forEach(tag => tagsArray.push(tag.name))
@@ -56,11 +52,15 @@ EditQuestion.propTypes = propTypes
 export default compose(
   withData,
   pageWithIntl,
-  graphql(QuestionDetailsQuery),
-  branch(props => props.data.loading, renderComponent(() => <div />)),
-  /*
-  withProps(({ questionDetails }) => ({
-    questionDetail: questionDetails.questions[0],
+  graphql(QuestionDetailsQuery, {
+    options: props => ({
+      variables: {
+        id: props.url.query.id,
+      },
+    }),
+  }),
+  branch(({ data }) => data.loading || !data.question, renderComponent(() => <div />)),
+  withProps(({ data }) => ({
+    question: data.question,
   })),
-  */
 )(EditQuestion)

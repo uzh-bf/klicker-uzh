@@ -39,8 +39,8 @@ export const QuestionListQuery = gql`
 // HACK: temporary query for question details display
 // TODO: replace by query for a single question's details
 export const QuestionDetailsQuery = gql`
-  {
-    questions: allQuestions {
+  query QuestionDetails($id: ID!) {
+    question(id: $id) {
       id
       title
       type
