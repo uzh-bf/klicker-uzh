@@ -22,3 +22,5 @@ export const FREERestrictionTypes = {
   NONE: 'NONE',
   RANGE: 'RANGE',
 }
+
+export const CHART_COLORS = ['#7CB8E4', '#976F34', '#E4BA7C', '#A4D9FF', '#437497']

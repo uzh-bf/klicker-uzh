@@ -7,6 +7,7 @@ import { createLinks } from '../../lib'
 
 const propTypes = {
   handleChange: PropTypes.func.isRequired,
+  handleChangeComplete: PropTypes.func.isRequired,
   title: PropTypes.element,
   value: PropTypes.number,
 }
@@ -16,7 +17,9 @@ const defaultProps = {
   value: undefined,
 }
 
-const ConfusionSlider = ({ title, value, handleChange }) => (
+const ConfusionSlider = ({
+  title, value, handleChange, handleChangeComplete,
+}) => (
   <div className="confusionSlider">
     <Helmet defer={false}>
       {createLinks(['https://unpkg.com/react-rangeslider/umd/rangeslider.min.css'])}
@@ -25,13 +28,22 @@ const ConfusionSlider = ({ title, value, handleChange }) => (
     {title && <div className="title">{title}</div>}
 
     <div className="slider">
-      <Slider min={-50} max={50} orientation="horizontal" value={value} onChange={handleChange} />
+      <Slider
+        min={-10}
+        max={10}
+        orientation="horizontal"
+        value={value}
+        onChange={handleChange}
+        onChangeComplete={handleChangeComplete}
+      />
     </div>
 
     <style jsx>{`
-      .title > :global(*:first-child) {
-        font-size: 1rem;
-        margin: 0;
+      .confusionSlider {
+        .title > :global(*):first-child {
+          font-size: 1rem;
+          margin: 0;
+        }
       }
     `}</style>
   </div>

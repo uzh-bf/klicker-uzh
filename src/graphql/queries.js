@@ -160,3 +160,43 @@ export const ActiveInstancesQuery = gql`
     }
   }
 `
+
+export const JoinSessionQuery = gql`
+  query JoinSession($shortname: String!) {
+    joinSession(shortname: $shortname) {
+      id
+      settings {
+        isFeedbackChannelActive
+        isFeedbackChannelPublic
+        isConfusionBarometerActive
+      }
+      activeQuestions {
+        id
+        instanceId
+        title
+        description
+        type
+        options {
+          ... on FREEQuestionOptions {
+            restrictions {
+              min
+              max
+              type
+            }
+          }
+          ... on SCQuestionOptions {
+            choices {
+              correct
+              name
+            }
+          }
+        }
+      }
+      feedbacks {
+        id
+        content
+        votes
+      }
+    }
+  }
+`
