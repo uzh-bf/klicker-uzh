@@ -93,7 +93,7 @@ if (apolloEngine) {
   apolloEngine.start()
 
   // if apollo engine is enabled, add the middleware to the stack
-  middleware = [...middleware, apolloEngine.expressMiddleware()]
+  middleware = [apolloEngine.expressMiddleware(), ...middleware]
 }
 
 // expose the GraphQL API endpoint
