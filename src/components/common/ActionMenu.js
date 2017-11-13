@@ -6,6 +6,7 @@ import { FormattedMessage } from 'react-intl'
 const propTypes = {
   activeIndex: PropTypes.number.isRequired,
   isSkipModeActive: PropTypes.bool,
+  isSubmitDisabled: PropTypes.bool,
   items: PropTypes.array.isRequired,
   onSubmit: PropTypes.func.isRequired,
   setActiveIndex: PropTypes.func.isRequired,
@@ -13,10 +14,16 @@ const propTypes = {
 
 const defaultProps = {
   isSkipModeActive: true,
+  isSubmitDisabled: false,
 }
 
 function ActionMenu({
-  activeIndex, isSkipModeActive, items, setActiveIndex, onSubmit,
+  activeIndex,
+  isSkipModeActive,
+  isSubmitDisabled,
+  items,
+  setActiveIndex,
+  onSubmit,
 }) {
   return (
     <div className="actionMenu">
@@ -30,7 +37,7 @@ function ActionMenu({
           />
         ))}
         <Menu.Item className="submitButton" position="right">
-          <Button fluid primary onClick={onSubmit}>
+          <Button fluid primary disabled={isSubmitDisabled} onClick={onSubmit}>
             {isSkipModeActive ? (
               <FormattedMessage defaultMessage="Skip" id="common.string.skip" />
             ) : (

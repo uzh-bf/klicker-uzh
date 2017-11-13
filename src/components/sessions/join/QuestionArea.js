@@ -18,6 +18,8 @@ const propTypes = {
   handleFreeValueChange: PropTypes.func.isRequired,
   handleNewResponse: PropTypes.func.isRequired,
   handleSubmit: PropTypes.func.isRequired,
+  inputEmpty: PropTypes.bool.isRequired,
+  inputValid: PropTypes.bool.isRequired,
   inputValue: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.object])
     .isRequired,
   isCollapsed: PropTypes.bool.isRequired,
@@ -38,7 +40,9 @@ function QuestionArea({
   activeQuestion,
   remainingQuestions,
   isCollapsed,
+  inputEmpty,
   inputValue,
+  inputValid,
   questions,
   toggleIsCollapsed,
   handleActiveQuestionChange,
@@ -78,7 +82,7 @@ function QuestionArea({
                   return (
                     <SCAnswerOptions
                       disabled={!remainingQuestions.includes(activeQuestion)}
-                      onChange={handleActiveChoicesChange}
+                      onChange={handleActiveChoicesChange(type)}
                       options={options.choices}
                       value={inputValue}
                     />
@@ -105,7 +109,8 @@ function QuestionArea({
               items={_range(questions.length).map(index => ({
                 done: !remainingQuestions.includes(index),
               }))}
-              isSkipModeActive={!inputValue}
+              isSkipModeActive={inputEmpty}
+              isSubmitDisabled={!inputEmpty && !inputValid}
               setActiveIndex={handleActiveQuestionChange}
               onSubmit={handleSubmit}
             />
@@ -165,29 +170,56 @@ export default compose(
   withStateHandlers(
     ({ questions }) => ({
       activeQuestion: 0,
+      inputEmpty: true,
+      inputValid: false,
       inputValue: undefined,
       isCollapsed: true,
       remainingQuestions: _range(questions.length),
     }),
     {
-      handleActiveChoicesChange: ({ inputValue }) => (choice) => {
-        // if the choice is already active, remove it
-        if (inputValue && inputValue.includes(choice)) {
+      handleActiveChoicesChange: ({ inputValue }) => (choice, type) => {
+        const validateChoices = newValue =>
+          (type === QuestionTypes.SC ? newValue.length === 1 : newValue.length > 0)
+
+        if (inputValue) {
+          // if the choice is already active, remove it
+          if (inputValue.includes(choice)) {
+            const newInputValue = _without(inputValue, choice)
+
+            return {
+              inputEmpty: newInputValue.length === 0,
+              inputValid: validateChoices(newInputValue),
+              inputValue: newInputValue,
+            }
+          }
+
+          // else add it to the active choices
+          const newInputValue = [...inputValue, choice]
           return {
-            inputValue: _without(inputValue, choice),
+            inputEmpty: false,
+            inputValid: validateChoices(newInputValue),
+            inputValue: newInputValue,
           }
         }
 
-        // else add it to the active choices
+        // initialize the value with the first choice
         return {
-          inputValue: inputValue ? [...inputValue, choice] : [choice],
+          inputEmpty: false,
+          inputValid: true,
+          inputValue: [choice],
         }
       },
       handleActiveQuestionChange: () => activeQuestion => ({
         activeQuestion,
+        inputEmpty: true,
+        inputValid: false,
         inputValue: undefined,
       }),
-      handleFreeValueChange: () => inputValue => ({ inputValue }),
+      handleFreeValueChange: () => inputValue => ({
+        inputEmpty: !inputValue || inputValue.length === 0,
+        inputValid: !!inputValue,
+        inputValue,
+      }),
       handleSubmit: ({ activeQuestion, remainingQuestions }) => () => {
         // calculate the new indices of remaining questions
         const newRemaining = _without(remainingQuestions, activeQuestion)
@@ -195,6 +227,9 @@ export default compose(
         return {
           // activate the first question that is still remaining
           activeQuestion: newRemaining[0],
+          inputEmpty: true,
+          inputValid: false,
+          inputValue: undefined,
           remainingQuestions: newRemaining,
         }
       },
@@ -202,8 +237,8 @@ export default compose(
     },
   ),
   withHandlers({
-    handleActiveChoicesChange: ({ handleActiveChoicesChange }) => choice => () =>
-      handleActiveChoicesChange(choice),
+    handleActiveChoicesChange: ({ handleActiveChoicesChange }) => type => choice => () =>
+      handleActiveChoicesChange(choice, type),
     handleActiveQuestionChange: ({ handleActiveQuestionChange }) => index => () =>
       handleActiveQuestionChange(index),
     handleCompleteQuestion: ({ handleCompleteQuestion }) => index => () =>
@@ -215,16 +250,20 @@ export default compose(
       handleSubmit,
       inputValue,
     }) => () => {
-      const { instanceId, type } = questions[activeQuestion]
+      // if the question has been answered, add a response
+      if (inputValue && (inputValue > 0 || inputValue.length > 0)) {
+        const { instanceId, type } = questions[activeQuestion]
 
-      const response = {}
-      if ([QuestionTypes.SC, QuestionTypes.MC].includes(type)) {
-        response.choices = inputValue
-      } else if (type === 'FREE') {
-        response.value = inputValue
+        const response = {}
+        if ([QuestionTypes.SC, QuestionTypes.MC].includes(type)) {
+          response.choices = inputValue
+        } else if (type === 'FREE') {
+          response.value = inputValue
+        }
+
+        handleNewResponse({ instanceId, response })
       }
 
-      handleNewResponse({ instanceId, response })
       handleSubmit()
     },
   }),
