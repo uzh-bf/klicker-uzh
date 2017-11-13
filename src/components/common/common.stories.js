@@ -45,7 +45,9 @@ storiesOf('common/components', module)
       ]}
     />
   ))
-  .add('ActionMenu', () => <ActionMenu />)
+  .add('ActionMenu', () => (
+    <ActionMenu items={[{ done: false }, { done: true }]} setActiveIndex={f => f} />
+  ))
   .add('Button', () => <Button>Hello World!</Button>)
   .add('Button (active)', () => <Button active>Hello World!</Button>)
   .add('Collapser', () => (
