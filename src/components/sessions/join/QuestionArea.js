@@ -46,8 +46,7 @@ function QuestionArea({
   handleFreeValueChange,
   handleSubmit,
 }) {
-  const currentQuestion =
-    remainingQuestions.length > 0 && questions[remainingQuestions[activeQuestion]]
+  const currentQuestion = remainingQuestions.length > 0 && questions[activeQuestion]
 
   return (
     <div className={classNames('questionArea', { active })}>
@@ -179,10 +178,16 @@ export default compose(
         inputValue: undefined,
       }),
       handleFreeValueChange: () => inputValue => ({ inputValue }),
-      handleSubmit: ({ activeQuestion, remainingQuestions }) => () => ({
-        activeQuestion: 0,
-        remainingQuestions: _without(remainingQuestions, activeQuestion),
-      }),
+      handleSubmit: ({ activeQuestion, remainingQuestions }) => () => {
+        // calculate the new indices of remaining questions
+        const newRemaining = _without(remainingQuestions, activeQuestion)
+
+        return {
+          // activate the first question that is still remaining
+          activeQuestion: newRemaining[0],
+          remainingQuestions: newRemaining,
+        }
+      },
       toggleIsCollapsed: ({ isCollapsed }) => () => ({ isCollapsed: !isCollapsed }),
     },
   ),
