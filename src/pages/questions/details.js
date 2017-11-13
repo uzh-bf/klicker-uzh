@@ -14,12 +14,14 @@ const propTypes = {
   questionDetails: PropTypes.shape({}).isRequired,
 }
 
-const EditQuestion = ({ intl, questionDetails }) => {
-  const question = !questionDetails.loading ? questionDetails.questions[0] : null
+const EditQuestion = ({ intl, data }) => {
+  console.dir(data)
 
-  const tagsArray = []
+  const question = data.questions[0]
+
+  const tagsArray = question.tags.map(tag => tag.name)
   // eslint-disable-next-line no-unused-expressions
-  question && question.tags.forEach(tag => tagsArray.push(tag.name))
+  // question && question.tags.forEach(tag => tagsArray.push(tag.name))
 
   console.dir(question)
 
@@ -54,8 +56,8 @@ EditQuestion.propTypes = propTypes
 export default compose(
   withData,
   pageWithIntl,
-  graphql(QuestionDetailsQuery, { name: 'questionDetails' }),
-  branch(({ questionDetails }) => questionDetails.loading, renderComponent(() => <div />)),
+  graphql(QuestionDetailsQuery),
+  branch(props => props.data.loading, renderComponent(() => <div />)),
   /*
   withProps(({ questionDetails }) => ({
     questionDetail: questionDetails.questions[0],

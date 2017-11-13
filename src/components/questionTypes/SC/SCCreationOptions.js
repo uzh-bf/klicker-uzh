@@ -11,6 +11,7 @@ import SCCreationPlaceholder from './SCCreationPlaceholder'
 import SCCreationOption from './SCCreationOption'
 
 const propTypes = {
+  disabled: PropTypes.bool,
   handleDeleteOption: PropTypes.func.isRequired,
   handleNewOption: PropTypes.func.isRequired,
   handleOptionToggleCorrect: PropTypes.func.isRequired,
@@ -22,8 +23,13 @@ const propTypes = {
   value: PropTypes.arrayOf(PropTypes.shape(SCCreationOption.propTypes)).isRequired,
 }
 
+const defaultProps = {
+  disabled: true,
+}
+
 // create the purely functional component
 const SCCreationOptions = ({
+  disabled,
   handleNewOption,
   handleDeleteOption,
   handleUpdateOrder,
@@ -31,9 +37,9 @@ const SCCreationOptions = ({
   value,
   meta: { dirty, invalid },
 }) => {
-  const SortableOption = SortableElement(props => (
+  const Option = props => (
     <div className="option">
-      <SCCreationOption {...props} />
+      <SCCreationOption disabled={disabled} {...props} />
       <style jsx>{`
         .option {
           cursor: grab;
@@ -41,24 +47,24 @@ const SCCreationOptions = ({
         }
       `}</style>
     </div>
-  ))
-
-  const SortableOptions = SortableContainer(
-    ({ sortableOptions, handleCorrectToggle, handleDelete }) => (
-      <div className="options">
-        {sortableOptions.map(({ correct, name }, index) => (
-          <SortableOption
-            key={`sortable-${name}`}
-            index={index}
-            name={name}
-            correct={correct}
-            handleCorrectToggle={handleCorrectToggle(index)}
-            handleDelete={handleDelete(index)}
-          />
-        ))}
-      </div>
-    ),
   )
+  const SortableOption = disabled ? Option : SortableElement(Option)
+
+  const Options = ({ sortableOptions, handleCorrectToggle, handleDelete }) => (
+    <div className="options">
+      {sortableOptions.map(({ correct, name }, index) => (
+        <SortableOption
+          key={`sortable-${name}`}
+          index={index}
+          name={name}
+          correct={correct}
+          handleCorrectToggle={handleCorrectToggle(index)}
+          handleDelete={handleDelete(index)}
+        />
+      ))}
+    </div>
+  )
+  const SortableOptions = disabled ? Options : SortableContainer(Options)
 
   return (
     <div className="SCCreationOptions">
@@ -87,7 +93,7 @@ const SCCreationOptions = ({
           onSortEnd={handleUpdateOrder}
         />
 
-        <SCCreationPlaceholder handleSave={handleNewOption} />
+        {!disabled && <SCCreationPlaceholder handleSave={handleNewOption} />}
       </Form.Field>
 
       <style jsx>{`
@@ -101,6 +107,7 @@ const SCCreationOptions = ({
 }
 
 SCCreationOptions.propTypes = propTypes
+SCCreationOptions.defaultProps = defaultProps
 
 export default compose(
   mapProps(({ input: { onChange, value }, meta }) => ({
