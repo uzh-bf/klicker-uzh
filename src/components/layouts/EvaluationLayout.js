@@ -101,6 +101,11 @@ function EvaluationLayout({
           />
         </div>
 
+        <div className="statistics">
+          <p>Average</p>
+          <p>Median</p>
+        </div>
+
         <div className="optionDisplay">
           <Possibilities questionType={type} questionOptions={options} />
         </div>
@@ -117,7 +122,7 @@ function EvaluationLayout({
                 grid-template-rows: minmax(auto, 0) minmax(auto, 2rem) auto 10rem 5rem;
                 grid-template-areas:
                   'instanceChooser instanceChooser'
-                  'questionDetails questionDetails' 'graph optionDisplay' 'graph settings'
+                  'questionDetails questionDetails' 'graph optionDisplay' 'graph statistics' 'graph settings'
                   'info chartType';
 
                 height: 100vh;
@@ -169,6 +174,7 @@ function EvaluationLayout({
                 .chartType,
                 .optionDisplay,
                 .settings,
+                .statistics,
                 .info {
                   padding: 1rem;
                 }
@@ -201,6 +207,12 @@ function EvaluationLayout({
                   grid-area: settings;
 
                   align-self: end;
+                }
+
+                .statistics {
+                  grid-area: statistics;
+
+                  align-self: center;
                 }
               }
             }
