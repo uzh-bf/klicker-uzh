@@ -22,15 +22,15 @@ const validate = ({
 }) => {
   const errors = {}
 
-  if (!firstName || !isAlpha(firstName) || isEmpty(firstName)) {
+  if (!firstName || isEmpty(firstName)) {
     errors.firstName = 'form.firstName.invalid'
   }
 
-  if (!lastName || !isAlpha(lastName) || isEmpty(lastName)) {
+  if (!lastName || isEmpty(lastName)) {
     errors.lastName = 'form.lastName.invalid'
   }
 
-  if (!institution || !isAlpha(institution) || isEmpty(institution)) {
+  if (!institution || isEmpty(institution)) {
     errors.institution = 'form.institution.invalid'
   }
 
