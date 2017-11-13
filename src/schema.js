@@ -17,6 +17,7 @@ const {
   allSessions,
   createSession,
   endSession,
+  joinSession,
   runningSession,
   sessionByPV,
   sessionsByPV,
@@ -41,17 +42,21 @@ const typeDefs = [
   }
 
   type Query {
-    allQuestions: [Question]!
-    allSessions: [Session]!
-    allTags: [Tag]!
-    activeInstances: [QuestionInstance]
-    runningSession: Session
     user: User
+
+    allQuestions: [Question]!
+
+    allTags: [Tag]!
+
+    allSessions: [Session]!
+    activeInstances: [QuestionInstance]!
+    runningSession: Session
+    joinSession(shortname: String!): Session_Public
   }
 
   type Mutation {
-    createUser(user: UserInput!): User
-    login(email: String!, password: String!): User
+    createUser(user: UserInput!): User!
+    login(email: String!, password: String!): User!
 
     createQuestion(question: QuestionInput!): Question!
 
@@ -65,10 +70,6 @@ const typeDefs = [
 
     addResponse(instanceId: ID!, response: QuestionInstance_ResponseInput!): QuestionInstance!
   }
-
-  type Subscription {
-    getResults(id: ID): QuestionInstance
-  }
 `,
   ...allTypes,
 ]
@@ -81,6 +82,7 @@ const resolvers = {
     allSessions: requireAuth(allSessions),
     allTags: requireAuth(allTags),
     activeInstances: requireAuth(activeInstances),
+    joinSession,
     runningSession: requireAuth(runningSession),
     user: requireAuth(authUser),
   },

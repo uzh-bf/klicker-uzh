@@ -47,7 +47,7 @@ const createQuestion = async ({
         options: {
           // reduce options to only the necessary properties for the respective type
           ...options,
-          choices: type === QuestionTypes.SC ? options.choices : null,
+          choices: [QuestionTypes.SC, QuestionTypes.MC].includes(type) ? options.choices : null,
           restrictions: type === QuestionTypes.FREE ? options.restrictions : null,
         },
         solution: {},

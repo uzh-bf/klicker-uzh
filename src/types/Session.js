@@ -18,6 +18,15 @@ const Session = `
     EXECUTED
   }
 
+  type Session_Public {
+    id: ID!
+
+    settings: Session_Settings!
+
+    activeQuestions: [Question_Public]!
+    feedbacks: [Session_Feedback!]
+  }
+
   input SessionInput {
     name: String!
     blocks: [Session_QuestionBlockInput!]!
