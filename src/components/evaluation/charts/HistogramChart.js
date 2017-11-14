@@ -21,7 +21,6 @@ const propTypes = {
       value: PropTypes.string.isRequired,
     }),
   ),
-  isSolutionShown: PropTypes.bool,
   restrictions: PropTypes.shape({
     max: PropTypes.number,
     min: PropTypes.number,
@@ -30,13 +29,10 @@ const propTypes = {
 
 const defaultProps = {
   data: [],
-  isSolutionShown: false,
   restrictions: null,
 }
 
-const HistogramChart = ({ isSolutionShown, data, restrictions }) => {
-  console.log(isSolutionShown)
-
+const HistogramChart = ({ data, restrictions }) => {
   // TODO comments
   const histogramArray = []
   let currentValue = restrictions.min
