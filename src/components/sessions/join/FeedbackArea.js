@@ -22,7 +22,7 @@ const propTypes = {
   handleNewFeedback: PropTypes.func.isRequired,
   isConfusionBarometerActive: PropTypes.bool,
   isFeedbackChannelActive: PropTypes.bool,
-  toggleFeedbackCreationMode: PropTypes.func.isRequired,
+  /* toggleFeedbackCreationMode: PropTypes.func.isRequired, */
 }
 
 const defaultProps = {
@@ -46,7 +46,7 @@ function FeedbackArea({
   handleConfusionSpeedChange,
   handleNewConfusionTS,
   handleNewFeedback,
-  toggleFeedbackCreationMode,
+  /* toggleFeedbackCreationMode, */
 }) {
   return (
     <div className={classNames('feedbackArea', { active })}>
@@ -107,10 +107,11 @@ function FeedbackArea({
               </label>
             </Form.Field>
 
+            {/*
             <Button onClick={toggleFeedbackCreationMode}>
               <FormattedMessage defaultMessage="Cancel" id="common.form.cancel" />
             </Button>
-
+            */}
             <Button primary floated="right" type="submit" onClick={handleNewFeedback}>
               <FormattedMessage defaultMessage="Submit" id="common.form.submit" />
             </Button>
@@ -118,6 +119,7 @@ function FeedbackArea({
         )}
       </div>
 
+      {/*
       {!feedbackCreationMode && (
         <div className="actionButton">
           <Button
@@ -130,6 +132,7 @@ function FeedbackArea({
           />
         </div>
       )}
+    */}
 
       <style jsx>{`
         @import 'src/theme';
@@ -198,7 +201,7 @@ export default compose(
     {
       confusionDifficulty: 0,
       confusionSpeed: 0,
-      feedbackCreationMode: false,
+      feedbackCreationMode: true,
       feedbackInputValue: undefined,
     },
     {
@@ -214,7 +217,7 @@ export default compose(
       toggleFeedbackCreationMode: ({ feedbackCreationMode }) => () => {
         if (feedbackCreationMode) {
           return {
-            feedbackCreationMode: false,
+            feedbackCreationMode: true,
             feedbackInputValue: undefined,
           }
         }
