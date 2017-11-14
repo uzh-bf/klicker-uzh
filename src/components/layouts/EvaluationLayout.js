@@ -276,7 +276,7 @@ function EvaluationLayout({
                 }
 
                 .statistics > div > .value {
-                  font-size: 2rem;
+                  font-size: 1.3rem;
                   font-weight: 400;
                   line-height: 1em;
                   color: #1b1c1d;
@@ -285,7 +285,7 @@ function EvaluationLayout({
                 }
 
                 .statistics > div > .label {
-                  font-size: 1em;
+                  font-size: 0.9em;
                   font-weight: 700;
                   color: rgba(0, 0, 0, 0.87);
                   text-transform: uppercase;
