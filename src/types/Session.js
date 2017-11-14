@@ -35,6 +35,7 @@ const Session = `
     id: ID!
     name: String!
     activeBlock: Int!
+    runtime: String
 
     status: Session_Status!
     settings: Session_Settings!
@@ -47,6 +48,8 @@ const Session = `
 
     createdAt: String!
     updatedAt: String!
+    startedAt: String!
+    finishedAt: String!
   }
 
   input Session_SettingsInput {

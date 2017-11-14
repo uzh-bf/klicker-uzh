@@ -39,6 +39,24 @@ const addFeedback = async ({ sessionId, content }) => {
   return session
 }
 
+// delete a feedback from a session
+const deleteFeedback = async ({ sessionId, feedbackId, userId }) => {
+  const session = await getRunningSession(sessionId)
+
+  // ensure the user is authorized to modify this session
+  if (!session.user.equals(userId)) {
+    throw new Error('UNAUTHORIZED')
+  }
+
+  session.feedbacks = session.feedbacks.filter(feedback => feedback.id !== feedbackId)
+
+  // save the updated session
+  await session.save()
+
+  // return the updated session
+  return session
+}
+
 // add a new confusion timestep to the session
 const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
   // TODO: security
@@ -150,4 +168,5 @@ module.exports = {
   addResponse,
   addConfusionTS,
   addFeedback,
+  deleteFeedback,
 }

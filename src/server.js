@@ -19,7 +19,7 @@ const queryMap = require('./queryMap.json')
 
 mongoose.Promise = Promise
 
-// const dev = process.env.NODE_ENV !== 'production'
+const dev = process.env.NODE_ENV !== 'production'
 
 // require important environment variables to be present
 // otherwise exit the application
@@ -77,13 +77,16 @@ let middleware = [
   }),
   // parse json contents
   bodyParser.json(),
+]
+
+if (!dev) {
   // persisted query middleware
-  (req, res, next) => {
+  middleware.push((req, res, next) => {
     const invertedMap = _invert(queryMap)
     req.body.query = invertedMap[req.body.id]
     next()
-  },
-]
+  })
+}
 
 // setup Apollo Engine (GraphQL API metrics)
 let apolloEngine = !!process.env.ENGINE_API_KEY
@@ -104,8 +107,8 @@ server.use(
   graphqlExpress((req, res) => ({
     context: { auth: req.auth, res },
     schema,
-    tracing: true,
-    cacheControl: true,
+    tracing: !!process.env.ENGINE_API_KEY,
+    cacheControl: !!process.env.ENGINE_API_KEY,
   })),
 )
 

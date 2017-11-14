@@ -37,6 +37,8 @@ const Session = new mongoose.Schema({
 
   createdAt: { type: Date, default: Date.now() },
   updatedAt: { type: Date, default: Date.now() },
+  startedAt: { type: Date },
+  finishedAt: { type: Date },
 })
 
 module.exports = {

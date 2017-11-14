@@ -93,12 +93,12 @@ exports[`SessionMgrService activateNextBlock recognizes that the final block has
     Name: testing session
     Status: RUNNING
 
-    ActiveBlock: 1
+    ActiveBlock: 0
     ActiveInstances: 0
 
     Blocks: [{
       Show solutions: false
-      Status: EXECUTED
+      Status: ACTIVE
       Time limit: -1
       Number of instances: 1
     }]
@@ -119,7 +119,7 @@ Array [
   
     QUESTION_INSTANCE
 
-    isOpen: false
+    isOpen: true
     version: 0
 
     responses: []

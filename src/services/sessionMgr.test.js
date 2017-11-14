@@ -288,7 +288,7 @@ describe('SessionMgrService', () => {
       })
 
       // expect the first block to be active
-      expect(session.activeBlock).toEqual(1)
+      expect(session.activeBlock).toEqual(0)
       // expect the session to have no more active instances
       expect(session.activeInstances).toHaveLength(0)
       // expect matching snapshots
