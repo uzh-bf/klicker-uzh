@@ -57,6 +57,9 @@ function FeedbackArea({
             value={confusionSpeed}
             handleChange={newValue => handleConfusionSpeedChange(newValue)}
             handleChangeComplete={handleNewConfusionTS}
+            min={-10}
+            max={10}
+            labels={{ min: 'slow', mid: 'optimal', max: 'fast' }}
           />
 
           <ConfusionSlider
@@ -68,6 +71,9 @@ function FeedbackArea({
             value={confusionDifficulty}
             handleChange={newValue => handleConfusionDifficultyChange(newValue)}
             handleChangeComplete={handleNewConfusionTS}
+            min={-10}
+            max={10}
+            labels={{ min: 'easy', mid: 'optimal', max: 'hard' }}
           />
         </div>
       )}

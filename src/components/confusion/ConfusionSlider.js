@@ -10,6 +10,9 @@ const propTypes = {
   handleChangeComplete: PropTypes.func.isRequired,
   title: PropTypes.element,
   value: PropTypes.number,
+  min: PropTypes.number.isRequired,
+  max: PropTypes.number.isRequired,
+  labels: PropTypes.object,
 }
 
 const defaultProps = {
@@ -18,16 +21,18 @@ const defaultProps = {
 }
 
 const ConfusionSlider = ({
-  title, value, handleChange, handleChangeComplete,
+  title,
+  value,
+  handleChange,
+  handleChangeComplete,
+  min,
+  max,
+  labels,
 }) => {
-  const min = -10
-  const max = 10
-
-  const labels = {
-    min: 'Low',
-    0: 'Medium',
-    9: 'High',
-  }
+  const labelsSlider = {}
+  labelsSlider[min] = labels.min
+  labelsSlider[(max + min) / 2] = labels.mid
+  labelsSlider[max] = labels.max
 
   return (
     <div className="confusionSlider">
@@ -45,12 +50,14 @@ const ConfusionSlider = ({
           value={value}
           onChange={handleChange}
           onChangeComplete={handleChangeComplete}
-          labels={labels}
+          labels={labelsSlider}
           handleLabel={value}
         />
       </div>
 
       <style jsx>{`
+        @import 'src/theme';
+
         .confusionSlider {
           margin-bottom: 70px;
 
@@ -60,7 +67,7 @@ const ConfusionSlider = ({
           }
 
           :global(.rangeslider__fill) {
-            background-color: #0022ff;
+            background-color: $color-primary;
           }
 
           :global(.rangeslider__handle) {
