@@ -95,6 +95,10 @@ describe('SessionExecService', () => {
 
       // TODO: add assertion
     })
+
+    it('allows the lecturer to delete feedbacks', async () => {
+      // TODO: assertions
+    })
   })
 
   describe('addConfusionTS', () => {

@@ -13,6 +13,7 @@ const {
 } = require('./resolvers/questionInstances')
 const {
   addFeedback,
+  deleteFeedback,
   addConfusionTS,
   allSessions,
   createSession,
@@ -24,6 +25,7 @@ const {
   startSession,
   updateSessionSettings,
   activateNextBlock,
+  runtimeByPV,
 } = require('./resolvers/sessions')
 const { allTags, tags } = require('./resolvers/tags')
 const {
@@ -65,6 +67,7 @@ const typeDefs = [
     activateNextBlock: Session!
     endSession(id: ID!): Session!
     addFeedback(sessionId: ID!, content: String!): Session!
+    deleteFeedback(sessionId: ID!, feedbackId: ID!): Session!
     addConfusionTS(sessionId: ID!, difficulty: Int!, speed: Int!): Session!
     updateSessionSettings(sessionId: ID!, settings: Session_SettingsInput!): Session!
 
@@ -88,6 +91,7 @@ const resolvers = {
   },
   Mutation: {
     addFeedback,
+    deleteFeedback: requireAuth(deleteFeedback),
     addConfusionTS,
     addResponse,
     createQuestion: requireAuth(createQuestion),
@@ -134,6 +138,7 @@ const resolvers = {
   },
   Session: {
     user,
+    runtime: runtimeByPV,
   },
   Session_QuestionBlock: {
     instances: questionInstancesByPV,

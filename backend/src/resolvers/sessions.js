@@ -1,3 +1,5 @@
+const moment = require('moment')
+
 const SessionMgrService = require('../services/sessionMgr')
 const SessionExecService = require('../services/sessionExec')
 const { SessionModel, UserModel } = require('../models')
@@ -46,6 +48,9 @@ const sessionByIDQuery = (parentValue, { id }) => SessionModel.findById(id)
 const sessionByPVQuery = parentValue => SessionModel.findById(parentValue.runningSession)
 const sessionsByPVQuery = parentValue => SessionModel.find({ _id: { $in: parentValue.sessions } })
 
+// calculate the session runtime
+const runtimeByPVQuery = ({ startedAt }) => moment.duration(moment().diff(startedAt)).humanize()
+
 /* ----- mutations ----- */
 const createSessionMutation = (parentValue, { session: { name, blocks } }, { auth }) =>
   SessionMgrService.createSession({
@@ -64,6 +69,9 @@ const endSessionMutation = (parentValue, { id }, { auth }) => SessionMgrService.
 const addFeedbackMutation = (parentValue, { sessionId, content }) =>
   SessionExecService.addFeedback({ sessionId, content })
 
+const deleteFeedbackMutation = (parentValue, { sessionId, feedbackId }, { auth }) =>
+  SessionExecService.deleteFeedback({ sessionId, feedbackId, userId: auth.sub })
+
 const addConfusionTSMutation = (parentValue, { sessionId, difficulty, speed }) =>
   SessionExecService.addConfusionTS({ sessionId, difficulty, speed })
 
@@ -81,6 +89,7 @@ module.exports = {
   session: sessionByIDQuery,
   sessionByPV: sessionByPVQuery,
   sessionsByPV: sessionsByPVQuery,
+  runtimeByPV: runtimeByPVQuery,
 
   // mutations
   createSession: createSessionMutation,
@@ -88,6 +97,7 @@ module.exports = {
   activateNextBlock: activateNextBlockMutation,
   startSession: startSessionMutation,
   addFeedback: addFeedbackMutation,
+  deleteFeedback: deleteFeedbackMutation,
   addConfusionTS: addConfusionTSMutation,
   updateSessionSettings: updateSessionSettingsMutation,
   joinSession: joinSessionQuery,
