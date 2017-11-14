@@ -16,7 +16,6 @@ const propTypes = {
   accountShort: PropTypes.string,
   handleSidebarToggle: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  runningSessionId: PropTypes.string.isRequired,
   search: PropTypes.shape({
     handleSearch: PropTypes.func.isRequired,
     handleSort: PropTypes.func.isRequired,
@@ -34,7 +33,6 @@ const defaultProps = {
 export const NavbarPres = ({
   accountShort,
   intl,
-  runningSessionId,
   search,
   sidebarVisible,
   title,
@@ -65,7 +63,7 @@ export const NavbarPres = ({
     <div className="accountArea">
       <Menu borderless className="loginArea noBorder">
         <Menu.Menu position="right">
-          {runningSessionId && <SessionArea sessionId={runningSessionId} />}
+          {accountShort && <SessionArea shortname={accountShort} />}
           <AccountArea accountShort={accountShort} />
         </Menu.Menu>
       </Menu>
