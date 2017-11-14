@@ -321,15 +321,12 @@ export default compose(
       const { instanceId, type } = questions[activeQuestion]
 
       // if the question has been answered, add a response
-      if (inputValue && (inputValue > 0 || inputValue.length > 0)) {
-        const response = {}
-        if ([QuestionTypes.SC, QuestionTypes.MC].includes(type)) {
-          response.choices = inputValue
-        } else if (type === 'FREE') {
-          response.value = inputValue
+      if (typeof inputValue !== 'undefined') {
+        if (inputValue.length > 0 && [QuestionTypes.SC, QuestionTypes.MC].includes(type)) {
+          handleNewResponse({ instanceId, response: { choices: inputValue } })
+        } else if (type === QuestionTypes.FREE) {
+          handleNewResponse({ instanceId, response: { value: inputValue } })
         }
-
-        handleNewResponse({ instanceId, response })
       }
 
       // update the stored responses
