@@ -80,7 +80,7 @@ function QuestionArea({
       {(() => {
         if (remainingQuestions.length === 0) {
           return (
-            <div className="padded">
+            <div>
               <FormattedMessage
                 defaultMessage="You have completed all active questions."
                 id="joinSession.allQuestionsCompleted"
@@ -170,6 +170,7 @@ function QuestionArea({
           }
 
           .collapser,
+          .options,
           .padded {
             padding: 1rem;
           }
@@ -193,10 +194,18 @@ function QuestionArea({
             border: 1px solid $color-primary;
             margin-right: 0.25rem;
 
-            padding: 1rem;
-
             .header {
               display: block;
+              margin: 1rem;
+            }
+
+            .collapser {
+              margin: 0 1rem;
+            }
+
+            .options {
+              padding: 0;
+              margin: 1rem 1rem 0 1rem;
             }
           }
         }
