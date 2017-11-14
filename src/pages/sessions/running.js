@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import moment from 'moment'
 import { compose, withHandlers, branch, renderComponent, withProps } from 'recompose'
 import { graphql } from 'react-apollo'
 import { intlShape } from 'react-intl'
@@ -30,6 +31,8 @@ const propTypes = {
   isConfusionBarometerActive: PropTypes.bool.isRequired,
   isFeedbackChannelActive: PropTypes.bool.isRequired,
   isFeedbackChannelPublic: PropTypes.bool.isRequired,
+  runtime: PropTypes.bool.isRequired,
+  startedAt: PropTypes.string.isRequired,
 }
 
 const Running = ({
@@ -37,6 +40,8 @@ const Running = ({
   blocks,
   confusionTS,
   feedbacks,
+  runtime,
+  startedAt,
   isConfusionBarometerActive,
   isFeedbackChannelActive,
   isFeedbackChannelPublic,
@@ -63,6 +68,8 @@ const Running = ({
         <SessionTimeline
           intl={intl}
           blocks={blocks}
+          runtime={runtime}
+          startedAt={startedAt}
           handleLeftActionClick={handleEndSession}
           handleRightActionClick={handleActivateNextBlock}
         />
@@ -204,8 +211,9 @@ export default compose(
     },
   }),
   // flatten out the relevant data props
-  withProps(({ data }) => ({
-    ...data.runningSession,
-    ...data.runningSession.settings,
+  withProps(({ data: { runningSession } }) => ({
+    ...runningSession,
+    ...runningSession.settings,
+    startedAt: moment(runningSession.startedAt).format('h:mm:ss'),
   })),
 )(Running)

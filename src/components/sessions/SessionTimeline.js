@@ -11,22 +11,31 @@ const propTypes = {
   handleLeftActionClick: PropTypes.func.isRequired,
   handleRightActionClick: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
+  runtime: PropTypes.string,
+  startedAt: PropTypes.string,
 }
 
 const defaultProps = {
   blocks: [],
+  runtime: '00:00:00',
+  startedAt: '00:00:00',
 }
 
 const SessionTimeline = ({
-  blocks, intl, handleLeftActionClick, handleRightActionClick,
+  blocks,
+  intl,
+  runtime,
+  startedAt,
+  handleLeftActionClick,
+  handleRightActionClick,
 }) => (
   <div className="sessionTimeline">
     <div className="topRow">
       <div className="startingTime">
-        <Icon name="time" /> 18:17:22
+        <Icon name="time" /> {startedAt}
       </div>
       <div className="runningTime">
-        <Icon name="play circle" /> 12:56
+        <Icon name="play circle" /> {runtime}
       </div>
       <div className="evaluationLink">
         <Icon name="external" />{' '}

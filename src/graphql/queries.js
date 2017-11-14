@@ -61,6 +61,8 @@ export const RunningSessionQuery = gql`
   query RunningSession {
     runningSession {
       id
+      runtime
+      startedAt
       confusionTS {
         difficulty
         speed
