@@ -2001,16 +2001,16 @@ exports[`Storyshots forms/helpers SemanticInput 1`] = `
 
 exports[`Storyshots questionTypes/FREE FREE Answering Options (Number restriction) 1`] = `
 <div
-  className="jsx-2380687086 ui form freeAnswerOptions"
+  className="jsx-28718466 ui form freeAnswerOptions"
 >
   <div
-    className="jsx-2380687086 field slider"
+    className="jsx-28718466 field slider"
   >
     <span
-      className="jsx-2380687086 min"
+      className="jsx-28718466 min"
     >
       <strong
-        className="jsx-2380687086"
+        className="jsx-28718466"
       >
         <span>
           Min
@@ -2020,10 +2020,10 @@ exports[`Storyshots questionTypes/FREE FREE Answering Options (Number restrictio
       900
     </span>
     <span
-      className="jsx-2380687086 max"
+      className="jsx-28718466 max"
     >
       <strong
-        className="jsx-2380687086"
+        className="jsx-28718466"
       >
         <span>
           Max
@@ -2067,7 +2067,7 @@ exports[`Storyshots questionTypes/FREE FREE Answering Options (Number restrictio
         <div
           className="rangeslider__handle-label"
         >
-          
+          555
         </div>
       </div>
       <ul
@@ -2093,22 +2093,22 @@ exports[`Storyshots questionTypes/FREE FREE Answering Options (Number restrictio
 
 exports[`Storyshots questionTypes/FREE FREE Answering Options (lower bound restriction) 1`] = `
 <div
-  className="jsx-2380687086 ui form freeAnswerOptions"
+  className="jsx-28718466 ui form freeAnswerOptions"
 >
   <div
-    className="jsx-2380687086 field"
+    className="jsx-28718466 field"
   >
     <textarea
-      className="jsx-2380687086"
+      className="jsx-28718466"
       disabled={false}
       id="responseInput"
       onChange={[Function]}
     />
     <div
-      className="jsx-2380687086"
+      className="jsx-28718466"
     >
       <strong
-        className="jsx-2380687086"
+        className="jsx-28718466"
       >
         <span>
           Min
@@ -2123,13 +2123,13 @@ exports[`Storyshots questionTypes/FREE FREE Answering Options (lower bound restr
 
 exports[`Storyshots questionTypes/FREE FREE Answering Options (unrestricted) 1`] = `
 <div
-  className="jsx-2380687086 ui form freeAnswerOptions"
+  className="jsx-28718466 ui form freeAnswerOptions"
 >
   <div
-    className="jsx-2380687086 field"
+    className="jsx-28718466 field"
   >
     <textarea
-      className="jsx-2380687086"
+      className="jsx-28718466"
       disabled={false}
       id="responseInput"
       onChange={[Function]}
@@ -2140,22 +2140,22 @@ exports[`Storyshots questionTypes/FREE FREE Answering Options (unrestricted) 1`]
 
 exports[`Storyshots questionTypes/FREE FREE Answering Options (upper bound restriction) 1`] = `
 <div
-  className="jsx-2380687086 ui form freeAnswerOptions"
+  className="jsx-28718466 ui form freeAnswerOptions"
 >
   <div
-    className="jsx-2380687086 field"
+    className="jsx-28718466 field"
   >
     <textarea
-      className="jsx-2380687086"
+      className="jsx-28718466"
       disabled={false}
       id="responseInput"
       onChange={[Function]}
     />
     <div
-      className="jsx-2380687086"
+      className="jsx-28718466"
     >
       <strong
-        className="jsx-2380687086"
+        className="jsx-28718466"
       >
         <span>
           Max
