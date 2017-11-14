@@ -4,10 +4,10 @@ import QRCode from 'qrcode.react'
 import { Icon, Menu, Popup } from 'semantic-ui-react'
 
 const propTypes = {
-  sessionId: PropTypes.string.isRequired,
+  shortname: PropTypes.string.isRequired,
 }
 
-const SessionArea = ({ sessionId }) => (
+const SessionArea = ({ shortname }) => (
   <Popup
     basic
     hideOnScroll
@@ -16,12 +16,12 @@ const SessionArea = ({ sessionId }) => (
     position="bottom right"
     trigger={
       <Menu.Item name="session">
-        /sessions/{sessionId} <Icon name="qrcode" />
+        /join/{shortname} <Icon name="qrcode" />
       </Menu.Item>
     }
   >
     <Popup.Content>
-      <QRCode value={`https://react-uniz-klicker.appuioapp.ch/sessions/${sessionId}`} />
+      <QRCode value={`https://react-uniz-klicker.appuioapp.ch/join/${shortname}`} />
     </Popup.Content>
   </Popup>
 )
