@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import Link from 'next/link'
 import { intlShape } from 'react-intl'
 import { Button, Icon } from 'semantic-ui-react'
 
@@ -26,6 +27,12 @@ const SessionTimeline = ({
       </div>
       <div className="runningTime">
         <Icon name="play circle" /> 12:56
+      </div>
+      <div className="evaluationLink">
+        <Icon name="external" />{' '}
+        <Link prefetch href="/sessions/evaluation">
+          <a target="_blank">Evaluation</a>
+        </Link>
       </div>
     </div>
     <div className="blocks">
@@ -81,11 +88,12 @@ const SessionTimeline = ({
 
         display: flex;
 
-        background: grey;
+        background: lightgrey;
         padding: 1rem;
       }
 
-      .runningTime {
+      .runningTime,
+      .evaluationLink {
         margin-left: 2rem;
       }
 
