@@ -5,6 +5,7 @@ import { Button, Icon } from 'semantic-ui-react'
 const propTypes = {
   alreadyVoted: PropTypes.bool.isRequired,
   content: PropTypes.string.isRequired,
+  onDelete: PropTypes.func,
   showDelete: PropTypes.bool,
   showVotes: PropTypes.bool,
   updateVotes: PropTypes.func.isRequired,
@@ -12,18 +13,25 @@ const propTypes = {
 }
 
 const defaultProps = {
+  onDelete: f => f,
   showDelete: true,
   showVotes: false,
 }
 
 const Feedback = ({
-  alreadyVoted, content, showDelete, showVotes, updateVotes, votes,
+  alreadyVoted,
+  content,
+  showDelete,
+  showVotes,
+  updateVotes,
+  votes,
+  onDelete,
 }) => (
   <div className="feedback">
     <div className="content">{content}</div>
     {showDelete && (
       <div className="delete">
-        <Button basic icon="trash outline" fluid />
+        <Button basic icon="trash outline" fluid onClick={onDelete} />
       </div>
     )}
 
