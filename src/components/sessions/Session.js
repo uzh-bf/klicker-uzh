@@ -14,7 +14,7 @@ const propTypes = {
     onClick: PropTypes.func.isRequired,
   }).isRequired,
   createdAt: PropTypes.string.isRequired,
-  id: PropTypes.string.isRequired,
+  /* id: PropTypes.string.isRequired, */
   name: PropTypes.string.isRequired,
 }
 
@@ -23,11 +23,12 @@ const defaultProps = {
 }
 
 const Session = ({
-  button, createdAt, name, blocks, id,
+  button, createdAt, /* id, */ name, blocks,
 }) => (
   <div className="session">
     <h2 className="title">
-      {id.slice(0, 7)} - {name}
+      {/* {id.slice(0, 7)} - {name} */}
+      {name}
     </h2>
     <div className="date">
       <FormattedMessage id="sessionHistory.string.createdOn" defaultMessage="Created on" />{' '}
@@ -42,6 +43,7 @@ const Session = ({
               id: instance.id,
               title: instance.question.title,
               type: instance.question.type,
+              versions: instance.question.versions,
             }))}
             showSolutions={block.showSolutions}
             timeLimit={block.timeLimit}
@@ -97,7 +99,7 @@ const Session = ({
           text-align: right;
         }
         .details {
-          border: 1px solid lightgrey;
+          //border: 1px solid lightgrey;
         }
         .block {
           flex: 1;

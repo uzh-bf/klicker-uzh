@@ -2,16 +2,18 @@ import React from 'react'
 import PropTypes from 'prop-types'
 
 const propTypes = {
-  id: PropTypes.string.isRequired,
+  /* id: PropTypes.string.isRequired, */
+  description: PropTypes.string.isRequired,
   title: PropTypes.string.isRequired,
   type: PropTypes.string.isRequired,
 }
 
-const QuestionSingle = ({ id, type, title }) => (
+const QuestionSingle = ({ /* id, */ description, type, title }) => (
   <div className="questionSingle">
-    <div className="id">{`#${id.substring(0, 7)}`}</div>
+    {/* <div className="id">{`#${id.substring(0, 7)}`}</div> */}
+    <div className="id">{title}</div>
     <div className="type">{type}</div>
-    <div className="content">{title}</div>
+    <div className="content">{description}</div>
 
     <style jsx>{`
       .questionSingle {

@@ -51,7 +51,9 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
         $background-color: rgba(124, 184, 228, 0.25);
 
         .session {
-          margin-bottom: 2rem;
+          margin-bottom: 1rem;
+          padding: 0.75rem;
+          border: 1px solid lightgray;
         }
 
         .session.running {
