@@ -56,9 +56,11 @@ const FREEAnswerOptions = ({
               disabled={disabled}
               min={options.restrictions.min}
               max={options.restrictions.max}
+              tooltip={false}
               orientation="horizontal"
               value={value}
               onChange={onChange}
+              handleLabel={value}
             />
             <Input
               type="number"
@@ -118,6 +120,29 @@ const FREEAnswerOptions = ({
         textarea {
           min-height: 10rem;
           width: 100%;
+        }
+
+        :global(.rangeslider__fill) {
+          background-color: $color-primary;
+        }
+
+        :global(.rangeslider__handle) {
+          padding: 1rem;
+
+          &:after {
+            display: none;
+          }
+
+          &:focus {
+            outline: none;
+          }
+        }
+
+        :global(.rangeslider__handle-label) {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate3d(-50%, -50%, 0);
         }
       }
     `}</style>
