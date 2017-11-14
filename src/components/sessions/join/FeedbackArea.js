@@ -55,12 +55,12 @@ function FeedbackArea({
                 <FormattedMessage id="common.string.speed" defaultMessage="Speed" />
               </h2>
             }
-            value={confusionSpeed}
             handleChange={newValue => handleConfusionSpeedChange(newValue)}
             handleChangeComplete={handleNewConfusionTS}
-            min={-10}
+            labels={{ max: 'fast', mid: 'optimal', min: 'slow' }}
             max={10}
-            labels={{ min: 'slow', mid: 'optimal', max: 'fast' }}
+            min={-10}
+            value={confusionSpeed}
           />
 
           <ConfusionSlider
@@ -69,12 +69,12 @@ function FeedbackArea({
                 <FormattedMessage id="common.string.difficulty" defaultMessage="Difficulty" />
               </h2>
             }
-            value={confusionDifficulty}
             handleChange={newValue => handleConfusionDifficultyChange(newValue)}
             handleChangeComplete={handleNewConfusionTS}
-            min={-10}
+            labels={{ max: 'hard', mid: 'optimal', min: 'easy' }}
             max={10}
-            labels={{ min: 'easy', mid: 'optimal', max: 'hard' }}
+            min={-10}
+            value={confusionDifficulty}
           />
         </div>
       )}
@@ -208,11 +208,11 @@ export default compose(
       handleConfusionSpeedChange: () => confusionSpeed => ({
         confusionSpeed,
       }),
-      handleFeedbackInputValueChange: () => e => ({
-        feedbackInputValue: e.target.value,
-      }),
       handleFeedbackInputReset: () => () => ({
         feedbackInputValue: '',
+      }),
+      handleFeedbackInputValueChange: () => e => ({
+        feedbackInputValue: e.target.value,
       }),
     },
   ),

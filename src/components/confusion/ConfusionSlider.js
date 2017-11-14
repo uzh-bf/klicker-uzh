@@ -8,14 +8,15 @@ import { createLinks } from '../../lib'
 const propTypes = {
   handleChange: PropTypes.func.isRequired,
   handleChangeComplete: PropTypes.func.isRequired,
+  labels: PropTypes.object,
+  max: PropTypes.number.isRequired,
+  min: PropTypes.number.isRequired,
   title: PropTypes.element,
   value: PropTypes.number,
-  min: PropTypes.number.isRequired,
-  max: PropTypes.number.isRequired,
-  labels: PropTypes.object,
 }
 
 const defaultProps = {
+  labels: undefined,
   title: undefined,
   value: undefined,
 }
