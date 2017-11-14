@@ -17,6 +17,7 @@ import {
   EndSessionMutation,
   UpdateSessionSettingsMutation,
   ActivateNextBlockMutation,
+  DeleteFeedbackMutation,
 } from '../../graphql/mutations'
 import { LoadingTeacherLayout, Messager } from '../../components/common'
 
@@ -25,6 +26,7 @@ const propTypes = {
   confusionTS: PropTypes.array.isRequired,
   feedbacks: PropTypes.array.isRequired,
   handleActivateNextBlock: PropTypes.func.isRequired,
+  handleDeleteFeedback: PropTypes.func.isRequired,
   handleEndSession: PropTypes.func.isRequired,
   handleUpdateSettings: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
@@ -46,6 +48,7 @@ const Running = ({
   isFeedbackChannelActive,
   isFeedbackChannelPublic,
   handleActivateNextBlock,
+  handleDeleteFeedback,
   handleEndSession,
   handleUpdateSettings,
 }) => (
@@ -98,6 +101,7 @@ const Running = ({
           handlePublicToggle={handleUpdateSettings({
             settings: { isFeedbackChannelPublic: !isFeedbackChannelPublic },
           })}
+          handleDeleteFeedback={handleDeleteFeedback}
         />
       </div>
     </div>
@@ -171,6 +175,7 @@ export default compose(
   graphql(EndSessionMutation, { name: 'endSession' }),
   graphql(UpdateSessionSettingsMutation, { name: 'updateSessionSettings' }),
   graphql(ActivateNextBlockMutation, { name: 'activateNextBlock' }),
+  graphql(DeleteFeedbackMutation, { name: 'deleteFeedback' }),
   withHandlers({
     // handle activation of the next block in the session
     handleActivateNextBlock: ({ activateNextBlock }) => async () => {
@@ -182,6 +187,20 @@ export default compose(
         console.error(message)
       }
     },
+
+    // handle deletion of a feedback
+    handleDeleteFeedback: ({ deleteFeedback, data: { joinSession } }) => ({
+      feedbackId,
+    }) => async () => {
+      try {
+        await deleteFeedback({
+          variables: { feedbackId, sessionId: joinSession.id },
+        })
+      } catch ({ message }) {
+        console.error(message)
+      }
+    },
+
     // handle ending the currently running session
     handleEndSession: ({ data, endSession }) => async () => {
       try {
@@ -198,6 +217,7 @@ export default compose(
         console.error(message)
       }
     },
+
     // handle a session settings update
     handleUpdateSettings: ({ data, updateSessionSettings }) => ({ settings }) => async () => {
       try {
