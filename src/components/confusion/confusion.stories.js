@@ -32,7 +32,14 @@ const data = [
 ]
 
 storiesOf('confusion', module)
-  .add('ConfusionSlider', () => <SliderWithState title={<h2>Speed</h2>} />)
+  .add('ConfusionSlider', () => (
+    <SliderWithState
+      title={<h2>Speed</h2>}
+      min={-10}
+      max={10}
+      labels={{ max: 'High', mid: 'Okay', min: 'Low' }}
+    />
+  ))
   .add('ConfusionBarometer', () => <BarometerWithState confusionTS={data} intl={intlMock} />)
   // HACK: disable test as recharts breaks => https://github.com/recharts/recharts/issues/765
   .add('ConfusionBarometer (isActive) [NoTest]', () => (

@@ -336,8 +336,8 @@ exports[`Storyshots common/navbar Navbar 1`] = `
           onMouseEnter={[Function]}
           onMouseLeave={[Function]}
         >
-          /sessions/
-          a2sd5
+          /join/
+          AW
            
           <i
             aria-hidden="true"
@@ -432,8 +432,7 @@ exports[`Storyshots common/navbar SessionArea 1`] = `
   onMouseEnter={[Function]}
   onMouseLeave={[Function]}
 >
-  /sessions/
-  a7s7d
+  /join/
    
   <i
     aria-hidden="true"
@@ -550,17 +549,17 @@ exports[`Storyshots confusion ConfusionBarometer 1`] = `
 
 exports[`Storyshots confusion ConfusionSlider 1`] = `
 <div
-  className="jsx-1078630351 confusionSlider"
+  className="jsx-468516100 confusionSlider"
 >
   <div
-    className="jsx-1078630351 title"
+    className="jsx-468516100 title"
   >
     <h2>
       Speed
     </h2>
   </div>
   <div
-    className="jsx-1078630351 slider"
+    className="jsx-468516100 slider"
   >
     <div
       aria-orientation="horizontal"
@@ -597,12 +596,55 @@ exports[`Storyshots confusion ConfusionSlider 1`] = `
         <div
           className="rangeslider__handle-label"
         >
-          
+          10
         </div>
       </div>
       <ul
         className="rangeslider__labels"
-      />
+      >
+        <li
+          className="rangeslider__label-item"
+          data-value="10"
+          onMouseDown={[Function]}
+          onTouchEnd={[Function]}
+          onTouchStart={[Function]}
+          style={
+            Object {
+              "left": "0px",
+            }
+          }
+        >
+          High
+        </li>
+        <li
+          className="rangeslider__label-item"
+          data-value="0"
+          onMouseDown={[Function]}
+          onTouchEnd={[Function]}
+          onTouchStart={[Function]}
+          style={
+            Object {
+              "left": "0px",
+            }
+          }
+        >
+          Okay
+        </li>
+        <li
+          className="rangeslider__label-item"
+          data-value="-10"
+          onMouseDown={[Function]}
+          onTouchEnd={[Function]}
+          onTouchStart={[Function]}
+          style={
+            Object {
+              "left": "0px",
+            }
+          }
+        >
+          Low
+        </li>
+      </ul>
     </div>
   </div>
 </div>
