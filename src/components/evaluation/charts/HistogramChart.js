@@ -7,6 +7,7 @@ import {
   ReferenceLine,
   CartesianGrid,
   Legend,
+  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -31,7 +32,7 @@ const data = [
   { name: '1', uv: 300 },
   { name: '2', uv: 145 },
   { name: '3', uv: 100 },
-  { name: '4', uv: -8 },
+  { name: '4', uv: 8 },
   { name: '5', uv: 100 },
   { name: '6', uv: 9 },
   { name: '7', uv: 53 },
@@ -39,8 +40,8 @@ const data = [
   { name: '9', uv: 79 },
   { name: '10', uv: 294 },
   { name: '12', uv: 43 },
-  { name: '13', uv: -74 },
-  { name: '14', uv: -71 },
+  { name: '13', uv: 74 },
+  { name: '14', uv: 71 },
   { name: '15', uv: 117 },
   { name: '16', uv: 186 },
   { name: '17', uv: 16 },
@@ -70,27 +71,29 @@ const data = [
 ]
 
 const HistogramChart = () => (
-  <BarChart
-    width={600}
-    height={300}
-    data={data}
-    margin={{
-      bottom: 5,
-      left: 20,
-      right: 30,
-      top: 5,
-    }}
-  >
-    <XAxis dataKey="name" />
-    <YAxis />
-    <CartesianGrid strokeDasharray="3 3" />
-    <Tooltip />
-    <Legend verticalAlign="top" wrapperStyle={{ lineHeight: '40px' }} />
-    <ReferenceLine y={0} stroke="#000" />
-    <Brush dataKey="name" height={30} stroke="#8884d8" />
-    <Bar dataKey="pv" fill="#8884d8" />
-    <Bar dataKey="uv" fill="#82ca9d" />
-  </BarChart>
+  <ResponsiveContainer width="80%">
+    <BarChart
+      width={600}
+      height={300}
+      data={data}
+      margin={{
+        bottom: 5,
+        left: 20,
+        right: 30,
+        top: 5,
+      }}
+    >
+      <XAxis dataKey="name" />
+      <YAxis />
+      <CartesianGrid strokeDasharray="3 3" />
+      <Tooltip />
+      <Legend verticalAlign="top" wrapperStyle={{ lineHeight: '40px' }} />
+      <ReferenceLine y={0} stroke="#000" />
+      <Brush dataKey="name" height={30} stroke="#8884d8" />
+      <Bar dataKey="pv" fill="#8884d8" />
+      <Bar dataKey="uv" fill="#82ca9d" />
+    </BarChart>
+  </ResponsiveContainer>
 )
 
 HistogramChart.propTypes = propTypes
