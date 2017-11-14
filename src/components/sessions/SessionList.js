@@ -46,8 +46,35 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
       ))}
 
       <style jsx>{`
+        @import 'src/theme';
+
+        $background-color: rgba(124, 184, 228, 0.25);
+
         .session {
           margin-bottom: 2rem;
+        }
+
+        .session.running {
+          padding: 0.5rem;
+
+          animation-name: color;
+          animation-duration: 2.5s;
+          animation-iteration-count: infinite;
+
+          @keyframes color {
+            0% {
+              background-color: $background-color;
+              border: 1px solid $color-primary;
+            }
+            50% {
+              background-color: transparent;
+              border: 1px solid transparent;
+            }
+            100% {
+              background-color: $background-color;
+              border: 1px solid $color-primary;
+            }
+          }
         }
       `}</style>
     </div>
