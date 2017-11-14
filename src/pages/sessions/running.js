@@ -189,12 +189,15 @@ export default compose(
     },
 
     // handle deletion of a feedback
-    handleDeleteFeedback: ({ deleteFeedback, data: { joinSession } }) => ({
-      feedbackId,
-    }) => async () => {
+    handleDeleteFeedback: ({
+      deleteFeedback,
+      data: { runningSession },
+    }) => feedbackId => async () => {
+      console.log('hello world')
+
       try {
         await deleteFeedback({
-          variables: { feedbackId, sessionId: joinSession.id },
+          variables: { feedbackId, sessionId: runningSession.id },
         })
       } catch ({ message }) {
         console.error(message)
