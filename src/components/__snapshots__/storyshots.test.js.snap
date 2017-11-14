@@ -4692,35 +4692,54 @@ exports[`Storyshots sessions SessionList 1`] = `
 
 exports[`Storyshots sessions SessionTimeline 1`] = `
 <div
-  className="jsx-265954221 sessionTimeline"
+  className="jsx-2181936900 sessionTimeline"
 >
   <div
-    className="jsx-265954221 topRow"
+    className="jsx-2181936900 topRow"
   >
     <div
-      className="jsx-265954221 startingTime"
+      className="jsx-2181936900 startingTime"
     >
       <i
         aria-hidden="true"
         className="time icon"
       />
-       18:17:22
+       
+      00:00:00
     </div>
     <div
-      className="jsx-265954221 runningTime"
+      className="jsx-2181936900 runningTime"
     >
       <i
         aria-hidden="true"
         className="play circle icon"
       />
-       12:56
+       
+      00:00:00
+    </div>
+    <div
+      className="jsx-2181936900 evaluationLink"
+    >
+      <i
+        aria-hidden="true"
+        className="external icon"
+      />
+       
+      <a
+        className="jsx-2181936900"
+        href="/sessions/evaluation"
+        onClick={[Function]}
+        target="_blank"
+      >
+        Evaluation
+      </a>
     </div>
   </div>
   <div
-    className="jsx-265954221 blocks"
+    className="jsx-2181936900 blocks"
   >
     <div
-      className="jsx-265954221 block"
+      className="jsx-2181936900 block"
     >
       <div
         className="jsx-1552646468 questionBlock"
@@ -4805,7 +4824,7 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
     </div>
   </div>
   <div
-    className="jsx-265954221 buttons"
+    className="jsx-2181936900 buttons"
   >
     <button
       className="ui red large icon left labeled button"
