@@ -137,6 +137,19 @@ export const AddFeedbackMutation = gql`
   }
 `
 
+export const DeleteFeedbackMutation = gql`
+  mutation DeleteFeedback($sessionId: ID!, $feedbackId: ID!) {
+    deleteFeedback(sessionId: $sessionId, feedbackId: $feedbackId) {
+      id
+      feedbacks {
+        id
+        content
+        votes
+      }
+    }
+  }
+`
+
 export const AddConfusionTSMutation = gql`
   mutation AddConfusionTS($sessionId: ID!, $difficulty: Int!, $speed: Int!) {
     addConfusionTS(sessionId: $sessionId, difficulty: $difficulty, speed: $speed) {

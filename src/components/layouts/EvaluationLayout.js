@@ -17,7 +17,7 @@ const propTypes = {
   ).isRequired,
   data: PropTypes.arrayOf().isRequired,
   description: PropTypes.string,
-  instanceTitles: PropTypes.arrayOf(PropTypes.string),
+  instanceSummary: PropTypes.arrayOf(PropTypes.object),
   intl: intlShape.isRequired,
   onChangeActiveInstance: PropTypes.func.isRequired,
   onChangeVisualizationType: PropTypes.func.isRequired,
@@ -33,7 +33,7 @@ const propTypes = {
 const defaultProps = {
   activeInstance: 0,
   description: undefined,
-  instanceTitles: [],
+  instanceSummary: [],
   pageTitle: 'EvaluationLayout',
   totalResponses: undefined,
 }
@@ -52,7 +52,7 @@ function EvaluationLayout({
   data,
   activeInstance,
   onChangeActiveInstance,
-  instanceTitles,
+  instanceSummary,
 }) {
   const calculateAverage = (array) => {
     const valuesArray = []
@@ -89,16 +89,16 @@ function EvaluationLayout({
   return (
     <CommonLayout baseFontSize="22px" pageTitle={pageTitle}>
       <div className="evaluationLayout">
-        {instanceTitles.length > 1 && (
+        {instanceSummary.length > 1 && (
           <div className="instanceChooser">
             <Menu fitted tabular>
-              {instanceTitles.map((instanceTitle, index) => (
+              {instanceSummary.map(({ title, totalResponses: count }, index) => (
                 <Menu.Item
                   fitted
                   active={index === activeInstance}
                   onClick={onChangeActiveInstance(index)}
                 >
-                  {instanceTitle}
+                  {title} ({count})
                 </Menu.Item>
               ))}
             </Menu>

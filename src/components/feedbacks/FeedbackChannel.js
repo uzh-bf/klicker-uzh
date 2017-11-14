@@ -8,6 +8,7 @@ import Feedback from './Feedback'
 const propTypes = {
   feedbacks: PropTypes.arrayOf(Feedback.propTypes),
   handleActiveToggle: PropTypes.func.isRequired,
+  handleDeleteFeedback: PropTypes.func.isRequired,
   handlePublicToggle: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   isActive: PropTypes.bool,
@@ -27,6 +28,7 @@ const FeedbackChannel = ({
   isPublic,
   handleActiveToggle,
   handlePublicToggle,
+  handleDeleteFeedback,
 }) => (
   <div className="feedbackChannel">
     <h2>
@@ -66,7 +68,12 @@ const FeedbackChannel = ({
       <div className="feedbacks">
         {feedbacks.map(({ id, content, votes }) => (
           <div className="feedback">
-            <Feedback key={id} content={content} votes={votes} />
+            <Feedback
+              key={id}
+              content={content}
+              votes={votes}
+              onDelete={handleDeleteFeedback(id)}
+            />
           </div>
         ))}
       </div>
