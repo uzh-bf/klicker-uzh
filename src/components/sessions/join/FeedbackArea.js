@@ -46,6 +46,7 @@ function FeedbackArea({
 }) {
   return (
     <div className={classNames('feedbackArea', { active })}>
+      <h1 className="header">Feedback-Channel</h1>
       {isConfusionBarometerActive && (
         <div className="confusion">
           <ConfusionSlider
@@ -134,8 +135,14 @@ function FeedbackArea({
 
           flex: 1;
 
+          background-color: white;
+
           &.active {
             display: flex;
+          }
+
+          .header {
+            display: none;
           }
 
           .confusion {
@@ -171,7 +178,12 @@ function FeedbackArea({
           @include desktop-tablet-only {
             display: flex;
 
-            border: 1px solid $color-primary-10p;
+            border: 1px solid $color-primary;
+            margin-left: 0.25rem;
+
+            .header {
+              display: block;
+            }
           }
         }
       `}</style>

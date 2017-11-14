@@ -76,6 +76,7 @@ function QuestionArea({
 
   return (
     <div className={classNames('questionArea', { active })}>
+      <h1 className="header">Active Question</h1>
       {(() => {
         if (remainingQuestions.length === 0) {
           return (
@@ -150,6 +151,8 @@ function QuestionArea({
 
           flex: 1;
 
+          background-color: white;
+
           > div {
             display: flex;
 
@@ -162,8 +165,11 @@ function QuestionArea({
             display: flex;
           }
 
+          .header {
+            display: none;
+          }
+
           .collapser,
-          .options,
           .padded {
             padding: 1rem;
           }
@@ -176,13 +182,22 @@ function QuestionArea({
           }
 
           .options {
+            margin-top: 1rem;
             flex: 1 1 50%;
           }
 
           @include desktop-tablet-only {
             display: flex;
+            flex-direction: column;
 
-            border: 1px solid $color-primary-10p;
+            border: 1px solid $color-primary;
+            margin-right: 0.25rem;
+
+            padding: 1rem;
+
+            .header {
+              display: block;
+            }
           }
         }
       `}</style>
