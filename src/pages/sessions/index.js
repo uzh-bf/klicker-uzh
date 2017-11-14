@@ -5,7 +5,7 @@ import { intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 
 import { pageWithIntl, withData } from '../../lib'
-import { RunningSessionQuery } from '../../graphql/queries'
+import { AccountSummaryQuery, RunningSessionQuery } from '../../graphql/queries'
 import { StartSessionMutation } from '../../graphql/mutations'
 import { TeacherLayout } from '../../components/layouts'
 import { SessionList } from '../../components/sessions'
@@ -98,7 +98,7 @@ export default compose(
     handleStartSession: ({ mutate }) => id => async () => {
       try {
         await mutate({
-          refetchQueries: [{ query: RunningSessionQuery }],
+          refetchQueries: [{ query: RunningSessionQuery }, { query: AccountSummaryQuery }],
           variables: { id },
         })
       } catch ({ message }) {

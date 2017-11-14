@@ -8,7 +8,7 @@ import { Button } from 'semantic-ui-react'
 import Link from 'next/link'
 
 import { pageWithIntl, withData } from '../../lib'
-import { SessionListQuery, RunningSessionQuery } from '../../graphql/queries'
+import { AccountSummaryQuery, SessionListQuery, RunningSessionQuery } from '../../graphql/queries'
 import { CreateSessionMutation, StartSessionMutation } from '../../graphql/mutations'
 import { SessionCreationForm } from '../../components/forms'
 import { QuestionList, TagList } from '../../components/questions'
@@ -48,23 +48,21 @@ const Index = ({
         onDiscard={handleCreationModeToggle}
       />
 
-      <style jsx>
-        {`
-          .creationForm {
-            animation-name: slide-in;
-            animation-duration: 0.5s;
-          }
+      <style jsx>{`
+        .creationForm {
+          animation-name: slide-in;
+          animation-duration: 0.5s;
+        }
 
-          @keyframes slide-in {
-            0% {
-              transform: translateY(300px);
-            }
-            100% {
-              transform: translateY(0);
-            }
+        @keyframes slide-in {
+          0% {
+            transform: translateY(300px);
           }
-        `}
-      </style>
+          100% {
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   )
 
@@ -247,7 +245,7 @@ export default compose(
     // handle starting an existing or newly created session
     handleStartSession: ({ mutate }) => id =>
       mutate({
-        refetchQueries: [{ query: RunningSessionQuery }],
+        refetchQueries: [{ query: RunningSessionQuery }, { query: AccountSummaryQuery }],
         variables: { id },
       }),
   }),

@@ -42,7 +42,6 @@ function EvaluationLayout({
   pageTitle,
   onToggleShowSolution,
   chart,
-  title,
   type,
   description,
   visualizationType,
@@ -73,7 +72,6 @@ function EvaluationLayout({
         )}
 
         <div className="questionDetails">
-          <h1>{title}</h1>
           <p>{description}</p>
         </div>
 
@@ -117,7 +115,8 @@ function EvaluationLayout({
 
                 grid-template-columns: auto 17rem;
                 grid-template-rows: minmax(auto, 0) minmax(auto, 2rem) auto 10rem 5rem;
-                grid-template-areas: 'instanceChooser instanceChooser'
+                grid-template-areas:
+                  'instanceChooser instanceChooser'
                   'questionDetails questionDetails' 'graph optionDisplay' 'graph settings'
                   'info chartType';
 
@@ -148,6 +147,12 @@ function EvaluationLayout({
                     font-size: 1.5rem;
                     line-height: 1.5rem;
                     margin-bottom: 0.5rem;
+                  }
+
+                  p {
+                    font-size: 1.2rem;
+                    font-weight: bold;
+                    line-height: 1.2rem;
                   }
                 }
 

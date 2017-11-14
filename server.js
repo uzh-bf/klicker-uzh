@@ -9,6 +9,8 @@ const glob = require('glob')
 const accepts = require('accepts')
 const express = require('express')
 const next = require('next')
+const compression = require('compression')
+const helmet = require('helmet')
 
 // Polyfill Node with `Intl` that has data for all locales.
 // See: https://formatjs.io/guides/runtime-environments/#server
@@ -54,6 +56,21 @@ app
     /* server.get('/', (req, res) => {
       res.redirect('/questions/')
     }) */
+
+    // compress using gzip
+    server.use(compression())
+
+    // secure the server with helmet
+    server.use(
+      helmet({
+        hsts: false,
+      }),
+    )
+
+    server.get('/join/:shortname', (req, res) => {
+      const params = { shortname: req.params.shortname }
+      return app.render(req, res, '/join', params)
+    })
 
     server.get('*', (req, res) => {
       const accept = accepts(req)

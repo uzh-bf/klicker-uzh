@@ -68,7 +68,7 @@ const validate = ({
       }
     }
   } else if (type === QuestionTypes.FREE) {
-    if (options && options.restrictions) {
+    if (options && options.restrictions && options.restrictions.type === 'RANGE') {
       if (!options.restrictions.min && !options.restrictions.max) {
         errors.options = 'form.createQuestion.options.noMinMax'
       }
@@ -207,7 +207,8 @@ const QuestionCreationForm = ({
               grid-gap: 1rem;
               grid-template-columns: repeat(6, 1fr);
               grid-template-rows: 5rem auto auto auto;
-              grid-template-areas: 'title title title title preview preview'
+              grid-template-areas:
+                'title title title title preview preview'
                 'type type tags tags preview preview'
                 'content content content content content content'
                 'options options options options options options';

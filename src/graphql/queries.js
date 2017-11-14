@@ -1,8 +1,7 @@
 import { gql } from 'react-apollo'
 
-// Used in: TagList
 export const TagListQuery = gql`
-  {
+  query TagList {
     tags: allTags {
       id
       name
@@ -10,9 +9,8 @@ export const TagListQuery = gql`
   }
 `
 
-// Used in: QuestionList
 export const QuestionListQuery = gql`
-  {
+  query QuestionList {
     questions: allQuestions {
       id
       title
@@ -36,9 +34,8 @@ export const QuestionListQuery = gql`
   }
 `
 
-// Used in: SessionList
 export const SessionListQuery = gql`
-  {
+  query SessionList {
     sessions: allSessions {
       id
       name
@@ -60,9 +57,8 @@ export const SessionListQuery = gql`
   }
 `
 
-// Used in: RunningSession
 export const RunningSessionQuery = gql`
-  {
+  query RunningSession {
     runningSession {
       id
       confusionTS {
@@ -98,9 +94,8 @@ export const RunningSessionQuery = gql`
   }
 `
 
-// Used in: Navbar
 export const AccountSummaryQuery = gql`
-  {
+  query AccountSummary {
     user {
       id
       shortname
@@ -112,7 +107,7 @@ export const AccountSummaryQuery = gql`
 `
 
 export const ActiveInstancesQuery = gql`
-  {
+  query ActiveInstances {
     activeInstances {
       id
       isOpen
@@ -156,6 +151,46 @@ export const ActiveInstancesQuery = gql`
             }
           }
         }
+      }
+    }
+  }
+`
+
+export const JoinSessionQuery = gql`
+  query JoinSession($shortname: String!) {
+    joinSession(shortname: $shortname) {
+      id
+      settings {
+        isFeedbackChannelActive
+        isFeedbackChannelPublic
+        isConfusionBarometerActive
+      }
+      activeQuestions {
+        id
+        instanceId
+        title
+        description
+        type
+        options {
+          ... on FREEQuestionOptions {
+            restrictions {
+              min
+              max
+              type
+            }
+          }
+          ... on SCQuestionOptions {
+            choices {
+              correct
+              name
+            }
+          }
+        }
+      }
+      feedbacks {
+        id
+        content
+        votes
       }
     }
   }

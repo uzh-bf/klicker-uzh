@@ -1,5 +1,5 @@
 # extend the node alpine base
-FROM node:8.7.0-alpine@sha256:9c6fab2e870c3dac999ae2bae0eeb4e4831aa25561da03cadcf736f4ba9f9cca
+FROM node:8-alpine
 
 LABEL maintainer="Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
 LABEL name="klicker-react"
@@ -11,6 +11,7 @@ ENV KLICKER_DIR /app
 
 # TODO: extract these environment variables
 ENV API_URL "https://api-uniz-klicker.appuioapp.ch/graphql"
+# ENV API_URL "http://localhost:4000/graphql"
 ENV SENTRY "https://16014e4cbb9e48a39a439e2c076ccc4f@sentry.ibf-devops.ch/6"
 ENV LOGROCKET "vqm2qj/klicker"
 # ENV API_URL '__API_URL__'
