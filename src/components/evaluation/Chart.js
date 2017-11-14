@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
-import { BarChart, PieChart, TableChart, CloudChart } from '.'
+import { BarChart, PieChart, TableChart, CloudChart, HistogramChart } from '.'
 
 // TODO
 const propTypes = {
@@ -29,6 +29,7 @@ const defaultProps = {
 
 const chartTypes = {
   BAR_CHART: BarChart,
+  HISTOGRAM: HistogramChart,
   PIE_CHART: PieChart,
   TABLE: TableChart,
   WORD_CLOUD: CloudChart,
