@@ -3,7 +3,7 @@ FROM node:8-alpine
 
 LABEL maintainer="Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
 LABEL name="klicker-api"
-LABEL version="0.0.1"
+LABEL version="1.0.0-beta.1"
 EXPOSE 3000
 
 # root application directory
