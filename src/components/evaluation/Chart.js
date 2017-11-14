@@ -7,6 +7,10 @@ import { BarChart, PieChart, TableChart, CloudChart, HistogramChart } from '.'
 // TODO
 const propTypes = {
   handleShowGraph: PropTypes.func.isRequired,
+  restrictions: PropTypes.shape({
+    max: PropTypes.number,
+    min: PropTypes.number,
+  }),
   results: PropTypes.shape({
     choices: PropTypes.arrayOf({
       correct: PropTypes.bool,
@@ -21,6 +25,7 @@ const propTypes = {
 }
 
 const defaultProps = {
+  restrictions: null,
   results: undefined,
   showGraph: false,
   showSolution: true,
@@ -36,7 +41,12 @@ const chartTypes = {
 }
 
 function Chart({
-  results, handleShowGraph, showGraph, showSolution, visualizationType,
+  restrictions,
+  results,
+  handleShowGraph,
+  showGraph,
+  showSolution,
+  visualizationType,
 }) {
   return (
     <div className="chart">
@@ -57,7 +67,13 @@ function Chart({
 
         const ChartComponent = chartTypes[visualizationType]
         if (ChartComponent) {
-          return <ChartComponent isSolutionShown={showSolution} data={results.data} />
+          return (
+            <ChartComponent
+              isSolutionShown={showSolution}
+              data={results.data}
+              restrictions={restrictions}
+            />
+          )
         }
 
         return <div>This chart type is not implemented yet.</div>

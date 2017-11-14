@@ -78,6 +78,7 @@ function Evaluation({
     <Chart
       intl={intl}
       handleShowGraph={handleShowGraph}
+      restrictions={options.restrictions}
       results={results}
       showGraph={showGraph}
       showSolution={showSolution}
