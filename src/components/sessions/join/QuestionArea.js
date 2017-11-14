@@ -80,12 +80,12 @@ function QuestionArea({
       {(() => {
         if (remainingQuestions.length === 0) {
           return (
-            <div>
+            <p className="space">
               <FormattedMessage
                 defaultMessage="You have completed all active questions."
                 id="joinSession.allQuestionsCompleted"
               />
-            </div>
+            </p>
           )
         }
 
@@ -167,6 +167,10 @@ function QuestionArea({
 
           .header {
             display: none;
+          }
+
+          .space {
+            margin: 1rem;
           }
 
           .collapser,
