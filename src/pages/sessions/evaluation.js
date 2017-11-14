@@ -17,7 +17,7 @@ const propTypes = {
   handleChangeVisualizationType: PropTypes.func.isRequired,
   handleShowGraph: PropTypes.func.isRequired,
   handleToggleShowSolution: PropTypes.func.isRequired,
-  instanceTitles: PropTypes.arrayOf(PropTypes.string),
+  instanceSummary: PropTypes.arrayOf(PropTypes.object),
   intl: intlShape.isRequired,
   showGraph: PropTypes.bool.isRequired,
   showSolution: PropTypes.bool.isRequired,
@@ -25,7 +25,7 @@ const propTypes = {
 }
 const defaultProps = {
   activeInstance: 0,
-  instanceTitles: [],
+  instanceSummary: [],
 }
 
 const mapActiveInstance = (activeInstance) => {
@@ -59,7 +59,7 @@ const mapActiveInstance = (activeInstance) => {
 function Evaluation({
   activeInstances,
   activeInstance,
-  instanceTitles,
+  instanceSummary,
   intl,
   handleChangeActiveInstance,
   showGraph,
@@ -89,7 +89,7 @@ function Evaluation({
     activeInstance,
     chart,
     description,
-    instanceTitles,
+    instanceSummary,
     intl,
     onChangeActiveInstance: handleChangeActiveInstance,
     onChangeVisualizationType: handleChangeVisualizationType,
@@ -142,6 +142,9 @@ export default compose(
   ),
   withProps(({ data }) => ({
     activeInstances: data.activeInstances.map(mapActiveInstance),
-    instanceTitles: data.activeInstances.map(instance => instance.question.title),
+    instanceSummary: data.activeInstances.map(instance => ({
+      title: instance.question.title,
+      totalResponses: instance.responses.length,
+    })),
   })),
 )(Evaluation)
