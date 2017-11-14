@@ -12,7 +12,6 @@ const propTypes = {
   active: PropTypes.bool,
   confusionDifficulty: PropTypes.number.isRequired,
   confusionSpeed: PropTypes.number.isRequired,
-  feedbackCreationMode: PropTypes.bool.isRequired,
   feedbackInputValue: PropTypes.string.isRequired,
   feedbacks: PropTypes.array,
   handleConfusionDifficultyChange: PropTypes.func.isRequired,
@@ -22,7 +21,6 @@ const propTypes = {
   handleNewFeedback: PropTypes.func.isRequired,
   isConfusionBarometerActive: PropTypes.bool,
   isFeedbackChannelActive: PropTypes.bool,
-  /* toggleFeedbackCreationMode: PropTypes.func.isRequired, */
 }
 
 const defaultProps = {
@@ -39,14 +37,12 @@ function FeedbackArea({
   confusionSpeed,
   isFeedbackChannelActive,
   feedbacks,
-  feedbackCreationMode,
   feedbackInputValue,
   handleFeedbackInputValueChange,
   handleConfusionDifficultyChange,
   handleConfusionSpeedChange,
   handleNewConfusionTS,
   handleNewFeedback,
-  /* toggleFeedbackCreationMode, */
 }) {
   return (
     <div className={classNames('feedbackArea', { active })}>
@@ -91,48 +87,32 @@ function FeedbackArea({
             </div>
           ))}
 
-        {feedbackCreationMode && (
-          <Form className="newFeedback">
-            <Form.Field>
-              <label htmlFor="feedbackInput">
-                <FormattedMessage
-                  defaultMessage="New Feedback"
-                  id="joinSession.newFeedbackInput.label"
-                />
-                <textarea
-                  name="feedbackInput"
-                  value={feedbackInputValue}
-                  onChange={handleFeedbackInputValueChange}
-                />
-              </label>
-            </Form.Field>
+        <Form className="newFeedback">
+          <Form.Field>
+            <label htmlFor="feedbackInput">
+              <FormattedMessage
+                defaultMessage="New Feedback"
+                id="joinSession.newFeedbackInput.label"
+              />
+              <textarea
+                name="feedbackInput"
+                value={feedbackInputValue}
+                onChange={handleFeedbackInputValueChange}
+              />
+            </label>
+          </Form.Field>
 
-            {/*
-            <Button onClick={toggleFeedbackCreationMode}>
-              <FormattedMessage defaultMessage="Cancel" id="common.form.cancel" />
-            </Button>
-            */}
-            <Button primary floated="right" type="submit" onClick={handleNewFeedback}>
-              <FormattedMessage defaultMessage="Submit" id="common.form.submit" />
-            </Button>
-          </Form>
-        )}
-      </div>
-
-      {/*
-      {!feedbackCreationMode && (
-        <div className="actionButton">
           <Button
-            circular
             primary
-            disabled={!isFeedbackChannelActive}
-            icon="plus"
-            onClick={toggleFeedbackCreationMode}
-            size="large"
-          />
-        </div>
-      )}
-    */}
+            disabled={!feedbackInputValue}
+            floated="right"
+            type="submit"
+            onClick={handleNewFeedback}
+          >
+            <FormattedMessage defaultMessage="Submit" id="common.form.submit" />
+          </Button>
+        </Form>
+      </div>
 
       <style jsx>{`
         @import 'src/theme';
@@ -201,7 +181,6 @@ export default compose(
     {
       confusionDifficulty: 0,
       confusionSpeed: 0,
-      feedbackCreationMode: true,
       feedbackInputValue: undefined,
     },
     {
@@ -214,18 +193,9 @@ export default compose(
       handleFeedbackInputValueChange: () => e => ({
         feedbackInputValue: e.target.value,
       }),
-      toggleFeedbackCreationMode: ({ feedbackCreationMode }) => () => {
-        if (feedbackCreationMode) {
-          return {
-            feedbackCreationMode: true,
-            feedbackInputValue: undefined,
-          }
-        }
-
-        return {
-          feedbackCreationMode: true,
-        }
-      },
+      handleFeedbackInputReset: () => () => ({
+        feedbackInputValue: '',
+      }),
     },
   ),
   withHandlers({
@@ -235,10 +205,10 @@ export default compose(
     handleNewFeedback: ({
       feedbackInputValue,
       handleNewFeedback,
-      toggleFeedbackCreationMode,
+      handleFeedbackInputReset,
     }) => () => {
+      handleFeedbackInputReset()
       handleNewFeedback({ content: feedbackInputValue })
-      toggleFeedbackCreationMode()
     },
   }),
 )(FeedbackArea)
