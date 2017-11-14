@@ -76,10 +76,11 @@ function QuestionArea({
 
   return (
     <div className={classNames('questionArea', { active })}>
+      <h1 className="header">Active Question</h1>
       {(() => {
         if (remainingQuestions.length === 0) {
           return (
-            <div className="padded">
+            <div>
               <FormattedMessage
                 defaultMessage="You have completed all active questions."
                 id="joinSession.allQuestionsCompleted"
@@ -150,6 +151,8 @@ function QuestionArea({
 
           flex: 1;
 
+          background-color: white;
+
           > div {
             display: flex;
 
@@ -160,6 +163,10 @@ function QuestionArea({
 
           &.active {
             display: flex;
+          }
+
+          .header {
+            display: none;
           }
 
           .collapser,
@@ -176,13 +183,30 @@ function QuestionArea({
           }
 
           .options {
+            margin-top: 1rem;
             flex: 1 1 50%;
           }
 
           @include desktop-tablet-only {
             display: flex;
+            flex-direction: column;
 
-            border: 1px solid $color-primary-10p;
+            border: 1px solid $color-primary;
+            margin-right: 0.25rem;
+
+            .header {
+              display: block;
+              margin: 1rem;
+            }
+
+            .collapser {
+              margin: 0 1rem;
+            }
+
+            .options {
+              padding: 0;
+              margin: 1rem 1rem 0 1rem;
+            }
           }
         }
       `}</style>

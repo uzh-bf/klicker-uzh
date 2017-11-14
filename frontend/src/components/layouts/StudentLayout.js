@@ -52,6 +52,7 @@ const StudentLayout = ({
             onClick={sidebar.handleToggleSidebarVisible}
           />
           <h1>{title}</h1>
+          <Button basic icon="refresh" onClick={() => window.location.reload()} />
         </div>
 
         <div className="content">
@@ -78,6 +79,8 @@ const StudentLayout = ({
               flex: 0 0 auto;
 
               display: flex;
+              justify-content: space-between;
+
               align-items: center;
 
               border-bottom: 1px solid lightgrey;
