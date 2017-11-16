@@ -24,7 +24,7 @@
     "jsonwebtoken": "8.1.0",
     "lodash": "4.17.4",
     "md5": "2.2.1",
-    "moment": "^2.19.2",
+    "moment": "2.19.2",
     "mongodb": "2.2.33",
     "mongoose": "4.13.2",
     "subscriptions-transport-ws": "0.9.1"
