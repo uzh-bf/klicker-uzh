@@ -64,11 +64,11 @@
     "validator": "9.1.1"
   },
   "devDependencies": {
-    "@storybook/addon-actions": "3.2.15",
-    "@storybook/addon-info": "3.2.15",
-    "@storybook/addon-links": "3.2.15",
-    "@storybook/addon-storyshots": "3.2.15",
-    "@storybook/react": "3.2.15",
+    "@storybook/addon-actions": "3.2.16",
+    "@storybook/addon-info": "3.2.16",
+    "@storybook/addon-links": "3.2.16",
+    "@storybook/addon-storyshots": "3.2.16",
+    "@storybook/react": "3.2.16",
     "babel-eslint": "8.0.2",
     "enzyme": "3.1.1",
     "eslint": "4.11.0",
