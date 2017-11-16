@@ -70,7 +70,7 @@
     "@storybook/addon-storyshots": "3.2.15",
     "@storybook/react": "3.2.15",
     "babel-eslint": "8.0.2",
-    "enzyme": "3.1.1",
+    "enzyme": "3.2.0",
     "eslint": "4.11.0",
     "eslint-config-airbnb": "16.1.0",
     "eslint-plugin-import": "2.8.0",
@@ -85,7 +85,7 @@
     "prettier-eslint-cli": "4.4.0",
     "react-addons-test-utils": "15.6.2",
     "react-dnd-test-backend": "2.5.4",
-    "react-test-renderer": "16.1.0",
+    "react-test-renderer": "16.1.1",
     "semantic-ui-css": "2.2.12",
     "storybook-addon-intl": "2.1.2"
   },
