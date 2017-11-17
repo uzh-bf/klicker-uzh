@@ -32,38 +32,45 @@ const propTypes = {
     max: PropTypes.number,
     min: PropTypes.number,
   }),
+  statistics: PropTypes.shape({
+    mean: PropTypes.number.isRequired,
+    median: PropTypes.number.isRequired,
+  }),
 }
 
 const defaultProps = {
   brush: undefined,
   data: [],
-  restrictions: null,
+  restrictions: undefined,
+  statistics: undefined,
 }
 
-const HistogramChart = ({ brush, data }) => {
-  console.dir(data)
-  return (
-    <ResponsiveContainer>
-      <BarChart
-        data={data}
-        margin={{
-          bottom: 16,
-          left: -24,
-          right: 24,
-          top: 24,
-        }}
-      >
-        <XAxis dataKey="value" />
-        <YAxis />
-        <CartesianGrid strokeDasharray="3 3" />
-        <Tooltip />
-        <Bar dataKey="count" fill="#8884d8" />
+const HistogramChart = ({ brush, data, statistics }) => (
+  <ResponsiveContainer>
+    <BarChart
+      data={data}
+      margin={{
+        bottom: 16,
+        left: -24,
+        right: 24,
+        top: 24,
+      }}
+    >
+      <XAxis dataKey="value" />
+      <YAxis />
+      <CartesianGrid strokeDasharray="3 3" />
+      <Tooltip />
+      <Bar dataKey="count" fill="#8884d8" />
 
-        {brush && <Brush {...brush} dataKey="value" height={30} stroke="#8884d8" />}
-      </BarChart>
-    </ResponsiveContainer>
-  )
-}
+      {statistics && [
+        <ReferenceLine x={statistics.mean} label="Mean" stroke="green" />,
+        <ReferenceLine x={statistics.median} label="Median" stroke="red" />,
+      ]}
+
+      {brush && <Brush {...brush} dataKey="value" height={30} stroke="#8884d8" />}
+    </BarChart>
+  </ResponsiveContainer>
+)
 
 HistogramChart.propTypes = propTypes
 HistogramChart.defaultProps = defaultProps

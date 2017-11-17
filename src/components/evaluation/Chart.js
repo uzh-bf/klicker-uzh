@@ -6,6 +6,7 @@ import { BarChart, PieChart, TableChart, CloudChart, HistogramChart } from '.'
 
 // TODO
 const propTypes = {
+  handleChangeBrush: PropTypes.func.isRequired,
   handleShowGraph: PropTypes.func.isRequired,
   restrictions: PropTypes.shape({
     max: PropTypes.number,
@@ -21,14 +22,19 @@ const propTypes = {
   }),
   showGraph: PropTypes.bool,
   showSolution: PropTypes.bool,
+  statistics: PropTypes.shape({
+    mean: PropTypes.number.isRequired,
+    median: PropTypes.number.isRequired,
+  }),
   visualizationType: PropTypes.string,
 }
 
 const defaultProps = {
-  restrictions: null,
+  restrictions: undefined,
   results: undefined,
   showGraph: false,
   showSolution: true,
+  statistics: undefined,
   visualizationType: 'TABLE',
 }
 
@@ -43,9 +49,11 @@ const chartTypes = {
 function Chart({
   restrictions,
   results,
+  handleChangeBrush,
   handleShowGraph,
   showGraph,
   showSolution,
+  statistics,
   visualizationType,
 }) {
   return (
@@ -72,6 +80,8 @@ function Chart({
               isSolutionShown={showSolution}
               data={results.data}
               restrictions={restrictions}
+              statistics={statistics}
+              handleChangeBrush={handleChangeBrush}
             />
           )
         }

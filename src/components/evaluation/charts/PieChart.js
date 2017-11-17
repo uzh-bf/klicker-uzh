@@ -28,7 +28,14 @@ const defaultProps = {
 
 const PieChart = ({ isSolutionShown, data }) => (
   <ResponsiveContainer>
-    <PieChartComponent>
+    <PieChartComponent
+      margin={{
+        bottom: 16,
+        left: -24,
+        right: 24,
+        top: 24,
+      }}
+    >
       <Tooltip />
       <Legend />
       <Pie label data={data} valueKey="count" nameKey="value" fill="#8884d8">

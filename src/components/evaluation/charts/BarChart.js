@@ -30,13 +30,20 @@ const defaultProps = {
 }
 
 const BarChart = ({ isSolutionShown, data }) => (
-  <ResponsiveContainer width="80%">
-    <BarChartComponent data={data}>
+  <ResponsiveContainer>
+    <BarChartComponent
+      data={data}
+      margin={{
+        bottom: 16,
+        left: -24,
+        right: 24,
+        top: 24,
+      }}
+    >
       <XAxis dataKey="value" />
       <YAxis />
       <CartesianGrid strokeDasharray="3 3" />
       <Tooltip />
-      <Legend />
       <Bar dataKey="count">
         {data.map((row, index) => (
           <Cell
