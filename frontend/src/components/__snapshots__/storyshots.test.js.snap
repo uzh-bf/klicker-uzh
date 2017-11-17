@@ -4336,17 +4336,17 @@ exports[`Storyshots sessions QuestionDropzone 1`] = `
 
 exports[`Storyshots sessions Session 1`] = `
 <div
-  className="jsx-1670121988 session"
+  className="jsx-4077483521 session"
 >
   <h2
-    className="jsx-1670121988 title"
+    className="jsx-4077483521 title"
   >
     4c821db
      - 
     Long session
   </h2>
   <div
-    className="jsx-1670121988 date"
+    className="jsx-4077483521 date"
   >
     <span>
       Created on
@@ -4355,10 +4355,10 @@ exports[`Storyshots sessions Session 1`] = `
     08.02.2015 14:02:00
   </div>
   <div
-    className="jsx-1670121988 details"
+    className="jsx-4077483521 details"
   >
     <div
-      className="jsx-1670121988 block"
+      className="jsx-4077483521 block"
     >
       <div
         className="jsx-1552646468 questionBlock"
@@ -4442,10 +4442,23 @@ exports[`Storyshots sessions Session 1`] = `
       </div>
     </div>
     <div
-      className="jsx-1670121988 actionArea"
+      className="jsx-4077483521 actionArea"
     >
       <button
         className="ui icon left labeled button"
+        disabled={undefined}
+        onClick={[Function]}
+        role="button"
+        tabIndex={undefined}
+      >
+        <i
+          aria-hidden="true"
+          className="external icon"
+        />
+        Evaluation
+      </button>
+      <button
+        className="ui icon primary left labeled button"
         disabled={undefined}
         onClick={[Function]}
         role="button"
@@ -4475,17 +4488,17 @@ exports[`Storyshots sessions SessionList 1`] = `
     className="jsx-3883543457 session"
   >
     <div
-      className="jsx-1670121988 session"
+      className="jsx-4077483521 session"
     >
       <h2
-        className="jsx-1670121988 title"
+        className="jsx-4077483521 title"
       >
         4c821db
          - 
         Long session
       </h2>
       <div
-        className="jsx-1670121988 date"
+        className="jsx-4077483521 date"
       >
         <span>
           Created on
@@ -4494,10 +4507,10 @@ exports[`Storyshots sessions SessionList 1`] = `
         08.02.2015 14:02:00
       </div>
       <div
-        className="jsx-1670121988 details"
+        className="jsx-4077483521 details"
       >
         <div
-          className="jsx-1670121988 block"
+          className="jsx-4077483521 block"
         >
           <div
             className="jsx-1552646468 questionBlock"
@@ -4581,10 +4594,23 @@ exports[`Storyshots sessions SessionList 1`] = `
           </div>
         </div>
         <div
-          className="jsx-1670121988 actionArea"
+          className="jsx-4077483521 actionArea"
         >
           <button
             className="ui icon left labeled button"
+            disabled={undefined}
+            onClick={[Function]}
+            role="button"
+            tabIndex={undefined}
+          >
+            <i
+              aria-hidden="true"
+              className="external icon"
+            />
+            Evaluation
+          </button>
+          <button
+            className="ui icon primary left labeled button"
             disabled={undefined}
             onClick={[Function]}
             role="button"
@@ -4604,17 +4630,17 @@ exports[`Storyshots sessions SessionList 1`] = `
     className="jsx-3883543457 session"
   >
     <div
-      className="jsx-1670121988 session"
+      className="jsx-4077483521 session"
     >
       <h2
-        className="jsx-1670121988 title"
+        className="jsx-4077483521 title"
       >
         4c821db
          - 
         Long session
       </h2>
       <div
-        className="jsx-1670121988 date"
+        className="jsx-4077483521 date"
       >
         <span>
           Created on
@@ -4623,10 +4649,10 @@ exports[`Storyshots sessions SessionList 1`] = `
         08.02.2015 14:02:00
       </div>
       <div
-        className="jsx-1670121988 details"
+        className="jsx-4077483521 details"
       >
         <div
-          className="jsx-1670121988 block"
+          className="jsx-4077483521 block"
         >
           <div
             className="jsx-1552646468 questionBlock"
@@ -4710,10 +4736,23 @@ exports[`Storyshots sessions SessionList 1`] = `
           </div>
         </div>
         <div
-          className="jsx-1670121988 actionArea"
+          className="jsx-4077483521 actionArea"
         >
           <button
             className="ui icon left labeled button"
+            disabled={undefined}
+            onClick={[Function]}
+            role="button"
+            tabIndex={undefined}
+          >
+            <i
+              aria-hidden="true"
+              className="external icon"
+            />
+            Evaluation
+          </button>
+          <button
+            className="ui icon primary left labeled button"
             disabled={undefined}
             onClick={[Function]}
             role="button"
@@ -4769,7 +4808,7 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
        
       <a
         className="jsx-2181936900"
-        href="/sessions/evaluation"
+        href="/sessions/evaluation/undefined"
         onClick={[Function]}
         target="_blank"
       >

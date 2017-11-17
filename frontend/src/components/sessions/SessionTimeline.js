@@ -12,6 +12,7 @@ const propTypes = {
   handleRightActionClick: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   runtime: PropTypes.string,
+  sessionId: PropTypes.string.isRequired,
   startedAt: PropTypes.string,
 }
 
@@ -22,6 +23,7 @@ const defaultProps = {
 }
 
 const SessionTimeline = ({
+  sessionId,
   blocks,
   intl,
   runtime,
@@ -39,7 +41,7 @@ const SessionTimeline = ({
       </div>
       <div className="evaluationLink">
         <Icon name="external" />{' '}
-        <Link prefetch href="/sessions/evaluation">
+        <Link prefetch href={`/sessions/evaluation/${sessionId}`}>
           <a target="_blank">Evaluation</a>
         </Link>
       </div>
