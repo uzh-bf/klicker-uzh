@@ -9,6 +9,7 @@ const allSessionsQuery = async (parentValue, args, { auth }) => {
   const user = await UserModel.findById(auth.sub).populate(['sessions'])
   return user.sessions
 }
+const sessionQuery = async (parentValue, { id }, { auth }) => SessionModel.findOne({ _id: id, user: auth.sub })
 
 const runningSessionQuery = async (parentValue, args, { auth }) => {
   const user = await UserModel.findById(auth.sub).populate('runningSession')
@@ -44,7 +45,6 @@ const joinSessionQuery = async (parentValue, { shortname }) => {
   }
 }
 
-const sessionByIDQuery = (parentValue, { id }) => SessionModel.findById(id)
 const sessionByPVQuery = parentValue => SessionModel.findById(parentValue.runningSession)
 const sessionsByPVQuery = parentValue => SessionModel.find({ _id: { $in: parentValue.sessions } })
 
@@ -86,7 +86,7 @@ module.exports = {
   // queries
   allSessions: allSessionsQuery,
   runningSession: runningSessionQuery,
-  session: sessionByIDQuery,
+  session: sessionQuery,
   sessionByPV: sessionByPVQuery,
   sessionsByPV: sessionsByPVQuery,
   runtimeByPV: runtimeByPVQuery,
