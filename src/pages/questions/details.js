@@ -12,7 +12,10 @@ import { QuestionDetailsQuery } from '../../graphql/queries'
 
 const propTypes = {
   intl: intlShape.isRequired,
-  question: PropTypes.shape({}).isRequired,
+  tags: PropTypes.arrayOf().isRequired,
+  title: PropTypes.string.isRequired,
+  type: PropTypes.string.isRequired,
+  versions: PropTypes.arrayOf().isRequired,
 }
 
 const EditQuestion = ({
