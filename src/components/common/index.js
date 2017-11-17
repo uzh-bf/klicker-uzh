@@ -1,4 +1,5 @@
 export { default as ActionButton } from './ActionButton'
+export { default as ActionMenu } from './ActionMenu'
 export { default as Button } from './Button'
 export { default as Collapser } from './Collapser'
 export { default as ListWithHeader } from './ListWithHeader'

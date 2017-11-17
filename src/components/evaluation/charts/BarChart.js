@@ -12,6 +12,8 @@ import {
   YAxis,
 } from 'recharts'
 
+import { CHART_COLORS } from '../../../constants'
+
 const propTypes = {
   data: PropTypes.arrayOf(
     PropTypes.shape({
@@ -36,8 +38,11 @@ const BarChart = ({ isSolutionShown, data }) => (
       <Tooltip />
       <Legend />
       <Bar dataKey="count">
-        {data.map(row => (
-          <Cell key={row.value} fill={isSolutionShown && row.correct ? '#00FF00' : '#8884d8'} />
+        {data.map((row, index) => (
+          <Cell
+            key={row.value}
+            fill={isSolutionShown && row.correct ? '#00FF00' : CHART_COLORS[index % 5]}
+          />
         ))}
       </Bar>
     </BarChartComponent>

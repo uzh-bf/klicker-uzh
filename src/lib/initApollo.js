@@ -1,7 +1,10 @@
 import { ApolloClient, createNetworkInterface } from 'react-apollo'
+import { PersistedQueryNetworkInterface } from 'persistgraphql'
 import fetch from 'isomorphic-fetch'
 
-// const dev = process.env.NODE_ENV !== 'production'
+import queryMap from '../graphql/queryMap.json'
+
+const dev = process.env.NODE_ENV !== 'production'
 
 let apolloClient = null
 
@@ -10,20 +13,25 @@ if (!process.browser) {
   global.fetch = fetch
 }
 
+const networkOpts = {
+  opts: {
+    // Additional fetch() options like `credentials` or `headers`
+    // credentials: dev ? 'include' : 'same-origin',
+    // HACK: temporarily always include credentials
+    credentials: 'include',
+  },
+  queryMap,
+  // Server URL (must be absolute)
+  // https://api.graph.cool/simple/v1/klicker
+  // uri: 'http://localhost:4000/graphql',
+  uri: process.env.API_URL || 'http://localhost',
+}
+
 function create() {
   return new ApolloClient({
-    networkInterface: createNetworkInterface({
-      opts: {
-        // Additional fetch() options like `credentials` or `headers`
-        // credentials: dev ? 'include' : 'same-origin',
-        // HACK: temporarily always include credentials
-        credentials: 'include',
-      },
-      // Server URL (must be absolute)
-      // https://api.graph.cool/simple/v1/klicker
-      // uri: 'http://localhost:4000/graphql',
-      uri: process.env.API_URL || 'http://localhost',
-    }),
+    networkInterface: dev
+      ? createNetworkInterface(networkOpts)
+      : new PersistedQueryNetworkInterface(networkOpts),
     ssrMode: !process.browser, // Disables forceFetch on the server (so queries are only run once)
   })
 }

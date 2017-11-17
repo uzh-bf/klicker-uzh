@@ -4,6 +4,7 @@ import { intlShape } from 'react-intl'
 import { compose, withHandlers, withProps, withState, branch, renderComponent } from 'recompose'
 import { graphql } from 'react-apollo'
 
+import { QuestionTypes } from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
 import { pageWithIntl, withData } from '../../lib'
 import { Chart } from '../../components/evaluation'
@@ -16,7 +17,7 @@ const propTypes = {
   handleChangeVisualizationType: PropTypes.func.isRequired,
   handleShowGraph: PropTypes.func.isRequired,
   handleToggleShowSolution: PropTypes.func.isRequired,
-  instanceTitles: PropTypes.arrayOf(PropTypes.string),
+  instanceSummary: PropTypes.arrayOf(PropTypes.object),
   intl: intlShape.isRequired,
   showGraph: PropTypes.bool.isRequired,
   showSolution: PropTypes.bool.isRequired,
@@ -24,11 +25,11 @@ const propTypes = {
 }
 const defaultProps = {
   activeInstance: 0,
-  instanceTitles: [],
+  instanceSummary: [],
 }
 
 const mapActiveInstance = (activeInstance) => {
-  if (activeInstance.question.type === 'SC') {
+  if ([QuestionTypes.SC, QuestionTypes.MC].includes(activeInstance.question.type)) {
     return {
       ...activeInstance,
       results: {
@@ -42,7 +43,7 @@ const mapActiveInstance = (activeInstance) => {
     }
   }
 
-  if (activeInstance.question.type === 'FREE') {
+  if (activeInstance.question.type === QuestionTypes.FREE) {
     return {
       ...activeInstance,
       results: {
@@ -58,7 +59,7 @@ const mapActiveInstance = (activeInstance) => {
 function Evaluation({
   activeInstances,
   activeInstance,
-  instanceTitles,
+  instanceSummary,
   intl,
   handleChangeActiveInstance,
   showGraph,
@@ -70,7 +71,7 @@ function Evaluation({
 }) {
   const { results, question, version } = activeInstances[activeInstance]
   const { title, type } = question
-  const { totalResponses } = results
+  const { totalResponses, data } = results
   const { description, options } = question.versions[version]
 
   const chart = (
@@ -87,8 +88,9 @@ function Evaluation({
   const layoutProps = {
     activeInstance,
     chart,
+    data,
     description,
-    instanceTitles,
+    instanceSummary,
     intl,
     onChangeActiveInstance: handleChangeActiveInstance,
     onChangeVisualizationType: handleChangeVisualizationType,
@@ -141,6 +143,9 @@ export default compose(
   ),
   withProps(({ data }) => ({
     activeInstances: data.activeInstances.map(mapActiveInstance),
-    instanceTitles: data.activeInstances.map(instance => instance.question.title),
+    instanceSummary: data.activeInstances.map(instance => ({
+      title: instance.question.title,
+      totalResponses: instance.responses.length,
+    })),
   })),
 )(Evaluation)

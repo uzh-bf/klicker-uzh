@@ -72,6 +72,11 @@ app
       return app.render(req, res, '/questions/details', params)
     })
 
+    server.get('/join/:shortname', (req, res) => {
+      const params = { shortname: req.params.shortname }
+      return app.render(req, res, '/join', params)
+    })
+
     server.get('*', (req, res) => {
       const accept = accepts(req)
       const locale = accept.language(dev ? ['en'] : languages)
