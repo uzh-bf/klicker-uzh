@@ -67,10 +67,13 @@ app
       }),
     )
 
-    server.get('/join/:shortname', (req, res) => {
-      const params = { shortname: req.params.shortname }
-      return app.render(req, res, '/join', params)
-    })
+    server.get('/join/:shortname', (req, res) =>
+      app.render(req, res, '/join', { shortname: req.params.shortname }),
+    )
+
+    server.get('/sessions/evaluation/:sessionId', (req, res) =>
+      app.render(req, res, '/sessions/evaluation', { sessionId: req.params.sessionId }),
+    )
 
     server.get('*', (req, res) => {
       const accept = accepts(req)

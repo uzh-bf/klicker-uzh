@@ -3,7 +3,7 @@
 import React from 'react'
 import renderer from 'react-test-renderer'
 
-import Evaluation from './index'
+import Evaluation from './evaluation'
 
 // HACK: workaround for https://github.com/Semantic-Org/Semantic-UI-React/issues/1702
 jest.mock('react-dom', () => ({
