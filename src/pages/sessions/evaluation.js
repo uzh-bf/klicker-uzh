@@ -1,7 +1,15 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { intlShape } from 'react-intl'
-import { compose, withHandlers, withProps, withState, branch, renderComponent } from 'recompose'
+import {
+  compose,
+  withHandlers,
+  withProps,
+  withState,
+  branch,
+  renderComponent,
+  renderNothing,
+} from 'recompose'
 import { graphql } from 'react-apollo'
 
 import { QuestionTypes } from '../../constants'
@@ -117,29 +125,12 @@ Evaluation.defaultProps = defaultProps
 export default compose(
   withData,
   pageWithIntl,
-  withState('showGraph', 'setShowGraph', false),
-  withState('showSolution', 'setShowSolution', false),
-  withState('visualizationType', 'handleChangeVisualizationType', 'PIE_CHART'),
-  withState('activeInstance', 'setActiveInstance', 0),
-  withHandlers({
-    handleChangeActiveInstance: ({ setActiveInstance }) => newInstance => () =>
-      setActiveInstance(newInstance),
-    // handle toggle of the visualization display
-    // the visualization display can only be toggled once, so only allow setting to true
-    handleShowGraph: ({ setShowGraph }) => () => setShowGraph(true),
-    // handle toggle of the solution overlay
-    handleToggleShowSolution: ({ setShowSolution }) => () =>
-      setShowSolution(showSolution => !showSolution),
-  }),
-  withProps(({ url }) => ({
-    sessionId: url.query.sessionId,
-  })),
   graphql(SessionEvaluationQuery, {
     // refetch the active instances query every 10s
-    options: ({ sessionId }) => ({ pollInterval: 10000, variables: { sessionId } }),
+    options: ({ url }) => ({ variables: { sessionId: url.query.sessionId } }),
   }),
   // if the query is still loading, display nothing
-  branch(({ data }) => data.loading, renderComponent(() => null)),
+  branch(({ data }) => data.loading, renderNothing),
   withProps(({ data: { session } }) => {
     let { blocks } = session
 
@@ -160,11 +151,34 @@ export default compose(
         title: instance.question.title,
         totalResponses: instance.responses.length,
       })),
+      sessionStatus: session.status,
     }
   }),
+  // override the session evaluation query with a polling query
+  branch(
+    ({ sessionStatus }) => sessionStatus === 'RUNNING',
+    graphql(SessionEvaluationQuery, {
+      // refetch the active instances query every 10s
+      options: ({ sessionId }) => ({ pollInterval: 10000, variables: { sessionId } }),
+    }),
+  ),
   // if the query has finished loading but there are no active instances, show a simple message
   branch(
     ({ activeInstances }) => !(activeInstances && activeInstances.length > 0),
     renderComponent(() => <div>No evaluation currently active.</div>),
   ),
+  withState('showGraph', 'setShowGraph', ({ sessionStatus }) => sessionStatus !== 'RUNNING'),
+  withState('showSolution', 'setShowSolution', ({ sessionStatus }) => sessionStatus !== 'RUNNING'),
+  withState('visualizationType', 'handleChangeVisualizationType', 'PIE_CHART'),
+  withState('activeInstance', 'setActiveInstance', 0),
+  withHandlers({
+    handleChangeActiveInstance: ({ setActiveInstance }) => newInstance => () =>
+      setActiveInstance(newInstance),
+    // handle toggle of the visualization display
+    // the visualization display can only be toggled once, so only allow setting to true
+    handleShowGraph: ({ setShowGraph }) => () => setShowGraph(true),
+    // handle toggle of the solution overlay
+    handleToggleShowSolution: ({ setShowSolution }) => () =>
+      setShowSolution(showSolution => !showSolution),
+  }),
 )(Evaluation)
