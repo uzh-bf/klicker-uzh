@@ -1,14 +1,22 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { intlShape } from 'react-intl'
-import { compose, withHandlers, withProps, withState, branch, renderComponent } from 'recompose'
+import {
+  compose,
+  withHandlers,
+  withProps,
+  withState,
+  branch,
+  renderComponent,
+  renderNothing,
+} from 'recompose'
 import { graphql } from 'react-apollo'
 
 import { QuestionTypes } from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
 import { pageWithIntl, withData } from '../../lib'
 import { Chart } from '../../components/evaluation'
-import { ActiveInstancesQuery } from '../../graphql/queries'
+import { SessionEvaluationQuery } from '../../graphql/queries'
 
 const propTypes = {
   activeInstance: PropTypes.number,
@@ -33,6 +41,7 @@ const mapActiveInstance = (activeInstance) => {
     return {
       ...activeInstance,
       results: {
+        // HACK: versioning hardcoded
         data: activeInstance.question.versions[0].options.choices.map((choice, index) => ({
           correct: choice.correct,
           count: activeInstance.results ? activeInstance.results.choices[index] : 0,
@@ -116,8 +125,50 @@ Evaluation.defaultProps = defaultProps
 export default compose(
   withData,
   pageWithIntl,
-  withState('showGraph', 'setShowGraph', false),
-  withState('showSolution', 'setShowSolution', false),
+  graphql(SessionEvaluationQuery, {
+    // refetch the active instances query every 10s
+    options: ({ url }) => ({ variables: { sessionId: url.query.sessionId } }),
+  }),
+  // if the query is still loading, display nothing
+  branch(({ data }) => data.loading, renderNothing),
+  withProps(({ data: { session } }) => {
+    let { blocks } = session
+
+    // if the session is running, only show open question instances in the evaluation
+    if (session.status === 'RUNNING') {
+      blocks = blocks.filter(block => block.status === 'ACTIVE')
+    }
+
+    // reduce question blocks to the active instances
+    const activeInstances = blocks
+      .map(block => block.instances) // map blocks to the instances contained within
+      .reduce((acc, val) => [...acc, ...val], []) // reduce array of arrays [[], [], []] to [...]
+      .map(mapActiveInstance) // map the array of all instances with the custom mapper
+
+    return {
+      activeInstances,
+      instanceSummary: activeInstances.map(instance => ({
+        title: instance.question.title,
+        totalResponses: instance.responses.length,
+      })),
+      sessionStatus: session.status,
+    }
+  }),
+  // override the session evaluation query with a polling query
+  branch(
+    ({ sessionStatus }) => sessionStatus === 'RUNNING',
+    graphql(SessionEvaluationQuery, {
+      // refetch the active instances query every 10s
+      options: ({ sessionId }) => ({ pollInterval: 10000, variables: { sessionId } }),
+    }),
+  ),
+  // if the query has finished loading but there are no active instances, show a simple message
+  branch(
+    ({ activeInstances }) => !(activeInstances && activeInstances.length > 0),
+    renderComponent(() => <div>No evaluation currently active.</div>),
+  ),
+  withState('showGraph', 'setShowGraph', ({ sessionStatus }) => sessionStatus !== 'RUNNING'),
+  withState('showSolution', 'setShowSolution', ({ sessionStatus }) => sessionStatus !== 'RUNNING'),
   withState('visualizationType', 'handleChangeVisualizationType', 'PIE_CHART'),
   withState('activeInstance', 'setActiveInstance', 0),
   withHandlers({
@@ -130,22 +181,4 @@ export default compose(
     handleToggleShowSolution: ({ setShowSolution }) => () =>
       setShowSolution(showSolution => !showSolution),
   }),
-  graphql(ActiveInstancesQuery, {
-    // refetch the active instances query every 10s
-    options: { pollInterval: 10000 },
-  }),
-  // if the query is still loading, display nothing
-  branch(({ data }) => data.loading, renderComponent(() => null)),
-  // if the query has finished loading but there are no active instances, show a simple message
-  branch(
-    ({ data }) => !(data.activeInstances && data.activeInstances.length > 0),
-    renderComponent(() => <div>No evaluation currently active.</div>),
-  ),
-  withProps(({ data }) => ({
-    activeInstances: data.activeInstances.map(mapActiveInstance),
-    instanceSummary: data.activeInstances.map(instance => ({
-      title: instance.question.title,
-      totalResponses: instance.responses.length,
-    })),
-  })),
 )(Evaluation)
