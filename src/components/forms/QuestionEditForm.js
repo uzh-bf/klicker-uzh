@@ -157,15 +157,17 @@ const QuestionEditForm = ({
             <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
           </Button>
         </Link>
-        <Button
-          primary
-          className="save"
-          disabled={invalid}
-          type="submit"
-          onClick={() => console.dir(this.props.form)}
-        >
-          <FormattedMessage defaultMessage="Save" id="common.button.save" />
-        </Button>
+        {isNewVersion && (
+          <Button
+            primary
+            className="save"
+            disabled={invalid}
+            type="submit"
+            onClick={() => console.dir(this.props.form)}
+          >
+            <FormattedMessage defaultMessage="Save" id="common.button.save" />
+          </Button>
+        )}
       </Form>
 
       <style jsx>{`
