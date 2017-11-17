@@ -1,6 +1,8 @@
 /* eslint-disable no-mixed-operators,no-plusplus,no-loop-func */
 import React from 'react'
 import PropTypes from 'prop-types'
+import _range from 'lodash/range'
+import { compose, withProps } from 'recompose'
 import {
   Bar,
   BarChart,
@@ -15,6 +17,11 @@ import {
 } from 'recharts'
 
 const propTypes = {
+  brush: PropTypes.shape({
+    endIndex: PropTypes.number.isRequired,
+    onChange: PropTypes.func.isRequired,
+    startIndex: PropTypes.number.isRequired,
+  }),
   data: PropTypes.arrayOf(
     PropTypes.shape({
       count: PropTypes.number.isRequired,
@@ -28,42 +35,31 @@ const propTypes = {
 }
 
 const defaultProps = {
+  brush: undefined,
   data: [],
   restrictions: null,
 }
 
-const HistogramChart = ({ data, restrictions }) => {
-  // TODO comments
-  const histogramArray = []
-  let currentValue = restrictions.min
-  for (let i = 0; i < restrictions.max - restrictions.min + 1; i++) {
-    histogramArray[i] = data.find(obj => +obj.value === currentValue)
-      ? { count: data.find(obj => +obj.value === currentValue).count, value: currentValue }
-      : { count: 0, value: currentValue }
-    currentValue += 1
-  }
-
+const HistogramChart = ({ brush, data }) => {
+  console.dir(data)
   return (
-    <ResponsiveContainer width="80%">
+    <ResponsiveContainer>
       <BarChart
-        width={600}
-        height={300}
-        data={histogramArray}
+        data={data}
         margin={{
-          bottom: 5,
-          left: 20,
-          right: 30,
-          top: 5,
+          bottom: 16,
+          left: -24,
+          right: 24,
+          top: 24,
         }}
       >
         <XAxis dataKey="value" />
         <YAxis />
         <CartesianGrid strokeDasharray="3 3" />
         <Tooltip />
-        <Legend verticalAlign="top" wrapperStyle={{ lineHeight: '40px' }} />
-        <ReferenceLine y={0} stroke="#000" />
-        <Brush dataKey="value" height={30} stroke="#8884d8" />
         <Bar dataKey="count" fill="#8884d8" />
+
+        {brush && <Brush {...brush} dataKey="value" height={30} stroke="#8884d8" />}
       </BarChart>
     </ResponsiveContainer>
   )
@@ -72,4 +68,20 @@ const HistogramChart = ({ data, restrictions }) => {
 HistogramChart.propTypes = propTypes
 HistogramChart.defaultProps = defaultProps
 
-export default HistogramChart
+export default compose(
+  withProps(({ data, restrictions }) => {
+    // map input data into the needed format
+    // make sure the value is numerical
+    const mapped = data.map(({ count, value }) => ({ count, value: +value }))
+
+    return {
+      data: _range(restrictions.min, restrictions.max + 1).map((index) => {
+        // try to find an existing value
+        const findItem = mapped.find(({ value }) => value === index)
+
+        // either return the existing value or a 0 count
+        return findItem || { count: 0, value: index }
+      }),
+    }
+  }),
+)(HistogramChart)

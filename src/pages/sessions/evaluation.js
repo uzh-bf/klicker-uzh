@@ -160,7 +160,10 @@ export default compose(
     ({ sessionStatus }) => sessionStatus === 'RUNNING',
     graphql(SessionEvaluationQuery, {
       // refetch the active instances query every 10s
-      options: ({ sessionId }) => ({ pollInterval: 10000, variables: { sessionId } }),
+      options: ({ url }) => ({
+        pollInterval: 10000,
+        variables: { sessionId: url.query.sessionId },
+      }),
     }),
   ),
   // if the query has finished loading but there are no active instances, show a simple message
