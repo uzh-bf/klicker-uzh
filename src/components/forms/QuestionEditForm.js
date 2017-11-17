@@ -95,7 +95,7 @@ const QuestionEditForm = ({
 
   // iterate through versions to map values to dropdown preferred option set
   const versionOptions = []
-  versions.forEach(({ id }) => versionOptions.push({ text: id, value: id }))
+  versions.forEach(({ id }, index) => versionOptions.push({ text: index + 1, value: id }))
 
   console.dir(versionOptions)
 
@@ -150,7 +150,6 @@ const QuestionEditForm = ({
         </div>
 
         <div className="questionInput questionOptions">
-          {/* TODO */}
           <Field name="options" component={typeComponents[type]} intl={intl} />
         </div>
         <Link href="/questions">
