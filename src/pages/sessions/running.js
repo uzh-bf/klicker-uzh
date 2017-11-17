@@ -29,6 +29,7 @@ const propTypes = {
   handleDeleteFeedback: PropTypes.func.isRequired,
   handleEndSession: PropTypes.func.isRequired,
   handleUpdateSettings: PropTypes.func.isRequired,
+  id: PropTypes.string.isRequired,
   intl: intlShape.isRequired,
   isConfusionBarometerActive: PropTypes.bool.isRequired,
   isFeedbackChannelActive: PropTypes.bool.isRequired,
@@ -38,6 +39,7 @@ const propTypes = {
 }
 
 const Running = ({
+  id,
   intl,
   blocks,
   confusionTS,
@@ -69,6 +71,7 @@ const Running = ({
     <div className="runningSession">
       <div className="sessionProgress">
         <SessionTimeline
+          sessionId={id}
           intl={intl}
           blocks={blocks}
           runtime={runtime}

@@ -200,8 +200,58 @@ export const JoinSessionQuery = gql`
 
 export const SessionEvaluationQuery = gql`
   query EvaluateSession($sessionId: ID!) {
-    evaluateSession(sessionId: $sessionId) {
+    session(id: $sessionId) {
       id
+      status
+      blocks {
+        id
+        status
+        instances {
+          id
+          isOpen
+          version
+          question {
+            id
+            title
+            type
+            versions {
+              description
+              options {
+                ... on SCQuestionOptions {
+                  choices {
+                    correct
+                    name
+                  }
+                }
+                ... on FREEQuestionOptions {
+                  restrictions {
+                    min
+                    max
+                    type
+                  }
+                }
+              }
+            }
+          }
+          results {
+            ... on SCQuestionResults {
+              choices
+            }
+            ... on FREEQuestionResults {
+              free {
+                count
+                key
+                value
+              }
+            }
+          }
+          responses {
+            id
+            value
+            createdAt
+          }
+        }
+      }
     }
   }
 `
