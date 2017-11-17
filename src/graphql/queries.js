@@ -197,3 +197,11 @@ export const JoinSessionQuery = gql`
     }
   }
 `
+
+export const SessionEvaluationQuery = gql`
+  query EvaluateSession($sessionId: ID!) {
+    evaluateSession(sessionId: $sessionId) {
+      id
+    }
+  }
+`

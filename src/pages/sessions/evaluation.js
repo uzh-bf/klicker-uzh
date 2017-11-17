@@ -116,6 +116,9 @@ Evaluation.defaultProps = defaultProps
 export default compose(
   withData,
   pageWithIntl,
+  withProps(({ url }) => ({
+    sessionId: url.query.sessionId,
+  })),
   withState('showGraph', 'setShowGraph', false),
   withState('showSolution', 'setShowSolution', false),
   withState('visualizationType', 'handleChangeVisualizationType', 'PIE_CHART'),
