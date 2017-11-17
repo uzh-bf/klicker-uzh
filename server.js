@@ -51,12 +51,6 @@ app
   .then(() => {
     const server = express()
 
-    // redirect the root route to the question pool page
-    // TODO: redirect location depending on login status
-    /* server.get('/', (req, res) => {
-      res.redirect('/questions/')
-    }) */
-
     // compress using gzip
     server.use(compression())
 
@@ -67,8 +61,8 @@ app
       }),
     )
 
-    server.get('/questions/:id', (req, res) =>
-      app.render(req, res, '/questions/details', { id: req.params.id }),
+    server.get('/questions/:questionId', (req, res) =>
+      app.render(req, res, '/questions/details', { questionId: req.params.questionId }),
     )
 
     server.get('/join/:shortname', (req, res) =>

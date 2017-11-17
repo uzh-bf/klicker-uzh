@@ -103,29 +103,29 @@ const QuestionEditForm = ({
     <div className="questionEditForm">
       <Form onSubmit={onSubmit}>
         <div className="questionInput questionTitle">
-          <div className="field">
+          <Form.Field>
             <label htmlFor="title">
               <FormattedMessage defaultMessage="Title" id="teacher.editQuestion.title" />
             </label>
             <div className="title">{title}</div>
-          </div>
+          </Form.Field>
         </div>
 
         <div className="questionInput questionType">
-          <div className="field">
+          <Form.Field>
             <label htmlFor="type">
               <FormattedMessage defaultMessage="Question Type" id="teacher.editQuestion.type" />
             </label>
             <div className="type">{type}</div>
-          </div>
+          </Form.Field>
         </div>
 
         <div className="questionInput questionVersion">
-          <div className="field">
+          <Form.Field>
             <label htmlFor="version">
               <FormattedMessage defaultMessage="Version" id="teacher.editQuestion.version" />
             </label>
-            <div className="version">
+            <div className="versionDropdown">
               <Dropdown
                 placeholder={intl.formatMessage({
                   defaultMessage: 'Select version',
@@ -138,36 +138,40 @@ const QuestionEditForm = ({
               />
             </div>
             <Button onClick={handleNewVersionToggle}>New Version</Button>
-          </div>
+          </Form.Field>
         </div>
 
         <div className="questionInput questionTags">
-          <Field name="tags" component={TagInput} props={{ disabled: !isNewVersion }} />
+          <Field name="tags" component={TagInput} disabled={!isNewVersion} />
         </div>
 
         <div className="questionInput questionContent">
-          <Field name="content" component={ContentInput} props={{ disabled: !isNewVersion }} />
+          <Field name="content" component={ContentInput} disabled={!isNewVersion} />
         </div>
 
         <div className="questionInput questionOptions">
           <Field name="options" component={typeComponents[type]} intl={intl} />
         </div>
-        <Link href="/questions">
-          <Button className="discard" type="reset" onClick={onDiscard}>
-            <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
-          </Button>
-        </Link>
-        {isNewVersion && (
-          <Button
-            primary
-            className="save"
-            disabled={invalid}
-            type="submit"
-            onClick={() => console.dir(this.props.form)}
-          >
-            <FormattedMessage defaultMessage="Save" id="common.button.save" />
-          </Button>
-        )}
+
+        <div className="actionArea">
+          <Link href="/questions">
+            <Button className="discard" type="reset" onClick={onDiscard}>
+              <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+            </Button>
+          </Link>
+
+          {isNewVersion && (
+            <Button
+              primary
+              className="save"
+              disabled={invalid}
+              type="submit"
+              onClick={() => console.dir(this.props.form)}
+            >
+              <FormattedMessage defaultMessage="Save" id="common.button.save" />
+            </Button>
+          )}
+        </div>
       </Form>
 
       <style jsx>{`
@@ -178,71 +182,77 @@ const QuestionEditForm = ({
           flex-direction: column;
 
           padding: 1rem;
-        }
 
-        .questionInput,
-        .questionPreview {
-          margin-bottom: 1rem;
-        }
+          .questionInput,
+          .questionPreview {
+            margin-bottom: 1rem;
+          }
 
-        // HACK: currently one field item in question div to full-fill bigger font-size
-        .questionInput > :global(.field > label) {
-          font-size: 1.2rem;
-        }
+          // HACK: currently one field item in question div to full-fill bigger font-size
+          .questionInput > :global(.field > label) {
+            font-size: 1.2rem;
+          }
 
-        @supports (grid-gap: 1rem) {
-          @include desktop-tablet-only {
-            .questionEditForm > :global(form) {
-              display: grid;
+          .questionVersion > :global(.field),
+          .actionArea {
+            display: flex;
+            flex-direction: column;
 
-              grid-gap: 1rem;
-              grid-template-columns: repeat(2, 1fr);
-              grid-template-rows: auto;
-              grid-template-areas: 'title type' 'version tags' 'content content' 'options options';
-            }
-
-            .questionInput {
-              margin-bottom: 0;
-            }
-
-            .questionTitle {
-              grid-area: title;
-            }
-
-            .questionType {
-              grid-area: type;
-            }
-
-            .questionVersion {
-              grid-area: version;
-            }
-
-            .questionVersion > .field {
-              display: flex;
-              flex-direction: column;
-              justify-content: space-between;
-            }
-
-            .questionTags {
-              grid-area: tags;
-            }
-
-            .questionPreview {
-              grid-area: preview;
-              margin-bottom: 0;
-            }
-
-            .questionContent {
-              grid-area: content;
-            }
-
-            .questionOptions {
-              grid-area: options;
+            :global(button) {
+              flex: 1;
+              margin-right: 0;
             }
           }
 
-          @include desktop-only {
-            .questionEditForm > :global(form) {
+          @supports (grid-gap: 1rem) {
+            @include desktop-tablet-only {
+              display: grid;
+
+              grid-gap: 1rem;
+              grid-template-columns: 1fr 1fr;
+              grid-template-rows: auto;
+              grid-template-areas: 'title type' 'version tags' 'content content' 'options options' 'actions actions';
+
+              .questionInput {
+                margin-bottom: 0;
+              }
+
+              .questionTitle {
+                grid-area: title;
+              }
+
+              .questionType {
+                grid-area: type;
+              }
+
+              .questionVersion {
+                grid-area: version;
+              }
+
+              .questionTags {
+                grid-area: tags;
+              }
+
+              .questionPreview {
+                grid-area: preview;
+                margin-bottom: 0;
+              }
+
+              .questionContent {
+                grid-area: content;
+              }
+
+              .questionOptions {
+                grid-area: options;
+              }
+
+              .actionArea {
+                grid-area: actions;
+                flex-direction: row;
+              }
+            }
+
+            @include desktop-only {
               margin: 0 20%;
               padding: 1rem 0;
             }
@@ -257,10 +267,10 @@ QuestionEditForm.propTypes = propTypes
 QuestionEditForm.defaultProps = defaultProps
 
 export default compose(
-  withState('isNewVersion', 'setToNewVersion', false),
+  withState('isNewVersion', 'setIsNewVersion', false),
   withHandlers({
-    handleNewVersionToggle: ({ setToNewVersion }) => () => {
-      setToNewVersion(prevState => !prevState)
+    handleNewVersionToggle: ({ setIsNewVersion }) => () => {
+      setIsNewVersion(prevState => !prevState)
     },
   }),
   connect((state, props) => ({

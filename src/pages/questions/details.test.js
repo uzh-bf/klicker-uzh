@@ -3,7 +3,7 @@
 import React from 'react'
 import renderer from 'react-test-renderer'
 
-import Session from './session'
+import QuestionDetails from './details'
 
 // HACK: workaround for https://github.com/Semantic-Org/Semantic-UI-React/issues/1702
 jest.mock('react-dom', () => ({
@@ -12,7 +12,7 @@ jest.mock('react-dom', () => ({
 
 describe('Snapshot-Testing', () => {
   it.skip('Works', () => {
-    const component = renderer.create(<Session />)
+    const component = renderer.create(<QuestionDetails />)
     const tree = component.toJSON()
     expect(tree).toMatchSnapshot()
   })

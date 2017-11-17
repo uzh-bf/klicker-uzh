@@ -20,34 +20,30 @@ const propTypes = {
 
 const EditQuestion = ({
   intl, tags, title, type, versions,
-}) => {
-  const tagsArray = tags.map(tag => tag.name)
-
-  return (
-    <TeacherLayout
-      intl={intl}
-      navbar={{
-        title: intl.formatMessage({
-          defaultMessage: 'Edit Question',
-          id: 'teacher.editQuestion.title',
-        }),
-      }}
-      pageTitle={intl.formatMessage({
+}) => (
+  <TeacherLayout
+    intl={intl}
+    navbar={{
+      title: intl.formatMessage({
         defaultMessage: 'Edit Question',
-        id: 'teacher.editQuestion.pageTitle',
-      })}
-      sidebar={{ activeItem: 'editQuestion' }}
-    >
-      <QuestionEditForm
-        intl={intl}
-        title={title}
-        tags={tagsArray}
-        type={type}
-        versions={versions}
-      />
-    </TeacherLayout>
-  )
-}
+        id: 'teacher.editQuestion.title',
+      }),
+    }}
+    pageTitle={intl.formatMessage({
+      defaultMessage: 'Edit Question',
+      id: 'teacher.editQuestion.pageTitle',
+    })}
+    sidebar={{ activeItem: 'editQuestion' }}
+  >
+    <QuestionEditForm
+      intl={intl}
+      title={title}
+      tags={tags.map(tag => tag.name)}
+      type={type}
+      versions={versions}
+    />
+  </TeacherLayout>
+)
 
 EditQuestion.propTypes = propTypes
 
@@ -55,11 +51,7 @@ export default compose(
   withData,
   pageWithIntl,
   graphql(QuestionDetailsQuery, {
-    options: props => ({
-      variables: {
-        id: props.url.query.id,
-      },
-    }),
+    options: ({ url }) => ({ variables: { id: url.query.questionId } }),
   }),
   branch(({ data }) => data.loading || !data.question, renderComponent(() => <div />)),
   withProps(({ data }) => ({
