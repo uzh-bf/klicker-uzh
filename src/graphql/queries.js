@@ -108,56 +108,6 @@ export const AccountSummaryQuery = gql`
   }
 `
 
-export const ActiveInstancesQuery = gql`
-  query ActiveInstances {
-    activeInstances {
-      id
-      isOpen
-      version
-      responses {
-        id
-        value
-        createdAt
-      }
-      results {
-        ... on SCQuestionResults {
-          choices
-        }
-        ... on FREEQuestionResults {
-          free {
-            count
-            key
-            value
-          }
-        }
-      }
-      question {
-        id
-        title
-        type
-        versions {
-          description
-          options {
-            ... on SCQuestionOptions {
-              choices {
-                correct
-                name
-              }
-            }
-            ... on FREEQuestionOptions {
-              restrictions {
-                min
-                max
-                type
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-`
-
 export const JoinSessionQuery = gql`
   query JoinSession($shortname: String!) {
     joinSession(shortname: $shortname) {
