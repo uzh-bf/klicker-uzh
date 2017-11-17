@@ -216,6 +216,12 @@ const QuestionEditForm = ({
               grid-area: version;
             }
 
+            .questionVersion > .field {
+              display: flex;
+              flex-direction: column;
+              justify-content: space-between;
+            }
+
             .questionTags {
               grid-area: tags;
             }
