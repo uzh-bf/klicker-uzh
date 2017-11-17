@@ -336,8 +336,8 @@ exports[`Storyshots common/navbar Navbar 1`] = `
           onMouseEnter={[Function]}
           onMouseLeave={[Function]}
         >
-          /sessions/
-          a2sd5
+          /join/
+          AW
            
           <i
             aria-hidden="true"
@@ -432,8 +432,7 @@ exports[`Storyshots common/navbar SessionArea 1`] = `
   onMouseEnter={[Function]}
   onMouseLeave={[Function]}
 >
-  /sessions/
-  a7s7d
+  /join/
    
   <i
     aria-hidden="true"
@@ -550,17 +549,17 @@ exports[`Storyshots confusion ConfusionBarometer 1`] = `
 
 exports[`Storyshots confusion ConfusionSlider 1`] = `
 <div
-  className="jsx-1078630351 confusionSlider"
+  className="jsx-468516100 confusionSlider"
 >
   <div
-    className="jsx-1078630351 title"
+    className="jsx-468516100 title"
   >
     <h2>
       Speed
     </h2>
   </div>
   <div
-    className="jsx-1078630351 slider"
+    className="jsx-468516100 slider"
   >
     <div
       aria-orientation="horizontal"
@@ -597,12 +596,55 @@ exports[`Storyshots confusion ConfusionSlider 1`] = `
         <div
           className="rangeslider__handle-label"
         >
-          
+          10
         </div>
       </div>
       <ul
         className="rangeslider__labels"
-      />
+      >
+        <li
+          className="rangeslider__label-item"
+          data-value="10"
+          onMouseDown={[Function]}
+          onTouchEnd={[Function]}
+          onTouchStart={[Function]}
+          style={
+            Object {
+              "left": "0px",
+            }
+          }
+        >
+          High
+        </li>
+        <li
+          className="rangeslider__label-item"
+          data-value="0"
+          onMouseDown={[Function]}
+          onTouchEnd={[Function]}
+          onTouchStart={[Function]}
+          style={
+            Object {
+              "left": "0px",
+            }
+          }
+        >
+          Okay
+        </li>
+        <li
+          className="rangeslider__label-item"
+          data-value="-10"
+          onMouseDown={[Function]}
+          onTouchEnd={[Function]}
+          onTouchStart={[Function]}
+          style={
+            Object {
+              "left": "0px",
+            }
+          }
+        >
+          Low
+        </li>
+      </ul>
     </div>
   </div>
 </div>
@@ -1959,16 +2001,16 @@ exports[`Storyshots forms/helpers SemanticInput 1`] = `
 
 exports[`Storyshots questionTypes/FREE FREE Answering Options (Number restriction) 1`] = `
 <div
-  className="jsx-2380687086 ui form freeAnswerOptions"
+  className="jsx-28718466 ui form freeAnswerOptions"
 >
   <div
-    className="jsx-2380687086 field slider"
+    className="jsx-28718466 field slider"
   >
     <span
-      className="jsx-2380687086 min"
+      className="jsx-28718466 min"
     >
       <strong
-        className="jsx-2380687086"
+        className="jsx-28718466"
       >
         <span>
           Min
@@ -1978,10 +2020,10 @@ exports[`Storyshots questionTypes/FREE FREE Answering Options (Number restrictio
       900
     </span>
     <span
-      className="jsx-2380687086 max"
+      className="jsx-28718466 max"
     >
       <strong
-        className="jsx-2380687086"
+        className="jsx-28718466"
       >
         <span>
           Max
@@ -2025,7 +2067,7 @@ exports[`Storyshots questionTypes/FREE FREE Answering Options (Number restrictio
         <div
           className="rangeslider__handle-label"
         >
-          
+          555
         </div>
       </div>
       <ul
@@ -2051,22 +2093,22 @@ exports[`Storyshots questionTypes/FREE FREE Answering Options (Number restrictio
 
 exports[`Storyshots questionTypes/FREE FREE Answering Options (lower bound restriction) 1`] = `
 <div
-  className="jsx-2380687086 ui form freeAnswerOptions"
+  className="jsx-28718466 ui form freeAnswerOptions"
 >
   <div
-    className="jsx-2380687086 field"
+    className="jsx-28718466 field"
   >
     <textarea
-      className="jsx-2380687086"
+      className="jsx-28718466"
       disabled={false}
       id="responseInput"
       onChange={[Function]}
     />
     <div
-      className="jsx-2380687086"
+      className="jsx-28718466"
     >
       <strong
-        className="jsx-2380687086"
+        className="jsx-28718466"
       >
         <span>
           Min
@@ -2081,13 +2123,13 @@ exports[`Storyshots questionTypes/FREE FREE Answering Options (lower bound restr
 
 exports[`Storyshots questionTypes/FREE FREE Answering Options (unrestricted) 1`] = `
 <div
-  className="jsx-2380687086 ui form freeAnswerOptions"
+  className="jsx-28718466 ui form freeAnswerOptions"
 >
   <div
-    className="jsx-2380687086 field"
+    className="jsx-28718466 field"
   >
     <textarea
-      className="jsx-2380687086"
+      className="jsx-28718466"
       disabled={false}
       id="responseInput"
       onChange={[Function]}
@@ -2098,22 +2140,22 @@ exports[`Storyshots questionTypes/FREE FREE Answering Options (unrestricted) 1`]
 
 exports[`Storyshots questionTypes/FREE FREE Answering Options (upper bound restriction) 1`] = `
 <div
-  className="jsx-2380687086 ui form freeAnswerOptions"
+  className="jsx-28718466 ui form freeAnswerOptions"
 >
   <div
-    className="jsx-2380687086 field"
+    className="jsx-28718466 field"
   >
     <textarea
-      className="jsx-2380687086"
+      className="jsx-28718466"
       disabled={false}
       id="responseInput"
       onChange={[Function]}
     />
     <div
-      className="jsx-2380687086"
+      className="jsx-28718466"
     >
       <strong
-        className="jsx-2380687086"
+        className="jsx-28718466"
       >
         <span>
           Max
@@ -4692,35 +4734,54 @@ exports[`Storyshots sessions SessionList 1`] = `
 
 exports[`Storyshots sessions SessionTimeline 1`] = `
 <div
-  className="jsx-265954221 sessionTimeline"
+  className="jsx-2181936900 sessionTimeline"
 >
   <div
-    className="jsx-265954221 topRow"
+    className="jsx-2181936900 topRow"
   >
     <div
-      className="jsx-265954221 startingTime"
+      className="jsx-2181936900 startingTime"
     >
       <i
         aria-hidden="true"
         className="time icon"
       />
-       18:17:22
+       
+      00:00:00
     </div>
     <div
-      className="jsx-265954221 runningTime"
+      className="jsx-2181936900 runningTime"
     >
       <i
         aria-hidden="true"
         className="play circle icon"
       />
-       12:56
+       
+      00:00:00
+    </div>
+    <div
+      className="jsx-2181936900 evaluationLink"
+    >
+      <i
+        aria-hidden="true"
+        className="external icon"
+      />
+       
+      <a
+        className="jsx-2181936900"
+        href="/sessions/evaluation"
+        onClick={[Function]}
+        target="_blank"
+      >
+        Evaluation
+      </a>
     </div>
   </div>
   <div
-    className="jsx-265954221 blocks"
+    className="jsx-2181936900 blocks"
   >
     <div
-      className="jsx-265954221 block"
+      className="jsx-2181936900 block"
     >
       <div
         className="jsx-1552646468 questionBlock"
@@ -4805,7 +4866,7 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
     </div>
   </div>
   <div
-    className="jsx-265954221 buttons"
+    className="jsx-2181936900 buttons"
   >
     <button
       className="ui red large icon left labeled button"

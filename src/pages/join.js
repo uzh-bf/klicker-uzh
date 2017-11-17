@@ -121,6 +121,12 @@ const Join = ({
             display: flex;
             height: 100%;
 
+            background-color: lightgray;
+
+            > * {
+              flex: 0 0 50%;
+            }
+
             .questionArea {
               padding: 1rem;
 
