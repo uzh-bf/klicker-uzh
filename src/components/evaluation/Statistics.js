@@ -30,7 +30,7 @@ const Statistics = ({
       </List.Item>
       <List.Item>
         <List.Header>
-          Mean <Icon name="square" color="green" />
+          Mean <Icon name="square" color="blue" />
         </List.Header>
         {_round(mean, 2)}
       </List.Item>

@@ -2,7 +2,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import _range from 'lodash/range'
-import _round from 'lodash/round'
 import { compose, withProps } from 'recompose'
 import {
   Bar,
@@ -30,6 +29,7 @@ const propTypes = {
     max: PropTypes.number,
     min: PropTypes.number,
   }),
+  solution: PropTypes.number,
   statistics: statisticsShape,
 }
 
@@ -37,10 +37,13 @@ const defaultProps = {
   brush: false,
   data: [],
   restrictions: undefined,
+  solution: undefined,
   statistics: undefined,
 }
 
-const HistogramChart = ({ brush, data, statistics }) => (
+const HistogramChart = ({
+  brush, data, solution, statistics,
+}) => (
   <ResponsiveContainer>
     <BarChart
       data={data}
@@ -53,14 +56,16 @@ const HistogramChart = ({ brush, data, statistics }) => (
     >
       <XAxis dataKey="value" />
       <YAxis />
-      <CartesianGrid strokeDasharray="3 3" />
+      <CartesianGrid strokeDasharray="5 5" />
       <Tooltip />
       <Bar dataKey="count" fill="#8884d8" />
 
       {statistics && [
-        <ReferenceLine isFront x={_round(statistics.mean, 0)} stroke="green" />,
-        <ReferenceLine isFront x={_round(statistics.median, 0)} stroke="red" />,
+        <ReferenceLine isFront x={Math.round(statistics.mean)} stroke="blue" />,
+        <ReferenceLine isFront x={Math.round(statistics.median)} stroke="red" />,
       ]}
+
+      {solution && <ReferenceLine isFront x={Math.round(solution)} stroke="green" />}
 
       {brush && <Brush dataKey="value" height={30} stroke="#8884d8" />}
     </BarChart>
@@ -72,9 +77,23 @@ HistogramChart.defaultProps = defaultProps
 
 export default compose(
   withProps(({ data, restrictions }) => {
+    // TODO: rework this to make it less complex
+    // potentially merge into a single map / reduce
+
     // map input data into the needed format
-    // make sure the value is numerical
-    const mapped = data.map(({ count, value }) => ({ count, value: +value }))
+    // make sure the value is numerical and rounded
+    const mapped = data.reduce((acc, { count, value }) => {
+      const rounded = Math.round(+value)
+      const index = acc.findIndex(({ value: v }) => v === rounded)
+
+      if (index > -1) {
+        const newAcc = acc
+        newAcc[index].count += count
+        return newAcc
+      }
+
+      return acc.concat({ count, value: rounded })
+    }, [])
 
     return {
       data: _range(restrictions.min, restrictions.max + 1).map((index) => {
