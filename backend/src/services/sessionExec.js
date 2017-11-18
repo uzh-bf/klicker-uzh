@@ -4,17 +4,7 @@ const { QuestionInstanceModel, QuestionTypes } = require('../models')
 
 const { getRunningSession } = require('./sessionMgr')
 
-const getResultKey = (restrictionType, response) => {
-  if (restrictionType === 'NONE') {
-    return md5(response.value)
-  }
-
-  if (restrictionType === 'RANGE') {
-    return response.value
-  }
-
-  return null
-}
+const getResultKey = (restrictionType, response) => md5(response.value)
 
 // add a new feedback to a session
 const addFeedback = async ({ sessionId, content }) => {
