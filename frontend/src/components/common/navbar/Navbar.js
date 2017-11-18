@@ -44,8 +44,8 @@ export const NavbarPres = ({
         <Menu.Item
           icon
           active={sidebarVisible}
-          name="sidebar"
           className="sidebar"
+          name="sidebar"
           onClick={handleSidebarToggle}
         >
           <Icon name="sidebar" />
@@ -56,7 +56,7 @@ export const NavbarPres = ({
 
     {search && (
       <div className="searchArea">
-        <SearchArea intl={intl} handleSearch={search.handleSearch} handleSort={search.handleSort} />
+        <SearchArea handleSearch={search.handleSearch} handleSort={search.handleSort} intl={intl} />
       </div>
     )}
 

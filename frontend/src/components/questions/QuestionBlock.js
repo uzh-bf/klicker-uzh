@@ -6,13 +6,13 @@ import QuestionSingle from './QuestionSingle'
 
 const propTypes = {
   questions: PropTypes.arrayOf(PropTypes.shape(QuestionSingle.propTypes)).isRequired,
-  showSolutions: PropTypes.bool,
+  // showSolutions: PropTypes.bool,
   status: PropTypes.string,
   timeLimit: PropTypes.number,
 }
 
 const defaultProps = {
-  showSolutions: false,
+  // showSolutions: false,
   status: 'PLANNED',
   timeLimit: 0,
 }
@@ -29,7 +29,7 @@ const QuestionBlock = ({ status, questions, timeLimit }) => (
     <div className="sessionStatus">{status}</div>
     <div className="questions">
       {questions.map(({ id, title, type }) => (
-        <QuestionSingle key={id} id={id} title={title} type={type} />
+        <QuestionSingle id={id} key={id} title={title} type={type} />
       ))}
     </div>
     <style jsx>{`

@@ -25,10 +25,6 @@ const propTypes = {
       value: PropTypes.string.isRequired,
     }),
   ),
-  restrictions: PropTypes.shape({
-    max: PropTypes.number,
-    min: PropTypes.number,
-  }),
   solution: PropTypes.number,
   statistics: statisticsShape,
 }
@@ -36,7 +32,6 @@ const propTypes = {
 const defaultProps = {
   brush: false,
   data: [],
-  restrictions: undefined,
   solution: undefined,
   statistics: undefined,
 }
@@ -61,11 +56,11 @@ const HistogramChart = ({
       <Bar dataKey="count" fill="#8884d8" />
 
       {statistics && [
-        <ReferenceLine isFront x={Math.round(statistics.mean)} stroke="blue" />,
-        <ReferenceLine isFront x={Math.round(statistics.median)} stroke="red" />,
+        <ReferenceLine isFront stroke="blue" x={Math.round(statistics.mean)} />,
+        <ReferenceLine isFront stroke="red" x={Math.round(statistics.median)} />,
       ]}
 
-      {solution && <ReferenceLine isFront x={Math.round(solution)} stroke="green" />}
+      {solution && <ReferenceLine isFront stroke="green" x={Math.round(solution)} />}
 
       {brush && <Brush dataKey="value" height={30} stroke="#8884d8" />}
     </BarChart>

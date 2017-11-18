@@ -17,7 +17,7 @@ storiesOf('sessions', module)
   ))
   .add('Session', () => <Session {...fixtures.session} />)
   .add('SessionTimeline', () => (
-    <SessionTimeline id="abcd" blocks={[fixtures.questionBlock2]} intl={intlMock} />
+    <SessionTimeline blocks={[fixtures.questionBlock2]} id="abcd" intl={intlMock} />
   ))
   .add('SessionList', () => <SessionListPres sessions={[fixtures.session, fixtures.session]} />)
   .add('QuestionDropzone', () => (

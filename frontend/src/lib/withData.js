@@ -73,7 +73,7 @@ export default ComposedComponent =>
     constructor(props) {
       super(props)
       this.apollo = initApollo()
-      this.redux = initRedux(this.apollo, this.props.serverState)
+      this.redux = initRedux(this.apollo, this.props.serverState) // eslint-disable-line
     }
 
     render() {

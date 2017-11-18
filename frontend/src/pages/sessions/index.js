@@ -44,9 +44,9 @@ const Index = ({
   >
     <div className="sessionHistory">
       <SessionList
-        intl={intl}
         handleCopySession={handleCopySession}
         handleStartSession={handleStartSession}
+        intl={intl}
       />
     </div>
 

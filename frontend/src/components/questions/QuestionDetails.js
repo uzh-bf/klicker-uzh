@@ -35,7 +35,7 @@ const QuestionDetails = ({ description, lastUsed }) => {
 
       <div className="column col3">
         <ListWithHeader items={lastUsed.length > 0 ? lastUsed : ['Never used']}>
-          <FormattedMessage id="questionPool.question.lastUsed" defaultMessage="Last used" />
+          <FormattedMessage defaultMessage="Last used" id="questionPool.question.lastUsed" />
         </ListWithHeader>
       </div>
 

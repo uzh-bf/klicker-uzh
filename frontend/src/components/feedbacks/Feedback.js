@@ -31,12 +31,12 @@ const Feedback = ({
     <div className="content">{content}</div>
     {showDelete && (
       <div className="delete">
-        <Button basic icon="trash outline" fluid onClick={onDelete} />
+        <Button basic fluid icon="trash outline" onClick={onDelete} />
       </div>
     )}
 
     {showVotes && (
-      <Button disabled={alreadyVoted} className="votes" onClick={updateVotes && updateVotes()}>
+      <Button className="votes" disabled={alreadyVoted} onClick={updateVotes && updateVotes()}>
         <Icon name={alreadyVoted ? 'thumbs up' : 'thumbs outline up'} />
         {votes}
       </Button>

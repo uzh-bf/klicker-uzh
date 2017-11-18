@@ -14,7 +14,7 @@ const propTypes = {
 const QuestionTags = ({ tags, type }) => (
   <div className="questionTags">
     {tags.map(tag => (
-      <div key={tag.id} className="tag">
+      <div className="tag" key={tag.id}>
         {tag.name}
       </div>
     ))}

@@ -25,14 +25,14 @@ const StudentLayout = ({
   const activeQuestionItem = {
     href: 'activeQuestion',
     label: (
-      <FormattedMessage id="student.sidebar.activeQuestion" defaultMessage="Active Question" />
+      <FormattedMessage defaultMessage="Active Question" id="student.sidebar.activeQuestion" />
     ),
     name: 'activeQuestion',
   }
   const feedbackChannelItem = {
     href: 'feedbackChannel',
     label: (
-      <FormattedMessage id="student.sidebar.feedbackChannel" defaultMessage="Feedback-Channel" />
+      <FormattedMessage defaultMessage="Feedback-Channel" id="student.sidebar.feedbackChannel" />
     ),
     name: 'feedbackChannel',
   }
@@ -47,8 +47,8 @@ const StudentLayout = ({
         <div className="header">
           <Button
             basic
-            icon="content"
             active={sidebar.sidebarVisible}
+            icon="content"
             onClick={sidebar.handleToggleSidebarVisible}
           />
           <h1>{title}</h1>
@@ -57,10 +57,10 @@ const StudentLayout = ({
 
         <div className="content">
           <Sidebar
-            items={sidebarItems}
-            visible={sidebar.sidebarVisible}
             activeItem={sidebar.activeItem}
             handleSidebarItemClick={sidebar.handleSidebarActiveItemChange}
+            items={sidebarItems}
+            visible={sidebar.sidebarVisible}
           >
             {children}
           </Sidebar>

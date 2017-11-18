@@ -15,7 +15,7 @@ const ListWithHeader = ({ children, items }) => (
     <h3 className="listHeader">{children}</h3>
     <ul className="list">
       {items.map(item => (
-        <li key={item} className="listItem">
+        <li className="listItem" key={item}>
           {item}
         </li>
       ))}

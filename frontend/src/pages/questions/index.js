@@ -43,9 +43,9 @@ const Index = ({
   const actionArea = (
     <div className="creationForm">
       <SessionCreationForm
+        onDiscard={handleCreationModeToggle}
         onSave={handleCreateSession('save')}
         onStart={handleCreateSession('start')}
-        onDiscard={handleCreationModeToggle}
       />
 
       <style jsx>{`
@@ -110,9 +110,9 @@ const Index = ({
             </Link>
           </div>
           <QuestionList
+            creationMode={creationMode}
             dropped={droppedQuestions}
             filters={filters}
-            creationMode={creationMode}
             onQuestionDropped={handleQuestionDropped}
           />
         </div>
