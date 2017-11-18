@@ -98,10 +98,10 @@ const FREECreationOptions = ({
               </label>
               <Input
                 name="min"
-                onChange={handleMinChange}
                 placeholder="-∞"
                 type="number"
                 value={min}
+                onChange={handleMinChange}
               />
             </Form.Field>
 
@@ -111,10 +111,10 @@ const FREECreationOptions = ({
               </label>
               <Input
                 name="max"
-                onChange={handleMaxChange}
                 placeholder="∞"
                 type="number"
                 value={max}
+                onChange={handleMaxChange}
               />
             </Form.Field>
           </div>

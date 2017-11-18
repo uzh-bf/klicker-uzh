@@ -44,10 +44,10 @@ storiesOf('confusion', module)
   // HACK: disable test as recharts breaks => https://github.com/recharts/recharts/issues/765
   .add('ConfusionBarometer (isActive) [NoTest]', () => (
     <ConfusionBarometer
+      isActive
       confusionTS={data}
       handleActiveToggle={() => null}
       intl={intlMock}
-      isActive
     />
   ))
   .add('ConfusionSection [NoTest]', () => <ConfusionSection />)

@@ -42,9 +42,9 @@ export const NavbarPres = ({
     <div className="sideArea">
       <Menu borderless className="noBorder">
         <Menu.Item
+          icon
           active={sidebarVisible}
           className="sidebar"
-          icon
           name="sidebar"
           onClick={handleSidebarToggle}
         >

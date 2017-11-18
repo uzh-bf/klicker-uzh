@@ -109,6 +109,7 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
 
       <div className="account">
         <Field
+          required
           component={SemanticInput}
           icon="hashtag"
           intl={intl}
@@ -117,7 +118,6 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
             id: 'form.shortname.label',
           })}
           name="shortname"
-          required
           tooltip={intl.formatMessage({
             defaultMessage:
               'A unique identifier for your account. Must be between 3 and 6 characters long.',

@@ -71,8 +71,8 @@ const FeedbackChannel = ({
             <Feedback
               content={content}
               key={id}
-              onDelete={handleDeleteFeedback(id)}
               votes={votes}
+              onDelete={handleDeleteFeedback(id)}
             />
           </div>
         ))}

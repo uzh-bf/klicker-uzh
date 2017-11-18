@@ -46,8 +46,8 @@ const StudentLayout = ({
       <div className="studentLayout">
         <div className="header">
           <Button
-            active={sidebar.sidebarVisible}
             basic
+            active={sidebar.sidebarVisible}
             icon="content"
             onClick={sidebar.handleToggleSidebarVisible}
           />

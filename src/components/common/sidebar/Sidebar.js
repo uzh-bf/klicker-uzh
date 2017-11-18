@@ -30,11 +30,11 @@ const Sidebar = ({
   <div className="sidebar">
     <SemanticSidebar.Pushable>
       <SemanticSidebar
+        vertical
         animation="overlay"
         as={Menu}
         className="sidebarMenu"
         icon="labeled"
-        vertical
         visible={visible}
         width="wide"
       >

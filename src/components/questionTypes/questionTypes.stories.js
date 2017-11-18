@@ -105,10 +105,10 @@ storiesOf('questionTypes/FREE', module)
   .add('FREE Answering Options (Number restriction)', () => (
     <FREEAnswerOptions
       options={{ restrictions: { max: 87, min: 900, type: 'RANGE' } }}
+      value={555}
       onChange={(a) => {
         console.log(a)
       }}
-      value={555}
     />
   ))
   .add('FREE Creation Options [NoTest]', () => <FREECreationOptionsWithState />)

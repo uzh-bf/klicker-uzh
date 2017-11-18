@@ -57,18 +57,18 @@ const FREEAnswerOptions = ({
               handleLabel={value}
               max={options.restrictions.max}
               min={options.restrictions.min}
-              onChange={onChange}
               orientation="horizontal"
               tooltip={false}
               value={value}
+              onChange={onChange}
             />
             <Input
               disabled={disabled}
               max={options.restrictions.max}
               min={options.restrictions.min}
-              onChange={e => onChange(e.target.value)}
               type="number"
               value={value}
+              onChange={e => onChange(e.target.value)}
             />
           </div>
         )

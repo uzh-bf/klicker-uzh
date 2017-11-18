@@ -53,8 +53,8 @@ TagListPres.defaultProps = defaultProps
 
 export default compose(
   graphql(TagListQuery),
-  branch(props => props.data.loading, renderComponent(LoadingDiv)),
-  branch(props => props.data.error, renderComponent(props => <div>{props.data.error}</div>)),
+  branch(({ data }) => data.loading, renderComponent(LoadingDiv)),
+  branch(({ data }) => data.error, renderComponent(({ data }) => <div>{data.error}</div>)),
   withProps(({ activeTags, data: { loading, tags } }) => ({
     loading,
     tags: tags && tags.map(tag => ({ ...tag, isActive: activeTags.includes(tag.name) })),

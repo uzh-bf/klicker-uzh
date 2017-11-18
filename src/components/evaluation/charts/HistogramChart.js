@@ -25,10 +25,6 @@ const propTypes = {
       value: PropTypes.string.isRequired,
     }),
   ),
-  restrictions: PropTypes.shape({
-    max: PropTypes.number,
-    min: PropTypes.number,
-  }),
   solution: PropTypes.number,
   statistics: statisticsShape,
 }
@@ -36,7 +32,6 @@ const propTypes = {
 const defaultProps = {
   brush: false,
   data: [],
-  restrictions: undefined,
   solution: undefined,
   statistics: undefined,
 }

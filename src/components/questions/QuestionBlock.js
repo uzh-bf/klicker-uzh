@@ -6,13 +6,13 @@ import QuestionSingle from './QuestionSingle'
 
 const propTypes = {
   questions: PropTypes.arrayOf(PropTypes.shape(QuestionSingle.propTypes)).isRequired,
-  showSolutions: PropTypes.bool,
+  // showSolutions: PropTypes.bool,
   status: PropTypes.string,
   timeLimit: PropTypes.number,
 }
 
 const defaultProps = {
-  showSolutions: false,
+  // showSolutions: false,
   status: 'PLANNED',
   timeLimit: 0,
 }

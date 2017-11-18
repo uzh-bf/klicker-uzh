@@ -46,11 +46,11 @@ const TagInput = ({ tags, input: { value, onChange }, meta: { invalid, dirty } }
       </ReactTooltip>
 
       <TagsInput
-        name="tags"
-        onChange={onChange}
         onlyUnique
+        name="tags"
         renderInput={autocompleteRenderInput(tags, value)}
         value={value || []}
+        onChange={onChange}
       />
     </Form.Field>
 

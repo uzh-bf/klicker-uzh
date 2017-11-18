@@ -51,8 +51,8 @@ const Question = ({
             checked={!draggable}
             className="ui checkbox"
             name={`check-${id}`}
-            onClick={() => null}
             type="checkbox"
+            onClick={() => null}
           />
         </div>
       )}

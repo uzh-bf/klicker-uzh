@@ -135,8 +135,8 @@ function QuestionArea({
               items={_range(questions.length).map(index => ({
                 done: !remainingQuestions.includes(index),
               }))}
-              onSubmit={handleSubmit}
               setActiveIndex={handleActiveQuestionChange}
+              onSubmit={handleSubmit}
             />
           </div>
         )

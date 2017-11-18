@@ -102,9 +102,9 @@ function EvaluationLayout({
         <div className="chartType">
           <VisualizationType
             intl={intl}
-            onChangeType={onChangeVisualizationType}
             type={type}
             visualization={visualizationType}
+            onChangeType={onChangeVisualizationType}
           />
         </div>
 

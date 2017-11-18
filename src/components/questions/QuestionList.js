@@ -36,11 +36,11 @@ export const QuestionListPres = ({
         lastUsed={question.instances.map(instance =>
           moment(instance.createdAt).format('DD.MM.YYYY HH:MM:SS'),
         )}
-        onDrop={onQuestionDropped(question.id)}
         tags={question.tags}
         title={question.title}
         type={question.type}
         version={question.versions.length}
+        onDrop={onQuestionDropped(question.id)}
       />
     ))}
 
@@ -57,8 +57,8 @@ QuestionListPres.defaultProps = defaultProps
 
 export default compose(
   graphql(QuestionListQuery),
-  branch(props => props.data.loading, renderComponent(LoadingDiv)),
-  branch(props => props.data.error, renderComponent(props => <div>{props.data.error}</div>)),
+  branch(({ data }) => data.loading, renderComponent(LoadingDiv)),
+  branch(({ data }) => data.error, renderComponent(({ data }) => <div>{data.error}</div>)),
   withProps(({ data: { error, questions }, filters }) => ({
     error,
     questions: questions && (filters ? filterQuestions(questions, filters) : questions),

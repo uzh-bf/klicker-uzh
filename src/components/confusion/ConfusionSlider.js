@@ -49,10 +49,10 @@ const ConfusionSlider = ({
           labels={labelsSlider}
           max={max}
           min={min}
-          onChange={handleChange}
-          onChangeComplete={handleChangeComplete}
           tooltip={false}
           value={value}
+          onChange={handleChange}
+          onChangeComplete={handleChangeComplete}
         />
       </div>
 

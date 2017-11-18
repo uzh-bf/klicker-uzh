@@ -83,8 +83,8 @@ const SCCreationOptions = ({
         <SortableOptions
           handleCorrectToggle={handleOptionToggleCorrect}
           handleDelete={handleDeleteOption}
-          onSortEnd={handleUpdateOrder}
           sortableOptions={value || []}
+          onSortEnd={handleUpdateOrder}
         />
 
         <SCCreationPlaceholder handleSave={handleNewOption} />

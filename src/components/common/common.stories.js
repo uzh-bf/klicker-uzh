@@ -88,10 +88,10 @@ storiesOf('common/navbar', module)
 storiesOf('common/sidebar', module)
   .add('Sidebar (visible)', () => (
     <Sidebar
+      visible
       activeItem="item1"
       handleSidebarItemClick={item => action(`click ${item}`)}
       items={sidebarItems}
-      visible
     >
       PAGE CONTENT
     </Sidebar>
