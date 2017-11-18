@@ -6,7 +6,6 @@ const propTypes = {
   active: PropTypes.bool,
   children: PropTypes.node.isRequired,
   handleSidebarItemClick: PropTypes.func.isRequired,
-  href: PropTypes.string.isRequired,
   name: PropTypes.string.isRequired,
 }
 

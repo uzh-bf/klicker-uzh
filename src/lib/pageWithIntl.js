@@ -44,7 +44,7 @@ export default (Page) => {
         locale, messages, now, ...props
       } = this.props // eslint-disable-line react/prop-types
       return (
-        <IntlProvider locale={locale} messages={messages} initialNow={now}>
+        <IntlProvider initialNow={now} locale={locale} messages={messages}>
           <IntlPage {...props} />
         </IntlProvider>
       )

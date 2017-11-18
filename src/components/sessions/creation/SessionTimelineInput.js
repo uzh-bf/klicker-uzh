@@ -24,7 +24,7 @@ const SessionTimelineInput = ({ input: { value, onChange } }) => {
   return (
     <div className="sessionTimeline">
       {value.map(question => (
-        <div key={question.id} className="timelineItem">
+        <div className="timelineItem" key={question.id}>
           <QuestionSingle id={question.id} title={question.title} type={question.type} />
         </div>
       ))}

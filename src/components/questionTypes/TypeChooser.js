@@ -54,7 +54,7 @@ const TypeChooser = ({ intl, input: { value, onChange } }) => {
         </a>
       </label>
 
-      <ReactTooltip id="TypeChooserHelp" delayShow={250} delayHide={250} place="right">
+      <ReactTooltip delayHide={250} delayShow={250} id="TypeChooserHelp" place="right">
         <FormattedMessage
           defaultMessage="Choose the type of question you would like to create."
           id="teacher.createQuestion.questionType.tooltip"
@@ -63,7 +63,7 @@ const TypeChooser = ({ intl, input: { value, onChange } }) => {
 
       <div className="types">
         {types.map(({ name, value: typeValue }) => (
-          <Button key={typeValue} active={typeValue === value} onClick={handleClick(typeValue)}>
+          <Button active={typeValue === value} key={typeValue} onClick={handleClick(typeValue)}>
             {name}
           </Button>
         ))}
