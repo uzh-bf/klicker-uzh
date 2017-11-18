@@ -47,7 +47,8 @@
     "react/jsx-closing-tag-location": 0,
     "import/extensions": 0,
     "react/destructuring-assignment": [1, "always"],
-    "react/boolean-prop-naming": 2
+    "react/boolean-prop-naming": 2,
+    "react/jsx-no-bind": 0
   },
   "env": {
     "browser": true,
