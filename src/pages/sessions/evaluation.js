@@ -3,9 +3,8 @@ import PropTypes from 'prop-types'
 import { intlShape } from 'react-intl'
 import {
   compose,
-  withHandlers,
   withProps,
-  withState,
+  withStateHandlers,
   branch,
   renderComponent,
   renderNothing,
@@ -14,71 +13,53 @@ import { graphql } from 'react-apollo'
 
 import { QuestionTypes } from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
-import { pageWithIntl, withData } from '../../lib'
+import {
+  calculateMax,
+  calculateMin,
+  calculateMean,
+  calculateMedian,
+  pageWithIntl,
+  withData,
+} from '../../lib'
 import { Chart } from '../../components/evaluation'
 import { SessionEvaluationQuery } from '../../graphql/queries'
+import { sessionStatusShape, statisticsShape } from '../../propTypes'
 
 const propTypes = {
   activeInstance: PropTypes.number,
-  activeInstances: PropTypes.array.isRequired,
   handleChangeActiveInstance: PropTypes.func.isRequired,
   handleChangeVisualizationType: PropTypes.func.isRequired,
   handleShowGraph: PropTypes.func.isRequired,
   handleToggleShowSolution: PropTypes.func.isRequired,
   instanceSummary: PropTypes.arrayOf(PropTypes.object),
   intl: intlShape.isRequired,
+  sessionStatus: sessionStatusShape.isRequired,
   showGraph: PropTypes.bool.isRequired,
   showSolution: PropTypes.bool.isRequired,
+  statistics: statisticsShape,
   visualizationType: PropTypes.string.isRequired,
 }
 const defaultProps = {
   activeInstance: 0,
   instanceSummary: [],
-}
-
-const mapActiveInstance = (activeInstance) => {
-  if ([QuestionTypes.SC, QuestionTypes.MC].includes(activeInstance.question.type)) {
-    return {
-      ...activeInstance,
-      results: {
-        // HACK: versioning hardcoded
-        data: activeInstance.question.versions[0].options.choices.map((choice, index) => ({
-          correct: choice.correct,
-          count: activeInstance.results ? activeInstance.results.choices[index] : 0,
-          value: choice.name,
-        })),
-        totalResponses: activeInstance.responses.length,
-      },
-    }
-  }
-
-  if (activeInstance.question.type === QuestionTypes.FREE) {
-    return {
-      ...activeInstance,
-      results: {
-        data: activeInstance.results ? activeInstance.results.free : [],
-        totalResponses: activeInstance.responses.length,
-      },
-    }
-  }
-
-  return activeInstance
+  statistics: undefined,
 }
 
 function Evaluation({
-  activeInstances,
   activeInstance,
   instanceSummary,
   intl,
   handleChangeActiveInstance,
+  sessionStatus,
   showGraph,
   showSolution,
+  statistics,
   visualizationType,
   handleShowGraph,
   handleToggleShowSolution,
   handleChangeVisualizationType,
 }) {
-  const { results, question, version } = activeInstances[activeInstance]
+  const { results, question, version } = activeInstance
   const { title, type } = question
   const { totalResponses, data } = results
   const { description, options } = question.versions[version]
@@ -87,9 +68,12 @@ function Evaluation({
     <Chart
       intl={intl}
       handleShowGraph={handleShowGraph}
+      restrictions={options.restrictions}
       results={results}
+      sessionStatus={sessionStatus}
       showGraph={showGraph}
       showSolution={showSolution}
+      statistics={statistics}
       visualizationType={visualizationType}
     />
   )
@@ -110,6 +94,7 @@ function Evaluation({
       id: 'teacher.evaluation.pageTitle',
     }),
     showSolution,
+    statistics,
     title,
     totalResponses,
     type,
@@ -131,6 +116,17 @@ export default compose(
   }),
   // if the query is still loading, display nothing
   branch(({ data }) => data.loading, renderNothing),
+  // override the session evaluation query with a polling query
+  branch(
+    ({ data: { session } }) => session.status === 'RUNNING',
+    graphql(SessionEvaluationQuery, {
+      // refetch the active instances query every 10s
+      options: ({ url }) => ({
+        pollInterval: 10000,
+        variables: { sessionId: url.query.sessionId },
+      }),
+    }),
+  ),
   withProps(({ data: { session } }) => {
     let { blocks } = session
 
@@ -143,7 +139,35 @@ export default compose(
     const activeInstances = blocks
       .map(block => block.instances) // map blocks to the instances contained within
       .reduce((acc, val) => [...acc, ...val], []) // reduce array of arrays [[], [], []] to [...]
-      .map(mapActiveInstance) // map the array of all instances with the custom mapper
+      .map((activeInstance) => {
+        // map the array of all instances with the custom mapper
+        if ([QuestionTypes.SC, QuestionTypes.MC].includes(activeInstance.question.type)) {
+          return {
+            ...activeInstance,
+            results: {
+              // HACK: versioning hardcoded
+              data: activeInstance.question.versions[0].options.choices.map((choice, index) => ({
+                correct: choice.correct,
+                count: activeInstance.results ? activeInstance.results.choices[index] : 0,
+                value: choice.name,
+              })),
+              totalResponses: activeInstance.responses.length,
+            },
+          }
+        }
+
+        if (activeInstance.question.type === QuestionTypes.FREE) {
+          return {
+            ...activeInstance,
+            results: {
+              data: activeInstance.results ? activeInstance.results.free : [],
+              totalResponses: activeInstance.responses.length,
+            },
+          }
+        }
+
+        return activeInstance
+      })
 
     return {
       activeInstances,
@@ -154,31 +178,52 @@ export default compose(
       sessionStatus: session.status,
     }
   }),
-  // override the session evaluation query with a polling query
-  branch(
-    ({ sessionStatus }) => sessionStatus === 'RUNNING',
-    graphql(SessionEvaluationQuery, {
-      // refetch the active instances query every 10s
-      options: ({ sessionId }) => ({ pollInterval: 10000, variables: { sessionId } }),
-    }),
-  ),
   // if the query has finished loading but there are no active instances, show a simple message
   branch(
     ({ activeInstances }) => !(activeInstances && activeInstances.length > 0),
     renderComponent(() => <div>No evaluation currently active.</div>),
   ),
-  withState('showGraph', 'setShowGraph', ({ sessionStatus }) => sessionStatus !== 'RUNNING'),
-  withState('showSolution', 'setShowSolution', ({ sessionStatus }) => sessionStatus !== 'RUNNING'),
-  withState('visualizationType', 'handleChangeVisualizationType', 'PIE_CHART'),
-  withState('activeInstance', 'setActiveInstance', 0),
-  withHandlers({
-    handleChangeActiveInstance: ({ setActiveInstance }) => newInstance => () =>
-      setActiveInstance(newInstance),
-    // handle toggle of the visualization display
-    // the visualization display can only be toggled once, so only allow setting to true
-    handleShowGraph: ({ setShowGraph }) => () => setShowGraph(true),
-    // handle toggle of the solution overlay
-    handleToggleShowSolution: ({ setShowSolution }) => () =>
-      setShowSolution(showSolution => !showSolution),
+  withStateHandlers(
+    ({ sessionStatus }) => ({
+      activeInstance: 0,
+      showGraph: sessionStatus !== 'RUNNING',
+      showSolution: sessionStatus !== 'RUNNING',
+      visualizationType: 'PIE_CHART',
+    }),
+    {
+      // handle change of active instance
+      handleChangeActiveInstance: () => activeInstance => () => ({ activeInstance }),
+
+      // handle change of vis. type
+      handleChangeVisualizationType: () => visualizationType => ({ visualizationType }),
+
+      // handle toggle of the visualization display
+      // the visualization display can only be toggled once, so only allow setting to true
+      handleShowGraph: () => () => ({ showGraph: true }),
+
+      // handle toggle of the solution overlay
+      handleToggleShowSolution: ({ showSolution }) => () => ({ showSolution: !showSolution }),
+    },
+  ),
+  withProps(({ activeInstances, activeInstance }) => {
+    const active = activeInstances[activeInstance]
+    const { question, results } = active
+
+    // TODO: update question type to FREE:RANGE
+    if (question.type === 'FREE') {
+      return {
+        activeInstance: active,
+        statistics: {
+          max: calculateMax(results),
+          mean: calculateMean(results),
+          median: calculateMedian(results),
+          min: calculateMin(results),
+        },
+      }
+    }
+
+    return {
+      activeInstance: active,
+    }
   }),
 )(Evaluation)
