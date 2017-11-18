@@ -1,6 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { List } from 'semantic-ui-react'
+import _round from 'lodash/round'
+import { Icon, List } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 const propTypes = {
@@ -21,19 +22,23 @@ const Statistics = ({
     <List celled>
       <List.Item>
         <List.Header>Minimum</List.Header>
-        {min}
+        {_round(min, 2)}
       </List.Item>
       <List.Item>
         <List.Header>Maximum</List.Header>
-        {max}
+        {_round(max, 2)}
       </List.Item>
       <List.Item>
-        <List.Header>Mean</List.Header>
-        {mean}
+        <List.Header>
+          Mean <Icon name="square" color="green" />
+        </List.Header>
+        {_round(mean, 2)}
       </List.Item>
       <List.Item>
-        <List.Header>Median</List.Header>
-        {median}
+        <List.Header>
+          Median <Icon name="square" color="red" />
+        </List.Header>
+        {_round(median, 2)}
       </List.Item>
     </List>
 

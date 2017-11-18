@@ -2,6 +2,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import _range from 'lodash/range'
+import _round from 'lodash/round'
 import { compose, withProps } from 'recompose'
 import {
   Bar,
@@ -57,8 +58,8 @@ const HistogramChart = ({ brush, data, statistics }) => (
       <Bar dataKey="count" fill="#8884d8" />
 
       {statistics && [
-        <ReferenceLine x={statistics.mean} label="Mean" stroke="green" />,
-        <ReferenceLine x={statistics.median} label="Median" stroke="red" />,
+        <ReferenceLine isFront x={_round(statistics.mean, 0)} stroke="green" />,
+        <ReferenceLine isFront x={_round(statistics.median, 0)} stroke="red" />,
       ]}
 
       {brush && <Brush dataKey="value" height={30} stroke="#8884d8" />}
