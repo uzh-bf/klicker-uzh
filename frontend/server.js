@@ -2,7 +2,7 @@ require('dotenv').config()
 
 const IntlPolyfill = require('intl')
 
-const { basename } = require('path')
+const { basename, join } = require('path')
 const { readFileSync } = require('fs')
 const glob = require('glob')
 
@@ -68,7 +68,7 @@ app
     )
 
     // static file serving from public folder
-    server.use(express.static('public'))
+    server.use(express.static(join(__dirname, 'public')))
 
     server.get('/join/:shortname', (req, res) =>
       app.render(req, res, '/join', { shortname: req.params.shortname }),
