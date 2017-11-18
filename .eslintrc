@@ -18,9 +18,10 @@
       }
     ],
     "react/jsx-sort-props": [
-      1,
+      2,
       {
         "callbacksLast": true,
+        "reservedFirst": true,
         "shorthandFirst": true
       }
     ],
@@ -46,7 +47,7 @@
     }],
     "react/jsx-closing-tag-location": 0,
     "import/extensions": 0,
-    "react/destructuring-assignment": [1, "always"],
+    "react/destructuring-assignment": [2, "always"],
     "react/boolean-prop-naming": 2,
     "react/jsx-no-bind": 0
   },
