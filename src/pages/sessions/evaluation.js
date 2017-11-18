@@ -16,26 +16,20 @@ import EvaluationLayout from '../../components/layouts/EvaluationLayout'
 import { pageWithIntl, withData } from '../../lib'
 import { Chart } from '../../components/evaluation'
 import { SessionEvaluationQuery } from '../../graphql/queries'
+import { sessionStatusShape, statisticsShape } from '../../propTypes'
 
 const propTypes = {
   activeInstance: PropTypes.number,
-  brush: PropTypes.shape({
-    endIndex: PropTypes.number.isRequired,
-    startIndex: PropTypes.number.isRequired,
-  }).isRequired,
   handleChangeActiveInstance: PropTypes.func.isRequired,
-  handleChangeBrush: PropTypes.func.isRequired,
   handleChangeVisualizationType: PropTypes.func.isRequired,
   handleShowGraph: PropTypes.func.isRequired,
   handleToggleShowSolution: PropTypes.func.isRequired,
   instanceSummary: PropTypes.arrayOf(PropTypes.object),
   intl: intlShape.isRequired,
+  sessionStatus: sessionStatusShape.isRequired,
   showGraph: PropTypes.bool.isRequired,
   showSolution: PropTypes.bool.isRequired,
-  statistics: PropTypes.shape({
-    mean: PropTypes.number.isRequired,
-    median: PropTypes.number.isRequired,
-  }),
+  statistics: statisticsShape,
   visualizationType: PropTypes.string.isRequired,
 }
 const defaultProps = {
@@ -46,10 +40,10 @@ const defaultProps = {
 
 function Evaluation({
   activeInstance,
-  brush,
   instanceSummary,
   intl,
   handleChangeActiveInstance,
+  sessionStatus,
   showGraph,
   showSolution,
   statistics,
@@ -57,7 +51,6 @@ function Evaluation({
   handleShowGraph,
   handleToggleShowSolution,
   handleChangeVisualizationType,
-  handleChangeBrush,
 }) {
   const { results, question, version } = activeInstance
   const { title, type } = question
@@ -66,11 +59,11 @@ function Evaluation({
 
   const chart = (
     <Chart
-      brush={{ ...brush, onChange: handleChangeBrush }}
       intl={intl}
       handleShowGraph={handleShowGraph}
       restrictions={options.restrictions}
       results={results}
+      sessionStatus={sessionStatus}
       showGraph={showGraph}
       showSolution={showSolution}
       statistics={statistics}
@@ -118,7 +111,7 @@ export default compose(
   branch(({ data }) => data.loading, renderNothing),
   // override the session evaluation query with a polling query
   branch(
-    ({ sessionStatus }) => sessionStatus === 'RUNNING',
+    ({ data: { session } }) => session.status === 'RUNNING',
     graphql(SessionEvaluationQuery, {
       // refetch the active instances query every 10s
       options: ({ url }) => ({
@@ -186,10 +179,6 @@ export default compose(
   withStateHandlers(
     ({ sessionStatus }) => ({
       activeInstance: 0,
-      brush: {
-        endIndex: undefined,
-        startIndex: undefined,
-      },
       showGraph: sessionStatus !== 'RUNNING',
       showSolution: sessionStatus !== 'RUNNING',
       visualizationType: 'PIE_CHART',
@@ -197,12 +186,6 @@ export default compose(
     {
       // handle change of active instance
       handleChangeActiveInstance: () => activeInstance => () => ({ activeInstance }),
-
-      // handle changes in brush
-      handleChangeBrush: ({ brush }) => ({ endIndex, startIndex }) => ({
-        endIndex: endIndex || brush.endIndex,
-        startIndex: startIndex || brush.startIndex,
-      }),
 
       // handle change of vis. type
       handleChangeVisualizationType: () => visualizationType => ({ visualizationType }),
@@ -245,7 +228,8 @@ export default compose(
       // TODO correct assumption that they are already sorted?
       const half = Math.floor(valuesArray.length / 2)
 
-      return array.length % 2 ? valuesArray[half] : (valuesArray[half - 1] + valuesArray[half]) / 2.0
+      return array.length % 2 ? valuesArray[half] :
+      (valuesArray[half - 1] + valuesArray[half]) / 2.0
     }
 
     const calculateMin = (array) => {

@@ -9,19 +9,16 @@ import {
   Brush,
   ReferenceLine,
   CartesianGrid,
-  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts'
 
+import { statisticsShape } from '../../../propTypes'
+
 const propTypes = {
-  brush: PropTypes.shape({
-    endIndex: PropTypes.number.isRequired,
-    onChange: PropTypes.func.isRequired,
-    startIndex: PropTypes.number.isRequired,
-  }),
+  brush: PropTypes.bool,
   data: PropTypes.arrayOf(
     PropTypes.shape({
       count: PropTypes.number.isRequired,
@@ -32,14 +29,11 @@ const propTypes = {
     max: PropTypes.number,
     min: PropTypes.number,
   }),
-  statistics: PropTypes.shape({
-    mean: PropTypes.number.isRequired,
-    median: PropTypes.number.isRequired,
-  }),
+  statistics: statisticsShape,
 }
 
 const defaultProps = {
-  brush: undefined,
+  brush: false,
   data: [],
   restrictions: undefined,
   statistics: undefined,
@@ -67,7 +61,7 @@ const HistogramChart = ({ brush, data, statistics }) => (
         <ReferenceLine x={statistics.median} label="Median" stroke="red" />,
       ]}
 
-      {brush && <Brush {...brush} dataKey="value" height={30} stroke="#8884d8" />}
+      {brush && <Brush dataKey="value" height={30} stroke="#8884d8" />}
     </BarChart>
   </ResponsiveContainer>
 )

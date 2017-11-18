@@ -2,11 +2,12 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
+
 import { BarChart, PieChart, TableChart, CloudChart, HistogramChart } from '.'
+import { statisticsShape } from '../../propTypes'
 
 // TODO
 const propTypes = {
-  handleChangeBrush: PropTypes.func.isRequired,
   handleShowGraph: PropTypes.func.isRequired,
   restrictions: PropTypes.shape({
     max: PropTypes.number,
@@ -20,12 +21,10 @@ const propTypes = {
     }),
     totalResponses: PropTypes.number,
   }),
+  sessionStatus: PropTypes.string.isRequired,
   showGraph: PropTypes.bool,
   showSolution: PropTypes.bool,
-  statistics: PropTypes.shape({
-    mean: PropTypes.number.isRequired,
-    median: PropTypes.number.isRequired,
-  }),
+  statistics: statisticsShape,
   visualizationType: PropTypes.string,
 }
 
@@ -49,8 +48,8 @@ const chartTypes = {
 function Chart({
   restrictions,
   results,
-  handleChangeBrush,
   handleShowGraph,
+  sessionStatus,
   showGraph,
   showSolution,
   statistics,
@@ -77,11 +76,11 @@ function Chart({
         if (ChartComponent) {
           return (
             <ChartComponent
+              brush={sessionStatus !== 'RUNNING'}
               isSolutionShown={showSolution}
               data={results.data}
               restrictions={restrictions}
               statistics={statistics}
-              handleChangeBrush={handleChangeBrush}
             />
           )
         }
