@@ -13,7 +13,14 @@ import { graphql } from 'react-apollo'
 
 import { QuestionTypes } from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
-import { pageWithIntl, withData } from '../../lib'
+import {
+  calculateMax,
+  calculateMin,
+  calculateMean,
+  calculateMedian,
+  pageWithIntl,
+  withData,
+} from '../../lib'
 import { Chart } from '../../components/evaluation'
 import { SessionEvaluationQuery } from '../../graphql/queries'
 import { sessionStatusShape, statisticsShape } from '../../propTypes'
@@ -198,52 +205,25 @@ export default compose(
       handleToggleShowSolution: ({ showSolution }) => () => ({ showSolution: !showSolution }),
     },
   ),
-  withProps(
-    ({ activeInstances, activeInstance }) => {
-      const active = activeInstances[activeInstance]
+  withProps(({ activeInstances, activeInstance }) => {
+    const active = activeInstances[activeInstance]
+    const { question, results } = active
 
+    // TODO: update question type to FREE:RANGE
+    if (question.type === 'FREE') {
       return {
         activeInstance: active,
-        // TODO: update statistics calculation
         statistics: {
-          max: 70,
-          mean: 50,
-          median: 30,
-          min: 1,
+          max: calculateMax(results),
+          mean: calculateMean(results),
+          median: calculateMedian(results),
+          min: calculateMin(results),
         },
       }
-    },
-    /* const calculateAverage = (array) => {
-      const valuesArray = []
-      array.map(({ value }) => valuesArray.push(+value))
-
-      const sum = valuesArray.reduce((a, b) => a + b, 0)
-      return sum / array.length
     }
 
-    const calculateMedian = (array) => {
-      const valuesArray = []
-      array.map(({ value }) => valuesArray.push(+value))
-
-      // TODO correct assumption that they are already sorted?
-      const half = Math.floor(valuesArray.length / 2)
-
-      return array.length % 2 ? valuesArray[half] :
-      (valuesArray[half - 1] + valuesArray[half]) / 2.0
+    return {
+      activeInstance: active,
     }
-
-    const calculateMin = (array) => {
-      const valuesArray = []
-      array.map(({ value }) => valuesArray.push(+value))
-
-      return Math.min.apply(null, valuesArray)
-    }
-
-    const calculateMax = (array) => {
-      const valuesArray = []
-      array.map(({ value }) => valuesArray.push(+value))
-
-      return Math.max.apply(null, valuesArray)
-    } */
-  ),
+  }),
 )(Evaluation)
