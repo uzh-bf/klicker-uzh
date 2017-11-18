@@ -4,7 +4,7 @@ import { intlShape } from 'react-intl'
 import { Checkbox, Menu } from 'semantic-ui-react'
 
 import { CommonLayout } from '.'
-import { Info, Possibilities, VisualizationType } from '../evaluation'
+import { Info, Possibilities, Statistics, VisualizationType } from '../evaluation'
 
 const propTypes = {
   activeInstance: PropTypes.number,
@@ -15,14 +15,19 @@ const propTypes = {
       name: PropTypes.string.isRequired,
     }),
   ).isRequired,
+  data: PropTypes.arrayOf().isRequired,
   description: PropTypes.string,
-  instanceTitles: PropTypes.arrayOf(PropTypes.string),
+  instanceSummary: PropTypes.arrayOf(PropTypes.object),
   intl: intlShape.isRequired,
   onChangeActiveInstance: PropTypes.func.isRequired,
   onChangeVisualizationType: PropTypes.func.isRequired,
   onToggleShowSolution: PropTypes.func.isRequired,
   options: PropTypes.object.isRequired,
   pageTitle: PropTypes.string,
+  statistics: PropTypes.shape({
+    mean: PropTypes.number.isRequired,
+    median: PropTypes.number.isRequired,
+  }),
   title: PropTypes.string.isRequired,
   totalResponses: PropTypes.number,
   type: PropTypes.string.isRequired,
@@ -32,8 +37,9 @@ const propTypes = {
 const defaultProps = {
   activeInstance: 0,
   description: undefined,
-  instanceTitles: [],
+  instanceSummary: [],
   pageTitle: 'EvaluationLayout',
+  statistics: undefined,
   totalResponses: undefined,
 }
 
@@ -50,21 +56,22 @@ function EvaluationLayout({
   options,
   activeInstance,
   onChangeActiveInstance,
-  instanceTitles,
+  instanceSummary,
+  statistics,
 }) {
   return (
     <CommonLayout baseFontSize="22px" pageTitle={pageTitle}>
       <div className="evaluationLayout">
-        {instanceTitles.length > 1 && (
+        {instanceSummary.length > 1 && (
           <div className="instanceChooser">
             <Menu fitted tabular>
-              {instanceTitles.map((instanceTitle, index) => (
+              {instanceSummary.map(({ title, totalResponses: count }, index) => (
                 <Menu.Item
                   fitted
                   active={index === activeInstance}
                   onClick={onChangeActiveInstance(index)}
                 >
-                  {instanceTitle}
+                  {title} ({count})
                 </Menu.Item>
               ))}
             </Menu>
@@ -105,6 +112,8 @@ function EvaluationLayout({
           <Possibilities questionType={type} questionOptions={options} />
         </div>
 
+        <div className="statistics">{statistics && <Statistics {...statistics} />}</div>
+
         <style jsx>{`
           @import 'src/theme';
 
@@ -114,10 +123,12 @@ function EvaluationLayout({
                 display: grid;
 
                 grid-template-columns: auto 17rem;
-                grid-template-rows: minmax(auto, 0) minmax(auto, 2rem) auto 10rem 5rem;
+                grid-template-rows:
+                  minmax(auto, 0) minmax(auto, 2rem) minmax(auto, 0) minmax(auto, 0)
+                  auto minmax(auto, 0);
                 grid-template-areas:
                   'instanceChooser instanceChooser'
-                  'questionDetails questionDetails' 'graph optionDisplay' 'graph settings'
+                  'questionDetails questionDetails' 'graph optionDisplay' 'graph statistics' 'graph settings'
                   'info chartType';
 
                 height: 100vh;
@@ -159,6 +170,7 @@ function EvaluationLayout({
                 .chart {
                   grid-area: graph;
 
+                  height: 100%;
                   padding: 1rem;
 
                   :global(> *) {
@@ -169,6 +181,7 @@ function EvaluationLayout({
                 .chartType,
                 .optionDisplay,
                 .settings,
+                .statistics,
                 .info {
                   padding: 1rem;
                 }
@@ -176,14 +189,14 @@ function EvaluationLayout({
                 .info {
                   grid-area: info;
 
-                  align-self: center;
+                  align-self: end;
                   padding-top: 0;
                 }
 
                 .chartType {
                   grid-area: chartType;
 
-                  align-self: center;
+                  align-self: end;
                   padding-top: 0;
                 }
 
@@ -195,6 +208,10 @@ function EvaluationLayout({
                     line-height: 1.5rem;
                     margin-bottom: 0.5rem;
                   }
+                }
+
+                .statistics {
+                  grid-area: statistics;
                 }
 
                 .settings {

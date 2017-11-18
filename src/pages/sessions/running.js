@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import moment from 'moment'
 import { compose, withHandlers, branch, renderComponent, withProps } from 'recompose'
 import { graphql } from 'react-apollo'
 import { intlShape } from 'react-intl'
@@ -16,6 +17,7 @@ import {
   EndSessionMutation,
   UpdateSessionSettingsMutation,
   ActivateNextBlockMutation,
+  DeleteFeedbackMutation,
 } from '../../graphql/mutations'
 import { LoadingTeacherLayout, Messager } from '../../components/common'
 
@@ -24,23 +26,31 @@ const propTypes = {
   confusionTS: PropTypes.array.isRequired,
   feedbacks: PropTypes.array.isRequired,
   handleActivateNextBlock: PropTypes.func.isRequired,
+  handleDeleteFeedback: PropTypes.func.isRequired,
   handleEndSession: PropTypes.func.isRequired,
   handleUpdateSettings: PropTypes.func.isRequired,
+  id: PropTypes.string.isRequired,
   intl: intlShape.isRequired,
   isConfusionBarometerActive: PropTypes.bool.isRequired,
   isFeedbackChannelActive: PropTypes.bool.isRequired,
   isFeedbackChannelPublic: PropTypes.bool.isRequired,
+  runtime: PropTypes.bool.isRequired,
+  startedAt: PropTypes.string.isRequired,
 }
 
 const Running = ({
+  id,
   intl,
   blocks,
   confusionTS,
   feedbacks,
+  runtime,
+  startedAt,
   isConfusionBarometerActive,
   isFeedbackChannelActive,
   isFeedbackChannelPublic,
   handleActivateNextBlock,
+  handleDeleteFeedback,
   handleEndSession,
   handleUpdateSettings,
 }) => (
@@ -61,8 +71,11 @@ const Running = ({
     <div className="runningSession">
       <div className="sessionProgress">
         <SessionTimeline
+          sessionId={id}
           intl={intl}
           blocks={blocks}
+          runtime={runtime}
+          startedAt={startedAt}
           handleLeftActionClick={handleEndSession}
           handleRightActionClick={handleActivateNextBlock}
         />
@@ -91,6 +104,7 @@ const Running = ({
           handlePublicToggle={handleUpdateSettings({
             settings: { isFeedbackChannelPublic: !isFeedbackChannelPublic },
           })}
+          handleDeleteFeedback={handleDeleteFeedback}
         />
       </div>
     </div>
@@ -164,6 +178,7 @@ export default compose(
   graphql(EndSessionMutation, { name: 'endSession' }),
   graphql(UpdateSessionSettingsMutation, { name: 'updateSessionSettings' }),
   graphql(ActivateNextBlockMutation, { name: 'activateNextBlock' }),
+  graphql(DeleteFeedbackMutation, { name: 'deleteFeedback' }),
   withHandlers({
     // handle activation of the next block in the session
     handleActivateNextBlock: ({ activateNextBlock }) => async () => {
@@ -175,6 +190,23 @@ export default compose(
         console.error(message)
       }
     },
+
+    // handle deletion of a feedback
+    handleDeleteFeedback: ({
+      deleteFeedback,
+      data: { runningSession },
+    }) => feedbackId => async () => {
+      console.log('hello world')
+
+      try {
+        await deleteFeedback({
+          variables: { feedbackId, sessionId: runningSession.id },
+        })
+      } catch ({ message }) {
+        console.error(message)
+      }
+    },
+
     // handle ending the currently running session
     handleEndSession: ({ data, endSession }) => async () => {
       try {
@@ -191,6 +223,7 @@ export default compose(
         console.error(message)
       }
     },
+
     // handle a session settings update
     handleUpdateSettings: ({ data, updateSessionSettings }) => ({ settings }) => async () => {
       try {
@@ -204,8 +237,9 @@ export default compose(
     },
   }),
   // flatten out the relevant data props
-  withProps(({ data }) => ({
-    ...data.runningSession,
-    ...data.runningSession.settings,
+  withProps(({ data: { runningSession } }) => ({
+    ...runningSession,
+    ...runningSession.settings,
+    startedAt: moment(runningSession.startedAt).format('h:mm:ss'),
   })),
 )(Running)

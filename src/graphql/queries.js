@@ -61,6 +61,8 @@ export const RunningSessionQuery = gql`
   query RunningSession {
     runningSession {
       id
+      runtime
+      startedAt
       confusionTS {
         difficulty
         speed
@@ -106,56 +108,6 @@ export const AccountSummaryQuery = gql`
   }
 `
 
-export const ActiveInstancesQuery = gql`
-  query ActiveInstances {
-    activeInstances {
-      id
-      isOpen
-      version
-      responses {
-        id
-        value
-        createdAt
-      }
-      results {
-        ... on SCQuestionResults {
-          choices
-        }
-        ... on FREEQuestionResults {
-          free {
-            count
-            key
-            value
-          }
-        }
-      }
-      question {
-        id
-        title
-        type
-        versions {
-          description
-          options {
-            ... on SCQuestionOptions {
-              choices {
-                correct
-                name
-              }
-            }
-            ... on FREEQuestionOptions {
-              restrictions {
-                min
-                max
-                type
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-`
-
 export const JoinSessionQuery = gql`
   query JoinSession($shortname: String!) {
     joinSession(shortname: $shortname) {
@@ -191,6 +143,64 @@ export const JoinSessionQuery = gql`
         id
         content
         votes
+      }
+    }
+  }
+`
+
+export const SessionEvaluationQuery = gql`
+  query EvaluateSession($sessionId: ID!) {
+    session(id: $sessionId) {
+      id
+      status
+      blocks {
+        id
+        status
+        instances {
+          id
+          isOpen
+          version
+          question {
+            id
+            title
+            type
+            versions {
+              description
+              options {
+                ... on SCQuestionOptions {
+                  choices {
+                    correct
+                    name
+                  }
+                }
+                ... on FREEQuestionOptions {
+                  restrictions {
+                    min
+                    max
+                    type
+                  }
+                }
+              }
+            }
+          }
+          results {
+            ... on SCQuestionResults {
+              choices
+            }
+            ... on FREEQuestionResults {
+              free {
+                count
+                key
+                value
+              }
+            }
+          }
+          responses {
+            id
+            value
+            createdAt
+          }
+        }
       }
     }
   }

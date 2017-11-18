@@ -1,9 +1,9 @@
 # extend the node alpine base
-FROM node:8-alpine
+FROM node:8-alpine@sha256:f89f73ef56dcfb5c39ed3e7ae69075dc8145a3a6bf2df83b1d840f204cf90c0b
 
 LABEL maintainer="Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
 LABEL name="klicker-react"
-LABEL version="0.0.1"
+LABEL version="1.0.0-beta.1"
 EXPOSE 3000
 
 # root application directory

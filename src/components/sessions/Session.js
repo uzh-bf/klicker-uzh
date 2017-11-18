@@ -1,6 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import moment from 'moment'
+import Link from 'next/link'
 import { Button, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
@@ -51,7 +52,13 @@ const Session = ({
         </div>
       ))}
       <div className="actionArea">
-        <Button icon labelPosition="left" onClick={button.onClick}>
+        <Link prefetch href={`/sessions/evaluation/${id}`}>
+          <Button icon labelPosition="left">
+            <Icon name="external" />
+            Evaluation
+          </Button>
+        </Link>
+        <Button primary icon labelPosition="left" onClick={button.onClick}>
           <Icon name={button.icon} />
           {button.message}
         </Button>
@@ -77,7 +84,12 @@ const Session = ({
         margin-bottom: 0.5rem;
       }
       .actionArea {
-        margin: auto;
+        display: flex;
+        flex-direction: column;
+
+        > :global(*) {
+          margin-bottom: 0.3rem;
+        }
       }
 
       @include desktop-tablet-only {
@@ -107,7 +119,6 @@ const Session = ({
         }
         .actionArea {
           align-self: flex-end;
-          margin: 0 0 0.3rem 0.3rem;
         }
       }
     `}</style>

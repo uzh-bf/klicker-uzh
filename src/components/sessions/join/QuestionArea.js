@@ -76,15 +76,16 @@ function QuestionArea({
 
   return (
     <div className={classNames('questionArea', { active })}>
+      <h1 className="header">Active Question</h1>
       {(() => {
         if (remainingQuestions.length === 0) {
           return (
-            <div className="padded">
+            <p className="space">
               <FormattedMessage
                 defaultMessage="You have completed all active questions."
                 id="joinSession.allQuestionsCompleted"
               />
-            </div>
+            </p>
           )
         }
 
@@ -150,6 +151,8 @@ function QuestionArea({
 
           flex: 1;
 
+          background-color: white;
+
           > div {
             display: flex;
 
@@ -160,6 +163,14 @@ function QuestionArea({
 
           &.active {
             display: flex;
+          }
+
+          .header {
+            display: none;
+          }
+
+          .space {
+            margin: 1rem;
           }
 
           .collapser,
@@ -176,13 +187,30 @@ function QuestionArea({
           }
 
           .options {
+            margin-top: 1rem;
             flex: 1 1 50%;
           }
 
           @include desktop-tablet-only {
             display: flex;
+            flex-direction: column;
 
-            border: 1px solid $color-primary-10p;
+            border: 1px solid $color-primary;
+            margin-right: 0.25rem;
+
+            .header {
+              display: block;
+              margin: 1rem;
+            }
+
+            .collapser {
+              margin: 0 1rem;
+            }
+
+            .options {
+              padding: 0;
+              margin: 1rem 1rem 0 1rem;
+            }
           }
         }
       `}</style>
@@ -297,15 +325,12 @@ export default compose(
       const { instanceId, type } = questions[activeQuestion]
 
       // if the question has been answered, add a response
-      if (inputValue && (inputValue > 0 || inputValue.length > 0)) {
-        const response = {}
-        if ([QuestionTypes.SC, QuestionTypes.MC].includes(type)) {
-          response.choices = inputValue
-        } else if (type === 'FREE') {
-          response.value = inputValue
+      if (typeof inputValue !== 'undefined') {
+        if (inputValue.length > 0 && [QuestionTypes.SC, QuestionTypes.MC].includes(type)) {
+          handleNewResponse({ instanceId, response: { choices: inputValue } })
+        } else if (type === QuestionTypes.FREE) {
+          handleNewResponse({ instanceId, response: { value: inputValue } })
         }
-
-        handleNewResponse({ instanceId, response })
       }
 
       // update the stored responses

@@ -121,6 +121,12 @@ const Join = ({
             display: flex;
             height: 100%;
 
+            background-color: lightgray;
+
+            > * {
+              flex: 0 0 50%;
+            }
+
             .questionArea {
               padding: 1rem;
 
@@ -131,6 +137,12 @@ const Join = ({
 
             @include desktop-tablet-only {
               padding: 1rem;
+
+              .questionArea {
+                border: 1px solid $color-primary;
+                background-color: white;
+                margin-right: 0.25rem;
+              }
             }
           }
         `}</style>
