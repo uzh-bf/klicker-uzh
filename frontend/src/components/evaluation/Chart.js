@@ -2,11 +2,17 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
-import { BarChart, PieChart, TableChart, CloudChart } from '.'
+
+import { BarChart, PieChart, TableChart, CloudChart, HistogramChart } from '.'
+import { statisticsShape } from '../../propTypes'
 
 // TODO
 const propTypes = {
   handleShowGraph: PropTypes.func.isRequired,
+  restrictions: PropTypes.shape({
+    max: PropTypes.number,
+    min: PropTypes.number,
+  }),
   results: PropTypes.shape({
     choices: PropTypes.arrayOf({
       correct: PropTypes.bool,
@@ -15,27 +21,39 @@ const propTypes = {
     }),
     totalResponses: PropTypes.number,
   }),
+  sessionStatus: PropTypes.string.isRequired,
   showGraph: PropTypes.bool,
   showSolution: PropTypes.bool,
+  statistics: statisticsShape,
   visualizationType: PropTypes.string,
 }
 
 const defaultProps = {
+  restrictions: undefined,
   results: undefined,
   showGraph: false,
   showSolution: true,
+  statistics: undefined,
   visualizationType: 'TABLE',
 }
 
 const chartTypes = {
   BAR_CHART: BarChart,
+  HISTOGRAM: HistogramChart,
   PIE_CHART: PieChart,
   TABLE: TableChart,
   WORD_CLOUD: CloudChart,
 }
 
 function Chart({
-  results, handleShowGraph, showGraph, showSolution, visualizationType,
+  restrictions,
+  results,
+  handleShowGraph,
+  sessionStatus,
+  showGraph,
+  showSolution,
+  statistics,
+  visualizationType,
 }) {
   return (
     <div className="chart">
@@ -56,7 +74,15 @@ function Chart({
 
         const ChartComponent = chartTypes[visualizationType]
         if (ChartComponent) {
-          return <ChartComponent isSolutionShown={showSolution} data={results.data} />
+          return (
+            <ChartComponent
+              brush={sessionStatus !== 'RUNNING'}
+              isSolutionShown={showSolution}
+              data={results.data}
+              restrictions={restrictions}
+              statistics={statistics}
+            />
+          )
         }
 
         return <div>This chart type is not implemented yet.</div>
