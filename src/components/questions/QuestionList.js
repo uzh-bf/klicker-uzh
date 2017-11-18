@@ -28,19 +28,19 @@ export const QuestionListPres = ({
   <div className="questionList">
     {questions.map(question => (
       <Question
-        key={question.id}
+        creationMode={creationMode}
+        description={question.versions[question.versions.length - 1].description}
+        draggable={creationMode && !dropped.includes(question.id)}
         id={question.id}
+        key={question.id}
         lastUsed={question.instances.map(instance =>
           moment(instance.createdAt).format('DD.MM.YYYY HH:MM:SS'),
         )}
+        onDrop={onQuestionDropped(question.id)}
         tags={question.tags}
         title={question.title}
         type={question.type}
         version={question.versions.length}
-        description={question.versions[question.versions.length - 1].description}
-        draggable={creationMode && !dropped.includes(question.id)}
-        creationMode={creationMode}
-        onDrop={onQuestionDropped(question.id)}
       />
     ))}
 

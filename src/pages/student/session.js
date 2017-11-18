@@ -136,13 +136,13 @@ const Session = ({
             {dataQuestion.type === 'NONE' && (
               <SCAnswerOptions
                 activeOption={questionActiveOption}
+                handleOptionClick={handleQuestionActiveOptionChange}
                 options={[
                   { label: 'answer1' },
                   { label: 'antwort 2' },
                   { label: 'option 3' },
                   { label: 'tschege' },
                 ]}
-                handleOptionClick={handleQuestionActiveOptionChange}
               />
             )}
             {dataQuestion.type === 'NUMBERS' && (
@@ -157,8 +157,8 @@ const Session = ({
           <div className="actionButton">
             <Button primary className="submitButton">
               <FormattedMessage
-                id="common.string.send"
                 defaultMessage="Send"
+                id="common.string.send"
                 onClick={console.dir('Hello')}
               />
             </Button>
@@ -172,23 +172,23 @@ const Session = ({
         >
           <div className="confusion">
             <ConfusionSlider
+              handleChange={handleFeedbackSpeedChange}
               title={
                 <h2>
-                  <FormattedMessage id="common.string.speed" defaultMessage="Speed" />
+                  <FormattedMessage defaultMessage="Speed" id="common.string.speed" />
                 </h2>
               }
               value={feedbackSpeed}
-              handleChange={handleFeedbackSpeedChange}
             />
 
             <ConfusionSlider
+              handleChange={handleFeedbackDifficultyChange}
               title={
                 <h2>
-                  <FormattedMessage id="common.string.difficulty" defaultMessage="Difficulty" />
+                  <FormattedMessage defaultMessage="Difficulty" id="common.string.difficulty" />
                 </h2>
               }
               value={feedbackDifficulty}
-              handleChange={handleFeedbackDifficultyChange}
             />
           </div>
 
@@ -199,12 +199,12 @@ const Session = ({
 }, index) => (
   <div className="feedback">
     <Feedback
-      index={index}
       alreadyVoted={alreadyVoted}
       content={content}
+      index={index}
       showDelete={showDelete}
-      votes={votes}
       updateVotes={updateVotes}
+      votes={votes}
     />
   </div>
               ))}

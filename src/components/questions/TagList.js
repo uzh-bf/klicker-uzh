@@ -26,9 +26,9 @@ export const TagListPres = ({ tags, handleTagClick }) => (
     <List selection size="large">
       {tags.map(({ isActive, id, name }) => (
         <List.Item
-          key={id}
           active={isActive}
           className="listItem"
+          key={id}
           onClick={() => handleTagClick(name)}
         >
           <List.Icon name={isActive ? 'folder' : 'folder outline'} />

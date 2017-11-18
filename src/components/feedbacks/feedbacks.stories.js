@@ -27,21 +27,21 @@ storiesOf('feedbacks', module)
   .add('FeedbackChannel', () => <FeedbackChannelWithState feedbacks={data} intl={intlMock} />)
   .add('FeedbackChannel (isActive)', () => (
     <FeedbackChannel
-      isActive
       data={data}
-      intl={intlMock}
       handleActiveToggle={() => action('active-toggle')}
       handlePublicToggle={() => action('public-toggle')}
+      intl={intlMock}
+      isActive
     />
   ))
   .add('FeedbackChannel (isPublic)', () => (
     <FeedbackChannel
-      isActive
-      isPublic
       data={data}
-      intl={intlMock}
       handleActiveToggle={() => action('active-toggle')}
       handlePublicToggle={() => action('public-toggle')}
+      intl={intlMock}
+      isActive
+      isPublic
     />
   ))
   .add('Feedback', () => <Feedback content="hello world" votes={100} />)

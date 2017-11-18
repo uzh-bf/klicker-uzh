@@ -48,16 +48,16 @@ const SessionTimeline = ({
     </div>
     <div className="blocks">
       {blocks.map(block => (
-        <div key={block.id} className="block">
+        <div className="block" key={block.id}>
           <QuestionBlock
-            showSolutions
-            timeLimit={60}
-            status={block.status}
             questions={block.instances.map(instance => ({
               id: instance.id,
               title: instance.question.title,
               type: instance.question.type,
             }))}
+            showSolutions
+            status={block.status}
+            timeLimit={60}
           />
         </div>
       ))}

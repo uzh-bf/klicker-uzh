@@ -71,7 +71,7 @@ const FREECreationOptions = ({
           </a>
         </label>
 
-        <ReactTooltip id="FREECreationHelp" delayShow={250} delayHide={250} place="right">
+        <ReactTooltip delayHide={250} delayShow={250} id="FREECreationHelp" place="right">
           <FormattedMessage
             defaultMessage="Choose the allowed format of incoming responses."
             id="teacher.createQuestion.optionsFREE.tooltip"
@@ -81,8 +81,8 @@ const FREECreationOptions = ({
         <div className="optionsChooser">
           {buttons.map(({ message, type: buttonType }) => (
             <Button
-              key={buttonType}
               active={buttonType === type}
+              key={buttonType}
               onClick={handleTypeChange(buttonType)}
             >
               {message}
@@ -98,10 +98,10 @@ const FREECreationOptions = ({
               </label>
               <Input
                 name="min"
-                type="number"
-                placeholder="-∞"
-                value={min}
                 onChange={handleMinChange}
+                placeholder="-∞"
+                type="number"
+                value={min}
               />
             </Form.Field>
 
@@ -111,10 +111,10 @@ const FREECreationOptions = ({
               </label>
               <Input
                 name="max"
-                type="number"
-                placeholder="∞"
-                value={max}
                 onChange={handleMaxChange}
+                placeholder="∞"
+                type="number"
+                value={max}
               />
             </Form.Field>
           </div>

@@ -109,7 +109,7 @@ function EvaluationLayout({
         </div>
 
         <div className="optionDisplay">
-          <Possibilities questionType={type} questionOptions={options} />
+          <Possibilities questionOptions={options} questionType={type} />
         </div>
 
         <div className="statistics">{statistics && <Statistics {...statistics} />}</div>

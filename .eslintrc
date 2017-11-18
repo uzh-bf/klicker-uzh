@@ -18,9 +18,10 @@
       }
     ],
     "react/jsx-sort-props": [
-      0,
+      1,
       {
         "callbacksLast": true,
+        "reservedFirst": true,
         "shorthandFirst": true
       }
     ],

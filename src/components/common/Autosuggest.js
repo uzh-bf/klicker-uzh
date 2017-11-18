@@ -31,17 +31,17 @@ const autocompleteRenderInput = (tags, currentValue) => ({ addTag, ...props }) =
 
   return (
     <Autosuggest
-      ref={props.ref}
-      suggestions={sortedSuggestions}
-      shouldRenderSuggestions={value => value && value.trim().length > 0}
       getSuggestionValue={getSuggestionValue}
-      renderSuggestion={renderSuggestion}
       inputProps={{ ...props, onChange: handleOnChange }}
+      onSuggestionsClearRequested={() => {}}
       onSuggestionSelected={(e, { suggestion }) => {
         addTag(suggestion.name)
       }}
-      onSuggestionsClearRequested={() => {}}
       onSuggestionsFetchRequested={() => {}}
+      ref={props.ref}
+      renderSuggestion={renderSuggestion}
+      shouldRenderSuggestions={value => value && value.trim().length > 0}
+      suggestions={sortedSuggestions}
     />
   )
 }

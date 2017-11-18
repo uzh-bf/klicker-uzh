@@ -45,14 +45,14 @@ const ConfusionSlider = ({
 
       <div className="slider">
         <Slider
-          min={min}
+          handleLabel={value}
+          labels={labelsSlider}
           max={max}
-          tooltip={false}
-          value={value}
+          min={min}
           onChange={handleChange}
           onChangeComplete={handleChangeComplete}
-          labels={labelsSlider}
-          handleLabel={value}
+          tooltip={false}
+          value={value}
         />
       </div>
 

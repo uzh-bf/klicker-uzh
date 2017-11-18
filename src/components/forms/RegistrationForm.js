@@ -109,7 +109,6 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
 
       <div className="account">
         <Field
-          required
           component={SemanticInput}
           icon="hashtag"
           intl={intl}
@@ -117,12 +116,13 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
             defaultMessage: 'Account ID',
             id: 'form.shortname.label',
           })}
+          name="shortname"
+          required
           tooltip={intl.formatMessage({
             defaultMessage:
               'A unique identifier for your account. Must be between 3 and 6 characters long.',
             id: 'tooltip',
           })}
-          name="shortname"
           type="text"
         />
         <Field
@@ -166,7 +166,7 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
           <label htmlFor="useCase">
             <FormattedMessage defaultMessage="Use case description" id="form.useCase.label" />
           </label>
-          <Field name="useCase" component="textarea" icon="company" intl={intl} type="text" />
+          <Field component="textarea" icon="company" intl={intl} name="useCase" type="text" />
         </Form.Field>
 
         <Button primary disabled={invalid} floated="right" type="submit">

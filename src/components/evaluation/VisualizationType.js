@@ -22,15 +22,15 @@ const options = [
 const VisualizationType = ({ intl, onChangeType, type }) => (
   <div className="visualizationType">
     <Dropdown
-      upward
-      search
-      selection
-      options={options.filter(o => o.withinType.includes(type))}
       onChange={(param, data) => onChangeType(data.value)}
+      options={options.filter(o => o.withinType.includes(type))}
       placeholder={intl.formatMessage({
         defaultMessage: 'Visualization',
         id: 'teacher.evaluation.visualization.title',
       })}
+      search
+      selection
+      upward
     />
 
     <style jsx>{`

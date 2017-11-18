@@ -48,11 +48,11 @@ const Question = ({
       {creationMode && (
         <div className={classNames('sessionMembership', { active: !draggable })}>
           <input
-            type="checkbox"
+            checked={!draggable}
             className="ui checkbox"
             name={`check-${id}`}
-            checked={!draggable}
             onClick={() => null}
+            type="checkbox"
           />
         </div>
       )}

@@ -42,10 +42,10 @@ export const NavbarPres = ({
     <div className="sideArea">
       <Menu borderless className="noBorder">
         <Menu.Item
-          icon
           active={sidebarVisible}
-          name="sidebar"
           className="sidebar"
+          icon
+          name="sidebar"
           onClick={handleSidebarToggle}
         >
           <Icon name="sidebar" />
@@ -56,7 +56,7 @@ export const NavbarPres = ({
 
     {search && (
       <div className="searchArea">
-        <SearchArea intl={intl} handleSearch={search.handleSearch} handleSort={search.handleSort} />
+        <SearchArea handleSearch={search.handleSearch} handleSort={search.handleSort} intl={intl} />
       </div>
     )}
 

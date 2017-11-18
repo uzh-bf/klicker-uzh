@@ -75,7 +75,7 @@ const SemanticInput = ({
       <Input {...input} {...inputProps} />
 
       {tooltip && (
-        <ReactTooltip id={input.name} delayShow={250} delayHide={250} place="right">
+        <ReactTooltip delayHide={250} delayShow={250} id={input.name} place="right">
           {tooltip}
         </ReactTooltip>
       )}

@@ -131,13 +131,13 @@ function QuestionArea({
 
             <ActionMenu
               activeIndex={activeQuestion}
+              isSkipModeActive={inputEmpty}
+              isSubmitDisabled={!inputEmpty && !inputValid}
               items={_range(questions.length).map(index => ({
                 done: !remainingQuestions.includes(index),
               }))}
-              isSkipModeActive={inputEmpty}
-              isSubmitDisabled={!inputEmpty && !inputValid}
-              setActiveIndex={handleActiveQuestionChange}
               onSubmit={handleSubmit}
+              setActiveIndex={handleActiveQuestionChange}
             />
           </div>
         )

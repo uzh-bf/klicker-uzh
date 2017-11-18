@@ -25,8 +25,8 @@ const ConfusionSection = ({ data, title }) => (
           <XAxis dataKey="timestamp" />
           <YAxis />
           <Tooltip />
-          <ReferenceLine y={0} stroke="red" />
-          <Line type="monotone" dataKey="value" stroke="#8884d8" />
+          <ReferenceLine stroke="red" y={0} />
+          <Line dataKey="value" stroke="#8884d8" type="monotone" />
         </LineChart>
       </ResponsiveContainer>
     </div>

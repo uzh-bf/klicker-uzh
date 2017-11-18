@@ -54,21 +54,21 @@ const FREEAnswerOptions = ({
             </span>
             <Slider
               disabled={disabled}
-              min={options.restrictions.min}
-              max={options.restrictions.max}
-              tooltip={false}
-              orientation="horizontal"
-              value={value}
-              onChange={onChange}
               handleLabel={value}
+              max={options.restrictions.max}
+              min={options.restrictions.min}
+              onChange={onChange}
+              orientation="horizontal"
+              tooltip={false}
+              value={value}
             />
             <Input
-              type="number"
               disabled={disabled}
-              min={options.restrictions.min}
               max={options.restrictions.max}
-              value={value}
+              min={options.restrictions.min}
               onChange={e => onChange(e.target.value)}
+              type="number"
+              value={value}
             />
           </div>
         )
@@ -77,8 +77,8 @@ const FREEAnswerOptions = ({
       return (
         <div className="field">
           <textarea
-            id="responseInput"
             disabled={disabled}
+            id="responseInput"
             onChange={e => onChange(e.target.value)}
           />
 
