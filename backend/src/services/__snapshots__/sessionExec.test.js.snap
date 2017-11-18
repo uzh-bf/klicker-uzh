@@ -1,5 +1,18 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`[object Object] 1`] = `
+Object {
+  "09960d18c947355e0b797d2c266e0825": Object {
+    "count": 1,
+    "value": 14,
+  },
+  "25daad3d9e60b45043a70c4ab7d3b1c6": Object {
+    "count": 2,
+    "value": 10,
+  },
+}
+`;
+
 exports[`SessionExecService addConfusionTS allows adding new timesteps 1`] = `
 
     SESSION
@@ -237,7 +250,7 @@ exports[`SessionExecService addResponse allows adding responses [FREE:RANGE] 1`]
 
 exports[`SessionExecService addResponse allows adding responses [FREE:RANGE] 2`] = `
 Object {
-  "10": Object {
+  "25daad3d9e60b45043a70c4ab7d3b1c6": Object {
     "count": 1,
     "value": 10,
   },
