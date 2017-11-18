@@ -123,10 +123,9 @@ function EvaluationLayout({
                 display: grid;
 
                 grid-template-columns: auto 17rem;
-                grid-template-rows: minmax(auto, 0) minmax(auto, 2rem) minmax(auto, 0) minmax(
-                    auto,
-                    0
-                  ) auto minmax(auto, 0);
+                grid-template-rows:
+                  minmax(auto, 0) minmax(auto, 2rem) minmax(auto, 0) minmax(auto, 0)
+                  auto minmax(auto, 0);
                 grid-template-areas:
                   'instanceChooser instanceChooser'
                   'questionDetails questionDetails' 'graph optionDisplay' 'graph statistics' 'graph settings'
