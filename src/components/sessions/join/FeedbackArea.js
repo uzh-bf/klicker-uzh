@@ -50,30 +50,30 @@ function FeedbackArea({
       {isConfusionBarometerActive && (
         <div className="confusion">
           <ConfusionSlider
-            title={
-              <h2>
-                <FormattedMessage id="common.string.speed" defaultMessage="Speed" />
-              </h2>
-            }
             handleChange={newValue => handleConfusionSpeedChange(newValue)}
             handleChangeComplete={handleNewConfusionTS}
             labels={{ max: 'fast', mid: 'optimal', min: 'slow' }}
             max={10}
             min={-10}
+            title={
+              <h2>
+                <FormattedMessage defaultMessage="Speed" id="common.string.speed" />
+              </h2>
+            }
             value={confusionSpeed}
           />
 
           <ConfusionSlider
-            title={
-              <h2>
-                <FormattedMessage id="common.string.difficulty" defaultMessage="Difficulty" />
-              </h2>
-            }
             handleChange={newValue => handleConfusionDifficultyChange(newValue)}
             handleChangeComplete={handleNewConfusionTS}
             labels={{ max: 'hard', mid: 'optimal', min: 'easy' }}
             max={10}
             min={-10}
+            title={
+              <h2>
+                <FormattedMessage defaultMessage="Difficulty" id="common.string.difficulty" />
+              </h2>
+            }
             value={confusionDifficulty}
           />
         </div>
@@ -83,13 +83,13 @@ function FeedbackArea({
         {isFeedbackChannelActive &&
           feedbacks &&
           feedbacks.map(({ id, content, votes }) => (
-            <div key={id} className="feedback">
+            <div className="feedback" key={id}>
               <Feedback
                 alreadyVoted={false}
                 content={content}
                 showDelete={false}
-                votes={votes}
                 updateVotes={() => null}
+                votes={votes}
               />
             </div>
           ))}

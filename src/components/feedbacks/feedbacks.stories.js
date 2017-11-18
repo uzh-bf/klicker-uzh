@@ -29,9 +29,9 @@ storiesOf('feedbacks', module)
     <FeedbackChannel
       isActive
       data={data}
-      intl={intlMock}
       handleActiveToggle={() => action('active-toggle')}
       handlePublicToggle={() => action('public-toggle')}
+      intl={intlMock}
     />
   ))
   .add('FeedbackChannel (isPublic)', () => (
@@ -39,9 +39,9 @@ storiesOf('feedbacks', module)
       isActive
       isPublic
       data={data}
-      intl={intlMock}
       handleActiveToggle={() => action('active-toggle')}
       handlePublicToggle={() => action('public-toggle')}
+      intl={intlMock}
     />
   ))
   .add('Feedback', () => <Feedback content="hello world" votes={100} />)

@@ -42,18 +42,18 @@ const TeacherLayout = ({
   const sidebarItems = [
     {
       href: '/questions',
-      label: <FormattedMessage id="teacher.questionPool.title" defaultMessage="Question Pool" />,
+      label: <FormattedMessage defaultMessage="Question Pool" id="teacher.questionPool.title" />,
       name: 'questionPool',
     },
     {
       href: '/sessions',
-      label: <FormattedMessage id="teacher.sessionHistory.title" defaultMessage="Sessions" />,
+      label: <FormattedMessage defaultMessage="Sessions" id="teacher.sessionHistory.title" />,
       name: 'sessionHistory',
     },
     {
       href: '/sessions/running',
       label: (
-        <FormattedMessage id="teacher.runningSession.title" defaultMessage="Running Session" />
+        <FormattedMessage defaultMessage="Running Session" id="teacher.runningSession.title" />
       ),
       name: 'runningSession',
     },
@@ -65,12 +65,12 @@ const TeacherLayout = ({
         {navbar && (
           <div className="navbar">
             <Navbar
+              handleSidebarToggle={handleSidebarToggle}
               intl={intl}
               sidebarVisible={isSidebarVisible}
               title={intl.formatMessage({
                 id: `teacher.${sidebar.activeItem}.title`,
               })}
-              handleSidebarToggle={handleSidebarToggle}
               {...navbar}
             />
           </div>
@@ -78,9 +78,9 @@ const TeacherLayout = ({
 
         <div className="content">
           <Sidebar
+            handleSidebarItemClick={handleSidebarItemClick}
             items={sidebarItems}
             visible={isSidebarVisible}
-            handleSidebarItemClick={handleSidebarItemClick}
             {...sidebar}
           >
             {children}

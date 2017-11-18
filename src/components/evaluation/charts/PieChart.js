@@ -38,11 +38,11 @@ const PieChart = ({ isSolutionShown, data }) => (
     >
       <Tooltip />
       <Legend />
-      <Pie label data={data} valueKey="count" nameKey="value" fill="#8884d8">
+      <Pie label data={data} fill="#8884d8" nameKey="value" valueKey="count">
         {data.map((row, index) => (
           <Cell
-            key={row.value}
             fill={isSolutionShown && row.correct ? '#00FF00' : CHART_COLORS[index % 5]}
+            key={row.value}
           />
         ))}
       </Pie>

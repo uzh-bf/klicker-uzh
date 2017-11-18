@@ -81,7 +81,7 @@ storiesOf('common/navbar', module)
   ))
   .add('AccountArea', () => <AccountArea accountShort="AW" />)
   .add('SearchArea', () => (
-    <SearchArea intl={intlMock} handleSearch={query => action(`search ${query}`)} />
+    <SearchArea handleSearch={query => action(`search ${query}`)} intl={intlMock} />
   ))
   .add('SessionArea', () => <SessionArea sessionId="a7s7d" />)
 
@@ -90,8 +90,8 @@ storiesOf('common/sidebar', module)
     <Sidebar
       visible
       activeItem="item1"
-      items={sidebarItems}
       handleSidebarItemClick={item => action(`click ${item}`)}
+      items={sidebarItems}
     >
       PAGE CONTENT
     </Sidebar>
@@ -99,14 +99,14 @@ storiesOf('common/sidebar', module)
   .add('Sidebar (invisible)', () => (
     <Sidebar
       activeItem="item1"
-      items={sidebarItems}
       handleSidebarItemClick={item => action(`click ${item}`)}
+      items={sidebarItems}
     >
       PAGE CONTENT
     </Sidebar>
   ))
   .add('SidebarItem', () => (
-    <SidebarItem href="bla" name="hello" handleSidebarItemClick={() => action('click')}>
+    <SidebarItem handleSidebarItemClick={() => action('click')} href="bla" name="hello">
       ITEM CONTENT
     </SidebarItem>
   ))

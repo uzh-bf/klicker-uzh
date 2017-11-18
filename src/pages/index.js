@@ -41,7 +41,7 @@ const Index = () => (
         </div>
         <div className="box">
           <h2>Development</h2>
-          <List relaxed divided>
+          <List divided relaxed>
             <List.Item>
               <List.Icon name="github" size="large" verticalAlign="middle" />
               <List.Content>

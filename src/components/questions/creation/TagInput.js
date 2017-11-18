@@ -38,7 +38,7 @@ const TagInput = ({ tags, input: { value, onChange }, meta: { invalid, dirty } }
         </a>
       </label>
 
-      <ReactTooltip id="tagHelp" delayShow={250} delayHide={250} place="right">
+      <ReactTooltip delayHide={250} delayShow={250} id="tagHelp" place="right">
         <FormattedMessage
           defaultMessage="Add tags to your question to improve organization and reusability (similar to the folders used previously)."
           id="teacher.createQuestion.tagInput.tooltip"
@@ -47,14 +47,14 @@ const TagInput = ({ tags, input: { value, onChange }, meta: { invalid, dirty } }
 
       <TagsInput
         onlyUnique
-        renderInput={autocompleteRenderInput(tags, value)}
         name="tags"
+        renderInput={autocompleteRenderInput(tags, value)}
         value={value || []}
         onChange={onChange}
       />
     </Form.Field>
 
-    <style jsx global>{`
+    <style global jsx>{`
       @import 'src/theme';
 
       .react-tagsinput {

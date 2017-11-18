@@ -31,8 +31,8 @@ const Sidebar = ({
     <SemanticSidebar.Pushable>
       <SemanticSidebar
         vertical
-        as={Menu}
         animation="overlay"
+        as={Menu}
         className="sidebarMenu"
         icon="labeled"
         visible={visible}
@@ -40,10 +40,10 @@ const Sidebar = ({
       >
         {items.map(item => (
           <SidebarItem
-            key={item.name}
             active={item.name === activeItem}
-            name={item.name}
             handleSidebarItemClick={handleSidebarItemClick(item.href)}
+            key={item.name}
+            name={item.name}
           >
             {item.label}
           </SidebarItem>

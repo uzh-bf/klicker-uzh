@@ -40,7 +40,7 @@ storiesOf('forms/components', module)
   // HACK: disable test for QuestionCreationForm as autosuggest breaks...
   .add('QuestionCreationForm [NoTest]', () => <QuestionCreationForm intl={intlMock} />)
   .add('SessionCreationForm', () => (
-    <SessionCreationForm intl={intlMock} handleSubmit={() => null} />
+    <SessionCreationForm handleSubmit={() => null} intl={intlMock} />
   ))
 
 storiesOf('forms/helpers', module)
@@ -64,11 +64,11 @@ storiesOf('forms/helpers', module)
       form fields
     </FormWithLinks>
   ))
-  .add('SemanticInput', () => <SemanticInput label="label" meta={{}} input={{}} />)
+  .add('SemanticInput', () => <SemanticInput input={{}} label="label" meta={{}} />)
   .add('SemanticInput (with error)', () => (
     <SemanticInput
+      input={{}}
       label="label"
       meta={{ error: 'fail', invalid: true, touched: true }}
-      input={{}}
     />
   ))

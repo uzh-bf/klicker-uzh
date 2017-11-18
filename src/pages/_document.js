@@ -44,15 +44,15 @@ export default class IntlDocument extends Document {
     return (
       <html lang={this.props.locale} {...this.helmetHtmlAttrComponents}>
         <Head>
-          <meta httpEquiv="Content-type" content="text/html; charset=utf-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <meta httpEquiv="X-UA-Compatible" content="IE=Edge" />
+          <meta content="text/html; charset=utf-8" httpEquiv="Content-type" />
+          <meta content="width=device-width, initial-scale=1" name="viewport" />
+          <meta content="IE=Edge" httpEquiv="X-UA-Compatible" />
 
           <link
-            href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
-            rel="stylesheet"
-            integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN"
             crossOrigin="anonymous"
+            href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+            integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN"
+            rel="stylesheet"
           />
 
           {this.helmetHeadComponents}

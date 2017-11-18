@@ -48,12 +48,12 @@ const SCCreationOptions = ({
       <div className="options">
         {sortableOptions.map(({ correct, name }, index) => (
           <SortableOption
-            key={`sortable-${name}`}
-            index={index}
-            name={name}
             correct={correct}
             handleCorrectToggle={handleCorrectToggle(index)}
             handleDelete={handleDelete(index)}
+            index={index}
+            key={`sortable-${name}`}
+            name={name}
           />
         ))}
       </div>
@@ -73,7 +73,7 @@ const SCCreationOptions = ({
           </a>
         </label>
 
-        <ReactTooltip id="SCCreationHelp" delayShow={250} delayHide={250} place="right">
+        <ReactTooltip delayHide={250} delayShow={250} id="SCCreationHelp" place="right">
           <FormattedMessage
             defaultMessage="Add answering options the respondents can choose from."
             id="teacher.createQuestion.optionsSC.tooltip"
@@ -81,9 +81,9 @@ const SCCreationOptions = ({
         </ReactTooltip>
 
         <SortableOptions
-          sortableOptions={value || []}
           handleCorrectToggle={handleOptionToggleCorrect}
           handleDelete={handleDeleteOption}
+          sortableOptions={value || []}
           onSortEnd={handleUpdateOrder}
         />
 

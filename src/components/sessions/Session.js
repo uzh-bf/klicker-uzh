@@ -31,13 +31,13 @@ const Session = ({
       {id.slice(0, 7)} - {name}
     </h2>
     <div className="date">
-      <FormattedMessage id="sessionHistory.string.createdOn" defaultMessage="Created on" />{' '}
+      <FormattedMessage defaultMessage="Created on" id="sessionHistory.string.createdOn" />{' '}
       {moment(createdAt).format('DD.MM.YYYY HH:MM:SS')}
     </div>
 
     <div className="details">
       {blocks.map(block => (
-        <div key={block.id} className="block">
+        <div className="block" key={block.id}>
           <QuestionBlock
             questions={block.instances.map(instance => ({
               id: instance.id,
@@ -56,7 +56,7 @@ const Session = ({
             Evaluation
           </Button>
         </Link>
-        <Button primary icon labelPosition="left" onClick={button.onClick}>
+        <Button icon primary labelPosition="left" onClick={button.onClick}>
           <Icon name={button.icon} />
           {button.message}
         </Button>

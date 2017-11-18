@@ -66,8 +66,8 @@ function Evaluation({
 
   const chart = (
     <Chart
-      intl={intl}
       handleShowGraph={handleShowGraph}
+      intl={intl}
       restrictions={options.restrictions}
       results={results}
       sessionStatus={sessionStatus}

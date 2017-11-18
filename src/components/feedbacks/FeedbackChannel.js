@@ -69,8 +69,8 @@ const FeedbackChannel = ({
         {feedbacks.map(({ id, content, votes }) => (
           <div className="feedback">
             <Feedback
-              key={id}
               content={content}
+              key={id}
               votes={votes}
               onDelete={handleDeleteFeedback(id)}
             />

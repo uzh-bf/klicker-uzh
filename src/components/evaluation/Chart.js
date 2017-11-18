@@ -64,8 +64,8 @@ function Chart({
             <div className="noChart">
               <Button className="showGraphButton" onClick={handleShowGraph}>
                 <FormattedMessage
-                  id="teacher.evaluation.graph.showGraph"
                   defaultMessage="Show Graph"
+                  id="teacher.evaluation.graph.showGraph"
                 />
               </Button>
             </div>
@@ -77,8 +77,8 @@ function Chart({
           return (
             <ChartComponent
               brush={sessionStatus !== 'RUNNING'}
-              isSolutionShown={showSolution}
               data={results.data}
+              isSolutionShown={showSolution}
               restrictions={restrictions}
               statistics={statistics}
             />
