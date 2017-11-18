@@ -5,7 +5,6 @@ import {
   BarChart as BarChartComponent,
   CartesianGrid,
   Cell,
-  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
