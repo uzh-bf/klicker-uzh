@@ -123,7 +123,10 @@ function EvaluationLayout({
                 display: grid;
 
                 grid-template-columns: auto 17rem;
-                grid-template-rows: minmax(auto, 0) minmax(auto, 2rem) auto auto 5rem;
+                grid-template-rows: minmax(auto, 0) minmax(auto, 2rem) minmax(auto, 0) minmax(
+                    auto,
+                    0
+                  ) auto minmax(auto, 0);
                 grid-template-areas:
                   'instanceChooser instanceChooser'
                   'questionDetails questionDetails' 'graph optionDisplay' 'graph statistics' 'graph settings'
@@ -168,6 +171,7 @@ function EvaluationLayout({
                 .chart {
                   grid-area: graph;
 
+                  height: 100%;
                   padding: 1rem;
 
                   :global(> *) {
@@ -186,14 +190,14 @@ function EvaluationLayout({
                 .info {
                   grid-area: info;
 
-                  align-self: center;
+                  align-self: end;
                   padding-top: 0;
                 }
 
                 .chartType {
                   grid-area: chartType;
 
-                  align-self: center;
+                  align-self: end;
                   padding-top: 0;
                 }
 
@@ -207,14 +211,14 @@ function EvaluationLayout({
                   }
                 }
 
+                .statistics {
+                  grid-area: statistics;
+                }
+
                 .settings {
                   grid-area: settings;
 
                   align-self: end;
-                }
-
-                .statistics {
-                  grid-area: statistics;
                 }
               }
             }
