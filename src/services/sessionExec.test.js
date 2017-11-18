@@ -311,12 +311,12 @@ describe('SessionExecService', () => {
           value: 10,
         },
       })
-      expect(instanceWithResponses.results.free).toEqual({
-        10: {
+      expect(instanceWithResponses.results.free).toMatchSnapshot({
+        '25daad3d9e60b45043a70c4ab7d3b1c6': {
           count: 2,
           value: 10,
         },
-        14: {
+        '09960d18c947355e0b797d2c266e0825': {
           count: 1,
           value: 14,
         },
