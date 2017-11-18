@@ -1,8 +1,7 @@
 import { gql } from 'react-apollo'
 
-// Used in: TagList
 export const TagListQuery = gql`
-  {
+  query TagList {
     tags: allTags {
       id
       name
@@ -10,9 +9,8 @@ export const TagListQuery = gql`
   }
 `
 
-// Used in: QuestionList
 export const QuestionListQuery = gql`
-  {
+  query QuestionList {
     questions: allQuestions {
       id
       title
@@ -36,9 +34,8 @@ export const QuestionListQuery = gql`
   }
 `
 
-// Used in: SessionList
 export const SessionListQuery = gql`
-  {
+  query SessionList {
     sessions: allSessions {
       id
       name
@@ -60,11 +57,12 @@ export const SessionListQuery = gql`
   }
 `
 
-// Used in: RunningSession
 export const RunningSessionQuery = gql`
-  {
+  query RunningSession {
     runningSession {
       id
+      runtime
+      startedAt
       confusionTS {
         difficulty
         speed
@@ -98,9 +96,8 @@ export const RunningSessionQuery = gql`
   }
 `
 
-// Used in: Navbar
 export const AccountSummaryQuery = gql`
-  {
+  query AccountSummary {
     user {
       id
       shortname
@@ -111,49 +108,97 @@ export const AccountSummaryQuery = gql`
   }
 `
 
-export const ActiveInstancesQuery = gql`
-  {
-    activeInstances {
+export const JoinSessionQuery = gql`
+  query JoinSession($shortname: String!) {
+    joinSession(shortname: $shortname) {
       id
-      isOpen
-      version
-      responses {
-        id
-        value
-        createdAt
+      settings {
+        isFeedbackChannelActive
+        isFeedbackChannelPublic
+        isConfusionBarometerActive
       }
-      results {
-        ... on SCQuestionResults {
-          choices
-        }
-        ... on FREEQuestionResults {
-          free {
-            count
-            key
-            value
+      activeQuestions {
+        id
+        instanceId
+        title
+        description
+        type
+        options {
+          ... on FREEQuestionOptions {
+            restrictions {
+              min
+              max
+              type
+            }
+          }
+          ... on SCQuestionOptions {
+            choices {
+              correct
+              name
+            }
           }
         }
       }
-      question {
+      feedbacks {
         id
-        title
-        type
-        versions {
-          description
-          options {
-            ... on SCQuestionOptions {
-              choices {
-                correct
-                name
+        content
+        votes
+      }
+    }
+  }
+`
+
+export const SessionEvaluationQuery = gql`
+  query EvaluateSession($sessionId: ID!) {
+    session(id: $sessionId) {
+      id
+      status
+      blocks {
+        id
+        status
+        instances {
+          id
+          isOpen
+          version
+          question {
+            id
+            title
+            type
+            versions {
+              description
+              options {
+                ... on SCQuestionOptions {
+                  choices {
+                    correct
+                    name
+                  }
+                }
+                ... on FREEQuestionOptions {
+                  restrictions {
+                    min
+                    max
+                    type
+                  }
+                }
               }
             }
-            ... on FREEQuestionOptions {
-              restrictions {
-                min
-                max
-                type
+          }
+          results {
+            ... on SCQuestionResults {
+              choices
+            }
+            ... on FREEQuestionResults {
+              free {
+                count
+                key
+                value
               }
             }
+          }
+          responses {
+            id
+            value
+            createdAt
           }
         }
       }

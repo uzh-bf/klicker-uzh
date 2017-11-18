@@ -1,6 +1,15 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Cell, Pie, PieChart as PieChartComponent, ResponsiveContainer } from 'recharts'
+import {
+  Cell,
+  Pie,
+  PieChart as PieChartComponent,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+} from 'recharts'
+
+import { CHART_COLORS } from '../../../constants'
 
 const propTypes = {
   data: PropTypes.arrayOf(
@@ -19,10 +28,22 @@ const defaultProps = {
 
 const PieChart = ({ isSolutionShown, data }) => (
   <ResponsiveContainer>
-    <PieChartComponent>
-      <Pie label data={data} valueKey="count" fill="#8884d8">
-        {data.map(row => (
-          <Cell key={row.value} fill={isSolutionShown && row.correct ? '#00FF00' : '#8884d8'} />
+    <PieChartComponent
+      margin={{
+        bottom: 16,
+        left: -24,
+        right: 24,
+        top: 24,
+      }}
+    >
+      <Tooltip />
+      <Legend />
+      <Pie label data={data} valueKey="count" nameKey="value" fill="#8884d8">
+        {data.map((row, index) => (
+          <Cell
+            key={row.value}
+            fill={isSolutionShown && row.correct ? '#00FF00' : CHART_COLORS[index % 5]}
+          />
         ))}
       </Pie>
     </PieChartComponent>

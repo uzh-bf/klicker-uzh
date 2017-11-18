@@ -3,7 +3,7 @@
 import React from 'react'
 import renderer from 'react-test-renderer'
 
-import Evaluation from './evaluation'
+import Join from './join'
 
 // HACK: workaround for https://github.com/Semantic-Org/Semantic-UI-React/issues/1702
 jest.mock('react-dom', () => ({
@@ -11,8 +11,8 @@ jest.mock('react-dom', () => ({
 }))
 
 describe('Snapshot-Testing', () => {
-  it.skip('Works', () => {
-    const component = renderer.create(<Evaluation />)
+  it('Works', () => {
+    const component = renderer.create(<Join url={{ query: { shortname: 'rsc' } }} />)
     const tree = component.toJSON()
     expect(tree).toMatchSnapshot()
   })

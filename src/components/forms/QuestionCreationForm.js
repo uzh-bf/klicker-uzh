@@ -68,7 +68,7 @@ const validate = ({
       }
     }
   } else if (type === QuestionTypes.FREE) {
-    if (options && options.restrictions) {
+    if (options && options.restrictions && options.restrictions.type === 'RANGE') {
       if (!options.restrictions.min && !options.restrictions.max) {
         errors.options = 'form.createQuestion.options.noMinMax'
       }

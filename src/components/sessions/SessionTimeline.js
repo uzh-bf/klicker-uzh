@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import Link from 'next/link'
 import { intlShape } from 'react-intl'
 import { Button, Icon } from 'semantic-ui-react'
 
@@ -10,22 +11,39 @@ const propTypes = {
   handleLeftActionClick: PropTypes.func.isRequired,
   handleRightActionClick: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
+  runtime: PropTypes.string,
+  sessionId: PropTypes.string.isRequired,
+  startedAt: PropTypes.string,
 }
 
 const defaultProps = {
   blocks: [],
+  runtime: '00:00:00',
+  startedAt: '00:00:00',
 }
 
 const SessionTimeline = ({
-  blocks, intl, handleLeftActionClick, handleRightActionClick,
+  sessionId,
+  blocks,
+  intl,
+  runtime,
+  startedAt,
+  handleLeftActionClick,
+  handleRightActionClick,
 }) => (
   <div className="sessionTimeline">
     <div className="topRow">
       <div className="startingTime">
-        <Icon name="time" /> 18:17:22
+        <Icon name="time" /> {startedAt}
       </div>
       <div className="runningTime">
-        <Icon name="play circle" /> 12:56
+        <Icon name="play circle" /> {runtime}
+      </div>
+      <div className="evaluationLink">
+        <Icon name="external" />{' '}
+        <Link prefetch href={`/sessions/evaluation/${sessionId}`}>
+          <a target="_blank">Evaluation</a>
+        </Link>
       </div>
     </div>
     <div className="blocks">
@@ -81,11 +99,12 @@ const SessionTimeline = ({
 
         display: flex;
 
-        background: grey;
+        background: lightgrey;
         padding: 1rem;
       }
 
-      .runningTime {
+      .runningTime,
+      .evaluationLink {
         margin-left: 2rem;
       }
 

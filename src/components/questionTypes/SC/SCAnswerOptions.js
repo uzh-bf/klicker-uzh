@@ -4,39 +4,52 @@ import classNames from 'classnames'
 import { Button } from 'semantic-ui-react'
 
 const propTypes = {
-  activeOption: PropTypes.number.isRequired,
-  onOptionClick: PropTypes.func.isRequired,
+  disabled: PropTypes.bool,
+  onChange: PropTypes.func,
   options: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.string.isRequired,
       name: PropTypes.string.isRequired,
     }),
   ),
+  value: PropTypes.arrayOf(PropTypes.number),
 }
 
 const defaultProps = {
+  disabled: false,
+  onChange: f => f,
   options: [],
+  value: [],
 }
 
-const SCAnswerOptions = ({ activeOption, options, onOptionClick }) => (
+const SCAnswerOptions = ({
+  value, disabled, options, onChange,
+}) => (
   <div className="options">
     {options.map((option, index) => (
-      <div key={option.id} className={classNames('option', { active: index === activeOption })}>
-        <Button basic fluid onClick={onOptionClick && onOptionClick(index)}>
+      <div key={option.id} className={classNames('option', { active: value.includes(index) })}>
+        <Button fluid disabled={disabled} onClick={onChange(index)}>
           {option.name}
         </Button>
       </div>
     ))}
 
     <style jsx>{`
-      :global(.option:not(:last-child)) {
-        margin-bottom: 0.5rem;
-      }
+      @import 'src/theme';
 
-      .option.active :global(button) {
-        border: 1px solid green !important;
+      .options > .option {
+        &:not(:last-child) {
+          margin-bottom: 0.5rem;
+        }
 
-        animation: bounce 0.5s;
+        &.active {
+          :global(button),
+          :global(button.disabled) {
+            border: 1px solid green !important;
+
+            animation: bounce 0.5s;
+          }
+        }
       }
 
       // TODO: improve animation

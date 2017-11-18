@@ -27,7 +27,7 @@ const options = [
 const SCAnswerOptionsWithState = compose(
   withState('activeOption', 'setActiveOption', 1),
   withHandlers({
-    onOptionClick: ({ setActiveOption }) => index => () => setActiveOption(index),
+    onChange: ({ setActiveOption }) => index => () => setActiveOption(index),
   }),
 )(SCAnswerOptions)
 
@@ -85,18 +85,27 @@ storiesOf('questionTypes/SC', module)
 
 storiesOf('questionTypes/FREE', module)
   .add('FREE Answering Options (unrestricted)', () => (
-    <FREEAnswerOptions options={{ restrictions: { max: null, min: null, type: 'NONE' } }} />
+    <FREEAnswerOptions
+      options={{ restrictions: { max: null, min: null, type: 'NONE' } }}
+      onChange={f => f}
+    />
   ))
   .add('FREE Answering Options (lower bound restriction)', () => (
-    <FREEAnswerOptions options={{ restrictions: { max: null, min: 9, type: 'NUMBERS' } }} />
+    <FREEAnswerOptions
+      options={{ restrictions: { max: null, min: 9, type: 'RANGE' } }}
+      onChange={f => f}
+    />
   ))
   .add('FREE Answering Options (upper bound restriction)', () => (
-    <FREEAnswerOptions options={{ restrictions: { max: 87, min: null, type: 'NUMBERS' } }} />
+    <FREEAnswerOptions
+      options={{ restrictions: { max: 87, min: null, type: 'RANGE' } }}
+      onChange={f => f}
+    />
   ))
   .add('FREE Answering Options (Number restriction)', () => (
     <FREEAnswerOptions
-      options={{ restrictions: { max: 87, min: 900, type: 'NUMBERS' } }}
-      handleChange={(a) => {
+      options={{ restrictions: { max: 87, min: 900, type: 'RANGE' } }}
+      onChange={(a) => {
         console.log(a)
       }}
       value={555}
