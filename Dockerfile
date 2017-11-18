@@ -13,10 +13,10 @@ ENV NODE_ENV "production"
 # switch to the node user (uid 1000)
 # non-root as provided by the base image
 USER 1000
-WORKDIR $KLICKER_DIR
 
 # inject the application dependencies
 COPY --chown=1000:0 package.json yarn.lock $KLICKER_DIR/
+WORKDIR $KLICKER_DIR
 
 # update permissions for klicker dir
 # install yarn packages
