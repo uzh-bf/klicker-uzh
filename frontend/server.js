@@ -67,6 +67,9 @@ app
       }),
     )
 
+    // static file serving from public folder
+    server.use(express.static('public'))
+
     server.get('/join/:shortname', (req, res) =>
       app.render(req, res, '/join', { shortname: req.params.shortname }),
     )
