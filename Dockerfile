@@ -8,7 +8,7 @@ EXPOSE 3000
 
 # root application directory
 ENV KLICKER_DIR /app
-ENV NODE_ENV 'production'
+ENV NODE_ENV "production"
 
 # switch to the node user (uid 1000)
 # non-root as provided by the base image
