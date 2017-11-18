@@ -17,7 +17,6 @@ const propTypes = {
   handleActiveChoicesChange: PropTypes.func.isRequired,
   handleActiveQuestionChange: PropTypes.func.isRequired,
   handleFreeValueChange: PropTypes.func.isRequired,
-  handleNewResponse: PropTypes.func.isRequired,
   handleSubmit: PropTypes.func.isRequired,
   inputEmpty: PropTypes.bool.isRequired,
   inputValid: PropTypes.bool.isRequired,
@@ -107,9 +106,9 @@ function QuestionArea({
                   return (
                     <SCAnswerOptions
                       disabled={!remainingQuestions.includes(activeQuestion)}
-                      onChange={handleActiveChoicesChange(type)}
                       options={options.choices}
                       value={inputValue}
+                      onChange={handleActiveChoicesChange(type)}
                     />
                   )
                 }
@@ -118,9 +117,9 @@ function QuestionArea({
                   return (
                     <FREEAnswerOptions
                       disabled={!remainingQuestions.includes(activeQuestion)}
-                      onChange={handleFreeValueChange}
                       options={options}
                       value={inputValue}
+                      onChange={handleFreeValueChange}
                     />
                   )
                 }

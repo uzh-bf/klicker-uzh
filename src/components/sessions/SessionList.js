@@ -75,7 +75,7 @@ const statusCases = {
 
 export default compose(
   graphql(SessionListQuery),
-  branch(props => props.data.loading, renderComponent(LoadingDiv)),
+  branch(({ data }) => data.loading, renderComponent(LoadingDiv)),
   withPropsOnChange(
     ['data'],
     ({ data: { error, sessions }, handleCopySession, handleStartSession }) => {

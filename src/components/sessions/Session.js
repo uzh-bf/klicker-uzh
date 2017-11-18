@@ -56,7 +56,7 @@ const Session = ({
             Evaluation
           </Button>
         </Link>
-        <Button icon labelPosition="left" onClick={button.onClick} primary>
+        <Button icon primary labelPosition="left" onClick={button.onClick}>
           <Icon name={button.icon} />
           {button.message}
         </Button>

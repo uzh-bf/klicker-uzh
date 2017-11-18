@@ -179,7 +179,7 @@ export default compose(
       handleSidebarActiveItemChange(newItem),
   }),
   graphql(JoinSessionQuery, {
-    options: props => ({ variables: { shortname: props.url.query.shortname } }),
+    options: ({ url }) => ({ variables: { shortname: url.query.shortname } }),
   }),
   branch(({ loading }) => loading, renderComponent(() => <div />)),
   branch(

@@ -35,7 +35,7 @@ const CreateQuestion = ({
     })}
     sidebar={{ activeItem: 'createQuestion' }}
   >
-    <QuestionCreationForm intl={intl} onDiscard={handleDiscard} onSubmit={handleSave} tags={tags} />
+    <QuestionCreationForm intl={intl} tags={tags} onDiscard={handleDiscard} onSubmit={handleSave} />
   </TeacherLayout>
 )
 
