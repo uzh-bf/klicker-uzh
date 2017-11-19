@@ -37,13 +37,13 @@ jobs:
     # trigger a new staging deployment
     - &build-setup
       stage: build
-      if: type = push AND (tag IS blank)
+      if: (type = push) AND (tag IS blank)
       addons:
         apt:
           packages:
             - docker-ce
       before_install:
-        - curl -L https://github.com/openshift/origin/releases/download/v3.6.1/openshift-origin-client-tools-v3.6.1-008f2d5-linux-64bit.tar.gz | tar xz
+        - curl -L https://github.com/openshift/origin/releases/download/v3.6.1/openshift-origin-client-tools-v3.6.1-008f2d5-linux-64bit.tar.gz | tar xzv
         - chmod +x ./oc
       before_script:
         - ./oc login --username=$OC_USER --password=$OC_PASSWORD
@@ -66,7 +66,7 @@ jobs:
 
     # build unstable tags (e.g. v1.0.0-beta.1)
     - <<: *build-setup
-      if: type = push AND (tag =~ ^v[0-9].[0-9].[0-9]-)
+      if: (type = push) AND (tag =~ ^v[0-9].[0-9].[0-9]-)
       script:
         - docker pull uzhbf/klicker-react:latest
         - docker build --cache-from uzhbf/klicker-react:latest -t uzhbf/klicker-react:$TRAVIS_TAG .
@@ -75,7 +75,7 @@ jobs:
     # build stable tags (e.g. v1.0.0)
     # trigger a deployment on APPUiO
     - <<: *build-setup
-      if: type = push AND (tag =~ ^v[0-9].[0-9].[0-9]$)
+      if: (type = push) AND (tag =~ ^v[0-9].[0-9].[0-9]$)
       script:
         - docker pull uzhbf/klicker-react:latest
         - docker build --cache-from uzhbf/klicker-react:latest -t uzhbf/klicker-react:stable -t uzhbf/klicker-react:$TRAVIS_TAG .
