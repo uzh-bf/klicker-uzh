@@ -76,18 +76,13 @@ jobs:
     # => will trigger a deployment on APPUiO
     - <<: *build-setup
       if: (type = push) AND (tag =~ /^v[0-9].[0-9].[0-9]$/)
+      env:
+        - USER=$DOCKER_USER PASSWORD=$DOCKER_PASSWORD REGISTRY="hub.docker.com" IMAGE_NAME="uzhbf/klicker-react"
+        - USER="serviceaccount" PASSWORD=$OC_TOKEN REGISTRY="registry.appuio.ch" IMAGE_NAME="registry.appuio.ch/uniz-klicker/klicker-react"
+      before_script:
+        - docker login -u $USER -p $PASSWORD $REGISTRY
       script:
         - docker pull $IMAGE_NAME:stable
         - docker build --cache-from $IMAGE_NAME:stable -t $IMAGE_NAME:stable -t $IMAGE_NAME:$TRAVIS_TAG .
-        - docker push $IMAGE_NAME:stable
         - docker push $IMAGE_NAME:$TRAVIS_TAG
-    - <<: *build-setup
-      if: (type = push) AND (tag =~ /^v[0-9].[0-9].[0-9]$/)
-      env:
-        - IMAGE_NAME="registry.appuio.ch/uniz-klicker/klicker-react"
-      before_script:
-        - docker login -u serviceaccount -p $OC_TOKEN registry.appuio.ch
-      script:
-        - docker pull $IMAGE_NAME:stable
-        - docker build --cache-from $IMAGE_NAME:stable -t $IMAGE_NAME:stable .
         - docker push $IMAGE_NAME:stable
