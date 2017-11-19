@@ -3,9 +3,12 @@ sudo: required
 branches:
   only:
     - master
+    - /^v[0-9].[0-9].[0-9]$/
+    - /^v[0-9].[0-9].[0-9]-/
 
 jobs:
   include:
+    # run jest with test coverage for codeclimate
     - &test-setup
       stage: test
       language: node_js
@@ -16,7 +19,7 @@ jobs:
         directories:
           - node_modules
       before_install:
-        - 'curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 1.2.0'
+        - curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 1.3.2
         - export PATH="$HOME/.yarn/bin:$PATH"
       before_script:
         - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
@@ -27,29 +30,59 @@ jobs:
       after_script:
         - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
 
+    # ensure correct formatting with prettier
     - <<: *test-setup
       script:
         - yarn run format:ci
 
+    # build all merges into master that are not tagged
+    # trigger a new staging deployment
     - &build-setup
       stage: build
-      if: type = push
+      if: (type = push) AND (branch = master)
       addons:
         apt:
           packages:
             - docker-ce
+      env:
+        - IMAGE_NAME="uzhbf/klicker-react"
       before_script:
-        - docker login -u$DOCKER_USER -p$DOCKER_PASSWORD
+        - docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
       script:
-        - docker pull uzhbf/klicker-react:latest
-        - docker build --cache-from uzhbf/klicker-react:latest -t uzhbf/klicker-react:latest .
-        - docker push uzhbf/klicker-react:latest
+        - docker pull $IMAGE_NAME:latest
+        - docker build --cache-from $IMAGE_NAME:latest -t $IMAGE_NAME:latest .
+        - docker push $IMAGE_NAME:latest
 
-
+    # build all pull requests
+    # TODO: review app deployment
     - <<: *build-setup
       if: type = pull_request
       script:
-        - docker pull uzhbf/klicker-react:nightly
-        - docker build --cache-from uzhbf/klicker-react:nightly -t uzhbf/klicker-react:nightly -t uzhbf/klicker-react:nightly-$TRAVIS_PULL_REQUEST .
-        - docker push uzhbf/klicker-react:nightly
-        - docker push uzhbf/klicker-react:nightly-$TRAVIS_PULL_REQUEST
+        - docker pull $IMAGE_NAME:nightly
+        - docker build --cache-from $IMAGE_NAME:nightly -t $IMAGE_NAME:nightly -t $IMAGE_NAME:nightly-$TRAVIS_PULL_REQUEST .
+        - docker push $IMAGE_NAME:nightly
+        - docker push $IMAGE_NAME:nightly-$TRAVIS_PULL_REQUEST
+
+    # build unstable tags (e.g. v1.0.0-beta.1)
+    - <<: *build-setup
+      if: (type = push) AND (tag =~ /^v[0-9].[0-9].[0-9]-/)
+      script:
+        - docker pull $IMAGE_NAME:latest
+        - docker build --cache-from $IMAGE_NAME:latest -t $IMAGE_NAME:$TRAVIS_TAG .
+        - docker push $IMAGE_NAME:$TRAVIS_TAG
+
+    # build stable tags (e.g. v1.0.0)
+    # push into APPUiO registry and to Docker Hub
+    # => will trigger a deployment on APPUiO
+    - <<: *build-setup
+      if: (type = push) AND (tag =~ /^v[0-9].[0-9].[0-9]$/)
+      env:
+        - USER=$DOCKER_USER PASSWORD=$DOCKER_PASSWORD REGISTRY="hub.docker.com" IMAGE_NAME="uzhbf/klicker-react"
+        - USER="serviceaccount" PASSWORD=$OC_TOKEN REGISTRY="registry.appuio.ch" IMAGE_NAME="registry.appuio.ch/uniz-klicker/klicker-react"
+      before_script:
+        - docker login -u $USER -p $PASSWORD $REGISTRY
+      script:
+        - docker pull $IMAGE_NAME:stable
+        - docker build --cache-from $IMAGE_NAME:stable -t $IMAGE_NAME:stable -t $IMAGE_NAME:$TRAVIS_TAG .
+        - docker push $IMAGE_NAME:$TRAVIS_TAG
+        - docker push $IMAGE_NAME:stable
