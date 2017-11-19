@@ -9,5 +9,8 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ".:/app:ro"
+      - "./.env:/app/.env:ro"
+      - "./server.js:/app/server.js:ro"
+      - "./src:/app/src"
+      - "./public:/app/public:ro"
     command: "yarn run dev"
