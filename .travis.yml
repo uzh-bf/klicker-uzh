@@ -59,7 +59,7 @@ jobs:
       if: type = pull_request
       script:
         - docker pull $IMAGE_NAME:nightly
-        - docker build --build-arg API_URL=$STAGING_API_URL --cache-from $IMAGE_NAME:nightly -t $IMAGE_NAME:nightly -t $IMAGE_NAME:nightly-$TRAVIS_PULL_REQUEST .
+        - docker build --build-arg VERSION=nightly-$TRAVIS_PULL_REQUEST --build-arg API_URL=$STAGING_API_URL --cache-from $IMAGE_NAME:nightly -t $IMAGE_NAME:nightly -t $IMAGE_NAME:nightly-$TRAVIS_PULL_REQUEST .
         - docker push $IMAGE_NAME:nightly
         - docker push $IMAGE_NAME:nightly-$TRAVIS_PULL_REQUEST
 
@@ -83,12 +83,11 @@ jobs:
       env:
         - USER=$DOCKER_USER
         - PASSWORD=$DOCKER_PASSWORD
-        - REGISTRY="hub.docker.com"
         - IMAGE_NAME="uzhbf/klicker-react"
       before_script:
-        - docker login -u $USER -p $PASSWORD $REGISTRY
+        - docker login -u $USER -p $PASSWORD
       script:
-        - docker build --build-arg API_URL=$PROD_API_URL --build-arg LOGROCKET=$PROD_LOGROCKET --build-arg SENTRY=$PROD_SENTRY -t $IMAGE_NAME:stable -t $IMAGE_NAME:$TRAVIS_TAG .
+        - docker build --build-arg VERSION=$TRAVIS_TAG --build-arg API_URL=$PROD_API_URL --build-arg LOGROCKET=$PROD_LOGROCKET --build-arg SENTRY=$PROD_SENTRY -t $IMAGE_NAME:stable -t $IMAGE_NAME:$TRAVIS_TAG .
         - docker push $IMAGE_NAME:$TRAVIS_TAG
         - docker push $IMAGE_NAME:stable
     - <<: *build-setup
@@ -103,6 +102,6 @@ jobs:
       before_script:
         - docker login -u $USER -p $PASSWORD $REGISTRY
       script:
-        - docker build --build-arg API_URL=$PROD_API_URL --build-arg LOGROCKET=$PROD_LOGROCKET --build-arg SENTRY=$PROD_SENTRY -t $IMAGE_NAME:stable -t $IMAGE_NAME:$TRAVIS_TAG .
+        - docker build --build-arg VERSION=$TRAVIS_TAG --build-arg API_URL=$PROD_API_URL --build-arg LOGROCKET=$PROD_LOGROCKET --build-arg SENTRY=$PROD_SENTRY -t $IMAGE_NAME:stable -t $IMAGE_NAME:$TRAVIS_TAG .
         - docker push $IMAGE_NAME:$TRAVIS_TAG
         - docker push $IMAGE_NAME:stable
