@@ -44,40 +44,50 @@ jobs:
         apt:
           packages:
             - docker-ce
+      env:
+        - IMAGE_NAME="uzhbf/klicker-react"
       before_script:
-        - docker login -u serviceaccount -p $OC_TOKEN registry.appuio.ch
-        # - docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+        - docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
       script:
-        - docker pull uzhbf/klicker-react:latest
-        - docker build --cache-from uzhbf/klicker-react:latest -t uzhbf/klicker-react:latest .
-        - docker push uzhbf/klicker-react:latest
+        - docker pull $IMAGE_NAME:latest
+        - docker build --cache-from $IMAGE_NAME:latest -t $IMAGE_NAME:latest .
+        - docker push $IMAGE_NAME:latest
 
     # build all pull requests
     # TODO: review app deployment
     - <<: *build-setup
       if: type = pull_request
       script:
-        - docker build . -t registry.appuio.ch/uniz-klicker/klicker-react:latest
-        - docker push registry.appuio.ch/uniz-klicker/klicker-react:latest
-        # - docker pull uzhbf/klicker-react:nightly
-        # - docker build --cache-from uzhbf/klicker-react:nightly -t uzhbf/klicker-react:nightly -t uzhbf/klicker-react:nightly-$TRAVIS_PULL_REQUEST .
-        # - docker push uzhbf/klicker-react:nightly
-        # - docker push uzhbf/klicker-react:nightly-$TRAVIS_PULL_REQUEST
+        - docker pull $IMAGE_NAME:nightly
+        - docker build --cache-from $IMAGE_NAME:nightly -t $IMAGE_NAME:nightly -t $IMAGE_NAME:nightly-$TRAVIS_PULL_REQUEST .
+        - docker push $IMAGE_NAME:nightly
+        - docker push $IMAGE_NAME:nightly-$TRAVIS_PULL_REQUEST
 
     # build unstable tags (e.g. v1.0.0-beta.1)
     - <<: *build-setup
       if: (type = push) AND (tag =~ /^v[0-9].[0-9].[0-9]-/)
       script:
-        - docker pull uzhbf/klicker-react:latest
-        - docker build --cache-from uzhbf/klicker-react:latest -t uzhbf/klicker-react:$TRAVIS_TAG .
-        - docker push uzhbf/klicker-react:$TRAVIS_TAG
+        - docker pull $IMAGE_NAME:latest
+        - docker build --cache-from $IMAGE_NAME:latest -t $IMAGE_NAME:$TRAVIS_TAG .
+        - docker push $IMAGE_NAME:$TRAVIS_TAG
 
     # build stable tags (e.g. v1.0.0)
-    # trigger a deployment on APPUiO
+    # push into APPUiO registry and to Docker Hub
+    # => will trigger a deployment on APPUiO
     - <<: *build-setup
       if: (type = push) AND (tag =~ /^v[0-9].[0-9].[0-9]$/)
       script:
-        - docker pull uzhbf/klicker-react:latest
-        - docker build --cache-from uzhbf/klicker-react:latest -t uzhbf/klicker-react:stable -t uzhbf/klicker-react:$TRAVIS_TAG .
-        - docker push uzhbf/klicker-react:stable
-        - docker push uzhbf/klicker-react:$TRAVIS_TAG
+        - docker pull $IMAGE_NAME:stable
+        - docker build --cache-from $IMAGE_NAME:stable -t $IMAGE_NAME:stable -t $IMAGE_NAME:$TRAVIS_TAG .
+        - docker push $IMAGE_NAME:stable
+        - docker push $IMAGE_NAME:$TRAVIS_TAG
+    - <<: *build-setup
+      if: (type = push) AND (tag =~ /^v[0-9].[0-9].[0-9]$/)
+      env:
+        - IMAGE_NAME="registry.appuio.ch/uniz-klicker/klicker-react"
+      before_script:
+        - docker login -u serviceaccount -p $OC_TOKEN registry.appuio.ch
+      script:
+        - docker pull $IMAGE_NAME:stable
+        - docker build --cache-from $IMAGE_NAME:stable -t $IMAGE_NAME:stable .
+        - docker push $IMAGE_NAME:stable
