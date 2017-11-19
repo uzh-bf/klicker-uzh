@@ -1,9 +1,0 @@
-version: '3'
-services:
-  react:
-    build: .
-    ports:
-      - "3000:3000"
-    volumes:
-      - ".:/app"
-    command: "yarn run dev" # run next in development mode
