@@ -89,7 +89,7 @@ jobs:
       env:
         - USER=$DOCKER_USER
         - PASSWORD=$DOCKER_PASSWORD
-        - IMAGE_NAME="uzhbf/klicker-react"
+        - IMAGE_NAME="uzhbf/klicker-api"
       before_script:
         - docker login -u $USER -p $PASSWORD
       script:
@@ -104,7 +104,7 @@ jobs:
         - USER="serviceaccount"
         - PASSWORD=$OC_TOKEN
         - REGISTRY="registry.appuio.ch"
-        - IMAGE_NAME="registry.appuio.ch/uniz-klicker/klicker-react"
+        - IMAGE_NAME="registry.appuio.ch/uniz-klicker/klicker-api"
       before_script:
         - docker login -u $USER -p $PASSWORD $REGISTRY
       script:
