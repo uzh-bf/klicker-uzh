@@ -46,7 +46,7 @@ jobs:
             - docker-ce
       before_script:
         - docker login -u serviceaccount -p $OC_TOKEN registry.appuio.ch
-        - docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+        # - docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
       script:
         - docker pull uzhbf/klicker-react:latest
         - docker build --cache-from uzhbf/klicker-react:latest -t uzhbf/klicker-react:latest .
@@ -57,10 +57,12 @@ jobs:
     - <<: *build-setup
       if: type = pull_request
       script:
-        - docker pull uzhbf/klicker-react:nightly
-        - docker build --cache-from uzhbf/klicker-react:nightly -t uzhbf/klicker-react:nightly -t uzhbf/klicker-react:nightly-$TRAVIS_PULL_REQUEST .
-        - docker push uzhbf/klicker-react:nightly
-        - docker push uzhbf/klicker-react:nightly-$TRAVIS_PULL_REQUEST
+        - docker build . -t registry.appuio.ch/uniz-klicker/klicker-react:latest
+        - docker push registry.appuio.ch/uniz-klicker/klicker-react:latest
+        # - docker pull uzhbf/klicker-react:nightly
+        # - docker build --cache-from uzhbf/klicker-react:nightly -t uzhbf/klicker-react:nightly -t uzhbf/klicker-react:nightly-$TRAVIS_PULL_REQUEST .
+        # - docker push uzhbf/klicker-react:nightly
+        # - docker push uzhbf/klicker-react:nightly-$TRAVIS_PULL_REQUEST
 
     # build unstable tags (e.g. v1.0.0-beta.1)
     - <<: *build-setup
