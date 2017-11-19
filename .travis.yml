@@ -1,9 +1,5 @@
 sudo: required
 
-branches:
-  only:
-    - master
-
 jobs:
   include:
     # run jest with test coverage for codeclimate
@@ -37,7 +33,7 @@ jobs:
     # trigger a new staging deployment
     - &build-setup
       stage: build
-      if: (type = push) AND (tag IS blank)
+      if: (type = push) AND (branch = master)
       addons:
         apt:
           packages:
@@ -66,7 +62,7 @@ jobs:
 
     # build unstable tags (e.g. v1.0.0-beta.1)
     - <<: *build-setup
-      if: (type = push) AND (tag =~ ^v[0-9].[0-9].[0-9]-)
+      if: (type = push) AND (tag =~ /^v[0-9].[0-9].[0-9]-/)
       script:
         - docker pull uzhbf/klicker-react:latest
         - docker build --cache-from uzhbf/klicker-react:latest -t uzhbf/klicker-react:$TRAVIS_TAG .
@@ -75,7 +71,7 @@ jobs:
     # build stable tags (e.g. v1.0.0)
     # trigger a deployment on APPUiO
     - <<: *build-setup
-      if: (type = push) AND (tag =~ ^v[0-9].[0-9].[0-9]$)
+      if: (type = push) AND (tag =~ /^v[0-9].[0-9].[0-9]$/)
       script:
         - docker pull uzhbf/klicker-react:latest
         - docker build --cache-from uzhbf/klicker-react:latest -t uzhbf/klicker-react:stable -t uzhbf/klicker-react:$TRAVIS_TAG .
