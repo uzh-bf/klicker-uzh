@@ -1,0 +1,13 @@
+version: '2'
+services:
+  react:
+    build:
+      context: .
+      args:
+        API_URL: "localhost:4000/graphql"
+        NODE_ENV: "development"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ".:/app:ro"
+    command: "yarn run dev"
