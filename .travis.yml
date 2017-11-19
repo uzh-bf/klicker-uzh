@@ -46,7 +46,9 @@ jobs:
         - curl -L https://github.com/openshift/origin/releases/download/v3.6.1/openshift-origin-client-tools-v3.6.1-008f2d5-linux-64bit.tar.gz | tar xz
         - chmod +x ./oc
       before_script:
-        - docker login -u$DOCKER_USER -p$DOCKER_PASSWORD
+        - ./oc login --username=$OC_USER --password=$OC_PASSWORD
+        - docker login -u $OC_USER -p `./oc whoami -t` registry.appuio.ch
+        - docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
       script:
         - docker pull uzhbf/klicker-react:latest
         - docker build --cache-from uzhbf/klicker-react:latest -t uzhbf/klicker-react:latest .
