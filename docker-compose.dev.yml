@@ -1,9 +1,16 @@
-version: '3'
+version: '2'
 services:
   react:
-    build: .
+    build:
+      context: .
+      args:
+        API_URL: "localhost:4000/graphql"
+        NODE_ENV: "development"
     ports:
       - "3000:3000"
     volumes:
-      - ".:/app"
-    command: "yarn run dev" # run next in development mode
+      - "./.env:/app/.env:ro"
+      - "./server.js:/app/server.js:ro"
+      - "./src:/app/src"
+      - "./public:/app/public:ro"
+    command: "yarn run dev"
