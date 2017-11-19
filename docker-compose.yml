@@ -7,4 +7,3 @@ services:
         API_URL: "localhost:4000/graphql"
     ports:
       - "3000:3000"
-    command: "yarn run dev" # run next in development mode
