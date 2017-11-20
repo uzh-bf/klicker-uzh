@@ -132,43 +132,42 @@ const SessionTimeline = ({
 
         .blockWrap {
           display: flex;
-          flex-direction: row;
+          flex-direction: column;
           align-items: center;
 
           background: linear-gradient(
-            to bottom,
+            to right,
             transparent 0%,
-            transparent calc(50% - 0.81px),
-            lightgrey calc(50% - 0.8px),
-            lightgrey calc(50% + 0.8px),
-            transparent calc(50% + 0.81px),
+            transparent calc(50% - 1.01px),
+            lightgrey calc(50% - 1px),
+            lightgrey calc(50% + 1px),
+            transparent calc(50% + 1.01px),
             transparent 100%
           );
 
+          .block {
+            flex: 1;
+            width: 100%;
+          }
+
           .waiting {
-            margin: 0 0.2rem;
-            padding: 0 0.7rem;
+            margin: 0.2rem 0;
+            padding: 0.5rem 0;
 
             &.first {
-              padding-left: 0;
-              margin-left: 0;
+              padding-top: 0;
+              margin-top: 0;
             }
 
             &.last {
-              padding-right: 0;
-              margin-right: 0;
+              padding-bottom: 0;
+              margin-bottom: 0;
             }
 
             :global(i) {
               background-color: white;
               color: lightgrey;
               margin-right: 0;
-            }
-          }
-
-          .block {
-            &:not(:first-child) {
-              margin-top: 1rem;
             }
           }
         }
@@ -205,10 +204,36 @@ const SessionTimeline = ({
           }
 
           .blockWrap {
+            flex-direction: row;
+            background: linear-gradient(
+              to bottom,
+              transparent 0%,
+              transparent calc(50% - 0.81px),
+              lightgrey calc(50% - 0.8px),
+              lightgrey calc(50% + 0.8px),
+              transparent calc(50% + 0.81px),
+              transparent 100%
+            );
+
             .block,
             .block:not(:first-child) {
               margin: 0.3rem;
               width: 17rem;
+            }
+
+            .waiting {
+              margin: 0 0.2rem;
+              padding: 0 0.7rem;
+
+              &.first {
+                padding-left: 0;
+                margin-left: 0;
+              }
+
+              &.last {
+                padding-right: 0;
+                margin-right: 0;
+              }
             }
           }
         }
