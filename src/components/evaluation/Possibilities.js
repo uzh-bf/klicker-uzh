@@ -1,9 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { List } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
-import { QuestionTypes } from '../../constants'
+import { CHART_COLORS, QuestionTypes } from '../../constants'
+import { EvaluationListItem } from '.'
 
 const propTypes = {
   questionOptions: PropTypes.object.isRequired,
@@ -39,11 +39,16 @@ const Possibilities = ({ questionOptions, questionType }) => (
     {(() => {
       if ([QuestionTypes.SC, QuestionTypes.MC].includes(questionType)) {
         return (
-          <List celled ordered>
-            {questionOptions.choices.map(choice => (
-              <List.Item key={choice.id}>{choice.name}</List.Item>
+          <div>
+            {questionOptions.choices.map((choice, index) => (
+              <EvaluationListItem
+                color={CHART_COLORS[index % 5]}
+                marker={String.fromCharCode(65 + index)}
+              >
+                {choice.name}
+              </EvaluationListItem>
             ))}
-          </List>
+          </div>
         )
       }
 
@@ -51,25 +56,15 @@ const Possibilities = ({ questionOptions, questionType }) => (
         const { restrictions } = questionOptions
 
         return (
-          <List celled>
+          <div>
             {(() => {
               const comp = []
               if (restrictions.min) {
-                comp.push(
-                  <List.Item>
-                    <List.Header>Minimum</List.Header>
-                    {restrictions.min}
-                  </List.Item>,
-                )
+                comp.push(<EvaluationListItem marker="MIN">{restrictions.min}</EvaluationListItem>)
               }
 
               if (restrictions.max) {
-                comp.push(
-                  <List.Item>
-                    <List.Header>Maximum</List.Header>
-                    {restrictions.max}
-                  </List.Item>,
-                )
+                comp.push(<EvaluationListItem marker="MAX">{restrictions.max}</EvaluationListItem>)
               }
 
               if (comp.length > 0) {
@@ -78,7 +73,7 @@ const Possibilities = ({ questionOptions, questionType }) => (
 
               return <div>No restrictions.</div>
             })()}
-          </List>
+          </div>
         )
       }
 

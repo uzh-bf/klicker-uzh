@@ -2,8 +2,15 @@ import _maxBy from 'lodash/maxBy'
 import _minBy from 'lodash/minBy'
 
 // calculate max and min using lodash
-export const calculateMax = results => _maxBy(results.data, 'value').value
-export const calculateMin = results => _minBy(results.data, 'value').value
+export const calculateMax = (results) => {
+  const maxItem = _maxBy(results.data, 'value')
+  return maxItem && maxItem.value
+}
+
+export const calculateMin = (results) => {
+  const minItem = _minBy(results.data, 'value')
+  return minItem && minItem.value
+}
 
 // calculate the mean using reduce
 export const calculateMean = results =>
