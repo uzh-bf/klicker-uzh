@@ -194,7 +194,7 @@ export default compose(
     }),
     {
       // handle change of active instance
-      handleChangeActiveInstance: () => activeInstanceIndex => () => ({ activeInstanceIndex }),
+      handleChangeActiveInstance: () => activeInstanceIndex => ({ activeInstanceIndex }),
 
       // handle change of vis. type
       handleChangeVisualizationType: () => visualizationType => ({ visualizationType }),
@@ -207,7 +207,7 @@ export default compose(
       handleToggleShowSolution: ({ showSolution }) => () => ({ showSolution: !showSolution }),
     },
   ),
-  withProps(({ activeInstances, activeInstanceIndex }) => {
+  withProps(({ activeInstances, activeInstanceIndex, handleChangeActiveInstance }) => {
     const activeInstance = activeInstances[activeInstanceIndex]
     const { question, results } = activeInstance
 
@@ -215,6 +215,7 @@ export default compose(
     if (question.type === 'FREE') {
       return {
         activeInstance,
+        handleChangeActiveInstance: index => () => handleChangeActiveInstance(index),
         statistics: {
           max: calculateMax(results),
           mean: calculateMean(results),
@@ -226,6 +227,7 @@ export default compose(
 
     return {
       activeInstance,
+      handleChangeActiveInstance: index => () => handleChangeActiveInstance(index),
     }
   }),
 )(Evaluation)
