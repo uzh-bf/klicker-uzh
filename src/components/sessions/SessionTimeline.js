@@ -114,7 +114,7 @@ const SessionTimeline = ({
         display: flex;
         flex-direction: column;
 
-        border: 1px solid grey;
+        border: 1px solid lightgray;
         padding: 1rem;
       }
 
