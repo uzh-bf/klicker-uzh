@@ -676,7 +676,12 @@ exports[`Storyshots evaluation/charts TableChart (FREE) 1`] = `
             }
           >
             <span>
-              Value
+              Count
+              <span
+                className="griddle-heading-descending"
+              >
+                ▼
+              </span>
             </span>
           </th>
           <th
@@ -691,12 +696,7 @@ exports[`Storyshots evaluation/charts TableChart (FREE) 1`] = `
             }
           >
             <span>
-              Count
-              <span
-                className="griddle-heading-descending"
-              >
-                ▼
-              </span>
+              Value
             </span>
           </th>
           <th
@@ -728,15 +728,6 @@ exports[`Storyshots evaluation/charts TableChart (FREE) 1`] = `
           style={undefined}
         >
           <td
-            className="griddle-cell"
-            onClick={undefined}
-            onMouseEnter={undefined}
-            onMouseLeave={undefined}
-            style={undefined}
-          >
-            hehe
-          </td>
-          <td
             className="griddle-cell countColumn"
             onClick={undefined}
             onMouseEnter={undefined}
@@ -750,6 +741,15 @@ exports[`Storyshots evaluation/charts TableChart (FREE) 1`] = `
             100
           </td>
           <td
+            className="griddle-cell"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={undefined}
+          >
+            hehe
+          </td>
+          <td
             className="griddle-cell solutionColumn"
             onClick={undefined}
             onMouseEnter={undefined}
@@ -772,6 +772,19 @@ exports[`Storyshots evaluation/charts TableChart (FREE) 1`] = `
           onMouseLeave={undefined}
           style={undefined}
         >
+          <td
+            className="griddle-cell countColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "3rem",
+              }
+            }
+          >
+            10
+          </td>
           <td
             className="griddle-cell"
             onClick={undefined}
@@ -782,19 +795,6 @@ exports[`Storyshots evaluation/charts TableChart (FREE) 1`] = `
             hello world
           </td>
           <td
-            className="griddle-cell countColumn"
-            onClick={undefined}
-            onMouseEnter={undefined}
-            onMouseLeave={undefined}
-            style={
-              Object {
-                "width": "3rem",
-              }
-            }
-          >
-            10
-          </td>
-          <td
             className="griddle-cell solutionColumn"
             onClick={undefined}
             onMouseEnter={undefined}
@@ -817,6 +817,19 @@ exports[`Storyshots evaluation/charts TableChart (FREE) 1`] = `
           onMouseLeave={undefined}
           style={undefined}
         >
+          <td
+            className="griddle-cell countColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "3rem",
+              }
+            }
+          >
+            10
+          </td>
           <td
             className="griddle-cell"
             onClick={undefined}
@@ -827,19 +840,6 @@ exports[`Storyshots evaluation/charts TableChart (FREE) 1`] = `
             hello worlds
           </td>
           <td
-            className="griddle-cell countColumn"
-            onClick={undefined}
-            onMouseEnter={undefined}
-            onMouseLeave={undefined}
-            style={
-              Object {
-                "width": "3rem",
-              }
-            }
-          >
-            10
-          </td>
-          <td
             className="griddle-cell solutionColumn"
             onClick={undefined}
             onMouseEnter={undefined}
@@ -862,6 +862,19 @@ exports[`Storyshots evaluation/charts TableChart (FREE) 1`] = `
           onMouseLeave={undefined}
           style={undefined}
         >
+          <td
+            className="griddle-cell countColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "3rem",
+              }
+            }
+          >
+            5
+          </td>
           <td
             className="griddle-cell"
             onClick={undefined}
@@ -872,19 +885,6 @@ exports[`Storyshots evaluation/charts TableChart (FREE) 1`] = `
             blablabla 
           </td>
           <td
-            className="griddle-cell countColumn"
-            onClick={undefined}
-            onMouseEnter={undefined}
-            onMouseLeave={undefined}
-            style={
-              Object {
-                "width": "3rem",
-              }
-            }
-          >
-            5
-          </td>
-          <td
             className="griddle-cell solutionColumn"
             onClick={undefined}
             onMouseEnter={undefined}
@@ -907,6 +907,19 @@ exports[`Storyshots evaluation/charts TableChart (FREE) 1`] = `
           onMouseLeave={undefined}
           style={undefined}
         >
+          <td
+            className="griddle-cell countColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "3rem",
+              }
+            }
+          >
+            5
+          </td>
           <td
             className="griddle-cell"
             onClick={undefined}
@@ -917,19 +930,6 @@ exports[`Storyshots evaluation/charts TableChart (FREE) 1`] = `
             blaaaali 
           </td>
           <td
-            className="griddle-cell countColumn"
-            onClick={undefined}
-            onMouseEnter={undefined}
-            onMouseLeave={undefined}
-            style={
-              Object {
-                "width": "3rem",
-              }
-            }
-          >
-            5
-          </td>
-          <td
             className="griddle-cell solutionColumn"
             onClick={undefined}
             onMouseEnter={undefined}
@@ -952,15 +952,6 @@ exports[`Storyshots evaluation/charts TableChart (FREE) 1`] = `
           onMouseLeave={undefined}
           style={undefined}
         >
-          <td
-            className="griddle-cell"
-            onClick={undefined}
-            onMouseEnter={undefined}
-            onMouseLeave={undefined}
-            style={undefined}
-          >
-            asdasd
-          </td>
           <td
             className="griddle-cell countColumn"
             onClick={undefined}
@@ -973,6 +964,15 @@ exports[`Storyshots evaluation/charts TableChart (FREE) 1`] = `
             }
           >
             1
+          </td>
+          <td
+            className="griddle-cell"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={undefined}
+          >
+            asdasd
           </td>
           <td
             className="griddle-cell solutionColumn"
@@ -1035,6 +1035,73 @@ exports[`Storyshots evaluation/components Chart 1`] = `
 </div>
 `;
 
+exports[`Storyshots evaluation/components EvaluationListItem 1`] = `
+<div>
+  <div
+    className="jsx-725384191 evaluationListItem"
+  >
+    <div
+      className="jsx-725384191 colorSquare"
+    >
+      <i
+        aria-hidden="true"
+        className="square icon icon"
+      />
+    </div>
+    <div
+      className="jsx-725384191 content"
+    >
+      hello world
+    </div>
+    <div
+      className="jsx-725384191 marker"
+    >
+      MIN
+    </div>
+  </div>
+  <div
+    className="jsx-610594514 evaluationListItem"
+  >
+    <div
+      className="jsx-610594514 colorSquare"
+    >
+      <i
+        aria-hidden="true"
+        className="square icon icon"
+      />
+    </div>
+    <div
+      className="jsx-610594514 content"
+    >
+      hello world 2
+    </div>
+  </div>
+  <div
+    className="jsx-91056044 evaluationListItem"
+  >
+    <div
+      className="jsx-91056044 content"
+    >
+      hello world 3
+    </div>
+    <div
+      className="jsx-91056044 marker"
+    >
+      MAX
+    </div>
+  </div>
+  <div
+    className="jsx-91056044 evaluationListItem"
+  >
+    <div
+      className="jsx-91056044 content"
+    >
+      hello world 4
+    </div>
+  </div>
+</div>
+`;
+
 exports[`Storyshots evaluation/components Info 1`] = `
 <div
   className="info"
@@ -1059,34 +1126,35 @@ exports[`Storyshots evaluation/components Possibilities (FREE:RANGE) 1`] = `
     </span>
   </h2>
   <div
-    className="ui celled list"
-    role="list"
+    className="jsx-2154886852"
   >
     <div
-      className="item"
-      data-value={undefined}
-      onClick={[Function]}
-      role="listitem"
+      className="jsx-91056044 evaluationListItem"
     >
       <div
-        className="header"
+        className="jsx-91056044 content"
       >
-        Minimum
+        10
       </div>
-      10
+      <div
+        className="jsx-91056044 marker"
+      >
+        MIN
+      </div>
     </div>
     <div
-      className="item"
-      data-value={undefined}
-      onClick={[Function]}
-      role="listitem"
+      className="jsx-91056044 evaluationListItem"
     >
       <div
-        className="header"
+        className="jsx-91056044 content"
       >
-        Maximum
+        20
       </div>
-      20
+      <div
+        className="jsx-91056044 marker"
+      >
+        MAX
+      </div>
     </div>
   </div>
 </div>
@@ -1104,40 +1172,95 @@ exports[`Storyshots evaluation/components Possibilities (SC) 1`] = `
     </span>
   </h2>
   <div
-    className="ui celled ordered list"
-    role="list"
+    className="jsx-2154886852"
   >
     <div
-      className="item"
-      data-value={undefined}
-      onClick={[Function]}
-      role="listitem"
+      className="jsx-110067377 evaluationListItem"
     >
-      This is the first possible answer
+      <div
+        className="jsx-110067377 colorSquare"
+      >
+        <i
+          aria-hidden="true"
+          className="square icon icon"
+        />
+      </div>
+      <div
+        className="jsx-110067377 content"
+      >
+        This is the first possible answer
+      </div>
+      <div
+        className="jsx-110067377 marker"
+      >
+        A
+      </div>
     </div>
     <div
-      className="item"
-      data-value={undefined}
-      onClick={[Function]}
-      role="listitem"
+      className="jsx-1709102229 evaluationListItem"
     >
-      This is the second possible answer
+      <div
+        className="jsx-1709102229 colorSquare"
+      >
+        <i
+          aria-hidden="true"
+          className="square icon icon"
+        />
+      </div>
+      <div
+        className="jsx-1709102229 content"
+      >
+        This is the second possible answer
+      </div>
+      <div
+        className="jsx-1709102229 marker"
+      >
+        B
+      </div>
     </div>
     <div
-      className="item"
-      data-value={undefined}
-      onClick={[Function]}
-      role="listitem"
+      className="jsx-4235792499 evaluationListItem"
     >
-      This is the third possible answer
+      <div
+        className="jsx-4235792499 colorSquare"
+      >
+        <i
+          aria-hidden="true"
+          className="square icon icon"
+        />
+      </div>
+      <div
+        className="jsx-4235792499 content"
+      >
+        This is the third possible answer
+      </div>
+      <div
+        className="jsx-4235792499 marker"
+      >
+        C
+      </div>
     </div>
     <div
-      className="item"
-      data-value={undefined}
-      onClick={[Function]}
-      role="listitem"
+      className="jsx-2249623282 evaluationListItem"
     >
-      This is the fourth possible answer
+      <div
+        className="jsx-2249623282 colorSquare"
+      >
+        <i
+          aria-hidden="true"
+          className="square icon icon"
+        />
+      </div>
+      <div
+        className="jsx-2249623282 content"
+      >
+        This is the fourth possible answer
+      </div>
+      <div
+        className="jsx-2249623282 marker"
+      >
+        D
+      </div>
     </div>
   </div>
 </div>
@@ -1155,68 +1278,95 @@ exports[`Storyshots evaluation/components Statistics 1`] = `
     </span>
   </h2>
   <div
-    className="ui celled list"
-    role="list"
+    className="jsx-324462402"
   >
     <div
-      className="item"
-      data-value={undefined}
-      onClick={[Function]}
-      role="listitem"
+      className="jsx-865544459 evaluationListItem"
     >
       <div
-        className="header"
+        className="jsx-865544459 colorSquare"
       >
-        Minimum
-      </div>
-      10
-    </div>
-    <div
-      className="item"
-      data-value={undefined}
-      onClick={[Function]}
-      role="listitem"
-    >
-      <div
-        className="header"
-      >
-        Maximum
-      </div>
-      100
-    </div>
-    <div
-      className="item"
-      data-value={undefined}
-      onClick={[Function]}
-      role="listitem"
-    >
-      <div
-        className="header"
-      >
-        Mean 
         <i
           aria-hidden="true"
-          className="blue square icon"
+          className="square icon icon"
         />
       </div>
-      34.35
+      <div
+        className="jsx-865544459 content"
+      >
+        10
+      </div>
+      <div
+        className="jsx-865544459 marker"
+      >
+        MIN
+      </div>
     </div>
     <div
-      className="item"
-      data-value={undefined}
-      onClick={[Function]}
-      role="listitem"
+      className="jsx-865544459 evaluationListItem"
     >
       <div
-        className="header"
+        className="jsx-865544459 colorSquare"
       >
-        Median 
         <i
           aria-hidden="true"
-          className="red square icon"
+          className="square icon icon"
         />
       </div>
-      23
+      <div
+        className="jsx-865544459 content"
+      >
+        100
+      </div>
+      <div
+        className="jsx-865544459 marker"
+      >
+        MAX
+      </div>
+    </div>
+    <div
+      className="jsx-2393557874 evaluationListItem"
+    >
+      <div
+        className="jsx-2393557874 colorSquare"
+      >
+        <i
+          aria-hidden="true"
+          className="square icon icon"
+        />
+      </div>
+      <div
+        className="jsx-2393557874 content"
+      >
+        34.35
+      </div>
+      <div
+        className="jsx-2393557874 marker"
+      >
+        MEAN
+      </div>
+    </div>
+    <div
+      className="jsx-725384191 evaluationListItem"
+    >
+      <div
+        className="jsx-725384191 colorSquare"
+      >
+        <i
+          aria-hidden="true"
+          className="square icon icon"
+        />
+      </div>
+      <div
+        className="jsx-725384191 content"
+      >
+        23
+      </div>
+      <div
+        className="jsx-725384191 marker"
+      >
+        MEDIAN
+      </div>
     </div>
   </div>
 </div>

@@ -52,13 +52,13 @@ function TableChart({ data, isSolutionShown }) {
         sortProperties={[{ id: 'count', sortAscending: false }]}
       >
         <RowDefinition>
-          <ColumnDefinition id="value" title="Value" />
           <ColumnDefinition
             cssClassName="griddle-cell countColumn"
             id="count"
             title="Count"
             width="3rem"
           />
+          <ColumnDefinition id="value" title="Value" />
           <ColumnDefinition
             cssClassName="griddle-cell solutionColumn"
             customComponent={ColumnWithSolution}

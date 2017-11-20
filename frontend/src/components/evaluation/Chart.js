@@ -81,6 +81,7 @@ function Chart({
               isSolutionShown={showSolution}
               restrictions={restrictions}
               statistics={statistics}
+              totalResponses={results.totalResponses}
             />
           )
         }
