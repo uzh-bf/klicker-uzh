@@ -71,40 +71,40 @@ const Running = ({
     <div className="runningSession">
       <div className="sessionProgress">
         <SessionTimeline
-          sessionId={id}
-          intl={intl}
           blocks={blocks}
-          runtime={runtime}
-          startedAt={startedAt}
           handleLeftActionClick={handleEndSession}
           handleRightActionClick={handleActivateNextBlock}
+          intl={intl}
+          runtime={runtime}
+          sessionId={id}
+          startedAt={startedAt}
         />
       </div>
 
       <div className="confusionBarometer">
         <ConfusionBarometer
-          intl={intl}
           confusionTS={confusionTS}
-          isActive={isConfusionBarometerActive}
           handleActiveToggle={handleUpdateSettings({
             settings: { isConfusionBarometerActive: !isConfusionBarometerActive },
           })}
+          intl={intl}
+          isActive={isConfusionBarometerActive}
         />
       </div>
 
       <div className="feedbackChannel">
         <FeedbackChannel
-          intl={intl}
           feedbacks={feedbacks}
-          isActive={isFeedbackChannelActive}
-          isPublic={isFeedbackChannelPublic}
           handleActiveToggle={handleUpdateSettings({
             settings: { isFeedbackChannelActive: !isFeedbackChannelActive },
           })}
+          handleDeleteFeedback={handleDeleteFeedback}
           handlePublicToggle={handleUpdateSettings({
             settings: { isFeedbackChannelPublic: !isFeedbackChannelPublic },
           })}
-          handleDeleteFeedback={handleDeleteFeedback}
+          intl={intl}
+          isActive={isFeedbackChannelActive}
+          isPublic={isFeedbackChannelPublic}
         />
       </div>
     </div>

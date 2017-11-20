@@ -44,27 +44,27 @@ function TableChart({ data, isSolutionShown }) {
   return (
     <div className="tableChart">
       <Griddle
-        data={data}
-        plugins={[plugins.LocalPlugin]}
-        sortProperties={[{ id: 'count', sortAscending: false }]}
         components={{
           Layout,
         }}
+        data={data}
+        plugins={[plugins.LocalPlugin]}
+        sortProperties={[{ id: 'count', sortAscending: false }]}
       >
         <RowDefinition>
           <ColumnDefinition id="value" title="Value" />
           <ColumnDefinition
+            cssClassName="griddle-cell countColumn"
             id="count"
             title="Count"
             width="3rem"
-            cssClassName="griddle-cell countColumn"
           />
           <ColumnDefinition
             cssClassName="griddle-cell solutionColumn"
+            customComponent={ColumnWithSolution}
             headerCssClassName="griddle-table-heading-cell solutionColumn"
             id="correct"
             title="T/F"
-            customComponent={ColumnWithSolution}
             width="1rem"
           />
         </RowDefinition>

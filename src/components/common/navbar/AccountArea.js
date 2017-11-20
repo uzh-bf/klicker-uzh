@@ -11,10 +11,10 @@ const AccountArea = ({ accountShort }) => (
   <Dropdown item simple text={accountShort.toUpperCase()}>
     <Dropdown.Menu>
       <Dropdown.Item>
-        <FormattedMessage id="common.string.settings" defaultMessage="Settings" />
+        <FormattedMessage defaultMessage="Settings" id="common.string.settings" />
       </Dropdown.Item>
       <Dropdown.Item>
-        <FormattedMessage id="common.string.logout" defaultMessage="Logout" />
+        <FormattedMessage defaultMessage="Logout" id="common.string.logout" />
       </Dropdown.Item>
     </Dropdown.Menu>
   </Dropdown>

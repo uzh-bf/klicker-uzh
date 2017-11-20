@@ -40,7 +40,7 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
 
       {runningSession && <h2>Remaining sessions</h2>}
       {sessions.map(session => (
-        <div key={session.id} className="session">
+        <div className="session" key={session.id}>
           <Session {...session} />
         </div>
       ))}
@@ -90,21 +90,21 @@ SessionListPres.defaultProps = defaultProps
 const statusCases = {
   [SessionStatus.COMPLETED]: {
     icon: 'copy',
-    message: <FormattedMessage id="session.button.completed.content" defaultMessage="Copy" />,
+    message: <FormattedMessage defaultMessage="Copy" id="session.button.completed.content" />,
   },
   [SessionStatus.CREATED]: {
     icon: 'play',
-    message: <FormattedMessage id="session.button.created.content" defaultMessage="Start" />,
+    message: <FormattedMessage defaultMessage="Start" id="session.button.created.content" />,
   },
   [SessionStatus.RUNNING]: {
     icon: 'play',
-    message: <FormattedMessage id="session.button.running.content" defaultMessage="Running" />,
+    message: <FormattedMessage defaultMessage="Running" id="session.button.running.content" />,
   },
 }
 
 export default compose(
   graphql(SessionListQuery),
-  branch(props => props.data.loading, renderComponent(LoadingDiv)),
+  branch(({ data }) => data.loading, renderComponent(LoadingDiv)),
   withPropsOnChange(
     ['data'],
     ({ data: { error, sessions }, handleCopySession, handleStartSession }) => {

@@ -52,8 +52,8 @@ const target = {
   // define what should be done once an item is dropped
   // props are passed through from the instantiation of the dropzone component
   // monitor.getItem('question') receives the data from the dragged component
-  drop(props, monitor) {
-    props.onDrop(monitor.getItem('question'))
+  drop({ onDrop }, monitor) {
+    onDrop(monitor.getItem('question'))
   },
 }
 

@@ -47,27 +47,27 @@ const ConfusionBarometer = ({
 
     {isActive && (
       <ConfusionSection
-        title={intl.formatMessage({
-          defaultMessage: 'Difficulty',
-          id: 'runningSession.confusionBarometer.string.difficulty',
-        })}
         data={confusionTS.map(({ createdAt, difficulty }) => ({
           timestamp: createdAt,
           value: difficulty,
         }))}
+        title={intl.formatMessage({
+          defaultMessage: 'Difficulty',
+          id: 'runningSession.confusionBarometer.string.difficulty',
+        })}
       />
     )}
 
     {isActive && (
       <ConfusionSection
-        title={intl.formatMessage({
-          defaultMessage: 'Comprehensibility',
-          id: 'runningSession.confusionBarometer.string.comprehensibility',
-        })}
         data={confusionTS.map(({ createdAt, speed }) => ({
           timestamp: createdAt,
           value: speed,
         }))}
+        title={intl.formatMessage({
+          defaultMessage: 'Comprehensibility',
+          id: 'runningSession.confusionBarometer.string.comprehensibility',
+        })}
       />
     )}
 

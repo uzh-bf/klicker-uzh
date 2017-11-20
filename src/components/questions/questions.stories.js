@@ -55,8 +55,8 @@ storiesOf('questions', module)
   .add('QuestionTags', () => <QuestionTags tags={fixtures.question.tags} type="SC" />)
   .add('TagList', () => (
     <TagListPres
-      tags={[{ id: '1', isActive: false, name: 'CAPM' }, { id: '2', isActive: true, name: 'CF' }]}
       handleTagClick={() => null}
+      tags={[{ id: '1', isActive: false, name: 'CAPM' }, { id: '2', isActive: true, name: 'CF' }]}
     />
   ))
   // HACK: disable test for TagInput as autosuggest breaks...

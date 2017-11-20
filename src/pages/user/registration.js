@@ -27,7 +27,7 @@ const Registration = ({
   >
     <div className="registration">
       <h1>
-        <FormattedMessage id="user.registration.title" defaultMessage="Registration" />
+        <FormattedMessage defaultMessage="Registration" id="user.registration.title" />
       </h1>
 
       {/* TODO: improve message handling */}

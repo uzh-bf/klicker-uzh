@@ -34,10 +34,10 @@ const data = [
 storiesOf('confusion', module)
   .add('ConfusionSlider', () => (
     <SliderWithState
-      title={<h2>Speed</h2>}
-      min={-10}
-      max={10}
       labels={{ max: 'High', mid: 'Okay', min: 'Low' }}
+      max={10}
+      min={-10}
+      title={<h2>Speed</h2>}
     />
   ))
   .add('ConfusionBarometer', () => <BarometerWithState confusionTS={data} intl={intlMock} />)
@@ -46,8 +46,8 @@ storiesOf('confusion', module)
     <ConfusionBarometer
       isActive
       confusionTS={data}
-      intl={intlMock}
       handleActiveToggle={() => null}
+      intl={intlMock}
     />
   ))
   .add('ConfusionSection [NoTest]', () => <ConfusionSection />)
