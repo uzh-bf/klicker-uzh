@@ -45,7 +45,6 @@ const SCCreationOptions = ({
     </div>
   )
 
-  console.log(disabled)
   const SortableOption = disabled ? Option : SortableElement(Option)
 
   const Options = ({ sortableOptions, handleCorrectToggle, handleDelete }) => (

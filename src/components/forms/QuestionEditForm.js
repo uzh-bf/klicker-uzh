@@ -150,7 +150,12 @@ const QuestionEditForm = ({
         </div>
 
         <div className="questionInput questionOptions">
-          <Field component={typeComponents[type]} disabled={!isNewVersion} intl={intl} name="options" />
+          <Field
+            component={typeComponents[type]}
+            disabled={!isNewVersion}
+            intl={intl}
+            name="options"
+          />
         </div>
 
         <div className="actionArea">
