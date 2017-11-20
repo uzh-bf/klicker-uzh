@@ -125,7 +125,6 @@ const Index = ({
           display: flex;
           flex-direction: column;
           height: 100%;
-          background-color: #f5f5f5;
 
           .questionList {
             // HACK: workaround for creating session div overlapping the question list

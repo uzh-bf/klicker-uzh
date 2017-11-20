@@ -24,15 +24,16 @@ const defaultProps = {
 }
 
 const Session = ({
-  button, createdAt, name, blocks, id,
+  button, createdAt, id, name, blocks,
 }) => (
   <div className="session">
     <h2 className="title">
-      {id.slice(0, 7)} - {name}
+      {/* {id.slice(0, 7)} - {name} */}
+      {name}
     </h2>
     <div className="date">
       <FormattedMessage defaultMessage="Created on" id="sessionHistory.string.createdOn" />{' '}
-      {moment(createdAt).format('DD.MM.YYYY HH:MM:SS')}
+      {moment(createdAt).format('DD.MM.YYYY HH:MM')}
     </div>
 
     <div className="details">
@@ -43,6 +44,7 @@ const Session = ({
               id: instance.id,
               title: instance.question.title,
               type: instance.question.type,
+              versions: instance.question.versions,
             }))}
             showSolutions={block.showSolutions}
             timeLimit={block.timeLimit}
@@ -56,7 +58,7 @@ const Session = ({
             Evaluation
           </Button>
         </Link>
-        <Button icon primary labelPosition="left" onClick={button.onClick}>
+        <Button icon primary className="lastButton" labelPosition="left" onClick={button.onClick}>
           <Icon name={button.icon} />
           {button.message}
         </Button>
@@ -78,7 +80,6 @@ const Session = ({
         margin-bottom: 0.5rem;
       }
       .block {
-        margin: 0 0.5rem;
         margin-bottom: 0.5rem;
       }
       .actionArea {
@@ -87,6 +88,14 @@ const Session = ({
 
         > :global(*) {
           margin-bottom: 0.3rem;
+        }
+
+        :global(.button) {
+          margin-right: 0 !important;
+        }
+
+        :global(.lastButton) {
+          margin-bottom: 0 !important;
         }
       }
 
@@ -109,11 +118,12 @@ const Session = ({
           text-align: right;
         }
         .details {
-          border: 1px solid lightgrey;
+          //border: 1px solid lightgrey;
         }
         .block {
           flex: 1;
-          margin: 0.3rem;
+          margin: 0;
+          margin-right: 0.5rem;
         }
         .actionArea {
           align-self: flex-end;
