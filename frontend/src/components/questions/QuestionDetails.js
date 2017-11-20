@@ -69,7 +69,7 @@ const QuestionDetails = ({ description, lastUsed }) => {
 
           .description {
             border-bottom: 1px solid $color-primary;
-            background-color: rgba(124, 184, 228, 0.12);
+            background-color: $color-primary-background;
           }
 
           .col2 {
