@@ -127,14 +127,14 @@ const QuestionEditForm = ({
             </label>
             <div className="versionDropdown">
               <Dropdown
-                defaultValue={versionOptions[versionOptions.length - 1].value}
                 fluid // get last element
+                selection
+                defaultValue={versionOptions[versionOptions.length - 1].value}
                 options={versionOptions}
                 placeholder={intl.formatMessage({
                   defaultMessage: 'Select version',
                   id: 'form.questionEditForm.versionDropdown.placeholder',
                 })}
-                selection
               />
             </div>
             <Button onClick={handleNewVersionToggle}>New Version</Button>
