@@ -81,6 +81,7 @@ const Question = ({
           padding: 10px;
           background-color: white;
           border: 1px solid lightgray;
+          background-color: #f9f9f9;
 
           &.draggable {
             cursor: grab;
