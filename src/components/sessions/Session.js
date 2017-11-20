@@ -15,7 +15,7 @@ const propTypes = {
     onClick: PropTypes.func.isRequired,
   }).isRequired,
   createdAt: PropTypes.string.isRequired,
-  /* id: PropTypes.string.isRequired, */
+  id: PropTypes.string.isRequired,
   name: PropTypes.string.isRequired,
 }
 
@@ -58,7 +58,7 @@ const Session = ({
             Evaluation
           </Button>
         </Link>
-        <Button icon primary labelPosition="left" onClick={button.onClick}>
+        <Button icon primary className="lastButton" labelPosition="left" onClick={button.onClick}>
           <Icon name={button.icon} />
           {button.message}
         </Button>
@@ -80,7 +80,6 @@ const Session = ({
         margin-bottom: 0.5rem;
       }
       .block {
-        margin: 0 0.5rem;
         margin-bottom: 0.5rem;
       }
       .actionArea {
@@ -89,6 +88,14 @@ const Session = ({
 
         > :global(*) {
           margin-bottom: 0.3rem;
+        }
+
+        :global(.button) {
+          margin-right: 0 !important;
+        }
+
+        :global(.lastButton) {
+          margin-bottom: 0 !important;
         }
       }
 
@@ -115,7 +122,8 @@ const Session = ({
         }
         .block {
           flex: 1;
-          margin: 0.3rem;
+          margin: 0;
+          margin-right: 0.5rem;
         }
         .actionArea {
           align-self: flex-end;

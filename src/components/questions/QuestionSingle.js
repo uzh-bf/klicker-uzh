@@ -12,11 +12,15 @@ const QuestionSingle = ({ type, title }) => (
     <div className="type">{type}</div>
 
     <style jsx>{`
+      @import 'src/theme';
+
       .questionSingle {
         background-color: white;
         display: flex;
         flex-flow: row wrap;
         padding: 0.3rem;
+        border: 1px solid $color-primary !important;
+        background-color: $color-primary-background;
 
         .title,
         .type {

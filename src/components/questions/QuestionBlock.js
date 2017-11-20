@@ -36,8 +36,8 @@ const QuestionBlock = ({ status, questions, timeLimit }) => (
       .questionBlock {
         display: flex;
 
-        background-color: lightgrey;
-        border: ${status === 'ACTIVE' ? '2px solid green' : '1px solid grey'};
+        background-color: ${status === 'ACTIVE' ? 'rgba(198, 293, 206, 0.75)' : '#eaeaea'};
+        border: ${status === 'ACTIVE' ? '2px solid rgb(0, 97, 0)' : '1px solid #c5c5c5'};
         flex-flow: row wrap;
         padding: 0.2rem;
 
@@ -58,6 +58,7 @@ const QuestionBlock = ({ status, questions, timeLimit }) => (
 
         .questions {
           flex: 0 0 100%;
+          background-color: white;
 
           > :global(*) {
             border: 1px solid grey;
