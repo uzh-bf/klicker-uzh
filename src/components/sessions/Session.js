@@ -24,7 +24,7 @@ const defaultProps = {
 }
 
 const Session = ({
-  button, createdAt, /* id, */ name, blocks,
+  button, createdAt, id, name, blocks,
 }) => (
   <div className="session">
     <h2 className="title">
