@@ -44,7 +44,8 @@ const SessionTimelineInput = ({ input: { value, onChange } }) => {
 
         .sessionTimeline > .timelineItem {
           border: 1px solid lightgrey;
-          width: 12rem;
+          padding: 0.5rem;
+          width: 15rem;
         }
 
         .sessionTimeline > .timelineItem:not(:last-child) {

@@ -26,7 +26,6 @@ const QuestionTags = ({ tags, type }) => (
       .questionTags {
         display: flex;
         flex-flow: row wrap;
-        background-color: white;
 
         .tag {
           background-color: #f1f1f1;
