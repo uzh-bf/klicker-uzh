@@ -31,7 +31,7 @@
     "logrocket-react": "1.0.0",
     "moment": "2.19.2",
     "next": "4.1.4",
-    "node-sass": "4.6.1",
+    "node-sass": "4.7.1",
     "persistgraphql": "0.3.11",
     "prop-types": "15.6.0",
     "prosemirror-schema-basic": "1.0.0",
