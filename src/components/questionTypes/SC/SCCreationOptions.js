@@ -11,7 +11,7 @@ import SCCreationPlaceholder from './SCCreationPlaceholder'
 import SCCreationOption from './SCCreationOption'
 
 const propTypes = {
-  disabled: PropTypes.bool,
+  disabled: PropTypes.bool.isRequired,
   handleDeleteOption: PropTypes.func.isRequired,
   handleNewOption: PropTypes.func.isRequired,
   handleOptionToggleCorrect: PropTypes.func.isRequired,
@@ -21,10 +21,6 @@ const propTypes = {
     invalid: PropTypes.bool,
   }).isRequired,
   value: PropTypes.arrayOf(PropTypes.shape(SCCreationOption.propTypes)).isRequired,
-}
-
-const defaultProps = {
-  disabled: false,
 }
 
 // create the purely functional component
@@ -49,6 +45,7 @@ const SCCreationOptions = ({
     </div>
   )
 
+  console.log(disabled)
   const SortableOption = disabled ? Option : SortableElement(Option)
 
   const Options = ({ sortableOptions, handleCorrectToggle, handleDelete }) => (
@@ -108,10 +105,10 @@ const SCCreationOptions = ({
 }
 
 SCCreationOptions.propTypes = propTypes
-SCCreationOptions.defaultProps = defaultProps
 
 export default compose(
-  mapProps(({ input: { onChange, value }, meta }) => ({
+  mapProps(({ input: { onChange, value }, meta, disabled }) => ({
+    disabled,
     // HACK: mapping as a workaround for the value.choices problem
     meta,
     onChange: choices => onChange({ ...value, choices }),
