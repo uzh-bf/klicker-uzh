@@ -24,6 +24,7 @@ const propTypes = {
   onToggleShowSolution: PropTypes.func.isRequired,
   options: PropTypes.object.isRequired,
   pageTitle: PropTypes.string,
+  showSolution: PropTypes.bool,
   statistics: PropTypes.shape({
     mean: PropTypes.number.isRequired,
     median: PropTypes.number.isRequired,
@@ -39,6 +40,7 @@ const defaultProps = {
   description: undefined,
   instanceSummary: [],
   pageTitle: 'EvaluationLayout',
+  showSolution: false,
   statistics: undefined,
   totalResponses: undefined,
 }
@@ -46,6 +48,7 @@ const defaultProps = {
 function EvaluationLayout({
   intl,
   pageTitle,
+  showSolution,
   onToggleShowSolution,
   chart,
   type,
@@ -91,6 +94,7 @@ function EvaluationLayout({
         <div className="settings">
           <Checkbox
             toggle
+            defaultChecked={showSolution}
             label={intl.formatMessage({
               defaultMessage: 'Show solution',
               id: 'teacher.evaluation.showSolution.label',
