@@ -1,14 +1,55 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { List } from 'semantic-ui-react'
+import { Icon, List } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
-import { QuestionTypes } from '../../constants'
+import { CHART_COLORS, QuestionTypes } from '../../constants'
 
 const propTypes = {
   questionOptions: PropTypes.object.isRequired,
   questionType: PropTypes.string.isRequired,
 }
+
+const Choice = ({ choice, index }) => (
+  <div className="choice">
+    <div className="colorSquare">
+      <Icon name="square icon" />
+    </div>
+    <div className="content">{choice.name}</div>
+    <div className="char">{String.fromCharCode(65 + index)}</div>
+    <style jsx>{`
+      .choice {
+        display: flex;
+        flex-flow: row wrap;
+        align-items: center;
+
+        border-bottom: 1px solid lightgrey;
+
+        padding: 0.1rem 0;
+
+        &:first-child {
+          border-top: 1px solid lightgrey;
+        }
+
+        .colorSquare :global(i) {
+          flex: 0 0 auto;
+
+          color: ${CHART_COLORS[index % 5]};
+        }
+
+        .char {
+          flex: 0 0 auto;
+
+          font-weight: bold;
+        }
+
+        .content {
+          flex: 1;
+        }
+      }
+    `}</style>
+  </div>
+)
 
 const Possibilities = ({ questionOptions, questionType }) => (
   <div className="possibilities">
@@ -39,9 +80,9 @@ const Possibilities = ({ questionOptions, questionType }) => (
     {(() => {
       if ([QuestionTypes.SC, QuestionTypes.MC].includes(questionType)) {
         return (
-          <List celled ordered>
-            {questionOptions.choices.map(choice => (
-              <List.Item key={choice.id}>{choice.name}</List.Item>
+          <List celled className="choices">
+            {questionOptions.choices.map((choice, index) => (
+              <Choice choice={choice} index={index} />
             ))}
           </List>
         )
