@@ -31,14 +31,31 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
     <div>
       {runningSession ? (
         <div className="session running">
-          <h2>Running session</h2>
+          <h2>
+            <FormattedMessage
+              defaultMessage="Running session"
+              id="sessionHistory.title.runningSession"
+            />
+          </h2>
           <Session {...runningSession} />
         </div>
       ) : (
-        <div className="session">No session is currently running.</div>
+        <div className="session">
+          <FormattedMessage
+            defaultMessage="No session is currently running."
+            id="sessionHistory.string.noSessionRunning"
+          />
+        </div>
       )}
 
-      {runningSession && <h2>Remaining sessions</h2>}
+      {runningSession && (
+        <h2>
+          <FormattedMessage
+            defaultMessage="Remaining sessions"
+            id="sessionHistory.title.remainingSessions"
+          />
+        </h2>
+      )}
       {sessions.map(session => (
         <div className="session" key={session.id}>
           <Session {...session} />
@@ -60,24 +77,8 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
         .session.running {
           padding: 0.5rem;
 
-          animation-name: color;
-          animation-duration: 2.5s;
-          animation-iteration-count: infinite;
-
-          @keyframes color {
-            0% {
-              background-color: $background-color;
-              border: 1px solid $color-primary;
-            }
-            50% {
-              background-color: transparent;
-              border: 1px solid transparent;
-            }
-            100% {
-              background-color: $background-color;
-              border: 1px solid $color-primary;
-            }
-          }
+          background-color: $background-color;
+          border: 1px solid $color-primary;
         }
       `}</style>
     </div>

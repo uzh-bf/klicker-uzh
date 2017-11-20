@@ -15,7 +15,6 @@ const QuestionSingle = ({ type, title }) => (
       @import 'src/theme';
 
       .questionSingle {
-        background-color: white;
         display: flex;
         flex-flow: row wrap;
         padding: 0.3rem;

@@ -1,7 +1,8 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import Link from 'next/link'
-import { intlShape } from 'react-intl'
+import classNames from 'classnames'
+import { intlShape, FormattedMessage } from 'react-intl'
 import { Button, Icon } from 'semantic-ui-react'
 
 import { QuestionBlock } from '../questions'
@@ -42,23 +43,35 @@ const SessionTimeline = ({
       <div className="evaluationLink">
         <Icon name="external" />{' '}
         <Link prefetch href={`/sessions/evaluation/${sessionId}`}>
-          <a target="_blank">Evaluation</a>
+          <a target="_blank">
+            <FormattedMessage defaultMessage="Evaluation" id="runningSession.button.evaluation" />
+          </a>
         </Link>
       </div>
     </div>
     <div className="blocks">
-      {blocks.map(block => (
-        <div className="block" key={block.id}>
-          <QuestionBlock
-            showSolutions
-            questions={block.instances.map(instance => ({
-              id: instance.id,
-              title: instance.question.title,
-              type: instance.question.type,
-            }))}
-            status={block.status}
-            timeLimit={60}
-          />
+      {blocks.map((block, index) => (
+        <div className="blockWrap">
+          <div className={classNames('waiting', { first: index === 0 })}>
+            <Icon name={index === 0 ? 'video play outline' : 'pause circle outline'} size="big" />
+          </div>
+          <div className="block" key={block.id}>
+            <QuestionBlock
+              showSolutions
+              questions={block.instances.map(instance => ({
+                id: instance.id,
+                title: instance.question.title,
+                type: instance.question.type,
+              }))}
+              status={block.status}
+              timeLimit={60}
+            />
+          </div>
+          {index === blocks.length - 1 && (
+            <div className="waiting last">
+              <Icon name="stop circle outline" size="big" />
+            </div>
+          )}
         </div>
       ))}
     </div>
@@ -92,72 +105,112 @@ const SessionTimeline = ({
       .sessionTimeline {
         display: flex;
         flex-direction: column;
-      }
-
-      .topRow {
-        flex: 1;
-
-        display: flex;
-
-        background: lightgrey;
-        padding: 1rem;
-      }
-
-      .runningTime,
-      .evaluationLink {
-        margin-left: 2rem;
-      }
-
-      .blocks {
-        flex: 1;
-
-        display: flex;
-        flex-direction: column;
-
-        border: 1px solid lightgray;
-        padding: 1rem;
-      }
-
-      .block:not(:first-child) {
-        margin-top: 1rem;
-      }
-
-      .buttons {
-        flex: 1;
-
-        display: flex;
-        flex-flow: row wrap;
-        justify-content: space-between;
-
-        margin-top: 1rem;
-      }
-
-      .buttons > :global(button) {
-        margin-right: 0;
-      }
-
-      @include desktop-tablet-only {
-        .sessionTimeline {
-          flex-flow: row wrap;
-        }
 
         .topRow {
-          flex: 0 0 100%;
+          flex: 1;
 
-          padding: 0.5rem;
+          display: flex;
+
+          background: lightgrey;
+          padding: 1rem;
+        }
+
+        .runningTime,
+        .evaluationLink {
+          margin-left: 2rem;
         }
 
         .blocks {
-          flex: 0 0 100%;
+          flex: 1;
 
-          flex-direction: row;
+          display: flex;
+          flex-direction: column;
 
-          padding: 0.5rem;
+          border: 1px solid lightgray;
+          padding: 1rem;
         }
 
-        .block,
-        .block:not(:first-child) {
-          margin: 0.3rem;
+        .blockWrap {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+
+          background: linear-gradient(
+            to bottom,
+            transparent 0%,
+            transparent calc(50% - 0.81px),
+            lightgrey calc(50% - 0.8px),
+            lightgrey calc(50% + 0.8px),
+            transparent calc(50% + 0.81px),
+            transparent 100%
+          );
+
+          .waiting {
+            margin: 0 0.2rem;
+            padding: 0 0.7rem;
+
+            &.first {
+              padding-left: 0;
+              margin-left: 0;
+            }
+
+            &.last {
+              padding-right: 0;
+              margin-right: 0;
+            }
+
+            :global(i) {
+              background-color: white;
+              color: lightgrey;
+              margin-right: 0;
+            }
+          }
+
+          .block {
+            &:not(:first-child) {
+              margin-top: 1rem;
+            }
+          }
+        }
+
+        .buttons {
+          flex: 1;
+
+          display: flex;
+          flex-flow: row wrap;
+          justify-content: space-between;
+
+          margin-top: 1rem;
+        }
+
+        .buttons > :global(button) {
+          margin-right: 0;
+        }
+
+        @include desktop-tablet-only {
+          flex-flow: row wrap;
+
+          .topRow {
+            flex: 0 0 100%;
+
+            padding: 0.5rem;
+          }
+
+          .blocks {
+            flex: 0 0 100%;
+
+            flex-direction: row;
+
+            padding: 0.5rem;
+          }
+
+          .blockWrap {
+            .block,
+            .block:not(:first-child) {
+              margin: 0.3rem;
+              width: 17rem;
+            }
+          }
         }
       }
     `}</style>

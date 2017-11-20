@@ -96,16 +96,16 @@ export const NavbarPres = ({
             padding-left: 1rem;
             display: flex;
             align-items: center;
-            background: $background-color;
           }
 
-          :global(.loginArea) {
-            background-color: $background-color;
-          }
-
-          :global(.sidebar) {
+          :global(.sidebar),
+          :global(.menu) {
             border-radius: 0;
             background-color: $background-color;
+          }
+
+          :global(.sidebar.active) {
+            background-color: $color-primary-20p;
           }
         }
 
