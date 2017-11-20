@@ -29,7 +29,7 @@ const QuestionBlock = ({ status, questions, timeLimit }) => (
     <div className="sessionStatus">{status}</div>
     <div className="questions">
       {questions.map(({ id, title, type }) => (
-        <QuestionSingle key={id} id={id} title={title} type={type} description={'desc'} />
+        <QuestionSingle description={'desc'} id={id} key={id} title={title} type={type} />
       ))}
     </div>
     <style jsx>{`
