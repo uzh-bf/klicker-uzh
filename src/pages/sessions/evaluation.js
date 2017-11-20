@@ -26,7 +26,8 @@ import { SessionEvaluationQuery } from '../../graphql/queries'
 import { sessionStatusShape, statisticsShape } from '../../propTypes'
 
 const propTypes = {
-  activeInstance: PropTypes.number,
+  activeInstance: PropTypes.object.isRequired,
+  activeInstanceIndex: PropTypes.number,
   handleChangeActiveInstance: PropTypes.func.isRequired,
   handleChangeVisualizationType: PropTypes.func.isRequired,
   handleShowGraph: PropTypes.func.isRequired,
@@ -40,12 +41,13 @@ const propTypes = {
   visualizationType: PropTypes.string.isRequired,
 }
 const defaultProps = {
-  activeInstance: 0,
+  activeInstanceIndex: 0,
   instanceSummary: [],
   statistics: undefined,
 }
 
 function Evaluation({
+  activeInstanceIndex,
   activeInstance,
   instanceSummary,
   intl,
@@ -79,7 +81,7 @@ function Evaluation({
   )
 
   const layoutProps = {
-    activeInstance,
+    activeInstance: activeInstanceIndex,
     chart,
     data,
     description,
@@ -185,14 +187,14 @@ export default compose(
   ),
   withStateHandlers(
     ({ sessionStatus }) => ({
-      activeInstance: 0,
+      activeInstanceIndex: 0,
       showGraph: sessionStatus !== 'RUNNING',
       showSolution: sessionStatus !== 'RUNNING',
       visualizationType: 'PIE_CHART',
     }),
     {
       // handle change of active instance
-      handleChangeActiveInstance: () => activeInstance => () => ({ activeInstance }),
+      handleChangeActiveInstance: () => activeInstanceIndex => ({ activeInstanceIndex }),
 
       // handle change of vis. type
       handleChangeVisualizationType: () => visualizationType => ({ visualizationType }),
@@ -205,14 +207,15 @@ export default compose(
       handleToggleShowSolution: ({ showSolution }) => () => ({ showSolution: !showSolution }),
     },
   ),
-  withProps(({ activeInstances, activeInstance }) => {
-    const active = activeInstances[activeInstance]
-    const { question, results } = active
+  withProps(({ activeInstances, activeInstanceIndex, handleChangeActiveInstance }) => {
+    const activeInstance = activeInstances[activeInstanceIndex]
+    const { question, results } = activeInstance
 
     // TODO: update question type to FREE:RANGE
     if (question.type === 'FREE') {
       return {
-        activeInstance: active,
+        activeInstance,
+        handleChangeActiveInstance: index => () => handleChangeActiveInstance(index),
         statistics: {
           max: calculateMax(results),
           mean: calculateMean(results),
@@ -223,7 +226,8 @@ export default compose(
     }
 
     return {
-      activeInstance: active,
+      activeInstance,
+      handleChangeActiveInstance: index => () => handleChangeActiveInstance(index),
     }
   }),
 )(Evaluation)
