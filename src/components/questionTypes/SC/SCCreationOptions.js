@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
-import { SortableContainer, SortableElement, arrayMove } from 'react-sortable-hoc'
+import { arrayMove, SortableContainer, SortableElement } from 'react-sortable-hoc'
 import { FormattedMessage } from 'react-intl'
 import { compose, mapProps, withHandlers } from 'recompose'
 import { FaQuestionCircle } from 'react-icons/lib/fa'
@@ -48,18 +48,19 @@ const SCCreationOptions = ({
       `}</style>
     </div>
   )
+
   const SortableOption = disabled ? Option : SortableElement(Option)
 
   const Options = ({ sortableOptions, handleCorrectToggle, handleDelete }) => (
     <div className="options">
       {sortableOptions.map(({ correct, name }, index) => (
         <SortableOption
-          key={`sortable-${name}`}
-          index={index}
-          name={name}
           correct={correct}
           handleCorrectToggle={handleCorrectToggle(index)}
           handleDelete={handleDelete(index)}
+          index={index}
+          key={`sortable-${name}`}
+          name={name}
         />
       ))}
     </div>
@@ -79,7 +80,7 @@ const SCCreationOptions = ({
           </a>
         </label>
 
-        <ReactTooltip id="SCCreationHelp" delayShow={250} delayHide={250} place="right">
+        <ReactTooltip delayHide={250} delayShow={250} id="SCCreationHelp" place="right">
           <FormattedMessage
             defaultMessage="Add answering options the respondents can choose from."
             id="teacher.createQuestion.optionsSC.tooltip"
@@ -87,9 +88,9 @@ const SCCreationOptions = ({
         </ReactTooltip>
 
         <SortableOptions
-          sortableOptions={value || []}
           handleCorrectToggle={handleOptionToggleCorrect}
           handleDelete={handleDeleteOption}
+          sortableOptions={value || []}
           onSortEnd={handleUpdateOrder}
         />
 

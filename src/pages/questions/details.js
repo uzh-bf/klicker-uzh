@@ -37,8 +37,8 @@ const EditQuestion = ({
   >
     <QuestionEditForm
       intl={intl}
-      title={title}
       tags={tags.map(tag => tag.name)}
+      title={title}
       type={type}
       versions={versions}
     />

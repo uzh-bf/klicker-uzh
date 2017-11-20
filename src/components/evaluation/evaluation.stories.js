@@ -12,6 +12,7 @@ import {
   PieChart,
   TableChart,
   CloudChart,
+  Statistics,
 } from '.'
 
 import { intlMock } from '../../../.storybook/utils'
@@ -48,7 +49,7 @@ storiesOf('evaluation/components', module)
       questionType="SC"
     />
   ))
-  .add('Possibilities (FREE)', () => (
+  .add('Possibilities (FREE:RANGE)', () => (
     <Possibilities
       intl={intlMock}
       questionOptions={{
@@ -61,8 +62,9 @@ storiesOf('evaluation/components', module)
       questionType="FREE"
     />
   ))
+  .add('Statistics', () => <Statistics max={100} mean={34.3453421} median={23} min={10} />)
   .add('Visualization', () => (
-    <VisualizationType intl={intlMock} onChangeType={console.log('State changed')} type="SC" />
+    <VisualizationType intl={intlMock} type="SC" onChangeType={console.log('State changed')} />
   ))
 
 storiesOf('evaluation/charts', module)

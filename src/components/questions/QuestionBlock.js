@@ -1,24 +1,25 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import classNames from 'classnames'
 import { Icon } from 'semantic-ui-react'
 
 import QuestionSingle from './QuestionSingle'
 
 const propTypes = {
   questions: PropTypes.arrayOf(PropTypes.shape(QuestionSingle.propTypes)).isRequired,
-  showSolutions: PropTypes.bool,
+  // showSolutions: PropTypes.bool,
   status: PropTypes.string,
   timeLimit: PropTypes.number,
 }
 
 const defaultProps = {
-  showSolutions: false,
+  // showSolutions: false,
   status: 'PLANNED',
   timeLimit: 0,
 }
 
 const QuestionBlock = ({ status, questions, timeLimit }) => (
-  <div className="questionBlock">
+  <div className={classNames('questionBlock', { active: status === 'ACTIVE' })}>
     <div className="timeLimit">
       <Icon name="clock" />
       {timeLimit}s
@@ -29,17 +30,24 @@ const QuestionBlock = ({ status, questions, timeLimit }) => (
     <div className="sessionStatus">{status}</div>
     <div className="questions">
       {questions.map(({ id, title, type }) => (
-        <QuestionSingle key={id} id={id} title={title} type={type} />
+        <QuestionSingle id={id} key={id} title={title} type={type} />
       ))}
     </div>
     <style jsx>{`
+      @import 'src/theme';
+
       .questionBlock {
         display: flex;
 
-        background-color: lightgrey;
-        border: ${status === 'ACTIVE' ? '2px solid green' : '1px solid grey'};
+        background-color: #eaeaea;
+        border: 2px solid #c5c5c5;
         flex-flow: row wrap;
         padding: 0.2rem;
+
+        &.active {
+          border: 2px solid rgb(0, 97, 0);
+          background-color: rgb(198, 293, 206);
+        }
 
         .timeLimit,
         .showSolution,
@@ -58,6 +66,8 @@ const QuestionBlock = ({ status, questions, timeLimit }) => (
 
         .questions {
           flex: 0 0 100%;
+          height: 100%;
+          background-color: white;
 
           > :global(*) {
             border: 1px solid grey;

@@ -41,7 +41,7 @@ function ActionMenu({
             {isSkipModeActive ? (
               <FormattedMessage defaultMessage="Skip" id="common.string.skip" />
             ) : (
-              <FormattedMessage id="common.string.submit" defaultMessage="Submit" />
+              <FormattedMessage defaultMessage="Submit" id="common.string.submit" />
             )}
           </Button>
         </Menu.Item>

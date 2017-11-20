@@ -21,7 +21,7 @@ const ResetPassword = ({ intl, handleSubmit }) => (
   >
     <div className="resetPassword">
       <h1>
-        <FormattedMessage id="user.resetPassword.title" defaultMessage="Reset password" />
+        <FormattedMessage defaultMessage="Reset password" id="user.resetPassword.title" />
       </h1>
 
       <PasswordResetForm intl={intl} onSubmit={handleSubmit} />

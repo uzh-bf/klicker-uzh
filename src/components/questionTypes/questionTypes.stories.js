@@ -80,7 +80,7 @@ storiesOf('questionTypes/SC', module)
   ))
   .add('SC Creation Placeholder', () => <SCCreationPlaceholder />)
   .add('SC Creation Preview', () => (
-    <SCCreationPreview title="Hello question" description="abcd" options={{ choices: options }} />
+    <SCCreationPreview description="abcd" options={{ choices: options }} title="Hello question" />
   ))
 
 storiesOf('questionTypes/FREE', module)
@@ -105,27 +105,27 @@ storiesOf('questionTypes/FREE', module)
   .add('FREE Answering Options (Number restriction)', () => (
     <FREEAnswerOptions
       options={{ restrictions: { max: 87, min: 900, type: 'RANGE' } }}
+      value={555}
       onChange={(a) => {
         console.log(a)
       }}
-      value={555}
     />
   ))
   .add('FREE Creation Options [NoTest]', () => <FREECreationOptionsWithState />)
   .add('FREE Creation Preview (unrestricted)', () => (
-    <FREECreationPreview title="Hello" description="World!" />
+    <FREECreationPreview description="World!" title="Hello" />
   ))
   .add('FREE Creation Preview (Lower bound restriction)', () => (
     <FREECreationPreview
-      title="Hello"
-      options={{ restrictions: { max: null, min: 90, type: 'RANGE' } }}
       description="World!"
+      options={{ restrictions: { max: null, min: 90, type: 'RANGE' } }}
+      title="Hello"
     />
   ))
   .add('FREE Creation Preview (Number-Range)', () => (
     <FREECreationPreview
-      title="Hello"
-      options={{ restrictions: { max: 900, min: 90, type: 'RANGE' } }}
       description="World!"
+      options={{ restrictions: { max: 900, min: 90, type: 'RANGE' } }}
+      title="Hello"
     />
   ))

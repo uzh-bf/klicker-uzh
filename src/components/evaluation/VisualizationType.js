@@ -16,21 +16,21 @@ const options = [
   { text: 'Bar Chart', value: 'BAR_CHART', withinType: ['SC', 'MC', 'FREE', 'FREE:RANGE'] },
   { text: 'Word cloud', value: 'WORD_CLOUD', withinType: ['FREE'] },
   { text: 'Table', value: 'TABLE', withinType: ['SC', 'MC', 'FREE', 'FREE:RANGE'] },
-  { text: 'Histogramm', value: 'HISTOGRAM', withinType: ['FREE:RANGE'] },
+  { text: 'Histogramm', value: 'HISTOGRAM', withinType: ['FREE', 'FREE:RANGE'] }, // TODO Historgamm should not be FREE
 ]
 
 const VisualizationType = ({ intl, onChangeType, type }) => (
   <div className="visualizationType">
     <Dropdown
-      upward
       search
       selection
+      upward
       options={options.filter(o => o.withinType.includes(type))}
-      onChange={(param, data) => onChangeType(data.value)}
       placeholder={intl.formatMessage({
         defaultMessage: 'Visualization',
         id: 'teacher.evaluation.visualization.title',
       })}
+      onChange={(param, data) => onChangeType(data.value)}
     />
 
     <style jsx>{`

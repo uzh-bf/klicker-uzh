@@ -36,7 +36,7 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
 
       <div className="column col3">
         <ListWithHeader items={lastUsed.length > 0 ? lastUsed : ['Never used']}>
-          <FormattedMessage id="questionPool.question.lastUsed" defaultMessage="Last used" />
+          <FormattedMessage defaultMessage="Last used" id="questionPool.question.lastUsed" />
         </ListWithHeader>
       </div>
 
@@ -72,7 +72,7 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
 
           .description {
             border-bottom: 1px solid $color-primary;
-            background-color: rgba(124, 184, 228, 0.12);
+            background-color: $color-primary-background;
           }
 
           .col2 {

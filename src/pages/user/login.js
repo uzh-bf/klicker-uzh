@@ -25,7 +25,7 @@ const Login = ({ intl, error, handleSubmit }) => (
   >
     <div className="login">
       <h1>
-        <FormattedMessage id="user.login.title" defaultMessage="Login" />
+        <FormattedMessage defaultMessage="Login" id="user.login.title" />
       </h1>
 
       {/* TODO: improve message handling */}

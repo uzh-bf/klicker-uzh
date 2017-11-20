@@ -141,23 +141,23 @@ const QuestionCreationForm = ({
     <div className="questionCreationForm">
       <Form onSubmit={onSubmit}>
         <div className="questionInput questionTitle">
-          <Field name="title" component={TitleInput} />
+          <Field component={TitleInput} name="title" />
         </div>
 
         <div className="questionInput questionType">
-          <Field name="type" component={TypeChooser} intl={intl} />
+          <Field component={TypeChooser} intl={intl} name="type" />
         </div>
 
         <div className="questionInput questionTags">
-          <Field name="tags" component={TagInput} tags={tags} />
+          <Field component={TagInput} name="tags" tags={tags} />
         </div>
 
         <div className="questionInput questionContent">
-          <Field name="content" component={ContentInput} />
+          <Field component={ContentInput} name="content" />
         </div>
 
         <div className="questionInput questionOptions">
-          <Field name="options" component={typeComponents[type].input} intl={intl} />
+          <Field component={typeComponents[type].input} intl={intl} name="options" />
         </div>
 
         <div className="questionPreview">
@@ -167,7 +167,7 @@ const QuestionCreationForm = ({
               id="teacher.createQuestion.previewLabel"
             />
           </h2>
-          <Preview title={title} description={content} options={options} />
+          <Preview description={content} options={options} title={title} />
         </div>
 
         <Button className="discard" type="reset" onClick={onDiscard}>

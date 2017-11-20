@@ -42,10 +42,10 @@ storiesOf('forms/components', module)
   .add('QuestionCreationForm [NoTest]', () => <QuestionCreationForm intl={intlMock} />)
   .add('QuestionEditForm', () => (
     <QuestionEditForm
-      intl={intlMock}
       content={
         'Dies ist die lange Ausführung der Frage. Annahme du bist klein, wie möchtest du das mit deiner Grösse schaffen?'
       }
+      intl={intlMock}
       options={{
         choices: [
           { correct: false, name: 'Hello' },
@@ -57,14 +57,14 @@ storiesOf('forms/components', module)
           type: 'NONE',
         },
       }}
-      title={'Was ist das denn für eine Frage?'}
       tags={['Hallo Tag', 'CAPM', 'Internet']}
+      title={'Was ist das denn für eine Frage?'}
       type={'SC'}
       versions={[1, 2, 3, 4, 5]}
     />
   ))
   .add('SessionCreationForm', () => (
-    <SessionCreationForm intl={intlMock} handleSubmit={() => null} />
+    <SessionCreationForm handleSubmit={() => null} intl={intlMock} />
   ))
 storiesOf('forms/helpers', module)
   .addDecorator(getStoryWithRedux)
@@ -87,11 +87,11 @@ storiesOf('forms/helpers', module)
       form fields
     </FormWithLinks>
   ))
-  .add('SemanticInput', () => <SemanticInput label="label" meta={{}} input={{}} />)
+  .add('SemanticInput', () => <SemanticInput input={{}} label="label" meta={{}} />)
   .add('SemanticInput (with error)', () => (
     <SemanticInput
+      input={{}}
       label="label"
       meta={{ error: 'fail', invalid: true, touched: true }}
-      input={{}}
     />
   ))

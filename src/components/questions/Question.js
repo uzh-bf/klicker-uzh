@@ -48,10 +48,10 @@ const Question = ({
       {creationMode && (
         <div className={classNames('sessionMembership', { active: !draggable })}>
           <input
-            type="checkbox"
+            checked={!draggable}
             className="ui checkbox"
             name={`check-${id}`}
-            checked={!draggable}
+            type="checkbox"
             onClick={() => null}
           />
         </div>
@@ -67,7 +67,7 @@ const Question = ({
         </div>
 
         <div className="details">
-          <QuestionDetails questionId={id} description={description} lastUsed={lastUsed} />
+          <QuestionDetails description={description} lastUsed={lastUsed} questionId={id} />
         </div>
       </div>
 
@@ -79,8 +79,8 @@ const Question = ({
           flex-flow: column nowrap;
 
           padding: 10px;
-          background-color: white;
           border: 1px solid lightgray;
+          background-color: #f9f9f9;
 
           &.draggable {
             cursor: grab;
@@ -118,8 +118,6 @@ const Question = ({
             .title {
               font-size: 1.2rem;
               margin: 0;
-              background-color: white;
-              //margin-bottom: 0.5rem;
             }
           }
 

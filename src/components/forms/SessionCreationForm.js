@@ -36,11 +36,11 @@ const SessionCreationForm = ({
 }) => (
   <form className="ui form sessionCreation" onSubmit={handleSubmit(onSave)}>
     <div className="sessionName">
-      <Field name="sessionName" label="Name" component={SemanticInput} />
+      <Field component={SemanticInput} label="Name" name="sessionName" />
     </div>
 
     <div className="sessionTimeline">
-      <Field name="questions" component={SessionTimelineInput} />
+      <Field component={SessionTimelineInput} name="questions" />
     </div>
 
     <div className="actionArea">

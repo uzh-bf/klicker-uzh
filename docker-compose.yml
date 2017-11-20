@@ -1,6 +1,9 @@
-version: '3'
+version: '2'
 services:
   react:
-    build: .
+    build:
+      context: .
+      args:
+        API_URL: "localhost:4000/graphql"
     ports:
       - "3000:3000"

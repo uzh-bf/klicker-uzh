@@ -276,10 +276,10 @@ exports[`Storyshots common/navbar AccountArea 1`] = `
 
 exports[`Storyshots common/navbar Navbar 1`] = `
 <div
-  className="jsx-1400096577 navbar"
+  className="jsx-4216236803 navbar"
 >
   <div
-    className="jsx-1400096577 sideArea"
+    className="jsx-4216236803 sideArea"
   >
     <div
       className="ui borderless noBorder menu"
@@ -294,14 +294,14 @@ exports[`Storyshots common/navbar Navbar 1`] = `
         />
       </div>
       <h1
-        className="jsx-1400096577"
+        className="jsx-4216236803"
       >
         Example page
       </h1>
     </div>
   </div>
   <div
-    className="jsx-1400096577 searchArea"
+    className="jsx-4216236803 searchArea"
   >
     <div
       className="ui fluid icon input"
@@ -320,7 +320,7 @@ exports[`Storyshots common/navbar Navbar 1`] = `
     </div>
   </div>
   <div
-    className="jsx-1400096577 accountArea"
+    className="jsx-4216236803 accountArea"
   >
     <div
       className="ui borderless loginArea noBorder menu"
@@ -1047,7 +1047,7 @@ exports[`Storyshots evaluation/components Info 1`] = `
 </div>
 `;
 
-exports[`Storyshots evaluation/components Possibilities (FREE) 1`] = `
+exports[`Storyshots evaluation/components Possibilities (FREE:RANGE) 1`] = `
 <div
   className="jsx-2154886852 possibilities"
 >
@@ -1138,6 +1138,85 @@ exports[`Storyshots evaluation/components Possibilities (SC) 1`] = `
       role="listitem"
     >
       This is the fourth possible answer
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots evaluation/components Statistics 1`] = `
+<div
+  className="jsx-324462402 statistics"
+>
+  <h2
+    className="jsx-324462402"
+  >
+    <span>
+      Statistics
+    </span>
+  </h2>
+  <div
+    className="ui celled list"
+    role="list"
+  >
+    <div
+      className="item"
+      data-value={undefined}
+      onClick={[Function]}
+      role="listitem"
+    >
+      <div
+        className="header"
+      >
+        Minimum
+      </div>
+      10
+    </div>
+    <div
+      className="item"
+      data-value={undefined}
+      onClick={[Function]}
+      role="listitem"
+    >
+      <div
+        className="header"
+      >
+        Maximum
+      </div>
+      100
+    </div>
+    <div
+      className="item"
+      data-value={undefined}
+      onClick={[Function]}
+      role="listitem"
+    >
+      <div
+        className="header"
+      >
+        Mean 
+        <i
+          aria-hidden="true"
+          className="blue square icon"
+        />
+      </div>
+      34.35
+    </div>
+    <div
+      className="item"
+      data-value={undefined}
+      onClick={[Function]}
+      role="listitem"
+    >
+      <div
+        className="header"
+      >
+        Median 
+        <i
+          aria-hidden="true"
+          className="red square icon"
+        />
+      </div>
+      23
     </div>
   </div>
 </div>
@@ -1738,10 +1817,10 @@ exports[`Storyshots forms/components SessionCreationForm 1`] = `
     className="jsx-833882662 sessionTimeline"
   >
     <div
-      className="jsx-3047766213 sessionTimeline"
+      className="jsx-911078851 sessionTimeline"
     >
       <div
-        className="jsx-3047766213 timelineItem"
+        className="jsx-911078851 timelineItem"
       >
         <div
           className="jsx-663420075 dropzone"
@@ -2606,78 +2685,78 @@ exports[`Storyshots questionTypes/SC SC Creation Preview 1`] = `
 
 exports[`Storyshots questions Question (MC, >1 versions) 1`] = `
 <div
-  className="jsx-1593239629 question"
+  className="jsx-1676723784 question"
 >
   <div
-    className="jsx-1593239629 wrapper"
+    className="jsx-1676723784 wrapper"
   >
     <h2
-      className="jsx-1593239629 title"
+      className="jsx-1676723784 title"
     >
       This is a long question
        
       (v2)
     </h2>
     <div
-      className="jsx-1593239629 tags"
+      className="jsx-1676723784 tags"
     >
       <div
-        className="jsx-1303596148 questionTags"
+        className="jsx-2945381066 questionTags"
       >
         <div
-          className="jsx-1303596148 tag"
+          className="jsx-2945381066 tag"
         >
           CAPM
         </div>
         <div
-          className="jsx-1303596148 tag"
+          className="jsx-2945381066 tag"
         >
           Risk
         </div>
         <div
-          className="jsx-1303596148 type tag"
+          className="jsx-2945381066 type tag"
         >
           MC
         </div>
       </div>
     </div>
     <div
-      className="jsx-1593239629 details"
+      className="jsx-1676723784 details"
     >
       <div
-        className="jsx-1141390511 questionDetails"
+        className="jsx-318444645 questionDetails"
       >
         <div
-          className="jsx-1141390511 column description"
+          className="jsx-318444645 column description"
         >
           -
         </div>
         <div
-          className="jsx-1141390511 column col2"
+          className="jsx-318444645 column col2"
         >
           <p
-            className="jsx-1141390511"
+            className="jsx-318444645"
           >
             Antworten Total: 
             <strong
-              className="jsx-1141390511"
+              className="jsx-318444645"
             >
               999
             </strong>
           </p>
           <p
-            className="jsx-1141390511"
+            className="jsx-318444645"
           >
             Korrekte Antworten: 
             <strong
-              className="jsx-1141390511"
+              className="jsx-318444645"
             >
               88%
             </strong>
           </p>
         </div>
         <div
-          className="jsx-1141390511 column col3"
+          className="jsx-318444645 column col3"
         >
           <div
             className="jsx-319169000"
@@ -2706,7 +2785,7 @@ exports[`Storyshots questions Question (MC, >1 versions) 1`] = `
           </div>
         </div>
         <div
-          className="jsx-1141390511 column buttons"
+          className="jsx-318444645 column buttons"
         >
           <button
             className="ui button button"
@@ -2798,67 +2877,67 @@ exports[`Storyshots questions Question (MC, >1 versions) 1`] = `
 
 exports[`Storyshots questions Question (MC, no tags) 1`] = `
 <div
-  className="jsx-1593239629 question"
+  className="jsx-1676723784 question"
 >
   <div
-    className="jsx-1593239629 wrapper"
+    className="jsx-1676723784 wrapper"
   >
     <h2
-      className="jsx-1593239629 title"
+      className="jsx-1676723784 title"
     >
       This is a long question
        
     </h2>
     <div
-      className="jsx-1593239629 tags"
+      className="jsx-1676723784 tags"
     >
       <div
-        className="jsx-1303596148 questionTags"
+        className="jsx-2945381066 questionTags"
       >
         <div
-          className="jsx-1303596148 type tag"
+          className="jsx-2945381066 type tag"
         >
           MC
         </div>
       </div>
     </div>
     <div
-      className="jsx-1593239629 details"
+      className="jsx-1676723784 details"
     >
       <div
-        className="jsx-1141390511 questionDetails"
+        className="jsx-318444645 questionDetails"
       >
         <div
-          className="jsx-1141390511 column description"
+          className="jsx-318444645 column description"
         >
           -
         </div>
         <div
-          className="jsx-1141390511 column col2"
+          className="jsx-318444645 column col2"
         >
           <p
-            className="jsx-1141390511"
+            className="jsx-318444645"
           >
             Antworten Total: 
             <strong
-              className="jsx-1141390511"
+              className="jsx-318444645"
             >
               999
             </strong>
           </p>
           <p
-            className="jsx-1141390511"
+            className="jsx-318444645"
           >
             Korrekte Antworten: 
             <strong
-              className="jsx-1141390511"
+              className="jsx-318444645"
             >
               88%
             </strong>
           </p>
         </div>
         <div
-          className="jsx-1141390511 column col3"
+          className="jsx-318444645 column col3"
         >
           <div
             className="jsx-319169000"
@@ -2887,7 +2966,7 @@ exports[`Storyshots questions Question (MC, no tags) 1`] = `
           </div>
         </div>
         <div
-          className="jsx-1141390511 column buttons"
+          className="jsx-318444645 column buttons"
         >
           <button
             className="ui button button"
@@ -2979,77 +3058,77 @@ exports[`Storyshots questions Question (MC, no tags) 1`] = `
 
 exports[`Storyshots questions Question (SC, 1 version) 1`] = `
 <div
-  className="jsx-1593239629 question"
+  className="jsx-1676723784 question"
 >
   <div
-    className="jsx-1593239629 wrapper"
+    className="jsx-1676723784 wrapper"
   >
     <h2
-      className="jsx-1593239629 title"
+      className="jsx-1676723784 title"
     >
       This is a long question
        
     </h2>
     <div
-      className="jsx-1593239629 tags"
+      className="jsx-1676723784 tags"
     >
       <div
-        className="jsx-1303596148 questionTags"
+        className="jsx-2945381066 questionTags"
       >
         <div
-          className="jsx-1303596148 tag"
+          className="jsx-2945381066 tag"
         >
           CAPM
         </div>
         <div
-          className="jsx-1303596148 tag"
+          className="jsx-2945381066 tag"
         >
           Risk
         </div>
         <div
-          className="jsx-1303596148 type tag"
+          className="jsx-2945381066 type tag"
         >
           SC
         </div>
       </div>
     </div>
     <div
-      className="jsx-1593239629 details"
+      className="jsx-1676723784 details"
     >
       <div
-        className="jsx-1141390511 questionDetails"
+        className="jsx-318444645 questionDetails"
       >
         <div
-          className="jsx-1141390511 column description"
+          className="jsx-318444645 column description"
         >
           -
         </div>
         <div
-          className="jsx-1141390511 column col2"
+          className="jsx-318444645 column col2"
         >
           <p
-            className="jsx-1141390511"
+            className="jsx-318444645"
           >
             Antworten Total: 
             <strong
-              className="jsx-1141390511"
+              className="jsx-318444645"
             >
               999
             </strong>
           </p>
           <p
-            className="jsx-1141390511"
+            className="jsx-318444645"
           >
             Korrekte Antworten: 
             <strong
-              className="jsx-1141390511"
+              className="jsx-318444645"
             >
               88%
             </strong>
           </p>
         </div>
         <div
-          className="jsx-1141390511 column col3"
+          className="jsx-318444645 column col3"
         >
           <div
             className="jsx-319169000"
@@ -3078,7 +3157,7 @@ exports[`Storyshots questions Question (SC, 1 version) 1`] = `
           </div>
         </div>
         <div
-          className="jsx-1141390511 column buttons"
+          className="jsx-318444645 column buttons"
         >
           <button
             className="ui button button"
@@ -3170,10 +3249,10 @@ exports[`Storyshots questions Question (SC, 1 version) 1`] = `
 
 exports[`Storyshots questions QuestionBlock (empty) 1`] = `
 <div
-  className="jsx-1552646468 questionBlock"
+  className="jsx-642947974 questionBlock"
 >
   <div
-    className="jsx-1552646468 timeLimit"
+    className="jsx-642947974 timeLimit"
   >
     <i
       aria-hidden="true"
@@ -3183,22 +3262,22 @@ exports[`Storyshots questions QuestionBlock (empty) 1`] = `
     s
   </div>
   <div
-    className="jsx-1552646468 sessionStatus"
+    className="jsx-642947974 sessionStatus"
   >
     PLANNED
   </div>
   <div
-    className="jsx-1552646468 questions"
+    className="jsx-642947974 questions"
   />
 </div>
 `;
 
 exports[`Storyshots questions QuestionBlock 1`] = `
 <div
-  className="jsx-1552646468 questionBlock"
+  className="jsx-642947974 questionBlock"
 >
   <div
-    className="jsx-1552646468 timeLimit"
+    className="jsx-642947974 timeLimit"
   >
     <i
       aria-hidden="true"
@@ -3208,68 +3287,53 @@ exports[`Storyshots questions QuestionBlock 1`] = `
     s
   </div>
   <div
-    className="jsx-1552646468 sessionStatus"
+    className="jsx-642947974 sessionStatus"
   >
     PLANNED
   </div>
   <div
-    className="jsx-1552646468 questions"
+    className="jsx-642947974 questions"
   >
     <div
-      className="jsx-2849987926 questionSingle"
+      className="jsx-3063139758 questionSingle"
     >
       <div
-        className="jsx-2849987926 id"
-      >
-        #4c821db
-      </div>
-      <div
-        className="jsx-2849987926 type"
-      >
-        SC
-      </div>
-      <div
-        className="jsx-2849987926 content"
+        className="jsx-3063139758 title"
       >
         This is a long question
+      </div>
+      <div
+        className="jsx-3063139758 type"
+      >
+        SC
       </div>
     </div>
     <div
-      className="jsx-2849987926 questionSingle"
+      className="jsx-3063139758 questionSingle"
     >
       <div
-        className="jsx-2849987926 id"
-      >
-        #4c821db
-      </div>
-      <div
-        className="jsx-2849987926 type"
-      >
-        SC
-      </div>
-      <div
-        className="jsx-2849987926 content"
+        className="jsx-3063139758 title"
       >
         This is a long question
+      </div>
+      <div
+        className="jsx-3063139758 type"
+      >
+        SC
       </div>
     </div>
     <div
-      className="jsx-2849987926 questionSingle"
+      className="jsx-3063139758 questionSingle"
     >
       <div
-        className="jsx-2849987926 id"
-      >
-        #4c821db
-      </div>
-      <div
-        className="jsx-2849987926 type"
-      >
-        SC
-      </div>
-      <div
-        className="jsx-2849987926 content"
+        className="jsx-3063139758 title"
       >
         This is a long question
+      </div>
+      <div
+        className="jsx-3063139758 type"
+      >
+        SC
       </div>
     </div>
   </div>
@@ -3278,39 +3342,39 @@ exports[`Storyshots questions QuestionBlock 1`] = `
 
 exports[`Storyshots questions QuestionDetails 1`] = `
 <div
-  className="jsx-1141390511 questionDetails"
+  className="jsx-318444645 questionDetails"
 >
   <div
-    className="jsx-1141390511 column description"
+    className="jsx-318444645 column description"
   >
     hello world blabla
   </div>
   <div
-    className="jsx-1141390511 column col2"
+    className="jsx-318444645 column col2"
   >
     <p
-      className="jsx-1141390511"
+      className="jsx-318444645"
     >
       Antworten Total: 
       <strong
-        className="jsx-1141390511"
+        className="jsx-318444645"
       >
         999
       </strong>
     </p>
     <p
-      className="jsx-1141390511"
+      className="jsx-318444645"
     >
       Korrekte Antworten: 
       <strong
-        className="jsx-1141390511"
+        className="jsx-318444645"
       >
         88%
       </strong>
     </p>
   </div>
   <div
-    className="jsx-1141390511 column col3"
+    className="jsx-318444645 column col3"
   >
     <div
       className="jsx-319169000"
@@ -3344,7 +3408,7 @@ exports[`Storyshots questions QuestionDetails 1`] = `
     </div>
   </div>
   <div
-    className="jsx-1141390511 column buttons"
+    className="jsx-318444645 column buttons"
   >
     <button
       className="ui button button"
@@ -3436,88 +3500,88 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
   className="jsx-3968520247 questionList"
 >
   <div
-    className="jsx-1593239629 question creationMode draggable"
+    className="jsx-1676723784 question creationMode draggable"
   >
     <div
-      className="jsx-1593239629 sessionMembership"
+      className="jsx-1676723784 sessionMembership"
     >
       <input
         checked={false}
-        className="jsx-1593239629 ui checkbox"
+        className="jsx-1676723784 ui checkbox"
         name="check-1"
         onClick={[Function]}
         type="checkbox"
       />
     </div>
     <div
-      className="jsx-1593239629 wrapper"
+      className="jsx-1676723784 wrapper"
     >
       <h2
-        className="jsx-1593239629 title"
+        className="jsx-1676723784 title"
       >
         question1
          
       </h2>
       <div
-        className="jsx-1593239629 tags"
+        className="jsx-1676723784 tags"
       >
         <div
-          className="jsx-1303596148 questionTags"
+          className="jsx-2945381066 questionTags"
         >
           <div
-            className="jsx-1303596148 tag"
+            className="jsx-2945381066 tag"
           >
             tag1
           </div>
           <div
-            className="jsx-1303596148 tag"
+            className="jsx-2945381066 tag"
           >
             tag2
           </div>
           <div
-            className="jsx-1303596148 type tag"
+            className="jsx-2945381066 type tag"
           >
             SC
           </div>
         </div>
       </div>
       <div
-        className="jsx-1593239629 details"
+        className="jsx-1676723784 details"
       >
         <div
-          className="jsx-1141390511 questionDetails"
+          className="jsx-318444645 questionDetails"
         >
           <div
-            className="jsx-1141390511 column description"
+            className="jsx-318444645 column description"
           >
             -
           </div>
           <div
-            className="jsx-1141390511 column col2"
+            className="jsx-318444645 column col2"
           >
             <p
-              className="jsx-1141390511"
+              className="jsx-318444645"
             >
               Antworten Total: 
               <strong
-                className="jsx-1141390511"
+                className="jsx-318444645"
               >
                 999
               </strong>
             </p>
             <p
-              className="jsx-1141390511"
+              className="jsx-318444645"
             >
               Korrekte Antworten: 
               <strong
-                className="jsx-1141390511"
+                className="jsx-318444645"
               >
                 88%
               </strong>
             </p>
           </div>
           <div
-            className="jsx-1141390511 column col3"
+            className="jsx-318444645 column col3"
           >
             <div
               className="jsx-319169000"
@@ -3541,7 +3605,7 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
             </div>
           </div>
           <div
-            className="jsx-1141390511 column buttons"
+            className="jsx-318444645 column buttons"
           >
             <button
               className="ui button button"
@@ -3630,89 +3694,89 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
     </div>
   </div>
   <div
-    className="jsx-1593239629 question creationMode draggable"
+    className="jsx-1676723784 question creationMode draggable"
   >
     <div
-      className="jsx-1593239629 sessionMembership"
+      className="jsx-1676723784 sessionMembership"
     >
       <input
         checked={false}
-        className="jsx-1593239629 ui checkbox"
+        className="jsx-1676723784 ui checkbox"
         name="check-2"
         onClick={[Function]}
         type="checkbox"
       />
     </div>
     <div
-      className="jsx-1593239629 wrapper"
+      className="jsx-1676723784 wrapper"
     >
       <h2
-        className="jsx-1593239629 title"
+        className="jsx-1676723784 title"
       >
         question2
          
         (v2)
       </h2>
       <div
-        className="jsx-1593239629 tags"
+        className="jsx-1676723784 tags"
       >
         <div
-          className="jsx-1303596148 questionTags"
+          className="jsx-2945381066 questionTags"
         >
           <div
-            className="jsx-1303596148 tag"
+            className="jsx-2945381066 tag"
           >
             tag3
           </div>
           <div
-            className="jsx-1303596148 tag"
+            className="jsx-2945381066 tag"
           >
             tag2
           </div>
           <div
-            className="jsx-1303596148 type tag"
+            className="jsx-2945381066 type tag"
           >
             MC
           </div>
         </div>
       </div>
       <div
-        className="jsx-1593239629 details"
+        className="jsx-1676723784 details"
       >
         <div
-          className="jsx-1141390511 questionDetails"
+          className="jsx-318444645 questionDetails"
         >
           <div
-            className="jsx-1141390511 column description"
+            className="jsx-318444645 column description"
           >
             -
           </div>
           <div
-            className="jsx-1141390511 column col2"
+            className="jsx-318444645 column col2"
           >
             <p
-              className="jsx-1141390511"
+              className="jsx-318444645"
             >
               Antworten Total: 
               <strong
-                className="jsx-1141390511"
+                className="jsx-318444645"
               >
                 999
               </strong>
             </p>
             <p
-              className="jsx-1141390511"
+              className="jsx-318444645"
             >
               Korrekte Antworten: 
               <strong
-                className="jsx-1141390511"
+                className="jsx-318444645"
               >
                 88%
               </strong>
             </p>
           </div>
           <div
-            className="jsx-1141390511 column col3"
+            className="jsx-318444645 column col3"
           >
             <div
               className="jsx-319169000"
@@ -3741,7 +3805,7 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
             </div>
           </div>
           <div
-            className="jsx-1141390511 column buttons"
+            className="jsx-318444645 column buttons"
           >
             <button
               className="ui button button"
@@ -3837,77 +3901,77 @@ exports[`Storyshots questions QuestionList 1`] = `
   className="jsx-3968520247 questionList"
 >
   <div
-    className="jsx-1593239629 question"
+    className="jsx-1676723784 question"
   >
     <div
-      className="jsx-1593239629 wrapper"
+      className="jsx-1676723784 wrapper"
     >
       <h2
-        className="jsx-1593239629 title"
+        className="jsx-1676723784 title"
       >
         question1
          
       </h2>
       <div
-        className="jsx-1593239629 tags"
+        className="jsx-1676723784 tags"
       >
         <div
-          className="jsx-1303596148 questionTags"
+          className="jsx-2945381066 questionTags"
         >
           <div
-            className="jsx-1303596148 tag"
+            className="jsx-2945381066 tag"
           >
             tag1
           </div>
           <div
-            className="jsx-1303596148 tag"
+            className="jsx-2945381066 tag"
           >
             tag2
           </div>
           <div
-            className="jsx-1303596148 type tag"
+            className="jsx-2945381066 type tag"
           >
             SC
           </div>
         </div>
       </div>
       <div
-        className="jsx-1593239629 details"
+        className="jsx-1676723784 details"
       >
         <div
-          className="jsx-1141390511 questionDetails"
+          className="jsx-318444645 questionDetails"
         >
           <div
-            className="jsx-1141390511 column description"
+            className="jsx-318444645 column description"
           >
             -
           </div>
           <div
-            className="jsx-1141390511 column col2"
+            className="jsx-318444645 column col2"
           >
             <p
-              className="jsx-1141390511"
+              className="jsx-318444645"
             >
               Antworten Total: 
               <strong
-                className="jsx-1141390511"
+                className="jsx-318444645"
               >
                 999
               </strong>
             </p>
             <p
-              className="jsx-1141390511"
+              className="jsx-318444645"
             >
               Korrekte Antworten: 
               <strong
-                className="jsx-1141390511"
+                className="jsx-318444645"
               >
                 88%
               </strong>
             </p>
           </div>
           <div
-            className="jsx-1141390511 column col3"
+            className="jsx-318444645 column col3"
           >
             <div
               className="jsx-319169000"
@@ -3931,7 +3995,7 @@ exports[`Storyshots questions QuestionList 1`] = `
             </div>
           </div>
           <div
-            className="jsx-1141390511 column buttons"
+            className="jsx-318444645 column buttons"
           >
             <button
               className="ui button button"
@@ -4020,78 +4084,78 @@ exports[`Storyshots questions QuestionList 1`] = `
     </div>
   </div>
   <div
-    className="jsx-1593239629 question"
+    className="jsx-1676723784 question"
   >
     <div
-      className="jsx-1593239629 wrapper"
+      className="jsx-1676723784 wrapper"
     >
       <h2
-        className="jsx-1593239629 title"
+        className="jsx-1676723784 title"
       >
         question2
          
         (v2)
       </h2>
       <div
-        className="jsx-1593239629 tags"
+        className="jsx-1676723784 tags"
       >
         <div
-          className="jsx-1303596148 questionTags"
+          className="jsx-2945381066 questionTags"
         >
           <div
-            className="jsx-1303596148 tag"
+            className="jsx-2945381066 tag"
           >
             tag3
           </div>
           <div
-            className="jsx-1303596148 tag"
+            className="jsx-2945381066 tag"
           >
             tag2
           </div>
           <div
-            className="jsx-1303596148 type tag"
+            className="jsx-2945381066 type tag"
           >
             MC
           </div>
         </div>
       </div>
       <div
-        className="jsx-1593239629 details"
+        className="jsx-1676723784 details"
       >
         <div
-          className="jsx-1141390511 questionDetails"
+          className="jsx-318444645 questionDetails"
         >
           <div
-            className="jsx-1141390511 column description"
+            className="jsx-318444645 column description"
           >
             -
           </div>
           <div
-            className="jsx-1141390511 column col2"
+            className="jsx-318444645 column col2"
           >
             <p
-              className="jsx-1141390511"
+              className="jsx-318444645"
             >
               Antworten Total: 
               <strong
-                className="jsx-1141390511"
+                className="jsx-318444645"
               >
                 999
               </strong>
             </p>
             <p
-              className="jsx-1141390511"
+              className="jsx-318444645"
             >
               Korrekte Antworten: 
               <strong
-                className="jsx-1141390511"
+                className="jsx-318444645"
               >
                 88%
               </strong>
             </p>
           </div>
           <div
-            className="jsx-1141390511 column col3"
+            className="jsx-318444645 column col3"
           >
             <div
               className="jsx-319169000"
@@ -4120,7 +4184,7 @@ exports[`Storyshots questions QuestionList 1`] = `
             </div>
           </div>
           <div
-            className="jsx-1141390511 column buttons"
+            className="jsx-318444645 column buttons"
           >
             <button
               className="ui button button"
@@ -4213,42 +4277,37 @@ exports[`Storyshots questions QuestionList 1`] = `
 
 exports[`Storyshots questions QuestionSingle 1`] = `
 <div
-  className="jsx-2849987926 questionSingle"
+  className="jsx-3063139758 questionSingle"
 >
   <div
-    className="jsx-2849987926 id"
-  >
-    #4c821db
-  </div>
-  <div
-    className="jsx-2849987926 type"
-  >
-    SC
-  </div>
-  <div
-    className="jsx-2849987926 content"
+    className="jsx-3063139758 title"
   >
     This is a long question
+  </div>
+  <div
+    className="jsx-3063139758 type"
+  >
+    SC
   </div>
 </div>
 `;
 
 exports[`Storyshots questions QuestionTags 1`] = `
 <div
-  className="jsx-1303596148 questionTags"
+  className="jsx-2945381066 questionTags"
 >
   <div
-    className="jsx-1303596148 tag"
+    className="jsx-2945381066 tag"
   >
     CAPM
   </div>
   <div
-    className="jsx-1303596148 tag"
+    className="jsx-2945381066 tag"
   >
     Risk
   </div>
   <div
-    className="jsx-1303596148 type tag"
+    className="jsx-2945381066 type tag"
   >
     SC
   </div>
@@ -4336,35 +4395,33 @@ exports[`Storyshots sessions QuestionDropzone 1`] = `
 
 exports[`Storyshots sessions Session 1`] = `
 <div
-  className="jsx-4077483521 session"
+  className="jsx-2209149579 session"
 >
   <h2
-    className="jsx-4077483521 title"
+    className="jsx-2209149579 title"
   >
-    4c821db
-     - 
     Long session
   </h2>
   <div
-    className="jsx-4077483521 date"
+    className="jsx-2209149579 date"
   >
     <span>
       Created on
     </span>
      
-    08.02.2015 14:02:00
+    08.02.2015 14:02
   </div>
   <div
-    className="jsx-4077483521 details"
+    className="jsx-2209149579 details"
   >
     <div
-      className="jsx-4077483521 block"
+      className="jsx-2209149579 block"
     >
       <div
-        className="jsx-1552646468 questionBlock"
+        className="jsx-642947974 questionBlock"
       >
         <div
-          className="jsx-1552646468 timeLimit"
+          className="jsx-642947974 timeLimit"
         >
           <i
             aria-hidden="true"
@@ -4374,75 +4431,60 @@ exports[`Storyshots sessions Session 1`] = `
           s
         </div>
         <div
-          className="jsx-1552646468 sessionStatus"
+          className="jsx-642947974 sessionStatus"
         >
           PLANNED
         </div>
         <div
-          className="jsx-1552646468 questions"
+          className="jsx-642947974 questions"
         >
           <div
-            className="jsx-2849987926 questionSingle"
+            className="jsx-3063139758 questionSingle"
           >
             <div
-              className="jsx-2849987926 id"
-            >
-              #4c821db
-            </div>
-            <div
-              className="jsx-2849987926 type"
-            >
-              SC
-            </div>
-            <div
-              className="jsx-2849987926 content"
+              className="jsx-3063139758 title"
             >
               This is a long question
+            </div>
+            <div
+              className="jsx-3063139758 type"
+            >
+              SC
             </div>
           </div>
           <div
-            className="jsx-2849987926 questionSingle"
+            className="jsx-3063139758 questionSingle"
           >
             <div
-              className="jsx-2849987926 id"
-            >
-              #4c821db
-            </div>
-            <div
-              className="jsx-2849987926 type"
-            >
-              SC
-            </div>
-            <div
-              className="jsx-2849987926 content"
+              className="jsx-3063139758 title"
             >
               This is a long question
+            </div>
+            <div
+              className="jsx-3063139758 type"
+            >
+              SC
             </div>
           </div>
           <div
-            className="jsx-2849987926 questionSingle"
+            className="jsx-3063139758 questionSingle"
           >
             <div
-              className="jsx-2849987926 id"
-            >
-              #4c821db
-            </div>
-            <div
-              className="jsx-2849987926 type"
-            >
-              SC
-            </div>
-            <div
-              className="jsx-2849987926 content"
+              className="jsx-3063139758 title"
             >
               This is a long question
+            </div>
+            <div
+              className="jsx-3063139758 type"
+            >
+              SC
             </div>
           </div>
         </div>
       </div>
     </div>
     <div
-      className="jsx-4077483521 actionArea"
+      className="jsx-2209149579 actionArea"
     >
       <button
         className="ui icon left labeled button"
@@ -4458,7 +4500,7 @@ exports[`Storyshots sessions Session 1`] = `
         Evaluation
       </button>
       <button
-        className="ui icon primary left labeled button"
+        className="ui icon primary left labeled button lastButton"
         disabled={undefined}
         onClick={[Function]}
         role="button"
@@ -4477,46 +4519,46 @@ exports[`Storyshots sessions Session 1`] = `
 
 exports[`Storyshots sessions SessionList 1`] = `
 <div
-  className="jsx-3883543457"
+  className="jsx-1740248303"
 >
   <div
-    className="jsx-3883543457 session"
+    className="jsx-1740248303 session"
   >
-    No session is currently running.
+    <span>
+      No session is currently running.
+    </span>
   </div>
   <div
-    className="jsx-3883543457 session"
+    className="jsx-1740248303 session"
   >
     <div
-      className="jsx-4077483521 session"
+      className="jsx-2209149579 session"
     >
       <h2
-        className="jsx-4077483521 title"
+        className="jsx-2209149579 title"
       >
-        4c821db
-         - 
         Long session
       </h2>
       <div
-        className="jsx-4077483521 date"
+        className="jsx-2209149579 date"
       >
         <span>
           Created on
         </span>
          
-        08.02.2015 14:02:00
+        08.02.2015 14:02
       </div>
       <div
-        className="jsx-4077483521 details"
+        className="jsx-2209149579 details"
       >
         <div
-          className="jsx-4077483521 block"
+          className="jsx-2209149579 block"
         >
           <div
-            className="jsx-1552646468 questionBlock"
+            className="jsx-642947974 questionBlock"
           >
             <div
-              className="jsx-1552646468 timeLimit"
+              className="jsx-642947974 timeLimit"
             >
               <i
                 aria-hidden="true"
@@ -4526,75 +4568,60 @@ exports[`Storyshots sessions SessionList 1`] = `
               s
             </div>
             <div
-              className="jsx-1552646468 sessionStatus"
+              className="jsx-642947974 sessionStatus"
             >
               PLANNED
             </div>
             <div
-              className="jsx-1552646468 questions"
+              className="jsx-642947974 questions"
             >
               <div
-                className="jsx-2849987926 questionSingle"
+                className="jsx-3063139758 questionSingle"
               >
                 <div
-                  className="jsx-2849987926 id"
-                >
-                  #4c821db
-                </div>
-                <div
-                  className="jsx-2849987926 type"
-                >
-                  SC
-                </div>
-                <div
-                  className="jsx-2849987926 content"
+                  className="jsx-3063139758 title"
                 >
                   This is a long question
+                </div>
+                <div
+                  className="jsx-3063139758 type"
+                >
+                  SC
                 </div>
               </div>
               <div
-                className="jsx-2849987926 questionSingle"
+                className="jsx-3063139758 questionSingle"
               >
                 <div
-                  className="jsx-2849987926 id"
-                >
-                  #4c821db
-                </div>
-                <div
-                  className="jsx-2849987926 type"
-                >
-                  SC
-                </div>
-                <div
-                  className="jsx-2849987926 content"
+                  className="jsx-3063139758 title"
                 >
                   This is a long question
+                </div>
+                <div
+                  className="jsx-3063139758 type"
+                >
+                  SC
                 </div>
               </div>
               <div
-                className="jsx-2849987926 questionSingle"
+                className="jsx-3063139758 questionSingle"
               >
                 <div
-                  className="jsx-2849987926 id"
-                >
-                  #4c821db
-                </div>
-                <div
-                  className="jsx-2849987926 type"
-                >
-                  SC
-                </div>
-                <div
-                  className="jsx-2849987926 content"
+                  className="jsx-3063139758 title"
                 >
                   This is a long question
+                </div>
+                <div
+                  className="jsx-3063139758 type"
+                >
+                  SC
                 </div>
               </div>
             </div>
           </div>
         </div>
         <div
-          className="jsx-4077483521 actionArea"
+          className="jsx-2209149579 actionArea"
         >
           <button
             className="ui icon left labeled button"
@@ -4610,7 +4637,7 @@ exports[`Storyshots sessions SessionList 1`] = `
             Evaluation
           </button>
           <button
-            className="ui icon primary left labeled button"
+            className="ui icon primary left labeled button lastButton"
             disabled={undefined}
             onClick={[Function]}
             role="button"
@@ -4627,38 +4654,36 @@ exports[`Storyshots sessions SessionList 1`] = `
     </div>
   </div>
   <div
-    className="jsx-3883543457 session"
+    className="jsx-1740248303 session"
   >
     <div
-      className="jsx-4077483521 session"
+      className="jsx-2209149579 session"
     >
       <h2
-        className="jsx-4077483521 title"
+        className="jsx-2209149579 title"
       >
-        4c821db
-         - 
         Long session
       </h2>
       <div
-        className="jsx-4077483521 date"
+        className="jsx-2209149579 date"
       >
         <span>
           Created on
         </span>
          
-        08.02.2015 14:02:00
+        08.02.2015 14:02
       </div>
       <div
-        className="jsx-4077483521 details"
+        className="jsx-2209149579 details"
       >
         <div
-          className="jsx-4077483521 block"
+          className="jsx-2209149579 block"
         >
           <div
-            className="jsx-1552646468 questionBlock"
+            className="jsx-642947974 questionBlock"
           >
             <div
-              className="jsx-1552646468 timeLimit"
+              className="jsx-642947974 timeLimit"
             >
               <i
                 aria-hidden="true"
@@ -4668,75 +4693,60 @@ exports[`Storyshots sessions SessionList 1`] = `
               s
             </div>
             <div
-              className="jsx-1552646468 sessionStatus"
+              className="jsx-642947974 sessionStatus"
             >
               PLANNED
             </div>
             <div
-              className="jsx-1552646468 questions"
+              className="jsx-642947974 questions"
             >
               <div
-                className="jsx-2849987926 questionSingle"
+                className="jsx-3063139758 questionSingle"
               >
                 <div
-                  className="jsx-2849987926 id"
-                >
-                  #4c821db
-                </div>
-                <div
-                  className="jsx-2849987926 type"
-                >
-                  SC
-                </div>
-                <div
-                  className="jsx-2849987926 content"
+                  className="jsx-3063139758 title"
                 >
                   This is a long question
+                </div>
+                <div
+                  className="jsx-3063139758 type"
+                >
+                  SC
                 </div>
               </div>
               <div
-                className="jsx-2849987926 questionSingle"
+                className="jsx-3063139758 questionSingle"
               >
                 <div
-                  className="jsx-2849987926 id"
-                >
-                  #4c821db
-                </div>
-                <div
-                  className="jsx-2849987926 type"
-                >
-                  SC
-                </div>
-                <div
-                  className="jsx-2849987926 content"
+                  className="jsx-3063139758 title"
                 >
                   This is a long question
+                </div>
+                <div
+                  className="jsx-3063139758 type"
+                >
+                  SC
                 </div>
               </div>
               <div
-                className="jsx-2849987926 questionSingle"
+                className="jsx-3063139758 questionSingle"
               >
                 <div
-                  className="jsx-2849987926 id"
-                >
-                  #4c821db
-                </div>
-                <div
-                  className="jsx-2849987926 type"
-                >
-                  SC
-                </div>
-                <div
-                  className="jsx-2849987926 content"
+                  className="jsx-3063139758 title"
                 >
                   This is a long question
+                </div>
+                <div
+                  className="jsx-3063139758 type"
+                >
+                  SC
                 </div>
               </div>
             </div>
           </div>
         </div>
         <div
-          className="jsx-4077483521 actionArea"
+          className="jsx-2209149579 actionArea"
         >
           <button
             className="ui icon left labeled button"
@@ -4752,7 +4762,7 @@ exports[`Storyshots sessions SessionList 1`] = `
             Evaluation
           </button>
           <button
-            className="ui icon primary left labeled button"
+            className="ui icon primary left labeled button lastButton"
             disabled={undefined}
             onClick={[Function]}
             role="button"
@@ -4773,13 +4783,13 @@ exports[`Storyshots sessions SessionList 1`] = `
 
 exports[`Storyshots sessions SessionTimeline 1`] = `
 <div
-  className="jsx-2181936900 sessionTimeline"
+  className="jsx-2752974310 sessionTimeline"
 >
   <div
-    className="jsx-2181936900 topRow"
+    className="jsx-2752974310 topRow"
   >
     <div
-      className="jsx-2181936900 startingTime"
+      className="jsx-2752974310 startingTime"
     >
       <i
         aria-hidden="true"
@@ -4789,7 +4799,7 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
       00:00:00
     </div>
     <div
-      className="jsx-2181936900 runningTime"
+      className="jsx-2752974310 runningTime"
     >
       <i
         aria-hidden="true"
@@ -4799,7 +4809,7 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
       00:00:00
     </div>
     <div
-      className="jsx-2181936900 evaluationLink"
+      className="jsx-2752974310 evaluationLink"
     >
       <i
         aria-hidden="true"
@@ -4807,105 +4817,112 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
       />
        
       <a
-        className="jsx-2181936900"
+        className="jsx-2752974310"
         href="/sessions/evaluation/undefined"
         onClick={[Function]}
         target="_blank"
       >
-        Evaluation
+        <span>
+          Evaluation
+        </span>
       </a>
     </div>
   </div>
   <div
-    className="jsx-2181936900 blocks"
+    className="jsx-2752974310 blocks"
   >
     <div
-      className="jsx-2181936900 block"
+      className="jsx-2752974310 blockWrap"
     >
       <div
-        className="jsx-1552646468 questionBlock"
+        className="jsx-2752974310 waiting first"
+      >
+        <i
+          aria-hidden="true"
+          className="video play outline big icon"
+        />
+      </div>
+      <div
+        className="jsx-2752974310 block"
       >
         <div
-          className="jsx-1552646468 timeLimit"
-        >
-          <i
-            aria-hidden="true"
-            className="clock icon"
-          />
-          60
-          s
-        </div>
-        <div
-          className="jsx-1552646468 sessionStatus"
-        >
-          PLANNED
-        </div>
-        <div
-          className="jsx-1552646468 questions"
+          className="jsx-642947974 questionBlock"
         >
           <div
-            className="jsx-2849987926 questionSingle"
+            className="jsx-642947974 timeLimit"
           >
-            <div
-              className="jsx-2849987926 id"
-            >
-              #4c821db
-            </div>
-            <div
-              className="jsx-2849987926 type"
-            >
-              SC
-            </div>
-            <div
-              className="jsx-2849987926 content"
-            >
-              This is a long question
-            </div>
+            <i
+              aria-hidden="true"
+              className="clock icon"
+            />
+            60
+            s
           </div>
           <div
-            className="jsx-2849987926 questionSingle"
+            className="jsx-642947974 sessionStatus"
           >
-            <div
-              className="jsx-2849987926 id"
-            >
-              #4c821db
-            </div>
-            <div
-              className="jsx-2849987926 type"
-            >
-              SC
-            </div>
-            <div
-              className="jsx-2849987926 content"
-            >
-              This is a long question
-            </div>
+            PLANNED
           </div>
           <div
-            className="jsx-2849987926 questionSingle"
+            className="jsx-642947974 questions"
           >
             <div
-              className="jsx-2849987926 id"
+              className="jsx-3063139758 questionSingle"
             >
-              #4c821db
+              <div
+                className="jsx-3063139758 title"
+              >
+                This is a long question
+              </div>
+              <div
+                className="jsx-3063139758 type"
+              >
+                SC
+              </div>
             </div>
             <div
-              className="jsx-2849987926 type"
+              className="jsx-3063139758 questionSingle"
             >
-              SC
+              <div
+                className="jsx-3063139758 title"
+              >
+                This is a long question
+              </div>
+              <div
+                className="jsx-3063139758 type"
+              >
+                SC
+              </div>
             </div>
             <div
-              className="jsx-2849987926 content"
+              className="jsx-3063139758 questionSingle"
             >
-              This is a long question
+              <div
+                className="jsx-3063139758 title"
+              >
+                This is a long question
+              </div>
+              <div
+                className="jsx-3063139758 type"
+              >
+                SC
+              </div>
             </div>
           </div>
         </div>
       </div>
+      <div
+        className="jsx-2752974310 waiting last"
+      >
+        <i
+          aria-hidden="true"
+          className="stop circle outline big icon"
+        />
+      </div>
     </div>
   </div>
   <div
-    className="jsx-2181936900 buttons"
+    className="jsx-2752974310 buttons"
   >
     <button
       className="ui red large icon left labeled button"
@@ -4939,56 +4956,46 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
 
 exports[`Storyshots sessions SessionTimelineInput 1`] = `
 <div
-  className="jsx-3047766213 sessionTimeline"
+  className="jsx-911078851 sessionTimeline"
 >
   <div
-    className="jsx-3047766213 timelineItem"
+    className="jsx-911078851 timelineItem"
   >
     <div
-      className="jsx-2849987926 questionSingle"
+      className="jsx-3063139758 questionSingle"
     >
       <div
-        className="jsx-2849987926 id"
-      >
-        #id1
-      </div>
-      <div
-        className="jsx-2849987926 type"
-      >
-        SC
-      </div>
-      <div
-        className="jsx-2849987926 content"
+        className="jsx-3063139758 title"
       >
         question1
       </div>
+      <div
+        className="jsx-3063139758 type"
+      >
+        SC
+      </div>
     </div>
   </div>
   <div
-    className="jsx-3047766213 timelineItem"
+    className="jsx-911078851 timelineItem"
   >
     <div
-      className="jsx-2849987926 questionSingle"
+      className="jsx-3063139758 questionSingle"
     >
       <div
-        className="jsx-2849987926 id"
-      >
-        #id2
-      </div>
-      <div
-        className="jsx-2849987926 type"
-      >
-        FREE
-      </div>
-      <div
-        className="jsx-2849987926 content"
+        className="jsx-3063139758 title"
       >
         question2
       </div>
+      <div
+        className="jsx-3063139758 type"
+      >
+        FREE
+      </div>
     </div>
   </div>
   <div
-    className="jsx-3047766213 timelineItem"
+    className="jsx-911078851 timelineItem"
   >
     <div
       className="jsx-663420075 dropzone"

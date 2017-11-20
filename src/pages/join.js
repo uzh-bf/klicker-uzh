@@ -89,8 +89,8 @@ const Join = ({
         {activeQuestions.length > 0 ? (
           <QuestionArea
             active={sidebarActiveItem === 'activeQuestion'}
-            questions={activeQuestions}
             handleNewResponse={handleNewResponse}
+            questions={activeQuestions}
           />
         ) : (
           <div
@@ -108,10 +108,10 @@ const Join = ({
         <FeedbackArea
           active={sidebarActiveItem === 'feedbackChannel'}
           feedbacks={feedbacks}
-          isConfusionBarometerActive={isConfusionBarometerActive}
-          isFeedbackChannelActive={isFeedbackChannelActive}
           handleNewConfusionTS={handleNewConfusionTS}
           handleNewFeedback={handleNewFeedback}
+          isConfusionBarometerActive={isConfusionBarometerActive}
+          isFeedbackChannelActive={isFeedbackChannelActive}
         />
 
         <style jsx>{`
@@ -137,6 +137,12 @@ const Join = ({
 
             @include desktop-tablet-only {
               padding: 1rem;
+
+              .questionArea {
+                border: 1px solid $color-primary;
+                background-color: white;
+                margin-right: 0.25rem;
+              }
             }
           }
         `}</style>
@@ -173,7 +179,7 @@ export default compose(
       handleSidebarActiveItemChange(newItem),
   }),
   graphql(JoinSessionQuery, {
-    options: props => ({ variables: { shortname: props.url.query.shortname } }),
+    options: ({ url }) => ({ variables: { shortname: url.query.shortname } }),
   }),
   branch(({ loading }) => loading, renderComponent(() => <div />)),
   branch(

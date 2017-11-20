@@ -127,14 +127,14 @@ const QuestionEditForm = ({
             </label>
             <div className="versionDropdown">
               <Dropdown
+                defaultValue={versionOptions[versionOptions.length - 1].value}
+                fluid // get last element
+                options={versionOptions}
                 placeholder={intl.formatMessage({
                   defaultMessage: 'Select version',
                   id: 'form.questionEditForm.versionDropdown.placeholder',
                 })}
-                defaultValue={versionOptions[versionOptions.length - 1].value} // get last element
-                fluid
                 selection
-                options={versionOptions}
               />
             </div>
             <Button onClick={handleNewVersionToggle}>New Version</Button>
@@ -142,15 +142,15 @@ const QuestionEditForm = ({
         </div>
 
         <div className="questionInput questionTags">
-          <Field name="tags" component={TagInput} disabled={!isNewVersion} />
+          <Field component={TagInput} disabled={!isNewVersion} name="tags" />
         </div>
 
         <div className="questionInput questionContent">
-          <Field name="content" component={ContentInput} disabled={!isNewVersion} />
+          <Field component={ContentInput} disabled={!isNewVersion} name="content" />
         </div>
 
         <div className="questionInput questionOptions">
-          <Field name="options" component={typeComponents[type]} intl={intl} />
+          <Field component={typeComponents[type]} intl={intl} name="options" />
         </div>
 
         <div className="actionArea">

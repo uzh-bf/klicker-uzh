@@ -43,9 +43,9 @@ const Index = ({
   const actionArea = (
     <div className="creationForm">
       <SessionCreationForm
+        onDiscard={handleCreationModeToggle}
         onSave={handleCreateSession('save')}
         onStart={handleCreateSession('start')}
-        onDiscard={handleCreationModeToggle}
       />
 
       <style jsx>{`
@@ -110,9 +110,9 @@ const Index = ({
             </Link>
           </div>
           <QuestionList
+            creationMode={creationMode}
             dropped={droppedQuestions}
             filters={filters}
-            creationMode={creationMode}
             onQuestionDropped={handleQuestionDropped}
           />
         </div>
@@ -125,7 +125,6 @@ const Index = ({
           display: flex;
           flex-direction: column;
           height: 100%;
-          background-color: #f5f5f5;
 
           .questionList {
             // HACK: workaround for creating session div overlapping the question list

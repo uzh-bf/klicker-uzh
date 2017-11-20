@@ -24,7 +24,7 @@ const SessionTimelineInput = ({ input: { value, onChange } }) => {
   return (
     <div className="sessionTimeline">
       {value.map(question => (
-        <div key={question.id} className="timelineItem">
+        <div className="timelineItem" key={question.id}>
           <QuestionSingle id={question.id} title={question.title} type={question.type} />
         </div>
       ))}
@@ -44,7 +44,8 @@ const SessionTimelineInput = ({ input: { value, onChange } }) => {
 
         .sessionTimeline > .timelineItem {
           border: 1px solid lightgrey;
-          width: 12rem;
+          padding: 0.5rem;
+          width: 15rem;
         }
 
         .sessionTimeline > .timelineItem:not(:last-child) {

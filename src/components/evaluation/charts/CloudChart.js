@@ -23,8 +23,8 @@ const CloudChart = ({ data }) => (
     <WordCloud
       data={data.map(row => ({ text: row.value, value: row.count }))}
       fontSizeMapper={fontSizeMapper}
-      rotate={rotate}
       height={600}
+      rotate={rotate}
       width={800}
     />
 

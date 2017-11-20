@@ -14,7 +14,7 @@ const propTypes = {
 const QuestionTags = ({ tags, type }) => (
   <div className="questionTags">
     {tags.map(tag => (
-      <div key={tag.id} className="tag">
+      <div className="tag" key={tag.id}>
         {tag.name}
       </div>
     ))}
@@ -26,7 +26,6 @@ const QuestionTags = ({ tags, type }) => (
       .questionTags {
         display: flex;
         flex-flow: row wrap;
-        background-color: white;
 
         .tag {
           background-color: #f1f1f1;

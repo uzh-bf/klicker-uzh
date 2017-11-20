@@ -17,7 +17,6 @@ const propTypes = {
   handleActiveChoicesChange: PropTypes.func.isRequired,
   handleActiveQuestionChange: PropTypes.func.isRequired,
   handleFreeValueChange: PropTypes.func.isRequired,
-  handleNewResponse: PropTypes.func.isRequired,
   handleSubmit: PropTypes.func.isRequired,
   inputEmpty: PropTypes.bool.isRequired,
   inputValid: PropTypes.bool.isRequired,
@@ -80,12 +79,12 @@ function QuestionArea({
       {(() => {
         if (remainingQuestions.length === 0) {
           return (
-            <div>
+            <p className="space">
               <FormattedMessage
                 defaultMessage="You have completed all active questions."
                 id="joinSession.allQuestionsCompleted"
               />
-            </div>
+            </p>
           )
         }
 
@@ -107,9 +106,9 @@ function QuestionArea({
                   return (
                     <SCAnswerOptions
                       disabled={!remainingQuestions.includes(activeQuestion)}
-                      onChange={handleActiveChoicesChange(type)}
                       options={options.choices}
                       value={inputValue}
+                      onChange={handleActiveChoicesChange(type)}
                     />
                   )
                 }
@@ -118,9 +117,9 @@ function QuestionArea({
                   return (
                     <FREEAnswerOptions
                       disabled={!remainingQuestions.includes(activeQuestion)}
-                      onChange={handleFreeValueChange}
                       options={options}
                       value={inputValue}
+                      onChange={handleFreeValueChange}
                     />
                   )
                 }
@@ -131,11 +130,11 @@ function QuestionArea({
 
             <ActionMenu
               activeIndex={activeQuestion}
+              isSkipModeActive={inputEmpty}
+              isSubmitDisabled={!inputEmpty && !inputValid}
               items={_range(questions.length).map(index => ({
                 done: !remainingQuestions.includes(index),
               }))}
-              isSkipModeActive={inputEmpty}
-              isSubmitDisabled={!inputEmpty && !inputValid}
               setActiveIndex={handleActiveQuestionChange}
               onSubmit={handleSubmit}
             />
@@ -167,6 +166,10 @@ function QuestionArea({
 
           .header {
             display: none;
+          }
+
+          .space {
+            margin: 1rem;
           }
 
           .collapser,

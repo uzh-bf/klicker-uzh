@@ -2,36 +2,31 @@ import React from 'react'
 import PropTypes from 'prop-types'
 
 const propTypes = {
-  id: PropTypes.string.isRequired,
   title: PropTypes.string.isRequired,
   type: PropTypes.string.isRequired,
 }
 
-const QuestionSingle = ({ id, type, title }) => (
+const QuestionSingle = ({ type, title }) => (
   <div className="questionSingle">
-    <div className="id">{`#${id.substring(0, 7)}`}</div>
+    <div className="title">{title}</div>
     <div className="type">{type}</div>
-    <div className="content">{title}</div>
 
     <style jsx>{`
+      @import 'src/theme';
+
       .questionSingle {
-        background-color: white;
         display: flex;
         flex-flow: row wrap;
         padding: 0.3rem;
+        border: 1px solid $color-primary !important;
+        background-color: $color-primary-background;
 
-        .id,
+        .title,
         .type {
           flex: 1;
-          padding-bottom: 0.3rem;
         }
         .type {
           text-align: right;
-        }
-        .content {
-          border-top: 1px solid lightgrey;
-          flex: 0 0 100%;
-          padding-top: 0.3rem;
         }
       }
     `}</style>

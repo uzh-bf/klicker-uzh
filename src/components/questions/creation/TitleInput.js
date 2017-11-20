@@ -29,7 +29,7 @@ const TitleInput = ({ input: { value, onChange }, meta: { dirty, invalid } }) =>
         </a>
       </label>
 
-      <ReactTooltip id="titleHelp" delayShow={250} delayHide={250} place="right">
+      <ReactTooltip delayHide={250} delayShow={250} id="titleHelp" place="right">
         <FormattedMessage
           defaultMessage="Enter a short summarizing title for the question. This is only visible to you!"
           id="teacher.createQuestion.titleInput.tooltip"
