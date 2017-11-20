@@ -39,26 +39,29 @@ const PieChart = ({ isSolutionShown, data }) => (
       }}
     >
       <Tooltip />
-      <Pie labelLine data={data} fill="#8884d8" nameKey="value" valueKey="count">
+      <Pie labelLine data={data} fill="#8884d8" innerRadius={5} nameKey="value" valueKey="count">
         <LabelList
           fill="black"
-          offset={20}
+          offset={30}
           position="outside"
           stroke="black"
+          strokeWidth={1}
+          style={{ fontSize: '1.5rem' }}
           valueAccessor={entry => `${entry.count} | ${entry.percentage}`}
         />
         <LabelList
           dataKey="label"
           fill="white"
-          offset={0}
           position="inside"
           stroke="white"
-          style={{ fontSize: `${1.75}rem` }}
+          strokeWidth={1}
+          style={{ fontSize: '3rem' }}
         />
         {data.map((row, index) => (
           <Cell
             fill={isSolutionShown && row.correct ? '#00FF00' : CHART_COLORS[index % 5]}
             key={row.value}
+            strokeWidth={5}
           />
         ))}
       </Pie>
@@ -70,7 +73,9 @@ PieChart.propTypes = propTypes
 PieChart.defaultProps = defaultProps
 
 export default withProps(({ data, totalResponses }) => ({
-  data: data.map(({ correct, count, value }, index) => ({
+  // filter out choices without any responses (weird labeling)
+  // map data to contain percentages and char labels
+  data: data.filter(({ count }) => count > 0).map(({ correct, count, value }, index) => ({
     correct,
     count,
     label: String.fromCharCode(65 + index),
