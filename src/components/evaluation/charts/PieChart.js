@@ -4,10 +4,12 @@ import {
   Cell,
   Pie,
   PieChart as PieChartComponent,
-  Legend,
   ResponsiveContainer,
   Tooltip,
+  LabelList,
 } from 'recharts'
+import { withProps } from 'recompose'
+import _round from 'lodash/round'
 
 import { CHART_COLORS } from '../../../constants'
 
@@ -37,8 +39,15 @@ const PieChart = ({ isSolutionShown, data }) => (
       }}
     >
       <Tooltip />
-      <Legend />
-      <Pie label data={data} fill="#8884d8" nameKey="value" valueKey="count">
+      <Pie labelLine data={data} fill="#8884d8" nameKey="value" valueKey="count">
+        <LabelList
+          fill="black"
+          offset={20}
+          position="outside"
+          stroke="black"
+          valueAccessor={entry => `${entry.count} / ${entry.percentage}`}
+        />
+        <LabelList dataKey="label" fill="white" offset={0} position="inside" stroke="white" />
         {data.map((row, index) => (
           <Cell
             fill={isSolutionShown && row.correct ? '#00FF00' : CHART_COLORS[index % 5]}
@@ -53,4 +62,12 @@ const PieChart = ({ isSolutionShown, data }) => (
 PieChart.propTypes = propTypes
 PieChart.defaultProps = defaultProps
 
-export default PieChart
+export default withProps(({ data, totalResponses }) => ({
+  data: data.map(({ correct, count, value }, index) => ({
+    correct,
+    count,
+    label: String.fromCharCode(65 + index),
+    percentage: `${_round(100 * (count / totalResponses), 2)} %`,
+    value,
+  })),
+}))(PieChart)
