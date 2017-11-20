@@ -45,9 +45,16 @@ const PieChart = ({ isSolutionShown, data }) => (
           offset={20}
           position="outside"
           stroke="black"
-          valueAccessor={entry => `${entry.count} / ${entry.percentage}`}
+          valueAccessor={entry => `${entry.count} | ${entry.percentage}`}
         />
-        <LabelList dataKey="label" fill="white" offset={0} position="inside" stroke="white" />
+        <LabelList
+          dataKey="label"
+          fill="white"
+          offset={0}
+          position="inside"
+          stroke="white"
+          style={{ fontSize: `${1.75}rem` }}
+        />
         {data.map((row, index) => (
           <Cell
             fill={isSolutionShown && row.correct ? '#00FF00' : CHART_COLORS[index % 5]}
