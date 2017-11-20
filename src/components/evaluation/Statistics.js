@@ -1,14 +1,22 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import _round from 'lodash/round'
-import { Icon, List } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
+import EvaluationListItem from './EvaluationListItem'
+
 const propTypes = {
-  max: PropTypes.number.isRequired,
-  mean: PropTypes.number.isRequired,
-  median: PropTypes.number.isRequired,
-  min: PropTypes.number.isRequired,
+  max: PropTypes.number,
+  mean: PropTypes.number,
+  median: PropTypes.number,
+  min: PropTypes.number,
+}
+
+const defaultProps = {
+  max: undefined,
+  mean: undefined,
+  median: undefined,
+  min: undefined,
 }
 
 const Statistics = ({
@@ -19,28 +27,20 @@ const Statistics = ({
       <FormattedMessage defaultMessage="Statistics" id="teacher.evaluation.statistics.title" />
     </h2>
 
-    <List celled>
-      <List.Item>
-        <List.Header>Minimum</List.Header>
-        {_round(min, 2)}
-      </List.Item>
-      <List.Item>
-        <List.Header>Maximum</List.Header>
-        {_round(max, 2)}
-      </List.Item>
-      <List.Item>
-        <List.Header>
-          Mean <Icon color="blue" name="square" />
-        </List.Header>
-        {_round(mean, 2)}
-      </List.Item>
-      <List.Item>
-        <List.Header>
-          Median <Icon color="red" name="square" />
-        </List.Header>
-        {_round(median, 2)}
-      </List.Item>
-    </List>
+    <div>
+      <EvaluationListItem color="white" marker="MIN">
+        {min ? _round(min, 2) : '-'}
+      </EvaluationListItem>
+      <EvaluationListItem color="white" marker="MAX">
+        {max ? _round(max, 2) : '-'}
+      </EvaluationListItem>
+      <EvaluationListItem color="Blue" marker="MEAN">
+        {mean ? _round(mean, 2) : '-'}
+      </EvaluationListItem>
+      <EvaluationListItem color="red" marker="MEDIAN">
+        {median ? _round(median, 2) : '-'}
+      </EvaluationListItem>
+    </div>
 
     <style jsx>{`
       .statistics {
@@ -54,5 +54,6 @@ const Statistics = ({
 )
 
 Statistics.propTypes = propTypes
+Statistics.defaultProps = defaultProps
 
 export default Statistics
