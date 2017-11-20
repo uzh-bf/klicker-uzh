@@ -42,7 +42,7 @@ const Possibilities = ({ questionOptions, questionType }) => (
           <div>
             {questionOptions.choices.map((choice, index) => (
               <EvaluationListItem
-                color={CHART_COLORS[index % 5]}
+                color={CHART_COLORS[index % 12]}
                 marker={String.fromCharCode(65 + index)}
               >
                 {choice.name}
