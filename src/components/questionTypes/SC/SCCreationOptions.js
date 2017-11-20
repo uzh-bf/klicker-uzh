@@ -24,7 +24,7 @@ const propTypes = {
 }
 
 const defaultProps = {
-  disabled: true,
+  disabled: false,
 }
 
 // create the purely functional component
