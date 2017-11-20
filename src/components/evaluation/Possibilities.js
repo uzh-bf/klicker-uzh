@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 
 import { CHART_COLORS, QuestionTypes } from '../../constants'
-import EvaluationListItem from './EvaluationListItem'
+import { EvaluationListItem } from '.'
 
 const propTypes = {
   questionOptions: PropTypes.object.isRequired,

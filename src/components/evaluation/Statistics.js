@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import _round from 'lodash/round'
 import { FormattedMessage } from 'react-intl'
 
-import EvaluationListItem from './EvaluationListItem'
+import { EvaluationListItem } from '.'
 
 const propTypes = {
   max: PropTypes.number,
