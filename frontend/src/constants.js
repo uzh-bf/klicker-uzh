@@ -14,6 +14,7 @@ export const QuestionBlockStatus = {
 
 export const QuestionTypes = {
   FREE: 'FREE',
+  'FREE:RANGE': 'FREE:RANGE',
   MC: 'MC',
   SC: 'SC',
 }

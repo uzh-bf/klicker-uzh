@@ -46,7 +46,7 @@ const BarChart = ({ isSolutionShown, data }) => (
       <Bar dataKey="count">
         {data.map((row, index) => (
           <Cell
-            fill={isSolutionShown && row.correct ? '#00FF00' : CHART_COLORS[index % 5]}
+            fill={isSolutionShown && row.correct ? '#00FF00' : CHART_COLORS[index % 12]}
             key={row.value}
           />
         ))}
