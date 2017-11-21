@@ -7,7 +7,7 @@ import Cookies from 'js-cookie'
 import { FormattedMessage } from 'react-intl'
 import { compose, withStateHandlers, withHandlers, withProps } from 'recompose'
 
-import { QuestionTypes } from '../../../constants'
+import { QuestionTypes, QuestionGroups } from '../../../constants'
 import { ActionMenu, Collapser } from '../../common'
 import { SCAnswerOptions, FREEAnswerOptions } from '../../questionTypes'
 
@@ -64,13 +64,9 @@ function QuestionArea({
         Please choose <strong>one or multiple</strong> of the options below:
       </p>
     ),
-    [QuestionTypes.FREE]:
-      currentQuestion.type === QuestionTypes.FREE &&
-      (currentQuestion.options.restrictions.type === 'RANGE' ? (
-        <p>Please choose a number from the given range below:</p>
-      ) : (
-        <p>Please enter your response below:</p>
-      )),
+    [QuestionTypes.FREE]: <p>Please enter your response below:</p>,
+
+    [QuestionTypes.FREE_RANGE]: <p>Please choose a number from the given range below:</p>,
   }
 
   return (
@@ -102,7 +98,7 @@ function QuestionArea({
               {messages[type]}
 
               {(() => {
-                if ([QuestionTypes.SC, QuestionTypes.MC].includes(type)) {
+                if (QuestionGroups.CHOICES.includes(type)) {
                   return (
                     <SCAnswerOptions
                       disabled={!remainingQuestions.includes(activeQuestion)}
@@ -113,11 +109,12 @@ function QuestionArea({
                   )
                 }
 
-                if (type === QuestionTypes.FREE) {
+                if (QuestionGroups.FREE.includes(type)) {
                   return (
                     <FREEAnswerOptions
                       disabled={!remainingQuestions.includes(activeQuestion)}
                       options={options}
+                      questionType={type}
                       value={inputValue}
                       onChange={handleFreeValueChange}
                     />
@@ -327,7 +324,7 @@ export default compose(
       if (typeof inputValue !== 'undefined') {
         if (inputValue.length > 0 && [QuestionTypes.SC, QuestionTypes.MC].includes(type)) {
           handleNewResponse({ instanceId, response: { choices: inputValue } })
-        } else if (type === QuestionTypes.FREE) {
+        } else if (QuestionGroups.FREE.includes(type)) {
           handleNewResponse({ instanceId, response: { value: inputValue } })
         }
       }

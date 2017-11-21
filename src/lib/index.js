@@ -6,9 +6,4 @@ export { default as initRedux } from './initRedux'
 export { createLinks } from './utils/css'
 export { filterQuestions, filterSessions } from './utils/filters'
 export { calculateMax, calculateMin, calculateMean, calculateMedian } from './utils/math'
-export {
-  SessionStatus,
-  QuestionBlockStatus,
-  QuestionTypes,
-  FREERestrictionTypes,
-} from '../constants'
+export { SessionStatus, QuestionBlockStatus, QuestionTypes } from '../constants'

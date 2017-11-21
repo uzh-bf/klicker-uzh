@@ -28,7 +28,7 @@ export const CreateQuestionMutation = gql`
     $title: String!
     $description: String!
     $options: QuestionOptionsInput!
-    $type: String!
+    $type: Question_Type!
     $tags: [ID!]!
   ) {
     createQuestion(
@@ -62,7 +62,6 @@ export const CreateQuestionMutation = gql`
             restrictions {
               min
               max
-              type
             }
           }
         }

@@ -11,7 +11,7 @@ import {
 } from 'recompose'
 import { graphql } from 'react-apollo'
 
-import { QuestionTypes } from '../../constants'
+import { QuestionGroups } from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
 import {
   calculateMax,
@@ -143,7 +143,7 @@ export default compose(
       .reduce((acc, val) => [...acc, ...val], []) // reduce array of arrays [[], [], []] to [...]
       .map((activeInstance) => {
         // map the array of all instances with the custom mapper
-        if ([QuestionTypes.SC, QuestionTypes.MC].includes(activeInstance.question.type)) {
+        if (QuestionGroups.CHOICES.includes(activeInstance.question.type)) {
           return {
             ...activeInstance,
             results: {
@@ -158,7 +158,7 @@ export default compose(
           }
         }
 
-        if (activeInstance.question.type === QuestionTypes.FREE) {
+        if (QuestionGroups.FREE.includes(activeInstance.question.type)) {
           return {
             ...activeInstance,
             results: {

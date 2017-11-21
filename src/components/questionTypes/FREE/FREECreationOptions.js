@@ -7,13 +7,11 @@ import { FormattedMessage } from 'react-intl'
 import { FaQuestionCircle } from 'react-icons/lib/fa'
 import { compose, withHandlers, mapProps } from 'recompose'
 
-import { Button } from '../../common'
-import { FREERestrictionTypes } from '../../../constants'
+import { QuestionTypes } from '../../../constants'
 
 const propTypes = {
   handleMaxChange: PropTypes.func.isRequired,
   handleMinChange: PropTypes.func.isRequired,
-  handleTypeChange: PropTypes.func.isRequired,
   max: PropTypes.number,
   meta: PropTypes.shape({
     dirty: PropTypes.bool,
@@ -34,145 +32,111 @@ const FREECreationOptions = ({
   type,
   handleMaxChange,
   handleMinChange,
-  handleTypeChange,
   meta: { dirty, invalid },
-}) => {
-  const buttons = [
-    {
-      message: (
+}) => (
+  <div className="FREECreationOptions">
+    <Form.Field required error={dirty && invalid}>
+      <label htmlFor="options">
         <FormattedMessage
-          defaultMessage="Unrestricted Input"
-          id="teacher.createQuestion.freeOptions.unrestricted"
+          defaultMessage="Input Restrictions"
+          id="teacher.createQuestion.optionsFREE.label"
         />
-      ),
-      type: FREERestrictionTypes.NONE,
-    },
-    {
-      message: (
+        <a data-tip data-for="FREECreationHelp">
+          <FaQuestionCircle />
+        </a>
+      </label>
+
+      <ReactTooltip delayHide={250} delayShow={250} id="FREECreationHelp" place="right">
         <FormattedMessage
-          defaultMessage="Numbers in Range"
-          id="teacher.createQuestion.freeOptions.numberRange"
+          defaultMessage="Choose the allowed format of incoming responses."
+          id="teacher.createQuestion.optionsFREE.tooltip"
         />
-      ),
-      type: FREERestrictionTypes.RANGE,
-    },
-  ]
+      </ReactTooltip>
 
-  return (
-    <div className="FREECreationOptions">
-      <Form.Field required error={dirty && invalid}>
-        <label htmlFor="options">
-          <FormattedMessage
-            defaultMessage="Input Restrictions"
-            id="teacher.createQuestion.optionsFREE.label"
-          />
-          <a data-tip data-for="FREECreationHelp">
-            <FaQuestionCircle />
-          </a>
-        </label>
+      {type === QuestionTypes.FREE && <div>Unrestricted input.</div>}
 
-        <ReactTooltip delayHide={250} delayShow={250} id="FREECreationHelp" place="right">
-          <FormattedMessage
-            defaultMessage="Choose the allowed format of incoming responses."
-            id="teacher.createQuestion.optionsFREE.tooltip"
-          />
-        </ReactTooltip>
+      {type === QuestionTypes.FREE_RANGE && (
+        <div className="range">
+          <Form.Field>
+            <label htmlFor="min">
+              <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />
+            </label>
+            <Input
+              name="min"
+              placeholder="-∞"
+              type="number"
+              value={min}
+              onChange={handleMinChange}
+            />
+          </Form.Field>
 
-        <div className="optionsChooser">
-          {buttons.map(({ message, type: buttonType }) => (
-            <Button
-              active={buttonType === type}
-              key={buttonType}
-              onClick={handleTypeChange(buttonType)}
-            >
-              {message}
-            </Button>
-          ))}
+          <Form.Field>
+            <label htmlFor="max">
+              <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />
+            </label>
+            <Input
+              name="max"
+              placeholder="∞"
+              type="number"
+              value={max}
+              onChange={handleMaxChange}
+            />
+          </Form.Field>
         </div>
+      )}
+    </Form.Field>
 
-        {type === FREERestrictionTypes.RANGE && (
-          <div className="range">
-            <Form.Field>
-              <label htmlFor="min">
-                <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />
-              </label>
-              <Input
-                name="min"
-                placeholder="-∞"
-                type="number"
-                value={min}
-                onChange={handleMinChange}
-              />
-            </Form.Field>
+    <style jsx>{`
+      @import 'src/theme';
 
-            <Form.Field>
-              <label htmlFor="max">
-                <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />
-              </label>
-              <Input
-                name="max"
-                placeholder="∞"
-                type="number"
-                value={max}
-                onChange={handleMaxChange}
-              />
-            </Form.Field>
-          </div>
-        )}
-      </Form.Field>
+      .FREECreationOptions {
+        @include tooltip-icon;
 
-      <style jsx>{`
-        @import 'src/theme';
+        .optionsChooser {
+          display: flex;
 
-        .FREECreationOptions {
-          @include tooltip-icon;
+          > :global(*):not(:last-child) {
+            margin-right: 1rem;
+          }
+        }
 
-          .optionsChooser {
-            display: flex;
+        .range {
+          display: flex;
+          flex-direction: column;
 
-            > :global(*):not(:last-child) {
-              margin-right: 1rem;
-            }
+          margin-top: 1rem;
+
+          :global(.field) > label {
+            font-size: 1rem;
           }
 
-          .range {
-            display: flex;
-            flex-direction: column;
+          @include desktop-tablet-only {
+            flex-direction: row;
 
-            margin-top: 1rem;
+            :global(.field) {
+              width: 10rem;
 
-            :global(.field) > label {
-              font-size: 1rem;
-            }
-
-            @include desktop-tablet-only {
-              flex-direction: row;
-
-              :global(.field) {
-                width: 10rem;
-
-                &:not(:last-child) {
-                  margin-right: 1rem;
-                }
+              &:not(:last-child) {
+                margin-right: 1rem;
               }
             }
           }
         }
-      `}</style>
-    </div>
-  )
-}
+      }
+    `}</style>
+  </div>
+)
 
 FREECreationOptions.propTypes = propTypes
 FREECreationOptions.defaultProps = defaultProps
 
 export default compose(
-  mapProps(({ input: { onChange, value }, meta }) => ({
+  mapProps(({ input: { onChange, value }, meta, type }) => ({
     max: _get(value, 'restrictions.max'),
     meta,
     min: _get(value, 'restrictions.min'),
     onChange,
-    type: _get(value, 'restrictions.type'),
+    type,
     value,
   })),
   withHandlers({
@@ -191,14 +155,6 @@ export default compose(
       onChange({
         ...value,
         restrictions: { ...value.restrictions, min },
-      })
-    },
-
-    // handle a change in the type of restriction for the answer format
-    handleTypeChange: ({ onChange, value }) => type => () => {
-      onChange({
-        ...value,
-        restrictions: { type },
       })
     },
   }),

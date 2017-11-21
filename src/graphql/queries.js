@@ -128,7 +128,6 @@ export const JoinSessionQuery = gql`
             restrictions {
               min
               max
-              type
             }
           }
           ... on SCQuestionOptions {
@@ -177,7 +176,6 @@ export const SessionEvaluationQuery = gql`
                   restrictions {
                     min
                     max
-                    type
                   }
                 }
               }

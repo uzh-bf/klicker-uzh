@@ -16,7 +16,7 @@ import {
   FREECreationOptions,
   FREECreationPreview,
 } from '../../components/questionTypes'
-import { FREERestrictionTypes, QuestionTypes } from '../../lib'
+import { QuestionTypes } from '../../lib'
 
 // form validation
 const validate = ({
@@ -67,8 +67,8 @@ const validate = ({
         errors.options = 'form.createQuestion.options.notEnoughCorrect'
       }
     }
-  } else if (type === QuestionTypes.FREE) {
-    if (options && options.restrictions && options.restrictions.type === 'RANGE') {
+  } else if (type === QuestionTypes.FREE_RANGE) {
+    if (options && options.restrictions) {
       if (!options.restrictions.min && !options.restrictions.max) {
         errors.options = 'form.createQuestion.options.noMinMax'
       }
@@ -134,6 +134,10 @@ const QuestionCreationForm = ({
       input: FREECreationOptions,
       preview: FREECreationPreview,
     },
+    [QuestionTypes.FREE_RANGE]: {
+      input: FREECreationOptions,
+      preview: FREECreationPreview,
+    },
   }
   const Preview = typeComponents[type].preview
 
@@ -157,7 +161,7 @@ const QuestionCreationForm = ({
         </div>
 
         <div className="questionInput questionOptions">
-          <Field component={typeComponents[type].input} intl={intl} name="options" />
+          <Field component={typeComponents[type].input} intl={intl} name="options" type={type} />
         </div>
 
         <div className="questionPreview">
@@ -167,7 +171,7 @@ const QuestionCreationForm = ({
               id="teacher.createQuestion.previewLabel"
             />
           </h2>
-          <Preview description={content} options={options} title={title} />
+          <Preview description={content} options={options} questionType={type} title={title} />
         </div>
 
         <Button className="discard" type="reset" onClick={onDiscard}>
@@ -266,9 +270,7 @@ export default compose(
       options: {
         choices: [],
         randomized: false,
-        restrictions: {
-          type: FREERestrictionTypes.NONE,
-        },
+        restrictions: {},
       },
       tags: null,
       title: null,

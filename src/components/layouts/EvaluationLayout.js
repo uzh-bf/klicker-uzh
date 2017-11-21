@@ -5,6 +5,7 @@ import { Checkbox, Menu } from 'semantic-ui-react'
 
 import { CommonLayout } from '.'
 import { Info, Possibilities, Statistics, VisualizationType } from '../evaluation'
+import { QuestionGroups } from '../../constants'
 
 const propTypes = {
   activeInstance: PropTypes.number,
@@ -87,11 +88,6 @@ function EvaluationLayout({
 
         <div className="info">
           <Info totalResponses={totalResponses} />
-        </div>
-
-        <div className="chart">{chart}</div>
-
-        <div className="settings">
           <Checkbox
             toggle
             defaultChecked={showSolution}
@@ -101,9 +97,6 @@ function EvaluationLayout({
             })}
             onChange={onToggleShowSolution}
           />
-        </div>
-
-        <div className="chartType">
           <VisualizationType
             intl={intl}
             type={type}
@@ -112,11 +105,20 @@ function EvaluationLayout({
           />
         </div>
 
-        <div className="optionDisplay">
-          <Possibilities questionOptions={options} questionType={type} />
-        </div>
+        <div className="chart">{chart}</div>
 
-        <div className="statistics">{statistics && <Statistics {...statistics} />}</div>
+        {QuestionGroups.POSSIBILITIES.includes(type) && (
+          <div className="optionDisplay">
+            <Possibilities questionOptions={options} questionType={type} />
+          </div>
+        )}
+
+        {QuestionGroups.STATISTICS.includes(type) &&
+          statistics && (
+            <div className="statistics">
+              <Statistics {...statistics} />
+            </div>
+          )}
 
         <style jsx>{`
           @import 'src/theme';
@@ -132,8 +134,8 @@ function EvaluationLayout({
                   auto minmax(auto, 0);
                 grid-template-areas:
                   'instanceChooser instanceChooser'
-                  'questionDetails questionDetails' 'graph optionDisplay' 'graph statistics' 'graph settings'
-                  'info chartType';
+                  'questionDetails questionDetails' 'graph optionDisplay' 'graph statistics' 'graph statistics'
+                  'info info';
 
                 height: 100vh;
 
@@ -195,13 +197,11 @@ function EvaluationLayout({
 
                   align-self: end;
                   padding-top: 0;
-                }
 
-                .chartType {
-                  grid-area: chartType;
-
-                  align-self: end;
-                  padding-top: 0;
+                  display: flex;
+                  flex-direction: row;
+                  align-items: center;
+                  justify-content: space-between;
                 }
 
                 .optionDisplay {
