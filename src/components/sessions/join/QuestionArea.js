@@ -286,8 +286,8 @@ export default compose(
         inputValue: undefined,
       }),
       handleFreeValueChange: () => inputValue => ({
-        inputEmpty: !inputValue || inputValue.length === 0,
-        inputValid: !!inputValue,
+        inputEmpty: inputValue !== 0 && (!inputValue || inputValue.length === 0),
+        inputValid: !!inputValue || inputValue === 0,
         inputValue,
       }),
       handleSubmit: ({ activeQuestion, remainingQuestions }) => () => {
