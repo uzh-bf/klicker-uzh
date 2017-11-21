@@ -1,25 +1,37 @@
 import React from 'react'
 import { Dropdown } from 'semantic-ui-react'
-import { compose, withState, withHandlers } from 'recompose'
+import { compose, withHandlers, withState } from 'recompose'
+import PropTypes from 'prop-types'
 
 const languageOptions = [
   {
     flag: 'gb',
-    key: 'en',
+    key: 'EN',
     text: 'English',
-    value: 'en',
+    value: 'EN',
   },
   {
     flag: 'de',
-    key: 'de',
+    key: 'DE',
     text: 'Deutsch',
-    value: 'de',
+    value: 'DE',
   },
 ]
 
-const LanguageSwitcher = () => (
+const propTypes = {
+  chosenLanguage: PropTypes.string.isRequired,
+  handleSetLanguage: PropTypes.func.isRequired,
+}
+
+const LanguageSwitcher = ({ chosenLanguage, handleSetLanguage }) => (
   <div className="languageSwitcher">
-    <Dropdown selection options={languageOptions} placeholder={'Select Language'} />
+    <Dropdown
+      selection
+      defaultValue={chosenLanguage}
+      options={languageOptions}
+      placeholder={'Select Language'}
+      onChange={() => handleSetLanguage('DE')}
+    />
 
     <style jsx>{`
       .languageSwitcher {
@@ -28,6 +40,8 @@ const LanguageSwitcher = () => (
     `}</style>
   </div>
 )
+
+LanguageSwitcher.propTypes = propTypes
 
 export default compose(
   withState('chosenLanguage', 'setLanguage', 'EN'), // English defined as intial language
