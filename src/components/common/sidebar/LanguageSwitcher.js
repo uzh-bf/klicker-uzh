@@ -1,5 +1,6 @@
 import React from 'react'
 import { Dropdown } from 'semantic-ui-react'
+import { compose, withState, withHandlers } from 'recompose'
 
 const languageOptions = [
   {
@@ -28,4 +29,9 @@ const LanguageSwitcher = () => (
   </div>
 )
 
-export default LanguageSwitcher
+export default compose(
+  withState('chosenLanguage', 'setLanguage', 'EN'), // English defined as intial language
+  withHandlers({
+    handleSetLanguage: ({ setLanguage }) => newLanguage => setLanguage(newLanguage),
+  }),
+)(LanguageSwitcher)
