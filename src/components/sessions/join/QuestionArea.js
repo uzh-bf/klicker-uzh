@@ -128,7 +128,6 @@ function QuestionArea({
               })()}
             </div>
 
-            {console.log(inputEmpty)}
             <ActionMenu
               activeIndex={activeQuestion}
               isSkipModeActive={inputEmpty}
