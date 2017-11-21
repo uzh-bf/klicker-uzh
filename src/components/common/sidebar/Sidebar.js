@@ -48,13 +48,7 @@ const Sidebar = ({
             {item.label}
           </SidebarItem>
         ))}
-        <SidebarItem
-          className="languageSwitcher"
-          handleSidebarItemClick={handleSidebarItemClick}
-          name="hello"
-        >
-          Hello
-        </SidebarItem>
+        <div className="languageSwitcher">Hello</div>
       </SemanticSidebar>
 
       <SemanticSidebar.Pusher>{children}</SemanticSidebar.Pusher>
@@ -73,6 +67,10 @@ const Sidebar = ({
         :global(.sidebarMenu) {
           text-align: left;
           width: 75% !important;
+        }
+
+        .languageSwitcher {
+          background-color: red;
         }
 
         @include desktop-tablet-only {
