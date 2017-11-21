@@ -1,7 +1,8 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Dropdown, Menu, Sidebar as SemanticSidebar } from 'semantic-ui-react'
+import { Menu, Sidebar as SemanticSidebar } from 'semantic-ui-react'
 import SidebarItem from './SidebarItem'
+import LanguageSwitcher from './LanguageSwitcher'
 
 const propTypes = {
   activeItem: PropTypes.string,
@@ -22,21 +23,6 @@ const defaultProps = {
   items: [],
   visible: false,
 }
-
-const languageOptions = [
-  {
-    flag: 'gb',
-    key: 'en',
-    text: 'English',
-    value: 'en',
-  },
-  {
-    flag: 'de',
-    key: 'de',
-    text: 'Deutsch',
-    value: 'de',
-  },
-]
 
 const Sidebar = ({
   activeItem, children, items, visible, handleSidebarItemClick,
@@ -62,10 +48,8 @@ const Sidebar = ({
             {item.label}
           </SidebarItem>
         ))}
-        {/* TODO floating position when scrolling */}
-        <div className="languageSwitcher">
-          <Dropdown selection options={languageOptions} placeholder={'Select Language'} />
-        </div>
+        {/* TODO correct position floating on bottom */}
+        <LanguageSwitcher />
       </SemanticSidebar>
 
       <SemanticSidebar.Pusher>{children}</SemanticSidebar.Pusher>
@@ -84,10 +68,6 @@ const Sidebar = ({
         :global(.sidebarMenu) {
           text-align: left;
           width: 75% !important;
-        }
-
-        .languageSwitcher {
-          margin-top: 20rem;
         }
 
         @include desktop-tablet-only {
