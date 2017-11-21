@@ -48,6 +48,13 @@ const Sidebar = ({
             {item.label}
           </SidebarItem>
         ))}
+        <SidebarItem
+          className="languageSwitcher"
+          handleSidebarItemClick={handleSidebarItemClick}
+          name="hello"
+        >
+          Hello
+        </SidebarItem>
       </SemanticSidebar>
 
       <SemanticSidebar.Pusher>{children}</SemanticSidebar.Pusher>
