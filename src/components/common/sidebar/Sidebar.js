@@ -62,6 +62,7 @@ const Sidebar = ({
             {item.label}
           </SidebarItem>
         ))}
+        {/* TODO floating position when scrolling */}
         <div className="languageSwitcher">
           <Dropdown selection options={languageOptions} placeholder={'Select Language'} />
         </div>
