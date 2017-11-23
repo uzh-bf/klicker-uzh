@@ -65,7 +65,7 @@ function EvaluationLayout({
 }) {
   return (
     <CommonLayout baseFontSize="22px" pageTitle={pageTitle}>
-      <div className="evaluationLayout">
+      <div className={`evaluationLayout ${type}`}>
         {instanceSummary.length > 1 && (
           <div className="instanceChooser">
             <Menu fitted tabular>
@@ -127,27 +127,48 @@ function EvaluationLayout({
             @supports (grid-gap: 1rem) {
               @include desktop-tablet-only {
                 display: grid;
+                height: 100vh;
 
                 grid-template-columns: auto 17rem;
                 grid-template-rows:
-                  minmax(auto, 0) minmax(auto, 2rem) minmax(auto, 0) minmax(auto, 0)
-                  auto minmax(auto, 0);
+                  2.3rem
+                  minmax(auto, 2rem)
+                  minmax(auto, 0)
+                  minmax(auto, 0)
+                  auto
+                  minmax(auto, 0);
                 grid-template-areas:
                   'instanceChooser instanceChooser'
-                  'questionDetails questionDetails' 'graph optionDisplay' 'graph statistics' 'graph statistics'
+                  'questionDetails questionDetails'
+                  'graph optionDisplay'
+                  'graph statistics'
+                  'graph statistics'
                   'info info';
 
-                height: 100vh;
+                &.FREE {
+                  grid-template-areas:
+                    'instanceChooser instanceChooser'
+                    'questionDetails questionDetails'
+                    'graph graph'
+                    'graph graph'
+                    'graph graph'
+                    'info info';
+                }
 
                 .instanceChooser {
                   grid-area: instanceChooser;
                   padding: 0.3rem;
                   padding-bottom: 0;
 
-                  :global(.menu .item) {
-                    font-size: 0.7rem;
-                    padding: 0 1rem;
-                    margin-bottom: 0;
+                  :global(.menu) {
+                    min-height: 0;
+
+                    :global(.item) {
+                      font-size: 0.7rem;
+                      padding: 0 0.6rem;
+                      margin: 0;
+                      height: 2rem;
+                    }
                   }
                 }
 
