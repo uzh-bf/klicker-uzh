@@ -5,7 +5,7 @@ import { Checkbox, Menu } from 'semantic-ui-react'
 
 import { CommonLayout } from '.'
 import { Info, Possibilities, Statistics, VisualizationType } from '../evaluation'
-import { QuestionGroups } from '../../constants'
+import { QUESTION_GROUPS } from '../../constants'
 
 const propTypes = {
   activeInstance: PropTypes.number,
@@ -107,13 +107,13 @@ function EvaluationLayout({
 
         <div className="chart">{chart}</div>
 
-        {QuestionGroups.POSSIBILITIES.includes(type) && (
+        {QUESTION_GROUPS.POSSIBILITIES.includes(type) && (
           <div className="optionDisplay">
             <Possibilities questionOptions={options} questionType={type} />
           </div>
         )}
 
-        {QuestionGroups.STATISTICS.includes(type) &&
+        {QUESTION_GROUPS.STATISTICS.includes(type) &&
           statistics && (
             <div className="statistics">
               <Statistics {...statistics} />

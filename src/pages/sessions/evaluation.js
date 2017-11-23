@@ -11,7 +11,7 @@ import {
 } from 'recompose'
 import { graphql } from 'react-apollo'
 
-import { QuestionGroups } from '../../constants'
+import { CHART_DEFAULTS, QUESTION_GROUPS, QUESTION_TYPES } from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
 import {
   calculateMax,
@@ -143,26 +143,28 @@ export default compose(
       .reduce((acc, val) => [...acc, ...val], []) // reduce array of arrays [[], [], []] to [...]
       .map((activeInstance) => {
         // map the array of all instances with the custom mapper
-        if (QuestionGroups.CHOICES.includes(activeInstance.question.type)) {
+        if (QUESTION_GROUPS.CHOICES.includes(activeInstance.question.type)) {
           return {
             ...activeInstance,
             results: {
               // HACK: versioning hardcoded
-              data: activeInstance.question.versions[0].options.choices.map((choice, index) => ({
-                correct: choice.correct,
-                count: activeInstance.results ? activeInstance.results.choices[index] : 0,
-                value: choice.name,
-              })),
+              data: activeInstance.question.versions[0].options[activeInstance.question.type].map(
+                (choice, index) => ({
+                  correct: choice.correct,
+                  count: activeInstance.results ? activeInstance.results.CHOICES[index] : 0,
+                  value: choice.name,
+                }),
+              ),
               totalResponses: activeInstance.responses.length,
             },
           }
         }
 
-        if (QuestionGroups.FREE.includes(activeInstance.question.type)) {
+        if (QUESTION_GROUPS.FREE.includes(activeInstance.question.type)) {
           return {
             ...activeInstance,
             results: {
-              data: activeInstance.results ? activeInstance.results.free : [],
+              data: activeInstance.results ? activeInstance.results.FREE : [],
               totalResponses: activeInstance.responses.length,
             },
           }
@@ -177,7 +179,7 @@ export default compose(
         title: instance.question.title,
         totalResponses: instance.responses.length,
       })),
-      sessionStatus: session.status,
+      SESSION_STATUS: session.status,
     }
   }),
   // if the query has finished loading but there are no active instances, show a simple message
@@ -186,18 +188,14 @@ export default compose(
     renderComponent(() => <div>No evaluation currently active.</div>),
   ),
   withStateHandlers(
-    ({ sessionStatus }) => ({
+    ({ SESSION_STATUS }) => ({
       activeInstanceIndex: 0,
-      showGraph: sessionStatus !== 'RUNNING',
-      showSolution: sessionStatus !== 'RUNNING',
-      visualizationType: 'PIE_CHART',
+      showGraph: SESSION_STATUS !== 'RUNNING',
+      showSolution: SESSION_STATUS !== 'RUNNING',
     }),
     {
       // handle change of active instance
       handleChangeActiveInstance: () => activeInstanceIndex => ({ activeInstanceIndex }),
-
-      // handle change of vis. type
-      handleChangeVisualizationType: () => visualizationType => ({ visualizationType }),
 
       // handle toggle of the visualization display
       // the visualization display can only be toggled once, so only allow setting to true
@@ -212,7 +210,7 @@ export default compose(
     const { question, results } = activeInstance
 
     // TODO: update question type to FREE:RANGE
-    if (question.type === 'FREE') {
+    if (question.type === QUESTION_TYPES.FREE_RANGE) {
       return {
         activeInstance,
         handleChangeActiveInstance: index => () => handleChangeActiveInstance(index),
@@ -230,4 +228,13 @@ export default compose(
       handleChangeActiveInstance: index => () => handleChangeActiveInstance(index),
     }
   }),
+  withStateHandlers(
+    ({ activeInstance: { question } }) => ({
+      visualizationType: CHART_DEFAULTS[question.type] || CHART_DEFAULTS.OTHER,
+    }),
+    {
+      // handle change of vis. type
+      handleChangeVisualizationType: () => visualizationType => ({ visualizationType }),
+    },
+  ),
 )(Evaluation)

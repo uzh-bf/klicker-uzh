@@ -16,7 +16,7 @@ import {
   FREECreationOptions,
   FREECreationPreview,
 } from '../../components/questionTypes'
-import { QuestionTypes } from '../../lib'
+import { QUESTION_TYPES } from '../../lib'
 
 // form validation
 const validate = ({
@@ -41,7 +41,7 @@ const validate = ({
   }
 
   // validation of SC answer options
-  if (type === QuestionTypes.SC) {
+  if (type === QUESTION_TYPES.SC) {
     // SC questions need at least one answer option to be valid
     if (!options || options.choices.length === 0) {
       errors.options = 'form.createQuestion.options.empty'
@@ -56,7 +56,7 @@ const validate = ({
       }
     }
     // validation of FREE answer options
-  } else if (type === QuestionTypes.MC) {
+  } else if (type === QUESTION_TYPES.MC) {
     // MC questions need at least one answer option to be valid
     if (!options || options.choices.length === 0) {
       errors.options = 'form.createQuestion.options.empty'
@@ -67,7 +67,7 @@ const validate = ({
         errors.options = 'form.createQuestion.options.notEnoughCorrect'
       }
     }
-  } else if (type === QuestionTypes.FREE_RANGE) {
+  } else if (type === QUESTION_TYPES.FREE_RANGE) {
     if (options && options.restrictions) {
       if (!options.restrictions.min && !options.restrictions.max) {
         errors.options = 'form.createQuestion.options.noMinMax'
@@ -107,7 +107,7 @@ const defaultProps = {
     choices: [],
   },
   tags: [],
-  type: QuestionTypes.SC,
+  type: QUESTION_TYPES.SC,
 }
 
 const QuestionCreationForm = ({
@@ -122,19 +122,19 @@ const QuestionCreationForm = ({
   onDiscard,
 }) => {
   const typeComponents = {
-    [QuestionTypes.SC]: {
+    [QUESTION_TYPES.SC]: {
       input: SCCreationOptions,
       preview: SCCreationPreview,
     },
-    [QuestionTypes.MC]: {
+    [QUESTION_TYPES.MC]: {
       input: SCCreationOptions,
       preview: SCCreationPreview,
     },
-    [QuestionTypes.FREE]: {
+    [QUESTION_TYPES.FREE]: {
       input: FREECreationOptions,
       preview: FREECreationPreview,
     },
-    [QuestionTypes.FREE_RANGE]: {
+    [QUESTION_TYPES.FREE_RANGE]: {
       input: FREECreationOptions,
       preview: FREECreationPreview,
     },

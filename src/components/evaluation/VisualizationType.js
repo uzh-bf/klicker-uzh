@@ -11,9 +11,9 @@ const propTypes = {
 }
 
 const options = [
-  { text: 'Pie Chart', value: 'PIE_CHART', withinType: ['SC', 'MC', 'FREE_RANGE'] },
-  { text: 'Bar Chart', value: 'BAR_CHART', withinType: ['SC', 'MC', 'FREE_RANGE'] },
-  { text: 'Word Cloud', value: 'WORD_CLOUD', withinType: ['FREE', 'FREE_RANGE'] },
+  { text: 'Pie Chart', value: 'PIE_CHART', withinType: ['SC'] },
+  { text: 'Bar Chart', value: 'BAR_CHART', withinType: ['SC', 'MC'] },
+  { text: 'Word Cloud', value: 'WORD_CLOUD', withinType: ['FREE'] },
   { text: 'Table', value: 'TABLE', withinType: ['SC', 'MC', 'FREE', 'FREE_RANGE'] },
   { text: 'Histogram', value: 'HISTOGRAM', withinType: ['FREE_RANGE'] },
 ]
@@ -29,6 +29,7 @@ const VisualizationType = ({ intl, onChangeType, type }) => (
         defaultMessage: 'Visualization',
         id: 'teacher.evaluation.visualization.title',
       })}
+      value={type}
       onChange={(param, data) => onChangeType(data.value)}
     />
 

@@ -1,29 +1,31 @@
-export const SemanticVersion = '2.2.13'
+export const SEMANTIC_VERSION = '2.2.13'
 
-export const SessionStatus = {
+export const SESSION_STATUS = {
   COMPLETED: 'COMPLETED',
   CREATED: 'CREATED',
   RUNNING: 'RUNNING',
 }
 
-export const QuestionBlockStatus = {
-  ACTIVE: 'ACTIVE',
-  EXECUTED: 'EXECUTED',
-  PLANNED: 'PLANNED',
-}
-
-export const QuestionTypes = {
+export const QUESTION_TYPES = {
   FREE: 'FREE',
   FREE_RANGE: 'FREE_RANGE',
   MC: 'MC',
   SC: 'SC',
 }
 
-export const QuestionGroups = {
-  CHOICES: [QuestionTypes.SC, QuestionTypes.MC],
-  FREE: [QuestionTypes.FREE, QuestionTypes.FREE_RANGE],
-  POSSIBILITIES: [QuestionTypes.SC, QuestionTypes.MC, QuestionTypes.FREE_RANGE],
-  STATISTICS: [QuestionTypes.FREE_RANGE],
+export const QUESTION_GROUPS = {
+  CHOICES: [QUESTION_TYPES.SC, QUESTION_TYPES.MC],
+  FREE: [QUESTION_TYPES.FREE, QUESTION_TYPES.FREE_RANGE],
+  POSSIBILITIES: [QUESTION_TYPES.SC, QUESTION_TYPES.MC, QUESTION_TYPES.FREE_RANGE],
+  STATISTICS: [QUESTION_TYPES.FREE_RANGE],
+}
+
+export const CHART_DEFAULTS = {
+  FREE: 'TABLE',
+  FREE_RANGE: 'HISTOGRAM',
+  MC: 'BAR_CHART',
+  OTHER: 'TABLE',
+  SC: 'PIE_CHART',
 }
 
 export const CHART_COLORS = [

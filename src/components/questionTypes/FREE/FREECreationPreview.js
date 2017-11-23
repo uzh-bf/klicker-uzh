@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 
-import { QuestionTypes } from '../../../constants'
+import { QUESTION_TYPES } from '../../../constants'
 
 const propTypes = {
   description: PropTypes.string,
@@ -35,7 +35,7 @@ const FREECreationPreview = ({
       // if the type is FREE_RANGE and both restrictions are specified
       // display a slider and selection
       if (
-        questionType === QuestionTypes.FREE_RANGE &&
+        questionType === QUESTION_TYPES.FREE_RANGE &&
         restrictions &&
         (restrictions.min && restrictions.max)
       ) {
@@ -76,7 +76,7 @@ const FREECreationPreview = ({
           <div className="freeText">
             <div className="box" />
           </div>
-          {questionType === QuestionTypes.FREE_RANGE &&
+          {questionType === QUESTION_TYPES.FREE_RANGE &&
             restrictions &&
             restrictions.min && (
               <div>
@@ -84,7 +84,7 @@ const FREECreationPreview = ({
                 {restrictions.min}
               </div>
             )}
-          {questionType === QuestionTypes.FREE_RANGE &&
+          {questionType === QUESTION_TYPES.FREE_RANGE &&
             restrictions &&
             restrictions.max && (
               <div>

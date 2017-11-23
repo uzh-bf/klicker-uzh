@@ -4,7 +4,7 @@ import ReactTooltip from 'react-tooltip'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { FaQuestionCircle } from 'react-icons/lib/fa'
 
-import { QuestionTypes } from '../../constants'
+import { QUESTION_TYPES } from '../../constants'
 import { Button } from '../common'
 
 const propTypes = {
@@ -20,30 +20,30 @@ const TypeChooser = ({ intl, input: { value, onChange } }) => {
     {
       name: intl.formatMessage({
         defaultMessage: 'SC',
-        id: 'common.questionTypes.sc',
+        id: 'common.QUESTION_TYPES.sc',
       }),
-      value: QuestionTypes.SC,
+      value: QUESTION_TYPES.SC,
     },
     {
       name: intl.formatMessage({
         defaultMessage: 'MC',
-        id: 'common.questionTypes.mc',
+        id: 'common.QUESTION_TYPES.mc',
       }),
-      value: QuestionTypes.MC,
+      value: QUESTION_TYPES.MC,
     },
     {
       name: intl.formatMessage({
         defaultMessage: 'FREE',
-        id: 'common.questionTypes.free',
+        id: 'common.QUESTION_TYPES.free',
       }),
-      value: QuestionTypes.FREE,
+      value: QUESTION_TYPES.FREE,
     },
     {
       name: intl.formatMessage({
         defaultMessage: 'FREE_RANGE',
-        id: 'common.questionTypes.freeRange',
+        id: 'common.QUESTION_TYPES.freeRange',
       }),
-      value: QuestionTypes.FREE_RANGE,
+      value: QUESTION_TYPES.FREE_RANGE,
     },
   ]
 

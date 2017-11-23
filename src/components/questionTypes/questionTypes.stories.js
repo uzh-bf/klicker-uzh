@@ -59,7 +59,7 @@ const FREECreationOptionsWithState = compose(
   }),
 )(FREECreationOptions)
 
-storiesOf('questionTypes/components', module).add('TypeChooser [NoTest]', () => (
+storiesOf('QUESTION_TYPES/components', module).add('TypeChooser [NoTest]', () => (
   <TypeChooser
     input={{
       onChange: (a) => {
@@ -71,7 +71,7 @@ storiesOf('questionTypes/components', module).add('TypeChooser [NoTest]', () => 
   />
 ))
 
-storiesOf('questionTypes/SC', module)
+storiesOf('QUESTION_TYPES/SC', module)
   .add('SC Answering Options', () => <SCAnswerOptionsWithState options={options} />)
   .add('SC Creation Options [NoTest]', () => <SCCreationOptionsWithState intl={intlMock} />)
   .add('SC Creation Option (correct)', () => <SCCreationOption correct name="That's true!" />)
@@ -83,7 +83,7 @@ storiesOf('questionTypes/SC', module)
     <SCCreationPreview description="abcd" options={{ choices: options }} title="Hello question" />
   ))
 
-storiesOf('questionTypes/FREE', module)
+storiesOf('QUESTION_TYPES/FREE', module)
   .add('FREE Answering Options (unrestricted)', () => (
     <FREEAnswerOptions
       options={{ restrictions: { max: null, min: null, type: 'NONE' } }}

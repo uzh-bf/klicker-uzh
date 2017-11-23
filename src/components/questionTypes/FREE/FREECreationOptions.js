@@ -7,7 +7,7 @@ import { FormattedMessage } from 'react-intl'
 import { FaQuestionCircle } from 'react-icons/lib/fa'
 import { compose, withHandlers, mapProps } from 'recompose'
 
-import { QuestionTypes } from '../../../constants'
+import { QUESTION_TYPES } from '../../../constants'
 
 const propTypes = {
   handleMaxChange: PropTypes.func.isRequired,
@@ -53,9 +53,9 @@ const FREECreationOptions = ({
         />
       </ReactTooltip>
 
-      {type === QuestionTypes.FREE && <div>Unrestricted input.</div>}
+      {type === QUESTION_TYPES.FREE && <div>Unrestricted input.</div>}
 
-      {type === QuestionTypes.FREE_RANGE && (
+      {type === QUESTION_TYPES.FREE_RANGE && (
         <div className="range">
           <Form.Field>
             <label htmlFor="min">

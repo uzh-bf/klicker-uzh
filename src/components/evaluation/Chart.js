@@ -21,7 +21,7 @@ const propTypes = {
     }),
     totalResponses: PropTypes.number,
   }),
-  sessionStatus: PropTypes.string.isRequired,
+  SESSION_STATUS: PropTypes.string.isRequired,
   showGraph: PropTypes.bool,
   showSolution: PropTypes.bool,
   statistics: statisticsShape,
@@ -49,7 +49,7 @@ function Chart({
   restrictions,
   results,
   handleShowGraph,
-  sessionStatus,
+  SESSION_STATUS,
   showGraph,
   showSolution,
   statistics,
@@ -76,7 +76,7 @@ function Chart({
         if (ChartComponent) {
           return (
             <ChartComponent
-              brush={sessionStatus !== 'RUNNING'}
+              brush={SESSION_STATUS !== 'RUNNING'}
               data={results.data}
               isSolutionShown={showSolution}
               restrictions={restrictions}

@@ -6,7 +6,7 @@ import { Helmet } from 'react-helmet'
 import { Input } from 'semantic-ui-react'
 
 import { createLinks } from '../../../lib'
-import { QuestionTypes } from '../../../constants'
+import { QUESTION_TYPES } from '../../../constants'
 
 const propTypes = {
   disabled: PropTypes.bool,
@@ -38,7 +38,7 @@ const FREEAnswerOptions = ({
 
     {(() => {
       if (
-        questionType === QuestionTypes.FREE_RANGE &&
+        questionType === QUESTION_TYPES.FREE_RANGE &&
         options.restrictions.min !== null &&
         options.restrictions.max !== null
       ) {

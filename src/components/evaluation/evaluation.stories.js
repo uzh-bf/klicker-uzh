@@ -60,17 +60,16 @@ storiesOf('evaluation/components', module)
       questionType="SC"
     />
   ))
-  .add('Possibilities (FREE:RANGE)', () => (
+  .add('Possibilities (FREE_RANGE)', () => (
     <Possibilities
       intl={intlMock}
       questionOptions={{
         restrictions: {
           max: 20,
           min: 10,
-          type: 'RANGE',
         },
       }}
-      questionType="FREE"
+      questionType="FREE_RANGE"
     />
   ))
   .add('Statistics', () => <Statistics max={100} mean={34.3453421} median={23} min={10} />)

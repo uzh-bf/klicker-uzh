@@ -51,14 +51,21 @@ export const CreateQuestionMutation = gql`
         id
         description
         options {
-          ... on SCQuestionOptions {
+          SC {
             choices {
               correct
               name
             }
             randomized
           }
-          ... on FREEQuestionOptions {
+          MC {
+            choices {
+              correct
+              name
+            }
+            randomized
+          }
+          FREE_RANGE {
             restrictions {
               min
               max
