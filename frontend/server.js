@@ -11,6 +11,7 @@ const express = require('express')
 const next = require('next')
 const compression = require('compression')
 const helmet = require('helmet')
+const morgan = require('morgan')
 
 // Polyfill Node with `Intl` that has data for all locales.
 // See: https://formatjs.io/guides/runtime-environments/#server
@@ -57,18 +58,23 @@ app
       res.redirect('/questions/')
     }) */
 
-    // compress using gzip
-    server.use(compression())
-
-    // secure the server with helmet
-    server.use(
+    const middleware = [
+      // compress using gzip
+      compression(),
+      // secure the server with helmet
       helmet({
         hsts: false,
       }),
-    )
+      // static file serving from public folder
+      express.static(join(__dirname, 'public')),
+    ]
 
-    // static file serving from public folder
-    server.use(express.static(join(__dirname, 'public')))
+    // activate morgan logging in dev and prod, but not in tests
+    if (process.env.NODE_ENV !== 'test') {
+      middleware.push(morgan('combined'))
+    }
+
+    server.use(...middleware)
 
     server.get('/join/:shortname', (req, res) =>
       app.render(req, res, '/join', { shortname: req.params.shortname }),

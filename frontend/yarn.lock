@@ -1791,6 +1791,12 @@ base64-js@^1.0.2:
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/base64-js/-/base64-js-1.2.1.tgz#a91947da1f4a516ea38e5b4ec0ec3773675e0886"
 
+basic-auth@~2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/basic-auth/-/basic-auth-2.0.0.tgz#015db3f353e02e56377755f962742e8981e7bbba"
+  dependencies:
+    safe-buffer "5.1.1"
+
 bcrypt-pbkdf@^1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/bcrypt-pbkdf/-/bcrypt-pbkdf-1.0.1.tgz#63bc5dcb61331b92bc05fd528953c33462a06f8d"
@@ -6061,6 +6067,16 @@ modify-values@^1.0.0:
 moment@2.19.2, moment@^2.11.2:
   version "2.19.2"
   resolved "https://registry.yarnpkg.com/moment/-/moment-2.19.2.tgz#8a7f774c95a64550b4c7ebd496683908f9419dbe"
+
+morgan@^1.9.0:
+  version "1.9.0"
+  resolved "https://registry.yarnpkg.com/morgan/-/morgan-1.9.0.tgz#d01fa6c65859b76fcf31b3cb53a3821a311d8051"
+  dependencies:
+    basic-auth "~2.0.0"
+    debug "2.6.9"
+    depd "~1.1.1"
+    on-finished "~2.3.0"
+    on-headers "~1.0.1"
 
 ms@2.0.0:
   version "2.0.0"
