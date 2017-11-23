@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 
-import { FREERestrictionTypes } from '../../../constants'
+import { QUESTION_TYPES } from '../../../constants'
 
 const propTypes = {
   description: PropTypes.string,
@@ -13,6 +13,7 @@ const propTypes = {
       type: PropTypes.string,
     }),
   }),
+  questionType: PropTypes.string.isRequired,
   title: PropTypes.string,
 }
 
@@ -24,82 +25,90 @@ const defaultProps = {
   title: 'TITLE',
 }
 
-const FREECreationPreview = ({ title, options: { restrictions }, description }) => {
-  const restrictedToNumbers =
-    restrictions &&
-    restrictions.type === FREERestrictionTypes.RANGE &&
-    (restrictions.min || restrictions.max)
+const FREECreationPreview = ({
+  title, questionType, options: { restrictions }, description,
+}) => (
+  <div className="preview">
+    <div className="title">{title || 'TITLE'}</div>
+    <div className="description">{description || 'DESCRIPTION'}</div>
+    {(() => {
+      // if the type is FREE_RANGE and both restrictions are specified
+      // display a slider and selection
+      if (
+        questionType === QUESTION_TYPES.FREE_RANGE &&
+        restrictions &&
+        (restrictions.min && restrictions.max)
+      ) {
+        return (
+          <div>
+            <div className="diagram">
+              {restrictions.min && (
+                <div className="min">
+                  <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />:{' '}
+                  {restrictions.min}
+                </div>
+              )}
+              {restrictions.max && (
+                <div className="max">
+                  <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />:{' '}
+                  {restrictions.max}
+                </div>
+              )}
+              <div className="line" />
+              <div className="box" />
+            </div>
+            <div className="selection">
+              {/* TODO how to align title horizontally centered? */}
+              <b className="title">
+                <FormattedMessage
+                  defaultMessage="Selection"
+                  id="teacher.createQuestion.selection"
+                />
+              </b>
+              <div className="box">{(+restrictions.min + +restrictions.max) / 2}</div>
+            </div>
+          </div>
+        )
+      }
 
-  return (
-    <div className="preview">
-      <div className="title">{title || 'TITLE'}</div>
-      <div className="description">{description || 'DESCRIPTION'}</div>
-      {restrictedToNumbers && (
-        <div className="diagram">
-          {restrictions.min && (
-            <div className="min">
-              <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />:{' '}
-              {restrictions.min}
-            </div>
-          )}
-          {restrictions.max && (
-            <div className="max">
-              <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />:{' '}
-              {restrictions.max}
-            </div>
-          )}
-          <div className="line" />
-          <div className="box" />
-        </div>
-      )}
-      {restrictedToNumbers ? (
-        <div className="selection">
-          {/* TODO how to align title horizontally centered? */}
-          <b className="title">
-            <FormattedMessage defaultMessage="Selection" id="teacher.createQuestion.selection" />
-          </b>
-          <div className="box">{(+restrictions.min + +restrictions.max) / 2}</div>
-        </div>
-      ) : (
+      return (
         <div>
           <div className="freeText">
             <div className="box" />
           </div>
-          {restrictions &&
-            restrictions.min && (
+          {questionType === QUESTION_TYPES.FREE_RANGE &&
+            restrictions &&
+            restrictions.min !== null && (
               <div>
                 <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />:{' '}
                 {restrictions.min}
               </div>
             )}
-          {restrictions &&
-            restrictions.max && (
+          {questionType === QUESTION_TYPES.FREE_RANGE &&
+            restrictions &&
+            restrictions.max !== null && (
               <div>
                 <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />:{' '}
                 {restrictions.max}
               </div>
             )}
         </div>
-      )}
-      <div className="button">
-        <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
-      </div>
+      )
+    })()}
+    <div className="button">
+      <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+    </div>
 
-      <style jsx>{`
-        @import 'src/theme';
+    <style jsx>{`
+      @import 'src/theme';
 
-        .preview {
-          display: flex;
-          flex-direction: column;
+      .preview {
+        display: flex;
+        flex-direction: column;
 
-          border: 1px solid lightgrey;
-          height: 100%;
-          padding: 1rem;
-
-          @include desktop-tablet-only {
-            min-height: 18.5rem;
-          }
-        }
+        border: 1px solid lightgrey;
+        height: 100%;
+        padding: 1rem;
 
         .title,
         .description,
@@ -163,10 +172,14 @@ const FREECreationPreview = ({ title, options: { restrictions }, description }) 
           width: 0;
           border-left: 0.2rem solid black;
         }
-      `}</style>
-    </div>
-  )
-}
+
+        @include desktop-tablet-only {
+          min-height: 18.5rem;
+        }
+      }
+    `}</style>
+  </div>
+)
 
 FREECreationPreview.propTypes = propTypes
 FREECreationPreview.defaultProps = defaultProps
