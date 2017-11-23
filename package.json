@@ -1,6 +1,6 @@
 {
   "name": "klicker-react",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.7",
   "main": "server.js",
   "repository": "https://github.com/uzh-bf/klicker-react.git",
   "author": "Roland Schläfli <roland.schlaefli@bf.uzh.ch>",
