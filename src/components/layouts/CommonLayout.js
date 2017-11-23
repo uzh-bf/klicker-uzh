@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { Helmet } from 'react-helmet'
 import { compose, lifecycle } from 'recompose'
 
-import { SemanticVersion } from '../../constants'
+import { SEMANTIC_VERSION } from '../../constants'
 import { createLinks, initLogging } from '../../lib'
 
 const propTypes = {
@@ -22,7 +22,7 @@ const CommonLayout = ({ baseFontSize, children, pageTitle }) => (
     <Helmet defer={false}>
       {createLinks([
         'https://fonts.googleapis.com/css?family=Open Sans',
-        `https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/${SemanticVersion}/semantic.min.css`,
+        `https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/${SEMANTIC_VERSION}/semantic.min.css`,
       ])}
       <title>{pageTitle}</title>
     </Helmet>
