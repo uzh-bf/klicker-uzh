@@ -4,6 +4,7 @@ import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
 
 import { BarChart, PieChart, TableChart, CloudChart, HistogramChart } from '.'
+import { SESSION_STATUS } from '../../constants'
 import { statisticsShape } from '../../propTypes'
 
 // TODO
@@ -21,7 +22,7 @@ const propTypes = {
     }),
     totalResponses: PropTypes.number,
   }),
-  SESSION_STATUS: PropTypes.string.isRequired,
+  sessionStatus: PropTypes.string.isRequired,
   showGraph: PropTypes.bool,
   showSolution: PropTypes.bool,
   statistics: statisticsShape,
@@ -49,7 +50,7 @@ function Chart({
   restrictions,
   results,
   handleShowGraph,
-  SESSION_STATUS,
+  sessionStatus,
   showGraph,
   showSolution,
   statistics,
@@ -76,7 +77,7 @@ function Chart({
         if (ChartComponent) {
           return (
             <ChartComponent
-              brush={SESSION_STATUS !== 'RUNNING'}
+              brush={sessionStatus !== SESSION_STATUS.RUNNING}
               data={results.data}
               isSolutionShown={showSolution}
               restrictions={restrictions}

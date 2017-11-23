@@ -40,7 +40,7 @@ const Possibilities = ({ questionOptions, questionType }) => (
       if (QUESTION_GROUPS.CHOICES.includes(questionType)) {
         return (
           <div>
-            {questionOptions.choices.map((choice, index) => (
+            {questionOptions[questionType].choices.map((choice, index) => (
               <EvaluationListItem
                 color={CHART_COLORS[index % 12]}
                 marker={String.fromCharCode(65 + index)}
@@ -53,7 +53,7 @@ const Possibilities = ({ questionOptions, questionType }) => (
       }
 
       if (questionType === QUESTION_TYPES.FREE_RANGE) {
-        const { restrictions } = questionOptions
+        const { FREE_RANGE: { restrictions } } = questionOptions
 
         return (
           <div>

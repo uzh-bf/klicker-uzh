@@ -41,7 +41,7 @@ const validate = ({
   }
 
   // validation of SC answer options
-  if (type === QUESTION_TYPES.SC) {
+  /* if (type === QUESTION_TYPES.SC) {
     // SC questions need at least one answer option to be valid
     if (!options || options.choices.length === 0) {
       errors.options = 'form.createQuestion.options.empty'
@@ -67,15 +67,17 @@ const validate = ({
         errors.options = 'form.createQuestion.options.notEnoughCorrect'
       }
     }
-  } else if (type === QUESTION_TYPES.FREE_RANGE) {
+  } else */
+
+  if (type === QUESTION_TYPES.FREE_RANGE) {
     if (options && options.restrictions) {
-      if (!options.restrictions.min && !options.restrictions.max) {
+      if (options.restrictions.min === null && options.restrictions.max === null) {
         errors.options = 'form.createQuestion.options.noMinMax'
       }
 
       if (
-        options.restrictions.min &&
-        options.restrictions.max &&
+        options.restrictions.min !== null &&
+        options.restrictions.max !== null &&
         options.restrictions.min >= options.restrictions.max
       ) {
         errors.options = 'form.createQuestion.options.minGteMax'
@@ -274,7 +276,7 @@ export default compose(
       },
       tags: null,
       title: null,
-      type: 'SC',
+      type: QUESTION_TYPES.SC,
     },
     validate,
   }),

@@ -59,7 +59,7 @@ const FREECreationOptionsWithState = compose(
   }),
 )(FREECreationOptions)
 
-storiesOf('QUESTION_TYPES/components', module).add('TypeChooser [NoTest]', () => (
+storiesOf('questionTypes/components', module).add('TypeChooser [NoTest]', () => (
   <TypeChooser
     input={{
       onChange: (a) => {
@@ -71,7 +71,7 @@ storiesOf('QUESTION_TYPES/components', module).add('TypeChooser [NoTest]', () =>
   />
 ))
 
-storiesOf('QUESTION_TYPES/SC', module)
+storiesOf('questionTypes/SC', module)
   .add('SC Answering Options', () => <SCAnswerOptionsWithState options={options} />)
   .add('SC Creation Options [NoTest]', () => <SCCreationOptionsWithState intl={intlMock} />)
   .add('SC Creation Option (correct)', () => <SCCreationOption correct name="That's true!" />)
@@ -83,28 +83,19 @@ storiesOf('QUESTION_TYPES/SC', module)
     <SCCreationPreview description="abcd" options={{ choices: options }} title="Hello question" />
   ))
 
-storiesOf('QUESTION_TYPES/FREE', module)
+storiesOf('questionTypes/FREE', module)
   .add('FREE Answering Options (unrestricted)', () => (
-    <FREEAnswerOptions
-      options={{ restrictions: { max: null, min: null, type: 'NONE' } }}
-      onChange={f => f}
-    />
+    <FREEAnswerOptions options={{ restrictions: { max: null, min: null } }} onChange={f => f} />
   ))
-  .add('FREE Answering Options (lower bound restriction)', () => (
-    <FREEAnswerOptions
-      options={{ restrictions: { max: null, min: 9, type: 'RANGE' } }}
-      onChange={f => f}
-    />
+  .add('FREE_RANGE Answering Options (lower bound restriction)', () => (
+    <FREEAnswerOptions options={{ restrictions: { max: null, min: 9 } }} onChange={f => f} />
   ))
-  .add('FREE Answering Options (upper bound restriction)', () => (
-    <FREEAnswerOptions
-      options={{ restrictions: { max: 87, min: null, type: 'RANGE' } }}
-      onChange={f => f}
-    />
+  .add('FREE_RANGE Answering Options (upper bound restriction)', () => (
+    <FREEAnswerOptions options={{ restrictions: { max: 87, min: null } }} onChange={f => f} />
   ))
-  .add('FREE Answering Options (Number restriction)', () => (
+  .add('FREE_RANGE Answering Options (Number restriction)', () => (
     <FREEAnswerOptions
-      options={{ restrictions: { max: 87, min: 900, type: 'RANGE' } }}
+      options={{ restrictions: { max: 87, min: 900 } }}
       value={555}
       onChange={(a) => {
         console.log(a)

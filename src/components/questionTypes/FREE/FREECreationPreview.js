@@ -78,7 +78,7 @@ const FREECreationPreview = ({
           </div>
           {questionType === QUESTION_TYPES.FREE_RANGE &&
             restrictions &&
-            restrictions.min && (
+            restrictions.min !== null && (
               <div>
                 <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />:{' '}
                 {restrictions.min}
@@ -86,7 +86,7 @@ const FREECreationPreview = ({
             )}
           {questionType === QUESTION_TYPES.FREE_RANGE &&
             restrictions &&
-            restrictions.max && (
+            restrictions.max !== null && (
               <div>
                 <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />:{' '}
                 {restrictions.max}

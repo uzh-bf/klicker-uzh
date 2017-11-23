@@ -84,18 +84,29 @@ const FREEAnswerOptions = ({
             onChange={e => onChange(e.target.value)}
           />
 
-          {options.restrictions.min !== null && (
+          {questionType === QUESTION_TYPES.FREE_RANGE && (
             <div>
-              <strong>
-                <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />
-              </strong>: {options.restrictions.min}
-            </div>
-          )}
-          {options.restrictions.max !== null && (
-            <div>
-              <strong>
-                <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />
-              </strong>: {options.restrictions.max}
+              {options.FREE_RANGE.restrictions.min !== null && (
+                <div>
+                  <strong>
+                    <FormattedMessage
+                      defaultMessage="Min"
+                      id="teacher.createQuestion.options.min"
+                    />
+                  </strong>: {options.restrictions.min}
+                </div>
+              )}
+
+              {options.FREE_RANGE.restrictions.max !== null && (
+                <div>
+                  <strong>
+                    <FormattedMessage
+                      defaultMessage="Max"
+                      id="teacher.createQuestion.options.max"
+                    />
+                  </strong>: {options.restrictions.max}
+                </div>
+              )}
             </div>
           )}
         </div>

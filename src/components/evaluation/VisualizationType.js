@@ -8,6 +8,7 @@ const propTypes = {
   intl: intlShape.isRequired,
   onChangeType: PropTypes.func.isRequired,
   type: PropTypes.string.isRequired,
+  visualization: PropTypes.string.isRequired,
 }
 
 const options = [
@@ -18,7 +19,9 @@ const options = [
   { text: 'Histogram', value: 'HISTOGRAM', withinType: ['FREE_RANGE'] },
 ]
 
-const VisualizationType = ({ intl, onChangeType, type }) => (
+const VisualizationType = ({
+  intl, onChangeType, type, visualization,
+}) => (
   <div className="visualizationType">
     <Dropdown
       search
@@ -29,7 +32,7 @@ const VisualizationType = ({ intl, onChangeType, type }) => (
         defaultMessage: 'Visualization',
         id: 'teacher.evaluation.visualization.title',
       })}
-      value={type}
+      value={visualization}
       onChange={(param, data) => onChangeType(data.value)}
     />
 

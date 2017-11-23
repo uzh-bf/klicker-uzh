@@ -11,7 +11,7 @@ import {
 } from 'recompose'
 import { graphql } from 'react-apollo'
 
-import { CHART_DEFAULTS, QUESTION_GROUPS, QUESTION_TYPES } from '../../constants'
+import { CHART_DEFAULTS, QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
 import {
   calculateMax,
@@ -120,7 +120,7 @@ export default compose(
   branch(({ data }) => data.loading, renderNothing),
   // override the session evaluation query with a polling query
   branch(
-    ({ data: { session } }) => session.status === 'RUNNING',
+    ({ data: { session } }) => session.status === SESSION_STATUS.RUNNING,
     graphql(SessionEvaluationQuery, {
       // refetch the active instances query every 10s
       options: ({ url }) => ({
@@ -133,7 +133,7 @@ export default compose(
     let { blocks } = session
 
     // if the session is running, only show open question instances in the evaluation
-    if (session.status === 'RUNNING') {
+    if (session.status === SESSION_STATUS.RUNNING) {
       blocks = blocks.filter(block => block.status === 'ACTIVE')
     }
 
@@ -148,13 +148,13 @@ export default compose(
             ...activeInstance,
             results: {
               // HACK: versioning hardcoded
-              data: activeInstance.question.versions[0].options[activeInstance.question.type].map(
-                (choice, index) => ({
-                  correct: choice.correct,
-                  count: activeInstance.results ? activeInstance.results.CHOICES[index] : 0,
-                  value: choice.name,
-                }),
-              ),
+              data: activeInstance.question.versions[0].options[
+                activeInstance.question.type
+              ].choices.map((choice, index) => ({
+                correct: choice.correct,
+                count: activeInstance.results ? activeInstance.results.CHOICES[index] : 0,
+                value: choice.name,
+              })),
               totalResponses: activeInstance.responses.length,
             },
           }
@@ -179,7 +179,7 @@ export default compose(
         title: instance.question.title,
         totalResponses: instance.responses.length,
       })),
-      SESSION_STATUS: session.status,
+      sessionStatus: session.status,
     }
   }),
   // if the query has finished loading but there are no active instances, show a simple message
@@ -188,10 +188,10 @@ export default compose(
     renderComponent(() => <div>No evaluation currently active.</div>),
   ),
   withStateHandlers(
-    ({ SESSION_STATUS }) => ({
+    ({ sessionStatus }) => ({
       activeInstanceIndex: 0,
-      showGraph: SESSION_STATUS !== 'RUNNING',
-      showSolution: SESSION_STATUS !== 'RUNNING',
+      showGraph: sessionStatus !== SESSION_STATUS.RUNNING,
+      showSolution: sessionStatus !== SESSION_STATUS.RUNNING,
     }),
     {
       // handle change of active instance

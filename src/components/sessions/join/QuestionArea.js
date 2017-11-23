@@ -102,7 +102,7 @@ function QuestionArea({
                   return (
                     <SCAnswerOptions
                       disabled={!remainingQuestions.includes(activeQuestion)}
-                      options={options.choices}
+                      options={options[type].choices}
                       value={inputValue}
                       onChange={handleActiveChoicesChange(type)}
                     />
@@ -113,7 +113,7 @@ function QuestionArea({
                   return (
                     <FREEAnswerOptions
                       disabled={!remainingQuestions.includes(activeQuestion)}
-                      options={options}
+                      options={options[type]}
                       questionType={type}
                       value={inputValue}
                       onChange={handleFreeValueChange}
@@ -322,7 +322,7 @@ export default compose(
 
       // if the question has been answered, add a response
       if (typeof inputValue !== 'undefined') {
-        if (inputValue.length > 0 && [QUESTION_TYPES.SC, QUESTION_TYPES.MC].includes(type)) {
+        if (inputValue.length > 0 && QUESTION_GROUPS.CHOICES.includes(type)) {
           handleNewResponse({ instanceId, response: { choices: inputValue } })
         } else if (QUESTION_GROUPS.FREE.includes(type)) {
           handleNewResponse({ instanceId, response: { value: inputValue } })
