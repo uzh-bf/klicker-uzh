@@ -3,13 +3,8 @@ const _values = require('lodash/values')
 
 const { ObjectId } = mongoose.Schema.Types
 
+const { QuestionTypes } = require('../constants')
 const QuestionVersion = require('./QuestionVersion')
-
-const QuestionTypes = {
-  SC: 'SC',
-  MC: 'MC',
-  FREE: 'FREE',
-}
 
 const Question = new mongoose.Schema({
   title: { type: String, required: true },
@@ -26,5 +21,4 @@ const Question = new mongoose.Schema({
 
 module.exports = {
   QuestionModel: mongoose.model('Question', Question),
-  QuestionTypes,
 }

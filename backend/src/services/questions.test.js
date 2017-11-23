@@ -61,16 +61,34 @@ describe('QuestionService', () => {
       expect(newQuestion).toMatchSnapshot()
     })
 
+    it('allows creating a valid MC question', async () => {
+      const newQuestion = await QuestionService.createQuestion({ ...question, type: 'MC', userId: user.id })
+
+      expect(newQuestion.versions.length).toEqual(1)
+      expect(newQuestion).toMatchSnapshot()
+    })
+
     it('allows creating a valid FREE question', async () => {
       const newQuestion = await QuestionService.createQuestion({
         ...question,
         userId: user.id,
         type: 'FREE',
+        options: {},
+      })
+
+      expect(newQuestion.versions.length).toEqual(1)
+      expect(newQuestion).toMatchSnapshot()
+    })
+
+    it('allows creating a valid FREE_RANGE question', async () => {
+      const newQuestion = await QuestionService.createQuestion({
+        ...question,
+        userId: user.id,
+        type: 'FREE_RANGE',
         options: {
           restrictions: {
             min: 10,
             max: 100,
-            type: 'RANGE',
           },
         },
       })

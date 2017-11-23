@@ -41,7 +41,6 @@ const Session = `
     settings: Session_Settings!
     user: User!
 
-    activeInstances: [QuestionInstance!]!
     blocks: [Session_QuestionBlock!]!
     confusionTS: [Session_ConfusionTimestep!]!
     feedbacks: [Session_Feedback!]!

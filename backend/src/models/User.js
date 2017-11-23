@@ -17,6 +17,7 @@ const User = new mongoose.Schema({
     minlength: 3,
     maxlength: 6,
     index: true,
+    unique: true,
   },
   isActive: { type: Boolean, default: false },
   isAAI: { type: Boolean, required: true },

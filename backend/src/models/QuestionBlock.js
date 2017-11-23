@@ -3,11 +3,7 @@ const _values = require('lodash/values')
 
 const { ObjectId } = mongoose.Schema.Types
 
-const QuestionBlockStatus = {
-  PLANNED: 'PLANNED',
-  ACTIVE: 'ACTIVE',
-  EXECUTED: 'EXECUTED',
-}
+const { QuestionBlockStatus } = require('../constants')
 
 module.exports = {
   QuestionBlock: new mongoose.Schema({
@@ -24,5 +20,4 @@ module.exports = {
     createdAt: { type: Date, default: Date.now() },
     updatedAt: { type: Date, default: Date.now() },
   }),
-  QuestionBlockStatus,
 }

@@ -5,11 +5,7 @@ const {
   allQuestions, createQuestion, questionsByPV, questionByPV, question,
 } = require('./resolvers/questions')
 const {
-  activeInstances,
-  questionInstancesByPV,
-  addResponse,
-  responsesByPV,
-  resultsByPV,
+  questionInstancesByPV, addResponse, responsesByPV, resultsByPV,
 } = require('./resolvers/questionInstances')
 const {
   addFeedback,
@@ -81,7 +77,6 @@ const resolvers = {
     allQuestions: requireAuth(allQuestions),
     allSessions: requireAuth(allSessions),
     allTags: requireAuth(allTags),
-    activeInstances: requireAuth(activeInstances),
     joinSession,
     question: requireAuth(question),
     runningSession: requireAuth(runningSession),
@@ -108,12 +103,14 @@ const resolvers = {
   },
   QuestionOptions: {
     __resolveType(obj) {
-      if (obj.restrictions) {
+      if (obj.FREE_RANGE) {
         return 'FREEQuestionOptions'
       }
-      if (obj.choices) {
+
+      if (obj.SC || obj.MC) {
         return 'SCQuestionOptions'
       }
+
       return null
     },
   },
@@ -124,11 +121,11 @@ const resolvers = {
   },
   QuestionInstance_Results: {
     __resolveType(obj) {
-      if (obj.free) {
+      if (obj.FREE) {
         return 'FREEQuestionResults'
       }
 
-      if (obj.choices) {
+      if (obj.CHOICES) {
         return 'SCQuestionResults'
       }
 

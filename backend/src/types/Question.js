@@ -11,19 +11,32 @@ const SCQuestionOptions = require('./questionTypes/SCQuestionOptions')
 const Question = `
   union QuestionOptions = SCQuestionOptions | FREEQuestionOptions
 
+  enum Question_Type {
+    SC
+    MC
+    FREE
+    FREE_RANGE
+  }
+
+  type Question_Options {
+    SC: SCQuestionOptions
+    MC: SCQuestionOptions
+    FREE_RANGE: FREEQuestionOptions
+  }
+
   type Question_Public {
     id: ID!
     instanceId: ID!
     title: String!
-    type: String!
+    type: Question_Type!
     description: String!
 
-    options: QuestionOptions!
+    options: Question_Options
   }
 
   input QuestionInput {
     title: String!
-    type: String!
+    type: Question_Type!
     description: String!
 
     options: QuestionOptionsInput!
@@ -38,7 +51,7 @@ const Question = `
   type Question {
     id: ID!
     title: String!
-    type: String!
+    type: Question_Type!
 
     user: User!
 
@@ -54,7 +67,7 @@ const Question = `
     id: ID!
     description: String!
 
-    options: QuestionOptions!
+    options: Question_Options
 
     instances: [QuestionInstance!]!
 

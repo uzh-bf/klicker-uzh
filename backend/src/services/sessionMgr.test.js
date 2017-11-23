@@ -7,6 +7,8 @@ const { QuestionInstanceModel } = require('../models')
 const { initializeDb, prepareSessionFactory } = require('../lib/test/setup')
 const { sessionSerializer, questionInstanceSerializer } = require('../lib/test/serializers')
 
+const { QuestionTypes } = require('../constants')
+
 mongoose.Promise = Promise
 
 // define how jest should serialize objects into snapshots
@@ -18,11 +20,10 @@ const prepareSession = prepareSessionFactory(SessionMgrService)
 
 describe('SessionMgrService', () => {
   let user
-  let question1
-  let question2
+  let questions
 
   beforeAll(async () => {
-    ({ user, question1, question2 } = await initializeDb({
+    ({ user, questions } = await initializeDb({
       mongoose,
       email: 'testSessionMgr@bf.uzh.ch',
       shortname: 'sesMgr',
@@ -49,13 +50,13 @@ describe('SessionMgrService', () => {
         name: 'session with an empty block',
         questionBlocks: [
           {
-            questions: [question1.id, question2.id],
+            questions: [questions[QuestionTypes.SC].id, questions[QuestionTypes.MC].id],
           },
           {
             questions: [],
           },
           {
-            questions: [question1.id],
+            questions: [questions[QuestionTypes.FREE].id, questions[QuestionTypes.FREE_RANGE].id],
           },
         ],
         userId: user.id,
@@ -70,10 +71,10 @@ describe('SessionMgrService', () => {
         name: 'hello world',
         questionBlocks: [
           {
-            questions: [question1.id, question2.id],
+            questions: [questions[QuestionTypes.SC].id, questions[QuestionTypes.MC].id],
           },
           {
-            questions: [question1.id],
+            questions: [questions[QuestionTypes.FREE].id, questions[QuestionTypes.FREE_RANGE].id],
           },
         ],
         userId: user.id,
@@ -163,7 +164,7 @@ describe('SessionMgrService', () => {
       })
     })
 
-    it('allows changing each setting seperately', async () => {
+    it('allows changing each setting separately', async () => {
       // update isConfusionBarometerActive
       const session = await SessionMgrService.updateSettings({
         sessionId: preparedSession.id,

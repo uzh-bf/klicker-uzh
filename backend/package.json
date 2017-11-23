@@ -1,6 +1,6 @@
 {
   "name": "klicker-api",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.4",
   "main": "src/server.js",
   "repository": "https://github.com/uzh-bf/klicker-api.git",
   "author": "Roland Schläfli <roland.schlaefli@bf.uzh.ch>",
@@ -27,6 +27,7 @@
     "moment": "2.19.2",
     "mongodb": "2.2.33",
     "mongoose": "4.13.4",
+    "morgan": "1.9.0",
     "subscriptions-transport-ws": "0.9.1"
   },
   "devDependencies": {
@@ -40,7 +41,8 @@
     "nodemon": "1.12.1",
     "prettier": "1.8.2",
     "prettier-eslint": "8.2.2",
-    "prettier-eslint-cli": "4.4.0"
+    "prettier-eslint-cli": "4.4.0",
+    "supertest": "3.0.0"
   },
   "scripts": {
     "precommit": "lint-staged",
@@ -53,7 +55,7 @@
     "start": "cross-env NODE_ENV=production node src/server.js",
     "start:inspect": "cross-env NODE_ENV=production node --inspect src/server.js",
     "test": "jest",
-    "test:ci": "jest --coverage",
+    "test:ci": "jest --coverage --forceExit",
     "test:snap": "jest -u",
     "test:watch": "jest --watch"
   },

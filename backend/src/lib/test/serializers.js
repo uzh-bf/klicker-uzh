@@ -12,19 +12,34 @@ const questionSerializer = {
       Description: ${description}
       Instances: [${instances}]
       Options: {
-        Choices: ${options.choices &&
-          `[${options.choices.map(({ correct, name }) => `{
-            Correct: ${correct}
-            Name: ${name}
-          }`)}
-        ]`}
-        Randomized: ${options.randomized}
-        Restrictions: ${options.restrictions &&
+        SC: ${options.SC &&
           `{
-          Max: ${options.restrictions.max}
-          Min: ${options.restrictions.min}
-          Type: ${options.restrictions.type}
+          Choices: ${options.SC.choices &&
+            `[${options.SC.choices.map(({ correct, name }) => `{
+              Correct: ${correct}
+              Name: ${name}
+            }`)}
+          ]`}
+          Randomized: ${options.SC.randomized}
         }`}
+        MC: ${options.MC &&
+          `{
+          Choices: ${options.MC.choices &&
+            `[${options.MC.choices.map(({ correct, name }) => `{
+              Correct: ${correct}
+              Name: ${name}
+            }`)}
+          ]`}
+          Randomized: ${options.MC.randomized}
+        }`}
+        FREE_RANGE: ${options.FREE_RANGE &&
+          `
+          Restrictions: ${options.FREE_RANGE.restrictions &&
+            `{
+            Max: ${options.FREE_RANGE.restrictions.max}
+            Min: ${options.FREE_RANGE.restrictions.min}
+          }`}
+        `}
       }
     `)}]
   `,
@@ -85,8 +100,8 @@ const questionInstanceSerializer = {
 
     results: ${val.results &&
       `{
-      choices: [${val.results.choices}]
-      free: ${val.results.free}
+      CHOICES: [${val.results.CHOICES}]
+      FREE: ${val.results.FREE}
     }`}
   `,
 }
