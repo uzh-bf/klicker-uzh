@@ -70,7 +70,7 @@ function Evaluation({
     <Chart
       handleShowGraph={handleShowGraph}
       intl={intl}
-      restrictions={options.restrictions}
+      restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
       results={results}
       sessionStatus={sessionStatus}
       showGraph={showGraph}
@@ -164,7 +164,9 @@ export default compose(
           return {
             ...activeInstance,
             results: {
-              data: activeInstance.results ? activeInstance.results.FREE : [],
+              data: activeInstance.results
+                ? activeInstance.results[activeInstance.question.type]
+                : [],
               totalResponses: activeInstance.responses.length,
             },
           }
@@ -209,7 +211,6 @@ export default compose(
     const activeInstance = activeInstances[activeInstanceIndex]
     const { question, results } = activeInstance
 
-    // TODO: update question type to FREE:RANGE
     if (question.type === QUESTION_TYPES.FREE_RANGE) {
       return {
         activeInstance,
