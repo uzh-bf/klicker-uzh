@@ -178,28 +178,28 @@ apollo-cache-control@^0.0.x:
   dependencies:
     graphql-extensions "^0.0.x"
 
-apollo-engine-binary-darwin@^0.2017.11-40-g9585bfc6:
+apollo-engine-binary-darwin@^0.2017.11-84-gb299b9188:
   version "0.2017.11-84-gb299b9188"
   resolved "https://registry.yarnpkg.com/apollo-engine-binary-darwin/-/apollo-engine-binary-darwin-0.2017.11-84-gb299b9188.tgz#1e863513bb4dce66edd7fe9f12014d55a1c9bed6"
 
-apollo-engine-binary-linux@^0.2017.11-40-g9585bfc6:
+apollo-engine-binary-linux@^0.2017.11-84-gb299b9188:
   version "0.2017.11-84-gb299b9188"
   resolved "https://registry.yarnpkg.com/apollo-engine-binary-linux/-/apollo-engine-binary-linux-0.2017.11-84-gb299b9188.tgz#02c4e96b1689fd9d1302535d57de8e60bc763688"
 
-apollo-engine-binary-windows@^0.2017.11-40-g9585bfc6:
+apollo-engine-binary-windows@^0.2017.11-84-gb299b9188:
   version "0.2017.11-84-gb299b9188"
   resolved "https://registry.yarnpkg.com/apollo-engine-binary-windows/-/apollo-engine-binary-windows-0.2017.11-84-gb299b9188.tgz#706bda576e004c0763a95fd1570f7c7a9718a5df"
 
-apollo-engine@0.5.4:
-  version "0.5.4"
-  resolved "https://registry.yarnpkg.com/apollo-engine/-/apollo-engine-0.5.4.tgz#0679d3e802389f1dd5808540f09b6543e9aabe23"
+apollo-engine@0.5.6:
+  version "0.5.6"
+  resolved "https://registry.yarnpkg.com/apollo-engine/-/apollo-engine-0.5.6.tgz#b1f1d816df7f598e1dcb453013990991d1491ca3"
   dependencies:
     request "^2.81.0"
     stream-line-wrapper "^0.1.1"
   optionalDependencies:
-    apollo-engine-binary-darwin "^0.2017.11-40-g9585bfc6"
-    apollo-engine-binary-linux "^0.2017.11-40-g9585bfc6"
-    apollo-engine-binary-windows "^0.2017.11-40-g9585bfc6"
+    apollo-engine-binary-darwin "^0.2017.11-84-gb299b9188"
+    apollo-engine-binary-linux "^0.2017.11-84-gb299b9188"
+    apollo-engine-binary-windows "^0.2017.11-84-gb299b9188"
 
 apollo-server-core@^1.2.0:
   version "1.2.0"
