@@ -1,6 +1,6 @@
-const {
-  QuestionInstanceModel, SessionModel, SessionStatus, UserModel, QuestionBlockStatus,
-} = require('../models')
+const { QuestionInstanceModel, SessionModel, UserModel } = require('../models')
+
+const { SessionStatus, QuestionBlockStatus } = require('../constants')
 
 const getRunningSession = async (sessionId) => {
   const session = await SessionModel.findById(sessionId)

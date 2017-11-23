@@ -13,13 +13,66 @@ exports[`QuestionService createQuestion allows creating a valid FREE question 1`
       Description: blabla
       Instances: []
       Options: {
-        Choices: null
-        Randomized: undefined
-        Restrictions: {
-          Max: 100
-          Min: 10
-          Type: RANGE
+        SC: undefined
+        MC: undefined
+        FREE_RANGE: undefined
+      }
+    ]
+  
+`;
+
+exports[`QuestionService createQuestion allows creating a valid FREE_RANGE question 1`] = `
+
+    QUESTION
+
+    Title: question without tags
+    Type: FREE_RANGE
+
+    Instances: []
+    Tags: [,]
+    Versions: [
+      Description: blabla
+      Instances: []
+      Options: {
+        SC: undefined
+        MC: undefined
+        FREE_RANGE: 
+          Restrictions: {
+            Max: 100
+            Min: 10
+          }
+        
+      }
+    ]
+  
+`;
+
+exports[`QuestionService createQuestion allows creating a valid MC question 1`] = `
+
+    QUESTION
+
+    Title: question without tags
+    Type: MC
+
+    Instances: []
+    Tags: [,]
+    Versions: [
+      Description: blabla
+      Instances: []
+      Options: {
+        SC: undefined
+        MC: {
+          Choices: [{
+              Correct: false
+              Name: option1
+            },{
+              Correct: true
+              Name: option2
+            }
+          ]
+          Randomized: true
         }
+        FREE_RANGE: undefined
       }
     ]
   
@@ -38,16 +91,19 @@ exports[`QuestionService createQuestion allows creating a valid SC question 1`] 
       Description: blabla
       Instances: []
       Options: {
-        Choices: [{
-            Correct: false
-            Name: option1
-          },{
-            Correct: true
-            Name: option2
-          }
-        ]
-        Randomized: true
-        Restrictions: null
+        SC: {
+          Choices: [{
+              Correct: false
+              Name: option1
+            },{
+              Correct: true
+              Name: option2
+            }
+          ]
+          Randomized: true
+        }
+        MC: undefined
+        FREE_RANGE: undefined
       }
     ]
   

@@ -1,0 +1,949 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Integration Login works with valid credentials 1`] = `
+
+    login {
+      email: testIntegration@bf.uzh.ch
+      shortname: integr
+      runningSession: false
+    }
+  
+`;
+
+exports[`Integration Question Creation works for FREE questions 1`] = `
+
+    createQuestion {
+      title: Test FREE
+      type: FREE
+      tags: TestTag
+      versions: 
+        description: This is a simple FREE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":null}
+      
+    }
+  
+`;
+
+exports[`Integration Question Creation works for FREE_RANGE questions 1`] = `
+
+    createQuestion {
+      title: Test FREE_RANGE
+      type: FREE_RANGE
+      tags: TestTag
+      versions: 
+        description: This is a simple FREE_RANGE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":0,"max":10}}}
+      
+    }
+  
+`;
+
+exports[`Integration Question Creation works for MC questions 1`] = `
+
+    createQuestion {
+      title: Test MC
+      type: MC
+      tags: TestTag
+      versions: 
+        description: This is a simple MC question.
+        options: {"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false},"FREE_RANGE":null}
+      
+    }
+  
+`;
+
+exports[`Integration Question Creation works for SC questions 1`] = `
+
+    createQuestion {
+      title: Test SC
+      type: SC
+      tags: TestTag
+      versions: 
+        description: This is a simple SC question.
+        options: {"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null,"FREE_RANGE":null}
+      
+    }
+  
+`;
+
+exports[`Integration Session Creation works 1`] = `
+
+    createSession {
+      confusionTS: 
+      feedbacks: 
+      blocks: 
+        status: PLANNED
+        instances: 
+          title: Test SC
+          type: SC
+        ,
+          title: Test MC
+          type: MC
+        
+      ,
+        status: PLANNED
+        instances: 
+          title: Test FREE
+          type: FREE
+        
+      ,
+        status: PLANNED
+        instances: 
+          title: Test FREE_RANGE
+          type: FREE_RANGE
+        
+      
+      settings: {"isConfusionBarometerActive":false,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":false}
+    }
+  
+`;
+
+exports[`Integration Session Execution allows adding confusion timesteps 1`] = `
+
+    addConfusionTS {
+      confusionTS: 
+        difficulty: 2
+        speed: 4
+      ,
+        difficulty: -2
+        speed: 9
+      ,
+        difficulty: -5
+        speed: 3
+      ,
+        difficulty: 5
+        speed: 10
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution allows adding feedbacks 1`] = `
+
+    addFeedback {
+      feedbacks: 
+        content: my test feedback
+        votes: 0
+      ,
+        content: good lecture
+        votes: 0
+      ,
+        content: my test feedback
+        votes: 0
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution allows completing sessions 1`] = `
+
+    startSession / endSession {
+      status: COMPLETED
+    }
+  
+`;
+
+exports[`Integration Session Execution allows evaluating sessions after completion 1`] = `
+
+    evaluateSession {
+      status: COMPLETED
+      blocks: 
+        status: EXECUTED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            
+          }
+          results: {"CHOICES":[1,0]}
+          responses: 
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            
+          }
+          results: {"CHOICES":[1,1,0]}
+          responses: 
+        
+      ,
+        status: EXECUTED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE
+            type: FREE
+            versions: 
+              description: This is a simple FREE question.
+              options: null
+            
+          }
+          results: {"FREE":[{"count":1,"key":"5eb63bbbe01eeed093cb22bb8f5acdc3","value":"hello world"}]}
+          responses: hello world
+        
+      ,
+        status: ACTIVE
+        instances: 
+          isOpen: true
+          version: 0
+          question {
+            title: Test FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":0,"max":10}},"SC":null,"MC":null}
+            
+          }
+          results: {"FREE":[{"count":1,"key":"a87ff679a2f3e71d9181a67b7542122c","value":"4"}]}
+          responses: 4
+        
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can activate the first question block 1`] = `
+
+    activateNextBlock {
+      blocks: 
+        status: ACTIVE
+        instances: true,true
+      ,
+        status: PLANNED
+        instances: false
+      ,
+        status: PLANNED
+        instances: false
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can activate the second question block 1`] = `
+
+    activateNextBlock {
+      blocks: 
+        status: EXECUTED
+        instances: false,false
+      ,
+        status: ACTIVE
+        instances: true
+      ,
+        status: PLANNED
+        instances: false
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can activate the third question block 1`] = `
+
+    activateNextBlock {
+      blocks: 
+        status: EXECUTED
+        instances: false,false
+      ,
+        status: EXECUTED
+        instances: false
+      ,
+        status: ACTIVE
+        instances: true
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can close the first question block 1`] = `
+
+    activateNextBlock {
+      blocks: 
+        status: EXECUTED
+        instances: false,false
+      ,
+        status: PLANNED
+        instances: false
+      ,
+        status: PLANNED
+        instances: false
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can close the second question block 1`] = `
+
+    activateNextBlock {
+      blocks: 
+        status: EXECUTED
+        instances: false,false
+      ,
+        status: EXECUTED
+        instances: false
+      ,
+        status: PLANNED
+        instances: false
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can close the third question block 1`] = `
+
+    activateNextBlock {
+      blocks: 
+        status: EXECUTED
+        instances: false,false
+      ,
+        status: EXECUTED
+        instances: false
+      ,
+        status: ACTIVE
+        instances: true
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can evaluate the first question block 1`] = `
+
+    runningSession {
+      confusionTS: 
+        difficulty: 2
+        speed: 4
+      ,
+        difficulty: -2
+        speed: 9
+      ,
+        difficulty: -5
+        speed: 3
+      ,
+        difficulty: 5
+        speed: 10
+      
+      feedbacks: 
+        content: my test feedback
+        votes: 0
+      ,
+        content: good lecture
+        votes: 0
+      ,
+        content: my test feedback
+        votes: 0
+      
+      blocks: 
+        status: ACTIVE
+        instances: 
+          isOpen: true
+          question {
+            title: Test SC
+            type: SC
+          }
+        ,
+          isOpen: true
+          question {
+            title: Test MC
+            type: MC
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          question {
+            title: Test FREE
+            type: FREE
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          question {
+            title: Test FREE_RANGE
+            type: FREE_RANGE
+          }
+        
+      
+      settings: {"isConfusionBarometerActive":true,"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true}
+    }
+  
+`;
+
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can evaluate the first question block 2`] = `
+
+    evaluateSession {
+      status: RUNNING
+      blocks: 
+        status: ACTIVE
+        instances: 
+          isOpen: true
+          version: 0
+          question {
+            title: Test SC
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            
+          }
+          results: {"CHOICES":[1,0]}
+          responses: 
+        ,
+          isOpen: true
+          version: 0
+          question {
+            title: Test MC
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            
+          }
+          results: {"CHOICES":[1,1,0]}
+          responses: 
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE
+            type: FREE
+            versions: 
+              description: This is a simple FREE question.
+              options: null
+            
+          }
+          results: null
+          responses: 
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":0,"max":10}},"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: 
+        
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can evaluate the second question block 1`] = `
+
+    runningSession {
+      confusionTS: 
+        difficulty: 2
+        speed: 4
+      ,
+        difficulty: -2
+        speed: 9
+      ,
+        difficulty: -5
+        speed: 3
+      ,
+        difficulty: 5
+        speed: 10
+      
+      feedbacks: 
+        content: my test feedback
+        votes: 0
+      ,
+        content: good lecture
+        votes: 0
+      ,
+        content: my test feedback
+        votes: 0
+      
+      blocks: 
+        status: EXECUTED
+        instances: 
+          isOpen: false
+          question {
+            title: Test SC
+            type: SC
+          }
+        ,
+          isOpen: false
+          question {
+            title: Test MC
+            type: MC
+          }
+        
+      ,
+        status: ACTIVE
+        instances: 
+          isOpen: true
+          question {
+            title: Test FREE
+            type: FREE
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          question {
+            title: Test FREE_RANGE
+            type: FREE_RANGE
+          }
+        
+      
+      settings: {"isConfusionBarometerActive":true,"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true}
+    }
+  
+`;
+
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can evaluate the second question block 2`] = `
+
+    evaluateSession {
+      status: RUNNING
+      blocks: 
+        status: EXECUTED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            
+          }
+          results: {"CHOICES":[1,0]}
+          responses: 
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            
+          }
+          results: {"CHOICES":[1,1,0]}
+          responses: 
+        
+      ,
+        status: ACTIVE
+        instances: 
+          isOpen: true
+          version: 0
+          question {
+            title: Test FREE
+            type: FREE
+            versions: 
+              description: This is a simple FREE question.
+              options: null
+            
+          }
+          results: {"FREE":[{"count":1,"key":"5eb63bbbe01eeed093cb22bb8f5acdc3","value":"hello world"}]}
+          responses: hello world
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":0,"max":10}},"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: 
+        
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can evaluate the third question block 1`] = `
+
+    runningSession {
+      confusionTS: 
+        difficulty: 2
+        speed: 4
+      ,
+        difficulty: -2
+        speed: 9
+      ,
+        difficulty: -5
+        speed: 3
+      ,
+        difficulty: 5
+        speed: 10
+      
+      feedbacks: 
+        content: my test feedback
+        votes: 0
+      ,
+        content: good lecture
+        votes: 0
+      ,
+        content: my test feedback
+        votes: 0
+      
+      blocks: 
+        status: EXECUTED
+        instances: 
+          isOpen: false
+          question {
+            title: Test SC
+            type: SC
+          }
+        ,
+          isOpen: false
+          question {
+            title: Test MC
+            type: MC
+          }
+        
+      ,
+        status: EXECUTED
+        instances: 
+          isOpen: false
+          question {
+            title: Test FREE
+            type: FREE
+          }
+        
+      ,
+        status: ACTIVE
+        instances: 
+          isOpen: true
+          question {
+            title: Test FREE_RANGE
+            type: FREE_RANGE
+          }
+        
+      
+      settings: {"isConfusionBarometerActive":true,"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true}
+    }
+  
+`;
+
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can evaluate the third question block 2`] = `
+
+    evaluateSession {
+      status: RUNNING
+      blocks: 
+        status: EXECUTED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            
+          }
+          results: {"CHOICES":[1,0]}
+          responses: 
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            
+          }
+          results: {"CHOICES":[1,1,0]}
+          responses: 
+        
+      ,
+        status: EXECUTED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE
+            type: FREE
+            versions: 
+              description: This is a simple FREE question.
+              options: null
+            
+          }
+          results: {"FREE":[{"count":1,"key":"5eb63bbbe01eeed093cb22bb8f5acdc3","value":"hello world"}]}
+          responses: hello world
+        
+      ,
+        status: ACTIVE
+        instances: 
+          isOpen: true
+          version: 0
+          question {
+            title: Test FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":0,"max":10}},"SC":null,"MC":null}
+            
+          }
+          results: {"FREE":[{"count":1,"key":"a87ff679a2f3e71d9181a67b7542122c","value":"4"}]}
+          responses: 4
+        
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can join the session initially 1`] = `
+
+    runningSession {
+      confusionTS: 
+        difficulty: 2
+        speed: 4
+      ,
+        difficulty: -2
+        speed: 9
+      ,
+        difficulty: -5
+        speed: 3
+      ,
+        difficulty: 5
+        speed: 10
+      
+      feedbacks: 
+        content: my test feedback
+        votes: 0
+      ,
+        content: good lecture
+        votes: 0
+      ,
+        content: my test feedback
+        votes: 0
+      
+      blocks: 
+        status: PLANNED
+        instances: 
+          isOpen: false
+          question {
+            title: Test SC
+            type: SC
+          }
+        ,
+          isOpen: false
+          question {
+            title: Test MC
+            type: MC
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          question {
+            title: Test FREE
+            type: FREE
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          question {
+            title: Test FREE_RANGE
+            type: FREE_RANGE
+          }
+        
+      
+      settings: {"isConfusionBarometerActive":true,"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true}
+    }
+  
+`;
+
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can join the session initially 2`] = `
+
+    evaluateSession {
+      status: RUNNING
+      blocks: 
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            
+          }
+          results: null
+          responses: 
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            
+          }
+          results: null
+          responses: 
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE
+            type: FREE
+            versions: 
+              description: This is a simple FREE question.
+              options: null
+            
+          }
+          results: null
+          responses: 
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":0,"max":10}},"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: 
+        
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) PARTICIPANT: can join the session initially 1`] = `
+
+    joinSession {
+      settings: {"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true,"isConfusionBarometerActive":true}
+      activeQuestions: 
+        title: Test SC
+        description: This is a simple SC question.
+        type: SC
+        options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+      ,
+        title: Test MC
+        description: This is a simple MC question.
+        type: MC
+        options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+      
+      feedbacks: 
+        content: my test feedback
+        votes: 0
+      ,
+        content: good lecture
+        votes: 0
+      ,
+        content: my test feedback
+        votes: 0
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) PARTICIPANT: can update the joined session for the second block 1`] = `
+
+    joinSession {
+      settings: {"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true,"isConfusionBarometerActive":true}
+      activeQuestions: 
+        title: Test FREE
+        description: This is a simple FREE question.
+        type: FREE
+        options: null
+      
+      feedbacks: 
+        content: my test feedback
+        votes: 0
+      ,
+        content: good lecture
+        votes: 0
+      ,
+        content: my test feedback
+        votes: 0
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) PARTICIPANT: can update the joined session for the third block 1`] = `
+
+    joinSession {
+      settings: {"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true,"isConfusionBarometerActive":true}
+      activeQuestions: 
+        title: Test FREE_RANGE
+        description: This is a simple FREE_RANGE question.
+        type: FREE_RANGE
+        options: {"FREE_RANGE":{"restrictions":{"min":0,"max":10}},"SC":null,"MC":null}
+      
+      feedbacks: 
+        content: my test feedback
+        votes: 0
+      ,
+        content: good lecture
+        votes: 0
+      ,
+        content: my test feedback
+        votes: 0
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution allows starting sessions 1`] = `
+
+    startSession / endSession {
+      status: RUNNING
+    }
+  
+`;
+
+exports[`Integration Session Execution allows updating session settings 1`] = `
+
+    updateSessionSettings {
+      settings: {"isConfusionBarometerActive":true,"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true}
+    }
+  
+`;

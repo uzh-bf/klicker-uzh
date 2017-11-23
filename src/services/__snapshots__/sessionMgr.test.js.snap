@@ -148,7 +148,7 @@ exports[`SessionMgrService createSession allows creating a valid session 1`] = `
       Show solutions: false
       Status: PLANNED
       Time limit: -1
-      Number of instances: 1
+      Number of instances: 2
     }]
 
     ConfusionTS: []
@@ -181,7 +181,7 @@ exports[`SessionMgrService createSession skips over question blocks without ques
       Show solutions: false
       Status: PLANNED
       Time limit: -1
-      Number of instances: 1
+      Number of instances: 2
     }]
 
     ConfusionTS: []
@@ -307,7 +307,7 @@ exports[`SessionMgrService updateSessionSettings allows changing all settings at
     }
 `;
 
-exports[`SessionMgrService updateSessionSettings allows changing each setting seperately 1`] = `
+exports[`SessionMgrService updateSessionSettings allows changing each setting separately 1`] = `
 
     SESSION
 
@@ -335,7 +335,7 @@ exports[`SessionMgrService updateSessionSettings allows changing each setting se
     }
 `;
 
-exports[`SessionMgrService updateSessionSettings allows changing each setting seperately 2`] = `
+exports[`SessionMgrService updateSessionSettings allows changing each setting separately 2`] = `
 
     SESSION
 
@@ -363,7 +363,7 @@ exports[`SessionMgrService updateSessionSettings allows changing each setting se
     }
 `;
 
-exports[`SessionMgrService updateSessionSettings allows changing each setting seperately 3`] = `
+exports[`SessionMgrService updateSessionSettings allows changing each setting separately 3`] = `
 
     SESSION
 
@@ -391,7 +391,7 @@ exports[`SessionMgrService updateSessionSettings allows changing each setting se
     }
 `;
 
-exports[`SessionMgrService updateSessionSettings allows changing each setting seperately 4`] = `
+exports[`SessionMgrService updateSessionSettings allows changing each setting separately 4`] = `
 
     SESSION
 
@@ -419,7 +419,7 @@ exports[`SessionMgrService updateSessionSettings allows changing each setting se
     }
 `;
 
-exports[`SessionMgrService updateSessionSettings allows changing each setting seperately 5`] = `
+exports[`SessionMgrService updateSessionSettings allows changing each setting separately 5`] = `
 
     SESSION
 

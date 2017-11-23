@@ -16,37 +16,10 @@ const runningSessionQuery = async (parentValue, args, { auth }) => {
   return user.runningSession
 }
 
-const joinSessionQuery = async (parentValue, { shortname }) => {
-  const user = await UserModel.findOne({ shortname }).populate([
-    { path: 'runningSession', populate: { path: 'activeInstances', populate: { path: 'question' } } },
-  ])
-  const { runningSession } = user
-  const {
-    id, activeInstances, settings, feedbacks,
-  } = runningSession
-
-  return {
-    id,
-    settings,
-    activeQuestions: activeInstances.map((instance) => {
-      const { id: instanceId, question } = instance
-      const version = question.versions[instance.version]
-
-      return {
-        id: question.id,
-        instanceId,
-        title: question.title,
-        type: question.type,
-        description: version.description,
-        options: version.options,
-      }
-    }),
-    feedbacks: settings.isFeedbackChannelActive && settings.isFeedbackChannelPublic ? feedbacks : null,
-  }
-}
-
 const sessionByPVQuery = parentValue => SessionModel.findById(parentValue.runningSession)
 const sessionsByPVQuery = parentValue => SessionModel.find({ _id: { $in: parentValue.sessions } })
+
+const joinSessionQuery = async (parentValue, { shortname }) => SessionExecService.joinSession({ shortname })
 
 // calculate the session runtime
 const runtimeByPVQuery = ({ startedAt }) => moment.duration(moment().diff(startedAt)).humanize()

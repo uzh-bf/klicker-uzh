@@ -11,6 +11,6 @@ const FREEQuestionResults = `
   }
 
   type FREEQuestionResults {
-    free: [FREEQuestionResults_Result!]!
+    FREE: [FREEQuestionResults_Result!]!
   }
 `

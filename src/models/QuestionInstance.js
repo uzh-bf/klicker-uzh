@@ -11,8 +11,8 @@ const Response = new mongoose.Schema({
 })
 
 const Results = new mongoose.Schema({
-  choices: [{ type: Number }],
-  free: { type: Object },
+  CHOICES: [{ type: Number }],
+  FREE: { type: Object },
 
   createdAt: { type: Date, default: Date.now() },
 })
