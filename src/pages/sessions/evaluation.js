@@ -28,6 +28,7 @@ import { sessionStatusShape, statisticsShape } from '../../propTypes'
 const propTypes = {
   activeInstance: PropTypes.object.isRequired,
   activeInstanceIndex: PropTypes.number,
+  activeVisualizations: PropTypes.object.isRequired,
   handleChangeActiveInstance: PropTypes.func.isRequired,
   handleChangeVisualizationType: PropTypes.func.isRequired,
   handleShowGraph: PropTypes.func.isRequired,
@@ -49,6 +50,7 @@ const defaultProps = {
 function Evaluation({
   activeInstanceIndex,
   activeInstance,
+  activeVisualizations,
   instanceSummary,
   intl,
   handleChangeActiveInstance,
@@ -56,7 +58,6 @@ function Evaluation({
   showGraph,
   showSolution,
   statistics,
-  visualizationType,
   handleShowGraph,
   handleToggleShowSolution,
   handleChangeVisualizationType,
@@ -68,20 +69,22 @@ function Evaluation({
 
   const chart = (
     <Chart
+      activeVisualization={activeVisualizations[type]}
       handleShowGraph={handleShowGraph}
       intl={intl}
+      questionType={type}
       restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
       results={results}
       sessionStatus={sessionStatus}
       showGraph={showGraph}
       showSolution={showSolution}
       statistics={statistics}
-      visualizationType={visualizationType}
     />
   )
 
   const layoutProps = {
     activeInstance: activeInstanceIndex,
+    activeVisualization: activeVisualizations[type],
     chart,
     data,
     description,
@@ -100,7 +103,6 @@ function Evaluation({
     title,
     totalResponses,
     type,
-    visualizationType,
   }
 
   return <EvaluationLayout {...layoutProps} />
@@ -164,9 +166,7 @@ export default compose(
           return {
             ...activeInstance,
             results: {
-              data: activeInstance.results
-                ? activeInstance.results[activeInstance.question.type]
-                : [],
+              data: activeInstance.results ? activeInstance.results.FREE : [],
               totalResponses: activeInstance.responses.length,
             },
           }
@@ -192,12 +192,26 @@ export default compose(
   withStateHandlers(
     ({ sessionStatus }) => ({
       activeInstanceIndex: 0,
+      activeVisualizations: CHART_DEFAULTS,
       showGraph: sessionStatus !== SESSION_STATUS.RUNNING,
       showSolution: sessionStatus !== SESSION_STATUS.RUNNING,
     }),
     {
       // handle change of active instance
-      handleChangeActiveInstance: () => activeInstanceIndex => ({ activeInstanceIndex }),
+      handleChangeActiveInstance: () => activeInstanceIndex => ({
+        activeInstanceIndex,
+      }),
+
+      // handle change of vis. type
+      handleChangeVisualizationType: ({ activeVisualizations }) => (
+        questionType,
+        visualizationType,
+      ) => ({
+        activeVisualizations: {
+          ...activeVisualizations,
+          [questionType]: visualizationType,
+        },
+      }),
 
       // handle toggle of the visualization display
       // the visualization display can only be toggled once, so only allow setting to true
@@ -229,13 +243,4 @@ export default compose(
       handleChangeActiveInstance: index => () => handleChangeActiveInstance(index),
     }
   }),
-  withStateHandlers(
-    ({ activeInstance: { question } }) => ({
-      visualizationType: CHART_DEFAULTS[question.type] || CHART_DEFAULTS.OTHER,
-    }),
-    {
-      // handle change of vis. type
-      handleChangeVisualizationType: () => visualizationType => ({ visualizationType }),
-    },
-  ),
 )(Evaluation)

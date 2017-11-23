@@ -9,6 +9,7 @@ import { QUESTION_GROUPS } from '../../constants'
 
 const propTypes = {
   activeInstance: PropTypes.number,
+  activeVisualization: PropTypes.string.isRequired,
   chart: PropTypes.element.isRequired,
   choices: PropTypes.arrayOf(
     PropTypes.shape({
@@ -33,7 +34,6 @@ const propTypes = {
   title: PropTypes.string.isRequired,
   totalResponses: PropTypes.number,
   type: PropTypes.string.isRequired,
-  visualizationType: PropTypes.string.isRequired,
 }
 
 const defaultProps = {
@@ -47,6 +47,7 @@ const defaultProps = {
 }
 
 function EvaluationLayout({
+  activeVisualization,
   intl,
   pageTitle,
   showSolution,
@@ -54,7 +55,6 @@ function EvaluationLayout({
   chart,
   type,
   description,
-  visualizationType,
   onChangeVisualizationType,
   totalResponses,
   options,
@@ -98,22 +98,22 @@ function EvaluationLayout({
             onChange={onToggleShowSolution}
           />
           <VisualizationType
+            activeVisualization={activeVisualization}
             intl={intl}
-            type={type}
-            visualization={visualizationType}
+            questionType={type}
             onChangeType={onChangeVisualizationType}
           />
         </div>
 
         <div className="chart">{chart}</div>
 
-        {QUESTION_GROUPS.POSSIBILITIES.includes(type) && (
+        {QUESTION_GROUPS.WITH_POSSIBILITIES.includes(type) && (
           <div className="optionDisplay">
             <Possibilities questionOptions={options} questionType={type} />
           </div>
         )}
 
-        {QUESTION_GROUPS.STATISTICS.includes(type) &&
+        {QUESTION_GROUPS.WITH_STATISTICS.includes(type) &&
           statistics && (
             <div className="statistics">
               <Statistics {...statistics} />
