@@ -76,13 +76,25 @@ app
 
     server.use(...middleware)
 
-    server.get('/join/:shortname', (req, res) =>
-      app.render(req, res, '/join', { shortname: req.params.shortname }),
-    )
+    server.get('/join/:shortname', (req, res) => {
+      const accept = accepts(req)
+      const locale = accept.language(dev ? ['en'] : languages)
+      req.locale = locale
+      req.localeDataScript = getLocaleDataScript(locale)
+      req.messages = dev ? {} : getMessages(locale)
 
-    server.get('/sessions/evaluation/:sessionId', (req, res) =>
-      app.render(req, res, '/sessions/evaluation', { sessionId: req.params.sessionId }),
-    )
+      return app.render(req, res, '/join', { shortname: req.params.shortname })
+    })
+
+    server.get('/sessions/evaluation/:sessionId', (req, res) => {
+      const accept = accepts(req)
+      const locale = accept.language(dev ? ['en'] : languages)
+      req.locale = locale
+      req.localeDataScript = getLocaleDataScript(locale)
+      req.messages = dev ? {} : getMessages(locale)
+
+      return app.render(req, res, '/sessions/evaluation', { sessionId: req.params.sessionId })
+    })
 
     server.get('*', (req, res) => {
       const accept = accepts(req)
@@ -90,7 +102,8 @@ app
       req.locale = locale
       req.localeDataScript = getLocaleDataScript(locale)
       req.messages = dev ? {} : getMessages(locale)
-      handle(req, res)
+
+      return handle(req, res)
     })
 
     server.listen(3000, (err) => {
