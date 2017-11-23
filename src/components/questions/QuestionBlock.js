@@ -27,7 +27,7 @@ const QuestionBlock = ({ status, questions, timeLimit }) => (
     {/* <div className="showSolution">
       <Icon name={showSolutions ? 'unhide' : 'hide'} />
     </div> */}
-    <div className="SESSION_STATUS">{status}</div>
+    <div className="sessionStatus">{status}</div>
     <div className="questions">
       {questions.map(({ id, title, type }) => (
         <QuestionSingle id={id} key={id} title={title} type={type} />
@@ -51,7 +51,7 @@ const QuestionBlock = ({ status, questions, timeLimit }) => (
 
         .timeLimit,
         .showSolution,
-        .SESSION_STATUS {
+        .sessionStatus {
           flex: 1 1 33%;
           margin-bottom: 0.2rem;
         }
@@ -60,7 +60,7 @@ const QuestionBlock = ({ status, questions, timeLimit }) => (
           text-align: center;
         }
 
-        .SESSION_STATUS {
+        .sessionStatus {
           text-align: right;
         }
 

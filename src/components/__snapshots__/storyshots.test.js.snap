@@ -2562,6 +2562,57 @@ exports[`Storyshots questionTypes/FREE FREE Creation Preview (unrestricted) 1`] 
 </div>
 `;
 
+exports[`Storyshots questionTypes/FREE FREE_RANGE Answering Options (Number restriction) 1`] = `
+<div
+  className="jsx-28718466 ui form freeAnswerOptions"
+>
+  <div
+    className="jsx-28718466 field"
+  >
+    <textarea
+      className="jsx-28718466"
+      disabled={false}
+      id="responseInput"
+      onChange={[Function]}
+    />
+  </div>
+</div>
+`;
+
+exports[`Storyshots questionTypes/FREE FREE_RANGE Answering Options (lower bound restriction) 1`] = `
+<div
+  className="jsx-28718466 ui form freeAnswerOptions"
+>
+  <div
+    className="jsx-28718466 field"
+  >
+    <textarea
+      className="jsx-28718466"
+      disabled={false}
+      id="responseInput"
+      onChange={[Function]}
+    />
+  </div>
+</div>
+`;
+
+exports[`Storyshots questionTypes/FREE FREE_RANGE Answering Options (upper bound restriction) 1`] = `
+<div
+  className="jsx-28718466 ui form freeAnswerOptions"
+>
+  <div
+    className="jsx-28718466 field"
+  >
+    <textarea
+      className="jsx-28718466"
+      disabled={false}
+      id="responseInput"
+      onChange={[Function]}
+    />
+  </div>
+</div>
+`;
+
 exports[`Storyshots questionTypes/SC SC Answering Options 1`] = `
 <div
   className="jsx-362972621 options"
