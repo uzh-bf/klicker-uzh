@@ -3243,8 +3243,8 @@ es-to-primitive@^1.1.1:
     is-symbol "^1.0.1"
 
 es5-ext@^0.10.14, es5-ext@^0.10.35, es5-ext@^0.10.9, es5-ext@~0.10.14:
-  version "0.10.37"
-  resolved "https://registry.yarnpkg.com/es5-ext/-/es5-ext-0.10.37.tgz#0ee741d148b80069ba27d020393756af257defc3"
+  version "0.10.36"
+  resolved "https://registry.yarnpkg.com/es5-ext/-/es5-ext-0.10.36.tgz#189b82b8951592ea10ac58cb69a7b33e2f2d3856"
   dependencies:
     es6-iterator "~2.0.1"
     es6-symbol "~3.1.1"
@@ -7311,9 +7311,9 @@ prosemirror-transform@^1.0.0:
   dependencies:
     prosemirror-model "^1.0.0"
 
-prosemirror-view@1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/prosemirror-view/-/prosemirror-view-1.0.2.tgz#acfefe3a725b8d9d19d09c0d6e6068d356f26a30"
+prosemirror-view@1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/prosemirror-view/-/prosemirror-view-1.0.3.tgz#cac13a691db06bcff8b94b04c0132b9e94b9eb75"
   dependencies:
     prosemirror-model "^1.0.0"
     prosemirror-state "^1.0.0"

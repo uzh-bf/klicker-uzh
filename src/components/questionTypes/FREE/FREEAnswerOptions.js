@@ -6,6 +6,7 @@ import { Helmet } from 'react-helmet'
 import { Input } from 'semantic-ui-react'
 
 import { createLinks } from '../../../lib'
+import { QUESTION_TYPES } from '../../../constants'
 
 const propTypes = {
   disabled: PropTypes.bool,
@@ -17,6 +18,7 @@ const propTypes = {
       type: PropTypes.string,
     }),
   }),
+  questionType: PropTypes.string.isRequired,
   value: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
 }
 
@@ -27,7 +29,7 @@ const defaultProps = {
 }
 
 const FREEAnswerOptions = ({
-  disabled, onChange, options, value,
+  disabled, onChange, options, value, questionType,
 }) => (
   <div className="ui form freeAnswerOptions">
     <Helmet defer={false}>
@@ -36,7 +38,7 @@ const FREEAnswerOptions = ({
 
     {(() => {
       if (
-        options.restrictions.type === 'RANGE' &&
+        questionType === QUESTION_TYPES.FREE_RANGE &&
         options.restrictions.min !== null &&
         options.restrictions.max !== null
       ) {
@@ -82,18 +84,29 @@ const FREEAnswerOptions = ({
             onChange={e => onChange(e.target.value)}
           />
 
-          {options.restrictions.min !== null && (
+          {questionType === QUESTION_TYPES.FREE_RANGE && (
             <div>
-              <strong>
-                <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />
-              </strong>: {options.restrictions.min}
-            </div>
-          )}
-          {options.restrictions.max !== null && (
-            <div>
-              <strong>
-                <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />
-              </strong>: {options.restrictions.max}
+              {options.FREE_RANGE.restrictions.min !== null && (
+                <div>
+                  <strong>
+                    <FormattedMessage
+                      defaultMessage="Min"
+                      id="teacher.createQuestion.options.min"
+                    />
+                  </strong>: {options.restrictions.min}
+                </div>
+              )}
+
+              {options.FREE_RANGE.restrictions.max !== null && (
+                <div>
+                  <strong>
+                    <FormattedMessage
+                      defaultMessage="Max"
+                      id="teacher.createQuestion.options.max"
+                    />
+                  </strong>: {options.restrictions.max}
+                </div>
+              )}
             </div>
           )}
         </div>
