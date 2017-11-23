@@ -131,7 +131,7 @@ function EvaluationLayout({
 
                 grid-template-columns: auto 17rem;
                 grid-template-rows:
-                  2.3rem
+                  minmax(auto, 0)
                   minmax(auto, 2rem)
                   minmax(auto, 0)
                   minmax(auto, 0)
