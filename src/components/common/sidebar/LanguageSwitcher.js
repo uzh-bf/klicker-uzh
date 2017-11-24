@@ -30,7 +30,7 @@ const LanguageSwitcher = ({ chosenLanguage, handleSetLanguage }) => (
       defaultValue={chosenLanguage}
       options={languageOptions}
       placeholder={'Select Language'}
-      onChange={() => handleSetLanguage('DE')}
+      onChange={(param, data) => handleSetLanguage(data.value)}
     />
 
     <style jsx>{`
