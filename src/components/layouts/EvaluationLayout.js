@@ -5,9 +5,11 @@ import { Checkbox, Menu } from 'semantic-ui-react'
 
 import { CommonLayout } from '.'
 import { Info, Possibilities, Statistics, VisualizationType } from '../evaluation'
+import { QUESTION_GROUPS } from '../../constants'
 
 const propTypes = {
   activeInstance: PropTypes.number,
+  activeVisualization: PropTypes.string.isRequired,
   chart: PropTypes.element.isRequired,
   choices: PropTypes.arrayOf(
     PropTypes.shape({
@@ -32,7 +34,6 @@ const propTypes = {
   title: PropTypes.string.isRequired,
   totalResponses: PropTypes.number,
   type: PropTypes.string.isRequired,
-  visualizationType: PropTypes.string.isRequired,
 }
 
 const defaultProps = {
@@ -46,6 +47,7 @@ const defaultProps = {
 }
 
 function EvaluationLayout({
+  activeVisualization,
   intl,
   pageTitle,
   showSolution,
@@ -53,7 +55,6 @@ function EvaluationLayout({
   chart,
   type,
   description,
-  visualizationType,
   onChangeVisualizationType,
   totalResponses,
   options,
@@ -64,7 +65,7 @@ function EvaluationLayout({
 }) {
   return (
     <CommonLayout baseFontSize="22px" pageTitle={pageTitle}>
-      <div className="evaluationLayout">
+      <div className={`evaluationLayout ${type}`}>
         {instanceSummary.length > 1 && (
           <div className="instanceChooser">
             <Menu fitted tabular>
@@ -87,11 +88,6 @@ function EvaluationLayout({
 
         <div className="info">
           <Info totalResponses={totalResponses} />
-        </div>
-
-        <div className="chart">{chart}</div>
-
-        <div className="settings">
           <Checkbox
             toggle
             defaultChecked={showSolution}
@@ -101,22 +97,28 @@ function EvaluationLayout({
             })}
             onChange={onToggleShowSolution}
           />
-        </div>
-
-        <div className="chartType">
           <VisualizationType
+            activeVisualization={activeVisualization}
             intl={intl}
-            type={type}
-            visualization={visualizationType}
+            questionType={type}
             onChangeType={onChangeVisualizationType}
           />
         </div>
 
-        <div className="optionDisplay">
-          <Possibilities questionOptions={options} questionType={type} />
-        </div>
+        <div className="chart">{chart}</div>
 
-        <div className="statistics">{statistics && <Statistics {...statistics} />}</div>
+        {QUESTION_GROUPS.WITH_POSSIBILITIES.includes(type) && (
+          <div className="optionDisplay">
+            <Possibilities questionOptions={options} questionType={type} />
+          </div>
+        )}
+
+        {QUESTION_GROUPS.WITH_STATISTICS.includes(type) &&
+          statistics && (
+            <div className="statistics">
+              <Statistics {...statistics} />
+            </div>
+          )}
 
         <style jsx>{`
           @import 'src/theme';
@@ -125,27 +127,48 @@ function EvaluationLayout({
             @supports (grid-gap: 1rem) {
               @include desktop-tablet-only {
                 display: grid;
+                height: 100vh;
 
                 grid-template-columns: auto 17rem;
                 grid-template-rows:
-                  minmax(auto, 0) minmax(auto, 2rem) minmax(auto, 0) minmax(auto, 0)
-                  auto minmax(auto, 0);
+                  minmax(auto, 0)
+                  minmax(auto, 2rem)
+                  minmax(auto, 0)
+                  minmax(auto, 0)
+                  auto
+                  minmax(auto, 0);
                 grid-template-areas:
                   'instanceChooser instanceChooser'
-                  'questionDetails questionDetails' 'graph optionDisplay' 'graph statistics' 'graph settings'
-                  'info chartType';
+                  'questionDetails questionDetails'
+                  'graph optionDisplay'
+                  'graph statistics'
+                  'graph statistics'
+                  'info info';
 
-                height: 100vh;
+                &.FREE {
+                  grid-template-areas:
+                    'instanceChooser instanceChooser'
+                    'questionDetails questionDetails'
+                    'graph graph'
+                    'graph graph'
+                    'graph graph'
+                    'info info';
+                }
 
                 .instanceChooser {
                   grid-area: instanceChooser;
                   padding: 0.3rem;
                   padding-bottom: 0;
 
-                  :global(.menu .item) {
-                    font-size: 0.7rem;
-                    padding: 0 1rem;
-                    margin-bottom: 0;
+                  :global(.menu) {
+                    min-height: 0;
+
+                    :global(.item) {
+                      font-size: 0.7rem;
+                      padding: 0 0.6rem;
+                      margin: 0;
+                      height: 2rem;
+                    }
                   }
                 }
 
@@ -195,13 +218,11 @@ function EvaluationLayout({
 
                   align-self: end;
                   padding-top: 0;
-                }
 
-                .chartType {
-                  grid-area: chartType;
-
-                  align-self: end;
-                  padding-top: 0;
+                  display: flex;
+                  flex-direction: row;
+                  align-items: center;
+                  justify-content: space-between;
                 }
 
                 .optionDisplay {

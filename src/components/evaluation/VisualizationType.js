@@ -5,32 +5,34 @@ import { intlShape } from 'react-intl'
 
 // TODO
 const propTypes = {
+  activeVisualization: PropTypes.string.isRequired,
   intl: intlShape.isRequired,
   onChangeType: PropTypes.func.isRequired,
-  type: PropTypes.string.isRequired,
+  questionType: PropTypes.string.isRequired,
 }
 
-// FIXME: only activate bar and pie charts for FREE:RANGE
 const options = [
-  { text: 'Pie Chart', value: 'PIE_CHART', withinType: ['SC', 'MC', 'FREE', 'FREE:RANGE'] },
-  { text: 'Bar Chart', value: 'BAR_CHART', withinType: ['SC', 'MC', 'FREE', 'FREE:RANGE'] },
-  { text: 'Word cloud', value: 'WORD_CLOUD', withinType: ['FREE'] },
-  { text: 'Table', value: 'TABLE', withinType: ['SC', 'MC', 'FREE', 'FREE:RANGE'] },
-  { text: 'Histogramm', value: 'HISTOGRAM', withinType: ['FREE', 'FREE:RANGE'] }, // TODO Historgamm should not be FREE
+  { text: 'Pie Chart', value: 'PIE_CHART', withinType: ['SC'] },
+  { text: 'Bar Chart', value: 'BAR_CHART', withinType: ['SC', 'MC'] },
+  { text: 'Word Cloud', value: 'WORD_CLOUD', withinType: ['FREE', 'FREE_RANGE'] },
+  { text: 'Table', value: 'TABLE', withinType: ['SC', 'MC', 'FREE', 'FREE_RANGE'] },
+  { text: 'Histogram', value: 'HISTOGRAM', withinType: ['FREE_RANGE'] },
 ]
 
-const VisualizationType = ({ intl, onChangeType, type }) => (
+const VisualizationType = ({
+  activeVisualization, intl, onChangeType, questionType,
+}) => (
   <div className="visualizationType">
     <Dropdown
-      search
       selection
       upward
-      options={options.filter(o => o.withinType.includes(type))}
+      options={options.filter(o => o.withinType.includes(questionType))}
       placeholder={intl.formatMessage({
         defaultMessage: 'Visualization',
         id: 'teacher.evaluation.visualization.title',
       })}
-      onChange={(param, data) => onChangeType(data.value)}
+      value={activeVisualization}
+      onChange={(param, data) => onChangeType(questionType, data.value)}
     />
 
     <style jsx>{`

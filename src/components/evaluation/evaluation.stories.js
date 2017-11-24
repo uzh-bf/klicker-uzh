@@ -50,27 +50,46 @@ storiesOf('evaluation/components', module)
     <Possibilities
       intl={intlMock}
       questionOptions={{
-        choices: [
-          { name: 'This is the first possible answer' },
-          { name: 'This is the second possible answer' },
-          { name: 'This is the third possible answer' },
-          { name: 'This is the fourth possible answer' },
-        ],
+        SC: {
+          choices: [
+            { correct: true, name: 'This is the first possible answer' },
+            { correct: false, name: 'This is the second possible answer' },
+            { correct: false, name: 'This is the third possible answer' },
+            { correct: false, name: 'This is the fourth possible answer' },
+          ],
+        },
       }}
       questionType="SC"
     />
   ))
-  .add('Possibilities (FREE:RANGE)', () => (
+  .add('Possibilities (MC)', () => (
     <Possibilities
       intl={intlMock}
       questionOptions={{
-        restrictions: {
-          max: 20,
-          min: 10,
-          type: 'RANGE',
+        MC: {
+          choices: [
+            { correct: true, name: 'This is the first possible answer' },
+            { correct: true, name: 'This is the second possible answer' },
+            { correct: false, name: 'This is the third possible answer' },
+            { correct: false, name: 'This is the fourth possible answer' },
+          ],
         },
       }}
-      questionType="FREE"
+      questionType="MC"
+    />
+  ))
+  .add('Possibilities (FREE_RANGE)', () => (
+    <Possibilities
+      intl={intlMock}
+      questionOptions={{
+        FREE_RANGE: {
+          restrictions: {
+            max: 20,
+            min: 10,
+          },
+        },
+      }}
+      questionType="FREE_RANGE"
     />
   ))
   .add('Statistics', () => <Statistics max={100} mean={34.3453421} median={23} min={10} />)

@@ -49,7 +49,7 @@ function TableChart({ data, isSolutionShown }) {
         }}
         data={data}
         plugins={[plugins.LocalPlugin]}
-        sortProperties={[{ id: 'count', sortAscending: false }]}
+        // sortProperties={[{ id: 'count', sortAscending: false }]}
       >
         <RowDefinition>
           <ColumnDefinition
