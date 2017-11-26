@@ -9,7 +9,7 @@ import { intlMock } from '../../../.storybook/utils'
 
 import { ActionButton, ActionMenu, Button, ListWithHeader, Collapser } from '.'
 import { AccountArea, SearchArea, SessionArea, NavbarPres } from './navbar'
-import { Sidebar, SidebarItem } from './sidebar'
+import { Sidebar, SidebarItem, LanguageSwitcher } from './sidebar'
 
 const sidebarItems = [
   { href: 'i1', label: 'Item 1', name: 'item1' },
@@ -110,3 +110,4 @@ storiesOf('common/sidebar', module)
       ITEM CONTENT
     </SidebarItem>
   ))
+  .add('LanguageSwitcher', () => <LanguageSwitcher />)

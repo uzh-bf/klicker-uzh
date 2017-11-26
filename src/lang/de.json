@@ -1,1 +1,6 @@
-{}
+{
+  "teacher.questionPool.title": "Fragepool",
+  "questionPool.question.lastUsed": "Zuletzt verwendet",
+  "questionPool.button.createSession": "Session erstellen",
+  "questionPool.button.createQuestion": "Frage erstellen"
+}
