@@ -6,6 +6,8 @@ import { compose, withHandlers, withState } from 'recompose'
 
 const propTypes = {
   handleSearch: PropTypes.func.isRequired,
+  handleSortOrderChange: PropTypes.func.isRequired,
+  handleSortTypeChange: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
 }
 
@@ -53,8 +55,10 @@ SearchArea.propTypes = propTypes
 
 export default compose(
   withState('sortType', 'setSortType', sortingTypes[0].id),
+  withState('sortOrder', 'setSortOrder', 1), // sortOrder can either be ASC (1) or DESC (0)
   withHandlers({
     handleSortTypeChange: ({ setSortType }) => newSortType =>
       setSortType({ sortType: newSortType }),
+    handleSortOrderChange: ({ setSortOrder }) => () => setSortOrder(sortOrder => !sortOrder),
   }),
 )(SearchArea)
