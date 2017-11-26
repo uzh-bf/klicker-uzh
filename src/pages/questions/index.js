@@ -4,6 +4,7 @@ import { compose, withState, withHandlers } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
+import _findIndex from 'lodash/findIndex'
 import { Button } from 'semantic-ui-react'
 import Link from 'next/link'
 
@@ -22,10 +23,20 @@ const propTypes = {
   handleCreationModeToggle: PropTypes.func.isRequired,
   handleQuestionDropped: PropTypes.func.isRequired,
   handleSearch: PropTypes.func.isRequired,
-  handleSort: PropTypes.func.isRequired,
+  handleSortByChange: PropTypes.func.isRequired,
+  handleSortOrderChange: PropTypes.func.isRequired,
   handleTagClick: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
+  sortBy: PropTypes.string.isRequired,
+  sortOrder: PropTypes.bool.isRequired,
 }
+
+const sortingTypes = [
+  { content: 'Title', id: 'TITLE', labelStart: 'sort alphabet' },
+  { content: '# of votes', id: 'VOTES', labelStart: 'sort numeric' },
+  { content: 'Question Type', id: 'TYPE', labelStart: 'sort content' },
+  { content: 'Create Date', id: 'CREATED', labelStart: 'sort numeric' },
+]
 
 const Index = ({
   creationMode,
@@ -34,10 +45,13 @@ const Index = ({
   filters,
   handleCreateSession,
   handleSearch,
-  handleSort,
+  handleSortByChange,
+  handleSortOrderChange,
   handleTagClick,
   handleQuestionDropped,
   handleCreationModeToggle,
+  sortBy,
+  sortOrder,
 }) => {
   // TODO: create a component for this?
   const actionArea = (
@@ -73,9 +87,11 @@ const Index = ({
       navbar={{
         search: {
           handleSearch: _debounce(handleSearch, 200),
-          handleSort,
-          sortBy: '',
-          sortOrder: '',
+          handleSortByChange,
+          handleSortOrderChange,
+          sortBy,
+          sortingTypes,
+          sortOrder,
         },
         title: intl.formatMessage({
           defaultMessage: 'Question Pool',
@@ -197,6 +213,8 @@ export default compose(
     title: null,
     type: null,
   }),
+  withState('sortBy', 'setSortBy', sortingTypes[0].id),
+  withState('sortOrder', 'setSortOrder', true), // sortOrder can either be ASC (true) or DESC (false)
   withHandlers({
     // handle toggling creation mode (display of session creation form)
     handleCreationModeToggle: ({ creationMode, setCreationMode, setDroppedQuestions }) => () => {
@@ -217,9 +235,15 @@ export default compose(
     handleSearch: ({ setFilters }) => title => setFilters(prevState => ({ ...prevState, title })),
 
     // handle updated sort settings
-    handleSort: () => (by, order) => {
-      console.log(`sorted by ${by} in ${order} order`)
+    handleSortByChange: ({ setSortBy }) => (currentSortBy) => {
+      // find current value and set next value in array as current sortType
+      const currentIndex = _findIndex(sortingTypes, { id: currentSortBy })
+      let nextIndex = currentIndex + 1
+      if (nextIndex === sortingTypes.length) nextIndex = 0
+      const nextObject = sortingTypes[nextIndex]
+      setSortBy(nextObject.id)
     },
+    handleSortOrderChange: ({ setSortOrder }) => () => setSortOrder(sortOrder => !sortOrder),
 
     // handle clicking on a tag in the tag list
     handleTagClick: ({ setFilters }) => tagName =>

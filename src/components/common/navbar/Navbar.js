@@ -56,7 +56,15 @@ export const NavbarPres = ({
 
     {search && (
       <div className="searchArea">
-        <SearchArea handleSearch={search.handleSearch} handleSort={search.handleSort} intl={intl} />
+        <SearchArea
+          handleSearch={search.handleSearch}
+          handleSortByChange={search.handleSortByChange}
+          handleSortOrderChange={search.handleSortOrderChange}
+          intl={intl}
+          sortBy={search.sortBy}
+          sortOrder={search.sortOrder}
+          sortingTypes={search.sortingTypes}
+        />
       </div>
     )}
 
