@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { compose, withProps, withState, withHandlers } from 'recompose'
+import { compose, withState, withHandlers } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
@@ -264,9 +264,6 @@ export default compose(
       }),
   }),
   graphql(StartSessionMutation),
-  withProps(({ data }) => {
-    console.log(data)
-  }),
   withHandlers({
     // handle starting an existing or newly created session
     handleStartSession: ({ mutate }) => id =>
