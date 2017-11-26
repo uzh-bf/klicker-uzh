@@ -75,6 +75,8 @@ const Sidebar = ({
             bottom: 0;
             left: 0;
             right: 0;
+
+            padding: 1rem;
           }
 
           @include desktop-tablet-only {
