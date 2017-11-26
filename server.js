@@ -146,6 +146,7 @@ app
     })
 
     server.get('/join/:shortname', (req, res) => {
+      // TODO: need to clear the cache once the active questions are changed by the lecturer
       const locale = getLocale(req)
       req.locale = locale
       req.localeDataScript = getLocaleDataScript(locale)
