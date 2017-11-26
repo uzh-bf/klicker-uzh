@@ -26,7 +26,10 @@ const propTypes = {
 const LanguageSwitcher = ({ chosenLanguage, handleSetLanguage }) => (
   <div className="languageSwitcher">
     <Dropdown
+      fluid
+      search
       selection
+      upward
       defaultValue={chosenLanguage}
       options={languageOptions}
       placeholder={'Select Language'}
@@ -35,7 +38,7 @@ const LanguageSwitcher = ({ chosenLanguage, handleSetLanguage }) => (
 
     <style jsx>{`
       .languageSwitcher {
-        margin-top: 20rem;
+        padding: 1rem;
       }
     `}</style>
   </div>

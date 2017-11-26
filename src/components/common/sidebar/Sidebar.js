@@ -48,10 +48,10 @@ const Sidebar = ({
             {item.label}
           </SidebarItem>
         ))}
-        {/* TODO correct position floating on bottom */}
-        <LanguageSwitcher />
+        <div className="langSwitcher">
+          <LanguageSwitcher />
+        </div>
       </SemanticSidebar>
-
       <SemanticSidebar.Pusher>{children}</SemanticSidebar.Pusher>
     </SemanticSidebar.Pushable>
 
@@ -66,19 +66,19 @@ const Sidebar = ({
         }
 
         :global(.sidebarMenu) {
+          position: relative;
           text-align: left;
           width: 75% !important;
-        }
 
-        @include desktop-tablet-only {
-          :global(.sidebarMenu) {
-            width: 20% !important;
+          .langSwitcher {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
           }
-        }
 
-        @include desktop-only {
-          :global(.sidebarMenu) {
-            width: 15% !important;
+          @include desktop-tablet-only {
+            width: 15rem !important;
           }
         }
       }
