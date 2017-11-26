@@ -58,7 +58,7 @@ const connectCache = async () => {
     const Redis = require('ioredis')
     cache = Redis(`redis://${process.env.REDIS_URL}`)
   } else {
-    const LRUCache = 'lru-cache'
+    const LRUCache = require('lru-cache')
     cache = new LRUCache({
       max: 100,
       maxAge: 1000 * 60 * 60,
