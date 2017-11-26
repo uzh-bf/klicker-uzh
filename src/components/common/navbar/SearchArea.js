@@ -3,12 +3,15 @@ import PropTypes from 'prop-types'
 import { intlShape } from 'react-intl'
 import { Button, Input } from 'semantic-ui-react'
 import { compose, withHandlers, withState } from 'recompose'
+import _findIndex from 'lodash/findIndex'
+import _find from 'lodash/find'
 
 const propTypes = {
   handleSearch: PropTypes.func.isRequired,
   handleSortOrderChange: PropTypes.func.isRequired,
   handleSortTypeChange: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
+  sortType: PropTypes.string.isRequired,
 }
 
 const sortingTypes = [
@@ -18,7 +21,9 @@ const sortingTypes = [
   { content: 'Created at', id: 'CREATED' },
 ]
 
-const SearchArea = ({ intl, handleSearch }) => (
+const SearchArea = ({
+  intl, handleSearch, handleSortTypeChange, sortType,
+}) => (
   <div className="searchingArea">
     <Input
       fluid
@@ -31,7 +36,10 @@ const SearchArea = ({ intl, handleSearch }) => (
     />
     <Button.Group>
       <Button icon="sort alphabet ascending" />
-      <Button content={sortingTypes[0].content} />
+      <Button
+        content={_find(sortingTypes, { id: sortType }).content}
+        onClick={() => handleSortTypeChange(sortType)}
+      />
     </Button.Group>
 
     <style jsx>{`
@@ -57,8 +65,12 @@ export default compose(
   withState('sortType', 'setSortType', sortingTypes[0].id),
   withState('sortOrder', 'setSortOrder', 1), // sortOrder can either be ASC (1) or DESC (0)
   withHandlers({
-    handleSortTypeChange: ({ setSortType }) => newSortType =>
-      setSortType({ sortType: newSortType }),
+    handleSortTypeChange: ({ setSortType }) => (currentSortType) => {
+      // find current value and set next value in array as current sortType
+      const currentIndex = _findIndex(sortingTypes, { id: currentSortType })
+      const nextObject = sortingTypes[currentIndex + 1]
+      setSortType(nextObject.id)
+    },
     handleSortOrderChange: ({ setSortOrder }) => () => setSortOrder(sortOrder => !sortOrder),
   }),
 )(SearchArea)
