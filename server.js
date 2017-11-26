@@ -64,9 +64,10 @@ app
       }),
       // enable cookie parsing for the locale cookie
       cookieParser(),
-      // static file serving from public folder
-      express.static(process.env.STATIC_PATH || '/', join(__dirname, 'public')),
     ]
+
+    // static file serving from public folder
+    express.static(join(__dirname, 'public'))
 
     // activate morgan logging in production
     if (!dev) {
