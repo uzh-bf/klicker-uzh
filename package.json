@@ -58,6 +58,7 @@
     "react-tooltip": "3.4.0",
     "recharts": "1.0.0-beta.4",
     "recompose": "0.26.0",
+    "redis": "^2.8.0",
     "redux": "3.7.2",
     "redux-form": "7.1.2",
     "semantic-ui-react": "0.76.0",
