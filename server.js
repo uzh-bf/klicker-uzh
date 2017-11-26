@@ -6,7 +6,7 @@ const { basename, join } = require('path')
 const { readFileSync } = require('fs')
 const glob = require('glob')
 
-const accepts = require('accepts')
+const cookieParser = require('cookie-parser')
 const express = require('express')
 const next = require('next')
 const compression = require('compression')
@@ -47,6 +47,9 @@ const getLocaleDataScript = (locale) => {
 // each message description in the source code will be used.
 const getMessages = locale => require(`${APP_DIR}/lang/${locale}.json`)
 
+const getLocale = req =>
+  (req.cookies.locale && languages.includes(req.cookies.locale) ? req.cookies.locale : 'en')
+
 app
   .prepare()
   .then(() => {
@@ -59,12 +62,11 @@ app
       helmet({
         hsts: false,
       }),
-    ]
-
-    if (process.env.STATIC_PATH) {
+      // enable cookie parsing for the locale cookie
+      cookieParser(),
       // static file serving from public folder
-      express.static(process.env.STATIC_PATH, join(__dirname, 'public'))
-    }
+      express.static(process.env.STATIC_PATH || '/', join(__dirname, 'public')),
+    ]
 
     // activate morgan logging in production
     if (!dev) {
@@ -74,8 +76,7 @@ app
     server.use(...middleware)
 
     server.get('/join/:shortname', (req, res) => {
-      const accept = accepts(req)
-      const locale = accept.language(dev ? ['en'] : languages)
+      const locale = getLocale(req)
       req.locale = locale
       req.localeDataScript = getLocaleDataScript(locale)
       req.messages = dev ? {} : getMessages(locale)
@@ -84,8 +85,7 @@ app
     })
 
     server.get('/sessions/evaluation/:sessionId', (req, res) => {
-      const accept = accepts(req)
-      const locale = accept.language(dev ? ['en'] : languages)
+      const locale = getLocale(req)
       req.locale = locale
       req.localeDataScript = getLocaleDataScript(locale)
       req.messages = dev ? {} : getMessages(locale)
@@ -94,8 +94,7 @@ app
     })
 
     server.get('*', (req, res) => {
-      const accept = accepts(req)
-      const locale = accept.language(dev ? ['en'] : languages)
+      const locale = getLocale(req)
       req.locale = locale
       req.localeDataScript = getLocaleDataScript(locale)
       req.messages = dev ? {} : getMessages(locale)

@@ -7,15 +7,15 @@ import Cookies from 'js-cookie'
 const languageOptions = [
   {
     flag: 'gb',
-    key: 'EN',
+    key: 'en',
     text: 'English',
-    value: 'EN',
+    value: 'en',
   },
   {
     flag: 'de',
-    key: 'DE',
+    key: 'de',
     text: 'Deutsch',
-    value: 'DE',
+    value: 'de',
   },
 ]
 
@@ -44,11 +44,11 @@ LanguageSwitcher.propTypes = propTypes
 export default compose(
   withStateHandlers(
     {
-      locale: Cookies.get('LOCALE') || 'EN',
+      locale: Cookies.get('locale') || 'en',
     },
     {
       handleChangeLocale: () => (locale) => {
-        Cookies.set('LOCALE', locale)
+        Cookies.set('locale', locale)
         // TODO: could this be done more nicely?
         location.reload() // eslint-disable-line no-restricted-globals
         return { locale }
