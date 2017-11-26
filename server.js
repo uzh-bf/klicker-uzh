@@ -6,7 +6,7 @@ const { basename, join } = require('path')
 const { readFileSync } = require('fs')
 const glob = require('glob')
 
-const accepts = require('accepts')
+const cookieParser = require('cookie-parser')
 const express = require('express')
 const next = require('next')
 const compression = require('compression')
@@ -102,6 +102,8 @@ const renderAndCache = async (req, res, pagePath, queryParams) => {
     app.renderError(e, req, res, pagePath, queryParams)
   }
 }
+const getLocale = req =>
+  (req.cookies.locale && languages.includes(req.cookies.locale) ? req.cookies.locale : 'en')
 
 app
   .prepare()
@@ -117,12 +119,12 @@ app
       helmet({
         hsts: false,
       }),
+      // enable cookie parsing for the locale cookie
+      cookieParser(),
     ]
 
-    if (process.env.STATIC_PATH) {
-      // static file serving from public folder
-      express.static(process.env.STATIC_PATH, join(__dirname, 'public'))
-    }
+    // static file serving from public folder
+    express.static(join(__dirname, 'public'))
 
     // activate morgan logging in production
     if (!dev) {
@@ -144,8 +146,7 @@ app
     })
 
     server.get('*', (req, res) => {
-      const accept = accepts(req)
-      const locale = accept.language(dev ? ['en'] : languages)
+      const locale = getLocale(req)
       req.locale = locale
       req.localeDataScript = getLocaleDataScript(locale)
       req.messages = dev ? {} : getMessages(locale)

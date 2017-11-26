@@ -1,6 +1,6 @@
 {
   "name": "klicker-react",
-  "version": "1.0.0-beta.7",
+  "version": "1.0.0-beta.8",
   "main": "server.js",
   "repository": "https://github.com/uzh-bf/klicker-react.git",
   "author": "Roland Schläfli <roland.schlaefli@bf.uzh.ch>",
@@ -16,6 +16,7 @@
     "babel-runtime": "7.0.0-beta.3",
     "classnames": "2.2.5",
     "compression": "1.7.1",
+    "cookie-parser": "^1.4.3",
     "cross-env": "5.1.1",
     "dotenv": "4.0.0",
     "express": "4.16.2",
