@@ -6,7 +6,7 @@ const { basename, join } = require('path')
 const { readFileSync } = require('fs')
 const glob = require('glob')
 
-const accepts = require('accepts')
+const cookieParser = require('cookie-parser')
 const express = require('express')
 const next = require('next')
 const compression = require('compression')
@@ -47,16 +47,13 @@ const getLocaleDataScript = (locale) => {
 // each message description in the source code will be used.
 const getMessages = locale => require(`${APP_DIR}/lang/${locale}.json`)
 
+const getLocale = req =>
+  (req.cookies.locale && languages.includes(req.cookies.locale) ? req.cookies.locale : 'en')
+
 app
   .prepare()
   .then(() => {
     const server = express()
-
-    // redirect the root route to the question pool page
-    // TODO: redirect location depending on login status
-    /* server.get('/', (req, res) => {
-      res.redirect('/questions/')
-    }) */
 
     const middleware = [
       // compress using gzip
@@ -65,20 +62,22 @@ app
       helmet({
         hsts: false,
       }),
-      // static file serving from public folder
-      express.static(join(__dirname, 'public')),
+      // enable cookie parsing for the locale cookie
+      cookieParser(),
     ]
 
-    // activate morgan logging in dev and prod, but not in tests
-    if (process.env.NODE_ENV !== 'test') {
+    // static file serving from public folder
+    express.static(join(__dirname, 'public'))
+
+    // activate morgan logging in production
+    if (!dev) {
       middleware.push(morgan('combined'))
     }
 
     server.use(...middleware)
 
     server.get('/join/:shortname', (req, res) => {
-      const accept = accepts(req)
-      const locale = accept.language(dev ? ['en'] : languages)
+      const locale = getLocale(req)
       req.locale = locale
       req.localeDataScript = getLocaleDataScript(locale)
       req.messages = dev ? {} : getMessages(locale)
@@ -87,8 +86,7 @@ app
     })
 
     server.get('/sessions/evaluation/:sessionId', (req, res) => {
-      const accept = accepts(req)
-      const locale = accept.language(dev ? ['en'] : languages)
+      const locale = getLocale(req)
       req.locale = locale
       req.localeDataScript = getLocaleDataScript(locale)
       req.messages = dev ? {} : getMessages(locale)
@@ -97,8 +95,7 @@ app
     })
 
     server.get('*', (req, res) => {
-      const accept = accepts(req)
-      const locale = accept.language(dev ? ['en'] : languages)
+      const locale = getLocale(req)
       req.locale = locale
       req.localeDataScript = getLocaleDataScript(locale)
       req.messages = dev ? {} : getMessages(locale)
