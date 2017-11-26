@@ -5,7 +5,7 @@ export default function initLogging() {
   // restrict code execution for trackers to clientside
   if (typeof window !== 'undefined') {
     // embed logrocket if enabled
-    if (!logrocket && process.env.LOGROCKET !== '__LOGROCKET__') {
+    if (!logrocket && process.env.LOGROCKET) {
       const LogRocket = require('logrocket')
       const LogRocketReact = require('logrocket-react')
       LogRocket.init(process.env.LOGROCKET)
@@ -15,12 +15,12 @@ export default function initLogging() {
     }
 
     // embed sentry if enabled
-    if (!sentry && process.env.SENTRY !== '__SENTRY__') {
+    if (!sentry && process.env.SENTRY) {
       const Raven = require('raven-js')
 
       Raven.config(process.env.SENTRY).install()
 
-      if (process.env.LOGROCKET !== '__LOGROCKET__') {
+      if (process.env.LOGROCKET) {
         Raven.setDataCallback(data =>
           Object.assign({}, data, {
             extra: {
