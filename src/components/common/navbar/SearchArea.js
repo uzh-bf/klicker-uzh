@@ -9,13 +9,15 @@ const propTypes = {
   handleSortByChange: PropTypes.func.isRequired,
   handleSortOrderChange: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  sortBy: PropTypes.bool.isRequired,
-  sortingTypes: PropTypes.shape({
-    content: PropTypes.string,
-    id: PropTypes.string,
-    labelStart: PropTypes.string,
-  }).isRequired,
-  sortOrder: PropTypes.string.isRequired,
+  sortBy: PropTypes.string.isRequired,
+  sortingTypes: PropTypes.arrayOf(
+    PropTypes.shape({
+      content: PropTypes.string,
+      id: PropTypes.string,
+      labelStart: PropTypes.string,
+    }),
+  ).isRequired,
+  sortOrder: PropTypes.bool.isRequired,
 }
 
 const SearchArea = ({

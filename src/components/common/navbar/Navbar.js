@@ -18,7 +18,17 @@ const propTypes = {
   intl: intlShape.isRequired,
   search: PropTypes.shape({
     handleSearch: PropTypes.func.isRequired,
-    handleSort: PropTypes.func.isRequired,
+    handleSortByChange: PropTypes.func.isRequired,
+    handleSortOrderChange: PropTypes.func.isRequired,
+    sortBy: PropTypes.string.isRequired,
+    sortingTypes: PropTypes.arrayOf(
+      PropTypes.shape({
+        content: PropTypes.string,
+        id: PropTypes.string,
+        labelStart: PropTypes.string,
+      }),
+    ).isRequired,
+    sortOrder: PropTypes.bool.isRequired,
   }),
   sidebarVisible: PropTypes.bool,
   title: PropTypes.string.isRequired,
