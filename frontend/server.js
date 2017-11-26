@@ -59,9 +59,12 @@ app
       helmet({
         hsts: false,
       }),
-      // static file serving from public folder
-      express.static(join(__dirname, 'public')),
     ]
+
+    if (process.env.STATIC_PATH) {
+      // static file serving from public folder
+      express.static(process.env.STATIC_PATH, join(__dirname, 'public'))
+    }
 
     // activate morgan logging in production
     if (!dev) {
