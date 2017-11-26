@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { intlShape } from 'react-intl'
-import { Input } from 'semantic-ui-react'
+import { Button, Input } from 'semantic-ui-react'
 
 const propTypes = {
   handleSearch: PropTypes.func.isRequired,
@@ -9,15 +9,33 @@ const propTypes = {
 }
 
 const SearchArea = ({ intl, handleSearch }) => (
-  <Input
-    fluid
-    icon="search"
-    placeholder={intl.formatMessage({
-      defaultMessage: 'Search...',
-      id: 'common.input.search.placeholder',
-    })}
-    onChange={e => handleSearch(e.target.value)}
-  />
+  <div className="searchingArea">
+    <Input
+      fluid
+      icon="search"
+      placeholder={intl.formatMessage({
+        defaultMessage: 'Search...',
+        id: 'common.input.search.placeholder',
+      })}
+      onChange={e => handleSearch(e.target.value)}
+    />
+    <Button content={'Hello'} />
+
+    <style jsx>{`
+      .searchingArea {
+        display: flex;
+        justify-content: flex-start;
+      }
+
+      .searchingArea > :global(.input) {
+        flex: 1;
+      }
+
+      .searchingArea > :global(.button) {
+        width: 15rem;
+      }
+    `}</style>
+  </div>
 )
 
 SearchArea.propTypes = propTypes
