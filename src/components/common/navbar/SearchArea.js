@@ -68,7 +68,9 @@ export default compose(
     handleSortTypeChange: ({ setSortType }) => (currentSortType) => {
       // find current value and set next value in array as current sortType
       const currentIndex = _findIndex(sortingTypes, { id: currentSortType })
-      const nextObject = sortingTypes[currentIndex + 1]
+      let nextIndex = currentIndex + 1
+      if (nextIndex === sortingTypes.length) nextIndex = 0
+      const nextObject = sortingTypes[nextIndex]
       setSortType(nextObject.id)
     },
     handleSortOrderChange: ({ setSortOrder }) => () => setSortOrder(sortOrder => !sortOrder),
