@@ -47,10 +47,68 @@ const getLocaleDataScript = (locale) => {
 // each message description in the source code will be used.
 const getMessages = locale => require(`${APP_DIR}/lang/${locale}.json`)
 
+// prepare cache to be connected to
+let cache
+const connectCache = async () => {
+  if (cache) {
+    return cache
+  }
+
+  if (process.env.REDIS_URL) {
+    const Redis = require('ioredis')
+    cache = Redis(`redis://${process.env.REDIS_URL}`)
+  } else {
+    const LRUCache = 'lru-cache'
+    cache = new LRUCache({
+      max: 100,
+      maxAge: 1000 * 60 * 60,
+    })
+  }
+
+  return cache
+}
+
+// construct a unique cache key from the request params
+const getCacheKey = req => `${req.url}-${req.locale}`
+
+// render a page to html and cache it in the appropriate place
+const renderAndCache = async (req, res, pagePath, queryParams) => {
+  const key = getCacheKey(req)
+
+  let cached
+  if (process.env.REDIS_URL) {
+    cached = await cache.get(key)
+  } else {
+    cached = cache.get(key)
+  }
+
+  // check if the page has already been cached
+  // return the cached HTML if this is the case
+  if (cached) {
+    console.log(`CACHE HIT: ${key}`)
+
+    res.send(cached)
+    return
+  }
+
+  // otherwise server-render the page and cache/return it
+  console.log(`CACHE MISS: ${key}`)
+  try {
+    const html = await app.renderToHTML(req, res, pagePath, queryParams)
+
+    res.send(html)
+    cache.set(key, html)
+  } catch (e) {
+    app.renderError(e, req, res, pagePath, queryParams)
+  }
+}
+
 app
   .prepare()
   .then(() => {
     const server = express()
+
+    connectCache()
 
     const middleware = [
       // compress using gzip
@@ -73,24 +131,16 @@ app
 
     server.use(...middleware)
 
-    server.get('/join/:shortname', (req, res) => {
-      const accept = accepts(req)
-      const locale = accept.language(dev ? ['en'] : languages)
-      req.locale = locale
-      req.localeDataScript = getLocaleDataScript(locale)
-      req.messages = dev ? {} : getMessages(locale)
+    server.get('/', (req, res) => {
+      renderAndCache(req, res, '/')
+    })
 
-      return app.render(req, res, '/join', { shortname: req.params.shortname })
+    server.get('/join/:shortname', (req, res) => {
+      renderAndCache(req, res, '/join', { shortname: req.params.shortname })
     })
 
     server.get('/sessions/evaluation/:sessionId', (req, res) => {
-      const accept = accepts(req)
-      const locale = accept.language(dev ? ['en'] : languages)
-      req.locale = locale
-      req.localeDataScript = getLocaleDataScript(locale)
-      req.messages = dev ? {} : getMessages(locale)
-
-      return app.render(req, res, '/sessions/evaluation', { sessionId: req.params.sessionId })
+      app.render(req, res, '/sessions/evaluation', { sessionId: req.params.sessionId })
     })
 
     server.get('*', (req, res) => {
