@@ -69,7 +69,7 @@ const connectCache = async () => {
 }
 
 // construct a unique cache key from the request params
-const getCacheKey = req => `${req.url}-${req.locale}`
+const getCacheKey = req => `${req.url}:${req.locale}`
 
 // render a page to html and cache it in the appropriate place
 const renderAndCache = async (req, res, pagePath, queryParams) => {
@@ -133,15 +133,33 @@ app
 
     server.use(...middleware)
 
-    server.get('/', (req, res) => {
-      renderAndCache(req, res, '/')
+    const staticSites = ['/', '/user/login', '/user/registration']
+    staticSites.forEach((url) => {
+      server.get(url, (req, res) => {
+        const locale = getLocale(req)
+        req.locale = locale
+        req.localeDataScript = getLocaleDataScript(locale)
+        req.messages = dev ? {} : getMessages(locale)
+
+        renderAndCache(req, res, url)
+      })
     })
 
     server.get('/join/:shortname', (req, res) => {
+      const locale = getLocale(req)
+      req.locale = locale
+      req.localeDataScript = getLocaleDataScript(locale)
+      req.messages = dev ? {} : getMessages(locale)
+
       renderAndCache(req, res, '/join', { shortname: req.params.shortname })
     })
 
     server.get('/sessions/evaluation/:sessionId', (req, res) => {
+      const locale = getLocale(req)
+      req.locale = locale
+      req.localeDataScript = getLocaleDataScript(locale)
+      req.messages = dev ? {} : getMessages(locale)
+
       app.render(req, res, '/sessions/evaluation', { sessionId: req.params.sessionId })
     })
 
