@@ -52,12 +52,6 @@ app
   .then(() => {
     const server = express()
 
-    // redirect the root route to the question pool page
-    // TODO: redirect location depending on login status
-    /* server.get('/', (req, res) => {
-      res.redirect('/questions/')
-    }) */
-
     const middleware = [
       // compress using gzip
       compression(),
@@ -65,12 +59,15 @@ app
       helmet({
         hsts: false,
       }),
-      // static file serving from public folder
-      express.static(join(__dirname, 'public')),
     ]
 
-    // activate morgan logging in dev and prod, but not in tests
-    if (process.env.NODE_ENV !== 'test') {
+    if (process.env.STATIC_PATH) {
+      // static file serving from public folder
+      express.static(process.env.STATIC_PATH, join(__dirname, 'public'))
+    }
+
+    // activate morgan logging in production
+    if (!dev) {
       middleware.push(morgan('combined'))
     }
 
