@@ -11,18 +11,24 @@ const propTypes = {
   handleSortOrderChange: PropTypes.func.isRequired,
   handleSortTypeChange: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
+  sortOrder: PropTypes.bool.isRequired,
   sortType: PropTypes.string.isRequired,
 }
 
 const sortingTypes = [
-  { content: 'Title', id: 'TITLE' },
-  { content: 'Number of votes', id: 'VOTES' },
-  { content: 'Question Type', id: 'TYPE' },
-  { content: 'Created at', id: 'CREATED' },
+  { content: 'Title', id: 'TITLE', labelStart: 'sort alphabet' },
+  { content: '# of votes', id: 'VOTES', labelStart: 'sort numeric' },
+  { content: 'Question Type', id: 'TYPE', labelStart: 'sort content' },
+  { content: 'Create Date', id: 'CREATED', labelStart: 'sort numeric' },
 ]
 
 const SearchArea = ({
-  intl, handleSearch, handleSortTypeChange, sortType,
+  intl,
+  handleSearch,
+  handleSortOrderChange,
+  handleSortTypeChange,
+  sortOrder,
+  sortType,
 }) => (
   <div className="searchingArea">
     <Input
@@ -35,7 +41,12 @@ const SearchArea = ({
       onChange={e => handleSearch(e.target.value)}
     />
     <Button.Group>
-      <Button icon="sort alphabet ascending" />
+      <Button
+        icon={`${_find(sortingTypes, { id: sortType }).labelStart} ${
+          sortOrder ? 'ascending' : 'descending'
+        }`}
+        onClick={handleSortOrderChange}
+      />
       <Button
         content={_find(sortingTypes, { id: sortType }).content}
         onClick={() => handleSortTypeChange(sortType)}
@@ -63,8 +74,9 @@ SearchArea.propTypes = propTypes
 
 export default compose(
   withState('sortType', 'setSortType', sortingTypes[0].id),
-  withState('sortOrder', 'setSortOrder', 1), // sortOrder can either be ASC (1) or DESC (0)
+  withState('sortOrder', 'setSortOrder', true), // sortOrder can either be ASC (true) or DESC (false)
   withHandlers({
+    handleSortOrderChange: ({ setSortOrder }) => () => setSortOrder(sortOrder => !sortOrder),
     handleSortTypeChange: ({ setSortType }) => (currentSortType) => {
       // find current value and set next value in array as current sortType
       const currentIndex = _findIndex(sortingTypes, { id: currentSortType })
@@ -73,6 +85,5 @@ export default compose(
       const nextObject = sortingTypes[nextIndex]
       setSortType(nextObject.id)
     },
-    handleSortOrderChange: ({ setSortOrder }) => () => setSortOrder(sortOrder => !sortOrder),
   }),
 )(SearchArea)
