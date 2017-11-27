@@ -56,7 +56,7 @@ const connectCache = async () => {
 
   if (process.env.REDIS_URL) {
     const Redis = require('ioredis')
-    cache = Redis(`redis://${process.env.REDIS_URL}`)
+    cache = new Redis(`redis://${process.env.REDIS_URL}`)
   } else {
     const LRUCache = require('lru-cache')
     cache = new LRUCache({
@@ -146,7 +146,6 @@ app
     })
 
     server.get('/join/:shortname', (req, res) => {
-      // TODO: need to clear the cache once the active questions are changed by the lecturer
       const locale = getLocale(req)
       req.locale = locale
       req.localeDataScript = getLocaleDataScript(locale)
@@ -182,3 +181,25 @@ app
     console.error(err.stack)
     process.exit(1)
   })
+
+process.on('exit', () => {
+  console.log('> Shutting down server')
+
+  if (process.env.REDIS_URL) {
+    cache.disconnect()
+  }
+
+  console.log('> Shutdown complete')
+  process.exit(0)
+})
+
+process.once('SIGUSR2', () => {
+  console.log('> Shutting down server')
+
+  if (process.env.REDIS_URL) {
+    cache.disconnect()
+  }
+
+  console.log('> Shutdown complete')
+  process.exit(0)
+})
