@@ -195,7 +195,7 @@ export default compose(
   withProps({
     // calculate a browser fingerprint (if activated)
     fp:
-      process.env.FINGERPRINTS &&
+      process.env.FINGERPRINTING &&
       new Promise((resolve, reject) => {
         // if an existing cookie already contains a fingerprint, reuse it
         const existing = Cookies.get('fp')

@@ -131,8 +131,8 @@ export const EndSessionMutation = gql`
 `
 
 export const AddFeedbackMutation = gql`
-  mutation AddFeedback($sessionId: ID!, $content: String!) {
-    addFeedback(sessionId: $sessionId, content: $content) {
+  mutation AddFeedback($fp: ID!, $sessionId: ID!, $content: String!) {
+    addFeedback(fp: $fp, sessionId: $sessionId, content: $content) {
       id
       feedbacks {
         id
@@ -157,8 +157,8 @@ export const DeleteFeedbackMutation = gql`
 `
 
 export const AddConfusionTSMutation = gql`
-  mutation AddConfusionTS($sessionId: ID!, $difficulty: Int!, $speed: Int!) {
-    addConfusionTS(sessionId: $sessionId, difficulty: $difficulty, speed: $speed) {
+  mutation AddConfusionTS($fp: ID!, $sessionId: ID!, $difficulty: Int!, $speed: Int!) {
+    addConfusionTS(fp: $fp, sessionId: $sessionId, difficulty: $difficulty, speed: $speed) {
       id
       confusionTS {
         difficulty
@@ -183,8 +183,8 @@ export const UpdateSessionSettingsMutation = gql`
 `
 
 export const AddResponseMutation = gql`
-  mutation AddResponse($instanceId: ID!, $response: QuestionInstance_ResponseInput!) {
-    addResponse(instanceId: $instanceId, response: $response) {
+  mutation AddResponse($fp: ID!, $instanceId: ID!, $response: QuestionInstance_ResponseInput!) {
+    addResponse(fp: $fp, instanceId: $instanceId, response: $response) {
       id
     }
   }
