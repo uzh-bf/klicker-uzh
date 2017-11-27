@@ -1800,9 +1800,9 @@ graphql-subscriptions@0.5.5:
     es6-promise "^4.1.1"
     iterall "^1.1.3"
 
-graphql-tools@2.8.0:
-  version "2.8.0"
-  resolved "https://registry.yarnpkg.com/graphql-tools/-/graphql-tools-2.8.0.tgz#1a248ec6be62b0b77607bba6f7470e7a651425fa"
+graphql-tools@2.9.0:
+  version "2.9.0"
+  resolved "https://registry.yarnpkg.com/graphql-tools/-/graphql-tools-2.9.0.tgz#1975f302e74670c9def0a4ab1ac482b8efdaf117"
   dependencies:
     apollo-utilities "^1.0.1"
     deprecated-decorator "^0.1.6"
