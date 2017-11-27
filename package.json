@@ -98,8 +98,9 @@
     "prepush": "yarn run test --onlyChanged",
     "build": "next build src && node ./src/lib/defaultLang",
     "compile-queries": "persistgraphql src/graphql/ --js --extension=js --add_typename",
-    "dev": "nodemon -w .env -w package.json -w yarn.lock server.js",
-    "dev:inspect": "nodemon -w .env -w package.json -w yarn.lock --inspect server.js",
+    "dev": "nodemon --delay 1000ms -w .env -w package.json -w yarn.lock -w server.js server.js",
+    "dev:inspect":
+      "nodemon --delay 1000ms -w .env -w package.json -w yarn.lock -w server.js --inspect server.js",
     "format": "prettier-eslint --single-quote --no-semi --write server.js \"src/**/*.js\"",
     "format:ci":
       "prettier-eslint --single-quote --no-semi --list-different server.js \"src/**/*.js\"",
