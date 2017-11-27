@@ -59,13 +59,13 @@
     "react-sortable-hoc": "0.6.8",
     "react-tagsinput": "3.19.0",
     "react-tooltip": "3.4.0",
-    "recharts": "1.0.0-beta.4",
+    "recharts": "1.0.0-beta.5",
     "recompose": "0.26.0",
     "redux": "3.7.2",
     "redux-form": "7.1.2",
     "semantic-ui-react": "0.76.0",
     "styled-jsx-plugin-sass": "0.2.1",
-    "validator": "9.1.1"
+    "validator": "9.1.2"
   },
   "devDependencies": {
     "@storybook/addon-actions": "3.2.16",
@@ -75,7 +75,7 @@
     "@storybook/react": "3.2.16",
     "babel-eslint": "8.0.2",
     "enzyme": "3.2.0",
-    "eslint": "4.11.0",
+    "eslint": "4.12.0",
     "eslint-config-airbnb": "16.1.0",
     "eslint-plugin-import": "2.8.0",
     "eslint-plugin-jsx-a11y": "6.0.2",
