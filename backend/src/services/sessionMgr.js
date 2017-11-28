@@ -11,7 +11,9 @@ const cleanCache = (shortname) => {
 
   logDebug(() => console.log(`[redis] Cleaning up SSR cache for ${key}`))
 
-  return redis.unlink([`${key}:de`, `${key}:en`])
+  // return redis.unlink([`${key}:de`, `${key}:en`])
+  // TODO: use unlink with redis 4.x
+  return redis.del([`${key}:de`, `${key}:en`])
 }
 
 const getRunningSession = async (sessionId) => {
@@ -279,8 +281,10 @@ const activateNextBlock = async ({ userId, shortname }) => {
         logDebug(() => console.log('[redis] Cleaning up participant data for instances:', keys))
 
         // unlink the keys from the redis store
-        const unlinkKeys = await redis.unlink(keys)
-        console.log(unlinkKeys)
+        // const unlinkKeys = await redis.unlink(keys)
+        // TODO: use unlink with redis 4.x
+        await redis.del(keys)
+        // console.log(unlinkKeys)
         // promises.push(unlinkKeys)
       }
     }
