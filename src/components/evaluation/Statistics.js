@@ -45,8 +45,9 @@ const Statistics = ({
     <style jsx>{`
       .statistics {
         h2 {
-          font-size: 1.3rem;
-          line-height: 1.3rem;
+          font-size: 1.2rem;
+          line-height: 1.2rem;
+          margin-bottom: 0.5rem;
         }
       }
     `}</style>
