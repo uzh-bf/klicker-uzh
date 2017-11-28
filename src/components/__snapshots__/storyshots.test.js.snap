@@ -1404,17 +1404,17 @@ exports[`Storyshots evaluation/components Info 1`] = `
 
 exports[`Storyshots evaluation/components Possibilities (FREE_RANGE) 1`] = `
 <div
-  className="jsx-2154886852 possibilities"
+  className="jsx-3283260225 possibilities"
 >
   <h2
-    className="jsx-2154886852"
+    className="jsx-3283260225"
   >
     <span>
       Restrictions
     </span>
   </h2>
   <div
-    className="jsx-2154886852"
+    className="jsx-3283260225"
   >
     <div
       className="jsx-91056044 evaluationListItem"
@@ -1450,17 +1450,17 @@ exports[`Storyshots evaluation/components Possibilities (FREE_RANGE) 1`] = `
 
 exports[`Storyshots evaluation/components Possibilities (MC) 1`] = `
 <div
-  className="jsx-2154886852 possibilities"
+  className="jsx-3283260225 possibilities"
 >
   <h2
-    className="jsx-2154886852"
+    className="jsx-3283260225"
   >
     <span>
       Choices
     </span>
   </h2>
   <div
-    className="jsx-2154886852"
+    className="jsx-3283260225"
   >
     <div
       className="jsx-110067377 evaluationListItem"
@@ -1556,17 +1556,17 @@ exports[`Storyshots evaluation/components Possibilities (MC) 1`] = `
 
 exports[`Storyshots evaluation/components Possibilities (SC) 1`] = `
 <div
-  className="jsx-2154886852 possibilities"
+  className="jsx-3283260225 possibilities"
 >
   <h2
-    className="jsx-2154886852"
+    className="jsx-3283260225"
   >
     <span>
       Choices
     </span>
   </h2>
   <div
-    className="jsx-2154886852"
+    className="jsx-3283260225"
   >
     <div
       className="jsx-110067377 evaluationListItem"
@@ -1662,17 +1662,17 @@ exports[`Storyshots evaluation/components Possibilities (SC) 1`] = `
 
 exports[`Storyshots evaluation/components Statistics 1`] = `
 <div
-  className="jsx-324462402 statistics"
+  className="jsx-3015112589 statistics"
 >
   <h2
-    className="jsx-324462402"
+    className="jsx-3015112589"
   >
     <span>
       Statistics
     </span>
   </h2>
   <div
-    className="jsx-324462402"
+    className="jsx-3015112589"
   >
     <div
       className="jsx-865544459 evaluationListItem"
