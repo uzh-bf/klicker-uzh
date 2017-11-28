@@ -12,12 +12,13 @@ const compression = require('compression')
 const helmet = require('helmet')
 const morgan = require('morgan')
 const _invert = require('lodash/invert')
+const RateLimit = require('express-rate-limit')
 const { graphqlExpress } = require('apollo-server-express')
 
 const schema = require('./schema')
 const AuthService = require('./services/auth')
 const queryMap = require('./queryMap.json')
-
+const { getRedis } = require('./redis')
 const { exceptTest } = require('./lib/utils')
 
 // require important environment variables to be present
@@ -33,11 +34,12 @@ appSettings.forEach((envVar) => {
 // connect to mongodb
 // use username and password authentication if passed in the environment
 // otherwise assume that no authentication needed (e.g. docker)
+mongoose.Promise = Promise
 const mongoConfig = {
   keepAlive: true,
   reconnectTries: 10,
   useMongoClient: true,
-  promiseLibrary: global.Promise,
+  promiseLibrary: Promise,
 }
 if (process.env.MONGO_USER && process.env.MONGO_PASSWORD) {
   mongoose.connect(
@@ -56,11 +58,25 @@ mongoose.connection
     exceptTest(() => console.warn('> Warning: ', error))
   })
 
+// setup Apollo Engine (GraphQL API metrics)
+let apolloEngine
+if (process.env.NODE_ENV === 'production' && process.env.ENGINE_API_KEY) {
+  const { Engine } = require('apollo-engine')
+  apolloEngine = new Engine({ engineConfig: { apiKey: process.env.ENGINE_API_KEY } })
+  apolloEngine.start()
+}
+
 // initialize an express server
 const server = express()
 
+// if the server is behind a proxy, set the APP_PROXY env to true
+// this will make express trust the X-* proxy headers and set corresponding req.ip
+if (process.env.APP_PROXY) {
+  server.enable('trust proxy')
+}
+
 // setup middleware stack
-let middleware = [
+const middleware = [
   // enable gzip compression
   compression(),
   // secure the server with helmet
@@ -85,12 +101,52 @@ let middleware = [
     secret: process.env.APP_SECRET,
     getToken: AuthService.getToken,
   }),
-  // parse json contents
-  bodyParser.json(),
 ]
 
-// add the persisted query middleware in production
+if (process.env.APP_RATE_LIMITING) {
+  // basic rate limiting configuration
+  const limiterSettings = {
+    // TODO: skipping for admins or similar?
+    windowMs: 5 * 60 * 1000, // in a 5 minute window
+    max: 200, // limit to 200 requests
+    delayAfter: 100, // start delaying responses after 100 requests
+    delayMs: 100, // delay responses by 250ms * (numResponses - delayAfter)
+    keyGenerator: req => `${req.auth ? req.auth.sub : req.ip}`,
+    onLimitReached: req =>
+      exceptTest(() => console.error(`> Rate-Limited a Request from ${req.ip} ${req.auth.sub || 'anon'}!`)),
+  }
+
+  // if redis is available, use it to centrally store rate limiting dataconst
+  const redis = getRedis(1)
+  let limiter
+  if (redis) {
+    const RedisStore = require('rate-limit-redis')
+    limiter = new RateLimit({
+      ...limiterSettings,
+      store:
+        redis &&
+        new RedisStore({
+          client: redis,
+          expiry: 5 * 60,
+          prefix: 'rl-api:',
+        }),
+    })
+  } else {
+    // if redis is not available, setup basic rate limiting with in-memory store
+    limiter = new RateLimit(limiterSettings)
+  }
+
+  middleware.push(limiter)
+}
+
+// parse json contents
+middleware.push(bodyParser.json())
+
 if (process.env.NODE_ENV === 'production') {
+  // add the morgan logging middleware in production
+  middleware.push(morgan('combined'))
+
+  // add the persisted query middleware in production
   middleware.push((req, res, next) => {
     const invertedMap = _invert(queryMap)
     req.body.query = invertedMap[req.body.id]
@@ -98,20 +154,9 @@ if (process.env.NODE_ENV === 'production') {
   })
 }
 
-// activate morgan logging in dev and prod, but not in tests
-if (process.env.NODE_ENV !== 'test') {
-  middleware.push(morgan('combined'))
-}
-
-// setup Apollo Engine (GraphQL API metrics)
-let apolloEngine = !!process.env.ENGINE_API_KEY
+// if apollo engine is enabled, add the middleware to the production stack
 if (apolloEngine) {
-  const { Engine } = require('apollo-engine')
-  apolloEngine = new Engine({ engineConfig: { apiKey: process.env.ENGINE_API_KEY } })
-  apolloEngine.start()
-
-  // if apollo engine is enabled, add the middleware to the stack
-  middleware = [apolloEngine.expressMiddleware(), ...middleware]
+  middleware.push(apolloEngine.expressMiddleware())
 }
 
 // expose the GraphQL API endpoint
@@ -120,7 +165,7 @@ server.use(
   ...middleware,
   // delegate to the GraphQL API
   graphqlExpress((req, res) => ({
-    context: { auth: req.auth, res },
+    context: { auth: req.auth, ip: req.ip, res },
     schema,
     tracing: !!process.env.ENGINE_API_KEY,
     cacheControl: !!process.env.ENGINE_API_KEY,

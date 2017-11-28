@@ -12,5 +12,6 @@ const FREEQuestionResults = `
 
   type FREEQuestionResults {
     FREE: [FREEQuestionResults_Result!]!
+    totalParticipants: Int!
   }
 `

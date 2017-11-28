@@ -215,19 +215,39 @@ describe('Integration', () => {
     it('allows adding confusion timesteps', async () => {
       ensureNoErrors(await sendQuery({
         query: mutations.AddConfusionTSMutation,
-        variables: { sessionId, difficulty: 2, speed: 4 },
+        variables: {
+          fp: 'myfp1',
+          sessionId,
+          difficulty: 2,
+          speed: 4,
+        },
       }))
       ensureNoErrors(await sendQuery({
         query: mutations.AddConfusionTSMutation,
-        variables: { sessionId, difficulty: -2, speed: 9 },
+        variables: {
+          fp: 'myfp1',
+          sessionId,
+          difficulty: -2,
+          speed: 9,
+        },
       }))
       ensureNoErrors(await sendQuery({
         query: mutations.AddConfusionTSMutation,
-        variables: { sessionId, difficulty: -5, speed: 3 },
+        variables: {
+          fp: 'myfp1',
+          sessionId,
+          difficulty: -5,
+          speed: 3,
+        },
       }))
       const data = ensureNoErrors(await sendQuery({
         query: mutations.AddConfusionTSMutation,
-        variables: { sessionId, difficulty: 5, speed: 10 },
+        variables: {
+          fp: 'myfp1',
+          sessionId,
+          difficulty: 5,
+          speed: 10,
+        },
       }))
 
       expect(data).toMatchSnapshot()
@@ -236,15 +256,15 @@ describe('Integration', () => {
     it('allows adding feedbacks', async () => {
       ensureNoErrors(await sendQuery({
         query: mutations.AddFeedbackMutation,
-        variables: { sessionId, content: 'my test feedback' },
+        variables: { fp: 'myfp1', sessionId, content: 'my test feedback' },
       }))
       ensureNoErrors(await sendQuery({
         query: mutations.AddFeedbackMutation,
-        variables: { sessionId, content: 'good lecture' },
+        variables: { fp: 'myfp1', sessionId, content: 'good lecture' },
       }))
       const data = ensureNoErrors(await sendQuery({
         query: mutations.AddFeedbackMutation,
-        variables: { sessionId, content: 'my test feedback' },
+        variables: { fp: 'myfp1', sessionId, content: 'my test feedback' },
       }))
 
       expect(data).toMatchSnapshot()
@@ -299,6 +319,7 @@ describe('Integration', () => {
         ensureNoErrors(await sendQuery({
           query: mutations.AddResponseMutation,
           variables: {
+            fp: 'myfp1',
             instanceId: instanceIds.SC,
             response: {
               choices: [0],
@@ -311,6 +332,7 @@ describe('Integration', () => {
         ensureNoErrors(await sendQuery({
           query: mutations.AddResponseMutation,
           variables: {
+            fp: 'myfp1',
             instanceId: instanceIds.MC,
             response: {
               choices: [0, 1],
@@ -377,6 +399,7 @@ describe('Integration', () => {
         ensureNoErrors(await sendQuery({
           query: mutations.AddResponseMutation,
           variables: {
+            fp: 'myfp1',
             instanceId: instanceIds.FREE,
             response: { value: 'hello world' },
           },
@@ -441,6 +464,7 @@ describe('Integration', () => {
         ensureNoErrors(await sendQuery({
           query: mutations.AddResponseMutation,
           variables: {
+            fp: 'myfp1',
             instanceId: instanceIds.FREE_RANGE,
             response: { value: 4 },
           },

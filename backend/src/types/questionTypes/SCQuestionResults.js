@@ -6,5 +6,6 @@ module.exports = () => [SCQuestionResults]
 const SCQuestionResults = `
   type SCQuestionResults {
     CHOICES: [Int!]!
+    totalParticipants: Int!
   }
 `
