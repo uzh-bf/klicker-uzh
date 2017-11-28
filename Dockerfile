@@ -26,6 +26,7 @@ COPY --chown=1000:0 . $KLICKER_DIR/
 ARG API_URL
 ARG SENTRY
 ARG LOGROCKET
+ARG FINGERPRINTING="true"
 RUN set -x && yarn run build
 
 # run next in production mode
