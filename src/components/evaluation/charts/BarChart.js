@@ -61,13 +61,12 @@ const BarChart = ({ isSolutionShown, data }) => (
         label={{ angle: -90, position: 'insideLeft', value: 'Responses' }}
       />
       <CartesianGrid strokeDasharray="3 3" vertical={false} />
-      <Bar dataKey="count">
-        {data.map((row, index) => (
-          <Cell
-            fill={isSolutionShown && row.correct ? '#00FF00' : CHART_COLORS[index % 12]}
-            key={row.value}
-          />
-        ))}
+      <Bar
+        dataKey="count"
+        isAnimationActive={false}
+        // HACK: don't animate as it causes labels to disappear
+        maxBarSize="5rem"
+      >
         <LabelList
           dataKey="percentage"
           fill="black"
@@ -83,6 +82,12 @@ const BarChart = ({ isSolutionShown, data }) => (
           stroke="white"
           style={{ fontSize: '3rem' }}
         />
+        {data.map((row, index) => (
+          <Cell
+            fill={isSolutionShown && row.correct ? '#00FF00' : CHART_COLORS[index % 12]}
+            key={row.value}
+          />
+        ))}
       </Bar>
     </BarChartComponent>
   </ResponsiveContainer>
