@@ -3,12 +3,16 @@ const md5 = require('md5')
 const { QuestionInstanceModel, UserModel } = require('../models')
 const { QuestionGroups, QuestionTypes } = require('../constants')
 
+const { getRedis } = require('../redis')
 const { getRunningSession } = require('./sessionMgr')
+
+// initialize redis if available
+const redis = getRedis(2)
 
 // add a new feedback to a session
 const addFeedback = async ({ sessionId, content }) => {
   // TODO: security
-  // TODO: rate limiting
+  // TODO: redis?
   // TODO: ...
 
   const session = await getRunningSession(sessionId)
@@ -47,10 +51,18 @@ const deleteFeedback = async ({ sessionId, feedbackId, userId }) => {
 }
 
 // add a new confusion timestep to the session
-const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
+const addConfusionTS = async ({
+  ip, fp, sessionId, difficulty, speed,
+}) => {
   // TODO: security
-  // TODO: rate limiting
+  // TODO: redis?
   // TODO: ...
+
+  // if redis is available, put the new confusion data in the store
+  if (redis) {
+    const result = redis.hset(`${sessionId}:confusion`, fp || ip, { difficulty, speed })
+    console.log(result)
+  }
 
   const session = await getRunningSession(sessionId)
 
@@ -70,7 +82,28 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
 }
 
 // add a response to an active question instance
-const addResponse = async ({ instanceId, response }) => {
+const addResponse = async ({
+  ip, fp, instanceId, response,
+}) => {
+  // if redis is available, check if any matching response (ip or fp) is already in the database.
+  // if so, throw an error
+  if (redis) {
+    // results should still be written to the database? but responses will not be saved seperately!
+    // or only write results to db every 5 or 10 responses and use redis as calculation platform?
+
+    // if redis is available, save the ip, fp and response under the key of the corresponding instance
+    const ipAdded = redis.sadd(`${instanceId}:ip`, ip)
+    const fpAdded = redis.sadd(`${instanceId}:fp`, fp)
+    const results = await Promise.all([ipAdded, fpAdded])
+
+    if (results[0] && results[1]) {
+      // add the response to the redis database
+      redis.rpush(`${instanceId}:responses`, JSON.stringify({ response }))
+    } else {
+      throw new Error('ALREADY_RESPONDED')
+    }
+  }
+
   // find the specified question instance
   // only find instances that are open
   const instance = await QuestionInstanceModel.findOne({ _id: instanceId, isOpen: true }).populate('question')
@@ -99,6 +132,7 @@ const addResponse = async ({ instanceId, response }) => {
     if (!instance.results) {
       instance.results = {
         CHOICES: new Array(currentVersion.options[questionType].choices.length).fill(+0),
+        totalParticipants: 0,
       }
     }
 
@@ -106,6 +140,7 @@ const addResponse = async ({ instanceId, response }) => {
     response.choices.forEach((responseIndex) => {
       instance.results.CHOICES[responseIndex] += 1
     })
+    instance.results.totalParticipants += 1
     instance.markModified('results.CHOICES')
   } else if (QuestionGroups.FREE.includes(questionType)) {
     if (!response.value) {
@@ -124,6 +159,7 @@ const addResponse = async ({ instanceId, response }) => {
     if (!instance.results) {
       instance.results = {
         FREE: {},
+        totalParticipants: 0,
       }
     }
 
@@ -140,15 +176,14 @@ const addResponse = async ({ instanceId, response }) => {
       // if the response value already occurred, simply increment count
       instance.results.FREE[resultKey].count += 1
     }
+    instance.results.totalParticipants += 1
     instance.markModified('results.FREE')
   }
 
-  // push the new response into the array
-  // TODO: redis for everything in here...
-  // TODO: save the IP and fingerprint of the responder and validate
+  // TODO: remove saving single responses in the database
   instance.responses.push({
-    ip: 'some ip',
-    fingerprint: 'some fingerprint',
+    ip,
+    fingerprint: fp,
     value: response,
   })
 

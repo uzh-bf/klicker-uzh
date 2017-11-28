@@ -29,6 +29,7 @@ jobs:
     # tests need an active instance of mongodb
     - <<: *test-setup
       services:
+        # TODO: add redis as a service and include it in integration testing
         - mongodb
       before_script:
         - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter

@@ -1,6 +1,6 @@
 {
   "name": "klicker-api",
-  "version": "1.0.0-beta.4",
+  "version": "1.0.0-beta.5",
   "main": "src/server.js",
   "repository": "https://github.com/uzh-bf/klicker-api.git",
   "author": "Roland Schläfli <roland.schlaefli@bf.uzh.ch>",
@@ -17,10 +17,12 @@
     "dotenv": "4.0.0",
     "express": "4.16.2",
     "express-jwt": "5.3.0",
+    "express-rate-limit": "^2.9.0",
     "graphql": "0.11.7",
     "graphql-subscriptions": "0.5.5",
     "graphql-tools": "2.9.0",
     "helmet": "3.9.0",
+    "ioredis": "^3.2.1",
     "jsonwebtoken": "8.1.0",
     "lodash": "4.17.4",
     "md5": "2.2.1",
@@ -28,6 +30,7 @@
     "mongodb": "2.2.33",
     "mongoose": "4.13.5",
     "morgan": "1.9.0",
+    "rate-limit-redis": "^1.1.0",
     "subscriptions-transport-ws": "0.9.1"
   },
   "devDependencies": {
@@ -47,8 +50,8 @@
   "scripts": {
     "precommit": "lint-staged",
     "prepush": "yarn run test --onlyChanged",
-    "dev": "nodemon -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock src/server.js",
-    "dev:inspect": "nodemon -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock --inspect src/server.js",
+    "dev": "nodemon --delay 1000ms -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock src/server.js",
+    "dev:inspect": "nodemon 1000ms -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock --inspect src/server.js",
     "format": "prettier-eslint --single-quote --no-semi --write \"src/**/*.js\"",
     "format:ci": "prettier-eslint --single-quote --no-semi --list-different \"src/**/*.js\"",
     "lint": "eslint \"src/**/*.js\"",

@@ -14,6 +14,8 @@ const Results = new mongoose.Schema({
   CHOICES: [{ type: Number }],
   FREE: { type: Object },
 
+  totalParticipants: { type: Number, default: 0 },
+
   createdAt: { type: Date, default: Date.now() },
 })
 

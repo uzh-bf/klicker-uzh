@@ -32,27 +32,43 @@ const createSessionMutation = (parentValue, { session: { name, blocks } }, { aut
     userId: auth.sub,
   })
 
-const startSessionMutation = (parentValue, { id }, { auth }) => SessionMgrService.startSession({ id, userId: auth.sub })
+const startSessionMutation = (parentValue, { id }, { auth }) =>
+  SessionMgrService.startSession({ id, userId: auth.sub, shortname: auth.shortname })
 
 const activateNextBlockMutation = (parentValue, args, { auth }) =>
-  SessionMgrService.activateNextBlock({ userId: auth.sub })
+  SessionMgrService.activateNextBlock({ userId: auth.sub, shortname: auth.shortname })
 
-const endSessionMutation = (parentValue, { id }, { auth }) => SessionMgrService.endSession({ id, userId: auth.sub })
+const endSessionMutation = (parentValue, { id }, { auth }) =>
+  SessionMgrService.endSession({ id, userId: auth.sub, shortname: auth.shortname })
 
-const addFeedbackMutation = (parentValue, { sessionId, content }) =>
-  SessionExecService.addFeedback({ sessionId, content })
+const addFeedbackMutation = (parentValue, { fp, sessionId, content }, { ip }) =>
+  SessionExecService.addFeedback({
+    fp,
+    ip,
+    sessionId,
+    content,
+  })
 
 const deleteFeedbackMutation = (parentValue, { sessionId, feedbackId }, { auth }) =>
   SessionExecService.deleteFeedback({ sessionId, feedbackId, userId: auth.sub })
 
-const addConfusionTSMutation = (parentValue, { sessionId, difficulty, speed }) =>
-  SessionExecService.addConfusionTS({ sessionId, difficulty, speed })
+const addConfusionTSMutation = (parentValue, {
+  fp, sessionId, difficulty, speed,
+}, { ip }) =>
+  SessionExecService.addConfusionTS({
+    fp,
+    ip,
+    sessionId,
+    difficulty,
+    speed,
+  })
 
 const updateSessionSettingsMutation = (parentValue, { sessionId, settings }, { auth }) =>
   SessionMgrService.updateSettings({
     sessionId,
     userId: auth.sub,
     settings,
+    shortname: auth.shortname,
   })
 
 module.exports = {

@@ -27,10 +27,15 @@ const resultsByPVQuery = ({ results }) => {
 }
 
 /* ----- mutations ----- */
-const addResponseMutation = (parentValue, { instanceId, response }) =>
+const addResponseMutation = (parentValue, { fp, instanceId, response }, { ip }) =>
   // TODO: use redis
   // TODO: fingerprinting, IP...
-  SessionExecService.addResponse({ instanceId, response })
+  SessionExecService.addResponse({
+    fp,
+    ip,
+    instanceId,
+    response,
+  })
 
 module.exports = {
   // queries

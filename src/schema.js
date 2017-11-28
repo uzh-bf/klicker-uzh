@@ -54,9 +54,9 @@ const typeDefs = [
 
   type Mutation {
     activateNextBlock: Session!
-    addConfusionTS(sessionId: ID!, difficulty: Int!, speed: Int!): Session!
-    addFeedback(sessionId: ID!, content: String!): Session!
-    addResponse(instanceId: ID!, response: QuestionInstance_ResponseInput!): QuestionInstance!
+    addConfusionTS(fp: ID, sessionId: ID!, difficulty: Int!, speed: Int!): Session!
+    addFeedback(fp: ID, sessionId: ID!, content: String!): Session!
+    addResponse(fp: ID, instanceId: ID!, response: QuestionInstance_ResponseInput!): QuestionInstance!
     createQuestion(question: QuestionInput!): Question!
     createSession(session: SessionInput!): Session!
     createUser(email: String!, password: String!, shortname: String!): User!

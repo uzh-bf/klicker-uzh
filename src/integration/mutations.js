@@ -194,8 +194,8 @@ const StartAndEndSessionSerializer = {
 }
 
 const AddFeedbackMutation = `
-  mutation AddFeedback($sessionId: ID!, $content: String!) {
-    addFeedback(sessionId: $sessionId, content: $content) {
+  mutation AddFeedback($fp: ID, $sessionId: ID!, $content: String!) {
+    addFeedback(fp: $fp, sessionId: $sessionId, content: $content) {
       id
       feedbacks {
         id
@@ -231,8 +231,8 @@ const DeleteFeedbackMutation = `
 `
 
 const AddConfusionTSMutation = `
-  mutation AddConfusionTS($sessionId: ID!, $difficulty: Int!, $speed: Int!) {
-    addConfusionTS(sessionId: $sessionId, difficulty: $difficulty, speed: $speed) {
+  mutation AddConfusionTS($fp: ID, $sessionId: ID!, $difficulty: Int!, $speed: Int!) {
+    addConfusionTS(fp: $fp, sessionId: $sessionId, difficulty: $difficulty, speed: $speed) {
       id
       confusionTS {
         difficulty
@@ -276,8 +276,8 @@ const UpdateSessionSettingsSerializer = {
 }
 
 const AddResponseMutation = `
-  mutation AddResponse($instanceId: ID!, $response: QuestionInstance_ResponseInput!) {
-    addResponse(instanceId: $instanceId, response: $response) {
+  mutation AddResponse($fp: ID, $instanceId: ID!, $response: QuestionInstance_ResponseInput!) {
+    addResponse(fp: $fp, instanceId: $instanceId, response: $response) {
       id
     }
   }

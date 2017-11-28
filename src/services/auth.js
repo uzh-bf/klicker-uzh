@@ -92,7 +92,15 @@ const login = async (res, email, password) => {
   // generate a JWT for future authentication
   // expiresIn: one day equals 86400 seconds
   // TODO: add more necessary properties for the JWT
-  const jwt = JWT.sign({ expiresIn: 86400, sub: user.id, scope: ['user'] }, process.env.APP_SECRET)
+  const jwt = JWT.sign(
+    {
+      expiresIn: 86400,
+      sub: user.id,
+      scope: ['user'],
+      shortname: user.shortname,
+    },
+    process.env.APP_SECRET,
+  )
 
   // set a cookie with the generated JWT
   // domain: the domain the cookie should be valid for
