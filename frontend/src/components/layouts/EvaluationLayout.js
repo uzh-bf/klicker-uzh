@@ -159,15 +159,24 @@ function EvaluationLayout({
                   grid-area: instanceChooser;
                   padding: 0.3rem;
                   padding-bottom: 0;
+                  border-bottom: 1px solid $color-primary;
 
                   :global(.menu) {
                     min-height: 0;
+                    margin-bottom: -1px;
+                    border-bottom: 1px solid $color-primary;
 
                     :global(.item) {
                       font-size: 0.7rem;
                       padding: 0 0.6rem;
-                      margin: 0;
+                      margin: 0 0 -1px 0;
                       height: 2rem;
+                    }
+
+                    :global(.item.active) {
+                      border-color: $color-primary;
+                      background-color: $color-primary-background;
+                      border-bottom: 1px solid $color-primary-background;
                     }
                   }
                 }
@@ -176,8 +185,8 @@ function EvaluationLayout({
                   grid-area: questionDetails;
                   align-self: start;
 
-                  background-color: lightgrey;
-                  border-bottom: 1px solid grey;
+                  background-color: $color-primary-background;
+                  border-bottom: 1px solid $color-primary;
                   padding: 1rem;
                   text-align: left;
 
@@ -198,31 +207,34 @@ function EvaluationLayout({
                   grid-area: graph;
 
                   height: 100%;
-                  padding: 1rem;
+                  padding: 1rem 0.5rem 1rem 1rem;
 
                   :global(> *) {
                     border: 1px solid lightgrey;
                   }
                 }
 
-                .chartType,
-                .optionDisplay,
-                .settings,
-                .statistics,
-                .info {
+                .chartType {
                   padding: 1rem;
+                }
+
+                .optionDisplay,
+                .statistics {
+                  padding: 1rem 1rem 1rem 0.5rem;
                 }
 
                 .info {
                   grid-area: info;
 
                   align-self: end;
-                  padding-top: 0;
 
                   display: flex;
                   flex-direction: row;
                   align-items: center;
                   justify-content: space-between;
+                  border-top: 1px solid lightgrey;
+                  background-color: #f3f3f3;
+                  padding: 0.5rem 1rem;
                 }
 
                 .optionDisplay {
@@ -237,12 +249,6 @@ function EvaluationLayout({
 
                 .statistics {
                   grid-area: statistics;
-                }
-
-                .settings {
-                  grid-area: settings;
-
-                  align-self: end;
                 }
               }
             }
