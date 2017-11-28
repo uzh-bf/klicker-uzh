@@ -95,6 +95,18 @@ function TableChart({ data, isSolutionShown }) {
           :global(.solutionColumn) {
             display: ${isSolutionShown ? 'table-cell' : 'none'};
           }
+
+          :global(.griddle-row:nth-child(2)) {
+            background-color: #efefef;
+          }
+
+          :global(.griddle-pagination) {
+            margin-top: 5px;
+
+            :global(.griddle-page-select) {
+              margin-left: 5px;
+            }
+          }
         }
       `}</style>
     </div>

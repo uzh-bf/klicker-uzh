@@ -41,13 +41,13 @@ const PieChart = ({ isSolutionShown, data }) => (
       <Tooltip />
       <Pie labelLine data={data} fill="#8884d8" innerRadius={5} nameKey="value" valueKey="count">
         <LabelList
+          dataKey="percentage"
           fill="black"
           offset={30}
           position="outside"
           stroke="black"
           strokeWidth={1}
           style={{ fontSize: '1.5rem' }}
-          valueAccessor={entry => `${entry.count} | ${entry.percentage}`}
         />
         <LabelList
           dataKey="label"
@@ -79,7 +79,7 @@ export default withProps(({ data, totalResponses }) => ({
     correct,
     count,
     label: String.fromCharCode(65 + index),
-    percentage: `${_round(100 * (count / totalResponses), 2)} %`,
+    percentage: `${count} | ${_round(100 * (count / totalResponses), 2)} %`,
     value,
   })),
 }))(PieChart)
