@@ -159,15 +159,24 @@ function EvaluationLayout({
                   grid-area: instanceChooser;
                   padding: 0.3rem;
                   padding-bottom: 0;
+                  border-bottom: 1px solid $color-primary;
 
                   :global(.menu) {
                     min-height: 0;
+                    margin-bottom: -1px;
+                    border-bottom: 1px solid $color-primary;
 
                     :global(.item) {
                       font-size: 0.7rem;
                       padding: 0 0.6rem;
-                      margin: 0;
+                      margin: 0 0 -1px 0;
                       height: 2rem;
+                    }
+
+                    :global(.item.active) {
+                      border-color: $color-primary;
+                      background-color: $color-primary-background;
+                      border-bottom: 1px solid $color-primary-background;
                     }
                   }
                 }
@@ -176,8 +185,8 @@ function EvaluationLayout({
                   grid-area: questionDetails;
                   align-self: start;
 
-                  background-color: lightgrey;
-                  border-bottom: 1px solid grey;
+                  background-color: $color-primary-background;
+                  border-bottom: 1px solid $color-primary;
                   padding: 1rem;
                   text-align: left;
 
