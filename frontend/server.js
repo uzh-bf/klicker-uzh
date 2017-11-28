@@ -124,7 +124,7 @@ app
     ]
 
     // static file serving from public folder
-    express.static(join(__dirname, 'public'))
+    middleware.push(express.static(join(__dirname, 'public')))
 
     // activate morgan logging in production
     if (!dev) {
