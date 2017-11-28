@@ -72,6 +72,17 @@ function Chart({
           )
         }
 
+        if (results.totalResponses === 0) {
+          return (
+            <div className="noChart">
+              <FormattedMessage
+                defaultMessage="No Results Available"
+                id="teacher.evaluation.graph.noResults"
+              />
+            </div>
+          )
+        }
+
         const ChartComponent = chartTypes[activeVisualization]
         if (ChartComponent) {
           return (
