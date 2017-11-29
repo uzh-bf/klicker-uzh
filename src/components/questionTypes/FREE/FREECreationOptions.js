@@ -163,6 +163,7 @@ export default compose(
     meta,
     min: _get(value, 'restrictions.min'),
     onChange,
+    solution: _get(value, 'solution'),
     type,
     value,
   })),
@@ -182,6 +183,14 @@ export default compose(
       onChange({
         ...value,
         restrictions: { ...value.restrictions, min },
+      })
+    },
+
+    // handle a change in the solution
+    handleSolutionChange: ({ onChange, value }) => (e) => {
+      onChange({
+        ...value,
+        solution: e.target.value,
       })
     },
   }),
