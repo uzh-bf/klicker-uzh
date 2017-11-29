@@ -38,7 +38,7 @@ const FREECreationOptions = ({
     <Form.Field required error={dirty && invalid}>
       <label htmlFor="options">
         <FormattedMessage
-          defaultMessage="Input Restrictions"
+          defaultMessage="Input Options"
           id="teacher.createQuestion.optionsFREE.label"
         />
         <a data-tip data-for="FREECreationHelp">
