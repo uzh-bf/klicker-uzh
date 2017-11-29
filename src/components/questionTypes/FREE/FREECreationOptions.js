@@ -5,7 +5,7 @@ import ReactTooltip from 'react-tooltip'
 import { Form, Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import { FaQuestionCircle } from 'react-icons/lib/fa'
-import { compose, withHandlers, mapProps } from 'recompose'
+import { compose, mapProps, withHandlers } from 'recompose'
 
 import { QUESTION_TYPES } from '../../../constants'
 
@@ -74,41 +74,47 @@ const FREECreationOptions = ({
 
       {type === QUESTION_TYPES.FREE_RANGE && (
         <div className="options">
-          <Form.Field>
-            <label htmlFor="min">
-              <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />
-            </label>
-            <Input
-              name="min"
-              placeholder="-∞"
-              type="number"
-              value={min}
-              onChange={handleMinChange}
-            />
-          </Form.Field>
-
-          <Form.Field>
-            <label htmlFor="max">
-              <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />
-            </label>
-            <Input
-              name="max"
-              placeholder="∞"
-              type="number"
-              value={max}
-              onChange={handleMaxChange}
-            />
-          </Form.Field>
-
-          <Form.Field>
-            <label htmlFor="solution">
-              <FormattedMessage
-                defaultMessage="Solution"
-                id="teacher.createQuestion.options.solution"
+          <Form.Group>
+            <Form.Field inline width="4">
+              <label htmlFor="min">
+                <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />
+              </label>
+              <Input
+                name="min"
+                placeholder="-∞"
+                type="number"
+                value={min}
+                onChange={handleMinChange}
               />
-            </label>
-            <Input name="solution" type="number" value={solution} onChange={handleSolutionChange} />
-          </Form.Field>
+            </Form.Field>
+
+            <Form.Field inline width="4">
+              <label htmlFor="max">
+                <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />
+              </label>
+              <Input
+                name="max"
+                placeholder="∞"
+                type="number"
+                value={max}
+                onChange={handleMaxChange}
+              />
+            </Form.Field>
+            <Form.Field width="8">
+              <label htmlFor="solution">
+                <FormattedMessage
+                  defaultMessage="Solution"
+                  id="teacher.createQuestion.options.solution"
+                />
+              </label>
+              <Input
+                name="solution"
+                type="number"
+                value={solution}
+                onChange={handleSolutionChange}
+              />
+            </Form.Field>
+          </Form.Group>
         </div>
       )}
     </Form.Field>
@@ -119,18 +125,7 @@ const FREECreationOptions = ({
       .FREECreationOptions {
         @include tooltip-icon;
 
-        .optionsChooser {
-          display: flex;
-
-          > :global(*):not(:last-child) {
-            margin-right: 1rem;
-          }
-        }
-
         .options {
-          display: flex;
-          flex-direction: column;
-
           margin-top: 1rem;
 
           :global(.field) > label {
