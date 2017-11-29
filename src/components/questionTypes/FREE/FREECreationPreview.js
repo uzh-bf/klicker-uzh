@@ -12,7 +12,6 @@ const propTypes = {
       min: PropTypes.number,
       type: PropTypes.string,
     }),
-    solution: PropTypes.any,
   }),
   questionType: PropTypes.string.isRequired,
   title: PropTypes.string,
@@ -22,16 +21,12 @@ const defaultProps = {
   description: 'DESCRIPTION',
   options: {
     restrictions: null,
-    solution: null,
   },
   title: 'TITLE',
 }
 
 const FREECreationPreview = ({
-  title,
-  questionType,
-  options: { restrictions, solution },
-  description,
+  title, questionType, options: { restrictions }, description,
 }) => (
   <div className="preview">
     <div className="title">{title || 'TITLE'}</div>
@@ -81,15 +76,6 @@ const FREECreationPreview = ({
           <div className="freeText">
             <div className="box" />
           </div>
-          {(questionType === QUESTION_TYPES.FREE || questionType === QUESTION_TYPES.FREE_RANGE) &&
-            solution && (
-              <div>
-                <FormattedMessage
-                  defaultMessage="Solution"
-                  id="teacher.createQuestion.options.solution"
-                />: {solution}
-              </div>
-            )}
           {questionType === QUESTION_TYPES.FREE_RANGE &&
             restrictions &&
             restrictions.min !== null && (
