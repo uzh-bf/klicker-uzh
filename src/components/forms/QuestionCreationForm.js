@@ -273,6 +273,7 @@ export default compose(
         choices: [],
         randomized: false,
         restrictions: {},
+        solution: null,
       },
       tags: null,
       title: null,

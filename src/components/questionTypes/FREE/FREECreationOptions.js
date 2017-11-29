@@ -12,26 +12,31 @@ import { QUESTION_TYPES } from '../../../constants'
 const propTypes = {
   handleMaxChange: PropTypes.func.isRequired,
   handleMinChange: PropTypes.func.isRequired,
+  handleSolutionChange: PropTypes.func.isRequired,
   max: PropTypes.number,
   meta: PropTypes.shape({
     dirty: PropTypes.bool,
     invalid: PropTypes.bool,
   }).isRequired,
   min: PropTypes.number,
+  solution: PropTypes.any,
   type: PropTypes.string.isRequired,
 }
 
 const defaultProps = {
   max: undefined,
   min: undefined,
+  solution: undefined,
 }
 
 const FREECreationOptions = ({
   max,
   min,
+  solution,
   type,
   handleMaxChange,
   handleMinChange,
+  handleSolutionChange,
   meta: { dirty, invalid },
 }) => (
   <div className="FREECreationOptions">
@@ -53,10 +58,22 @@ const FREECreationOptions = ({
         />
       </ReactTooltip>
 
-      {type === QUESTION_TYPES.FREE && <div>Unrestricted input.</div>}
+      {type === QUESTION_TYPES.FREE && (
+        <div className="options">
+          <Form.Field>
+            <label htmlFor="solution">
+              <FormattedMessage
+                defaultMessage="Solution"
+                id="teacher.createQuestion.options.solution"
+              />
+            </label>
+            <Input name="solution" value={solution} onChange={handleSolutionChange} />
+          </Form.Field>
+        </div>
+      )}
 
       {type === QUESTION_TYPES.FREE_RANGE && (
-        <div className="range">
+        <div className="options">
           <Form.Field>
             <label htmlFor="min">
               <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />
@@ -82,6 +99,16 @@ const FREECreationOptions = ({
               onChange={handleMaxChange}
             />
           </Form.Field>
+
+          <Form.Field>
+            <label htmlFor="solution">
+              <FormattedMessage
+                defaultMessage="Solution"
+                id="teacher.createQuestion.options.solution"
+              />
+            </label>
+            <Input name="solution" type="number" value={solution} onChange={handleSolutionChange} />
+          </Form.Field>
         </div>
       )}
     </Form.Field>
@@ -100,7 +127,7 @@ const FREECreationOptions = ({
           }
         }
 
-        .range {
+        .options {
           display: flex;
           flex-direction: column;
 
