@@ -33,7 +33,7 @@
     "logrocket": "0.5.6",
     "logrocket-react": "1.0.0",
     "lru-cache": "4.1.1",
-    "moment": "2.19.2",
+    "moment": "2.19.3",
     "morgan": "1.9.0",
     "next": "4.1.4",
     "node-sass": "4.7.2",
@@ -101,11 +101,9 @@
     "build": "next build src && node ./src/lib/defaultLang",
     "compile-queries": "persistgraphql src/graphql/ --js --extension=js --add_typename",
     "dev": "nodemon --delay 1000ms -w .env -w package.json -w yarn.lock -w server.js server.js",
-    "dev:inspect":
-      "nodemon --delay 1000ms -w .env -w package.json -w yarn.lock -w server.js --inspect server.js",
+    "dev:inspect": "nodemon --delay 1000ms -w .env -w package.json -w yarn.lock -w server.js --inspect server.js",
     "format": "prettier-eslint --single-quote --no-semi --write server.js \"src/**/*.js\"",
-    "format:ci":
-      "prettier-eslint --single-quote --no-semi --list-different server.js \"src/**/*.js\"",
+    "format:ci": "prettier-eslint --single-quote --no-semi --list-different server.js \"src/**/*.js\"",
     "lint": "eslint server.js \"src/**/*.js\"",
     "start": "cross-env NODE_ENV=production node server.js",
     "start:inspect": "cross-env NODE_ENV=production node --inspect server.js",
@@ -116,10 +114,19 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "roots": ["src/"]
+    "roots": [
+      "src/"
+    ]
   },
   "lint-staged": {
-    "*.js": ["prettier-eslint --single-quote --no-semi --write", "eslint", "git add"],
-    "*.json": ["prettier-eslint --single-quote --no-semi --write", "git add"]
+    "*.js": [
+      "prettier-eslint --single-quote --no-semi --write",
+      "eslint",
+      "git add"
+    ],
+    "*.json": [
+      "prettier-eslint --single-quote --no-semi --write",
+      "git add"
+    ]
   }
 }
