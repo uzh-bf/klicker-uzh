@@ -6,11 +6,12 @@ const { basename, join } = require('path')
 const { readFileSync } = require('fs')
 const glob = require('glob')
 
-const accepts = require('accepts')
+const cookieParser = require('cookie-parser')
 const express = require('express')
 const next = require('next')
 const compression = require('compression')
 const helmet = require('helmet')
+const morgan = require('morgan')
 
 // Polyfill Node with `Intl` that has data for all locales.
 // See: https://formatjs.io/guides/runtime-environments/#server
@@ -46,43 +47,148 @@ const getLocaleDataScript = (locale) => {
 // each message description in the source code will be used.
 const getMessages = locale => require(`${APP_DIR}/lang/${locale}.json`)
 
+// prepare cache to be connected to
+let cache
+const connectCache = async () => {
+  if (cache) {
+    return cache
+  }
+
+  if (process.env.REDIS_URL) {
+    const Redis = require('ioredis')
+    cache = new Redis(`redis://${process.env.REDIS_URL}`)
+  } else {
+    const LRUCache = require('lru-cache')
+    cache = new LRUCache({
+      max: 100,
+      maxAge: 1000 * 60 * 60,
+    })
+  }
+
+  return cache
+}
+
+// construct a unique cache key from the request params
+const getCacheKey = req => `${req.url}:${req.locale}`
+
+// render a page to html and cache it in the appropriate place
+const renderAndCache = async (req, res, pagePath, queryParams) => {
+  const key = getCacheKey(req)
+
+  let cached
+  if (process.env.REDIS_URL) {
+    cached = await cache.get(key)
+  } else {
+    cached = cache.get(key)
+  }
+
+  // check if the page has already been cached
+  // return the cached HTML if this is the case
+  if (cached) {
+    console.log(`CACHE HIT: ${key}`)
+
+    res.send(cached)
+    return
+  }
+
+  // otherwise server-render the page and cache/return it
+  console.log(`CACHE MISS: ${key}`)
+  try {
+    const html = await app.renderToHTML(req, res, pagePath, queryParams)
+
+    res.send(html)
+    cache.set(key, html)
+  } catch (e) {
+    app.renderError(e, req, res, pagePath, queryParams)
+  }
+}
+const getLocale = req =>
+  (req.cookies.locale && languages.includes(req.cookies.locale) ? req.cookies.locale : 'en')
+
 app
   .prepare()
   .then(() => {
     const server = express()
 
-    // compress using gzip
-    server.use(compression())
+    connectCache()
 
-    // secure the server with helmet
-    server.use(
+    const middleware = [
+      // compress using gzip
+      compression(),
+      // secure the server with helmet
       helmet({
         hsts: false,
       }),
-    )
+      // enable cookie parsing for the locale cookie
+      cookieParser(),
+    ]
 
     // static file serving from public folder
-    server.use(express.static(join(__dirname, 'public')))
+    middleware.push(express.static(join(__dirname, 'public')))
 
-    server.get('/questions/:questionId', (req, res) =>
-      app.render(req, res, '/questions/details', { questionId: req.params.questionId }),
-    )
+    // activate morgan logging in production
+    if (!dev) {
+      middleware.push(morgan('combined'))
+    }
 
-    server.get('/join/:shortname', (req, res) =>
-      app.render(req, res, '/join', { shortname: req.params.shortname }),
-    )
+    server.use(...middleware)
 
-    server.get('/sessions/evaluation/:sessionId', (req, res) =>
-      app.render(req, res, '/sessions/evaluation', { sessionId: req.params.sessionId }),
-    )
+    // prepare page configuration
+    const pages = [
+      {
+        mapParams: req => ({ sessionId: req.params.sessionId }),
+        renderPath: '/sessions/evaluation',
+        url: '/sessions/evaluation/:sessionId',
+      },
+      {
+        mapParams: req => ({ questionId: req.params.questionId }),
+        renderPath: '/questions/details',
+        url: '/questions/:questionId',
+      },
+      {
+        cached: true,
+        mapParams: req => ({ shortname: req.params.shortname }),
+        renderPath: '/join',
+        url: '/join/:shortname',
+      },
+      {
+        cached: true,
+        url: '/',
+      },
+      {
+        cached: true,
+        url: '/user/login',
+      },
+      {
+        cached: true,
+        url: '/user/registration',
+      },
+    ]
+
+    pages.forEach(({
+      url, mapParams, renderPath, cached = false,
+    }) => {
+      server.get(url, (req, res) => {
+        const locale = getLocale(req)
+        req.locale = locale
+        req.localeDataScript = getLocaleDataScript(locale)
+        req.messages = dev ? {} : getMessages(locale)
+
+        if (cached) {
+          renderAndCache(req, res, '/join', { shortname: req.params.shortname })
+        } else {
+          app.render(req, res, renderPath || url, mapParams ? mapParams(req) : undefined)
+        }
+      })
+    })
 
     server.get('*', (req, res) => {
-      const accept = accepts(req)
-      const locale = accept.language(dev ? ['en'] : languages)
+      const locale = getLocale(req)
       req.locale = locale
       req.localeDataScript = getLocaleDataScript(locale)
       req.messages = dev ? {} : getMessages(locale)
-      handle(req, res)
+
+      return handle(req, res)
     })
 
     server.listen(3000, (err) => {
@@ -94,3 +200,25 @@ app
     console.error(err.stack)
     process.exit(1)
   })
+
+process.on('exit', () => {
+  console.log('> Shutting down server')
+
+  if (process.env.REDIS_URL) {
+    cache.disconnect()
+  }
+
+  console.log('> Shutdown complete')
+  process.exit(0)
+})
+
+process.once('SIGUSR2', () => {
+  console.log('> Shutting down server')
+
+  if (process.env.REDIS_URL) {
+    cache.disconnect()
+  }
+
+  console.log('> Shutdown complete')
+  process.exit(0)
+})

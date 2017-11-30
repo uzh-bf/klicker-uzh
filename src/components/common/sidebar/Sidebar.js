@@ -1,8 +1,8 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Menu, Sidebar as SemanticSidebar } from 'semantic-ui-react'
-
 import SidebarItem from './SidebarItem'
+import LanguageSwitcher from './LanguageSwitcher'
 
 const propTypes = {
   activeItem: PropTypes.string,
@@ -48,8 +48,10 @@ const Sidebar = ({
             {item.label}
           </SidebarItem>
         ))}
+        <div className="langSwitcher">
+          <LanguageSwitcher />
+        </div>
       </SemanticSidebar>
-
       <SemanticSidebar.Pusher>{children}</SemanticSidebar.Pusher>
     </SemanticSidebar.Pushable>
 
@@ -64,19 +66,21 @@ const Sidebar = ({
         }
 
         :global(.sidebarMenu) {
+          position: relative;
           text-align: left;
           width: 75% !important;
-        }
 
-        @include desktop-tablet-only {
-          :global(.sidebarMenu) {
-            width: 20% !important;
+          .langSwitcher {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+
+            padding: 1rem;
           }
-        }
 
-        @include desktop-only {
-          :global(.sidebarMenu) {
-            width: 15% !important;
+          @include desktop-tablet-only {
+            width: 15rem !important;
           }
         }
       }

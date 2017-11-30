@@ -7,7 +7,7 @@ import Cookies from 'js-cookie'
 import { FormattedMessage } from 'react-intl'
 import { compose, withStateHandlers, withHandlers, withProps } from 'recompose'
 
-import { QuestionTypes } from '../../../constants'
+import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
 import { ActionMenu, Collapser } from '../../common'
 import { SCAnswerOptions, FREEAnswerOptions } from '../../questionTypes'
 
@@ -54,23 +54,19 @@ function QuestionArea({
 
   // TODO: internationalization
   const messages = {
-    [QuestionTypes.SC]: (
+    [QUESTION_TYPES.SC]: (
       <p>
         Please choose a <strong>single</strong> option below:
       </p>
     ),
-    [QuestionTypes.MC]: (
+    [QUESTION_TYPES.MC]: (
       <p>
         Please choose <strong>one or multiple</strong> of the options below:
       </p>
     ),
-    [QuestionTypes.FREE]:
-      currentQuestion.type === QuestionTypes.FREE &&
-      (currentQuestion.options.restrictions.type === 'RANGE' ? (
-        <p>Please choose a number from the given range below:</p>
-      ) : (
-        <p>Please enter your response below:</p>
-      )),
+    [QUESTION_TYPES.FREE]: <p>Please enter your response below:</p>,
+
+    [QUESTION_TYPES.FREE_RANGE]: <p>Please choose a number from the given range below:</p>,
   }
 
   return (
@@ -102,22 +98,23 @@ function QuestionArea({
               {messages[type]}
 
               {(() => {
-                if ([QuestionTypes.SC, QuestionTypes.MC].includes(type)) {
+                if (QUESTION_GROUPS.CHOICES.includes(type)) {
                   return (
                     <SCAnswerOptions
                       disabled={!remainingQuestions.includes(activeQuestion)}
-                      options={options.choices}
+                      options={options[type].choices}
                       value={inputValue}
                       onChange={handleActiveChoicesChange(type)}
                     />
                   )
                 }
 
-                if (type === QuestionTypes.FREE) {
+                if (QUESTION_GROUPS.FREE.includes(type)) {
                   return (
                     <FREEAnswerOptions
                       disabled={!remainingQuestions.includes(activeQuestion)}
-                      options={options}
+                      options={options[type]}
+                      questionType={type}
                       value={inputValue}
                       onChange={handleFreeValueChange}
                     />
@@ -249,7 +246,7 @@ export default compose(
     {
       handleActiveChoicesChange: ({ inputValue }) => (choice, type) => {
         const validateChoices = newValue =>
-          (type === QuestionTypes.SC ? newValue.length === 1 : newValue.length > 0)
+          (type === QUESTION_TYPES.SC ? newValue.length === 1 : newValue.length > 0)
 
         if (inputValue) {
           // if the choice is already active, remove it
@@ -286,8 +283,8 @@ export default compose(
         inputValue: undefined,
       }),
       handleFreeValueChange: () => inputValue => ({
-        inputEmpty: !inputValue || inputValue.length === 0,
-        inputValid: !!inputValue,
+        inputEmpty: inputValue !== 0 && (!inputValue || inputValue.length === 0),
+        inputValid: !!inputValue || inputValue === 0,
         inputValue,
       }),
       handleSubmit: ({ activeQuestion, remainingQuestions }) => () => {
@@ -325,9 +322,9 @@ export default compose(
 
       // if the question has been answered, add a response
       if (typeof inputValue !== 'undefined') {
-        if (inputValue.length > 0 && [QuestionTypes.SC, QuestionTypes.MC].includes(type)) {
+        if (inputValue.length > 0 && QUESTION_GROUPS.CHOICES.includes(type)) {
           handleNewResponse({ instanceId, response: { choices: inputValue } })
-        } else if (type === QuestionTypes.FREE) {
+        } else if (QUESTION_GROUPS.FREE.includes(type)) {
           handleNewResponse({ instanceId, response: { value: inputValue } })
         }
       }

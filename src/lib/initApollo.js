@@ -24,7 +24,7 @@ const networkOpts = {
   // Server URL (must be absolute)
   // https://api.graph.cool/simple/v1/klicker
   // uri: 'http://localhost:4000/graphql',
-  uri: process.env.API_URL || 'http://localhost',
+  uri: process.env.API_URL || 'http://localhost:4000/graphql',
 }
 
 function create() {

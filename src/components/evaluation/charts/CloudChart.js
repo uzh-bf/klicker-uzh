@@ -15,13 +15,13 @@ const defaultProps = {
   data: [],
 }
 
-const fontSizeMapper = word => Math.log2(word.value) * 40
-const rotate = word => word.value % 360
+const fontSizeMapper = word => (1 + Math.log2(word.value)) * 40
+const rotate = word => word.value % 90
 
 const CloudChart = ({ data }) => (
   <div className="cloudChart">
     <WordCloud
-      data={data.map(row => ({ text: row.value, value: row.count }))}
+      data={data.map(({ value, count }) => ({ text: value, value: count }))}
       fontSizeMapper={fontSizeMapper}
       height={600}
       rotate={rotate}

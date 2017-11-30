@@ -11,7 +11,7 @@ import {
 } from 'recompose'
 import { graphql } from 'react-apollo'
 
-import { QuestionTypes } from '../../constants'
+import { CHART_DEFAULTS, QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
 import {
   calculateMax,
@@ -28,6 +28,7 @@ import { sessionStatusShape, statisticsShape } from '../../propTypes'
 const propTypes = {
   activeInstance: PropTypes.object.isRequired,
   activeInstanceIndex: PropTypes.number,
+  activeVisualizations: PropTypes.object.isRequired,
   handleChangeActiveInstance: PropTypes.func.isRequired,
   handleChangeVisualizationType: PropTypes.func.isRequired,
   handleShowGraph: PropTypes.func.isRequired,
@@ -49,6 +50,7 @@ const defaultProps = {
 function Evaluation({
   activeInstanceIndex,
   activeInstance,
+  activeVisualizations,
   instanceSummary,
   intl,
   handleChangeActiveInstance,
@@ -56,7 +58,6 @@ function Evaluation({
   showGraph,
   showSolution,
   statistics,
-  visualizationType,
   handleShowGraph,
   handleToggleShowSolution,
   handleChangeVisualizationType,
@@ -68,20 +69,22 @@ function Evaluation({
 
   const chart = (
     <Chart
+      activeVisualization={activeVisualizations[type]}
       handleShowGraph={handleShowGraph}
       intl={intl}
-      restrictions={options.restrictions}
+      questionType={type}
+      restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
       results={results}
       sessionStatus={sessionStatus}
       showGraph={showGraph}
       showSolution={showSolution}
       statistics={statistics}
-      visualizationType={visualizationType}
     />
   )
 
   const layoutProps = {
     activeInstance: activeInstanceIndex,
+    activeVisualization: activeVisualizations[type],
     chart,
     data,
     description,
@@ -100,7 +103,6 @@ function Evaluation({
     title,
     totalResponses,
     type,
-    visualizationType,
   }
 
   return <EvaluationLayout {...layoutProps} />
@@ -120,7 +122,7 @@ export default compose(
   branch(({ data }) => data.loading, renderNothing),
   // override the session evaluation query with a polling query
   branch(
-    ({ data: { session } }) => session.status === 'RUNNING',
+    ({ data: { session } }) => session.status === SESSION_STATUS.RUNNING,
     graphql(SessionEvaluationQuery, {
       // refetch the active instances query every 10s
       options: ({ url }) => ({
@@ -133,7 +135,7 @@ export default compose(
     let { blocks } = session
 
     // if the session is running, only show open question instances in the evaluation
-    if (session.status === 'RUNNING') {
+    if (session.status === SESSION_STATUS.RUNNING) {
       blocks = blocks.filter(block => block.status === 'ACTIVE')
     }
 
@@ -143,14 +145,16 @@ export default compose(
       .reduce((acc, val) => [...acc, ...val], []) // reduce array of arrays [[], [], []] to [...]
       .map((activeInstance) => {
         // map the array of all instances with the custom mapper
-        if ([QuestionTypes.SC, QuestionTypes.MC].includes(activeInstance.question.type)) {
+        if (QUESTION_GROUPS.CHOICES.includes(activeInstance.question.type)) {
           return {
             ...activeInstance,
             results: {
               // HACK: versioning hardcoded
-              data: activeInstance.question.versions[0].options.choices.map((choice, index) => ({
+              data: activeInstance.question.versions[0].options[
+                activeInstance.question.type
+              ].choices.map((choice, index) => ({
                 correct: choice.correct,
-                count: activeInstance.results ? activeInstance.results.choices[index] : 0,
+                count: activeInstance.results ? activeInstance.results.CHOICES[index] : 0,
                 value: choice.name,
               })),
               totalResponses: activeInstance.responses.length,
@@ -158,11 +162,11 @@ export default compose(
           }
         }
 
-        if (activeInstance.question.type === QuestionTypes.FREE) {
+        if (QUESTION_GROUPS.FREE.includes(activeInstance.question.type)) {
           return {
             ...activeInstance,
             results: {
-              data: activeInstance.results ? activeInstance.results.free : [],
+              data: activeInstance.results ? activeInstance.results.FREE : [],
               totalResponses: activeInstance.responses.length,
             },
           }
@@ -188,16 +192,26 @@ export default compose(
   withStateHandlers(
     ({ sessionStatus }) => ({
       activeInstanceIndex: 0,
-      showGraph: sessionStatus !== 'RUNNING',
-      showSolution: sessionStatus !== 'RUNNING',
-      visualizationType: 'PIE_CHART',
+      activeVisualizations: CHART_DEFAULTS,
+      showGraph: sessionStatus !== SESSION_STATUS.RUNNING,
+      showSolution: sessionStatus !== SESSION_STATUS.RUNNING,
     }),
     {
       // handle change of active instance
-      handleChangeActiveInstance: () => activeInstanceIndex => ({ activeInstanceIndex }),
+      handleChangeActiveInstance: () => activeInstanceIndex => ({
+        activeInstanceIndex,
+      }),
 
       // handle change of vis. type
-      handleChangeVisualizationType: () => visualizationType => ({ visualizationType }),
+      handleChangeVisualizationType: ({ activeVisualizations }) => (
+        questionType,
+        visualizationType,
+      ) => ({
+        activeVisualizations: {
+          ...activeVisualizations,
+          [questionType]: visualizationType,
+        },
+      }),
 
       // handle toggle of the visualization display
       // the visualization display can only be toggled once, so only allow setting to true
@@ -211,8 +225,7 @@ export default compose(
     const activeInstance = activeInstances[activeInstanceIndex]
     const { question, results } = activeInstance
 
-    // TODO: update question type to FREE:RANGE
-    if (question.type === 'FREE') {
+    if (question.type === QUESTION_TYPES.FREE_RANGE) {
       return {
         activeInstance,
         handleChangeActiveInstance: index => () => handleChangeActiveInstance(index),

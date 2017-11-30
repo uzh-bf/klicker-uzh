@@ -165,18 +165,25 @@ export const JoinSessionQuery = gql`
         description
         type
         options {
-          ... on FREEQuestionOptions {
+          FREE_RANGE {
             restrictions {
               min
               max
-              type
             }
           }
-          ... on SCQuestionOptions {
+          SC {
             choices {
               correct
               name
             }
+            randomized
+          }
+          MC {
+            choices {
+              correct
+              name
+            }
+            randomized
           }
         }
       }
@@ -208,28 +215,35 @@ export const SessionEvaluationQuery = gql`
             versions {
               description
               options {
-                ... on SCQuestionOptions {
+                FREE_RANGE {
+                  restrictions {
+                    min
+                    max
+                  }
+                }
+                SC {
                   choices {
                     correct
                     name
                   }
+                  randomized
                 }
-                ... on FREEQuestionOptions {
-                  restrictions {
-                    min
-                    max
-                    type
+                MC {
+                  choices {
+                    correct
+                    name
                   }
+                  randomized
                 }
               }
             }
           }
           results {
             ... on SCQuestionResults {
-              choices
+              CHOICES
             }
             ... on FREEQuestionResults {
-              free {
+              FREE {
                 count
                 key
                 value

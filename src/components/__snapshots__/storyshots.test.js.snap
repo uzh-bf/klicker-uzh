@@ -441,9 +441,106 @@ exports[`Storyshots common/navbar SessionArea 1`] = `
 </a>
 `;
 
+exports[`Storyshots common/sidebar LanguageSwitcher 1`] = `
+<div
+  className="languageSwitcher"
+>
+  <div
+    aria-busy={undefined}
+    aria-disabled={undefined}
+    aria-expanded={false}
+    className="ui fluid search selection upward dropdown"
+    onBlur={[Function]}
+    onChange={[Function]}
+    onClick={[Function]}
+    onFocus={[Function]}
+    onMouseDown={[Function]}
+    role="combobox"
+    tabIndex={undefined}
+  >
+    <input
+      aria-autocomplete="list"
+      autoComplete="off"
+      className="search"
+      onChange={[Function]}
+      style={
+        Object {
+          "width": undefined,
+        }
+      }
+      tabIndex={0}
+      type="text"
+      value=""
+    />
+    <div
+      aria-live="polite"
+      className="text"
+      role="alert"
+    >
+      English
+    </div>
+    <i
+      aria-hidden="true"
+      className="dropdown icon"
+      onClick={[Function]}
+    />
+    <div
+      aria-multiselectable={undefined}
+      className="menu transition"
+      role="listbox"
+    >
+      <div
+        aria-checked={true}
+        aria-disabled={undefined}
+        aria-selected={true}
+        className="active selected item"
+        onClick={[Function]}
+        role="option"
+        style={
+          Object {
+            "pointerEvents": "all",
+          }
+        }
+      >
+        <i
+          className="gb flag"
+        />
+        <span
+          className="text"
+        >
+          English
+        </span>
+      </div>
+      <div
+        aria-checked={false}
+        aria-disabled={undefined}
+        aria-selected={false}
+        className="item"
+        onClick={[Function]}
+        role="option"
+        style={
+          Object {
+            "pointerEvents": "all",
+          }
+        }
+      >
+        <i
+          className="de flag"
+        />
+        <span
+          className="text"
+        >
+          Deutsch
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
 exports[`Storyshots common/sidebar Sidebar (invisible) 1`] = `
 <div
-  className="jsx-511432160 sidebar"
+  className="jsx-3166438025 sidebar"
 >
   <div
     className="pushable"
@@ -463,6 +560,104 @@ exports[`Storyshots common/sidebar Sidebar (invisible) 1`] = `
       >
         Item 2
       </a>
+      <div
+        className="jsx-3166438025 langSwitcher"
+      >
+        <div
+          className="languageSwitcher"
+        >
+          <div
+            aria-busy={undefined}
+            aria-disabled={undefined}
+            aria-expanded={false}
+            className="ui fluid search selection upward dropdown"
+            onBlur={[Function]}
+            onChange={[Function]}
+            onClick={[Function]}
+            onFocus={[Function]}
+            onMouseDown={[Function]}
+            role="combobox"
+            tabIndex={undefined}
+          >
+            <input
+              aria-autocomplete="list"
+              autoComplete="off"
+              className="search"
+              onChange={[Function]}
+              style={
+                Object {
+                  "width": undefined,
+                }
+              }
+              tabIndex={0}
+              type="text"
+              value=""
+            />
+            <div
+              aria-live="polite"
+              className="text"
+              role="alert"
+            >
+              English
+            </div>
+            <i
+              aria-hidden="true"
+              className="dropdown icon"
+              onClick={[Function]}
+            />
+            <div
+              aria-multiselectable={undefined}
+              className="menu transition"
+              role="listbox"
+            >
+              <div
+                aria-checked={true}
+                aria-disabled={undefined}
+                aria-selected={true}
+                className="active selected item"
+                onClick={[Function]}
+                role="option"
+                style={
+                  Object {
+                    "pointerEvents": "all",
+                  }
+                }
+              >
+                <i
+                  className="gb flag"
+                />
+                <span
+                  className="text"
+                >
+                  English
+                </span>
+              </div>
+              <div
+                aria-checked={false}
+                aria-disabled={undefined}
+                aria-selected={false}
+                className="item"
+                onClick={[Function]}
+                role="option"
+                style={
+                  Object {
+                    "pointerEvents": "all",
+                  }
+                }
+              >
+                <i
+                  className="de flag"
+                />
+                <span
+                  className="text"
+                >
+                  Deutsch
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     <div
       className="pusher"
@@ -475,7 +670,7 @@ exports[`Storyshots common/sidebar Sidebar (invisible) 1`] = `
 
 exports[`Storyshots common/sidebar Sidebar (visible) 1`] = `
 <div
-  className="jsx-511432160 sidebar"
+  className="jsx-3166438025 sidebar"
 >
   <div
     className="pushable"
@@ -495,6 +690,104 @@ exports[`Storyshots common/sidebar Sidebar (visible) 1`] = `
       >
         Item 2
       </a>
+      <div
+        className="jsx-3166438025 langSwitcher"
+      >
+        <div
+          className="languageSwitcher"
+        >
+          <div
+            aria-busy={undefined}
+            aria-disabled={undefined}
+            aria-expanded={false}
+            className="ui fluid search selection upward dropdown"
+            onBlur={[Function]}
+            onChange={[Function]}
+            onClick={[Function]}
+            onFocus={[Function]}
+            onMouseDown={[Function]}
+            role="combobox"
+            tabIndex={undefined}
+          >
+            <input
+              aria-autocomplete="list"
+              autoComplete="off"
+              className="search"
+              onChange={[Function]}
+              style={
+                Object {
+                  "width": undefined,
+                }
+              }
+              tabIndex={0}
+              type="text"
+              value=""
+            />
+            <div
+              aria-live="polite"
+              className="text"
+              role="alert"
+            >
+              English
+            </div>
+            <i
+              aria-hidden="true"
+              className="dropdown icon"
+              onClick={[Function]}
+            />
+            <div
+              aria-multiselectable={undefined}
+              className="menu transition"
+              role="listbox"
+            >
+              <div
+                aria-checked={true}
+                aria-disabled={undefined}
+                aria-selected={true}
+                className="active selected item"
+                onClick={[Function]}
+                role="option"
+                style={
+                  Object {
+                    "pointerEvents": "all",
+                  }
+                }
+              >
+                <i
+                  className="gb flag"
+                />
+                <span
+                  className="text"
+                >
+                  English
+                </span>
+              </div>
+              <div
+                aria-checked={false}
+                aria-disabled={undefined}
+                aria-selected={false}
+                className="item"
+                onClick={[Function]}
+                role="option"
+                style={
+                  Object {
+                    "pointerEvents": "all",
+                  }
+                }
+              >
+                <i
+                  className="de flag"
+                />
+                <span
+                  className="text"
+                >
+                  Deutsch
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     <div
       className="pusher"
@@ -652,7 +945,7 @@ exports[`Storyshots confusion ConfusionSlider 1`] = `
 
 exports[`Storyshots evaluation/charts TableChart (FREE) 1`] = `
 <div
-  className="jsx-2550815555 tableChart"
+  className="jsx-38908138 tableChart"
 >
   <div>
     <table
@@ -677,11 +970,6 @@ exports[`Storyshots evaluation/charts TableChart (FREE) 1`] = `
           >
             <span>
               Count
-              <span
-                className="griddle-heading-descending"
-              >
-                ▼
-              </span>
             </span>
           </th>
           <th
@@ -720,6 +1008,96 @@ exports[`Storyshots evaluation/charts TableChart (FREE) 1`] = `
         className="griddle-table-body"
         style={undefined}
       >
+        <tr
+          className="griddle-row"
+          onClick={undefined}
+          onMouseEnter={undefined}
+          onMouseLeave={undefined}
+          style={undefined}
+        >
+          <td
+            className="griddle-cell countColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "3rem",
+              }
+            }
+          >
+            10
+          </td>
+          <td
+            className="griddle-cell"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={undefined}
+          >
+            hello world
+          </td>
+          <td
+            className="griddle-cell solutionColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "1rem",
+              }
+            }
+          >
+            <span>
+              F
+            </span>
+          </td>
+        </tr>
+        <tr
+          className="griddle-row"
+          onClick={undefined}
+          onMouseEnter={undefined}
+          onMouseLeave={undefined}
+          style={undefined}
+        >
+          <td
+            className="griddle-cell countColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "3rem",
+              }
+            }
+          >
+            5
+          </td>
+          <td
+            className="griddle-cell"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={undefined}
+          >
+            blablabla 
+          </td>
+          <td
+            className="griddle-cell solutionColumn"
+            onClick={undefined}
+            onMouseEnter={undefined}
+            onMouseLeave={undefined}
+            style={
+              Object {
+                "width": "1rem",
+              }
+            }
+          >
+            <span>
+              F
+            </span>
+          </td>
+        </tr>
         <tr
           className="griddle-row"
           onClick={undefined}
@@ -783,7 +1161,7 @@ exports[`Storyshots evaluation/charts TableChart (FREE) 1`] = `
               }
             }
           >
-            10
+            1
           </td>
           <td
             className="griddle-cell"
@@ -792,7 +1170,7 @@ exports[`Storyshots evaluation/charts TableChart (FREE) 1`] = `
             onMouseLeave={undefined}
             style={undefined}
           >
-            hello world
+            asdasd
           </td>
           <td
             className="griddle-cell solutionColumn"
@@ -882,97 +1260,7 @@ exports[`Storyshots evaluation/charts TableChart (FREE) 1`] = `
             onMouseLeave={undefined}
             style={undefined}
           >
-            blablabla 
-          </td>
-          <td
-            className="griddle-cell solutionColumn"
-            onClick={undefined}
-            onMouseEnter={undefined}
-            onMouseLeave={undefined}
-            style={
-              Object {
-                "width": "1rem",
-              }
-            }
-          >
-            <span>
-              F
-            </span>
-          </td>
-        </tr>
-        <tr
-          className="griddle-row"
-          onClick={undefined}
-          onMouseEnter={undefined}
-          onMouseLeave={undefined}
-          style={undefined}
-        >
-          <td
-            className="griddle-cell countColumn"
-            onClick={undefined}
-            onMouseEnter={undefined}
-            onMouseLeave={undefined}
-            style={
-              Object {
-                "width": "3rem",
-              }
-            }
-          >
-            5
-          </td>
-          <td
-            className="griddle-cell"
-            onClick={undefined}
-            onMouseEnter={undefined}
-            onMouseLeave={undefined}
-            style={undefined}
-          >
             blaaaali 
-          </td>
-          <td
-            className="griddle-cell solutionColumn"
-            onClick={undefined}
-            onMouseEnter={undefined}
-            onMouseLeave={undefined}
-            style={
-              Object {
-                "width": "1rem",
-              }
-            }
-          >
-            <span>
-              F
-            </span>
-          </td>
-        </tr>
-        <tr
-          className="griddle-row"
-          onClick={undefined}
-          onMouseEnter={undefined}
-          onMouseLeave={undefined}
-          style={undefined}
-        >
-          <td
-            className="griddle-cell countColumn"
-            onClick={undefined}
-            onMouseEnter={undefined}
-            onMouseLeave={undefined}
-            style={
-              Object {
-                "width": "3rem",
-              }
-            }
-          >
-            1
-          </td>
-          <td
-            className="griddle-cell"
-            onClick={undefined}
-            onMouseEnter={undefined}
-            onMouseLeave={undefined}
-            style={undefined}
-          >
-            asdasd
           </td>
           <td
             className="griddle-cell solutionColumn"
@@ -1114,19 +1402,19 @@ exports[`Storyshots evaluation/components Info 1`] = `
 </div>
 `;
 
-exports[`Storyshots evaluation/components Possibilities (FREE:RANGE) 1`] = `
+exports[`Storyshots evaluation/components Possibilities (FREE_RANGE) 1`] = `
 <div
-  className="jsx-2154886852 possibilities"
+  className="jsx-3283260225 possibilities"
 >
   <h2
-    className="jsx-2154886852"
+    className="jsx-3283260225"
   >
     <span>
       Restrictions
     </span>
   </h2>
   <div
-    className="jsx-2154886852"
+    className="jsx-3283260225"
   >
     <div
       className="jsx-91056044 evaluationListItem"
@@ -1160,19 +1448,125 @@ exports[`Storyshots evaluation/components Possibilities (FREE:RANGE) 1`] = `
 </div>
 `;
 
-exports[`Storyshots evaluation/components Possibilities (SC) 1`] = `
+exports[`Storyshots evaluation/components Possibilities (MC) 1`] = `
 <div
-  className="jsx-2154886852 possibilities"
+  className="jsx-3283260225 possibilities"
 >
   <h2
-    className="jsx-2154886852"
+    className="jsx-3283260225"
   >
     <span>
       Choices
     </span>
   </h2>
   <div
-    className="jsx-2154886852"
+    className="jsx-3283260225"
+  >
+    <div
+      className="jsx-110067377 evaluationListItem"
+    >
+      <div
+        className="jsx-110067377 colorSquare"
+      >
+        <i
+          aria-hidden="true"
+          className="square icon icon"
+        />
+      </div>
+      <div
+        className="jsx-110067377 content"
+      >
+        This is the first possible answer
+      </div>
+      <div
+        className="jsx-110067377 marker"
+      >
+        A
+      </div>
+    </div>
+    <div
+      className="jsx-1709102229 evaluationListItem"
+    >
+      <div
+        className="jsx-1709102229 colorSquare"
+      >
+        <i
+          aria-hidden="true"
+          className="square icon icon"
+        />
+      </div>
+      <div
+        className="jsx-1709102229 content"
+      >
+        This is the second possible answer
+      </div>
+      <div
+        className="jsx-1709102229 marker"
+      >
+        B
+      </div>
+    </div>
+    <div
+      className="jsx-4235792499 evaluationListItem"
+    >
+      <div
+        className="jsx-4235792499 colorSquare"
+      >
+        <i
+          aria-hidden="true"
+          className="square icon icon"
+        />
+      </div>
+      <div
+        className="jsx-4235792499 content"
+      >
+        This is the third possible answer
+      </div>
+      <div
+        className="jsx-4235792499 marker"
+      >
+        C
+      </div>
+    </div>
+    <div
+      className="jsx-2249623282 evaluationListItem"
+    >
+      <div
+        className="jsx-2249623282 colorSquare"
+      >
+        <i
+          aria-hidden="true"
+          className="square icon icon"
+        />
+      </div>
+      <div
+        className="jsx-2249623282 content"
+      >
+        This is the fourth possible answer
+      </div>
+      <div
+        className="jsx-2249623282 marker"
+      >
+        D
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Storyshots evaluation/components Possibilities (SC) 1`] = `
+<div
+  className="jsx-3283260225 possibilities"
+>
+  <h2
+    className="jsx-3283260225"
+  >
+    <span>
+      Choices
+    </span>
+  </h2>
+  <div
+    className="jsx-3283260225"
   >
     <div
       className="jsx-110067377 evaluationListItem"
@@ -1268,17 +1662,17 @@ exports[`Storyshots evaluation/components Possibilities (SC) 1`] = `
 
 exports[`Storyshots evaluation/components Statistics 1`] = `
 <div
-  className="jsx-324462402 statistics"
+  className="jsx-3015112589 statistics"
 >
   <h2
-    className="jsx-324462402"
+    className="jsx-3015112589"
   >
     <span>
       Statistics
     </span>
   </h2>
   <div
-    className="jsx-324462402"
+    className="jsx-3015112589"
   >
     <div
       className="jsx-865544459 evaluationListItem"
@@ -1380,29 +1774,16 @@ exports[`Storyshots evaluation/components Visualization 1`] = `
     aria-busy={undefined}
     aria-disabled={undefined}
     aria-expanded={false}
-    className="ui search selection upward dropdown"
+    aria-multiselectable={undefined}
+    className="ui selection upward dropdown"
     onBlur={[Function]}
     onChange={[Function]}
     onClick={[Function]}
     onFocus={[Function]}
     onMouseDown={[Function]}
-    role="combobox"
-    tabIndex={undefined}
+    role="listbox"
+    tabIndex={0}
   >
-    <input
-      aria-autocomplete="list"
-      autoComplete="off"
-      className="search"
-      onChange={[Function]}
-      style={
-        Object {
-          "width": undefined,
-        }
-      }
-      tabIndex={0}
-      type="text"
-      value=""
-    />
     <div
       aria-live="polite"
       className="default text"
@@ -1416,92 +1797,8 @@ exports[`Storyshots evaluation/components Visualization 1`] = `
       onClick={[Function]}
     />
     <div
-      aria-multiselectable={undefined}
       className="menu transition"
-      role="listbox"
-    >
-      <div
-        aria-checked={false}
-        aria-disabled={undefined}
-        aria-selected={true}
-        className="selected item"
-        onClick={[Function]}
-        role="option"
-        style={
-          Object {
-            "pointerEvents": "all",
-          }
-        }
-        withinType={
-          Array [
-            "SC",
-            "MC",
-            "FREE",
-            "FREE:RANGE",
-          ]
-        }
-      >
-        <span
-          className="text"
-        >
-          Pie Chart
-        </span>
-      </div>
-      <div
-        aria-checked={false}
-        aria-disabled={undefined}
-        aria-selected={false}
-        className="item"
-        onClick={[Function]}
-        role="option"
-        style={
-          Object {
-            "pointerEvents": "all",
-          }
-        }
-        withinType={
-          Array [
-            "SC",
-            "MC",
-            "FREE",
-            "FREE:RANGE",
-          ]
-        }
-      >
-        <span
-          className="text"
-        >
-          Bar Chart
-        </span>
-      </div>
-      <div
-        aria-checked={false}
-        aria-disabled={undefined}
-        aria-selected={false}
-        className="item"
-        onClick={[Function]}
-        role="option"
-        style={
-          Object {
-            "pointerEvents": "all",
-          }
-        }
-        withinType={
-          Array [
-            "SC",
-            "MC",
-            "FREE",
-            "FREE:RANGE",
-          ]
-        }
-      >
-        <span
-          className="text"
-        >
-          Table
-        </span>
-      </div>
-    </div>
+    />
   </div>
 </div>
 `;
@@ -2228,128 +2525,6 @@ exports[`Storyshots forms/helpers SemanticInput 1`] = `
 </div>
 `;
 
-exports[`Storyshots questionTypes/FREE FREE Answering Options (Number restriction) 1`] = `
-<div
-  className="jsx-28718466 ui form freeAnswerOptions"
->
-  <div
-    className="jsx-28718466 field slider"
-  >
-    <span
-      className="jsx-28718466 min"
-    >
-      <strong
-        className="jsx-28718466"
-      >
-        <span>
-          Min
-        </span>
-      </strong>
-      : 
-      900
-    </span>
-    <span
-      className="jsx-28718466 max"
-    >
-      <strong
-        className="jsx-28718466"
-      >
-        <span>
-          Max
-        </span>
-      </strong>
-      : 
-      87
-    </span>
-    <div
-      aria-orientation="horizontal"
-      aria-valuemax={87}
-      aria-valuemin={900}
-      aria-valuenow={555}
-      className="rangeslider rangeslider-horizontal"
-      onMouseDown={[Function]}
-      onMouseUp={[Function]}
-      onTouchEnd={[Function]}
-      onTouchStart={[Function]}
-    >
-      <div
-        className="rangeslider__fill"
-        style={
-          Object {
-            "width": "0px",
-          }
-        }
-      />
-      <div
-        className="rangeslider__handle"
-        onKeyDown={[Function]}
-        onMouseDown={[Function]}
-        onTouchEnd={[Function]}
-        onTouchMove={[Function]}
-        style={
-          Object {
-            "left": "0px",
-          }
-        }
-        tabIndex={0}
-      >
-        <div
-          className="rangeslider__handle-label"
-        >
-          555
-        </div>
-      </div>
-      <ul
-        className="rangeslider__labels"
-      />
-    </div>
-    <div
-      className="ui input"
-    >
-      <input
-        disabled={false}
-        max={87}
-        min={900}
-        onChange={[Function]}
-        tabIndex={undefined}
-        type="number"
-        value={555}
-      />
-    </div>
-  </div>
-</div>
-`;
-
-exports[`Storyshots questionTypes/FREE FREE Answering Options (lower bound restriction) 1`] = `
-<div
-  className="jsx-28718466 ui form freeAnswerOptions"
->
-  <div
-    className="jsx-28718466 field"
-  >
-    <textarea
-      className="jsx-28718466"
-      disabled={false}
-      id="responseInput"
-      onChange={[Function]}
-    />
-    <div
-      className="jsx-28718466"
-    >
-      <strong
-        className="jsx-28718466"
-      >
-        <span>
-          Min
-        </span>
-      </strong>
-      : 
-      9
-    </div>
-  </div>
-</div>
-`;
-
 exports[`Storyshots questionTypes/FREE FREE Answering Options (unrestricted) 1`] = `
 <div
   className="jsx-28718466 ui form freeAnswerOptions"
@@ -2367,7 +2542,112 @@ exports[`Storyshots questionTypes/FREE FREE Answering Options (unrestricted) 1`]
 </div>
 `;
 
-exports[`Storyshots questionTypes/FREE FREE Answering Options (upper bound restriction) 1`] = `
+exports[`Storyshots questionTypes/FREE FREE Creation Preview (Lower bound restriction) 1`] = `
+<div
+  className="jsx-3917984181 preview"
+>
+  <div
+    className="jsx-3917984181 title"
+  >
+    Hello
+  </div>
+  <div
+    className="jsx-3917984181 description"
+  >
+    World!
+  </div>
+  <div
+    className="jsx-3917984181"
+  >
+    <div
+      className="jsx-3917984181 freeText"
+    >
+      <div
+        className="jsx-3917984181 box"
+      />
+    </div>
+  </div>
+  <div
+    className="jsx-3917984181 button"
+  >
+    <span>
+      Submit
+    </span>
+  </div>
+</div>
+`;
+
+exports[`Storyshots questionTypes/FREE FREE Creation Preview (Number-Range) 1`] = `
+<div
+  className="jsx-3917984181 preview"
+>
+  <div
+    className="jsx-3917984181 title"
+  >
+    Hello
+  </div>
+  <div
+    className="jsx-3917984181 description"
+  >
+    World!
+  </div>
+  <div
+    className="jsx-3917984181"
+  >
+    <div
+      className="jsx-3917984181 freeText"
+    >
+      <div
+        className="jsx-3917984181 box"
+      />
+    </div>
+  </div>
+  <div
+    className="jsx-3917984181 button"
+  >
+    <span>
+      Submit
+    </span>
+  </div>
+</div>
+`;
+
+exports[`Storyshots questionTypes/FREE FREE Creation Preview (unrestricted) 1`] = `
+<div
+  className="jsx-3917984181 preview"
+>
+  <div
+    className="jsx-3917984181 title"
+  >
+    Hello
+  </div>
+  <div
+    className="jsx-3917984181 description"
+  >
+    World!
+  </div>
+  <div
+    className="jsx-3917984181"
+  >
+    <div
+      className="jsx-3917984181 freeText"
+    >
+      <div
+        className="jsx-3917984181 box"
+      />
+    </div>
+  </div>
+  <div
+    className="jsx-3917984181 button"
+  >
+    <span>
+      Submit
+    </span>
+  </div>
+</div>
+`;
+
+exports[`Storyshots questionTypes/FREE FREE_RANGE Answering Options (Number restriction) 1`] = `
 <div
   className="jsx-28718466 ui form freeAnswerOptions"
 >
@@ -2380,184 +2660,40 @@ exports[`Storyshots questionTypes/FREE FREE Answering Options (upper bound restr
       id="responseInput"
       onChange={[Function]}
     />
-    <div
+  </div>
+</div>
+`;
+
+exports[`Storyshots questionTypes/FREE FREE_RANGE Answering Options (lower bound restriction) 1`] = `
+<div
+  className="jsx-28718466 ui form freeAnswerOptions"
+>
+  <div
+    className="jsx-28718466 field"
+  >
+    <textarea
       className="jsx-28718466"
-    >
-      <strong
-        className="jsx-28718466"
-      >
-        <span>
-          Max
-        </span>
-      </strong>
-      : 
-      87
-    </div>
+      disabled={false}
+      id="responseInput"
+      onChange={[Function]}
+    />
   </div>
 </div>
 `;
 
-exports[`Storyshots questionTypes/FREE FREE Creation Preview (Lower bound restriction) 1`] = `
+exports[`Storyshots questionTypes/FREE FREE_RANGE Answering Options (upper bound restriction) 1`] = `
 <div
-  className="jsx-415858001 preview"
+  className="jsx-28718466 ui form freeAnswerOptions"
 >
   <div
-    className="jsx-415858001 title"
+    className="jsx-28718466 field"
   >
-    Hello
-  </div>
-  <div
-    className="jsx-415858001 description"
-  >
-    World!
-  </div>
-  <div
-    className="jsx-415858001 diagram"
-  >
-    <div
-      className="jsx-415858001 min"
-    >
-      <span>
-        Min
-      </span>
-      :
-       
-      90
-    </div>
-    <div
-      className="jsx-415858001 line"
+    <textarea
+      className="jsx-28718466"
+      disabled={false}
+      id="responseInput"
+      onChange={[Function]}
     />
-    <div
-      className="jsx-415858001 box"
-    />
-  </div>
-  <div
-    className="jsx-415858001 selection"
-  >
-    <b
-      className="jsx-415858001 title"
-    >
-      <span>
-        Selection
-      </span>
-    </b>
-    <div
-      className="jsx-415858001 box"
-    >
-      45
-    </div>
-  </div>
-  <div
-    className="jsx-415858001 button"
-  >
-    <span>
-      Submit
-    </span>
-  </div>
-</div>
-`;
-
-exports[`Storyshots questionTypes/FREE FREE Creation Preview (Number-Range) 1`] = `
-<div
-  className="jsx-415858001 preview"
->
-  <div
-    className="jsx-415858001 title"
-  >
-    Hello
-  </div>
-  <div
-    className="jsx-415858001 description"
-  >
-    World!
-  </div>
-  <div
-    className="jsx-415858001 diagram"
-  >
-    <div
-      className="jsx-415858001 min"
-    >
-      <span>
-        Min
-      </span>
-      :
-       
-      90
-    </div>
-    <div
-      className="jsx-415858001 max"
-    >
-      <span>
-        Max
-      </span>
-      :
-       
-      900
-    </div>
-    <div
-      className="jsx-415858001 line"
-    />
-    <div
-      className="jsx-415858001 box"
-    />
-  </div>
-  <div
-    className="jsx-415858001 selection"
-  >
-    <b
-      className="jsx-415858001 title"
-    >
-      <span>
-        Selection
-      </span>
-    </b>
-    <div
-      className="jsx-415858001 box"
-    >
-      495
-    </div>
-  </div>
-  <div
-    className="jsx-415858001 button"
-  >
-    <span>
-      Submit
-    </span>
-  </div>
-</div>
-`;
-
-exports[`Storyshots questionTypes/FREE FREE Creation Preview (unrestricted) 1`] = `
-<div
-  className="jsx-415858001 preview"
->
-  <div
-    className="jsx-415858001 title"
-  >
-    Hello
-  </div>
-  <div
-    className="jsx-415858001 description"
-  >
-    World!
-  </div>
-  <div
-    className="jsx-415858001"
-  >
-    <div
-      className="jsx-415858001 freeText"
-    >
-      <div
-        className="jsx-415858001 box"
-      />
-    </div>
-  </div>
-  <div
-    className="jsx-415858001 button"
-  >
-    <span>
-      Submit
-    </span>
   </div>
 </div>
 `;

@@ -1,6 +1,8 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
+import Fingerprint2 from 'fingerprintjs2'
+import Cookies from 'js-cookie'
 import {
   compose,
   withHandlers,
@@ -190,18 +192,45 @@ export default compose(
       </div>
     )),
   ),
+  withProps({
+    // calculate a browser fingerprint (if activated)
+    fp:
+      process.env.FINGERPRINTING &&
+      new Promise((resolve, reject) => {
+        // if an existing cookie already contains a fingerprint, reuse it
+        const existing = Cookies.get('fp')
+        if (existing) {
+          resolve(existing)
+        }
+
+        // otherwise generate a new fingerprint and store it in a cookie
+        try {
+          new Fingerprint2().get((result) => {
+            Cookies.set('fp', result)
+            resolve(result)
+          })
+        } catch (err) {
+          reject(err)
+        }
+      }),
+  }),
   graphql(AddConfusionTSMutation, { name: 'newConfusionTS' }),
   graphql(AddFeedbackMutation, { name: 'newFeedback' }),
   graphql(AddResponseMutation, { name: 'newResponse' }),
   withHandlers({
     // handle creation of a new confusion timestep
-    handleNewConfusionTS: ({ data: { joinSession }, newConfusionTS }) => async ({
+    handleNewConfusionTS: ({ fp, data: { joinSession }, newConfusionTS }) => async ({
       difficulty,
       speed,
     }) => {
       try {
         await newConfusionTS({
-          variables: { difficulty, sessionId: joinSession.id, speed },
+          variables: {
+            difficulty,
+            fp: await fp,
+            sessionId: joinSession.id,
+            speed,
+          },
         })
       } catch ({ message }) {
         console.error(message)
@@ -209,7 +238,9 @@ export default compose(
     },
 
     // handle creation of a new feedback
-    handleNewFeedback: ({ data: { joinSession }, newFeedback, url }) => async ({ content }) => {
+    handleNewFeedback: ({
+      data: { joinSession }, fp, newFeedback, url,
+    }) => async ({ content }) => {
       try {
         if (joinSession.settings.isFeedbackChannelPublic) {
           await newFeedback({
@@ -246,10 +277,10 @@ export default compose(
                 data,
               })
             },
-            variables: { content, sessionId: joinSession.id },
+            variables: { content, fp: await fp, sessionId: joinSession.id },
           })
         } else {
-          await newFeedback({ variables: { content, sessionId: joinSession.id } })
+          await newFeedback({ variables: { content, fp, sessionId: joinSession.id } })
         }
       } catch ({ message }) {
         console.error(message)
@@ -257,10 +288,10 @@ export default compose(
     },
 
     // handle creation of a new response
-    handleNewResponse: ({ newResponse }) => async ({ instanceId, response }) => {
+    handleNewResponse: ({ fp, newResponse }) => async ({ instanceId, response }) => {
       try {
         await newResponse({
-          variables: { instanceId, response },
+          variables: { fp: await fp, instanceId, response },
         })
       } catch ({ message }) {
         console.error(message)
