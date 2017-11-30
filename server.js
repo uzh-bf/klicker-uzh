@@ -88,14 +88,14 @@ const renderAndCache = async (req, res, pagePath, queryParams) => {
   // check if the page has already been cached
   // return the cached HTML if this is the case
   if (cached) {
-    console.log(`CACHE HIT: ${key}`)
+    console.log(`[klicker-react] cache hit: ${key}`)
 
     res.send(cached)
     return
   }
 
   // otherwise server-render the page and cache/return it
-  console.log(`CACHE MISS: ${key}`)
+  console.log(`[klicker-react] cache miss: ${key}`)
   try {
     const html = await app.renderToHTML(req, res, pagePath, queryParams)
 
@@ -139,6 +139,21 @@ app
     // prepare page configuration
     const pages = [
       {
+        cached: true,
+        url: '/',
+      },
+      {
+        cached: true,
+        url: '/user/login',
+      },
+      {
+        cached: true,
+        url: '/user/registration',
+      },
+      {
+        url: '/questions/create',
+      },
+      {
         mapParams: req => ({ sessionId: req.params.sessionId }),
         renderPath: '/sessions/evaluation',
         url: '/sessions/evaluation/:sessionId',
@@ -153,18 +168,6 @@ app
         mapParams: req => ({ shortname: req.params.shortname }),
         renderPath: '/join',
         url: '/join/:shortname',
-      },
-      {
-        cached: true,
-        url: '/',
-      },
-      {
-        cached: true,
-        url: '/user/login',
-      },
-      {
-        cached: true,
-        url: '/user/registration',
       },
     ]
 
@@ -199,7 +202,7 @@ app
 
     server.listen(3000, (err) => {
       if (err) throw err
-      console.log('> Ready on http://localhost:3000')
+      console.log('[klicker-react] Ready on http://localhost:3000')
     })
   })
   .catch((err) => {
@@ -208,23 +211,23 @@ app
   })
 
 process.on('exit', () => {
-  console.log('> Shutting down server')
+  console.log('[klicker-react] Shutting down server')
 
   if (process.env.REDIS_URL) {
     cache.disconnect()
   }
 
-  console.log('> Shutdown complete')
+  console.log('[klicker-react] Shutdown complete')
   process.exit(0)
 })
 
 process.once('SIGUSR2', () => {
-  console.log('> Shutting down server')
+  console.log('[klicker-react] Shutting down server')
 
   if (process.env.REDIS_URL) {
     cache.disconnect()
   }
 
-  console.log('> Shutdown complete')
+  console.log('[klicker-react] Shutdown complete')
   process.exit(0)
 })
