@@ -41,7 +41,7 @@
     "prop-types": "15.6.0",
     "prosemirror-schema-basic": "1.0.0",
     "prosemirror-state": "1.0.1",
-    "prosemirror-view": "1.0.3",
+    "prosemirror-view": "1.0.4",
     "qrcode.react": "0.7.2",
     "raven-js": "3.20.1",
     "react": "16.1.1",
