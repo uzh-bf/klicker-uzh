@@ -57,11 +57,14 @@ const connectCache = async () => {
   if (process.env.REDIS_URL) {
     const Redis = require('ioredis')
     cache = new Redis(`redis://${process.env.REDIS_URL}`)
+    console.log('[redis] Connected to db 0')
   } else {
     const LRUCache = require('lru-cache')
     cache = new LRUCache({
       max: 100,
-      maxAge: 1000 * 60 * 60,
+      // TODO: this would be nice to set much higher
+      // but how would we clean up i.e. /join/someuser when the running session updates?
+      maxAge: 1000 * 10, // pages are cached for 10 seconds
     })
   }
 
@@ -165,17 +168,20 @@ app
       },
     ]
 
+    // create routes for all specified static and dynamic pages
     pages.forEach(({
       url, mapParams, renderPath, cached = false,
     }) => {
       server.get(url, (req, res) => {
+        // setup locale and get messages for the specific route
         const locale = getLocale(req)
         req.locale = locale
         req.localeDataScript = getLocaleDataScript(locale)
         req.messages = dev ? {} : getMessages(locale)
 
+        // if the route contents should be cached
         if (cached) {
-          renderAndCache(req, res, '/join', { shortname: req.params.shortname })
+          renderAndCache(req, res, renderPath || url, mapParams ? mapParams(req) : undefined)
         } else {
           app.render(req, res, renderPath || url, mapParams ? mapParams(req) : undefined)
         }
