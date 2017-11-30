@@ -53,17 +53,22 @@ export const QuestionDetailsQuery = gql`
         id
         description
         options {
-          ... on SCQuestionOptions {
+          SC {
             choices {
               correct
               name
             }
           }
-          ... on FREEQuestionOptions {
+          MC {
+            choices {
+              correct
+              name
+            }
+          }
+          FREE_RANGE {
             restrictions {
               min
               max
-              type
             }
           }
         }
