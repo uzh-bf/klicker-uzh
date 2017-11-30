@@ -49,8 +49,9 @@ const TagInput = ({
       </ReactTooltip>
 
       <TagsInput
-        disabled={disabled}
+        addOnBlur
         onlyUnique
+        disabled={disabled}
         name="tags"
         renderInput={autocompleteRenderInput(tags, value)}
         value={value || []}
