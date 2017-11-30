@@ -8910,9 +8910,9 @@ stdout-stream@^1.4.0:
   dependencies:
     readable-stream "^2.0.1"
 
-storybook-addon-intl@2.1.2:
-  version "2.1.2"
-  resolved "https://registry.yarnpkg.com/storybook-addon-intl/-/storybook-addon-intl-2.1.2.tgz#6c9c32d2cfed8c1d252dd28aae812a553c279d96"
+storybook-addon-intl@2.2.0:
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/storybook-addon-intl/-/storybook-addon-intl-2.2.0.tgz#5f296538f4924134dcc4d5f9d1c416c86ea3d015"
   dependencies:
     "@storybook/addons" "^3.1.0"
     prop-types "^15.5.0"
