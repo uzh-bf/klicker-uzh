@@ -14,23 +14,18 @@ const propTypes = {
     }),
   }),
   questionType: PropTypes.string.isRequired,
-  title: PropTypes.string,
 }
 
 const defaultProps = {
-  description: 'DESCRIPTION',
+  description: '',
   options: {
     restrictions: null,
   },
-  title: 'TITLE',
 }
 
-const FREECreationPreview = ({
-  title, questionType, options: { restrictions }, description,
-}) => (
+const FREECreationPreview = ({ questionType, options: { restrictions }, description }) => (
   <div className="preview">
-    <div className="title">{title || 'TITLE'}</div>
-    <div className="description">{description || 'DESCRIPTION'}</div>
+    <div className="description">{description}</div>
     {(() => {
       // if the type is FREE_RANGE and both restrictions are specified
       // display a slider and selection

@@ -7,20 +7,29 @@ import styles from './styles'
 
 const propTypes = {
   correct: PropTypes.bool.isRequired,
+  disabled: PropTypes.bool,
   handleCorrectToggle: PropTypes.func.isRequired,
   handleDelete: PropTypes.func.isRequired,
   name: PropTypes.string.isRequired,
 }
 
+const defaultProps = {
+  disabled: false,
+}
+
 const SCCreationOption = ({
-  correct, name, handleCorrectToggle, handleDelete,
+  correct, disabled, name, handleCorrectToggle, handleDelete,
 }) => (
   <div className={classNames('option', { correct })}>
-    <button className="leftAction" onClick={handleDelete}>
+    <button className="leftAction" disabled={disabled} onClick={handleDelete}>
       <FaTrash />
     </button>
 
-    <button className={classNames('toggle', { correct })} onClick={handleCorrectToggle}>
+    <button
+      className={classNames('toggle', { correct })}
+      disabled={disabled}
+      onClick={handleCorrectToggle}
+    >
       {correct ? 'TRUE' : 'FALSE'}
     </button>
 
@@ -31,5 +40,6 @@ const SCCreationOption = ({
 )
 
 SCCreationOption.propTypes = propTypes
+SCCreationOption.defaultProps = defaultProps
 
 export default SCCreationOption

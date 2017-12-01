@@ -57,11 +57,14 @@ const connectCache = async () => {
   if (process.env.REDIS_URL) {
     const Redis = require('ioredis')
     cache = new Redis(`redis://${process.env.REDIS_URL}`)
+    console.log('[redis] Connected to db 0')
   } else {
     const LRUCache = require('lru-cache')
     cache = new LRUCache({
       max: 100,
-      maxAge: 1000 * 60 * 60,
+      // TODO: this would be nice to set much higher
+      // but how would we clean up i.e. /join/someuser when the running session updates?
+      maxAge: 1000 * 10, // pages are cached for 10 seconds
     })
   }
 
@@ -85,14 +88,14 @@ const renderAndCache = async (req, res, pagePath, queryParams) => {
   // check if the page has already been cached
   // return the cached HTML if this is the case
   if (cached) {
-    console.log(`CACHE HIT: ${key}`)
+    console.log(`[klicker-react] cache hit: ${key}`)
 
     res.send(cached)
     return
   }
 
   // otherwise server-render the page and cache/return it
-  console.log(`CACHE MISS: ${key}`)
+  console.log(`[klicker-react] cache miss: ${key}`)
   try {
     const html = await app.renderToHTML(req, res, pagePath, queryParams)
 
@@ -133,34 +136,59 @@ app
 
     server.use(...middleware)
 
-    const staticSites = ['/', '/user/login', '/user/registration']
-    staticSites.forEach((url) => {
+    // prepare page configuration
+    const pages = [
+      {
+        cached: true,
+        url: '/',
+      },
+      {
+        cached: true,
+        url: '/user/login',
+      },
+      {
+        cached: true,
+        url: '/user/registration',
+      },
+      {
+        url: '/questions/create',
+      },
+      {
+        mapParams: req => ({ sessionId: req.params.sessionId }),
+        renderPath: '/sessions/evaluation',
+        url: '/sessions/evaluation/:sessionId',
+      },
+      {
+        mapParams: req => ({ questionId: req.params.questionId }),
+        renderPath: '/questions/details',
+        url: '/questions/:questionId',
+      },
+      {
+        cached: true,
+        mapParams: req => ({ shortname: req.params.shortname }),
+        renderPath: '/join',
+        url: '/join/:shortname',
+      },
+    ]
+
+    // create routes for all specified static and dynamic pages
+    pages.forEach(({
+      url, mapParams, renderPath, cached = false,
+    }) => {
       server.get(url, (req, res) => {
+        // setup locale and get messages for the specific route
         const locale = getLocale(req)
         req.locale = locale
         req.localeDataScript = getLocaleDataScript(locale)
         req.messages = dev ? {} : getMessages(locale)
 
-        renderAndCache(req, res, url)
+        // if the route contents should be cached
+        if (cached) {
+          renderAndCache(req, res, renderPath || url, mapParams ? mapParams(req) : undefined)
+        } else {
+          app.render(req, res, renderPath || url, mapParams ? mapParams(req) : undefined)
+        }
       })
-    })
-
-    server.get('/join/:shortname', (req, res) => {
-      const locale = getLocale(req)
-      req.locale = locale
-      req.localeDataScript = getLocaleDataScript(locale)
-      req.messages = dev ? {} : getMessages(locale)
-
-      renderAndCache(req, res, '/join', { shortname: req.params.shortname })
-    })
-
-    server.get('/sessions/evaluation/:sessionId', (req, res) => {
-      const locale = getLocale(req)
-      req.locale = locale
-      req.localeDataScript = getLocaleDataScript(locale)
-      req.messages = dev ? {} : getMessages(locale)
-
-      app.render(req, res, '/sessions/evaluation', { sessionId: req.params.sessionId })
     })
 
     server.get('*', (req, res) => {
@@ -174,7 +202,7 @@ app
 
     server.listen(3000, (err) => {
       if (err) throw err
-      console.log('> Ready on http://localhost:3000')
+      console.log('[klicker-react] Ready on http://localhost:3000')
     })
   })
   .catch((err) => {
@@ -183,23 +211,23 @@ app
   })
 
 process.on('exit', () => {
-  console.log('> Shutting down server')
+  console.log('[klicker-react] Shutting down server')
 
   if (process.env.REDIS_URL) {
     cache.disconnect()
   }
 
-  console.log('> Shutdown complete')
+  console.log('[klicker-react] Shutdown complete')
   process.exit(0)
 })
 
 process.once('SIGUSR2', () => {
-  console.log('> Shutting down server')
+  console.log('[klicker-react] Shutting down server')
 
   if (process.env.REDIS_URL) {
     cache.disconnect()
   }
 
-  console.log('> Shutdown complete')
+  console.log('[klicker-react] Shutdown complete')
   process.exit(0)
 })
