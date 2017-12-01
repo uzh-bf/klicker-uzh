@@ -2547,11 +2547,6 @@ exports[`Storyshots questionTypes/FREE FREE Creation Preview (Lower bound restri
   className="jsx-3917984181 preview"
 >
   <div
-    className="jsx-3917984181 title"
-  >
-    Hello
-  </div>
-  <div
     className="jsx-3917984181 description"
   >
     World!
@@ -2582,11 +2577,6 @@ exports[`Storyshots questionTypes/FREE FREE Creation Preview (Number-Range) 1`] 
   className="jsx-3917984181 preview"
 >
   <div
-    className="jsx-3917984181 title"
-  >
-    Hello
-  </div>
-  <div
     className="jsx-3917984181 description"
   >
     World!
@@ -2616,11 +2606,6 @@ exports[`Storyshots questionTypes/FREE FREE Creation Preview (unrestricted) 1`] 
 <div
   className="jsx-3917984181 preview"
 >
-  <div
-    className="jsx-3917984181 title"
-  >
-    Hello
-  </div>
   <div
     className="jsx-3917984181 description"
   >
@@ -2750,6 +2735,7 @@ exports[`Storyshots questionTypes/SC SC Creation Option (correct) 1`] = `
 >
   <button
     className="jsx-2247491703 leftAction"
+    disabled={false}
     onClick={undefined}
   >
     <svg
@@ -2774,6 +2760,7 @@ exports[`Storyshots questionTypes/SC SC Creation Option (correct) 1`] = `
   </button>
   <button
     className="jsx-2247491703 toggle correct"
+    disabled={false}
     onClick={undefined}
   >
     TRUE
@@ -2792,6 +2779,7 @@ exports[`Storyshots questionTypes/SC SC Creation Option (incorrect) 1`] = `
 >
   <button
     className="jsx-2247491703 leftAction"
+    disabled={false}
     onClick={undefined}
   >
     <svg
@@ -2816,6 +2804,7 @@ exports[`Storyshots questionTypes/SC SC Creation Option (incorrect) 1`] = `
   </button>
   <button
     className="jsx-2247491703 toggle"
+    disabled={false}
     onClick={undefined}
   >
     FALSE
@@ -2903,11 +2892,6 @@ exports[`Storyshots questionTypes/SC SC Creation Preview 1`] = `
   className="jsx-42818339 preview"
 >
   <div
-    className="jsx-42818339 title"
-  >
-    Hello question
-  </div>
-  <div
     className="jsx-42818339 description"
   >
     abcd
@@ -2922,11 +2906,11 @@ exports[`Storyshots questionTypes/SC SC Creation Preview 1`] = `
         className="jsx-362972621 option"
       >
         <button
-          className="ui fluid button"
-          disabled={undefined}
+          className="ui fluid disabled button"
+          disabled={true}
           onClick={[Function]}
           role="button"
-          tabIndex={undefined}
+          tabIndex={-1}
         >
           answer 1
         </button>
@@ -2935,11 +2919,11 @@ exports[`Storyshots questionTypes/SC SC Creation Preview 1`] = `
         className="jsx-362972621 option"
       >
         <button
-          className="ui fluid button"
-          disabled={undefined}
+          className="ui fluid disabled button"
+          disabled={true}
           onClick={[Function]}
           role="button"
-          tabIndex={undefined}
+          tabIndex={-1}
         >
           antwort 2
         </button>
@@ -2948,11 +2932,11 @@ exports[`Storyshots questionTypes/SC SC Creation Preview 1`] = `
         className="jsx-362972621 option"
       >
         <button
-          className="ui fluid button"
-          disabled={undefined}
+          className="ui fluid disabled button"
+          disabled={true}
           onClick={[Function]}
           role="button"
-          tabIndex={undefined}
+          tabIndex={-1}
         >
           option 3
         </button>

@@ -28,6 +28,7 @@ export const CreateQuestionMutation = gql`
     $title: String!
     $description: String!
     $options: QuestionOptionsInput!
+    $solution: Question_SolutionInput
     $type: Question_Type!
     $tags: [ID!]!
   ) {
@@ -36,6 +37,7 @@ export const CreateQuestionMutation = gql`
         title: $title
         description: $description
         options: $options
+        solution: $solution
         type: $type
         tags: $tags
       }
@@ -71,6 +73,74 @@ export const CreateQuestionMutation = gql`
               max
             }
           }
+        }
+        solution {
+          SC
+          MC
+          FREE
+          FREE_RANGE
+        }
+        createdAt
+      }
+    }
+  }
+`
+export const ModifyQuestionMutation = gql`
+  mutation ModifyQuestion(
+    $id: ID!
+    $title: String
+    $description: String
+    $options: QuestionOptionsInput
+    $solution: Question_SolutionInput
+    $tags: [ID!]
+  ) {
+    modifyQuestion(
+      id: $id
+      question: {
+        title: $title
+        description: $description
+        options: $options
+        solution: $solution
+        tags: $tags
+      }
+    ) {
+      id
+      title
+      type
+      tags {
+        id
+        name
+      }
+      versions {
+        id
+        description
+        options {
+          SC {
+            choices {
+              correct
+              name
+            }
+            randomized
+          }
+          MC {
+            choices {
+              correct
+              name
+            }
+            randomized
+          }
+          FREE_RANGE {
+            restrictions {
+              min
+              max
+            }
+          }
+        }
+        solution {
+          SC
+          MC
+          FREE
+          FREE_RANGE
         }
         createdAt
       }

@@ -9,6 +9,7 @@ import { FaQuestionCircle } from 'react-icons/lib/fa'
 import { autocompleteRenderInput } from '../../common'
 
 const propTypes = {
+  disabled: PropTypes.bool.isRequired,
   input: PropTypes.shape({
     onChange: PropTypes.func.isRequired,
     value: PropTypes.array,
@@ -28,7 +29,9 @@ const defaultProps = {
   tags: [],
 }
 
-const TagInput = ({ tags, input: { value, onChange }, meta: { invalid, dirty } }) => (
+const TagInput = ({
+  tags, input: { value, onChange }, meta: { invalid, dirty }, disabled,
+}) => (
   <div className="tagInput">
     <Form.Field required error={dirty && invalid}>
       <label htmlFor="tags">
@@ -46,7 +49,9 @@ const TagInput = ({ tags, input: { value, onChange }, meta: { invalid, dirty } }
       </ReactTooltip>
 
       <TagsInput
+        addOnBlur
         onlyUnique
+        disabled={disabled}
         name="tags"
         renderInput={autocompleteRenderInput(tags, value)}
         value={value || []}
