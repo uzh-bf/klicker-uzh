@@ -34,7 +34,6 @@ export const QuestionListQuery = gql`
   }
 `
 
-// HACK: temporary query for question details display
 export const QuestionDetailsQuery = gql`
   query QuestionDetails($id: ID!) {
     question(id: $id) {
@@ -71,6 +70,12 @@ export const QuestionDetailsQuery = gql`
               max
             }
           }
+        }
+        solution {
+          SC
+          MC
+          FREE
+          FREE_RANGE
         }
       }
       createdAt
