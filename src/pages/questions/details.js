@@ -11,7 +11,7 @@ import _isNil from 'lodash/isNil'
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionEditForm } from '../../components/forms'
 import { pageWithIntl, withData, omitDeep } from '../../lib'
-import { QuestionDetailsQuery, TagListQuery } from '../../graphql/queries'
+import { QuestionListQuery, QuestionDetailsQuery, TagListQuery } from '../../graphql/queries'
 import { ModifyQuestionMutation } from '../../graphql/mutations'
 
 const propTypes = {
@@ -78,7 +78,7 @@ export default compose(
   }),
   branch(({ data }) => data.loading || !data.question, renderNothing),
   graphql(ModifyQuestionMutation),
-  withState('activeVersion', 'setActiveVersion', 0),
+  withState('activeVersion', 'setActiveVersion', ({ data }) => data.question.versions.length - 1),
   withProps(({ activeVersion, data }) => ({
     ..._pick(data.question, ['id', 'title', 'type', 'tags', 'versions']),
     isNewVersion: activeVersion === data.question.versions.length,
@@ -90,7 +90,9 @@ export default compose(
     },
 
     // handle modifying a question
-    handleSave: ({ id, mutate, isNewVersion }) => async ({
+    handleSave: ({
+      id, mutate, isNewVersion, url,
+    }) => async ({
       title,
       description,
       options,
@@ -101,10 +103,28 @@ export default compose(
         await mutate({
           // reload the question details and tags after update
           // TODO: replace with optimistic updates
-          refetchQueries: [
-            { query: QuestionDetailsQuery, variables: { id } },
-            { query: TagListQuery },
-          ],
+          refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
+          // update the cache after the mutation has completed
+          update: (store, { data: { modifyQuestion } }) => {
+            const query = {
+              query: QuestionDetailsQuery,
+              variables: { id: url.query.questionId },
+            }
+
+            // get the data from the store
+            // replace the feedbacks
+            const data = store.readQuery(query)
+
+            data.question.title = modifyQuestion.title
+            data.question.versions = modifyQuestion.versions
+            data.question.tags = modifyQuestion.tags
+
+            // write the updated data to the store
+            store.writeQuery({
+              ...query,
+              data,
+            })
+          },
           variables: _omitBy(
             isNewVersion
               ? {

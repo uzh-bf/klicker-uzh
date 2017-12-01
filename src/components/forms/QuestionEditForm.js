@@ -101,7 +101,7 @@ const QuestionEditForm = ({
         <Message info>
           The contents of existing versions cannot be altered. Please create a new version instead.
         </Message>
-        <Menu tabular>
+        <Menu stackable tabular>
           {versionOptions.map(({ id, text }, index) => (
             <Menu.Item
               active={activeVersion === index}
@@ -261,7 +261,7 @@ export default compose(
         versions,
       },
       versionOptions: versions.map(({ id }, index) => ({
-        text: `Version ${index + 1}`,
+        text: `v${index + 1}`,
         value: id,
       })),
     }
