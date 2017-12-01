@@ -15,6 +15,9 @@ const questionsByPVQuery = parentValue => QuestionModel.find({ _id: { $in: paren
 const createQuestionMutation = (parentValue, { question }, { auth }) =>
   QuestionService.createQuestion({ ...question, userId: auth.sub })
 
+const modifyQuestionMutation = (parentValue, { id, question }, { auth }) =>
+  QuestionService.modifyQuestion(id, auth.sub, question)
+
 module.exports = {
   // queries
   allQuestions: allQuestionsQuery,
@@ -24,4 +27,5 @@ module.exports = {
 
   // mutations
   createQuestion: createQuestionMutation,
+  modifyQuestion: modifyQuestionMutation,
 }

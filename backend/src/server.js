@@ -7,23 +7,23 @@ const redis = getRedis()
 
 server.listen(process.env.PORT, (err) => {
   if (err) throw err
-  console.log(`> API ready on http://localhost:${process.env.PORT}!`)
+  console.log(`[klicker-api] ready on http://localhost:${process.env.PORT}!`)
 })
 
 process.on('exit', () => {
-  console.log('> Shutting down server')
+  console.log('[klicker-api] Shutting down server')
   mongoose.disconnect()
   redis.disconnect()
 
-  console.log('> Shutdown complete')
+  console.log('[klicker-api] Shutdown complete')
   process.exit(0)
 })
 
 process.once('SIGUSR2', () => {
-  console.log('> Shutting down server')
+  console.log('[klicker-api] Shutting down server')
   mongoose.disconnect()
   redis.disconnect()
 
-  console.log('> Shutdown complete')
+  console.log('[klicker-api] Shutdown complete')
   process.exit(0)
 })

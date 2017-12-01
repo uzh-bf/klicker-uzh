@@ -8,6 +8,7 @@ const QuestionTypes = {
 const QuestionGroups = {
   CHOICES: [QuestionTypes.SC, QuestionTypes.MC],
   FREE: [QuestionTypes.FREE, QuestionTypes.FREE_RANGE],
+  WITH_OPTIONS: [QuestionTypes.SC, QuestionTypes.MC, QuestionTypes.FREE_RANGE],
 }
 
 const QuestionBlockStatus = {

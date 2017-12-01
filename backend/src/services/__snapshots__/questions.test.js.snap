@@ -17,6 +17,13 @@ exports[`QuestionService createQuestion allows creating a valid FREE question 1`
         MC: undefined
         FREE_RANGE: undefined
       }
+      Solution: {
+        SC: []
+        MC: []
+        FREE: Schweiz
+        FREE_RANGE: undefined
+      }
+      
     ]
   
 `;
@@ -43,6 +50,13 @@ exports[`QuestionService createQuestion allows creating a valid FREE_RANGE quest
           }
         
       }
+      Solution: {
+        SC: []
+        MC: []
+        FREE: undefined
+        FREE_RANGE: 56
+      }
+      
     ]
   
 `;
@@ -68,12 +82,22 @@ exports[`QuestionService createQuestion allows creating a valid MC question 1`] 
             },{
               Correct: true
               Name: option2
+            },{
+              Correct: false
+              Name: option2
             }
           ]
           Randomized: true
         }
         FREE_RANGE: undefined
       }
+      Solution: {
+        SC: []
+        MC: []
+        FREE: undefined
+        FREE_RANGE: undefined
+      }
+      
     ]
   
 `;
@@ -98,6 +122,9 @@ exports[`QuestionService createQuestion allows creating a valid SC question 1`] 
             },{
               Correct: true
               Name: option2
+            },{
+              Correct: false
+              Name: option2
             }
           ]
           Randomized: true
@@ -105,6 +132,155 @@ exports[`QuestionService createQuestion allows creating a valid SC question 1`] 
         MC: undefined
         FREE_RANGE: undefined
       }
+      Solution: {
+        SC: [false,true,false]
+        MC: [false,true,false]
+        FREE: undefined
+        FREE_RANGE: undefined
+      }
+      
+    ]
+  
+`;
+
+exports[`QuestionService modifyQuestion allows creating a new question version 1`] = `
+
+    QUESTION
+
+    Title: modified title
+    Type: SC
+
+    Instances: []
+    Tags: [ABCD,XYZ]
+    Versions: [
+      Description: blabla
+      Instances: []
+      Options: {
+        SC: {
+          Choices: [{
+              Correct: false
+              Name: option1
+            },{
+              Correct: true
+              Name: option2
+            },{
+              Correct: false
+              Name: option2
+            }
+          ]
+          Randomized: true
+        }
+        MC: undefined
+        FREE_RANGE: undefined
+      }
+      Solution: {
+        SC: [false,true,false]
+        MC: [false,true,false]
+        FREE: undefined
+        FREE_RANGE: undefined
+      }
+      
+    ,
+      Description: This is the new description for version 2
+      Instances: []
+      Options: {
+        SC: {
+          Choices: [{
+              Correct: true
+              Name: option3
+            },{
+              Correct: false
+              Name: option4
+            }
+          ]
+          Randomized: true
+        }
+        MC: undefined
+        FREE_RANGE: undefined
+      }
+      Solution: undefined
+    ]
+  
+`;
+
+exports[`QuestionService modifyQuestion allows modifying the question tags 1`] = `
+
+    QUESTION
+
+    Title: modified title
+    Type: SC
+
+    Instances: []
+    Tags: [ABCD,XYZ]
+    Versions: [
+      Description: blabla
+      Instances: []
+      Options: {
+        SC: {
+          Choices: [{
+              Correct: false
+              Name: option1
+            },{
+              Correct: true
+              Name: option2
+            },{
+              Correct: false
+              Name: option2
+            }
+          ]
+          Randomized: true
+        }
+        MC: undefined
+        FREE_RANGE: undefined
+      }
+      Solution: {
+        SC: [false,true,false]
+        MC: [false,true,false]
+        FREE: undefined
+        FREE_RANGE: undefined
+      }
+      
+    ]
+  
+`;
+
+exports[`QuestionService modifyQuestion allows modifying the question title 1`] = `
+
+    QUESTION
+
+    Title: modified title
+    Type: SC
+
+    Instances: []
+    Tags: [ABCD,test]
+    Versions: [
+      Description: blabla
+      Instances: []
+      Options: {
+        SC: {
+          Choices: [{
+              Correct: false
+              Name: option1
+            },{
+              Correct: true
+              Name: option2
+            },{
+              Correct: false
+              Name: option2
+            }
+          ]
+          Randomized: true
+        }
+        MC: undefined
+        FREE_RANGE: undefined
+      }
+      Solution: {
+        SC: [false,true,false]
+        MC: [false,true,false]
+        FREE: undefined
+        FREE_RANGE: undefined
+      }
+      
     ]
   
 `;

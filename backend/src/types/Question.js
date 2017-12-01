@@ -18,10 +18,28 @@ const Question = `
     FREE_RANGE
   }
 
+  input QuestionOptionsInput {
+    randomized: Boolean
+    restrictions: FREEQuestionOptions_RestrictionsInput
+    choices: [SCQuestionOptions_ChoiceInput!]
+  }
   type Question_Options {
     SC: SCQuestionOptions
     MC: SCQuestionOptions
     FREE_RANGE: FREEQuestionOptions
+  }
+
+  input Question_SolutionInput {
+    SC: [Boolean!]
+    MC: [Boolean!]
+    FREE: String
+    FREE_RANGE: Int
+  }
+  type Question_Solution {
+    SC: [Boolean!]
+    MC: [Boolean!]
+    FREE: String
+    FREE_RANGE: Int
   }
 
   type Question_Public {
@@ -32,6 +50,7 @@ const Question = `
     description: String!
 
     options: Question_Options
+    solution: Question_Solution
   }
 
   input QuestionInput {
@@ -40,13 +59,16 @@ const Question = `
     description: String!
 
     options: QuestionOptionsInput!
+    solution: Question_SolutionInput
 
     tags: [ID!]!
   }
-  input QuestionOptionsInput {
-    randomized: Boolean
-    restrictions: FREEQuestionOptions_RestrictionsInput
-    choices: [SCQuestionOptions_ChoiceInput!]
+  input QuestionModifyInput {
+    title: String
+    description: String
+    options: QuestionOptionsInput
+    solution: Question_SolutionInput
+    tags: [ID!]
   }
   type Question {
     id: ID!
@@ -68,6 +90,7 @@ const Question = `
     description: String!
 
     options: Question_Options
+    solution: Question_Solution
 
     instances: [QuestionInstance!]!
 

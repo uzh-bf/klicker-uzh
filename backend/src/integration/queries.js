@@ -32,6 +32,73 @@ const QuestionListQuery = `
   }
 `
 
+const QuestionDetailsQuery = `
+  question(id: $id) {
+    id
+    title
+    type
+    instances {
+      id
+      createdAt
+    }
+    tags {
+      id
+      name
+    }
+    versions {
+      id
+      description
+      options {
+        SC {
+          choices {
+            correct
+            name
+          }
+        }
+        MC {
+          choices {
+            correct
+            name
+          }
+        }
+        FREE_RANGE {
+          restrictions {
+            min
+            max
+          }
+        }
+      }
+      solution {
+        SC
+        MC
+        FREE
+        FREE_RANGE
+    }
+    createdAt
+    updatedAt
+`
+const QuestionDetailsSerializer = {
+  test: ({ question }) => !!question,
+  print: ({
+    question: {
+      title, type, instances, tags, versions,
+    },
+  }) => `
+    question {
+      title: ${title}
+      type: ${type}
+      tags: ${JSON.stringify(tags.map(tag => tag.name))}
+
+      instances: ${instances.length}
+      versions: ${versions.map(({ description, options, solution }) => `
+        description: ${description}
+        options: ${JSON.stringify(options)}
+        solution: ${JSON.stringify(solution)}
+      `)}
+    }
+  `,
+}
+
 const SessionListQuery = `
   query SessionList {
     sessions: allSessions {
@@ -298,10 +365,16 @@ const SessionEvaluationSerializer = {
 module.exports = {
   TagListQuery,
   QuestionListQuery,
+  QuestionDetailsQuery,
   SessionListQuery,
   RunningSessionQuery,
   AccountSummaryQuery,
   JoinSessionQuery,
   SessionEvaluationQuery,
-  serializers: [RunningSessionSerializer, JoinSessionSerializer, SessionEvaluationSerializer],
+  serializers: [
+    QuestionDetailsSerializer,
+    RunningSessionSerializer,
+    JoinSessionSerializer,
+    SessionEvaluationSerializer,
+  ],
 }

@@ -2,7 +2,12 @@ const { makeExecutableSchema } = require('graphql-tools')
 
 const { requireAuth } = require('./services/auth')
 const {
-  allQuestions, createQuestion, questionsByPV, questionByPV, question,
+  allQuestions,
+  createQuestion,
+  questionsByPV,
+  questionByPV,
+  question,
+  modifyQuestion,
 } = require('./resolvers/questions')
 const {
   questionInstancesByPV, addResponse, responsesByPV, resultsByPV,
@@ -63,6 +68,7 @@ const typeDefs = [
     deleteFeedback(sessionId: ID!, feedbackId: ID!): Session!
     endSession(id: ID!): Session!
     login(email: String!, password: String!): User!
+    modifyQuestion(id: ID!, question: QuestionModifyInput!): Question!
     startSession(id: ID!): Session!
     updateSessionSettings(sessionId: ID!, settings: Session_SettingsInput!): Session!
   }
@@ -93,6 +99,7 @@ const resolvers = {
     createUser,
     endSession: requireAuth(endSession),
     login,
+    modifyQuestion: requireAuth(modifyQuestion),
     startSession: requireAuth(startSession),
     updateSessionSettings: requireAuth(updateSessionSettings),
     activateNextBlock: requireAuth(activateNextBlock),
