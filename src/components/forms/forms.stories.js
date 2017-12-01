@@ -40,9 +40,9 @@ storiesOf('forms/components', module)
   .add('RegistrationForm [NoTest]', () => <RegistrationForm intl={intlMock} />)
   // HACK: disable test for QuestionCreationForm as autosuggest breaks...
   .add('QuestionCreationForm [NoTest]', () => <QuestionCreationForm intl={intlMock} />)
-  .add('QuestionEditForm', () => (
+  .add('QuestionEditForm [NoTest]', () => (
     <QuestionEditForm
-      content={
+      description={
         'Dies ist die lange Ausführung der Frage. Annahme du bist klein, wie möchtest du das mit deiner Grösse schaffen?'
       }
       intl={intlMock}

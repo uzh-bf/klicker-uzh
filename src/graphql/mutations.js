@@ -88,11 +88,11 @@ export const CreateQuestionMutation = gql`
 export const ModifyQuestionMutation = gql`
   mutation ModifyQuestion(
     $id: ID!
-    $title: String!
-    $description: String!
-    $options: QuestionOptionsInput!
+    $title: String
+    $description: String
+    $options: QuestionOptionsInput
     $solution: Question_SolutionInput
-    $tags: [ID!]!
+    $tags: [ID!]
   ) {
     modifyQuestion(
       id: $id

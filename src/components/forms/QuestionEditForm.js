@@ -1,16 +1,14 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import Link from 'next/link'
 import isEmpty from 'validator/lib/isEmpty'
-import { compose, withState, withProps } from 'recompose'
-import { connect } from 'react-redux'
+import { compose, withProps } from 'recompose'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Button, Form, Icon, Menu, Message } from 'semantic-ui-react'
 
 import { ContentInput, TagInput, TitleInput } from '../questions'
 import { FREECreationOptions, SCCreationOptions } from '../../components/questionTypes'
-import { QUESTION_TYPES } from '../../lib'
+import { QUESTION_TYPES } from '../../constants'
 
 // form validation
 const validate = ({
@@ -50,29 +48,17 @@ const validate = ({
 
 const propTypes = {
   activeVersion: PropTypes.number.isRequired,
-  content: PropTypes.string.isRequired,
   handleSubmit: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   invalid: PropTypes.bool.isRequired,
   isNewVersion: PropTypes.bool.isRequired,
+  onActiveVersionChange: PropTypes.func.isRequired,
   onDiscard: PropTypes.func.isRequired,
-  options: PropTypes.object,
-  setActiveVersion: PropTypes.func.isRequired,
-  tags: PropTypes.arrayOf(
-    PropTypes.shape({
-      name: PropTypes.string.isRequired,
-    }),
-  ),
-  title: PropTypes.string.isRequired,
   type: PropTypes.string,
   versionOptions: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 const defaultProps = {
-  options: {
-    choices: [],
-  },
-  tags: [],
   type: QUESTION_TYPES.SC,
 }
 
@@ -85,12 +71,12 @@ const typeComponents = {
 
 const QuestionEditForm = ({
   activeVersion,
-  setActiveVersion,
   isNewVersion,
   intl,
   invalid,
   type,
   handleSubmit: onSubmit,
+  onActiveVersionChange,
   onDiscard,
   versionOptions,
 }) => (
@@ -120,12 +106,15 @@ const QuestionEditForm = ({
             <Menu.Item
               active={activeVersion === index}
               key={id}
-              onClick={() => setActiveVersion(index)}
+              onClick={() => onActiveVersionChange(index)}
             >
               {text}
             </Menu.Item>
           ))}
-          <Menu.Item active={isNewVersion} onClick={() => setActiveVersion(versionOptions.length)}>
+          <Menu.Item
+            active={isNewVersion}
+            onClick={() => onActiveVersionChange(versionOptions.length)}
+          >
             <Icon name="plus" />
             New Version
           </Menu.Item>
@@ -137,7 +126,7 @@ const QuestionEditForm = ({
       </div>
 
       <div className="questionInput questionContent">
-        <Field component={ContentInput} disabled={!isNewVersion} name="content" />
+        <Field component={ContentInput} disabled={!isNewVersion} name="description" />
       </div>
 
       <div className="questionInput questionOptions">
@@ -150,23 +139,12 @@ const QuestionEditForm = ({
       </div>
 
       <div className="actionArea">
-        <Link href="/questions">
-          <Button className="discard" type="reset" onClick={onDiscard}>
-            <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
-          </Button>
-        </Link>
-
-        {isNewVersion && (
-          <Button
-            primary
-            className="save"
-            disabled={invalid}
-            type="submit"
-            onClick={() => console.log('click')}
-          >
-            <FormattedMessage defaultMessage="Save" id="common.button.save" />
-          </Button>
-        )}
+        <Button className="discard" type="reset" onClick={onDiscard}>
+          <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+        </Button>
+        <Button primary className="save" disabled={invalid} type="submit">
+          <FormattedMessage defaultMessage="Save" id="common.button.save" />
+        </Button>
       </div>
     </Form>
 
@@ -269,23 +247,25 @@ QuestionEditForm.propTypes = propTypes
 QuestionEditForm.defaultProps = defaultProps
 
 export default compose(
-  withState('activeVersion', 'setActiveVersion', 0),
-  withProps(({ activeVersion, versions }) => ({
-    isNewVersion: activeVersion === versions.length,
-    versionOptions: versions.map(({ id }, index) => ({ text: `Version ${index + 1}`, value: id })),
-  })),
-  connect((state, {
-    versions, tags, title, type,
-  }) => ({
-    initialValues: {
-      content: versions[versions.length - 1].description,
-      options: versions[versions.length - 1].options[type],
-      tags,
-      title,
-      type,
-      versions,
-    },
-  })),
+  withProps(({
+    isNewVersion, activeVersion, versions, tags, title, type,
+  }) => {
+    const initializeVersion = isNewVersion ? versions.length - 1 : activeVersion
+    return {
+      initialValues: {
+        description: versions[initializeVersion].description,
+        options: versions[initializeVersion].options[type],
+        tags,
+        title,
+        type,
+        versions,
+      },
+      versionOptions: versions.map(({ id }, index) => ({
+        text: `Version ${index + 1}`,
+        value: id,
+      })),
+    }
+  }),
   reduxForm({
     enableReinitialize: true,
     form: 'editQuestion',
