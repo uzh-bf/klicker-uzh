@@ -45,6 +45,7 @@ const CreateQuestionMutation = `
     $title: String!
     $description: String!
     $options: QuestionOptionsInput!
+    $solution: Question_SolutionInput
     $type: Question_Type!
     $tags: [ID!]!
   ) {
@@ -53,6 +54,7 @@ const CreateQuestionMutation = `
         title: $title
         description: $description
         options: $options
+        solution: $solution
         type: $type
         tags: $tags
       }
@@ -89,28 +91,100 @@ const CreateQuestionMutation = `
             }
           }
         }
+        solution {
+          SC
+          MC
+          FREE
+          FREE_RANGE
+        }
+        createdAt
+      }
+    }
+  }
+`
+
+const ModifyQuestionMutation = `
+  mutation ModifyQuestion(
+    $id: ID!
+    $title: String
+    $description: String
+    $options: QuestionOptionsInput
+    $solution: Question_SolutionInput
+    $tags: [ID!]
+  ) {
+    modifyQuestion(
+      id: $id
+      question: {
+        title: $title
+        description: $description
+        options: $options
+        solution: $solution
+        tags: $tags
+      }
+    ) {
+      id
+      title
+      type
+      tags {
+        id
+        name
+      }
+      versions {
+        id
+        description
+        options {
+          SC {
+            choices {
+              correct
+              name
+            }
+            randomized
+          }
+          MC {
+            choices {
+              correct
+              name
+            }
+            randomized
+          }
+          FREE_RANGE {
+            restrictions {
+              min
+              max
+            }
+          }
+        }
+        solution {
+          SC
+          MC
+          FREE
+          FREE_RANGE
+        }
         createdAt
       }
     }
   }
 `
 const CreateQuestionSerializer = {
-  test: ({ createQuestion }) => !!createQuestion,
-  print: ({
-    createQuestion: {
+  test: ({ createQuestion, modifyQuestion }) => !!createQuestion || !!modifyQuestion,
+  print: ({ createQuestion, modifyQuestion }) => {
+    const {
       title, type, tags, versions,
-    },
-  }) => `
-    createQuestion {
+    } = createQuestion || modifyQuestion
+
+    return `
+    createQuestion / modifyQuestion {
       title: ${title}
       type: ${type}
       tags: ${tags.map(tag => tag.name)}
-      versions: ${versions.map(({ description, options }) => `
+      versions: ${versions.map(({ description, options, solution }) => `
         description: ${description}
         options: ${JSON.stringify(options)}
+        solution: ${JSON.stringify(solution)}
       `)}
     }
-  `,
+  `
+  },
 }
 
 const CreateSessionMutation = `
@@ -314,6 +388,7 @@ module.exports = {
   RegistrationMutation,
   LoginMutation,
   CreateQuestionMutation,
+  ModifyQuestionMutation,
   CreateSessionMutation,
   StartSessionMutation,
   EndSessionMutation,
