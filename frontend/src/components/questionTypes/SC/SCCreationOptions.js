@@ -61,6 +61,11 @@ const SCCreationOptions = ({
       ))}
     </div>
   )
+  Options.propTypes = {
+    handleCorrectToggle: PropTypes.func.isRequired,
+    handleDelete: PropTypes.func.isRequired,
+    sortableOptions: PropTypes.array.isRequired,
+  }
   const SortableOptions = disabled ? Options : SortableContainer(Options)
 
   return (

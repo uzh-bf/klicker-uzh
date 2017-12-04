@@ -12,6 +12,7 @@ import { ListWithHeader } from '../common'
 const propTypes = {
   description: PropTypes.string.isRequired,
   lastUsed: PropTypes.array,
+  questionId: PropTypes.string.isRequired,
 }
 
 const defaultProps = {
@@ -44,7 +45,7 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
         <Button className="button">
           <FaEye />
         </Button>
-        <Link prefetch href={`/questions/${questionId}`}>
+        <Link href={`/questions/${questionId}`}>
           <Button className="button">
             <FaPencil />
           </Button>
