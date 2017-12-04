@@ -20,7 +20,7 @@
     "express-rate-limit": "2.9.0",
     "graphql": "0.11.7",
     "graphql-subscriptions": "0.5.5",
-    "graphql-tools": "2.10.0",
+    "graphql-tools": "2.11.0",
     "helmet": "3.9.0",
     "ioredis": "3.2.2",
     "jsonwebtoken": "8.1.0",
@@ -31,7 +31,7 @@
     "mongoose": "4.13.6",
     "morgan": "1.9.0",
     "rate-limit-redis": "1.1.0",
-    "subscriptions-transport-ws": "0.9.1"
+    "subscriptions-transport-ws": "0.9.2"
   },
   "devDependencies": {
     "babel-eslint": "8.0.3",
