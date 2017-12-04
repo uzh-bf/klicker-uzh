@@ -43,8 +43,8 @@
     "lint-staged": "5.0.0",
     "nodemon": "1.12.1",
     "prettier": "1.8.2",
-    "prettier-eslint": "8.2.2",
-    "prettier-eslint-cli": "4.4.0",
+    "prettier-eslint": "8.2.3",
+    "prettier-eslint-cli": "4.4.2",
     "supertest": "3.0.0"
   },
   "scripts": {
