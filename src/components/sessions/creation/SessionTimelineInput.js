@@ -2,6 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { adjust } from 'ramda'
 import { FormattedMessage } from 'react-intl'
+import { Icon, Message } from 'semantic-ui-react'
 
 import QuestionDropzone from './QuestionDropzone'
 import QuestionSingle from '../../questions/QuestionSingle'
@@ -40,7 +41,10 @@ const SessionTimelineInput = ({ input: { value, onChange } }) => {
     <div className="sessionTimeline">
       {value.map((block, index) => (
         <div className="timelineItem" key={block.id}>
-          <div className="title">Block {index + 1}</div>
+          <div className="title">
+            <span>Block {index + 1}</span>
+            <Icon name="settings" />
+          </div>
 
           <div className="questions">
             {block.questions.map(question => (
@@ -56,12 +60,23 @@ const SessionTimelineInput = ({ input: { value, onChange } }) => {
 
       <div className="timelineItem">
         <div className="title">
-          <FormattedMessage defaultMessage="New block" id="teacher.sessionCreation.newBlock" />
+          <FormattedMessage defaultMessage="New Block" id="teacher.sessionCreation.newBlock" />
         </div>
 
         <div className="blockDropzone">
           <QuestionDropzone onDrop={handleNewBlock} />
         </div>
+
+        {value.length === 0 && (
+          <div className="message">
+            <Message info>
+              <FormattedMessage
+                defaultMessage="Drag & drop a question into the dropzone."
+                id="teacher.sessionCreation.emptyDropzoneInfo"
+              />
+            </Message>
+          </div>
+        )}
       </div>
       <style jsx>{`
         @import 'src/theme';
@@ -73,29 +88,33 @@ const SessionTimelineInput = ({ input: { value, onChange } }) => {
           height: 100%;
           padding: 0.5rem;
 
-          font-size: 0.8rem;
-
           > .timelineItem {
             display: flex;
             flex-direction: column;
 
             padding: 0.5rem;
 
-            .title {
-              font-weight: bold;
-
-              margin-bottom: 0.3rem;
-            }
-
             > :global(*):not(:first-child) {
               margin-top: -2px;
             }
 
+            .title {
+              display: flex;
+              flex-direction: row;
+              justify-content: space-between;
+
+              font-weight: bold;
+              margin-bottom: 0.5rem;
+            }
+
+            .message,
             .questionDropzone {
               margin-top: 0.5rem;
             }
 
             .questions {
+              font-size: 0.9rem;
+
               > :global(*):not(:first-child) {
                 margin-top: -2px;
               }

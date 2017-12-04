@@ -4,7 +4,7 @@ import _truncate from 'lodash/truncate'
 import Link from 'next/link'
 
 import { FormattedMessage } from 'react-intl'
-import { FaEye, FaPencil, FaTrash } from 'react-icons/lib/fa'
+import { FaEye } from 'react-icons/lib/fa'
 import { Button } from 'semantic-ui-react'
 
 import { ListWithHeader } from '../common'
@@ -42,17 +42,11 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
       </div>
 
       <div className="column buttons">
-        <Button className="button">
-          <FaEye />
-        </Button>
         <Link href={`/questions/${questionId}`}>
           <Button className="button">
-            <FaPencil />
+            <FaEye />
           </Button>
         </Link>
-        <Button className="button">
-          <FaTrash />
-        </Button>
       </div>
 
       <style jsx>{`
@@ -102,7 +96,6 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
 
           @include desktop-tablet-only {
             flex-direction: row;
-            min-height: 7rem;
 
             .column {
               flex: 1;
