@@ -28,8 +28,9 @@ const QuestionDropzone = ({ canDrop, isOver, connectDropTarget }) =>
 
           background-color: #f2f2f2;
           border: 1px solid lightgrey;
-          color: lightgrey;
+          color: grey;
           font-size: 1.5rem;
+          min-height: 2.5rem;
           height: 100%;
           width: 100%;
         }

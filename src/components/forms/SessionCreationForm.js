@@ -40,7 +40,7 @@ const SessionCreationForm = ({
     </div>
 
     <div className="sessionTimeline">
-      <Field component={SessionTimelineInput} name="questions" />
+      <Field component={SessionTimelineInput} name="blocks" />
     </div>
 
     <div className="actionArea">
@@ -116,7 +116,7 @@ SessionCreationForm.propTypes = propTypes
 export default reduxForm({
   form: 'createSession',
   initialValues: {
-    questions: [],
+    blocks: [],
   },
   validate,
 })(SessionCreationForm)

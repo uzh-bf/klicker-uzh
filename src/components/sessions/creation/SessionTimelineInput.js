@@ -1,5 +1,8 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import { adjust } from 'ramda'
+import { FormattedMessage } from 'react-intl'
+
 import QuestionDropzone from './QuestionDropzone'
 import QuestionSingle from '../../questions/QuestionSingle'
 
@@ -9,47 +12,111 @@ const propTypes = {
     value: PropTypes.arrayOf(
       PropTypes.shape({
         id: PropTypes.string.isRequired,
-        title: PropTypes.string.isRequired,
-        type: PropTypes.string.isRequired,
+        questions: PropTypes.arrayOf(
+          PropTypes.shape({
+            title: PropTypes.string.isRequired,
+            type: PropTypes.string.isRequired,
+          }),
+        ),
       }),
     ),
   }).isRequired,
 }
 
 const SessionTimelineInput = ({ input: { value, onChange } }) => {
-  const handleNewQuestion = (newQuestion) => {
-    onChange([...value, newQuestion])
+  // handle creation of an entirely new block
+  const handleNewBlock = (newQuestion) => {
+    onChange([...value, { questions: [newQuestion] }])
+  }
+
+  // handle extending a block with a further question
+  const handleExtendBlock = blockIndex => (newQuestion) => {
+    onChange(
+      adjust(prev => ({ ...prev, questions: [...prev.questions, newQuestion] }), blockIndex, value),
+    )
   }
 
   return (
     <div className="sessionTimeline">
-      {value.map(question => (
-        <div className="timelineItem" key={question.id}>
-          <QuestionSingle id={question.id} title={question.title} type={question.type} />
+      {value.map((block, index) => (
+        <div className="timelineItem" key={block.id}>
+          <div className="title">Block {index + 1}</div>
+
+          <div className="questions">
+            {block.questions.map(question => (
+              <QuestionSingle id={question.id} title={question.title} type={question.type} />
+            ))}
+          </div>
+
+          <div className="questionDropzone">
+            <QuestionDropzone onDrop={handleExtendBlock(index)} />
+          </div>
         </div>
       ))}
+
       <div className="timelineItem">
-        <QuestionDropzone onDrop={handleNewQuestion} />
+        <div className="title">
+          <FormattedMessage defaultMessage="New block" id="teacher.sessionCreation.newBlock" />
+        </div>
+
+        <div className="blockDropzone">
+          <QuestionDropzone onDrop={handleNewBlock} />
+        </div>
       </div>
       <style jsx>{`
+        @import 'src/theme';
+
         .sessionTimeline {
           display: flex;
-          flex-direction: row;
+          flex-direction: column;
 
-          border-left: 1px solid lightgrey;
-          border-bottom: 1px solid lightgrey;
           height: 100%;
           padding: 0.5rem;
-        }
 
-        .sessionTimeline > .timelineItem {
-          border: 1px solid lightgrey;
-          padding: 0.5rem;
-          width: 15rem;
-        }
+          font-size: 0.8rem;
 
-        .sessionTimeline > .timelineItem:not(:last-child) {
-          margin-right: 0.5rem;
+          > .timelineItem {
+            display: flex;
+            flex-direction: column;
+
+            padding: 0.5rem;
+
+            .title {
+              font-weight: bold;
+
+              margin-bottom: 0.3rem;
+            }
+
+            > :global(*):not(:first-child) {
+              margin-top: -2px;
+            }
+
+            .questionDropzone {
+              margin-top: 0.5rem;
+            }
+
+            .questions {
+              > :global(*):not(:first-child) {
+                margin-top: -2px;
+              }
+            }
+          }
+
+          @include desktop-tablet-only {
+            flex-flow: row wrap;
+
+            border-left: 1px solid lightgrey;
+            border-bottom: 1px solid lightgrey;
+
+            > .timelineItem {
+              width: 15rem;
+
+              &:not(:last-child) {
+                border-right: 1px solid lightgrey;
+                margin-bottom: 0;
+              }
+            }
+          }
         }
       `}</style>
     </div>
