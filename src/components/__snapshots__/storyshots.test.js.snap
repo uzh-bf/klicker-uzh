@@ -833,7 +833,9 @@ exports[`Storyshots confusion ConfusionBarometer 1`] = `
       type="checkbox"
       value={false}
     />
-    <label>
+    <label
+      htmlFor={undefined}
+    >
       Activated
     </label>
   </div>
@@ -1860,7 +1862,9 @@ exports[`Storyshots feedbacks FeedbackChannel (isActive) 1`] = `
         type="checkbox"
         value={true}
       />
-      <label>
+      <label
+        htmlFor={undefined}
+      >
         Activated
       </label>
     </div>
@@ -1883,7 +1887,9 @@ exports[`Storyshots feedbacks FeedbackChannel (isActive) 1`] = `
         type="checkbox"
         value={false}
       />
-      <label>
+      <label
+        htmlFor={undefined}
+      >
         Publish questions
       </label>
     </div>
@@ -1923,7 +1929,9 @@ exports[`Storyshots feedbacks FeedbackChannel (isPublic) 1`] = `
         type="checkbox"
         value={true}
       />
-      <label>
+      <label
+        htmlFor={undefined}
+      >
         Activated
       </label>
     </div>
@@ -1946,7 +1954,9 @@ exports[`Storyshots feedbacks FeedbackChannel (isPublic) 1`] = `
         type="checkbox"
         value={true}
       />
-      <label>
+      <label
+        htmlFor={undefined}
+      >
         Publish questions
       </label>
     </div>
@@ -1986,7 +1996,9 @@ exports[`Storyshots feedbacks FeedbackChannel 1`] = `
         type="checkbox"
         value={false}
       />
-      <label>
+      <label
+        htmlFor={undefined}
+      >
         Activated
       </label>
     </div>
@@ -2009,7 +2021,9 @@ exports[`Storyshots feedbacks FeedbackChannel 1`] = `
         type="checkbox"
         value={false}
       />
-      <label>
+      <label
+        htmlFor={undefined}
+      >
         Publish questions
       </label>
     </div>
