@@ -1,6 +1,5 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import isEmpty from 'validator/lib/isEmpty'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage } from 'react-intl'
 import { FaFloppyO, FaPlay, FaTrash } from 'react-icons/lib/fa'
@@ -9,15 +8,11 @@ import { SemanticInput } from '.'
 import { SessionTimelineInput } from '../sessions'
 
 // form validation
-const validate = ({ sessionName, questions }) => {
+const validate = ({ blocks }) => {
   const errors = {}
 
-  if (!sessionName || isEmpty(sessionName)) {
-    errors.sessionName = 'form.createSession.sessionName.empty'
-  }
-
-  if (!questions || questions.length === 0) {
-    errors.questions = 'form.createSession.questions.empty'
+  if (!blocks || blocks.length === 0) {
+    errors.blocks = 'form.createSession.blocks.empty'
   }
 
   return errors
@@ -62,10 +57,12 @@ const SessionCreationForm = ({
         <FaTrash />
         <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
       </button>
+
       <button className="ui fluid button" disabled={invalid} type="submit">
         <FaFloppyO />
         <FormattedMessage defaultMessage="Save" id="common.button.save" />
       </button>
+
       <button
         className="ui fluid primary button"
         disabled={invalid}
