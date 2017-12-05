@@ -50,13 +50,19 @@ describe('SessionMgrService', () => {
         name: 'session with an empty block',
         questionBlocks: [
           {
-            questions: [questions[QuestionTypes.SC].id, questions[QuestionTypes.MC].id],
+            questions: [
+              { question: questions[QuestionTypes.SC].id, version: 0 },
+              { question: questions[QuestionTypes.MC].id, version: 0 },
+            ],
           },
           {
             questions: [],
           },
           {
-            questions: [questions[QuestionTypes.FREE].id, questions[QuestionTypes.FREE_RANGE].id],
+            questions: [
+              { question: questions[QuestionTypes.FREE].id, version: 0 },
+              { question: questions[QuestionTypes.FREE_RANGE].id, version: 0 },
+            ],
           },
         ],
         userId: user.id,
@@ -71,10 +77,16 @@ describe('SessionMgrService', () => {
         name: 'hello world',
         questionBlocks: [
           {
-            questions: [questions[QuestionTypes.SC].id, questions[QuestionTypes.MC].id],
+            questions: [
+              { question: questions[QuestionTypes.SC].id, version: 0 },
+              { question: questions[QuestionTypes.MC].id, version: 0 },
+            ],
           },
           {
-            questions: [questions[QuestionTypes.FREE].id, questions[QuestionTypes.FREE_RANGE].id],
+            questions: [
+              { question: questions[QuestionTypes.FREE].id, version: 0 },
+              { question: questions[QuestionTypes.FREE_RANGE].id, version: 0 },
+            ],
           },
         ],
         userId: user.id,

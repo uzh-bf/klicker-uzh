@@ -275,9 +275,14 @@ describe('Integration', () => {
           variables: {
             name: 'Session Name',
             blocks: [
-              { questions: [questions[QuestionTypes.SC], questions[QuestionTypes.MC]] },
-              { questions: [questions[QuestionTypes.FREE]] },
-              { questions: [questions[QuestionTypes.FREE_RANGE]] },
+              {
+                questions: [
+                  { question: questions[QuestionTypes.SC], version: 0 },
+                  { question: questions[QuestionTypes.MC], version: 0 },
+                ],
+              },
+              { questions: [{ question: questions[QuestionTypes.FREE], version: 0 }] },
+              { questions: [{ question: questions[QuestionTypes.FREE_RANGE], version: 0 }] },
             ],
           },
         },

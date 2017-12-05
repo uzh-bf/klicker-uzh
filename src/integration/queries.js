@@ -109,6 +109,7 @@ const SessionListQuery = `
         id
         instances {
           id
+          version
           question {
             id
             title
@@ -145,6 +146,7 @@ const RunningSessionQuery = `
         instances {
           id
           isOpen
+          version
           question {
             id
             title
@@ -178,8 +180,9 @@ const RunningSessionSerializer = {
       `)}
       blocks: ${blocks.map(({ status, instances }) => `
         status: ${status}
-        instances: ${instances.map(({ isOpen, question }) => `
+        instances: ${instances.map(({ isOpen, question, version }) => `
           isOpen: ${isOpen}
+          version: ${version}
           question {
             title: ${question.title}
             type: ${question.type}
