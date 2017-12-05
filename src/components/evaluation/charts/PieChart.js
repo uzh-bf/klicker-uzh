@@ -1,13 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import {
-  Cell,
-  Pie,
-  PieChart as PieChartComponent,
-  ResponsiveContainer,
-  Tooltip,
-  LabelList,
-} from 'recharts'
+import { Cell, Pie, PieChart as PieChartComponent, ResponsiveContainer, LabelList } from 'recharts'
 import { withProps } from 'recompose'
 import _round from 'lodash/round'
 
@@ -38,8 +31,15 @@ const PieChart = ({ isSolutionShown, data }) => (
         top: 24,
       }}
     >
-      <Tooltip />
-      <Pie labelLine data={data} fill="#8884d8" innerRadius={5} nameKey="value" valueKey="count">
+      <Pie
+        labelLine
+        data={data}
+        fill="#8884d8"
+        innerRadius={5}
+        isAnimationActive={false}
+        nameKey="value"
+        valueKey="count"
+      >
         <LabelList
           dataKey="percentage"
           fill="black"

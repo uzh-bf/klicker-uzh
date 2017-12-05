@@ -11,6 +11,7 @@ import { statisticsShape } from '../../propTypes'
 const propTypes = {
   activeVisualization: PropTypes.string.isRequired,
   handleShowGraph: PropTypes.func.isRequired,
+  questionType: PropTypes.string.isRequired,
   restrictions: PropTypes.shape({
     max: PropTypes.number,
     min: PropTypes.number,
@@ -39,9 +40,9 @@ const defaultProps = {
 
 const chartTypes = {
   BAR_CHART: BarChart,
-  STACK_CHART: StackChart,
   HISTOGRAM: HistogramChart,
   PIE_CHART: PieChart,
+  STACK_CHART: StackChart,
   TABLE: TableChart,
   WORD_CLOUD: CloudChart,
 }
@@ -51,6 +52,7 @@ function Chart({
   restrictions,
   results,
   handleShowGraph,
+  questionType,
   sessionStatus,
   showGraph,
   showSolution,
@@ -91,6 +93,7 @@ function Chart({
               brush={sessionStatus !== SESSION_STATUS.RUNNING}
               data={results.data}
               isSolutionShown={showSolution}
+              questionType={questionType}
               restrictions={restrictions}
               statistics={statistics}
               totalResponses={results.totalResponses}
