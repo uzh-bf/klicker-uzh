@@ -47,7 +47,7 @@ const PieChart = ({ isSolutionShown, data }) => (
           position="outside"
           stroke="black"
           strokeWidth={1}
-          style={{ fontSize: '1.5rem' }}
+          style={{ fontSize: '2rem' }}
         />
         <LabelList
           dataKey="label"
