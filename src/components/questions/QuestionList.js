@@ -29,7 +29,6 @@ export const QuestionListPres = ({
     {questions.map(question => (
       <Question
         creationMode={creationMode}
-        description={question.versions[question.versions.length - 1].description}
         draggable={creationMode && !dropped.includes(question.id)}
         id={question.id}
         key={question.id}
@@ -39,7 +38,7 @@ export const QuestionListPres = ({
         tags={question.tags}
         title={question.title}
         type={question.type}
-        version={question.versions.length}
+        versions={question.versions}
         onDrop={onQuestionDropped(question.id)}
       />
     ))}

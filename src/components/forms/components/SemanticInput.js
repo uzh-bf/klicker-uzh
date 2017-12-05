@@ -9,6 +9,7 @@ import { FaQuestionCircle } from 'react-icons/lib/fa'
 
 const propTypes = {
   disabled: PropTypes.bool,
+  inlineLabel: PropTypes.string,
   input: PropTypes.object.isRequired,
   intl: intlShape.isRequired,
   label: PropTypes.string,
@@ -18,6 +19,7 @@ const propTypes = {
     touched: PropTypes.bool,
   }).isRequired,
   placeholder: PropTypes.string,
+  renderInput: PropTypes.func,
   required: PropTypes.bool,
   tooltip: PropTypes.string,
   width: PropTypes.number,
@@ -25,8 +27,10 @@ const propTypes = {
 
 const defaultProps = {
   disabled: false,
+  inlineLabel: undefined,
   label: undefined,
   placeholder: undefined,
+  renderInput: undefined,
   required: false,
   tooltip: undefined,
   width: undefined,
@@ -34,6 +38,7 @@ const defaultProps = {
 
 const SemanticInput = ({
   disabled,
+  inlineLabel,
   input,
   intl,
   label,
@@ -42,6 +47,7 @@ const SemanticInput = ({
   required,
   tooltip,
   width,
+  renderInput,
   ...rest
 }) => {
   // construct field props
@@ -55,7 +61,7 @@ const SemanticInput = ({
 
   // construct input props
   // define the default placeholder to be equal to the label
-  const inputProps = { placeholder: placeholder || label, ...rest }
+  const inputProps = { label: inlineLabel, placeholder: placeholder || label, ...rest }
 
   const showError = touched && invalid && error
 

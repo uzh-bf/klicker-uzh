@@ -95,6 +95,7 @@ export const SessionListQuery = gql`
         id
         instances {
           id
+          version
           question {
             id
             title
@@ -131,6 +132,7 @@ export const RunningSessionQuery = gql`
         instances {
           id
           isOpen
+          version
           question {
             id
             title
