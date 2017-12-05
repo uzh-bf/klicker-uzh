@@ -47,8 +47,10 @@ const SessionTimelineInput = ({ input: { value, onChange } }) => {
           </div>
 
           <div className="questions">
-            {block.questions.map(question => (
-              <QuestionSingle id={question.id} title={question.title} type={question.type} />
+            {block.questions.map(({
+ id, title, type, version,
+}) => (
+  <QuestionSingle id={id} title={title} type={type} version={version} />
             ))}
           </div>
 
