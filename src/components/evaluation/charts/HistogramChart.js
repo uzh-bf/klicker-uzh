@@ -50,7 +50,20 @@ const HistogramChart = ({
       }}
     >
       <XAxis dataKey="value" />
-      <YAxis />
+      <YAxis
+        domain={[
+          0,
+          (dataMax) => {
+            const rounded = Math.ceil(dataMax * 1.1)
+
+            if (rounded % 2 === 0) {
+              return rounded
+            }
+
+            return rounded + 1
+          },
+        ]}
+      />
       <CartesianGrid strokeDasharray="5 5" />
       <Tooltip />
       <Bar dataKey="count" fill="#8884d8" />
