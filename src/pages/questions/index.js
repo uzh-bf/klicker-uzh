@@ -259,7 +259,7 @@ export default compose(
       try {
         // prepare blocks for consumption through the api
         const parsedBlocks = blocks.map(({ questions }) => ({
-          questions: questions.map(q => q.id),
+          questions: questions.map(({ id, version }) => ({ question: id, version })),
         }))
 
         // create a new session
