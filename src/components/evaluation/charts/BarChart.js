@@ -6,15 +6,13 @@ import {
   CartesianGrid,
   Cell,
   LabelList,
-  Label,
   ResponsiveContainer,
-  XAxis,
   YAxis,
 } from 'recharts'
 import { withProps } from 'recompose'
 import _round from 'lodash/round'
 
-import { CHART_COLORS } from '../../../constants'
+import { CHART_COLORS, QUESTION_TYPES } from '../../../constants'
 
 const propTypes = {
   data: PropTypes.arrayOf(
@@ -42,9 +40,6 @@ const BarChart = ({ isSolutionShown, data }) => (
         top: 24,
       }}
     >
-      <XAxis dataKey="label">
-        <Label offset={0} position="insideBottom" value="Choices" />
-      </XAxis>
       <YAxis
         domain={[
           0,
@@ -68,15 +63,15 @@ const BarChart = ({ isSolutionShown, data }) => (
         maxBarSize="5rem"
       >
         <LabelList
-          dataKey="percentage"
+          dataKey="label"
           fill="black"
           offset={30}
           position="top"
           stroke="black"
-          style={{ fontSize: '1.5rem' }}
+          style={{ fontSize: '3rem' }}
         />
         <LabelList
-          dataKey="label"
+          dataKey="percentage"
           fill="white"
           position="inside"
           stroke="white"
@@ -96,14 +91,17 @@ const BarChart = ({ isSolutionShown, data }) => (
 BarChart.propTypes = propTypes
 BarChart.defaultProps = defaultProps
 
-export default withProps(({ data, totalResponses }) => ({
+export default withProps(({ data, questionType, totalResponses }) => ({
   // filter out choices without any responses (weird labeling)
   // map data to contain percentages and char labels
-  data: data.filter(({ count }) => count > 0).map(({ correct, count, value }, index) => ({
+  data: data.map(({ correct, count, value }, index) => ({
     correct,
     count,
     label: String.fromCharCode(65 + index),
-    percentage: `${count} | ${_round(100 * (count / totalResponses), 2)} %`,
+    percentage:
+      questionType === QUESTION_TYPES.SC
+        ? `${count} | ${_round(100 * (count / totalResponses), 2)} %`
+        : count,
     value,
   })),
 }))(BarChart)
