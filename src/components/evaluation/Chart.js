@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
 
-import { BarChart, PieChart, TableChart, CloudChart, HistogramChart } from '.'
+import { BarChart, StackChart, PieChart, TableChart, CloudChart, HistogramChart } from '.'
 import { SESSION_STATUS } from '../../constants'
 import { statisticsShape } from '../../propTypes'
 
@@ -39,6 +39,7 @@ const defaultProps = {
 
 const chartTypes = {
   BAR_CHART: BarChart,
+  STACK_CHART: StackChart,
   HISTOGRAM: HistogramChart,
   PIE_CHART: PieChart,
   TABLE: TableChart,
