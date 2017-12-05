@@ -53,11 +53,41 @@ const HistogramChart = ({
       <YAxis />
       <CartesianGrid strokeDasharray="5 5" />
       <Tooltip />
-      <Bar dataKey="count" fill="#8884d8" />
+      <Bar dataKey="count" fill="rgb(19, 149, 186)" />
 
       {statistics && [
-        <ReferenceLine isFront stroke="blue" x={Math.round(statistics.mean)} />,
-        <ReferenceLine isFront stroke="red" x={Math.round(statistics.median)} />,
+        <ReferenceLine
+          isFront
+          label={{
+ position: 'top', value: 'MEAN', fill: 'blue', fontSize: 14,
+}}
+          stroke="blue"
+          x={Math.round(statistics.mean)}
+        />,
+        <ReferenceLine
+          isFront
+          label={{
+ position: 'top', value: 'MEDIAN', fill: 'red', fontSize: 14,
+}}
+          stroke="red"
+          x={Math.round(statistics.median)}
+        />,
+        <ReferenceLine
+          isFront
+          label={{
+ position: 'top', value: 'Q1', fill: 'black', fontSize: 14,
+}}
+          stroke="black"
+          x={Math.round(statistics.q1)}
+        />,
+        <ReferenceLine
+          isFront
+          label={{
+ position: 'top', value: 'Q3', fill: 'black', fontSize: 14,
+}}
+          stroke="black"
+          x={Math.round(statistics.q3)}
+        />,
       ]}
 
       {solution && <ReferenceLine isFront stroke="green" x={Math.round(solution)} />}

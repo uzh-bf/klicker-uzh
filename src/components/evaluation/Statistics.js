@@ -37,7 +37,7 @@ const Statistics = ({
       <EvaluationListItem color="white" marker="MIN">
         {min ? _round(min, 2) : '-'}
       </EvaluationListItem>
-      <EvaluationListItem color="white" marker="Q1">
+      <EvaluationListItem color="black" marker="Q1">
         {q1 ? _round(q1, 2) : '-'}
       </EvaluationListItem>
       <EvaluationListItem color="red" marker="MEDIAN">
@@ -46,7 +46,7 @@ const Statistics = ({
       <EvaluationListItem color="Blue" marker="MEAN">
         {mean ? _round(mean, 2) : '-'}
       </EvaluationListItem>
-      <EvaluationListItem color="white" marker="Q3">
+      <EvaluationListItem color="black" marker="Q3">
         {q3 ? _round(q3, 2) : '-'}
       </EvaluationListItem>
       <EvaluationListItem color="white" marker="MAX">
