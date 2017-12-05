@@ -2,13 +2,16 @@ import _maxBy from 'lodash/maxBy'
 import _minBy from 'lodash/minBy'
 
 // sort values
-export const sortValues = values =>
-  Array.sort(
-    values.data.reduce((acc, { count, value }) => {
-      const filled = Array.fill(+value, count)
-      return acc.concat(filled)
-    }, []),
-  )
+export const sortValues = (values) => {
+  // create array out of the values and their counts
+  const array = values.data.reduce((acc, { count, value }) => {
+    const elements = Array(count).fill(parseFloat(value))
+    return acc.concat(elements)
+  }, [])
+
+  // return sorted array
+  return array.sort((a, b) => a - b)
+}
 
 // calculate the min using lodas
 export const calculateMin = (values) => {

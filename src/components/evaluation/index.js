@@ -1,5 +1,6 @@
 export { default as BarChart } from './charts/BarChart'
 export { default as PieChart } from './charts/PieChart'
+export { default as StackChart } from './charts/StackChart'
 export { default as TableChart } from './charts/TableChart'
 export { default as CloudChart } from './charts/CloudChart'
 export { default as HistogramChart } from './charts/HistogramChart'
