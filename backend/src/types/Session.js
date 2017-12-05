@@ -62,8 +62,12 @@ const Session = `
     isFeedbackChannelPublic: Boolean!
   }
 
+  input Session_QuestionBlockQuestionInput {
+    question: ID!
+    version: Int!
+  }
   input Session_QuestionBlockInput {
-    questions: [ID!]!
+    questions: [Session_QuestionBlockQuestionInput!]!
   }
   type Session_QuestionBlock {
     id: ID!

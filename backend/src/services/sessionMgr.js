@@ -3,7 +3,8 @@ const { getRedis } = require('../redis')
 const { SessionStatus, QuestionBlockStatus } = require('../constants')
 const { logDebug } = require('../lib/utils')
 
-const redis = getRedis()
+const redisCache = getRedis()
+const redisControl = getRedis(2)
 
 // if redis is in use, unlink the cached /join/:shortname pages
 const cleanCache = (shortname) => {
@@ -13,7 +14,7 @@ const cleanCache = (shortname) => {
 
   // return redis.unlink([`${key}:de`, `${key}:en`])
   // TODO: use unlink with redis 4.x
-  return redis.del([`${key}:de`, `${key}:en`])
+  return redisCache.del([`${key}:de`, `${key}:en`])
 }
 
 const getRunningSession = async (sessionId) => {
@@ -46,12 +47,12 @@ const createSession = async ({ name, questionBlocks, userId }) => {
   // skip any blocks that are empty (erroneous blocks)
   // create question instances for all questions within
   const blocks = questionBlocks.filter(block => block.questions.length > 0).map(block => ({
-    instances: block.questions.map((question) => {
+    instances: block.questions.map(({ question, version }) => {
       // create a new question instance model
       const instance = new QuestionInstanceModel({
         question,
         user: userId,
-        version: 0,
+        version,
       })
 
       // append the new question instance to the store
@@ -125,7 +126,7 @@ const startSession = async ({ id, userId, shortname }) => {
   const promises = [session.save(), updatedUser]
 
   // if redis is in use, cleanup the page cache
-  if (redis) {
+  if (redisCache) {
     promises.push(cleanCache(shortname))
   }
 
@@ -171,7 +172,7 @@ const endSession = async ({ id, userId, shortname }) => {
   const promises = [session.save(), updatedUser]
 
   // if redis is in use, cleanup the page cache
-  if (redis) {
+  if (redisCache) {
     promises.push(cleanCache(shortname))
   }
 
@@ -207,7 +208,7 @@ const updateSettings = async ({
   }
 
   // if redis is in use, cleanup the page cache
-  if (redis) {
+  if (redisCache) {
     await cleanCache(shortname)
   }
 
@@ -271,7 +272,7 @@ const activateNextBlock = async ({ userId, shortname }) => {
       runningSession.blocks[prevBlockIndex].status = QuestionBlockStatus.EXECUTED
 
       // if redis is available, cleanup the instance data from the previous block
-      if (redis) {
+      if (redisControl) {
         // calculate the keys to be unlinked
         const keys = previousBlock.instances.reduce(
           (prevKeys, instanceId) => [...prevKeys, `${instanceId}:fp`, `${instanceId}:ip`, `${instanceId}:responses`],
@@ -283,7 +284,7 @@ const activateNextBlock = async ({ userId, shortname }) => {
         // unlink the keys from the redis store
         // const unlinkKeys = await redis.unlink(keys)
         // TODO: use unlink with redis 4.x
-        await redis.del(keys)
+        await redisControl.del(keys)
         // console.log(unlinkKeys)
         // promises.push(unlinkKeys)
       }
@@ -296,7 +297,7 @@ const activateNextBlock = async ({ userId, shortname }) => {
   promises.concat([runningSession.save(), user.save()])
 
   // if redis is in use, cleanup the page cache
-  if (redis) {
+  if (redisCache) {
     promises.push(cleanCache(shortname))
   }
 

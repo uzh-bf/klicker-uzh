@@ -437,12 +437,14 @@ exports[`Integration Session Execution allows running the full session flow (res
         status: ACTIVE
         instances: 
           isOpen: true
+          version: 0
           question {
             title: Test SC #2
             type: SC
           }
         ,
           isOpen: true
+          version: 0
           question {
             title: Test MC #2
             type: MC
@@ -452,6 +454,7 @@ exports[`Integration Session Execution allows running the full session flow (res
         status: PLANNED
         instances: 
           isOpen: false
+          version: 0
           question {
             title: Test FREE #2
             type: FREE
@@ -461,6 +464,7 @@ exports[`Integration Session Execution allows running the full session flow (res
         status: PLANNED
         instances: 
           isOpen: false
+          version: 0
           question {
             title: Test FREE_RANGE #2
             type: FREE_RANGE
@@ -584,12 +588,14 @@ exports[`Integration Session Execution allows running the full session flow (res
         status: EXECUTED
         instances: 
           isOpen: false
+          version: 0
           question {
             title: Test SC #2
             type: SC
           }
         ,
           isOpen: false
+          version: 0
           question {
             title: Test MC #2
             type: MC
@@ -599,6 +605,7 @@ exports[`Integration Session Execution allows running the full session flow (res
         status: ACTIVE
         instances: 
           isOpen: true
+          version: 0
           question {
             title: Test FREE #2
             type: FREE
@@ -608,6 +615,7 @@ exports[`Integration Session Execution allows running the full session flow (res
         status: PLANNED
         instances: 
           isOpen: false
+          version: 0
           question {
             title: Test FREE_RANGE #2
             type: FREE_RANGE
@@ -731,12 +739,14 @@ exports[`Integration Session Execution allows running the full session flow (res
         status: EXECUTED
         instances: 
           isOpen: false
+          version: 0
           question {
             title: Test SC #2
             type: SC
           }
         ,
           isOpen: false
+          version: 0
           question {
             title: Test MC #2
             type: MC
@@ -746,6 +756,7 @@ exports[`Integration Session Execution allows running the full session flow (res
         status: EXECUTED
         instances: 
           isOpen: false
+          version: 0
           question {
             title: Test FREE #2
             type: FREE
@@ -755,6 +766,7 @@ exports[`Integration Session Execution allows running the full session flow (res
         status: ACTIVE
         instances: 
           isOpen: true
+          version: 0
           question {
             title: Test FREE_RANGE #2
             type: FREE_RANGE
@@ -878,12 +890,14 @@ exports[`Integration Session Execution allows running the full session flow (res
         status: PLANNED
         instances: 
           isOpen: false
+          version: 0
           question {
             title: Test SC #2
             type: SC
           }
         ,
           isOpen: false
+          version: 0
           question {
             title: Test MC #2
             type: MC
@@ -893,6 +907,7 @@ exports[`Integration Session Execution allows running the full session flow (res
         status: PLANNED
         instances: 
           isOpen: false
+          version: 0
           question {
             title: Test FREE #2
             type: FREE
@@ -902,6 +917,7 @@ exports[`Integration Session Execution allows running the full session flow (res
         status: PLANNED
         instances: 
           isOpen: false
+          version: 0
           question {
             title: Test FREE_RANGE #2
             type: FREE_RANGE

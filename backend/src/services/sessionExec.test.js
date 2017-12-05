@@ -169,10 +169,10 @@ describe('SessionExecService', () => {
       preparedSession = await prepareSession(
         user.id,
         [
-          questions[QuestionTypes.SC].id,
-          questions[QuestionTypes.MC].id,
-          questions[QuestionTypes.FREE].id,
-          questions[QuestionTypes.FREE_RANGE].id,
+          { question: questions[QuestionTypes.SC].id, version: 0 },
+          { question: questions[QuestionTypes.MC].id, version: 0 },
+          { question: questions[QuestionTypes.FREE].id, version: 0 },
+          { question: questions[QuestionTypes.FREE_RANGE].id, version: 0 },
         ],
         true,
       )
