@@ -3038,7 +3038,7 @@ exports[`Storyshots questions Question (MC, >1 versions) 1`] = `
           className="text"
           role="alert"
         >
-          Revision 1 - 05.12.2017 18:12
+          Revision 1 - 08.02.2015 14:2
         </div>
         <i
           aria-hidden="true"
@@ -3064,7 +3064,7 @@ exports[`Storyshots questions Question (MC, >1 versions) 1`] = `
             <span
               className="text"
             >
-              Revision 1 - 05.12.2017 18:12
+              Revision 1 - 08.02.2015 14:2
             </span>
           </div>
         </div>
@@ -3228,7 +3228,7 @@ exports[`Storyshots questions Question (MC, no tags) 1`] = `
           className="text"
           role="alert"
         >
-          Revision 1 - 05.12.2017 18:12
+          Revision 1 - 08.02.2015 14:2
         </div>
         <i
           aria-hidden="true"
@@ -3254,7 +3254,7 @@ exports[`Storyshots questions Question (MC, no tags) 1`] = `
             <span
               className="text"
             >
-              Revision 1 - 05.12.2017 18:12
+              Revision 1 - 08.02.2015 14:2
             </span>
           </div>
         </div>
@@ -3408,7 +3408,7 @@ exports[`Storyshots questions Question (SC, 1 version) 1`] = `
           className="text"
           role="alert"
         >
-          Revision 1 - 05.12.2017 18:12
+          Revision 1 - 08.02.2015 14:2
         </div>
         <i
           aria-hidden="true"
@@ -3434,7 +3434,7 @@ exports[`Storyshots questions Question (SC, 1 version) 1`] = `
             <span
               className="text"
             >
-              Revision 1 - 05.12.2017 18:12
+              Revision 1 - 08.02.2015 14:2
             </span>
           </div>
         </div>
@@ -3815,7 +3815,7 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
             className="text"
             role="alert"
           >
-            Revision 1 - 05.12.2017 18:12
+            Revision 1 - 08.02.2015 14:2
           </div>
           <i
             aria-hidden="true"
@@ -3841,7 +3841,7 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
               <span
                 className="text"
               >
-                Revision 1 - 05.12.2017 18:12
+                Revision 1 - 08.02.2015 14:2
               </span>
             </div>
           </div>
@@ -4008,7 +4008,7 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
             className="text"
             role="alert"
           >
-            Revision 2 - 05.12.2017 18:12
+            Revision 2 - 02.03.2016 14:3
           </div>
           <i
             aria-hidden="true"
@@ -4034,7 +4034,7 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
               <span
                 className="text"
               >
-                Revision 1 - 05.12.2017 18:12
+                Revision 1 - 08.02.2015 14:2
               </span>
             </div>
             <div
@@ -4053,7 +4053,7 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
               <span
                 className="text"
               >
-                Revision 2 - 05.12.2017 18:12
+                Revision 2 - 02.03.2016 14:3
               </span>
             </div>
           </div>
@@ -4221,7 +4221,7 @@ exports[`Storyshots questions QuestionList 1`] = `
             className="text"
             role="alert"
           >
-            Revision 1 - 05.12.2017 18:12
+            Revision 1 - 08.02.2015 14:2
           </div>
           <i
             aria-hidden="true"
@@ -4247,7 +4247,7 @@ exports[`Storyshots questions QuestionList 1`] = `
               <span
                 className="text"
               >
-                Revision 1 - 05.12.2017 18:12
+                Revision 1 - 08.02.2015 14:2
               </span>
             </div>
           </div>
@@ -4403,7 +4403,7 @@ exports[`Storyshots questions QuestionList 1`] = `
             className="text"
             role="alert"
           >
-            Revision 2 - 05.12.2017 18:12
+            Revision 2 - 02.03.2016 14:3
           </div>
           <i
             aria-hidden="true"
@@ -4429,7 +4429,7 @@ exports[`Storyshots questions QuestionList 1`] = `
               <span
                 className="text"
               >
-                Revision 1 - 05.12.2017 18:12
+                Revision 1 - 08.02.2015 14:2
               </span>
             </div>
             <div
@@ -4448,7 +4448,7 @@ exports[`Storyshots questions QuestionList 1`] = `
               <span
                 className="text"
               >
-                Revision 2 - 05.12.2017 18:12
+                Revision 2 - 02.03.2016 14:3
               </span>
             </div>
           </div>

@@ -4,7 +4,7 @@ const question = {
   tags: [{ id: 0, name: 'CAPM' }, { id: 1, name: 'Risk' }],
   title: 'This is a long question',
   type: 'SC',
-  versions: [{ description: 'test 1' }],
+  versions: [{ createdAt: '2015-02-08 14:32:11', description: 'test 1' }],
 }
 
 const questionBlock = {
@@ -20,7 +20,7 @@ const question2 = {
     id: '4c821db7-0940-4a24-b31a-7969104bbc9f',
     title: question.title,
     type: question.type,
-    versions: [{ description: 'test 1' }],
+    versions: [{ createdAt: '2015-02-08 14:32:11', description: 'test 1' }],
   },
 }
 
@@ -50,7 +50,7 @@ const questions = [
     tags: [{ id: 0, name: 'tag1' }, { id: 1, name: 'tag2' }],
     instances: [{ createdAt: '2015-02-08 14:32:11' }],
     type: 'SC',
-    versions: [{ description: 'test 1' }],
+    versions: [{ createdAt: '2015-02-08 14:32:11', description: 'test 1' }],
   },
   {
     id: '2',
@@ -58,7 +58,10 @@ const questions = [
     tags: [{ id: 2, name: 'tag3' }, { id: 3, name: 'tag2' }],
     instances: [{ createdAt: '2015-02-08 14:32:11' }, { createdAt: '2015-02-10 17:32:11' }],
     type: 'MC',
-    versions: [{ description: 'test2' }, { description: 'test3' }],
+    versions: [
+      { createdAt: '2015-02-08 14:32:11', description: 'test2' },
+      { createdAt: '2016-03-02 14:32:11', description: 'test3' },
+    ],
   },
 ]
 
