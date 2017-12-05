@@ -24,9 +24,7 @@ storiesOf('questions', module)
     <DragDropContextProvider backend={HTML5Backend}>{getStory()}</DragDropContextProvider>
   ))
   .add('Question (SC, 1 version)', () => <Question {...fixtures.question} />)
-  .add('Question (MC, >1 versions)', () => (
-    <Question {...fixtures.question} type="MC" version={2} />
-  ))
+  .add('Question (MC, >1 versions)', () => <Question {...fixtures.question} type="MC" />)
   .add('Question (MC, no tags)', () => <Question {...fixtures.question} tags={[]} type="MC" />)
   .add('QuestionDetails', () => (
     <QuestionDetails
