@@ -104,9 +104,9 @@
     "dev": "nodemon --delay 1000ms -w .env -w package.json -w yarn.lock -w server.js server.js",
     "dev:inspect":
       "nodemon --delay 1000ms -w .env -w package.json -w yarn.lock -w server.js --inspect server.js",
-    "format": "prettier-eslint --single-quote --no-semi --write server.js \"src/**/*.js\"",
+    "format": "prettier-eslint --singleQuote --no-semi --write server.js \"src/**/*.js\"",
     "format:ci":
-      "prettier-eslint --single-quote --no-semi --list-different server.js \"src/**/*.js\"",
+      "prettier-eslint --singleQuote --no-semi --list-different server.js \"src/**/*.js\"",
     "lint": "eslint server.js \"src/**/*.js\"",
     "start": "cross-env NODE_ENV=production node server.js",
     "start:inspect": "cross-env NODE_ENV=production node --inspect server.js",
