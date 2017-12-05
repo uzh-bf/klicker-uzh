@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
   XAxis,
   YAxis,
+  Tooltip,
 } from 'recharts'
 import { withProps } from 'recompose'
 import _round from 'lodash/round'
@@ -30,6 +31,22 @@ const defaultProps = {
   data: [],
   isSolutionShown: false,
 }
+
+/*
+const renderTooltip = (props) => {
+  console.log(props)
+  return (
+    <div className="tooltip">
+      Test
+      <style jsx>{`
+        .tooltip {
+          background-color: white;
+          color: red;
+        }
+      `}</style>
+    </div>
+  )
+} */
 
 const StackChart = ({ isSolutionShown, data }) => (
   <ResponsiveContainer>
@@ -61,22 +78,16 @@ const StackChart = ({ isSolutionShown, data }) => (
         label={{ angle: -90, position: 'insideLeft', value: 'Responses' }}
       />
       <CartesianGrid strokeDasharray="3 3" vertical={false} />
+      <Tooltip />
       <Bar
         dataKey="count"
         isAnimationActive={false}
         // HACK: don't animate as it causes labels to disappear
         maxBarSize="5rem"
+        stackId="a"
       >
         <LabelList
-          dataKey="percentage"
-          fill="black"
-          offset={30}
-          position="top"
-          stroke="black"
-          style={{ fontSize: '1.5rem' }}
-        />
-        <LabelList
-          dataKey="label"
+          dataKey="count"
           fill="white"
           position="inside"
           stroke="white"
@@ -84,7 +95,31 @@ const StackChart = ({ isSolutionShown, data }) => (
         />
         {data.map((row, index) => (
           <Cell
-            fill={isSolutionShown && row.correct ? '#00FF00' : CHART_COLORS[index % 12]}
+            fill={isSolutionShown ? (row.correct ? 'green' : CHART_COLORS[index % 12]) : 'green'}
+            key={row.value}
+          />
+        ))}
+      </Bar>
+
+      <Bar dataKey="residual" stackId="a">
+        <LabelList
+          dataKey="residual"
+          fill="white"
+          position="inside"
+          stroke="white"
+          style={{ fontSize: '3rem' }}
+        />
+        <LabelList
+          dataKey="label"
+          fill="black"
+          offset={30}
+          position="top"
+          stroke="black"
+          style={{ fontSize: '1.5rem' }}
+        />
+        {data.map((row, index) => (
+          <Cell
+            fill={isSolutionShown ? (!row.correct ? 'green' : CHART_COLORS[index % 12]) : 'red'}
             key={row.value}
           />
         ))}
@@ -102,8 +137,11 @@ export default withProps(({ data, totalResponses }) => ({
   data: data.filter(({ count }) => count > 0).map(({ correct, count, value }, index) => ({
     correct,
     count,
+    count_correct: correct ? count : totalResponses - count,
+    count_wrong: correct ? totalResponses - count : count,
     label: String.fromCharCode(65 + index),
     percentage: `${count} | ${_round(100 * (count / totalResponses), 2)} %`,
+    residual: totalResponses - count,
     value,
   })),
 }))(StackChart)
