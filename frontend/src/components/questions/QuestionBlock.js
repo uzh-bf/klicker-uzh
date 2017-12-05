@@ -24,13 +24,12 @@ const QuestionBlock = ({ status, questions, timeLimit }) => (
       <Icon name="clock" />
       {timeLimit}s
     </div>
-    {/* <div className="showSolution">
-      <Icon name={showSolutions ? 'unhide' : 'hide'} />
-    </div> */}
     <div className="sessionStatus">{status}</div>
     <div className="questions">
-      {questions.map(({ id, title, type }) => (
-        <QuestionSingle id={id} key={id} title={title} type={type} />
+      {questions.map(({
+ id, title, type, version,
+}) => (
+  <QuestionSingle id={id} key={id} title={title} type={type} version={version} />
       ))}
     </div>
     <style jsx>{`

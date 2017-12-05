@@ -4,11 +4,18 @@ import PropTypes from 'prop-types'
 const propTypes = {
   title: PropTypes.string.isRequired,
   type: PropTypes.string.isRequired,
+  version: PropTypes.number,
 }
 
-const QuestionSingle = ({ type, title }) => (
+const defaultProps = {
+  version: 0,
+}
+
+const QuestionSingle = ({ type, title, version }) => (
   <div className="questionSingle">
-    <div className="title">{title}</div>
+    <div className="title">
+      {title} (v{version + 1})
+    </div>
     <div className="type">{type}</div>
 
     <style jsx>{`
@@ -21,11 +28,11 @@ const QuestionSingle = ({ type, title }) => (
         border: 1px solid $color-primary !important;
         background-color: $color-primary-background;
 
-        .title,
-        .type {
+        .title {
           flex: 1;
         }
         .type {
+          flex: 0 0 auto;
           text-align: right;
         }
       }
@@ -34,5 +41,6 @@ const QuestionSingle = ({ type, title }) => (
 )
 
 QuestionSingle.propTypes = propTypes
+QuestionSingle.defaultProps = defaultProps
 
 export default QuestionSingle
