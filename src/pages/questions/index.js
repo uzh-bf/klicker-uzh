@@ -4,7 +4,7 @@ import { compose, withState, withHandlers } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
-import { Button } from 'semantic-ui-react'
+import { Button, Icon } from 'semantic-ui-react'
 import Link from 'next/link'
 
 import { pageWithIntl, withData } from '../../lib'
@@ -93,21 +93,54 @@ const Index = ({
           <TagList activeTags={filters.tags} handleTagClick={handleTagClick} />
         </div>
         <div className="questionList">
-          <div className="buttons">
-            <Button onClick={handleCreationModeToggle}>
-              <FormattedMessage
-                defaultMessage="Create Session"
-                id="questionPool.button.createSession"
-              />
-            </Button>
-            <Link href="/questions/create">
-              <Button>
+          <div className="actionArea">
+            <div className="actionButtons">
+              <Button primary onClick={handleCreationModeToggle}>
                 <FormattedMessage
-                  defaultMessage="Create Question"
-                  id="questionPool.button.createQuestion"
+                  defaultMessage="Create Session"
+                  id="questionPool.button.createSession"
                 />
               </Button>
-            </Link>
+              <Link href="/questions/create">
+                <Button primary>
+                  <FormattedMessage
+                    defaultMessage="Create Question"
+                    id="questionPool.button.createQuestion"
+                  />
+                </Button>
+              </Link>
+            </div>
+            {creationMode && (
+              <div className="creationButtons">
+                <div className="checkedCounter">
+                  <FormattedMessage
+                    defaultMessage="{count} items checked."
+                    id="questionPool.itemsChecked"
+                    values={{
+                      count: 1,
+                    }}
+                  />
+                </div>
+                <Button icon labelPosition="left">
+                  <Icon name="lightning" />
+                  <FormattedMessage
+                    defaultMessage="Split into {num} block{end}"
+                    id="questionPool.button.quickCreateSeparate"
+                    values={{
+                      end: '',
+                      num: 1,
+                    }}
+                  />
+                </Button>
+                <Button icon labelPosition="left">
+                  <Icon name="lightning" />
+                  <FormattedMessage
+                    defaultMessage="Group into one block"
+                    id="questionPool.button.quickCreateSingle"
+                  />
+                </Button>
+              </div>
+            )}
           </div>
           <QuestionList
             creationMode={creationMode}
@@ -127,17 +160,16 @@ const Index = ({
           height: 100%;
 
           .questionList {
-            // HACK: workaround for creating session div overlapping the question list
             padding: 1rem;
-            padding-bottom: 235px;
 
-            .buttons {
+            .actionArea {
               margin: 0 0 1rem 0;
 
               display: flex;
-              justify-content: center;
+              flex-direction: column;
+              align-items: center;
 
-              > :global(button:last-child) {
+              :global(button:last-child) {
                 margin-right: 0;
               }
             }
@@ -161,9 +193,21 @@ const Index = ({
               flex: 1;
               padding: 1rem;
 
-              .buttons {
+              .actionArea {
                 display: flex;
-                justify-content: flex-end;
+                flex-direction: row;
+                justify-content: space-between;
+              }
+
+              .creationButtons {
+                display: flex;
+                flex-direction: row;
+                align-items: flex-end;
+              }
+
+              .checkedCounter {
+                color: grey;
+                margin-right: 1rem;
               }
             }
           }
