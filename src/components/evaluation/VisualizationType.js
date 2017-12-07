@@ -14,6 +14,7 @@ const propTypes = {
 const options = [
   { text: 'Pie Chart', value: 'PIE_CHART', withinType: ['SC'] },
   { text: 'Bar Chart', value: 'BAR_CHART', withinType: ['SC', 'MC'] },
+  { text: 'Stacked Chart', value: 'STACK_CHART', withinType: ['MC'] },
   { text: 'Word Cloud', value: 'WORD_CLOUD', withinType: ['FREE', 'FREE_RANGE'] },
   { text: 'Table', value: 'TABLE', withinType: ['SC', 'MC', 'FREE', 'FREE_RANGE'] },
   { text: 'Histogram', value: 'HISTOGRAM', withinType: ['FREE_RANGE'] },
