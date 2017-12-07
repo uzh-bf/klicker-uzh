@@ -23,7 +23,7 @@ export const QUESTION_GROUPS = {
 export const CHART_DEFAULTS = {
   FREE: 'TABLE',
   FREE_RANGE: 'HISTOGRAM',
-  MC: 'BAR_CHART',
+  MC: 'STACK_CHART',
   OTHER: 'TABLE',
   SC: 'PIE_CHART',
 }
