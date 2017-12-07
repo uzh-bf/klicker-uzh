@@ -68,7 +68,8 @@
     "redux-form": "7.2.0",
     "semantic-ui-react": "0.77.0",
     "styled-jsx-plugin-sass": "0.2.1",
-    "validator": "9.1.2"
+    "validator": "9.1.2",
+    "webpack": "3.9.1"
   },
   "devDependencies": {
     "@storybook/addon-actions": "3.2.16",
