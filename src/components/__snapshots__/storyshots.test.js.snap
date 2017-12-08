@@ -2802,10 +2802,10 @@ exports[`Storyshots questionTypes/FREE FREE_RANGE Answering Options (upper bound
 
 exports[`Storyshots questionTypes/SC SC Answering Options 1`] = `
 <div
-  className="jsx-362972621 options"
+  className="jsx-3302775466 options"
 >
   <div
-    className="jsx-362972621 option"
+    className="jsx-3302775466 option"
   >
     <button
       className="ui fluid button"
@@ -2818,7 +2818,7 @@ exports[`Storyshots questionTypes/SC SC Answering Options 1`] = `
     </button>
   </div>
   <div
-    className="jsx-362972621 option"
+    className="jsx-3302775466 option"
   >
     <button
       className="ui fluid button"
@@ -2831,7 +2831,7 @@ exports[`Storyshots questionTypes/SC SC Answering Options 1`] = `
     </button>
   </div>
   <div
-    className="jsx-362972621 option"
+    className="jsx-3302775466 option"
   >
     <button
       className="ui fluid button"
@@ -3017,10 +3017,10 @@ exports[`Storyshots questionTypes/SC SC Creation Preview 1`] = `
     className="jsx-42818339 options"
   >
     <div
-      className="jsx-362972621 options"
+      className="jsx-3302775466 options"
     >
       <div
-        className="jsx-362972621 option"
+        className="jsx-3302775466 option"
       >
         <button
           className="ui fluid disabled button"
@@ -3033,7 +3033,7 @@ exports[`Storyshots questionTypes/SC SC Creation Preview 1`] = `
         </button>
       </div>
       <div
-        className="jsx-362972621 option"
+        className="jsx-3302775466 option"
       >
         <button
           className="ui fluid disabled button"
@@ -3046,7 +3046,7 @@ exports[`Storyshots questionTypes/SC SC Creation Preview 1`] = `
         </button>
       </div>
       <div
-        className="jsx-362972621 option"
+        className="jsx-3302775466 option"
       >
         <button
           className="ui fluid disabled button"
