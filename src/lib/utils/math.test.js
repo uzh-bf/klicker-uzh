@@ -25,4 +25,16 @@ describe('math', () => {
   it('calculates median correctly', () => {
     expect(calculateMedian(results)).toEqual(3)
   })
+
+  it.skip('calculates q1 correctly', () => {
+    // TODO
+  })
+
+  it.skip('calcilates q3 correctly', () => {
+    // TODO
+  })
+
+  it.skip('calculates std correctly', () => {
+    // TODO
+  })
 })
