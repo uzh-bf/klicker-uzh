@@ -100,7 +100,10 @@ const renderAndCache = async (req, res, pagePath, queryParams) => {
     const html = await app.renderToHTML(req, res, pagePath, queryParams)
 
     res.send(html)
-    cache.set(key, html)
+
+    // let the cache expire after 10 minutes
+    // TODO: do this depending on page or dynamically?
+    cache.set(key, html, 'EX', 600)
   } catch (e) {
     app.renderError(e, req, res, pagePath, queryParams)
   }
@@ -143,11 +146,9 @@ app
         url: '/',
       },
       {
-        cached: true,
         url: '/user/login',
       },
       {
-        cached: true,
         url: '/user/registration',
       },
       {
