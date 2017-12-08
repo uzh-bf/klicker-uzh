@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Button, Menu } from 'semantic-ui-react'
+import { Button, Progress } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 const propTypes = {
@@ -9,7 +9,7 @@ const propTypes = {
   isSubmitDisabled: PropTypes.bool,
   items: PropTypes.array.isRequired,
   onSubmit: PropTypes.func.isRequired,
-  setActiveIndex: PropTypes.func.isRequired,
+  // setActiveIndex: PropTypes.func.isRequired,
 }
 
 const defaultProps = {
@@ -22,12 +22,12 @@ function ActionMenu({
   isSkipModeActive,
   isSubmitDisabled,
   items,
-  setActiveIndex,
+  // setActiveIndex,
   onSubmit,
 }) {
   return (
     <div className="actionMenu">
-      <Menu borderless className="noBorder">
+      {/* <Menu borderless className="noBorder">
         {items.map(({ done }, index) => (
           <Menu.Item
             active={index === activeIndex}
@@ -45,21 +45,51 @@ function ActionMenu({
             )}
           </Button>
         </Menu.Item>
-      </Menu>
+          </Menu> */}
+      <div className="progress">
+        <Progress autoSuccess progress="ratio" total={items.length} value={activeIndex} />
+      </div>
+      <div className="actions">
+        <Button fluid primary disabled={isSubmitDisabled} onClick={onSubmit}>
+          {isSkipModeActive ? (
+            <FormattedMessage defaultMessage="Skip" id="common.string.skip" />
+          ) : (
+            <FormattedMessage defaultMessage="Submit" id="common.string.submit" />
+          )}
+        </Button>
+      </div>
 
       <style jsx>{`
         @import 'src/theme';
 
         .actionMenu {
+          align-items: center;
           border-top: 1px solid $color-primary-20p;
+          display: flex;
+          flex-direction: row;
 
-          :global(.item.active) {
+          padding: 0.5rem 1rem;
+
+          .progress {
+            flex: 1;
+            margin-right: 1rem;
+
+            :global(.ui.progress) {
+              margin: 0;
+            }
+          }
+
+          .actions {
+            flex: 0 0 7rem;
+          }
+
+          /* :global(.item.active) {
             background-color: $color-primary-50p;
 
             &:hover {
               background-color: $color-primary-50p;
             }
-          }
+          } */
 
           :global(.item.submitButton button.button) {
             margin: 0;
