@@ -1699,10 +1699,10 @@ exports[`Storyshots evaluation/components Statistics 1`] = `
       </div>
     </div>
     <div
-      className="jsx-865544459 evaluationListItem"
+      className="jsx-764491627 evaluationListItem"
     >
       <div
-        className="jsx-865544459 colorSquare"
+        className="jsx-764491627 colorSquare"
       >
         <i
           aria-hidden="true"
@@ -1710,14 +1710,36 @@ exports[`Storyshots evaluation/components Statistics 1`] = `
         />
       </div>
       <div
-        className="jsx-865544459 content"
+        className="jsx-764491627 content"
       >
-        100
+        -
       </div>
       <div
-        className="jsx-865544459 marker"
+        className="jsx-764491627 marker"
       >
-        MAX
+        Q1
+      </div>
+    </div>
+    <div
+      className="jsx-725384191 evaluationListItem"
+    >
+      <div
+        className="jsx-725384191 colorSquare"
+      >
+        <i
+          aria-hidden="true"
+          className="square icon icon"
+        />
+      </div>
+      <div
+        className="jsx-725384191 content"
+      >
+        23
+      </div>
+      <div
+        className="jsx-725384191 marker"
+      >
+        MEDIAN
       </div>
     </div>
     <div
@@ -1743,10 +1765,10 @@ exports[`Storyshots evaluation/components Statistics 1`] = `
       </div>
     </div>
     <div
-      className="jsx-725384191 evaluationListItem"
+      className="jsx-764491627 evaluationListItem"
     >
       <div
-        className="jsx-725384191 colorSquare"
+        className="jsx-764491627 colorSquare"
       >
         <i
           aria-hidden="true"
@@ -1754,14 +1776,58 @@ exports[`Storyshots evaluation/components Statistics 1`] = `
         />
       </div>
       <div
-        className="jsx-725384191 content"
+        className="jsx-764491627 content"
       >
-        23
+        -
       </div>
       <div
-        className="jsx-725384191 marker"
+        className="jsx-764491627 marker"
       >
-        MEDIAN
+        Q3
+      </div>
+    </div>
+    <div
+      className="jsx-865544459 evaluationListItem"
+    >
+      <div
+        className="jsx-865544459 colorSquare"
+      >
+        <i
+          aria-hidden="true"
+          className="square icon icon"
+        />
+      </div>
+      <div
+        className="jsx-865544459 content"
+      >
+        100
+      </div>
+      <div
+        className="jsx-865544459 marker"
+      >
+        MAX
+      </div>
+    </div>
+    <div
+      className="jsx-865544459 evaluationListItem"
+    >
+      <div
+        className="jsx-865544459 colorSquare"
+      >
+        <i
+          aria-hidden="true"
+          className="square icon icon"
+        />
+      </div>
+      <div
+        className="jsx-865544459 content"
+      >
+        -
+      </div>
+      <div
+        className="jsx-865544459 marker"
+      >
+        SD
       </div>
     </div>
   </div>
