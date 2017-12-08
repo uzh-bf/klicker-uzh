@@ -94,31 +94,33 @@ function FeedbackArea({
             </div>
           ))}
 
-        <Form className="newFeedback">
-          <Form.Field>
-            <label htmlFor="feedbackInput">
-              <FormattedMessage
-                defaultMessage="New Feedback"
-                id="joinSession.newFeedbackInput.label"
-              />
-              <textarea
-                name="feedbackInput"
-                value={feedbackInputValue}
-                onChange={handleFeedbackInputValueChange}
-              />
-            </label>
-          </Form.Field>
+        {isFeedbackChannelActive && (
+          <Form className="newFeedback">
+            <Form.Field>
+              <label htmlFor="feedbackInput">
+                <FormattedMessage
+                  defaultMessage="New Feedback"
+                  id="joinSession.newFeedbackInput.label"
+                />
+                <textarea
+                  name="feedbackInput"
+                  value={feedbackInputValue}
+                  onChange={handleFeedbackInputValueChange}
+                />
+              </label>
+            </Form.Field>
 
-          <Button
-            primary
-            disabled={!feedbackInputValue}
-            floated="right"
-            type="submit"
-            onClick={handleNewFeedback}
-          >
-            <FormattedMessage defaultMessage="Submit" id="common.form.submit" />
-          </Button>
-        </Form>
+            <Button
+              primary
+              disabled={!feedbackInputValue}
+              floated="right"
+              type="submit"
+              onClick={handleNewFeedback}
+            >
+              <FormattedMessage defaultMessage="Submit" id="common.form.submit" />
+            </Button>
+          </Form>
+        )}
       </div>
 
       <style jsx>{`
