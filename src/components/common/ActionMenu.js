@@ -7,7 +7,8 @@ const propTypes = {
   activeIndex: PropTypes.number.isRequired,
   isSkipModeActive: PropTypes.bool,
   isSubmitDisabled: PropTypes.bool,
-  items: PropTypes.array.isRequired,
+  numItems: PropTypes.number.isRequired,
+  // items: PropTypes.array.isRequired,
   onSubmit: PropTypes.func.isRequired,
   // setActiveIndex: PropTypes.func.isRequired,
 }
@@ -21,7 +22,8 @@ function ActionMenu({
   activeIndex,
   isSkipModeActive,
   isSubmitDisabled,
-  items,
+  numItems,
+  // items,
   // setActiveIndex,
   onSubmit,
 }) {
@@ -47,14 +49,14 @@ function ActionMenu({
         </Menu.Item>
           </Menu> */}
       <div className="progress">
-        <Progress autoSuccess progress="ratio" total={items.length} value={activeIndex} />
+        <Progress autoSuccess progress="ratio" total={numItems} value={activeIndex} />
       </div>
       <div className="actions">
         <Button fluid primary disabled={isSubmitDisabled} onClick={onSubmit}>
           {isSkipModeActive ? (
-            <FormattedMessage defaultMessage="Skip" id="common.string.skip" />
+            <FormattedMessage defaultMessage="Skip" id="common.button.skip" />
           ) : (
-            <FormattedMessage defaultMessage="Submit" id="common.string.submit" />
+            <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
           )}
         </Button>
       </div>
