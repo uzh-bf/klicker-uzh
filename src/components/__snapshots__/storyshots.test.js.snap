@@ -41,47 +41,45 @@ exports[`Storyshots common/components ActionButton 1`] = `
 
 exports[`Storyshots common/components ActionMenu 1`] = `
 <div
-  className="jsx-3174408904 actionMenu"
+  className="jsx-761699691 actionMenu"
 >
   <div
-    className="ui borderless noBorder menu"
+    className="jsx-761699691 progress"
   >
     <div
-      className="icon item"
-      onClick={[Function]}
+      className="ui progress"
+      data-percent={NaN}
     >
-      <i
-        aria-hidden="true"
-        className="hand pointer icon"
-      />
-      
-    </div>
-    <a
-      className="disabled icon item"
-      onClick={[Function]}
-    >
-      <i
-        aria-hidden="true"
-        className="checkmark icon"
-      />
-      
-    </a>
-    <div
-      className="right item submitButton"
-      onClick={[Function]}
-    >
-      <button
-        className="ui fluid primary button"
-        disabled={undefined}
-        onClick={[Function]}
-        role="button"
-        tabIndex={undefined}
+      <div
+        className="bar"
+        style={
+          Object {
+            "width": "NaN%",
+          }
+        }
       >
-        <span>
-          Skip
-        </span>
-      </button>
+        <div
+          className="progress"
+        >
+          undefined/undefined
+        </div>
+      </div>
     </div>
+  </div>
+  <div
+    className="jsx-761699691 actions"
+  >
+    <button
+      className="ui fluid primary button"
+      disabled={undefined}
+      onClick={[Function]}
+      role="button"
+      tabIndex={undefined}
+    >
+      <span>
+        Skip
+      </span>
+    </button>
   </div>
 </div>
 `;
@@ -120,10 +118,10 @@ exports[`Storyshots common/components Button 1`] = `
 
 exports[`Storyshots common/components Collapser (extended) 1`] = `
 <div
-  className="jsx-329073836 collapser"
+  className="jsx-884473926 collapser"
 >
   <div
-    className="jsx-329073836 content"
+    className="jsx-884473926 content"
   >
     <div>
       <p>
@@ -143,7 +141,7 @@ exports[`Storyshots common/components Collapser (extended) 1`] = `
     </div>
   </div>
   <div
-    className="jsx-329073836 collapse"
+    className="jsx-884473926 collapse"
   >
     <i
       aria-hidden="true"
@@ -156,10 +154,10 @@ exports[`Storyshots common/components Collapser (extended) 1`] = `
 
 exports[`Storyshots common/components Collapser 1`] = `
 <div
-  className="jsx-329073836 collapser"
+  className="jsx-884473926 collapser"
 >
   <div
-    className="jsx-329073836 content collapsed"
+    className="jsx-884473926 content collapsed"
   >
     <div>
       <p>
@@ -179,7 +177,7 @@ exports[`Storyshots common/components Collapser 1`] = `
     </div>
   </div>
   <div
-    className="jsx-329073836 collapse"
+    className="jsx-884473926 collapse"
   >
     <i
       aria-hidden="true"
@@ -2644,13 +2642,13 @@ exports[`Storyshots forms/helpers SemanticInput 1`] = `
 
 exports[`Storyshots questionTypes/FREE FREE Answering Options (unrestricted) 1`] = `
 <div
-  className="jsx-28718466 ui form freeAnswerOptions"
+  className="jsx-3044738652 ui form freeAnswerOptions"
 >
   <div
-    className="jsx-28718466 field"
+    className="jsx-3044738652 field"
   >
     <textarea
-      className="jsx-28718466"
+      className="jsx-3044738652"
       disabled={false}
       id="responseInput"
       onChange={[Function]}
@@ -2751,13 +2749,13 @@ exports[`Storyshots questionTypes/FREE FREE Creation Preview (unrestricted) 1`] 
 
 exports[`Storyshots questionTypes/FREE FREE_RANGE Answering Options (Number restriction) 1`] = `
 <div
-  className="jsx-28718466 ui form freeAnswerOptions"
+  className="jsx-3044738652 ui form freeAnswerOptions"
 >
   <div
-    className="jsx-28718466 field"
+    className="jsx-3044738652 field"
   >
     <textarea
-      className="jsx-28718466"
+      className="jsx-3044738652"
       disabled={false}
       id="responseInput"
       onChange={[Function]}
@@ -2768,13 +2766,13 @@ exports[`Storyshots questionTypes/FREE FREE_RANGE Answering Options (Number rest
 
 exports[`Storyshots questionTypes/FREE FREE_RANGE Answering Options (lower bound restriction) 1`] = `
 <div
-  className="jsx-28718466 ui form freeAnswerOptions"
+  className="jsx-3044738652 ui form freeAnswerOptions"
 >
   <div
-    className="jsx-28718466 field"
+    className="jsx-3044738652 field"
   >
     <textarea
-      className="jsx-28718466"
+      className="jsx-3044738652"
       disabled={false}
       id="responseInput"
       onChange={[Function]}
@@ -2785,13 +2783,13 @@ exports[`Storyshots questionTypes/FREE FREE_RANGE Answering Options (lower bound
 
 exports[`Storyshots questionTypes/FREE FREE_RANGE Answering Options (upper bound restriction) 1`] = `
 <div
-  className="jsx-28718466 ui form freeAnswerOptions"
+  className="jsx-3044738652 ui form freeAnswerOptions"
 >
   <div
-    className="jsx-28718466 field"
+    className="jsx-3044738652 field"
   >
     <textarea
-      className="jsx-28718466"
+      className="jsx-3044738652"
       disabled={false}
       id="responseInput"
       onChange={[Function]}
