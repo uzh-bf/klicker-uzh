@@ -255,15 +255,17 @@ export default compose(
       mutate,
       handleCreationModeToggle,
       handleStartSession,
-    }) => type => async ({ sessionName, questions }) => {
+    }) => type => async ({ sessionName, blocks }) => {
       try {
-        // HACK: map each question into a separate question block
-        const blocks = questions.map(question => ({ questions: [question.id] }))
+        // prepare blocks for consumption through the api
+        const parsedBlocks = blocks.map(({ questions }) => ({
+          questions: questions.map(({ id, version }) => ({ question: id, version })),
+        }))
 
         // create a new session
         const result = await mutate({
           refetchQueries: [{ query: SessionListQuery }],
-          variables: { blocks, name: sessionName },
+          variables: { blocks: parsedBlocks, name: sessionName },
         })
 
         // start the session immediately if the respective button was clicked
