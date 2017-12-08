@@ -1,3 +1,5 @@
+/* eslint-disable no-mixed-operators */
+
 import _maxBy from 'lodash/maxBy'
 import _minBy from 'lodash/minBy'
 

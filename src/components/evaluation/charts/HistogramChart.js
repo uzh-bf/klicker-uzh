@@ -72,32 +72,44 @@ const HistogramChart = ({
         <ReferenceLine
           isFront
           label={{
- position: 'top', value: 'MEAN', fill: 'blue', fontSize: 14,
-}}
+            fill: 'blue',
+            fontSize: '1rem',
+            position: 'top',
+            value: 'MEAN',
+          }}
           stroke="blue"
           x={Math.round(statistics.mean)}
         />,
         <ReferenceLine
           isFront
           label={{
- position: 'top', value: 'MEDIAN', fill: 'red', fontSize: 14,
-}}
+            fill: 'red',
+            fontSize: '1rem',
+            position: 'top',
+            value: 'MEDIAN',
+          }}
           stroke="red"
           x={Math.round(statistics.median)}
         />,
         <ReferenceLine
           isFront
           label={{
- position: 'top', value: 'Q1', fill: 'black', fontSize: 14,
-}}
+            fill: 'black',
+            fontSize: '1rem',
+            position: 'top',
+            value: 'Q1',
+          }}
           stroke="black"
           x={Math.round(statistics.q1)}
         />,
         <ReferenceLine
           isFront
           label={{
- position: 'top', value: 'Q3', fill: 'black', fontSize: 14,
-}}
+            fill: 'black',
+            fontSize: '1rem',
+            position: 'top',
+            value: 'Q3',
+          }}
           stroke="black"
           x={Math.round(statistics.q3)}
         />,
