@@ -207,7 +207,7 @@ export default compose(
         // otherwise generate a new fingerprint and store it in a cookie
         try {
           new Fingerprint2().get((result) => {
-            Cookies.set('fp', result)
+            Cookies.set('fp', result, { path: '' })
             resolve(result)
           })
         } catch (err) {

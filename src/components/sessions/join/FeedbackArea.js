@@ -54,8 +54,8 @@ function FeedbackArea({
             handleChange={newValue => handleConfusionSpeedChange(newValue)}
             handleChangeComplete={handleNewConfusionTS}
             labels={{ max: 'fast', mid: 'optimal', min: 'slow' }}
-            max={10}
-            min={-10}
+            max={5}
+            min={-5}
             title={
               <h2>
                 <FormattedMessage defaultMessage="Speed" id="common.string.speed" />
@@ -68,8 +68,8 @@ function FeedbackArea({
             handleChange={newValue => handleConfusionDifficultyChange(newValue)}
             handleChangeComplete={handleNewConfusionTS}
             labels={{ max: 'hard', mid: 'optimal', min: 'easy' }}
-            max={10}
-            min={-10}
+            max={5}
+            min={-5}
             title={
               <h2>
                 <FormattedMessage defaultMessage="Difficulty" id="common.string.difficulty" />
@@ -230,7 +230,11 @@ export default compose(
       handleNewConfusionTS({ difficulty: confusionDifficulty, speed: confusionSpeed })
 
       // update the confusion cookie
-      Cookies.set('confusion', { difficulty: confusionDifficulty, speed: confusionSpeed })
+      Cookies.set(
+        'confusion',
+        { difficulty: confusionDifficulty, speed: confusionSpeed },
+        { path: '' },
+      )
     },
     handleNewFeedback: ({
       feedbackInputValue,

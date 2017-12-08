@@ -229,20 +229,21 @@ QuestionArea.defaultProps = defaultProps
 
 export default compose(
   withProps(({ questions }) => {
-    const storedResponses = Cookies.getJSON('responses') || Cookies.set('responses', []) || []
+    const storedResponses = Cookies.getJSON('responses') || []
 
-    return {
+    const result = {
       remainingQuestions: questions
-        .map(({ instanceId }, index) => {
+        .filter(({ instanceId }) => {
           if (storedResponses.includes(instanceId)) {
-            return -1
+            return false
           }
 
-          return index
+          return true
         })
-        .filter(index => index !== -1),
-      storedResponses,
+        .map((v, index) => index),
     }
+
+    return result
   }),
   withStateHandlers(
     ({ remainingQuestions }) => ({
@@ -326,7 +327,6 @@ export default compose(
       handleNewResponse,
       handleSubmit,
       inputValue,
-      storedResponses,
     }) => () => {
       const { instanceId, type } = questions[activeQuestion]
 
@@ -340,7 +340,8 @@ export default compose(
       }
 
       // update the stored responses
-      Cookies.set('responses', [...storedResponses, instanceId])
+      const storedResponses = Cookies.getJSON('responses') || []
+      Cookies.set('responses', [...storedResponses, instanceId], { expires: 7, path: '' })
 
       handleSubmit()
     },
