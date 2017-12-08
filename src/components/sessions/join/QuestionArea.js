@@ -71,9 +71,11 @@ function QuestionArea({
 
   return (
     <div className={classNames('questionArea', { active })}>
-      <h1 className="header">Active Question</h1>
+      <h1 className="header">
+        <FormattedMessage defaultMessage="Question" id="student.questionArea.title" />
+      </h1>
       {(() => {
-        if (remainingQuestions.length === 0) {
+        /* if (remainingQuestions.length === 0) {
           return (
             <p className="space">
               <FormattedMessage
@@ -82,7 +84,7 @@ function QuestionArea({
               />
             </p>
           )
-        }
+        } */
 
         const { description, options, type } = currentQuestion
 
@@ -169,7 +171,6 @@ function QuestionArea({
             margin: 1rem;
           }
 
-          .collapser,
           .options,
           .padded {
             padding: 1rem;
@@ -180,6 +181,7 @@ function QuestionArea({
 
             background-color: $color-primary-20p;
             border-bottom: 1px solid -color-primary-50p;
+            padding: 0.5rem;
           }
 
           .options {
@@ -249,23 +251,34 @@ export default compose(
           (type === QUESTION_TYPES.SC ? newValue.length === 1 : newValue.length > 0)
 
         if (inputValue) {
-          // if the choice is already active, remove it
-          if (inputValue.includes(choice)) {
-            const newInputValue = _without(inputValue, choice)
-
+          if (type === QUESTION_TYPES.SC) {
+            // activate the choice given
             return {
-              inputEmpty: newInputValue.length === 0,
-              inputValid: validateChoices(newInputValue),
-              inputValue: newInputValue,
+              inputEmpty: false,
+              inputValid: validateChoices([choice]),
+              inputValue: [choice],
             }
           }
 
-          // else add it to the active choices
-          const newInputValue = [...inputValue, choice]
-          return {
-            inputEmpty: false,
-            inputValid: validateChoices(newInputValue),
-            inputValue: newInputValue,
+          if (type === QUESTION_TYPES.MC) {
+            // if the choice is already active, remove it
+            if (inputValue.includes(choice)) {
+              const newInputValue = _without(inputValue, choice)
+
+              return {
+                inputEmpty: newInputValue.length === 0,
+                inputValid: validateChoices(newInputValue),
+                inputValue: newInputValue,
+              }
+            }
+
+            // else add it to the active choices
+            const newInputValue = [...inputValue, choice]
+            return {
+              inputEmpty: false,
+              inputValid: validateChoices(newInputValue),
+              inputValue: newInputValue,
+            }
           }
         }
 
