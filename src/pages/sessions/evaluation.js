@@ -18,6 +18,9 @@ import {
   calculateMin,
   calculateMean,
   calculateMedian,
+  calculateFirstQuartile,
+  calculateThirdQuartile,
+  calculateStandardDeviation,
   pageWithIntl,
   withData,
 } from '../../lib'
@@ -234,6 +237,9 @@ export default compose(
           mean: calculateMean(results),
           median: calculateMedian(results),
           min: calculateMin(results),
+          q1: calculateFirstQuartile(results),
+          q3: calculateThirdQuartile(results),
+          sd: calculateStandardDeviation(results),
         },
       }
     }
