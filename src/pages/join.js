@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import Fingerprint2 from 'fingerprintjs2'
 import Cookies from 'js-cookie'
+import _throttle from 'lodash/debounce'
 import {
   compose,
   withHandlers,
@@ -217,6 +218,9 @@ export default compose(
   graphql(AddConfusionTSMutation, { name: 'newConfusionTS' }),
   graphql(AddFeedbackMutation, { name: 'newFeedback' }),
   graphql(AddResponseMutation, { name: 'newResponse' }),
+  withProps(({ newConfusionTS }) => ({
+    newConfusionTS: _throttle(newConfusionTS, 10000, { trailing: true }),
+  })),
   withHandlers({
     // handle creation of a new confusion timestep
     handleNewConfusionTS: ({ fp, data: { joinSession }, newConfusionTS }) => async ({
