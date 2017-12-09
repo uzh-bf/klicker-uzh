@@ -93,6 +93,17 @@ function QuestionArea({
         <FormattedMessage defaultMessage="Question" id="student.questionArea.title" />
       </h1>
       {(() => {
+        if (remainingQuestions.length === 0) {
+          return (
+            <div className="padded">
+              <FormattedMessage
+                defaultMessage="You have already answered all active questions."
+                id="joinSession.questionArea.alreadyAnswered"
+              />
+            </div>
+          )
+        }
+
         const { description, options, type } = currentQuestion
 
         return (
