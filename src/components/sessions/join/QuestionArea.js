@@ -11,7 +11,7 @@ import { SCAnswerOptions, FREEAnswerOptions } from '../../questionTypes'
 import { withStorage } from '../../../lib'
 
 const propTypes = {
-  active: PropTypes.bool,
+  active: PropTypes.bool.isRequired,
   activeQuestion: PropTypes.number,
   handleActiveChoicesChange: PropTypes.func.isRequired,
   handleActiveQuestionChange: PropTypes.func.isRequired,
@@ -28,7 +28,6 @@ const propTypes = {
 }
 
 const defaultProps = {
-  active: false,
   activeQuestion: 0,
   questions: [],
   remainingQuestions: [],

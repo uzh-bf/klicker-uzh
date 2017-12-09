@@ -10,7 +10,7 @@ import { Feedback } from '../../../components/feedbacks'
 import { withStorage } from '../../../lib'
 
 const propTypes = {
-  active: PropTypes.bool,
+  active: PropTypes.bool.isRequired,
   confusionDifficulty: PropTypes.number.isRequired,
   confusionSpeed: PropTypes.number.isRequired,
   feedbackInputValue: PropTypes.string.isRequired,
@@ -25,7 +25,6 @@ const propTypes = {
 }
 
 const defaultProps = {
-  active: false,
   feedbacks: [],
   isConfusionBarometerActive: false,
   isFeedbackChannelActive: false,
