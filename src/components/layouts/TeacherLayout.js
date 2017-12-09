@@ -93,7 +93,7 @@ const TeacherLayout = ({
           .teacherLayout {
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
+            height: 100vh;
 
             .content {
               flex: 1;
