@@ -15,7 +15,7 @@ import { graphql } from 'react-apollo'
 
 import FeedbackArea from '../components/sessions/join/FeedbackArea'
 import QuestionArea from '../components/sessions/join/QuestionArea'
-import { pageWithIntl, withData, withFingerprint, withStorage } from '../lib'
+import { pageWithIntl, withData, withFingerprint } from '../lib'
 import { JoinSessionQuery } from '../graphql/queries'
 import {
   AddConfusionTSMutation,
@@ -105,7 +105,6 @@ const Join = ({
             />
           </div>
         )}
-
         <FeedbackArea
           active={sidebarActiveItem === 'feedbackChannel'}
           feedbacks={feedbacks}
@@ -114,7 +113,7 @@ const Join = ({
           isConfusionBarometerActive={isConfusionBarometerActive}
           isFeedbackChannelActive={isFeedbackChannelActive}
         />
-
+        )
         <style jsx>{`
           @import 'src/theme';
 
@@ -157,18 +156,18 @@ Join.defaultProps = defaultProps
 
 export default compose(
   withData,
-  withStorage({
+  /* withStorage({
     propDefault: 'activeQuestion',
     propName: 'sidebarActiveItem',
     storageType: 'session',
-  }),
+  }), */
   pageWithIntl,
   withFingerprint,
   withStateHandlers(
-    ({ sidebarActiveItem }) => ({
-      sidebarActiveItem,
+    {
+      sidebarActiveItem: 'activeQuestion',
       sidebarVisible: false,
-    }),
+    },
     {
       // handle a change in the active sidebar item
       handleSidebarActiveItemChange: () => sidebarActiveItem => ({
@@ -281,7 +280,7 @@ export default compose(
     },
 
     handleSidebarActiveItemChange: ({ handleSidebarActiveItemChange }) => newItem => () => {
-      sessionStorage.setItem('sidebarActiveItem', newItem)
+      // sessionStorage.setItem('sidebarActiveItem', newItem)
       handleSidebarActiveItemChange(newItem)
     },
   }),
