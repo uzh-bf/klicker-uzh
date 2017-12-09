@@ -1,44 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Storyshots common/components ActionButton 1`] = `
-<div
-  className="jsx-3826807623 actionButtonWrapper"
->
-  <div
-    className="jsx-3826807623 actionButton"
-  >
-    <button
-      className="ui large circular icon primary button"
-      disabled={undefined}
-      onClick={[Function]}
-      role="button"
-      tabIndex={undefined}
-    >
-      <i
-        aria-hidden="true"
-        className="plus icon"
-      />
-    </button>
-  </div>
-  <div
-    className="jsx-3826807623 ui vertical text menu buttonMenu"
-  >
-    <button
-      className="jsx-3826807623 item"
-      onClick={[Function]}
-    >
-      abcd
-    </button>
-    <button
-      className="jsx-3826807623 item"
-      onClick={[Function]}
-    >
-      cdef
-    </button>
-  </div>
-</div>
-`;
-
 exports[`Storyshots common/components ActionMenu 1`] = `
 <div
   className="jsx-761699691 actionMenu"
@@ -807,10 +768,10 @@ exports[`Storyshots common/sidebar SidebarItem 1`] = `
 
 exports[`Storyshots confusion ConfusionBarometer 1`] = `
 <div
-  className="jsx-891792633 confusionBarometer"
+  className="jsx-611542565 confusionBarometer"
 >
   <h2
-    className="jsx-891792633"
+    className="jsx-611542565"
   >
     <span>
       Confusion-Barometer
@@ -2304,24 +2265,24 @@ exports[`Storyshots forms/components PasswortResetForm 1`] = `
 
 exports[`Storyshots forms/components SessionCreationForm 1`] = `
 <form
-  className="jsx-1759122760 ui form sessionCreation"
+  className="jsx-2035316391 ui form sessionCreation"
   onSubmit={null}
 >
   <div
-    className="jsx-1759122760 upper"
+    className="jsx-2035316391 upper"
   >
     <h2
-      className="jsx-1759122760 title"
+      className="jsx-2035316391 title"
     >
       <span>
         Create Session
       </span>
     </h2>
     <div
-      className="jsx-1759122760 sessionSettings"
+      className="jsx-2035316391 sessionSettings"
     >
       <div
-        className="jsx-1759122760 sessionName"
+        className="jsx-2035316391 sessionName"
       >
         <div
           className="field"
@@ -2354,7 +2315,7 @@ exports[`Storyshots forms/components SessionCreationForm 1`] = `
     </div>
   </div>
   <div
-    className="jsx-1759122760 sessionTimeline"
+    className="jsx-2035316391 sessionTimeline"
   >
     <div
       className="jsx-897902222 sessionTimeline"
@@ -2375,25 +2336,10 @@ exports[`Storyshots forms/components SessionCreationForm 1`] = `
           <div
             className="jsx-3824212928 dropzone"
           >
-            <svg
-              fill="currentColor"
-              height="1em"
-              preserveAspectRatio="xMidYMid meet"
-              style={
-                Object {
-                  "color": undefined,
-                  "verticalAlign": "middle",
-                }
-              }
-              viewBox="0 0 40 40"
-              width="1em"
-            >
-              <g>
-                <path
-                  d="m35.9 16.4v4.3q0 0.9-0.6 1.5t-1.5 0.7h-9.3v9.2q0 0.9-0.6 1.6t-1.5 0.6h-4.3q-0.9 0-1.5-0.6t-0.7-1.6v-9.2h-9.3q-0.9 0-1.5-0.7t-0.6-1.5v-4.3q0-0.9 0.6-1.5t1.5-0.6h9.3v-9.3q0-0.9 0.7-1.5t1.5-0.6h4.3q0.9 0 1.5 0.6t0.6 1.5v9.3h9.3q0.9 0 1.5 0.6t0.6 1.5z"
-                />
-              </g>
-            </svg>
+            <i
+              aria-hidden="true"
+              className="plus icon"
+            />
           </div>
         </div>
         <div
@@ -2411,89 +2357,50 @@ exports[`Storyshots forms/components SessionCreationForm 1`] = `
     </div>
   </div>
   <div
-    className="jsx-1759122760 actionArea"
+    className="jsx-2035316391 actionArea"
   >
     <button
-      className="jsx-1759122760 ui fluid button"
-      onClick={undefined}
-      type="button"
+      className="ui fluid icon left labeled button"
+      disabled={undefined}
+      onClick={[Function]}
+      role="button"
+      tabIndex={undefined}
     >
-      <svg
-        fill="currentColor"
-        height="1em"
-        preserveAspectRatio="xMidYMid meet"
-        style={
-          Object {
-            "color": undefined,
-            "verticalAlign": "middle",
-          }
-        }
-        viewBox="0 0 40 40"
-        width="1em"
-      >
-        <g>
-          <path
-            d="m15.9 30.7v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.7 0v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.8 0v-15.7q0-0.3-0.2-0.5t-0.6-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.4 0 0.6-0.2t0.2-0.5z m-12.2-22.1h10l-1.1-2.6q-0.1-0.2-0.3-0.3h-7.1q-0.2 0.1-0.4 0.3z m20.7 0.7v1.4q0 0.3-0.2 0.5t-0.5 0.2h-2.1v21.2q0 1.8-1.1 3.2t-2.5 1.3h-18.6q-1.4 0-2.5-1.3t-1-3.1v-21.3h-2.2q-0.3 0-0.5-0.2t-0.2-0.5v-1.4q0-0.3 0.2-0.5t0.5-0.2h6.9l1.6-3.8q0.3-0.8 1.2-1.4t1.7-0.5h7.2q0.9 0 1.8 0.5t1.2 1.4l1.5 3.8h6.9q0.3 0 0.5 0.2t0.2 0.5z"
-          />
-        </g>
-      </svg>
+      <i
+        aria-hidden="true"
+        className="trash icon"
+      />
       <span>
         Discard
       </span>
     </button>
     <button
-      className="jsx-1759122760 ui fluid button"
+      className="ui fluid icon disabled left labeled button"
       disabled={true}
+      onClick={[Function]}
+      role="button"
+      tabIndex={-1}
       type="submit"
     >
-      <svg
-        fill="currentColor"
-        height="1em"
-        preserveAspectRatio="xMidYMid meet"
-        style={
-          Object {
-            "color": undefined,
-            "verticalAlign": "middle",
-          }
-        }
-        viewBox="0 0 40 40"
-        width="1em"
-      >
-        <g>
-          <path
-            d="m11.6 34.3h17.1v-8.6h-17.1v8.6z m20 0h2.8v-20q0-0.3-0.2-0.9t-0.4-0.7l-6.3-6.3q-0.2-0.2-0.8-0.5t-0.8-0.2v9.3q0 0.9-0.7 1.5t-1.5 0.6h-12.8q-0.9 0-1.6-0.6t-0.6-1.5v-9.3h-2.8v28.6h2.8v-9.3q0-0.9 0.6-1.5t1.6-0.6h18.5q0.9 0 1.5 0.6t0.7 1.5v9.3z m-8.6-20.7v-7.2q0-0.3-0.2-0.5t-0.5-0.2h-4.3q-0.3 0-0.5 0.2t-0.2 0.5v7.2q0 0.3 0.2 0.5t0.5 0.2h4.3q0.3 0 0.5-0.2t0.2-0.5z m14.3 0.7v20.7q0 0.9-0.6 1.5t-1.6 0.6h-30q-0.8 0-1.5-0.6t-0.6-1.5v-30q0-0.9 0.6-1.5t1.5-0.6h20.8q0.9 0 1.9 0.4t1.7 1.1l6.3 6.2q0.6 0.6 1 1.7t0.5 2z"
-          />
-        </g>
-      </svg>
+      <i
+        aria-hidden="true"
+        className="save icon"
+      />
       <span>
         Save
       </span>
     </button>
     <button
-      className="jsx-1759122760 ui fluid primary button"
+      className="ui fluid icon primary disabled left labeled button"
       disabled={true}
-      onClick={null}
-      type="button"
+      onClick={[Function]}
+      role="button"
+      tabIndex={-1}
     >
-      <svg
-        fill="currentColor"
-        height="1em"
-        preserveAspectRatio="xMidYMid meet"
-        style={
-          Object {
-            "color": undefined,
-            "verticalAlign": "middle",
-          }
-        }
-        viewBox="0 0 40 40"
-        width="1em"
-      >
-        <g>
-          <path
-            d="m35.4 20.7l-29.6 16.5q-0.6 0.3-0.9 0t-0.4-0.8v-32.8q0-0.6 0.4-0.8t0.9 0l29.6 16.5q0.5 0.3 0.5 0.7t-0.5 0.7z"
-          />
-        </g>
-      </svg>
+      <i
+        aria-hidden="true"
+        className="play icon"
+      />
       <span>
         Start
       </span>
@@ -2853,25 +2760,10 @@ exports[`Storyshots questionTypes/SC SC Creation Option (correct) 1`] = `
     disabled={false}
     onClick={undefined}
   >
-    <svg
-      fill="currentColor"
-      height="1em"
-      preserveAspectRatio="xMidYMid meet"
-      style={
-        Object {
-          "color": undefined,
-          "verticalAlign": "middle",
-        }
-      }
-      viewBox="0 0 40 40"
-      width="1em"
-    >
-      <g>
-        <path
-          d="m15.9 30.7v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.7 0v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.8 0v-15.7q0-0.3-0.2-0.5t-0.6-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.4 0 0.6-0.2t0.2-0.5z m-12.2-22.1h10l-1.1-2.6q-0.1-0.2-0.3-0.3h-7.1q-0.2 0.1-0.4 0.3z m20.7 0.7v1.4q0 0.3-0.2 0.5t-0.5 0.2h-2.1v21.2q0 1.8-1.1 3.2t-2.5 1.3h-18.6q-1.4 0-2.5-1.3t-1-3.1v-21.3h-2.2q-0.3 0-0.5-0.2t-0.2-0.5v-1.4q0-0.3 0.2-0.5t0.5-0.2h6.9l1.6-3.8q0.3-0.8 1.2-1.4t1.7-0.5h7.2q0.9 0 1.8 0.5t1.2 1.4l1.5 3.8h6.9q0.3 0 0.5 0.2t0.2 0.5z"
-        />
-      </g>
-    </svg>
+    <i
+      aria-hidden="true"
+      className="trash icon"
+    />
   </button>
   <button
     className="jsx-2247491703 toggle correct"
@@ -2897,25 +2789,10 @@ exports[`Storyshots questionTypes/SC SC Creation Option (incorrect) 1`] = `
     disabled={false}
     onClick={undefined}
   >
-    <svg
-      fill="currentColor"
-      height="1em"
-      preserveAspectRatio="xMidYMid meet"
-      style={
-        Object {
-          "color": undefined,
-          "verticalAlign": "middle",
-        }
-      }
-      viewBox="0 0 40 40"
-      width="1em"
-    >
-      <g>
-        <path
-          d="m15.9 30.7v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.7 0v-15.7q0-0.3-0.2-0.5t-0.5-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.3 0 0.5-0.2t0.2-0.5z m5.8 0v-15.7q0-0.3-0.2-0.5t-0.6-0.2h-1.4q-0.3 0-0.5 0.2t-0.2 0.5v15.7q0 0.3 0.2 0.5t0.5 0.2h1.4q0.4 0 0.6-0.2t0.2-0.5z m-12.2-22.1h10l-1.1-2.6q-0.1-0.2-0.3-0.3h-7.1q-0.2 0.1-0.4 0.3z m20.7 0.7v1.4q0 0.3-0.2 0.5t-0.5 0.2h-2.1v21.2q0 1.8-1.1 3.2t-2.5 1.3h-18.6q-1.4 0-2.5-1.3t-1-3.1v-21.3h-2.2q-0.3 0-0.5-0.2t-0.2-0.5v-1.4q0-0.3 0.2-0.5t0.5-0.2h6.9l1.6-3.8q0.3-0.8 1.2-1.4t1.7-0.5h7.2q0.9 0 1.8 0.5t1.2 1.4l1.5 3.8h6.9q0.3 0 0.5 0.2t0.2 0.5z"
-        />
-      </g>
-    </svg>
+    <i
+      aria-hidden="true"
+      className="trash icon"
+    />
   </button>
   <button
     className="jsx-2247491703 toggle"
@@ -2941,25 +2818,10 @@ exports[`Storyshots questionTypes/SC SC Creation Placeholder 1`] = `
     onClick={[Function]}
     type="button"
   >
-    <svg
-      fill="currentColor"
-      height="1em"
-      preserveAspectRatio="xMidYMid meet"
-      style={
-        Object {
-          "color": undefined,
-          "verticalAlign": "middle",
-        }
-      }
-      viewBox="0 0 40 40"
-      width="1em"
-    >
-      <g>
-        <path
-          d="m35.9 16.4v4.3q0 0.9-0.6 1.5t-1.5 0.7h-9.3v9.2q0 0.9-0.6 1.6t-1.5 0.6h-4.3q-0.9 0-1.5-0.6t-0.7-1.6v-9.2h-9.3q-0.9 0-1.5-0.7t-0.6-1.5v-4.3q0-0.9 0.6-1.5t1.5-0.6h9.3v-9.3q0-0.9 0.7-1.5t1.5-0.6h4.3q0.9 0 1.5 0.6t0.6 1.5v9.3h9.3q0.9 0 1.5 0.6t0.6 1.5z"
-        />
-      </g>
-    </svg>
+    <i
+      aria-hidden="true"
+      className="plus icon"
+    />
   </button>
   <button
     className="jsx-327855630 jsx-2247491703 toggle"
@@ -2979,25 +2841,10 @@ exports[`Storyshots questionTypes/SC SC Creation Placeholder 1`] = `
     onClick={[Function]}
     type="button"
   >
-    <svg
-      fill="currentColor"
-      height="1em"
-      preserveAspectRatio="xMidYMid meet"
-      style={
-        Object {
-          "color": undefined,
-          "verticalAlign": "middle",
-        }
-      }
-      viewBox="0 0 40 40"
-      width="1em"
-    >
-      <g>
-        <path
-          d="m11.6 34.3h17.1v-8.6h-17.1v8.6z m20 0h2.8v-20q0-0.3-0.2-0.9t-0.4-0.7l-6.3-6.3q-0.2-0.2-0.8-0.5t-0.8-0.2v9.3q0 0.9-0.7 1.5t-1.5 0.6h-12.8q-0.9 0-1.6-0.6t-0.6-1.5v-9.3h-2.8v28.6h2.8v-9.3q0-0.9 0.6-1.5t1.6-0.6h18.5q0.9 0 1.5 0.6t0.7 1.5v9.3z m-8.6-20.7v-7.2q0-0.3-0.2-0.5t-0.5-0.2h-4.3q-0.3 0-0.5 0.2t-0.2 0.5v7.2q0 0.3 0.2 0.5t0.5 0.2h4.3q0.3 0 0.5-0.2t0.2-0.5z m14.3 0.7v20.7q0 0.9-0.6 1.5t-1.6 0.6h-30q-0.8 0-1.5-0.6t-0.6-1.5v-30q0-0.9 0.6-1.5t1.5-0.6h20.8q0.9 0 1.9 0.4t1.7 1.1l6.3 6.2q0.6 0.6 1 1.7t0.5 2z"
-        />
-      </g>
-    </svg>
+    <i
+      aria-hidden="true"
+      className="save icon"
+    />
   </button>
 </div>
 `;
@@ -3161,39 +3008,39 @@ exports[`Storyshots questions Question (MC, >1 versions) 1`] = `
       className="jsx-3830748110 details"
     >
       <div
-        className="jsx-3116432185 questionDetails"
+        className="jsx-3104406109 questionDetails"
       >
         <div
-          className="jsx-3116432185 column description"
+          className="jsx-3104406109 column description"
         >
           test 1
         </div>
         <div
-          className="jsx-3116432185 column col2"
+          className="jsx-3104406109 column col2"
         >
           <p
-            className="jsx-3116432185"
+            className="jsx-3104406109"
           >
             Antworten Total: 
             <strong
-              className="jsx-3116432185"
+              className="jsx-3104406109"
             >
               999
             </strong>
           </p>
           <p
-            className="jsx-3116432185"
+            className="jsx-3104406109"
           >
             Korrekte Antworten: 
             <strong
-              className="jsx-3116432185"
+              className="jsx-3104406109"
             >
               88%
             </strong>
           </p>
         </div>
         <div
-          className="jsx-3116432185 column col3"
+          className="jsx-3104406109 column col3"
         >
           <div
             className="jsx-319169000"
@@ -3222,34 +3069,19 @@ exports[`Storyshots questions Question (MC, >1 versions) 1`] = `
           </div>
         </div>
         <div
-          className="jsx-3116432185 column buttons"
+          className="jsx-3104406109 column buttons"
         >
           <button
-            className="ui button button"
+            className="ui icon button"
             disabled={undefined}
             onClick={[Function]}
             role="button"
             tabIndex={undefined}
           >
-            <svg
-              fill="currentColor"
-              height="1em"
-              preserveAspectRatio="xMidYMid meet"
-              style={
-                Object {
-                  "color": undefined,
-                  "verticalAlign": "middle",
-                }
-              }
-              viewBox="0 0 40 40"
-              width="1em"
-            >
-              <g>
-                <path
-                  d="m37.1 21.4q-3.3-5.2-8.5-7.8 1.4 2.3 1.4 5 0 4.1-2.9 7t-7.1 3-7.1-3-2.9-7q0-2.7 1.4-5.1-5.1 2.7-8.5 7.9 2.9 4.6 7.4 7.3t9.7 2.7 9.7-2.7 7.4-7.3z m-16-8.5q0-0.5-0.3-0.8t-0.8-0.3q-2.8 0-4.8 2t-2 4.8q0 0.4 0.3 0.7t0.8 0.3 0.7-0.3 0.4-0.7q0-2 1.3-3.3t3.3-1.4q0.4 0 0.8-0.3t0.3-0.7z m18.9 8.5q0 0.8-0.4 1.6-3.2 5.1-8.4 8.2t-11.2 3.1-11.2-3.1-8.4-8.2q-0.4-0.8-0.4-1.6t0.4-1.5q3.2-5.1 8.4-8.2t11.2-3.1 11.1 3.1 8.5 8.2q0.4 0.8 0.4 1.5z"
-                />
-              </g>
-            </svg>
+            <i
+              aria-hidden="true"
+              className="eye icon"
+            />
           </button>
         </div>
       </div>
@@ -3341,39 +3173,39 @@ exports[`Storyshots questions Question (MC, no tags) 1`] = `
       className="jsx-3830748110 details"
     >
       <div
-        className="jsx-3116432185 questionDetails"
+        className="jsx-3104406109 questionDetails"
       >
         <div
-          className="jsx-3116432185 column description"
+          className="jsx-3104406109 column description"
         >
           test 1
         </div>
         <div
-          className="jsx-3116432185 column col2"
+          className="jsx-3104406109 column col2"
         >
           <p
-            className="jsx-3116432185"
+            className="jsx-3104406109"
           >
             Antworten Total: 
             <strong
-              className="jsx-3116432185"
+              className="jsx-3104406109"
             >
               999
             </strong>
           </p>
           <p
-            className="jsx-3116432185"
+            className="jsx-3104406109"
           >
             Korrekte Antworten: 
             <strong
-              className="jsx-3116432185"
+              className="jsx-3104406109"
             >
               88%
             </strong>
           </p>
         </div>
         <div
-          className="jsx-3116432185 column col3"
+          className="jsx-3104406109 column col3"
         >
           <div
             className="jsx-319169000"
@@ -3402,34 +3234,19 @@ exports[`Storyshots questions Question (MC, no tags) 1`] = `
           </div>
         </div>
         <div
-          className="jsx-3116432185 column buttons"
+          className="jsx-3104406109 column buttons"
         >
           <button
-            className="ui button button"
+            className="ui icon button"
             disabled={undefined}
             onClick={[Function]}
             role="button"
             tabIndex={undefined}
           >
-            <svg
-              fill="currentColor"
-              height="1em"
-              preserveAspectRatio="xMidYMid meet"
-              style={
-                Object {
-                  "color": undefined,
-                  "verticalAlign": "middle",
-                }
-              }
-              viewBox="0 0 40 40"
-              width="1em"
-            >
-              <g>
-                <path
-                  d="m37.1 21.4q-3.3-5.2-8.5-7.8 1.4 2.3 1.4 5 0 4.1-2.9 7t-7.1 3-7.1-3-2.9-7q0-2.7 1.4-5.1-5.1 2.7-8.5 7.9 2.9 4.6 7.4 7.3t9.7 2.7 9.7-2.7 7.4-7.3z m-16-8.5q0-0.5-0.3-0.8t-0.8-0.3q-2.8 0-4.8 2t-2 4.8q0 0.4 0.3 0.7t0.8 0.3 0.7-0.3 0.4-0.7q0-2 1.3-3.3t3.3-1.4q0.4 0 0.8-0.3t0.3-0.7z m18.9 8.5q0 0.8-0.4 1.6-3.2 5.1-8.4 8.2t-11.2 3.1-11.2-3.1-8.4-8.2q-0.4-0.8-0.4-1.6t0.4-1.5q3.2-5.1 8.4-8.2t11.2-3.1 11.1 3.1 8.5 8.2q0.4 0.8 0.4 1.5z"
-                />
-              </g>
-            </svg>
+            <i
+              aria-hidden="true"
+              className="eye icon"
+            />
           </button>
         </div>
       </div>
@@ -3531,39 +3348,39 @@ exports[`Storyshots questions Question (SC, 1 version) 1`] = `
       className="jsx-3830748110 details"
     >
       <div
-        className="jsx-3116432185 questionDetails"
+        className="jsx-3104406109 questionDetails"
       >
         <div
-          className="jsx-3116432185 column description"
+          className="jsx-3104406109 column description"
         >
           test 1
         </div>
         <div
-          className="jsx-3116432185 column col2"
+          className="jsx-3104406109 column col2"
         >
           <p
-            className="jsx-3116432185"
+            className="jsx-3104406109"
           >
             Antworten Total: 
             <strong
-              className="jsx-3116432185"
+              className="jsx-3104406109"
             >
               999
             </strong>
           </p>
           <p
-            className="jsx-3116432185"
+            className="jsx-3104406109"
           >
             Korrekte Antworten: 
             <strong
-              className="jsx-3116432185"
+              className="jsx-3104406109"
             >
               88%
             </strong>
           </p>
         </div>
         <div
-          className="jsx-3116432185 column col3"
+          className="jsx-3104406109 column col3"
         >
           <div
             className="jsx-319169000"
@@ -3592,34 +3409,19 @@ exports[`Storyshots questions Question (SC, 1 version) 1`] = `
           </div>
         </div>
         <div
-          className="jsx-3116432185 column buttons"
+          className="jsx-3104406109 column buttons"
         >
           <button
-            className="ui button button"
+            className="ui icon button"
             disabled={undefined}
             onClick={[Function]}
             role="button"
             tabIndex={undefined}
           >
-            <svg
-              fill="currentColor"
-              height="1em"
-              preserveAspectRatio="xMidYMid meet"
-              style={
-                Object {
-                  "color": undefined,
-                  "verticalAlign": "middle",
-                }
-              }
-              viewBox="0 0 40 40"
-              width="1em"
-            >
-              <g>
-                <path
-                  d="m37.1 21.4q-3.3-5.2-8.5-7.8 1.4 2.3 1.4 5 0 4.1-2.9 7t-7.1 3-7.1-3-2.9-7q0-2.7 1.4-5.1-5.1 2.7-8.5 7.9 2.9 4.6 7.4 7.3t9.7 2.7 9.7-2.7 7.4-7.3z m-16-8.5q0-0.5-0.3-0.8t-0.8-0.3q-2.8 0-4.8 2t-2 4.8q0 0.4 0.3 0.7t0.8 0.3 0.7-0.3 0.4-0.7q0-2 1.3-3.3t3.3-1.4q0.4 0 0.8-0.3t0.3-0.7z m18.9 8.5q0 0.8-0.4 1.6-3.2 5.1-8.4 8.2t-11.2 3.1-11.2-3.1-8.4-8.2q-0.4-0.8-0.4-1.6t0.4-1.5q3.2-5.1 8.4-8.2t11.2-3.1 11.1 3.1 8.5 8.2q0.4 0.8 0.4 1.5z"
-                />
-              </g>
-            </svg>
+            <i
+              aria-hidden="true"
+              className="eye icon"
+            />
           </button>
         </div>
       </div>
@@ -3732,39 +3534,39 @@ exports[`Storyshots questions QuestionBlock 1`] = `
 
 exports[`Storyshots questions QuestionDetails 1`] = `
 <div
-  className="jsx-3116432185 questionDetails"
+  className="jsx-3104406109 questionDetails"
 >
   <div
-    className="jsx-3116432185 column description"
+    className="jsx-3104406109 column description"
   >
     hello world blabla
   </div>
   <div
-    className="jsx-3116432185 column col2"
+    className="jsx-3104406109 column col2"
   >
     <p
-      className="jsx-3116432185"
+      className="jsx-3104406109"
     >
       Antworten Total: 
       <strong
-        className="jsx-3116432185"
+        className="jsx-3104406109"
       >
         999
       </strong>
     </p>
     <p
-      className="jsx-3116432185"
+      className="jsx-3104406109"
     >
       Korrekte Antworten: 
       <strong
-        className="jsx-3116432185"
+        className="jsx-3104406109"
       >
         88%
       </strong>
     </p>
   </div>
   <div
-    className="jsx-3116432185 column col3"
+    className="jsx-3104406109 column col3"
   >
     <div
       className="jsx-319169000"
@@ -3798,34 +3600,19 @@ exports[`Storyshots questions QuestionDetails 1`] = `
     </div>
   </div>
   <div
-    className="jsx-3116432185 column buttons"
+    className="jsx-3104406109 column buttons"
   >
     <button
-      className="ui button button"
+      className="ui icon button"
       disabled={undefined}
       onClick={[Function]}
       role="button"
       tabIndex={undefined}
     >
-      <svg
-        fill="currentColor"
-        height="1em"
-        preserveAspectRatio="xMidYMid meet"
-        style={
-          Object {
-            "color": undefined,
-            "verticalAlign": "middle",
-          }
-        }
-        viewBox="0 0 40 40"
-        width="1em"
-      >
-        <g>
-          <path
-            d="m37.1 21.4q-3.3-5.2-8.5-7.8 1.4 2.3 1.4 5 0 4.1-2.9 7t-7.1 3-7.1-3-2.9-7q0-2.7 1.4-5.1-5.1 2.7-8.5 7.9 2.9 4.6 7.4 7.3t9.7 2.7 9.7-2.7 7.4-7.3z m-16-8.5q0-0.5-0.3-0.8t-0.8-0.3q-2.8 0-4.8 2t-2 4.8q0 0.4 0.3 0.7t0.8 0.3 0.7-0.3 0.4-0.7q0-2 1.3-3.3t3.3-1.4q0.4 0 0.8-0.3t0.3-0.7z m18.9 8.5q0 0.8-0.4 1.6-3.2 5.1-8.4 8.2t-11.2 3.1-11.2-3.1-8.4-8.2q-0.4-0.8-0.4-1.6t0.4-1.5q3.2-5.1 8.4-8.2t11.2-3.1 11.1 3.1 8.5 8.2q0.4 0.8 0.4 1.5z"
-          />
-        </g>
-      </svg>
+      <i
+        aria-hidden="true"
+        className="eye icon"
+      />
     </button>
   </div>
 </div>
@@ -3938,39 +3725,39 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
         className="jsx-3830748110 details"
       >
         <div
-          className="jsx-3116432185 questionDetails"
+          className="jsx-3104406109 questionDetails"
         >
           <div
-            className="jsx-3116432185 column description"
+            className="jsx-3104406109 column description"
           >
             test 1
           </div>
           <div
-            className="jsx-3116432185 column col2"
+            className="jsx-3104406109 column col2"
           >
             <p
-              className="jsx-3116432185"
+              className="jsx-3104406109"
             >
               Antworten Total: 
               <strong
-                className="jsx-3116432185"
+                className="jsx-3104406109"
               >
                 999
               </strong>
             </p>
             <p
-              className="jsx-3116432185"
+              className="jsx-3104406109"
             >
               Korrekte Antworten: 
               <strong
-                className="jsx-3116432185"
+                className="jsx-3104406109"
               >
                 88%
               </strong>
             </p>
           </div>
           <div
-            className="jsx-3116432185 column col3"
+            className="jsx-3104406109 column col3"
           >
             <div
               className="jsx-319169000"
@@ -3994,34 +3781,19 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
             </div>
           </div>
           <div
-            className="jsx-3116432185 column buttons"
+            className="jsx-3104406109 column buttons"
           >
             <button
-              className="ui button button"
+              className="ui icon button"
               disabled={undefined}
               onClick={[Function]}
               role="button"
               tabIndex={undefined}
             >
-              <svg
-                fill="currentColor"
-                height="1em"
-                preserveAspectRatio="xMidYMid meet"
-                style={
-                  Object {
-                    "color": undefined,
-                    "verticalAlign": "middle",
-                  }
-                }
-                viewBox="0 0 40 40"
-                width="1em"
-              >
-                <g>
-                  <path
-                    d="m37.1 21.4q-3.3-5.2-8.5-7.8 1.4 2.3 1.4 5 0 4.1-2.9 7t-7.1 3-7.1-3-2.9-7q0-2.7 1.4-5.1-5.1 2.7-8.5 7.9 2.9 4.6 7.4 7.3t9.7 2.7 9.7-2.7 7.4-7.3z m-16-8.5q0-0.5-0.3-0.8t-0.8-0.3q-2.8 0-4.8 2t-2 4.8q0 0.4 0.3 0.7t0.8 0.3 0.7-0.3 0.4-0.7q0-2 1.3-3.3t3.3-1.4q0.4 0 0.8-0.3t0.3-0.7z m18.9 8.5q0 0.8-0.4 1.6-3.2 5.1-8.4 8.2t-11.2 3.1-11.2-3.1-8.4-8.2q-0.4-0.8-0.4-1.6t0.4-1.5q3.2-5.1 8.4-8.2t11.2-3.1 11.1 3.1 8.5 8.2q0.4 0.8 0.4 1.5z"
-                  />
-                </g>
-              </svg>
+              <i
+                aria-hidden="true"
+                className="eye icon"
+              />
             </button>
           </div>
         </div>
@@ -4150,39 +3922,39 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
         className="jsx-3830748110 details"
       >
         <div
-          className="jsx-3116432185 questionDetails"
+          className="jsx-3104406109 questionDetails"
         >
           <div
-            className="jsx-3116432185 column description"
+            className="jsx-3104406109 column description"
           >
             test3
           </div>
           <div
-            className="jsx-3116432185 column col2"
+            className="jsx-3104406109 column col2"
           >
             <p
-              className="jsx-3116432185"
+              className="jsx-3104406109"
             >
               Antworten Total: 
               <strong
-                className="jsx-3116432185"
+                className="jsx-3104406109"
               >
                 999
               </strong>
             </p>
             <p
-              className="jsx-3116432185"
+              className="jsx-3104406109"
             >
               Korrekte Antworten: 
               <strong
-                className="jsx-3116432185"
+                className="jsx-3104406109"
               >
                 88%
               </strong>
             </p>
           </div>
           <div
-            className="jsx-3116432185 column col3"
+            className="jsx-3104406109 column col3"
           >
             <div
               className="jsx-319169000"
@@ -4211,34 +3983,19 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
             </div>
           </div>
           <div
-            className="jsx-3116432185 column buttons"
+            className="jsx-3104406109 column buttons"
           >
             <button
-              className="ui button button"
+              className="ui icon button"
               disabled={undefined}
               onClick={[Function]}
               role="button"
               tabIndex={undefined}
             >
-              <svg
-                fill="currentColor"
-                height="1em"
-                preserveAspectRatio="xMidYMid meet"
-                style={
-                  Object {
-                    "color": undefined,
-                    "verticalAlign": "middle",
-                  }
-                }
-                viewBox="0 0 40 40"
-                width="1em"
-              >
-                <g>
-                  <path
-                    d="m37.1 21.4q-3.3-5.2-8.5-7.8 1.4 2.3 1.4 5 0 4.1-2.9 7t-7.1 3-7.1-3-2.9-7q0-2.7 1.4-5.1-5.1 2.7-8.5 7.9 2.9 4.6 7.4 7.3t9.7 2.7 9.7-2.7 7.4-7.3z m-16-8.5q0-0.5-0.3-0.8t-0.8-0.3q-2.8 0-4.8 2t-2 4.8q0 0.4 0.3 0.7t0.8 0.3 0.7-0.3 0.4-0.7q0-2 1.3-3.3t3.3-1.4q0.4 0 0.8-0.3t0.3-0.7z m18.9 8.5q0 0.8-0.4 1.6-3.2 5.1-8.4 8.2t-11.2 3.1-11.2-3.1-8.4-8.2q-0.4-0.8-0.4-1.6t0.4-1.5q3.2-5.1 8.4-8.2t11.2-3.1 11.1 3.1 8.5 8.2q0.4 0.8 0.4 1.5z"
-                  />
-                </g>
-              </svg>
+              <i
+                aria-hidden="true"
+                className="eye icon"
+              />
             </button>
           </div>
         </div>
@@ -4344,39 +4101,39 @@ exports[`Storyshots questions QuestionList 1`] = `
         className="jsx-3830748110 details"
       >
         <div
-          className="jsx-3116432185 questionDetails"
+          className="jsx-3104406109 questionDetails"
         >
           <div
-            className="jsx-3116432185 column description"
+            className="jsx-3104406109 column description"
           >
             test 1
           </div>
           <div
-            className="jsx-3116432185 column col2"
+            className="jsx-3104406109 column col2"
           >
             <p
-              className="jsx-3116432185"
+              className="jsx-3104406109"
             >
               Antworten Total: 
               <strong
-                className="jsx-3116432185"
+                className="jsx-3104406109"
               >
                 999
               </strong>
             </p>
             <p
-              className="jsx-3116432185"
+              className="jsx-3104406109"
             >
               Korrekte Antworten: 
               <strong
-                className="jsx-3116432185"
+                className="jsx-3104406109"
               >
                 88%
               </strong>
             </p>
           </div>
           <div
-            className="jsx-3116432185 column col3"
+            className="jsx-3104406109 column col3"
           >
             <div
               className="jsx-319169000"
@@ -4400,34 +4157,19 @@ exports[`Storyshots questions QuestionList 1`] = `
             </div>
           </div>
           <div
-            className="jsx-3116432185 column buttons"
+            className="jsx-3104406109 column buttons"
           >
             <button
-              className="ui button button"
+              className="ui icon button"
               disabled={undefined}
               onClick={[Function]}
               role="button"
               tabIndex={undefined}
             >
-              <svg
-                fill="currentColor"
-                height="1em"
-                preserveAspectRatio="xMidYMid meet"
-                style={
-                  Object {
-                    "color": undefined,
-                    "verticalAlign": "middle",
-                  }
-                }
-                viewBox="0 0 40 40"
-                width="1em"
-              >
-                <g>
-                  <path
-                    d="m37.1 21.4q-3.3-5.2-8.5-7.8 1.4 2.3 1.4 5 0 4.1-2.9 7t-7.1 3-7.1-3-2.9-7q0-2.7 1.4-5.1-5.1 2.7-8.5 7.9 2.9 4.6 7.4 7.3t9.7 2.7 9.7-2.7 7.4-7.3z m-16-8.5q0-0.5-0.3-0.8t-0.8-0.3q-2.8 0-4.8 2t-2 4.8q0 0.4 0.3 0.7t0.8 0.3 0.7-0.3 0.4-0.7q0-2 1.3-3.3t3.3-1.4q0.4 0 0.8-0.3t0.3-0.7z m18.9 8.5q0 0.8-0.4 1.6-3.2 5.1-8.4 8.2t-11.2 3.1-11.2-3.1-8.4-8.2q-0.4-0.8-0.4-1.6t0.4-1.5q3.2-5.1 8.4-8.2t11.2-3.1 11.1 3.1 8.5 8.2q0.4 0.8 0.4 1.5z"
-                  />
-                </g>
-              </svg>
+              <i
+                aria-hidden="true"
+                className="eye icon"
+              />
             </button>
           </div>
         </div>
@@ -4545,39 +4287,39 @@ exports[`Storyshots questions QuestionList 1`] = `
         className="jsx-3830748110 details"
       >
         <div
-          className="jsx-3116432185 questionDetails"
+          className="jsx-3104406109 questionDetails"
         >
           <div
-            className="jsx-3116432185 column description"
+            className="jsx-3104406109 column description"
           >
             test3
           </div>
           <div
-            className="jsx-3116432185 column col2"
+            className="jsx-3104406109 column col2"
           >
             <p
-              className="jsx-3116432185"
+              className="jsx-3104406109"
             >
               Antworten Total: 
               <strong
-                className="jsx-3116432185"
+                className="jsx-3104406109"
               >
                 999
               </strong>
             </p>
             <p
-              className="jsx-3116432185"
+              className="jsx-3104406109"
             >
               Korrekte Antworten: 
               <strong
-                className="jsx-3116432185"
+                className="jsx-3104406109"
               >
                 88%
               </strong>
             </p>
           </div>
           <div
-            className="jsx-3116432185 column col3"
+            className="jsx-3104406109 column col3"
           >
             <div
               className="jsx-319169000"
@@ -4606,34 +4348,19 @@ exports[`Storyshots questions QuestionList 1`] = `
             </div>
           </div>
           <div
-            className="jsx-3116432185 column buttons"
+            className="jsx-3104406109 column buttons"
           >
             <button
-              className="ui button button"
+              className="ui icon button"
               disabled={undefined}
               onClick={[Function]}
               role="button"
               tabIndex={undefined}
             >
-              <svg
-                fill="currentColor"
-                height="1em"
-                preserveAspectRatio="xMidYMid meet"
-                style={
-                  Object {
-                    "color": undefined,
-                    "verticalAlign": "middle",
-                  }
-                }
-                viewBox="0 0 40 40"
-                width="1em"
-              >
-                <g>
-                  <path
-                    d="m37.1 21.4q-3.3-5.2-8.5-7.8 1.4 2.3 1.4 5 0 4.1-2.9 7t-7.1 3-7.1-3-2.9-7q0-2.7 1.4-5.1-5.1 2.7-8.5 7.9 2.9 4.6 7.4 7.3t9.7 2.7 9.7-2.7 7.4-7.3z m-16-8.5q0-0.5-0.3-0.8t-0.8-0.3q-2.8 0-4.8 2t-2 4.8q0 0.4 0.3 0.7t0.8 0.3 0.7-0.3 0.4-0.7q0-2 1.3-3.3t3.3-1.4q0.4 0 0.8-0.3t0.3-0.7z m18.9 8.5q0 0.8-0.4 1.6-3.2 5.1-8.4 8.2t-11.2 3.1-11.2-3.1-8.4-8.2q-0.4-0.8-0.4-1.6t0.4-1.5q3.2-5.1 8.4-8.2t11.2-3.1 11.1 3.1 8.5 8.2q0.4 0.8 0.4 1.5z"
-                  />
-                </g>
-              </svg>
+              <i
+                aria-hidden="true"
+                className="eye icon"
+              />
             </button>
           </div>
         </div>
@@ -4741,25 +4468,10 @@ exports[`Storyshots sessions QuestionDropzone 1`] = `
   <div
     className="jsx-3824212928 dropzone"
   >
-    <svg
-      fill="currentColor"
-      height="1em"
-      preserveAspectRatio="xMidYMid meet"
-      style={
-        Object {
-          "color": undefined,
-          "verticalAlign": "middle",
-        }
-      }
-      viewBox="0 0 40 40"
-      width="1em"
-    >
-      <g>
-        <path
-          d="m35.9 16.4v4.3q0 0.9-0.6 1.5t-1.5 0.7h-9.3v9.2q0 0.9-0.6 1.6t-1.5 0.6h-4.3q-0.9 0-1.5-0.6t-0.7-1.6v-9.2h-9.3q-0.9 0-1.5-0.7t-0.6-1.5v-4.3q0-0.9 0.6-1.5t1.5-0.6h9.3v-9.3q0-0.9 0.7-1.5t1.5-0.6h4.3q0.9 0 1.5 0.6t0.6 1.5v9.3h9.3q0.9 0 1.5 0.6t0.6 1.5z"
-        />
-      </g>
-    </svg>
+    <i
+      aria-hidden="true"
+      className="plus icon"
+    />
   </div>
 </div>
 `;
@@ -5409,25 +5121,10 @@ exports[`Storyshots sessions SessionTimelineInput 1`] = `
       <div
         className="jsx-3824212928 dropzone"
       >
-        <svg
-          fill="currentColor"
-          height="1em"
-          preserveAspectRatio="xMidYMid meet"
-          style={
-            Object {
-              "color": undefined,
-              "verticalAlign": "middle",
-            }
-          }
-          viewBox="0 0 40 40"
-          width="1em"
-        >
-          <g>
-            <path
-              d="m35.9 16.4v4.3q0 0.9-0.6 1.5t-1.5 0.7h-9.3v9.2q0 0.9-0.6 1.6t-1.5 0.6h-4.3q-0.9 0-1.5-0.6t-0.7-1.6v-9.2h-9.3q-0.9 0-1.5-0.7t-0.6-1.5v-4.3q0-0.9 0.6-1.5t1.5-0.6h9.3v-9.3q0-0.9 0.7-1.5t1.5-0.6h4.3q0.9 0 1.5 0.6t0.6 1.5v9.3h9.3q0.9 0 1.5 0.6t0.6 1.5z"
-            />
-          </g>
-        </svg>
+        <i
+          aria-hidden="true"
+          className="plus icon"
+        />
       </div>
     </div>
   </div>
@@ -5492,25 +5189,10 @@ exports[`Storyshots sessions SessionTimelineInput 1`] = `
       <div
         className="jsx-3824212928 dropzone"
       >
-        <svg
-          fill="currentColor"
-          height="1em"
-          preserveAspectRatio="xMidYMid meet"
-          style={
-            Object {
-              "color": undefined,
-              "verticalAlign": "middle",
-            }
-          }
-          viewBox="0 0 40 40"
-          width="1em"
-        >
-          <g>
-            <path
-              d="m35.9 16.4v4.3q0 0.9-0.6 1.5t-1.5 0.7h-9.3v9.2q0 0.9-0.6 1.6t-1.5 0.6h-4.3q-0.9 0-1.5-0.6t-0.7-1.6v-9.2h-9.3q-0.9 0-1.5-0.7t-0.6-1.5v-4.3q0-0.9 0.6-1.5t1.5-0.6h9.3v-9.3q0-0.9 0.7-1.5t1.5-0.6h4.3q0.9 0 1.5 0.6t0.6 1.5v9.3h9.3q0.9 0 1.5 0.6t0.6 1.5z"
-            />
-          </g>
-        </svg>
+        <i
+          aria-hidden="true"
+          className="plus icon"
+        />
       </div>
     </div>
   </div>
@@ -5530,25 +5212,10 @@ exports[`Storyshots sessions SessionTimelineInput 1`] = `
       <div
         className="jsx-3824212928 dropzone"
       >
-        <svg
-          fill="currentColor"
-          height="1em"
-          preserveAspectRatio="xMidYMid meet"
-          style={
-            Object {
-              "color": undefined,
-              "verticalAlign": "middle",
-            }
-          }
-          viewBox="0 0 40 40"
-          width="1em"
-        >
-          <g>
-            <path
-              d="m35.9 16.4v4.3q0 0.9-0.6 1.5t-1.5 0.7h-9.3v9.2q0 0.9-0.6 1.6t-1.5 0.6h-4.3q-0.9 0-1.5-0.6t-0.7-1.6v-9.2h-9.3q-0.9 0-1.5-0.7t-0.6-1.5v-4.3q0-0.9 0.6-1.5t1.5-0.6h9.3v-9.3q0-0.9 0.7-1.5t1.5-0.6h4.3q0.9 0 1.5 0.6t0.6 1.5v9.3h9.3q0.9 0 1.5 0.6t0.6 1.5z"
-            />
-          </g>
-        </svg>
+        <i
+          aria-hidden="true"
+          className="plus icon"
+        />
       </div>
     </div>
   </div>
