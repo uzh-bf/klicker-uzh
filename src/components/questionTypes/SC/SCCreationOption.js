@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import { FaTrash } from 'react-icons/lib/fa'
+import { Icon } from 'semantic-ui-react'
 
 import styles from './styles'
 
@@ -22,7 +22,7 @@ const SCCreationOption = ({
 }) => (
   <div className={classNames('option', { correct })}>
     <button className="leftAction" disabled={disabled} onClick={handleDelete}>
-      <FaTrash />
+      <Icon name="trash" />
     </button>
 
     <button

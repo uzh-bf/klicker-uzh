@@ -2,7 +2,6 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import Fingerprint2 from 'fingerprintjs2'
-import Cookies from 'js-cookie'
 import _throttle from 'lodash/debounce'
 import {
   compose,
@@ -160,11 +159,18 @@ Join.defaultProps = defaultProps
 export default compose(
   withData,
   pageWithIntl,
+  withProps(() => {
+    if (typeof window !== 'undefined' && sessionStorage) {
+      return { sidebarActiveItem: sessionStorage.getItem('sidebarActiveItem') }
+    }
+
+    return null
+  }),
   withStateHandlers(
-    {
-      sidebarActiveItem: 'activeQuestion',
+    ({ sidebarActiveItem = 'activeQuestion ' }) => ({
+      sidebarActiveItem,
       sidebarVisible: false,
-    },
+    }),
     {
       // handle a change in the active sidebar item
       handleSidebarActiveItemChange: () => sidebarActiveItem => ({
@@ -177,10 +183,6 @@ export default compose(
       }),
     },
   ),
-  withHandlers({
-    handleSidebarActiveItemChange: ({ handleSidebarActiveItemChange }) => newItem => () =>
-      handleSidebarActiveItemChange(newItem),
-  }),
   graphql(JoinSessionQuery, {
     options: ({ url }) => ({ variables: { shortname: url.query.shortname } }),
   }),
@@ -197,9 +199,10 @@ export default compose(
     // calculate a browser fingerprint (if activated)
     fp:
       process.env.FINGERPRINTING &&
+      typeof window !== 'undefined' &&
       new Promise((resolve, reject) => {
         // if an existing cookie already contains a fingerprint, reuse it
-        const existing = Cookies.get('fp')
+        const existing = sessionStorage.get('fp')
         if (existing) {
           resolve(existing)
         }
@@ -207,7 +210,7 @@ export default compose(
         // otherwise generate a new fingerprint and store it in a cookie
         try {
           new Fingerprint2().get((result) => {
-            Cookies.set('fp', result, { path: '' })
+            sessionStorage.setItem('fp', result)
             resolve(result)
           })
         } catch (err) {
@@ -300,6 +303,11 @@ export default compose(
       } catch ({ message }) {
         console.error(message)
       }
+    },
+
+    handleSidebarActiveItemChange: ({ handleSidebarActiveItemChange }) => newItem => () => {
+      localStorage.setItem('sidebarActiveItem', newItem)
+      handleSidebarActiveItemChange(newItem)
     },
   }),
   withProps(({ data: { joinSession }, url }) => ({

@@ -233,7 +233,7 @@ export default compose(
       Cookies.set(
         'confusion',
         { difficulty: confusionDifficulty, speed: confusionSpeed },
-        { path: '' },
+        { expires: new Date(new Date().getTime() + 15 * 60 * 1000), path: '' },
       )
     },
     handleNewFeedback: ({

@@ -2,9 +2,8 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import _get from 'lodash/get'
 import ReactTooltip from 'react-tooltip'
-import { Form, Input } from 'semantic-ui-react'
+import { Form, Icon, Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import { FaQuestionCircle } from 'react-icons/lib/fa'
 import { compose, withHandlers, mapProps } from 'recompose'
 
 import { QUESTION_TYPES } from '../../../constants'
@@ -42,7 +41,7 @@ const FREECreationOptions = ({
           id="teacher.createQuestion.optionsFREE.label"
         />
         <a data-tip data-for="FREECreationHelp">
-          <FaQuestionCircle />
+          <Icon name="question circle" />
         </a>
       </label>
 
