@@ -1,13 +1,13 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import Cookies from 'js-cookie'
 import { FormattedMessage } from 'react-intl'
-import { compose, withStateHandlers, withHandlers, withProps } from 'recompose'
+import { compose, withStateHandlers, withHandlers } from 'recompose'
 import { Form, Button } from 'semantic-ui-react'
 
 import { ConfusionSlider } from '../../../components/confusion'
 import { Feedback } from '../../../components/feedbacks'
+import { withStorage } from '../../../lib'
 
 const propTypes = {
   active: PropTypes.bool,
@@ -198,15 +198,16 @@ FeedbackArea.propTypes = propTypes
 FeedbackArea.defaultProps = defaultProps
 
 export default compose(
-  withProps(() => {
-    // reinitialize confusion barometer
-    const initialConfusion = Cookies.getJSON('confusion') || {}
-    return { ...initialConfusion }
+  withStorage({
+    json: true,
+    propDefault: { difficulty: undefined, speed: undefined },
+    propName: 'confusion',
+    storageType: 'session',
   }),
   withStateHandlers(
-    ({ difficulty, speed }) => ({
-      confusionDifficulty: difficulty,
-      confusionSpeed: speed,
+    ({ confusion }) => ({
+      confusionDifficulty: confusion ? confusion.difficulty : undefined,
+      confusionSpeed: confusion ? confusion.speed : undefined,
       feedbackInputValue: undefined,
     }),
     {
@@ -230,10 +231,9 @@ export default compose(
       handleNewConfusionTS({ difficulty: confusionDifficulty, speed: confusionSpeed })
 
       // update the confusion cookie
-      Cookies.set(
+      sessionStorage.setItem(
         'confusion',
-        { difficulty: confusionDifficulty, speed: confusionSpeed },
-        { expires: new Date(new Date().getTime() + 15 * 60 * 1000), path: '' },
+        JSON.stringify({ difficulty: confusionDifficulty, speed: confusionSpeed }),
       )
     },
     handleNewFeedback: ({

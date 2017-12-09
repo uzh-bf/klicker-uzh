@@ -1,7 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import Fingerprint2 from 'fingerprintjs2'
 import _throttle from 'lodash/debounce'
 import {
   compose,
@@ -16,7 +15,7 @@ import { graphql } from 'react-apollo'
 
 import FeedbackArea from '../components/sessions/join/FeedbackArea'
 import QuestionArea from '../components/sessions/join/QuestionArea'
-import { pageWithIntl, withData } from '../lib'
+import { pageWithIntl, withData, withFingerprint, withStorage } from '../lib'
 import { JoinSessionQuery } from '../graphql/queries'
 import {
   AddConfusionTSMutation,
@@ -158,16 +157,15 @@ Join.defaultProps = defaultProps
 
 export default compose(
   withData,
-  pageWithIntl,
-  withProps(() => {
-    if (typeof window !== 'undefined' && sessionStorage) {
-      return { sidebarActiveItem: sessionStorage.getItem('sidebarActiveItem') }
-    }
-
-    return null
+  withStorage({
+    propDefault: 'activeQuestion',
+    propName: 'sidebarActiveItem',
+    storageType: 'session',
   }),
+  pageWithIntl,
+  withFingerprint,
   withStateHandlers(
-    ({ sidebarActiveItem = 'activeQuestion ' }) => ({
+    ({ sidebarActiveItem }) => ({
       sidebarActiveItem,
       sidebarVisible: false,
     }),
@@ -186,7 +184,7 @@ export default compose(
   graphql(JoinSessionQuery, {
     options: ({ url }) => ({ variables: { shortname: url.query.shortname } }),
   }),
-  branch(({ loading }) => loading, renderComponent(() => <div />)),
+  branch(({ data }) => data.loading, renderComponent(() => <div />)),
   branch(
     ({ data }) => data.errors || !data.joinSession,
     renderComponent(() => (
@@ -195,29 +193,6 @@ export default compose(
       </div>
     )),
   ),
-  withProps({
-    // calculate a browser fingerprint (if activated)
-    fp:
-      process.env.FINGERPRINTING &&
-      typeof window !== 'undefined' &&
-      new Promise((resolve, reject) => {
-        // if an existing cookie already contains a fingerprint, reuse it
-        const existing = sessionStorage.get('fp')
-        if (existing) {
-          resolve(existing)
-        }
-
-        // otherwise generate a new fingerprint and store it in a cookie
-        try {
-          new Fingerprint2().get((result) => {
-            sessionStorage.setItem('fp', result)
-            resolve(result)
-          })
-        } catch (err) {
-          reject(err)
-        }
-      }),
-  }),
   graphql(AddConfusionTSMutation, { name: 'newConfusionTS' }),
   graphql(AddFeedbackMutation, { name: 'newFeedback' }),
   graphql(AddResponseMutation, { name: 'newResponse' }),
@@ -306,7 +281,7 @@ export default compose(
     },
 
     handleSidebarActiveItemChange: ({ handleSidebarActiveItemChange }) => newItem => () => {
-      localStorage.setItem('sidebarActiveItem', newItem)
+      sessionStorage.setItem('sidebarActiveItem', newItem)
       handleSidebarActiveItemChange(newItem)
     },
   }),

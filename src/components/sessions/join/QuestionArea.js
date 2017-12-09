@@ -2,13 +2,13 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import _without from 'lodash/without'
-import Cookies from 'js-cookie'
 import { FormattedMessage } from 'react-intl'
 import { compose, withStateHandlers, withHandlers, withProps } from 'recompose'
 
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
 import { ActionMenu, Collapser } from '../../common'
 import { SCAnswerOptions, FREEAnswerOptions } from '../../questionTypes'
+import { withStorage } from '../../../lib'
 
 const propTypes = {
   active: PropTypes.bool,
@@ -239,23 +239,23 @@ QuestionArea.propTypes = propTypes
 QuestionArea.defaultProps = defaultProps
 
 export default compose(
-  withProps(({ questions }) => {
-    const storedResponses = Cookies.getJSON('responses') || []
-
-    const result = {
-      remainingQuestions: questions
-        .filter(({ instanceId }) => {
-          if (storedResponses.includes(instanceId)) {
-            return false
-          }
-
-          return true
-        })
-        .map((v, index) => index),
-    }
-
-    return result
+  withStorage({
+    json: true,
+    propDefault: [],
+    propName: 'storedResponses',
+    storageType: 'local',
   }),
+  withProps(({ questions, storedResponses }) => ({
+    remainingQuestions: questions
+      .filter(({ instanceId }) => {
+        if (storedResponses && storedResponses.includes(instanceId)) {
+          return false
+        }
+
+        return true
+      })
+      .map((v, index) => index),
+  })),
   withStateHandlers(
     ({ remainingQuestions }) => ({
       activeQuestion: 0,
@@ -351,8 +351,11 @@ export default compose(
       }
 
       // update the stored responses
-      const storedResponses = Cookies.getJSON('responses') || []
-      Cookies.set('responses', [...storedResponses, instanceId], { expires: 7, path: '' })
+      const prevResponses = JSON.parse(localStorage.getItem('storedResponses'))
+      localStorage.setItem(
+        'storedResponses',
+        JSON.stringify(prevResponses ? [...prevResponses, instanceId] : [instanceId]),
+      )
 
       handleSubmit()
     },

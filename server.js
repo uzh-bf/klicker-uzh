@@ -75,7 +75,7 @@ const connectCache = async () => {
 const getCacheKey = req => `${req.url}:${req.locale}`
 
 // render a page to html and cache it in the appropriate place
-const renderAndCache = async (req, res, pagePath, queryParams) => {
+const renderAndCache = async (req, res, pagePath, queryParams, expiration = 60) => {
   const key = getCacheKey(req)
 
   let cached
@@ -101,9 +101,12 @@ const renderAndCache = async (req, res, pagePath, queryParams) => {
 
     res.send(html)
 
-    // let the cache expire after 10 minutes
-    // TODO: do this depending on page or dynamically?
-    cache.set(key, html, 'EX', 600)
+    // let the cache expire if redis is used
+    if (process.env.REDIS_URL) {
+      cache.set(key, html, 'EX', expiration)
+    } else {
+      cache.set(key, html)
+    }
   } catch (e) {
     app.renderError(e, req, res, pagePath, queryParams)
   }
@@ -142,7 +145,7 @@ app
     // prepare page configuration
     const pages = [
       {
-        cached: true,
+        cached: 60 * 60 * 24,
         url: '/',
       },
       {
@@ -165,7 +168,7 @@ app
         url: '/questions/:questionId',
       },
       {
-        cached: true,
+        cached: 60,
         mapParams: req => ({ shortname: req.params.shortname }),
         renderPath: '/join',
         url: '/join/:shortname',
@@ -185,7 +188,13 @@ app
 
         // if the route contents should be cached
         if (cached) {
-          renderAndCache(req, res, renderPath || url, mapParams ? mapParams(req) : undefined)
+          renderAndCache(
+            req,
+            res,
+            renderPath || url,
+            mapParams ? mapParams(req) : undefined,
+            cached,
+          )
         } else {
           app.render(req, res, renderPath || url, mapParams ? mapParams(req) : undefined)
         }
