@@ -245,19 +245,17 @@ export default compose(
     storageType: 'local',
   }),
   withProps(({ questions, storedResponses }) => ({
-    remainingQuestions: questions
-      .filter(({ instanceId }) => {
-        if (storedResponses && storedResponses.includes(instanceId)) {
-          return false
-        }
+    remainingQuestions: questions.reduce((indices, { instanceId }, index) => {
+      if (storedResponses && storedResponses.includes(instanceId)) {
+        return indices
+      }
 
-        return true
-      })
-      .map((v, index) => index),
+      return [...indices, index]
+    }, []),
   })),
   withStateHandlers(
     ({ remainingQuestions }) => ({
-      activeQuestion: 0,
+      activeQuestion: remainingQuestions[0],
       inputEmpty: true,
       inputValid: false,
       inputValue: undefined,
