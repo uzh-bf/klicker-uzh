@@ -28,16 +28,19 @@ COPY --chown=1000:0 . $KLICKER_DIR/
 # define available build arguments
 # these are then bundled into the js
 ARG API_URL
-ARG SENTRY
+ARG SENTRY_DSN
 ARG LOGROCKET
+ARG HOTJAR
+ARG OPBEAT_APP_ID
+ARG OPBEAT_ORG_ID
 ARG FINGERPRINTING="true"
+ARG VERSION="staging"
 RUN set -x && yarn run build
 
 # run next in production mode
 CMD ["yarn", "start:pm"]
 
 # add labels
-ARG VERSION="staging"
 LABEL maintainer="Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
 LABEL name="klicker-api"
 LABEL version=$VERSION
