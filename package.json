@@ -38,6 +38,7 @@
     "next": "4.2.0",
     "node-sass": "4.7.2",
     "opbeat": "^4.16.0",
+    "opbeat-react": "^3.4.0",
     "persistgraphql": "0.3.11",
     "prop-types": "15.6.0",
     "prosemirror-schema-basic": "1.0.0",
