@@ -106,8 +106,14 @@ jobs:
         - docker push $IMAGE_NAME:$TRAVIS_TAG
         - docker push $IMAGE_NAME:stable
         - >
-          curl $OPBEAT_URL
-          -H "Authorization: Bearer $OPBEAT_TOKEN"
+          curl $OPBEAT_URL_REACT
+          -H "Authorization: Bearer $OPBEAT_TOKEN_REACT"
+          -d rev=`git log -n 1 --pretty=format:%H`
+          -d branch=`git rev-parse --abbrev-ref HEAD`
+          -d status=completed
+        - >
+          curl $OPBEAT_URL_NEXT
+          -H "Authorization: Bearer $OPBEAT_TOKEN_NEXT"
           -d rev=`git log -n 1 --pretty=format:%H`
           -d branch=`git rev-parse --abbrev-ref HEAD`
           -d status=completed
