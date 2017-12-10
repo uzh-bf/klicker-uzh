@@ -6,7 +6,7 @@ const { ANALYZE } = process.env
 
 module.exports = {
   webpack: (config) => {
-    config.plugins.push(new webpack.ContextReplacementPlugin(/moment[/\\]locale$/, /de-ch|en-us/))
+    config.plugins.push(new webpack.ContextReplacementPlugin(/moment[/\\]locale$/, /de|en/))
 
     if (ANALYZE) {
       const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
