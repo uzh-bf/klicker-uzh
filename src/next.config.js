@@ -1,7 +1,6 @@
 /* eslint-disable import/no-extraneous-dependencies */
 
 const webpack = require('webpack')
-const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
 
 const { ANALYZE } = process.env
 
@@ -10,6 +9,8 @@ module.exports = {
     config.plugins.push(new webpack.ContextReplacementPlugin(/moment[/\\]locale$/, /de-ch|en-us/))
 
     if (ANALYZE) {
+      const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
+
       config.plugins.push(
         new BundleAnalyzerPlugin({
           analyzerMode: 'server',
