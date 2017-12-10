@@ -68,6 +68,7 @@ const Index = ({
 
   return (
     <TeacherLayout
+      fixedHeight
       actionArea={creationMode ? actionArea : null}
       intl={intl}
       navbar={{
@@ -127,6 +128,7 @@ const Index = ({
           height: 100%;
 
           .questionList {
+            overflow: auto;
             padding: 1rem;
 
             .buttons {

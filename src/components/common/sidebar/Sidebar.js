@@ -67,7 +67,6 @@ const Sidebar = ({
 
         :global(.sidebarMenu) {
           position: relative;
-          text-align: left;
           width: 75% !important;
 
           .langSwitcher {

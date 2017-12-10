@@ -45,7 +45,7 @@ export const QuestionListPres = ({
 
     <style jsx>{`
       .questionList {
-        > :global(*) {
+        :global(> *) {
           margin-bottom: 1rem;
         }
       }
