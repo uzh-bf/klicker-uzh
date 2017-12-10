@@ -240,7 +240,7 @@ export default compose(
   graphql(StartSessionMutation),
   withHandlers({
     // handle starting an existing or newly created session
-    handleStartSession: ({ mutate }) => id =>
+    handleStartSession: ({ mutate }) => ({ id }) =>
       mutate({
         refetchQueries: [{ query: RunningSessionQuery }, { query: AccountSummaryQuery }],
         variables: { id },

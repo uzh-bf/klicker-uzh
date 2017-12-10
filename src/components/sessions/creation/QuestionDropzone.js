@@ -30,7 +30,7 @@ const QuestionDropzone = ({ canDrop, isOver, connectDropTarget }) =>
           border: 1px solid lightgrey;
           color: grey;
           font-size: 1.5rem;
-          min-height: 2.5rem;
+          min-height: 5rem;
           height: 100%;
           width: 100%;
         }
