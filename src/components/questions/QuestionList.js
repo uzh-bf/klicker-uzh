@@ -44,8 +44,10 @@ export const QuestionListPres = ({
     ))}
 
     <style jsx>{`
-      .questionList > :global(*) {
-        margin-bottom: 1rem;
+      .questionList {
+        > :global(*) {
+          margin-bottom: 1rem;
+        }
       }
     `}</style>
   </div>
