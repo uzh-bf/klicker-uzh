@@ -41,7 +41,10 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
       </div>
 
       <div className="column buttons">
-        <Link href={`/questions/${questionId}`}>
+        <Link
+          as={`/questions/${questionId}`}
+          href={{ pathname: '/questions/details', query: { questionId } }}
+        >
           <Button icon="eye" />
         </Link>
       </div>

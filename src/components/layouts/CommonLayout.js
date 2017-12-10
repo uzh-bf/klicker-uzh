@@ -1,10 +1,11 @@
+/* eslint-disable react/jsx-sort-props */
+
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Helmet } from 'react-helmet'
-import { compose, lifecycle } from 'recompose'
 
 import { SEMANTIC_VERSION } from '../../constants'
-import { createLinks, initLogging } from '../../lib'
+import { createLinks } from '../../lib'
 
 const propTypes = {
   baseFontSize: PropTypes.string,
@@ -17,19 +18,21 @@ const defaultProps = {
   pageTitle: 'CommonLayout',
 }
 
+const links = [
+  'https://fonts.googleapis.com/css?family=Open Sans',
+  `https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/${SEMANTIC_VERSION}/semantic.min.css`,
+]
+
 const CommonLayout = ({ baseFontSize, children, pageTitle }) => (
   <div className="commonLayout">
     <Helmet defer={false}>
-      {createLinks([
-        'https://fonts.googleapis.com/css?family=Open Sans',
-        `https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/${SEMANTIC_VERSION}/semantic.min.css`,
-      ])}
+      {createLinks(links)}
       <title>{pageTitle}</title>
     </Helmet>
 
     {children}
 
-    <style global jsx>{`
+    <style jsx global>{`
       *:not(i) {
         font-family: 'Open Sans', sans-serif !important;
       }
@@ -60,11 +63,4 @@ const CommonLayout = ({ baseFontSize, children, pageTitle }) => (
 CommonLayout.propTypes = propTypes
 CommonLayout.defaultProps = defaultProps
 
-export default compose(
-  lifecycle({
-    componentWillMount: () => {
-      // initialize sentry and logrocket (if appropriately configured)
-      initLogging()
-    },
-  }),
-)(CommonLayout)
+export default CommonLayout
