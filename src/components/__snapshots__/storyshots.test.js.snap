@@ -408,7 +408,7 @@ exports[`Storyshots common/sidebar LanguageSwitcher 1`] = `
     aria-busy={undefined}
     aria-disabled={undefined}
     aria-expanded={false}
-    className="ui fluid search selection upward dropdown"
+    className="ui fluid search selection dropdown"
     onBlur={[Function]}
     onChange={[Function]}
     onClick={[Function]}
@@ -499,7 +499,7 @@ exports[`Storyshots common/sidebar LanguageSwitcher 1`] = `
 
 exports[`Storyshots common/sidebar Sidebar (invisible) 1`] = `
 <div
-  className="jsx-3166438025 sidebar"
+  className="jsx-485800020 sidebar"
 >
   <div
     className="pushable"
@@ -520,7 +520,7 @@ exports[`Storyshots common/sidebar Sidebar (invisible) 1`] = `
         Item 2
       </a>
       <div
-        className="jsx-3166438025 langSwitcher"
+        className="jsx-485800020 langSwitcher"
       >
         <div
           className="languageSwitcher"
@@ -529,7 +529,7 @@ exports[`Storyshots common/sidebar Sidebar (invisible) 1`] = `
             aria-busy={undefined}
             aria-disabled={undefined}
             aria-expanded={false}
-            className="ui fluid search selection upward dropdown"
+            className="ui fluid search selection dropdown"
             onBlur={[Function]}
             onChange={[Function]}
             onClick={[Function]}
@@ -629,7 +629,7 @@ exports[`Storyshots common/sidebar Sidebar (invisible) 1`] = `
 
 exports[`Storyshots common/sidebar Sidebar (visible) 1`] = `
 <div
-  className="jsx-3166438025 sidebar"
+  className="jsx-485800020 sidebar"
 >
   <div
     className="pushable"
@@ -650,7 +650,7 @@ exports[`Storyshots common/sidebar Sidebar (visible) 1`] = `
         Item 2
       </a>
       <div
-        className="jsx-3166438025 langSwitcher"
+        className="jsx-485800020 langSwitcher"
       >
         <div
           className="languageSwitcher"
@@ -659,7 +659,7 @@ exports[`Storyshots common/sidebar Sidebar (visible) 1`] = `
             aria-busy={undefined}
             aria-disabled={undefined}
             aria-expanded={false}
-            className="ui fluid search selection upward dropdown"
+            className="ui fluid search selection dropdown"
             onBlur={[Function]}
             onChange={[Function]}
             onClick={[Function]}
@@ -2334,7 +2334,7 @@ exports[`Storyshots forms/components SessionCreationForm 1`] = `
           className="jsx-897902222 blockDropzone"
         >
           <div
-            className="jsx-3824212928 dropzone"
+            className="jsx-3099967442 dropzone"
           >
             <i
               aria-hidden="true"
@@ -3620,7 +3620,7 @@ exports[`Storyshots questions QuestionDetails 1`] = `
 
 exports[`Storyshots questions QuestionList (creation mode) 1`] = `
 <div
-  className="jsx-3968520247 questionList"
+  className="jsx-753457472 questionList"
 >
   <div
     className="jsx-3830748110 question creationMode draggable"
@@ -4007,7 +4007,7 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
 
 exports[`Storyshots questions QuestionList 1`] = `
 <div
-  className="jsx-3968520247 questionList"
+  className="jsx-753457472 questionList"
 >
   <div
     className="jsx-3830748110 question"
@@ -4466,7 +4466,7 @@ exports[`Storyshots sessions QuestionDropzone 1`] = `
   }
 >
   <div
-    className="jsx-3824212928 dropzone"
+    className="jsx-3099967442 dropzone"
   >
     <i
       aria-hidden="true"
@@ -5119,7 +5119,7 @@ exports[`Storyshots sessions SessionTimelineInput 1`] = `
       className="jsx-897902222 questionDropzone"
     >
       <div
-        className="jsx-3824212928 dropzone"
+        className="jsx-3099967442 dropzone"
       >
         <i
           aria-hidden="true"
@@ -5187,7 +5187,7 @@ exports[`Storyshots sessions SessionTimelineInput 1`] = `
       className="jsx-897902222 questionDropzone"
     >
       <div
-        className="jsx-3824212928 dropzone"
+        className="jsx-3099967442 dropzone"
       >
         <i
           aria-hidden="true"
@@ -5210,7 +5210,7 @@ exports[`Storyshots sessions SessionTimelineInput 1`] = `
       className="jsx-897902222 blockDropzone"
     >
       <div
-        className="jsx-3824212928 dropzone"
+        className="jsx-3099967442 dropzone"
       >
         <i
           aria-hidden="true"
