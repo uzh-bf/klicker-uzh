@@ -105,3 +105,9 @@ jobs:
         - docker build --build-arg VERSION=$TRAVIS_TAG --build-arg API_URL=$PROD_API_URL --build-arg LOGROCKET=$PROD_LOGROCKET --build-arg SENTRY=$PROD_SENTRY -t $IMAGE_NAME:stable -t $IMAGE_NAME:$TRAVIS_TAG .
         - docker push $IMAGE_NAME:$TRAVIS_TAG
         - docker push $IMAGE_NAME:stable
+        - >
+          curl $OPBEAT_URL
+          -H "Authorization: Bearer $OPBEAT_TOKEN"
+          -d rev=`git log -n 1 --pretty=format:%H`
+          -d branch=`git rev-parse --abbrev-ref HEAD`
+          -d status=completed

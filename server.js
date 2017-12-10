@@ -1,5 +1,13 @@
 require('dotenv').config()
 
+// initialize opbeat if so configured
+let opbeat
+if (process.env.OPBEAT_APP_ID) {
+  opbeat = require('opbeat').start({
+    active: process.env.NODE_ENV === 'production',
+  })
+}
+
 const IntlPolyfill = require('intl')
 
 const { basename, join } = require('path')
@@ -140,6 +148,11 @@ app
       middleware.push(morgan('combined'))
     }
 
+    // add the opbeat middleware
+    if (opbeat) {
+      middleware.push(opbeat.middleware.express())
+    }
+
     server.use(...middleware)
 
     // prepare page configuration
@@ -206,6 +219,16 @@ app
       req.locale = locale
       req.localeDataScript = getLocaleDataScript(locale)
       req.messages = dev ? {} : getMessages(locale)
+
+      // set the opbeat transaction name
+      if (opbeat) {
+        opbeat.setTransactionName(req.originalUrl)
+
+        // set the user context if a cookie was set
+        if (req.cookies.userId) {
+          opbeat.setUserContext({ id: req.cookies.userId })
+        }
+      }
 
       return handle(req, res)
     })
