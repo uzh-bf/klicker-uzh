@@ -223,7 +223,7 @@ app
       // set the opbeat transaction name
       if (opbeat) {
         if (req.originalUrl.length > 6 && req.originalUrl.substring(0, 6) !== '/_next') {
-          opbeat.setTransactionName(req.originalUrl)
+          opbeat.setTransactionName(`${req.method} ${req.originalUrl}`)
         }
 
         // set the user context if a cookie was set
