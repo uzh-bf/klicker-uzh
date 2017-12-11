@@ -102,14 +102,16 @@ export default ComposedComponent =>
           const LogRocket = require('logrocket')
           const LogRocketReact = require('logrocket-react')
 
-          LogRocket.init(process.env.LOGROCKET)
-          LogRocketReact(LogRocket)
+          if (LogRocket && LogRocketReact) {
+            LogRocket.init(process.env.LOGROCKET)
+            LogRocketReact(LogRocket)
 
-          logrocket = true
+            logrocket = true
+          }
         }
 
         // setup sentry if so configured
-        if (process.env.SENTRY_DSN && !sentry) {
+        if (process.env.SENTRY_DSN && !sentry && Raven) {
           Raven.config(process.env.SENTRY_DSN, {
             environment: process.env.NODE_ENV,
             release: process.env.VERSION,
@@ -131,9 +133,11 @@ export default ComposedComponent =>
         if (process.env.HOTJAR && !hotjar) {
           const { hotjar: hj } = require('react-hotjar')
 
-          hj.initialize(process.env.HOTJAR, 6)
+          if (hj) {
+            hj.initialize(process.env.HOTJAR, 6)
 
-          hotjar = true
+            hotjar = true
+          }
         }
       }
     }
