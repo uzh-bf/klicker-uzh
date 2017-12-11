@@ -5,7 +5,6 @@ import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
 import { Form, Icon, Input } from 'semantic-ui-react'
 import { FormattedMessage, intlShape } from 'react-intl'
-import { FaQuestionCircle } from 'react-icons/lib/fa'
 
 const propTypes = {
   disabled: PropTypes.bool,
@@ -72,7 +71,7 @@ const SemanticInput = ({
           {label}
           {tooltip && (
             <a data-tip data-for={input.name}>
-              <FaQuestionCircle className="icon" />
+              <Icon className="icon" name="question circle" />
             </a>
           )}
         </label>

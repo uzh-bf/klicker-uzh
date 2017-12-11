@@ -1,8 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import Fingerprint2 from 'fingerprintjs2'
-import Cookies from 'js-cookie'
+import _throttle from 'lodash/debounce'
 import {
   compose,
   withHandlers,
@@ -16,7 +15,7 @@ import { graphql } from 'react-apollo'
 
 import FeedbackArea from '../components/sessions/join/FeedbackArea'
 import QuestionArea from '../components/sessions/join/QuestionArea'
-import { pageWithIntl, withData } from '../lib'
+import { pageWithIntl, withData, withFingerprint } from '../lib'
 import { JoinSessionQuery } from '../graphql/queries'
 import {
   AddConfusionTSMutation,
@@ -106,7 +105,6 @@ const Join = ({
             />
           </div>
         )}
-
         <FeedbackArea
           active={sidebarActiveItem === 'feedbackChannel'}
           feedbacks={feedbacks}
@@ -115,7 +113,7 @@ const Join = ({
           isConfusionBarometerActive={isConfusionBarometerActive}
           isFeedbackChannelActive={isFeedbackChannelActive}
         />
-
+        )
         <style jsx>{`
           @import 'src/theme';
 
@@ -158,7 +156,13 @@ Join.defaultProps = defaultProps
 
 export default compose(
   withData,
+  /* withStorage({
+    propDefault: 'activeQuestion',
+    propName: 'sidebarActiveItem',
+    storageType: 'session',
+  }), */
   pageWithIntl,
+  withFingerprint,
   withStateHandlers(
     {
       sidebarActiveItem: 'activeQuestion',
@@ -176,14 +180,10 @@ export default compose(
       }),
     },
   ),
-  withHandlers({
-    handleSidebarActiveItemChange: ({ handleSidebarActiveItemChange }) => newItem => () =>
-      handleSidebarActiveItemChange(newItem),
-  }),
   graphql(JoinSessionQuery, {
     options: ({ url }) => ({ variables: { shortname: url.query.shortname } }),
   }),
-  branch(({ loading }) => loading, renderComponent(() => <div />)),
+  branch(({ data }) => data.loading, renderComponent(() => <div />)),
   branch(
     ({ data }) => data.errors || !data.joinSession,
     renderComponent(() => (
@@ -192,31 +192,12 @@ export default compose(
       </div>
     )),
   ),
-  withProps({
-    // calculate a browser fingerprint (if activated)
-    fp:
-      process.env.FINGERPRINTING &&
-      new Promise((resolve, reject) => {
-        // if an existing cookie already contains a fingerprint, reuse it
-        const existing = Cookies.get('fp')
-        if (existing) {
-          resolve(existing)
-        }
-
-        // otherwise generate a new fingerprint and store it in a cookie
-        try {
-          new Fingerprint2().get((result) => {
-            Cookies.set('fp', result)
-            resolve(result)
-          })
-        } catch (err) {
-          reject(err)
-        }
-      }),
-  }),
   graphql(AddConfusionTSMutation, { name: 'newConfusionTS' }),
   graphql(AddFeedbackMutation, { name: 'newFeedback' }),
   graphql(AddResponseMutation, { name: 'newResponse' }),
+  withProps(({ newConfusionTS }) => ({
+    newConfusionTS: _throttle(newConfusionTS, 10000, { trailing: true }),
+  })),
   withHandlers({
     // handle creation of a new confusion timestep
     handleNewConfusionTS: ({ fp, data: { joinSession }, newConfusionTS }) => async ({
@@ -296,6 +277,11 @@ export default compose(
       } catch ({ message }) {
         console.error(message)
       }
+    },
+
+    handleSidebarActiveItemChange: ({ handleSidebarActiveItemChange }) => newItem => () => {
+      // sessionStorage.setItem('sidebarActiveItem', newItem)
+      handleSidebarActiveItemChange(newItem)
     },
   }),
   withProps(({ data: { joinSession }, url }) => ({

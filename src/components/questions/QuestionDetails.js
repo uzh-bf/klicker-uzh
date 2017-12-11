@@ -4,7 +4,6 @@ import _truncate from 'lodash/truncate'
 import Link from 'next/link'
 
 import { FormattedMessage } from 'react-intl'
-import { FaEye } from 'react-icons/lib/fa'
 import { Button } from 'semantic-ui-react'
 
 import { ListWithHeader } from '../common'
@@ -42,10 +41,11 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
       </div>
 
       <div className="column buttons">
-        <Link href={`/questions/${questionId}`}>
-          <Button className="button">
-            <FaEye />
-          </Button>
+        <Link
+          as={`/questions/${questionId}`}
+          href={{ pathname: '/questions/details', query: { questionId } }}
+        >
+          <Button icon="eye" />
         </Link>
       </div>
 
@@ -126,7 +126,7 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
               flex: none;
               padding: 0.3rem;
 
-              :global(.button) {
+              :global(button) {
                 margin: 0;
                 margin-bottom: 0.3rem;
                 padding: 7px 12px;
@@ -134,11 +134,11 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
                 background-color: rgba(224, 225, 226, 0.73);
               }
 
-              :global(.button:last-child) {
+              :global(button:last-child) {
                 margin-bottom: 0;
               }
 
-              :global(.button:hover) {
+              :global(button:hover) {
                 color: $color-primary !important;
               }
             }
