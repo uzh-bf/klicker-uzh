@@ -7,7 +7,7 @@ if (process.env.OPBEAT_APP_ID_NEXT) {
     active: process.env.NODE_ENV === 'production',
     appId: process.env.OPBEAT_APP_ID_NEXT,
     organizationId: process.env.OPBEAT_ORG_ID_NEXT,
-    secretToken: process.env.OPBEAT_SECRET_KEY_NEXT,
+    secretToken: process.env.OPBEAT_SECRET_TOKEN_NEXT,
   })
 }
 

@@ -4,7 +4,6 @@ import React from 'react'
 let Raven
 if (process.env.SENTRY_DSN) {
   Raven = require('raven-js')
-  console.log(Raven)
 }
 
 export default function withLogging(Child) {
@@ -19,11 +18,11 @@ export default function withLogging(Child) {
       super(props)
       this.state = { error: null }
 
-      if (process.env.OPBEAT_APP_ID) {
+      if (process.env.OPBEAT_APP_ID_REACT) {
         initOpbeat({
           active: process.env.NODE_ENV === 'production',
-          appId: process.env.OPBEAT_APP_ID,
-          orgId: process.env.OPBEAT_ORG_ID,
+          appId: process.env.OPBEAT_APP_ID_REACT,
+          orgId: process.env.OPBEAT_ORG_ID_REACT,
         })
       }
 
