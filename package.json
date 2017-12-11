@@ -30,7 +30,7 @@
     "mongodb": "2.2.33",
     "mongoose": "4.13.6",
     "morgan": "1.9.0",
-    "opbeat": "^4.16.0",
+    "opbeat": "4.16.0",
     "rate-limit-redis": "1.1.0",
     "subscriptions-transport-ws": "0.9.4"
   },
