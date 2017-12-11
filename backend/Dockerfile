@@ -5,15 +5,20 @@ FROM node:8-alpine@sha256:5afa874abbb18b38de0eb3b0b8bf168a01c1b65845b949104c3a50
 ENV KLICKER_DIR /app
 ENV PM_VERSION="2.8.0"
 
-# switch to the node user (uid 1000)
-# non-root as provided by the base image
-USER node
+# fix permissions for the global node directories
+# this allows installing pm2 globally as user 1000
+RUN set -x \
+  && export NPM_PREFIX=$(npm config get prefix) \
+  && chown -R 1000:0 \
+    $NPM_PREFIX/lib/node_modules \
+    $NPM_PREFIX/bin \
+    $NPM_PREFIX/share
 
-# install pm2 globally and modify rights of home directory
-RUN set -x && yarn global add pm2@$PM_VERSION && chown -R node:0 /home/node
+# install pm2 globally
+RUN set -x && npm install -g pm2@$PM_VERSION
 
 # inject the application dependencies
-COPY --chown=node:0 package.json yarn.lock $KLICKER_DIR/
+COPY --chown=1000:0 package.json yarn.lock $KLICKER_DIR/
 WORKDIR $KLICKER_DIR
 
 # update permissions for klicker dir
@@ -22,10 +27,10 @@ ARG NODE_ENV="production"
 RUN set -x && yarn install --frozen-lockfile
 
 # inject application sources and entrypoint
-COPY --chown=node:0 . $KLICKER_DIR/
+COPY --chown=1000:0 . $KLICKER_DIR/
 
-# run next in production mode
-CMD ["yarn", "start:pm"]
+# run express in production mode
+CMD ["pm2-docker", "start", "--env production", "src/server.js"]
 
 # add labels
 ARG VERSION="staging"
