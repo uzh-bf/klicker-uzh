@@ -17,6 +17,10 @@ RUN set -x \
     /.pm2 \
   && chmod g+w /.pm2
 
+# switch to the node user (uid 1000)
+# non-root as provided by the base image
+USER 1000
+
 # install pm2 globally
 RUN set -x && npm install -g pm2@$PM_VERSION
 
