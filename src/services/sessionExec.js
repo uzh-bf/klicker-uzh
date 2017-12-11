@@ -61,8 +61,7 @@ const addConfusionTS = async ({
 
   // if redis is available, put the new confusion data in the store
   if (redis) {
-    const result = redis.hset(`${sessionId}:confusion`, fp || ip, { difficulty, speed })
-    console.log(result)
+    await redis.hset(`${sessionId}:confusion`, fp || ip, JSON.stringify({ difficulty, speed }))
   }
 
   const session = await getRunningSession(sessionId)

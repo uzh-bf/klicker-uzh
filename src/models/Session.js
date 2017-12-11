@@ -20,6 +20,8 @@ const Session = new mongoose.Schema({
     isConfusionBarometerActive: { type: Boolean, default: false },
     isFeedbackChannelActive: { type: Boolean, default: false },
     isFeedbackChannelPublic: { type: Boolean, default: false },
+    fingerprinting: { type: Boolean, default: true },
+    ipFiltering: { type: Boolean, default: true },
   },
   user: { type: ObjectId, ref: 'User', required: true },
 
