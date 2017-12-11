@@ -69,7 +69,7 @@
     "redux-form": "7.2.0",
     "semantic-ui-react": "0.77.1",
     "styled-jsx-plugin-sass": "0.2.1",
-    "validator": "9.1.2",
+    "validator": "9.2.0",
     "webpack": "3.10.0"
   },
   "devDependencies": {
