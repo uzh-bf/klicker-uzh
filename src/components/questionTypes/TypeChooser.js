@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
 import { FormattedMessage, intlShape } from 'react-intl'
-import { FaQuestionCircle } from 'react-icons/lib/fa'
+import { Icon } from 'semantic-ui-react'
 
 import { QUESTION_TYPES } from '../../constants'
 import { Button } from '../common'
@@ -57,7 +57,7 @@ const TypeChooser = ({ intl, input: { value, onChange } }) => {
           id="teacher.createQuestion.questionType.label"
         />
         <a data-tip data-for="TypeChooserHelp">
-          <FaQuestionCircle />
+          <Icon name="question circle" />
         </a>
       </label>
 
@@ -70,7 +70,12 @@ const TypeChooser = ({ intl, input: { value, onChange } }) => {
 
       <div className="types">
         {types.map(({ name, value: typeValue }) => (
-          <Button active={typeValue === value} key={typeValue} onClick={handleClick(typeValue)}>
+          <Button
+            active={typeValue === value}
+            key={typeValue}
+            type="button"
+            onClick={handleClick(typeValue)}
+          >
             {name}
           </Button>
         ))}
