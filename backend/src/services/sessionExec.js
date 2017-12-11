@@ -1,4 +1,5 @@
 const md5 = require('md5')
+const _every = require('lodash/every')
 
 const { QuestionInstanceModel, UserModel } = require('../models')
 const { QuestionGroups, QuestionTypes } = require('../constants')
@@ -92,11 +93,23 @@ const addResponse = async ({
     // or only write results to db every 5 or 10 responses and use redis as calculation platform?
 
     // if redis is available, save the ip, fp and response under the key of the corresponding instance
-    const ipAdded = redis.sadd(`${instanceId}:ip`, ip)
-    const fpAdded = redis.sadd(`${instanceId}:fp`, fp)
-    const results = await Promise.all([ipAdded, fpAdded])
+    const promises = []
 
-    if (results[0] && results[1]) {
+    // if fingerprinting is enabled, try adding the fingerprint to redis
+    if (process.env.APP_FINGERPRINTING) {
+      promises.push(redis.sadd(`${instanceId}:fp`, fp))
+    }
+
+    // if ip filtering is enabled, try adding the ip to redis
+    if (process.env.APP_IP_FILTERING) {
+      promises.push(redis.sadd(`${instanceId}:ip`, ip))
+    }
+
+    // check results for set operations
+    const results = await Promise.all(promises)
+
+    // if every result is truthy (i.e. 1 new set item added)
+    if (_every(results)) {
       // add the response to the redis database
       redis.rpush(`${instanceId}:responses`, JSON.stringify({ response }))
     } else {
