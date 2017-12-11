@@ -113,7 +113,6 @@ const Join = ({
           isConfusionBarometerActive={isConfusionBarometerActive}
           isFeedbackChannelActive={isFeedbackChannelActive}
         />
-        )
         <style jsx>{`
           @import 'src/theme';
 
