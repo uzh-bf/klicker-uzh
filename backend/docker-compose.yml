@@ -5,13 +5,24 @@ services:
     ports:
       - "4000:3000"
     environment:
-      APP_DOMAIN: localhost
-      APP_SECRET: hello-world
-      MONGO_URL: mongodb/klicker
-      ORIGIN: http://localhost:3000
+      APP_DOMAIN: "localhost"
+      APP_SECRET: "hello-world"
+      MONGO_URL: "klicker:klicker@ds161042.mlab.com:61042/klicker-dev"
+      REDIS_URL: ":klicker-dev@144.76.118.94:6379"
+      ORIGIN: "http://localhost:3000"
       PORT: 3000
+      # OPBEAT_APP_ID: ""
+      # OPBEAT_ORG_ID: ""
+      # OPBEAT_SECRET_TOKEN: ""
+      # MONGO_URL: "mongodb/klicker"
+      # REDIS_URL: "redis"
 
-  mongodb:
-    image: mongo:3.2
-    ports:
-      - "27017:27017"
+  #redis:
+    #image: "redis:3-32bit"
+    #ports:
+      #- "6379:6379"
+
+  #mongodb:
+    #image: "mongo:3.2"
+    #ports:
+      #- "27017:27017"

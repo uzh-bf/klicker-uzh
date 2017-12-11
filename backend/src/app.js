@@ -1,6 +1,11 @@
 /* eslint-disable global-require */
-
 require('dotenv').config()
+
+// initialize opbeat if so configured
+let opbeat
+if (process.env.OPBEAT_APP_ID) {
+  opbeat = require('opbeat')
+}
 
 const bodyParser = require('body-parser')
 const cors = require('cors')
@@ -113,7 +118,13 @@ if (process.env.APP_RATE_LIMITING) {
     delayMs: 100, // delay responses by 250ms * (numResponses - delayAfter)
     keyGenerator: req => `${req.auth ? req.auth.sub : req.ip}`,
     onLimitReached: req =>
-      exceptTest(() => console.error(`> Rate-Limited a Request from ${req.ip} ${req.auth.sub || 'anon'}!`)),
+      exceptTest(() => {
+        const error = `> Rate-Limited a Request from ${req.ip} ${req.auth.sub || 'anon'}!`
+        console.error(error)
+        if (opbeat) {
+          opbeat.captureError(error)
+        }
+      }),
   }
 
   // if redis is available, use it to centrally store rate limiting dataconst
@@ -150,8 +161,20 @@ if (process.env.NODE_ENV === 'production') {
   middleware.push((req, res, next) => {
     const invertedMap = _invert(queryMap)
     req.body.query = invertedMap[req.body.id]
+
+    // set the opbeat transaction name and user context
+    if (opbeat) {
+      opbeat.setTransactionName(`[${req.body.id}] ${req.body.operationName}`)
+      opbeat.setUserContext({ id: req.auth.sub })
+    }
+
     next()
   })
+}
+
+// add the opbeat middleware
+if (opbeat) {
+  middleware.push(opbeat.middleware.express())
 }
 
 // if apollo engine is enabled, add the middleware to the production stack
