@@ -9,8 +9,8 @@ ENV PM_VERSION="2.8.0"
 # non-root as provided by the base image
 USER node
 
-# install pm2 globally
-RUN set -x && yarn global add pm2@$PM_VERSION
+# install pm2 globally and modify rights of home directory
+RUN set -x && yarn global add pm2@$PM_VERSION && chown -R node:0 /home/node
 
 # inject the application dependencies
 COPY --chown=node:0 package.json yarn.lock $KLICKER_DIR/
