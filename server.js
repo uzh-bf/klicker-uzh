@@ -2,12 +2,12 @@ require('dotenv').config()
 
 // initialize opbeat if so configured
 let opbeat
-if (process.env.OPBEAT_APP_ID) {
+if (process.env.OPBEAT_APP_ID_NEXT) {
   opbeat = require('opbeat').start({
     active: process.env.NODE_ENV === 'production',
-    appId: process.env.OPBEAT_APP_ID,
-    organizationId: process.env.OPBEAT_ORG_ID,
-    secretToken: process.env.OPBEAT_SECRET_KEY,
+    appId: process.env.OPBEAT_APP_ID_NEXT,
+    organizationId: process.env.OPBEAT_ORG_ID_NEXT,
+    secretToken: process.env.OPBEAT_SECRET_KEY_NEXT,
   })
 }
 

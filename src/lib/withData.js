@@ -87,11 +87,11 @@ export default ComposedComponent =>
 
       if (process.browser) {
         // setup opbeat if so configured
-        if (process.env.OPBEAT_APP_ID && !opbeat) {
+        if (process.env.OPBEAT_APP_ID_REACT && !opbeat) {
           initOpbeat({
             active: process.env.NODE_ENV === 'production',
-            appId: process.env.OPBEAT_APP_ID,
-            orgId: process.env.OPBEAT_ORG_ID,
+            appId: process.env.OPBEAT_APP_ID_REACT,
+            orgId: process.env.OPBEAT_ORG_ID_REACT,
           })
 
           opbeat = true
