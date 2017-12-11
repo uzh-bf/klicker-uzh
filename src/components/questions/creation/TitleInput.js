@@ -1,9 +1,8 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
-import { Form, Input } from 'semantic-ui-react'
+import { Form, Icon, Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import { FaQuestionCircle } from 'react-icons/lib/fa'
 
 const propTypes = {
   input: PropTypes.shape({
@@ -25,7 +24,7 @@ const TitleInput = ({ input: { value, onChange }, meta: { dirty, invalid } }) =>
           id="teacher.createQuestion.titleInput.label"
         />
         <a data-tip data-for="titleHelp">
-          <FaQuestionCircle />
+          <Icon name="question circle" />
         </a>
       </label>
 

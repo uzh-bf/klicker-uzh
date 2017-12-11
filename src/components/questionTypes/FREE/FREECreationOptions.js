@@ -2,14 +2,14 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import _get from 'lodash/get'
 import ReactTooltip from 'react-tooltip'
-import { Form, Input } from 'semantic-ui-react'
+import { Form, Icon, Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import { FaQuestionCircle } from 'react-icons/lib/fa'
 import { compose, withHandlers, mapProps } from 'recompose'
 
 import { QUESTION_TYPES } from '../../../constants'
 
 const propTypes = {
+  disabled: PropTypes.bool,
   handleMaxChange: PropTypes.func.isRequired,
   handleMinChange: PropTypes.func.isRequired,
   max: PropTypes.number,
@@ -22,11 +22,13 @@ const propTypes = {
 }
 
 const defaultProps = {
+  disabled: false,
   max: undefined,
   min: undefined,
 }
 
 const FREECreationOptions = ({
+  disabled,
   max,
   min,
   type,
@@ -42,7 +44,7 @@ const FREECreationOptions = ({
           id="teacher.createQuestion.optionsFREE.label"
         />
         <a data-tip data-for="FREECreationHelp">
-          <FaQuestionCircle />
+          <Icon name="question circle" />
         </a>
       </label>
 
@@ -62,6 +64,7 @@ const FREECreationOptions = ({
               <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />
             </label>
             <Input
+              disabled={disabled}
               name="min"
               placeholder="-∞"
               type="number"
@@ -75,6 +78,7 @@ const FREECreationOptions = ({
               <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />
             </label>
             <Input
+              disabled={disabled}
               name="max"
               placeholder="∞"
               type="number"
@@ -131,7 +135,10 @@ FREECreationOptions.propTypes = propTypes
 FREECreationOptions.defaultProps = defaultProps
 
 export default compose(
-  mapProps(({ input: { onChange, value }, meta, type }) => ({
+  mapProps(({
+    disabled, input: { onChange, value }, meta, type,
+  }) => ({
+    disabled,
     max: _get(value, 'restrictions.max'),
     meta,
     min: _get(value, 'restrictions.min'),
