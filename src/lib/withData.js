@@ -1,10 +1,17 @@
 /* eslint-disable react/prop-types */
+import initOpbeat, { captureError } from 'opbeat-react'
+import Raven from 'raven-js'
 
 import React from 'react'
 import { ApolloProvider, getDataFromTree } from 'react-apollo'
 import Head from 'next/head'
 import initApollo from './initApollo'
 import initRedux from './initRedux'
+
+let logrocket = null
+let hotjar = null
+let sentry = null
+let opbeat = null
 
 // Gets the display name of a JSX component for dev tools
 function getComponentDisplayName(Component) {
@@ -74,14 +81,87 @@ export default ComposedComponent =>
       super(props)
       this.apollo = initApollo()
       this.redux = initRedux(this.apollo, this.props.serverState) // eslint-disable-line
+
+      // setup additional error handling for all pages with data
+      this.state = { error: null }
+
+      if (process.browser) {
+        // setup opbeat if so configured
+        if (process.env.OPBEAT_APP_ID_REACT && !opbeat) {
+          initOpbeat({
+            active: process.env.NODE_ENV === 'production',
+            appId: process.env.OPBEAT_APP_ID_REACT,
+            orgId: process.env.OPBEAT_ORG_ID_REACT,
+          })
+
+          opbeat = true
+        }
+
+        // setup logrocket if so configured
+        if (process.env.LOGROCKET && !logrocket) {
+          const LogRocket = require('logrocket')
+          const LogRocketReact = require('logrocket-react')
+
+          LogRocket.init(process.env.LOGROCKET)
+          LogRocketReact(LogRocket)
+
+          logrocket = true
+        }
+
+        // setup sentry if so configured
+        if (process.env.SENTRY_DSN && !sentry) {
+          Raven.config(process.env.SENTRY_DSN, {
+            environment: process.env.NODE_ENV,
+            release: process.env.VERSION,
+          }).install()
+
+          if (process.env.LOGROCKET) {
+            Raven.setDataCallback(data =>
+              Object.assign({}, data, {
+                extra: {
+                  sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef
+                },
+              }),
+            )
+          }
+
+          sentry = true
+        }
+
+        if (process.env.HOTJAR && !hotjar) {
+          const { hotjar: hj } = require('react-hotjar')
+
+          hj.initialize(process.env.HOTJAR, 6)
+
+          hotjar = true
+        }
+      }
+    }
+
+    componentDidCatch(error, errorInfo) {
+      // set the component error state
+      this.setState({ error })
+
+      // log the error to console, opbeat and/or sentry
+      console.error(error)
+      if (process.env.OPBEAT_APP_ID) {
+        console.log('opbeat catch')
+        captureError(error, errorInfo)
+      }
+      if (process.env.SENTRY_DSN) {
+        console.log('sentry catch')
+        Raven.captureException(error, { extra: errorInfo })
+      }
     }
 
     render() {
+      const { error } = this.state
+
       return (
         // No need to use the Redux Provider
         // because Apollo sets up the store for us
         <ApolloProvider client={this.apollo} store={this.redux}>
-          <ComposedComponent {...this.props} />
+          <ComposedComponent {...this.props} error={error} />
         </ApolloProvider>
       )
     }

@@ -68,6 +68,7 @@ const Index = ({
 
   return (
     <TeacherLayout
+      fixedHeight
       actionArea={creationMode ? actionArea : null}
       intl={intl}
       navbar={{
@@ -127,9 +128,8 @@ const Index = ({
           height: 100%;
 
           .questionList {
-            // HACK: workaround for creating session div overlapping the question list
+            overflow: auto;
             padding: 1rem;
-            padding-bottom: 235px;
 
             .buttons {
               margin: 0 0 1rem 0;
@@ -242,7 +242,7 @@ export default compose(
   graphql(StartSessionMutation),
   withHandlers({
     // handle starting an existing or newly created session
-    handleStartSession: ({ mutate }) => id =>
+    handleStartSession: ({ mutate }) => ({ id }) =>
       mutate({
         refetchQueries: [{ query: RunningSessionQuery }, { query: AccountSummaryQuery }],
         variables: { id },

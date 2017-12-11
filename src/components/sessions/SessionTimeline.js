@@ -42,7 +42,11 @@ const SessionTimeline = ({
       </div>
       <div className="evaluationLink">
         <Icon name="external" />{' '}
-        <Link prefetch href={`/sessions/evaluation/${sessionId}`}>
+        <Link
+          prefetch
+          as={`/sessions/evaluation/${sessionId}`}
+          href={{ pathname: '/sessions/evaluation', query: { sessionId } }}
+        >
           <a target="_blank">
             <FormattedMessage defaultMessage="Evaluation" id="runningSession.button.evaluation" />
           </a>

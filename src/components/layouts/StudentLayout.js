@@ -52,7 +52,12 @@ const StudentLayout = ({
             onClick={sidebar.handleToggleSidebarVisible}
           />
           <h1>{title}</h1>
-          <Button basic icon="refresh" onClick={() => window.location.reload()} />
+          <Button
+            basic
+            disabled={sidebar.activeItem !== 'activeQuestion'}
+            icon="refresh"
+            onClick={() => window.location.reload()}
+          />
         </div>
 
         <div className="content">
