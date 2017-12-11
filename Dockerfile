@@ -8,11 +8,14 @@ ENV PM_VERSION="2.8.0"
 # fix permissions for the global node directories
 # this allows installing pm2 globally as user 1000
 RUN set -x \
+  && mkdir /.pm2 \
   && export NPM_PREFIX=$(npm config get prefix) \
   && chown -R 1000:0 \
     $NPM_PREFIX/lib/node_modules \
     $NPM_PREFIX/bin \
-    $NPM_PREFIX/share
+    $NPM_PREFIX/share \
+    /.pm2 \
+  && chmod g+w /.pm2
 
 # install pm2 globally
 RUN set -x && npm install -g pm2@$PM_VERSION
