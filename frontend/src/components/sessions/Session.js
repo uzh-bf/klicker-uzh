@@ -51,7 +51,10 @@ const Session = ({
   </div>
       ))}
       <div className="actionArea">
-        <Link prefetch href={`/sessions/evaluation/${id}`}>
+        <Link
+          as={`/sessions/evaluation/${id}`}
+          href={{ pathname: '/sessions/evaluation', query: { sessionId: id } }}
+        >
           <Button icon labelPosition="left">
             <Icon name="external" />
             Evaluation

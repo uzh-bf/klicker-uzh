@@ -7,7 +7,7 @@ import { compose, withHandlers, withState } from 'recompose'
 
 import { intlMock } from '../../../.storybook/utils'
 
-import { ActionButton, ActionMenu, Button, ListWithHeader, Collapser } from '.'
+import { ActionMenu, Button, ListWithHeader, Collapser } from '.'
 import { AccountArea, SearchArea, SessionArea, NavbarPres } from './navbar'
 import { Sidebar, SidebarItem, LanguageSwitcher } from './sidebar'
 
@@ -37,14 +37,6 @@ const collapserContent = (
 )
 
 storiesOf('common/components', module)
-  .add('ActionButton', () => (
-    <ActionButton
-      items={[
-        { handleClick: () => action('click abcd'), label: 'abcd' },
-        { handleClick: () => action('click cdef'), label: 'cdef' },
-      ]}
-    />
-  ))
   .add('ActionMenu', () => (
     <ActionMenu items={[{ done: false }, { done: true }]} setActiveIndex={f => f} />
   ))

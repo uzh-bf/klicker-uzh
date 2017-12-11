@@ -135,6 +135,7 @@ const QuestionEditForm = ({
           disabled={!isNewVersion}
           intl={intl}
           name="options"
+          type={type}
         />
       </div>
 

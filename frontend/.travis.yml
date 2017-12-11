@@ -50,7 +50,11 @@ jobs:
         - docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
       script:
         - docker pull $IMAGE_NAME:latest
-        - docker build --build-arg API_URL=$STAGING_API_URL --cache-from $IMAGE_NAME:latest -t $IMAGE_NAME:latest .
+        - >
+          docker build .
+          --build-arg API_URL=$STAGING_API_URL
+          --cache-from $IMAGE_NAME:latest
+          -t $IMAGE_NAME:latest
         - docker push $IMAGE_NAME:latest
 
     # build all pull requests
@@ -59,7 +63,13 @@ jobs:
       if: type = pull_request
       script:
         - docker pull $IMAGE_NAME:nightly
-        - docker build --build-arg VERSION=nightly-$TRAVIS_PULL_REQUEST --build-arg API_URL=$STAGING_API_URL --cache-from $IMAGE_NAME:nightly -t $IMAGE_NAME:nightly -t $IMAGE_NAME:nightly-$TRAVIS_PULL_REQUEST .
+        - >
+          docker build .
+          --build-arg API_URL=$STAGING_API_URL
+          --build-arg VERSION=nightly-$TRAVIS_PULL_REQUEST
+          --cache-from $IMAGE_NAME:nightly
+          -t $IMAGE_NAME:nightly
+          -t $IMAGE_NAME:nightly-$TRAVIS_PULL_REQUEST
         - docker push $IMAGE_NAME:nightly
         - docker push $IMAGE_NAME:nightly-$TRAVIS_PULL_REQUEST
 
@@ -87,7 +97,12 @@ jobs:
       before_script:
         - docker login -u $USER -p $PASSWORD
       script:
-        - docker build --build-arg VERSION=$TRAVIS_TAG --build-arg API_URL=$PROD_API_URL --build-arg LOGROCKET=$PROD_LOGROCKET --build-arg SENTRY=$PROD_SENTRY -t $IMAGE_NAME:stable -t $IMAGE_NAME:$TRAVIS_TAG .
+        - >
+          docker build .
+          --build-arg API_URL=$PROD_API_URL
+          --build-arg VERSION=$TRAVIS_TAG
+          -t $IMAGE_NAME:stable
+          -t $IMAGE_NAME:$TRAVIS_TAG
         - docker push $IMAGE_NAME:$TRAVIS_TAG
         - docker push $IMAGE_NAME:stable
     - <<: *build-setup
@@ -102,6 +117,28 @@ jobs:
       before_script:
         - docker login -u $USER -p $PASSWORD $REGISTRY
       script:
-        - docker build --build-arg VERSION=$TRAVIS_TAG --build-arg API_URL=$PROD_API_URL --build-arg LOGROCKET=$PROD_LOGROCKET --build-arg SENTRY=$PROD_SENTRY -t $IMAGE_NAME:stable -t $IMAGE_NAME:$TRAVIS_TAG .
+        - >
+          docker build .
+          --build-arg API_URL=$PROD_API_URL
+          --build-arg HOTJAR=$PROD_HOTJAR
+          --build-arg LOGROCKET=$PROD_LOGROCKET
+          --build-arg OPBEAT_APP_ID_REACT=$PROD_OPBEAT_APP_ID
+          --build-arg OPBEAT_ORG_ID_REACT=$PROD_OPBEAT_ORG_ID
+          --build-arg SENTRY_DSN=$PROD_SENTRY
+          --build-arg VERSION=$TRAVIS_TAG
+          -t $IMAGE_NAME:stable
+          -t $IMAGE_NAME:$TRAVIS_TAG
         - docker push $IMAGE_NAME:$TRAVIS_TAG
         - docker push $IMAGE_NAME:stable
+        - >
+          curl $PROD_OPBEAT_URL_REACT
+          -H "Authorization: Bearer $PROD_OPBEAT_TOKEN_REACT"
+          -d rev=`git log -n 1 --pretty=format:%H`
+          -d branch=`git rev-parse --abbrev-ref HEAD`
+          -d status=completed
+        - >
+          curl $PROD_OPBEAT_URL_NEXT
+          -H "Authorization: Bearer $PROD_OPBEAT_TOKEN_NEXT"
+          -d rev=`git log -n 1 --pretty=format:%H`
+          -d branch=`git rev-parse --abbrev-ref HEAD`
+          -d status=completed
