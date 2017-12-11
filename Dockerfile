@@ -7,13 +7,22 @@ ENV PM_VERSION="2.8.0"
 
 # switch to the node user (uid 1000)
 # non-root as provided by the base image
-USER node
+USER 1000
+
+# fix permissions for the global node directories
+# this allows installing pm2 globally as user 1000
+RUN set -x \
+  && export NPM_PREFIX=$(npm config get prefix) \
+  && chown -R 1000:0 \
+    $NPM_PREFIX/lib/node_modules \
+    $NPM_PREFIX/bin \
+    $NPM_PREFIX/share
 
 # install pm2 globally
-RUN set -x && yarn global add pm2@$PM_VERSION
+RUN set -x && npm install -g pm2@$PM_VERSION
 
 # inject the application dependencies
-COPY --chown=node:0 package.json yarn.lock $KLICKER_DIR/
+COPY --chown=1000:0 package.json yarn.lock $KLICKER_DIR/
 WORKDIR $KLICKER_DIR
 
 # update permissions for klicker dir
@@ -22,7 +31,7 @@ ARG NODE_ENV="production"
 RUN set -x && yarn install --frozen-lockfile
 
 # inject application sources and entrypoint
-COPY --chown=node:0 . $KLICKER_DIR/
+COPY --chown=1000:0 . $KLICKER_DIR/
 
 # pre-build the application
 # define available build arguments
@@ -38,7 +47,7 @@ ARG VERSION="staging"
 RUN set -x && yarn run build
 
 # run next in production mode
-CMD ["yarn", "start:pm"]
+CMD ["pm2-docker", "start", "--env production", "server.js"]
 
 # add labels
 LABEL maintainer="Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
