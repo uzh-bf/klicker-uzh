@@ -7,13 +7,13 @@ ENV PM_VERSION="2.8.0"
 
 # switch to the node user (uid 1000)
 # non-root as provided by the base image
-USER 1000
+USER node
 
 # install pm2 globally
 RUN set -x && yarn global add pm2@$PM_VERSION
 
 # inject the application dependencies
-COPY --chown=1000:0 package.json yarn.lock $KLICKER_DIR/
+COPY --chown=node:0 package.json yarn.lock $KLICKER_DIR/
 WORKDIR $KLICKER_DIR
 
 # update permissions for klicker dir
@@ -22,7 +22,7 @@ ARG NODE_ENV="production"
 RUN set -x && yarn install --frozen-lockfile
 
 # inject application sources and entrypoint
-COPY --chown=1000:0 . $KLICKER_DIR/
+COPY --chown=node:0 . $KLICKER_DIR/
 
 # pre-build the application
 # define available build arguments
