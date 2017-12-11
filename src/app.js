@@ -162,10 +162,14 @@ if (process.env.NODE_ENV === 'production') {
     const invertedMap = _invert(queryMap)
     req.body.query = invertedMap[req.body.id]
 
-    // set the opbeat transaction name and user context
+    // set the opbeat transaction name
     if (opbeat) {
       opbeat.setTransactionName(`[${req.body.id}] ${req.body.operationName}`)
-      opbeat.setUserContext({ id: req.auth.sub })
+
+      // if the request is authenticated, set the user context
+      if (req.auth) {
+        opbeat.setUserContext({ id: req.auth.sub })
+      }
     }
 
     next()
