@@ -1,9 +1,3 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Snapshot-Testing Works 1`] = `
-<div>
-  <span>
-    No session active.
-  </span>
-</div>
-`;
+exports[`Snapshot-Testing Works 1`] = `<div />`;

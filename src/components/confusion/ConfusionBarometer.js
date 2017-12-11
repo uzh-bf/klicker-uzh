@@ -28,10 +28,7 @@ const ConfusionBarometer = ({
 }) => (
   <div className="confusionBarometer">
     <h2>
-      <FormattedMessage
-        defaultMessage="Confusion-Barometer"
-        id="runningSession.confusionBarometer.string.title"
-      />
+      <FormattedMessage defaultMessage="Confusion-Barometer" id="runningSession.confusion.title" />
     </h2>
 
     <Checkbox
@@ -45,31 +42,36 @@ const ConfusionBarometer = ({
       onChange={handleActiveToggle}
     />
 
-    {isActive && (
-      <ConfusionSection
-        data={confusionTS.map(({ createdAt, difficulty }) => ({
-          timestamp: createdAt,
-          value: difficulty,
-        }))}
-        title={intl.formatMessage({
-          defaultMessage: 'Difficulty',
-          id: 'runningSession.confusionBarometer.string.difficulty',
-        })}
-      />
-    )}
+    {(() => {
+      if (isActive) {
+        return (
+          <React.Fragment>
+            <ConfusionSection
+              data={confusionTS.map(({ createdAt, difficulty }) => ({
+                timestamp: createdAt,
+                value: difficulty,
+              }))}
+              title={intl.formatMessage({
+                defaultMessage: 'Difficulty',
+                id: 'runningSession.confusion.difficulty',
+              })}
+            />
+            <ConfusionSection
+              data={confusionTS.map(({ createdAt, speed }) => ({
+                timestamp: createdAt,
+                value: speed,
+              }))}
+              title={intl.formatMessage({
+                defaultMessage: 'Speed',
+                id: 'runningSession.confusion.speed',
+              })}
+            />
+          </React.Fragment>
+        )
+      }
 
-    {isActive && (
-      <ConfusionSection
-        data={confusionTS.map(({ createdAt, speed }) => ({
-          timestamp: createdAt,
-          value: speed,
-        }))}
-        title={intl.formatMessage({
-          defaultMessage: 'Comprehensibility',
-          id: 'runningSession.confusionBarometer.string.comprehensibility',
-        })}
-      />
-    )}
+      return null
+    })()}
 
     <style jsx>{`
       @import 'src/theme';
@@ -77,32 +79,34 @@ const ConfusionBarometer = ({
       .confusionBarometer {
         display: flex;
         flex-direction: column;
-      }
 
-      h2 {
-        margin-bottom: 1rem;
-      }
-
-      h3 {
-        margin: 0 0 0.5rem 0;
-      }
-
-      .confusionSection {
-        flex: 1;
-
-        background: lightgrey;
-        border: 1px solid grey;
-        margin-top: 1rem;
-        padding: 1rem;
-      }
-
-      @include desktop-tablet-only {
-        .confusionSection {
-          padding: 0.5rem;
+        h2 {
+          margin-bottom: 1rem;
         }
 
-        .confusionSection:last-child {
-          margin-top: 0.5rem;
+        h3 {
+          margin: 0 0 0.5rem 0;
+        }
+
+        :global(.checkbox) {
+          margin-bottom: 1rem;
+        }
+
+        .confusionSection {
+          flex: 1;
+
+          background: lightgrey;
+          border: 1px solid grey;
+          margin-top: 1rem;
+          padding: 1rem;
+
+          @include desktop-tablet-only {
+            padding: 0.5rem;
+
+            &:last-child {
+              margin-top: 0.5rem;
+            }
+          }
         }
       }
     `}</style>

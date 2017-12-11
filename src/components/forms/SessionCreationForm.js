@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage } from 'react-intl'
-import { FaFloppyO, FaPlay, FaTrash } from 'react-icons/lib/fa'
+import { Button, Icon } from 'semantic-ui-react'
 
 import { SemanticInput } from '.'
 import { SessionTimelineInput } from '../sessions'
@@ -53,25 +53,27 @@ const SessionCreationForm = ({
     </div>
 
     <div className="actionArea">
-      <button className="ui fluid button" type="button" onClick={onDiscard}>
-        <FaTrash />
+      <Button fluid icon labelPosition="left" onClick={onDiscard}>
+        <Icon name="trash" />
         <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
-      </button>
+      </Button>
 
-      <button className="ui fluid button" disabled={invalid} type="submit">
-        <FaFloppyO />
+      <Button fluid icon disabled={invalid} labelPosition="left" type="submit">
+        <Icon name="save" />
         <FormattedMessage defaultMessage="Save" id="common.button.save" />
-      </button>
+      </Button>
 
-      <button
-        className="ui fluid primary button"
+      <Button
+        fluid
+        icon
+        primary
         disabled={invalid}
-        type="button"
+        labelPosition="left"
         onClick={handleSubmit(onStart)}
       >
-        <FaPlay />
+        <Icon name="play" />
         <FormattedMessage defaultMessage="Start" id="common.button.start" />
-      </button>
+      </Button>
     </div>
 
     <style jsx>{`
@@ -110,18 +112,13 @@ const SessionCreationForm = ({
           border-top: 0;
           padding: 0.5rem;
 
-          > .button {
+          > :global(button) {
             &:not(:last-child) {
               margin-bottom: 0.5rem;
             }
 
             &:first-child {
               margin-bottom: 2rem;
-            }
-
-            > :global(svg) {
-              margin-right: 0.4rem;
-              margin-top: -3px;
             }
           }
         }
