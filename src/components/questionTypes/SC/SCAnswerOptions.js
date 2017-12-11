@@ -37,15 +37,25 @@ const SCAnswerOptions = ({
     <style jsx>{`
       @import 'src/theme';
 
+      $button-border-width: 2px;
+
       .options > .option {
         &:not(:last-child) {
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.5rem !important;
+        }
+
+        :global(button),
+        :global(button.disabled) {
+          border: $button-border-width solid lightgray !important;
+          background-color: lightgray !important;
         }
 
         &.active {
           :global(button),
           :global(button.disabled) {
-            border: 1px solid green !important;
+            border: $button-border-width solid rgb(0, 97, 0) !important;
+            background-color: rgb(198, 239, 206) !important;
+            color: rgb(0, 97, 0) !important;
 
             animation: bounce 0.5s;
           }
