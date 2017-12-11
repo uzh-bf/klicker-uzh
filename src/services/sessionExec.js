@@ -100,6 +100,9 @@ const addResponse = async ({
       // add the response to the redis database
       redis.rpush(`${instanceId}:responses`, JSON.stringify({ response }))
     } else {
+      // add the response to the redis database
+      redis.rpush(`${instanceId}:dropped`, JSON.stringify({ response }))
+
       throw new Error('ALREADY_RESPONDED')
     }
   }
