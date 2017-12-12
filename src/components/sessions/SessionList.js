@@ -75,11 +75,13 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
           />
         </h2>
       )}
-      {sessions.map(session => (
-        <div className="session" key={session.id}>
-          <Session {...session} />
-        </div>
-      ))}
+
+      {sessionsAvailable &&
+        sessions.filter(session => session.status !== 'RUNNING').map(session => (
+          <div className="session" key={session.id}>
+            <Session {...session} />
+          </div>
+        ))}
 
       <style jsx>{`
         @import 'src/theme';
