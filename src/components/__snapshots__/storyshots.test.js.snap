@@ -4620,6 +4620,17 @@ exports[`Storyshots sessions SessionList 1`] = `
       No session is currently running.
     </span>
   </div>
+  <h2
+    className="jsx-1740248303"
+  >
+    <span>
+      Remaining sessions
+    </span>
+     
+    (
+    2
+    )
+  </h2>
   <div
     className="jsx-1740248303 session"
   >
