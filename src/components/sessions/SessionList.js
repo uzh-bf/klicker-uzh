@@ -77,7 +77,8 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
           <FormattedMessage
             defaultMessage="Remaining sessions"
             id="sessionList.title.remainingSessions"
-          />
+          />{' '}
+          ({remainingSessions.length})
         </h2>
       )}
       {remainingSessionsAvailable &&
@@ -92,7 +93,8 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
           <FormattedMessage
             defaultMessage="Completed sessions"
             id="sessionList.title.CompletedSessions"
-          />
+          />{' '}
+          ({completedSessions.length})
         </h2>
       )}
       {completedSessionsAvailable &&
