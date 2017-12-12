@@ -29,7 +29,7 @@ const Session = ({
   <div className="session">
     <h2 className="title">{name}</h2>
     <div className="date">
-      <FormattedMessage defaultMessage="Created on" id="sessionHistory.string.createdOn" />{' '}
+      <FormattedMessage defaultMessage="Created on" id="sessionList.string.createdOn" />{' '}
       {moment(createdAt).format('DD.MM.YYYY HH:MM')}
     </div>
 

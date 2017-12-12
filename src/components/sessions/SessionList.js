@@ -34,7 +34,7 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
           <h2>
             <FormattedMessage
               defaultMessage="Running session"
-              id="sessionHistory.title.runningSession"
+              id="sessionList.title.runningSession"
             />
           </h2>
           <Session {...runningSession} />
@@ -43,7 +43,7 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
         <div className="session">
           <FormattedMessage
             defaultMessage="No session is currently running."
-            id="sessionHistory.string.noSessionRunning"
+            id="sessionList.string.noSessionRunning"
           />
         </div>
       )}
@@ -52,7 +52,7 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
         <h2>
           <FormattedMessage
             defaultMessage="Remaining sessions"
-            id="sessionHistory.title.remainingSessions"
+            id="sessionList.title.remainingSessions"
           />
         </h2>
       )}
