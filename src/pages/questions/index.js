@@ -93,29 +93,31 @@ const Index = ({
         <div className="tagList">
           <TagList activeTags={filters.tags} handleTagClick={handleTagClick} />
         </div>
-        <div className="questionList">
-          <div className="buttons">
-            <Button onClick={handleCreationModeToggle}>
-              <FormattedMessage
-                defaultMessage="Create Session"
-                id="questionPool.button.createSession"
-              />
-            </Button>
-            <Link href="/questions/create">
-              <Button>
+        <div className="wrapper">
+          <div className="questionList">
+            <div className="buttons">
+              <Button onClick={handleCreationModeToggle}>
                 <FormattedMessage
-                  defaultMessage="Create Question"
-                  id="questionPool.button.createQuestion"
+                  defaultMessage="Create Session"
+                  id="questionPool.button.createSession"
                 />
               </Button>
-            </Link>
+              <Link href="/questions/create">
+                <Button>
+                  <FormattedMessage
+                    defaultMessage="Create Question"
+                    id="questionPool.button.createQuestion"
+                  />
+                </Button>
+              </Link>
+            </div>
+            <QuestionList
+              creationMode={creationMode}
+              dropped={droppedQuestions}
+              filters={filters}
+              onQuestionDropped={handleQuestionDropped}
+            />
           </div>
-          <QuestionList
-            creationMode={creationMode}
-            dropped={droppedQuestions}
-            filters={filters}
-            onQuestionDropped={handleQuestionDropped}
-          />
         </div>
       </div>
 
@@ -127,26 +129,32 @@ const Index = ({
           flex-direction: column;
           height: 100%;
 
-          .questionList {
-            overflow: auto;
-            padding: 1rem;
-
-            .buttons {
-              margin: 0 0 1rem 0;
-
-              display: flex;
-              justify-content: center;
-
-              > :global(button:last-child) {
-                margin-right: 0;
-              }
-            }
-          }
-
           .tagList {
             flex: 1;
             background: #ebebeb;
             padding: 0.5rem;
+          }
+
+          .wrapper {
+            overflow: auto;
+
+            .questionList {
+              padding: 1rem;
+
+              margin: 0 auto;
+              max-width: $max-width;
+
+              .buttons {
+                margin: 0 0 1rem 0;
+
+                display: flex;
+                justify-content: center;
+
+                > :global(button:last-child) {
+                  margin-right: 0;
+                }
+              }
+            }
           }
 
           @include desktop-tablet-only {
@@ -157,13 +165,15 @@ const Index = ({
               padding: 1rem;
             }
 
-            .questionList {
+            .wrapper {
               flex: 1;
               padding: 1rem;
 
-              .buttons {
-                display: flex;
-                justify-content: flex-end;
+              .questionList {
+                .buttons {
+                  display: flex;
+                  justify-content: flex-end;
+                }
               }
             }
           }
@@ -175,7 +185,7 @@ const Index = ({
               padding: 2rem;
             }
 
-            .questionList {
+            .wrapper {
               padding: 2rem;
             }
           }
