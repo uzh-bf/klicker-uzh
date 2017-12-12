@@ -105,14 +105,29 @@ const Join = ({
             />
           </div>
         )}
-        <FeedbackArea
-          active={sidebarActiveItem === 'feedbackChannel'}
-          feedbacks={feedbacks}
-          handleNewConfusionTS={handleNewConfusionTS}
-          handleNewFeedback={handleNewFeedback}
-          isConfusionBarometerActive={isConfusionBarometerActive}
-          isFeedbackChannelActive={isFeedbackChannelActive}
-        />
+
+        {isConfusionBarometerActive || isFeedbackChannelActive ? (
+          <FeedbackArea
+            active={sidebarActiveItem === 'feedbackChannel'}
+            feedbacks={feedbacks}
+            handleNewConfusionTS={handleNewConfusionTS}
+            handleNewFeedback={handleNewFeedback}
+            isConfusionBarometerActive={isConfusionBarometerActive}
+            isFeedbackChannelActive={isFeedbackChannelActive}
+          />
+        ) : (
+          <div
+            className={classNames('feedbackArea', {
+              inactive: sidebarActiveItem !== 'feedbackChannel',
+            })}
+          >
+            <FormattedMessage
+              defaultMessage="Feedback Channel deactivated."
+              id="joinSession.noFeedbackChannel"
+            />
+          </div>
+        )}
+
         <style jsx>{`
           @import 'src/theme';
 
@@ -126,7 +141,8 @@ const Join = ({
               flex: 0 0 50%;
             }
 
-            .questionArea {
+            .questionArea,
+            .feedbackArea {
               padding: 1rem;
 
               &.inactive {
@@ -141,6 +157,16 @@ const Join = ({
                 border: 1px solid $color-primary;
                 background-color: white;
                 margin-right: 0.25rem;
+              }
+
+              .feedbackArea {
+                border: 1px solid $color-primary;
+                background-color: white;
+                margin-left: 0.25rem;
+
+                &.inactive {
+                  display: block;
+                }
               }
             }
           }
