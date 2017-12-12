@@ -27,7 +27,12 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
     return <div>{error}</div>
   }
 
+  const remainingSessions = sessions.filter(session => session.status === 'CREATED')
+  const completedSessions = sessions.filter(session => session.status === 'COMPLETED')
+
   const sessionsAvailable = sessions.length !== 0
+  const remainingSessionsAvailable = remainingSessions.length !== 0
+  const completedSessionsAvailable = completedSessions.length !== 0
 
   return (
     <div>
@@ -67,7 +72,7 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
         []
       )}
 
-      {runningSession && (
+      {remainingSessionsAvailable && (
         <h2>
           <FormattedMessage
             defaultMessage="Remaining sessions"
@@ -75,9 +80,23 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
           />
         </h2>
       )}
+      {remainingSessionsAvailable &&
+        remainingSessions.map(session => (
+          <div className="session" key={session.id}>
+            <Session {...session} />
+          </div>
+        ))}
 
-      {sessionsAvailable &&
-        sessions.filter(session => session.status !== 'RUNNING').map(session => (
+      {completedSessionsAvailable && (
+        <h2>
+          <FormattedMessage
+            defaultMessage="Completed sessions"
+            id="sessionList.title.CompletedSessions"
+          />
+        </h2>
+      )}
+      {completedSessionsAvailable &&
+        completedSessions.map(session => (
           <div className="session" key={session.id}>
             <Session {...session} />
           </div>
