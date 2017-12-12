@@ -59,13 +59,10 @@ const Index = ({
 
       @include desktop-tablet-only {
         .sessionList {
+          margin: auto;
           padding: 2rem;
-        }
-      }
 
-      @include desktop-only {
-        .sessionList {
-          padding: 2rem 10%;
+          max-width: $max-width;
         }
       }
     `}</style>

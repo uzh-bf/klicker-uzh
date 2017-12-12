@@ -2,6 +2,9 @@
 $breakpoint-tablet: 768px;
 $breakpoint-desktop: 991px;
 
+// max width for question pool and session list
+$max-width: 1280px;
+
 // colors
 $color-primary: rgb(124, 184, 228); //7cb8e4 // 7cb8e4 // ff9c5a
 $color-primary-50p: rgba($color-primary, 0.5);
