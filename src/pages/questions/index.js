@@ -96,12 +96,6 @@ const Index = ({
         <div className="wrapper">
           <div className="questionList">
             <div className="buttons">
-              <Button onClick={handleCreationModeToggle}>
-                <FormattedMessage
-                  defaultMessage="Create Session"
-                  id="questionPool.button.createSession"
-                />
-              </Button>
               <Link href="/questions/create">
                 <Button>
                   <FormattedMessage
@@ -110,6 +104,12 @@ const Index = ({
                   />
                 </Button>
               </Link>
+              <Button onClick={handleCreationModeToggle}>
+                <FormattedMessage
+                  defaultMessage="Create Session"
+                  id="questionPool.button.createSession"
+                />
+              </Button>
             </div>
             <QuestionList
               creationMode={creationMode}
