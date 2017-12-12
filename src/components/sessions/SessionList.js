@@ -27,9 +27,22 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
     return <div>{error}</div>
   }
 
+  const sessionsAvailable = sessions.length !== 0
+
   return (
     <div>
-      {runningSession ? (
+      {!sessionsAvailable ? (
+        <div className="session">
+          <FormattedMessage
+            defaultMessage="No session was found."
+            id="sessionList.string.noSessions"
+          />
+        </div>
+      ) : (
+        []
+      )}
+
+      {sessionsAvailable && runningSession ? (
         <div className="session running">
           <h2>
             <FormattedMessage
@@ -40,12 +53,18 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
           <Session {...runningSession} />
         </div>
       ) : (
+        []
+      )}
+
+      {sessionsAvailable && !runningSession ? (
         <div className="session">
           <FormattedMessage
             defaultMessage="No session is currently running."
             id="sessionList.string.noSessionRunning"
           />
         </div>
+      ) : (
+        []
       )}
 
       {runningSession && (
