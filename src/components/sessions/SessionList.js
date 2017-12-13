@@ -27,40 +27,84 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
     return <div>{error}</div>
   }
 
+  const remainingSessions = sessions.filter(session => session.status === 'CREATED')
+  const completedSessions = sessions.filter(session => session.status === 'COMPLETED')
+
+  const sessionsAvailable = sessions.length !== 0
+  const remainingSessionsAvailable = remainingSessions.length !== 0
+  const completedSessionsAvailable = completedSessions.length !== 0
+
   return (
     <div>
-      {runningSession ? (
-        <div className="session running">
+      {!sessionsAvailable ? (
+        <div className="session">
+          <FormattedMessage
+            defaultMessage="No session was found."
+            id="sessionList.string.noSessions"
+          />
+        </div>
+      ) : (
+        []
+      )}
+
+      {sessionsAvailable && runningSession ? (
+        <div className="runningSession">
           <h2>
             <FormattedMessage
               defaultMessage="Running session"
-              id="sessionHistory.title.runningSession"
+              id="sessionList.title.runningSession"
             />
           </h2>
-          <Session {...runningSession} />
+          <div className="session">
+            <Session {...runningSession} />
+          </div>
         </div>
       ) : (
+        []
+      )}
+
+      {sessionsAvailable && !runningSession ? (
         <div className="session">
           <FormattedMessage
             defaultMessage="No session is currently running."
-            id="sessionHistory.string.noSessionRunning"
+            id="sessionList.string.noSessionRunning"
           />
         </div>
+      ) : (
+        []
       )}
 
-      {runningSession && (
+      {remainingSessionsAvailable && (
         <h2>
           <FormattedMessage
-            defaultMessage="Remaining sessions"
-            id="sessionHistory.title.remainingSessions"
-          />
+            defaultMessage="Planned sessions"
+            id="sessionList.title.plannedSessions"
+          />{' '}
+          ({remainingSessions.length})
         </h2>
       )}
-      {sessions.map(session => (
-        <div className="session" key={session.id}>
-          <Session {...session} />
-        </div>
-      ))}
+      {remainingSessionsAvailable &&
+        remainingSessions.map(session => (
+          <div className="session" key={session.id}>
+            <Session {...session} />
+          </div>
+        ))}
+
+      {completedSessionsAvailable && (
+        <h2>
+          <FormattedMessage
+            defaultMessage="Completed sessions"
+            id="sessionList.title.completedSessions"
+          />{' '}
+          ({completedSessions.length})
+        </h2>
+      )}
+      {completedSessionsAvailable &&
+        completedSessions.map(session => (
+          <div className="session" key={session.id}>
+            <Session {...session} />
+          </div>
+        ))}
 
       <style jsx>{`
         @import 'src/theme';
@@ -74,9 +118,7 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
           background-color: #f9f9f9;
         }
 
-        .session.running {
-          padding: 0.5rem;
-
+        .runningSession > .session {
           background-color: $background-color;
           border: 1px solid $color-primary;
         }
