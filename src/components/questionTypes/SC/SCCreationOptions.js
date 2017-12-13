@@ -4,8 +4,7 @@ import ReactTooltip from 'react-tooltip'
 import { arrayMove, SortableContainer, SortableElement } from 'react-sortable-hoc'
 import { FormattedMessage } from 'react-intl'
 import { compose, mapProps, withHandlers } from 'recompose'
-import { FaQuestionCircle } from 'react-icons/lib/fa'
-import { Form } from 'semantic-ui-react'
+import { Form, Icon } from 'semantic-ui-react'
 
 import SCCreationPlaceholder from './SCCreationPlaceholder'
 import SCCreationOption from './SCCreationOption'
@@ -77,7 +76,7 @@ const SCCreationOptions = ({
             id="teacher.createQuestion.optionsSC.label"
           />
           <a data-tip data-for="SCCreationHelp">
-            <FaQuestionCircle />
+            <Icon name="question circle" />
           </a>
         </label>
 

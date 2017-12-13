@@ -1,5 +1,16 @@
 require('dotenv').config()
 
+// initialize opbeat if so configured
+let opbeat
+if (process.env.OPBEAT_APP_ID_NEXT) {
+  opbeat = require('opbeat').start({
+    active: process.env.NODE_ENV === 'production',
+    appId: process.env.OPBEAT_APP_ID_NEXT,
+    organizationId: process.env.OPBEAT_ORG_ID_NEXT,
+    secretToken: process.env.OPBEAT_SECRET_TOKEN_NEXT,
+  })
+}
+
 const IntlPolyfill = require('intl')
 
 const { basename, join } = require('path')
@@ -75,7 +86,7 @@ const connectCache = async () => {
 const getCacheKey = req => `${req.url}:${req.locale}`
 
 // render a page to html and cache it in the appropriate place
-const renderAndCache = async (req, res, pagePath, queryParams) => {
+const renderAndCache = async (req, res, pagePath, queryParams, expiration = 60) => {
   const key = getCacheKey(req)
 
   let cached
@@ -100,7 +111,13 @@ const renderAndCache = async (req, res, pagePath, queryParams) => {
     const html = await app.renderToHTML(req, res, pagePath, queryParams)
 
     res.send(html)
-    cache.set(key, html)
+
+    // let the cache expire if redis is used
+    if (process.env.REDIS_URL) {
+      cache.set(key, html, 'EX', expiration)
+    } else {
+      cache.set(key, html)
+    }
   } catch (e) {
     app.renderError(e, req, res, pagePath, queryParams)
   }
@@ -134,20 +151,23 @@ app
       middleware.push(morgan('combined'))
     }
 
+    // add the opbeat middleware
+    if (opbeat) {
+      middleware.push(opbeat.middleware.express())
+    }
+
     server.use(...middleware)
 
     // prepare page configuration
     const pages = [
       {
-        cached: true,
+        cached: 60 * 60 * 24,
         url: '/',
       },
       {
-        cached: true,
         url: '/user/login',
       },
       {
-        cached: true,
         url: '/user/registration',
       },
       {
@@ -164,7 +184,7 @@ app
         url: '/questions/:questionId',
       },
       {
-        cached: true,
+        cached: 60,
         mapParams: req => ({ shortname: req.params.shortname }),
         renderPath: '/join',
         url: '/join/:shortname',
@@ -184,7 +204,13 @@ app
 
         // if the route contents should be cached
         if (cached) {
-          renderAndCache(req, res, renderPath || url, mapParams ? mapParams(req) : undefined)
+          renderAndCache(
+            req,
+            res,
+            renderPath || url,
+            mapParams ? mapParams(req) : undefined,
+            cached,
+          )
         } else {
           app.render(req, res, renderPath || url, mapParams ? mapParams(req) : undefined)
         }
@@ -196,6 +222,18 @@ app
       req.locale = locale
       req.localeDataScript = getLocaleDataScript(locale)
       req.messages = dev ? {} : getMessages(locale)
+
+      // set the opbeat transaction name
+      if (opbeat) {
+        if (req.originalUrl.length > 6 && req.originalUrl.substring(0, 6) !== '/_next') {
+          opbeat.setTransactionName(`${req.method} ${req.originalUrl}`)
+        }
+
+        // set the user context if a cookie was set
+        if (req.cookies.userId) {
+          opbeat.setUserContext({ id: req.cookies.userId })
+        }
+      }
 
       return handle(req, res)
     })

@@ -2,9 +2,8 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import TagsInput from 'react-tagsinput'
 import ReactTooltip from 'react-tooltip'
-import { Form } from 'semantic-ui-react'
+import { Form, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import { FaQuestionCircle } from 'react-icons/lib/fa'
 
 import { autocompleteRenderInput } from '../../common'
 
@@ -37,7 +36,7 @@ const TagInput = ({
       <label htmlFor="tags">
         <FormattedMessage defaultMessage="Tags" id="teacher.createQuestion.tagInput.label" />
         <a data-tip data-for="tagHelp">
-          <FaQuestionCircle />
+          <Icon name="question circle" />
         </a>
       </label>
 

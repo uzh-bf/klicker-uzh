@@ -1,6 +1,7 @@
 import React from 'react'
 import Router from 'next/router'
 import PropTypes from 'prop-types'
+import Cookies from 'js-cookie'
 import { compose, withState, withHandlers } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
@@ -73,7 +74,12 @@ export default compose(
     // handle form submission
     handleSubmit: ({ mutate, setError }) => async ({ email, password }) => {
       try {
-        await mutate({ variables: { email, password } })
+        const { data } = await mutate({ variables: { email, password } })
+
+        // save the user id in a cookie
+        if (data.login && data.login.id) {
+          Cookies.set('userId', data.login.id)
+        }
 
         // redirect to question pool
         Router.push('/questions')

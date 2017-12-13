@@ -69,15 +69,30 @@ function EvaluationLayout({
         {instanceSummary.length > 1 && (
           <div className="instanceChooser">
             <Menu fitted tabular>
+              <Menu.Item
+                className="hoverable"
+                disabled={activeInstance === 0}
+                icon="arrow left"
+                onClick={onChangeActiveInstance(activeInstance - 1)}
+              />
+
               {instanceSummary.map(({ title, totalResponses: count }, index) => (
                 <Menu.Item
                   fitted
                   active={index === activeInstance}
+                  className="hoverable"
                   onClick={onChangeActiveInstance(index)}
                 >
-                  {title} ({count})
+                  {title.length > 15 ? `${title.substring(0, 15)} ...` : title} ({count})
                 </Menu.Item>
               ))}
+
+              <Menu.Item
+                className="hoverable"
+                disabled={activeInstance + 1 === instanceSummary.length}
+                icon="arrow right"
+                onClick={onChangeActiveInstance(activeInstance + 1)}
+              />
             </Menu>
           </div>
         )}
@@ -128,6 +143,9 @@ function EvaluationLayout({
               @include desktop-tablet-only {
                 display: grid;
                 height: 100vh;
+                width: 100vw;
+                max-height: 100vh;
+                max-width: 100vw;
 
                 grid-template-columns: auto 17rem;
                 grid-template-rows:
@@ -177,6 +195,10 @@ function EvaluationLayout({
                       border-color: $color-primary;
                       background-color: $color-primary-background;
                       border-bottom: 1px solid $color-primary-background;
+                    }
+
+                    :global(.item.hoverable:hover) {
+                      background-color: $color-primary-10p;
                     }
                   }
                 }
