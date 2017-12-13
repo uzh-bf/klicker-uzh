@@ -4611,20 +4611,20 @@ exports[`Storyshots sessions Session 1`] = `
 
 exports[`Storyshots sessions SessionList 1`] = `
 <div
-  className="jsx-1740248303"
+  className="jsx-3452742146"
 >
   <div
-    className="jsx-1740248303 session"
+    className="jsx-3452742146 session"
   >
     <span>
       No session is currently running.
     </span>
   </div>
   <h2
-    className="jsx-1740248303"
+    className="jsx-3452742146"
   >
     <span>
-      Remaining sessions
+      Planned sessions
     </span>
      
     (
@@ -4632,7 +4632,7 @@ exports[`Storyshots sessions SessionList 1`] = `
     )
   </h2>
   <div
-    className="jsx-1740248303 session"
+    className="jsx-3452742146 session"
   >
     <div
       className="jsx-2209149579 session"
@@ -4766,7 +4766,7 @@ exports[`Storyshots sessions SessionList 1`] = `
     </div>
   </div>
   <div
-    className="jsx-1740248303 session"
+    className="jsx-3452742146 session"
   >
     <div
       className="jsx-2209149579 session"

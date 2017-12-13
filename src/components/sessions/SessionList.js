@@ -48,14 +48,16 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
       )}
 
       {sessionsAvailable && runningSession ? (
-        <div className="session running">
+        <div className="runningSession">
           <h2>
             <FormattedMessage
               defaultMessage="Running session"
               id="sessionList.title.runningSession"
             />
           </h2>
-          <Session {...runningSession} />
+          <div className="session">
+            <Session {...runningSession} />
+          </div>
         </div>
       ) : (
         []
@@ -75,8 +77,8 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
       {remainingSessionsAvailable && (
         <h2>
           <FormattedMessage
-            defaultMessage="Remaining sessions"
-            id="sessionList.title.remainingSessions"
+            defaultMessage="Planned sessions"
+            id="sessionList.title.plannedSessions"
           />{' '}
           ({remainingSessions.length})
         </h2>
@@ -92,7 +94,7 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
         <h2>
           <FormattedMessage
             defaultMessage="Completed sessions"
-            id="sessionList.title.CompletedSessions"
+            id="sessionList.title.completedSessions"
           />{' '}
           ({completedSessions.length})
         </h2>
@@ -116,9 +118,7 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
           background-color: #f9f9f9;
         }
 
-        .session.running {
-          padding: 0.5rem;
-
+        .runningSession > .session {
           background-color: $background-color;
           border: 1px solid $color-primary;
         }
