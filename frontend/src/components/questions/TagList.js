@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import { graphql } from 'react-apollo'
 import { List } from 'semantic-ui-react'
 import { compose, withProps, branch, renderComponent } from 'recompose'
+import { FormattedMessage } from 'react-intl'
 
 import { LoadingDiv } from '../common'
 import { TagListQuery } from '../../graphql/queries'
@@ -23,6 +24,11 @@ const defaultProps = {
 
 export const TagListPres = ({ tags, handleTagClick }) => (
   <div className="tagList">
+    {tags.length === 0 ? (
+      <FormattedMessage defaultMessage="No tags available." id="tagList.string.noTags" />
+    ) : (
+      []
+    )}
     <List selection size="large">
       {tags.map(({ isActive, id, name }) => (
         <List.Item
