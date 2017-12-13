@@ -29,7 +29,7 @@ const SearchArea = ({
   sortingTypes,
   sortOrder,
 }) => (
-  <div className="searchingArea">
+  <div className="searchArea">
     <Input
       fluid
       icon="search"
@@ -38,8 +38,8 @@ const SearchArea = ({
         id: 'common.input.search.placeholder',
       })}
       onChange={e => handleSearch(e.target.value)}
-    />
-    <Button.Group>
+    >
+      <input />
       <Button
         icon={`${_find(sortingTypes, { id: sortBy }).labelStart} ${
           sortOrder ? 'ascending' : 'descending'
@@ -50,20 +50,16 @@ const SearchArea = ({
         content={_find(sortingTypes, { id: sortBy }).content}
         onClick={() => handleSortByChange(sortBy)}
       />
-    </Button.Group>
+    </Input>
 
     <style jsx>{`
-      .searchingArea {
+      .searchArea {
         display: flex;
         justify-content: flex-start;
-      }
 
-      .searchingArea > :global(.input) {
-        flex: 1;
-      }
-
-      .searchingArea > :global(.buttons) {
-        width: 10rem;
+        > :global(.input) {
+          flex: 1;
+        }
       }
     `}</style>
   </div>

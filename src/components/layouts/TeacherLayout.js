@@ -125,6 +125,7 @@ TeacherLayout.propTypes = propTypes
 TeacherLayout.defaultProps = defaultProps
 
 export default compose(
+  DragDropContext(HTML5Backend),
   withState('isSidebarVisible', 'setIsSidebarVisible', false),
   withHandlers({
     handleSidebarItemClick: () => href => () => {
@@ -134,5 +135,4 @@ export default compose(
       setIsSidebarVisible(prevState => !prevState)
     },
   }),
-  DragDropContext(HTML5Backend),
 )(TeacherLayout)
