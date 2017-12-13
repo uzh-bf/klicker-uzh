@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { compose, withState, withHandlers } from 'recompose'
+import { compose, withHandlers, withStateHandlers } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
@@ -14,6 +14,7 @@ import { CreateSessionMutation, StartSessionMutation } from '../../graphql/mutat
 import { SessionCreationForm } from '../../components/forms'
 import { QuestionList, TagList } from '../../components/questions'
 import { TeacherLayout } from '../../components/layouts'
+import { QUESTION_SORTINGS } from '../../constants'
 
 const propTypes = {
   creationMode: PropTypes.bool.isRequired,
@@ -24,19 +25,11 @@ const propTypes = {
   handleQuestionDropped: PropTypes.func.isRequired,
   handleSearch: PropTypes.func.isRequired,
   handleSortByChange: PropTypes.func.isRequired,
-  handleSortOrderChange: PropTypes.func.isRequired,
+  handleSortOrderToggle: PropTypes.func.isRequired,
   handleTagClick: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  sortBy: PropTypes.string.isRequired,
-  sortOrder: PropTypes.bool.isRequired,
+  sort: PropTypes.object.isRequired,
 }
-
-const sortingTypes = [
-  { content: 'Title', id: 'TITLE', labelStart: 'sort alphabet' },
-  { content: '# of votes', id: 'VOTES', labelStart: 'sort numeric' },
-  { content: 'Question Type', id: 'TYPE', labelStart: 'sort content' },
-  { content: 'Create Date', id: 'CREATED', labelStart: 'sort numeric' },
-]
 
 const Index = ({
   creationMode,
@@ -46,12 +39,11 @@ const Index = ({
   handleCreateSession,
   handleSearch,
   handleSortByChange,
-  handleSortOrderChange,
+  handleSortOrderToggle,
   handleTagClick,
   handleQuestionDropped,
   handleCreationModeToggle,
-  sortBy,
-  sortOrder,
+  sort,
 }) => {
   // TODO: create a component for this?
   const actionArea = (
@@ -89,10 +81,10 @@ const Index = ({
         search: {
           handleSearch: _debounce(handleSearch, 200),
           handleSortByChange,
-          handleSortOrderChange,
-          sortBy,
-          sortingTypes,
-          sortOrder,
+          handleSortOrderToggle,
+          sortBy: sort.by,
+          sortingTypes: QUESTION_SORTINGS,
+          sortOrder: sort.asc,
         },
         title: intl.formatMessage({
           defaultMessage: 'Question Pool',
@@ -216,63 +208,73 @@ Index.propTypes = propTypes
 export default compose(
   withData,
   pageWithIntl,
-  withState('creationMode', 'setCreationMode', false),
-  withState('droppedQuestions', 'setDroppedQuestions', []),
-  withState('filters', 'setFilters', {
-    tags: [],
-    title: null,
-    type: null,
-  }),
-  withState('sortBy', 'setSortBy', sortingTypes[0].id),
-  withState('sortOrder', 'setSortOrder', true), // sortOrder can either be ASC (true) or DESC (false)
-  withHandlers({
-    // handle toggling creation mode (display of session creation form)
-    handleCreationModeToggle: ({ creationMode, setCreationMode, setDroppedQuestions }) => () => {
-      // if the creation mode was activated before, reset dropped questions on toggle
-      if (creationMode) {
-        setDroppedQuestions([])
-      }
-
-      // toggle creation mode
-      setCreationMode(prevState => !prevState)
+  withStateHandlers(
+    {
+      creationMode: false,
+      droppedQuestions: [],
+      filters: {
+        tags: [],
+        title: null,
+        type: null,
+      },
+      sort: {
+        asc: true,
+        by: QUESTION_SORTINGS[0].id,
+      },
     },
-
-    // handle a new question that gets dropped on the session creation timeline
-    handleQuestionDropped: ({ setDroppedQuestions }) => id => () =>
-      setDroppedQuestions(prevState => [...prevState, id]),
-
-    // handle an update in the search bar
-    handleSearch: ({ setFilters }) => title => setFilters(prevState => ({ ...prevState, title })),
-
-    // handle updated sort settings
-    handleSortByChange: ({ setSortBy }) => (currentSortBy) => {
-      // find current value and set next value in array as current sortType
-      const currentIndex = _findIndex(sortingTypes, { id: currentSortBy })
-      let nextIndex = currentIndex + 1
-      if (nextIndex === sortingTypes.length) nextIndex = 0
-      const nextObject = sortingTypes[nextIndex]
-      setSortBy(nextObject.id)
-    },
-    handleSortOrderChange: ({ setSortOrder }) => () => setSortOrder(sortOrder => !sortOrder),
-
-    // handle clicking on a tag in the tag list
-    handleTagClick: ({ setFilters }) => tagName =>
-      setFilters((prevState) => {
-        // remove the tag from active tags
-        if (prevState.tags.includes(tagName)) {
+    {
+      // handle toggling creation mode (display of session creation form)
+      handleCreationModeToggle: ({ creationMode }) => () => {
+        // if the creation mode was activated before, reset dropped questions on toggle
+        if (creationMode) {
           return {
-            ...prevState,
-            tags: prevState.tags.filter(tag => tag !== tagName),
+            creationMode: false,
+            droppedQuestions: [],
+          }
+        }
+
+        // turn on creation mode
+        return { creationMode: true }
+      },
+
+      // handle a new question that gets dropped on the session creation timeline
+      handleQuestionDropped: ({ droppedQuestions }) => id => () => ({
+        droppedQuestions: [...droppedQuestions, id],
+      }),
+
+      // handle an update in the search bar
+      handleSearch: ({ filters }) => title => ({ ...filters, title }),
+
+      // handle updated sort settings
+      handleSortByChange: ({ sort }) => (currentSortBy) => {
+        // find current value and set next value in array as current sortType
+        const currentIndex = _findIndex(QUESTION_SORTINGS, { id: currentSortBy })
+        let nextIndex = currentIndex + 1
+        if (nextIndex === QUESTION_SORTINGS.length) nextIndex = 0
+        const nextObject = QUESTION_SORTINGS[nextIndex]
+
+        return { sort: { ...sort, by: nextObject } }
+      },
+      handleSortOrderToggle: ({ sort }) => () => ({ sort: { ...sort, asc: !sort.asc } }),
+
+      // handle clicking on a tag in the tag list
+      handleTagClick: ({ filters }) => (tagName) => {
+        // remove the tag from active tags
+        if (filters.tags.includes(tagName)) {
+          return {
+            ...filters,
+            tags: filters.tags.filter(tag => tag !== tagName),
           }
         }
 
         // add the tag to active tags
         return {
-          ...prevState,
-          tags: [...prevState.tags, tagName],
+          ...filters,
+          tags: [...filters.tags, tagName],
         }
-      }),
-  }),
+      },
+    },
+  ),
   graphql(StartSessionMutation),
   withHandlers({
     // handle starting an existing or newly created session

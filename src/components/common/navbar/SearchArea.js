@@ -7,7 +7,7 @@ import _find from 'lodash/find'
 const propTypes = {
   handleSearch: PropTypes.func.isRequired,
   handleSortByChange: PropTypes.func.isRequired,
-  handleSortOrderChange: PropTypes.func.isRequired,
+  handleSortOrderToggle: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   sortBy: PropTypes.string.isRequired,
   sortingTypes: PropTypes.arrayOf(
@@ -24,7 +24,7 @@ const SearchArea = ({
   intl,
   handleSearch,
   handleSortByChange,
-  handleSortOrderChange,
+  handleSortOrderToggle,
   sortBy,
   sortingTypes,
   sortOrder,
@@ -44,7 +44,7 @@ const SearchArea = ({
         icon={`${_find(sortingTypes, { id: sortBy }).labelStart} ${
           sortOrder ? 'ascending' : 'descending'
         }`}
-        onClick={handleSortOrderChange}
+        onClick={handleSortOrderToggle}
       />
       <Button
         content={_find(sortingTypes, { id: sortBy }).content}
