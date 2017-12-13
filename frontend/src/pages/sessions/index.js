@@ -32,17 +32,17 @@ const Index = ({
         sortOrder: '',
       },
       title: intl.formatMessage({
-        defaultMessage: 'Sessions',
-        id: 'teacher.sessionHistory.title',
+        defaultMessage: 'Session List',
+        id: 'teacher.sessionList.title',
       }),
     }}
     pageTitle={intl.formatMessage({
-      defaultMessage: 'Sessions',
-      id: 'teacher.sessionHistory.pageTitle',
+      defaultMessage: 'Session List',
+      id: 'teacher.sessionList.pageTitle',
     })}
-    sidebar={{ activeItem: 'sessionHistory' }}
+    sidebar={{ activeItem: 'sessionList' }}
   >
-    <div className="sessionHistory">
+    <div className="sessionList">
       <SessionList
         handleCopySession={handleCopySession}
         handleStartSession={handleStartSession}
@@ -53,19 +53,16 @@ const Index = ({
     <style jsx>{`
       @import 'src/theme';
 
-      .sessionHistory {
+      .sessionList {
         padding: 1rem 0.7rem;
       }
 
       @include desktop-tablet-only {
-        .sessionHistory {
+        .sessionList {
+          margin: auto;
           padding: 2rem;
-        }
-      }
 
-      @include desktop-only {
-        .sessionHistory {
-          padding: 2rem 10%;
+          max-width: $max-width;
         }
       }
     `}</style>

@@ -50,8 +50,8 @@ const TeacherLayout = ({
     },
     {
       href: '/sessions',
-      label: <FormattedMessage defaultMessage="Sessions" id="teacher.sessionHistory.title" />,
-      name: 'sessionHistory',
+      label: <FormattedMessage defaultMessage="Session List" id="teacher.sessionList.title" />,
+      name: 'sessionList',
     },
     {
       href: '/sessions/running',
