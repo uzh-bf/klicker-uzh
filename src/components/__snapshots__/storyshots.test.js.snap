@@ -3620,7 +3620,7 @@ exports[`Storyshots questions QuestionDetails 1`] = `
 
 exports[`Storyshots questions QuestionList (creation mode) 1`] = `
 <div
-  className="jsx-753457472 questionList"
+  className="jsx-2713308233 questionList"
 >
   <div
     className="jsx-3830748110 question creationMode draggable"
@@ -4007,7 +4007,7 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
 
 exports[`Storyshots questions QuestionList 1`] = `
 <div
-  className="jsx-753457472 questionList"
+  className="jsx-2713308233 questionList"
 >
   <div
     className="jsx-3830748110 question"
