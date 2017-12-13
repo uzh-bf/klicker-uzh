@@ -50,14 +50,69 @@ const HistogramChart = ({
       }}
     >
       <XAxis dataKey="value" />
-      <YAxis />
+      <YAxis
+        domain={[
+          0,
+          (dataMax) => {
+            const rounded = Math.ceil(dataMax * 1.1)
+
+            if (rounded % 2 === 0) {
+              return rounded
+            }
+
+            return rounded + 1
+          },
+        ]}
+      />
       <CartesianGrid strokeDasharray="5 5" />
       <Tooltip />
-      <Bar dataKey="count" fill="#8884d8" />
+      <Bar dataKey="count" fill="rgb(19, 149, 186)" />
 
       {statistics && [
-        <ReferenceLine isFront stroke="blue" x={Math.round(statistics.mean)} />,
-        <ReferenceLine isFront stroke="red" x={Math.round(statistics.median)} />,
+        <ReferenceLine
+          isFront
+          label={{
+            fill: 'blue',
+            fontSize: '1rem',
+            position: 'top',
+            value: 'MEAN',
+          }}
+          stroke="blue"
+          x={Math.round(statistics.mean)}
+        />,
+        <ReferenceLine
+          isFront
+          label={{
+            fill: 'red',
+            fontSize: '1rem',
+            position: 'top',
+            value: 'MEDIAN',
+          }}
+          stroke="red"
+          x={Math.round(statistics.median)}
+        />,
+        <ReferenceLine
+          isFront
+          label={{
+            fill: 'black',
+            fontSize: '1rem',
+            position: 'top',
+            value: 'Q1',
+          }}
+          stroke="black"
+          x={Math.round(statistics.q1)}
+        />,
+        <ReferenceLine
+          isFront
+          label={{
+            fill: 'black',
+            fontSize: '1rem',
+            position: 'top',
+            value: 'Q3',
+          }}
+          stroke="black"
+          x={Math.round(statistics.q3)}
+        />,
       ]}
 
       {solution && <ReferenceLine isFront stroke="green" x={Math.round(solution)} />}

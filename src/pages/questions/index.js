@@ -82,6 +82,7 @@ const Index = ({
 
   return (
     <TeacherLayout
+      fixedHeight
       actionArea={creationMode ? actionArea : null}
       intl={intl}
       navbar={{
@@ -108,29 +109,31 @@ const Index = ({
         <div className="tagList">
           <TagList activeTags={filters.tags} handleTagClick={handleTagClick} />
         </div>
-        <div className="questionList">
-          <div className="buttons">
-            <Button onClick={handleCreationModeToggle}>
-              <FormattedMessage
-                defaultMessage="Create Session"
-                id="questionPool.button.createSession"
-              />
-            </Button>
-            <Link href="/questions/create">
-              <Button>
+        <div className="wrapper">
+          <div className="questionList">
+            <div className="buttons">
+              <Link href="/questions/create">
+                <Button>
+                  <FormattedMessage
+                    defaultMessage="Create Question"
+                    id="questionPool.button.createQuestion"
+                  />
+                </Button>
+              </Link>
+              <Button onClick={handleCreationModeToggle}>
                 <FormattedMessage
-                  defaultMessage="Create Question"
-                  id="questionPool.button.createQuestion"
+                  defaultMessage="Create Session"
+                  id="questionPool.button.createSession"
                 />
               </Button>
-            </Link>
+            </div>
+            <QuestionList
+              creationMode={creationMode}
+              dropped={droppedQuestions}
+              filters={filters}
+              onQuestionDropped={handleQuestionDropped}
+            />
           </div>
-          <QuestionList
-            creationMode={creationMode}
-            dropped={droppedQuestions}
-            filters={filters}
-            onQuestionDropped={handleQuestionDropped}
-          />
         </div>
       </div>
 
@@ -142,27 +145,32 @@ const Index = ({
           flex-direction: column;
           height: 100%;
 
-          .questionList {
-            // HACK: workaround for creating session div overlapping the question list
-            padding: 1rem;
-            padding-bottom: 235px;
-
-            .buttons {
-              margin: 0 0 1rem 0;
-
-              display: flex;
-              justify-content: center;
-
-              > :global(button:last-child) {
-                margin-right: 0;
-              }
-            }
-          }
-
           .tagList {
             flex: 1;
             background: #ebebeb;
             padding: 0.5rem;
+          }
+
+          .wrapper {
+            overflow: auto;
+
+            .questionList {
+              padding: 1rem;
+
+              margin: 0 auto;
+              max-width: $max-width;
+
+              .buttons {
+                margin: 0 0 1rem 0;
+
+                display: flex;
+                justify-content: center;
+
+                > :global(button:last-child) {
+                  margin-right: 0;
+                }
+              }
+            }
           }
 
           @include desktop-tablet-only {
@@ -173,13 +181,15 @@ const Index = ({
               padding: 1rem;
             }
 
-            .questionList {
+            .wrapper {
               flex: 1;
               padding: 1rem;
 
-              .buttons {
-                display: flex;
-                justify-content: flex-end;
+              .questionList {
+                .buttons {
+                  display: flex;
+                  justify-content: flex-end;
+                }
               }
             }
           }
@@ -191,7 +201,7 @@ const Index = ({
               padding: 2rem;
             }
 
-            .questionList {
+            .wrapper {
               padding: 2rem;
             }
           }
@@ -266,7 +276,7 @@ export default compose(
   graphql(StartSessionMutation),
   withHandlers({
     // handle starting an existing or newly created session
-    handleStartSession: ({ mutate }) => id =>
+    handleStartSession: ({ mutate }) => ({ id }) =>
       mutate({
         refetchQueries: [{ query: RunningSessionQuery }, { query: AccountSummaryQuery }],
         variables: { id },
@@ -279,15 +289,17 @@ export default compose(
       mutate,
       handleCreationModeToggle,
       handleStartSession,
-    }) => type => async ({ sessionName, questions }) => {
+    }) => type => async ({ sessionName, blocks }) => {
       try {
-        // HACK: map each question into a separate question block
-        const blocks = questions.map(question => ({ questions: [question.id] }))
+        // prepare blocks for consumption through the api
+        const parsedBlocks = blocks.map(({ questions }) => ({
+          questions: questions.map(({ id, version }) => ({ question: id, version })),
+        }))
 
         // create a new session
         const result = await mutate({
           refetchQueries: [{ query: SessionListQuery }],
-          variables: { blocks, name: sessionName },
+          variables: { blocks: parsedBlocks, name: sessionName },
         })
 
         // start the session immediately if the respective button was clicked

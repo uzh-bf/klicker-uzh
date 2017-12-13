@@ -35,13 +35,13 @@ const Collapser = ({ children, collapsed, handleCollapseToggle }) => (
         line-height: 1.2rem;
         margin: 0.5rem;
         margin-bottom: 0.3rem;
+        min-height: 3rem;
         overflow: hidden;
-        min-height: 6rem;
         word-wrap: break-word;
       }
 
       .content.collapsed {
-        flex: 1 0 6rem;
+        flex: 1 0 3rem;
       }
 
       .content :global(p) {

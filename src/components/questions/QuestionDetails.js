@@ -1,9 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import _truncate from 'lodash/truncate'
+import Link from 'next/link'
 
 import { FormattedMessage } from 'react-intl'
-import { FaEye, FaPencil, FaTrash } from 'react-icons/lib/fa'
 import { Button } from 'semantic-ui-react'
 
 import { ListWithHeader } from '../common'
@@ -11,13 +11,14 @@ import { ListWithHeader } from '../common'
 const propTypes = {
   description: PropTypes.string.isRequired,
   lastUsed: PropTypes.array,
+  questionId: PropTypes.string.isRequired,
 }
 
 const defaultProps = {
   lastUsed: [],
 }
 
-const QuestionDetails = ({ description, lastUsed }) => {
+const QuestionDetails = ({ questionId, description, lastUsed }) => {
   const truncatedDesc = _truncate(description, { length: 250 })
 
   // TODO: internationalization
@@ -40,15 +41,12 @@ const QuestionDetails = ({ description, lastUsed }) => {
       </div>
 
       <div className="column buttons">
-        <Button className="button">
-          <FaEye />
-        </Button>
-        <Button className="button">
-          <FaPencil />
-        </Button>
-        <Button className="button">
-          <FaTrash />
-        </Button>
+        <Link
+          as={`/questions/${questionId}`}
+          href={{ pathname: '/questions/details', query: { questionId } }}
+        >
+          <Button icon="eye" />
+        </Link>
       </div>
 
       <style jsx>{`
@@ -98,7 +96,6 @@ const QuestionDetails = ({ description, lastUsed }) => {
 
           @include desktop-tablet-only {
             flex-direction: row;
-            min-height: 7rem;
 
             .column {
               flex: 1;
@@ -129,7 +126,7 @@ const QuestionDetails = ({ description, lastUsed }) => {
               flex: none;
               padding: 0.3rem;
 
-              :global(.button) {
+              :global(button) {
                 margin: 0;
                 margin-bottom: 0.3rem;
                 padding: 7px 12px;
@@ -137,11 +134,11 @@ const QuestionDetails = ({ description, lastUsed }) => {
                 background-color: rgba(224, 225, 226, 0.73);
               }
 
-              :global(.button:last-child) {
+              :global(button:last-child) {
                 margin-bottom: 0;
               }
 
-              :global(.button:hover) {
+              :global(button:hover) {
                 color: $color-primary !important;
               }
             }

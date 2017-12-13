@@ -34,6 +34,57 @@ export const QuestionListQuery = gql`
   }
 `
 
+export const QuestionDetailsQuery = gql`
+  query QuestionDetails($id: ID!) {
+    question(id: $id) {
+      id
+      title
+      type
+      instances {
+        id
+        createdAt
+      }
+      tags {
+        id
+        name
+      }
+      versions {
+        id
+        description
+        options {
+          SC {
+            choices {
+              correct
+              name
+            }
+          }
+          MC {
+            choices {
+              correct
+              name
+            }
+          }
+          FREE_RANGE {
+            restrictions {
+              min
+              max
+            }
+          }
+        }
+        solution {
+          SC
+          MC
+          FREE
+          FREE_RANGE
+        }
+      }
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+// Used in: SessionList
 export const SessionListQuery = gql`
   query SessionList {
     sessions: allSessions {
@@ -44,6 +95,7 @@ export const SessionListQuery = gql`
         id
         instances {
           id
+          version
           question {
             id
             title
@@ -80,6 +132,7 @@ export const RunningSessionQuery = gql`
         instances {
           id
           isOpen
+          version
           question {
             id
             title

@@ -13,6 +13,7 @@ import { Sidebar } from '../../components/common/sidebar'
 const propTypes = {
   actionArea: PropTypes.element,
   children: PropTypes.node.isRequired,
+  fixedHeight: PropTypes.bool,
   handleSidebarItemClick: PropTypes.func.isRequired,
   handleSidebarToggle: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
@@ -24,6 +25,7 @@ const propTypes = {
 
 const defaultProps = {
   actionArea: undefined,
+  fixedHeight: false,
   navbar: undefined,
   pageTitle: 'TeacherLayout',
 }
@@ -31,6 +33,7 @@ const defaultProps = {
 const TeacherLayout = ({
   actionArea,
   children,
+  fixedHeight,
   intl,
   navbar,
   pageTitle,
@@ -47,8 +50,8 @@ const TeacherLayout = ({
     },
     {
       href: '/sessions',
-      label: <FormattedMessage defaultMessage="Sessions" id="teacher.sessionHistory.title" />,
-      name: 'sessionHistory',
+      label: <FormattedMessage defaultMessage="Session List" id="teacher.sessionList.title" />,
+      name: 'sessionList',
     },
     {
       href: '/sessions/running',
@@ -93,19 +96,23 @@ const TeacherLayout = ({
           .teacherLayout {
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
+            height: ${fixedHeight ? '100vh' : 'initial'};
+            min-height: ${fixedHeight ? 'initial' : '100vh'};
+
+            .navbar {
+              flex: 0 0 auto;
+            }
 
             .content {
+              background-color: white;
+
               flex: 1;
 
               display: flex;
             }
 
             .actionArea {
-              position: fixed;
-              bottom: 0;
-              right: 0;
-              left: 0;
+              flex: 0 0 auto;
             }
           }
         `}</style>

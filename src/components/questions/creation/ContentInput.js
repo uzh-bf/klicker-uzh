@@ -1,11 +1,11 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
-import { Form } from 'semantic-ui-react'
+import { Form, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import { FaQuestionCircle } from 'react-icons/lib/fa'
 
 const propTypes = {
+  disabled: PropTypes.bool.isRequired,
   input: PropTypes.shape({
     onChange: PropTypes.func.isRequired,
     value: PropTypes.string.isRequired,
@@ -16,7 +16,7 @@ const propTypes = {
   }).isRequired,
 }
 
-const ContentInput = ({ input: { value, onChange }, meta: { dirty, invalid } }) => (
+const ContentInput = ({ input: { value, onChange }, meta: { dirty, invalid }, disabled }) => (
   <div className="contentInput">
     <Form.Field required error={dirty && invalid}>
       <label htmlFor="content">
@@ -25,7 +25,7 @@ const ContentInput = ({ input: { value, onChange }, meta: { dirty, invalid } }) 
           id="teacher.createQuestion.contentInput.label"
         />
         <a data-tip data-for="contentHelp">
-          <FaQuestionCircle />
+          <Icon name="question circle" />
         </a>
       </label>
 
@@ -36,7 +36,7 @@ const ContentInput = ({ input: { value, onChange }, meta: { dirty, invalid } }) 
         />
       </ReactTooltip>
 
-      <textarea name="content" value={value} onChange={onChange} />
+      <textarea disabled={disabled} name="content" value={value} onChange={onChange} />
     </Form.Field>
 
     <ReactTooltip delayHide={250} id="contentHelp" place="right">

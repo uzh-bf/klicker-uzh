@@ -1,16 +1,16 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
-import { SortableContainer, SortableElement, arrayMove } from 'react-sortable-hoc'
+import { arrayMove, SortableContainer, SortableElement } from 'react-sortable-hoc'
 import { FormattedMessage } from 'react-intl'
 import { compose, mapProps, withHandlers } from 'recompose'
-import { FaQuestionCircle } from 'react-icons/lib/fa'
-import { Form } from 'semantic-ui-react'
+import { Form, Icon } from 'semantic-ui-react'
 
 import SCCreationPlaceholder from './SCCreationPlaceholder'
 import SCCreationOption from './SCCreationOption'
 
 const propTypes = {
+  disabled: PropTypes.bool.isRequired,
   handleDeleteOption: PropTypes.func.isRequired,
   handleNewOption: PropTypes.func.isRequired,
   handleOptionToggleCorrect: PropTypes.func.isRequired,
@@ -24,6 +24,7 @@ const propTypes = {
 
 // create the purely functional component
 const SCCreationOptions = ({
+  disabled,
   handleNewOption,
   handleDeleteOption,
   handleUpdateOrder,
@@ -31,9 +32,9 @@ const SCCreationOptions = ({
   value,
   meta: { dirty, invalid },
 }) => {
-  const SortableOption = SortableElement(props => (
+  const Option = props => (
     <div className="option">
-      <SCCreationOption {...props} />
+      <SCCreationOption disabled={disabled} {...props} />
       <style jsx>{`
         .option {
           cursor: grab;
@@ -41,24 +42,30 @@ const SCCreationOptions = ({
         }
       `}</style>
     </div>
-  ))
-
-  const SortableOptions = SortableContainer(
-    ({ sortableOptions, handleCorrectToggle, handleDelete }) => (
-      <div className="options">
-        {sortableOptions.map(({ correct, name }, index) => (
-          <SortableOption
-            correct={correct}
-            handleCorrectToggle={handleCorrectToggle(index)}
-            handleDelete={handleDelete(index)}
-            index={index}
-            key={`sortable-${name}`}
-            name={name}
-          />
-        ))}
-      </div>
-    ),
   )
+
+  const SortableOption = disabled ? Option : SortableElement(Option)
+
+  const Options = ({ sortableOptions, handleCorrectToggle, handleDelete }) => (
+    <div className="options">
+      {sortableOptions.map(({ correct, name }, index) => (
+        <SortableOption
+          correct={correct}
+          handleCorrectToggle={handleCorrectToggle(index)}
+          handleDelete={handleDelete(index)}
+          index={index}
+          key={`sortable-${name}`}
+          name={name}
+        />
+      ))}
+    </div>
+  )
+  Options.propTypes = {
+    handleCorrectToggle: PropTypes.func.isRequired,
+    handleDelete: PropTypes.func.isRequired,
+    sortableOptions: PropTypes.array.isRequired,
+  }
+  const SortableOptions = disabled ? Options : SortableContainer(Options)
 
   return (
     <div className="SCCreationOptions">
@@ -69,7 +76,7 @@ const SCCreationOptions = ({
             id="teacher.createQuestion.optionsSC.label"
           />
           <a data-tip data-for="SCCreationHelp">
-            <FaQuestionCircle />
+            <Icon name="question circle" />
           </a>
         </label>
 
@@ -87,7 +94,7 @@ const SCCreationOptions = ({
           onSortEnd={handleUpdateOrder}
         />
 
-        <SCCreationPlaceholder handleSave={handleNewOption} />
+        {!disabled && <SCCreationPlaceholder handleSave={handleNewOption} />}
       </Form.Field>
 
       <style jsx>{`
@@ -103,7 +110,8 @@ const SCCreationOptions = ({
 SCCreationOptions.propTypes = propTypes
 
 export default compose(
-  mapProps(({ input: { onChange, value }, meta }) => ({
+  mapProps(({ input: { onChange, value }, meta, disabled }) => ({
+    disabled,
     // HACK: mapping as a workaround for the value.choices problem
     meta,
     onChange: choices => onChange({ ...value, choices }),

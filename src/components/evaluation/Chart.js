@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
 
-import { BarChart, PieChart, TableChart, CloudChart, HistogramChart } from '.'
+import { BarChart, StackChart, PieChart, TableChart, CloudChart, HistogramChart } from '.'
 import { SESSION_STATUS } from '../../constants'
 import { statisticsShape } from '../../propTypes'
 
@@ -11,6 +11,7 @@ import { statisticsShape } from '../../propTypes'
 const propTypes = {
   activeVisualization: PropTypes.string.isRequired,
   handleShowGraph: PropTypes.func.isRequired,
+  questionType: PropTypes.string.isRequired,
   restrictions: PropTypes.shape({
     max: PropTypes.number,
     min: PropTypes.number,
@@ -41,6 +42,7 @@ const chartTypes = {
   BAR_CHART: BarChart,
   HISTOGRAM: HistogramChart,
   PIE_CHART: PieChart,
+  STACK_CHART: StackChart,
   TABLE: TableChart,
   WORD_CLOUD: CloudChart,
 }
@@ -50,6 +52,7 @@ function Chart({
   restrictions,
   results,
   handleShowGraph,
+  questionType,
   sessionStatus,
   showGraph,
   showSolution,
@@ -72,6 +75,17 @@ function Chart({
           )
         }
 
+        if (results.totalResponses === 0) {
+          return (
+            <div className="noChart">
+              <FormattedMessage
+                defaultMessage="No Results Available"
+                id="teacher.evaluation.graph.noResults"
+              />
+            </div>
+          )
+        }
+
         const ChartComponent = chartTypes[activeVisualization]
         if (ChartComponent) {
           return (
@@ -79,6 +93,7 @@ function Chart({
               brush={sessionStatus !== SESSION_STATUS.RUNNING}
               data={results.data}
               isSolutionShown={showSolution}
+              questionType={questionType}
               restrictions={restrictions}
               statistics={statistics}
               totalResponses={results.totalResponses}

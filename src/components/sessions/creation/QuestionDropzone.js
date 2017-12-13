@@ -1,8 +1,8 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import { FaPlus } from 'react-icons/lib/fa'
 import { DropTarget } from 'react-dnd'
+import { Icon } from 'semantic-ui-react'
 
 const propTypes = {
   canDrop: PropTypes.bool,
@@ -18,7 +18,7 @@ const defaultProps = {
 const QuestionDropzone = ({ canDrop, isOver, connectDropTarget }) =>
   connectDropTarget(
     <div className={classNames('dropzone', { canDrop, isOver })}>
-      <FaPlus />
+      <Icon name="plus" />
 
       <style jsx>{`
         .dropzone {
@@ -28,8 +28,9 @@ const QuestionDropzone = ({ canDrop, isOver, connectDropTarget }) =>
 
           background-color: #f2f2f2;
           border: 1px solid lightgrey;
-          color: lightgrey;
+          color: grey;
           font-size: 1.5rem;
+          min-height: 5rem;
           height: 100%;
           width: 100%;
         }

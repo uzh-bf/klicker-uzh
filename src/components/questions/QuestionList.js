@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import moment from 'moment'
 import { graphql } from 'react-apollo'
 import { compose, withProps, branch, renderComponent } from 'recompose'
+import { FormattedMessage } from 'react-intl'
 
 import Question from './Question'
 import { LoadingDiv } from '../common'
@@ -26,10 +27,20 @@ export const QuestionListPres = ({
   questions, dropped, onQuestionDropped, creationMode,
 }) => (
   <div className="questionList">
+    {questions.length === 0 ? (
+      <div className="message">
+        <FormattedMessage
+          defaultMessage="No questions available."
+          id="questionList.string.noQuestions"
+        />
+      </div>
+    ) : (
+      []
+    )}
+
     {questions.map(question => (
       <Question
         creationMode={creationMode}
-        description={question.versions[question.versions.length - 1].description}
         draggable={creationMode && !dropped.includes(question.id)}
         id={question.id}
         key={question.id}
@@ -39,14 +50,23 @@ export const QuestionListPres = ({
         tags={question.tags}
         title={question.title}
         type={question.type}
-        version={question.versions.length}
+        versions={question.versions}
         onDrop={onQuestionDropped(question.id)}
       />
     ))}
 
     <style jsx>{`
-      .questionList > :global(*) {
-        margin-bottom: 1rem;
+      .questionList {
+        :global(> *) {
+          margin-bottom: 1rem;
+        }
+
+        .message {
+          margin-bottom: 1rem;
+          padding: 0.75rem;
+          border: 1px solid lightgray;
+          background-color: #f9f9f9;
+        }
       }
     `}</style>
   </div>

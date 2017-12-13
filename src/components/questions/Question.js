@@ -1,7 +1,10 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
+import moment from 'moment'
+import { compose, withState, withProps } from 'recompose'
 import { DragSource } from 'react-dnd'
+import { Dropdown } from 'semantic-ui-react'
 
 import QuestionDetails from './QuestionDetails'
 import QuestionTags from './QuestionTags'
@@ -9,7 +12,6 @@ import QuestionTags from './QuestionTags'
 const propTypes = {
   connectDragSource: PropTypes.func.isRequired,
   creationMode: PropTypes.bool,
-  description: PropTypes.string,
   draggable: PropTypes.bool,
   id: PropTypes.string.isRequired,
   isDragging: PropTypes.bool,
@@ -17,31 +19,30 @@ const propTypes = {
   tags: PropTypes.array,
   title: PropTypes.string.isRequired,
   type: PropTypes.string.isRequired,
-  version: PropTypes.number,
 }
 
 const defaultProps = {
   creationMode: false,
-  description: '-',
   draggable: false,
   isDragging: false,
   lastUsed: [],
   tags: [],
-  version: 1,
 }
 
 const Question = ({
+  activeVersion,
   id,
   lastUsed,
   tags,
   title,
   type,
   description,
-  version,
+  versions,
   draggable,
   creationMode,
   isDragging,
   connectDragSource,
+  handleSetActiveVersion,
 }) =>
   connectDragSource(
     <div className={classNames('question', { creationMode, draggable, isDragging })}>
@@ -58,16 +59,26 @@ const Question = ({
       )}
 
       <div className="wrapper">
-        <h2 className="title">
-          {title} {version && version > 1 && `(v${version})`}
-        </h2>
+        <h2 className="title">{title}</h2>
+
+        <div className="versionChooser">
+          <Dropdown
+            options={versions.map((version, index) => ({
+              key: index,
+              text: `Revision ${index + 1} - ${moment(version.createdAt).format('DD.MM.Y H:M')}`,
+              value: index,
+            }))}
+            value={activeVersion}
+            onChange={(param, data) => handleSetActiveVersion(data.value)}
+          />
+        </div>
 
         <div className="tags">
           <QuestionTags tags={tags} type={type} />
         </div>
 
         <div className="details">
-          <QuestionDetails description={description} lastUsed={lastUsed} />
+          <QuestionDetails description={description} lastUsed={lastUsed} questionId={id} />
         </div>
       </div>
 
@@ -92,10 +103,6 @@ const Question = ({
 
           &.isDragging {
             opacity: 0.5;
-          }
-
-          .title {
-            //color: #2a99ea;
           }
 
           .sessionMembership {
@@ -137,12 +144,20 @@ const Question = ({
               flex-flow: row wrap;
 
               .title,
+              .versionChooser {
+                flex: 0 0 auto;
+              }
+
+              .versionChooser {
+                padding-top: 2px;
+                padding-left: 1rem;
+              }
+
               .tags {
                 flex: 1 1 auto;
-              }
-              .tags {
                 align-self: flex-end;
               }
+
               .details {
                 flex: 0 0 100%;
               }
@@ -159,8 +174,15 @@ Question.defaultProps = defaultProps
 // define the source for DnD
 const source = {
   // only props defined here are "transported" to the dropzone
-  beginDrag({ id, title, type }) {
-    return { id, title, type }
+  beginDrag({
+    activeVersion, id, title, type,
+  }) {
+    return {
+      id,
+      title,
+      type,
+      version: activeVersion,
+    }
   },
   // whether the element can be dragged
   canDrag({ draggable }) {
@@ -184,4 +206,10 @@ const collect = (connect, monitor) => ({
 // define a unique item type "question"
 const withDnD = DragSource('question', source, collect)
 
-export default withDnD(Question)
+export default compose(
+  withState('activeVersion', 'handleSetActiveVersion', ({ versions }) => versions.length - 1),
+  withProps(({ activeVersion, versions }) => ({
+    description: versions[activeVersion].description,
+  })),
+  withDnD,
+)(Question)

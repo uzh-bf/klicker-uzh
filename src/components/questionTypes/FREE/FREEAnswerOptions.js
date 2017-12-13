@@ -117,8 +117,6 @@ const FREEAnswerOptions = ({
       @import 'src/theme';
 
       .freeAnswerOptions {
-        height: 100%;
-
         .slider {
           .min,
           .max {
@@ -131,6 +129,7 @@ const FREEAnswerOptions = ({
         }
 
         textarea {
+          height: 100%;
           min-height: 10rem;
           width: 100%;
         }

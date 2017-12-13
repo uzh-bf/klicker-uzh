@@ -1,23 +1,18 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import isEmpty from 'validator/lib/isEmpty'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage } from 'react-intl'
-import { FaFloppyO, FaPlay, FaTrash } from 'react-icons/lib/fa'
+import { Button, Icon } from 'semantic-ui-react'
 
 import { SemanticInput } from '.'
 import { SessionTimelineInput } from '../sessions'
 
 // form validation
-const validate = ({ sessionName, questions }) => {
+const validate = ({ blocks }) => {
   const errors = {}
 
-  if (!sessionName || isEmpty(sessionName)) {
-    errors.sessionName = 'form.createSession.sessionName.empty'
-  }
-
-  if (!questions || questions.length === 0) {
-    errors.questions = 'form.createSession.questions.empty'
+  if (!blocks || blocks.length === 0) {
+    errors.blocks = 'form.createSession.blocks.empty'
   }
 
   return errors
@@ -35,77 +30,98 @@ const SessionCreationForm = ({
   invalid, handleSubmit, onSave, onDiscard, onStart,
 }) => (
   <form className="ui form sessionCreation" onSubmit={handleSubmit(onSave)}>
-    <div className="sessionName">
-      <Field component={SemanticInput} label="Name" name="sessionName" />
+    <div className="upper">
+      <h2 className="title">
+        <FormattedMessage defaultMessage="Create Session" id="teacher.sessionCreation.title" />
+      </h2>
+
+      <div className="sessionSettings">
+        <div className="sessionName">
+          <Field
+            component={SemanticInput}
+            inlineLabel="Name"
+            labelPosition="left"
+            name="sessionName"
+            placeholder="Session #1"
+          />
+        </div>
+      </div>
     </div>
 
     <div className="sessionTimeline">
-      <Field component={SessionTimelineInput} name="questions" />
+      <Field component={SessionTimelineInput} name="blocks" />
     </div>
 
     <div className="actionArea">
-      <button className="ui fluid button" type="button" onClick={onDiscard}>
-        <FaTrash />
+      <Button fluid icon labelPosition="left" onClick={onDiscard}>
+        <Icon name="trash" />
         <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
-      </button>
-      <button className="ui fluid button" disabled={invalid} type="submit">
-        <FaFloppyO />
+      </Button>
+
+      <Button fluid icon disabled={invalid} labelPosition="left" type="submit">
+        <Icon name="save" />
         <FormattedMessage defaultMessage="Save" id="common.button.save" />
-      </button>
-      <button
-        className="ui fluid primary button"
+      </Button>
+
+      <Button
+        fluid
+        icon
+        primary
         disabled={invalid}
-        type="button"
+        labelPosition="left"
         onClick={handleSubmit(onStart)}
       >
-        <FaPlay />
+        <Icon name="play" />
         <FormattedMessage defaultMessage="Start" id="common.button.start" />
-      </button>
+      </Button>
     </div>
 
     <style jsx>{`
+      @import 'src/theme';
+
       .sessionCreation {
         display: flex;
         flex-flow: row wrap;
 
         background-color: white;
-      }
 
-      .sessionName {
-        flex: 0 0 100%;
+        .title {
+          font-size: 1.5rem;
+          margin: 0;
 
-        border: 1px solid lightgrey;
-        padding: 0.5rem;
-        text-align: center;
-      }
+          padding: 0.5rem 1rem;
+        }
 
-      .sessionName > .editButton {
-        margin-left: 0.5rem;
-      }
+        .upper {
+          flex: 0 0 100%;
 
-      .sessionTimeline {
-        flex: 1;
-      }
+          border-bottom: 1px solid lightgrey;
+          border-top: 1px solid lightgrey;
+          text-align: center;
+          padding: 0 1rem 1rem 1rem;
+        }
 
-      .actionArea {
-        flex: 0 0 10rem;
+        .sessionTimeline {
+          flex: 1;
+        }
 
-        border: 1px solid lightgrey;
-        border-top: 0;
-        padding: 0.5rem;
-      }
+        .actionArea {
+          flex: 0 0 10rem;
 
-      .actionArea > .button:not(:last-child) {
-        margin-bottom: 0.5rem;
-      }
+          border: 1px solid lightgrey;
+          border-top: 0;
+          padding: 0.5rem;
 
-      .actionArea > .button:first-child {
-        margin-bottom: 2rem;
-      }
+          > :global(button) {
+            &:not(:last-child) {
+              margin-bottom: 0.5rem;
+            }
 
-      .actionArea > .button > :global(svg) {
-        margin-right: 0.4rem;
-        margin-top: -3px;
+            &:first-child {
+              margin-bottom: 2rem;
+            }
+          }
+        }
       }
     `}</style>
   </form>
@@ -116,7 +132,7 @@ SessionCreationForm.propTypes = propTypes
 export default reduxForm({
   form: 'createSession',
   initialValues: {
-    questions: [],
+    blocks: [],
   },
   validate,
 })(SessionCreationForm)

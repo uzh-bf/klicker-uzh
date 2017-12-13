@@ -30,8 +30,13 @@ storiesOf('sessions', module)
       input={{
         onChange: () => null,
         value: [
-          { id: 'id1', title: 'question1', type: 'SC' },
-          { id: 'id2', title: 'question2', type: 'FREE' },
+          { questions: [{ id: 'id1', title: 'question1', type: 'SC' }] },
+          {
+            questions: [
+              { id: 'id2', title: 'question2', type: 'FREE' },
+              { id: 'id3', title: 'question3', type: 'SC' },
+            ],
+          },
         ],
       }}
     />

@@ -7,25 +7,23 @@ import SCAnswerOptions from './SCAnswerOptions'
 const propTypes = {
   description: PropTypes.string,
   options: PropTypes.array,
-  title: PropTypes.string,
 }
 
 const defaultProps = {
-  description: 'DESCRIPTION',
-  options: [],
-  title: 'TITLE',
+  description: '',
+  options: {
+    choices: [],
+  },
 }
 
-const SCCreationPreview = ({ title, description, options }) => (
+const SCCreationPreview = ({ description, options }) => (
   <div className="preview">
-    <div className="title">{title || 'TITLE'}</div>
-    <div className="description">{description || 'DESCRIPTION'}</div>
+    <div className="description">{description}</div>
     <div className="options">
       <SCAnswerOptions
+        disabled
         activeOption={-1}
-        options={
-          ((!options || options.choices.length === 0) && [{ name: 'OPTION' }]) || options.choices
-        }
+        options={options.choices}
         onOptionClick={f => () => f}
       />
     </div>

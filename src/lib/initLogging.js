@@ -1,5 +1,6 @@
 let logrocket = false
 let sentry = false
+let hotjar = false
 
 export default function initLogging() {
   // restrict code execution for trackers to clientside
@@ -31,6 +32,14 @@ export default function initLogging() {
       }
 
       sentry = true
+    }
+
+    if (!hotjar && process.env.HOTJAR) {
+      const { hotjar: hj } = require('react-hotjar')
+
+      // TODO: make hotjar tracking code dynamic
+      hj.initialize(702378, 6)
+      hotjar = true
     }
   }
 }

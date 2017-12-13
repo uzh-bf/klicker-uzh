@@ -42,7 +42,11 @@ const SessionTimeline = ({
       </div>
       <div className="evaluationLink">
         <Icon name="external" />{' '}
-        <Link prefetch href={`/sessions/evaluation/${sessionId}`}>
+        <Link
+          prefetch
+          as={`/sessions/evaluation/${sessionId}`}
+          href={{ pathname: '/sessions/evaluation', query: { sessionId } }}
+        >
           <a target="_blank">
             <FormattedMessage defaultMessage="Evaluation" id="runningSession.button.evaluation" />
           </a>
@@ -58,10 +62,11 @@ const SessionTimeline = ({
           <div className="block" key={block.id}>
             <QuestionBlock
               showSolutions
-              questions={block.instances.map(instance => ({
-                id: instance.id,
-                title: instance.question.title,
-                type: instance.question.type,
+              questions={block.instances.map(({ id, question, version }) => ({
+                id,
+                title: question.title,
+                type: question.type,
+                version,
               }))}
               status={block.status}
               timeLimit={60}

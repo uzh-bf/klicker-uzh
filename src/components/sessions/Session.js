@@ -27,32 +27,34 @@ const Session = ({
   button, createdAt, id, name, blocks,
 }) => (
   <div className="session">
-    <h2 className="title">
-      {/* {id.slice(0, 7)} - {name} */}
-      {name}
-    </h2>
+    <h2 className="title">{name}</h2>
     <div className="date">
-      <FormattedMessage defaultMessage="Created on" id="sessionHistory.string.createdOn" />{' '}
+      <FormattedMessage defaultMessage="Created on" id="sessionList.string.createdOn" />{' '}
       {moment(createdAt).format('DD.MM.YYYY HH:MM')}
     </div>
 
     <div className="details">
-      {blocks.map(block => (
-        <div className="block" key={block.id}>
-          <QuestionBlock
-            questions={block.instances.map(instance => ({
-              id: instance.id,
-              title: instance.question.title,
-              type: instance.question.type,
-              versions: instance.question.versions,
+      {blocks.map(({
+ id: blockId, instances, showSolutions, timeLimit,
+}) => (
+  <div className="block" key={blockId}>
+    <QuestionBlock
+      questions={instances.map(({ id: instanceId, question, version }) => ({
+              id: instanceId,
+              title: question.title,
+              type: question.type,
+              version,
             }))}
-            showSolutions={block.showSolutions}
-            timeLimit={block.timeLimit}
-          />
-        </div>
+      showSolutions={showSolutions}
+      timeLimit={timeLimit}
+    />
+  </div>
       ))}
       <div className="actionArea">
-        <Link prefetch href={`/sessions/evaluation/${id}`}>
+        <Link
+          as={`/sessions/evaluation/${id}`}
+          href={{ pathname: '/sessions/evaluation', query: { sessionId: id } }}
+        >
           <Button icon labelPosition="left">
             <Icon name="external" />
             Evaluation

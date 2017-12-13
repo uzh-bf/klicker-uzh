@@ -7,9 +7,10 @@ import { Form, Button } from 'semantic-ui-react'
 
 import { ConfusionSlider } from '../../../components/confusion'
 import { Feedback } from '../../../components/feedbacks'
+import { withStorage } from '../../../lib'
 
 const propTypes = {
-  active: PropTypes.bool,
+  active: PropTypes.bool.isRequired,
   confusionDifficulty: PropTypes.number.isRequired,
   confusionSpeed: PropTypes.number.isRequired,
   feedbackInputValue: PropTypes.string.isRequired,
@@ -24,7 +25,6 @@ const propTypes = {
 }
 
 const defaultProps = {
-  active: false,
   feedbacks: [],
   isConfusionBarometerActive: false,
   isFeedbackChannelActive: false,
@@ -53,8 +53,8 @@ function FeedbackArea({
             handleChange={newValue => handleConfusionSpeedChange(newValue)}
             handleChangeComplete={handleNewConfusionTS}
             labels={{ max: 'fast', mid: 'optimal', min: 'slow' }}
-            max={10}
-            min={-10}
+            max={5}
+            min={-5}
             title={
               <h2>
                 <FormattedMessage defaultMessage="Speed" id="common.string.speed" />
@@ -67,8 +67,8 @@ function FeedbackArea({
             handleChange={newValue => handleConfusionDifficultyChange(newValue)}
             handleChangeComplete={handleNewConfusionTS}
             labels={{ max: 'hard', mid: 'optimal', min: 'easy' }}
-            max={10}
-            min={-10}
+            max={5}
+            min={-5}
             title={
               <h2>
                 <FormattedMessage defaultMessage="Difficulty" id="common.string.difficulty" />
@@ -94,31 +94,33 @@ function FeedbackArea({
             </div>
           ))}
 
-        <Form className="newFeedback">
-          <Form.Field>
-            <label htmlFor="feedbackInput">
-              <FormattedMessage
-                defaultMessage="New Feedback"
-                id="joinSession.newFeedbackInput.label"
-              />
-              <textarea
-                name="feedbackInput"
-                value={feedbackInputValue}
-                onChange={handleFeedbackInputValueChange}
-              />
-            </label>
-          </Form.Field>
+        {isFeedbackChannelActive && (
+          <Form className="newFeedback">
+            <Form.Field>
+              <label htmlFor="feedbackInput">
+                <FormattedMessage
+                  defaultMessage="New Feedback"
+                  id="joinSession.newFeedbackInput.label"
+                />
+                <textarea
+                  name="feedbackInput"
+                  value={feedbackInputValue}
+                  onChange={handleFeedbackInputValueChange}
+                />
+              </label>
+            </Form.Field>
 
-          <Button
-            primary
-            disabled={!feedbackInputValue}
-            floated="right"
-            type="submit"
-            onClick={handleNewFeedback}
-          >
-            <FormattedMessage defaultMessage="Submit" id="common.form.submit" />
-          </Button>
-        </Form>
+            <Button
+              primary
+              disabled={!feedbackInputValue}
+              floated="right"
+              type="submit"
+              onClick={handleNewFeedback}
+            >
+              <FormattedMessage defaultMessage="Submit" id="common.form.submit" />
+            </Button>
+          </Form>
+        )}
       </div>
 
       <style jsx>{`
@@ -195,12 +197,18 @@ FeedbackArea.propTypes = propTypes
 FeedbackArea.defaultProps = defaultProps
 
 export default compose(
+  withStorage({
+    json: true,
+    propDefault: { difficulty: undefined, speed: undefined },
+    propName: 'confusion',
+    storageType: 'session',
+  }),
   withStateHandlers(
-    {
-      confusionDifficulty: 0,
-      confusionSpeed: 0,
+    ({ confusion }) => ({
+      confusionDifficulty: confusion ? confusion.difficulty : undefined,
+      confusionSpeed: confusion ? confusion.speed : undefined,
       feedbackInputValue: undefined,
-    },
+    }),
     {
       handleConfusionDifficultyChange: () => confusionDifficulty => ({
         confusionDifficulty,
@@ -218,7 +226,14 @@ export default compose(
   ),
   withHandlers({
     handleNewConfusionTS: ({ confusionDifficulty, confusionSpeed, handleNewConfusionTS }) => () => {
+      // send the new confusion entry to the server
       handleNewConfusionTS({ difficulty: confusionDifficulty, speed: confusionSpeed })
+
+      // update the confusion cookie
+      sessionStorage.setItem(
+        'confusion',
+        JSON.stringify({ difficulty: confusionDifficulty, speed: confusionSpeed }),
+      )
     },
     handleNewFeedback: ({
       feedbackInputValue,

@@ -1,5 +1,16 @@
 require('dotenv').config()
 
+// initialize opbeat if so configured
+let opbeat
+if (process.env.OPBEAT_APP_ID_NEXT) {
+  opbeat = require('opbeat').start({
+    active: process.env.NODE_ENV === 'production',
+    appId: process.env.OPBEAT_APP_ID_NEXT,
+    organizationId: process.env.OPBEAT_ORG_ID_NEXT,
+    secretToken: process.env.OPBEAT_SECRET_TOKEN_NEXT,
+  })
+}
+
 const IntlPolyfill = require('intl')
 
 const { basename, join } = require('path')
@@ -47,6 +58,70 @@ const getLocaleDataScript = (locale) => {
 // each message description in the source code will be used.
 const getMessages = locale => require(`${APP_DIR}/lang/${locale}.json`)
 
+// prepare cache to be connected to
+let cache
+const connectCache = async () => {
+  if (cache) {
+    return cache
+  }
+
+  if (process.env.REDIS_URL) {
+    const Redis = require('ioredis')
+    cache = new Redis(`redis://${process.env.REDIS_URL}`)
+    console.log('[redis] Connected to db 0')
+  } else {
+    const LRUCache = require('lru-cache')
+    cache = new LRUCache({
+      max: 100,
+      // TODO: this would be nice to set much higher
+      // but how would we clean up i.e. /join/someuser when the running session updates?
+      maxAge: 1000 * 10, // pages are cached for 10 seconds
+    })
+  }
+
+  return cache
+}
+
+// construct a unique cache key from the request params
+const getCacheKey = req => `${req.url}:${req.locale}`
+
+// render a page to html and cache it in the appropriate place
+const renderAndCache = async (req, res, pagePath, queryParams, expiration = 60) => {
+  const key = getCacheKey(req)
+
+  let cached
+  if (process.env.REDIS_URL) {
+    cached = await cache.get(key)
+  } else {
+    cached = cache.get(key)
+  }
+
+  // check if the page has already been cached
+  // return the cached HTML if this is the case
+  if (cached) {
+    console.log(`[klicker-react] cache hit: ${key}`)
+
+    res.send(cached)
+    return
+  }
+
+  // otherwise server-render the page and cache/return it
+  console.log(`[klicker-react] cache miss: ${key}`)
+  try {
+    const html = await app.renderToHTML(req, res, pagePath, queryParams)
+
+    res.send(html)
+
+    // let the cache expire if redis is used
+    if (process.env.REDIS_URL) {
+      cache.set(key, html, 'EX', expiration)
+    } else {
+      cache.set(key, html)
+    }
+  } catch (e) {
+    app.renderError(e, req, res, pagePath, queryParams)
+  }
+}
 const getLocale = req =>
   (req.cookies.locale && languages.includes(req.cookies.locale) ? req.cookies.locale : 'en')
 
@@ -54,6 +129,8 @@ app
   .prepare()
   .then(() => {
     const server = express()
+
+    connectCache()
 
     const middleware = [
       // compress using gzip
@@ -67,31 +144,77 @@ app
     ]
 
     // static file serving from public folder
-    express.static(join(__dirname, 'public'))
+    middleware.push(express.static(join(__dirname, 'public')))
 
     // activate morgan logging in production
     if (!dev) {
       middleware.push(morgan('combined'))
     }
 
+    // add the opbeat middleware
+    if (opbeat) {
+      middleware.push(opbeat.middleware.express())
+    }
+
     server.use(...middleware)
 
-    server.get('/join/:shortname', (req, res) => {
-      const locale = getLocale(req)
-      req.locale = locale
-      req.localeDataScript = getLocaleDataScript(locale)
-      req.messages = dev ? {} : getMessages(locale)
+    // prepare page configuration
+    const pages = [
+      {
+        cached: 60 * 60 * 24,
+        url: '/',
+      },
+      {
+        url: '/user/login',
+      },
+      {
+        url: '/user/registration',
+      },
+      {
+        url: '/questions/create',
+      },
+      {
+        mapParams: req => ({ sessionId: req.params.sessionId }),
+        renderPath: '/sessions/evaluation',
+        url: '/sessions/evaluation/:sessionId',
+      },
+      {
+        mapParams: req => ({ questionId: req.params.questionId }),
+        renderPath: '/questions/details',
+        url: '/questions/:questionId',
+      },
+      {
+        cached: 60,
+        mapParams: req => ({ shortname: req.params.shortname }),
+        renderPath: '/join',
+        url: '/join/:shortname',
+      },
+    ]
 
-      return app.render(req, res, '/join', { shortname: req.params.shortname })
-    })
+    // create routes for all specified static and dynamic pages
+    pages.forEach(({
+      url, mapParams, renderPath, cached = false,
+    }) => {
+      server.get(url, (req, res) => {
+        // setup locale and get messages for the specific route
+        const locale = getLocale(req)
+        req.locale = locale
+        req.localeDataScript = getLocaleDataScript(locale)
+        req.messages = dev ? {} : getMessages(locale)
 
-    server.get('/sessions/evaluation/:sessionId', (req, res) => {
-      const locale = getLocale(req)
-      req.locale = locale
-      req.localeDataScript = getLocaleDataScript(locale)
-      req.messages = dev ? {} : getMessages(locale)
-
-      return app.render(req, res, '/sessions/evaluation', { sessionId: req.params.sessionId })
+        // if the route contents should be cached
+        if (cached) {
+          renderAndCache(
+            req,
+            res,
+            renderPath || url,
+            mapParams ? mapParams(req) : undefined,
+            cached,
+          )
+        } else {
+          app.render(req, res, renderPath || url, mapParams ? mapParams(req) : undefined)
+        }
+      })
     })
 
     server.get('*', (req, res) => {
@@ -100,15 +223,49 @@ app
       req.localeDataScript = getLocaleDataScript(locale)
       req.messages = dev ? {} : getMessages(locale)
 
+      // set the opbeat transaction name
+      if (opbeat) {
+        if (req.originalUrl.length > 6 && req.originalUrl.substring(0, 6) !== '/_next') {
+          opbeat.setTransactionName(`${req.method} ${req.originalUrl}`)
+        }
+
+        // set the user context if a cookie was set
+        if (req.cookies.userId) {
+          opbeat.setUserContext({ id: req.cookies.userId })
+        }
+      }
+
       return handle(req, res)
     })
 
     server.listen(3000, (err) => {
       if (err) throw err
-      console.log('> Ready on http://localhost:3000')
+      console.log('[klicker-react] Ready on http://localhost:3000')
     })
   })
   .catch((err) => {
     console.error(err.stack)
     process.exit(1)
   })
+
+process.on('exit', () => {
+  console.log('[klicker-react] Shutting down server')
+
+  if (process.env.REDIS_URL) {
+    cache.disconnect()
+  }
+
+  console.log('[klicker-react] Shutdown complete')
+  process.exit(0)
+})
+
+process.once('SIGUSR2', () => {
+  console.log('[klicker-react] Shutting down server')
+
+  if (process.env.REDIS_URL) {
+    cache.disconnect()
+  }
+
+  console.log('[klicker-react] Shutdown complete')
+  process.exit(0)
+})
