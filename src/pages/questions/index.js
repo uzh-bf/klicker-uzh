@@ -4,11 +4,10 @@ import { compose, withHandlers, withStateHandlers } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
-import _findIndex from 'lodash/findIndex'
 import { Button } from 'semantic-ui-react'
 import Link from 'next/link'
 
-import { pageWithIntl, withData } from '../../lib'
+import { pageWithIntl, withData, withSorting, withDnD } from '../../lib'
 import { AccountSummaryQuery, SessionListQuery, RunningSessionQuery } from '../../graphql/queries'
 import { CreateSessionMutation, StartSessionMutation } from '../../graphql/mutations'
 import { SessionCreationForm } from '../../components/forms'
@@ -206,8 +205,10 @@ const Index = ({
 Index.propTypes = propTypes
 
 export default compose(
+  withDnD,
   withData,
   pageWithIntl,
+  withSorting,
   withStateHandlers(
     {
       creationMode: false,
@@ -216,10 +217,6 @@ export default compose(
         tags: [],
         title: null,
         type: null,
-      },
-      sort: {
-        asc: true,
-        by: QUESTION_SORTINGS[0].id,
       },
     },
     {
@@ -244,18 +241,6 @@ export default compose(
 
       // handle an update in the search bar
       handleSearch: ({ filters }) => title => ({ ...filters, title }),
-
-      // handle updated sort settings
-      handleSortByChange: ({ sort }) => (currentSortBy) => {
-        // find current value and set next value in array as current sortType
-        const currentIndex = _findIndex(QUESTION_SORTINGS, { id: currentSortBy })
-        let nextIndex = currentIndex + 1
-        if (nextIndex === QUESTION_SORTINGS.length) nextIndex = 0
-        const nextObject = QUESTION_SORTINGS[nextIndex]
-
-        return { sort: { ...sort, by: nextObject } }
-      },
-      handleSortOrderToggle: ({ sort }) => () => ({ sort: { ...sort, asc: !sort.asc } }),
 
       // handle clicking on a tag in the tag list
       handleTagClick: ({ filters }) => (tagName) => {

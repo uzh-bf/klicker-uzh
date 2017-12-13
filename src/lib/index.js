@@ -6,6 +6,8 @@ export { default as withFingerprint } from './withFingerprint'
 export { default as withStorage } from './withStorage'
 export { default as initRedux } from './initRedux'
 export { default as omitDeep } from './utils/omitDeep'
+export { default as withSorting } from './withSorting'
+export { default as withDnD } from './withDnD'
 export { createLinks } from './utils/css'
 export { filterQuestions, filterSessions } from './utils/filters'
 export {
