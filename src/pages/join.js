@@ -122,7 +122,7 @@ const Join = ({
             })}
           >
             <FormattedMessage
-              defaultMessage="Feedback Channel deactivated."
+              defaultMessage="Feedback-Channel deactivated."
               id="joinSession.noFeedbackChannel"
             />
           </div>
