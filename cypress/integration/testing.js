@@ -1,5 +1,19 @@
 /* eslint-disable no-undef */
 
+// TODO: somehow import this from .graphql
+const LoginMutation = `
+  mutation Login($email: String!, $password: String!) {
+    login(email: $email, password: $password) {
+      id
+      email
+      shortname
+      runningSession {
+        id
+      }
+    }
+  }
+`
+
 const email = ''
 const password = ''
 
@@ -44,18 +58,7 @@ describe('/user/resetPassword', () => {
 describe('/questions', () => {
   beforeEach(() => {
     cy.request('POST', 'http://localhost:4000/graphql', {
-      query: `
-        mutation Login($email: String!, $password: String!) {
-          login(email: $email, password: $password) {
-            id
-            email
-            shortname
-            runningSession {
-              id
-            }
-          }
-        }
-      `,
+      query: LoginMutation,
       variables: {
         email,
         password,
