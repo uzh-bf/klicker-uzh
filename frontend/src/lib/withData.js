@@ -1,13 +1,11 @@
 /* eslint-disable react/prop-types */
-import initOpbeat, { captureError } from 'opbeat-react'
-import Raven from 'raven-js'
-
 import React from 'react'
 import { ApolloProvider, getDataFromTree } from 'react-apollo'
 import Head from 'next/head'
 import initApollo from './initApollo'
 import initRedux from './initRedux'
 
+let Raven
 let logrocket = null
 let hotjar = null
 let sentry = null
@@ -85,16 +83,20 @@ export default ComposedComponent =>
       // setup additional error handling for all pages with data
       this.state = { error: null }
 
-      if (process.browser) {
+      if (process.env.NODE_ENV === 'production' && process.browser) {
         // setup opbeat if so configured
         if (process.env.OPBEAT_APP_ID_REACT && !opbeat) {
-          initOpbeat({
-            active: process.env.NODE_ENV === 'production',
-            appId: process.env.OPBEAT_APP_ID_REACT,
-            orgId: process.env.OPBEAT_ORG_ID_REACT,
-          })
+          const initOpbeat = require('opbeat-react')
 
-          opbeat = true
+          if (initOpbeat) {
+            initOpbeat({
+              active: process.env.NODE_ENV === 'production',
+              appId: process.env.OPBEAT_APP_ID_REACT,
+              orgId: process.env.OPBEAT_ORG_ID_REACT,
+            })
+
+            opbeat = true
+          }
         }
 
         // setup logrocket if so configured
@@ -111,23 +113,27 @@ export default ComposedComponent =>
         }
 
         // setup sentry if so configured
-        if (process.env.SENTRY_DSN && !sentry && Raven) {
-          Raven.config(process.env.SENTRY_DSN, {
-            environment: process.env.NODE_ENV,
-            release: process.env.VERSION,
-          }).install()
+        if (process.env.SENTRY_DSN && !sentry) {
+          Raven = require('raven-js')
 
-          if (process.env.LOGROCKET) {
-            Raven.setDataCallback(data =>
-              Object.assign({}, data, {
-                extra: {
-                  sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef
-                },
-              }),
-            )
+          if (Raven) {
+            Raven.config(process.env.SENTRY_DSN, {
+              environment: process.env.NODE_ENV,
+              release: process.env.VERSION,
+            }).install()
+
+            if (process.env.LOGROCKET) {
+              Raven.setDataCallback(data =>
+                Object.assign({}, data, {
+                  extra: {
+                    sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef
+                  },
+                }),
+              )
+            }
+
+            sentry = true
           }
-
-          sentry = true
         }
 
         if (process.env.HOTJAR && !hotjar) {
@@ -148,13 +154,18 @@ export default ComposedComponent =>
 
       // log the error to console, opbeat and/or sentry
       console.error(error)
+
       if (process.env.OPBEAT_APP_ID) {
-        console.log('opbeat catch')
-        captureError(error, errorInfo)
+        const { captureError } = require('opbeat-react')
+
+        if (captureError) {
+          captureError(error, errorInfo)
+        }
       }
       if (process.env.SENTRY_DSN) {
-        console.log('sentry catch')
-        Raven.captureException(error, { extra: errorInfo })
+        if (Raven) {
+          Raven.captureException(error, { extra: errorInfo })
+        }
       }
     }
 

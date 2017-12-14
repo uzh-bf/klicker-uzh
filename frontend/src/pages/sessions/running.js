@@ -12,13 +12,14 @@ import { ConfusionBarometer } from '../../components/confusion'
 import { FeedbackChannel } from '../../components/feedbacks'
 import { SessionTimeline } from '../../components/sessions'
 import { TeacherLayout } from '../../components/layouts'
-import { AccountSummaryQuery, RunningSessionQuery } from '../../graphql/queries'
 import {
+  AccountSummaryQuery,
+  RunningSessionQuery,
   EndSessionMutation,
   UpdateSessionSettingsMutation,
   ActivateNextBlockMutation,
   DeleteFeedbackMutation,
-} from '../../graphql/mutations'
+} from '../../graphql'
 import { LoadingTeacherLayout, Messager } from '../../components/common'
 
 const propTypes = {
