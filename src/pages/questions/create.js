@@ -8,8 +8,7 @@ import { intlShape } from 'react-intl'
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionCreationForm } from '../../components/forms'
 import { pageWithIntl, withData } from '../../lib'
-import { CreateQuestionMutation } from '../../graphql/mutations'
-import { QuestionListQuery, TagListQuery } from '../../graphql/queries'
+import { QuestionListQuery, TagListQuery, CreateQuestionMutation } from '../../graphql'
 
 const propTypes = {
   handleDiscard: PropTypes.func.isRequired,

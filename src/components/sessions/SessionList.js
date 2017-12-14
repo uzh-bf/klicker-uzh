@@ -7,7 +7,7 @@ import { FormattedMessage } from 'react-intl'
 
 import Session from './Session'
 import { LoadingDiv } from '../common'
-import { SessionListQuery } from '../../graphql/queries'
+import { SessionListQuery } from '../../graphql'
 import { SESSION_STATUS } from '../../constants'
 
 const propTypes = {

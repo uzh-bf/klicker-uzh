@@ -25,7 +25,7 @@ import {
   withData,
 } from '../../lib'
 import { Chart } from '../../components/evaluation'
-import { SessionEvaluationQuery } from '../../graphql/queries'
+import { SessionEvaluationQuery } from '../../graphql'
 import { sessionStatusShape, statisticsShape } from '../../propTypes'
 
 const propTypes = {

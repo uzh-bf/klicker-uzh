@@ -1,0 +1,13 @@
+mutation ActivateNextBlock {
+  activateNextBlock {
+    id
+    blocks {
+      id
+      status
+      instances {
+        id
+        isOpen
+      }
+    }
+  }
+}

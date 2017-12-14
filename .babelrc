@@ -11,7 +11,12 @@
           }
         ]
       ],
-      "plugins": ["inline-dotenv", "add-react-displayname", "react-intl"]
+      "plugins": [
+        "babel-plugin-inline-import-graphql-ast",
+        "inline-dotenv",
+        "add-react-displayname",
+        "react-intl"
+      ]
     },
     "production": {
       "presets": [
@@ -25,10 +30,10 @@
         ]
       ],
       "plugins": [
+        "babel-plugin-inline-import-graphql-ast",
         "transform-inline-environment-variables",
-        ["lodash", { "id": ["lodash", "recompose", "semantic-ui-react"] }],
+        ["lodash", { "id": ["lodash", "recompose", "semantic-ui-react", "ramda"] }],
         "add-react-displayname",
-        "graphql-tag",
         [
           "react-intl",
           {
