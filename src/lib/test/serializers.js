@@ -99,8 +99,8 @@ const questionInstanceSerializer = {
     version: ${val.version}
 
     responses: [${val.responses.map(response => `
-      ip: ${response.ip}
-      fingerprint: ${response.fingerprint}
+      ipUnique: ${response.ipUnique}
+      fpUnique: ${response.fpUnique}
       value: {
         choices: ${response.value.choices}
         text: ${response.value.text}
