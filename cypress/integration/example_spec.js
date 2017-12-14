@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 //
 // **** Kitchen Sink Tests ****
 //
@@ -705,7 +707,7 @@ describe('Kitchen Sink', () => {
 
     it('cy.location() - get window.location', () => {
       // https://on.cypress.io/location
-      cy.location().should((location) => {
+      cy.location().should(location => {
         expect(location.hash).to.be.empty
         expect(location.href).to.eq('https://example.cypress.io/commands/location')
         expect(location.host).to.eq('example.cypress.io')
@@ -815,7 +817,7 @@ describe('Kitchen Sink', () => {
         cy
           .get('.assertions-p')
           .find('p')
-          .should(($p) => {
+          .should($p => {
             // return an array of texts from all of the p's
             let texts = $p.map((i, el) =>
               // https://on.cypress.io/$
@@ -961,7 +963,7 @@ describe('Kitchen Sink', () => {
 
     it('.then() - invoke a callback function with the current subject', () => {
       // https://on.cypress.io/then
-      cy.get('.connectors-list>li').then(($lis) => {
+      cy.get('.connectors-list>li').then($lis => {
         expect($lis).to.have.length(3)
         expect($lis.eq(0)).to.contain('Walk the dog')
         expect($lis.eq(1)).to.contain('Feed the cat')
@@ -1035,7 +1037,7 @@ describe('Kitchen Sink', () => {
 
     it('cy.server() - control behavior of network requests and responses', () => {
       // https://on.cypress.io/server
-      cy.server().should((server) => {
+      cy.server().should(server => {
         // the default options on server
         // you can override any of these options
         expect(server.delay).to.eq(0)
@@ -1072,7 +1074,7 @@ describe('Kitchen Sink', () => {
 
     it('cy.request() - make an XHR request', () => {
       // https://on.cypress.io/request
-      cy.request('https://jsonplaceholder.typicode.com/comments').should((response) => {
+      cy.request('https://jsonplaceholder.typicode.com/comments').should(response => {
         expect(response.status).to.eq(200)
         expect(response.body).to.have.length(500)
         expect(response).to.have.property('headers')
@@ -1115,7 +1117,7 @@ describe('Kitchen Sink', () => {
       cy.wait('@postComment')
 
       // get the route
-      cy.get('@postComment').then((xhr) => {
+      cy.get('@postComment').then(xhr => {
         expect(xhr.requestBody).to.include('email')
         expect(xhr.requestHeaders).to.have.property('Content-Type')
         expect(xhr.responseBody).to.have.property('name', 'Using POST in cy.route()')
@@ -1202,7 +1204,7 @@ describe('Kitchen Sink', () => {
       // The filePath is relative to your project's root.
 
       // https://on.cypress.io/readfile
-      cy.readFile('cypress.json').then((json) => {
+      cy.readFile('cypress.json').then(json => {
         expect(json).to.be.an('object')
       })
     })
@@ -1212,11 +1214,11 @@ describe('Kitchen Sink', () => {
 
       // Use a response from a request to automatically
       // generate a fixture file for use later
-      cy.request('https://jsonplaceholder.typicode.com/users').then((response) => {
+      cy.request('https://jsonplaceholder.typicode.com/users').then(response => {
         // https://on.cypress.io/writefile
         cy.writeFile('cypress/fixtures/users.json', response.body)
       })
-      cy.fixture('users').should((users) => {
+      cy.fixture('users').should(users => {
         expect(users[0].name).to.exist
       })
 
@@ -1227,7 +1229,7 @@ describe('Kitchen Sink', () => {
         email: 'jane@example.com',
       })
 
-      cy.fixture('profile').should((profile) => {
+      cy.fixture('profile').should(profile => {
         expect(profile.name).to.eq('Jane')
       })
     })
@@ -1253,7 +1255,7 @@ describe('Kitchen Sink', () => {
         })
 
       // clearLocalStorage() yields the localStorage object
-      cy.clearLocalStorage().should((ls) => {
+      cy.clearLocalStorage().should(ls => {
         expect(ls.getItem('prop1')).to.be.null
         expect(ls.getItem('prop2')).to.be.null
         expect(ls.getItem('prop3')).to.be.null
@@ -1269,7 +1271,7 @@ describe('Kitchen Sink', () => {
           expect(localStorage.getItem('prop3')).to.eq('magenta')
         })
 
-      cy.clearLocalStorage('prop1').should((ls) => {
+      cy.clearLocalStorage('prop1').should(ls => {
         expect(ls.getItem('prop1')).to.be.null
         expect(ls.getItem('prop2')).to.eq('blue')
         expect(ls.getItem('prop3')).to.eq('magenta')
@@ -1285,7 +1287,7 @@ describe('Kitchen Sink', () => {
           expect(localStorage.getItem('prop3')).to.eq('magenta')
         })
 
-      cy.clearLocalStorage(/prop1|2/).should((ls) => {
+      cy.clearLocalStorage(/prop1|2/).should(ls => {
         expect(ls.getItem('prop1')).to.be.null
         expect(ls.getItem('prop2')).to.be.null
         expect(ls.getItem('prop3')).to.eq('magenta')
@@ -1322,7 +1324,7 @@ describe('Kitchen Sink', () => {
       cy
         .getCookies()
         .should('have.length', 1)
-        .should((cookies) => {
+        .should(cookies => {
           // each cookie has these properties
           expect(cookies[0]).to.have.property('name', 'token')
           expect(cookies[0]).to.have.property('value', '123ABC')
@@ -1445,7 +1447,7 @@ describe('Kitchen Sink', () => {
     it('Cypress._.method() - call a lodash method', () => {
       // use the _.chain, _.map, _.take, and _.value functions
       // https://on.cypress.io/_
-      cy.request('https://jsonplaceholder.typicode.com/users').then((response) => {
+      cy.request('https://jsonplaceholder.typicode.com/users').then(response => {
         const ids = Cypress._.chain(response.body)
           .map('id')
           .take(3)
@@ -1488,7 +1490,7 @@ describe('Kitchen Sink', () => {
           'https://example.cypress.io/assets/img/javascript-logo.png',
           undefined,
           'anonymous',
-        ).then((dataUrl) => {
+        ).then(dataUrl => {
           // create an <img> element and set its src to the dataUrl
           const img = Cypress.$('<img />', { src: dataUrl })
           // need to explicitly return cy here since we are initially returning
@@ -1510,7 +1512,7 @@ describe('Kitchen Sink', () => {
 
       function waitOneSecond() {
         // return a promise that resolves after 1 second
-        return new Cypress.Promise(((resolve, reject) => {
+        return new Cypress.Promise((resolve, reject) => {
           setTimeout(() => {
             // set waited to true
             waited = true
@@ -1518,13 +1520,13 @@ describe('Kitchen Sink', () => {
             // resolve with 'foo' string
             resolve('foo')
           }, 1000)
-        }))
+        })
       }
 
       cy.then(() =>
         // return a promise to cy.then() that
         // is awaited until it resolves
-        waitOneSecond().then((str) => {
+        waitOneSecond().then(str => {
           expect(str).to.eq('foo')
           expect(waited).to.be.true
         }),
