@@ -11,8 +11,12 @@ import _isNil from 'lodash/isNil'
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionEditForm } from '../../components/forms'
 import { pageWithIntl, withData, omitDeep } from '../../lib'
-import { QuestionListQuery, QuestionDetailsQuery, TagListQuery } from '../../graphql/queries'
-import { ModifyQuestionMutation } from '../../graphql/mutations'
+import {
+  QuestionListQuery,
+  QuestionDetailsQuery,
+  TagListQuery,
+  ModifyQuestionMutation,
+} from '../../graphql'
 
 const propTypes = {
   activeVersion: PropTypes.number.isRequired,

@@ -6,7 +6,7 @@ import { compose, withProps, branch, renderComponent } from 'recompose'
 import { FormattedMessage } from 'react-intl'
 
 import { LoadingDiv } from '../common'
-import { TagListQuery } from '../../graphql/queries'
+import { TagListQuery } from '../../graphql'
 
 const propTypes = {
   handleTagClick: PropTypes.func.isRequired,

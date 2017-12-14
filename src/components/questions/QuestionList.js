@@ -8,7 +8,7 @@ import { FormattedMessage } from 'react-intl'
 import Question from './Question'
 import { LoadingDiv } from '../common'
 import { filterQuestions } from '../../lib'
-import { QuestionListQuery } from '../../graphql/queries'
+import { QuestionListQuery } from '../../graphql'
 
 const propTypes = {
   creationMode: PropTypes.bool,
