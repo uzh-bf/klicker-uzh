@@ -33,49 +33,53 @@ const QuestionListQuery = `
 `
 
 const QuestionDetailsQuery = `
-  question(id: $id) {
-    id
-    title
-    type
-    instances {
+  query QuestionDetails($id: ID!) {
+    question(id: $id) {
       id
-      createdAt
-    }
-    tags {
-      id
-      name
-    }
-    versions {
-      id
-      description
-      options {
-        SC {
-          choices {
-            correct
-            name
+      title
+      type
+      instances {
+        id
+        createdAt
+      }
+      tags {
+        id
+        name
+      }
+      versions {
+        id
+        description
+        options {
+          SC {
+            choices {
+              correct
+              name
+            }
+          }
+          MC {
+            choices {
+              correct
+              name
+            }
+          }
+          FREE_RANGE {
+            restrictions {
+              min
+              max
+            }
           }
         }
-        MC {
-          choices {
-            correct
-            name
-          }
-        }
-        FREE_RANGE {
-          restrictions {
-            min
-            max
-          }
+        solution {
+          SC
+          MC
+          FREE
+          FREE_RANGE
         }
       }
-      solution {
-        SC
-        MC
-        FREE
-        FREE_RANGE
+      createdAt
+      updatedAt
     }
-    createdAt
-    updatedAt
+  }
 `
 const QuestionDetailsSerializer = {
   test: ({ question }) => !!question,
