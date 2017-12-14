@@ -1,5 +1,5 @@
 mutation AddResponse(
-  $fp: ID!
+  $fp: ID
   $instanceId: ID!
   $response: QuestionInstance_ResponseInput!
 ) {

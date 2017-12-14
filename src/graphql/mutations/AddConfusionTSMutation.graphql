@@ -1,5 +1,5 @@
 mutation AddConfusionTS(
-  $fp: ID!
+  $fp: ID
   $sessionId: ID!
   $difficulty: Int!
   $speed: Int!
