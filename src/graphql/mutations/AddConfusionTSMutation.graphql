@@ -1,0 +1,20 @@
+mutation AddConfusionTS(
+  $fp: ID
+  $sessionId: ID!
+  $difficulty: Int!
+  $speed: Int!
+) {
+  addConfusionTS(
+    fp: $fp
+    sessionId: $sessionId
+    difficulty: $difficulty
+    speed: $speed
+  ) {
+    id
+    confusionTS {
+      difficulty
+      speed
+      createdAt
+    }
+  }
+}

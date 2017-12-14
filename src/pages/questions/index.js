@@ -8,8 +8,13 @@ import { Button } from 'semantic-ui-react'
 import Link from 'next/link'
 
 import { pageWithIntl, withData } from '../../lib'
-import { AccountSummaryQuery, SessionListQuery, RunningSessionQuery } from '../../graphql/queries'
-import { CreateSessionMutation, StartSessionMutation } from '../../graphql/mutations'
+import {
+  CreateSessionMutation,
+  StartSessionMutation,
+  AccountSummaryQuery,
+  SessionListQuery,
+  RunningSessionQuery,
+} from '../../graphql'
 import { SessionCreationForm } from '../../components/forms'
 import { QuestionList, TagList } from '../../components/questions'
 import { TeacherLayout } from '../../components/layouts'

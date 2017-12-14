@@ -1,0 +1,6 @@
+mutation StartSession($id: ID!) {
+  startSession(id: $id) {
+    id
+    status
+  }
+}
