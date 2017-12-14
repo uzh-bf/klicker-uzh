@@ -3,8 +3,8 @@ const mongoose = require('mongoose')
 const { ObjectId } = mongoose.Schema.Types
 
 const Response = new mongoose.Schema({
-  ip: { type: String, default: 'none' },
-  fingerprint: { type: String, default: 'none' },
+  ipUnique: { type: Boolean },
+  fpUnique: { type: Boolean },
   value: { type: Object, required: true },
 
   createdAt: { type: Date, default: Date.now() },

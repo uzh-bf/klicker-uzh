@@ -188,24 +188,24 @@ exports[`SessionExecService addResponse allows adding responses to a FREE questi
     version: 0
 
     responses: [
-      ip: none
-      fingerprint: none
+      ipUnique: undefined
+      fpUnique: undefined
       value: {
         choices: undefined
         text: undefined
         value: SCHWEIZ
       }
     ,
-      ip: none
-      fingerprint: none
+      ipUnique: undefined
+      fpUnique: undefined
       value: {
         choices: undefined
         text: undefined
         value: schwiiz...
       }
     ,
-      ip: none
-      fingerprint: none
+      ipUnique: undefined
+      fpUnique: undefined
       value: {
         choices: undefined
         text: undefined
@@ -265,24 +265,24 @@ exports[`SessionExecService addResponse allows adding responses to a FREE_RANGE 
     version: 0
 
     responses: [
-      ip: none
-      fingerprint: none
+      ipUnique: undefined
+      fpUnique: undefined
       value: {
         choices: undefined
         text: undefined
         value: 10
       }
     ,
-      ip: none
-      fingerprint: none
+      ipUnique: undefined
+      fpUnique: undefined
       value: {
         choices: undefined
         text: undefined
         value: 14
       }
     ,
-      ip: none
-      fingerprint: none
+      ipUnique: undefined
+      fpUnique: undefined
       value: {
         choices: undefined
         text: undefined
@@ -333,16 +333,16 @@ exports[`SessionExecService addResponse allows adding responses to a SC question
     version: 0
 
     responses: [
-      ip: none
-      fingerprint: none
+      ipUnique: undefined
+      fpUnique: undefined
       value: {
         choices: 0
         text: undefined
         value: undefined
       }
     ,
-      ip: none
-      fingerprint: none
+      ipUnique: undefined
+      fpUnique: undefined
       value: {
         choices: 1
         text: undefined
@@ -365,24 +365,24 @@ exports[`SessionExecService addResponse allows adding responses to a SC question
     version: 0
 
     responses: [
-      ip: none
-      fingerprint: none
+      ipUnique: undefined
+      fpUnique: undefined
       value: {
         choices: 0
         text: undefined
         value: undefined
       }
     ,
-      ip: none
-      fingerprint: none
+      ipUnique: undefined
+      fpUnique: undefined
       value: {
         choices: 1
         text: undefined
         value: undefined
       }
     ,
-      ip: none
-      fingerprint: none
+      ipUnique: undefined
+      fpUnique: undefined
       value: {
         choices: 1
         text: undefined
@@ -433,16 +433,16 @@ exports[`SessionExecService addResponse allows adding responses to an MC questio
     version: 0
 
     responses: [
-      ip: none
-      fingerprint: none
+      ipUnique: undefined
+      fpUnique: undefined
       value: {
         choices: 0
         text: undefined
         value: undefined
       }
     ,
-      ip: none
-      fingerprint: none
+      ipUnique: undefined
+      fpUnique: undefined
       value: {
         choices: 0,1,2
         text: undefined

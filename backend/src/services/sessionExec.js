@@ -85,37 +85,55 @@ const addConfusionTS = async ({
 const addResponse = async ({
   ip, fp, instanceId, response,
 }) => {
-  // if redis is available, check if any matching response (ip or fp) is already in the database.
-  // if so, throw an error
-  if (redis) {
-    // results should still be written to the database? but responses will not be saved seperately!
-    // or only write results to db every 5 or 10 responses and use redis as calculation platform?
+  // response object to save
+  let saveResponse = {
+    value: response,
+  }
 
-    // if redis is available, save the ip, fp and response under the key of the corresponding instance
+  // if redis is available, save the ip, fp and response under the key of the corresponding instance
+  // also check if any matching response (ip or fp) is already in the database.
+  if (redis && (process.env.APP_FILTERING_IP || process.env.APP_FILTERING_FP)) {
+    // TODO: results should still be written to the database? but responses will not be saved seperately!
     const promises = []
 
-    // if fingerprinting is enabled, try adding the fingerprint to redis
-    if (process.env.APP_FINGERPRINTING) {
-      promises.push(redis.sadd(`${instanceId}:fp`, fp))
+    // if ip filtering is enabled, try adding the ip to redis
+    if (process.env.APP_FILTERING_IP) {
+      promises.push(redis.sadd(`${instanceId}:ip`, ip))
     }
 
-    // if ip filtering is enabled, try adding the ip to redis
-    if (process.env.APP_IP_FILTERING) {
-      promises.push(redis.sadd(`${instanceId}:ip`, ip))
+    // if fingerprinting is enabled, try adding the fingerprint to redis
+    if (process.env.APP_FILTERING_FP) {
+      promises.push(redis.sadd(`${instanceId}:fp`, fp))
     }
 
     // check results for set operations
     const results = await Promise.all(promises)
 
-    // if every result is truthy (i.e. 1 new set item added)
-    if (_every(results)) {
-      // add the response to the redis database
-      redis.rpush(`${instanceId}:responses`, JSON.stringify({ response }))
-    } else {
-      // add the response to the redis database
+    // if not every result is truthy (i.e. at least one promise returned 0)
+    if (process.env.APP_FILTERING_STRICT && !_every(results)) {
+      // add the dropped response to the redis database
       redis.rpush(`${instanceId}:dropped`, JSON.stringify({ response }))
 
+      // if strict filtering is enabled, drop here
       throw new Error('ALREADY_RESPONDED')
+    }
+
+    // add the response to the redis database
+    redis.rpush(`${instanceId}:responses`, JSON.stringify({ response }))
+
+    if (process.env.APP_FILTERING_IP && process.env.APP_FILTERING_FP) {
+      const [ipUnique, fpUnique] = results
+      saveResponse = {
+        ...saveResponse,
+        ipUnique,
+        fpUnique,
+      }
+    } else if (process.env.APP_FILTERING_IP) {
+      const [ipUnique] = results
+      saveResponse = { ...saveResponse, ipUnique }
+    } else {
+      const [fpUnique] = results
+      saveResponse = { ...saveResponse, fpUnique }
     }
   }
 
@@ -138,7 +156,7 @@ const addResponse = async ({
       throw new Error('INVALID_RESPONSE')
     }
 
-    // if the response contains multiple choices for an MC question
+    // if the response contains multiple choices for a SC question
     if (questionType === QuestionTypes.SC && response.choices.length > 1) {
       throw new Error('TOO_MANY_CHOICES')
     }
@@ -158,7 +176,7 @@ const addResponse = async ({
     instance.results.totalParticipants += 1
     instance.markModified('results.CHOICES')
   } else if (QuestionGroups.FREE.includes(questionType)) {
-    if (!response.value) {
+    if (!response.value || response.value.length > 1000) {
       throw new Error('INVALID_RESPONSE')
     }
 
@@ -195,12 +213,8 @@ const addResponse = async ({
     instance.markModified('results.FREE')
   }
 
-  // TODO: remove saving single responses in the database
-  instance.responses.push({
-    ip,
-    fingerprint: fp,
-    value: response,
-  })
+  // TODO: remove saving single responses in the database?
+  instance.responses.push(saveResponse)
 
   // save the updated instance
   await instance.save()
