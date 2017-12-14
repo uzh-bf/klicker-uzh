@@ -1,5 +1,4 @@
 const md5 = require('md5')
-const _every = require('lodash/every')
 
 const { QuestionInstanceModel, UserModel } = require('../models')
 const { QuestionGroups, QuestionTypes } = require('../constants')
@@ -86,55 +85,69 @@ const addResponse = async ({
   ip, fp, instanceId, response,
 }) => {
   // response object to save
-  let saveResponse = {
+  const saveResponse = {
     value: response,
   }
 
   // if redis is available, save the ip, fp and response under the key of the corresponding instance
   // also check if any matching response (ip or fp) is already in the database.
+  // TODO: results should still be written to the database? but responses will not be saved seperately!
   if (redis && (process.env.APP_FILTERING_IP || process.env.APP_FILTERING_FP)) {
-    // TODO: results should still be written to the database? but responses will not be saved seperately!
-    const promises = []
+    // prepare a redis pipeline
+    const pipeline = redis.pipeline()
+
+    const dropResponse = () => {
+      // add the dropped response to the redis database
+      redis.rpush(`${instanceId}:dropped`, JSON.stringify({ response }))
+
+      // if strict filtering fails, drop here
+      throw new Error('ALREADY_RESPONDED')
+    }
 
     // if ip filtering is enabled, try adding the ip to redis
     if (process.env.APP_FILTERING_IP) {
-      promises.push(redis.sadd(`${instanceId}:ip`, ip))
+      pipeline.sadd(`${instanceId}:ip`, ip)
     }
 
     // if fingerprinting is enabled, try adding the fingerprint to redis
     if (process.env.APP_FILTERING_FP) {
-      promises.push(redis.sadd(`${instanceId}:fp`, fp))
+      pipeline.sadd(`${instanceId}:fp`, fp)
     }
 
-    // check results for set operations
-    const results = await Promise.all(promises)
+    const results = await pipeline.exec()
 
-    // if not every result is truthy (i.e. at least one promise returned 0)
-    if (process.env.APP_FILTERING_STRICT && !_every(results)) {
-      // add the dropped response to the redis database
-      redis.rpush(`${instanceId}:dropped`, JSON.stringify({ response }))
+    // if ip filtering is enabled, parse the results
+    let startIndex = 0
+    if (process.env.APP_FILTERING_IP) {
+      const ipUnique = results[0][1]
 
-      // if strict filtering is enabled, drop here
-      throw new Error('ALREADY_RESPONDED')
+      // if filtering is strict, drop on non unique
+      if (process.env.APP_FILTERING_IP_STRICT && !ipUnique) {
+        dropResponse()
+      }
+
+      // otherwise save the flag in the response
+      saveResponse.ipUnique = ipUnique
+
+      // increment startIndex such that the fp check knows which result to take
+      startIndex = 1
+    }
+
+    // if fp filtering is enabled, parse the results
+    if (process.env.APP_FILTERING_FP) {
+      const fpUnique = results[startIndex][1]
+
+      // if filtering is strict, drop on non unique
+      if (process.env.APP_FILTERING_FP_STRICT && !fpUnique) {
+        dropResponse()
+      }
+
+      // otherwise save the flag in the response
+      saveResponse.fpUnique = fpUnique
     }
 
     // add the response to the redis database
-    redis.rpush(`${instanceId}:responses`, JSON.stringify({ response }))
-
-    if (process.env.APP_FILTERING_IP && process.env.APP_FILTERING_FP) {
-      const [ipUnique, fpUnique] = results
-      saveResponse = {
-        ...saveResponse,
-        ipUnique,
-        fpUnique,
-      }
-    } else if (process.env.APP_FILTERING_IP) {
-      const [ipUnique] = results
-      saveResponse = { ...saveResponse, ipUnique }
-    } else {
-      const [fpUnique] = results
-      saveResponse = { ...saveResponse, fpUnique }
-    }
+    redis.rpush(`${instanceId}:responses`, JSON.stringify(saveResponse))
   }
 
   // find the specified question instance
