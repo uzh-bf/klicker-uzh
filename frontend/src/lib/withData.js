@@ -1,11 +1,14 @@
 /* eslint-disable react/prop-types */
+
+import Raven from 'raven-js'
+import initOpbeat, { captureError } from 'opbeat-react'
+
 import React from 'react'
 import { ApolloProvider, getDataFromTree } from 'react-apollo'
 import Head from 'next/head'
 import initApollo from './initApollo'
 import initRedux from './initRedux'
 
-let Raven
 let logrocket = null
 let hotjar = null
 let sentry = null
@@ -86,8 +89,6 @@ export default ComposedComponent =>
       if (process.env.NODE_ENV === 'production' && process.browser) {
         // setup opbeat if so configured
         if (process.env.OPBEAT_APP_ID_REACT && !opbeat) {
-          const initOpbeat = require('opbeat-react')
-
           if (initOpbeat) {
             initOpbeat({
               active: process.env.NODE_ENV === 'production',
@@ -114,8 +115,6 @@ export default ComposedComponent =>
 
         // setup sentry if so configured
         if (process.env.SENTRY_DSN && !sentry) {
-          Raven = require('raven-js')
-
           if (Raven) {
             Raven.config(process.env.SENTRY_DSN, {
               environment: process.env.NODE_ENV,
@@ -155,16 +154,16 @@ export default ComposedComponent =>
       // log the error to console, opbeat and/or sentry
       console.error(error)
 
-      if (process.env.OPBEAT_APP_ID) {
-        const { captureError } = require('opbeat-react')
-
-        if (captureError) {
-          captureError(error, errorInfo)
+      if (process.env.NODE_ENV === 'production') {
+        if (process.env.OPBEAT_APP_ID) {
+          if (captureError) {
+            captureError(error, errorInfo)
+          }
         }
-      }
-      if (process.env.SENTRY_DSN) {
-        if (Raven) {
-          Raven.captureException(error, { extra: errorInfo })
+        if (process.env.SENTRY_DSN) {
+          if (Raven) {
+            Raven.captureException(error, { extra: errorInfo })
+          }
         }
       }
     }
