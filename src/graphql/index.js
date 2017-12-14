@@ -1,24 +1,50 @@
-export { default as ActivateNextBlockMutation } from './mutations/ActivateNextBlockMutation.graphql'
-export { default as AddConfusionTSMutation } from './mutations/AddConfusionTSMutation.graphql'
-export { default as AddFeedbackMutation } from './mutations/AddFeedbackMutation.graphql'
-export { default as AddResponseMutation } from './mutations/AddResponseMutation.graphql'
-export { default as CreateQuestionMutation } from './mutations/CreateQuestionMutation.graphql'
-export { default as CreateSessionMutation } from './mutations/CreateQuestionMutation.graphql'
-export { default as DeleteFeedbackMutation } from './mutations/DeleteFeedbackMutation.graphql'
-export { default as EndSessionMutation } from './mutations/EndSessionMutation.graphql'
-export { default as LoginMutation } from './mutations/LoginMutation.graphql'
-export { default as ModifyQuestionMutation } from './mutations/ModifyQuestionMutation.graphql'
-export { default as RegistrationMutation } from './mutations/RegistrationMutation.graphql'
-export { default as StartSessionMutation } from './mutations/StartSessionMutation.graphql'
-export {
-  default as UpdateSessionSettingsMutation,
-} from './mutations/UpdateSessionSettingsMutation.graphql'
+// HACK: this fixes https://github.com/detrohutt/babel-plugin-inline-import-graphql-ast/issues/2
 
-export { default as AccountSummaryQuery } from './queries/AccountSummaryQuery.graphql'
-export { default as JoinSessionQuery } from './queries/JoinSessionQuery.graphql'
-export { default as QuestionDetailsQuery } from './queries/QuestionDetailsQuery.graphql'
-export { default as QuestionListQuery } from './queries/QuestionListQuery.graphql'
-export { default as RunningSessionQuery } from './queries/RunningSessionQuery.graphql'
-export { default as SessionEvaluationQuery } from './queries/SessionEvaluationQuery.graphql'
-export { default as SessionListQuery } from './queries/SessionListQuery.graphql'
-export { default as TagListQuery } from './queries/TagListQuery.graphql'
+// HACK: don't remove these hacks, the imports below need exactly one empty line above them to work!
+
+import ActivateNextBlockMutation from './mutations/ActivateNextBlockMutation.graphql'
+import AddConfusionTSMutation from './mutations/AddConfusionTSMutation.graphql'
+import AddFeedbackMutation from './mutations/AddFeedbackMutation.graphql'
+import AddResponseMutation from './mutations/AddResponseMutation.graphql'
+import CreateQuestionMutation from './mutations/CreateQuestionMutation.graphql'
+import CreateSessionMutation from './mutations/CreateSessionMutation.graphql'
+import DeleteFeedbackMutation from './mutations/DeleteFeedbackMutation.graphql'
+import EndSessionMutation from './mutations/EndSessionMutation.graphql'
+import LoginMutation from './mutations/LoginMutation.graphql'
+import ModifyQuestionMutation from './mutations/ModifyQuestionMutation.graphql'
+import RegistrationMutation from './mutations/RegistrationMutation.graphql'
+import StartSessionMutation from './mutations/StartSessionMutation.graphql'
+import UpdateSessionSettingsMutation from './mutations/UpdateSessionSettingsMutation.graphql'
+
+import AccountSummaryQuery from './queries/AccountSummaryQuery.graphql'
+import JoinSessionQuery from './queries/JoinSessionQuery.graphql'
+import QuestionDetailsQuery from './queries/QuestionDetailsQuery.graphql'
+import QuestionListQuery from './queries/QuestionListQuery.graphql'
+import RunningSessionQuery from './queries/RunningSessionQuery.graphql'
+import SessionEvaluationQuery from './queries/SessionEvaluationQuery.graphql'
+import SessionListQuery from './queries/SessionListQuery.graphql'
+import TagListQuery from './queries/TagListQuery.graphql'
+
+export {
+  ActivateNextBlockMutation,
+  AddConfusionTSMutation,
+  AddFeedbackMutation,
+  AddResponseMutation,
+  CreateQuestionMutation,
+  CreateSessionMutation,
+  DeleteFeedbackMutation,
+  EndSessionMutation,
+  LoginMutation,
+  ModifyQuestionMutation,
+  RegistrationMutation,
+  StartSessionMutation,
+  UpdateSessionSettingsMutation,
+  AccountSummaryQuery,
+  JoinSessionQuery,
+  QuestionDetailsQuery,
+  QuestionListQuery,
+  RunningSessionQuery,
+  SessionEvaluationQuery,
+  SessionListQuery,
+  TagListQuery,
+}
