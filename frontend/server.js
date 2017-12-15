@@ -288,6 +288,17 @@ app
     process.exit(1)
   })
 
+process.on('SIGINT', () => {
+  console.log('[klicker-react] Shutting down server')
+
+  if (process.env.REDIS_URL) {
+    cache.disconnect()
+  }
+
+  console.log('[klicker-react] Shutdown complete')
+  process.exit(0)
+})
+
 process.on('exit', () => {
   console.log('[klicker-react] Shutting down server')
 
