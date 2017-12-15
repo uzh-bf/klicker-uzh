@@ -8,7 +8,7 @@ import { FormattedMessage } from 'react-intl'
 import Question from './Question'
 import { LoadingDiv } from '../common'
 import { filterQuestions } from '../../lib'
-import { QuestionListQuery } from '../../graphql'
+import QuestionListQuery from '../../graphql/queries/QuestionListQuery.graphql'
 
 const propTypes = {
   creationMode: PropTypes.bool,
@@ -46,7 +46,7 @@ export const QuestionListPres = ({
         key={question.id}
         lastUsed={question.instances.map(
           ({ createdAt, version }) =>
-            `${moment(createdAt).format('DD.MM.YYYY HH:mm')} (v${version})`,
+            `${moment(createdAt).format('DD.MM.YYYY HH:mm')} (v${version + 1})`,
         )}
         tags={question.tags}
         title={question.title}
