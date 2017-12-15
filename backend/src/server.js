@@ -27,6 +27,9 @@ const redis = getRedis()
 server.listen(process.env.PORT, (err) => {
   if (err) throw err
   console.log(`[klicker-api] ready on http://${process.env.APP_DOMAIN}:${process.env.PORT}${process.env.APP_PATH}!`)
+
+  // send a ready message to PM2
+  process.send('ready')
 })
 
 process.on('SIGINT', async () => {

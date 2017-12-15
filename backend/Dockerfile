@@ -37,7 +37,8 @@ RUN set -x && yarn install --frozen-lockfile
 COPY --chown=1000:0 . $KLICKER_DIR/
 
 # run express in production mode
-CMD ["pm2-docker", "start", "--env", "production", "src/server.js"]
+# run next in production mode
+CMD ["pm2-docker", "start", "src/server.js", "--wait-ready", "--listen-timeout", "5000"]
 
 # add labels
 ARG VERSION="staging"
