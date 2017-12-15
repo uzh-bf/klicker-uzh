@@ -27,23 +27,26 @@ const FREECreationPreview = ({ questionType, options: { restrictions }, descript
   <div className="preview">
     <div className="description">{description}</div>
     {(() => {
+      const isMinDefined = typeof restrictions.min !== 'undefined'
+      const isMaxDefined = typeof restrictions !== 'undefined'
       // if the type is FREE_RANGE and both restrictions are specified
       // display a slider and selection
       if (
         questionType === QUESTION_TYPES.FREE_RANGE &&
         restrictions &&
-        (restrictions.min && restrictions.max)
+        isMinDefined &&
+        isMaxDefined
       ) {
         return (
           <div>
             <div className="diagram">
-              {restrictions.min && (
+              {isMinDefined && (
                 <div className="min">
                   <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />:{' '}
                   {restrictions.min}
                 </div>
               )}
-              {restrictions.max && (
+              {isMaxDefined && (
                 <div className="max">
                   <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />:{' '}
                   {restrictions.max}

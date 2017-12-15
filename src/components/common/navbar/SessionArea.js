@@ -1,31 +1,45 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import QRCode from 'qrcode.react'
-import { Icon, Menu, Popup } from 'semantic-ui-react'
+import Link from 'next/link'
+import { Button, Icon, Menu } from 'semantic-ui-react'
+import { FormattedMessage } from 'react-intl'
 
 const propTypes = {
+  sessionId: PropTypes.string,
   shortname: PropTypes.string.isRequired,
 }
 
-const SessionArea = ({ shortname }) => (
-  <Popup
-    basic
-    hideOnScroll
-    className="sessionArea"
-    on="click"
-    position="bottom right"
-    trigger={
-      <Menu.Item name="session">
-        /join/{shortname} <Icon name="qrcode" />
-      </Menu.Item>
-    }
-  >
-    <Popup.Content>
-      <QRCode value={`https://react-uniz-klicker.appuioapp.ch/join/${shortname}`} />
-    </Popup.Content>
-  </Popup>
+const defaultProps = {
+  sessionId: undefined,
+}
+
+const SessionArea = ({ sessionId, shortname }) => (
+  <React.Fragment>
+    <Menu.Item>
+      <Link prefetch href="/sessions/running">
+        <Button icon primary disabled={!sessionId} labelPosition="left">
+          <Icon name="play" />
+          <FormattedMessage defaultMessage="To Running Session" id="sessionArea.toRunningSession" />
+        </Button>
+      </Link>
+    </Menu.Item>
+
+    <Menu.Item>
+      <Link as={`/join/${shortname}`} href={{ pathname: '/join', query: { shortname } }}>
+        <Button icon labelPosition="left">
+          <Icon name="external" />
+          <FormattedMessage
+            defaultMessage="To /join/{shortname}"
+            id="sessionArea.toJoinSession"
+            values={{ shortname }}
+          />
+        </Button>
+      </Link>
+    </Menu.Item>
+  </React.Fragment>
 )
 
 SessionArea.propTypes = propTypes
+SessionArea.defaultProps = defaultProps
 
 export default SessionArea
