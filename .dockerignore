@@ -2,11 +2,8 @@
 
 !src/
 !.env
-!CHANGELOG.md
-!Dockerfile
 !entrypoint.sh
 !LICENSE.md
 !package.json
-!README.md
 !yarn.lock
 !process.json
