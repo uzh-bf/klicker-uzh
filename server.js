@@ -132,6 +132,12 @@ app
 
     connectCache()
 
+    // if the server is behind a proxy, set the APP_PROXY env to true
+    // this will make express trust the X-* proxy headers and set corresponding req.ip
+    if (process.env.APP_PROXY) {
+      server.enable('trust proxy')
+    }
+
     const middleware = [
       // compress using gzip
       compression(),
