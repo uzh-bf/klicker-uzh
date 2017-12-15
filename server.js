@@ -26,6 +26,7 @@ const { basename, join } = require('path')
 const { readFileSync } = require('fs')
 const glob = require('glob')
 
+const accepts = require('accepts')
 const cookieParser = require('cookie-parser')
 const express = require('express')
 const next = require('next')
@@ -47,6 +48,22 @@ const handle = app.getRequestHandler()
 
 // Get the supported languages by looking for translations in the `lang/` dir.
 const languages = glob.sync(`${APP_DIR}/lang/*.json`).map(f => basename(f, '.json'))
+
+const getLocale = (req) => {
+  // if a locale cookie was already set, use the locale saved within
+  if (req.cookies.locale && languages.includes(req.cookies.locale)) {
+    return {
+      locale: req.cookies.locale,
+    }
+  }
+
+  // if the accepts header is set, use its language
+  const accept = accepts(req)
+  return {
+    locale: accept.language(dev ? ['en'] : languages),
+    setCookie: true,
+  }
+}
 
 // We need to expose React Intl's locale data on the request for the user's
 // locale. This function will also cache the scripts by lang in memory.
@@ -130,8 +147,6 @@ const renderAndCache = async (req, res, pagePath, queryParams, expiration = 60) 
     app.renderError(e, req, res, pagePath, queryParams)
   }
 }
-const getLocale = req =>
-  (req.cookies.locale && languages.includes(req.cookies.locale) ? req.cookies.locale : 'en')
 
 app
   .prepare()
@@ -211,10 +226,15 @@ app
     }) => {
       server.get(url, (req, res) => {
         // setup locale and get messages for the specific route
-        const locale = getLocale(req)
+        const { locale, setCookie } = getLocale(req)
         req.locale = locale
         req.localeDataScript = getLocaleDataScript(locale)
         req.messages = dev ? {} : getMessages(locale)
+
+        // set a locale cookie with the specified language
+        if (setCookie) {
+          res.cookie('locale', locale)
+        }
 
         // if the route contents should be cached
         if (cached) {
@@ -232,10 +252,16 @@ app
     })
 
     server.get('*', (req, res) => {
-      const locale = getLocale(req)
+      // setup locale and get messages for the specific route
+      const { locale, setCookie } = getLocale(req)
       req.locale = locale
       req.localeDataScript = getLocaleDataScript(locale)
       req.messages = dev ? {} : getMessages(locale)
+
+      // set a locale cookie with the specified language
+      if (setCookie) {
+        res.cookie('locale', locale)
+      }
 
       // set the opbeat transaction name
       if (apm) {
