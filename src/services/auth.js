@@ -114,7 +114,7 @@ const login = async (res, email, password) => {
       domain: process.env.APP_DOMAIN,
       httpOnly: true,
       maxAge: 86400000,
-      path: process.env.APP_PATH ? `${process.env.APP_PARH}/graphql` : '/graphql',
+      path: `${process.env.APP_PATH}/graphql`,
       secure: !dev && process.env.APP_HTTPS,
     })
   }
