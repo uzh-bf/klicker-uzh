@@ -11,10 +11,10 @@ RUN set -x \
   && mkdir /.pm2 \
   && export NPM_PREFIX=$(npm config get prefix) \
   && chown -R 1000:0 \
-    $NPM_PREFIX/lib/node_modules \
-    $NPM_PREFIX/bin \
-    $NPM_PREFIX/share \
-    /.pm2 \
+  $NPM_PREFIX/lib/node_modules \
+  $NPM_PREFIX/bin \
+  $NPM_PREFIX/share \
+  /.pm2 \
   && chmod g+w /.pm2
 
 # switch to the node user (uid 1000)
@@ -50,7 +50,7 @@ ARG VERSION="staging"
 RUN set -x && yarn run build
 
 # run next in production mode
-CMD ["pm2-docker", "start", "--env", "production", "server.js"]
+CMD ["pm2-docker", "start", "server.js", "--wait-ready", "--listen-timeout", "5000"]
 
 # add labels
 LABEL maintainer="Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"

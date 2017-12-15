@@ -281,6 +281,9 @@ app
     server.listen(3000, (err) => {
       if (err) throw err
       console.log('[klicker-react] Ready on http://localhost:3000')
+
+      // send a ready message to PM2
+      process.send('ready')
     })
   })
   .catch((err) => {
