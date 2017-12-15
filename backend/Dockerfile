@@ -38,7 +38,7 @@ COPY --chown=1000:0 . $KLICKER_DIR/
 
 # run express in production mode
 # run next in production mode
-CMD ["pm2-docker", "start", "src/server.js", "--wait-ready", "--listen-timeout", "5000"]
+CMD ["pm2-docker", "start", "process.json"]
 
 # add labels
 ARG VERSION="staging"
