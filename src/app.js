@@ -2,9 +2,9 @@
 require('dotenv').config()
 
 // initialize opbeat if so configured
-let opbeat
-if (process.env.OPBEAT_APP_ID) {
-  opbeat = require('opbeat')
+let apm
+if (process.env.APM_SERVER_URL) {
+  apm = require('elastic-apm-node')
 }
 
 const bodyParser = require('body-parser')
@@ -120,9 +120,11 @@ if (process.env.APP_RATE_LIMITING) {
     onLimitReached: req =>
       exceptTest(() => {
         const error = `> Rate-Limited a Request from ${req.ip} ${req.auth.sub || 'anon'}!`
+
         console.error(error)
-        if (opbeat) {
-          opbeat.captureError(error)
+
+        if (apm) {
+          apm.captureError(error)
         }
       }),
   }
@@ -163,12 +165,12 @@ if (process.env.NODE_ENV === 'production') {
     req.body.query = invertedMap[req.body.id]
 
     // set the opbeat transaction name
-    if (opbeat) {
-      opbeat.setTransactionName(`[${req.body.id}] ${req.body.operationName}`)
+    if (apm) {
+      apm.setTransactionName(`[${req.body.id}] ${req.body.operationName}`)
 
       // if the request is authenticated, set the user context
       if (req.auth) {
-        opbeat.setUserContext({ id: req.auth.sub })
+        apm.setUserContext({ id: req.auth.sub })
       }
     }
 
@@ -177,8 +179,8 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // add the opbeat middleware
-if (opbeat) {
-  middleware.push(opbeat.middleware.express())
+if (apm) {
+  middleware.push(apm.middleware.express())
 }
 
 // if apollo engine is enabled, add the middleware to the production stack
