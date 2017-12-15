@@ -3,7 +3,7 @@ FROM node:8-alpine@sha256:40201c973cf40708f06205b22067f952dd46a29cecb7a74b873ce3
 
 # root application directory
 ENV KLICKER_DIR /app
-ENV PM_VERSION="2.8.0"
+ENV PM_VERSION="2.9.1"
 
 # fix permissions for the global node directories
 # this allows installing pm2 globally as user 1000
