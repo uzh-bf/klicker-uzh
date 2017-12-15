@@ -1,13 +1,22 @@
 require('dotenv').config()
 
-// initialize opbeat if so configured
-let opbeat
-if (process.env.OPBEAT_APP_ID_NEXT) {
-  opbeat = require('opbeat').start({
+const dev = process.env.NODE_ENV !== 'production'
+
+// initialize elastic-apm if so configured
+let apm
+if (process.env.APM_SERVER_URL) {
+  /* apm = require('opbeat').start({
     active: process.env.NODE_ENV === 'production',
     appId: process.env.OPBEAT_APP_ID_NEXT,
     organizationId: process.env.OPBEAT_ORG_ID_NEXT,
     secretToken: process.env.OPBEAT_SECRET_TOKEN_NEXT,
+  }) */
+
+  apm = require('elastic-apm-node').start({
+    active: !dev,
+    appName: process.env.APM_NAME,
+    secretToken: process.env.APM_SECRET_TOKEN,
+    serverUrl: process.env.APM_SERVER_URL,
   })
 }
 
@@ -34,7 +43,6 @@ Intl.DateTimeFormat = IntlPolyfill.DateTimeFormat
 const APP_DIR = './src'
 
 // Bootstrap a new Next.js application
-const dev = process.env.NODE_ENV !== 'production'
 const app = next({ dev, dir: APP_DIR })
 const handle = app.getRequestHandler()
 
@@ -173,8 +181,8 @@ app
     }
 
     // add the opbeat middleware
-    if (opbeat) {
-      middleware.push(opbeat.middleware.express())
+    if (apm) {
+      middleware.push(apm.middleware.express())
     }
 
     server.use(...middleware)
@@ -256,14 +264,14 @@ app
       }
 
       // set the opbeat transaction name
-      if (opbeat) {
+      if (apm) {
         if (req.originalUrl.length > 6 && req.originalUrl.substring(0, 6) !== '/_next') {
-          opbeat.setTransactionName(`${req.method} ${req.originalUrl}`)
+          apm.setTransactionName(`${req.method} ${req.originalUrl}`)
         }
 
         // set the user context if a cookie was set
         if (req.cookies.userId) {
-          opbeat.setUserContext({ id: req.cookies.userId })
+          apm.setUserContext({ id: req.cookies.userId })
         }
       }
 
