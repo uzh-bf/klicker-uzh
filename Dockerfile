@@ -50,7 +50,7 @@ ARG VERSION="staging"
 RUN set -x && yarn run build
 
 # run next in production mode
-CMD ["pm2-docker", "start", "process.json"]
+CMD ["pm2-docker", "start", "--json", "process.json", "--web"]
 
 # add labels
 LABEL maintainer="Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
