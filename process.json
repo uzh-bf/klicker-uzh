@@ -1,0 +1,16 @@
+{
+  "apps": [
+    {
+      "name": "klicker-react",
+      "script": "server.js",
+      "wait_ready": true,
+      "listen_timeout": 10000,
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "env_production": {
+        "NODE_ENV": "production"
+      }
+    }
+  ]
+}
