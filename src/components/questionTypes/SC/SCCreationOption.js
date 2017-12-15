@@ -30,7 +30,7 @@ const SCCreationOption = ({
       disabled={disabled}
       onClick={handleCorrectToggle}
     >
-      {correct ? 'TRUE' : 'FALSE'}
+      {correct ? <Icon name="checkmark" /> : <Icon name="remove" />}
     </button>
 
     <div className="name">{name}</div>

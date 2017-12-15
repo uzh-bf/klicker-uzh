@@ -9,9 +9,6 @@ export default css`
     text-align: center;
   }
 
-  button:hover {
-  }
-
   input {
     border: none;
     box-shadow: none;
@@ -50,7 +47,12 @@ export default css`
     border: 1px solid lightgrey;
     color: white;
     margin: 0.5rem;
-    width: 5rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+
+    :global(i) {
+      margin: 0;
+    }
   }
 
   .toggle.correct {
