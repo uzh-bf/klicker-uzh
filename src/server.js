@@ -29,19 +29,28 @@ server.listen(process.env.PORT, (err) => {
   console.log(`[klicker-api] ready on http://${process.env.APP_DOMAIN}:${process.env.PORT}${process.env.APP_PATH}!`)
 })
 
-process.on('exit', () => {
+process.on('SIGINT', async () => {
   console.log('[klicker-api] Shutting down server')
-  mongoose.disconnect()
-  redis.disconnect()
+  await mongoose.disconnect()
+  await redis.disconnect()
 
   console.log('[klicker-api] Shutdown complete')
   process.exit(0)
 })
 
-process.once('SIGUSR2', () => {
+process.on('exit', async () => {
   console.log('[klicker-api] Shutting down server')
-  mongoose.disconnect()
-  redis.disconnect()
+  await mongoose.disconnect()
+  await redis.disconnect()
+
+  console.log('[klicker-api] Shutdown complete')
+  process.exit(0)
+})
+
+process.once('SIGUSR2', async () => {
+  console.log('[klicker-api] Shutting down server')
+  await mongoose.disconnect()
+  await redis.disconnect()
 
   console.log('[klicker-api] Shutdown complete')
   process.exit(0)
