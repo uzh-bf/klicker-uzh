@@ -1,8 +1,10 @@
 require('dotenv').config()
 
+const dev = process.env.NODE_ENV !== 'production'
+
 // initialize elastic-apm if so configured
 let apm
-if (process.env.NODE_ENV === 'production' && process.env.OPBEAT_APP_ID_NEXT) {
+if (process.env.APM_SERVER_URL) {
   /* apm = require('opbeat').start({
     active: process.env.NODE_ENV === 'production',
     appId: process.env.OPBEAT_APP_ID_NEXT,
@@ -11,13 +13,9 @@ if (process.env.NODE_ENV === 'production' && process.env.OPBEAT_APP_ID_NEXT) {
   }) */
 
   apm = require('elastic-apm-node').start({
-    // Set required app name (allowed characters: a-z, A-Z, 0-9, -, _, and space)
+    active: !dev,
     appName: 'klicker-next',
-
-    // Use if APM Server requires a token
-    secretToken: process.env.APM_SECRET_TOKEN_NEXT,
-
-    // Set custom APM Server URL (default: http://localhost:8200)
+    secretToken: process.env.APM_SECRET_TOKEN,
     serverUrl: process.env.APM_SERVER_URL,
   })
 }
@@ -44,7 +42,6 @@ Intl.DateTimeFormat = IntlPolyfill.DateTimeFormat
 const APP_DIR = './src'
 
 // Bootstrap a new Next.js application
-const dev = process.env.NODE_ENV !== 'production'
 const app = next({ dev, dir: APP_DIR })
 const handle = app.getRequestHandler()
 
