@@ -36,6 +36,7 @@ const propTypes = {
   isFeedbackChannelActive: PropTypes.bool.isRequired,
   isFeedbackChannelPublic: PropTypes.bool.isRequired,
   runtime: PropTypes.bool.isRequired,
+  shortname: PropTypes.string.isRequired,
   startedAt: PropTypes.string.isRequired,
 }
 
@@ -47,6 +48,7 @@ const Running = ({
   feedbacks,
   runtime,
   startedAt,
+  shortname,
   isConfusionBarometerActive,
   isFeedbackChannelActive,
   isFeedbackChannelPublic,
@@ -78,6 +80,7 @@ const Running = ({
           intl={intl}
           runtime={runtime}
           sessionId={id}
+          shortname={shortname}
           startedAt={startedAt}
         />
       </div>
@@ -163,6 +166,10 @@ Running.propTypes = propTypes
 export default compose(
   withData,
   pageWithIntl,
+  graphql(AccountSummaryQuery),
+  withProps(({ data }) => ({
+    shortname: data.user && data.user.shortname,
+  })),
   graphql(RunningSessionQuery, {
     // refetch the running session query every 10s
     options: { pollInterval: 10000 },

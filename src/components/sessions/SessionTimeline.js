@@ -15,6 +15,7 @@ const propTypes = {
   intl: intlShape.isRequired,
   runtime: PropTypes.string,
   sessionId: PropTypes.string.isRequired,
+  shortname: PropTypes.string.isRequired,
   startedAt: PropTypes.string,
 }
 
@@ -30,6 +31,7 @@ const SessionTimeline = ({
   intl,
   runtime,
   startedAt,
+  shortname,
   handleLeftActionClick,
   handleRightActionClick,
 }) => (
@@ -61,7 +63,7 @@ const SessionTimeline = ({
           <Popup.Content>
             <div className="popupContent">
               <div className="qr">
-                <QRCode value={'https://react-uniz-klicker.appuioapp.ch/join/asd'} />
+                <QRCode value={`https://react-uniz-klicker.appuioapp.ch/join/${shortname}`} />
               </div>
 
               <Button disabled>
