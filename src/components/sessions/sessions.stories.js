@@ -25,7 +25,7 @@ storiesOf('sessions', module)
       <QuestionDropzone />
     </div>
   ))
-  .add('SessionTimelineInput', () => (
+  .add('SessionTimelineInput [NoTest]', () => (
     <SessionTimelineInput
       input={{
         onChange: () => null,
