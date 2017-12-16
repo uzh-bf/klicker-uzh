@@ -1,4 +1,6 @@
-const { QuestionInstanceModel, SessionModel, UserModel } = require('../models')
+const {
+  QuestionInstanceModel, SessionModel, UserModel, QuestionModel,
+} = require('../models')
 const { getRedis } = require('../redis')
 const { SessionStatus, QuestionBlockStatus } = require('../constants')
 const { logDebug } = require('../lib/utils')
@@ -43,6 +45,8 @@ const createSession = async ({ name, questionBlocks, userId }) => {
   // initialize a store for newly created instance models
   let instances = []
 
+  const promises = []
+
   // pass through all the question blocks in params
   // skip any blocks that are empty (erroneous blocks)
   // create question instances for all questions within
@@ -54,6 +58,11 @@ const createSession = async ({ name, questionBlocks, userId }) => {
         user: userId,
         version,
       })
+
+      // update the question with the corresponding instances
+      promises.push(QuestionModel.findByIdAndUpdate(question, {
+        $push: { instances: instance.id },
+      }))
 
       // append the new question instance to the store
       instances = [...instances, instance]
@@ -73,6 +82,7 @@ const createSession = async ({ name, questionBlocks, userId }) => {
 
   // save everything at once
   await Promise.all([
+    ...promises,
     ...instances.map(instance => instance.save()),
     newSession.save(),
     UserModel.update(

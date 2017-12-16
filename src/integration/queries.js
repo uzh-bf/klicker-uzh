@@ -15,6 +15,7 @@ const QuestionListQuery = `
       type
       instances {
         id
+        version
         createdAt
       }
       tags {
