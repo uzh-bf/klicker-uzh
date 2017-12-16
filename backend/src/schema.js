@@ -105,6 +105,7 @@ const resolvers = {
     activateNextBlock: requireAuth(activateNextBlock),
   },
   Question: {
+    instances: questionInstancesByPV,
     tags,
     user,
   },
