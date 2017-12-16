@@ -44,11 +44,13 @@ const Question = ({
   connectDragSource,
   handleSetActiveVersion,
 }) =>
+  // TODO: draggable rework
   connectDragSource(
-    <div className={classNames('question', { creationMode, draggable, isDragging })}>
+    <div className={classNames('question', { creationMode, draggable: true, isDragging })}>
       {creationMode && (
         <div className={classNames('sessionMembership', { active: !draggable })}>
           <input
+            disabled
             checked={!draggable}
             className="ui checkbox"
             name={`check-${id}`}
@@ -186,9 +188,9 @@ const source = {
     }
   },
   // whether the element can be dragged
-  canDrag({ draggable }) {
+  /* canDrag({ draggable }) {
     return draggable
-  },
+  }, */
   // if the element is dropped somewhere
   endDrag({ onDrop }, monitor) {
     if (monitor.didDrop()) {
