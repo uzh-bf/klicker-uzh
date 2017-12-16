@@ -125,7 +125,8 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "roots": ["src/"]
+    "roots": ["src/"],
+    "testPathIgnorePatterns": ["/node_modules/", "src/.next"]
   },
   "lint-staged": {
     "*.js": ["prettier-eslint --single-quote --no-semi --write", "eslint", "git add"],

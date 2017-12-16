@@ -5,6 +5,7 @@ query QuestionList {
     type
     instances {
       id
+      version
       createdAt
     }
     tags {

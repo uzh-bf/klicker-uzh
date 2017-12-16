@@ -47,7 +47,6 @@ const CommonLayout = ({ baseFontSize, children, pageTitle }) => (
 
       input,
       textarea,
-      button,
       .noBorder {
         border-radius: 0 !important;
       }

@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import ReactTooltip from 'react-tooltip'
 import { adjust } from 'ramda'
 import { FormattedMessage } from 'react-intl'
 import { Icon, Message } from 'semantic-ui-react'
@@ -63,7 +64,17 @@ const SessionTimelineInput = ({ input: { value, onChange } }) => {
       <div className="timelineItem">
         <div className="title">
           <FormattedMessage defaultMessage="New Block" id="teacher.sessionCreation.newBlock" />
+          <a data-tip data-for="newBlockHelp">
+            <Icon name="question circle" />
+          </a>
         </div>
+
+        <ReactTooltip delayHide={250} delayShow={250} id="newBlockHelp" place="right">
+          <FormattedMessage
+            defaultMessage="Group questions inside a question block to activate and evaluate them simultaneously."
+            id="teacher.sessionCreation.newBlock.tooltip"
+          />
+        </ReactTooltip>
 
         <div className="blockDropzone">
           <QuestionDropzone onDrop={handleNewBlock} />
@@ -107,6 +118,11 @@ const SessionTimelineInput = ({ input: { value, onChange } }) => {
 
               font-weight: bold;
               margin-bottom: 0.5rem;
+
+              a {
+                color: $color-primary;
+                font-size: 1.25rem;
+              }
             }
 
             .message,
