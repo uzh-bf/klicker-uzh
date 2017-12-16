@@ -2831,7 +2831,7 @@ exports[`Storyshots questionTypes/SC SC Creation Preview 1`] = `
 
 exports[`Storyshots questions Question (MC, >1 versions) 1`] = `
 <div
-  className="jsx-3830748110 question"
+  className="jsx-3830748110 question draggable"
 >
   <div
     className="jsx-3830748110 wrapper"
@@ -3006,7 +3006,7 @@ exports[`Storyshots questions Question (MC, >1 versions) 1`] = `
 
 exports[`Storyshots questions Question (MC, no tags) 1`] = `
 <div
-  className="jsx-3830748110 question"
+  className="jsx-3830748110 question draggable"
 >
   <div
     className="jsx-3830748110 wrapper"
@@ -3171,7 +3171,7 @@ exports[`Storyshots questions Question (MC, no tags) 1`] = `
 
 exports[`Storyshots questions Question (SC, 1 version) 1`] = `
 <div
-  className="jsx-3830748110 question"
+  className="jsx-3830748110 question draggable"
 >
   <div
     className="jsx-3830748110 wrapper"
@@ -3545,6 +3545,7 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
       <input
         checked={false}
         className="jsx-3830748110 ui checkbox"
+        disabled={true}
         name="check-1"
         onClick={[Function]}
         type="checkbox"
@@ -3723,6 +3724,7 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
       <input
         checked={false}
         className="jsx-3830748110 ui checkbox"
+        disabled={true}
         name="check-2"
         onClick={[Function]}
         type="checkbox"
@@ -3924,7 +3926,7 @@ exports[`Storyshots questions QuestionList 1`] = `
   className="jsx-2713308233 questionList"
 >
   <div
-    className="jsx-3830748110 question"
+    className="jsx-3830748110 question draggable"
   >
     <div
       className="jsx-3830748110 wrapper"
@@ -4091,7 +4093,7 @@ exports[`Storyshots questions QuestionList 1`] = `
     </div>
   </div>
   <div
-    className="jsx-3830748110 question"
+    className="jsx-3830748110 question draggable"
   >
     <div
       className="jsx-3830748110 wrapper"
