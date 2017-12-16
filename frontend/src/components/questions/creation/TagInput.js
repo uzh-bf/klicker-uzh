@@ -74,7 +74,6 @@ const TagInput = ({
 
         &-tag {
           background-color: $color-secondary;
-          border-radius: 2px;
           border: 1px solid grey;
           color: grey;
           display: inline-block;

@@ -35,7 +35,7 @@ const SCCreationPlaceholder = ({
       type="button"
       onClick={handleCorrectToggle}
     >
-      {correct ? 'TRUE' : 'FALSE'}
+      {correct ? <Icon name="checkmark" /> : <Icon name="remove" />}
     </button>
 
     <input type="text" value={name} onChange={handleNameChange} />
@@ -77,7 +77,7 @@ const SCCreationPlaceholder = ({
       }
 
       .inputMode > .toggle {
-        flex: 0 0 5rem;
+        flex: 0 0 auto;
       }
 
       .inputMode > input {
