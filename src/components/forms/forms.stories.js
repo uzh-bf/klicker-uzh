@@ -63,7 +63,7 @@ storiesOf('forms/components', module)
       versions={[1, 2, 3, 4, 5]}
     />
   ))
-  .add('SessionCreationForm', () => (
+  .add('SessionCreationForm [NoTest]', () => (
     <SessionCreationForm handleSubmit={() => null} intl={intlMock} />
   ))
 storiesOf('forms/helpers', module)

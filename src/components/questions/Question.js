@@ -63,9 +63,10 @@ const Question = ({
 
         <div className="versionChooser">
           <Dropdown
+            disabled={versions.length === 1}
             options={versions.map((version, index) => ({
               key: index,
-              text: `Revision ${index + 1} - ${moment(version.createdAt).format('DD.MM.Y H:M')}`,
+              text: `v${index + 1} - ${moment(version.createdAt).format('DD.MM.YYYY HH:mm')}`,
               value: index,
             }))}
             value={activeVersion}

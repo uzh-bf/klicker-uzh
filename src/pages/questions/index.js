@@ -155,8 +155,12 @@ const Index = ({
                 display: flex;
                 justify-content: center;
 
-                > :global(button:last-child) {
+                > :global(button) {
                   margin-right: 0;
+
+                  &:first-child {
+                    margin-right: 0.5rem;
+                  }
                 }
               }
             }
@@ -185,14 +189,6 @@ const Index = ({
 
           @include desktop-only {
             padding: 0;
-
-            .tagList {
-              padding: 2rem;
-            }
-
-            .wrapper {
-              padding: 2rem;
-            }
           }
         }
       `}</style>

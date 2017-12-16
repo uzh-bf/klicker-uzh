@@ -45,9 +45,15 @@ export const TagListPres = ({ tags, handleTagClick }) => (
 
     <style jsx>{`
       .tagList {
-        :global(.listItem:hover .content),
-        :global(.listItem:hover i) {
-          color: #2185d0;
+        :global(.listItem.item) {
+          border-radius: 0;
+          padding-left: 1rem;
+          padding-right: 1rem;
+
+          &:hover :global(.content),
+          &:hover :global(i) {
+            color: #2185d0;
+          }
         }
       }
     `}</style>

@@ -3,6 +3,8 @@
   "common.button.submit": "Absenden",
   "common.string.settings": "Einstellungen",
   "common.string.logout": "Logout",
+  "sessionArea.toRunningSession": "Zur laufenden Session",
+  "sessionArea.toJoinSession": "Zu /join/{shortname}",
   "runningSession.confusion.title": "Confusion-Barometer",
   "confusionSection.noData": "Noch keine Daten.",
   "teacher.evaluation.graph.showGraph": "Graph anzeigen",
@@ -19,6 +21,7 @@
   "form.useCase.label": "Anwendungsfall",
   "form.button.submit": "Absenden",
   "teacher.sessionCreation.title": "Session erstellen",
+  "form.createSession.button.save": "Fertigstellen",
   "common.button.start": "Start",
   "student.sidebar.activeQuestion": "Aktive Frage",
   "student.sidebar.feedbackChannel": "Feedback-Channel",
@@ -50,6 +53,8 @@
   "teacher.createQuestion.questionType.tooltip":
     "Definieren Sie den Typ der Frage, die Sie erstellen möchten.",
   "teacher.sessionCreation.newBlock": "Neuer Frageblock",
+  "teacher.sessionCreation.newBlock.tooltip":
+    "Gruppieren Sie Fragen in einem Frageblock, um sie gleichzeitig zu aktivieren und auszuwerten.",
   "teacher.sessionCreation.emptyDropzoneInfo":
     "Benutzen Sie Drag & Drop und ziehen Sie eine Frage in die graue Ablagezone.",
   "common.string.speed": "Geschwindigkeit",
@@ -72,7 +77,9 @@
   "session.button.completed.content": "Duplizieren",
   "session.button.created.content": "Starten",
   "session.button.running.content": "Laufend",
+  "sessionArea.downloadPNG": "PNG herunterladen",
   "runningSession.button.evaluation": "Auswertung",
+  "runningSession.button.cancel": "Abbrechen",
   "joinSession.noEvaluationActive": "Es ist keine Auswertung aktiv.",
   "joinSession.noFeedbackChannel": "Der Feedback-Channel ist deaktiviert.",
   "joinSession.noSessionActive": "Es ist keine Session aktiv.",
