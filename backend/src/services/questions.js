@@ -1,6 +1,6 @@
 const { QuestionModel, TagModel, UserModel } = require('../models')
 
-const { QuestionGroups } = require('../constants')
+const { QuestionGroups, QuestionTypes } = require('../constants')
 
 // process tags when editing or creating a question
 const processTags = (existingTags, newTags, userId) => {
@@ -40,10 +40,21 @@ const createQuestion = async ({
     throw new Error('NO_OPTIONS_SPECIFIED')
   }
 
-  if (QuestionGroups.CHOICES.includes(type) && solution && options.choices.length !== solution[type].length) {
-    throw new Error('INVALID_SOLUTION')
+  if (QuestionGroups.CHOICES.includes(type)) {
+    if (options.choices.length === 0) {
+      throw new Error('NO_CHOICES_SPECIFIED')
+    }
+
+    if (solution && options.choices.length !== solution[type].length) {
+      throw new Error('INVALID_SOLUTION')
+    }
   }
 
+  if (type === QuestionTypes.FREE_RANGE) {
+    if (!options.restrictions || (!options.restrictions.min && !options.restrictions.max)) {
+      throw new Error('INVALID_RESTRICTIONS')
+    }
+  }
   // find the corresponding user
   const user = await UserModel.findById(userId).populate(['tags'])
 
