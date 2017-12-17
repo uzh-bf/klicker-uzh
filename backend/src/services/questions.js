@@ -1,3 +1,5 @@
+const isInteger = require('lodash/isInteger')
+
 const { QuestionModel, TagModel, UserModel } = require('../models')
 
 const { QuestionGroups, QuestionTypes } = require('../constants')
@@ -51,7 +53,13 @@ const createQuestion = async ({
   }
 
   if (type === QuestionTypes.FREE_RANGE) {
-    if (!options.restrictions || (!options.restrictions.min && !options.restrictions.max)) {
+    if (!options.restrictions) {
+      throw new Error('MISSING_RESTRICTIONS')
+    }
+
+    const isMinInt = isInteger(options.restrictions.min)
+    const isMaxInt = isInteger(options.restrictions.max)
+    if ((!isMinInt && !isMaxInt) || options.restrictions.max <= options.restrictions.min) {
       throw new Error('INVALID_RESTRICTIONS')
     }
   }
