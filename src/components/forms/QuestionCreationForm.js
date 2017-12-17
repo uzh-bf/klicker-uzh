@@ -2,6 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import _get from 'lodash/get'
 import isEmpty from 'validator/lib/isEmpty'
+import _isInteger from 'lodash/isInteger'
 import { connect } from 'react-redux'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage, intlShape } from 'react-intl'
@@ -17,6 +18,7 @@ import {
   FREECreationPreview,
 } from '../../components/questionTypes'
 import { QUESTION_TYPES } from '../../lib'
+import { QUESTION_GROUPS } from '../../constants'
 
 // form validation
 const validate = ({
@@ -38,6 +40,10 @@ const validate = ({
 
   if (!type || isEmpty(type)) {
     errors.type = 'form.createQuestion.type.empty'
+  }
+
+  if (QUESTION_GROUPS.CHOICES.includes(type) && (!options || options.choices.length === 0)) {
+    errors.options = 'form.createQuestion.options.empty'
   }
 
   // validation of SC answer options
@@ -71,15 +77,14 @@ const validate = ({
 
   if (type === QUESTION_TYPES.FREE_RANGE) {
     if (options && options.restrictions) {
-      if (options.restrictions.min === null && options.restrictions.max === null) {
+      const isMinInt = _isInteger(options.restrictions.min)
+      const isMaxInt = _isInteger(options.restrictions.max)
+
+      if (!isMinInt && !isMaxInt) {
         errors.options = 'form.createQuestion.options.noMinMax'
       }
 
-      if (
-        options.restrictions.min !== null &&
-        options.restrictions.max !== null &&
-        options.restrictions.min >= options.restrictions.max
-      ) {
+      if (isMinInt && isMaxInt && options.restrictions.min >= options.restrictions.max) {
         errors.options = 'form.createQuestion.options.minGteMax'
       }
     }
