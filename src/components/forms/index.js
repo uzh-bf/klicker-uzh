@@ -1,6 +1,7 @@
 export { default as GeneralSettingsForm } from './GeneralSettingsForm'
 export { default as LoginForm } from './LoginForm'
 export { default as PasswordResetForm } from './PasswordResetForm'
+export { default as PasswordSettingsForm } from './PasswordSettingsForm'
 export { default as QuestionCreationForm } from './QuestionCreationForm'
 export { default as QuestionEditForm } from './QuestionEditForm'
 export { default as RegistrationForm } from './RegistrationForm'
