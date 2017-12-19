@@ -3,7 +3,7 @@ import { compose } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
 
 import { TeacherLayout } from '../../components/layouts'
-import { pageWithIntl } from '../../lib'
+import { pageWithIntl, withData } from '../../lib'
 
 const propTypes = {
   intl: intlShape.isRequired,
@@ -11,10 +11,18 @@ const propTypes = {
 
 const Settings = ({ intl }) => (
   <TeacherLayout
+    intl={intl}
+    navbar={{
+      title: intl.formatMessage({
+        defaultMessage: 'Question Pool',
+        id: 'teacher.questionPool.title',
+      }),
+    }}
     pageTitle={intl.formatMessage({
-      defaultMessage: 'Reset password',
-      id: 'user.resetPassword.pageTitle',
+      defaultMessage: 'Settings',
+      id: 'user.settings.pageTitle',
     })}
+    sidebar={{ activeItem: null }}
   >
     <div className="userSettings">
       <h1>
@@ -26,4 +34,4 @@ const Settings = ({ intl }) => (
 
 Settings.propTypes = propTypes
 
-export default compose(pageWithIntl)(Settings)
+export default compose(withData, pageWithIntl)(Settings)
