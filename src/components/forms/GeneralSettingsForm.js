@@ -33,7 +33,13 @@ const GeneralSettingsForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
   }
 
   return (
-    <SettingsForm button={button}>
+    <SettingsForm
+      button={button}
+      sectionTitle={intl.formatMessage({
+        defaultMessage: 'General',
+        id: 'form.settings.general.title',
+      })}
+    >
       <Field
         required
         component={SemanticInput}

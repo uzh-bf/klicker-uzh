@@ -1,7 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import Link from 'next/link'
-import { Button, Form, List } from 'semantic-ui-react'
+import { Button, Divider, Form } from 'semantic-ui-react'
 
 const propTypes = {
   button: PropTypes.shape({
@@ -10,21 +9,15 @@ const propTypes = {
     onSubmit: PropTypes.func.isRequired,
   }).isRequired,
   children: PropTypes.node.isRequired,
-  links: PropTypes.arrayOf(
-    PropTypes.shape({
-      href: PropTypes.string.isRequired,
-      label: PropTypes.string.isRequired,
-    }),
-  ),
+  sectionTitle: PropTypes.string.isRequired,
 }
 
-const defaultProps = {
-  links: [],
-}
-
-const SettingsForm = ({ button, children, links }) => (
-  <div className="formWithLinks">
+const SettingsForm = ({ button, children, sectionTitle }) => (
+  <div className="settingsForm">
     <Form error>
+      <h2>{sectionTitle}</h2>
+      <Divider />
+
       {children}
 
       <div className="actionArea">
@@ -37,35 +30,19 @@ const SettingsForm = ({ button, children, links }) => (
         >
           {button.label}
         </Button>
-
-        <div className="links">
-          <List>
-            {links.map(link => (
-              <List.Item>
-                <Link href={link.href}>
-                  <a>{link.label}</a>
-                </Link>
-              </List.Item>
-            ))}
-          </List>
-        </div>
       </div>
     </Form>
 
     <style jsx>{`
       @import 'src/theme';
 
-      .formWithLinks > :global(form) {
+      .settingsForm > :global(form) {
         display: flex;
         flex-direction: column;
 
         .actionArea {
           display: flex;
           flex-direction: column;
-        }
-
-        .links {
-          margin-top: 1rem;
         }
 
         :global(.semanticButton) {
@@ -78,12 +55,6 @@ const SettingsForm = ({ button, children, links }) => (
           .actionArea {
             flex-direction: row;
             justify-content: space-between;
-          }
-
-          .links {
-            order: 0;
-
-            margin-top: 0;
           }
 
           :global(.semanticButton) {
@@ -103,6 +74,5 @@ const SettingsForm = ({ button, children, links }) => (
 )
 
 SettingsForm.propTypes = propTypes
-SettingsForm.defaultProps = defaultProps
 
 export default SettingsForm

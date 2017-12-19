@@ -33,7 +33,13 @@ const PasswordSettingsForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
   }
 
   return (
-    <SettingsForm button={button}>
+    <SettingsForm
+      button={button}
+      sectionTitle={intl.formatMessage({
+        defaultMessage: 'Password',
+        id: 'form.settings.password.title',
+      })}
+    >
       <Field
         required
         component={SemanticInput}
