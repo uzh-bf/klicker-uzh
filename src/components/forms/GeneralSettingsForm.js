@@ -41,7 +41,7 @@ const GeneralSettingsForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
         id: 'form.settings.general.title',
       })}
     >
-      <Form.Group>
+      <Form.Group widths="equal">
         <Field
           required
           component={SemanticInput}
