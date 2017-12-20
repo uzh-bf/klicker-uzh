@@ -30,9 +30,9 @@ const Settings = ({ intl }) => (
         <FormattedMessage defaultMessage="Account Settings" id="user.settings.title" />
       </h1>
 
-      <GeneralSettingsForm intl={intl} />
+      <GeneralSettingsForm className="settingsForm" intl={intl} />
 
-      <PasswordSettingsForm intl={intl} />
+      <PasswordSettingsForm className="settingsForm" intl={intl} />
     </div>
 
     <style jsx>{`
@@ -41,6 +41,10 @@ const Settings = ({ intl }) => (
         flex-direction: column;
         height: 100%;
         margin: 2rem 10rem;
+      }
+
+      :global(.settingsForm) {
+        margin-bottom: 2rem;
       }
     `}</style>
   </TeacherLayout>
