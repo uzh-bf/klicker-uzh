@@ -52,7 +52,7 @@ const PasswordSettingsForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
             id: 'form.password.label',
           })}
           name="password"
-          type="email"
+          type="password"
         />
         <Field
           required
@@ -64,7 +64,7 @@ const PasswordSettingsForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
             id: 'form.passwordRepeated.label',
           })}
           name="passwordRepeated"
-          type="passwordRepeated"
+          type="password"
         />
       </Form.Group>
     </SettingsForm>
