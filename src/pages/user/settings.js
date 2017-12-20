@@ -1,6 +1,6 @@
 import React from 'react'
-import { compose } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
+import { compose } from 'recompose'
 
 import { TeacherLayout } from '../../components/layouts'
 import { GeneralSettingsForm, PasswordSettingsForm } from '../../components/forms'
@@ -30,23 +30,27 @@ const Settings = ({ intl }) => (
         <FormattedMessage defaultMessage="Account Settings" id="user.settings.title" />
       </h1>
 
-      <GeneralSettingsForm className="settingsForm" intl={intl} />
+      <div className="settingsForm">
+        <GeneralSettingsForm className="settingsForm" intl={intl} />
+      </div>
 
-      <PasswordSettingsForm className="settingsForm" intl={intl} />
+      <div className="settingsForm">
+        <PasswordSettingsForm className="settingsForm" intl={intl} />
+      </div>
+
+      <style jsx>{`
+        .userSettings {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          margin: 2rem 10rem;
+
+          .settingsForm {
+            margin-bottom: 2rem;
+          }
+        }
+      `}</style>
     </div>
-
-    <style jsx>{`
-      .userSettings {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        margin: 2rem 10rem;
-      }
-
-      :global(.settingsForm) {
-        margin-bottom: 2rem;
-      }
-    `}</style>
   </TeacherLayout>
 )
 
