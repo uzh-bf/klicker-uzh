@@ -149,12 +149,12 @@ function EvaluationLayout({
 
                 grid-template-columns: auto 17rem;
                 grid-template-rows:
-                  minmax(auto, 0)
-                  minmax(auto, 2rem)
-                  minmax(auto, 0)
-                  minmax(auto, 0)
                   auto
-                  minmax(auto, 0);
+                  auto
+                  auto
+                  auto
+                  minmax(auto, 100%)
+                  auto;
                 grid-template-areas:
                   'instanceChooser instanceChooser'
                   'questionDetails questionDetails'
