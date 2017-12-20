@@ -45,7 +45,6 @@ const GeneralSettingsForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
         <Field
           required
           component={SemanticInput}
-          icon="mail"
           intl={intl}
           label={intl.formatMessage({
             defaultMessage: 'First Name',
@@ -56,7 +55,6 @@ const GeneralSettingsForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
         <Field
           required
           component={SemanticInput}
-          icon="mail"
           intl={intl}
           label={intl.formatMessage({
             defaultMessage: 'Last Name',
@@ -68,7 +66,7 @@ const GeneralSettingsForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
       <Field
         required
         component={SemanticInput}
-        icon="mail"
+        icon="home"
         intl={intl}
         label={intl.formatMessage({
           defaultMessage: 'Account ID',

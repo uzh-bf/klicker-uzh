@@ -37,7 +37,7 @@ const PasswordSettingsForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
     <SettingsForm
       button={button}
       sectionTitle={intl.formatMessage({
-        defaultMessage: 'Password',
+        defaultMessage: 'Set new Password',
         id: 'form.settings.password.title',
       })}
     >
@@ -48,7 +48,7 @@ const PasswordSettingsForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
           icon="key"
           intl={intl}
           label={intl.formatMessage({
-            defaultMessage: 'Password',
+            defaultMessage: 'New Password',
             id: 'form.password.label',
           })}
           name="password"
