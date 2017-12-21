@@ -110,8 +110,8 @@ ajv@^4.9.1:
     json-stable-stringify "^1.0.1"
 
 ajv@^5.1.0, ajv@^5.2.3, ajv@^5.3.0:
-  version "5.5.1"
-  resolved "https://registry.yarnpkg.com/ajv/-/ajv-5.5.1.tgz#b38bb8876d9e86bee994956a04e721e88b248eb2"
+  version "5.5.2"
+  resolved "https://registry.yarnpkg.com/ajv/-/ajv-5.5.2.tgz#73b5eeca3fab653e3d3f9422b341ad42205dc965"
   dependencies:
     co "^4.6.0"
     fast-deep-equal "^1.0.0"
@@ -180,16 +180,16 @@ apollo-cache-control@^0.0.x:
     graphql-extensions "^0.0.x"
 
 apollo-engine-binary-darwin@^0.2017.11-137-g908dbec6f:
-  version "0.2017.11-137-g908dbec6f"
-  resolved "https://registry.yarnpkg.com/apollo-engine-binary-darwin/-/apollo-engine-binary-darwin-0.2017.11-137-g908dbec6f.tgz#3dae28300928b7cdc1096587668071b29c71b19e"
+  version "0.2017.11-84-gb299b9188"
+  resolved "https://registry.yarnpkg.com/apollo-engine-binary-darwin/-/apollo-engine-binary-darwin-0.2017.11-84-gb299b9188.tgz#1e863513bb4dce66edd7fe9f12014d55a1c9bed6"
 
 apollo-engine-binary-linux@^0.2017.11-137-g908dbec6f:
-  version "0.2017.11-137-g908dbec6f"
-  resolved "https://registry.yarnpkg.com/apollo-engine-binary-linux/-/apollo-engine-binary-linux-0.2017.11-137-g908dbec6f.tgz#2926abc144e9eef9874c9d05e9cdf77ff10e54c9"
+  version "0.2017.11-84-gb299b9188"
+  resolved "https://registry.yarnpkg.com/apollo-engine-binary-linux/-/apollo-engine-binary-linux-0.2017.11-84-gb299b9188.tgz#02c4e96b1689fd9d1302535d57de8e60bc763688"
 
 apollo-engine-binary-windows@^0.2017.11-137-g908dbec6f:
-  version "0.2017.11-137-g908dbec6f"
-  resolved "https://registry.yarnpkg.com/apollo-engine-binary-windows/-/apollo-engine-binary-windows-0.2017.11-137-g908dbec6f.tgz#56884fffbe584b426bee9d21b0e45c6597dc40b0"
+  version "0.2017.11-84-gb299b9188"
+  resolved "https://registry.yarnpkg.com/apollo-engine-binary-windows/-/apollo-engine-binary-windows-0.2017.11-84-gb299b9188.tgz#706bda576e004c0763a95fd1570f7c7a9718a5df"
 
 apollo-engine@0.6.1:
   version "0.6.1"
@@ -203,8 +203,8 @@ apollo-engine@0.6.1:
     apollo-engine-binary-windows "^0.2017.11-137-g908dbec6f"
 
 apollo-server-core@^1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/apollo-server-core/-/apollo-server-core-1.2.0.tgz#e851c47444991b6f89f88529237076b83e01e8ee"
+  version "1.3.2"
+  resolved "https://registry.yarnpkg.com/apollo-server-core/-/apollo-server-core-1.3.2.tgz#f36855a3ebdc2d77b8b9c454380bf1d706105ffc"
   dependencies:
     apollo-cache-control "^0.0.x"
     apollo-tracing "^0.1.0"
@@ -218,8 +218,8 @@ apollo-server-express@1.2.0:
     apollo-server-module-graphiql "^1.2.0"
 
 apollo-server-module-graphiql@^1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/apollo-server-module-graphiql/-/apollo-server-module-graphiql-1.2.0.tgz#899d84f3b747795dbbfc8354aa51622ef038151c"
+  version "1.3.2"
+  resolved "https://registry.yarnpkg.com/apollo-server-module-graphiql/-/apollo-server-module-graphiql-1.3.2.tgz#0a9e4c48dece3af904fee333f95f7b9817335ca7"
 
 apollo-tracing@^0.1.0:
   version "0.1.1"
@@ -941,8 +941,8 @@ cookiejar@^2.1.0:
   resolved "https://registry.yarnpkg.com/cookiejar/-/cookiejar-2.1.1.tgz#41ad57b1b555951ec171412a81942b1e8200d34a"
 
 core-js@^2.4.0, core-js@^2.5.0, core-js@^2.5.1:
-  version "2.5.2"
-  resolved "https://registry.yarnpkg.com/core-js/-/core-js-2.5.2.tgz#bc4648656e7dc9dc80d7d3c7bbc172d96e744e63"
+  version "2.5.3"
+  resolved "https://registry.yarnpkg.com/core-js/-/core-js-2.5.3.tgz#8acc38345824f16d8365b7c9b4259168e8ed603e"
 
 core-util-is@1.0.2, core-util-is@^1.0.2, core-util-is@~1.0.0:
   version "1.0.2"
@@ -1193,7 +1193,7 @@ elastic-apm-http-client@^4.1.0:
   dependencies:
     fast-safe-stringify "^1.2.0"
 
-elastic-apm-node@^0.8.1:
+elastic-apm-node@0.8.1:
   version "0.8.1"
   resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-0.8.1.tgz#4ed6a67850461afbbf0cd17309adb8768fa2b97b"
   dependencies:
@@ -1232,8 +1232,8 @@ end-of-stream@^1.1.0:
     once "^1.4.0"
 
 errno@^0.1.4:
-  version "0.1.5"
-  resolved "https://registry.yarnpkg.com/errno/-/errno-0.1.5.tgz#a563781a6052bc2c9ccd89e8cef0eb9506e0c321"
+  version "0.1.6"
+  resolved "https://registry.yarnpkg.com/errno/-/errno-0.1.6.tgz#c386ce8a6283f14fc09563b71560908c9bf53026"
   dependencies:
     prr "~1.0.1"
 
@@ -1324,9 +1324,51 @@ eslint-scope@^3.7.1:
     esrecurse "^4.1.0"
     estraverse "^4.1.1"
 
-eslint@4.13.0, eslint@^4.5.0:
+eslint@4.13.0:
   version "4.13.0"
   resolved "https://registry.yarnpkg.com/eslint/-/eslint-4.13.0.tgz#1991aa359586af83877bde59de9d41f53e20826d"
+  dependencies:
+    ajv "^5.3.0"
+    babel-code-frame "^6.22.0"
+    chalk "^2.1.0"
+    concat-stream "^1.6.0"
+    cross-spawn "^5.1.0"
+    debug "^3.0.1"
+    doctrine "^2.0.2"
+    eslint-scope "^3.7.1"
+    espree "^3.5.2"
+    esquery "^1.0.0"
+    estraverse "^4.2.0"
+    esutils "^2.0.2"
+    file-entry-cache "^2.0.0"
+    functional-red-black-tree "^1.0.1"
+    glob "^7.1.2"
+    globals "^11.0.1"
+    ignore "^3.3.3"
+    imurmurhash "^0.1.4"
+    inquirer "^3.0.6"
+    is-resolvable "^1.0.0"
+    js-yaml "^3.9.1"
+    json-stable-stringify-without-jsonify "^1.0.1"
+    levn "^0.3.0"
+    lodash "^4.17.4"
+    minimatch "^3.0.2"
+    mkdirp "^0.5.1"
+    natural-compare "^1.4.0"
+    optionator "^0.8.2"
+    path-is-inside "^1.0.2"
+    pluralize "^7.0.0"
+    progress "^2.0.0"
+    require-uncached "^1.0.3"
+    semver "^5.3.0"
+    strip-ansi "^4.0.0"
+    strip-json-comments "~2.0.1"
+    table "^4.0.1"
+    text-table "~0.2.0"
+
+eslint@^4.0.0, eslint@^4.5.0:
+  version "4.13.1"
+  resolved "https://registry.yarnpkg.com/eslint/-/eslint-4.13.1.tgz#0055e0014464c7eb7878caf549ef2941992b444f"
   dependencies:
     ajv "^5.3.0"
     babel-code-frame "^6.22.0"
@@ -2375,10 +2417,8 @@ is-regexp@^1.0.0:
   resolved "https://registry.yarnpkg.com/is-regexp/-/is-regexp-1.0.0.tgz#fd2d883545c46bac5a633e7b9a09e87fa2cb5069"
 
 is-resolvable@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/is-resolvable/-/is-resolvable-1.0.0.tgz#8df57c61ea2e3c501408d100fb013cf8d6e0cc62"
-  dependencies:
-    tryit "^1.0.1"
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/is-resolvable/-/is-resolvable-1.0.1.tgz#acca1cd36dbe44b974b924321555a70ba03b1cf4"
 
 is-retry-allowed@^1.0.0:
   version "1.1.0"
@@ -3388,9 +3428,13 @@ module-details-from-path@^1.0.2:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/module-details-from-path/-/module-details-from-path-1.0.3.tgz#114c949673e2a8a35e9d35788527aa37b679da2b"
 
-moment@2.19.4, moment@2.x.x:
+moment@2.19.4:
   version "2.19.4"
   resolved "https://registry.yarnpkg.com/moment/-/moment-2.19.4.tgz#17e5e2c6ead8819c8ecfad83a0acccb312e94682"
+
+moment@2.x.x:
+  version "2.20.1"
+  resolved "https://registry.yarnpkg.com/moment/-/moment-2.20.1.tgz#d6eb1a46cbcc14a2b2f9434112c1ff8907f313fd"
 
 mongodb-core@2.1.17:
   version "2.1.17"
@@ -3930,7 +3974,7 @@ prettier-eslint-cli@4.4.2:
     rxjs "^5.3.0"
     yargs "10.0.3"
 
-prettier-eslint@8.2.5, prettier-eslint@^8.0.0:
+prettier-eslint@8.2.5:
   version "8.2.5"
   resolved "https://registry.yarnpkg.com/prettier-eslint/-/prettier-eslint-8.2.5.tgz#1eb41c23159a6770f9e4191ecae8b0447a0a1867"
   dependencies:
@@ -3947,13 +3991,40 @@ prettier-eslint@8.2.5, prettier-eslint@^8.0.0:
     typescript "^2.5.1"
     typescript-eslint-parser "^8.0.0"
 
-prettier@1.9.1, prettier@^1.7.1:
+prettier-eslint@^8.0.0:
+  version "8.5.0"
+  resolved "https://registry.yarnpkg.com/prettier-eslint/-/prettier-eslint-8.5.0.tgz#ec9c2d1538af18b09622d8abfa1052730dffa47b"
+  dependencies:
+    common-tags "^1.4.0"
+    dlv "^1.1.0"
+    eslint "^4.0.0"
+    indent-string "^3.2.0"
+    lodash.merge "^4.6.0"
+    loglevel-colored-level-prefix "^1.0.0"
+    prettier "^1.7.0"
+    pretty-format "^22.0.3"
+    require-relative "^0.8.7"
+    typescript "^2.5.1"
+    typescript-eslint-parser "^11.0.0"
+
+prettier@1.9.1:
   version "1.9.1"
   resolved "https://registry.yarnpkg.com/prettier/-/prettier-1.9.1.tgz#41638a0d47c1efbd1b7d5a742aaa5548eab86d70"
+
+prettier@^1.7.0, prettier@^1.7.1:
+  version "1.9.2"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-1.9.2.tgz#96bc2132f7a32338e6078aeb29727178c6335827"
 
 pretty-format@^21.2.1:
   version "21.2.1"
   resolved "https://registry.yarnpkg.com/pretty-format/-/pretty-format-21.2.1.tgz#ae5407f3cf21066cd011aa1ba5fce7b6a2eddb36"
+  dependencies:
+    ansi-regex "^3.0.0"
+    ansi-styles "^3.2.0"
+
+pretty-format@^22.0.3:
+  version "22.0.3"
+  resolved "https://registry.yarnpkg.com/pretty-format/-/pretty-format-22.0.3.tgz#a2bfa59fc33ad24aa4429981bb52524b41ba5dd7"
   dependencies:
     ansi-regex "^3.0.0"
     ansi-styles "^3.2.0"
@@ -4835,10 +4906,6 @@ trim-right@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/trim-right/-/trim-right-1.0.1.tgz#cb2e1203067e0c8de1f614094b9fe45704ea6003"
 
-tryit@^1.0.1:
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/tryit/-/tryit-1.0.3.tgz#393be730a9446fd1ead6da59a014308f36c289cb"
-
 tunnel-agent@^0.6.0:
   version "0.6.0"
   resolved "https://registry.yarnpkg.com/tunnel-agent/-/tunnel-agent-0.6.0.tgz#27a5dea06b36b04a0a9966774b290868f0fc40fd"
@@ -4865,6 +4932,13 @@ type-is@~1.6.15:
 typedarray@^0.0.6:
   version "0.0.6"
   resolved "https://registry.yarnpkg.com/typedarray/-/typedarray-0.0.6.tgz#867ac74e3864187b1d3d47d996a78ec5c8830777"
+
+typescript-eslint-parser@^11.0.0:
+  version "11.0.0"
+  resolved "https://registry.yarnpkg.com/typescript-eslint-parser/-/typescript-eslint-parser-11.0.0.tgz#37dba6a0130dd307504aa4b4b21b0d3dc7d4e9f2"
+  dependencies:
+    lodash.unescape "4.0.1"
+    semver "5.4.1"
 
 typescript-eslint-parser@^8.0.0:
   version "8.0.1"
@@ -5083,8 +5157,8 @@ write@^0.2.1:
     mkdirp "^0.5.1"
 
 ws@^3.0.0:
-  version "3.3.2"
-  resolved "https://registry.yarnpkg.com/ws/-/ws-3.3.2.tgz#96c1d08b3fefda1d5c1e33700d3bfaa9be2d5608"
+  version "3.3.3"
+  resolved "https://registry.yarnpkg.com/ws/-/ws-3.3.3.tgz#f1cf84fe2d5e901ebce94efaece785f187a228f2"
   dependencies:
     async-limiter "~1.0.0"
     safe-buffer "~5.1.0"
@@ -5121,8 +5195,8 @@ yargs-parser@^7.0.0:
     camelcase "^4.1.0"
 
 yargs-parser@^8.0.0:
-  version "8.0.0"
-  resolved "https://registry.yarnpkg.com/yargs-parser/-/yargs-parser-8.0.0.tgz#21d476330e5a82279a4b881345bf066102e219c6"
+  version "8.1.0"
+  resolved "https://registry.yarnpkg.com/yargs-parser/-/yargs-parser-8.1.0.tgz#f1376a33b6629a5d063782944da732631e966950"
   dependencies:
     camelcase "^4.1.0"
 
