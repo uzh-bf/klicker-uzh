@@ -19,7 +19,7 @@
     "cookie-parser": "1.4.3",
     "cross-env": "5.1.1",
     "dotenv": "4.0.0",
-    "elastic-apm-node": "0.8.1",
+    "elastic-apm-node": "0.9.0",
     "express": "4.16.2",
     "fingerprintjs2": "1.5.1",
     "glob": "7.1.2",
