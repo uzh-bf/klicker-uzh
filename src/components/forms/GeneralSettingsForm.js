@@ -7,6 +7,7 @@ import { compose, withProps } from 'recompose'
 
 import { SemanticInput, SettingsForm } from '.'
 
+// TODO validation
 const validate = ({ email }) => {
   const errors = {}
 
@@ -71,8 +72,8 @@ const GeneralSettingsForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
 GeneralSettingsForm.propTypes = propTypes
 
 export default compose(
-  withProps(({ accountShort }) => ({
-    initialValues: { accountShort },
+  withProps(({ accountShort, email }) => ({
+    initialValues: { accountShort, email },
   })),
   reduxForm({
     enableReinitialize: true,

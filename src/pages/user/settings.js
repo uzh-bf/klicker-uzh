@@ -13,10 +13,11 @@ import { AccountSummaryQuery } from '../../graphql'
 
 const propTypes = {
   accountShort: PropTypes.string.isRequired,
+  email: PropTypes.string.isRequired,
   intl: intlShape.isRequired,
 }
 
-const Settings = ({ accountShort, intl }) => (
+const Settings = ({ accountShort, email, intl }) => (
   <TeacherLayout
     intl={intl}
     navbar={{
@@ -37,7 +38,12 @@ const Settings = ({ accountShort, intl }) => (
       </h1>
 
       <div className="settingsForm">
-        <GeneralSettingsForm accountShort={accountShort} className="settingsForm" intl={intl} />
+        <GeneralSettingsForm
+          accountShort={accountShort}
+          className="settingsForm"
+          email={email}
+          intl={intl}
+        />
       </div>
 
       <div className="settingsForm">
@@ -68,5 +74,6 @@ export default compose(
   graphql(AccountSummaryQuery),
   withProps(({ data }) => ({
     accountShort: _get(data, 'user.shortname'),
+    email: _get(data, 'user.email'),
   })),
 )(Settings)
