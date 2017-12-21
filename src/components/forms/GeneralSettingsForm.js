@@ -3,7 +3,6 @@ import PropTypes from 'prop-types'
 import isEmail from 'validator/lib/isEmail'
 import { Field, reduxForm } from 'redux-form'
 import { intlShape } from 'react-intl'
-import { Form } from 'semantic-ui-react'
 import { compose, withProps } from 'recompose'
 
 import { SemanticInput, SettingsForm } from '.'
@@ -42,28 +41,6 @@ const GeneralSettingsForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
         id: 'form.settings.general.title',
       })}
     >
-      <Form.Group widths="equal">
-        <Field
-          required
-          component={SemanticInput}
-          intl={intl}
-          label={intl.formatMessage({
-            defaultMessage: 'First Name',
-            id: 'form.firstName.label',
-          })}
-          name="firstName"
-        />
-        <Field
-          required
-          component={SemanticInput}
-          intl={intl}
-          label={intl.formatMessage({
-            defaultMessage: 'Last Name',
-            id: 'form.lastName.label',
-          })}
-          name="lastName"
-        />
-      </Form.Group>
       <Field
         required
         component={SemanticInput}
