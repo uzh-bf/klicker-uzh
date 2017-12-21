@@ -43,7 +43,7 @@
     "persistgraphql": "0.3.11",
     "prop-types": "15.6.0",
     "prosemirror-schema-basic": "1.0.0",
-    "prosemirror-state": "1.0.1",
+    "prosemirror-state": "1.0.2",
     "prosemirror-view": "1.0.5",
     "qrcode.react": "0.7.2",
     "ramda": "0.25.0",
