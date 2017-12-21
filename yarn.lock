@@ -1187,22 +1187,22 @@ ee-first@1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/ee-first/-/ee-first-1.1.1.tgz#590c61156b0ae2f4f0255732a158b266bc56b21d"
 
-elastic-apm-http-client@^4.1.0:
-  version "4.1.0"
-  resolved "https://registry.yarnpkg.com/elastic-apm-http-client/-/elastic-apm-http-client-4.1.0.tgz#0e4b14f3f58368c127ef4520efae0b7684ded22f"
+elastic-apm-http-client@^5.1.0:
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/elastic-apm-http-client/-/elastic-apm-http-client-5.1.0.tgz#8a100b90315009647b3ce29f2cba4c6dd6ee9c45"
   dependencies:
     fast-safe-stringify "^1.2.0"
 
-elastic-apm-node@0.8.1:
-  version "0.8.1"
-  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-0.8.1.tgz#4ed6a67850461afbbf0cd17309adb8768fa2b97b"
+elastic-apm-node@0.9.0:
+  version "0.9.0"
+  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-0.9.0.tgz#77a494ea9f87bf4dd7291eee4eb82d3b60233f0b"
   dependencies:
     after-all-results "^2.0.0"
     console-log-level "^1.4.0"
     cookie "^0.3.1"
     core-util-is "^1.0.2"
     debug "^3.0.0"
-    elastic-apm-http-client "^4.1.0"
+    elastic-apm-http-client "^5.1.0"
     end-of-stream "^1.1.0"
     fast-safe-stringify "^1.1.3"
     http-headers "^3.0.1"
