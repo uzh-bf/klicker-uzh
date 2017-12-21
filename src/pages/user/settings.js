@@ -1,16 +1,22 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import { FormattedMessage, intlShape } from 'react-intl'
-import { compose } from 'recompose'
+import { compose, withProps } from 'recompose'
+import { graphql } from 'react-apollo'
+
+import _get from 'lodash/get'
 
 import { TeacherLayout } from '../../components/layouts'
 import { GeneralSettingsForm, PasswordSettingsForm } from '../../components/forms'
 import { pageWithIntl, withData } from '../../lib'
+import { AccountSummaryQuery } from '../../graphql'
 
 const propTypes = {
+  accountShort: PropTypes.string.isRequired,
   intl: intlShape.isRequired,
 }
 
-const Settings = ({ intl }) => (
+const Settings = ({ accountShort, intl }) => (
   <TeacherLayout
     intl={intl}
     navbar={{
@@ -31,7 +37,7 @@ const Settings = ({ intl }) => (
       </h1>
 
       <div className="settingsForm">
-        <GeneralSettingsForm className="settingsForm" intl={intl} />
+        <GeneralSettingsForm accountShort={accountShort} className="settingsForm" intl={intl} />
       </div>
 
       <div className="settingsForm">
@@ -56,4 +62,11 @@ const Settings = ({ intl }) => (
 
 Settings.propTypes = propTypes
 
-export default compose(withData, pageWithIntl)(Settings)
+export default compose(
+  withData,
+  pageWithIntl,
+  graphql(AccountSummaryQuery),
+  withProps(({ data }) => ({
+    accountShort: _get(data, 'user.shortname'),
+  })),
+)(Settings)

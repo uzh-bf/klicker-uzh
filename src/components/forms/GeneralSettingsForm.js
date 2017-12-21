@@ -4,6 +4,7 @@ import isEmail from 'validator/lib/isEmail'
 import { Field, reduxForm } from 'redux-form'
 import { intlShape } from 'react-intl'
 import { Form } from 'semantic-ui-react'
+import { compose, withProps } from 'recompose'
 
 import { SemanticInput, SettingsForm } from '.'
 
@@ -72,7 +73,7 @@ const GeneralSettingsForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
           defaultMessage: 'Account ID',
           id: 'form.accountId.label',
         })}
-        name="accountId"
+        name="accountShort"
       />
       <Field
         required
@@ -92,7 +93,13 @@ const GeneralSettingsForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
 
 GeneralSettingsForm.propTypes = propTypes
 
-export default reduxForm({
-  form: 'generalSettings',
-  validate,
-})(GeneralSettingsForm)
+export default compose(
+  withProps(({ accountShort }) => ({
+    initialValues: { accountShort },
+  })),
+  reduxForm({
+    enableReinitialize: true,
+    form: 'generalSettings',
+    validate,
+  }),
+)(GeneralSettingsForm)
