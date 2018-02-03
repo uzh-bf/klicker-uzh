@@ -1,18 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`[object Object] 1`] = `
-Object {
-  "09960d18c947355e0b797d2c266e0825": Object {
-    "count": 1,
-    "value": 14,
-  },
-  "25daad3d9e60b45043a70c4ab7d3b1c6": Object {
-    "count": 2,
-    "value": 10,
-  },
-}
-`;
-
 exports[`SessionExecService addConfusionTS allows adding new timesteps 1`] = `
 
     SESSION
@@ -295,6 +282,19 @@ exports[`SessionExecService addResponse allows adding responses to a FREE_RANGE 
       FREE: [object Object]
     }
   
+`;
+
+exports[`SessionExecService addResponse allows adding responses to a FREE_RANGE question: [object Object] 1`] = `
+Object {
+  "09960d18c947355e0b797d2c266e0825": Object {
+    "count": 1,
+    "value": 14,
+  },
+  "25daad3d9e60b45043a70c4ab7d3b1c6": Object {
+    "count": 2,
+    "value": 10,
+  },
+}
 `;
 
 exports[`SessionExecService addResponse allows adding responses to a SC question 1`] = `
