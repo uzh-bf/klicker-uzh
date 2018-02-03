@@ -5,13 +5,6 @@ const dev = process.env.NODE_ENV !== 'production'
 // initialize elastic-apm if so configured
 let apm
 if (process.env.APM_SERVER_URL) {
-  /* apm = require('opbeat').start({
-    active: process.env.NODE_ENV === 'production',
-    appId: process.env.OPBEAT_APP_ID_NEXT,
-    organizationId: process.env.OPBEAT_ORG_ID_NEXT,
-    secretToken: process.env.OPBEAT_SECRET_TOKEN_NEXT,
-  }) */
-
   apm = require('elastic-apm-node').start({
     active: !dev,
     appName: process.env.APM_NAME,
@@ -258,7 +251,7 @@ app
         res.cookie('locale', locale)
       }
 
-      // set the opbeat transaction name
+      // set the APM transaction name
       if (apm) {
         if (req.originalUrl.length > 6 && req.originalUrl.substring(0, 6) !== '/_next') {
           apm.setTransactionName(`${req.method} ${req.originalUrl}`)
