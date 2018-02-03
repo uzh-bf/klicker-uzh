@@ -178,11 +178,6 @@ if (process.env.NODE_ENV === 'production') {
   })
 }
 
-// add the opbeat middleware
-if (apm) {
-  middleware.push(apm.middleware.express())
-}
-
 // if apollo engine is enabled, add the middleware to the production stack
 if (apolloEngine) {
   middleware.push(apolloEngine.expressMiddleware())
