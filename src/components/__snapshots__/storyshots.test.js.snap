@@ -837,7 +837,9 @@ exports[`Storyshots confusion ConfusionBarometer 1`] = `
     <input
       checked={false}
       className="hidden"
+      id={undefined}
       name={undefined}
+      onClick={[Function]}
       readOnly={true}
       tabIndex={0}
       type="checkbox"
@@ -1932,7 +1934,9 @@ exports[`Storyshots feedbacks FeedbackChannel (isActive) 1`] = `
       <input
         checked={true}
         className="hidden"
+        id={undefined}
         name={undefined}
+        onClick={[Function]}
         readOnly={true}
         tabIndex={0}
         type="checkbox"
@@ -1957,7 +1961,9 @@ exports[`Storyshots feedbacks FeedbackChannel (isActive) 1`] = `
       <input
         checked={false}
         className="hidden"
+        id={undefined}
         name={undefined}
+        onClick={[Function]}
         readOnly={true}
         tabIndex={0}
         type="checkbox"
@@ -1999,7 +2005,9 @@ exports[`Storyshots feedbacks FeedbackChannel (isPublic) 1`] = `
       <input
         checked={true}
         className="hidden"
+        id={undefined}
         name={undefined}
+        onClick={[Function]}
         readOnly={true}
         tabIndex={0}
         type="checkbox"
@@ -2024,7 +2032,9 @@ exports[`Storyshots feedbacks FeedbackChannel (isPublic) 1`] = `
       <input
         checked={true}
         className="hidden"
+        id={undefined}
         name={undefined}
+        onClick={[Function]}
         readOnly={true}
         tabIndex={0}
         type="checkbox"
@@ -2066,7 +2076,9 @@ exports[`Storyshots feedbacks FeedbackChannel 1`] = `
       <input
         checked={false}
         className="hidden"
+        id={undefined}
         name={undefined}
+        onClick={[Function]}
         readOnly={true}
         tabIndex={0}
         type="checkbox"
@@ -2091,7 +2103,9 @@ exports[`Storyshots feedbacks FeedbackChannel 1`] = `
       <input
         checked={false}
         className="hidden"
+        id={undefined}
         name={undefined}
+        onClick={[Function]}
         readOnly={true}
         tabIndex={-1}
         type="checkbox"
