@@ -18,7 +18,7 @@
     "compression": "1.7.1",
     "cookie-parser": "1.4.3",
     "cross-env": "5.1.1",
-    "dotenv": "5.0.0",
+    "dotenv": "4.0.0",
     "elastic-apm-node": "0.12.0",
     "express": "4.16.2",
     "fingerprintjs2": "1.5.1",
@@ -97,7 +97,7 @@
     "react-test-renderer": "16.2.0",
     "semantic-ui-css": "2.2.14",
     "storybook-addon-intl": "2.2.0",
-    "webpack-bundle-analyzer": "2.9.1"
+    "webpack-bundle-analyzer": "2.9.2"
   },
   "scripts": {
     "precommit": "lint-staged",
