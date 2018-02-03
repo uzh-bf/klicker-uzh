@@ -189,28 +189,28 @@ apollo-cache-control@^0.0.x:
   dependencies:
     graphql-extensions "^0.0.x"
 
-apollo-engine-binary-darwin@0.2017.12-45-g12ba029f9:
-  version "0.2017.12-45-g12ba029f9"
-  resolved "https://registry.yarnpkg.com/apollo-engine-binary-darwin/-/apollo-engine-binary-darwin-0.2017.12-45-g12ba029f9.tgz#a1c646179337fa58093decc4fd278b6518d2734a"
+apollo-engine-binary-darwin@0.2018.1-54-gce490265c:
+  version "0.2018.1-54-gce490265c"
+  resolved "https://registry.yarnpkg.com/apollo-engine-binary-darwin/-/apollo-engine-binary-darwin-0.2018.1-54-gce490265c.tgz#398ed38b51fea982eec3a620a85da7dfea060fc5"
 
-apollo-engine-binary-linux@0.2017.12-45-g12ba029f9:
-  version "0.2017.12-45-g12ba029f9"
-  resolved "https://registry.yarnpkg.com/apollo-engine-binary-linux/-/apollo-engine-binary-linux-0.2017.12-45-g12ba029f9.tgz#4a3948fb887a16f302ed9eb8466df7bf70c23e80"
+apollo-engine-binary-linux@0.2018.1-54-gce490265c:
+  version "0.2018.1-54-gce490265c"
+  resolved "https://registry.yarnpkg.com/apollo-engine-binary-linux/-/apollo-engine-binary-linux-0.2018.1-54-gce490265c.tgz#abbf9b720b89da604edd76d13a88c471597d5481"
 
-apollo-engine-binary-windows@0.2017.12-45-g12ba029f9:
-  version "0.2017.12-45-g12ba029f9"
-  resolved "https://registry.yarnpkg.com/apollo-engine-binary-windows/-/apollo-engine-binary-windows-0.2017.12-45-g12ba029f9.tgz#4a8985ae2e024e6b0c4b229f5fb6cf4b0baacf69"
+apollo-engine-binary-windows@0.2018.1-54-gce490265c:
+  version "0.2018.1-54-gce490265c"
+  resolved "https://registry.yarnpkg.com/apollo-engine-binary-windows/-/apollo-engine-binary-windows-0.2018.1-54-gce490265c.tgz#9fbb28deb31a5407669b22b1a831551a80f84287"
 
-apollo-engine@0.8.1:
-  version "0.8.1"
-  resolved "https://registry.yarnpkg.com/apollo-engine/-/apollo-engine-0.8.1.tgz#ff3182061e729d631b4c5c1a49c2e731a430ba9b"
+apollo-engine@0.8.8:
+  version "0.8.8"
+  resolved "https://registry.yarnpkg.com/apollo-engine/-/apollo-engine-0.8.8.tgz#ec3f2534a634503387372d2b86e70ae20752b6c6"
   dependencies:
     request "^2.81.0"
     stream-json "^0.5.2"
   optionalDependencies:
-    apollo-engine-binary-darwin "0.2017.12-45-g12ba029f9"
-    apollo-engine-binary-linux "0.2017.12-45-g12ba029f9"
-    apollo-engine-binary-windows "0.2017.12-45-g12ba029f9"
+    apollo-engine-binary-darwin "0.2018.1-54-gce490265c"
+    apollo-engine-binary-linux "0.2018.1-54-gce490265c"
+    apollo-engine-binary-windows "0.2018.1-54-gce490265c"
 
 apollo-server-core@^1.2.0:
   version "1.3.2"
@@ -1474,9 +1474,51 @@ eslint-visitor-keys@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/eslint-visitor-keys/-/eslint-visitor-keys-1.0.0.tgz#3f3180fb2e291017716acb4c9d6d5b5c34a6a81d"
 
-eslint@4.17.0, eslint@^4.0.0, eslint@^4.5.0:
+eslint@4.17.0:
   version "4.17.0"
   resolved "https://registry.yarnpkg.com/eslint/-/eslint-4.17.0.tgz#dc24bb51ede48df629be7031c71d9dc0ee4f3ddf"
+  dependencies:
+    ajv "^5.3.0"
+    babel-code-frame "^6.22.0"
+    chalk "^2.1.0"
+    concat-stream "^1.6.0"
+    cross-spawn "^5.1.0"
+    debug "^3.1.0"
+    doctrine "^2.1.0"
+    eslint-scope "^3.7.1"
+    eslint-visitor-keys "^1.0.0"
+    espree "^3.5.2"
+    esquery "^1.0.0"
+    esutils "^2.0.2"
+    file-entry-cache "^2.0.0"
+    functional-red-black-tree "^1.0.1"
+    glob "^7.1.2"
+    globals "^11.0.1"
+    ignore "^3.3.3"
+    imurmurhash "^0.1.4"
+    inquirer "^3.0.6"
+    is-resolvable "^1.0.0"
+    js-yaml "^3.9.1"
+    json-stable-stringify-without-jsonify "^1.0.1"
+    levn "^0.3.0"
+    lodash "^4.17.4"
+    minimatch "^3.0.2"
+    mkdirp "^0.5.1"
+    natural-compare "^1.4.0"
+    optionator "^0.8.2"
+    path-is-inside "^1.0.2"
+    pluralize "^7.0.0"
+    progress "^2.0.0"
+    require-uncached "^1.0.3"
+    semver "^5.3.0"
+    strip-ansi "^4.0.0"
+    strip-json-comments "~2.0.1"
+    table "^4.0.1"
+    text-table "~0.2.0"
+
+eslint@^4.0.0, eslint@^4.5.0:
+  version "4.16.0"
+  resolved "https://registry.yarnpkg.com/eslint/-/eslint-4.16.0.tgz#934ada9e98715e1d7bbfd6f6f0519ed2fab35cc1"
   dependencies:
     ajv "^5.3.0"
     babel-code-frame "^6.22.0"
