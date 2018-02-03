@@ -1,4 +1,3 @@
-import initOpbeat from 'opbeat-react'
 import React from 'react'
 
 let Raven
@@ -18,14 +17,6 @@ export default function withLogging(Child) {
       super(props)
       this.state = { error: null }
 
-      if (process.env.OPBEAT_APP_ID_REACT) {
-        initOpbeat({
-          active: process.env.NODE_ENV === 'production',
-          appId: process.env.OPBEAT_APP_ID_REACT,
-          orgId: process.env.OPBEAT_ORG_ID_REACT,
-        })
-      }
-
       if (Raven) {
         Raven.config(process.env.SENTRY_DSN, {
           environment: process.env.NODE_ENV,
@@ -36,12 +27,6 @@ export default function withLogging(Child) {
 
     componentDidCatch(error, errorInfo) {
       this.setState({ error })
-
-      if (process.env.OPBEAT_APP_ID) {
-        const { captureError } = require('opbeat-react')
-        captureError(error, errorInfo)
-        console.error(error)
-      }
 
       if (Raven) {
         Raven.captureException(error, { extra: errorInfo })
