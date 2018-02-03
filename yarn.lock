@@ -4168,9 +4168,9 @@ find-up@^2.0.0, find-up@^2.1.0:
   dependencies:
     locate-path "^2.0.0"
 
-fingerprintjs2@1.5.1:
-  version "1.5.1"
-  resolved "https://registry.yarnpkg.com/fingerprintjs2/-/fingerprintjs2-1.5.1.tgz#010691d425bc37fa0b5a7ec1ae85404bb3f934cb"
+fingerprintjs2@1.6.1:
+  version "1.6.1"
+  resolved "https://registry.yarnpkg.com/fingerprintjs2/-/fingerprintjs2-1.6.1.tgz#e5f3af34361c74b13e12a380c51418dab76d6280"
 
 flat-cache@^1.2.1:
   version "1.3.0"
