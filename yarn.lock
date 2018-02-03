@@ -4788,9 +4788,9 @@ graphql@0.11.7:
   dependencies:
     iterall "^1.1.0"
 
-griddle-react@1.9.0:
-  version "1.9.0"
-  resolved "https://registry.yarnpkg.com/griddle-react/-/griddle-react-1.9.0.tgz#04586bf0267a8d3560d05ed4e4850a4e4292d538"
+griddle-react@1.11.1:
+  version "1.11.1"
+  resolved "https://registry.yarnpkg.com/griddle-react/-/griddle-react-1.11.1.tgz#3b75f554f50833f7b9addb27dc6aba8092da1716"
   dependencies:
     immutable "^3.8.1"
     lodash "^4.17.4"
