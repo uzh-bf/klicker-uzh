@@ -79,7 +79,7 @@
     "@storybook/react": "3.2.18",
     "babel-eslint": "8.0.3",
     "cypress": "1.4.1",
-    "enzyme": "3.2.0",
+    "enzyme": "3.3.0",
     "eslint": "4.17.0",
     "eslint-config-airbnb": "16.1.0",
     "eslint-plugin-import": "2.8.0",
