@@ -21,7 +21,7 @@
     "dotenv": "4.0.0",
     "elastic-apm-node": "0.12.0",
     "express": "4.16.2",
-    "fingerprintjs2": "1.5.1",
+    "fingerprintjs2": "1.6.1",
     "glob": "7.1.2",
     "graphql": "0.11.7",
     "griddle-react": "1.11.1",
