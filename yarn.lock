@@ -2198,10 +2198,6 @@ has@^1.0.1:
   dependencies:
     function-bind "^1.0.2"
 
-hashlru@^2.0.0:
-  version "2.2.1"
-  resolved "https://registry.yarnpkg.com/hashlru/-/hashlru-2.2.1.tgz#10f2099a0d7c05a40f2beaf5c1d39cf2f7dabf36"
-
 hawk@3.1.3, hawk@~3.1.3:
   version "3.1.3"
   resolved "https://registry.yarnpkg.com/hawk/-/hawk-3.1.3.tgz#078444bd7c1640b0fe540d2c9b73d59678e8e1c4"
@@ -2318,10 +2314,6 @@ http-signature@~1.2.0:
     assert-plus "^1.0.0"
     jsprim "^1.2.2"
     sshpk "^1.7.0"
-
-https-pem@^1.0.4:
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/https-pem/-/https-pem-1.0.4.tgz#f34d986916d051563a7fc6ba96ddb1c28634dc18"
 
 husky@0.14.3:
   version "0.14.3"
@@ -3924,7 +3916,7 @@ oauth-sign@~0.8.1, oauth-sign@~0.8.2:
   version "0.8.2"
   resolved "https://registry.yarnpkg.com/oauth-sign/-/oauth-sign-0.8.2.tgz#46a6ab7f0aead8deae9ec0565780b7d4efeb9d43"
 
-object-assign@^4, object-assign@^4.0.1, object-assign@^4.1.0, object-assign@^4.1.1:
+object-assign@^4, object-assign@^4.0.1, object-assign@^4.1.0:
   version "4.1.1"
   resolved "https://registry.yarnpkg.com/object-assign/-/object-assign-4.1.1.tgz#2109adc7965887cfc05cbbd442cac8bfbb360863"
 
@@ -3980,45 +3972,6 @@ onetime@^2.0.0:
   resolved "https://registry.yarnpkg.com/onetime/-/onetime-2.0.1.tgz#067428230fd67443b2794b22bba528b6867962d4"
   dependencies:
     mimic-fn "^1.0.0"
-
-opbeat-http-client@^1.0.3, opbeat-http-client@^1.2.2:
-  version "1.2.2"
-  resolved "https://registry.yarnpkg.com/opbeat-http-client/-/opbeat-http-client-1.2.2.tgz#8ad399969d508254dace2d0853981368117da33f"
-  dependencies:
-    fast-safe-stringify "^1.1.3"
-
-opbeat-release-tracker@^1.1.1:
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/opbeat-release-tracker/-/opbeat-release-tracker-1.1.1.tgz#2f65767250b955ae988edca875acd836120e7e0a"
-  dependencies:
-    after-all-results "^2.0.0"
-    opbeat-http-client "^1.0.3"
-
-opbeat@4.16.0:
-  version "4.16.0"
-  resolved "https://registry.yarnpkg.com/opbeat/-/opbeat-4.16.0.tgz#2d76c8d311e259829b85fbced46de97a6c4b3f70"
-  dependencies:
-    after-all-results "^2.0.0"
-    console-log-level "^1.4.0"
-    cookie "^0.3.1"
-    core-util-is "^1.0.2"
-    debug "^3.0.0"
-    end-of-stream "^1.1.0"
-    fast-safe-stringify "^1.1.3"
-    hashlru "^2.0.0"
-    https-pem "^1.0.4"
-    is-native "^1.0.1"
-    normalize-bool "^1.0.0"
-    object-assign "^4.1.1"
-    opbeat-http-client "^1.2.2"
-    opbeat-release-tracker "^1.1.1"
-    redact-secrets "^1.0.0"
-    require-in-the-middle "^2.1.2"
-    semver "^5.3.0"
-    sql-summary "^1.0.0"
-    stackman "^2.0.1"
-    unicode-byte-truncate "^1.0.0"
-    uuid "^3.0.1"
 
 optimist@^0.6.1:
   version "0.6.1"
@@ -4979,17 +4932,6 @@ sshpk@^1.7.0:
     ecc-jsbn "~0.1.1"
     jsbn "~0.1.0"
     tweetnacl "~0.14.0"
-
-stackman@^2.0.1:
-  version "2.0.1"
-  resolved "https://registry.yarnpkg.com/stackman/-/stackman-2.0.1.tgz#ced309c662e9b9b667efd7183b1ae30c517cbaa3"
-  dependencies:
-    after-all-results "^2.0.0"
-    async-cache "^1.1.0"
-    debug "^2.2.0"
-    error-callsites "^1.0.1"
-    load-source-map "^1.0.0"
-    path-is-absolute "^1.0.1"
 
 stackman@^3.0.0:
   version "3.0.1"

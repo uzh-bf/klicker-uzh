@@ -1,7 +1,7 @@
 /* eslint-disable global-require */
 require('dotenv').config()
 
-// initialize opbeat if so configured
+// initialize APM if so configured
 let apm
 if (process.env.APM_SERVER_URL) {
   apm = require('elastic-apm-node')
@@ -164,7 +164,7 @@ if (process.env.NODE_ENV === 'production') {
     const invertedMap = _invert(queryMap)
     req.body.query = invertedMap[req.body.id]
 
-    // set the opbeat transaction name
+    // set the APM transaction name
     if (apm) {
       apm.setTransactionName(`[${req.body.id}] ${req.body.operationName}`)
 
