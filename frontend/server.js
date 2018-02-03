@@ -180,11 +180,6 @@ app
       middleware.push(morgan('combined'))
     }
 
-    // add the opbeat middleware
-    if (apm) {
-      middleware.push(apm.middleware.express())
-    }
-
     server.use(...middleware)
 
     // prepare page configuration
