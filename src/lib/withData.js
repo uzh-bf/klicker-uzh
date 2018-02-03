@@ -1,8 +1,6 @@
 /* eslint-disable react/prop-types */
 
 import Raven from 'raven-js'
-import initOpbeat, { captureError } from 'opbeat-react'
-
 import React from 'react'
 import { ApolloProvider, getDataFromTree } from 'react-apollo'
 import Head from 'next/head'
@@ -12,7 +10,6 @@ import initRedux from './initRedux'
 let logrocket = null
 let hotjar = null
 let sentry = null
-let opbeat = null
 
 // Gets the display name of a JSX component for dev tools
 function getComponentDisplayName(Component) {
@@ -87,19 +84,6 @@ export default ComposedComponent =>
       this.state = { error: null }
 
       if (process.env.NODE_ENV === 'production' && process.browser) {
-        // setup opbeat if so configured
-        if (process.env.OPBEAT_APP_ID_REACT && !opbeat) {
-          if (initOpbeat) {
-            initOpbeat({
-              active: process.env.NODE_ENV === 'production',
-              appId: process.env.OPBEAT_APP_ID_REACT,
-              orgId: process.env.OPBEAT_ORG_ID_REACT,
-            })
-
-            opbeat = true
-          }
-        }
-
         // setup logrocket if so configured
         if (process.env.LOGROCKET && !logrocket) {
           const LogRocket = require('logrocket')
@@ -151,15 +135,10 @@ export default ComposedComponent =>
       // set the component error state
       this.setState({ error })
 
-      // log the error to console, opbeat and/or sentry
+      // log the error to console and/or sentry
       console.error(error)
 
       if (process.env.NODE_ENV === 'production') {
-        if (process.env.OPBEAT_APP_ID) {
-          if (captureError) {
-            captureError(error, errorInfo)
-          }
-        }
         if (process.env.SENTRY_DSN) {
           if (Raven) {
             Raven.captureException(error, { extra: errorInfo })
