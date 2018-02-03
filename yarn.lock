@@ -4379,9 +4379,9 @@ range-parser@~1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/range-parser/-/range-parser-1.2.0.tgz#f49be6b487894ddc40dcc94a322f611092e00d5e"
 
-rate-limit-redis@1.3.0:
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/rate-limit-redis/-/rate-limit-redis-1.3.0.tgz#25cbe3979671fafd2282a68da852a609b3323c9a"
+rate-limit-redis@1.4.0:
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/rate-limit-redis/-/rate-limit-redis-1.4.0.tgz#9bfb5ef31adf3026500ee06be0dcc2082ccc5d87"
   dependencies:
     defaults "^1.0.3"
     redis "^2.6.0-2"
