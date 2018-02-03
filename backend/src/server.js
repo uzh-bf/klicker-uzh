@@ -1,14 +1,7 @@
 /* eslint-disable global-require */
 
-// initialize opbeat if so configured
+// initialize APM if so configured
 if (process.env.APM_SERVER_URL) {
-  /* require('opbeat').start({
-    active: process.env.NODE_ENV === 'production',
-    appId: process.env.OPBEAT_APP_ID,
-    organizationId: process.env.OPBEAT_ORG_ID,
-    secretToken: process.env.OPBEAT_SECRET_TOKEN,
-  }) */
-
   require('elastic-apm-node').start({
     active: process.env.NODE_ENV === 'production',
     appName: process.env.APM_NAME,
