@@ -8045,7 +8045,7 @@ prop-types@15.6.0, prop-types@^15.5.0, prop-types@^15.5.10, prop-types@^15.5.4, 
     loose-envify "^1.3.1"
     object-assign "^4.1.1"
 
-prosemirror-model@^1.0.0:
+prosemirror-model@^1.0.0, prosemirror-model@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/prosemirror-model/-/prosemirror-model-1.1.0.tgz#94cea251a4dd2696460f7b33061121058f7f8c86"
   dependencies:
@@ -8057,14 +8057,7 @@ prosemirror-schema-basic@1.0.0:
   dependencies:
     prosemirror-model "^1.0.0"
 
-prosemirror-state@1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/prosemirror-state/-/prosemirror-state-1.0.2.tgz#f1b55b721b05c7c0817e1ddf42026b59539cfe07"
-  dependencies:
-    prosemirror-model "^1.0.0"
-    prosemirror-transform "^1.0.0"
-
-prosemirror-state@^1.0.0:
+prosemirror-state@1.1.0, prosemirror-state@^1.0.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/prosemirror-state/-/prosemirror-state-1.1.0.tgz#36187dc53028bb61b53f6af3ba672e2995084bc6"
   dependencies:
@@ -8077,11 +8070,11 @@ prosemirror-transform@^1.0.0:
   dependencies:
     prosemirror-model "^1.0.0"
 
-prosemirror-view@1.0.5:
-  version "1.0.5"
-  resolved "https://registry.yarnpkg.com/prosemirror-view/-/prosemirror-view-1.0.5.tgz#be31aa7381630e42dea5e11381dd2c60148ebccb"
+prosemirror-view@1.0.10:
+  version "1.0.10"
+  resolved "https://registry.yarnpkg.com/prosemirror-view/-/prosemirror-view-1.0.10.tgz#be82fd39da157ba9b0d00ae7b640a87851c11446"
   dependencies:
-    prosemirror-model "^1.0.0"
+    prosemirror-model "^1.1.0"
     prosemirror-state "^1.0.0"
     prosemirror-transform "^1.0.0"
 
