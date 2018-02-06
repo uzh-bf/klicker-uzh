@@ -8943,9 +8943,9 @@ react-autowhatever@^10.1.0:
     react-themeable "^1.1.0"
     section-iterator "^2.0.0"
 
-react-d3-cloud@0.5.0:
-  version "0.5.0"
-  resolved "https://registry.yarnpkg.com/react-d3-cloud/-/react-d3-cloud-0.5.0.tgz#0060f963ff4f0051a9225d1a6b222919e6b6f2d6"
+react-d3-cloud@0.6.0:
+  version "0.6.0"
+  resolved "https://registry.yarnpkg.com/react-d3-cloud/-/react-d3-cloud-0.6.0.tgz#fb88284457be2baea2d432a80f960db599df8280"
   dependencies:
     d3-cloud "^1.2.4"
     d3-scale "^1.0.6"
