@@ -3574,7 +3574,11 @@ dotenv-webpack@^1.5.4:
   dependencies:
     dotenv "^4.0.0"
 
-dotenv@4.0.0, dotenv@^4.0.0:
+dotenv@5.0.0:
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-5.0.0.tgz#0206eb5b336639bf377618a2a304ff00c6a1fddb"
+
+dotenv@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-4.0.0.tgz#864ef1379aced55ce6f95debecdce179f7a0cd1d"
 
@@ -3615,9 +3619,9 @@ elastic-apm-http-client@^5.1.0:
   dependencies:
     fast-safe-stringify "^1.2.0"
 
-elastic-apm-node@0.12.0:
-  version "0.12.0"
-  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-0.12.0.tgz#0fd358d19bf10d82de118097051ba7c7e0160223"
+elastic-apm-node@1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.0.0.tgz#b5b97e82da894b30b38d1028da13fae31a2d9d2e"
   dependencies:
     after-all-results "^2.0.0"
     console-log-level "^1.4.0"
@@ -3630,11 +3634,12 @@ elastic-apm-node@0.12.0:
     http-headers "^3.0.1"
     is-native "^1.0.1"
     normalize-bool "^1.0.0"
+    original-url "^1.2.0"
     redact-secrets "^1.0.0"
     require-in-the-middle "^2.1.2"
     semver "^5.3.0"
     sql-summary "^1.0.0"
-    stackman "^3.0.0"
+    stackman "^3.0.1"
     unicode-byte-truncate "^1.0.0"
     uuid "^3.0.1"
 
@@ -4489,6 +4494,10 @@ form-data@~2.3.1:
     asynckit "^0.4.0"
     combined-stream "^1.0.5"
     mime-types "^2.1.12"
+
+forwarded-parse@^2.0.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/forwarded-parse/-/forwarded-parse-2.1.0.tgz#1ae9d7a4be3af884f74d936d856f7d8c6abd0439"
 
 forwarded@~0.1.2:
   version "0.1.2"
@@ -7881,6 +7890,12 @@ orderedmap@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/orderedmap/-/orderedmap-1.0.0.tgz#d90fc2ba1ed085190907d601dec6e6a53f8d41ba"
 
+original-url@^1.2.0:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/original-url/-/original-url-1.2.1.tgz#44c659b769b170458d5302c835b59753c05d5c8a"
+  dependencies:
+    forwarded-parse "^2.0.0"
+
 os-browserify@^0.3.0:
   version "0.3.0"
   resolved "https://registry.yarnpkg.com/os-browserify/-/os-browserify-0.3.0.tgz#854373c7f5c2315914fc9bfc6bd8238fdda1ec27"
@@ -10275,7 +10290,7 @@ stackframe@^1.0.3:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/stackframe/-/stackframe-1.0.4.tgz#357b24a992f9427cba6b545d96a14ed2cbca187b"
 
-stackman@^3.0.0:
+stackman@^3.0.1:
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/stackman/-/stackman-3.0.1.tgz#915a77753201d66e3f2df64252c2381a177f374b"
   dependencies:
@@ -10490,9 +10505,9 @@ style-loader@^0.19.1:
     loader-utils "^1.0.2"
     schema-utils "^0.3.0"
 
-styled-jsx-plugin-sass@0.2.1:
-  version "0.2.1"
-  resolved "https://registry.yarnpkg.com/styled-jsx-plugin-sass/-/styled-jsx-plugin-sass-0.2.1.tgz#e6fd9861954206b928bd13a947277f3f10f73a36"
+styled-jsx-plugin-sass@0.2.2:
+  version "0.2.2"
+  resolved "https://registry.yarnpkg.com/styled-jsx-plugin-sass/-/styled-jsx-plugin-sass-0.2.2.tgz#e1da2e68477f7b66af8ef31ac71eda0da946cb9c"
 
 styled-jsx@2.2.1:
   version "2.2.1"
