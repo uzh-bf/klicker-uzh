@@ -1,6 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import isAlpha from 'validator/lib/isAlpha'
+import isAlphanumeric from 'validator/lib/isAlphanumeric'
 import isEmail from 'validator/lib/isEmail'
 import isLength from 'validator/lib/isLength'
 import isEmpty from 'validator/lib/isEmpty'
@@ -11,24 +12,9 @@ import { Button, Form } from 'semantic-ui-react'
 import { SemanticInput } from '.'
 
 const validate = ({
-  firstName,
-  lastName,
-  institution,
-  email,
-  shortname,
-  password,
-  passwordRepeat,
-  useCase,
+  institution, email, shortname, password, passwordRepeat, useCase,
 }) => {
   const errors = {}
-
-  if (!firstName || isEmpty(firstName)) {
-    errors.firstName = 'form.firstName.invalid'
-  }
-
-  if (!lastName || isEmpty(lastName)) {
-    errors.lastName = 'form.lastName.invalid'
-  }
 
   if (!institution || isEmpty(institution)) {
     errors.institution = 'form.institution.invalid'
@@ -40,7 +26,7 @@ const validate = ({
   }
 
   // the shortname is allowed to be within 3 to 6 chars
-  if (!shortname || !isAlpha(shortname) || !isLength(shortname, { max: 6, min: 3 })) {
+  if (!shortname || !isAlphanumeric(shortname) || !isLength(shortname, { max: 6, min: 3 })) {
     errors.shortname = 'form.shortname.invalid'
   }
 
@@ -74,28 +60,6 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
         <Field
           required
           component={SemanticInput}
-          intl={intl}
-          label={intl.formatMessage({
-            defaultMessage: 'First name',
-            id: 'form.firstName.label',
-          })}
-          name="firstName"
-          type="text"
-        />
-        <Field
-          required
-          component={SemanticInput}
-          intl={intl}
-          label={intl.formatMessage({
-            defaultMessage: 'Last name',
-            id: 'form.lastName.label',
-          })}
-          name="lastName"
-          type="text"
-        />
-        <Field
-          required
-          component={SemanticInput}
           icon="mail"
           intl={intl}
           label={intl.formatMessage({
@@ -105,9 +69,6 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
           name="email"
           type="email"
         />
-      </div>
-
-      <div className="account">
         <Field
           required
           component={SemanticInput}
@@ -118,13 +79,16 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
             id: 'form.shortname.label',
           })}
           name="shortname"
+          placeholder="klicker.uzh.ch/join/ID..."
           tooltip={intl.formatMessage({
             defaultMessage:
-              'A unique identifier for your account. Must be between 3 and 6 characters long.',
+              'A unique identifier for your account. Must be between 3 and 6 characters long (alphanumeric).',
             id: 'tooltip',
           })}
           type="text"
         />
+      </div>
+      <div className="account">
         <Field
           required
           component={SemanticInput}
@@ -162,12 +126,20 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
           name="institution"
           type="text"
         />
-        <Form.Field>
-          <label htmlFor="useCase">
-            <FormattedMessage defaultMessage="Use case description" id="form.useCase.label" />
-          </label>
-          <Field component="textarea" icon="company" intl={intl} name="useCase" type="text" />
-        </Form.Field>
+        <Field
+          component={SemanticInput}
+          intl={intl}
+          label={intl.formatMessage({
+            defaultMessage: 'Use case description',
+            id: 'form.useCase.label',
+          })}
+          name="useCase"
+          tooltip={intl.formatMessage({
+            defaultMessage: 'Short description of your planned use case for the IBF Klicker.',
+            id: 'tooltip',
+          })}
+          type="text"
+        />
 
         <Button primary disabled={invalid} floated="right" type="submit">
           <FormattedMessage defaultMessage="Submit" id="form.button.submit" />

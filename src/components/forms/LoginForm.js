@@ -46,10 +46,10 @@ const LoginForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
         id: 'form.forgotPassword.label',
       }),
     },
-    {
+    /* { TODO: enable AAI button
       href: '/user/aaiLogin',
       label: intl.formatMessage({ defaultMessage: 'Login with AAI', id: 'form.aaiLogin.label' }),
-    },
+    }, */
   ]
 
   return (
