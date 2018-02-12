@@ -11,12 +11,10 @@
     js-tokens "^3.0.0"
 
 "@babel/code-frame@^7.0.0-beta.35":
-  version "7.0.0-beta.39"
-  resolved "https://registry.yarnpkg.com/@babel/code-frame/-/code-frame-7.0.0-beta.39.tgz#91c90bb65207fc5a55128cb54956ded39e850457"
+  version "7.0.0-beta.40"
+  resolved "https://registry.yarnpkg.com/@babel/code-frame/-/code-frame-7.0.0-beta.40.tgz#37e2b0cf7c56026b4b21d3927cadf81adec32ac6"
   dependencies:
-    chalk "^2.0.0"
-    esutils "^2.0.2"
-    js-tokens "^3.0.0"
+    "@babel/highlight" "7.0.0-beta.40"
 
 "@babel/helper-function-name@7.0.0-beta.36":
   version "7.0.0-beta.36"
@@ -31,6 +29,14 @@
   resolved "https://registry.yarnpkg.com/@babel/helper-get-function-arity/-/helper-get-function-arity-7.0.0-beta.36.tgz#f5383bac9a96b274828b10d98900e84ee43e32b8"
   dependencies:
     "@babel/types" "7.0.0-beta.36"
+
+"@babel/highlight@7.0.0-beta.40":
+  version "7.0.0-beta.40"
+  resolved "https://registry.yarnpkg.com/@babel/highlight/-/highlight-7.0.0-beta.40.tgz#b43d67d76bf46e1d10d227f68cddcd263786b255"
+  dependencies:
+    chalk "^2.0.0"
+    esutils "^2.0.2"
+    js-tokens "^3.0.0"
 
 "@babel/template@7.0.0-beta.36":
   version "7.0.0-beta.36"
@@ -4605,11 +4611,11 @@ graphql-tag@^2.0.0, graphql-tag@^2.4.2:
   version "2.7.3"
   resolved "https://registry.yarnpkg.com/graphql-tag/-/graphql-tag-2.7.3.tgz#5040112a1b4623285ef017c252276f0dea37f03f"
 
-graphql@0.11.7:
-  version "0.11.7"
-  resolved "https://registry.yarnpkg.com/graphql/-/graphql-0.11.7.tgz#e5abaa9cb7b7cccb84e9f0836bf4370d268750c6"
+graphql@0.13.0:
+  version "0.13.0"
+  resolved "https://registry.yarnpkg.com/graphql/-/graphql-0.13.0.tgz#d1b44a282279a9ce0a6ec1037329332f4c1079b6"
   dependencies:
-    iterall "1.1.3"
+    iterall "1.1.x"
 
 "graphql@>=0.9.4 <0.11", graphql@^0.10.0, graphql@^0.10.3:
   version "0.10.5"
@@ -5618,11 +5624,7 @@ istanbul-reports@^1.1.3:
   dependencies:
     handlebars "^4.0.3"
 
-iterall@1.1.3:
-  version "1.1.3"
-  resolved "https://registry.yarnpkg.com/iterall/-/iterall-1.1.3.tgz#1cbbff96204056dde6656e2ed2e2226d0e6d72c9"
-
-iterall@^1.1.0:
+iterall@1.1.x, iterall@^1.1.0:
   version "1.1.4"
   resolved "https://registry.yarnpkg.com/iterall/-/iterall-1.1.4.tgz#0db40d38fdcf53ae14dc8ec674e62ab190d52cfc"
 
