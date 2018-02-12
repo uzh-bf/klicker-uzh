@@ -45,7 +45,7 @@
     "prosemirror-view": "1.0.10",
     "qrcode.react": "0.7.2",
     "ramda": "0.25.0",
-    "raven-js": "3.22.1",
+    "raven-js": "3.22.2",
     "react": "16.2.0",
     "react-addons-css-transition-group": "15.6.2",
     "react-apollo": "1.4.16",
