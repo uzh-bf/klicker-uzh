@@ -25,7 +25,7 @@ const SessionArea = ({ sessionId, shortname }) => (
     </Menu.Item>
 
     <Menu.Item>
-      <Link as={`/join/${shortname}`} href={{ pathname: '/join', query: { shortname } }}>
+      <a href={`/join/${shortname}`} target="_blank">
         <Button icon labelPosition="left">
           <Icon name="external" />
           <FormattedMessage
@@ -34,7 +34,7 @@ const SessionArea = ({ sessionId, shortname }) => (
             values={{ shortname }}
           />
         </Button>
-      </Link>
+      </a>
     </Menu.Item>
   </React.Fragment>
 )
