@@ -14,6 +14,7 @@ import SessionArea from './SessionArea'
 
 const propTypes = {
   accountShort: PropTypes.string,
+  filters: PropTypes.object,
   handleSidebarToggle: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   runningSessionId: PropTypes.string,
