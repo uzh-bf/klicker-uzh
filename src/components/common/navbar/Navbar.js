@@ -14,6 +14,7 @@ import SessionArea from './SessionArea'
 
 const propTypes = {
   accountShort: PropTypes.string,
+  filters: PropTypes.object,
   handleSidebarToggle: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   runningSessionId: PropTypes.string,
@@ -66,7 +67,9 @@ export const NavbarPres = ({
     <div className="accountArea">
       <Menu borderless className="loginArea noBorder">
         <Menu.Menu position="right">
-          {accountShort && <SessionArea sessionId={runningSessionId} shortname={accountShort} />}
+          {accountShort && (
+            <SessionArea intl={intl} sessionId={runningSessionId} shortname={accountShort} />
+          )}
           <AccountArea accountShort={accountShort} />
         </Menu.Menu>
       </Menu>
@@ -85,7 +88,7 @@ export const NavbarPres = ({
         padding: 3px 0 3px 0;
 
         background-color: $background-color;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+        border-bottom: 1px solid lightgrey;
 
         z-index: 100;
 
@@ -129,6 +132,11 @@ export const NavbarPres = ({
 
           :global(.menu) {
             background-color: $background-color;
+
+            :global(.item) {
+              padding-top: 0;
+              padding-bottom: 0;
+            }
           }
         }
 
@@ -143,7 +151,7 @@ export const NavbarPres = ({
             flex: 1 1 50%;
             order: 1;
 
-            padding: 0.2rem 2rem;
+            padding: 0.2rem 1rem;
           }
 
           .accountArea {

@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage } from 'react-intl'
 import { Button, Icon } from 'semantic-ui-react'
+import moment from 'moment'
 
 import { SemanticInput } from '.'
 import { SessionTimelineInput } from '../sessions'
@@ -137,6 +138,8 @@ export default reduxForm({
   form: 'createSession',
   initialValues: {
     blocks: [],
+    // initialize session name to the current date and time
+    sessionName: moment().format('DD.MM.YYYY HH:mm'),
   },
   validate,
 })(SessionCreationForm)

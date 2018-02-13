@@ -84,5 +84,10 @@
   "common.string.send": "Send",
   "user.login.title": "Login",
   "user.registration.title": "Registration",
-  "user.resetPassword.title": "Reset password"
+  "user.resetPassword.title": "Reset password",
+  "form.email.invalid": "Please provide a valid email address.",
+  "form.password.invalid": "Please provide a valid password (8+ characters).",
+  "form.shortname.invalid": "Please provide a valid account ID (3-6 characters).",
+  "form.passwordRepeat.invalid": "Please ensure that passwords match.",
+  "form.institution.invalid": "Please provide a valid institution."
 }

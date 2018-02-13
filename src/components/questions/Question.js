@@ -81,7 +81,12 @@ const Question = ({
         </div>
 
         <div className="details">
-          <QuestionDetails description={description} lastUsed={lastUsed} questionId={id} />
+          <QuestionDetails
+            description={description}
+            lastUsed={lastUsed}
+            questionId={id}
+            questionType={type}
+          />
         </div>
       </div>
 
@@ -92,7 +97,7 @@ const Question = ({
           display: flex;
           flex-flow: column nowrap;
 
-          padding: 10px;
+          padding: 0.5rem;
           border: 1px solid lightgray;
           background-color: #f9f9f9;
 
@@ -146,18 +151,19 @@ const Question = ({
               flex: 1;
               flex-flow: row wrap;
 
-              .title,
-              .versionChooser {
+              .title {
                 flex: 0 0 auto;
               }
 
               .versionChooser {
-                padding-top: 2px;
-                padding-left: 1rem;
+                flex: 1 1 auto;
+                padding-right: 1rem;
+                text-align: right;
+                align-self: center;
               }
 
               .tags {
-                flex: 1 1 auto;
+                flex: 0 0 auto;
                 align-self: flex-end;
               }
 

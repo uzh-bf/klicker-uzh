@@ -1,7 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import moment from 'moment'
-import Link from 'next/link'
 import { Button, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
@@ -10,6 +9,7 @@ import { QuestionBlock } from '../questions'
 const propTypes = {
   blocks: PropTypes.array,
   button: PropTypes.shape({
+    disabled: PropTypes.bool.isRequired,
     icon: PropTypes.oneOf(['copy', 'play']).isRequired,
     message: PropTypes.element.isRequired,
     onClick: PropTypes.func.isRequired,
@@ -39,6 +39,7 @@ const Session = ({
 }) => (
   <div className="block" key={blockId}>
     <QuestionBlock
+      noDetails
       questions={instances.map(({ id: instanceId, question, version }) => ({
               id: instanceId,
               title: question.title,
@@ -51,19 +52,25 @@ const Session = ({
   </div>
       ))}
       <div className="actionArea">
-        <Link
-          as={`/sessions/evaluation/${id}`}
-          href={{ pathname: '/sessions/evaluation', query: { sessionId: id } }}
-        >
+        <a href={`/sessions/evaluation/${id}`} target="_blank">
           <Button icon labelPosition="left">
             <Icon name="external" />
             Evaluation
           </Button>
-        </Link>
-        <Button icon primary className="lastButton" labelPosition="left" onClick={button.onClick}>
-          <Icon name={button.icon} />
-          {button.message}
-        </Button>
+        </a>
+        {!button.hidden && (
+          <Button
+            icon
+            primary
+            className="lastButton"
+            disabled={button.disabled}
+            labelPosition="left"
+            onClick={button.onClick}
+          >
+            <Icon name={button.icon} />
+            {button.message}
+          </Button>
+        )}
       </div>
     </div>
 
@@ -88,16 +95,12 @@ const Session = ({
         display: flex;
         flex-direction: column;
 
-        > :global(*) {
-          margin-bottom: 0.3rem;
-        }
-
         :global(.button) {
           margin-right: 0 !important;
         }
 
         :global(.lastButton) {
-          margin-bottom: 0 !important;
+          margin-top: 0.3rem !important;
         }
       }
 
