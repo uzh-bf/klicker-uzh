@@ -5,10 +5,9 @@ const SessionExecService = require('../services/sessionExec')
 const { SessionModel, UserModel } = require('../models')
 
 /* ----- queries ----- */
-const allSessionsQuery = async (parentValue, args, { auth }) => {
-  const user = await UserModel.findById(auth.sub).populate(['sessions'])
-  return user.sessions
-}
+const allSessionsQuery = async (parentValue, args, { auth }) =>
+  SessionModel.find({ user: auth.sub }).sort({ createdAt: -1 })
+
 const sessionQuery = async (parentValue, { id }, { auth }) => SessionModel.findOne({ _id: id, user: auth.sub })
 
 const runningSessionQuery = async (parentValue, args, { auth }) => {
@@ -22,7 +21,19 @@ const sessionsByPVQuery = parentValue => SessionModel.find({ _id: { $in: parentV
 const joinSessionQuery = async (parentValue, { shortname }) => SessionExecService.joinSession({ shortname })
 
 // calculate the session runtime
-const runtimeByPVQuery = ({ startedAt }) => moment.duration(moment().diff(startedAt)).humanize()
+const runtimeByPVQuery = ({ startedAt }) => {
+  const duration = moment.duration(moment().diff(startedAt))
+  const days = duration.days()
+  const hours = `0${duration.hours()}`.slice(-2)
+  const minutes = `0${duration.minutes()}`.slice(-2)
+  const seconds = `0${duration.seconds()}`.slice(-2)
+
+  if (days > 0) {
+    return `${days}d ${hours}:${minutes}:${seconds}`
+  }
+
+  return `${hours}:${minutes}:${seconds}`
+}
 
 /* ----- mutations ----- */
 const createSessionMutation = (parentValue, { session: { name, blocks } }, { auth }) =>
