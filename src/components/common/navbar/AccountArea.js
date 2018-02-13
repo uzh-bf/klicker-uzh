@@ -8,16 +8,18 @@ const propTypes = {
 }
 
 const AccountArea = ({ accountShort }) => (
-  <Dropdown item simple text={accountShort.toUpperCase()}>
-    <Dropdown.Menu>
-      <Dropdown.Item>
-        <FormattedMessage defaultMessage="Settings" id="common.string.settings" />
-      </Dropdown.Item>
-      <Dropdown.Item>
-        <FormattedMessage defaultMessage="Logout" id="common.string.logout" />
-      </Dropdown.Item>
-    </Dropdown.Menu>
-  </Dropdown>
+  <React.Fragment>
+    <Dropdown item simple icon="user" text={accountShort.toUpperCase()}>
+      <Dropdown.Menu>
+        <Dropdown.Item disabled>
+          <FormattedMessage defaultMessage="Settings" id="common.string.settings" />
+        </Dropdown.Item>
+        <Dropdown.Item disabled>
+          <FormattedMessage defaultMessage="Logout" id="common.string.logout" />
+        </Dropdown.Item>
+      </Dropdown.Menu>
+    </Dropdown>
+  </React.Fragment>
 )
 
 AccountArea.propTypes = propTypes

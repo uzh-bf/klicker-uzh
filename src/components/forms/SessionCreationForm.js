@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage } from 'react-intl'
 import { Button, Icon } from 'semantic-ui-react'
+import moment from 'moment'
 
 import { SemanticInput } from '.'
 import { SessionTimelineInput } from '../sessions'
@@ -60,7 +61,7 @@ const SessionCreationForm = ({
 
       <Button fluid icon disabled={invalid} labelPosition="left" type="submit">
         <Icon name="save" />
-        <FormattedMessage defaultMessage="Save" id="common.button.save" />
+        <FormattedMessage defaultMessage="Save & Close" id="form.createSession.button.save" />
       </Button>
 
       <Button
@@ -106,13 +107,17 @@ const SessionCreationForm = ({
         }
 
         .actionArea {
-          flex: 0 0 10rem;
+          flex: 0 0 auto;
 
           border: 1px solid lightgrey;
           border-top: 0;
           padding: 0.5rem;
 
           > :global(button) {
+            :global(span) {
+              margin-left: 2rem;
+            }
+
             &:not(:last-child) {
               margin-bottom: 0.5rem;
             }
@@ -133,6 +138,8 @@ export default reduxForm({
   form: 'createSession',
   initialValues: {
     blocks: [],
+    // initialize session name to the current date and time
+    sessionName: moment().format('DD.MM.YYYY HH:mm'),
   },
   validate,
 })(SessionCreationForm)

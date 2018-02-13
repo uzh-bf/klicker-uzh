@@ -1,9 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import Link from 'next/link'
 import classNames from 'classnames'
+import QRCode from 'qrcode.react'
 import { intlShape, FormattedMessage } from 'react-intl'
-import { Button, Icon } from 'semantic-ui-react'
+import { Button, Icon, Popup } from 'semantic-ui-react'
 
 import { QuestionBlock } from '../questions'
 
@@ -14,6 +14,7 @@ const propTypes = {
   intl: intlShape.isRequired,
   runtime: PropTypes.string,
   sessionId: PropTypes.string.isRequired,
+  shortname: PropTypes.string.isRequired,
   startedAt: PropTypes.string,
 }
 
@@ -29,30 +30,60 @@ const SessionTimeline = ({
   intl,
   runtime,
   startedAt,
+  shortname,
   handleLeftActionClick,
   handleRightActionClick,
 }) => (
   <div className="sessionTimeline">
     <div className="topRow">
-      <div className="startingTime">
-        <Icon name="time" /> {startedAt}
+      <div className="infos">
+        <div className="startingTime">
+          <Icon name="time" /> {startedAt}
+        </div>
+        <div className="runningTime">
+          <Icon name="play circle" /> {runtime}
+        </div>
       </div>
-      <div className="runningTime">
-        <Icon name="play circle" /> {runtime}
-      </div>
-      <div className="evaluationLink">
-        <Icon name="external" />{' '}
-        <Link
-          prefetch
-          as={`/sessions/evaluation/${sessionId}`}
-          href={{ pathname: '/sessions/evaluation', query: { sessionId } }}
+
+      <div className="actions">
+        <Popup
+          basic
+          hideOnScroll
+          on="click"
+          position="bottom right"
+          trigger={
+            <div className="qrTrigger">
+              <Button icon size="small">
+                <Icon name="qrcode" />
+              </Button>
+            </div>
+          }
         >
-          <a target="_blank">
-            <FormattedMessage defaultMessage="Evaluation" id="runningSession.button.evaluation" />
-          </a>
-        </Link>
+          <Popup.Content>
+            <div className="popupContent">
+              <div className="qr">
+                <QRCode value={`https://beta.klicker.uzh.ch/join/${shortname}`} />
+              </div>
+            </div>
+          </Popup.Content>
+        </Popup>
+        <a href={`/sessions/evaluation/${sessionId}`} target="_blank">
+          <Button icon labelPosition="left" size="small">
+            <Icon name="external" />
+            <FormattedMessage
+              defaultMessage="Evaluation (Results)"
+              id="runningSession.button.evaluation"
+            />
+          </Button>
+        </a>
+
+        <Button icon color="red" labelPosition="left" size="small" onClick={handleLeftActionClick}>
+          <Icon name="remove" />
+          <FormattedMessage defaultMessage="Cancel" id="runningSession.button.cancel" />
+        </Button>
       </div>
     </div>
+
     <div className="blocks">
       {blocks.map((block, index) => (
         <div className="blockWrap">
@@ -82,17 +113,6 @@ const SessionTimeline = ({
     </div>
     <div className="buttons">
       <Button
-        color="red"
-        content={intl.formatMessage({
-          defaultMessage: 'Cancel',
-          id: 'runningSession.button.cancel',
-        })}
-        icon="remove"
-        labelPosition="left"
-        size="large"
-        onClick={handleLeftActionClick}
-      />
-      <Button
         primary
         content={intl.formatMessage({
           defaultMessage: 'Next',
@@ -114,15 +134,32 @@ const SessionTimeline = ({
         .topRow {
           flex: 1;
 
-          display: flex;
-
-          background: lightgrey;
-          padding: 1rem;
+          justify-content: space-between;
         }
 
-        .runningTime,
-        .evaluationLink {
+        .topRow,
+        .infos,
+        .actions {
+          display: flex;
+          align-items: flex-end;
+        }
+
+        .actions > :global(*:last-child) {
+          margin: 0;
+        }
+
+        .runningTime {
           margin-left: 2rem;
+        }
+
+        .popupContent {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+
+          .qr {
+            margin-bottom: 0.5rem;
+          }
         }
 
         .blocks {
@@ -182,13 +219,13 @@ const SessionTimeline = ({
 
           display: flex;
           flex-flow: row wrap;
-          justify-content: space-between;
+          justify-content: flex-end;
 
           margin-top: 1rem;
-        }
 
-        .buttons > :global(button) {
-          margin-right: 0;
+          > :global(button) {
+            margin-right: 0;
+          }
         }
 
         @include desktop-tablet-only {
@@ -197,7 +234,10 @@ const SessionTimeline = ({
           .topRow {
             flex: 0 0 100%;
 
-            padding: 0.5rem;
+            padding-bottom: 0.25rem;
+
+            .actions {
+            }
           }
 
           .blocks {

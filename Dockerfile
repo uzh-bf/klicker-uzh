@@ -1,9 +1,9 @@
 # extend the node alpine base
-FROM node:8-alpine@sha256:40201c973cf40708f06205b22067f952dd46a29cecb7a74b873ce303ad0d11a5
+FROM node:8-alpine@sha256:b1e1f024dccf7058d2f55b21d6bf65c9cb932ba7bee2a24eca08ddb7c654312b
 
 # root application directory
 ENV KLICKER_DIR="/app"
-ENV PM_VERSION="2.8.0"
+ENV PM_VERSION="2.9.2"
 
 # fix permissions for the global node directories
 # this allows installing pm2 globally as user 1000
@@ -11,10 +11,10 @@ RUN set -x \
   && mkdir /.pm2 \
   && export NPM_PREFIX=$(npm config get prefix) \
   && chown -R 1000:0 \
-    $NPM_PREFIX/lib/node_modules \
-    $NPM_PREFIX/bin \
-    $NPM_PREFIX/share \
-    /.pm2 \
+  $NPM_PREFIX/lib/node_modules \
+  $NPM_PREFIX/bin \
+  $NPM_PREFIX/share \
+  /.pm2 \
   && chmod g+w /.pm2
 
 # switch to the node user (uid 1000)
@@ -50,7 +50,7 @@ ARG VERSION="staging"
 RUN set -x && yarn run build
 
 # run next in production mode
-CMD ["pm2-docker", "start", "--env", "production", "server.js"]
+CMD ["pm2-docker", "start", "process.json", "--web", "--env", "production", "--raw"]
 
 # add labels
 LABEL maintainer="Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"

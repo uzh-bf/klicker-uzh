@@ -1,6 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import isEmpty from 'validator/lib/isEmpty'
+import _isInteger from 'lodash/isInteger'
 import { compose, withProps } from 'recompose'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage, intlShape } from 'react-intl'
@@ -8,7 +9,7 @@ import { Button, Form, Icon, Menu, Message } from 'semantic-ui-react'
 
 import { ContentInput, TagInput, TitleInput } from '../questions'
 import { FREECreationOptions, SCCreationOptions } from '../../components/questionTypes'
-import { QUESTION_TYPES } from '../../constants'
+import { QUESTION_TYPES, QUESTION_GROUPS } from '../../constants'
 
 // form validation
 const validate = ({
@@ -24,22 +25,24 @@ const validate = ({
     errors.tags = 'form.editQuestion.tags.empty'
   }
 
-  // validation of SC answer options
-  if (type === QUESTION_TYPES.SC) {
-    // SC questions need at least one answer option to be valid
-    if (!options || options.length === 0) {
-      errors.options = 'form.editQuestion.options.empty'
-    }
-    // validation of FREE answer options
-  } else if (type === QUESTION_TYPES.FREE) {
+  if (QUESTION_GROUPS.CHOICES.includes(type) && (!options || options.choices.length === 0)) {
+    errors.options = 'form.createQuestion.options.empty'
+  }
+
+  if (type === QUESTION_TYPES.FREE_RANGE) {
     if (options && options.restrictions) {
-      if (!options.restrictions.min && !options.restrictions.max) {
-        errors.options = 'form.editQuestion.options.noMinMax'
+      const isMinInt = _isInteger(options.restrictions.min)
+      const isMaxInt = _isInteger(options.restrictions.max)
+
+      if (!isMinInt && !isMaxInt) {
+        errors.options = 'form.createQuestion.options.noMinMax'
       }
 
-      if (options.restrictions.min >= options.restrictions.max) {
-        errors.options = 'form.editQuestion.options.minGteMax'
+      if (isMinInt && isMaxInt && options.restrictions.min >= options.restrictions.max) {
+        errors.options = 'form.createQuestion.options.minGteMax'
       }
+    } else {
+      errors.options = 'form.createQuestion.options.invalid'
     }
   }
 

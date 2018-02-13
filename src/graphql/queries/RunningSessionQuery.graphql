@@ -1,0 +1,37 @@
+query RunningSession {
+  runningSession {
+    id
+    runtime
+    startedAt
+    confusionTS {
+      difficulty
+      speed
+      createdAt
+    }
+    feedbacks {
+      id
+      content
+      votes
+      createdAt
+    }
+    blocks {
+      id
+      status
+      instances {
+        id
+        isOpen
+        version
+        question {
+          id
+          title
+          type
+        }
+      }
+    }
+    settings {
+      isConfusionBarometerActive
+      isFeedbackChannelActive
+      isFeedbackChannelPublic
+    }
+  }
+}

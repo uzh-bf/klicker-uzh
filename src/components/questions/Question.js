@@ -44,11 +44,13 @@ const Question = ({
   connectDragSource,
   handleSetActiveVersion,
 }) =>
+  // TODO: draggable rework
   connectDragSource(
-    <div className={classNames('question', { creationMode, draggable, isDragging })}>
+    <div className={classNames('question', { creationMode, draggable: true, isDragging })}>
       {creationMode && (
         <div className={classNames('sessionMembership', { active: !draggable })}>
           <input
+            disabled
             checked={!draggable}
             className="ui checkbox"
             name={`check-${id}`}
@@ -63,9 +65,10 @@ const Question = ({
 
         <div className="versionChooser">
           <Dropdown
+            disabled={versions.length === 1}
             options={versions.map((version, index) => ({
               key: index,
-              text: `Revision ${index + 1} - ${moment(version.createdAt).format('DD.MM.Y H:M')}`,
+              text: `v${index + 1} - ${moment(version.createdAt).format('DD.MM.YYYY HH:mm')}`,
               value: index,
             }))}
             value={activeVersion}
@@ -78,7 +81,12 @@ const Question = ({
         </div>
 
         <div className="details">
-          <QuestionDetails description={description} lastUsed={lastUsed} questionId={id} />
+          <QuestionDetails
+            description={description}
+            lastUsed={lastUsed}
+            questionId={id}
+            questionType={type}
+          />
         </div>
       </div>
 
@@ -89,7 +97,7 @@ const Question = ({
           display: flex;
           flex-flow: column nowrap;
 
-          padding: 10px;
+          padding: 0.5rem;
           border: 1px solid lightgray;
           background-color: #f9f9f9;
 
@@ -143,18 +151,19 @@ const Question = ({
               flex: 1;
               flex-flow: row wrap;
 
-              .title,
-              .versionChooser {
+              .title {
                 flex: 0 0 auto;
               }
 
               .versionChooser {
-                padding-top: 2px;
-                padding-left: 1rem;
+                flex: 1 1 auto;
+                padding-right: 1rem;
+                text-align: right;
+                align-self: center;
               }
 
               .tags {
-                flex: 1 1 auto;
+                flex: 0 0 auto;
                 align-self: flex-end;
               }
 
@@ -185,9 +194,9 @@ const source = {
     }
   },
   // whether the element can be dragged
-  canDrag({ draggable }) {
+  /* canDrag({ draggable }) {
     return draggable
-  },
+  }, */
   // if the element is dropped somewhere
   endDrag({ onDrop }, monitor) {
     if (monitor.didDrop()) {

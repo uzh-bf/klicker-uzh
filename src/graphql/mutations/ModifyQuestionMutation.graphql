@@ -1,0 +1,60 @@
+mutation ModifyQuestion(
+  $id: ID!
+  $title: String
+  $description: String
+  $options: QuestionOptionsInput
+  $solution: Question_SolutionInput
+  $tags: [ID!]
+) {
+  modifyQuestion(
+    id: $id
+    question: {
+      title: $title
+      description: $description
+      options: $options
+      solution: $solution
+      tags: $tags
+    }
+  ) {
+    id
+    title
+    type
+    tags {
+      id
+      name
+    }
+    versions {
+      id
+      description
+      options {
+        SC {
+          choices {
+            correct
+            name
+          }
+          randomized
+        }
+        MC {
+          choices {
+            correct
+            name
+          }
+          randomized
+        }
+        FREE_RANGE {
+          restrictions {
+            min
+            max
+          }
+        }
+      }
+      solution {
+        SC
+        MC
+        FREE
+        FREE_RANGE
+      }
+      createdAt
+    }
+  }
+}

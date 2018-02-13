@@ -8,7 +8,7 @@ import { graphql } from 'react-apollo'
 
 import { StaticLayout } from '../../components/layouts'
 import { LoginForm } from '../../components/forms'
-import { LoginMutation } from '../../graphql/mutations'
+import { LoginMutation } from '../../graphql'
 import { pageWithIntl, withData } from '../../lib'
 
 const propTypes = {
@@ -29,10 +29,10 @@ const Login = ({ intl, error, handleSubmit }) => (
         <FormattedMessage defaultMessage="Login" id="user.login.title" />
       </h1>
 
-      {/* TODO: improve message handling */}
-      {error && <div className="errorMessage message">Login failed: {error}</div>}
-
       <LoginForm intl={intl} onSubmit={handleSubmit} />
+
+      {/* TODO: improve message handling */}
+      {error && <div className="errorMessage message">Login failed ({error})</div>}
 
       <style jsx>{`
         @import 'src/theme';

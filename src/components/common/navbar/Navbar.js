@@ -6,7 +6,7 @@ import { Icon, Menu } from 'semantic-ui-react'
 import { graphql } from 'react-apollo'
 import { compose, withProps } from 'recompose'
 
-import { AccountSummaryQuery } from '../../../graphql/queries'
+import { AccountSummaryQuery } from '../../../graphql'
 
 import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'
@@ -14,8 +14,10 @@ import SessionArea from './SessionArea'
 
 const propTypes = {
   accountShort: PropTypes.string,
+  filters: PropTypes.object,
   handleSidebarToggle: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
+  runningSessionId: PropTypes.string,
   search: PropTypes.shape({
     handleSearch: PropTypes.func.isRequired,
     handleSortByChange: PropTypes.func.isRequired,
@@ -36,6 +38,7 @@ const propTypes = {
 
 const defaultProps = {
   accountShort: 'ANON',
+  runningSessionId: undefined,
   search: undefined,
   sidebarVisible: false,
 }
@@ -47,6 +50,7 @@ export const NavbarPres = ({
   sidebarVisible,
   title,
   handleSidebarToggle,
+  runningSessionId,
 }) => (
   <div className="navbar">
     <div className="sideArea">
@@ -81,7 +85,9 @@ export const NavbarPres = ({
     <div className="accountArea">
       <Menu borderless className="loginArea noBorder">
         <Menu.Menu position="right">
-          {accountShort && <SessionArea shortname={accountShort} />}
+          {accountShort && (
+            <SessionArea intl={intl} sessionId={runningSessionId} shortname={accountShort} />
+          )}
           <AccountArea accountShort={accountShort} />
         </Menu.Menu>
       </Menu>
@@ -100,7 +106,7 @@ export const NavbarPres = ({
         padding: 3px 0 3px 0;
 
         background-color: $background-color;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+        border-bottom: 1px solid lightgrey;
 
         z-index: 100;
 
@@ -144,6 +150,11 @@ export const NavbarPres = ({
 
           :global(.menu) {
             background-color: $background-color;
+
+            :global(.item) {
+              padding-top: 0;
+              padding-bottom: 0;
+            }
           }
         }
 
@@ -158,14 +169,19 @@ export const NavbarPres = ({
             flex: 1 1 50%;
             order: 1;
 
-            padding: 0.2rem 2rem;
+            padding: 0.2rem 1rem;
           }
 
           .accountArea {
             flex: 0 0 auto;
             order: 2;
 
-            display: block;
+            display: initial;
+
+            :global(.item) {
+              padding-left: 0.5rem;
+              padding-right: 0.5rem;
+            }
           }
         }
       }

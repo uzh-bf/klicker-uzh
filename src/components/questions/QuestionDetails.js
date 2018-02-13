@@ -3,7 +3,6 @@ import PropTypes from 'prop-types'
 import _truncate from 'lodash/truncate'
 import Link from 'next/link'
 
-import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
 
 import { ListWithHeader } from '../common'
@@ -25,19 +24,11 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
   return (
     <div className="questionDetails">
       <div className="column description">{truncatedDesc}</div>
-      <div className="column col2">
-        <p>
-          Antworten Total: <strong>999</strong>
-        </p>
-        <p>
-          Korrekte Antworten: <strong>88%</strong>
-        </p>
-      </div>
 
-      <div className="column col3">
-        <ListWithHeader items={lastUsed.length > 0 ? lastUsed : ['Never used']}>
-          <FormattedMessage defaultMessage="Last used" id="questionPool.question.lastUsed" />
-        </ListWithHeader>
+      <div className="column options" />
+
+      <div className="column lastUsed">
+        <ListWithHeader items={lastUsed.length > 0 ? lastUsed : ['-']} />
       </div>
 
       <div className="column buttons">
@@ -45,7 +36,7 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
           as={`/questions/${questionId}`}
           href={{ pathname: '/questions/details', query: { questionId } }}
         >
-          <Button icon="eye" />
+          <Button icon="pencil" />
         </Link>
       </div>
 
@@ -70,12 +61,12 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
             background-color: $color-primary-background;
           }
 
-          .col2 {
+          .options {
             display: none;
             border-bottom: 1px solid $color-primary;
           }
 
-          .col3 {
+          .lastUsed {
             display: none;
             border-bottom: 1px solid $color-primary;
           }
@@ -99,7 +90,7 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
 
             .column {
               flex: 1;
-              padding: 1rem;
+              padding: 0.7rem;
               text-align: left;
 
               &:not(:last-child) {
@@ -111,14 +102,14 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
               border-bottom: none;
             }
 
-            .col2 {
-              display: block;
+            .options {
               border-bottom: none;
             }
 
-            .col3 {
+            .lastUsed {
               display: block;
               border-bottom: none;
+              text-align: center;
             }
 
             .buttons {
@@ -145,12 +136,12 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
           }
 
           @include desktop-only {
-            .col2 {
-              flex: 0 0 250px;
+            .options {
+              flex: 0 0 12rem;
             }
 
-            .col3 {
-              flex: 0 0 250px;
+            .lastUsed {
+              flex: 0 0 12rem;
             }
           }
         }

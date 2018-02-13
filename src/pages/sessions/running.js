@@ -12,13 +12,14 @@ import { ConfusionBarometer } from '../../components/confusion'
 import { FeedbackChannel } from '../../components/feedbacks'
 import { SessionTimeline } from '../../components/sessions'
 import { TeacherLayout } from '../../components/layouts'
-import { AccountSummaryQuery, RunningSessionQuery } from '../../graphql/queries'
 import {
+  AccountSummaryQuery,
+  RunningSessionQuery,
   EndSessionMutation,
   UpdateSessionSettingsMutation,
   ActivateNextBlockMutation,
   DeleteFeedbackMutation,
-} from '../../graphql/mutations'
+} from '../../graphql'
 import { LoadingTeacherLayout, Messager } from '../../components/common'
 
 const propTypes = {
@@ -35,6 +36,7 @@ const propTypes = {
   isFeedbackChannelActive: PropTypes.bool.isRequired,
   isFeedbackChannelPublic: PropTypes.bool.isRequired,
   runtime: PropTypes.bool.isRequired,
+  shortname: PropTypes.string.isRequired,
   startedAt: PropTypes.string.isRequired,
 }
 
@@ -46,6 +48,7 @@ const Running = ({
   feedbacks,
   runtime,
   startedAt,
+  shortname,
   isConfusionBarometerActive,
   isFeedbackChannelActive,
   isFeedbackChannelPublic,
@@ -77,6 +80,7 @@ const Running = ({
           intl={intl}
           runtime={runtime}
           sessionId={id}
+          shortname={shortname}
           startedAt={startedAt}
         />
       </div>
@@ -162,6 +166,10 @@ Running.propTypes = propTypes
 export default compose(
   withData,
   pageWithIntl,
+  graphql(AccountSummaryQuery),
+  withProps(({ data }) => ({
+    shortname: data.user && data.user.shortname,
+  })),
   graphql(RunningSessionQuery, {
     // refetch the running session query every 10s
     options: { pollInterval: 10000 },
@@ -240,6 +248,6 @@ export default compose(
   withProps(({ data: { runningSession } }) => ({
     ...runningSession,
     ...runningSession.settings,
-    startedAt: moment(runningSession.startedAt).format('h:mm:ss'),
+    startedAt: moment(runningSession.startedAt).format('HH:mm:ss'),
   })),
 )(Running)

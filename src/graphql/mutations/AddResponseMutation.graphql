@@ -1,0 +1,9 @@
+mutation AddResponse(
+  $fp: ID
+  $instanceId: ID!
+  $response: QuestionInstance_ResponseInput!
+) {
+  addResponse(fp: $fp, instanceId: $instanceId, response: $response) {
+    id
+  }
+}

@@ -7,9 +7,14 @@ import _debounce from 'lodash/debounce'
 import { Button } from 'semantic-ui-react'
 import Link from 'next/link'
 
-import { pageWithIntl, withData, withSorting, withDnD } from '../../lib'
-import { AccountSummaryQuery, SessionListQuery, RunningSessionQuery } from '../../graphql/queries'
-import { CreateSessionMutation, StartSessionMutation } from '../../graphql/mutations'
+import { pageWithIntl, withData, withDnD, withSorting } from '../../lib'
+import {
+  CreateSessionMutation,
+  StartSessionMutation,
+  AccountSummaryQuery,
+  SessionListQuery,
+  RunningSessionQuery,
+} from '../../graphql'
 import { SessionCreationForm } from '../../components/forms'
 import { QuestionList, TagList } from '../../components/questions'
 import { TeacherLayout } from '../../components/layouts'
@@ -98,7 +103,11 @@ const Index = ({
     >
       <div className="questionPool">
         <div className="tagList">
-          <TagList activeTags={filters.tags} handleTagClick={handleTagClick} />
+          <TagList
+            activeTags={filters.tags}
+            activeType={filters.type}
+            handleTagClick={handleTagClick}
+          />
         </div>
         <div className="wrapper">
           <div className="questionList">
@@ -138,7 +147,7 @@ const Index = ({
 
           .tagList {
             flex: 1;
-            background: #ebebeb;
+            background: $color-primary-10p;
             padding: 0.5rem;
           }
 
@@ -157,8 +166,12 @@ const Index = ({
                 display: flex;
                 justify-content: center;
 
-                > :global(button:last-child) {
+                > :global(button) {
                   margin-right: 0;
+
+                  &:first-child {
+                    margin-right: 0.5rem;
+                  }
                 }
               }
             }
@@ -187,14 +200,6 @@ const Index = ({
 
           @include desktop-only {
             padding: 0;
-
-            .tagList {
-              padding: 2rem;
-            }
-
-            .wrapper {
-              padding: 2rem;
-            }
           }
         }
       `}</style>
@@ -243,7 +248,17 @@ export default compose(
       handleSearch: ({ filters }) => title => ({ ...filters, title }),
 
       // handle clicking on a tag in the tag list
-      handleTagClick: ({ filters }) => (tagName) => {
+      handleTagClick: ({ filters }) => (tagName, questionType = false) => {
+        // if the changed tag is a question type tag
+        if (questionType) {
+          if (filters.type === tagName) {
+            return { ...filters, type: null }
+          }
+
+          // add the tag to active tags
+          return { ...filters, type: tagName }
+        }
+
         // remove the tag from active tags
         if (filters.tags.includes(tagName)) {
           return {
