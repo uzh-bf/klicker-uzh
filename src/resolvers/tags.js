@@ -1,10 +1,7 @@
-const { TagModel, UserModel } = require('../models')
+const { TagModel } = require('../models')
 
 /* ----- queries ----- */
-const allTagsQuery = async (parentValue, args, { auth }) => {
-  const user = await UserModel.findById(auth.sub).populate(['tags'])
-  return user.tags
-}
+const allTagsQuery = async (parentValue, args, { auth }) => TagModel.find({ user: auth.sub }).sort({ name: 1 })
 
 const tagByIDQuery = (parentValue, { id }) => TagModel.findById(id)
 const tagsByPVQuery = parentValue => TagModel.find({ _id: { $in: parentValue.tags } })

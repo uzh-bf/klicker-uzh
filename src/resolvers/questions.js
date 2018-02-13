@@ -1,11 +1,10 @@
 const QuestionService = require('../services/questions')
-const { QuestionModel, UserModel } = require('../models')
+const { QuestionModel } = require('../models')
 
 /* ----- queries ----- */
-const allQuestionsQuery = async (parentValue, args, { auth }) => {
-  const user = await UserModel.findById(auth.sub).populate({ path: 'questions' })
-  return user.questions
-}
+const allQuestionsQuery = async (parentValue, args, { auth }) =>
+  QuestionModel.find({ user: auth.sub }).sort({ createdAt: -1 })
+
 const questionQuery = async (parentValue, { id }, { auth }) => QuestionModel.findOne({ _id: id, user: auth.sub })
 
 const questionByPVQuery = parentValue => QuestionModel.findById(parentValue.question)

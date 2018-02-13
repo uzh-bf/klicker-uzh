@@ -43,7 +43,6 @@ mongoose.Promise = Promise
 const mongoConfig = {
   keepAlive: true,
   reconnectTries: 10,
-  useMongoClient: true,
   promiseLibrary: Promise,
 }
 if (process.env.MONGO_USER && process.env.MONGO_PASSWORD) {
