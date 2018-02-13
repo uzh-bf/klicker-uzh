@@ -57,7 +57,6 @@ const initializeDb = async ({
     keepAlive: true,
     promiseLibrary: global.Promise,
     reconnectTries: 10,
-    useMongoClient: true,
   })
 
   await setupTestEnv({ email, password: 'somePassword', shortname })
