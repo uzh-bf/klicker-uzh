@@ -69,14 +69,14 @@
     "semantic-ui-react": "0.78.2",
     "styled-jsx-plugin-sass": "0.2.2",
     "validator": "9.4.0",
-    "webpack": "3.10.0"
+    "webpack": "3.11.0"
   },
   "devDependencies": {
-    "@storybook/addon-actions": "3.3.12",
-    "@storybook/addon-info": "3.3.12",
-    "@storybook/addon-links": "3.3.12",
-    "@storybook/addon-storyshots": "3.3.12",
-    "@storybook/react": "3.3.12",
+    "@storybook/addon-actions": "3.3.13",
+    "@storybook/addon-info": "3.3.13",
+    "@storybook/addon-links": "3.3.13",
+    "@storybook/addon-storyshots": "3.3.13",
+    "@storybook/react": "3.3.13",
     "babel-eslint": "8.2.1",
     "cypress": "1.4.2",
     "enzyme": "3.3.0",
