@@ -29,10 +29,10 @@ const Login = ({ intl, error, handleSubmit }) => (
         <FormattedMessage defaultMessage="Login" id="user.login.title" />
       </h1>
 
-      {/* TODO: improve message handling */}
-      {error && <div className="errorMessage message">Login failed: {error}</div>}
-
       <LoginForm intl={intl} onSubmit={handleSubmit} />
+
+      {/* TODO: improve message handling */}
+      {error && <div className="errorMessage message">Login failed ({error})</div>}
 
       <style jsx>{`
         @import 'src/theme';
