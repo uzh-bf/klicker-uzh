@@ -9,15 +9,37 @@ const propTypes = {
 }
 
 const SearchArea = ({ intl, handleSearch }) => (
-  <Input
-    fluid
-    icon="search"
-    placeholder={intl.formatMessage({
-      defaultMessage: 'Search...',
-      id: 'common.input.search.placeholder',
-    })}
-    onChange={e => handleSearch(e.target.value)}
-  />
+  <div className="searchWrapper">
+    <Input
+      fluid
+      icon="search"
+      placeholder={intl.formatMessage({
+        defaultMessage: 'Search...',
+        id: 'common.input.search.placeholder',
+      })}
+      onChange={e => handleSearch(e.target.value)}
+    />
+    {/* TODO: <div className="filters">
+      {filters.tags.length > 0 && filters.tags.map(tag => <span className="tag">{tag}</span>)}
+    </div> */}
+
+    <style jsx>{`
+      .searchWrapper {
+        position: relative;
+
+        .filters {
+          position: absolute;
+          bottom: 0.65rem;
+          right: 3rem;
+
+          .tag {
+            font-style: italic;
+            margin-left: 0.5rem;
+          }
+        }
+      }
+    `}</style>
+  </div>
 )
 
 SearchArea.propTypes = propTypes

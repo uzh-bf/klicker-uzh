@@ -6,25 +6,29 @@ import { Icon } from 'semantic-ui-react'
 import QuestionSingle from './QuestionSingle'
 
 const propTypes = {
+  noDetails: PropTypes.bool,
   questions: PropTypes.arrayOf(PropTypes.shape(QuestionSingle.propTypes)).isRequired,
-  // showSolutions: PropTypes.bool,
   status: PropTypes.string,
   timeLimit: PropTypes.number,
 }
 
 const defaultProps = {
-  // showSolutions: false,
+  noDetails: false,
   status: 'PLANNED',
   timeLimit: 0,
 }
 
-const QuestionBlock = ({ status, questions, timeLimit }) => (
+const QuestionBlock = ({
+  status, questions, timeLimit, noDetails,
+}) => (
   <div className={classNames('questionBlock', { active: status === 'ACTIVE' })}>
-    <div className="timeLimit">
-      <Icon name="clock" />
-      {timeLimit}s
-    </div>
-    <div className="sessionStatus">{status}</div>
+    {!noDetails && (
+      <div className="timeLimit">
+        <Icon name="clock" />
+        {timeLimit}s
+      </div>
+    )}
+    {!noDetails && <div className="sessionStatus">{status}</div>}
     <div className="questions">
       {questions.map(({
  id, title, type, version,

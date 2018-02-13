@@ -1,6 +1,5 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import Link from 'next/link'
 import classNames from 'classnames'
 import QRCode from 'qrcode.react'
 import { intlShape, FormattedMessage } from 'react-intl'
@@ -63,25 +62,20 @@ const SessionTimeline = ({
           <Popup.Content>
             <div className="popupContent">
               <div className="qr">
-                <QRCode value={`https://react-uniz-klicker.appuioapp.ch/join/${shortname}`} />
+                <QRCode value={`https://beta.klicker.uzh.ch/join/${shortname}`} />
               </div>
-
-              <Button disabled>
-                <FormattedMessage defaultMessage="Download PNG" id="sessionArea.downloadPNG" />
-              </Button>
             </div>
           </Popup.Content>
         </Popup>
-        <Link
-          prefetch
-          as={`/sessions/evaluation/${sessionId}`}
-          href={{ pathname: '/sessions/evaluation', query: { sessionId } }}
-        >
+        <a href={`/sessions/evaluation/${sessionId}`} target="_blank">
           <Button icon labelPosition="left" size="small">
             <Icon name="external" />
-            <FormattedMessage defaultMessage="Evaluation" id="runningSession.button.evaluation" />
+            <FormattedMessage
+              defaultMessage="Evaluation (Results)"
+              id="runningSession.button.evaluation"
+            />
           </Button>
-        </Link>
+        </a>
 
         <Button icon color="red" labelPosition="left" size="small" onClick={handleLeftActionClick}>
           <Icon name="remove" />

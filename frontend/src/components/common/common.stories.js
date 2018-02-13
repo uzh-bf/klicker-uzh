@@ -75,7 +75,7 @@ storiesOf('common/navbar', module)
   .add('SearchArea', () => (
     <SearchArea handleSearch={query => action(`search ${query}`)} intl={intlMock} />
   ))
-  .add('SessionArea', () => <SessionArea sessionId="a7s7d" />)
+  .add('SessionArea', () => <SessionArea intl={intlMock} sessionId="a7s7d" />)
 
 storiesOf('common/sidebar', module)
   .add('Sidebar (visible)', () => (

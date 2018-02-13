@@ -109,17 +109,15 @@ export const SessionListPres = ({ error, runningSession, sessions }) => {
       <style jsx>{`
         @import 'src/theme';
 
-        $background-color: rgba(124, 184, 228, 0.25);
-
         .session {
           margin-bottom: 1rem;
-          padding: 0.75rem;
-          border: 1px solid lightgray;
+          padding: 0.5rem;
+          border: 1px solid lightgrey;
           background-color: #f9f9f9;
         }
 
         .runningSession > .session {
-          background-color: $background-color;
+          background-color: #f9f9f9;
           border: 1px solid $color-primary;
         }
       `}</style>
@@ -186,6 +184,8 @@ export default compose(
           ...session,
           button: {
             ...statusCases[session.status],
+            disabled: session.status === SESSION_STATUS.COMPLETED,
+            hidden: session.status === SESSION_STATUS.COMPLETED,
             onClick: handleSessionAction(session.id, session.status),
           },
         })),
