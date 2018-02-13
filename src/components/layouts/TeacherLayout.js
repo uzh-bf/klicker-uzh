@@ -60,6 +60,14 @@ const TeacherLayout = ({
       ),
       name: 'runningSession',
     },
+    {
+      href: '/questions/create',
+      icon: 'plus',
+      label: (
+        <FormattedMessage defaultMessage="Create Question" id="teacher.createQuestion.title" />
+      ),
+      name: 'createQuestion',
+    },
   ]
 
   return (
