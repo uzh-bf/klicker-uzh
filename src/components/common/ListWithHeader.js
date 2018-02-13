@@ -12,7 +12,7 @@ const defaultProps = {
 
 const ListWithHeader = ({ children, items }) => (
   <div>
-    <h3 className="listHeader">{children}</h3>
+    {children && <h3 className="listHeader">{children}</h3>}
     <ul className="list">
       {items.map(item => (
         <li className="listItem" key={item}>
@@ -24,7 +24,7 @@ const ListWithHeader = ({ children, items }) => (
     <style jsx>{`
       .list {
         margin: 0;
-        margin-top: 1rem;
+        // margin-top: 1rem;
         padding: 0;
       }
       .listHeader {
