@@ -37,20 +37,6 @@ export const TagListPres = ({ tags, types, handleTagClick }) => (
       []
     )}
     <List selection size="large">
-      <List.Header className="listHeader">
-        <FormattedMessage defaultMessage="Tags" id="tagList.header.tags" />
-      </List.Header>
-      {tags.map(({ isActive, id, name }) => (
-        <List.Item
-          active={isActive}
-          className="listItem"
-          key={id}
-          onClick={() => handleTagClick(name)}
-        >
-          <List.Icon name="tag" />
-          <List.Content>{name}</List.Content>
-        </List.Item>
-      ))}
       <List.Header className="listHeader types">
         <FormattedMessage defaultMessage="Types" id="tagList.header.types" />
       </List.Header>
@@ -65,15 +51,30 @@ export const TagListPres = ({ tags, types, handleTagClick }) => (
           <List.Content>{name}</List.Content>
         </List.Item>
       ))}
+      <List.Header className="listHeader tags">
+        <FormattedMessage defaultMessage="Tags" id="tagList.header.tags" />
+      </List.Header>
+      {tags.map(({ isActive, id, name }) => (
+        <List.Item
+          active={isActive}
+          className="listItem"
+          key={id}
+          onClick={() => handleTagClick(name)}
+        >
+          <List.Icon name="tag" />
+          <List.Content>{name}</List.Content>
+        </List.Item>
+      ))}
     </List>
 
     <style jsx>{`
       .tagList {
         :global(.listHeader) {
+          color: grey;
           font-weight: bold;
-          padding: 0 1rem 0.2rem 1rem;
+          padding: 0 1rem 0.3rem 1rem;
         }
-        :global(.listHeader.types) {
+        :global(.listHeader.tags) {
           margin-top: 1rem;
         }
         :global(.listItem.item) {
