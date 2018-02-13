@@ -88,5 +88,10 @@
   "common.string.send": "Absenden",
   "user.login.title": "Login",
   "user.registration.title": "Account erstellen",
-  "user.resetPassword.title": "Passwort zurücksetzen"
+  "user.resetPassword.title": "Passwort zurücksetzen",
+  "form.email.invalid": "Bitte eine gültige Email-Adresse angeben.",
+  "form.password.invalid": "Bitte ein gültiges Passwort angeben (8+ Zeichen).",
+  "form.shortname.invalid": "Bitte ein gültiges Accountkürzel angeben (3-6 Zeichen).",
+  "form.passwordRepeat.invalid": "Bitte sicherstellen, dass Passwörter übereinstimmen.",
+  "form.institution.invalid": "Bitte eine gültige Institution angeben."
 }

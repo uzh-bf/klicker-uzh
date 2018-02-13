@@ -248,6 +248,6 @@ export default compose(
   withProps(({ data: { runningSession } }) => ({
     ...runningSession,
     ...runningSession.settings,
-    startedAt: moment(runningSession.startedAt).format('h:mm:ss'),
+    startedAt: moment(runningSession.startedAt).format('HH:mm:ss'),
   })),
 )(Running)

@@ -96,7 +96,11 @@ const Index = ({
     >
       <div className="questionPool">
         <div className="tagList">
-          <TagList activeTags={filters.tags} handleTagClick={handleTagClick} />
+          <TagList
+            activeTags={filters.tags}
+            activeType={filters.type}
+            handleTagClick={handleTagClick}
+          />
         </div>
         <div className="wrapper">
           <div className="questionList">
@@ -136,7 +140,7 @@ const Index = ({
 
           .tagList {
             flex: 1;
-            background: #ebebeb;
+            background: $color-primary-10p;
             padding: 0.5rem;
           }
 
@@ -233,8 +237,18 @@ export default compose(
     },
 
     // handle clicking on a tag in the tag list
-    handleTagClick: ({ setFilters }) => tagName =>
+    handleTagClick: ({ setFilters }) => (tagName, questionType = false) =>
       setFilters((prevState) => {
+        // if the changed tag is a question type tag
+        if (questionType) {
+          if (prevState.type === tagName) {
+            return { ...prevState, type: null }
+          }
+
+          // add the tag to active tags
+          return { ...prevState, type: tagName }
+        }
+
         // remove the tag from active tags
         if (prevState.tags.includes(tagName)) {
           return {
