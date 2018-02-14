@@ -5,14 +5,16 @@ import { intlShape, FormattedMessage } from 'react-intl'
 
 const propTypes = {
   intl: intlShape.isRequired,
+  runtime: PropTypes.string,
   sessionId: PropTypes.string,
 }
 
 const defaultProps = {
+  runtime: undefined,
   sessionId: undefined,
 }
 
-const SessionArea = ({ intl, sessionId }) => (
+const SessionArea = ({ intl, runtime, sessionId }) => (
   <React.Fragment>
     <Menu.Item>
       <a href="/sessions/running">
@@ -25,6 +27,7 @@ const SessionArea = ({ intl, sessionId }) => (
         >
           <Icon name="play" />
           <FormattedMessage defaultMessage="Running Session" id="sessionArea.toRunningSession" />
+          {runtime && `(${runtime})`}
         </Button>
       </a>
     </Menu.Item>
