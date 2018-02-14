@@ -6,33 +6,25 @@ import { intlShape, FormattedMessage } from 'react-intl'
 const propTypes = {
   intl: intlShape.isRequired,
   sessionId: PropTypes.string,
-  shortname: PropTypes.string.isRequired,
 }
 
 const defaultProps = {
   sessionId: undefined,
 }
 
-const SessionArea = ({ intl, sessionId, shortname }) => (
+const SessionArea = ({ intl, sessionId }) => (
   <React.Fragment>
     <Menu.Item>
       <a href="/sessions/running">
-        <Button icon primary disabled={!sessionId} labelPosition="left" size="small">
+        <Button
+          icon
+          color={sessionId && 'green'}
+          disabled={!sessionId}
+          labelPosition="left"
+          size="small"
+        >
           <Icon name="play" />
           <FormattedMessage defaultMessage="Running Session" id="sessionArea.toRunningSession" />
-        </Button>
-      </a>
-    </Menu.Item>
-
-    <Menu.Item>
-      <a href={`/join/${shortname}`} target="_blank">
-        <Button icon labelPosition="left" size="small">
-          <Icon name="external" />
-          <FormattedMessage
-            defaultMessage="Student View"
-            id="sessionArea.toJoinSession"
-            values={{ shortname }}
-          />
         </Button>
       </a>
     </Menu.Item>

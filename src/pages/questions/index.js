@@ -176,7 +176,7 @@ const Index = ({
 
             .tagList {
               flex: 0 0 auto;
-              padding: 1rem;
+              padding: 2rem 1rem;
             }
 
             .wrapper {

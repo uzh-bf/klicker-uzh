@@ -109,6 +109,16 @@ const SessionTimeline = ({
             </div>
           </Popup.Content>
         </Popup>
+        <a href={`/join/${shortname}`} target="_blank">
+          <Button icon labelPosition="left" size="small">
+            <Icon name="external" />
+            <FormattedMessage
+              defaultMessage="Student View"
+              id="sessionArea.toJoinSession"
+              values={{ shortname }}
+            />
+          </Button>
+        </a>
         <a href={`/sessions/evaluation/${sessionId}`} target="_blank">
           <Button icon labelPosition="left" size="small">
             <Icon name="external" />

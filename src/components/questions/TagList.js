@@ -73,8 +73,9 @@ export const TagListPres = ({ tags, types, handleTagClick }) => (
 
         :global(.listHeader) {
           color: grey;
+          font-size: 1rem;
           font-weight: bold;
-          padding: 0 1rem 0.2rem 1rem;
+          padding: 0 1rem;
         }
         :global(.listHeader.tags) {
           margin-top: 1rem;

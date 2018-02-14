@@ -67,9 +67,7 @@ export const NavbarPres = ({
     <div className="accountArea">
       <Menu borderless className="loginArea noBorder">
         <Menu.Menu position="right">
-          {accountShort && (
-            <SessionArea intl={intl} sessionId={runningSessionId} shortname={accountShort} />
-          )}
+          {accountShort && <SessionArea intl={intl} sessionId={runningSessionId} />}
           <AccountArea accountShort={accountShort} />
         </Menu.Menu>
       </Menu>
