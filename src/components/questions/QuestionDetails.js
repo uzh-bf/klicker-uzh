@@ -21,7 +21,6 @@ const defaultProps = {
 const QuestionDetails = ({ questionId, description, lastUsed }) => {
   const truncatedDesc = _truncate(description, { length: 250 })
 
-  // TODO: internationalization
   return (
     <div className="questionDetails">
       <div className="column description">{truncatedDesc}</div>
@@ -40,13 +39,17 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
           as={`/questions/${questionId}`}
           href={{ pathname: '/questions/details', query: { questionId } }}
         >
-          <Button fluid>View</Button>
+          <Button fluid>
+            <FormattedMessage defaultMessage="View" id="questionDetails.button.view" />
+          </Button>
         </Link>
         <Link
           as={`/questions/${questionId}`}
           href={{ pathname: '/questions/details', query: { questionId } }}
         >
-          <Button fluid>Edit</Button>
+          <Button fluid>
+            <FormattedMessage defaultMessage="Edit" id="questionDetails.button.edit" />
+          </Button>
         </Link>
       </div>
 
