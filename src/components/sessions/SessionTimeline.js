@@ -93,6 +93,7 @@ const SessionTimeline = ({
           <div className="block" key={block.id}>
             <QuestionBlock
               showSolutions
+              index={index + 1}
               questions={block.instances.map(({ id, question, version }) => ({
                 id,
                 title: question.title,
@@ -100,7 +101,6 @@ const SessionTimeline = ({
                 version,
               }))}
               status={block.status}
-              timeLimit={60}
             />
           </div>
           {index === blocks.length - 1 && (
