@@ -3,7 +3,8 @@ import PropTypes from 'prop-types'
 import _truncate from 'lodash/truncate'
 import Link from 'next/link'
 
-import { Button } from 'semantic-ui-react'
+import { Button, Icon } from 'semantic-ui-react'
+import { FormattedMessage } from 'react-intl'
 
 import { ListWithHeader } from '../common'
 
@@ -28,7 +29,10 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
       <div className="column options" />
 
       <div className="column lastUsed">
-        <ListWithHeader items={lastUsed.length > 0 ? lastUsed : ['-']} />
+        <ListWithHeader items={lastUsed.length > 0 ? lastUsed : ['-']}>
+          <Icon name="history" />
+          <FormattedMessage defaultMessage="Usage history" id="questionDetails.usageHistory" />
+        </ListWithHeader>
       </div>
 
       <div className="column buttons">
@@ -110,6 +114,8 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
               display: block;
               border-bottom: none;
               text-align: center;
+
+              padding: 0;
             }
 
             .buttons {

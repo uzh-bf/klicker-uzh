@@ -44,10 +44,11 @@ export const QuestionListPres = ({
         draggable={creationMode && !dropped.includes(question.id)}
         id={question.id}
         key={question.id}
-        lastUsed={question.instances.map(
-          ({ createdAt, version }) =>
-            `${moment(createdAt).format('DD.MM.YYYY HH:mm')} (v${version + 1})`,
-        )}
+        lastUsed={question.instances.map(({ createdAt, session, version }) => (
+          <a href={`/sessions/evaluation/${session}`} target="_blank">
+            {moment(createdAt).format('DD.MM.YYYY HH:mm')} (v{version + 1})
+          </a>
+        ))}
         tags={question.tags}
         title={question.title}
         type={question.type}
