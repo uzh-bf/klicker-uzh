@@ -198,7 +198,7 @@ function QuestionArea({
             flex: 0 0 auto;
 
             background-color: $color-primary-20p;
-            border-bottom: 1px solid -color-primary-50p;
+            border-bottom: 1px solid $color-primary;
             padding: 0.5rem;
           }
 
@@ -220,6 +220,7 @@ function QuestionArea({
             }
 
             .collapser {
+              border: 1px solid $color-primary;
               margin: 0 1rem;
             }
 
