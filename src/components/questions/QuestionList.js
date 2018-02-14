@@ -60,7 +60,7 @@ export const QuestionListPres = ({
     <style jsx>{`
       .questionList {
         :global(> *) {
-          margin-bottom: 1.5rem;
+          margin-bottom: 1rem;
         }
 
         .message {

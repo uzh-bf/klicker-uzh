@@ -40,7 +40,13 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
           as={`/questions/${questionId}`}
           href={{ pathname: '/questions/details', query: { questionId } }}
         >
-          <Button icon="pencil" />
+          <Button fluid>View</Button>
+        </Link>
+        <Link
+          as={`/questions/${questionId}`}
+          href={{ pathname: '/questions/details', query: { questionId } }}
+        >
+          <Button fluid>Edit</Button>
         </Link>
       </div>
 
