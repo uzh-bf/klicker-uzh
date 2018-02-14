@@ -23,6 +23,7 @@ import {
 import { LoadingTeacherLayout, Messager } from '../../components/common'
 
 const propTypes = {
+  activeStep: PropTypes.number.isRequired,
   blocks: PropTypes.array.isRequired,
   confusionTS: PropTypes.array.isRequired,
   feedbacks: PropTypes.array.isRequired,
@@ -43,6 +44,7 @@ const propTypes = {
 const Running = ({
   id,
   intl,
+  activeStep,
   blocks,
   confusionTS,
   feedbacks,
@@ -74,6 +76,7 @@ const Running = ({
     <div className="runningSession">
       <div className="sessionProgress">
         <SessionTimeline
+          activeStep={activeStep}
           blocks={blocks}
           handleLeftActionClick={handleEndSession}
           handleRightActionClick={handleActivateNextBlock}

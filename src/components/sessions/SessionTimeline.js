@@ -8,6 +8,7 @@ import { Button, Icon, Popup } from 'semantic-ui-react'
 import { QuestionBlock } from '../questions'
 
 const propTypes = {
+  activeStep: PropTypes.number.isRequired,
   blocks: PropTypes.array, // TODO: extend
   handleLeftActionClick: PropTypes.func.isRequired,
   handleRightActionClick: PropTypes.func.isRequired,
@@ -24,6 +25,46 @@ const defaultProps = {
   startedAt: '00:00:00',
 }
 
+const getMessage = (intl, num, max) => {
+  if (num === 0) {
+    return {
+      icon: 'play',
+      label: intl.formatMessage({
+        defaultMessage: 'Start session',
+        id: 'runningSession.button.start',
+      }),
+    }
+  }
+
+  if (num % 2 === 1) {
+    return {
+      icon: 'right arrow',
+      label: intl.formatMessage({
+        defaultMessage: 'Close current block',
+        id: 'runningSession.button.closeBlock',
+      }),
+    }
+  }
+
+  if (num === max) {
+    return {
+      icon: 'stop',
+      label: intl.formatMessage({
+        defaultMessage: 'Finish session',
+        id: 'runningSession.button.finish',
+      }),
+    }
+  }
+
+  return {
+    icon: 'right arrow',
+    label: intl.formatMessage({
+      defaultMessage: 'Open next block',
+      id: 'runningSession.button.openBlock',
+    }),
+  }
+}
+
 const SessionTimeline = ({
   sessionId,
   blocks,
@@ -31,6 +72,7 @@ const SessionTimeline = ({
   runtime,
   startedAt,
   shortname,
+  activeStep,
   handleLeftActionClick,
   handleRightActionClick,
 }) => (
@@ -77,10 +119,16 @@ const SessionTimeline = ({
           </Button>
         </a>
 
-        <Button icon color="red" labelPosition="left" size="small" onClick={handleLeftActionClick}>
-          <Icon name="remove" />
-          <FormattedMessage defaultMessage="Cancel" id="runningSession.button.cancel" />
-        </Button>
+        {/* <Button
+            icon
+            color="red"
+            labelPosition="left"
+            size="small"
+            onClick={handleLeftActionClick}
+          >
+            <Icon name="remove" />
+            <FormattedMessage defaultMessage="Cancel" id="runningSession.button.cancel" />
+          </Button> */}
       </div>
     </div>
 
@@ -88,7 +136,11 @@ const SessionTimeline = ({
       {blocks.map((block, index) => (
         <div className="blockWrap">
           <div className={classNames('waiting', { first: index === 0 })}>
-            <Icon name={index === 0 ? 'video play outline' : 'pause circle outline'} size="big" />
+            <Icon
+              color={index === activeStep / 2 && 'green'}
+              name={index === 0 ? 'video play outline' : 'pause circle outline'}
+              size="big"
+            />
           </div>
           <div className="block" key={block.id}>
             <QuestionBlock
@@ -105,7 +157,11 @@ const SessionTimeline = ({
           </div>
           {index === blocks.length - 1 && (
             <div className="waiting last">
-              <Icon name="stop circle outline" size="big" />
+              <Icon
+                color={activeStep === blocks.length * 2 && 'red'}
+                name="stop circle outline"
+                size="big"
+              />
             </div>
           )}
         </div>
@@ -113,15 +169,12 @@ const SessionTimeline = ({
     </div>
     <div className="buttons">
       <Button
-        primary
-        content={intl.formatMessage({
-          defaultMessage: 'Next',
-          id: 'runningSession.button.next',
-        })}
-        icon="right arrow"
-        labelPosition="right"
+        color={activeStep === blocks.length * 2 ? 'red' : 'blue'}
+        content={getMessage(intl, activeStep, blocks.length * 2).label}
+        icon={getMessage(intl, activeStep, blocks.length * 2).icon}
+        labelPosition="left"
         size="large"
-        onClick={handleRightActionClick}
+        onClick={activeStep >= blocks.length * 2 ? handleLeftActionClick : handleRightActionClick}
       />
     </div>
     <style jsx>{`

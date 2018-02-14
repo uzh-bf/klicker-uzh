@@ -18,7 +18,8 @@ const QuestionSingle = ({
 }) => (
   <div className="questionSingle">
     <div className="type">
-      #{index} - {type}
+      {index && `#${index} - `}
+      {type}
     </div>
     <div className="title">
       {title} (v{version + 1})

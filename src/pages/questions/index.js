@@ -6,6 +6,7 @@ import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
 import { Button } from 'semantic-ui-react'
 import Link from 'next/link'
+import Router from 'next/router'
 
 import { pageWithIntl, withData } from '../../lib'
 import {
@@ -296,6 +297,7 @@ export default compose(
         // start the session immediately if the respective button was clicked
         if (type === 'start') {
           await handleStartSession({ id: result.data.createSession.id })
+          Router.push('/sessions/running')
         }
 
         // disable creation mode
