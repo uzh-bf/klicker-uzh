@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import _isNumber from 'lodash/isNumber'
 import { FormattedMessage } from 'react-intl'
 
 import { CHART_COLORS, QUESTION_TYPES, QUESTION_GROUPS } from '../../constants'
@@ -59,11 +60,11 @@ const Possibilities = ({ questionOptions, questionType }) => (
           <div>
             {(() => {
               const comp = []
-              if (restrictions && restrictions.min) {
+              if (restrictions && _isNumber(restrictions.min)) {
                 comp.push(<EvaluationListItem marker="MIN">{restrictions.min}</EvaluationListItem>)
               }
 
-              if (restrictions && restrictions.max) {
+              if (restrictions && _isNumber(restrictions.max)) {
                 comp.push(<EvaluationListItem marker="MAX">{restrictions.max}</EvaluationListItem>)
               }
 
@@ -71,7 +72,14 @@ const Possibilities = ({ questionOptions, questionType }) => (
                 return comp
               }
 
-              return <div>No restrictions.</div>
+              return (
+                <div>
+                  <FormattedMessage
+                    defaultMessage="No restrictions."
+                    id="teacher.evaluation.possibilities.noRestrictions"
+                  />
+                </div>
+              )
             })()}
           </div>
         )

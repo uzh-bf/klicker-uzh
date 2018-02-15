@@ -149,8 +149,8 @@ export default compose(
 
     return {
       data: _range(
-        restrictions.min || _minBy(data, i => i.value),
-        (restrictions.max || _maxBy(data, i => i.value)) + 1,
+        restrictions.min || _minBy(data, i => i.value * 1).value,
+        (restrictions.max || _maxBy(data, i => i.value * 1).value) + 1,
       ).map((index) => {
         // try to find an existing value
         const findItem = mapped.find(({ value }) => value === index)

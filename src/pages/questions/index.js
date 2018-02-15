@@ -15,6 +15,7 @@ import {
   AccountSummaryQuery,
   SessionListQuery,
   RunningSessionQuery,
+  QuestionListQuery,
 } from '../../graphql'
 import { SessionCreationForm } from '../../components/forms'
 import { QuestionList, TagList } from '../../components/questions'
@@ -290,7 +291,7 @@ export default compose(
 
         // create a new session
         const result = await mutate({
-          refetchQueries: [{ query: SessionListQuery }],
+          refetchQueries: [{ query: QuestionListQuery, SessionListQuery }],
           variables: { blocks: parsedBlocks, name: sessionName },
         })
 

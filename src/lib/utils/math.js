@@ -17,13 +17,13 @@ export const sortValues = (values) => {
 
 // calculate the min using lodas
 export const calculateMin = (values) => {
-  const minItem = _minBy(values.data, 'value')
+  const minItem = _minBy(values.data, i => i.value * 1)
   return minItem && minItem.value
 }
 
 // calculate the max using lodash
 export const calculateMax = (values) => {
-  const maxItem = _maxBy(values.data, 'value')
+  const maxItem = _maxBy(values.data, i => i.value * 1)
   return maxItem && maxItem.value
 }
 
