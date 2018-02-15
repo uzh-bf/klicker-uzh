@@ -1355,9 +1355,9 @@ elastic-apm-http-client@^5.1.0:
   dependencies:
     fast-safe-stringify "^1.2.0"
 
-elastic-apm-node@1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.0.1.tgz#9bdeeb69011a4e907070511f875d1775941f7126"
+elastic-apm-node@1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.0.3.tgz#93bd8cdd87f1ab8357ee0edb93fbd54018f6b872"
   dependencies:
     after-all-results "^2.0.0"
     console-log-level "^1.4.0"
