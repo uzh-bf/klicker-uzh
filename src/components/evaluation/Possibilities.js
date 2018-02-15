@@ -59,11 +59,11 @@ const Possibilities = ({ questionOptions, questionType }) => (
           <div>
             {(() => {
               const comp = []
-              if (restrictions.min) {
+              if (restrictions && restrictions.min) {
                 comp.push(<EvaluationListItem marker="MIN">{restrictions.min}</EvaluationListItem>)
               }
 
-              if (restrictions.max) {
+              if (restrictions && restrictions.max) {
                 comp.push(<EvaluationListItem marker="MAX">{restrictions.max}</EvaluationListItem>)
               }
 

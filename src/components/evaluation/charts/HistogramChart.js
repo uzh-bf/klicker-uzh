@@ -2,6 +2,8 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import _range from 'lodash/range'
+import _minBy from 'lodash/minBy'
+import _maxBy from 'lodash/maxBy'
 import { compose, withProps } from 'recompose'
 import {
   Bar,
@@ -146,7 +148,10 @@ export default compose(
     }, [])
 
     return {
-      data: _range(restrictions.min, restrictions.max + 1).map((index) => {
+      data: _range(
+        restrictions.min || _minBy(data, i => i.value),
+        (restrictions.max || _maxBy(data, i => i.value)) + 1,
+      ).map((index) => {
         // try to find an existing value
         const findItem = mapped.find(({ value }) => value === index)
 

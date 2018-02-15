@@ -80,9 +80,9 @@ const validate = ({
       const isMinInt = _isInteger(options.restrictions.min)
       const isMaxInt = _isInteger(options.restrictions.max)
 
-      if (!isMinInt && !isMaxInt) {
+      /* if (!isMinInt && !isMaxInt) {
         errors.options = 'form.createQuestion.options.noMinMax'
-      }
+      } */
 
       if (isMinInt && isMaxInt && options.restrictions.min >= options.restrictions.max) {
         errors.options = 'form.createQuestion.options.minGteMax'

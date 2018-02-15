@@ -27,7 +27,7 @@ const SessionArea = ({ intl, runtime, sessionId }) => (
         >
           <Icon name="play" />
           <FormattedMessage defaultMessage="Running Session" id="sessionArea.toRunningSession" />
-          {runtime && `(${runtime})`}
+          {runtime && ` (${runtime})`}
         </Button>
       </a>
     </Menu.Item>
