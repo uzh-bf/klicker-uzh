@@ -162,7 +162,7 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
         />
 
         <Button primary disabled={invalid} floated="right" type="submit">
-          <FormattedMessage defaultMessage="Submit" id="Absenden" />
+          <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
         </Button>
       </div>
     </Form>
