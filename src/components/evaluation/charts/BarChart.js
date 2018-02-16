@@ -23,8 +23,8 @@ const propTypes = {
       value: PropTypes.string.isRequired,
     }),
   ),
-  isSolutionShown: PropTypes.bool,
   isColored: PropTypes.bool,
+  isSolutionShown: PropTypes.bool,
 }
 
 const defaultProps = {

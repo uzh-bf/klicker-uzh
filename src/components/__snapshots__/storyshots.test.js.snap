@@ -300,7 +300,7 @@ exports[`Storyshots common/navbar Navbar 1`] = `
             href="/sessions/running"
           >
             <button
-              className="ui small icon primary left labeled button"
+              className="ui green small icon left labeled button"
               disabled={undefined}
               onClick={[Function]}
               role="button"
@@ -312,32 +312,6 @@ exports[`Storyshots common/navbar Navbar 1`] = `
               />
               <span>
                 Running Session
-              </span>
-            </button>
-          </a>
-        </div>
-        <div
-          className="item"
-          onClick={[Function]}
-        >
-          <a
-            className="jsx-4219433326"
-            href="/join/AW"
-            target="_blank"
-          >
-            <button
-              className="ui small icon left labeled button"
-              disabled={undefined}
-              onClick={[Function]}
-              role="button"
-              tabIndex={undefined}
-            >
-              <i
-                aria-hidden="true"
-                className="external icon"
-              />
-              <span>
-                Student View
               </span>
             </button>
           </a>
@@ -450,7 +424,7 @@ Array [
       href="/sessions/running"
     >
       <button
-        className="ui small icon primary left labeled button"
+        className="ui green small icon left labeled button"
         disabled={undefined}
         onClick={[Function]}
         role="button"
@@ -462,32 +436,6 @@ Array [
         />
         <span>
           Running Session
-        </span>
-      </button>
-    </a>
-  </div>,
-  <div
-    className="item"
-    onClick={[Function]}
-  >
-    <a
-      className="jsx-4219433326"
-      href="/join/undefined"
-      target="_blank"
-    >
-      <button
-        className="ui small icon left labeled button"
-        disabled={undefined}
-        onClick={[Function]}
-        role="button"
-        tabIndex={undefined}
-      >
-        <i
-          aria-hidden="true"
-          className="external icon"
-        />
-        <span>
-          Student View
         </span>
       </button>
     </a>
@@ -914,17 +862,17 @@ exports[`Storyshots confusion ConfusionBarometer 1`] = `
 
 exports[`Storyshots confusion ConfusionSlider 1`] = `
 <div
-  className="jsx-468516100 confusionSlider"
+  className="jsx-2608453951 confusionSlider"
 >
   <div
-    className="jsx-468516100 title"
+    className="jsx-2608453951 title"
   >
     <h2>
       Speed
     </h2>
   </div>
   <div
-    className="jsx-468516100 slider"
+    className="jsx-2608453951 slider"
   >
     <div
       aria-orientation="horizontal"
@@ -1734,17 +1682,17 @@ exports[`Storyshots evaluation/components Possibilities (SC) 1`] = `
 
 exports[`Storyshots evaluation/components Statistics 1`] = `
 <div
-  className="jsx-3015112589 statistics"
+  className="jsx-521492810 statistics"
 >
   <h2
-    className="jsx-3015112589"
+    className="jsx-521492810"
   >
     <span>
       Statistics
     </span>
   </h2>
   <div
-    className="jsx-3015112589"
+    className="jsx-521492810"
   >
     <div
       className="jsx-865544459 evaluationListItem"
@@ -1906,7 +1854,7 @@ exports[`Storyshots evaluation/components Statistics 1`] = `
 
 exports[`Storyshots evaluation/components Visualization 1`] = `
 <div
-  className="jsx-704040651 visualizationType"
+  className="visualizationType"
 >
   <div
     aria-busy={undefined}
@@ -1943,15 +1891,15 @@ exports[`Storyshots evaluation/components Visualization 1`] = `
 
 exports[`Storyshots feedbacks Feedback 1`] = `
 <div
-  className="jsx-1482035386 feedback"
+  className="jsx-340218795 feedback"
 >
   <div
-    className="jsx-1482035386 content"
+    className="jsx-340218795 content"
   >
     hello world
   </div>
   <div
-    className="jsx-1482035386 delete"
+    className="jsx-340218795 delete"
   >
     <button
       className="ui basic fluid icon button"
@@ -2199,6 +2147,11 @@ exports[`Storyshots forms/components LoginForm 1`] = `
       </label>
       <div
         className="ui icon input"
+        intl={
+          Object {
+            "formatMessage": [Function],
+          }
+        }
       >
         <input
           disabled={undefined}
@@ -2230,6 +2183,11 @@ exports[`Storyshots forms/components LoginForm 1`] = `
       </label>
       <div
         className="ui icon input"
+        intl={
+          Object {
+            "formatMessage": [Function],
+          }
+        }
       >
         <input
           disabled={undefined}
@@ -2311,6 +2269,11 @@ exports[`Storyshots forms/components PasswortResetForm 1`] = `
       </label>
       <div
         className="ui icon input"
+        intl={
+          Object {
+            "formatMessage": [Function],
+          }
+        }
       >
         <input
           disabled={undefined}
@@ -2471,17 +2434,6 @@ exports[`Storyshots forms/helpers SemanticInput (with error) 1`] = `
       tabIndex={undefined}
       type="text"
     />
-  </div>
-  <div
-    className="jsx-3360603769 errorMessage"
-  >
-    <i
-      aria-hidden="true"
-      className="hand pointer icon"
-    />
-    <span>
-      fail
-    </span>
   </div>
 </div>
 `;
@@ -4389,7 +4341,7 @@ exports[`Storyshots questions QuestionTags 1`] = `
 
 exports[`Storyshots questions TagList 1`] = `
 <div
-  className="jsx-4017071446 tagList"
+  className="jsx-2433651819 tagList"
 >
   <div
     className="ui large selection list"
@@ -4928,6 +4880,27 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
           />
         </button>
       </div>
+      <a
+        className="jsx-2239088075"
+        href="/join/undefined"
+        target="_blank"
+      >
+        <button
+          className="ui small icon left labeled button"
+          disabled={undefined}
+          onClick={[Function]}
+          role="button"
+          tabIndex={undefined}
+        >
+          <i
+            aria-hidden="true"
+            className="external icon"
+          />
+          <span>
+            Student View
+          </span>
+        </button>
+      </a>
       <a
         className="jsx-2239088075"
         href="/sessions/evaluation/undefined"
