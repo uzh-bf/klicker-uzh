@@ -55,7 +55,7 @@ function QuestionArea({
       <p>
         <FormattedMessage
           defaultMessage="Please choose a single option below:"
-          id="joinSessionquestionArea.info.SC"
+          id="joinSession.questionArea.info.SC"
         />
       </p>
     ),
@@ -63,7 +63,7 @@ function QuestionArea({
       <p>
         <FormattedMessage
           defaultMessage="Please choose one or multiple of the options below:"
-          id="joinSessionquestionArea.info.MC"
+          id="joinSession.questionArea.info.MC"
         />
       </p>
     ),
@@ -71,7 +71,7 @@ function QuestionArea({
       <p>
         <FormattedMessage
           defaultMessage="Please enter your response below:"
-          id="joinSessionquestionArea.info.FREE"
+          id="joinSession.questionArea.info.FREE"
         />
       </p>
     ),
@@ -80,7 +80,7 @@ function QuestionArea({
       <p>
         <FormattedMessage
           defaultMessage="Please choose a number from the given range below:"
-          id="joinSessionquestionArea.info.FREE_RANGE"
+          id="joinSession.questionArea.info.FREE_RANGE"
         />
       </p>
     ),
@@ -89,7 +89,7 @@ function QuestionArea({
   return (
     <div className={classNames('questionArea', { active })}>
       <h1 className="header">
-        <FormattedMessage defaultMessage="Question" id="joinSessionquestionArea.title" />
+        <FormattedMessage defaultMessage="Question" id="joinSession.questionArea.title" />
       </h1>
       {(() => {
         if (remainingQuestions.length === 0) {

@@ -65,11 +65,11 @@
   "common.string.difficulty": "Difficulty",
   "joinSession.newFeedbackInput.label": "New open feedback",
   "common.form.submit": "Submit",
-  "joinSessionquestionArea.info.SC": "Please choose a single option below:",
-  "joinSessionquestionArea.info.MC": "Please choose one or multiple of the options below:",
-  "joinSessionquestionArea.info.FREE": "Please enter your response below:",
-  "joinSessionquestionArea.info.FREE_RANGE": "Please choose a number from the given range below:",
-  "joinSessionquestionArea.title": "Question",
+  "joinSession.questionArea.info.SC": "Please choose a single option below:",
+  "joinSession.questionArea.info.MC": "Please choose one or multiple of the options below:",
+  "joinSession.questionArea.info.FREE": "Please enter your response below:",
+  "joinSession.questionArea.info.FREE_RANGE": "Please choose a number from the given range below:",
+  "joinSession.questionArea.title": "Question",
   "joinSession.questionArea.alreadyAnswered": "You have already answered all active questions.",
   "sessionList.string.createdOn": "Created on",
   "sessionList.string.noSessions": "No session was found.",
@@ -90,5 +90,10 @@
   "common.string.send": "Send",
   "user.login.title": "Login",
   "user.registration.title": "Registration",
-  "user.resetPassword.title": "Reset password"
+  "user.resetPassword.title": "Reset password",
+  "form.email.invalid": "Please provide a valid email address.",
+  "form.password.invalid": "Please provide a valid password (8+ characters).",
+  "form.shortname.invalid": "Please provide a valid account identifier (3-6 characters).",
+  "form.passwordRepeat.invalid": "Please ensure that both passwords match.",
+  "form.institution.invalid": "Please provide a valid institution."
 }
