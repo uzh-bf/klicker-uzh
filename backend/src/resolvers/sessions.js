@@ -16,6 +16,7 @@ const runningSessionQuery = async (parentValue, args, { auth }) => {
 }
 
 const sessionByPVQuery = parentValue => SessionModel.findById(parentValue.runningSession)
+const sessionIdByPVQuery = parentValue => parentValue.session
 const sessionsByPVQuery = parentValue => SessionModel.find({ _id: { $in: parentValue.sessions } })
 
 const joinSessionQuery = async (parentValue, { shortname }) => SessionExecService.joinSession({ shortname })
@@ -88,6 +89,7 @@ module.exports = {
   runningSession: runningSessionQuery,
   session: sessionQuery,
   sessionByPV: sessionByPVQuery,
+  sessionIdByPV: sessionIdByPVQuery,
   sessionsByPV: sessionsByPVQuery,
   runtimeByPV: runtimeByPVQuery,
 

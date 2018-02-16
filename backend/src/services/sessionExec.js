@@ -1,4 +1,5 @@
 const md5 = require('md5')
+const _isNumber = require('lodash/isNumber')
 
 const { QuestionInstanceModel, UserModel } = require('../models')
 const { QuestionGroups, QuestionTypes } = require('../constants')
@@ -193,12 +194,16 @@ const addResponse = async ({
       throw new Error('INVALID_RESPONSE')
     }
 
-    if (
-      questionType === QuestionTypes.FREE_RANGE &&
-      (response.value < currentVersion.options.FREE_RANGE.restrictions.min ||
-        response.value > currentVersion.options.FREE_RANGE.restrictions.max)
-    ) {
-      throw new Error('RESPONSE_OUT_OF_RANGE')
+    if (questionType === QuestionTypes.FREE_RANGE) {
+      if (!_isNumber(response.value * 1)) {
+        throw new Error('INVALID_RESPONSE')
+      }
+
+      // validate that the response lies within the specified range if given
+      const { min, max } = currentVersion.options.FREE_RANGE.restrictions
+      if ((min && response.value < min) || (max && response.value > max)) {
+        throw new Error('RESPONSE_OUT_OF_RANGE')
+      }
     }
 
     // if it is the very first response, initialize results

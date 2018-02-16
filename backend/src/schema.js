@@ -22,6 +22,7 @@ const {
   joinSession,
   runningSession,
   sessionByPV,
+  sessionIdByPV,
   sessionsByPV,
   startSession,
   updateSessionSettings,
@@ -124,6 +125,7 @@ const resolvers = {
   },
   QuestionInstance: {
     question: questionByPV,
+    session: sessionIdByPV,
     responses: responsesByPV,
     results: resultsByPV,
   },

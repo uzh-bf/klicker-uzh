@@ -167,6 +167,56 @@ describe('Integration', () => {
 
       expect(data).toMatchSnapshot()
     })
+
+    it('creates partly restricted FREE_RANGE questions', async () => {
+      const data = ensureNoErrors(await sendQuery(
+        {
+          query: mutations.CreateQuestionMutation,
+          variables: {
+            title: 'Test partly restricted FREE_RANGE',
+            description: 'This is a simple partly restricted FREE_RANGE question.',
+            type: 'FREE_RANGE',
+            options: {
+              restrictions: { min: 10, max: null },
+            },
+            solution: {
+              FREE_RANGE: 15,
+            },
+            tags: ['TestTag'],
+          },
+        },
+        authCookie,
+      ))
+
+      questions.FREE_RANGE_PART = data.createQuestion.id
+
+      expect(data).toMatchSnapshot()
+    })
+
+    it('creates unrestricted FREE_RANGE questions', async () => {
+      const data = ensureNoErrors(await sendQuery(
+        {
+          query: mutations.CreateQuestionMutation,
+          variables: {
+            title: 'Test unrestricted FREE_RANGE',
+            description: 'This is a simple unrestricted FREE_RANGE question.',
+            type: 'FREE_RANGE',
+            options: {
+              restrictions: { min: null, max: null },
+            },
+            solution: {
+              FREE_RANGE: 20,
+            },
+            tags: ['TestTag'],
+          },
+        },
+        authCookie,
+      ))
+
+      questions.FREE_RANGE_OPEN = data.createQuestion.id
+
+      expect(data).toMatchSnapshot()
+    })
   })
 
   describe('Question Modification', () => {
@@ -265,6 +315,52 @@ describe('Integration', () => {
 
       expect(data).toMatchSnapshot()
     })
+
+    it('modifies partly restricted FREE_RANGE questions', async () => {
+      const data = ensureNoErrors(await sendQuery(
+        {
+          query: mutations.ModifyQuestionMutation,
+          variables: {
+            id: questions.FREE_RANGE,
+            title: 'Test FREE_RANGE #2',
+            description: 'This is a simple modified FREE_RANGE question.',
+            options: {
+              restrictions: { min: null, max: 10 },
+            },
+            solution: {
+              FREE_RANGE: 6,
+            },
+            tags: ['TestTag', 'AdditionalTag'],
+          },
+        },
+        authCookie,
+      ))
+
+      expect(data).toMatchSnapshot()
+    })
+
+    it('modifies unrestricted FREE_RANGE questions', async () => {
+      const data = ensureNoErrors(await sendQuery(
+        {
+          query: mutations.ModifyQuestionMutation,
+          variables: {
+            id: questions.FREE_RANGE,
+            title: 'Test FREE_RANGE #2',
+            description: 'This is a simple modified FREE_RANGE question.',
+            options: {
+              restrictions: { min: null, max: null },
+            },
+            solution: {
+              FREE_RANGE: 16,
+            },
+            tags: ['TestTag', 'AdditionalTag'],
+          },
+        },
+        authCookie,
+      ))
+
+      expect(data).toMatchSnapshot()
+    })
   })
 
   describe('Session Creation', () => {
@@ -282,7 +378,13 @@ describe('Integration', () => {
                 ],
               },
               { questions: [{ question: questions[QuestionTypes.FREE], version: 0 }] },
-              { questions: [{ question: questions[QuestionTypes.FREE_RANGE], version: 0 }] },
+              {
+                questions: [
+                  { question: questions[QuestionTypes.FREE_RANGE], version: 0 },
+                  { question: questions.FREE_RANGE_PART, version: 0 },
+                  { question: questions.FREE_RANGE_OPEN, version: 0 },
+                ],
+              },
             ],
           },
         },
@@ -571,6 +673,8 @@ describe('Integration', () => {
         }))
 
         instanceIds.FREE_RANGE = data.joinSession.activeQuestions[0].instanceId
+        instanceIds.FREE_RANGE_PART = data.joinSession.activeQuestions[1].instanceId
+        instanceIds.FREE_RANGE_OPEN = data.joinSession.activeQuestions[2].instanceId
 
         expect(data).toMatchSnapshot()
       })
@@ -585,6 +689,29 @@ describe('Integration', () => {
           },
         }))
       })
+
+      it('PARTICIPANT: can respond to the partly restricted FREE_RANGE question in the third block', async () => {
+        ensureNoErrors(await sendQuery({
+          query: mutations.AddResponseMutation,
+          variables: {
+            fp: 'myfp1',
+            instanceId: instanceIds.FREE_RANGE_PART,
+            response: { value: 99999 },
+          },
+        }))
+      })
+
+      it('PARTICIPANT: can respond to the unrestricted FREE_RANGE question in the third block', async () => {
+        ensureNoErrors(await sendQuery({
+          query: mutations.AddResponseMutation,
+          variables: {
+            fp: 'myfp1',
+            instanceId: instanceIds.FREE_RANGE_OPEN,
+            response: { value: 99999.3784 },
+          },
+        }))
+      })
+
       it('LECTURER: can evaluate the third question block', async () => {
         const runningSession = ensureNoErrors(await sendQuery(
           {

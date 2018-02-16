@@ -1,3 +1,7 @@
+const mongoose = require('mongoose')
+
+const { ObjectId } = mongoose.Types
+
 const {
   QuestionInstanceModel, SessionModel, UserModel, QuestionModel,
 } = require('../models')
@@ -50,11 +54,13 @@ const createSession = async ({ name, questionBlocks, userId }) => {
   // pass through all the question blocks in params
   // skip any blocks that are empty (erroneous blocks)
   // create question instances for all questions within
+  const sessionId = ObjectId()
   const blocks = questionBlocks.filter(block => block.questions.length > 0).map(block => ({
     instances: block.questions.map(({ question, version }) => {
       // create a new question instance model
       const instance = new QuestionInstanceModel({
         question,
+        session: sessionId,
         user: userId,
         version,
       })
@@ -75,6 +81,7 @@ const createSession = async ({ name, questionBlocks, userId }) => {
   // create a new session model
   // pass in the list of blocks created above
   const newSession = new SessionModel({
+    id: sessionId,
     name,
     blocks,
     user: userId,
@@ -252,6 +259,7 @@ const activateNextBlock = async ({ userId, shortname }) => {
   if (nextBlockIndex < runningSession.blocks.length) {
     if (runningSession.activeInstances.length === 0) {
       // if there are no active instances, activate the next block
+      runningSession.activeStep += 1
 
       // increase the index of the currently active block
       runningSession.activeBlock += 1
@@ -269,6 +277,7 @@ const activateNextBlock = async ({ userId, shortname }) => {
       runningSession.activeInstances = nextBlock.instances
     } else if (runningSession.activeBlock >= 0) {
       // if there are active instances, close them
+      runningSession.activeStep += 1
 
       // find the currently active block
       const previousBlock = runningSession.blocks[prevBlockIndex]
@@ -301,7 +310,12 @@ const activateNextBlock = async ({ userId, shortname }) => {
     }
   } else {
     // if the final block was reached above, reset the users active instances
+
+    // set the status of the previous block to executed
+    runningSession.blocks[prevBlockIndex].status = QuestionBlockStatus.EXECUTED
+
     runningSession.activeInstances = []
+    runningSession.activeStep += 1
   }
 
   promises.concat([runningSession.save(), user.save()])

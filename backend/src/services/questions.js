@@ -1,4 +1,4 @@
-const isInteger = require('lodash/isInteger')
+const _isNumber = require('lodash/isNumber')
 
 const { QuestionModel, TagModel, UserModel } = require('../models')
 
@@ -42,6 +42,7 @@ const createQuestion = async ({
     throw new Error('NO_OPTIONS_SPECIFIED')
   }
 
+  // validation for SC and MC questions
   if (QuestionGroups.CHOICES.includes(type)) {
     if (options.choices.length === 0) {
       throw new Error('NO_CHOICES_SPECIFIED')
@@ -52,15 +53,23 @@ const createQuestion = async ({
     }
   }
 
+  // validation for FREE_RANGE questions
   if (type === QuestionTypes.FREE_RANGE) {
     if (!options.restrictions) {
       throw new Error('MISSING_RESTRICTIONS')
     }
 
-    const isMinInt = isInteger(options.restrictions.min)
-    const isMaxInt = isInteger(options.restrictions.max)
-    if ((!isMinInt && !isMaxInt) || options.restrictions.max <= options.restrictions.min) {
-      throw new Error('INVALID_RESTRICTIONS')
+    // if at least one restriction is set, the restrictions need to be evaluated
+    if (options.restrictions.min || options.restrictions.max) {
+      const isMinNum = !options.restrictions.min || _isNumber(options.restrictions.min)
+      const isMaxNum = !options.restrictions.max || _isNumber(options.restrictions.max)
+      if (
+        !isMinNum ||
+        !isMaxNum ||
+        (options.restrictions.min && options.restrictions.max && options.restrictions.max <= options.restrictions.min)
+      ) {
+        throw new Error('INVALID_RESTRICTIONS')
+      }
     }
   }
   // find the corresponding user

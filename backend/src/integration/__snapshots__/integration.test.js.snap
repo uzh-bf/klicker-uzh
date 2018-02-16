@@ -70,6 +70,36 @@ exports[`Integration Question Creation creates SC questions 1`] = `
   
 `;
 
+exports[`Integration Question Creation creates partly restricted FREE_RANGE questions 1`] = `
+
+    createQuestion / modifyQuestion {
+      title: Test partly restricted FREE_RANGE
+      type: FREE_RANGE
+      tags: TestTag
+      versions: 
+        description: This is a simple partly restricted FREE_RANGE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":10,"max":null}}}
+        solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":15}
+      
+    }
+  
+`;
+
+exports[`Integration Question Creation creates unrestricted FREE_RANGE questions 1`] = `
+
+    createQuestion / modifyQuestion {
+      title: Test unrestricted FREE_RANGE
+      type: FREE_RANGE
+      tags: TestTag
+      versions: 
+        description: This is a simple unrestricted FREE_RANGE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":null,"max":null}}}
+        solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":20}
+      
+    }
+  
+`;
+
 exports[`Integration Question Modification modifies FREE questions 1`] = `
 
     createQuestion / modifyQuestion {
@@ -146,6 +176,56 @@ exports[`Integration Question Modification modifies SC questions 1`] = `
   
 `;
 
+exports[`Integration Question Modification modifies partly restricted FREE_RANGE questions 1`] = `
+
+    createQuestion / modifyQuestion {
+      title: Test FREE_RANGE #2
+      type: FREE_RANGE
+      tags: TestTag,AdditionalTag
+      versions: 
+        description: This is a simple FREE_RANGE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":0,"max":10}}}
+        solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":5}
+      ,
+        description: This is a simple modified FREE_RANGE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":-10,"max":40}}}
+        solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":16}
+      ,
+        description: This is a simple modified FREE_RANGE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":null,"max":10}}}
+        solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":6}
+      
+    }
+  
+`;
+
+exports[`Integration Question Modification modifies unrestricted FREE_RANGE questions 1`] = `
+
+    createQuestion / modifyQuestion {
+      title: Test FREE_RANGE #2
+      type: FREE_RANGE
+      tags: TestTag,AdditionalTag
+      versions: 
+        description: This is a simple FREE_RANGE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":0,"max":10}}}
+        solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":5}
+      ,
+        description: This is a simple modified FREE_RANGE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":-10,"max":40}}}
+        solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":16}
+      ,
+        description: This is a simple modified FREE_RANGE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":null,"max":10}}}
+        solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":6}
+      ,
+        description: This is a simple modified FREE_RANGE question.
+        options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":null,"max":null}}}
+        solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":16}
+      
+    }
+  
+`;
+
 exports[`Integration Session Creation works 1`] = `
 
     createSession {
@@ -170,6 +250,12 @@ exports[`Integration Session Creation works 1`] = `
         status: PLANNED
         instances: 
           title: Test FREE_RANGE #2
+          type: FREE_RANGE
+        ,
+          title: Test partly restricted FREE_RANGE
+          type: FREE_RANGE
+        ,
+          title: Test unrestricted FREE_RANGE
           type: FREE_RANGE
         
       
@@ -282,7 +368,7 @@ exports[`Integration Session Execution allows evaluating sessions after completi
           responses: hello world
         
       ,
-        status: ACTIVE
+        status: EXECUTED
         instances: 
           isOpen: true
           version: 0
@@ -295,10 +381,42 @@ exports[`Integration Session Execution allows evaluating sessions after completi
             ,
               description: This is a simple modified FREE_RANGE question.
               options: {"FREE_RANGE":{"restrictions":{"min":-10,"max":40}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":10}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
             
           }
           results: {"FREE":[{"count":1,"key":"a87ff679a2f3e71d9181a67b7542122c","value":"4"}]}
           responses: 4
+        ,
+          isOpen: true
+          version: 0
+          question {
+            title: Test partly restricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple partly restricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":10,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: {"FREE":[{"count":1,"key":"d3eb9a9233e52948740d7eb8c3062d14","value":"99999"}]}
+          responses: 99999
+        ,
+          isOpen: true
+          version: 0
+          question {
+            title: Test unrestricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple unrestricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: {"FREE":[{"count":1,"key":"e4b1fc5758fb519823c9f2feb30b9a87","value":"99999.3784"}]}
+          responses: 99999.3784
         
       
     }
@@ -316,7 +434,7 @@ exports[`Integration Session Execution allows running the full session flow (res
         instances: false
       ,
         status: PLANNED
-        instances: false
+        instances: false,false,false
       
     }
   
@@ -333,7 +451,7 @@ exports[`Integration Session Execution allows running the full session flow (res
         instances: true
       ,
         status: PLANNED
-        instances: false
+        instances: false,false,false
       
     }
   
@@ -350,7 +468,7 @@ exports[`Integration Session Execution allows running the full session flow (res
         instances: false
       ,
         status: ACTIVE
-        instances: true
+        instances: true,true,true
       
     }
   
@@ -367,7 +485,7 @@ exports[`Integration Session Execution allows running the full session flow (res
         instances: false
       ,
         status: PLANNED
-        instances: false
+        instances: false,false,false
       
     }
   
@@ -384,7 +502,7 @@ exports[`Integration Session Execution allows running the full session flow (res
         instances: false
       ,
         status: PLANNED
-        instances: false
+        instances: false,false,false
       
     }
   
@@ -400,8 +518,8 @@ exports[`Integration Session Execution allows running the full session flow (res
         status: EXECUTED
         instances: false
       ,
-        status: ACTIVE
-        instances: true
+        status: EXECUTED
+        instances: true,true,true
       
     }
   
@@ -410,6 +528,7 @@ exports[`Integration Session Execution allows running the full session flow (res
 exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can evaluate the first question block 1`] = `
 
     runningSession {
+      activeStep: 1
       confusionTS: 
         difficulty: 2
         speed: 4
@@ -467,6 +586,20 @@ exports[`Integration Session Execution allows running the full session flow (res
           version: 0
           question {
             title: Test FREE_RANGE #2
+            type: FREE_RANGE
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test partly restricted FREE_RANGE
+            type: FREE_RANGE
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test unrestricted FREE_RANGE
             type: FREE_RANGE
           }
         
@@ -548,6 +681,38 @@ exports[`Integration Session Execution allows running the full session flow (res
             ,
               description: This is a simple modified FREE_RANGE question.
               options: {"FREE_RANGE":{"restrictions":{"min":-10,"max":40}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":10}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: 
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test partly restricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple partly restricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":10,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: 
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test unrestricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple unrestricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
             
           }
           results: null
@@ -561,6 +726,7 @@ exports[`Integration Session Execution allows running the full session flow (res
 exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can evaluate the second question block 1`] = `
 
     runningSession {
+      activeStep: 3
       confusionTS: 
         difficulty: 2
         speed: 4
@@ -618,6 +784,20 @@ exports[`Integration Session Execution allows running the full session flow (res
           version: 0
           question {
             title: Test FREE_RANGE #2
+            type: FREE_RANGE
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test partly restricted FREE_RANGE
+            type: FREE_RANGE
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test unrestricted FREE_RANGE
             type: FREE_RANGE
           }
         
@@ -699,6 +879,38 @@ exports[`Integration Session Execution allows running the full session flow (res
             ,
               description: This is a simple modified FREE_RANGE question.
               options: {"FREE_RANGE":{"restrictions":{"min":-10,"max":40}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":10}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: 
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test partly restricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple partly restricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":10,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: 
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test unrestricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple unrestricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
             
           }
           results: null
@@ -712,6 +924,7 @@ exports[`Integration Session Execution allows running the full session flow (res
 exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can evaluate the third question block 1`] = `
 
     runningSession {
+      activeStep: 5
       confusionTS: 
         difficulty: 2
         speed: 4
@@ -769,6 +982,20 @@ exports[`Integration Session Execution allows running the full session flow (res
           version: 0
           question {
             title: Test FREE_RANGE #2
+            type: FREE_RANGE
+          }
+        ,
+          isOpen: true
+          version: 0
+          question {
+            title: Test partly restricted FREE_RANGE
+            type: FREE_RANGE
+          }
+        ,
+          isOpen: true
+          version: 0
+          question {
+            title: Test unrestricted FREE_RANGE
             type: FREE_RANGE
           }
         
@@ -850,10 +1077,42 @@ exports[`Integration Session Execution allows running the full session flow (res
             ,
               description: This is a simple modified FREE_RANGE question.
               options: {"FREE_RANGE":{"restrictions":{"min":-10,"max":40}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":10}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
             
           }
           results: {"FREE":[{"count":1,"key":"a87ff679a2f3e71d9181a67b7542122c","value":"4"}]}
           responses: 4
+        ,
+          isOpen: true
+          version: 0
+          question {
+            title: Test partly restricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple partly restricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":10,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: {"FREE":[{"count":1,"key":"d3eb9a9233e52948740d7eb8c3062d14","value":"99999"}]}
+          responses: 99999
+        ,
+          isOpen: true
+          version: 0
+          question {
+            title: Test unrestricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple unrestricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: {"FREE":[{"count":1,"key":"e4b1fc5758fb519823c9f2feb30b9a87","value":"99999.3784"}]}
+          responses: 99999.3784
         
       
     }
@@ -863,6 +1122,7 @@ exports[`Integration Session Execution allows running the full session flow (res
 exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can join the session initially 1`] = `
 
     runningSession {
+      activeStep: 0
       confusionTS: 
         difficulty: 2
         speed: 4
@@ -920,6 +1180,20 @@ exports[`Integration Session Execution allows running the full session flow (res
           version: 0
           question {
             title: Test FREE_RANGE #2
+            type: FREE_RANGE
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test partly restricted FREE_RANGE
+            type: FREE_RANGE
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test unrestricted FREE_RANGE
             type: FREE_RANGE
           }
         
@@ -1001,6 +1275,38 @@ exports[`Integration Session Execution allows running the full session flow (res
             ,
               description: This is a simple modified FREE_RANGE question.
               options: {"FREE_RANGE":{"restrictions":{"min":-10,"max":40}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":10}},"SC":null,"MC":null}
+            ,
+              description: This is a simple modified FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: 
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test partly restricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple partly restricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":10,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: 
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test unrestricted FREE_RANGE
+            type: FREE_RANGE
+            versions: 
+              description: This is a simple unrestricted FREE_RANGE question.
+              options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
             
           }
           results: null
@@ -1073,6 +1379,16 @@ exports[`Integration Session Execution allows running the full session flow (res
         description: This is a simple FREE_RANGE question.
         type: FREE_RANGE
         options: {"FREE_RANGE":{"restrictions":{"min":0,"max":10}},"SC":null,"MC":null}
+      ,
+        title: Test partly restricted FREE_RANGE
+        description: This is a simple partly restricted FREE_RANGE question.
+        type: FREE_RANGE
+        options: {"FREE_RANGE":{"restrictions":{"min":10,"max":null}},"SC":null,"MC":null}
+      ,
+        title: Test unrestricted FREE_RANGE
+        description: This is a simple unrestricted FREE_RANGE question.
+        type: FREE_RANGE
+        options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
       
       feedbacks: 
         content: my test feedback

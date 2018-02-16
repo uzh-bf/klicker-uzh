@@ -30,6 +30,7 @@ const Session = new mongoose.Schema({
   feedbacks: [Feedback],
 
   activeBlock: { type: Number, default: -1 },
+  activeStep: { type: Number, default: 0 },
   activeInstances: [{ type: ObjectId, ref: 'QuestionInstance' }],
 
   createdAt: { type: Date, default: Date.now() },

@@ -8,6 +8,7 @@ exports[`SessionExecService addConfusionTS allows adding new timesteps 1`] = `
     Status: RUNNING
 
     ActiveBlock: -1
+    ActiveStep: 0
     ActiveInstances: 0
 
     Blocks: [{
@@ -39,6 +40,7 @@ exports[`SessionExecService addConfusionTS allows adding new timesteps 2`] = `
     Status: RUNNING
 
     ActiveBlock: -1
+    ActiveStep: 0
     ActiveInstances: 0
 
     Blocks: [{
@@ -73,6 +75,7 @@ exports[`SessionExecService addFeedback allows adding new feedbacks to a running
     Status: RUNNING
 
     ActiveBlock: -1
+    ActiveStep: 0
     ActiveInstances: 0
 
     Blocks: [{
@@ -104,6 +107,7 @@ exports[`SessionExecService addFeedback allows adding new feedbacks to a running
     Status: RUNNING
 
     ActiveBlock: -1
+    ActiveStep: 0
     ActiveInstances: 0
 
     Blocks: [{
@@ -138,6 +142,7 @@ exports[`SessionExecService addResponse allows adding responses to a FREE questi
     Status: RUNNING
 
     ActiveBlock: 0
+    ActiveStep: 1
     ActiveInstances: 4
 
     Blocks: [{
@@ -215,6 +220,7 @@ exports[`SessionExecService addResponse allows adding responses to a FREE_RANGE 
     Status: RUNNING
 
     ActiveBlock: 0
+    ActiveStep: 1
     ActiveInstances: 4
 
     Blocks: [{
@@ -305,6 +311,7 @@ exports[`SessionExecService addResponse allows adding responses to a SC question
     Status: RUNNING
 
     ActiveBlock: 0
+    ActiveStep: 1
     ActiveInstances: 4
 
     Blocks: [{
@@ -405,6 +412,7 @@ exports[`SessionExecService addResponse allows adding responses to an MC questio
     Status: RUNNING
 
     ActiveBlock: 0
+    ActiveStep: 1
     ActiveInstances: 4
 
     Blocks: [{

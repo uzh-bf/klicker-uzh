@@ -1,5 +1,38 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`QuestionService createQuestion allows creating a partly restricted FREE_RANGE question 1`] = `
+
+    QUESTION
+
+    Title: question without tags
+    Type: FREE_RANGE
+
+    Instances: []
+    Tags: [,]
+    Versions: [
+      Description: blabla
+      Instances: []
+      Options: {
+        SC: undefined
+        MC: undefined
+        FREE_RANGE: 
+          Restrictions: {
+            Max: 20
+            Min: null
+          }
+        
+      }
+      Solution: {
+        SC: []
+        MC: []
+        FREE: undefined
+        FREE_RANGE: 10
+      }
+      
+    ]
+  
+`;
+
 exports[`QuestionService createQuestion allows creating a valid FREE question 1`] = `
 
     QUESTION
@@ -137,6 +170,39 @@ exports[`QuestionService createQuestion allows creating a valid SC question 1`] 
         MC: [false,true,false]
         FREE: undefined
         FREE_RANGE: undefined
+      }
+      
+    ]
+  
+`;
+
+exports[`QuestionService createQuestion allows creating an unrestricted FREE_RANGE question 1`] = `
+
+    QUESTION
+
+    Title: question without tags
+    Type: FREE_RANGE
+
+    Instances: []
+    Tags: [,]
+    Versions: [
+      Description: blabla
+      Instances: []
+      Options: {
+        SC: undefined
+        MC: undefined
+        FREE_RANGE: 
+          Restrictions: {
+            Max: null
+            Min: null
+          }
+        
+      }
+      Solution: {
+        SC: []
+        MC: []
+        FREE: undefined
+        FREE_RANGE: 56
       }
       
     ]
