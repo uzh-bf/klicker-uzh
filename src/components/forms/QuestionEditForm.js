@@ -84,7 +84,7 @@ const QuestionEditForm = ({
       <div className="questionInput questionType">
         <Form.Field>
           <label htmlFor="type">
-            <FormattedMessage defaultMessage="Question Type" id="teacher.editQuestion.type" />
+            <FormattedMessage defaultMessage="Question Type" id="editQuestion.type" />
           </label>
           <div className="type">{type}</div>
         </Form.Field>
@@ -98,14 +98,14 @@ const QuestionEditForm = ({
         <h2>
           <FormattedMessage
             defaultMessage="Question Versions"
-            id="teacher.editQuestion.questionVersions.title"
+            id="editQuestion.questionVersions.title"
           />
         </h2>
 
         <Message info>
           <FormattedMessage
             defaultMessage="The contents of existing versions cannot be altered. Please create a new version instead."
-            id="teacher.editQuestion.questionVersions.description"
+            id="editQuestion.questionVersions.description"
           />
         </Message>
         <Menu stackable tabular>

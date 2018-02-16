@@ -68,10 +68,7 @@ function Chart({
           return (
             <div className="noChart">
               <Button className="showGraphButton" onClick={handleShowGraph}>
-                <FormattedMessage
-                  defaultMessage="Show Graph"
-                  id="teacher.evaluation.graph.showGraph"
-                />
+                <FormattedMessage defaultMessage="Show Graph" id="evaluation.graph.showGraph" />
               </Button>
             </div>
           )
@@ -82,7 +79,7 @@ function Chart({
             <div className="noChart">
               <FormattedMessage
                 defaultMessage="No Results Available"
-                id="teacher.evaluation.graph.noResults"
+                id="evaluation.graph.noResults"
               />
             </div>
           )

@@ -171,10 +171,7 @@ const QuestionCreationForm = ({
 
         <div className="questionPreview">
           <h2>
-            <FormattedMessage
-              defaultMessage="Audience Preview"
-              id="teacher.createQuestion.previewLabel"
-            />
+            <FormattedMessage defaultMessage="Audience Preview" id="createQuestion.previewLabel" />
           </h2>
           <Preview description={content} options={options} questionType={type} title={title} />
         </div>

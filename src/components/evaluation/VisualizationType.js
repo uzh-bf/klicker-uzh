@@ -30,7 +30,7 @@ const VisualizationType = ({
       options={options.filter(o => o.withinType.includes(questionType))}
       placeholder={intl.formatMessage({
         defaultMessage: 'Visualization',
-        id: 'teacher.evaluation.visualization.title',
+        id: 'evaluation.visualization.title',
       })}
       value={activeVisualization}
       onChange={(param, data) => onChangeType(questionType, data.value)}

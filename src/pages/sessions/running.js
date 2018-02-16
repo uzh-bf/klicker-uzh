@@ -64,12 +64,12 @@ const Running = ({
     navbar={{
       title: intl.formatMessage({
         defaultMessage: 'Running Session',
-        id: 'teacher.runningSession.title',
+        id: 'runningSession.title',
       }),
     }}
     pageTitle={intl.formatMessage({
       defaultMessage: 'Running Session',
-      id: 'teacher.runningSession.pageTitle',
+      id: 'runningSession.pageTitle',
     })}
     sidebar={{ activeItem: 'runningSession' }}
   >

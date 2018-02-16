@@ -87,12 +87,12 @@ const Index = ({
         },
         title: intl.formatMessage({
           defaultMessage: 'Question Pool',
-          id: 'teacher.questionPool.title',
+          id: 'questionPool.title',
         }),
       }}
       pageTitle={intl.formatMessage({
         defaultMessage: 'Question Pool',
-        id: 'teacher.questionPool.pageTitle',
+        id: 'questionPool.pageTitle',
       })}
       sidebar={{ activeItem: 'questionPool' }}
     >

@@ -108,7 +108,7 @@ function EvaluationLayout({
             defaultChecked={showSolution}
             label={intl.formatMessage({
               defaultMessage: 'Show solution',
-              id: 'teacher.evaluation.showSolution.label',
+              id: 'evaluation.showSolution.label',
             })}
             onChange={onToggleShowSolution}
           />

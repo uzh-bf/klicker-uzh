@@ -25,14 +25,14 @@ const StudentLayout = ({
   const activeQuestionItem = {
     href: 'activeQuestion',
     label: (
-      <FormattedMessage defaultMessage="Active Question" id="student.sidebar.activeQuestion" />
+      <FormattedMessage defaultMessage="Active Question" id="joinSessionsidebar.activeQuestion" />
     ),
     name: 'activeQuestion',
   }
   const feedbackChannelItem = {
     href: 'feedbackChannel',
     label: (
-      <FormattedMessage defaultMessage="Feedback-Channel" id="student.sidebar.feedbackChannel" />
+      <FormattedMessage defaultMessage="Feedback-Channel" id="joinSessionsidebar.feedbackChannel" />
     ),
     name: 'feedbackChannel',
   }

@@ -102,7 +102,7 @@ function Evaluation({
     options,
     pageTitle: intl.formatMessage({
       defaultMessage: 'Evaluation',
-      id: 'teacher.evaluation.pageTitle',
+      id: 'evaluation.pageTitle',
     }),
     showSolution,
     statistics,

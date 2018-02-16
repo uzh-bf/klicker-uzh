@@ -16,19 +16,14 @@ const Possibilities = ({ questionOptions, questionType }) => (
     <h2>
       {(() => {
         if (QUESTION_GROUPS.CHOICES.includes(questionType)) {
-          return (
-            <FormattedMessage
-              defaultMessage="Choices"
-              id="teacher.evaluation.possibilities.choices"
-            />
-          )
+          return <FormattedMessage defaultMessage="Choices" id="evaluation.possibilities.choices" />
         }
 
         if (questionType === QUESTION_TYPES.FREE_RANGE) {
           return (
             <FormattedMessage
               defaultMessage="Restrictions"
-              id="teacher.evaluation.possibilities.restrictions"
+              id="evaluation.possibilities.restrictions"
             />
           )
         }
@@ -76,7 +71,7 @@ const Possibilities = ({ questionOptions, questionType }) => (
                 <div>
                   <FormattedMessage
                     defaultMessage="No restrictions."
-                    id="teacher.evaluation.possibilities.noRestrictions"
+                    id="evaluation.possibilities.noRestrictions"
                   />
                 </div>
               )

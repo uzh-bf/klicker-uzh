@@ -35,7 +35,7 @@ const Statistics = ({
 }) => (
   <div className="statistics">
     <h2>
-      <FormattedMessage defaultMessage="Statistics" id="teacher.evaluation.statistics.title" />
+      <FormattedMessage defaultMessage="Statistics" id="evaluation.statistics.title" />
     </h2>
 
     <div>
@@ -73,10 +73,11 @@ const Statistics = ({
           value={bins}
           onChange={onChangeBins}
         />
+
         <Message info>
           <FormattedMessage
             defaultMessage="Type a number to override Freedman-Diaconis thresholding. The threshold defines the number of bins displayed in the histogram."
-            id="teacher.evaluation.bins.description"
+            id="evaluation.bins.description"
           />
         </Message>
       </div>
