@@ -6,17 +6,19 @@ const propTypes = {
   active: PropTypes.bool,
   children: PropTypes.node.isRequired,
   handleSidebarItemClick: PropTypes.func.isRequired,
+  icon: PropTypes.string,
   name: PropTypes.string.isRequired,
 }
 
 const defaultProps = {
   active: false,
+  icon: undefined,
 }
 
 const SidebarItem = ({
-  active, children, name, handleSidebarItemClick,
+  active, children, icon, name, handleSidebarItemClick,
 }) => (
-  <Menu.Item active={active} name={name} onClick={handleSidebarItemClick}>
+  <Menu.Item active={active} icon={icon} name={name} onClick={handleSidebarItemClick}>
     {children}
   </Menu.Item>
 )

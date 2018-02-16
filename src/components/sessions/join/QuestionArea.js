@@ -55,7 +55,7 @@ function QuestionArea({
       <p>
         <FormattedMessage
           defaultMessage="Please choose a single option below:"
-          id="student.questionArea.info.SC"
+          id="joinSession.questionArea.info.SC"
         />
       </p>
     ),
@@ -63,7 +63,7 @@ function QuestionArea({
       <p>
         <FormattedMessage
           defaultMessage="Please choose one or multiple of the options below:"
-          id="student.questionArea.info.MC"
+          id="joinSession.questionArea.info.MC"
         />
       </p>
     ),
@@ -71,7 +71,7 @@ function QuestionArea({
       <p>
         <FormattedMessage
           defaultMessage="Please enter your response below:"
-          id="student.questionArea.info.FREE"
+          id="joinSession.questionArea.info.FREE"
         />
       </p>
     ),
@@ -80,7 +80,7 @@ function QuestionArea({
       <p>
         <FormattedMessage
           defaultMessage="Please choose a number from the given range below:"
-          id="student.questionArea.info.FREE_RANGE"
+          id="joinSession.questionArea.info.FREE_RANGE"
         />
       </p>
     ),
@@ -89,7 +89,7 @@ function QuestionArea({
   return (
     <div className={classNames('questionArea', { active })}>
       <h1 className="header">
-        <FormattedMessage defaultMessage="Question" id="student.questionArea.title" />
+        <FormattedMessage defaultMessage="Question" id="joinSession.questionArea.title" />
       </h1>
       {(() => {
         if (remainingQuestions.length === 0) {
@@ -198,7 +198,7 @@ function QuestionArea({
             flex: 0 0 auto;
 
             background-color: $color-primary-20p;
-            border-bottom: 1px solid -color-primary-50p;
+            border-bottom: 1px solid $color-primary;
             padding: 0.5rem;
           }
 
@@ -220,6 +220,7 @@ function QuestionArea({
             }
 
             .collapser {
+              border: 1px solid $color-primary;
               margin: 0 1rem;
             }
 

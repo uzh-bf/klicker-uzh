@@ -47,6 +47,10 @@ const PasswordResetForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
       <Field
         required
         component={SemanticInput}
+        errorMessage={intl.formatMessage({
+          defaultMessage: 'Please provide a valid email address.',
+          id: 'form.email.invalid',
+        })}
         icon="mail"
         intl={intl}
         label={intl.formatMessage({

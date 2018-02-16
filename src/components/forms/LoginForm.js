@@ -57,6 +57,10 @@ const LoginForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
       <Field
         required
         component={SemanticInput}
+        errorMessage={intl.formatMessage({
+          defaultMessage: 'Please provide a valid email address.',
+          id: 'form.email.invalid',
+        })}
         icon="mail"
         intl={intl}
         label={intl.formatMessage({
@@ -69,6 +73,10 @@ const LoginForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
       <Field
         required
         component={SemanticInput}
+        errorMessage={intl.formatMessage({
+          defaultMessage: 'Please provide a valid password (8+ characters).',
+          id: 'form.password.invalid',
+        })}
         icon="privacy"
         intl={intl}
         label={intl.formatMessage({

@@ -6,6 +6,7 @@ import { Icon } from 'semantic-ui-react'
 import QuestionSingle from './QuestionSingle'
 
 const propTypes = {
+  index: PropTypes.number,
   noDetails: PropTypes.bool,
   questions: PropTypes.arrayOf(PropTypes.shape(QuestionSingle.propTypes)).isRequired,
   status: PropTypes.string,
@@ -13,27 +14,36 @@ const propTypes = {
 }
 
 const defaultProps = {
+  index: undefined,
   noDetails: false,
   status: 'PLANNED',
-  timeLimit: 0,
+  timeLimit: undefined,
 }
 
 const QuestionBlock = ({
-  status, questions, timeLimit, noDetails,
+  index, status, questions, timeLimit, noDetails,
 }) => (
   <div className={classNames('questionBlock', { active: status === 'ACTIVE' })}>
-    {!noDetails && (
-      <div className="timeLimit">
-        <Icon name="clock" />
-        {timeLimit}s
-      </div>
-    )}
+    {index >= 0 && <div className="index">Block {index}</div>}
+    {!noDetails &&
+      timeLimit && (
+        <div className="timeLimit">
+          <Icon name="clock" />
+          {timeLimit}s
+        </div>
+      )}
     {!noDetails && <div className="sessionStatus">{status}</div>}
     <div className="questions">
-      {questions.map(({
- id, title, type, version,
-}) => (
-  <QuestionSingle id={id} key={id} title={title} type={type} version={version} />
+      {questions.map((question, singleIndex) => (
+        // HACK: prettier failure with destructuring for question
+        <QuestionSingle
+          id={question.id}
+          index={singleIndex + 1}
+          key={question.id}
+          title={question.title}
+          type={question.type}
+          version={question.version}
+        />
       ))}
     </div>
     <style jsx>{`
@@ -52,11 +62,16 @@ const QuestionBlock = ({
           background-color: rgb(198, 293, 206);
         }
 
+        .index,
         .timeLimit,
         .showSolution,
         .sessionStatus {
           flex: 1 1 33%;
           margin-bottom: 0.2rem;
+        }
+
+        .index {
+          font-weight: bold;
         }
 
         .showSolution {

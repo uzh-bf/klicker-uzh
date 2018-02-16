@@ -69,18 +69,20 @@ export const TagListPres = ({ tags, types, handleTagClick }) => (
 
     <style jsx>{`
       .tagList {
+        font-size: 0.9rem;
+
         :global(.listHeader) {
           color: grey;
+          font-size: 1rem;
           font-weight: bold;
-          padding: 0 1rem 0.3rem 1rem;
+          padding: 0 1rem;
         }
         :global(.listHeader.tags) {
           margin-top: 1rem;
         }
         :global(.listItem.item) {
           border-radius: 0;
-          padding-left: 1rem;
-          padding-right: 1rem;
+          padding: 0.3rem 1rem;
 
           &:hover :global(.content),
           &:hover :global(i) {

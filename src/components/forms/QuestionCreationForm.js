@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import _get from 'lodash/get'
 import isEmpty from 'validator/lib/isEmpty'
-import _isInteger from 'lodash/isInteger'
+import _isNumber from 'lodash/isNumber'
 import { connect } from 'react-redux'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage, intlShape } from 'react-intl'
@@ -77,14 +77,10 @@ const validate = ({
 
   if (type === QUESTION_TYPES.FREE_RANGE) {
     if (options && options.restrictions) {
-      const isMinInt = _isInteger(options.restrictions.min)
-      const isMaxInt = _isInteger(options.restrictions.max)
+      const isMinNum = _isNumber(options.restrictions.min)
+      const isMaxNum = _isNumber(options.restrictions.max)
 
-      if (!isMinInt && !isMaxInt) {
-        errors.options = 'form.createQuestion.options.noMinMax'
-      }
-
-      if (isMinInt && isMaxInt && options.restrictions.min >= options.restrictions.max) {
+      if (isMinNum && isMaxNum && options.restrictions.min >= options.restrictions.max) {
         errors.options = 'form.createQuestion.options.minGteMax'
       }
     } else {
@@ -175,10 +171,7 @@ const QuestionCreationForm = ({
 
         <div className="questionPreview">
           <h2>
-            <FormattedMessage
-              defaultMessage="Audience Preview"
-              id="teacher.createQuestion.previewLabel"
-            />
+            <FormattedMessage defaultMessage="Audience Preview" id="createQuestion.previewLabel" />
           </h2>
           <Preview description={content} options={options} questionType={type} title={title} />
         </div>
@@ -279,7 +272,10 @@ export default compose(
       options: {
         choices: [],
         randomized: false,
-        restrictions: {},
+        restrictions: {
+          max: null,
+          min: null,
+        },
       },
       tags: null,
       title: null,

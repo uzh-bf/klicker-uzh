@@ -73,7 +73,7 @@ const SCCreationOptions = ({
         <label htmlFor="options">
           <FormattedMessage
             defaultMessage="Available Choices"
-            id="teacher.createQuestion.optionsSC.label"
+            id="createQuestion.optionsSC.label"
           />
           <a data-tip data-for="SCCreationHelp">
             <Icon name="question circle" />
@@ -83,7 +83,7 @@ const SCCreationOptions = ({
         <ReactTooltip delayHide={250} delayShow={250} id="SCCreationHelp" place="right">
           <FormattedMessage
             defaultMessage="Add answering options the respondents can choose from."
-            id="teacher.createQuestion.optionsSC.tooltip"
+            id="createQuestion.optionsSC.tooltip"
           />
         </ReactTooltip>
 

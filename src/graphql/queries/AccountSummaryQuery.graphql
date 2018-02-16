@@ -4,6 +4,7 @@ query AccountSummary {
     shortname
     runningSession {
       id
+      runtime
     }
   }
 }
