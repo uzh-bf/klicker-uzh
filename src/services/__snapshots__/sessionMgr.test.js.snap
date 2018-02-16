@@ -8,6 +8,7 @@ exports[`SessionMgrService activateNextBlock allows activating the first questio
     Status: RUNNING
 
     ActiveBlock: 0
+    ActiveStep: 1
     ActiveInstances: 1
 
     Blocks: [{
@@ -51,6 +52,7 @@ exports[`SessionMgrService activateNextBlock has a valid initial state 1`] = `
     Status: RUNNING
 
     ActiveBlock: -1
+    ActiveStep: 0
     ActiveInstances: 0
 
     Blocks: [{
@@ -94,11 +96,12 @@ exports[`SessionMgrService activateNextBlock recognizes that the final block has
     Status: RUNNING
 
     ActiveBlock: 0
+    ActiveStep: 2
     ActiveInstances: 0
 
     Blocks: [{
       Show solutions: false
-      Status: ACTIVE
+      Status: EXECUTED
       Time limit: -1
       Number of instances: 1
     }]
@@ -137,6 +140,7 @@ exports[`SessionMgrService createSession allows creating a valid session 1`] = `
     Status: CREATED
 
     ActiveBlock: -1
+    ActiveStep: 0
     ActiveInstances: 0
 
     Blocks: [{
@@ -170,6 +174,7 @@ exports[`SessionMgrService createSession skips over question blocks without ques
     Status: CREATED
 
     ActiveBlock: -1
+    ActiveStep: 0
     ActiveInstances: 0
 
     Blocks: [{
@@ -203,6 +208,7 @@ exports[`SessionMgrService endSession allows ending a running session 1`] = `
     Status: COMPLETED
 
     ActiveBlock: -1
+    ActiveStep: 0
     ActiveInstances: 0
 
     Blocks: [{
@@ -231,6 +237,7 @@ exports[`SessionMgrService endSession returns on an already completed session 1`
     Status: COMPLETED
 
     ActiveBlock: -1
+    ActiveStep: 0
     ActiveInstances: 0
 
     Blocks: [{
@@ -259,6 +266,7 @@ exports[`SessionMgrService startSession allows starting a created session 1`] = 
     Status: RUNNING
 
     ActiveBlock: -1
+    ActiveStep: 0
     ActiveInstances: 0
 
     Blocks: [{
@@ -287,6 +295,7 @@ exports[`SessionMgrService updateSessionSettings allows changing all settings at
     Status: RUNNING
 
     ActiveBlock: -1
+    ActiveStep: 0
     ActiveInstances: 0
 
     Blocks: [{
@@ -315,6 +324,7 @@ exports[`SessionMgrService updateSessionSettings allows changing each setting se
     Status: RUNNING
 
     ActiveBlock: -1
+    ActiveStep: 0
     ActiveInstances: 0
 
     Blocks: [{
@@ -343,6 +353,7 @@ exports[`SessionMgrService updateSessionSettings allows changing each setting se
     Status: RUNNING
 
     ActiveBlock: -1
+    ActiveStep: 0
     ActiveInstances: 0
 
     Blocks: [{
@@ -371,6 +382,7 @@ exports[`SessionMgrService updateSessionSettings allows changing each setting se
     Status: RUNNING
 
     ActiveBlock: -1
+    ActiveStep: 0
     ActiveInstances: 0
 
     Blocks: [{
@@ -399,6 +411,7 @@ exports[`SessionMgrService updateSessionSettings allows changing each setting se
     Status: RUNNING
 
     ActiveBlock: -1
+    ActiveStep: 0
     ActiveInstances: 0
 
     Blocks: [{
@@ -427,6 +440,7 @@ exports[`SessionMgrService updateSessionSettings allows changing each setting se
     Status: RUNNING
 
     ActiveBlock: -1
+    ActiveStep: 0
     ActiveInstances: 0
 
     Blocks: [{

@@ -17,6 +17,7 @@ const QuestionListQuery = `
         id
         version
         createdAt
+        session
       }
       tags {
         id
@@ -134,6 +135,7 @@ const RunningSessionQuery = `
       id
       runtime
       startedAt
+      activeStep
       confusionTS {
         difficulty
         speed
@@ -171,10 +173,11 @@ const RunningSessionSerializer = {
   test: ({ runningSession }) => !!runningSession,
   print: ({
     runningSession: {
-      confusionTS, feedbacks, blocks, settings,
+      activeStep, confusionTS, feedbacks, blocks, settings,
     },
   }) => `
     runningSession {
+      activeStep: ${activeStep}
       confusionTS: ${confusionTS.map(({ difficulty, speed }) => `
         difficulty: ${difficulty}
         speed: ${speed}
@@ -206,6 +209,7 @@ const AccountSummaryQuery = `
       shortname
       runningSession {
         id
+        runtime
       }
     }
   }

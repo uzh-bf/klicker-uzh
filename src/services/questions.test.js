@@ -127,6 +127,46 @@ describe('QuestionService', () => {
 
       questions.FREE_RANGE = newQuestion
     })
+
+    it('allows creating a partly restricted FREE_RANGE question', async () => {
+      const newQuestion = await QuestionService.createQuestion({
+        ...question,
+        userId: user.id,
+        type: 'FREE_RANGE',
+        options: {
+          restrictions: {
+            max: 20,
+            min: null,
+          },
+        },
+        solution: { FREE_RANGE: 10 },
+      })
+
+      expect(newQuestion.versions.length).toEqual(1)
+      expect(newQuestion).toMatchSnapshot()
+
+      questions.FREE_RANGE_PART = newQuestion
+    })
+
+    it('allows creating an unrestricted FREE_RANGE question', async () => {
+      const newQuestion = await QuestionService.createQuestion({
+        ...question,
+        userId: user.id,
+        type: 'FREE_RANGE',
+        options: {
+          restrictions: {
+            max: null,
+            min: null,
+          },
+        },
+        solution: { FREE_RANGE: 56 },
+      })
+
+      expect(newQuestion.versions.length).toEqual(1)
+      expect(newQuestion).toMatchSnapshot()
+
+      questions.FREE_RANGE_OPEN = newQuestion
+    })
   })
 
   describe('modifyQuestion', () => {

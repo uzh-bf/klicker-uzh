@@ -112,9 +112,9 @@ if (process.env.APP_RATE_LIMITING) {
   const limiterSettings = {
     // TODO: skipping for admins or similar?
     windowMs: 5 * 60 * 1000, // in a 5 minute window
-    max: 200, // limit to 200 requests
-    delayAfter: 100, // start delaying responses after 100 requests
-    delayMs: 100, // delay responses by 250ms * (numResponses - delayAfter)
+    max: 1000, // limit to 200 requests
+    delayAfter: 500, // start delaying responses after 100 requests
+    delayMs: 50, // delay responses by 250ms * (numResponses - delayAfter)
     keyGenerator: req => `${req.auth ? req.auth.sub : req.ip}`,
     onLimitReached: req =>
       exceptTest(() => {

@@ -119,6 +119,32 @@ const initializeDb = async ({
           type: QuestionTypes.FREE_RANGE,
           userId: result.user.id,
         }),
+        FREE_RANGE_PART: await QuestionService.createQuestion({
+          description: 'a description',
+          options: {
+            restrictions: {
+              min: 10,
+              max: null,
+            },
+          },
+          tags: ['CDEF', 'BBB'],
+          title: 'partly restricted free range',
+          type: QuestionTypes.FREE_RANGE,
+          userId: result.user.id,
+        }),
+        FREE_RANGE_OPEN: await QuestionService.createQuestion({
+          description: 'a description',
+          options: {
+            restrictions: {
+              min: null,
+              max: null,
+            },
+          },
+          tags: ['CDEF', 'BBB'],
+          title: 'unrestricted free range',
+          type: QuestionTypes.FREE_RANGE,
+          userId: result.user.id,
+        }),
       }
     }
 

@@ -285,6 +285,7 @@ describe('SessionMgrService', () => {
 
       // expect the first block to be active
       expect(session.activeBlock).toEqual(0)
+      expect(session.activeStep).toEqual(1)
       // expect the session to have some active instances
       expect(session.activeInstances.map(v => v.toString())).toEqual(session.blocks[0].instances.map(v => v.toString()))
       // expect matching snapshots
