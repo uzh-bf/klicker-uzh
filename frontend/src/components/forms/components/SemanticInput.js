@@ -4,13 +4,12 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
 import { Form, Icon, Input } from 'semantic-ui-react'
-import { FormattedMessage, intlShape } from 'react-intl'
 
 const propTypes = {
   disabled: PropTypes.bool,
+  errorMessage: PropTypes.string,
   inlineLabel: PropTypes.string,
   input: PropTypes.object.isRequired,
-  intl: intlShape.isRequired,
   label: PropTypes.string,
   meta: PropTypes.shape({
     error: PropTypes.string,
@@ -26,6 +25,7 @@ const propTypes = {
 
 const defaultProps = {
   disabled: false,
+  errorMessage: undefined,
   inlineLabel: undefined,
   label: undefined,
   placeholder: undefined,
@@ -37,9 +37,9 @@ const defaultProps = {
 
 const SemanticInput = ({
   disabled,
+  errorMessage,
   inlineLabel,
   input,
-  intl,
   label,
   meta: { error, invalid, touched },
   placeholder,
@@ -85,12 +85,13 @@ const SemanticInput = ({
         </ReactTooltip>
       )}
 
-      {showError && (
-        <div className="errorMessage">
-          <Icon name="hand pointer" />
-          <FormattedMessage id={error} />
-        </div>
-      )}
+      {showError &&
+        errorMessage && (
+          <div className="errorMessage">
+            <Icon name="hand pointer" />
+            {errorMessage}
+          </div>
+        )}
 
       <style jsx>{`
         @import 'src/theme';

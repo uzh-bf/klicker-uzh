@@ -45,20 +45,24 @@ const TeacherLayout = ({
   const sidebarItems = [
     {
       href: '/questions',
-      label: <FormattedMessage defaultMessage="Question Pool" id="teacher.questionPool.title" />,
+      label: <FormattedMessage defaultMessage="Question Pool" id="questionPool.title" />,
       name: 'questionPool',
     },
     {
       href: '/sessions',
-      label: <FormattedMessage defaultMessage="Session List" id="teacher.sessionList.title" />,
+      label: <FormattedMessage defaultMessage="Session List" id="sessionList.title" />,
       name: 'sessionList',
     },
     {
       href: '/sessions/running',
-      label: (
-        <FormattedMessage defaultMessage="Running Session" id="teacher.runningSession.title" />
-      ),
+      label: <FormattedMessage defaultMessage="Running Session" id="runningSession.title" />,
       name: 'runningSession',
+    },
+    {
+      href: '/questions/create',
+      icon: 'plus',
+      label: <FormattedMessage defaultMessage="Create Question" id="createQuestion.title" />,
+      name: 'createQuestion',
     },
   ]
 
@@ -72,7 +76,7 @@ const TeacherLayout = ({
               intl={intl}
               sidebarVisible={isSidebarVisible}
               title={intl.formatMessage({
-                id: `teacher.${sidebar.activeItem}.title`,
+                id: `${sidebar.activeItem}.title`,
               })}
               {...navbar}
             />

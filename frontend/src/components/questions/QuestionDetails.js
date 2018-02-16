@@ -3,7 +3,8 @@ import PropTypes from 'prop-types'
 import _truncate from 'lodash/truncate'
 import Link from 'next/link'
 
-import { Button } from 'semantic-ui-react'
+import { Button, Icon } from 'semantic-ui-react'
+import { FormattedMessage } from 'react-intl'
 
 import { ListWithHeader } from '../common'
 
@@ -20,7 +21,6 @@ const defaultProps = {
 const QuestionDetails = ({ questionId, description, lastUsed }) => {
   const truncatedDesc = _truncate(description, { length: 250 })
 
-  // TODO: internationalization
   return (
     <div className="questionDetails">
       <div className="column description">{truncatedDesc}</div>
@@ -28,7 +28,10 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
       <div className="column options" />
 
       <div className="column lastUsed">
-        <ListWithHeader items={lastUsed.length > 0 ? lastUsed : ['-']} />
+        <ListWithHeader items={lastUsed.length > 0 ? lastUsed : ['-']}>
+          <Icon name="history" />
+          <FormattedMessage defaultMessage="Usage history" id="questionDetails.usageHistory" />
+        </ListWithHeader>
       </div>
 
       <div className="column buttons">
@@ -36,7 +39,17 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
           as={`/questions/${questionId}`}
           href={{ pathname: '/questions/details', query: { questionId } }}
         >
-          <Button icon="pencil" />
+          <Button fluid>
+            <FormattedMessage defaultMessage="View" id="questionDetails.button.view" />
+          </Button>
+        </Link>
+        <Link
+          as={`/questions/${questionId}`}
+          href={{ pathname: '/questions/details', query: { questionId } }}
+        >
+          <Button fluid>
+            <FormattedMessage defaultMessage="Edit" id="questionDetails.button.edit" />
+          </Button>
         </Link>
       </div>
 
@@ -110,6 +123,8 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
               display: block;
               border-bottom: none;
               text-align: center;
+
+              padding: 0;
             }
 
             .buttons {

@@ -25,12 +25,12 @@ const CreateQuestion = ({
     navbar={{
       title: intl.formatMessage({
         defaultMessage: 'Create Question',
-        id: 'teacher.createQuestion.title',
+        id: 'createQuestion.title',
       }),
     }}
     pageTitle={intl.formatMessage({
       defaultMessage: 'Create Question',
-      id: 'teacher.createQuestion.pageTitle',
+      id: 'createQuestion.pageTitle',
     })}
     sidebar={{ activeItem: 'createQuestion' }}
   >

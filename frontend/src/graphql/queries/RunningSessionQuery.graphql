@@ -3,6 +3,7 @@ query RunningSession {
     id
     runtime
     startedAt
+    activeStep
     confusionTS {
       difficulty
       speed

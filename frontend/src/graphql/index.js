@@ -1,7 +1,3 @@
-// HACK: this fixes https://github.com/detrohutt/babel-plugin-inline-import-graphql-ast/issues/2
-
-// HACK: don't remove these hacks, the imports below need exactly one empty line above them to work!
-
 import ActivateNextBlockMutation from './mutations/ActivateNextBlockMutation.graphql'
 import AddConfusionTSMutation from './mutations/AddConfusionTSMutation.graphql'
 import AddFeedbackMutation from './mutations/AddFeedbackMutation.graphql'
