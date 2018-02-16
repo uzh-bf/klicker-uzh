@@ -52,10 +52,7 @@ const TypeChooser = ({ intl, input: { value, onChange } }) => {
   return (
     <div className="required field typeChooser">
       <label htmlFor="types">
-        <FormattedMessage
-          defaultMessage="Question Type"
-          id="teacher.createQuestion.questionType.label"
-        />
+        <FormattedMessage defaultMessage="Question Type" id="createQuestion.questionType.label" />
         <a data-tip data-for="TypeChooserHelp">
           <Icon name="question circle" />
         </a>
@@ -64,7 +61,7 @@ const TypeChooser = ({ intl, input: { value, onChange } }) => {
       <ReactTooltip delayHide={250} delayShow={250} id="TypeChooserHelp" place="right">
         <FormattedMessage
           defaultMessage="Choose the type of question you would like to create."
-          id="teacher.createQuestion.questionType.tooltip"
+          id="createQuestion.questionType.tooltip"
         />
       </ReactTooltip>
 

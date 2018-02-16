@@ -32,6 +32,7 @@ const propTypes = {
   activeInstance: PropTypes.object.isRequired,
   activeInstanceIndex: PropTypes.number,
   activeVisualizations: PropTypes.object.isRequired,
+  bins: PropTypes.number.isRequired,
   handleChangeActiveInstance: PropTypes.func.isRequired,
   handleChangeVisualizationType: PropTypes.func.isRequired,
   handleShowGraph: PropTypes.func.isRequired,
@@ -54,6 +55,7 @@ function Evaluation({
   activeInstanceIndex,
   activeInstance,
   activeVisualizations,
+  bins,
   instanceSummary,
   intl,
   handleChangeActiveInstance,
@@ -75,6 +77,7 @@ function Evaluation({
       activeVisualization={activeVisualizations[type]}
       handleShowGraph={handleShowGraph}
       intl={intl}
+      numBins={bins}
       questionType={type}
       restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
       results={results}
@@ -99,7 +102,7 @@ function Evaluation({
     options,
     pageTitle: intl.formatMessage({
       defaultMessage: 'Evaluation',
-      id: 'teacher.evaluation.pageTitle',
+      id: 'evaluation.pageTitle',
     }),
     showSolution,
     statistics,
@@ -196,7 +199,8 @@ export default compose(
     ({ sessionStatus }) => ({
       activeInstanceIndex: 0,
       activeVisualizations: CHART_DEFAULTS,
-      showGraph: sessionStatus !== SESSION_STATUS.RUNNING,
+      bins: null,
+      showGraph: false,
       showSolution: sessionStatus !== SESSION_STATUS.RUNNING,
     }),
     {
@@ -204,6 +208,9 @@ export default compose(
       handleChangeActiveInstance: () => activeInstanceIndex => ({
         activeInstanceIndex,
       }),
+
+      // handle change in the number of bins
+      handleChangeBins: () => bins => ({ bins }),
 
       // handle change of vis. type
       handleChangeVisualizationType: ({ activeVisualizations }) => (
@@ -224,29 +231,39 @@ export default compose(
       handleToggleShowSolution: ({ showSolution }) => () => ({ showSolution: !showSolution }),
     },
   ),
-  withProps(({ activeInstances, activeInstanceIndex, handleChangeActiveInstance }) => {
-    const activeInstance = activeInstances[activeInstanceIndex]
-    const { question, results } = activeInstance
+  withProps(
+    ({
+      activeInstances,
+      activeInstanceIndex,
+      bins,
+      handleChangeBins,
+      handleChangeActiveInstance,
+    }) => {
+      const activeInstance = activeInstances[activeInstanceIndex]
+      const { question, results } = activeInstance
 
-    if (question.type === QUESTION_TYPES.FREE_RANGE) {
+      if (question.type === QUESTION_TYPES.FREE_RANGE) {
+        return {
+          activeInstance,
+          handleChangeActiveInstance: index => () => handleChangeActiveInstance(index),
+          statistics: {
+            bins,
+            max: calculateMax(results),
+            mean: calculateMean(results),
+            median: calculateMedian(results),
+            min: calculateMin(results),
+            onChangeBins: e => handleChangeBins(+e.target.value),
+            q1: calculateFirstQuartile(results),
+            q3: calculateThirdQuartile(results),
+            sd: calculateStandardDeviation(results),
+          },
+        }
+      }
+
       return {
         activeInstance,
         handleChangeActiveInstance: index => () => handleChangeActiveInstance(index),
-        statistics: {
-          max: calculateMax(results),
-          mean: calculateMean(results),
-          median: calculateMedian(results),
-          min: calculateMin(results),
-          q1: calculateFirstQuartile(results),
-          q3: calculateThirdQuartile(results),
-          sd: calculateStandardDeviation(results),
-        },
       }
-    }
-
-    return {
-      activeInstance,
-      handleChangeActiveInstance: index => () => handleChangeActiveInstance(index),
-    }
-  }),
+    },
+  ),
 )(Evaluation)

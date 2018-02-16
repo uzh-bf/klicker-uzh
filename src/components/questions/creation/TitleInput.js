@@ -19,10 +19,7 @@ const TitleInput = ({ input: { value, onChange }, meta: { dirty, invalid } }) =>
   <div className="titleInput">
     <Form.Field required error={dirty && invalid}>
       <label htmlFor="questionTitle">
-        <FormattedMessage
-          defaultMessage="Question Title"
-          id="teacher.createQuestion.titleInput.label"
-        />
+        <FormattedMessage defaultMessage="Question Title" id="createQuestion.titleInput.label" />
         <a data-tip data-for="titleHelp">
           <Icon name="question circle" />
         </a>
@@ -31,7 +28,7 @@ const TitleInput = ({ input: { value, onChange }, meta: { dirty, invalid } }) =>
       <ReactTooltip delayHide={250} delayShow={250} id="titleHelp" place="right">
         <FormattedMessage
           defaultMessage="Enter a short summarizing title for the question. This is only visible to you!"
-          id="teacher.createQuestion.titleInput.tooltip"
+          id="createQuestion.titleInput.tooltip"
         />
       </ReactTooltip>
 

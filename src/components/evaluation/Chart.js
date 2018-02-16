@@ -11,6 +11,7 @@ import { statisticsShape } from '../../propTypes'
 const propTypes = {
   activeVisualization: PropTypes.string.isRequired,
   handleShowGraph: PropTypes.func.isRequired,
+  numBins: PropTypes.number.isRequired,
   questionType: PropTypes.string.isRequired,
   restrictions: PropTypes.shape({
     max: PropTypes.number,
@@ -52,6 +53,7 @@ function Chart({
   restrictions,
   results,
   handleShowGraph,
+  numBins,
   questionType,
   sessionStatus,
   showGraph,
@@ -66,10 +68,7 @@ function Chart({
           return (
             <div className="noChart">
               <Button className="showGraphButton" onClick={handleShowGraph}>
-                <FormattedMessage
-                  defaultMessage="Show Graph"
-                  id="teacher.evaluation.graph.showGraph"
-                />
+                <FormattedMessage defaultMessage="Show Graph" id="evaluation.graph.showGraph" />
               </Button>
             </div>
           )
@@ -80,7 +79,7 @@ function Chart({
             <div className="noChart">
               <FormattedMessage
                 defaultMessage="No Results Available"
-                id="teacher.evaluation.graph.noResults"
+                id="evaluation.graph.noResults"
               />
             </div>
           )
@@ -92,7 +91,9 @@ function Chart({
             <ChartComponent
               brush={sessionStatus !== SESSION_STATUS.RUNNING}
               data={results.data}
+              isColored={questionType !== 'FREE_RANGE'}
               isSolutionShown={showSolution}
+              numBins={numBins}
               questionType={questionType}
               restrictions={restrictions}
               statistics={statistics}

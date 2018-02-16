@@ -32,12 +32,12 @@ const Index = ({
       },
       title: intl.formatMessage({
         defaultMessage: 'Session List',
-        id: 'teacher.sessionList.title',
+        id: 'sessionList.title',
       }),
     }}
     pageTitle={intl.formatMessage({
       defaultMessage: 'Session List',
-      id: 'teacher.sessionList.pageTitle',
+      id: 'sessionList.pageTitle',
     })}
     sidebar={{ activeItem: 'sessionList' }}
   >

@@ -56,7 +56,7 @@ function FeedbackArea({
             max={5}
             min={-5}
             title={
-              <h2>
+              <h2 className="sectionTitle">
                 <FormattedMessage defaultMessage="Speed" id="common.string.speed" />
               </h2>
             }
@@ -70,7 +70,7 @@ function FeedbackArea({
             max={5}
             min={-5}
             title={
-              <h2>
+              <h2 className="sectionTitle">
                 <FormattedMessage defaultMessage="Difficulty" id="common.string.difficulty" />
               </h2>
             }
@@ -80,6 +80,7 @@ function FeedbackArea({
       )}
 
       <div className="feedbacks">
+        <h2 className="sectionTitle">Feedbacks</h2>
         {isFeedbackChannelActive &&
           feedbacks &&
           feedbacks.map(({ id, content, votes }) => (
@@ -98,10 +99,12 @@ function FeedbackArea({
           <Form className="newFeedback">
             <Form.Field>
               <label htmlFor="feedbackInput">
-                <FormattedMessage
-                  defaultMessage="New Feedback"
-                  id="joinSession.newFeedbackInput.label"
-                />
+                <h2 className="sectionTitle">
+                  <FormattedMessage
+                    defaultMessage="New open feedback"
+                    id="joinSession.newFeedbackInput.label"
+                  />
+                </h2>
                 <textarea
                   name="feedbackInput"
                   value={feedbackInputValue}
@@ -117,7 +120,7 @@ function FeedbackArea({
               type="submit"
               onClick={handleNewFeedback}
             >
-              <FormattedMessage defaultMessage="Submit" id="common.form.submit" />
+              <FormattedMessage defaultMessage="Submit" id="Absenden" />
             </Button>
           </Form>
         )}
@@ -148,10 +151,30 @@ function FeedbackArea({
           }
 
           .confusion {
-            margin-bottom: 0.5rem;
+            background-color: $color-primary-20p;
+            border: 1px solid $color-primary;
+            padding: 1rem;
+
+            > :global(*:first-child) {
+              margin-bottom: 5rem;
+            }
+
+            > :global(*:last-child) {
+              margin-bottom: 3rem;
+            }
+          }
+
+          .feedbacks {
+            margin-top: 1rem;
           }
 
           .feedback:not(:last-child) {
+            margin-bottom: 0.3rem;
+          }
+
+          .sectionTitle {
+            font-weight: bold;
+            font-size: 1rem;
             margin-bottom: 0.5rem;
           }
 
@@ -161,20 +184,11 @@ function FeedbackArea({
             left: 1rem;
             right: 1rem;
 
+            margin-bottom: 0;
+
             textarea {
               height: 7rem;
             }
-          }
-
-          .actionButton {
-            position: fixed;
-
-            bottom: 2rem;
-            right: 2rem;
-          }
-
-          .actionButton :global(button) {
-            margin-right: 0;
           }
 
           @include desktop-tablet-only {

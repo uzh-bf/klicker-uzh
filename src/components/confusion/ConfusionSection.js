@@ -16,7 +16,12 @@ const ConfusionSection = ({ data, title }) => (
       {(() => {
         // if there is no data for the section, display a message
         if (data.length === 0) {
-          return <FormattedMessage defaultMessage="No data yet." id="confusionSection.noData" />
+          return (
+            <FormattedMessage
+              defaultMessage="No data yet."
+              id="runningSession.confusionSection.noData"
+            />
+          )
         }
 
         // otherwise render a chart

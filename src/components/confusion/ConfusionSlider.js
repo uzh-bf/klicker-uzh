@@ -60,8 +60,6 @@ const ConfusionSlider = ({
         @import 'src/theme';
 
         .confusionSlider {
-          margin-bottom: 70px;
-
           .title > :global(*):first-child {
             font-size: 1rem;
             margin: 0;

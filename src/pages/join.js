@@ -67,11 +67,11 @@ const Join = ({
     sidebarActiveItem === 'activeQuestion'
       ? intl.formatMessage({
         defaultMessage: 'Active Question',
-        id: 'student.activeQuestion.title',
+        id: 'joinSessionactiveQuestion.title',
       })
       : intl.formatMessage({
         defaultMessage: 'Feedback-Channel',
-        id: 'student.feedbackChannel.title',
+        id: 'joinSessionfeedbackChannel.title',
       })
 
   return (

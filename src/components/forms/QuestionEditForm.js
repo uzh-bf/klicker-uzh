@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import isEmpty from 'validator/lib/isEmpty'
-import _isInteger from 'lodash/isInteger'
+import _isNumber from 'lodash/isNumber'
 import { compose, withProps } from 'recompose'
 import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage, intlShape } from 'react-intl'
@@ -31,14 +31,10 @@ const validate = ({
 
   if (type === QUESTION_TYPES.FREE_RANGE) {
     if (options && options.restrictions) {
-      const isMinInt = _isInteger(options.restrictions.min)
-      const isMaxInt = _isInteger(options.restrictions.max)
+      const isMinNum = _isNumber(options.restrictions.min)
+      const isMaxNum = _isNumber(options.restrictions.max)
 
-      if (!isMinInt && !isMaxInt) {
-        errors.options = 'form.createQuestion.options.noMinMax'
-      }
-
-      if (isMinInt && isMaxInt && options.restrictions.min >= options.restrictions.max) {
+      if (isMinNum && isMaxNum && options.restrictions.min >= options.restrictions.max) {
         errors.options = 'form.createQuestion.options.minGteMax'
       }
     } else {
@@ -88,7 +84,7 @@ const QuestionEditForm = ({
       <div className="questionInput questionType">
         <Form.Field>
           <label htmlFor="type">
-            <FormattedMessage defaultMessage="Question Type" id="teacher.editQuestion.type" />
+            <FormattedMessage defaultMessage="Question Type" id="editQuestion.type" />
           </label>
           <div className="type">{type}</div>
         </Form.Field>
@@ -99,10 +95,18 @@ const QuestionEditForm = ({
       </div>
 
       <div className="questionVersion">
-        <h2>Question Versions</h2>
+        <h2>
+          <FormattedMessage
+            defaultMessage="Question Versions"
+            id="editQuestion.questionVersions.title"
+          />
+        </h2>
 
         <Message info>
-          The contents of existing versions cannot be altered. Please create a new version instead.
+          <FormattedMessage
+            defaultMessage="The contents of existing versions cannot be altered. Please create a new version instead."
+            id="editQuestion.questionVersions.description"
+          />
         </Message>
         <Menu stackable tabular>
           {versionOptions.map(({ id, text }, index) => (
