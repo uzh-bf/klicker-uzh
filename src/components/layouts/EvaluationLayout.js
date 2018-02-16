@@ -131,7 +131,7 @@ function EvaluationLayout({
         {QUESTION_GROUPS.WITH_STATISTICS.includes(type) &&
           statistics && (
             <div className="statistics">
-              <Statistics {...statistics} />
+              <Statistics {...statistics} withBins={activeVisualization === 'HISTOGRAM'} />
             </div>
           )}
 
@@ -221,7 +221,7 @@ function EvaluationLayout({
                   p {
                     font-size: 1.2rem;
                     font-weight: bold;
-                    line-height: 1.2rem;
+                    line-height: 1.5rem;
                   }
                 }
 

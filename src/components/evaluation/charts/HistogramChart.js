@@ -1,9 +1,11 @@
 /* eslint-disable no-mixed-operators,no-plusplus,no-loop-func */
 import React from 'react'
 import PropTypes from 'prop-types'
-import _range from 'lodash/range'
+import _isNumber from 'lodash/isNumber'
 import _minBy from 'lodash/minBy'
 import _maxBy from 'lodash/maxBy'
+import _sumBy from 'lodash/sumBy'
+import { histogram, thresholdFreedmanDiaconis } from 'd3'
 import { compose, withProps } from 'recompose'
 import {
   Bar,
@@ -128,36 +130,30 @@ HistogramChart.propTypes = propTypes
 HistogramChart.defaultProps = defaultProps
 
 export default compose(
-  withProps(({ data, restrictions }) => {
-    // TODO: rework this to make it less complex
-    // potentially merge into a single map / reduce
+  withProps(({ data, numBins, restrictions }) => {
+    // calculate the borders of the histogram
+    const min = _isNumber(restrictions.min) ? restrictions.min : +_minBy(data, o => +o.value).value
+    const max = _isNumber(restrictions.max) ? restrictions.max : +_maxBy(data, o => +o.value).value
 
-    // map input data into the needed format
-    // make sure the value is numerical and rounded
-    const mapped = data.reduce((acc, { count, value }) => {
-      const rounded = Math.round(+value)
-      const index = acc.findIndex(({ value: v }) => v === rounded)
+    // calculate the number of bins according to freedman diaconis
+    const defaultThreshold = thresholdFreedmanDiaconis(data.map(o => +o.value), min, max)
 
-      if (index > -1) {
-        const newAcc = acc
-        newAcc[index].count += count
-        return newAcc
-      }
+    // setup the D3 histogram generator
+    // use either the passed number of bins or the default threshold
+    const histGen = histogram()
+      .domain([min, max])
+      .value(o => Math.round(+o.value))
+      .thresholds(numBins || defaultThreshold)
 
-      return acc.concat({ count, value: rounded })
-    }, [])
+    // bin the data using D3
+    const bins = histGen(data)
 
+    // map the bins to recharts objects
     return {
-      data: _range(
-        restrictions.min || _minBy(data, i => i.value * 1).value,
-        (restrictions.max || _maxBy(data, i => i.value * 1).value) + 1,
-      ).map((index) => {
-        // try to find an existing value
-        const findItem = mapped.find(({ value }) => value === index)
-
-        // either return the existing value or a 0 count
-        return findItem || { count: 0, value: index }
-      }),
+      data: bins.map(bin => ({
+        count: _sumBy(bin, 'count'),
+        value: `${bin.x0}-${bin.x1}`,
+      })),
     }
   }),
 )(HistogramChart)

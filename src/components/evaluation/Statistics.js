@@ -2,17 +2,21 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import _round from 'lodash/round'
 import { FormattedMessage } from 'react-intl'
+import { Input, Message } from 'semantic-ui-react'
 
 import { EvaluationListItem } from '.'
 
 const propTypes = {
+  bins: PropTypes.number.isRequired,
   max: PropTypes.number,
   mean: PropTypes.number,
   median: PropTypes.number,
   min: PropTypes.number,
+  onChangeBins: PropTypes.func.isRequired,
   q1: PropTypes.number,
   q3: PropTypes.number,
   sd: PropTypes.number,
+  withBins: PropTypes.bool,
 }
 
 const defaultProps = {
@@ -23,10 +27,11 @@ const defaultProps = {
   q1: undefined,
   q3: undefined,
   sd: undefined,
+  withBins: false,
 }
 
 const Statistics = ({
-  max, mean, median, min, q1, q3, sd,
+  bins, max, mean, median, min, q1, q3, sd, onChangeBins, withBins,
 }) => (
   <div className="statistics">
     <h2>
@@ -57,12 +62,41 @@ const Statistics = ({
       </EvaluationListItem>
     </div>
 
+    {withBins && (
+      <div className="bins">
+        <Input
+          fluid
+          label="Threshold"
+          labelPosition="left"
+          name="bins"
+          type="number"
+          value={bins}
+          onChange={onChangeBins}
+        />
+        <Message info>
+          <FormattedMessage
+            defaultMessage="Type a number to override Freedman-Diaconis thresholding. The threshold defines the number of bins displayed in the histogram."
+            id="teacher.evaluation.bins.description"
+          />
+        </Message>
+      </div>
+    )}
+
     <style jsx>{`
       .statistics {
         h2 {
           font-size: 1.2rem;
           line-height: 1.2rem;
           margin-bottom: 0.5rem;
+        }
+
+        .bins {
+          margin-top: 1rem;
+
+          :global(.message) {
+            margin-top: 0.5rem;
+            padding: 1rem;
+          }
         }
       }
     `}</style>
