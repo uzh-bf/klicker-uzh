@@ -120,7 +120,7 @@ function FeedbackArea({
               type="submit"
               onClick={handleNewFeedback}
             >
-              <FormattedMessage defaultMessage="Submit" id="Absenden" />
+              <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
             </Button>
           </Form>
         )}
