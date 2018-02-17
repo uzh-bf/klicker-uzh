@@ -3,9 +3,10 @@ import PropTypes from 'prop-types'
 import { compose, withState, withHandlers } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
+import { Message } from 'semantic-ui-react'
 
 import { StaticLayout } from '../../components/layouts'
-import { PasswordResetForm } from '../../components/forms'
+import { PasswordRequestForm } from '../../components/forms'
 import { pageWithIntl, withData } from '../../lib'
 import { RequestPasswordMutation } from '../../graphql'
 
@@ -16,7 +17,7 @@ const propTypes = {
   success: PropTypes.oneOfType(PropTypes.string, null).isRequired,
 }
 
-const ResetPassword = ({
+const RequestPassword = ({
   intl, handleSubmit, success, error,
 }) => (
   <StaticLayout
@@ -27,10 +28,19 @@ const ResetPassword = ({
   >
     <div className="resetPassword">
       <h1>
-        <FormattedMessage defaultMessage="Reset your password" id="user.resetPassword.title" />
+        <FormattedMessage defaultMessage="Reset your password" id="user.requestPassword.title" />
       </h1>
 
-      <PasswordResetForm intl={intl} onSubmit={handleSubmit} />
+      {success && (
+        <Message success>
+          <FormattedMessage
+            defaultMessage="An email has been sent to the provided address. Please follow the instructions therein to regain access to your account."
+            id="user.requestPassword.success"
+          />
+        </Message>
+      )}
+      {!success && <PasswordRequestForm intl={intl} onSubmit={handleSubmit} />}
+      {error && <Message error>{error}</Message>}
 
       <style jsx>{`
         @import 'src/theme';
@@ -52,16 +62,24 @@ const ResetPassword = ({
   </StaticLayout>
 )
 
-ResetPassword.propTypes = propTypes
+RequestPassword.propTypes = propTypes
 
 export default compose(
   withData,
   pageWithIntl,
-  // graphql(RequestPasswordMutation),
+  graphql(RequestPasswordMutation),
   withState('error', 'setError', null),
   withState('success', 'setSuccess', null),
   withHandlers({
     // handle form submission
-    handleSubmit: ({ mutate, setError, setSuccess }) => () => {},
+    handleSubmit: ({ mutate, setError, setSuccess }) => async ({ email }) => {
+      try {
+        const result = await mutate({ variables: { email } })
+        setSuccess(email)
+      } catch ({ message }) {
+        console.error(message)
+        setError(message)
+      }
+    },
   }),
-)(ResetPassword)
+)(RequestPassword)

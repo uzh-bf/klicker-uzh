@@ -23,7 +23,7 @@ const propTypes = {
   invalid: PropTypes.bool.isRequired,
 }
 
-const PasswordResetForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
+const PasswordRequestForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
   const button = {
     invalid,
     label: intl.formatMessage({
@@ -48,41 +48,25 @@ const PasswordResetForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
         required
         component={SemanticInput}
         errorMessage={intl.formatMessage({
-          defaultMessage: 'Please provide a valid password.',
-          id: 'form.password.invalid',
-        })}
-        icon="privacy"
-        intl={intl}
-        label={intl.formatMessage({
-          defaultMessage: 'Password',
-          id: 'form.password.label',
-        })}
-        name="password"
-        type="password"
-      />
-      <Field
-        required
-        component={SemanticInput}
-        errorMessage={intl.formatMessage({
           defaultMessage: 'Please provide a valid email address.',
-          id: 'form.passwordRepeat.invalid',
+          id: 'form.email.invalid',
         })}
-        icon="privacy"
+        icon="mail"
         intl={intl}
         label={intl.formatMessage({
-          defaultMessage: 'Repeat password',
-          id: 'form.passwordRepeat.label',
+          defaultMessage: 'Email',
+          id: 'form.email.label',
         })}
-        name="passwordRepeat"
-        type="password"
+        name="email"
+        type="email"
       />
     </FormWithLinks>
   )
 }
 
-PasswordResetForm.propTypes = propTypes
+PasswordRequestForm.propTypes = propTypes
 
 export default reduxForm({
   form: 'passwordRequest',
   validate,
-})(PasswordResetForm)
+})(PasswordRequestForm)

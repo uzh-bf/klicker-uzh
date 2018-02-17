@@ -8,6 +8,7 @@ import DeleteFeedbackMutation from './mutations/DeleteFeedbackMutation.graphql'
 import EndSessionMutation from './mutations/EndSessionMutation.graphql'
 import LoginMutation from './mutations/LoginMutation.graphql'
 import ModifyQuestionMutation from './mutations/ModifyQuestionMutation.graphql'
+import RequestPasswordMutation from './mutations/RequestPasswordMutation.graphql'
 import RegistrationMutation from './mutations/RegistrationMutation.graphql'
 import StartSessionMutation from './mutations/StartSessionMutation.graphql'
 import UpdateSessionSettingsMutation from './mutations/UpdateSessionSettingsMutation.graphql'
@@ -39,6 +40,7 @@ export {
   JoinSessionQuery,
   QuestionDetailsQuery,
   QuestionListQuery,
+  RequestPasswordMutation,
   RunningSessionQuery,
   SessionEvaluationQuery,
   SessionListQuery,
