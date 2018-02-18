@@ -1,6 +1,15 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Line, LineChart, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from 'recharts'
+import {
+  Line,
+  LineChart,
+  ReferenceLine,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  Legend,
+  CartesianGrid,
+} from 'recharts'
 import { FormattedMessage } from 'react-intl'
 
 const propTypes = {
@@ -27,11 +36,22 @@ const ConfusionSection = ({ data, title }) => (
         // otherwise render a chart
         return (
           <ResponsiveContainer>
-            <LineChart data={data}>
-              <XAxis dataKey="timestamp" />
-              <YAxis domain={[-5, 5]} />
+            <LineChart
+              data={data}
+              margin={{
+                top: 0,
+                right: 0,
+                left: 0,
+                bottom: 0,
+              }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <Legend />
+              <XAxis dataKey="createdAt" />
+              <YAxis domain={[-5, 5]} ticks={[-5, 0, 5]} />
               <ReferenceLine stroke="red" y={0} />
-              <Line dataKey="value" stroke="#8884d8" type="monotone" />
+              <Line dataKey="value" name="value" stroke="#8884d8" type="step" />
+              <Line dataKey="valueRunning" name="running average" stroke="green" type="monotone" />
             </LineChart>
           </ResponsiveContainer>
         )
@@ -42,6 +62,8 @@ const ConfusionSection = ({ data, title }) => (
       .confusionSection {
         display: flex;
         flex-direction: column;
+
+        height: 15rem;
 
         .chart {
           flex: 1;

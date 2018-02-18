@@ -30,7 +30,7 @@ const getMessage = (intl, num, max) => {
     return {
       icon: 'play',
       label: intl.formatMessage({
-        defaultMessage: 'Start session',
+        defaultMessage: 'Open first block',
         id: 'runningSession.button.start',
       }),
     }

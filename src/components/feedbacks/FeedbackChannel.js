@@ -57,7 +57,7 @@ const FeedbackChannel = ({
         disabled={!isActive}
         label={intl.formatMessage({
           defaultMessage: 'Publish questions',
-          id: 'runningSession.feedbackChannel.string.publishQuestions',
+          id: 'runningSession.feedbackChannel.publishQuestions',
         })}
         value={isPublic}
         onChange={handlePublicToggle}

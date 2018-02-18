@@ -101,5 +101,13 @@
   "form.shortname.invalid": "Bitte ein gültiges Accountkürzel angeben (3-6 Zeichen).",
   "form.passwordRepeat.invalid": "Bitte sicherstellen, dass Passwörter übereinstimmen.",
   "form.institution.invalid": "Bitte eine gültige Institution angeben.",
-  "runningSession.noRunningSession": "Momentan läuft keine Session.."
+  "runningSession.noRunningSession": "Momentan läuft keine Session..",
+  "runningSession.button.start": "Ersten Frageblock aktivieren",
+  "runningSession.button.closeBlock": "Aktiven Frageblock schliessen",
+  "runningSession.button.finish": "Session beenden",
+  "runningSession.button.openBlock": "Nächsten Frageblock aktivieren",
+  "runningSession.confusion.difficulty": "Schwierigkeit",
+  "runningSession.confusion.speed": "Geschwindigkeit",
+  "common.string.activated": "Aktiviert",
+  "runningSession.feedbackChannel.publishQuestions": "Feedbacks veröffentlichen"
 }
