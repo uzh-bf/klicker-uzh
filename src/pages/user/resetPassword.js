@@ -35,10 +35,12 @@ const ResetPassword = ({
       {success && (
         <Message success>
           <FormattedMessage
-            defaultMessage="Your password was successfully changed. You can now login at "
+            defaultMessage="Your password was successfully changed. You can now {login}."
             id="user.resetPassword.success"
+            values={{
+              login: <Link href="/user/login">login</Link>,
+            }}
           />
-          <Link href="/user/login">sdf</Link>
         </Message>
       )}
       <PasswordResetForm intl={intl} onSubmit={handleSubmit} />

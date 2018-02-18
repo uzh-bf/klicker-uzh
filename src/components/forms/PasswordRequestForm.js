@@ -45,6 +45,7 @@ const PasswordRequestForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
   return (
     <FormWithLinks button={button} links={links}>
       <Field
+        autoFocus
         required
         component={SemanticInput}
         errorMessage={intl.formatMessage({
