@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Button, Icon, Menu, Popup } from 'semantic-ui-react'
+import { Button, Icon, Menu, Popup, List } from 'semantic-ui-react'
 import { intlShape, FormattedMessage } from 'react-intl'
 
 const propTypes = {
@@ -12,6 +12,51 @@ const propTypes = {
 const defaultProps = {
   runtime: undefined,
   sessionId: undefined,
+}
+
+const changelog = {
+  new: [
+    {
+      items: [
+        'Multiple-choice questions can be created and evaluated.',
+        'One can define solutions for SC- and MC-questions and display them while presenting the results (optional).',
+        'More advanced visualizations for all question types, including word clouds and aggregated tables.',
+      ],
+      text: 'Extended question types and visualizations',
+    },
+    {
+      items: [
+        'Questions can be grouped into sessions and question blocks.',
+        'Each session could e.g. correspond to a single lecture.',
+        'A question block is part of a session and represents a group of questions that are evaluated simultaneously.',
+        'The parts of a session are activated on a predefined timeline.',
+      ],
+      text: 'Sessions & question blocks',
+    },
+    {
+      items: [
+        'The new feedback channel enables the collection of open text feedbacks over the course of the entire session (optional).',
+        'It also allows the students to give feedback on the speed and difficulty of the session at any point in time (optional).',
+      ],
+      text: 'Feedback-Channel (experimental)',
+    },
+    {
+      items: [
+        'Currently supported languages are English and German.',
+        'The tool is easily translateable to other languages (open-source).',
+      ],
+      text: 'Support for multiple languages',
+    },
+  ],
+  upcoming: [
+    { text: 'Advanced session management (quick creation, copying and other modifications).' },
+    {
+      text:
+        'On-the-fly modification of running sessions (e.g., adding questions while a session is already running and starting "empty" sessions).',
+    },
+    { text: 'Overall improvements for performance and user experience.' },
+    { text: 'Open-source documentation to encourage collaboration.' },
+  ],
 }
 
 const SessionArea = ({ intl, runtime, sessionId }) => (
@@ -45,22 +90,48 @@ const SessionArea = ({ intl, runtime, sessionId }) => (
     >
       <Popup.Content>
         <div className="popupContent">
-          <h3>Latest release</h3>
-          <ul>
-            <li>bla</li>
-          </ul>
+          <h3>New features (major)</h3>
+          <List bulleted>
+            {changelog.new.map(({ text, items }) => (
+              <List.Item>
+                {items ? <h4>{text}</h4> : text}
+                {items && <List.List>{items.map(item => <List.Item>{item}</List.Item>)}</List.List>}
+              </List.Item>
+            ))}
+          </List>
 
           <h3>Upcoming features</h3>
-          <ul>
-            <li>hello world integration</li>
-          </ul>
+          <List bulleted>
+            {changelog.upcoming.map(({ text, items }) => (
+              <List.Item>
+                {items ? <h4>{text}</h4> : text}
+                {items && <List.List>{items.map(item => <List.Item>{item}</List.Item>)}</List.List>}
+              </List.Item>
+            ))}
+          </List>
+          <p>
+            <strong>
+              A public roadmap will be made available and will show the planned features in more
+              detail.
+            </strong>
+          </p>
         </div>
       </Popup.Content>
     </Popup>
 
     <style jsx>{`
+      h3 {
+        font-size: 1.2rem;
+      }
+
+      h4 {
+        font-size: 1rem;
+        margin: 0;
+      }
+
       .popupContent {
-        padding: 1rem;
+        padding: 0;
+        width: 35rem;
       }
     `}</style>
   </React.Fragment>
