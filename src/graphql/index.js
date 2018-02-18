@@ -2,6 +2,7 @@ import ActivateNextBlockMutation from './mutations/ActivateNextBlockMutation.gra
 import AddConfusionTSMutation from './mutations/AddConfusionTSMutation.graphql'
 import AddFeedbackMutation from './mutations/AddFeedbackMutation.graphql'
 import AddResponseMutation from './mutations/AddResponseMutation.graphql'
+import ChangePasswordMutation from './mutations/ChangePasswordMutation.graphql'
 import CreateQuestionMutation from './mutations/CreateQuestionMutation.graphql'
 import CreateSessionMutation from './mutations/CreateSessionMutation.graphql'
 import DeleteFeedbackMutation from './mutations/DeleteFeedbackMutation.graphql'
@@ -27,6 +28,7 @@ export {
   AddConfusionTSMutation,
   AddFeedbackMutation,
   AddResponseMutation,
+  ChangePasswordMutation,
   CreateQuestionMutation,
   CreateSessionMutation,
   DeleteFeedbackMutation,

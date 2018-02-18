@@ -3,11 +3,13 @@ import PropTypes from 'prop-types'
 import { compose, withState, withHandlers } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
+import { Message } from 'semantic-ui-react'
+import Link from 'next/link'
 
 import { StaticLayout } from '../../components/layouts'
 import { PasswordResetForm } from '../../components/forms'
 import { pageWithIntl, withData } from '../../lib'
-import { RequestPasswordMutation } from '../../graphql'
+import { ChangePasswordMutation } from '../../graphql'
 
 const propTypes = {
   error: PropTypes.oneOfType(PropTypes.string, null).isRequired,
@@ -30,7 +32,17 @@ const ResetPassword = ({
         <FormattedMessage defaultMessage="Reset your password" id="user.resetPassword.title" />
       </h1>
 
+      {success && (
+        <Message success>
+          <FormattedMessage
+            defaultMessage="Your password was successfully changed. You can now login at "
+            id="user.resetPassword.success"
+          />
+          <Link href="/user/login">sdf</Link>
+        </Message>
+      )}
       <PasswordResetForm intl={intl} onSubmit={handleSubmit} />
+      {error && <Message error>{error}</Message>}
 
       <style jsx>{`
         @import 'src/theme';
@@ -57,11 +69,21 @@ ResetPassword.propTypes = propTypes
 export default compose(
   withData,
   pageWithIntl,
-  // graphql(RequestPasswordMutation),
+  graphql(ChangePasswordMutation),
   withState('error', 'setError', null),
   withState('success', 'setSuccess', null),
   withHandlers({
     // handle form submission
-    handleSubmit: ({ mutate, setError, setSuccess }) => () => {},
+    handleSubmit: ({
+      mutate, setError, setSuccess, url,
+    }) => async ({ password }) => {
+      try {
+        await mutate({ variables: { jwt: url.query.resetToken, newPassword: password } })
+        setSuccess('Success')
+      } catch ({ message }) {
+        console.error(message)
+        setError(message)
+      }
+    },
   }),
 )(ResetPassword)

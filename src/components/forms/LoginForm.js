@@ -40,7 +40,7 @@ const LoginForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
   }
   const links = [
     {
-      href: '/user/resetPassword',
+      href: '/user/requestPassword',
       label: intl.formatMessage({
         defaultMessage: 'Forgot password?',
         id: 'form.forgotPassword.label',

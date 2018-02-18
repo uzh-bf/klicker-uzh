@@ -1,17 +1,22 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import isEmail from 'validator/lib/isEmail'
+import isLength from 'validator/lib/isLength'
 import { Field, reduxForm } from 'redux-form'
 import { intlShape } from 'react-intl'
 
 import { FormWithLinks, SemanticInput } from '.'
 
-const validate = ({ email }) => {
+const validate = ({ password, passwordRepeat }) => {
   const errors = {}
 
-  // the email address needs to be valid
-  if (!email || !isEmail(email)) {
-    errors.email = 'form.common.email.invalid'
+  // password should at least have 7 characters (or more?)
+  if (!password || !isLength(password, { max: undefined, min: 7 })) {
+    errors.password = 'form.password.invalid'
+  }
+
+  // both password fields need to match
+  if (!passwordRepeat || passwordRepeat !== password) {
+    errors.passwordRepeat = 'form.passwordRepeat.invalid'
   }
 
   return errors
@@ -48,7 +53,7 @@ const PasswordResetForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
         required
         component={SemanticInput}
         errorMessage={intl.formatMessage({
-          defaultMessage: 'Please provide a valid password.',
+          defaultMessage: 'Please provide a valid password (8+ characters).',
           id: 'form.password.invalid',
         })}
         icon="privacy"
@@ -64,7 +69,7 @@ const PasswordResetForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
         required
         component={SemanticInput}
         errorMessage={intl.formatMessage({
-          defaultMessage: 'Please provide a valid email address.',
+          defaultMessage: 'Please ensure that passwords match.',
           id: 'form.passwordRepeat.invalid',
         })}
         icon="privacy"
@@ -83,6 +88,6 @@ const PasswordResetForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
 PasswordResetForm.propTypes = propTypes
 
 export default reduxForm({
-  form: 'passwordRequest',
+  form: 'passwordReset',
   validate,
 })(PasswordResetForm)
