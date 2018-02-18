@@ -39,6 +39,7 @@ const SessionCreationForm = ({
       <div className="sessionSettings">
         <div className="sessionName">
           <Field
+            autoFocus
             component={SemanticInput}
             inlineLabel="Name"
             labelPosition="left"
