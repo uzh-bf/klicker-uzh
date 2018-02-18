@@ -58,6 +58,7 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
     <Form error onSubmit={onSubmit}>
       <div className="personal">
         <Field
+          autoFocus
           required
           component={SemanticInput}
           errorMessage={intl.formatMessage({

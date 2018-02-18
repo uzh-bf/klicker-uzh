@@ -150,7 +150,7 @@ const QuestionCreationForm = ({
     <div className="questionCreationForm">
       <Form onSubmit={onSubmit}>
         <div className="questionInput questionTitle">
-          <Field component={TitleInput} name="title" />
+          <Field autoFocus component={TitleInput} name="title" />
         </div>
 
         <div className="questionInput questionType">

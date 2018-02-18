@@ -207,21 +207,9 @@ exports[`Storyshots common/navbar AccountArea 1`] = `
   >
     <div
       aria-checked={undefined}
-      aria-disabled={true}
+      aria-disabled={undefined}
       aria-selected={undefined}
-      className="disabled item"
-      onClick={[Function]}
-      role="option"
-    >
-      <span>
-        Settings
-      </span>
-    </div>
-    <div
-      aria-checked={undefined}
-      aria-disabled={true}
-      aria-selected={undefined}
-      className="disabled item"
+      className="item"
       onClick={[Function]}
       role="option"
     >
@@ -361,21 +349,9 @@ exports[`Storyshots common/navbar Navbar 1`] = `
           >
             <div
               aria-checked={undefined}
-              aria-disabled={true}
+              aria-disabled={undefined}
               aria-selected={undefined}
-              className="disabled item"
-              onClick={[Function]}
-              role="option"
-            >
-              <span>
-                Settings
-              </span>
-            </div>
-            <div
-              aria-checked={undefined}
-              aria-disabled={true}
-              aria-selected={undefined}
-              className="disabled item"
+              className="item"
               onClick={[Function]}
               role="option"
             >
@@ -2154,6 +2130,7 @@ exports[`Storyshots forms/components LoginForm 1`] = `
         }
       >
         <input
+          autoFocus={true}
           disabled={undefined}
           name="email"
           onBlur={[Function]}
@@ -2236,7 +2213,7 @@ exports[`Storyshots forms/components LoginForm 1`] = `
           >
             <a
               className="jsx-1235538274"
-              href="/user/resetPassword"
+              href="/user/requestPassword"
               onClick={[Function]}
             >
               Forgot password?
@@ -2249,7 +2226,7 @@ exports[`Storyshots forms/components LoginForm 1`] = `
 </div>
 `;
 
-exports[`Storyshots forms/components PasswortResetForm 1`] = `
+exports[`Storyshots forms/components PasswordRequestForm 1`] = `
 <div
   className="jsx-1235538274 formWithLinks"
 >
@@ -2276,6 +2253,7 @@ exports[`Storyshots forms/components PasswortResetForm 1`] = `
         }
       >
         <input
+          autoFocus={true}
           disabled={undefined}
           name="email"
           onBlur={[Function]}
