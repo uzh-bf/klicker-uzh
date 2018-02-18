@@ -94,7 +94,7 @@ const TeacherLayout = ({
           </Sidebar>
         </div>
 
-        {actionArea && <div className="actionArea">{actionArea}</div>}
+        <div className="actionArea">{actionArea}</div>
 
         <style jsx>{`
           .teacherLayout {
@@ -113,6 +113,8 @@ const TeacherLayout = ({
               flex: 1;
 
               display: flex;
+
+              overflow: hidden;
             }
 
             .actionArea {

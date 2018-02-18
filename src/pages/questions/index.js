@@ -141,15 +141,21 @@ const Index = ({
           height: 100%;
 
           .tagList {
+            overflow-y: auto;
+            height: 100%;
+
             flex: 1;
             background: $color-primary-10p;
             padding: 0.5rem;
           }
 
           .wrapper {
-            overflow: auto;
+            height: 100%;
 
             .questionList {
+              height: 100%;
+              overflow-y: auto;
+
               padding: 1rem;
 
               margin: 0 auto;

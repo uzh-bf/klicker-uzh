@@ -54,6 +54,8 @@ const Index = ({
 
       .sessionList {
         padding: 1rem 0.7rem;
+
+        height: 100%;
       }
 
       @include desktop-tablet-only {
