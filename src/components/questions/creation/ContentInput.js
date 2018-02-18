@@ -36,9 +36,6 @@ const ContentInput = ({ input: { value, onChange }, meta: { dirty, invalid }, di
       <textarea disabled={disabled} name="content" value={value} onChange={onChange} />
     </Form.Field>
 
-    <ReactTooltip delayHide={250} id="contentHelp" place="right">
-      <span>Enter the question to ask the audience.</span>
-    </ReactTooltip>
     <style jsx>{`
       @import 'src/theme';
 
