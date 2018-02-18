@@ -284,7 +284,7 @@ exports[`Storyshots common/navbar Navbar 1`] = `
           onClick={[Function]}
         >
           <a
-            className="jsx-4219433326"
+            className="jsx-1862355618"
             href="/sessions/running"
           >
             <button
@@ -396,7 +396,7 @@ Array [
     onClick={[Function]}
   >
     <a
-      className="jsx-4219433326"
+      className="jsx-1862355618"
       href="/sessions/running"
     >
       <button

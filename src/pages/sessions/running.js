@@ -182,7 +182,12 @@ export default compose(
     ({ data }) => data.loading || !data.runningSession,
     renderComponent(({ intl }) => (
       <LoadingTeacherLayout intl={intl} pageId="runningSession">
-        <Messager intl={intl} message="No currently running session..." />
+        <Messager
+          message={intl.formatMessage({
+            defaultMessage: 'No currently running session...',
+            id: 'runningSession.noRunningSession',
+          })}
+        />
       </LoadingTeacherLayout>
     )),
   ),
