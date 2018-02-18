@@ -42,7 +42,7 @@
   "createQuestion.titleInput.label": "Fragetitel",
   "createQuestion.titleInput.tooltip":
     "Geben Sie einen kurzen, zusammenfassenden Titel für die Frage ein. Dieser dient lediglich zur besseren Übersicht.",
-  "questionDetails.usageHistory": "Verwendungsübersicht",
+  "questionDetails.usageHistory": "Verwendet am",
   "questionDetails.button.view": "Ansehen",
   "questionDetails.button.edit": "Editieren",
   "questionList.string.noQuestions": "Sie haben noch keine Fragen erstellt.",
