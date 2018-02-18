@@ -43,7 +43,7 @@ const ResetPassword = ({
           />
         </Message>
       )}
-      <PasswordResetForm intl={intl} onSubmit={handleSubmit} />
+      {!success && <PasswordResetForm intl={intl} onSubmit={handleSubmit} />}
       {error && <Message error>{error}</Message>}
 
       <style jsx>{`
