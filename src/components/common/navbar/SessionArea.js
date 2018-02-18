@@ -48,13 +48,14 @@ const changelog = {
       text: 'Support for multiple languages',
     },
   ],
-  upcoming: [
+  planned: [
+    { text: 'Many overall improvements for performance and user experience.' },
     { text: 'Advanced session management (quick creation, copying and other modifications).' },
     {
       text:
         'On-the-fly modification of running sessions (e.g., adding questions while a session is already running and starting "empty" sessions).',
     },
-    { text: 'Overall improvements for performance and user experience.' },
+
     { text: 'Open-source documentation to encourage collaboration.' },
   ],
 }
@@ -100,9 +101,9 @@ const SessionArea = ({ intl, runtime, sessionId }) => (
             ))}
           </List>
 
-          <h3>Upcoming features</h3>
+          <h3>Planned features</h3>
           <List bulleted>
-            {changelog.upcoming.map(({ text, items }) => (
+            {changelog.planned.map(({ text, items }) => (
               <List.Item>
                 {items ? <h4>{text}</h4> : text}
                 {items && <List.List>{items.map(item => <List.Item>{item}</List.Item>)}</List.List>}
