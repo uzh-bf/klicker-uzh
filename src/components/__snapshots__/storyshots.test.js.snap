@@ -207,21 +207,9 @@ exports[`Storyshots common/navbar AccountArea 1`] = `
   >
     <div
       aria-checked={undefined}
-      aria-disabled={true}
+      aria-disabled={undefined}
       aria-selected={undefined}
-      className="disabled item"
-      onClick={[Function]}
-      role="option"
-    >
-      <span>
-        Settings
-      </span>
-    </div>
-    <div
-      aria-checked={undefined}
-      aria-disabled={true}
-      aria-selected={undefined}
-      className="disabled item"
+      className="item"
       onClick={[Function]}
       role="option"
     >
@@ -361,21 +349,9 @@ exports[`Storyshots common/navbar Navbar 1`] = `
           >
             <div
               aria-checked={undefined}
-              aria-disabled={true}
+              aria-disabled={undefined}
               aria-selected={undefined}
-              className="disabled item"
-              onClick={[Function]}
-              role="option"
-            >
-              <span>
-                Settings
-              </span>
-            </div>
-            <div
-              aria-checked={undefined}
-              aria-disabled={true}
-              aria-selected={undefined}
-              className="disabled item"
+              className="item"
               onClick={[Function]}
               role="option"
             >

@@ -74,7 +74,7 @@ export default compose(
     // handle form submission
     handleSubmit: ({ mutate, setError, setSuccess }) => async ({ email }) => {
       try {
-        const result = await mutate({ variables: { email } })
+        await mutate({ variables: { email } })
         setSuccess(email)
       } catch ({ message }) {
         console.error(message)
