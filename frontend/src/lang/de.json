@@ -42,7 +42,7 @@
   "createQuestion.titleInput.label": "Fragetitel",
   "createQuestion.titleInput.tooltip":
     "Geben Sie einen kurzen, zusammenfassenden Titel für die Frage ein. Dieser dient lediglich zur besseren Übersicht.",
-  "questionDetails.usageHistory": "Verwendungsübersicht",
+  "questionDetails.usageHistory": "Verwendet am",
   "questionDetails.button.view": "Ansehen",
   "questionDetails.button.edit": "Editieren",
   "questionList.string.noQuestions": "Sie haben noch keine Fragen erstellt.",
@@ -100,5 +100,14 @@
   "form.password.invalid": "Bitte ein gültiges Passwort angeben (8+ Zeichen).",
   "form.shortname.invalid": "Bitte ein gültiges Accountkürzel angeben (3-6 Zeichen).",
   "form.passwordRepeat.invalid": "Bitte sicherstellen, dass Passwörter übereinstimmen.",
-  "form.institution.invalid": "Bitte eine gültige Institution angeben."
+  "form.institution.invalid": "Bitte eine gültige Institution angeben.",
+  "runningSession.noRunningSession": "Momentan läuft keine Session..",
+  "runningSession.button.start": "Ersten Frageblock aktivieren",
+  "runningSession.button.closeBlock": "Aktiven Frageblock schliessen",
+  "runningSession.button.finish": "Session beenden",
+  "runningSession.button.openBlock": "Nächsten Frageblock aktivieren",
+  "runningSession.confusion.difficulty": "Schwierigkeit",
+  "runningSession.confusion.speed": "Geschwindigkeit",
+  "common.string.activated": "Aktiviert",
+  "runningSession.feedbackChannel.publishQuestions": "Feedbacks veröffentlichen"
 }

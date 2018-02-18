@@ -221,7 +221,7 @@ export default compose(
   graphql(AddFeedbackMutation, { name: 'newFeedback' }),
   graphql(AddResponseMutation, { name: 'newResponse' }),
   withProps(({ newConfusionTS }) => ({
-    newConfusionTS: _throttle(newConfusionTS, 10000, { trailing: true }),
+    newConfusionTS: _throttle(newConfusionTS, 4000, { trailing: true }),
   })),
   withHandlers({
     // handle creation of a new confusion timestep

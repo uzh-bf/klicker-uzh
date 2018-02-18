@@ -2,6 +2,9 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { Checkbox } from 'semantic-ui-react'
 import { FormattedMessage, intlShape } from 'react-intl'
+import { compose, withProps } from 'recompose'
+import _sumBy from 'lodash/sumBy'
+import moment from 'moment'
 
 import ConfusionSection from './ConfusionSection'
 
@@ -47,9 +50,10 @@ const ConfusionBarometer = ({
         return (
           <React.Fragment>
             <ConfusionSection
-              data={confusionTS.map(({ createdAt, difficulty }) => ({
-                timestamp: createdAt,
+              data={confusionTS.map(({ timestamp, difficulty, difficultyRunning }) => ({
+                timestamp,
                 value: difficulty,
+                valueRunning: difficultyRunning,
               }))}
               title={intl.formatMessage({
                 defaultMessage: 'Difficulty',
@@ -57,9 +61,10 @@ const ConfusionBarometer = ({
               })}
             />
             <ConfusionSection
-              data={confusionTS.map(({ createdAt, speed }) => ({
-                timestamp: createdAt,
+              data={confusionTS.map(({ timestamp, speed, speedRunning }) => ({
+                timestamp,
                 value: speed,
+                valueRunning: speedRunning,
               }))}
               title={intl.formatMessage({
                 defaultMessage: 'Speed',
@@ -116,4 +121,25 @@ const ConfusionBarometer = ({
 ConfusionBarometer.propTypes = propTypes
 ConfusionBarometer.defaultProps = defaultProps
 
-export default ConfusionBarometer
+export default compose(
+  withProps(({ confusionTS }) => ({
+    confusionTS: confusionTS.reduce((acc, { createdAt, speed, difficulty }) => {
+      const tempAcc = [...acc, { difficulty, speed }]
+
+      // calculate the running average for difficulty and speed
+      const difficultyRunning = _sumBy(tempAcc, 'difficulty') / tempAcc.length
+      const speedRunning = _sumBy(tempAcc, 'speed') / tempAcc.length
+
+      return [
+        ...acc,
+        {
+          difficulty,
+          difficultyRunning,
+          speed,
+          speedRunning,
+          timestamp: moment(createdAt).format('H:mm:ss'),
+        },
+      ]
+    }, []),
+  })),
+)(ConfusionBarometer)
