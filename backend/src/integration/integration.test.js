@@ -464,7 +464,7 @@ describe('Integration', () => {
           fp: 'myfp1',
           sessionId,
           difficulty: -2,
-          speed: 9,
+          speed: 3,
         },
       }))
       ensureNoErrors(await sendQuery({
@@ -482,7 +482,7 @@ describe('Integration', () => {
           fp: 'myfp1',
           sessionId,
           difficulty: 5,
-          speed: 10,
+          speed: 2,
         },
       }))
 
