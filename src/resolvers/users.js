@@ -11,12 +11,19 @@ const createUserMutation = (parentValue, { email, password, shortname }) =>
 
 const loginMutation = (parentValue, { email, password }, { res }) => AuthService.login(res, email, password)
 
+const changePasswordMutation = (parentValue, { newPassword }, { auth }) =>
+  AuthService.changePassword(auth.sub, newPassword)
+
+const requestPasswordMutation = (parentValue, { email }, { res }) => AuthService.requestPassword(res, email)
+
 module.exports = {
   // queries
   authUser: authUserByIDQuery,
   user: userByIDQuery,
 
   // mutations
+  changePassword: changePasswordMutation,
   createUser: createUserMutation,
   login: loginMutation,
+  requestPassword: requestPasswordMutation,
 }

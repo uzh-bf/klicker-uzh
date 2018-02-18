@@ -6,7 +6,7 @@ const JWT = require('jsonwebtoken')
 mongoose.Promise = Promise
 
 const {
-  isAuthenticated, isValidJWT, signup, login, requireAuth, getToken,
+  isAuthenticated, isValidJWT, signup, login, requireAuth, getToken, changePassword,
 } = require('./auth')
 const { UserModel } = require('../models')
 const { initializeDb } = require('../lib/test/setup')
@@ -166,5 +166,32 @@ describe('AuthService', () => {
       // expect a new cookie to have been set
       expect(cookieStore[0]).toEqual('jwt')
     })
+
+    it('allows changing the password', async () => {
+      // expect the old login to work and the promise to resolve
+      const user = await login(res, 'testAuth@bf.uzh.ch', 'somePassword')
+      expect(user).toEqual(expect.objectContaining({
+        email: 'testAuth@bf.uzh.ch',
+        shortname: 'auth',
+      }))
+
+      // change the user's password
+      const updatedUser = await changePassword(user.id, 'someOtherPassword')
+      expect(updatedUser).toEqual(expect.objectContaining({
+        email: 'testAuth@bf.uzh.ch',
+        shortname: 'auth',
+      }))
+
+      // expect the old login to fail and the promise to reject
+      expect(login(res, 'testAuth@bf.uzh.ch', 'somePassword')).rejects.toEqual(new Error('INVALID_LOGIN'))
+
+      // expect the new login to work
+      expect(login(res, 'testAuth@bf.uzh.ch', 'someOtherPassword')).resolves.toEqual(expect.objectContaining({
+        email: 'testAuth@bf.uzh.ch',
+        shortname: 'auth',
+      }))
+    })
+
+    it('allows requesting a password reset link', async () => {})
   })
 })

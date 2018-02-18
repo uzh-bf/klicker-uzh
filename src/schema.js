@@ -32,7 +32,7 @@ const {
 } = require('./resolvers/sessions')
 const { allTags, tags } = require('./resolvers/tags')
 const {
-  createUser, login, user, authUser,
+  createUser, login, user, authUser, changePassword, requestPassword,
 } = require('./resolvers/users')
 const { allTypes } = require('./types')
 
@@ -63,6 +63,7 @@ const typeDefs = [
     addConfusionTS(fp: ID, sessionId: ID!, difficulty: Int!, speed: Int!): Session!
     addFeedback(fp: ID, sessionId: ID!, content: String!): Session!
     addResponse(fp: ID, instanceId: ID!, response: QuestionInstance_ResponseInput!): QuestionInstance!
+    changePassword(newPassword: String!): User!
     createQuestion(question: QuestionInput!): Question!
     createSession(session: SessionInput!): Session!
     createUser(email: String!, password: String!, shortname: String!): User!
@@ -70,6 +71,7 @@ const typeDefs = [
     endSession(id: ID!): Session!
     login(email: String!, password: String!): User!
     modifyQuestion(id: ID!, question: QuestionModifyInput!): Question!
+    requestPassword(email: String!): String!
     startSession(id: ID!): Session!
     updateSessionSettings(sessionId: ID!, settings: Session_SettingsInput!): Session!
   }
@@ -95,12 +97,14 @@ const resolvers = {
     deleteFeedback: requireAuth(deleteFeedback),
     addConfusionTS,
     addResponse,
+    changePassword: requireAuth(changePassword),
     createQuestion: requireAuth(createQuestion),
     createSession: requireAuth(createSession),
     createUser,
     endSession: requireAuth(endSession),
     login,
     modifyQuestion: requireAuth(modifyQuestion),
+    requestPassword,
     startSession: requireAuth(startSession),
     updateSessionSettings: requireAuth(updateSessionSettings),
     activateNextBlock: requireAuth(activateNextBlock),

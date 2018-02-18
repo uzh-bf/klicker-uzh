@@ -1,5 +1,10 @@
+const fs = require('fs')
+const path = require('path')
+const handlebars = require('handlebars')
 const bcrypt = require('bcryptjs')
 const JWT = require('jsonwebtoken')
+const nodemailer = require('nodemailer')
+const _has = require('lodash/has')
 
 const { UserModel } = require('../models')
 
@@ -46,6 +51,12 @@ const getToken = (req) => {
     if (split[0] === 'Bearer' && isValidJWT(split[1], process.env.APP_SECRET)) {
       return split[1]
     }
+  }
+
+  // if no token was found, but would be needed
+  // additionally look for a token in the GraphQL variables
+  if (_has(req, 'body.variables.jwt') && isValidJWT(req.body.variables.jwt, process.env.APP_SECRET)) {
+    return req.body.variables.jwt
   }
 
   // no token found
@@ -123,6 +134,83 @@ const login = async (res, email, password) => {
   return user
 }
 
+// change the password of an existing user
+const changePassword = async (userId, newPassword) => {
+  // look for a user with the given id
+  // and check whether the user exists
+  const user = await UserModel.findById(userId)
+  if (!user) {
+    throw new Error('PASSWORD_UPDATE_FAILED')
+  }
+
+  // generate a salt with bcyrpt using 10 rounds
+  // hash and salt the password
+  // set the new password and save the user
+  user.password = bcrypt.hashSync(newPassword, 10)
+  const updatedUser = await user.save()
+  if (!updatedUser) {
+    throw new Error('PASSWORD_UPDATE_FAILED')
+  }
+
+  // return the updated user
+  return updatedUser
+}
+
+// request a password reset link
+const requestPassword = async (res, email) => {
+  // look for a user with the given email
+  // and check whether the user exists
+  const user = await UserModel.findOne({ email })
+  if (!user) {
+    return 'PASSWORD_RESET_FAILED'
+  }
+
+  // generate a temporary JWT for password reset
+  const jwt = JWT.sign(
+    {
+      expiresIn: 86400,
+      sub: user.id,
+      scope: ['user'],
+      shortname: user.shortname,
+    },
+    process.env.APP_SECRET,
+  )
+
+  // create reusable transporter object using the default SMTP transport
+  const transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST,
+    port: process.env.EMAIL_PORT || 587,
+    secure: process.env.EMAIL_SECURE || false, // true for 465, false for other ports
+    auth: {
+      user: process.env.EMAIL_USER, // generated ethereal user
+      pass: process.env.EMAIL_PASS, // generated ethereal password
+    },
+  })
+
+  // load the template source and compile it
+  const source = fs.readFileSync(path.join(__dirname, 'emails', 'passwordReset.hbs'), 'utf8')
+  const template = handlebars.compile(source)
+
+  // send mail with defined transport object
+  if (process.env.NODE_ENV !== 'test') {
+    try {
+      await transporter.sendMail({
+        from: process.env.EMAIL_FROM,
+        to: user.email,
+        subject: 'IBF Klicker - Password Reset',
+        html: template({
+          email: user.email,
+          jwt,
+        }),
+      })
+    } catch (e) {
+      return 'PASSWORD_RESET_FAILED'
+    }
+  }
+
+  return 'PASSWORD_RESET_SENT'
+}
+
 module.exports = {
   isAuthenticated,
   requireAuth,
@@ -130,4 +218,6 @@ module.exports = {
   getToken,
   signup,
   login,
+  changePassword,
+  requestPassword,
 }

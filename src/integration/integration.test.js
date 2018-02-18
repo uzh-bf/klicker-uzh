@@ -63,6 +63,25 @@ describe('Integration', () => {
     })
   })
 
+  describe('Passwords', () => {
+    it('can be updated', async () => {
+      ensureNoErrors(await sendQuery(
+        {
+          query: mutations.ChangePasswordMutation,
+          variables: { newPassword: 'someOtherPassword' },
+        },
+        authCookie,
+      ))
+    })
+
+    it('can be requested', async () => {
+      ensureNoErrors(await sendQuery({
+        query: mutations.RequestPasswordMutation,
+        variables: { email: 'testIntegration@bf.uzh.ch' },
+      }))
+    })
+  })
+
   describe('Question Creation', () => {
     it('creates SC questions', async () => {
       const data = ensureNoErrors(await sendQuery(

@@ -13,6 +13,7 @@ const cookieParser = require('cookie-parser')
 const express = require('express')
 const expressJWT = require('express-jwt')
 const mongoose = require('mongoose')
+mongoose.Promise = require('bluebird')
 const compression = require('compression')
 const helmet = require('helmet')
 const morgan = require('morgan')
@@ -39,11 +40,9 @@ appSettings.forEach((envVar) => {
 // connect to mongodb
 // use username and password authentication if passed in the environment
 // otherwise assume that no authentication needed (e.g. docker)
-mongoose.Promise = Promise
 const mongoConfig = {
   keepAlive: true,
   reconnectTries: 10,
-  promiseLibrary: Promise,
 }
 if (process.env.MONGO_USER && process.env.MONGO_PASSWORD) {
   mongoose.connect(
@@ -98,6 +97,8 @@ const middleware = [
   }),
   // enable cookie parsing
   cookieParser(),
+  // parse json contents
+  bodyParser.json(),
   // setup JWT authentication
   expressJWT({
     credentialsRequired: false,
@@ -150,9 +151,6 @@ if (process.env.APP_RATE_LIMITING) {
 
   middleware.push(limiter)
 }
-
-// parse json contents
-middleware.push(bodyParser.json())
 
 if (process.env.NODE_ENV === 'production') {
   // add the morgan logging middleware in production
