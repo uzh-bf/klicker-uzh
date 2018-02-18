@@ -100,5 +100,6 @@
   "form.password.invalid": "Bitte ein gültiges Passwort angeben (8+ Zeichen).",
   "form.shortname.invalid": "Bitte ein gültiges Accountkürzel angeben (3-6 Zeichen).",
   "form.passwordRepeat.invalid": "Bitte sicherstellen, dass Passwörter übereinstimmen.",
-  "form.institution.invalid": "Bitte eine gültige Institution angeben."
+  "form.institution.invalid": "Bitte eine gültige Institution angeben.",
+  "runningSession.noRunningSession": "Momentan läuft keine Session.."
 }
