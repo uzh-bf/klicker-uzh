@@ -7,7 +7,6 @@ import {
   ResponsiveContainer,
   XAxis,
   YAxis,
-  Legend,
   CartesianGrid,
 } from 'recharts'
 import { FormattedMessage } from 'react-intl'
@@ -39,18 +38,22 @@ const ConfusionSection = ({ data, title }) => (
             <LineChart
               data={data}
               margin={{
-                top: 0,
-                right: 0,
-                left: 0,
                 bottom: 0,
+                left: 0,
+                right: 0,
+                top: 0,
               }}
             >
-              <CartesianGrid strokeDasharray="3 3" />
-              <Legend />
-              <XAxis dataKey="createdAt" />
-              <YAxis domain={[-5, 5]} ticks={[-5, 0, 5]} />
+              <CartesianGrid strokeDasharray="5 5" />
+              <XAxis dataKey="timestamp" padding={{ right: 10 }} />
+              <YAxis
+                domain={[-5, 5]}
+                minTickGap={1}
+                padding={{ bottom: 10, top: 10 }}
+                ticks={[-5, -3, -1, 1, 3, 5]}
+              />
               <ReferenceLine stroke="red" y={0} />
-              <Line dataKey="value" name="value" stroke="#8884d8" type="step" />
+              <Line dataKey="value" stroke="lightgrey" type="monotone" />
               <Line dataKey="valueRunning" name="running average" stroke="green" type="monotone" />
             </LineChart>
           </ResponsiveContainer>

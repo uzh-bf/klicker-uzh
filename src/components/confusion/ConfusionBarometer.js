@@ -4,6 +4,7 @@ import { Checkbox } from 'semantic-ui-react'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { compose, withProps } from 'recompose'
 import _sumBy from 'lodash/sumBy'
+import moment from 'moment'
 
 import ConfusionSection from './ConfusionSection'
 
@@ -49,8 +50,8 @@ const ConfusionBarometer = ({
         return (
           <React.Fragment>
             <ConfusionSection
-              data={confusionTS.map(({ createdAt, difficulty, difficultyRunning }) => ({
-                timestamp: createdAt,
+              data={confusionTS.map(({ timestamp, difficulty, difficultyRunning }) => ({
+                timestamp,
                 value: difficulty,
                 valueRunning: difficultyRunning,
               }))}
@@ -60,8 +61,8 @@ const ConfusionBarometer = ({
               })}
             />
             <ConfusionSection
-              data={confusionTS.map(({ createdAt, speed, speedRunning }) => ({
-                timestamp: createdAt,
+              data={confusionTS.map(({ timestamp, speed, speedRunning }) => ({
+                timestamp,
                 value: speed,
                 valueRunning: speedRunning,
               }))}
@@ -132,11 +133,11 @@ export default compose(
       return [
         ...acc,
         {
-          createdAt,
           difficulty,
-          speed,
           difficultyRunning,
+          speed,
           speedRunning,
+          timestamp: moment(createdAt).format('H:mm:ss'),
         },
       ]
     }, []),
