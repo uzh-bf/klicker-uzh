@@ -19,8 +19,8 @@ exports[`SessionExecService addConfusionTS allows adding new timesteps 1`] = `
     }]
 
     ConfusionTS: [{
-      Difficulty: -10
-      Speed: 10
+      Difficulty: -5
+      Speed: 5
     }]
 
     Feedbacks: []
@@ -51,11 +51,11 @@ exports[`SessionExecService addConfusionTS allows adding new timesteps 2`] = `
     }]
 
     ConfusionTS: [{
-      Difficulty: -10
-      Speed: 10
+      Difficulty: -5
+      Speed: 5
     },{
-      Difficulty: 5
-      Speed: -7
+      Difficulty: 3
+      Speed: -4
     }]
 
     Feedbacks: []

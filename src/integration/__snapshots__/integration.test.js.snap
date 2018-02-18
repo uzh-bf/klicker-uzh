@@ -272,13 +272,13 @@ exports[`Integration Session Execution allows adding confusion timesteps 1`] = `
         speed: 4
       ,
         difficulty: -2
-        speed: 9
+        speed: 3
       ,
         difficulty: -5
         speed: 3
       ,
         difficulty: 5
-        speed: 10
+        speed: 2
       
     }
   
@@ -534,13 +534,13 @@ exports[`Integration Session Execution allows running the full session flow (res
         speed: 4
       ,
         difficulty: -2
-        speed: 9
+        speed: 3
       ,
         difficulty: -5
         speed: 3
       ,
         difficulty: 5
-        speed: 10
+        speed: 2
       
       feedbacks: 
         content: my test feedback
@@ -732,13 +732,13 @@ exports[`Integration Session Execution allows running the full session flow (res
         speed: 4
       ,
         difficulty: -2
-        speed: 9
+        speed: 3
       ,
         difficulty: -5
         speed: 3
       ,
         difficulty: 5
-        speed: 10
+        speed: 2
       
       feedbacks: 
         content: my test feedback
@@ -930,13 +930,13 @@ exports[`Integration Session Execution allows running the full session flow (res
         speed: 4
       ,
         difficulty: -2
-        speed: 9
+        speed: 3
       ,
         difficulty: -5
         speed: 3
       ,
         difficulty: 5
-        speed: 10
+        speed: 2
       
       feedbacks: 
         content: my test feedback
@@ -1128,13 +1128,13 @@ exports[`Integration Session Execution allows running the full session flow (res
         speed: 4
       ,
         difficulty: -2
-        speed: 9
+        speed: 3
       ,
         difficulty: -5
         speed: 3
       ,
         difficulty: 5
-        speed: 10
+        speed: 2
       
       feedbacks: 
         content: my test feedback

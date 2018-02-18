@@ -109,8 +109,8 @@ describe('SessionExecService', () => {
     it('prevents adding timesteps if a session is not yet running', () => {
       expect(SessionExecService.addConfusionTS({
         sessionId: preparedSession.id,
-        difficulty: 9,
-        speed: -5,
+        difficulty: 3,
+        speed: -4,
       })).rejects.toEqual(new Error('SESSION_NOT_STARTED'))
     })
 
@@ -122,8 +122,8 @@ describe('SessionExecService', () => {
 
       expect(SessionExecService.addConfusionTS({
         sessionId: preparedSession.id,
-        difficulty: 9,
-        speed: -5,
+        difficulty: 2,
+        speed: -3,
       })).rejects.toEqual(new Error('SESSION_CONFUSION_DEACTIVATED'))
     })
 
@@ -138,15 +138,15 @@ describe('SessionExecService', () => {
 
       const session = await SessionExecService.addConfusionTS({
         sessionId: preparedSession.id,
-        difficulty: -10,
-        speed: 10,
+        difficulty: -5,
+        speed: 5,
       })
       expect(session).toMatchSnapshot()
 
       const session2 = await SessionExecService.addConfusionTS({
         sessionId: preparedSession.id,
-        difficulty: 5,
-        speed: -7,
+        difficulty: 3,
+        speed: -4,
       })
       expect(session2).toMatchSnapshot()
     })
