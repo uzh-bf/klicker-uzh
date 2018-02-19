@@ -11,7 +11,7 @@
     "bcryptjs": "2.4.3",
     "bluebird": "3.5.1",
     "body-parser": "1.18.2",
-    "compression": "1.7.1",
+    "compression": "1.7.2",
     "cookie-parser": "1.4.3",
     "cors": "2.8.4",
     "cross-env": "5.1.3",
