@@ -8330,9 +8330,9 @@ prosemirror-transform@^1.0.0:
   dependencies:
     prosemirror-model "^1.0.0"
 
-prosemirror-view@1.0.10:
-  version "1.0.10"
-  resolved "https://registry.yarnpkg.com/prosemirror-view/-/prosemirror-view-1.0.10.tgz#be82fd39da157ba9b0d00ae7b640a87851c11446"
+prosemirror-view@1.0.11:
+  version "1.0.11"
+  resolved "https://registry.yarnpkg.com/prosemirror-view/-/prosemirror-view-1.0.11.tgz#39a5976a6aba0e8479f18241186815af1e126d3f"
   dependencies:
     prosemirror-model "^1.1.0"
     prosemirror-state "^1.0.0"
