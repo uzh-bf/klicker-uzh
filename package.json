@@ -69,7 +69,7 @@
     "redux-form": "7.2.3",
     "semantic-ui-react": "0.78.2",
     "styled-jsx-plugin-sass": "0.2.2",
-    "validator": "9.4.0",
+    "validator": "9.4.1",
     "webpack": "3.11.0"
   },
   "devDependencies": {
@@ -108,11 +108,9 @@
     "compile-queries": "persistgraphql src/graphql/ --add_typename",
     "cypress:open": "cypress open",
     "dev": "nodemon --delay 1000ms -w .env -w package.json -w yarn.lock -w server.js server.js",
-    "dev:inspect":
-      "nodemon --delay 1000ms -w .env -w package.json -w yarn.lock -w server.js --inspect server.js",
+    "dev:inspect": "nodemon --delay 1000ms -w .env -w package.json -w yarn.lock -w server.js --inspect server.js",
     "format": "prettier-eslint --singleQuote --no-semi --write server.js \"src/**/*.js\"",
-    "format:ci":
-      "prettier-eslint --singleQuote --no-semi --list-different server.js \"src/**/*.js\"",
+    "format:ci": "prettier-eslint --singleQuote --no-semi --list-different server.js \"src/**/*.js\"",
     "lint": "eslint server.js \"src/**/*.js\"",
     "start": "cross-env NODE_ENV=production node server.js",
     "start:inspect": "cross-env NODE_ENV=production node --inspect server.js",
@@ -124,11 +122,23 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "roots": ["src/"],
-    "testPathIgnorePatterns": ["/node_modules/", "src/.next"]
+    "roots": [
+      "src/"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "src/.next"
+    ]
   },
   "lint-staged": {
-    "*.js": ["prettier-eslint --single-quote --no-semi --write", "eslint", "git add"],
-    "*.json": ["prettier-eslint --single-quote --no-semi --write", "git add"]
+    "*.js": [
+      "prettier-eslint --single-quote --no-semi --write",
+      "eslint",
+      "git add"
+    ],
+    "*.json": [
+      "prettier-eslint --single-quote --no-semi --write",
+      "git add"
+    ]
   }
 }
