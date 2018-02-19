@@ -2959,9 +2959,9 @@ cyclist@~0.2.2:
   version "0.2.2"
   resolved "https://registry.yarnpkg.com/cyclist/-/cyclist-0.2.2.tgz#1b33792e11e914a2fd6d6ed6447464444e5fa640"
 
-cypress@2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/cypress/-/cypress-2.0.0.tgz#6cc9b5da2df1df6892873340f65e66a4df86844a"
+cypress@2.0.2:
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/cypress/-/cypress-2.0.2.tgz#df7a5c2105c3877617ceafa02f18b554c2ce31dd"
   dependencies:
     "@cypress/listr-verbose-renderer" "0.4.1"
     "@cypress/xvfb" "1.1.3"
