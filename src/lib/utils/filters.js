@@ -21,6 +21,7 @@ function filterQuestions(questions, filters) {
 }
 
 function sortQuestions(questions, sort) {
+  // TODO sorting according to options
   return questions
 }
 
