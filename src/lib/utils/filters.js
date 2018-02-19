@@ -22,7 +22,18 @@ function filterQuestions(questions, filters) {
 
 function sortQuestions(questions, sort) {
   // TODO sorting according to options
-  return questions
+  console.log(sort)
+  console.log(questions)
+
+  let sorted = questions
+
+  if (sort.asc) {
+    sorted = questions.sort((a, b) => a.title.localeCompare(b.title))
+  } else {
+    sorted = questions.sort((a, b) => a.title.localeCompare(b.title)).reverse()
+  }
+
+  return sorted
 }
 
 function filterSessions(sessions, filters) {
