@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
 
 import _every from 'lodash/every'
+import moment from 'moment'
 
 function filterQuestions(questions, filters) {
   return questions.filter((question) => {
@@ -21,16 +22,36 @@ function filterQuestions(questions, filters) {
 }
 
 function sortQuestions(questions, sort) {
-  // TODO sorting according to options
   console.log(sort)
   console.log(questions)
 
   let sorted = questions
 
-  if (sort.asc) {
+  if (sort.by === 'TITLE') {
     sorted = questions.sort((a, b) => a.title.localeCompare(b.title))
-  } else {
-    sorted = questions.sort((a, b) => a.title.localeCompare(b.title)).reverse()
+    if (!sort.asc) {
+      sorted = sorted.reverse()
+    }
+  } else if (sort.by === 'TYPE') {
+    sorted = questions.sort((a, b) => a.type.localeCompare(b.type))
+    if (!sort.asc) {
+      sorted = sorted.reverse()
+    }
+  } else if (sort.by === 'CREATED') {
+    sorted = questions.sort((a, b) => {
+      if (a.instances.length === 0 || b.instances.length === 0) {
+        return 1
+      }
+
+      return (
+        moment(a.instances[a.instances.length - 1].createdAt) -
+        moment(b.instances[b.instances.length - 1].createdAt)
+      )
+    })
+
+    if (!sort.asc) {
+      sorted = sorted.reverse()
+    }
   }
 
   return sorted

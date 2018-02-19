@@ -45,7 +45,7 @@ export const CHART_COLORS = [
 
 export const QUESTION_SORTINGS = [
   { content: 'Title', id: 'TITLE', labelStart: 'sort alphabet' },
-  { content: '# of votes', id: 'VOTES', labelStart: 'sort numeric' },
+  // { content: '# of votes', id: 'VOTES', labelStart: 'sort numeric' },
   { content: 'Question Type', id: 'TYPE', labelStart: 'sort content' },
   { content: 'Create Date', id: 'CREATED', labelStart: 'sort numeric' },
 ]
