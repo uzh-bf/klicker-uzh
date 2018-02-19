@@ -22,7 +22,7 @@ const propTypes = {
   search: PropTypes.shape({
     handleSearch: PropTypes.func.isRequired,
     handleSortByChange: PropTypes.func.isRequired,
-    handleSortOrderChange: PropTypes.func.isRequired,
+    handleSortOrderToggle: PropTypes.func.isRequired,
     sortBy: PropTypes.string.isRequired,
     sortingTypes: PropTypes.arrayOf(
       PropTypes.shape({
@@ -76,7 +76,7 @@ export const NavbarPres = ({
         <SearchArea
           handleSearch={search.handleSearch}
           handleSortByChange={search.handleSortByChange}
-          handleSortOrderChange={search.handleSortOrderChange}
+          handleSortOrderToggle={search.handleSortOrderToggle}
           intl={intl}
           sortBy={search.sortBy}
           sortOrder={search.sortOrder}

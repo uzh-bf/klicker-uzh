@@ -23,9 +23,12 @@ export default (ComposedComponent) => {
           if (nextIndex === QUESTION_SORTINGS.length) nextIndex = 0
           const nextObject = QUESTION_SORTINGS[nextIndex]
 
-          return { sort: { ...sort, by: nextObject } }
+          return { sort: { ...sort, by: nextObject.id } }
         },
-        handleSortOrderToggle: ({ sort }) => () => ({ sort: { ...sort, asc: !sort.asc } }),
+        handleSortOrderToggle: ({ sort }) => () => {
+          console.log(sort)
+          return { sort: { ...sort, asc: !sort.asc } }
+        },
       },
     ),
   )(ComposedComponent)
