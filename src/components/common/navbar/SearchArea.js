@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { intlShape } from 'react-intl'
-import { Button, Input } from 'semantic-ui-react'
+import { Button, Dropdown, Input } from 'semantic-ui-react'
 import _find from 'lodash/find'
 
 const propTypes = {
@@ -46,9 +46,10 @@ const SearchArea = ({
         }`}
         onClick={handleSortOrderToggle}
       />
-      <Button
-        content={_find(sortingTypes, { id: sortBy }).content}
-        onClick={() => handleSortByChange(sortBy)}
+      <Dropdown
+        selection
+        options={sortingTypes.map(({ content, id }) => ({ text: content, value: id }))}
+        onChange={() => handleSortByChange(sortBy)}
       />
     </Input>
 
