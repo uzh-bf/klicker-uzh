@@ -12,7 +12,7 @@ import { configureStore, intlMock } from '../../../.storybook/utils'
 import {
   FormWithLinks,
   LoginForm,
-  PasswordResetForm,
+  PasswordRequestForm,
   QuestionCreationForm,
   QuestionEditForm,
   RegistrationForm,
@@ -36,7 +36,7 @@ storiesOf('forms/components', module)
     <DragDropContextProvider backend={HTML5Backend}>{getStory()}</DragDropContextProvider>
   ))
   .add('LoginForm', () => <LoginForm intl={intlMock} />)
-  .add('PasswortResetForm', () => <PasswordResetForm intl={intlMock} />)
+  .add('PasswordRequestForm', () => <PasswordRequestForm intl={intlMock} />)
   .add('RegistrationForm [NoTest]', () => <RegistrationForm intl={intlMock} />)
   // HACK: disable test for QuestionCreationForm as autosuggest breaks...
   .add('QuestionCreationForm [NoTest]', () => <QuestionCreationForm intl={intlMock} />)

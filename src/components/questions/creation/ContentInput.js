@@ -20,10 +20,7 @@ const ContentInput = ({ input: { value, onChange }, meta: { dirty, invalid }, di
   <div className="contentInput">
     <Form.Field required error={dirty && invalid}>
       <label htmlFor="content">
-        <FormattedMessage
-          defaultMessage="Question"
-          id="teacher.createQuestion.contentInput.label"
-        />
+        <FormattedMessage defaultMessage="Question" id="createQuestion.contentInput.label" />
         <a data-tip data-for="contentHelp">
           <Icon name="question circle" />
         </a>
@@ -32,16 +29,13 @@ const ContentInput = ({ input: { value, onChange }, meta: { dirty, invalid }, di
       <ReactTooltip delayHide={250} delayShow={250} id="contentHelp" place="right">
         <FormattedMessage
           defaultMessage="Enter the question you want to ask the audience."
-          id="teacher.createQuestion.contentInput.tooltip"
+          id="createQuestion.contentInput.tooltip"
         />
       </ReactTooltip>
 
       <textarea disabled={disabled} name="content" value={value} onChange={onChange} />
     </Form.Field>
 
-    <ReactTooltip delayHide={250} id="contentHelp" place="right">
-      <span>Enter the question to ask the audience.</span>
-    </ReactTooltip>
     <style jsx>{`
       @import 'src/theme';
 

@@ -46,12 +46,12 @@ const FREEAnswerOptions = ({
           <div className="field slider">
             <span className="min">
               <strong>
-                <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />
+                <FormattedMessage defaultMessage="Min" id="createQuestion.options.min" />
               </strong>: {options.restrictions.min}
             </span>
             <span className="max">
               <strong>
-                <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />
+                <FormattedMessage defaultMessage="Max" id="createQuestion.options.max" />
               </strong>: {options.restrictions.max}
             </span>
             <Slider
@@ -89,10 +89,7 @@ const FREEAnswerOptions = ({
               {options.FREE_RANGE.restrictions.min !== null && (
                 <div>
                   <strong>
-                    <FormattedMessage
-                      defaultMessage="Min"
-                      id="teacher.createQuestion.options.min"
-                    />
+                    <FormattedMessage defaultMessage="Min" id="createQuestion.options.min" />
                   </strong>: {options.restrictions.min}
                 </div>
               )}
@@ -100,10 +97,7 @@ const FREEAnswerOptions = ({
               {options.FREE_RANGE.restrictions.max !== null && (
                 <div>
                   <strong>
-                    <FormattedMessage
-                      defaultMessage="Max"
-                      id="teacher.createQuestion.options.max"
-                    />
+                    <FormattedMessage defaultMessage="Max" id="createQuestion.options.max" />
                   </strong>: {options.restrictions.max}
                 </div>
               )}

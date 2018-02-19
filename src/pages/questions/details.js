@@ -48,12 +48,12 @@ const EditQuestion = ({
     navbar={{
       title: intl.formatMessage({
         defaultMessage: 'Edit Question',
-        id: 'teacher.editQuestion.title',
+        id: 'editQuestion.title',
       }),
     }}
     pageTitle={intl.formatMessage({
       defaultMessage: 'Edit Question',
-      id: 'teacher.editQuestion.pageTitle',
+      id: 'editQuestion.pageTitle',
     })}
     sidebar={{ activeItem: 'editQuestion' }}
   >

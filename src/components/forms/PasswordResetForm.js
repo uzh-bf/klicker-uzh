@@ -1,17 +1,22 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import isEmail from 'validator/lib/isEmail'
+import isLength from 'validator/lib/isLength'
 import { Field, reduxForm } from 'redux-form'
 import { intlShape } from 'react-intl'
 
 import { FormWithLinks, SemanticInput } from '.'
 
-const validate = ({ email }) => {
+const validate = ({ password, passwordRepeat }) => {
   const errors = {}
 
-  // the email address needs to be valid
-  if (!email || !isEmail(email)) {
-    errors.email = 'form.common.email.invalid'
+  // password should at least have 7 characters (or more?)
+  if (!password || !isLength(password, { max: undefined, min: 7 })) {
+    errors.password = 'form.password.invalid'
+  }
+
+  // both password fields need to match
+  if (!passwordRepeat || passwordRepeat !== password) {
+    errors.passwordRepeat = 'form.passwordRepeat.invalid'
   }
 
   return errors
@@ -45,16 +50,37 @@ const PasswordResetForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
   return (
     <FormWithLinks button={button} links={links}>
       <Field
+        autoFocus
         required
         component={SemanticInput}
-        icon="mail"
+        errorMessage={intl.formatMessage({
+          defaultMessage: 'Please provide a valid password (8+ characters).',
+          id: 'form.password.invalid',
+        })}
+        icon="privacy"
         intl={intl}
         label={intl.formatMessage({
-          defaultMessage: 'Email',
-          id: 'form.email.label',
+          defaultMessage: 'Password',
+          id: 'form.password.label',
         })}
-        name="email"
-        type="email"
+        name="password"
+        type="password"
+      />
+      <Field
+        required
+        component={SemanticInput}
+        errorMessage={intl.formatMessage({
+          defaultMessage: 'Please ensure that passwords match.',
+          id: 'form.passwordRepeat.invalid',
+        })}
+        icon="privacy"
+        intl={intl}
+        label={intl.formatMessage({
+          defaultMessage: 'Repeat password',
+          id: 'form.passwordRepeat.label',
+        })}
+        name="passwordRepeat"
+        type="password"
       />
     </FormWithLinks>
   )

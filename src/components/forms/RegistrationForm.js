@@ -58,8 +58,13 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
     <Form error onSubmit={onSubmit}>
       <div className="personal">
         <Field
+          autoFocus
           required
           component={SemanticInput}
+          errorMessage={intl.formatMessage({
+            defaultMessage: 'Please provide a valid email address.',
+            id: 'form.email.invalid',
+          })}
           icon="mail"
           intl={intl}
           label={intl.formatMessage({
@@ -72,6 +77,10 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
         <Field
           required
           component={SemanticInput}
+          errorMessage={intl.formatMessage({
+            defaultMessage: 'Please provide a valid account ID (3-6 characters).',
+            id: 'form.shortname.invalid',
+          })}
           icon="hashtag"
           intl={intl}
           label={intl.formatMessage({
@@ -92,6 +101,10 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
         <Field
           required
           component={SemanticInput}
+          errorMessage={intl.formatMessage({
+            defaultMessage: 'Please provide a valid password (8+ characters).',
+            id: 'form.password.invalid',
+          })}
           icon="privacy"
           intl={intl}
           label={intl.formatMessage({
@@ -104,6 +117,10 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
         <Field
           required
           component={SemanticInput}
+          errorMessage={intl.formatMessage({
+            defaultMessage: 'Please ensure that passwords match.',
+            id: 'form.passwordRepeat.invalid',
+          })}
           icon="privacy"
           intl={intl}
           label={intl.formatMessage({
@@ -118,6 +135,10 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
         <Field
           required
           component={SemanticInput}
+          errorMessage={intl.formatMessage({
+            defaultMessage: 'Please provide a valid institution.',
+            id: 'form.institution.invalid',
+          })}
           icon="university"
           label={intl.formatMessage({
             defaultMessage: 'Institution',
@@ -142,7 +163,7 @@ const RegistrationForm = ({ intl, invalid, handleSubmit: onSubmit }) => (
         />
 
         <Button primary disabled={invalid} floated="right" type="submit">
-          <FormattedMessage defaultMessage="Submit" id="form.button.submit" />
+          <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
         </Button>
       </div>
     </Form>

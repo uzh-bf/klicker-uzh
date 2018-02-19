@@ -34,7 +34,7 @@ const TagInput = ({
   <div className="tagInput">
     <Form.Field required error={dirty && invalid}>
       <label htmlFor="tags">
-        <FormattedMessage defaultMessage="Tags" id="teacher.createQuestion.tagInput.label" />
+        <FormattedMessage defaultMessage="Tags" id="createQuestion.tagInput.label" />
         <a data-tip data-for="tagHelp">
           <Icon name="question circle" />
         </a>
@@ -43,7 +43,7 @@ const TagInput = ({
       <ReactTooltip delayHide={250} delayShow={250} id="tagHelp" place="right">
         <FormattedMessage
           defaultMessage="Add tags to your question to improve organization and reusability (similar to the folders used previously)."
-          id="teacher.createQuestion.tagInput.tooltip"
+          id="createQuestion.tagInput.tooltip"
         />
       </ReactTooltip>
 

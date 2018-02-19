@@ -33,12 +33,13 @@ const SessionCreationForm = ({
   <form className="ui form sessionCreation" onSubmit={handleSubmit(onSave)}>
     <div className="upper">
       <h2 className="title">
-        <FormattedMessage defaultMessage="Create Session" id="teacher.sessionCreation.title" />
+        <FormattedMessage defaultMessage="Create Session" id="sessionCreation.title" />
       </h2>
 
       <div className="sessionSettings">
         <div className="sessionName">
           <Field
+            autoFocus
             component={SemanticInput}
             inlineLabel="Name"
             labelPosition="left"

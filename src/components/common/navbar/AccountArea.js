@@ -11,10 +11,10 @@ const AccountArea = ({ accountShort }) => (
   <React.Fragment>
     <Dropdown item simple icon="user" text={accountShort.toUpperCase()}>
       <Dropdown.Menu>
-        <Dropdown.Item disabled>
+        {/* <Dropdown.Item disabled>
           <FormattedMessage defaultMessage="Settings" id="common.string.settings" />
-        </Dropdown.Item>
-        <Dropdown.Item disabled>
+        </Dropdown.Item> */}
+        <Dropdown.Item>
           <FormattedMessage defaultMessage="Logout" id="common.string.logout" />
         </Dropdown.Item>
       </Dropdown.Menu>

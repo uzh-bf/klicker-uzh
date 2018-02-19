@@ -1,4 +1,4 @@
-export const SEMANTIC_VERSION = '2.2.13'
+export const SEMANTIC_VERSION = '2.2.14'
 
 export const SESSION_STATUS = {
   COMPLETED: 'COMPLETED',

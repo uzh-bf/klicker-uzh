@@ -23,6 +23,7 @@ import {
 import { LoadingTeacherLayout, Messager } from '../../components/common'
 
 const propTypes = {
+  activeStep: PropTypes.number.isRequired,
   blocks: PropTypes.array.isRequired,
   confusionTS: PropTypes.array.isRequired,
   feedbacks: PropTypes.array.isRequired,
@@ -43,6 +44,7 @@ const propTypes = {
 const Running = ({
   id,
   intl,
+  activeStep,
   blocks,
   confusionTS,
   feedbacks,
@@ -62,18 +64,19 @@ const Running = ({
     navbar={{
       title: intl.formatMessage({
         defaultMessage: 'Running Session',
-        id: 'teacher.runningSession.title',
+        id: 'runningSession.title',
       }),
     }}
     pageTitle={intl.formatMessage({
       defaultMessage: 'Running Session',
-      id: 'teacher.runningSession.pageTitle',
+      id: 'runningSession.pageTitle',
     })}
     sidebar={{ activeItem: 'runningSession' }}
   >
     <div className="runningSession">
       <div className="sessionProgress">
         <SessionTimeline
+          activeStep={activeStep}
           blocks={blocks}
           handleLeftActionClick={handleEndSession}
           handleRightActionClick={handleActivateNextBlock}
@@ -179,7 +182,12 @@ export default compose(
     ({ data }) => data.loading || !data.runningSession,
     renderComponent(({ intl }) => (
       <LoadingTeacherLayout intl={intl} pageId="runningSession">
-        <Messager intl={intl} message="No currently running session..." />
+        <Messager
+          message={intl.formatMessage({
+            defaultMessage: 'No currently running session...',
+            id: 'runningSession.noRunningSession',
+          })}
+        />
       </LoadingTeacherLayout>
     )),
   ),

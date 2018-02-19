@@ -6,6 +6,7 @@ import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
 import { Button } from 'semantic-ui-react'
 import Link from 'next/link'
+import Router from 'next/router'
 
 import { pageWithIntl, withData, withDnD, withSorting } from '../../lib'
 import {
@@ -14,6 +15,7 @@ import {
   AccountSummaryQuery,
   SessionListQuery,
   RunningSessionQuery,
+  QuestionListQuery,
 } from '../../graphql'
 import { SessionCreationForm } from '../../components/forms'
 import { QuestionList, TagList } from '../../components/questions'
@@ -92,12 +94,12 @@ const Index = ({
         },
         title: intl.formatMessage({
           defaultMessage: 'Question Pool',
-          id: 'teacher.questionPool.title',
+          id: 'questionPool.title',
         }),
       }}
       pageTitle={intl.formatMessage({
         defaultMessage: 'Question Pool',
-        id: 'teacher.questionPool.pageTitle',
+        id: 'questionPool.pageTitle',
       })}
       sidebar={{ activeItem: 'questionPool' }}
     >
@@ -146,15 +148,21 @@ const Index = ({
           height: 100%;
 
           .tagList {
+            overflow-y: auto;
+            height: 100%;
+
             flex: 1;
             background: $color-primary-10p;
             padding: 0.5rem;
           }
 
           .wrapper {
-            overflow: auto;
+            height: 100%;
 
             .questionList {
+              height: 100%;
+              overflow-y: auto;
+
               padding: 1rem;
 
               margin: 0 auto;
@@ -182,7 +190,7 @@ const Index = ({
 
             .tagList {
               flex: 0 0 auto;
-              padding: 1rem;
+              padding: 2rem 1rem;
             }
 
             .wrapper {
@@ -300,13 +308,14 @@ export default compose(
 
         // create a new session
         const result = await mutate({
-          refetchQueries: [{ query: SessionListQuery }],
+          refetchQueries: [{ query: QuestionListQuery, SessionListQuery }],
           variables: { blocks: parsedBlocks, name: sessionName },
         })
 
         // start the session immediately if the respective button was clicked
         if (type === 'start') {
           await handleStartSession({ id: result.data.createSession.id })
+          Router.push('/sessions/running')
         }
 
         // disable creation mode

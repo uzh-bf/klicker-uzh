@@ -63,7 +63,7 @@ const SessionTimelineInput = ({ input: { value, onChange } }) => {
 
       <div className="timelineItem">
         <div className="title">
-          <FormattedMessage defaultMessage="New Block" id="teacher.sessionCreation.newBlock" />
+          <FormattedMessage defaultMessage="New Block" id="sessionCreation.newBlock" />
           <a data-tip data-for="newBlockHelp">
             <Icon name="question circle" />
           </a>
@@ -72,7 +72,7 @@ const SessionTimelineInput = ({ input: { value, onChange } }) => {
         <ReactTooltip delayHide={250} delayShow={250} id="newBlockHelp" place="right">
           <FormattedMessage
             defaultMessage="Group questions inside a question block to activate and evaluate them simultaneously."
-            id="teacher.sessionCreation.newBlock.tooltip"
+            id="sessionCreation.newBlock.tooltip"
           />
         </ReactTooltip>
 
@@ -85,7 +85,7 @@ const SessionTimelineInput = ({ input: { value, onChange } }) => {
             <Message info>
               <FormattedMessage
                 defaultMessage="Drag & drop a question into the dropzone."
-                id="teacher.sessionCreation.emptyDropzoneInfo"
+                id="sessionCreation.emptyDropzoneInfo"
               />
             </Message>
           </div>

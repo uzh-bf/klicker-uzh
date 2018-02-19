@@ -12,7 +12,7 @@ const LoadingTeacherLayout = ({
   const navbarConfig = {
     title: intl.formatMessage({
       defaultMessage: title,
-      id: `teacher.${pageId}.title`,
+      id: `${pageId}.title`,
     }),
   }
 
@@ -22,7 +22,7 @@ const LoadingTeacherLayout = ({
       navbar={navbarConfig}
       pageTitle={intl.formatMessage({
         defaultMessage: title,
-        id: `teacher.${pageId}.pageTitle`,
+        id: `${pageId}.pageTitle`,
       })}
       sidebar={{ activeItem: pageId }}
     >

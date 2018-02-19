@@ -6,9 +6,9 @@ describe('math', () => {
     data: [
       { count: 4, value: -3 },
       { count: 5, value: 3 },
-      { count: 2, value: 4 },
+      { count: '2', value: '4' },
       { count: 1, value: 7 },
-      { count: 2, value: 10 },
+      { count: '2', value: '10' },
     ],
     totalResponses: 14,
   }
