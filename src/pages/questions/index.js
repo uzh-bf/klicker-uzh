@@ -253,32 +253,36 @@ export default compose(
       }),
 
       // handle an update in the search bar
-      handleSearch: ({ filters }) => title => ({ ...filters, title }),
+      handleSearch: ({ filters }) => title => ({ filters: { ...filters, title } }),
 
       // handle clicking on a tag in the tag list
       handleTagClick: ({ filters }) => (tagName, questionType = false) => {
         // if the changed tag is a question type tag
         if (questionType) {
           if (filters.type === tagName) {
-            return { ...filters, type: null }
+            return { filters: { ...filters, type: null } }
           }
 
           // add the tag to active tags
-          return { ...filters, type: tagName }
+          return { filters: { ...filters, type: tagName } }
         }
 
         // remove the tag from active tags
         if (filters.tags.includes(tagName)) {
           return {
-            ...filters,
-            tags: filters.tags.filter(tag => tag !== tagName),
+            filters: {
+              ...filters,
+              tags: filters.tags.filter(tag => tag !== tagName),
+            },
           }
         }
 
         // add the tag to active tags
         return {
-          ...filters,
-          tags: [...filters.tags, tagName],
+          filters: {
+            ...filters,
+            tags: [...filters.tags, tagName],
+          },
         }
       },
     },
