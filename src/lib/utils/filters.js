@@ -20,8 +20,29 @@ function filterQuestions(questions, filters) {
   })
 }
 
+function sortQuestions(questions, sort) {
+  return questions
+}
+
 function filterSessions(sessions, filters) {
   return sessions
 }
 
-export { filterQuestions, filterSessions }
+function processItems(items, filters, sort) {
+  let processed = items
+
+  console.log(sort)
+
+  if (filters) {
+    processed = filterQuestions(processed, filters)
+  }
+
+  if (sort) {
+    console.log('Sorting')
+    processed = sortQuestions(processed, sort)
+  }
+
+  return processed
+}
+
+export { filterSessions, processItems }

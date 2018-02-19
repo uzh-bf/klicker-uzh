@@ -2,12 +2,12 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import moment from 'moment'
 import { graphql } from 'react-apollo'
-import { compose, withProps, branch, renderComponent } from 'recompose'
+import { branch, compose, renderComponent, withProps } from 'recompose'
 import { FormattedMessage } from 'react-intl'
 
 import Question from './Question'
 import { LoadingDiv } from '../common'
-import { filterQuestions } from '../../lib'
+import { processItems } from '../../lib'
 import QuestionListQuery from '../../graphql/queries/QuestionListQuery.graphql'
 
 const propTypes = {
@@ -81,8 +81,9 @@ export default compose(
   graphql(QuestionListQuery),
   branch(({ data }) => data.loading, renderComponent(LoadingDiv)),
   branch(({ data }) => data.error, renderComponent(({ data }) => <div>{data.error}</div>)),
-  withProps(({ data: { error, questions }, filters }) => ({
+  withProps(({ data: { error, questions }, filters, sort }) => ({
     error,
-    questions: questions && (filters ? filterQuestions(questions, filters) : questions),
+    // questions: questions && (filters ? filterQuestions(questions, filters) : questions),
+    questions: processItems(questions, filters, sort),
   })),
 )(QuestionListPres)

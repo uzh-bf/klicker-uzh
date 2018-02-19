@@ -26,6 +26,7 @@ const propTypes = {
   creationMode: PropTypes.bool.isRequired,
   droppedQuestions: PropTypes.arrayOf(PropTypes.string).isRequired,
   filters: PropTypes.object.isRequired,
+  sort: PropTypes.object.isRequired,
   handleCreateSession: PropTypes.func.isRequired,
   handleCreationModeToggle: PropTypes.func.isRequired,
   handleQuestionDropped: PropTypes.func.isRequired,
@@ -34,7 +35,6 @@ const propTypes = {
   handleSortOrderToggle: PropTypes.func.isRequired,
   handleTagClick: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  sort: PropTypes.object.isRequired,
 }
 
 const Index = ({
@@ -42,6 +42,7 @@ const Index = ({
   droppedQuestions,
   intl,
   filters,
+  sort,
   handleCreateSession,
   handleSearch,
   handleSortByChange,
@@ -49,7 +50,6 @@ const Index = ({
   handleTagClick,
   handleQuestionDropped,
   handleCreationModeToggle,
-  sort,
 }) => {
   // TODO: create a component for this?
   const actionArea = (
@@ -133,6 +133,7 @@ const Index = ({
               creationMode={creationMode}
               dropped={droppedQuestions}
               filters={filters}
+              sort={sort}
               onQuestionDropped={handleQuestionDropped}
             />
           </div>

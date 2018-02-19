@@ -9,7 +9,7 @@ export { default as omitDeep } from './utils/omitDeep'
 export { default as withSorting } from './withSorting'
 export { default as withDnD } from './withDnD'
 export { createLinks } from './utils/css'
-export { filterQuestions, filterSessions } from './utils/filters'
+export { filterSessions, processItems } from './utils/filters'
 export {
   calculateMax,
   calculateMin,
