@@ -1,11 +1,18 @@
 import React from 'react'
+import { registerObserver } from 'react-perf-devtool'
 
 let Raven
+let LogRocket
+let LogRocketReact
 if (process.env.SENTRY_DSN) {
   Raven = require('raven-js')
 }
+if (process.env.LOGROCKET) {
+  LogRocket = require('logrocket')
+  LogRocketReact = require('logrocket-react')
+}
 
-export default function withLogging(Child) {
+export default function withLogging(Child, services = ['ga', 'raven', 'logrocket']) {
   return class WrappedComponent extends React.Component {
     static getInitialProps(context) {
       if (Child.getInitialProps) {
@@ -17,18 +24,49 @@ export default function withLogging(Child) {
       super(props)
       this.state = { error: null }
 
-      if (Raven) {
-        Raven.config(process.env.SENTRY_DSN, {
-          environment: process.env.NODE_ENV,
-          release: process.env.VERSION,
-        }).install()
+      if (typeof window !== 'undefined') {
+        if (process.env.NODE_ENV === 'development') {
+          // setup react-perf-devtool
+          registerObserver()
+        }
+
+        // TODO: include google analytics
+
+        // embed logrocket if enabled
+        if (
+          process.env.NODE_ENV === 'production' &&
+          process.env.LOGROCKET &&
+          services.includes('logrocket')
+        ) {
+          LogRocket.init(process.env.LOGROCKET)
+          LogRocketReact(LogRocket)
+        }
+
+        // embed sentry if enabled
+        if (process.env.NODE_ENV === 'production' && services.includes('raven') && Raven) {
+          Raven.config(process.env.SENTRY_DSN, {
+            environment: process.env.NODE_ENV,
+            release: process.env.VERSION,
+          }).install()
+
+          // connect logrocket to sentry
+          if (process.env.LOGROCKET && services.includes('logrocket')) {
+            Raven.setDataCallback(data =>
+              Object.assign({}, data, {
+                extra: {
+                  sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef
+                },
+              }),
+            )
+          }
+        }
       }
     }
 
     componentDidCatch(error, errorInfo) {
       this.setState({ error })
 
-      if (Raven) {
+      if (process.env.NODE_ENV === 'production' && services.includes('raven')) {
         Raven.captureException(error, { extra: errorInfo })
       }
     }

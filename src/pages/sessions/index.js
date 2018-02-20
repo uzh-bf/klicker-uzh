@@ -4,7 +4,7 @@ import { compose, withHandlers } from 'recompose'
 import { intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 
-import { pageWithIntl, withData } from '../../lib'
+import { pageWithIntl, withData, withLogging } from '../../lib'
 import { AccountSummaryQuery, RunningSessionQuery, StartSessionMutation } from '../../graphql'
 import { TeacherLayout } from '../../components/layouts'
 import { SessionList } from '../../components/sessions'
@@ -73,6 +73,7 @@ const Index = ({
 Index.propTypes = propTypes
 
 export default compose(
+  withLogging,
   withData,
   pageWithIntl,
   graphql(StartSessionMutation),

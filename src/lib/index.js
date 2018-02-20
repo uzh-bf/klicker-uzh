@@ -1,5 +1,4 @@
 export { default as initApollo } from './initApollo'
-export { default as initLogging } from './initLogging'
 export { default as pageWithIntl } from './pageWithIntl'
 export { default as withData } from './withData'
 export { default as withFingerprint } from './withFingerprint'
@@ -8,6 +7,7 @@ export { default as initRedux } from './initRedux'
 export { default as omitDeep } from './utils/omitDeep'
 export { default as withSorting } from './withSorting'
 export { default as withDnD } from './withDnD'
+export { default as withLogging } from './withLogging'
 export { createLinks } from './utils/css'
 export { filterSessions, processItems } from './utils/filters'
 export {

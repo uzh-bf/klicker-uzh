@@ -8,7 +8,7 @@ import { Button } from 'semantic-ui-react'
 import Link from 'next/link'
 import Router from 'next/router'
 
-import { pageWithIntl, withData, withDnD, withSorting } from '../../lib'
+import { pageWithIntl, withData, withDnD, withSorting, withLogging } from '../../lib'
 import {
   CreateSessionMutation,
   StartSessionMutation,
@@ -219,6 +219,7 @@ const Index = ({
 Index.propTypes = propTypes
 
 export default compose(
+  withLogging,
   withDnD,
   withData,
   pageWithIntl,

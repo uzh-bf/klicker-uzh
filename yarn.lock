@@ -8760,6 +8760,10 @@ react-modal@^3.1.10:
     prop-types "^15.5.10"
     warning "^3.0.0"
 
+react-perf-devtool@^3.0.4:
+  version "3.0.4"
+  resolved "https://registry.yarnpkg.com/react-perf-devtool/-/react-perf-devtool-3.0.4.tgz#3f6d245b3612d459806a40ba70a9b20b05d65c04"
+
 react-rangeslider@2.2.0:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/react-rangeslider/-/react-rangeslider-2.2.0.tgz#4362b01f4f5a455f0815d371d496f69ca4c6b5aa"

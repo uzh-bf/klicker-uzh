@@ -1,9 +1,10 @@
 import React from 'react'
 import Link from 'next/link'
-
+import { compose } from 'recompose'
 import { List } from 'semantic-ui-react'
 
 import { StaticLayout } from '../components/layouts'
+import { withLogging } from '../lib'
 
 const links = [
   {
@@ -184,4 +185,4 @@ const Index = () => (
   </StaticLayout>
 )
 
-export default Index
+export default compose(withLogging(['ga', 'raven']))(Index)
