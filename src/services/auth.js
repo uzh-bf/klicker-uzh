@@ -195,6 +195,7 @@ const requestPassword = async (res, email) => {
   if (process.env.NODE_ENV !== 'test') {
     try {
       await transporter.sendMail({
+        bcc: 'roland.schlaefli@bf.uzh.ch',
         from: process.env.EMAIL_FROM,
         to: user.email,
         subject: 'IBF Klicker - Password Reset',
