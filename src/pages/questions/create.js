@@ -41,7 +41,7 @@ const CreateQuestion = ({
 CreateQuestion.propTypes = propTypes
 
 export default compose(
-  withLogging,
+  withLogging(),
   withDnD,
   withData,
   pageWithIntl,

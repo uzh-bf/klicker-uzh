@@ -75,7 +75,7 @@ const EditQuestion = ({
 EditQuestion.propTypes = propTypes
 
 export default compose(
-  withLogging,
+  withLogging(),
   withDnD,
   withData,
   pageWithIntl,

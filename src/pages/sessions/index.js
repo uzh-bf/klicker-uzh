@@ -73,7 +73,7 @@ const Index = ({
 Index.propTypes = propTypes
 
 export default compose(
-  withLogging,
+  withLogging(),
   withData,
   pageWithIntl,
   graphql(StartSessionMutation),

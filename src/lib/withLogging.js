@@ -12,68 +12,69 @@ if (process.env.LOGROCKET) {
   LogRocketReact = require('logrocket-react')
 }
 
-export default function withLogging(Child, services = ['ga', 'raven', 'logrocket']) {
-  return class WrappedComponent extends React.Component {
-    static getInitialProps(context) {
-      if (Child.getInitialProps) {
-        return Child.getInitialProps(context)
+export default (services = ['ga', 'raven', 'logrocket']) =>
+  function withLogging(Child) {
+    return class WrappedComponent extends React.Component {
+      static getInitialProps(context) {
+        if (Child.getInitialProps) {
+          return Child.getInitialProps(context)
+        }
+        return {}
       }
-      return {}
-    }
-    constructor(props) {
-      super(props)
-      this.state = { error: null }
+      constructor(props) {
+        super(props)
+        this.state = { error: null }
 
-      if (typeof window !== 'undefined') {
-        if (process.env.NODE_ENV === 'development') {
-          // setup react-perf-devtool
-          registerObserver()
-        }
+        if (typeof window !== 'undefined') {
+          if (process.env.NODE_ENV === 'development') {
+            // setup react-perf-devtool
+            registerObserver()
+          }
 
-        // TODO: include google analytics
+          // TODO: include google analytics
 
-        // embed logrocket if enabled
-        if (
-          process.env.NODE_ENV === 'production' &&
-          process.env.LOGROCKET &&
-          services.includes('logrocket')
-        ) {
-          LogRocket.init(process.env.LOGROCKET)
-          LogRocketReact(LogRocket)
-        }
+          // embed logrocket if enabled
+          if (
+            process.env.NODE_ENV === 'production' &&
+            process.env.LOGROCKET &&
+            services.includes('logrocket')
+          ) {
+            LogRocket.init(process.env.LOGROCKET)
+            LogRocketReact(LogRocket)
+          }
 
-        // embed sentry if enabled
-        if (process.env.NODE_ENV === 'production' && services.includes('raven') && Raven) {
-          Raven.config(process.env.SENTRY_DSN, {
-            environment: process.env.NODE_ENV,
-            release: process.env.VERSION,
-          }).install()
+          // embed sentry if enabled
+          if (process.env.NODE_ENV === 'production' && services.includes('raven') && Raven) {
+            Raven.config(process.env.SENTRY_DSN, {
+              environment: process.env.NODE_ENV,
+              release: process.env.VERSION,
+            }).install()
 
-          // connect logrocket to sentry
-          if (process.env.LOGROCKET && services.includes('logrocket')) {
-            Raven.setDataCallback(data =>
-              Object.assign({}, data, {
-                extra: {
-                  sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef
-                },
-              }),
-            )
+            // connect logrocket to sentry
+            if (process.env.LOGROCKET && services.includes('logrocket')) {
+              Raven.setDataCallback(data =>
+                Object.assign({}, data, {
+                  extra: {
+                    sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef
+                  },
+                }),
+              )
+            }
           }
         }
       }
-    }
 
-    componentDidCatch(error, errorInfo) {
-      this.setState({ error })
+      componentDidCatch(error, errorInfo) {
+        this.setState({ error })
 
-      if (process.env.NODE_ENV === 'production' && services.includes('raven')) {
-        Raven.captureException(error, { extra: errorInfo })
+        if (process.env.NODE_ENV === 'production' && services.includes('raven')) {
+          Raven.captureException(error, { extra: errorInfo })
+        }
+      }
+
+      render() {
+        const { error } = this.state
+        return <Child {...this.props} error={error} />
       }
     }
-
-    render() {
-      const { error } = this.state
-      return <Child {...this.props} error={error} />
-    }
   }
-}

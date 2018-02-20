@@ -8,7 +8,7 @@ import { Button } from 'semantic-ui-react'
 import Link from 'next/link'
 import Router from 'next/router'
 
-import { pageWithIntl, withData, withDnD, withSorting, withLogging } from '../../lib'
+import { pageWithIntl, withData, withDnD, withSortingAndFiltering, withLogging } from '../../lib'
 import {
   CreateSessionMutation,
   StartSessionMutation,
@@ -115,27 +115,29 @@ const Index = ({
           <div className="questionList">
             <div className="buttons">
               <Link href="/questions/create">
-                <Button>
+                <Button primary>
                   <FormattedMessage
                     defaultMessage="Create Question"
                     id="questionPool.button.createQuestion"
                   />
                 </Button>
               </Link>
-              <Button onClick={handleCreationModeToggle}>
+              <Button primary onClick={handleCreationModeToggle}>
                 <FormattedMessage
                   defaultMessage="Create Session"
                   id="questionPool.button.createSession"
                 />
               </Button>
             </div>
-            <QuestionList
-              creationMode={creationMode}
-              dropped={droppedQuestions}
-              filters={filters}
-              sort={sort}
-              onQuestionDropped={handleQuestionDropped}
-            />
+            <div className="questionListContent">
+              <QuestionList
+                creationMode={creationMode}
+                dropped={droppedQuestions}
+                filters={filters}
+                sort={sort}
+                onQuestionDropped={handleQuestionDropped}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -162,18 +164,21 @@ const Index = ({
 
             .questionList {
               height: 100%;
-              overflow-y: auto;
 
-              padding: 1rem;
+              display: flex;
+              flex-direction: column;
 
               margin: 0 auto;
               max-width: $max-width;
 
               .buttons {
-                margin: 0 0 1rem 0;
+                border: 1px solid $color-primary;
+
+                flex: 0 0 auto;
 
                 display: flex;
                 justify-content: center;
+                padding: 0.5rem;
 
                 > :global(button) {
                   margin-right: 0;
@@ -182,6 +187,14 @@ const Index = ({
                     margin-right: 0.5rem;
                   }
                 }
+              }
+
+              .questionListContent {
+                flex: 1;
+                overflow-y: auto;
+                height: 100%;
+
+                padding: 1rem 1rem 0 0;
               }
             }
           }
@@ -219,20 +232,15 @@ const Index = ({
 Index.propTypes = propTypes
 
 export default compose(
-  withLogging,
+  withLogging(),
   withDnD,
   withData,
   pageWithIntl,
-  withSorting,
+  withSortingAndFiltering,
   withStateHandlers(
     {
       creationMode: false,
       droppedQuestions: [],
-      filters: {
-        tags: [],
-        title: null,
-        type: null,
-      },
     },
     {
       // handle toggling creation mode (display of session creation form)
@@ -253,40 +261,6 @@ export default compose(
       handleQuestionDropped: ({ droppedQuestions }) => id => () => ({
         droppedQuestions: [...droppedQuestions, id],
       }),
-
-      // handle an update in the search bar
-      handleSearch: ({ filters }) => title => ({ filters: { ...filters, title } }),
-
-      // handle clicking on a tag in the tag list
-      handleTagClick: ({ filters }) => (tagName, questionType = false) => {
-        // if the changed tag is a question type tag
-        if (questionType) {
-          if (filters.type === tagName) {
-            return { filters: { ...filters, type: null } }
-          }
-
-          // add the tag to active tags
-          return { filters: { ...filters, type: tagName } }
-        }
-
-        // remove the tag from active tags
-        if (filters.tags.includes(tagName)) {
-          return {
-            filters: {
-              ...filters,
-              tags: filters.tags.filter(tag => tag !== tagName),
-            },
-          }
-        }
-
-        // add the tag to active tags
-        return {
-          filters: {
-            ...filters,
-            tags: [...filters.tags, tagName],
-          },
-        }
-      },
     },
   ),
   graphql(StartSessionMutation),

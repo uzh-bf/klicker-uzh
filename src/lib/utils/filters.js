@@ -22,39 +22,41 @@ function filterQuestions(questions, filters) {
 }
 
 function sortQuestions(questions, sort) {
-  console.log(sort)
-  console.log(questions)
-
-  let sorted = questions
+  const factor = sort.asc ? 1 : -1
 
   if (sort.by === 'TITLE') {
-    sorted = questions.sort((a, b) => a.title.localeCompare(b.title))
-    if (!sort.asc) {
-      sorted = sorted.reverse()
-    }
-  } else if (sort.by === 'TYPE') {
-    sorted = questions.sort((a, b) => a.type.localeCompare(b.type))
-    if (!sort.asc) {
-      sorted = sorted.reverse()
-    }
-  } else if (sort.by === 'CREATED') {
-    sorted = questions.sort((a, b) => {
-      if (a.instances.length === 0 || b.instances.length === 0) {
-        return 1
-      }
-
-      return (
-        moment(a.instances[a.instances.length - 1].createdAt) -
-        moment(b.instances[b.instances.length - 1].createdAt)
-      )
-    })
-
-    if (!sort.asc) {
-      sorted = sorted.reverse()
-    }
+    return questions.sort((a, b) => factor * a.title.localeCompare(b.title))
   }
 
-  return sorted
+  if (sort.by === 'TYPE') {
+    return questions.sort((a, b) => factor * a.type.localeCompare(b.type))
+  }
+
+  if (sort.by === 'CREATED') {
+    return questions.sort((a, b) => factor * (moment(a.createdAt) - moment(b.createdAt)))
+  }
+
+  if (sort.by === 'USED') {
+    return questions.sort((a, b) => {
+      if (a.instances.length === 0 || b.instances.length === 0) {
+        if (a.instances.length === 0 && b.instances.length === 0) {
+          return 0
+        }
+
+        return factor * 1
+      }
+
+      // compare the dates of the latest created instances
+      // this allows us to sort by "last usage"
+      return (
+        factor *
+        (moment(a.instances[a.instances.length - 1].createdAt) -
+          moment(b.instances[b.instances.length - 1].createdAt))
+      )
+    })
+  }
+
+  return questions
 }
 
 function filterSessions(sessions, filters) {

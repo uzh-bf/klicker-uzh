@@ -49,7 +49,7 @@ const SearchArea = ({
       <Dropdown
         selection
         options={sortingTypes.map(({ content, id }) => ({ text: content, value: id }))}
-        onChange={() => handleSortByChange(sortBy)}
+        onChange={(param, data) => handleSortByChange(data.value)}
       />
     </Input>
 

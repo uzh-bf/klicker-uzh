@@ -119,7 +119,7 @@ Evaluation.propTypes = propTypes
 Evaluation.defaultProps = defaultProps
 
 export default compose(
-  withLogging,
+  withLogging(),
   withData,
   pageWithIntl,
   graphql(SessionEvaluationQuery, {

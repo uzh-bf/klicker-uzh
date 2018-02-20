@@ -167,7 +167,7 @@ const Running = ({
 Running.propTypes = propTypes
 
 export default compose(
-  withLogging,
+  withLogging(),
   withData,
   pageWithIntl,
   graphql(AccountSummaryQuery),
