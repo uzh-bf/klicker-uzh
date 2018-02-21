@@ -18,6 +18,11 @@ const propTypes = {
     }),
   ).isRequired,
   sortOrder: PropTypes.bool.isRequired,
+  withSorting: PropTypes.bool,
+}
+
+const defaultProps = {
+  withSorting: false,
 }
 
 const SearchArea = ({
@@ -28,6 +33,7 @@ const SearchArea = ({
   sortBy,
   sortingTypes,
   sortOrder,
+  withSorting,
 }) => (
   <div className="searchArea">
     <Input
@@ -42,18 +48,22 @@ const SearchArea = ({
       <input />
     </Input>
 
-    <Button
-      icon={`${_find(sortingTypes, { id: sortBy }).labelStart} ${
-        sortOrder ? 'ascending' : 'descending'
-      }`}
-      size="small"
-      onClick={handleSortOrderToggle}
-    />
-    <Dropdown
-      selection
-      options={sortingTypes.map(({ content, id }) => ({ text: content, value: id }))}
-      onChange={(param, data) => handleSortByChange(data.value)}
-    />
+    {withSorting && (
+      <React.Fragment>
+        <Button
+          icon={`${_find(sortingTypes, { id: sortBy }).labelStart} ${
+            sortOrder ? 'ascending' : 'descending'
+          }`}
+          size="small"
+          onClick={handleSortOrderToggle}
+        />
+        <Dropdown
+          selection
+          options={sortingTypes.map(({ content, id }) => ({ text: content, value: id }))}
+          onChange={(param, data) => handleSortByChange(data.value)}
+        />
+      </React.Fragment>
+    )}
 
     <style jsx>{`
       .searchArea {
@@ -70,5 +80,6 @@ const SearchArea = ({
 )
 
 SearchArea.propTypes = propTypes
+SearchArea.defaultProps = defaultProps
 
 export default SearchArea

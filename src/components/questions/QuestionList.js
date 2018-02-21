@@ -79,7 +79,11 @@ export default compose(
   branch(({ data }) => data.loading, renderComponent(LoadingDiv)),
   branch(({ data }) => data.error, renderComponent(({ data }) => <div>{data.error}</div>)),
   withProps(({ data: { error, questions }, filters, sort }) => {
-    const questionIndex = buildIndex('questions', questions)
+    const questionIndex = buildIndex('questions', questions, [
+      'title',
+      'createdAt',
+      ['versions', 0, 'description'],
+    ])
 
     return {
       error,

@@ -23,7 +23,7 @@ const indices = {}
   },
 } */
 
-function buildIndex(name, items) {
+function buildIndex(name, items, searchIndices) {
   // if an index already exists, return it
   if (indices[name]) {
     return indices[name]
@@ -40,9 +40,7 @@ function buildIndex(name, items) {
   // search.tokenizer = new JsSearch.StopWordsTokenizer(new JsSearch.SimpleTokenizer())
 
   // index by title, type, creation date and the description of the first version
-  search.addIndex('title')
-  search.addIndex('createdAt')
-  search.addIndex(['versions', 0, 'description'])
+  searchIndices.forEach(index => search.addIndex(index))
 
   // build the index based on the items
   search.addDocuments(items)
@@ -73,6 +71,16 @@ function filterQuestions(questions, filters, index) {
       }
       return true
     })
+  }
+
+  return results
+}
+
+function filterSessions(sessions, filters, index) {
+  let results = sessions
+
+  if (filters.title) {
+    results = index.search(filters.title)
   }
 
   return results
@@ -114,10 +122,6 @@ function sortQuestions(questions, sort) {
   }
 
   return questions
-}
-
-function filterSessions(sessions, filters) {
-  return sessions
 }
 
 function processItems(items, filters, sort, index) {

@@ -7,7 +7,6 @@ import _debounce from 'lodash/debounce'
 import { Button } from 'semantic-ui-react'
 import Link from 'next/link'
 import Router from 'next/router'
-import fuse from 'fuse.js'
 
 import { pageWithIntl, withData, withDnD, withSortingAndFiltering, withLogging } from '../../lib'
 import {
@@ -17,7 +16,6 @@ import {
   SessionListQuery,
   RunningSessionQuery,
   QuestionListQuery,
-  TagListQuery,
 } from '../../graphql'
 import { SessionCreationForm } from '../../components/forms'
 import { QuestionList, TagList } from '../../components/questions'
@@ -28,7 +26,6 @@ const propTypes = {
   creationMode: PropTypes.bool.isRequired,
   droppedQuestions: PropTypes.arrayOf(PropTypes.string).isRequired,
   filters: PropTypes.object.isRequired,
-  sort: PropTypes.object.isRequired,
   handleCreateSession: PropTypes.func.isRequired,
   handleCreationModeToggle: PropTypes.func.isRequired,
   handleQuestionDropped: PropTypes.func.isRequired,
@@ -37,6 +34,8 @@ const propTypes = {
   handleSortOrderToggle: PropTypes.func.isRequired,
   handleTagClick: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
+  questions: PropTypes.array.isRequired,
+  sort: PropTypes.object.isRequired,
 }
 
 const Index = ({
@@ -94,6 +93,7 @@ const Index = ({
           sortBy: sort.by,
           sortingTypes: QUESTION_SORTINGS,
           sortOrder: sort.asc,
+          withSorting: true,
         },
         title: intl.formatMessage({
           defaultMessage: 'Question Pool',
