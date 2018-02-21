@@ -103,15 +103,22 @@ function EvaluationLayout({
 
         <div className="info">
           <Info totalResponses={totalResponses} />
-          <Checkbox
-            toggle
-            defaultChecked={showSolution}
-            label={intl.formatMessage({
-              defaultMessage: 'Show solution',
-              id: 'evaluation.showSolution.label',
-            })}
-            onChange={onToggleShowSolution}
-          />
+          {/* don't show 'show solution' check box for free and free range questions
+          and word cloud charts */
+          type !== 'FREE' &&
+            type !== 'FREE_RANGE' &&
+            activeVisualization !== 'WORD_CLOUD' && (
+              <Checkbox
+                toggle
+                defaultChecked={showSolution}
+                label={intl.formatMessage({
+                  defaultMessage: 'Show solution',
+                  id: 'evaluation.showSolution.label',
+                })}
+                onChange={onToggleShowSolution}
+              />
+            )}
+
           <VisualizationType
             activeVisualization={activeVisualization}
             intl={intl}
