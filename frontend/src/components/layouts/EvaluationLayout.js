@@ -88,7 +88,7 @@ function EvaluationLayout({
                   defaultValue={0}
                   options={dropdownOptions}
                   placeholder="Select Question"
-                  onChange={(param, data) => onChangeActiveInstance(data.value)()}
+                  onChange={(param, data) => onChangeActiveInstance(data.value)}
                 />
               </div>
             )
@@ -101,7 +101,7 @@ function EvaluationLayout({
                   className="hoverable"
                   disabled={activeInstance === 0}
                   icon="arrow left"
-                  onClick={onChangeActiveInstance(activeInstance - 1)}
+                  onClick={() => onChangeActiveInstance(activeInstance - 1)}
                 />
 
                 {instanceSummary.map(({ title, totalResponses: count }, index) => (
@@ -109,7 +109,7 @@ function EvaluationLayout({
                     fitted
                     active={index === activeInstance}
                     className="hoverable"
-                    onClick={onChangeActiveInstance(index)}
+                    onClick={() => onChangeActiveInstance(index)}
                   >
                     {title.length > 15 ? `${title.substring(0, 15)} ...` : title} ({count})
                   </Menu.Item>
@@ -119,7 +119,7 @@ function EvaluationLayout({
                   className="hoverable"
                   disabled={activeInstance + 1 === instanceSummary.length}
                   icon="arrow right"
-                  onClick={onChangeActiveInstance(activeInstance + 1)}
+                  onClick={() => onChangeActiveInstance(activeInstance + 1)}
                 />
               </Menu>
             </div>
