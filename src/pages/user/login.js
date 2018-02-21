@@ -9,7 +9,7 @@ import { graphql } from 'react-apollo'
 import { StaticLayout } from '../../components/layouts'
 import { LoginForm } from '../../components/forms'
 import { LoginMutation } from '../../graphql'
-import { pageWithIntl, withData } from '../../lib'
+import { pageWithIntl, withData, withLogging } from '../../lib'
 
 const propTypes = {
   error: PropTypes.oneOfType(PropTypes.string, null).isRequired,
@@ -66,6 +66,7 @@ const Login = ({ intl, error, handleSubmit }) => (
 Login.propTypes = propTypes
 
 export default compose(
+  withLogging(['ga', 'raven']),
   withData,
   pageWithIntl,
   graphql(LoginMutation),

@@ -10,7 +10,7 @@ import _isNil from 'lodash/isNil'
 
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionEditForm } from '../../components/forms'
-import { pageWithIntl, withData, omitDeep } from '../../lib'
+import { pageWithIntl, withData, omitDeep, withDnD, withLogging } from '../../lib'
 import {
   QuestionListQuery,
   QuestionDetailsQuery,
@@ -75,6 +75,8 @@ const EditQuestion = ({
 EditQuestion.propTypes = propTypes
 
 export default compose(
+  withLogging(),
+  withDnD,
   withData,
   pageWithIntl,
   graphql(QuestionDetailsQuery, {

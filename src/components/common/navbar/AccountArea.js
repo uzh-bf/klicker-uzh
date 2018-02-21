@@ -9,7 +9,7 @@ const propTypes = {
 
 const AccountArea = ({ accountShort }) => (
   <React.Fragment>
-    <Dropdown item simple icon="user" text={accountShort.toUpperCase()}>
+    <Dropdown disabled item simple icon="user" text={accountShort.toUpperCase()}>
       <Dropdown.Menu>
         {/* <Dropdown.Item disabled>
           <FormattedMessage defaultMessage="Settings" id="common.string.settings" />
