@@ -271,7 +271,7 @@ export default compose(
 
       return {
         activeInstance,
-        handleChangeActiveInstance: index => () => handleChangeActiveInstance(index),
+        handleChangeActiveInstance,
       }
     },
   ),
