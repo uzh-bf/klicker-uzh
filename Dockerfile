@@ -3,7 +3,7 @@ FROM node:8-alpine@sha256:b0f4ff99dbfbbe6076289f762dfae8e8cdd7cad2eee24500c81957
 
 # root application directory
 ENV KLICKER_DIR="/app"
-ENV PM_VERSION="2.9.2"
+ENV PM_VERSION="2.10.1"
 
 # fix permissions for the global node directories
 # this allows installing pm2 globally as user 1000
@@ -50,7 +50,7 @@ ARG VERSION="staging"
 RUN set -x && yarn run build
 
 # run next in production mode
-CMD ["pm2-docker", "start", "process.json", "--web", "--env", "production", "--raw"]
+CMD ["pm2-runtime", "start", "process.json", "--web", "--env", "production", "--raw"]
 
 # add labels
 LABEL maintainer="Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
