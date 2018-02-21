@@ -24,7 +24,7 @@ const addFeedback = async ({ sessionId, content }) => {
   }
 
   // push a new feedback into the array
-  session.feedbacks.push({ content })
+  session.feedbacks.push({ content, createdAt: Date.now() })
 
   // save the updated session
   await session.save()
@@ -72,7 +72,7 @@ const addConfusionTS = async ({
   }
 
   // push a new timestep into the array
-  session.confusionTS.push({ difficulty, speed })
+  session.confusionTS.push({ createdAt: Date.now(), difficulty, speed })
 
   // save the updated session
   await session.save()
@@ -87,6 +87,7 @@ const addResponse = async ({
 }) => {
   // response object to save
   const saveResponse = {
+    createdAt: Date.now(),
     value: response,
   }
 
