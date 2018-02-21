@@ -42,7 +42,7 @@ const calculatePercentage = (questionType, count, totalResponses) => {
 
   // only show percentage string if count is >0
   if (count > 0) {
-    return `${count} | ${_round(100 * (count / totalResponses), 2)} %`
+    return `${count} | ${_round(100 * (count / totalResponses), 1)} %`
   }
 
   // return an empty string so it doesn't clutter the visualization
