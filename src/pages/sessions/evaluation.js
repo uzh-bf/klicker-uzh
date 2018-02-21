@@ -156,6 +156,7 @@ export default compose(
             ...activeInstance,
             results: {
               // HACK: versioning hardcoded
+              // TODO: !!!
               data: activeInstance.question.versions[0].options[
                 activeInstance.question.type
               ].choices.map((choice, index) => ({
@@ -169,10 +170,17 @@ export default compose(
         }
 
         if (QUESTION_GROUPS.FREE.includes(activeInstance.question.type)) {
+          let data = activeInstance.results ? activeInstance.results.FREE : []
+
+          // values in FREE_RANGE questions need to be numerical
+          if (activeInstance.question.type === QUESTION_TYPES.FREE_RANGE) {
+            data = data.map(({ value, ...rest }) => ({ ...rest, value: +value }))
+          }
+
           return {
             ...activeInstance,
             results: {
-              data: activeInstance.results ? activeInstance.results.FREE : [],
+              data,
               totalResponses: activeInstance.responses.length,
             },
           }
