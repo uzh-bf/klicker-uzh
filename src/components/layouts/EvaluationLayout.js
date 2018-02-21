@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { intlShape } from 'react-intl'
-import { Checkbox, Menu } from 'semantic-ui-react'
+import { Checkbox, Dropdown, Menu } from 'semantic-ui-react'
 
 import { CommonLayout } from '.'
 import { Info, Possibilities, Statistics, VisualizationType } from '../evaluation'
@@ -66,36 +66,65 @@ function EvaluationLayout({
   return (
     <CommonLayout baseFontSize="22px" pageTitle={pageTitle}>
       <div className={`evaluationLayout ${type}`}>
-        {instanceSummary.length > 1 && (
-          <div className="instanceChooser">
-            <Menu fitted tabular>
-              <Menu.Item
-                className="hoverable"
-                disabled={activeInstance === 0}
-                icon="arrow left"
-                onClick={onChangeActiveInstance(activeInstance - 1)}
-              />
+        {(() => {
+          if (instanceSummary.length <= 0) {
+            return null
+          }
 
-              {instanceSummary.map(({ title, totalResponses: count }, index) => (
+          if (instanceSummary.length > 10) {
+            const dropdownOptions = instanceSummary.map(
+              ({ title, totalResponses: count }, index) => ({
+                key: index,
+                text: `${title} (${count})`,
+                value: index,
+              }),
+            )
+
+            return (
+              <div className="instanceDropdown">
+                <Dropdown
+                  search
+                  selection
+                  defaultValue={0}
+                  options={dropdownOptions}
+                  placeholder="Select Question"
+                  onChange={(param, data) => onChangeActiveInstance(data.value)()}
+                />
+              </div>
+            )
+          }
+
+          return (
+            <div className="instanceChooser">
+              <Menu fitted tabular>
                 <Menu.Item
-                  fitted
-                  active={index === activeInstance}
                   className="hoverable"
-                  onClick={onChangeActiveInstance(index)}
-                >
-                  {title.length > 15 ? `${title.substring(0, 15)} ...` : title} ({count})
-                </Menu.Item>
-              ))}
+                  disabled={activeInstance === 0}
+                  icon="arrow left"
+                  onClick={onChangeActiveInstance(activeInstance - 1)}
+                />
 
-              <Menu.Item
-                className="hoverable"
-                disabled={activeInstance + 1 === instanceSummary.length}
-                icon="arrow right"
-                onClick={onChangeActiveInstance(activeInstance + 1)}
-              />
-            </Menu>
-          </div>
-        )}
+                {instanceSummary.map(({ title, totalResponses: count }, index) => (
+                  <Menu.Item
+                    fitted
+                    active={index === activeInstance}
+                    className="hoverable"
+                    onClick={onChangeActiveInstance(index)}
+                  >
+                    {title.length > 15 ? `${title.substring(0, 15)} ...` : title} ({count})
+                  </Menu.Item>
+                ))}
+
+                <Menu.Item
+                  className="hoverable"
+                  disabled={activeInstance + 1 === instanceSummary.length}
+                  icon="arrow right"
+                  onClick={onChangeActiveInstance(activeInstance + 1)}
+                />
+              </Menu>
+            </div>
+          )
+        })()}
 
         <div className="questionDetails">
           <p>{description}</p>
@@ -103,15 +132,22 @@ function EvaluationLayout({
 
         <div className="info">
           <Info totalResponses={totalResponses} />
-          <Checkbox
-            toggle
-            defaultChecked={showSolution}
-            label={intl.formatMessage({
-              defaultMessage: 'Show solution',
-              id: 'evaluation.showSolution.label',
-            })}
-            onChange={onToggleShowSolution}
-          />
+          {/* don't show 'show solution' check box for free and free range questions
+          and word cloud charts */
+          type !== 'FREE' &&
+            type !== 'FREE_RANGE' &&
+            activeVisualization !== 'WORD_CLOUD' && (
+              <Checkbox
+                toggle
+                defaultChecked={showSolution}
+                label={intl.formatMessage({
+                  defaultMessage: 'Show solution',
+                  id: 'evaluation.showSolution.label',
+                })}
+                onChange={onToggleShowSolution}
+              />
+            )}
+
           <VisualizationType
             activeVisualization={activeVisualization}
             intl={intl}
