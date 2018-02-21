@@ -124,6 +124,7 @@ describe('AuthService', () => {
         email: 'testSignup@bf.uzh.ch',
         shortname: 'signup',
         isAAI: false,
+        isActive: false,
       }))
 
       // expect the password to not be the same (as it is hashed)
