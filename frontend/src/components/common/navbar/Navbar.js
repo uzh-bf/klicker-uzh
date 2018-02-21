@@ -81,6 +81,7 @@ export const NavbarPres = ({
           sortBy={search.sortBy}
           sortOrder={search.sortOrder}
           sortingTypes={search.sortingTypes}
+          withSorting={search.withSorting}
         />
       </div>
     )}
