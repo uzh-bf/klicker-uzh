@@ -7,6 +7,7 @@ import _debounce from 'lodash/debounce'
 import { Button } from 'semantic-ui-react'
 import Link from 'next/link'
 import Router from 'next/router'
+import fuse from 'fuse.js'
 
 import { pageWithIntl, withData, withDnD, withSortingAndFiltering, withLogging } from '../../lib'
 import {
@@ -16,6 +17,7 @@ import {
   SessionListQuery,
   RunningSessionQuery,
   QuestionListQuery,
+  TagListQuery,
 } from '../../graphql'
 import { SessionCreationForm } from '../../components/forms'
 import { QuestionList, TagList } from '../../components/questions'
@@ -42,6 +44,7 @@ const Index = ({
   droppedQuestions,
   intl,
   filters,
+  questions,
   sort,
   handleCreateSession,
   handleSearch,
@@ -132,6 +135,7 @@ const Index = ({
             <div className="questionListContent">
               <QuestionList
                 creationMode={creationMode}
+                data={questions}
                 dropped={droppedQuestions}
                 filters={filters}
                 sort={sort}
@@ -150,9 +154,11 @@ const Index = ({
           flex-direction: column;
           height: 100%;
 
+          overflow-y: auto;
+
           .tagList {
-            overflow-y: auto;
             height: 100%;
+            min-width: 5rem;
 
             flex: 1;
             background: $color-primary-10p;
@@ -191,18 +197,19 @@ const Index = ({
 
               .questionListContent {
                 flex: 1;
-                overflow-y: auto;
                 height: 100%;
 
-                padding: 1rem 1rem 0 0;
+                padding: 1rem;
               }
             }
           }
 
           @include desktop-tablet-only {
             flex-flow: row wrap;
+            overflow-y: auto;
 
             .tagList {
+              overflow-y: auto;
               flex: 0 0 auto;
               padding: 2rem 1rem;
             }
@@ -215,6 +222,11 @@ const Index = ({
                 .buttons {
                   display: flex;
                   justify-content: flex-end;
+                }
+
+                .questionListContent {
+                  overflow-y: auto;
+                  padding: 1rem 1rem 0 0;
                 }
               }
             }
@@ -288,7 +300,7 @@ export default compose(
 
         // create a new session
         const result = await mutate({
-          refetchQueries: [{ query: QuestionListQuery, SessionListQuery }],
+          refetchQueries: [{ query: QuestionListQuery }, { query: SessionListQuery }],
           variables: { blocks: parsedBlocks, name: sessionName },
         })
 
@@ -306,4 +318,5 @@ export default compose(
       }
     },
   }),
+  graphql(QuestionListQuery, { name: 'questions' }),
 )(Index)

@@ -9,7 +9,7 @@ export { default as withSortingAndFiltering } from './withSortingAndFiltering'
 export { default as withDnD } from './withDnD'
 export { default as withLogging } from './withLogging'
 export { createLinks } from './utils/css'
-export { filterSessions, processItems } from './utils/filters'
+export { filterSessions, processItems, buildIndex } from './utils/filters'
 export {
   calculateMax,
   calculateMin,

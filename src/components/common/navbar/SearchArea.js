@@ -40,18 +40,20 @@ const SearchArea = ({
       onChange={e => handleSearch(e.target.value)}
     >
       <input />
-      <Button
-        icon={`${_find(sortingTypes, { id: sortBy }).labelStart} ${
-          sortOrder ? 'ascending' : 'descending'
-        }`}
-        onClick={handleSortOrderToggle}
-      />
-      <Dropdown
-        selection
-        options={sortingTypes.map(({ content, id }) => ({ text: content, value: id }))}
-        onChange={(param, data) => handleSortByChange(data.value)}
-      />
     </Input>
+
+    <Button
+      icon={`${_find(sortingTypes, { id: sortBy }).labelStart} ${
+        sortOrder ? 'ascending' : 'descending'
+      }`}
+      size="small"
+      onClick={handleSortOrderToggle}
+    />
+    <Dropdown
+      selection
+      options={sortingTypes.map(({ content, id }) => ({ text: content, value: id }))}
+      onChange={(param, data) => handleSortByChange(data.value)}
+    />
 
     <style jsx>{`
       .searchArea {
@@ -60,6 +62,7 @@ const SearchArea = ({
 
         > :global(.input) {
           flex: 1;
+          margin-right: 1rem;
         }
       }
     `}</style>

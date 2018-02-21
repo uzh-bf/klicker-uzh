@@ -2,23 +2,76 @@
 
 import _every from 'lodash/every'
 import moment from 'moment'
+// import Fuse from 'fuse.js'
+import * as JsSearch from 'js-search'
 
-function filterQuestions(questions, filters) {
-  return questions.filter((question) => {
-    if (filters.type && question.type !== filters.type) {
-      return false
-    }
-    if (filters.title && !question.title.toLowerCase().includes(filters.title.toLowerCase())) {
-      return false
-    }
-    if (
-      filters.tags &&
-      !_every(filters.tags, tag => question.tags.map(t => t.name).includes(tag))
-    ) {
-      return false
-    }
-    return true
-  })
+const indices = {}
+
+/* const INDEX_CONFIGS = {
+  questions: {
+    location: 0,
+    distance: 100,
+    threshold: 0.5,
+    maxPatternLength: 32,
+    minMatchCharLength: 1,
+    tokenize: true,
+    matchAllTokens: true,
+    includeScore: true,
+    includeMatches: true,
+    // TODO: add description to search keys?
+    keys: ['title', 'tags.name', 'type'],
+  },
+} */
+
+function buildIndex(name, items) {
+  /* if (indices[name]) {
+    return indices[name]
+  }
+
+  indices[name] = new Fuse(items, INDEX_CONFIGS[name])
+  return indices[name] */
+
+  if (indices[name]) {
+    return indices[name]
+  }
+
+  const search = JsSearch.Search('id')
+  search.addIndex('title')
+  search.addIndex('type')
+  search.addIndex(['versions', 'description'])
+  search.addIndex(['tags', 'name'])
+  search.addDocuments(items)
+  indices[name] = search
+  return search
+}
+
+function filterQuestions(questions, filters, index) {
+  console.log(filters)
+
+  let results = questions
+
+  if (filters.title) {
+    // results = index.search(filters.title)
+    results = index.search(filters.title)
+    console.log(results)
+  }
+
+  if (filters.type || filters.tags) {
+    results = results.filter((question) => {
+      if (filters.type && question.type !== filters.type) {
+        return false
+      }
+      if (
+        filters.tags &&
+        !_every(filters.tags, tag => question.tags.map(t => t.name).includes(tag))
+      ) {
+        return false
+      }
+      return true
+    })
+  }
+
+  return results
 }
 
 function sortQuestions(questions, sort) {
@@ -63,21 +116,18 @@ function filterSessions(sessions, filters) {
   return sessions
 }
 
-function processItems(items, filters, sort) {
+function processItems(items, filters, sort, index) {
   let processed = items
 
-  console.log(sort)
-
   if (filters) {
-    processed = filterQuestions(processed, filters)
+    processed = filterQuestions(processed, filters, index)
   }
 
   if (sort) {
-    console.log('Sorting')
     processed = sortQuestions(processed, sort)
   }
 
   return processed
 }
 
-export { filterSessions, processItems }
+export { filterSessions, processItems, buildIndex }
