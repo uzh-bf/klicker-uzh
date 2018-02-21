@@ -1,15 +1,14 @@
 import React from 'react'
 import { registerObserver } from 'react-perf-devtool'
-
-const initialized = []
+import { initGA, logPageView, logException } from '.'
 
 let Raven
 let LogRocket
 let LogRocketReact
-if (process.env.SENTRY_DSN && !initialized.contains('raven')) {
+if (process.env.SENTRY_DSN && !window.INIT_RAVEN) {
   Raven = require('raven-js')
 }
-if (process.env.LOGROCKET && !initialized.contains('logrocket')) {
+if (process.env.LOGROCKET && !window.INIT_LR) {
   LogRocket = require('logrocket')
   LogRocketReact = require('logrocket-react')
 }
@@ -27,27 +26,33 @@ export default (services = ['ga', 'raven', 'logrocket']) =>
         super(props)
         this.state = { error: null }
 
+        /*
         if (typeof window !== 'undefined') {
-          if (process.env.NODE_ENV === 'development' && !initialized.contains('perf')) {
+          if (process.env.NODE_ENV === 'development' && !window.INIT_PERF) {
             // setup react-perf-devtool
             registerObserver()
 
-            initialized.append('perf')
+            window.INIT_PERF = true
           }
 
-          // TODO: include google analytics
+          // include google analytics
+          if (!window.INIT_GA) {
+            initGA()
+
+            window.INIT_GA = true
+          }
 
           // embed logrocket if enabled
           if (
             process.env.NODE_ENV === 'production' &&
             process.env.LOGROCKET &&
             services.includes('logrocket') &&
-            !initialized.contains('logrocket')
+            !window.INIT_LR
           ) {
             LogRocket.init(process.env.LOGROCKET)
             LogRocketReact(LogRocket)
 
-            initialized.append('logrocket')
+            window.INIT_LR = true
           }
 
           // embed sentry if enabled
@@ -55,7 +60,7 @@ export default (services = ['ga', 'raven', 'logrocket']) =>
             process.env.NODE_ENV === 'production' &&
             services.includes('raven') &&
             Raven &&
-            !initialized.contains('raven')
+            !window.INIT_RAVEN
           ) {
             Raven.config(process.env.SENTRY_DSN, {
               environment: process.env.NODE_ENV,
@@ -73,8 +78,65 @@ export default (services = ['ga', 'raven', 'logrocket']) =>
               )
             }
 
-            initialized.append('raven')
+            window.INIT_RAVEN = true
           }
+        }
+        */
+      }
+
+      componentDidMount() {
+        if (process.env.NODE_ENV === 'development' && !window.INIT_PERF) {
+          // setup react-perf-devtool
+          registerObserver()
+
+          window.INIT_PERF = true
+        }
+
+        // include google analytics
+        if (!window.INIT_GA) {
+          initGA()
+          logPageView()
+
+          window.INIT_GA = true
+        }
+
+        // embed logrocket if enabled
+        if (
+          process.env.NODE_ENV === 'production' &&
+          process.env.LOGROCKET &&
+          services.includes('logrocket') &&
+          !window.INIT_LR
+        ) {
+          LogRocket.init(process.env.LOGROCKET)
+          LogRocketReact(LogRocket)
+
+          window.INIT_LR = true
+        }
+
+        // embed sentry if enabled
+        if (
+          process.env.NODE_ENV === 'production' &&
+          services.includes('raven') &&
+          Raven &&
+          !window.INIT_RAVEN
+        ) {
+          Raven.config(process.env.SENTRY_DSN, {
+            environment: process.env.NODE_ENV,
+            release: process.env.VERSION,
+          }).install()
+
+          // connect logrocket to sentry
+          if (process.env.LOGROCKET && services.includes('logrocket')) {
+            Raven.setDataCallback(data =>
+              Object.assign({}, data, {
+                extra: {
+                  sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef
+                },
+              }),
+            )
+          }
+
+          window.INIT_RAVEN = true
         }
       }
 
@@ -83,6 +145,7 @@ export default (services = ['ga', 'raven', 'logrocket']) =>
 
         if (process.env.NODE_ENV === 'production' && services.includes('raven')) {
           Raven.captureException(error, { extra: errorInfo })
+          logException(error)
         }
       }
 
