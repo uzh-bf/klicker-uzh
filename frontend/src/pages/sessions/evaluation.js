@@ -155,8 +155,7 @@ export default compose(
           return {
             ...activeInstance,
             results: {
-              // HACK: versioning hardcoded
-              data: activeInstance.question.versions[0].options[
+              data: activeInstance.question.versions[activeInstance.version].options[
                 activeInstance.question.type
               ].choices.map((choice, index) => ({
                 correct: choice.correct,
@@ -169,10 +168,17 @@ export default compose(
         }
 
         if (QUESTION_GROUPS.FREE.includes(activeInstance.question.type)) {
+          let data = activeInstance.results ? activeInstance.results.FREE : []
+
+          // values in FREE_RANGE questions need to be numerical
+          if (activeInstance.question.type === QUESTION_TYPES.FREE_RANGE) {
+            data = data.map(({ value, ...rest }) => ({ ...rest, value: +value }))
+          }
+
           return {
             ...activeInstance,
             results: {
-              data: activeInstance.results ? activeInstance.results.FREE : [],
+              data,
               totalResponses: activeInstance.responses.length,
             },
           }
@@ -184,6 +190,7 @@ export default compose(
     return {
       activeInstances,
       instanceSummary: activeInstances.map(instance => ({
+        hasSolution: !!instance.solution,
         title: instance.question.title,
         totalResponses: instance.responses.length,
       })),
@@ -245,7 +252,7 @@ export default compose(
       if (question.type === QUESTION_TYPES.FREE_RANGE) {
         return {
           activeInstance,
-          handleChangeActiveInstance: index => () => handleChangeActiveInstance(index),
+          handleChangeActiveInstance,
           statistics: {
             bins,
             max: calculateMax(results),

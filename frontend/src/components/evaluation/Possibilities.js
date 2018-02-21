@@ -56,11 +56,19 @@ const Possibilities = ({ questionOptions, questionType }) => (
             {(() => {
               const comp = []
               if (restrictions && _isNumber(restrictions.min)) {
-                comp.push(<EvaluationListItem marker="MIN">{restrictions.min}</EvaluationListItem>)
+                comp.push(
+                  <EvaluationListItem reverse marker="MIN">
+                    {restrictions.min}
+                  </EvaluationListItem>,
+                )
               }
 
               if (restrictions && _isNumber(restrictions.max)) {
-                comp.push(<EvaluationListItem marker="MAX">{restrictions.max}</EvaluationListItem>)
+                comp.push(
+                  <EvaluationListItem reverse marker="MAX">
+                    {restrictions.max}
+                  </EvaluationListItem>,
+                )
               }
 
               if (comp.length > 0) {
