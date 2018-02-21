@@ -79,7 +79,7 @@ export default withProps(({ data, totalResponses }) => ({
     correct,
     count,
     label: String.fromCharCode(65 + index),
-    percentage: `${count} | ${_round(100 * (count / totalResponses), 2)} %`,
+    percentage: `${count} | ${_round(100 * (count / totalResponses), 1)} %`,
     value,
   })),
 }))(PieChart)
