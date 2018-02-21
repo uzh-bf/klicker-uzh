@@ -21,7 +21,17 @@ const propTypes = {
   runningSessionRuntime: PropTypes.string,
   search: PropTypes.shape({
     handleSearch: PropTypes.func.isRequired,
-    handleSort: PropTypes.func.isRequired,
+    handleSortByChange: PropTypes.func.isRequired,
+    handleSortOrderToggle: PropTypes.func.isRequired,
+    sortBy: PropTypes.string.isRequired,
+    sortingTypes: PropTypes.arrayOf(
+      PropTypes.shape({
+        content: PropTypes.string,
+        id: PropTypes.string,
+        labelStart: PropTypes.string,
+      }),
+    ).isRequired,
+    sortOrder: PropTypes.bool.isRequired,
   }),
   sidebarVisible: PropTypes.bool,
   title: PropTypes.string.isRequired,
@@ -63,7 +73,15 @@ export const NavbarPres = ({
 
     {search && (
       <div className="searchArea">
-        <SearchArea handleSearch={search.handleSearch} handleSort={search.handleSort} intl={intl} />
+        <SearchArea
+          handleSearch={search.handleSearch}
+          handleSortByChange={search.handleSortByChange}
+          handleSortOrderToggle={search.handleSortOrderToggle}
+          intl={intl}
+          sortBy={search.sortBy}
+          sortOrder={search.sortOrder}
+          sortingTypes={search.sortingTypes}
+        />
       </div>
     )}
 

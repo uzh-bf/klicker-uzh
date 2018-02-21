@@ -1,14 +1,13 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import Router from 'next/router'
-import { graphql } from 'react-apollo'
-import { compose, withPropsOnChange, branch, renderComponent } from 'recompose'
+import { compose, withProps, branch, renderComponent } from 'recompose'
 import { FormattedMessage } from 'react-intl'
 
 import Session from './Session'
 import { LoadingDiv } from '../common'
-import { SessionListQuery } from '../../graphql'
 import { SESSION_STATUS } from '../../constants'
+import { buildIndex, filterSessions } from '../../lib'
 
 const propTypes = {
   error: PropTypes.string,
@@ -145,51 +144,52 @@ const statusCases = {
 }
 
 export default compose(
-  graphql(SessionListQuery),
   branch(({ data }) => data.loading, renderComponent(LoadingDiv)),
-  withPropsOnChange(
-    ['data'],
-    ({ data: { error, sessions }, handleCopySession, handleStartSession }) => {
-      // calculate what action to take on button click based on session status
-      const handleSessionAction = (sessionId, status) => {
-        if (status === SESSION_STATUS.CREATED) {
-          return handleStartSession(sessionId)
-        }
-
-        if (status === SESSION_STATUS.RUNNING) {
-          return () => Router.push('/sessions/running')
-        }
-
-        if (status === SESSION_STATUS.COMPLETED) {
-          return handleCopySession(sessionId)
-        }
-
-        return () => null
+  withProps(({
+    data: { error, sessions }, handleCopySession, handleStartSession, filters,
+  }) => {
+    // calculate what action to take on button click based on session status
+    const handleSessionAction = (sessionId, status) => {
+      if (status === SESSION_STATUS.CREATED) {
+        return handleStartSession(sessionId)
       }
 
-      // extract the running session from all sessions
-      const runningSession = sessions.filter(session => session.status === SESSION_STATUS.RUNNING)
+      if (status === SESSION_STATUS.RUNNING) {
+        return () => Router.push('/sessions/running')
+      }
 
-      // return the newly composed props
-      return {
-        error,
-        runningSession: runningSession.length === 1 && {
-          ...runningSession[0],
-          button: {
-            ...statusCases[SESSION_STATUS.RUNNING],
-            onClick: () => Router.push('/sessions/running'),
-          },
+      if (status === SESSION_STATUS.COMPLETED) {
+        return handleCopySession(sessionId)
+      }
+
+      return () => null
+    }
+
+    // extract the running session from all sessions
+    const runningSession = sessions.filter(session => session.status === SESSION_STATUS.RUNNING)
+
+    // create a session index
+    const sessionIndex = buildIndex('sessions', sessions, ['name', 'createdAt'])
+
+    // return the newly composed props
+    return {
+      error,
+      runningSession: runningSession.length === 1 && {
+        ...runningSession[0],
+        button: {
+          ...statusCases[SESSION_STATUS.RUNNING],
+          onClick: () => Router.push('/sessions/running'),
         },
-        sessions: sessions.map(session => ({
-          ...session,
-          button: {
-            ...statusCases[session.status],
-            disabled: session.status === SESSION_STATUS.COMPLETED,
-            hidden: session.status === SESSION_STATUS.COMPLETED,
-            onClick: handleSessionAction(session.id, session.status),
-          },
-        })),
-      }
-    },
-  ),
+      },
+      sessions: filterSessions(sessions, filters, sessionIndex).map(session => ({
+        ...session,
+        button: {
+          ...statusCases[session.status],
+          disabled: session.status === SESSION_STATUS.COMPLETED,
+          hidden: session.status === SESSION_STATUS.COMPLETED,
+          onClick: handleSessionAction(session.id, session.status),
+        },
+      })),
+    }
+  }),
 )(SessionListPres)

@@ -1,15 +1,41 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { intlShape } from 'react-intl'
-import { Input } from 'semantic-ui-react'
+import { Button, Dropdown, Input } from 'semantic-ui-react'
+import _find from 'lodash/find'
 
 const propTypes = {
   handleSearch: PropTypes.func.isRequired,
+  handleSortByChange: PropTypes.func.isRequired,
+  handleSortOrderToggle: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
+  sortBy: PropTypes.string.isRequired,
+  sortingTypes: PropTypes.arrayOf(
+    PropTypes.shape({
+      content: PropTypes.string,
+      id: PropTypes.string,
+      labelStart: PropTypes.string,
+    }),
+  ).isRequired,
+  sortOrder: PropTypes.bool.isRequired,
+  withSorting: PropTypes.bool,
 }
 
-const SearchArea = ({ intl, handleSearch }) => (
-  <div className="searchWrapper">
+const defaultProps = {
+  withSorting: false,
+}
+
+const SearchArea = ({
+  intl,
+  handleSearch,
+  handleSortByChange,
+  handleSortOrderToggle,
+  sortBy,
+  sortingTypes,
+  sortOrder,
+  withSorting,
+}) => (
+  <div className="searchArea">
     <Input
       fluid
       icon="search"
@@ -18,24 +44,35 @@ const SearchArea = ({ intl, handleSearch }) => (
         id: 'common.input.search.placeholder',
       })}
       onChange={e => handleSearch(e.target.value)}
-    />
-    {/* TODO: <div className="filters">
-      {filters.tags.length > 0 && filters.tags.map(tag => <span className="tag">{tag}</span>)}
-    </div> */}
+    >
+      <input />
+    </Input>
+
+    {withSorting && (
+      <React.Fragment>
+        <Button
+          icon={`${_find(sortingTypes, { id: sortBy }).labelStart} ${
+            sortOrder ? 'ascending' : 'descending'
+          }`}
+          size="small"
+          onClick={handleSortOrderToggle}
+        />
+        <Dropdown
+          selection
+          options={sortingTypes.map(({ content, id }) => ({ text: content, value: id }))}
+          onChange={(param, data) => handleSortByChange(data.value)}
+        />
+      </React.Fragment>
+    )}
 
     <style jsx>{`
-      .searchWrapper {
-        position: relative;
+      .searchArea {
+        display: flex;
+        justify-content: flex-start;
 
-        .filters {
-          position: absolute;
-          bottom: 0.65rem;
-          right: 3rem;
-
-          .tag {
-            font-style: italic;
-            margin-left: 0.5rem;
-          }
+        > :global(.input) {
+          flex: 1;
+          margin-right: 1rem;
         }
       }
     `}</style>
@@ -43,5 +80,6 @@ const SearchArea = ({ intl, handleSearch }) => (
 )
 
 SearchArea.propTypes = propTypes
+SearchArea.defaultProps = defaultProps
 
 export default SearchArea

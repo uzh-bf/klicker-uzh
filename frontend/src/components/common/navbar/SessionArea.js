@@ -1,3 +1,5 @@
+/* eslint-disable react/no-array-index-key */
+
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Button, Icon, Menu, Popup, List } from 'semantic-ui-react'
@@ -93,27 +95,21 @@ const SessionArea = ({ intl, runtime, sessionId }) => (
         <div className="popupContent">
           <h3>New features (major)</h3>
           <List bulleted>
-            {changelog.new.map(({ text, items }) => (
-              <List.Item>
+            {changelog.new.map(({ text, items }, index) => (
+              <List.Item key={index}>
                 {items ? <h4>{text}</h4> : text}
                 {items && <List.List>{items.map(item => <List.Item>{item}</List.Item>)}</List.List>}
               </List.Item>
             ))}
           </List>
 
-          <h3>Planned features</h3>
-          <List bulleted>
-            {changelog.planned.map(({ text, items }) => (
-              <List.Item>
-                {items ? <h4>{text}</h4> : text}
-                {items && <List.List>{items.map(item => <List.Item>{item}</List.Item>)}</List.List>}
-              </List.Item>
-            ))}
-          </List>
+          <h3>Planned features (major)</h3>
           <p>
             <strong>
-              A public roadmap will be made available and will show the planned features in more
-              detail.
+              A public roadmap is available on{' '}
+              <a href="https://trello.com/b/xw0D1k6l" rel="noopener noreferrer" target="_blank">
+                https://trello.com/b/xw0D1k6l
+              </a>.
             </strong>
           </p>
         </div>

@@ -1,14 +1,12 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import moment from 'moment'
-import { graphql } from 'react-apollo'
-import { compose, withProps, branch, renderComponent } from 'recompose'
+import { branch, compose, renderComponent, withProps } from 'recompose'
 import { FormattedMessage } from 'react-intl'
 
 import Question from './Question'
 import { LoadingDiv } from '../common'
-import { filterQuestions } from '../../lib'
-import QuestionListQuery from '../../graphql/queries/QuestionListQuery.graphql'
+import { processItems, buildIndex } from '../../lib'
 
 const propTypes = {
   creationMode: PropTypes.bool,
@@ -78,11 +76,18 @@ QuestionListPres.propTypes = propTypes
 QuestionListPres.defaultProps = defaultProps
 
 export default compose(
-  graphql(QuestionListQuery),
   branch(({ data }) => data.loading, renderComponent(LoadingDiv)),
   branch(({ data }) => data.error, renderComponent(({ data }) => <div>{data.error}</div>)),
-  withProps(({ data: { error, questions }, filters }) => ({
-    error,
-    questions: questions && (filters ? filterQuestions(questions, filters) : questions),
-  })),
+  withProps(({ data: { error, questions }, filters, sort }) => {
+    const questionIndex = buildIndex('questions', questions, [
+      'title',
+      'createdAt',
+      ['versions', 0, 'description'],
+    ])
+
+    return {
+      error,
+      questions: processItems(questions, filters, sort, questionIndex),
+    }
+  }),
 )(QuestionListPres)

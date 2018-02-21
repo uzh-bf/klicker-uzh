@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { StaticLayout } from '../../components/layouts'
 import { RegistrationForm } from '../../components/forms'
 import { RegistrationMutation } from '../../graphql'
-import { pageWithIntl, withData } from '../../lib'
+import { pageWithIntl, withData, withLogging } from '../../lib'
 
 const propTypes = {
   error: PropTypes.oneOfType(PropTypes.string, null).isRequired,
@@ -75,6 +75,7 @@ const Registration = ({
 Registration.propTypes = propTypes
 
 export default compose(
+  withLogging(['ga', 'raven']),
   withData,
   pageWithIntl,
   graphql(RegistrationMutation),
