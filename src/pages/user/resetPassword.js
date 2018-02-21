@@ -8,7 +8,7 @@ import Link from 'next/link'
 
 import { StaticLayout } from '../../components/layouts'
 import { PasswordResetForm } from '../../components/forms'
-import { pageWithIntl, withData } from '../../lib'
+import { pageWithIntl, withData, withLogging } from '../../lib'
 import { ChangePasswordMutation } from '../../graphql'
 
 const propTypes = {
@@ -69,6 +69,7 @@ const ResetPassword = ({
 ResetPassword.propTypes = propTypes
 
 export default compose(
+  withLogging(['ga', 'raven']),
   withData,
   pageWithIntl,
   graphql(ChangePasswordMutation),

@@ -43,6 +43,13 @@ export const CHART_COLORS = [
   'rgb(236, 170, 56)', // 9
 ]
 
+export const QUESTION_SORTINGS = [
+  { content: 'Last Usage', id: 'USED', labelStart: 'sort numeric' },
+  { content: 'Creation Date', id: 'CREATED', labelStart: 'sort numeric' },
+  { content: 'Title', id: 'TITLE', labelStart: 'sort alphabet' },
+  { content: 'Question Type', id: 'TYPE', labelStart: 'sort content' },
+]
+
 // https://www.viget.com/articles/add-colors-to-your-palette-with-color-mixing
 // original circle
 /* export const CHART_COLORS = [

@@ -1,10 +1,8 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import Router from 'next/router'
-import HTML5Backend from 'react-dnd-html5-backend'
 import { compose, withState, withHandlers } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
-import { DragDropContext } from 'react-dnd'
 
 import { CommonLayout } from '.'
 import { Navbar } from '../../components/common/navbar'
@@ -140,5 +138,4 @@ export default compose(
       setIsSidebarVisible(prevState => !prevState)
     },
   }),
-  DragDropContext(HTML5Backend),
 )(TeacherLayout)

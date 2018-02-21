@@ -1,15 +1,11 @@
 /* eslint-disable react/prop-types */
 
-import Raven from 'raven-js'
+// import Raven from 'raven-js'
 import React from 'react'
 import { ApolloProvider, getDataFromTree } from 'react-apollo'
 import Head from 'next/head'
 import initApollo from './initApollo'
 import initRedux from './initRedux'
-
-let logrocket = null
-let hotjar = null
-let sentry = null
 
 // Gets the display name of a JSX component for dev tools
 function getComponentDisplayName(Component) {
@@ -82,69 +78,11 @@ export default ComposedComponent =>
 
       // setup additional error handling for all pages with data
       this.state = { error: null }
-
-      if (process.env.NODE_ENV === 'production' && process.browser) {
-        // setup logrocket if so configured
-        if (process.env.LOGROCKET && !logrocket) {
-          const LogRocket = require('logrocket')
-          const LogRocketReact = require('logrocket-react')
-
-          if (LogRocket && LogRocketReact) {
-            LogRocket.init(process.env.LOGROCKET)
-            LogRocketReact(LogRocket)
-
-            logrocket = true
-          }
-        }
-
-        // setup sentry if so configured
-        if (process.env.SENTRY_DSN && !sentry) {
-          if (Raven) {
-            Raven.config(process.env.SENTRY_DSN, {
-              environment: process.env.NODE_ENV,
-              release: process.env.VERSION,
-            }).install()
-
-            if (process.env.LOGROCKET) {
-              Raven.setDataCallback(data =>
-                Object.assign({}, data, {
-                  extra: {
-                    sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef
-                  },
-                }),
-              )
-            }
-
-            sentry = true
-          }
-        }
-
-        if (process.env.HOTJAR && !hotjar) {
-          const { hotjar: hj } = require('react-hotjar')
-
-          if (hj) {
-            hj.initialize(process.env.HOTJAR, 6)
-
-            hotjar = true
-          }
-        }
-      }
     }
 
-    componentDidCatch(error, errorInfo) {
+    componentDidCatch(error) {
       // set the component error state
       this.setState({ error })
-
-      // log the error to console and/or sentry
-      console.error(error)
-
-      if (process.env.NODE_ENV === 'production') {
-        if (process.env.SENTRY_DSN) {
-          if (Raven) {
-            Raven.captureException(error, { extra: errorInfo })
-          }
-        }
-      }
     }
 
     render() {

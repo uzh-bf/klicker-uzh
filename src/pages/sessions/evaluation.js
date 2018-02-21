@@ -23,6 +23,7 @@ import {
   calculateStandardDeviation,
   pageWithIntl,
   withData,
+  withLogging,
 } from '../../lib'
 import { Chart } from '../../components/evaluation'
 import { SessionEvaluationQuery } from '../../graphql'
@@ -118,6 +119,7 @@ Evaluation.propTypes = propTypes
 Evaluation.defaultProps = defaultProps
 
 export default compose(
+  withLogging(),
   withData,
   pageWithIntl,
   graphql(SessionEvaluationQuery, {

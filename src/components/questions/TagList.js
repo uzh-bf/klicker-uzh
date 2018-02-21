@@ -70,6 +70,7 @@ export const TagListPres = ({ tags, types, handleTagClick }) => (
     <style jsx>{`
       .tagList {
         font-size: 0.9rem;
+        min-width: 10rem;
 
         :global(.listHeader) {
           color: grey;

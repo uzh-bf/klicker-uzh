@@ -1,13 +1,15 @@
 export { default as initApollo } from './initApollo'
-export { default as initLogging } from './initLogging'
 export { default as pageWithIntl } from './pageWithIntl'
 export { default as withData } from './withData'
 export { default as withFingerprint } from './withFingerprint'
 export { default as withStorage } from './withStorage'
 export { default as initRedux } from './initRedux'
 export { default as omitDeep } from './utils/omitDeep'
+export { default as withSortingAndFiltering } from './withSortingAndFiltering'
+export { default as withDnD } from './withDnD'
+export { default as withLogging } from './withLogging'
 export { createLinks } from './utils/css'
-export { filterQuestions, filterSessions } from './utils/filters'
+export { filterSessions, processItems, buildIndex } from './utils/filters'
 export {
   calculateMax,
   calculateMin,

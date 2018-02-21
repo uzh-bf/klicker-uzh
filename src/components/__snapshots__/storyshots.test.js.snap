@@ -178,17 +178,17 @@ exports[`Storyshots common/components ListWithHeader 1`] = `
 exports[`Storyshots common/navbar AccountArea 1`] = `
 <div
   aria-busy={undefined}
-  aria-disabled={undefined}
+  aria-disabled={true}
   aria-expanded={false}
   aria-multiselectable={undefined}
-  className="ui item simple dropdown"
+  className="ui disabled item simple dropdown"
   onBlur={[Function]}
   onChange={[Function]}
   onClick={[Function]}
   onFocus={[Function]}
   onMouseDown={[Function]}
   role="listbox"
-  tabIndex={0}
+  tabIndex={-1}
 >
   <div
     aria-live="polite"
@@ -251,21 +251,18 @@ exports[`Storyshots common/navbar Navbar 1`] = `
     className="jsx-1373967784 searchArea"
   >
     <div
-      className="jsx-697872273 searchWrapper"
+      className="jsx-882341539 searchArea"
     >
       <div
         className="ui fluid icon input"
       >
         <input
+          className="jsx-882341539"
           disabled={undefined}
           onChange={[Function]}
           placeholder="Search..."
           tabIndex={undefined}
           type="text"
-        />
-        <i
-          aria-hidden="true"
-          className="search icon"
         />
       </div>
     </div>
@@ -320,17 +317,17 @@ exports[`Storyshots common/navbar Navbar 1`] = `
         </a>
         <div
           aria-busy={undefined}
-          aria-disabled={undefined}
+          aria-disabled={true}
           aria-expanded={false}
           aria-multiselectable={undefined}
-          className="ui item simple dropdown"
+          className="ui disabled item simple dropdown"
           onBlur={[Function]}
           onChange={[Function]}
           onClick={[Function]}
           onFocus={[Function]}
           onMouseDown={[Function]}
           role="listbox"
-          tabIndex={0}
+          tabIndex={-1}
         >
           <div
             aria-live="polite"
@@ -369,21 +366,18 @@ exports[`Storyshots common/navbar Navbar 1`] = `
 
 exports[`Storyshots common/navbar SearchArea 1`] = `
 <div
-  className="jsx-697872273 searchWrapper"
+  className="jsx-882341539 searchArea"
 >
   <div
     className="ui fluid icon input"
   >
     <input
+      className="jsx-882341539"
       disabled={undefined}
       onChange={[Function]}
       placeholder="Search..."
       tabIndex={undefined}
       type="text"
-    />
-    <i
-      aria-hidden="true"
-      className="search icon"
     />
   </div>
 </div>
@@ -4263,7 +4257,7 @@ exports[`Storyshots questions QuestionTags 1`] = `
 
 exports[`Storyshots questions TagList 1`] = `
 <div
-  className="jsx-2433651819 tagList"
+  className="jsx-2276423281 tagList"
 >
   <div
     className="ui large selection list"
