@@ -51,7 +51,7 @@ export const QuestionListPres = ({
         title={question.title}
         type={question.type}
         versions={question.versions}
-        onDrop={onQuestionDropped(question.id)}
+        onDrop={() => onQuestionDropped(question.id)}
       />
     ))}
 

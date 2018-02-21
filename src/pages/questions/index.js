@@ -270,7 +270,7 @@ export default compose(
       },
 
       // handle a new question that gets dropped on the session creation timeline
-      handleQuestionDropped: ({ droppedQuestions }) => id => () => ({
+      handleQuestionDropped: ({ droppedQuestions }) => id => ({
         droppedQuestions: [...droppedQuestions, id],
       }),
     },
