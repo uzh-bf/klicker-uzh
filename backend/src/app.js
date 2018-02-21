@@ -139,10 +139,10 @@ if (process.env.APP_RATE_LIMITING) {
       store:
         redis &&
         new RedisStore({
-          client: redis,
-          expiry: 5 * 60,
-          prefix: 'rl-api:',
-        }),
+        client: redis,
+        expiry: 5 * 60,
+        prefix: 'rl-api:',
+      }),
     })
   } else {
     // if redis is not available, setup basic rate limiting with in-memory store

@@ -38,8 +38,8 @@
     "subscriptions-transport-ws": "0.9.5"
   },
   "devDependencies": {
-    "babel-eslint": "8.2.1",
-    "eslint": "4.17.0",
+    "babel-eslint": "8.2.2",
+    "eslint": "4.18.1",
     "eslint-config-airbnb-base": "12.1.0",
     "eslint-plugin-import": "2.8.0",
     "husky": "0.14.3",
