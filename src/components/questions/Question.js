@@ -12,7 +12,7 @@ import QuestionTags from './QuestionTags'
 const propTypes = {
   connectDragSource: PropTypes.func.isRequired,
   creationMode: PropTypes.bool,
-  draggable: PropTypes.bool,
+  // draggable: PropTypes.bool,
   id: PropTypes.string.isRequired,
   isDragging: PropTypes.bool,
   lastUsed: PropTypes.array,
@@ -23,7 +23,7 @@ const propTypes = {
 
 const defaultProps = {
   creationMode: false,
-  draggable: false,
+  // draggable: false,
   isDragging: false,
   lastUsed: [],
   tags: [],
@@ -38,7 +38,7 @@ const Question = ({
   type,
   description,
   versions,
-  draggable,
+  // draggable,
   creationMode,
   isDragging,
   connectDragSource,
@@ -47,7 +47,7 @@ const Question = ({
   // TODO: draggable rework
   connectDragSource(
     <div className={classNames('question', { creationMode, draggable: true, isDragging })}>
-      {creationMode && (
+      {/* creationMode && (
         <div className={classNames('sessionMembership', { active: !draggable })}>
           <input
             disabled
@@ -58,7 +58,7 @@ const Question = ({
             onClick={() => null}
           />
         </div>
-      )}
+      ) */}
 
       <div className="wrapper">
         <h2 className="title">{title}</h2>

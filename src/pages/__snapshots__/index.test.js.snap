@@ -209,20 +209,6 @@ exports[`Snapshot-Testing Works 1`] = `
               Login
             </a>
           </div>
-          <div
-            className="item"
-            data-value={undefined}
-            onClick={[Function]}
-            role="listitem"
-          >
-            <a
-              className="jsx-940135107"
-              href="/user/registration"
-              onClick={[Function]}
-            >
-              Register
-            </a>
-          </div>
         </div>
       </div>
     </main>
