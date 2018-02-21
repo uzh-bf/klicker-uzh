@@ -59,6 +59,10 @@ const ConfusionBarometer = ({
                 defaultMessage: 'Difficulty',
                 id: 'runningSession.confusion.difficulty',
               })}
+              ylabel={intl.formatMessage({
+                defaultMessage: 'easy - hard',
+                id: 'runningSession.confusion.difficultyY',
+              })}
             />
             <ConfusionSection
               data={confusionTS.map(({ timestamp, speed, speedRunning }) => ({
@@ -69,6 +73,10 @@ const ConfusionBarometer = ({
               title={intl.formatMessage({
                 defaultMessage: 'Speed',
                 id: 'runningSession.confusion.speed',
+              })}
+              ylabel={intl.formatMessage({
+                defaultMessage: 'slow - fast',
+                id: 'runningSession.confusion.speedY',
               })}
             />
           </React.Fragment>

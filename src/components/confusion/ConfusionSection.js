@@ -1,6 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import {
+  Legend,
   Line,
   LineChart,
   ReferenceLine,
@@ -8,15 +9,17 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
+  Label,
 } from 'recharts'
 import { FormattedMessage } from 'react-intl'
 
 const propTypes = {
   data: LineChart.propTypes.data.isRequired,
   title: PropTypes.string.isRequired,
+  ylabel: PropTypes.string.isRequired,
 }
 
-const ConfusionSection = ({ data, title }) => (
+const ConfusionSection = ({ data, title, ylabel }) => (
   <div className="confusionSection">
     <h3>{title}</h3>
 
@@ -50,11 +53,19 @@ const ConfusionSection = ({ data, title }) => (
                 domain={[-5, 5]}
                 minTickGap={1}
                 padding={{ bottom: 10, top: 10 }}
-                ticks={[-5, -3, -1, 1, 3, 5]}
-              />
-              <ReferenceLine stroke="red" y={0} />
+                ticks={[-5, -2.5, 0, 2.5, 5]}
+              >
+                <Label
+                  angle={-90}
+                  position="insideLeft"
+                  style={{ textAnchor: 'middle' }}
+                  value={ylabel}
+                />
+              </YAxis>
+              <ReferenceLine stroke="black" y={0} />
               <Line dataKey="value" stroke="lightgrey" type="monotone" />
               <Line dataKey="valueRunning" name="running average" stroke="green" type="monotone" />
+              <Legend />
             </LineChart>
           </ResponsiveContainer>
         )
