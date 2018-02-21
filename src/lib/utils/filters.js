@@ -24,47 +24,51 @@ const indices = {}
 } */
 
 function buildIndex(name, items) {
-  /* if (indices[name]) {
-    return indices[name]
-  }
-
-  indices[name] = new Fuse(items, INDEX_CONFIGS[name])
-  return indices[name] */
-
+  // if an index already exists, return it
   if (indices[name]) {
     return indices[name]
   }
 
-  const search = JsSearch.Search('id')
+  // build a new js-search index
+  const search = new JsSearch.Search('id')
+
+  // use the TF-IDF strategy
+  search.searchIndex = new JsSearch.TfIdfSearchIndex()
+
+  // look for all substrings, not only prefixed
+  search.indexStrategy = new JsSearch.AllSubstringsIndexStrategy()
+  // search.tokenizer = new JsSearch.StopWordsTokenizer(new JsSearch.SimpleTokenizer())
+
+  // index by title, type, creation date and the description of the first version
   search.addIndex('title')
-  search.addIndex('type')
-  search.addIndex(['versions', 'description'])
-  search.addIndex(['tags', 'name'])
+  search.addIndex('createdAt')
+  search.addIndex(['versions', 0, 'description'])
+
+  // build the index based on the items
   search.addDocuments(items)
+
+  // store the index and return it (singleton)
   indices[name] = search
   return search
 }
 
 function filterQuestions(questions, filters, index) {
-  console.log(filters)
-
   let results = questions
 
+  // if a title (query) was given, search the index with it
   if (filters.title) {
-    // results = index.search(filters.title)
     results = index.search(filters.title)
-    console.log(results)
   }
 
+  // if either type or tags were selected, filter the results
   if (filters.type || filters.tags) {
-    results = results.filter((question) => {
-      if (filters.type && question.type !== filters.type) {
+    results = results.filter(({ type, tags }) => {
+      // compare the type selected and the type of each question
+      if (filters.type && type !== filters.type) {
         return false
       }
-      if (
-        filters.tags &&
-        !_every(filters.tags, tag => question.tags.map(t => t.name).includes(tag))
-      ) {
+      // compare the tags selected and check whether the question fulfills all of them
+      if (filters.tags && !_every(filters.tags, tag => tags.map(t => t.name).includes(tag))) {
         return false
       }
       return true
