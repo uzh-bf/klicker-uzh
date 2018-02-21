@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import _round from 'lodash/round'
 import { FormattedMessage } from 'react-intl'
 import { Input, Message } from 'semantic-ui-react'
+import _isNumber from 'lodash/isNumber'
 
 import { EvaluationListItem } from '.'
 
@@ -39,26 +40,26 @@ const Statistics = ({
     </h2>
 
     <div>
-      <EvaluationListItem color="white" marker="MIN">
-        {min ? _round(min, 2) : '-'}
+      <EvaluationListItem reverse /* color="white" */ marker="MIN">
+        {_isNumber(min) ? _round(min, 2) : '-'}
       </EvaluationListItem>
-      <EvaluationListItem color="black" marker="Q1">
-        {q1 ? _round(q1, 2) : '-'}
+      <EvaluationListItem reverse /* color="black" */ marker="Q1">
+        {_isNumber(q1) ? _round(q1, 2) : '-'}
       </EvaluationListItem>
-      <EvaluationListItem color="red" marker="MEDIAN">
-        {median ? _round(median, 2) : '-'}
+      <EvaluationListItem reverse /* color="red" */ marker="MEDIAN">
+        {_isNumber(median) ? _round(median, 2) : '-'}
       </EvaluationListItem>
-      <EvaluationListItem color="Blue" marker="MEAN">
-        {mean ? _round(mean, 2) : '-'}
+      <EvaluationListItem reverse /* color="Blue" */ marker="MEAN">
+        {_isNumber(mean) ? _round(mean, 2) : '-'}
       </EvaluationListItem>
-      <EvaluationListItem color="black" marker="Q3">
-        {q3 ? _round(q3, 2) : '-'}
+      <EvaluationListItem reverse /* color="black" */ marker="Q3">
+        {_isNumber(q3) ? _round(q3, 2) : '-'}
       </EvaluationListItem>
-      <EvaluationListItem color="white" marker="MAX">
-        {max ? _round(max, 2) : '-'}
+      <EvaluationListItem reverse /* color="white" */ marker="MAX">
+        {_isNumber(max) ? _round(max, 2) : '-'}
       </EvaluationListItem>
-      <EvaluationListItem color="white" marker="SD">
-        {sd ? _round(sd, 2) : '-'}
+      <EvaluationListItem reverse /* color="white" */ marker="SD">
+        {_isNumber(sd) ? _round(sd, 2) : '-'}
       </EvaluationListItem>
     </div>
 
