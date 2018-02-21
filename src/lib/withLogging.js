@@ -5,10 +5,10 @@ import { initGA, logPageView, logException } from '.'
 let Raven
 let LogRocket
 let LogRocketReact
-if (process.env.SENTRY_DSN && !window.INIT_RAVEN) {
+if (process.env.SENTRY_DSN) {
   Raven = require('raven-js')
 }
-if (process.env.LOGROCKET && !window.INIT_LR) {
+if (process.env.LOGROCKET) {
   LogRocket = require('logrocket')
   LogRocketReact = require('logrocket-react')
 }
@@ -85,58 +85,60 @@ export default (services = ['ga', 'raven', 'logrocket']) =>
       }
 
       componentDidMount() {
-        if (process.env.NODE_ENV === 'development' && !window.INIT_PERF) {
-          // setup react-perf-devtool
-          registerObserver()
+        if (typeof window !== 'undefined') {
+          if (process.env.NODE_ENV === 'development' && !window.INIT_PERF) {
+            // setup react-perf-devtool
+            registerObserver()
 
-          window.INIT_PERF = true
-        }
-
-        // include google analytics
-        if (!window.INIT_GA) {
-          initGA()
-          logPageView()
-
-          window.INIT_GA = true
-        }
-
-        // embed logrocket if enabled
-        if (
-          process.env.NODE_ENV === 'production' &&
-          process.env.LOGROCKET &&
-          services.includes('logrocket') &&
-          !window.INIT_LR
-        ) {
-          LogRocket.init(process.env.LOGROCKET)
-          LogRocketReact(LogRocket)
-
-          window.INIT_LR = true
-        }
-
-        // embed sentry if enabled
-        if (
-          process.env.NODE_ENV === 'production' &&
-          services.includes('raven') &&
-          Raven &&
-          !window.INIT_RAVEN
-        ) {
-          Raven.config(process.env.SENTRY_DSN, {
-            environment: process.env.NODE_ENV,
-            release: process.env.VERSION,
-          }).install()
-
-          // connect logrocket to sentry
-          if (process.env.LOGROCKET && services.includes('logrocket')) {
-            Raven.setDataCallback(data =>
-              Object.assign({}, data, {
-                extra: {
-                  sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef
-                },
-              }),
-            )
+            window.INIT_PERF = true
           }
 
-          window.INIT_RAVEN = true
+          // include google analytics
+          if (!window.INIT_GA) {
+            initGA()
+            logPageView()
+
+            window.INIT_GA = true
+          }
+
+          // embed logrocket if enabled
+          if (
+            process.env.NODE_ENV === 'production' &&
+            process.env.LOGROCKET &&
+            services.includes('logrocket') &&
+            !window.INIT_LR
+          ) {
+            LogRocket.init(process.env.LOGROCKET)
+            LogRocketReact(LogRocket)
+
+            window.INIT_LR = true
+          }
+
+          // embed sentry if enabled
+          if (
+            process.env.NODE_ENV === 'production' &&
+            services.includes('raven') &&
+            Raven &&
+            !window.INIT_RAVEN
+          ) {
+            Raven.config(process.env.SENTRY_DSN, {
+              environment: process.env.NODE_ENV,
+              release: process.env.VERSION,
+            }).install()
+
+            // connect logrocket to sentry
+            if (process.env.LOGROCKET && services.includes('logrocket')) {
+              Raven.setDataCallback(data =>
+                Object.assign({}, data, {
+                  extra: {
+                    sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef
+                  },
+                }),
+              )
+            }
+
+            window.INIT_RAVEN = true
+          }
         }
       }
 

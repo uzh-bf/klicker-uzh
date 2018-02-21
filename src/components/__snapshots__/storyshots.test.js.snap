@@ -3441,18 +3441,6 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
     className="jsx-3919960998 question creationMode draggable"
   >
     <div
-      className="jsx-3919960998 sessionMembership"
-    >
-      <input
-        checked={false}
-        className="jsx-3919960998 ui checkbox"
-        disabled={true}
-        name="check-1"
-        onClick={[Function]}
-        type="checkbox"
-      />
-    </div>
-    <div
       className="jsx-3919960998 wrapper"
     >
       <h2
@@ -3621,18 +3609,6 @@ exports[`Storyshots questions QuestionList (creation mode) 1`] = `
   <div
     className="jsx-3919960998 question creationMode draggable"
   >
-    <div
-      className="jsx-3919960998 sessionMembership"
-    >
-      <input
-        checked={false}
-        className="jsx-3919960998 ui checkbox"
-        disabled={true}
-        name="check-2"
-        onClick={[Function]}
-        type="checkbox"
-      />
-    </div>
     <div
       className="jsx-3919960998 wrapper"
     >
