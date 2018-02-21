@@ -1322,10 +1322,10 @@ exports[`Storyshots evaluation/components Chart 1`] = `
 exports[`Storyshots evaluation/components EvaluationListItem 1`] = `
 <div>
   <div
-    className="jsx-725384191 evaluationListItem"
+    className="jsx-3000948528 evaluationListItem"
   >
     <div
-      className="jsx-725384191 colorSquare"
+      className="jsx-3000948528 colorSquare"
     >
       <i
         aria-hidden="true"
@@ -1333,21 +1333,21 @@ exports[`Storyshots evaluation/components EvaluationListItem 1`] = `
       />
     </div>
     <div
-      className="jsx-725384191 content"
+      className="jsx-3000948528 content"
     >
       hello world
     </div>
     <div
-      className="jsx-725384191 marker"
+      className="jsx-3000948528 marker"
     >
       MIN
     </div>
   </div>
   <div
-    className="jsx-610594514 evaluationListItem"
+    className="jsx-3664683677 evaluationListItem"
   >
     <div
-      className="jsx-610594514 colorSquare"
+      className="jsx-3664683677 colorSquare"
     >
       <i
         aria-hidden="true"
@@ -1355,30 +1355,30 @@ exports[`Storyshots evaluation/components EvaluationListItem 1`] = `
       />
     </div>
     <div
-      className="jsx-610594514 content"
+      className="jsx-3664683677 content"
     >
       hello world 2
     </div>
   </div>
   <div
-    className="jsx-91056044 evaluationListItem"
+    className="jsx-3779267427 evaluationListItem"
   >
     <div
-      className="jsx-91056044 content"
+      className="jsx-3779267427 content"
     >
       hello world 3
     </div>
     <div
-      className="jsx-91056044 marker"
+      className="jsx-3779267427 marker"
     >
       MAX
     </div>
   </div>
   <div
-    className="jsx-91056044 evaluationListItem"
+    className="jsx-3779267427 evaluationListItem"
   >
     <div
-      className="jsx-91056044 content"
+      className="jsx-3779267427 content"
     >
       hello world 4
     </div>
@@ -1413,31 +1413,31 @@ exports[`Storyshots evaluation/components Possibilities (FREE_RANGE) 1`] = `
     className="jsx-3283260225"
   >
     <div
-      className="jsx-91056044 evaluationListItem"
+      className="jsx-3779267427 evaluationListItem reverse"
     >
       <div
-        className="jsx-91056044 content"
-      >
-        10
-      </div>
-      <div
-        className="jsx-91056044 marker"
+        className="jsx-3779267427 marker"
       >
         MIN
       </div>
+      <div
+        className="jsx-3779267427 content"
+      >
+        10
+      </div>
     </div>
     <div
-      className="jsx-91056044 evaluationListItem"
+      className="jsx-3779267427 evaluationListItem reverse"
     >
       <div
-        className="jsx-91056044 content"
-      >
-        20
-      </div>
-      <div
-        className="jsx-91056044 marker"
+        className="jsx-3779267427 marker"
       >
         MAX
+      </div>
+      <div
+        className="jsx-3779267427 content"
+      >
+        20
       </div>
     </div>
   </div>
@@ -1459,10 +1459,10 @@ exports[`Storyshots evaluation/components Possibilities (MC) 1`] = `
     className="jsx-3283260225"
   >
     <div
-      className="jsx-110067377 evaluationListItem"
+      className="jsx-4258134142 evaluationListItem"
     >
       <div
-        className="jsx-110067377 colorSquare"
+        className="jsx-4258134142 colorSquare"
       >
         <i
           aria-hidden="true"
@@ -1470,21 +1470,21 @@ exports[`Storyshots evaluation/components Possibilities (MC) 1`] = `
         />
       </div>
       <div
-        className="jsx-110067377 content"
+        className="jsx-4258134142 content"
       >
         This is the first possible answer
       </div>
       <div
-        className="jsx-110067377 marker"
+        className="jsx-4258134142 marker"
       >
         A
       </div>
     </div>
     <div
-      className="jsx-1709102229 evaluationListItem"
+      className="jsx-1949426394 evaluationListItem"
     >
       <div
-        className="jsx-1709102229 colorSquare"
+        className="jsx-1949426394 colorSquare"
       >
         <i
           aria-hidden="true"
@@ -1492,21 +1492,21 @@ exports[`Storyshots evaluation/components Possibilities (MC) 1`] = `
         />
       </div>
       <div
-        className="jsx-1709102229 content"
+        className="jsx-1949426394 content"
       >
         This is the second possible answer
       </div>
       <div
-        className="jsx-1709102229 marker"
+        className="jsx-1949426394 marker"
       >
         B
       </div>
     </div>
     <div
-      className="jsx-4235792499 evaluationListItem"
+      className="jsx-1547578044 evaluationListItem"
     >
       <div
-        className="jsx-4235792499 colorSquare"
+        className="jsx-1547578044 colorSquare"
       >
         <i
           aria-hidden="true"
@@ -1514,21 +1514,21 @@ exports[`Storyshots evaluation/components Possibilities (MC) 1`] = `
         />
       </div>
       <div
-        className="jsx-4235792499 content"
+        className="jsx-1547578044 content"
       >
         This is the third possible answer
       </div>
       <div
-        className="jsx-4235792499 marker"
+        className="jsx-1547578044 marker"
       >
         C
       </div>
     </div>
     <div
-      className="jsx-2249623282 evaluationListItem"
+      className="jsx-2727709245 evaluationListItem"
     >
       <div
-        className="jsx-2249623282 colorSquare"
+        className="jsx-2727709245 colorSquare"
       >
         <i
           aria-hidden="true"
@@ -1536,12 +1536,12 @@ exports[`Storyshots evaluation/components Possibilities (MC) 1`] = `
         />
       </div>
       <div
-        className="jsx-2249623282 content"
+        className="jsx-2727709245 content"
       >
         This is the fourth possible answer
       </div>
       <div
-        className="jsx-2249623282 marker"
+        className="jsx-2727709245 marker"
       >
         D
       </div>
@@ -1565,10 +1565,10 @@ exports[`Storyshots evaluation/components Possibilities (SC) 1`] = `
     className="jsx-3283260225"
   >
     <div
-      className="jsx-110067377 evaluationListItem"
+      className="jsx-4258134142 evaluationListItem"
     >
       <div
-        className="jsx-110067377 colorSquare"
+        className="jsx-4258134142 colorSquare"
       >
         <i
           aria-hidden="true"
@@ -1576,21 +1576,21 @@ exports[`Storyshots evaluation/components Possibilities (SC) 1`] = `
         />
       </div>
       <div
-        className="jsx-110067377 content"
+        className="jsx-4258134142 content"
       >
         This is the first possible answer
       </div>
       <div
-        className="jsx-110067377 marker"
+        className="jsx-4258134142 marker"
       >
         A
       </div>
     </div>
     <div
-      className="jsx-1709102229 evaluationListItem"
+      className="jsx-1949426394 evaluationListItem"
     >
       <div
-        className="jsx-1709102229 colorSquare"
+        className="jsx-1949426394 colorSquare"
       >
         <i
           aria-hidden="true"
@@ -1598,21 +1598,21 @@ exports[`Storyshots evaluation/components Possibilities (SC) 1`] = `
         />
       </div>
       <div
-        className="jsx-1709102229 content"
+        className="jsx-1949426394 content"
       >
         This is the second possible answer
       </div>
       <div
-        className="jsx-1709102229 marker"
+        className="jsx-1949426394 marker"
       >
         B
       </div>
     </div>
     <div
-      className="jsx-4235792499 evaluationListItem"
+      className="jsx-1547578044 evaluationListItem"
     >
       <div
-        className="jsx-4235792499 colorSquare"
+        className="jsx-1547578044 colorSquare"
       >
         <i
           aria-hidden="true"
@@ -1620,21 +1620,21 @@ exports[`Storyshots evaluation/components Possibilities (SC) 1`] = `
         />
       </div>
       <div
-        className="jsx-4235792499 content"
+        className="jsx-1547578044 content"
       >
         This is the third possible answer
       </div>
       <div
-        className="jsx-4235792499 marker"
+        className="jsx-1547578044 marker"
       >
         C
       </div>
     </div>
     <div
-      className="jsx-2249623282 evaluationListItem"
+      className="jsx-2727709245 evaluationListItem"
     >
       <div
-        className="jsx-2249623282 colorSquare"
+        className="jsx-2727709245 colorSquare"
       >
         <i
           aria-hidden="true"
@@ -1642,12 +1642,12 @@ exports[`Storyshots evaluation/components Possibilities (SC) 1`] = `
         />
       </div>
       <div
-        className="jsx-2249623282 content"
+        className="jsx-2727709245 content"
       >
         This is the fourth possible answer
       </div>
       <div
-        className="jsx-2249623282 marker"
+        className="jsx-2727709245 marker"
       >
         D
       </div>
@@ -1671,157 +1671,101 @@ exports[`Storyshots evaluation/components Statistics 1`] = `
     className="jsx-521492810"
   >
     <div
-      className="jsx-865544459 evaluationListItem"
+      className="jsx-3779267427 evaluationListItem reverse"
     >
       <div
-        className="jsx-865544459 colorSquare"
-      >
-        <i
-          aria-hidden="true"
-          className="square icon icon"
-        />
-      </div>
-      <div
-        className="jsx-865544459 content"
-      >
-        10
-      </div>
-      <div
-        className="jsx-865544459 marker"
+        className="jsx-3779267427 marker"
       >
         MIN
       </div>
+      <div
+        className="jsx-3779267427 content"
+      >
+        10
+      </div>
     </div>
     <div
-      className="jsx-764491627 evaluationListItem"
+      className="jsx-3779267427 evaluationListItem reverse"
     >
       <div
-        className="jsx-764491627 colorSquare"
-      >
-        <i
-          aria-hidden="true"
-          className="square icon icon"
-        />
-      </div>
-      <div
-        className="jsx-764491627 content"
-      >
-        -
-      </div>
-      <div
-        className="jsx-764491627 marker"
+        className="jsx-3779267427 marker"
       >
         Q1
       </div>
+      <div
+        className="jsx-3779267427 content"
+      >
+        -
+      </div>
     </div>
     <div
-      className="jsx-725384191 evaluationListItem"
+      className="jsx-3779267427 evaluationListItem reverse"
     >
       <div
-        className="jsx-725384191 colorSquare"
-      >
-        <i
-          aria-hidden="true"
-          className="square icon icon"
-        />
-      </div>
-      <div
-        className="jsx-725384191 content"
-      >
-        23
-      </div>
-      <div
-        className="jsx-725384191 marker"
+        className="jsx-3779267427 marker"
       >
         MEDIAN
       </div>
+      <div
+        className="jsx-3779267427 content"
+      >
+        23
+      </div>
     </div>
     <div
-      className="jsx-2393557874 evaluationListItem"
+      className="jsx-3779267427 evaluationListItem reverse"
     >
       <div
-        className="jsx-2393557874 colorSquare"
-      >
-        <i
-          aria-hidden="true"
-          className="square icon icon"
-        />
-      </div>
-      <div
-        className="jsx-2393557874 content"
-      >
-        34.35
-      </div>
-      <div
-        className="jsx-2393557874 marker"
+        className="jsx-3779267427 marker"
       >
         MEAN
       </div>
+      <div
+        className="jsx-3779267427 content"
+      >
+        34.35
+      </div>
     </div>
     <div
-      className="jsx-764491627 evaluationListItem"
+      className="jsx-3779267427 evaluationListItem reverse"
     >
       <div
-        className="jsx-764491627 colorSquare"
-      >
-        <i
-          aria-hidden="true"
-          className="square icon icon"
-        />
-      </div>
-      <div
-        className="jsx-764491627 content"
-      >
-        -
-      </div>
-      <div
-        className="jsx-764491627 marker"
+        className="jsx-3779267427 marker"
       >
         Q3
       </div>
-    </div>
-    <div
-      className="jsx-865544459 evaluationListItem"
-    >
       <div
-        className="jsx-865544459 colorSquare"
-      >
-        <i
-          aria-hidden="true"
-          className="square icon icon"
-        />
-      </div>
-      <div
-        className="jsx-865544459 content"
-      >
-        100
-      </div>
-      <div
-        className="jsx-865544459 marker"
-      >
-        MAX
-      </div>
-    </div>
-    <div
-      className="jsx-865544459 evaluationListItem"
-    >
-      <div
-        className="jsx-865544459 colorSquare"
-      >
-        <i
-          aria-hidden="true"
-          className="square icon icon"
-        />
-      </div>
-      <div
-        className="jsx-865544459 content"
+        className="jsx-3779267427 content"
       >
         -
       </div>
+    </div>
+    <div
+      className="jsx-3779267427 evaluationListItem reverse"
+    >
       <div
-        className="jsx-865544459 marker"
+        className="jsx-3779267427 marker"
+      >
+        MAX
+      </div>
+      <div
+        className="jsx-3779267427 content"
+      >
+        100
+      </div>
+    </div>
+    <div
+      className="jsx-3779267427 evaluationListItem reverse"
+    >
+      <div
+        className="jsx-3779267427 marker"
       >
         SD
+      </div>
+      <div
+        className="jsx-3779267427 content"
+      >
+        -
       </div>
     </div>
   </div>
