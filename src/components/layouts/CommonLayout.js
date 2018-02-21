@@ -45,6 +45,10 @@ const CommonLayout = ({ baseFontSize, children, pageTitle }) => (
         font-size: 1rem !important;
       }
 
+      #__next {
+        height: 100%;
+      }
+
       input,
       textarea,
       .noBorder {
@@ -54,6 +58,11 @@ const CommonLayout = ({ baseFontSize, children, pageTitle }) => (
       .noBorder {
         border: 0 !important;
         box-shadow: none !important;
+      }
+    `}</style>
+    <style jsx>{`
+      .commonLayout {
+        height: 100%;
       }
     `}</style>
   </div>
