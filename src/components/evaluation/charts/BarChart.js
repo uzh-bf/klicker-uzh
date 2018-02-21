@@ -33,6 +33,22 @@ const defaultProps = {
   isSolutionShown: false,
 }
 
+// TODO: extract to libraries
+const calculatePercentage = (questionType, count, totalResponses) => {
+  // no percentages needed for other question types
+  if (questionType !== QUESTION_TYPES.SC) {
+    return count
+  }
+
+  // only show percentage string if count is >0
+  if (count > 0) {
+    return `${count} | ${_round(100 * (count / totalResponses), 2)} %`
+  }
+
+  // return an empty string so it doesn't clutter the visualization
+  return ''
+}
+
 const BarChart = ({ isSolutionShown, data, isColored }) => (
   <ResponsiveContainer>
     <BarChartComponent
@@ -108,10 +124,7 @@ export default withProps(({ data, questionType, totalResponses }) => ({
       correct,
       count,
       label: questionType === 'FREE_RANGE' ? +value : String.fromCharCode(65 + index),
-      percentage:
-        questionType === QUESTION_TYPES.SC
-          ? `${count} | ${_round(100 * (count / totalResponses), 2)} %`
-          : count,
+      percentage: calculatePercentage(questionType, count, totalResponses),
       value,
     })),
     o => o.label,
