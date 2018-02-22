@@ -100,7 +100,7 @@
     "react-addons-test-utils": "15.6.2",
     "react-dnd-test-backend": "2.5.4",
     "react-test-renderer": "16.2.0",
-    "semantic-ui-css": "2.2.14",
+    "semantic-ui-css": "2.3.0",
     "storybook-addon-intl": "2.3.0",
     "webpack-bundle-analyzer": "2.10.0"
   },
