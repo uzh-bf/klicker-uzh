@@ -1,11 +1,11 @@
 const _map = require('lodash/map')
 
 const SessionExecService = require('../services/sessionExec')
-const { QuestionInstanceModel } = require('../models')
 
 /* ----- queries ----- */
-const questionInstanceByIDQuery = (parentValue, { id }) => QuestionInstanceModel.findById(id)
-const questionInstancesByPVQuery = parentValue => QuestionInstanceModel.find({ _id: { $in: parentValue.instances } })
+const questionInstanceByIDQuery = (parentValue, { id }, { loaders }) => loaders.questionInstances.load(id)
+const questionInstancesByPVQuery = (parentValue, args, { loaders }) =>
+  loaders.questionInstances.loadMany(parentValue.instances)
 
 const responsesByPVQuery = parentValue =>
   parentValue.responses.map(({ id, value, createdAt }) => ({ id, ...value, createdAt }))
@@ -28,8 +28,6 @@ const resultsByPVQuery = ({ results }) => {
 
 /* ----- mutations ----- */
 const addResponseMutation = (parentValue, { fp, instanceId, response }, { ip }) =>
-  // TODO: use redis
-  // TODO: fingerprinting, IP...
   SessionExecService.addResponse({
     fp,
     ip,

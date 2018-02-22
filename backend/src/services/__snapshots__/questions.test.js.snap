@@ -277,7 +277,7 @@ exports[`QuestionService modifyQuestion allows modifying the question tags 1`] =
     Type: SC
 
     Instances: []
-    Tags: [ABCD,XYZ]
+    Tags: [,]
     Versions: [
       Description: blabla
       Instances: []

@@ -26,6 +26,7 @@ const AuthService = require('./services/auth')
 const queryMap = require('./queryMap.json')
 const { getRedis } = require('./redis')
 const { exceptTest } = require('./lib/utils')
+const { createLoaders } = require('./lib/loaders')
 
 // require important environment variables to be present
 // otherwise exit the application
@@ -51,6 +52,11 @@ if (process.env.MONGO_USER && process.env.MONGO_PASSWORD) {
   )
 } else {
   mongoose.connect(`mongodb://${process.env.MONGO_URL}`, mongoConfig)
+}
+
+if (process.env.MONGO_DEBUG) {
+  // activate mongoose debug mode (log all queries)
+  mongoose.set('debug', true)
 }
 
 mongoose.connection
@@ -186,7 +192,12 @@ server.use(
   ...middleware,
   // delegate to the GraphQL API
   graphqlExpress((req, res) => ({
-    context: { auth: req.auth, ip: req.ip, res },
+    context: {
+      auth: req.auth,
+      ip: req.ip,
+      loaders: createLoaders(req.auth),
+      res,
+    },
     schema,
     tracing: !!process.env.ENGINE_API_KEY,
     cacheControl: !!process.env.ENGINE_API_KEY,
