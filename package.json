@@ -46,7 +46,7 @@
     "prosemirror-schema-basic": "1.0.0",
     "prosemirror-state": "1.1.0",
     "prosemirror-view": "1.0.11",
-    "qrcode.react": "0.7.2",
+    "qrcode.react": "0.8.0",
     "ramda": "0.25.0",
     "raven-js": "3.22.3",
     "react": "16.2.0",
