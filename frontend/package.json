@@ -82,7 +82,7 @@
     "@storybook/addon-links": "3.3.13",
     "@storybook/addon-storyshots": "3.3.13",
     "@storybook/react": "3.3.13",
-    "babel-eslint": "8.2.1",
+    "babel-eslint": "8.2.2",
     "cypress": "2.0.2",
     "enzyme": "3.3.0",
     "eslint": "4.18.0",
