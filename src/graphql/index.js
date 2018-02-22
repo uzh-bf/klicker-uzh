@@ -21,6 +21,7 @@ import RunningSessionQuery from './queries/RunningSessionQuery.graphql'
 import SessionEvaluationQuery from './queries/SessionEvaluationQuery.graphql'
 import SessionListQuery from './queries/SessionListQuery.graphql'
 import QuestionPoolQuery from './queries/QuestionPoolQuery.graphql'
+import TagListQuery from './queries/TagListQuery.graphql'
 
 export {
   ActivateNextBlockMutation,
@@ -45,4 +46,5 @@ export {
   SessionEvaluationQuery,
   SessionListQuery,
   QuestionPoolQuery,
+  TagListQuery,
 }
