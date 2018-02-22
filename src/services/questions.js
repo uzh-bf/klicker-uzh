@@ -175,7 +175,7 @@ const modifyQuestion = async (questionId, userId, {
     })
 
     // set the question tags to the new tag list
-    question.tags = allTags
+    question.tags = allTagIds
 
     // replace the users tags
     user.tags = Array.from(new Set([...user.tags, ...allTags]))

@@ -23,7 +23,12 @@ const Session = new mongoose.Schema({
     fingerprinting: { type: Boolean, default: true },
     ipFiltering: { type: Boolean, default: true },
   },
-  user: { type: ObjectId, ref: 'User', required: true },
+  user: {
+    type: ObjectId,
+    ref: 'User',
+    required: true,
+    index: true,
+  },
 
   blocks: [{ type: QuestionBlock, required: true }],
   confusionTS: [ConfusionTimestep],

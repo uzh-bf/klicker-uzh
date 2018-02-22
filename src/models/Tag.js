@@ -4,7 +4,12 @@ const { ObjectId } = mongoose.Schema.Types
 
 const Tag = new mongoose.Schema({
   name: { type: String, required: true, index: true },
-  user: { type: ObjectId, ref: 'User', required: true },
+  user: {
+    type: ObjectId,
+    ref: 'User',
+    required: true,
+    index: true,
+  },
 
   questions: [{ type: ObjectId, ref: 'Question', required: true }],
 
