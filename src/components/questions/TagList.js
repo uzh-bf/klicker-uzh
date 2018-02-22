@@ -1,12 +1,10 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { graphql } from 'react-apollo'
 import { List } from 'semantic-ui-react'
 import { compose, withProps, branch, renderComponent } from 'recompose'
 import { FormattedMessage } from 'react-intl'
 
 import { LoadingDiv } from '../common'
-import { TagListQuery } from '../../graphql'
 
 const propTypes = {
   handleTagClick: PropTypes.func.isRequired,
@@ -99,7 +97,6 @@ TagListPres.propTypes = propTypes
 TagListPres.defaultProps = defaultProps
 
 export default compose(
-  graphql(TagListQuery),
   branch(({ data }) => data.loading, renderComponent(LoadingDiv)),
   branch(({ data }) => data.error, renderComponent(({ data }) => <div>{data.error}</div>)),
   withProps(({ activeTags, activeType, data: { loading, tags } }) => ({
