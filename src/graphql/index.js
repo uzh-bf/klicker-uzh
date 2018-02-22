@@ -17,11 +17,10 @@ import UpdateSessionSettingsMutation from './mutations/UpdateSessionSettingsMuta
 import AccountSummaryQuery from './queries/AccountSummaryQuery.graphql'
 import JoinSessionQuery from './queries/JoinSessionQuery.graphql'
 import QuestionDetailsQuery from './queries/QuestionDetailsQuery.graphql'
-import QuestionListQuery from './queries/QuestionListQuery.graphql'
 import RunningSessionQuery from './queries/RunningSessionQuery.graphql'
 import SessionEvaluationQuery from './queries/SessionEvaluationQuery.graphql'
 import SessionListQuery from './queries/SessionListQuery.graphql'
-import TagListQuery from './queries/TagListQuery.graphql'
+import QuestionPoolQuery from './queries/QuestionPoolQuery.graphql'
 
 export {
   ActivateNextBlockMutation,
@@ -41,10 +40,9 @@ export {
   AccountSummaryQuery,
   JoinSessionQuery,
   QuestionDetailsQuery,
-  QuestionListQuery,
   RequestPasswordMutation,
   RunningSessionQuery,
   SessionEvaluationQuery,
   SessionListQuery,
-  TagListQuery,
+  QuestionPoolQuery,
 }
