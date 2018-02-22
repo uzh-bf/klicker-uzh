@@ -1,4 +1,4 @@
-query QuestionList {
+query QuestionPool {
   questions: allQuestions {
     id
     title
@@ -20,5 +20,9 @@ query QuestionList {
     }
     createdAt
     updatedAt
+  }
+  tags: allTags {
+    id
+    name
   }
 }

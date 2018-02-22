@@ -15,7 +15,7 @@ import {
   AccountSummaryQuery,
   SessionListQuery,
   RunningSessionQuery,
-  QuestionListQuery,
+  QuestionPoolQuery,
 } from '../../graphql'
 import { SessionCreationForm } from '../../components/forms'
 import { QuestionList, TagList } from '../../components/questions'
@@ -24,6 +24,7 @@ import { QUESTION_SORTINGS } from '../../constants'
 
 const propTypes = {
   creationMode: PropTypes.bool.isRequired,
+  data: PropTypes.object.isRequired,
   droppedQuestions: PropTypes.arrayOf(PropTypes.string).isRequired,
   filters: PropTypes.object.isRequired,
   handleCreateSession: PropTypes.func.isRequired,
@@ -34,7 +35,6 @@ const propTypes = {
   handleSortOrderToggle: PropTypes.func.isRequired,
   handleTagClick: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  questions: PropTypes.array.isRequired,
   sort: PropTypes.object.isRequired,
 }
 
@@ -43,7 +43,7 @@ const Index = ({
   droppedQuestions,
   intl,
   filters,
-  questions,
+  data,
   sort,
   handleCreateSession,
   handleSearch,
@@ -111,6 +111,7 @@ const Index = ({
           <TagList
             activeTags={filters.tags}
             activeType={filters.type}
+            data={data}
             handleTagClick={handleTagClick}
           />
         </div>
@@ -135,7 +136,7 @@ const Index = ({
             <div className="questionListContent">
               <QuestionList
                 creationMode={creationMode}
-                data={questions}
+                data={data}
                 dropped={droppedQuestions}
                 filters={filters}
                 sort={sort}
@@ -248,6 +249,9 @@ export default compose(
   withDnD,
   withData,
   pageWithIntl,
+  graphql(StartSessionMutation, { name: 'startSession' }),
+  graphql(CreateSessionMutation, { name: 'createSession' }),
+  graphql(QuestionPoolQuery),
   withSortingAndFiltering,
   withStateHandlers(
     {
@@ -275,22 +279,12 @@ export default compose(
       }),
     },
   ),
-  graphql(StartSessionMutation),
-  withHandlers({
-    // handle starting an existing or newly created session
-    handleStartSession: ({ mutate }) => ({ id }) =>
-      mutate({
-        refetchQueries: [{ query: RunningSessionQuery }, { query: AccountSummaryQuery }],
-        variables: { id },
-      }),
-  }),
-  graphql(CreateSessionMutation),
   withHandlers({
     // handle creating a new session
     handleCreateSession: ({
-      mutate,
+      createSession,
+      startSession,
       handleCreationModeToggle,
-      handleStartSession,
     }) => type => async ({ sessionName, blocks }) => {
       try {
         // prepare blocks for consumption through the api
@@ -299,14 +293,21 @@ export default compose(
         }))
 
         // create a new session
-        const result = await mutate({
-          refetchQueries: [{ query: QuestionListQuery }, { query: SessionListQuery }],
+        const result = await createSession({
+          refetchQueries: [{ query: SessionListQuery }],
           variables: { blocks: parsedBlocks, name: sessionName },
         })
 
         // start the session immediately if the respective button was clicked
         if (type === 'start') {
-          await handleStartSession({ id: result.data.createSession.id })
+          await startSession({
+            refetchQueries: [
+              { query: SessionListQuery },
+              { query: RunningSessionQuery },
+              { query: AccountSummaryQuery },
+            ],
+            variables: { id: result.data.createSession.id },
+          })
           Router.push('/sessions/running')
         }
 
@@ -318,5 +319,4 @@ export default compose(
       }
     },
   }),
-  graphql(QuestionListQuery, { name: 'questions' }),
 )(Index)
