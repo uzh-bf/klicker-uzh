@@ -44,11 +44,12 @@ const LoginForm = ({ intl, onSubmit }) => {
       }) => (
         <FormWithLinks
           button={{
-            disabled: isSubmitting || !_isEmpty(errors) || _isEmpty(touched),
+            disabled: !_isEmpty(errors) || _isEmpty(touched),
             label: intl.formatMessage({
               defaultMessage: 'Submit',
               id: 'form.common.button.submit',
             }),
+            loading: isSubmitting,
             onSubmit: handleSubmit,
           }}
           links={links}

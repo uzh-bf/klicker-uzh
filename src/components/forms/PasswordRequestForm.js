@@ -39,11 +39,12 @@ const PasswordRequestForm = ({ intl, onSubmit }) => {
       }) => (
         <FormWithLinks
           button={{
-            disabled: isSubmitting || !_isEmpty(errors),
+            disabled: !_isEmpty(errors),
             label: intl.formatMessage({
               defaultMessage: 'Submit',
               id: 'form.common.button.submit',
             }),
+            loading: isSubmitting,
             onSubmit: handleSubmit,
           }}
           links={links}

@@ -192,8 +192,9 @@ const RegistrationForm = ({ intl, onSubmit }) => (
           </div>
           <Button
             primary
-            disabled={isSubmitting || !_isEmpty(errors) || _isEmpty(touched)}
+            disabled={!_isEmpty(errors) || _isEmpty(touched)}
             floated="right"
+            loading={isSubmitting}
             type="submit"
           >
             <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
