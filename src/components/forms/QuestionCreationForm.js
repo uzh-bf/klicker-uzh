@@ -1,13 +1,10 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import _get from 'lodash/get'
-import isEmpty from 'validator/lib/isEmpty'
-import _isNumber from 'lodash/isNumber'
-import { connect } from 'react-redux'
-import { Field, reduxForm } from 'redux-form'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Button, Form } from 'semantic-ui-react'
-import { compose } from 'recompose'
+import { Formik } from 'formik'
+import Yup from 'yup'
+import _isEmpty from 'lodash/isEmpty'
 
 import { ContentInput, TitleInput, TagInput } from '../questions'
 import {
@@ -19,9 +16,10 @@ import {
 } from '../../components/questionTypes'
 import { QUESTION_TYPES } from '../../lib'
 import { QUESTION_GROUPS } from '../../constants'
+import { FormikInput } from '.'
 
 // form validation
-const validate = ({
+/* const validate = ({
   content, options, tags, title, type,
 }) => {
   const errors = {}
@@ -46,35 +44,6 @@ const validate = ({
     errors.options = 'form.createQuestion.options.empty'
   }
 
-  // validation of SC answer options
-  /* if (type === QUESTION_TYPES.SC) {
-    // SC questions need at least one answer option to be valid
-    if (!options || options.choices.length === 0) {
-      errors.options = 'form.createQuestion.options.empty'
-    } else {
-      const numCorrect = options.choices.filter(option => option.correct).length
-      if (numCorrect > 1) {
-        // validate that only one option is correct for SC questions
-        errors.options = 'form.createQuestion.options.tooManyCorrect'
-      } else if (numCorrect === 0) {
-        // validate that there is a correct choice
-        errors.options = 'form.createQuestion.options.notEnoughCorrect'
-      }
-    }
-    // validation of FREE answer options
-  } else if (type === QUESTION_TYPES.MC) {
-    // MC questions need at least one answer option to be valid
-    if (!options || options.choices.length === 0) {
-      errors.options = 'form.createQuestion.options.empty'
-    } else {
-      const numCorrect = options.choices.filter(option => option.correct).length
-      if (numCorrect === 0) {
-        // validate that there is at least one correct choice
-        errors.options = 'form.createQuestion.options.notEnoughCorrect'
-      }
-    }
-  } else */
-
   if (type === QUESTION_TYPES.FREE_RANGE) {
     if (options && options.restrictions) {
       const isMinNum = _isNumber(options.restrictions.min)
@@ -89,14 +58,14 @@ const validate = ({
   }
 
   return errors
-}
+} */
 
 const propTypes = {
   content: PropTypes.string.isRequired,
-  handleSubmit: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   invalid: PropTypes.bool.isRequired,
   onDiscard: PropTypes.func.isRequired,
+  onSubmit: PropTypes.func.isRequired,
   options: PropTypes.object,
   tags: PropTypes.arrayOf(
     PropTypes.shape({
@@ -123,7 +92,7 @@ const QuestionCreationForm = ({
   tags,
   title,
   type,
-  handleSubmit: onSubmit,
+  onSubmit,
   onDiscard,
 }) => {
   const typeComponents = {
@@ -148,41 +117,81 @@ const QuestionCreationForm = ({
 
   return (
     <div className="questionCreationForm">
-      <Form onSubmit={onSubmit}>
-        <div className="questionInput questionTitle">
-          <Field autoFocus component={TitleInput} name="title" />
-        </div>
+      <Formik
+        initialValues={{
+          content: null,
+          options: {
+            choices: [],
+            randomized: false,
+            restrictions: {
+              max: null,
+              min: null,
+            },
+          },
+          tags: null,
+          title: null,
+          type: QUESTION_TYPES.SC,
+        }}
+        validationSchema={Yup.object().shape({})}
+        onSubmit={onSubmit}
+      >
+        {({
+          values,
+          errors,
+          touched,
+          handleChange,
+          handleBlur,
+          handleSubmit,
+          submitForm,
+          isSubmitting,
+          setFieldValue,
+        }) => (
+          <Form onSubmit={onSubmit}>
+            <div className="questionInput questionTitle">
+              <FormikInput autoFocus />
+              <Field autoFocus component={TitleInput} name="title" />
+            </div>
 
-        <div className="questionInput questionType">
-          <Field component={TypeChooser} intl={intl} name="type" />
-        </div>
+            <div className="questionInput questionType">
+              <Field component={TypeChooser} intl={intl} name="type" />
+            </div>
 
-        <div className="questionInput questionTags">
-          <Field component={TagInput} name="tags" tags={tags} />
-        </div>
+            <div className="questionInput questionTags">
+              <Field component={TagInput} name="tags" tags={tags} />
+            </div>
 
-        <div className="questionInput questionContent">
-          <Field component={ContentInput} name="content" />
-        </div>
+            <div className="questionInput questionContent">
+              <Field component={ContentInput} name="content" />
+            </div>
 
-        <div className="questionInput questionOptions">
-          <Field component={typeComponents[type].input} intl={intl} name="options" type={type} />
-        </div>
+            <div className="questionInput questionOptions">
+              <Field
+                component={typeComponents[type].input}
+                intl={intl}
+                name="options"
+                type={type}
+              />
+            </div>
 
-        <div className="questionPreview">
-          <h2>
-            <FormattedMessage defaultMessage="Audience Preview" id="createQuestion.previewLabel" />
-          </h2>
-          <Preview description={content} options={options} questionType={type} title={title} />
-        </div>
+            <div className="questionPreview">
+              <h2>
+                <FormattedMessage
+                  defaultMessage="Audience Preview"
+                  id="createQuestion.previewLabel"
+                />
+              </h2>
+              <Preview description={content} options={options} questionType={type} title={title} />
+            </div>
 
-        <Button className="discard" type="reset" onClick={onDiscard}>
-          <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
-        </Button>
-        <Button primary className="save" disabled={invalid} type="submit">
-          <FormattedMessage defaultMessage="Save" id="common.button.save" />
-        </Button>
-      </Form>
+            <Button className="discard" type="reset" onClick={onDiscard}>
+              <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+            </Button>
+            <Button primary className="save" disabled={invalid} type="submit">
+              <FormattedMessage defaultMessage="Save" id="common.button.save" />
+            </Button>
+          </Form>
+        )}
+      </Formik>
 
       <style jsx>{`
         @import 'src/theme';
@@ -264,7 +273,9 @@ const QuestionCreationForm = ({
 QuestionCreationForm.propTypes = propTypes
 QuestionCreationForm.defaultProps = defaultProps
 
-export default compose(
+export default QuestionCreationForm
+
+/* export default compose(
   reduxForm({
     form: 'createQuestion',
     initialValues: {
@@ -289,4 +300,4 @@ export default compose(
     title: _get(state, 'form.createQuestion.values.title'),
     type: _get(state, 'form.createQuestion.values.type'),
   })),
-)(QuestionCreationForm)
+)(QuestionCreationForm) */
