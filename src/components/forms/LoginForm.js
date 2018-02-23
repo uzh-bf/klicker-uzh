@@ -1,27 +1,10 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import isEmail from 'validator/lib/isEmail'
-import isLength from 'validator/lib/isLength'
 import { intlShape } from 'react-intl'
 import { Formik } from 'formik'
+import yup from 'yup'
 
 import { FormWithLinks, FormikInput } from '.'
-
-const validate = ({ email, password }) => {
-  const errors = {}
-
-  // the email address needs to be valid
-  if (!email || !isEmail(email)) {
-    errors.email = 'form.email.invalid'
-  }
-
-  // password should at least have 7 characters (or more?)
-  if (!password || !isLength(password, { max: undefined, min: 1 })) {
-    errors.password = 'form.password.invalid'
-  }
-
-  return errors
-}
 
 const propTypes = {
   intl: intlShape.isRequired,
@@ -149,7 +132,13 @@ const LoginForm = ({ intl, onSubmit }) => {
           />
         </FormWithLinks>
       )}
-      validate={validate}
+      validationSchema={yup.object().shape({
+        email: yup
+          .string()
+          .email()
+          .required(),
+        password: yup.string().required(),
+      })}
       onSubmit={onSubmit}
     />
   )
