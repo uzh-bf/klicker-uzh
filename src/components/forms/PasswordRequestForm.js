@@ -26,7 +26,7 @@ const PasswordRequestForm = ({ intl, onSubmit }) => {
   return (
     <Formik
       initialValues={{
-        email: '',
+        email: null,
       }}
       render={({
         values,
@@ -39,7 +39,7 @@ const PasswordRequestForm = ({ intl, onSubmit }) => {
       }) => (
         <FormWithLinks
           button={{
-            disabled: isSubmitting || !_isEmpty(errors) || _isEmpty(touched),
+            disabled: isSubmitting || !_isEmpty(errors),
             label: intl.formatMessage({
               defaultMessage: 'Submit',
               id: 'form.common.button.submit',

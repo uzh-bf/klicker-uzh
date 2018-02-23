@@ -41,12 +41,12 @@ const RegistrationForm = ({ intl, onSubmit }) => (
   <div className="registrationForm">
     <Formik
       initialValues={{
-        email: '',
-        shortname: '',
-        password: '',
-        passwordRepeat: '',
-        institution: '',
-        useCase: '',
+        email: null,
+        shortname: null,
+        password: null,
+        passwordRepeat: null,
+        institution: null,
+        useCase: null,
       }}
       render={({
         values,
@@ -171,7 +171,6 @@ const RegistrationForm = ({ intl, onSubmit }) => (
               value={values.institution}
             />
             <FormikInput
-              required
               error={errors.useCase}
               handleBlur={handleBlur}
               handleChange={handleChange}
@@ -190,34 +189,33 @@ const RegistrationForm = ({ intl, onSubmit }) => (
               type="text"
               value={values.useCase}
             />
-
-            <Button
-              primary
-              disabled={isSubmitting || !_isEmpty(errors) || _isEmpty(touched)}
-              floated="right"
-              type="submit"
-            >
-              <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
-            </Button>
           </div>
+          <Button
+            primary
+            disabled={isSubmitting || !_isEmpty(errors) || _isEmpty(touched)}
+            floated="right"
+            type="submit"
+          >
+            <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+          </Button>
         </Form>
       )}
       validationSchema={Yup.object().shape({
         email: Yup.string()
           .email()
-          .isRequired(),
-        insitution: Yup.string().isRequired(),
+          .required(),
+        insitution: Yup.string().required(),
         password: Yup.string()
           .min(8)
-          .isRequired(),
+          .required(),
         passwordRepeat: Yup.string()
           .min(8)
-          .isRequired(),
+          .oneOf([Yup.ref('password'), null])
+          .required(),
         shortname: Yup.string()
           .min(3)
           .max(6)
-          .isRequired()
-          .lowercase(),
+          .required(),
         useCase: Yup.string(),
       })}
       onSubmit={onSubmit}

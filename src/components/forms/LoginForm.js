@@ -30,8 +30,8 @@ const LoginForm = ({ intl, onSubmit }) => {
   return (
     <Formik
       initialValues={{
-        email: '',
-        password: '',
+        email: null,
+        password: null,
       }}
       render={({
         values,

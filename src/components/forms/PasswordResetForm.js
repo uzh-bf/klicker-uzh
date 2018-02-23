@@ -26,8 +26,8 @@ const PasswordResetForm = ({ intl, onSubmit }) => {
   return (
     <Formik
       initialValues={{
-        password: '',
-        passwordRepeat: '',
+        password: null,
+        passwordRepeat: null,
       }}
       render={({
         values,
@@ -98,6 +98,7 @@ const PasswordResetForm = ({ intl, onSubmit }) => {
           .required(),
         passwordRepeat: Yup.string()
           .min(8)
+          .oneOf([Yup.ref('password'), null])
           .required(),
       })}
       onSubmit={onSubmit}
