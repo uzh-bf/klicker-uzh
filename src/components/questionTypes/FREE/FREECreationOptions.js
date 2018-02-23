@@ -13,10 +13,8 @@ const propTypes = {
   handleMaxChange: PropTypes.func.isRequired,
   handleMinChange: PropTypes.func.isRequired,
   max: PropTypes.number,
-  meta: PropTypes.shape({
-    dirty: PropTypes.bool,
-    invalid: PropTypes.bool,
-  }).isRequired,
+  dirty: PropTypes.bool,
+  invalid: PropTypes.bool,
   min: PropTypes.number,
   type: PropTypes.string.isRequired,
 }
@@ -34,7 +32,8 @@ const FREECreationOptions = ({
   type,
   handleMaxChange,
   handleMinChange,
-  meta: { dirty, invalid },
+  dirty,
+  invalid,
 }) => (
   <div className="FREECreationOptions">
     <Form.Field required error={dirty && invalid}>
@@ -136,11 +135,12 @@ FREECreationOptions.defaultProps = defaultProps
 
 export default compose(
   mapProps(({
-    disabled, input: { onChange, value }, meta, type,
+    disabled, onChange, value, dirty, invalid, type,
   }) => ({
     disabled,
     max: _get(value, 'restrictions.max'),
-    meta,
+    dirty,
+    invalid,
     min: _get(value, 'restrictions.min'),
     onChange,
     type,

@@ -3,10 +3,11 @@ import PropTypes from 'prop-types'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Button, Form } from 'semantic-ui-react'
 import { Formik } from 'formik'
-import Yup from 'yup'
+import isEmpty from 'validator/lib/isEmpty'
 import _isEmpty from 'lodash/isEmpty'
+import _isNumber from 'lodash/isNumber'
 
-import { ContentInput, TitleInput, TagInput } from '../questions'
+import { ContentInput, TagInput } from '../questions'
 import {
   TypeChooser,
   SCCreationOptions,
@@ -19,7 +20,7 @@ import { QUESTION_GROUPS } from '../../constants'
 import { FormikInput } from '.'
 
 // form validation
-/* const validate = ({
+const validate = ({
   content, options, tags, title, type,
 }) => {
   const errors = {}
@@ -58,42 +59,25 @@ import { FormikInput } from '.'
   }
 
   return errors
-} */
+}
 
 const propTypes = {
-  content: PropTypes.string.isRequired,
   intl: intlShape.isRequired,
-  invalid: PropTypes.bool.isRequired,
   onDiscard: PropTypes.func.isRequired,
   onSubmit: PropTypes.func.isRequired,
-  options: PropTypes.object,
   tags: PropTypes.arrayOf(
     PropTypes.shape({
       name: PropTypes.string.isRequired,
     }),
   ),
-  title: PropTypes.string.isRequired,
-  type: PropTypes.string,
 }
 
 const defaultProps = {
-  options: {
-    choices: [],
-  },
   tags: [],
-  type: QUESTION_TYPES.SC,
 }
 
 const QuestionCreationForm = ({
-  intl,
-  invalid,
-  content,
-  options,
-  tags,
-  title,
-  type,
-  onSubmit,
-  onDiscard,
+  intl, tags, onSubmit, onDiscard,
 }) => {
   const typeComponents = {
     [QUESTION_TYPES.SC]: {
@@ -113,7 +97,6 @@ const QuestionCreationForm = ({
       preview: FREECreationPreview,
     },
   }
-  const Preview = typeComponents[type].preview
 
   return (
     <div className="questionCreationForm">
@@ -132,7 +115,13 @@ const QuestionCreationForm = ({
           title: null,
           type: QUESTION_TYPES.SC,
         }}
-        validationSchema={Yup.object().shape({})}
+        validation={validate}
+        /* validationSchema={Yup.object().shape({
+          content: Yup.string().required(),
+          tags: Yup.array().min(1).required(),
+          title: Yup.string().required(),
+          type: Yup.oneOf(QUESTION_TYPES.values()).required(),
+        })} */
         onSubmit={onSubmit}
       >
         {({
@@ -142,55 +131,109 @@ const QuestionCreationForm = ({
           handleChange,
           handleBlur,
           handleSubmit,
-          submitForm,
           isSubmitting,
           setFieldValue,
-        }) => (
-          <Form onSubmit={onSubmit}>
-            <div className="questionInput questionTitle">
-              <FormikInput autoFocus />
-              <Field autoFocus component={TitleInput} name="title" />
-            </div>
+        }) => {
+          const Preview = typeComponents[values.type].preview
+          const OptionsInput = typeComponents[values.type].input
 
-            <div className="questionInput questionType">
-              <Field component={TypeChooser} intl={intl} name="type" />
-            </div>
-
-            <div className="questionInput questionTags">
-              <Field component={TagInput} name="tags" tags={tags} />
-            </div>
-
-            <div className="questionInput questionContent">
-              <Field component={ContentInput} name="content" />
-            </div>
-
-            <div className="questionInput questionOptions">
-              <Field
-                component={typeComponents[type].input}
-                intl={intl}
-                name="options"
-                type={type}
-              />
-            </div>
-
-            <div className="questionPreview">
-              <h2>
-                <FormattedMessage
-                  defaultMessage="Audience Preview"
-                  id="createQuestion.previewLabel"
+          return (
+            <Form error onSubmit={handleSubmit}>
+              <div className="questionInput questionTitle">
+                <FormikInput
+                  autoFocus
+                  required
+                  error={errors.title}
+                  errorMessage={
+                    <FormattedMessage
+                      defaultMessage="Please provide a valid question title (summary)."
+                      id="form.questionTitle.invalid"
+                    />
+                  }
+                  handleBlur={handleBlur}
+                  handleChange={handleChange}
+                  intl={intl}
+                  label={intl.formatMessage({
+                    defaultMessage: 'Question Title',
+                    id: 'createQuestion.titleInput.label',
+                  })}
+                  name="title"
+                  tooltip={
+                    <FormattedMessage
+                      defaultMessage="Enter a short summarizing title for the question. This is only visible to you!"
+                      id="createQuestion.titleInput.tooltip"
+                    />
+                  }
+                  touched={touched.title}
+                  type="text"
+                  value={values.title}
                 />
-              </h2>
-              <Preview description={content} options={options} questionType={type} title={title} />
-            </div>
+              </div>
 
-            <Button className="discard" type="reset" onClick={onDiscard}>
-              <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
-            </Button>
-            <Button primary className="save" disabled={invalid} type="submit">
-              <FormattedMessage defaultMessage="Save" id="common.button.save" />
-            </Button>
-          </Form>
-        )}
+              <div className="questionInput questionType">
+                <TypeChooser
+                  intl={intl}
+                  value={values.type}
+                  onChange={newType => setFieldValue('type', newType)}
+                />
+              </div>
+
+              <div className="questionInput questionTags">
+                <TagInput
+                  tags={tags}
+                  value={values.tags}
+                  onChange={newTags => setFieldValue('tags', newTags)}
+                />
+              </div>
+
+              <div className="questionInput questionContent">
+                <ContentInput
+                  error={errors.content}
+                  touched={touched.content}
+                  value={values.content}
+                  onChange={newContent => setFieldValue('content', newContent)}
+                />
+              </div>
+
+              <div className="questionInput questionOptions">
+                <OptionsInput
+                  intl={intl}
+                  type={values.type}
+                  value={values.options}
+                  onChange={newOptions => setFieldValue('options', newOptions)}
+                />
+              </div>
+
+              <div className="questionPreview">
+                <h2>
+                  <FormattedMessage
+                    defaultMessage="Audience Preview"
+                    id="createQuestion.previewLabel"
+                  />
+                </h2>
+                <Preview
+                  description={values.content}
+                  options={values.options}
+                  questionType={values.type}
+                  title={values.title}
+                />
+              </div>
+
+              <Button className="discard" type="reset" onClick={onDiscard}>
+                <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+              </Button>
+              <Button
+                primary
+                className="save"
+                disabled={!_isEmpty(errors) || _isEmpty(touched)}
+                loading={isSubmitting}
+                type="submit"
+              >
+                <FormattedMessage defaultMessage="Save" id="common.button.save" />
+              </Button>
+            </Form>
+          )
+        }}
       </Formik>
 
       <style jsx>{`
@@ -274,30 +317,3 @@ QuestionCreationForm.propTypes = propTypes
 QuestionCreationForm.defaultProps = defaultProps
 
 export default QuestionCreationForm
-
-/* export default compose(
-  reduxForm({
-    form: 'createQuestion',
-    initialValues: {
-      content: null,
-      options: {
-        choices: [],
-        randomized: false,
-        restrictions: {
-          max: null,
-          min: null,
-        },
-      },
-      tags: null,
-      title: null,
-      type: QUESTION_TYPES.SC,
-    },
-    validate,
-  }),
-  connect(state => ({
-    content: _get(state, 'form.createQuestion.values.content'),
-    options: _get(state, 'form.createQuestion.values.options'),
-    title: _get(state, 'form.createQuestion.values.title'),
-    type: _get(state, 'form.createQuestion.values.type'),
-  })),
-)(QuestionCreationForm) */

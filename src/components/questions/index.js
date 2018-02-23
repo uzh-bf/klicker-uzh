@@ -8,4 +8,3 @@ export { default as TagList } from './TagList'
 
 export { default as ContentInput } from './creation/ContentInput'
 export { default as TagInput } from './creation/TagInput'
-export { default as TitleInput } from './creation/TitleInput'

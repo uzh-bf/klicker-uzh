@@ -1,24 +1,30 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import isEmpty from 'validator/lib/isEmpty'
-import _isNumber from 'lodash/isNumber'
 import { compose, withProps } from 'recompose'
-import { Field, reduxForm } from 'redux-form'
+import isEmpty from 'validator/lib/isEmpty'
+import _isEmpty from 'lodash/isEmpty'
+import _isNumber from 'lodash/isNumber'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Button, Form, Icon, Menu, Message } from 'semantic-ui-react'
+import { Formik } from 'formik'
 
-import { ContentInput, TagInput, TitleInput } from '../questions'
+import { FormikInput } from '.'
+import { ContentInput, TagInput } from '../questions'
 import { FREECreationOptions, SCCreationOptions } from '../../components/questionTypes'
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../constants'
 
 // form validation
 const validate = ({
-  content, options, tags, type,
+  title, description, options, tags, type,
 }) => {
   const errors = {}
 
-  if (!content || isEmpty(content)) {
-    errors.content = 'form.editQuestion.content.empty'
+  if (!title || isEmpty(title)) {
+    errors.title = 'form.editQuestion.content.empty'
+  }
+
+  if (!description || isEmpty(description)) {
+    errors.description = 'form.editQuestion.content.empty'
   }
 
   if (!tags || tags.length === 0) {
@@ -47,17 +53,23 @@ const validate = ({
 
 const propTypes = {
   activeVersion: PropTypes.number.isRequired,
-  handleSubmit: PropTypes.func.isRequired,
+  initialValues: PropTypes.object.isRequired,
   intl: intlShape.isRequired,
-  invalid: PropTypes.bool.isRequired,
   isNewVersion: PropTypes.bool.isRequired,
   onActiveVersionChange: PropTypes.func.isRequired,
   onDiscard: PropTypes.func.isRequired,
+  onSubmit: PropTypes.func.isRequired,
+  tags: PropTypes.arrayOf(
+    PropTypes.shape({
+      name: PropTypes.string.isRequired,
+    }),
+  ),
   type: PropTypes.string,
   versionOptions: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 const defaultProps = {
+  tags: [],
   type: QUESTION_TYPES.SC,
 }
 
@@ -70,91 +82,149 @@ const typeComponents = {
 
 const QuestionEditForm = ({
   activeVersion,
-  isNewVersion,
+  initialValues,
   intl,
-  invalid,
+  isNewVersion,
+  tags,
   type,
-  handleSubmit: onSubmit,
+  onSubmit,
   onActiveVersionChange,
   onDiscard,
   versionOptions,
 }) => (
   <div className="questionEditForm">
-    <Form onSubmit={onSubmit}>
-      <div className="questionInput questionType">
-        <Form.Field>
-          <label htmlFor="type">
-            <FormattedMessage defaultMessage="Question Type" id="editQuestion.type" />
-          </label>
-          <div className="type">{type}</div>
-        </Form.Field>
-      </div>
+    <Formik
+      initialValues={initialValues}
+      validation={validate}
+      // validationSchema={Yup.object().shape({})}
+      onSubmit={onSubmit}
+    >
+      {({
+ values, errors, touched, handleChange, handleBlur, handleSubmit, setFieldValue,
+}) => {
+        const OptionsInput = typeComponents[type]
 
-      <div className="questionInput questionTitle">
-        <Field component={TitleInput} name="title" />
-      </div>
+        return (
+          <Form error onSubmit={handleSubmit}>
+            <div className="questionInput questionType">
+              <Form.Field>
+                <label htmlFor="type">
+                  <FormattedMessage defaultMessage="Question Type" id="editQuestion.type" />
+                </label>
+                <div className="type">{type}</div>
+              </Form.Field>
+            </div>
 
-      <div className="questionVersion">
-        <h2>
-          <FormattedMessage
-            defaultMessage="Question Versions"
-            id="editQuestion.questionVersions.title"
-          />
-        </h2>
+            <div className="questionInput questionTitle">
+              <FormikInput
+                error={errors.title}
+                errorMessage={
+                  <FormattedMessage
+                    defaultMessage="Please provide a valid question title (summary)."
+                    id="form.questionTitle.invalid"
+                  />
+                }
+                handleBlur={handleBlur}
+                handleChange={handleChange}
+                intl={intl}
+                label={intl.formatMessage({
+                  defaultMessage: 'Question Title',
+                  id: 'createQuestion.titleInput.label',
+                })}
+                name="title"
+                tooltip={
+                  <FormattedMessage
+                    defaultMessage="Enter a short summarizing title for the question. This is only visible to you!"
+                    id="createQuestion.titleInput.tooltip"
+                  />
+                }
+                touched={touched.title}
+                type="text"
+                value={values.title}
+              />
+            </div>
 
-        <Message info>
-          <FormattedMessage
-            defaultMessage="The contents of existing versions cannot be altered. Please create a new version instead."
-            id="editQuestion.questionVersions.description"
-          />
-        </Message>
-        <Menu stackable tabular>
-          {versionOptions.map(({ id, text }, index) => (
-            <Menu.Item
-              active={activeVersion === index}
-              key={id}
-              onClick={() => onActiveVersionChange(index)}
-            >
-              {text}
-            </Menu.Item>
-          ))}
-          <Menu.Item
-            active={isNewVersion}
-            onClick={() => onActiveVersionChange(versionOptions.length)}
-          >
-            <Icon name="plus" />
-            New Version
-          </Menu.Item>
-        </Menu>
-      </div>
+            <div className="questionVersion">
+              <h2>
+                <FormattedMessage
+                  defaultMessage="Question Versions"
+                  id="editQuestion.questionVersions.title"
+                />
+              </h2>
 
-      <div className="questionInput questionTags">
-        <Field component={TagInput} name="tags" />
-      </div>
+              <Message info>
+                <FormattedMessage
+                  defaultMessage="The contents of existing versions cannot be altered. Please create a new version instead."
+                  id="editQuestion.questionVersions.description"
+                />
+              </Message>
 
-      <div className="questionInput questionContent">
-        <Field component={ContentInput} disabled={!isNewVersion} name="description" />
-      </div>
+              <Menu stackable tabular>
+                {versionOptions.map(({ id, text }, index) => (
+                  <Menu.Item
+                    active={activeVersion === index}
+                    key={id}
+                    onClick={() => onActiveVersionChange(index)}
+                  >
+                    {text}
+                  </Menu.Item>
+                ))}
 
-      <div className="questionInput questionOptions">
-        <Field
-          component={typeComponents[type]}
-          disabled={!isNewVersion}
-          intl={intl}
-          name="options"
-          type={type}
-        />
-      </div>
+                <Menu.Item
+                  active={isNewVersion}
+                  onClick={() => onActiveVersionChange(versionOptions.length)}
+                >
+                  <Icon name="plus" />
+                  New Version
+                </Menu.Item>
+              </Menu>
+            </div>
 
-      <div className="actionArea">
-        <Button className="discard" type="reset" onClick={onDiscard}>
-          <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
-        </Button>
-        <Button primary className="save" disabled={invalid} type="submit">
-          <FormattedMessage defaultMessage="Save" id="common.button.save" />
-        </Button>
-      </div>
-    </Form>
+            <div className="questionInput questionTags">
+              <TagInput
+                tags={tags}
+                value={values.tags}
+                onChange={newTags => setFieldValue('tags', newTags)}
+              />
+            </div>
+
+            <div className="questionInput questionContent">
+              <ContentInput
+                disabled={!isNewVersion}
+                error={errors.description}
+                touched={touched.description}
+                value={values.description}
+                onChange={newDescription => setFieldValue('description', newDescription)}
+              />
+            </div>
+
+            <div className="questionInput questionOptions">
+              <OptionsInput
+                disabled={!isNewVersion}
+                intl={intl}
+                type={values.type}
+                value={values.options}
+                onChange={newOptions => setFieldValue('options', newOptions)}
+              />
+            </div>
+
+            <div className="actionArea">
+              <Button className="discard" type="reset" onClick={onDiscard}>
+                <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+              </Button>
+              <Button
+                primary
+                className="save"
+                disabled={!_isEmpty(errors) || _isEmpty(touched)}
+                type="submit"
+              >
+                <FormattedMessage defaultMessage="Save" id="common.button.save" />
+              </Button>
+            </div>
+          </Form>
+        )
+      }}
+    </Formik>
 
     <style jsx>{`
       @import 'src/theme';
@@ -256,27 +326,23 @@ QuestionEditForm.defaultProps = defaultProps
 
 export default compose(
   withProps(({
-    isNewVersion, activeVersion, versions, tags, title, type,
+    allTags, isNewVersion, activeVersion, versions, questionTags, title, type,
   }) => {
     const initializeVersion = isNewVersion ? versions.length - 1 : activeVersion
     return {
       initialValues: {
         description: versions[initializeVersion].description,
         options: versions[initializeVersion].options[type],
-        tags,
+        tags: questionTags.map(tag => tag.name),
         title,
         type,
         versions,
       },
+      tags: allTags,
       versionOptions: versions.map(({ id }, index) => ({
         text: `v${index + 1}`,
         value: id,
       })),
     }
-  }),
-  reduxForm({
-    enableReinitialize: true,
-    form: 'editQuestion',
-    validate,
   }),
 )(QuestionEditForm)

@@ -15,10 +15,8 @@ const propTypes = {
   handleNewOption: PropTypes.func.isRequired,
   handleOptionToggleCorrect: PropTypes.func.isRequired,
   handleUpdateOrder: PropTypes.func.isRequired,
-  meta: PropTypes.shape({
-    dirty: PropTypes.bool,
-    invalid: PropTypes.bool,
-  }).isRequired,
+  dirty: PropTypes.bool,
+  invalid: PropTypes.bool,
   value: PropTypes.arrayOf(PropTypes.shape(SCCreationOption.propTypes)).isRequired,
 }
 
@@ -30,7 +28,8 @@ const SCCreationOptions = ({
   handleUpdateOrder,
   handleOptionToggleCorrect,
   value,
-  meta: { dirty, invalid },
+  dirty,
+  invalid,
 }) => {
   const Option = props => (
     <div className="option">
@@ -110,10 +109,13 @@ const SCCreationOptions = ({
 SCCreationOptions.propTypes = propTypes
 
 export default compose(
-  mapProps(({ input: { onChange, value }, meta, disabled }) => ({
+  mapProps(({
+    onChange, value, dirty, invalid, disabled,
+  }) => ({
     disabled,
     // HACK: mapping as a workaround for the value.choices problem
-    meta,
+    dirty,
+    invalid,
     onChange: choices => onChange({ ...value, choices }),
     value: value.choices,
   })),

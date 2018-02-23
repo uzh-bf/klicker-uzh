@@ -12,29 +12,31 @@ import { TeacherLayout } from '../../components/layouts'
 import { QuestionEditForm } from '../../components/forms'
 import { pageWithIntl, withData, omitDeep, withDnD, withLogging } from '../../lib'
 import {
-  QuestionListQuery,
-  QuestionDetailsQuery,
   TagListQuery,
+  QuestionPoolQuery,
+  QuestionDetailsQuery,
   ModifyQuestionMutation,
 } from '../../graphql'
 
 const propTypes = {
   activeVersion: PropTypes.number.isRequired,
+  allTags: PropTypes.array.isRequired,
   handleDiscard: PropTypes.func.isRequired,
   handleSave: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   isNewVersion: PropTypes.bool.isRequired,
+  questionTags: PropTypes.array.isRequired,
   setActiveVersion: PropTypes.func.isRequired,
-  tags: PropTypes.arrayOf().isRequired,
   title: PropTypes.string.isRequired,
   type: PropTypes.string.isRequired,
-  versions: PropTypes.arrayOf().isRequired,
+  versions: PropTypes.array.isRequired,
 }
 
 const EditQuestion = ({
+  allTags,
   intl,
   isNewVersion,
-  tags,
+  questionTags,
   title,
   type,
   versions,
@@ -59,9 +61,10 @@ const EditQuestion = ({
   >
     <QuestionEditForm
       activeVersion={activeVersion}
+      allTags={allTags}
       intl={intl}
       isNewVersion={isNewVersion}
-      tags={tags.map(tag => tag.name)}
+      questionTags={questionTags}
       title={title}
       type={type}
       versions={versions}
@@ -79,15 +82,26 @@ export default compose(
   withDnD,
   withData,
   pageWithIntl,
+  graphql(TagListQuery, { name: 'tags' }),
   graphql(QuestionDetailsQuery, {
+    name: 'details',
     options: ({ url }) => ({ variables: { id: url.query.questionId } }),
   }),
-  branch(({ data }) => data.loading || !data.question, renderNothing),
+  branch(
+    ({ details, tags }) => details.loading || tags.loading || !details.question,
+    renderNothing,
+  ),
   graphql(ModifyQuestionMutation),
-  withState('activeVersion', 'setActiveVersion', ({ data }) => data.question.versions.length - 1),
-  withProps(({ activeVersion, data }) => ({
-    ..._pick(data.question, ['id', 'title', 'type', 'tags', 'versions']),
-    isNewVersion: activeVersion === data.question.versions.length,
+  withState(
+    'activeVersion',
+    'setActiveVersion',
+    ({ details }) => details.question.versions.length - 1,
+  ),
+  withProps(({ activeVersion, details, tags }) => ({
+    ..._pick(details.question, ['id', 'title', 'type', 'versions']),
+    allTags: tags.tags,
+    isNewVersion: activeVersion === details.question.versions.length,
+    questionTags: details.question.tags,
   })),
   withHandlers({
     // handle discarding question modification
@@ -109,7 +123,7 @@ export default compose(
         await mutate({
           // reload the question details and tags after update
           // TODO: replace with optimistic updates
-          refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
+          refetchQueries: [{ query: QuestionPoolQuery }],
           // update the cache after the mutation has completed
           update: (store, { data: { modifyQuestion } }) => {
             const query = {
