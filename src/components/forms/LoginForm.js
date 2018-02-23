@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import { intlShape } from 'react-intl'
 import { Formik } from 'formik'
 import yup from 'yup'
+import _isEmpty from 'lodash/isEmpty'
 
 import { FormWithLinks, FormikInput } from '.'
 
@@ -26,43 +27,6 @@ const LoginForm = ({ intl, onSubmit }) => {
     }, */
   ]
 
-  /* return (
-    <FormWithLinks button={button} links={links}>
-      <Field
-        autoFocus
-        required
-        component={SemanticInput}
-        errorMessage={intl.formatMessage({
-          defaultMessage: 'Please provide a valid email address.',
-          id: 'form.email.invalid',
-        })}
-        icon="mail"
-        intl={intl}
-        label={intl.formatMessage({
-          defaultMessage: 'Email',
-          id: 'form.email.label',
-        })}
-        name="email"
-        type="email"
-      />
-      <Field
-        required
-        component={SemanticInput}
-        errorMessage={intl.formatMessage({
-          defaultMessage: 'Please provide a valid password (8+ characters).',
-          id: 'form.password.invalid',
-        })}
-        icon="privacy"
-        intl={intl}
-        label={intl.formatMessage({
-          defaultMessage: 'Password',
-          id: 'form.password.label',
-        })}
-        name="password"
-        type="password"
-      />
-    </FormWithLinks>
-  ) */
   return (
     <Formik
       initialValues={{
@@ -80,7 +44,7 @@ const LoginForm = ({ intl, onSubmit }) => {
       }) => (
         <FormWithLinks
           button={{
-            disabled: isSubmitting,
+            disabled: isSubmitting || !_isEmpty(errors) || _isEmpty(touched),
             label: intl.formatMessage({
               defaultMessage: 'Submit',
               id: 'form.common.button.submit',
