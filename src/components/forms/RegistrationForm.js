@@ -1,6 +1,5 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import isAlpha from 'validator/lib/isAlpha'
 import isAlphanumeric from 'validator/lib/isAlphanumeric'
 import isEmail from 'validator/lib/isEmail'
 import isLength from 'validator/lib/isLength'
@@ -40,7 +39,7 @@ const validate = ({
     errors.passwordRepeat = 'form.passwordRepeat.invalid'
   }
 
-  if (useCase && !isAlpha(useCase)) {
+  if (useCase && !isAlphanumeric(useCase)) {
     errors.useCase = 'form.useCase.invalid'
   }
 
