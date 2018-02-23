@@ -6322,12 +6322,6 @@ lint-staged@7.0.0:
     staged-git-files "1.1.0"
     stringify-object "^3.2.2"
 
-list.js@1.5.0:
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/list.js/-/list.js-1.5.0.tgz#a4cbfc8281ddefc02fdb2d30c8748bfae25fbcda"
-  dependencies:
-    string-natural-compare "^2.0.2"
-
 listr-silent-renderer@^1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/listr-silent-renderer/-/listr-silent-renderer-1.1.1.tgz#924b5a3757153770bf1a8e3fbf74b8bbf3f9242e"
@@ -7576,10 +7570,6 @@ ora@^0.2.3:
     cli-spinners "^0.1.2"
     object-assign "^4.0.1"
 
-orderedmap@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/orderedmap/-/orderedmap-1.0.0.tgz#d90fc2ba1ed085190907d601dec6e6a53f8d41ba"
-
 original-url@^1.2.0:
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/original-url/-/original-url-1.2.1.tgz#44c659b769b170458d5302c835b59753c05d5c8a"
@@ -8291,39 +8281,6 @@ prop-types@15.6.0, prop-types@^15.5.0, prop-types@^15.5.10, prop-types@^15.5.4, 
     loose-envify "^1.3.1"
     object-assign "^4.1.1"
 
-prosemirror-model@^1.0.0, prosemirror-model@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/prosemirror-model/-/prosemirror-model-1.1.0.tgz#94cea251a4dd2696460f7b33061121058f7f8c86"
-  dependencies:
-    orderedmap "^1.0.0"
-
-prosemirror-schema-basic@1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/prosemirror-schema-basic/-/prosemirror-schema-basic-1.0.0.tgz#240516a52637e1a5b9d6d0bde0708906f2f51397"
-  dependencies:
-    prosemirror-model "^1.0.0"
-
-prosemirror-state@1.1.0, prosemirror-state@^1.0.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/prosemirror-state/-/prosemirror-state-1.1.0.tgz#36187dc53028bb61b53f6af3ba672e2995084bc6"
-  dependencies:
-    prosemirror-model "^1.0.0"
-    prosemirror-transform "^1.0.0"
-
-prosemirror-transform@^1.0.0:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/prosemirror-transform/-/prosemirror-transform-1.0.2.tgz#3b67f1ff639cf195d4392dea053765547d5fd412"
-  dependencies:
-    prosemirror-model "^1.0.0"
-
-prosemirror-view@1.0.11:
-  version "1.0.11"
-  resolved "https://registry.yarnpkg.com/prosemirror-view/-/prosemirror-view-1.0.11.tgz#39a5976a6aba0e8479f18241186815af1e126d3f"
-  dependencies:
-    prosemirror-model "^1.1.0"
-    prosemirror-state "^1.0.0"
-    prosemirror-transform "^1.0.0"
-
 proxy-addr@~2.0.2:
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/proxy-addr/-/proxy-addr-2.0.3.tgz#355f262505a621646b3130a728eb647e22055341"
@@ -8658,10 +8615,6 @@ react-hot-loader@4.0.0-beta.18:
     global "^4.3.0"
     hoist-non-react-statics "^2.3.1"
     react-stand-in "^4.0.0-beta.18"
-
-react-hotjar@1.0.11:
-  version "1.0.11"
-  resolved "https://registry.yarnpkg.com/react-hotjar/-/react-hotjar-1.0.11.tgz#d802ca46ecc2bd4aed44cde595bb89c9fb35cc54"
 
 react-html-attributes@^1.3.0:
   version "1.4.1"
@@ -9933,10 +9886,6 @@ string-length@^2.0.0:
   dependencies:
     astral-regex "^1.0.0"
     strip-ansi "^4.0.0"
-
-string-natural-compare@^2.0.2:
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/string-natural-compare/-/string-natural-compare-2.0.2.tgz#c5ce4e278ab5d1265ae6fc55435aeb7b76fcb001"
 
 string-width@^1.0.1, string-width@^1.0.2:
   version "1.0.2"
