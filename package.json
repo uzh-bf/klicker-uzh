@@ -57,7 +57,7 @@
     "react-ga": "2.4.1",
     "react-helmet": "5.2.0",
     "react-intl": "2.4.0",
-    "react-perf-devtool": "3.0.4",
+    "react-perf-devtool": "3.0.5",
     "react-rangeslider": "2.2.0",
     "react-redux": "5.0.7",
     "react-sortable-hoc": "0.6.8",
@@ -67,7 +67,7 @@
     "recompose": "0.26.0",
     "redux": "3.7.2",
     "redux-form": "7.2.3",
-    "semantic-ui-react": "0.78.2",
+    "semantic-ui-react": "0.78.3",
     "styled-jsx-plugin-sass": "0.2.2",
     "validator": "9.4.1",
     "webpack": "3.11.0",
@@ -80,7 +80,7 @@
     "@storybook/addon-storyshots": "3.3.14",
     "@storybook/react": "3.3.14",
     "babel-eslint": "8.2.2",
-    "cypress": "2.0.3",
+    "cypress": "2.0.4",
     "enzyme": "3.3.0",
     "eslint": "4.18.1",
     "eslint-config-airbnb": "16.1.0",
@@ -99,7 +99,7 @@
     "react-test-renderer": "16.2.0",
     "semantic-ui-css": "2.3.0",
     "storybook-addon-intl": "2.3.0",
-    "webpack-bundle-analyzer": "2.10.0"
+    "webpack-bundle-analyzer": "2.11.0"
   },
   "scripts": {
     "precommit": "lint-staged",
