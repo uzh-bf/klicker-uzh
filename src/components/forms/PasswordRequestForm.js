@@ -1,37 +1,18 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import isEmail from 'validator/lib/isEmail'
-import { Field, reduxForm } from 'redux-form'
 import { intlShape } from 'react-intl'
+import Yup from 'yup'
+import _isEmpty from 'lodash/isEmpty'
+import { Formik } from 'formik'
 
-import { FormWithLinks, SemanticInput } from '.'
-
-const validate = ({ email }) => {
-  const errors = {}
-
-  // the email address needs to be valid
-  if (!email || !isEmail(email)) {
-    errors.email = 'form.common.email.invalid'
-  }
-
-  return errors
-}
+import { FormWithLinks, FormikInput } from '.'
 
 const propTypes = {
-  handleSubmit: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  invalid: PropTypes.bool.isRequired,
+  onSubmit: PropTypes.func.isRequired,
 }
 
-const PasswordRequestForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
-  const button = {
-    invalid,
-    label: intl.formatMessage({
-      defaultMessage: 'Submit',
-      id: 'form.common.button.submit',
-    }),
-    onSubmit,
-  }
+const PasswordRequestForm = ({ intl, onSubmit }) => {
   const links = [
     {
       href: '/user/login',
@@ -43,31 +24,64 @@ const PasswordRequestForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
   ]
 
   return (
-    <FormWithLinks button={button} links={links}>
-      <Field
-        autoFocus
-        required
-        component={SemanticInput}
-        errorMessage={intl.formatMessage({
-          defaultMessage: 'Please provide a valid email address.',
-          id: 'form.email.invalid',
-        })}
-        icon="mail"
-        intl={intl}
-        label={intl.formatMessage({
-          defaultMessage: 'Email',
-          id: 'form.email.label',
-        })}
-        name="email"
-        type="email"
-      />
-    </FormWithLinks>
+    <Formik
+      initialValues={{
+        email: null,
+      }}
+      render={({
+        values,
+        errors,
+        touched,
+        handleChange,
+        handleBlur,
+        handleSubmit,
+        isSubmitting,
+      }) => (
+        <FormWithLinks
+          button={{
+            disabled: !_isEmpty(errors),
+            label: intl.formatMessage({
+              defaultMessage: 'Submit',
+              id: 'form.common.button.submit',
+            }),
+            loading: isSubmitting,
+            onSubmit: handleSubmit,
+          }}
+          links={links}
+        >
+          <FormikInput
+            autoFocus
+            required
+            error={errors.email}
+            errorMessage={intl.formatMessage({
+              defaultMessage: 'Please provide a valid email address.',
+              id: 'form.email.invalid',
+            })}
+            handleBlur={handleBlur}
+            handleChange={handleChange}
+            icon="mail"
+            intl={intl}
+            label={intl.formatMessage({
+              defaultMessage: 'Email',
+              id: 'form.email.label',
+            })}
+            name="email"
+            touched={touched.email}
+            type="email"
+            value={values.email}
+          />
+        </FormWithLinks>
+      )}
+      validationSchema={Yup.object().shape({
+        email: Yup.string()
+          .email()
+          .required(),
+      })}
+      onSubmit={onSubmit}
+    />
   )
 }
 
 PasswordRequestForm.propTypes = propTypes
 
-export default reduxForm({
-  form: 'passwordRequest',
-  validate,
-})(PasswordRequestForm)
+export default PasswordRequestForm

@@ -8,31 +8,30 @@ import { FormattedMessage } from 'react-intl'
 import { autocompleteRenderInput } from '../../common'
 
 const propTypes = {
-  disabled: PropTypes.bool.isRequired,
-  input: PropTypes.shape({
-    onChange: PropTypes.func.isRequired,
-    value: PropTypes.array,
-  }).isRequired,
-  meta: PropTypes.shape({
-    dirty: PropTypes.bool,
-    invalid: PropTypes.bool,
-  }).isRequired,
+  disabled: PropTypes.bool,
+  error: PropTypes.string,
+  onChange: PropTypes.func.isRequired,
   tags: PropTypes.arrayOf(
     PropTypes.shape({
       name: PropTypes.string.isRequired,
     }),
   ),
+  touched: PropTypes.bool.isRequired,
+  value: PropTypes.array,
 }
 
 const defaultProps = {
+  disabled: false,
+  error: null,
   tags: [],
+  value: [],
 }
 
 const TagInput = ({
-  tags, input: { value, onChange }, meta: { invalid, dirty }, disabled,
+  tags, value, onChange, error, touched, disabled,
 }) => (
   <div className="tagInput">
-    <Form.Field required error={dirty && invalid}>
+    <Form.Field required error={touched && error}>
       <label htmlFor="tags">
         <FormattedMessage defaultMessage="Tags" id="createQuestion.tagInput.label" />
         <a data-tip data-for="tagHelp">
@@ -52,7 +51,7 @@ const TagInput = ({
         onlyUnique
         disabled={disabled}
         name="tags"
-        renderInput={autocompleteRenderInput(tags, value)}
+        renderInput={autocompleteRenderInput(tags, value || [])}
         value={value || []}
         onChange={onChange}
       />

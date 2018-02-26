@@ -5,20 +5,22 @@ import { Form, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 const propTypes = {
-  disabled: PropTypes.bool.isRequired,
-  input: PropTypes.shape({
-    onChange: PropTypes.func.isRequired,
-    value: PropTypes.string.isRequired,
-  }).isRequired,
-  meta: PropTypes.shape({
-    dirty: PropTypes.bool,
-    invalid: PropTypes.bool,
-  }).isRequired,
+  disabled: PropTypes.bool,
+  error: PropTypes.bool.isRequired,
+  onChange: PropTypes.func.isRequired,
+  touched: PropTypes.bool.isRequired,
+  value: PropTypes.string.isRequired,
 }
 
-const ContentInput = ({ input: { value, onChange }, meta: { dirty, invalid }, disabled }) => (
+const defaultProps = {
+  disabled: false,
+}
+
+const ContentInput = ({
+  value, onChange, error, touched, disabled,
+}) => (
   <div className="contentInput">
-    <Form.Field required error={dirty && invalid}>
+    <Form.Field required error={touched && error}>
       <label htmlFor="content">
         <FormattedMessage defaultMessage="Question" id="createQuestion.contentInput.label" />
         <a data-tip data-for="contentHelp">
@@ -33,7 +35,12 @@ const ContentInput = ({ input: { value, onChange }, meta: { dirty, invalid }, di
         />
       </ReactTooltip>
 
-      <textarea disabled={disabled} name="content" value={value} onChange={onChange} />
+      <textarea
+        disabled={disabled}
+        name="content"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+      />
     </Form.Field>
 
     <style jsx>{`
@@ -57,5 +64,6 @@ const ContentInput = ({ input: { value, onChange }, meta: { dirty, invalid }, di
 )
 
 ContentInput.propTypes = propTypes
+ContentInput.defaultProps = defaultProps
 
 export default ContentInput

@@ -13,13 +13,7 @@ const defaultProps = {
 const ListWithHeader = ({ children, items }) => (
   <div className="listWithHeader">
     {children && <span className="listHeader">{children}</span>}
-    <ul className="list">
-      {items.map(item => (
-        <li className="listItem" key={item}>
-          {item}
-        </li>
-      ))}
-    </ul>
+    <ul className="list">{items.map(item => <li className="listItem">{item}</li>)}</ul>
 
     <style jsx>{`
       @import 'src/theme';
