@@ -52,7 +52,7 @@ const queries = [
 // build a query map from the queries above
 const queryMap = {}
 queries.forEach((query) => {
-  queryMap[query.documentId] = query.loc.source
+  queryMap[query.documentId] = query
 })
 
 export {
