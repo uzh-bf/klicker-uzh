@@ -77,7 +77,7 @@ export default ComposedComponent =>
     constructor(props) {
       super(props)
       // eslint-disable-next-line react/destructuring-assignment
-      this.apollo = initApollo(this.props.serverState.apollo.data)
+      this.apollo = initApollo(this.props.serverState ? this.props.serverState.apollo.data : {})
     }
 
     render() {

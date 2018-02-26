@@ -64,6 +64,7 @@ exports[`Snapshot-Testing Works 1`] = `
                     "textComponent": "span",
                   }
                 }
+                renderInput={undefined}
               >
                 <input
                   autoFocus={true}
@@ -71,13 +72,10 @@ exports[`Snapshot-Testing Works 1`] = `
                   name="email"
                   onBlur={[Function]}
                   onChange={[Function]}
-                  onDragStart={[Function]}
-                  onDrop={[Function]}
-                  onFocus={[Function]}
                   placeholder="Email"
                   tabIndex={undefined}
                   type="email"
-                  value=""
+                  value={null}
                 />
                 <i
                   aria-hidden="true"
@@ -121,19 +119,17 @@ exports[`Snapshot-Testing Works 1`] = `
                     "textComponent": "span",
                   }
                 }
+                renderInput={undefined}
               >
                 <input
                   disabled={undefined}
                   name="password"
                   onBlur={[Function]}
                   onChange={[Function]}
-                  onDragStart={[Function]}
-                  onDrop={[Function]}
-                  onFocus={[Function]}
                   placeholder="Password"
                   tabIndex={undefined}
                   type="password"
-                  value=""
+                  value={null}
                 />
                 <i
                   aria-hidden="true"

@@ -1,13 +1,12 @@
 /* eslint-disable import/no-extraneous-dependencies, react/prop-types */
 
 import React from 'react'
-import { Provider as ReduxProvider } from 'react-redux'
 import { storiesOf } from '@storybook/react'
 import { action } from '@storybook/addon-actions'
 import { DragDropContextProvider } from 'react-dnd'
 import HTML5Backend from 'react-dnd-html5-backend'
 
-import { configureStore, intlMock } from '../../../.storybook/utils'
+import { intlMock } from '../../../.storybook/utils'
 
 import {
   FormWithLinks,
@@ -20,18 +19,7 @@ import {
   SessionCreationForm,
 } from '.'
 
-let store
-const getStoryWithRedux = (getStory) => {
-  // initialize the redux store
-  if (!store) {
-    store = configureStore()
-  }
-
-  return <ReduxProvider store={store}>{getStory()}</ReduxProvider>
-}
-
 storiesOf('forms/components', module)
-  .addDecorator(getStoryWithRedux)
   .addDecorator(getStory => (
     <DragDropContextProvider backend={HTML5Backend}>{getStory()}</DragDropContextProvider>
   ))
@@ -67,7 +55,6 @@ storiesOf('forms/components', module)
     <SessionCreationForm handleSubmit={() => null} intl={intlMock} />
   ))
 storiesOf('forms/helpers', module)
-  .addDecorator(getStoryWithRedux)
   .add('FormWithLinks', () => (
     <FormWithLinks
       button={{
