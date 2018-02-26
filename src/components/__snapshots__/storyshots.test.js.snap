@@ -2066,6 +2066,7 @@ exports[`Storyshots forms/components LoginForm 1`] = `
             "formatMessage": [Function],
           }
         }
+        renderInput={undefined}
       >
         <input
           autoFocus={true}
@@ -2073,13 +2074,10 @@ exports[`Storyshots forms/components LoginForm 1`] = `
           name="email"
           onBlur={[Function]}
           onChange={[Function]}
-          onDragStart={[Function]}
-          onDrop={[Function]}
-          onFocus={[Function]}
           placeholder="Email"
           tabIndex={undefined}
           type="email"
-          value=""
+          value={null}
         />
         <i
           aria-hidden="true"
@@ -2103,19 +2101,17 @@ exports[`Storyshots forms/components LoginForm 1`] = `
             "formatMessage": [Function],
           }
         }
+        renderInput={undefined}
       >
         <input
           disabled={undefined}
           name="password"
           onBlur={[Function]}
           onChange={[Function]}
-          onDragStart={[Function]}
-          onDrop={[Function]}
-          onFocus={[Function]}
           placeholder="Password"
           tabIndex={undefined}
           type="password"
-          value=""
+          value={null}
         />
         <i
           aria-hidden="true"
@@ -2189,6 +2185,7 @@ exports[`Storyshots forms/components PasswordRequestForm 1`] = `
             "formatMessage": [Function],
           }
         }
+        renderInput={undefined}
       >
         <input
           autoFocus={true}
@@ -2196,13 +2193,10 @@ exports[`Storyshots forms/components PasswordRequestForm 1`] = `
           name="email"
           onBlur={[Function]}
           onChange={[Function]}
-          onDragStart={[Function]}
-          onDrop={[Function]}
-          onFocus={[Function]}
           placeholder="Email"
           tabIndex={undefined}
           type="email"
-          value=""
+          value={null}
         />
         <i
           aria-hidden="true"
@@ -2214,11 +2208,11 @@ exports[`Storyshots forms/components PasswordRequestForm 1`] = `
       className="jsx-1235538274 actionArea"
     >
       <button
-        className="ui primary disabled button semanticButton"
-        disabled={true}
+        className="ui primary button semanticButton"
+        disabled={undefined}
         onClick={[Function]}
         role="button"
-        tabIndex={-1}
+        tabIndex={undefined}
         type="submit"
       >
         Submit

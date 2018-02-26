@@ -23,6 +23,38 @@ import SessionListQuery from './queries/SessionListQuery.graphql'
 import QuestionPoolQuery from './queries/QuestionPoolQuery.graphql'
 import TagListQuery from './queries/TagListQuery.graphql'
 
+const queries = [
+  ActivateNextBlockMutation,
+  AddConfusionTSMutation,
+  AddFeedbackMutation,
+  AddResponseMutation,
+  ChangePasswordMutation,
+  CreateQuestionMutation,
+  CreateSessionMutation,
+  DeleteFeedbackMutation,
+  EndSessionMutation,
+  LoginMutation,
+  ModifyQuestionMutation,
+  RequestPasswordMutation,
+  RegistrationMutation,
+  StartSessionMutation,
+  UpdateSessionSettingsMutation,
+  AccountSummaryQuery,
+  JoinSessionQuery,
+  QuestionDetailsQuery,
+  RunningSessionQuery,
+  SessionEvaluationQuery,
+  SessionListQuery,
+  QuestionPoolQuery,
+  TagListQuery,
+]
+
+// build a query map from the queries above
+const queryMap = {}
+queries.forEach((query) => {
+  queryMap[query.documentId] = query
+})
+
 export {
   ActivateNextBlockMutation,
   AddConfusionTSMutation,
@@ -47,4 +79,5 @@ export {
   SessionListQuery,
   QuestionPoolQuery,
   TagListQuery,
+  queryMap,
 }

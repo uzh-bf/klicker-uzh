@@ -8,14 +8,12 @@ import { QUESTION_TYPES } from '../../constants'
 import { Button } from '../common'
 
 const propTypes = {
-  input: PropTypes.shape({
-    onChange: PropTypes.func.isRequired,
-    value: PropTypes.string.isRequired,
-  }).isRequired,
   intl: intlShape.isRequired,
+  onChange: PropTypes.func.isRequired,
+  value: PropTypes.string.isRequired,
 }
 
-const TypeChooser = ({ intl, input: { value, onChange } }) => {
+const TypeChooser = ({ intl, value, onChange }) => {
   const types = [
     {
       name: intl.formatMessage({
