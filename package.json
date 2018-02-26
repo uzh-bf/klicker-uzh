@@ -71,7 +71,7 @@
     "redux": "3.7.2",
     "redux-form": "7.2.3",
     "semantic-ui-react": "0.78.3",
-    "styled-jsx-plugin-sass": "0.2.2",
+    "styled-jsx-plugin-sass": "0.2.3",
     "validator": "9.4.1",
     "webpack": "3.11.0",
     "yup": "^0.24.1"
@@ -91,7 +91,7 @@
     "eslint-plugin-jsx-a11y": "6.0.3",
     "eslint-plugin-react": "7.7.0",
     "husky": "0.14.3",
-    "jest": "22.4.0",
+    "jest": "22.4.2",
     "lint-staged": "7.0.0",
     "nodemon": "1.15.1",
     "prettier": "1.10.2",

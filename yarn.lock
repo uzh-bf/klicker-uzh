@@ -5921,7 +5921,7 @@ jest-changed-files@^22.2.0:
   dependencies:
     throat "^4.0.0"
 
-jest-cli@^22.4.0:
+jest-cli@^22.4.2:
   version "22.4.2"
   resolved "https://registry.yarnpkg.com/jest-cli/-/jest-cli-22.4.2.tgz#e6546dc651e13d164481aa3e76e53ac4f4edab06"
   dependencies:
@@ -6173,12 +6173,12 @@ jest-worker@^22.2.2:
   dependencies:
     merge-stream "^1.0.1"
 
-jest@22.4.0:
-  version "22.4.0"
-  resolved "https://registry.yarnpkg.com/jest/-/jest-22.4.0.tgz#476e2c08c6c2a6dbb5cfec520b8bf1cd4c99afd7"
+jest@22.4.2:
+  version "22.4.2"
+  resolved "https://registry.yarnpkg.com/jest/-/jest-22.4.2.tgz#34012834a49bf1bdd3bc783850ab44e4499afc20"
   dependencies:
     import-local "^1.0.0"
-    jest-cli "^22.4.0"
+    jest-cli "^22.4.2"
 
 jquery@x.*:
   version "3.3.1"
@@ -10077,9 +10077,9 @@ style-loader@^0.19.1:
     loader-utils "^1.0.2"
     schema-utils "^0.3.0"
 
-styled-jsx-plugin-sass@0.2.2:
-  version "0.2.2"
-  resolved "https://registry.yarnpkg.com/styled-jsx-plugin-sass/-/styled-jsx-plugin-sass-0.2.2.tgz#e1da2e68477f7b66af8ef31ac71eda0da946cb9c"
+styled-jsx-plugin-sass@0.2.3:
+  version "0.2.3"
+  resolved "https://registry.yarnpkg.com/styled-jsx-plugin-sass/-/styled-jsx-plugin-sass-0.2.3.tgz#159fc2852506235c6735fde9edf29d9c8b319884"
 
 styled-jsx@2.2.3:
   version "2.2.3"
