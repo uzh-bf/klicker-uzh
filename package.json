@@ -97,7 +97,7 @@
     "react-test-renderer": "16.2.0",
     "semantic-ui-css": "2.3.0",
     "storybook-addon-intl": "2.3.0",
-    "webpack-bundle-analyzer": "2.10.0"
+    "webpack-bundle-analyzer": "2.10.1"
   },
   "scripts": {
     "precommit": "lint-staged",
