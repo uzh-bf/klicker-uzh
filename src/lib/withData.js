@@ -1,11 +1,10 @@
-/* eslint-disable react/prop-types */
+// https://github.com/zeit/next.js/blob/canary/examples/with-apollo/lib/withData.js
 
-// import Raven from 'raven-js'
 import React from 'react'
+import PropTypes from 'prop-types'
 import { ApolloProvider, getDataFromTree } from 'react-apollo'
 import Head from 'next/head'
 import initApollo from './initApollo'
-import initRedux from './initRedux'
 
 // Gets the display name of a JSX component for dev tools
 function getComponentDisplayName(Component) {
@@ -15,9 +14,17 @@ function getComponentDisplayName(Component) {
 export default ComposedComponent =>
   class WithData extends React.Component {
     static displayName = `WithData(${getComponentDisplayName(ComposedComponent)})`
+    static propTypes = {
+      serverState: PropTypes.object.isRequired,
+    }
 
     static async getInitialProps(ctx) {
-      let serverState = {}
+      // Initial serverState with apollo (empty)
+      let serverState = {
+        apollo: {
+          data: {},
+        },
+      }
 
       // Evaluate the composed component's getInitialProps()
       let composedInitialProps = {}
@@ -27,42 +34,38 @@ export default ComposedComponent =>
 
       // Run all GraphQL queries in the component tree
       // and extract the resulting data
+      const apollo = initApollo()
+      try {
+        // Run all GraphQL queries
+        await getDataFromTree(
+          <ApolloProvider client={apollo}>
+            <ComposedComponent {...composedInitialProps} />
+          </ApolloProvider>,
+          {
+            router: {
+              asPath: ctx.asPath,
+              pathname: ctx.pathname,
+              query: ctx.query,
+            },
+          },
+        )
+      } catch (error) {
+        // Prevent Apollo Client GraphQL errors from crashing SSR.
+        // Handle them in components via the data.error prop:
+        // http://dev.apollodata.com/react/api-queries.html#graphql-query-data-error
+      }
+
       if (!process.browser) {
-        const apollo = initApollo()
-        const redux = initRedux(apollo)
-        // Provide the `url` prop data in case a GraphQL query uses it
-        const url = { pathname: ctx.pathname, query: ctx.query }
-
-        try {
-          // Run all GraphQL queries
-          await getDataFromTree(
-            // No need to use the Redux Provider
-            // because Apollo sets up the store for us
-            <ApolloProvider client={apollo} store={redux}>
-              <ComposedComponent url={url} {...composedInitialProps} />
-            </ApolloProvider>,
-          )
-        } catch (error) {
-          // Prevent Apollo Client GraphQL errors from crashing SSR.
-          // Handle them in components via the data.error prop:
-          // http://dev.apollodata.com/react/api-queries.html#graphql-query-data-error
-        }
-
         // getDataFromTree does not call componentWillUnmount
         // head side effect therefore need to be cleared manually
         Head.rewind()
+      }
 
-        // Extract query data from the store
-        const state = redux.getState()
-
-        // No need to include other initial Redux state because when it
-        // initialises on the client-side it'll create it again anyway
-        serverState = {
-          apollo: {
-            // Only include the Apollo data state
-            data: state.apollo.data,
-          },
-        }
+      // Extract query data from the Apollo store
+      serverState = {
+        apollo: {
+          data: apollo.cache.extract(),
+        },
       }
 
       return {
@@ -73,26 +76,14 @@ export default ComposedComponent =>
 
     constructor(props) {
       super(props)
-      this.apollo = initApollo()
-      this.redux = initRedux(this.apollo, this.props.serverState) // eslint-disable-line
-
-      // setup additional error handling for all pages with data
-      this.state = { error: null }
-    }
-
-    componentDidCatch(error) {
-      // set the component error state
-      this.setState({ error })
+      // eslint-disable-next-line react/destructuring-assignment
+      this.apollo = initApollo(this.props.serverState.apollo.data)
     }
 
     render() {
-      const { error } = this.state
-
       return (
-        // No need to use the Redux Provider
-        // because Apollo sets up the store for us
-        <ApolloProvider client={this.apollo} store={this.redux}>
-          <ComposedComponent {...this.props} error={error} />
+        <ApolloProvider client={this.apollo}>
+          <ComposedComponent {...this.props} />
         </ApolloProvider>
       )
     }
