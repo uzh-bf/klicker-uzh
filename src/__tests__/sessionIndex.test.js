@@ -3,7 +3,7 @@
 import React from 'react'
 import renderer from 'react-test-renderer'
 
-import Index from './index'
+import Index from '../pages/sessions/index'
 
 describe('Snapshot-Testing', () => {
   it('Works', () => {

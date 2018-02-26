@@ -3,7 +3,7 @@
 import React from 'react'
 import renderer from 'react-test-renderer'
 
-import ResetPassword from './resetPassword'
+import ResetPassword from '../pages/user/resetPassword'
 
 describe('Snapshot-Testing', () => {
   it('Works', () => {

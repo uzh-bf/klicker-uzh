@@ -3,11 +3,11 @@
 import React from 'react'
 import renderer from 'react-test-renderer'
 
-import QuestionDetails from './details'
+import Index from '../pages/index'
 
 describe('Snapshot-Testing', () => {
-  it.skip('Works', () => {
-    const component = renderer.create(<QuestionDetails />)
+  it('Works', () => {
+    const component = renderer.create(<Index />)
     const tree = component.toJSON()
     expect(tree).toMatchSnapshot()
   })

@@ -3,11 +3,11 @@
 import React from 'react'
 import renderer from 'react-test-renderer'
 
-import Index from './index'
+import RequestPassword from '../pages/user/requestPassword'
 
 describe('Snapshot-Testing', () => {
-  it.skip('Works', () => {
-    const component = renderer.create(<Index />)
+  it('Works', () => {
+    const component = renderer.create(<RequestPassword />)
     const tree = component.toJSON()
     expect(tree).toMatchSnapshot()
   })

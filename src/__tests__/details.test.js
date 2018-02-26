@@ -3,11 +3,11 @@
 import React from 'react'
 import renderer from 'react-test-renderer'
 
-import Evaluation from './evaluation'
+import QuestionDetails from '../pages/questions/details'
 
 describe('Snapshot-Testing', () => {
   it.skip('Works', () => {
-    const component = renderer.create(<Evaluation />)
+    const component = renderer.create(<QuestionDetails />)
     const tree = component.toJSON()
     expect(tree).toMatchSnapshot()
   })

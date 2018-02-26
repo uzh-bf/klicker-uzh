@@ -5,9 +5,12 @@ const webpack = require('webpack')
 const { ANALYZE } = process.env
 
 module.exports = {
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     // add the webpack context replacement plugin to remove moment locales
     config.plugins.push(new webpack.ContextReplacementPlugin(/moment[/\\]locale$/, /en/))
+
+    // ignore test files when bundling
+    config.plugins.push(new webpack.IgnorePlugin(/src\/pages.*\/test.*/))
 
     // push graphql loaders into the webpack config
     config.module.rules.push({
@@ -30,7 +33,7 @@ module.exports = {
       config.plugins.push(
         new BundleAnalyzerPlugin({
           analyzerMode: 'server',
-          analyzerPort: 8888,
+          analyzerPort: isServer ? 8888 : 8889,
           openAnalyzer: true,
         }),
       )

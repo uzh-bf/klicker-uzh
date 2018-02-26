@@ -3,11 +3,11 @@
 import React from 'react'
 import renderer from 'react-test-renderer'
 
-import Join from './join'
+import Evaluation from '../pages/sessions/evaluation'
 
 describe('Snapshot-Testing', () => {
-  it('Works', () => {
-    const component = renderer.create(<Join url={{ query: { shortname: 'rsc' } }} />)
+  it.skip('Works', () => {
+    const component = renderer.create(<Evaluation />)
     const tree = component.toJSON()
     expect(tree).toMatchSnapshot()
   })
