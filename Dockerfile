@@ -1,5 +1,5 @@
 # extend the node alpine base
-FROM node:8-alpine@sha256:b0f4ff99dbfbbe6076289f762dfae8e8cdd7cad2eee24500c81957300ee6e360
+FROM node:8-alpine@sha256:eae6c7c7cc06944b03ad8ee78d0cfb2b829b2836b9427ccc1103f2ea3d34ec4c
 
 # root application directory
 ENV KLICKER_DIR /app
