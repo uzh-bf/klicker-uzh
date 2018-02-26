@@ -17,13 +17,12 @@ mongoose.Promise = require('bluebird')
 const compression = require('compression')
 const helmet = require('helmet')
 const morgan = require('morgan')
-const _invert = require('lodash/invert')
 const RateLimit = require('express-rate-limit')
 const { graphqlExpress } = require('apollo-server-express')
 
 const schema = require('./schema')
 const AuthService = require('./services/auth')
-const queryMap = require('./queryMap.json')
+// const queryMap = require('./queryMap.json')
 const { getRedis } = require('./redis')
 const { exceptTest } = require('./lib/utils')
 const { createLoaders } = require('./lib/loaders')
@@ -71,7 +70,22 @@ mongoose.connection
 let apolloEngine
 if (process.env.NODE_ENV === 'production' && process.env.ENGINE_API_KEY) {
   const { Engine } = require('apollo-engine')
-  apolloEngine = new Engine({ engineConfig: { apiKey: process.env.ENGINE_API_KEY } })
+  apolloEngine = new Engine({
+    engineConfig: {
+      apiKey: process.env.ENGINE_API_KEY,
+      stores: [
+        {
+          name: 'pq',
+          inMemory: {
+            cacheSize: '5000000',
+          },
+        },
+      ],
+      persistedQueries: {
+        store: 'pq',
+      },
+    },
+  })
   apolloEngine.start()
 }
 
@@ -85,7 +99,7 @@ if (process.env.APP_PROXY) {
 }
 
 // setup middleware stack
-const middleware = [
+let middleware = [
   // enable gzip compression
   compression(),
   // secure the server with helmet
@@ -114,13 +128,16 @@ const middleware = [
   }),
 ]
 
+if (process.env.ENGINE_API_KEY) {
+  middleware = [apolloEngine.expressMiddleware(), ...middleware]
+}
+
 if (process.env.APP_RATE_LIMITING) {
   // basic rate limiting configuration
   const limiterSettings = {
-    // TODO: skipping for admins or similar?
     windowMs: 5 * 60 * 1000, // in a 5 minute window
     max: 1000, // limit to 200 requests
-    delayAfter: 500, // start delaying responses after 100 requests
+    delayAfter: 200, // start delaying responses after 100 requests
     delayMs: 50, // delay responses by 250ms * (numResponses - delayAfter)
     keyGenerator: req => `${req.auth ? req.auth.sub : req.ip}`,
     onLimitReached: req =>
@@ -158,18 +175,31 @@ if (process.env.APP_RATE_LIMITING) {
   middleware.push(limiter)
 }
 
+// add the query caching middleware
+/* middleware.push(async (req, res, next) => {
+  console.log(req)
+
+  const queryHash = _get(req.body, 'extensions.persistedQuery')
+  if (queryHash) {
+    const query = queryMap[queryHash.sha256Hash]
+    if (query) {
+      // req.body.query = query
+      console.log('query')
+    }
+  }
+
+  next()
+}) */
+
 if (process.env.NODE_ENV === 'production') {
   // add the morgan logging middleware in production
   middleware.push(morgan('combined'))
 
   // add the persisted query middleware in production
   middleware.push((req, res, next) => {
-    const invertedMap = _invert(queryMap)
-    req.body.query = invertedMap[req.body.id]
-
     // set the APM transaction name
     if (apm) {
-      apm.setTransactionName(`[${req.body.id}] ${req.body.operationName}`)
+      apm.setTransactionName(`${req.body.operationName}`)
 
       // if the request is authenticated, set the user context
       if (req.auth) {
@@ -179,11 +209,6 @@ if (process.env.NODE_ENV === 'production') {
 
     next()
   })
-}
-
-// if apollo engine is enabled, add the middleware to the production stack
-if (apolloEngine) {
-  middleware.push(apolloEngine.expressMiddleware())
 }
 
 // expose the GraphQL API endpoint
