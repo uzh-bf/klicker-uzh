@@ -14,8 +14,12 @@ if (!process.browser) {
 }
 
 function create(initialState) {
+  console.log('creating')
   return new ApolloClient({
-    cache: new InMemoryCache().restore(initialState || {}),
+    cache: new InMemoryCache({
+      addTypename: true,
+      dataIdFromObject: o => o.id,
+    }).restore(initialState || {}),
     connectToDevTools: process.browser,
     link: new HttpLink({
       credentials: 'include', // Additional fetch() options like `credentials` or `headers`

@@ -42,10 +42,10 @@ const RegistrationForm = ({ intl, onSubmit }) => (
     <Formik
       initialValues={{
         email: null,
-        shortname: null,
+        institution: null,
         password: null,
         passwordRepeat: null,
-        institution: null,
+        shortname: null,
         useCase: null,
       }}
       render={({
