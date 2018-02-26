@@ -9,23 +9,21 @@ import QuestionDropzone from './QuestionDropzone'
 import QuestionSingle from '../../questions/QuestionSingle'
 
 const propTypes = {
-  input: PropTypes.shape({
-    onChange: PropTypes.func.isRequired,
-    value: PropTypes.arrayOf(
-      PropTypes.shape({
-        id: PropTypes.string.isRequired,
-        questions: PropTypes.arrayOf(
-          PropTypes.shape({
-            title: PropTypes.string.isRequired,
-            type: PropTypes.string.isRequired,
-          }),
-        ),
-      }),
-    ),
-  }).isRequired,
+  onChange: PropTypes.func.isRequired,
+  value: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      questions: PropTypes.arrayOf(
+        PropTypes.shape({
+          title: PropTypes.string.isRequired,
+          type: PropTypes.string.isRequired,
+        }),
+      ),
+    }),
+  ).isRequired,
 }
 
-const SessionTimelineInput = ({ input: { value, onChange } }) => {
+const SessionTimelineInput = ({ value, onChange }) => {
   // handle creation of an entirely new block
   const handleNewBlock = (newQuestion) => {
     onChange([...value, { questions: [newQuestion] }])

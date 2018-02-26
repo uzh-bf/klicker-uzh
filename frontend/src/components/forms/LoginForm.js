@@ -1,43 +1,18 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import isEmail from 'validator/lib/isEmail'
-import isLength from 'validator/lib/isLength'
-import { Field, reduxForm } from 'redux-form'
 import { intlShape } from 'react-intl'
+import { Formik } from 'formik'
+import Yup from 'yup'
+import _isEmpty from 'lodash/isEmpty'
 
-import { FormWithLinks, SemanticInput } from '.'
-
-const validate = ({ email, password }) => {
-  const errors = {}
-
-  // the email address needs to be valid
-  if (!email || !isEmail(email)) {
-    errors.email = 'form.email.invalid'
-  }
-
-  // password should at least have 7 characters (or more?)
-  if (!password || !isLength(password, { max: undefined, min: 1 })) {
-    errors.password = 'form.password.invalid'
-  }
-
-  return errors
-}
+import { FormWithLinks, FormikInput } from '.'
 
 const propTypes = {
-  handleSubmit: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  invalid: PropTypes.bool.isRequired,
+  onSubmit: PropTypes.func.isRequired,
 }
 
-const LoginForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
-  const button = {
-    invalid,
-    label: intl.formatMessage({
-      defaultMessage: 'Submit',
-      id: 'form.common.button.submit',
-    }),
-    onSubmit,
-  }
+const LoginForm = ({ intl, onSubmit }) => {
   const links = [
     {
       href: '/user/requestPassword',
@@ -53,47 +28,86 @@ const LoginForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
   ]
 
   return (
-    <FormWithLinks button={button} links={links}>
-      <Field
-        autoFocus
-        required
-        component={SemanticInput}
-        errorMessage={intl.formatMessage({
-          defaultMessage: 'Please provide a valid email address.',
-          id: 'form.email.invalid',
-        })}
-        icon="mail"
-        intl={intl}
-        label={intl.formatMessage({
-          defaultMessage: 'Email',
-          id: 'form.email.label',
-        })}
-        name="email"
-        type="email"
-      />
-      <Field
-        required
-        component={SemanticInput}
-        errorMessage={intl.formatMessage({
-          defaultMessage: 'Please provide a valid password (8+ characters).',
-          id: 'form.password.invalid',
-        })}
-        icon="privacy"
-        intl={intl}
-        label={intl.formatMessage({
-          defaultMessage: 'Password',
-          id: 'form.password.label',
-        })}
-        name="password"
-        type="password"
-      />
-    </FormWithLinks>
+    <Formik
+      initialValues={{
+        email: null,
+        password: null,
+      }}
+      render={({
+        values,
+        errors,
+        touched,
+        handleChange,
+        handleBlur,
+        handleSubmit,
+        isSubmitting,
+      }) => (
+        <FormWithLinks
+          button={{
+            disabled: !_isEmpty(errors) || _isEmpty(touched),
+            label: intl.formatMessage({
+              defaultMessage: 'Submit',
+              id: 'form.common.button.submit',
+            }),
+            loading: isSubmitting,
+            onSubmit: handleSubmit,
+          }}
+          links={links}
+        >
+          <FormikInput
+            autoFocus
+            required
+            error={errors.email}
+            errorMessage={intl.formatMessage({
+              defaultMessage: 'Please provide a valid email address.',
+              id: 'form.email.invalid',
+            })}
+            handleBlur={handleBlur}
+            handleChange={handleChange}
+            icon="mail"
+            intl={intl}
+            label={intl.formatMessage({
+              defaultMessage: 'Email',
+              id: 'form.email.label',
+            })}
+            name="email"
+            touched={touched.email}
+            type="email"
+            value={values.email}
+          />
+          <FormikInput
+            required
+            error={errors.password}
+            errorMessage={intl.formatMessage({
+              defaultMessage: 'Please provide a valid password (8+ characters).',
+              id: 'form.password.invalid',
+            })}
+            handleBlur={handleBlur}
+            handleChange={handleChange}
+            icon="privacy"
+            intl={intl}
+            label={intl.formatMessage({
+              defaultMessage: 'Password',
+              id: 'form.password.label',
+            })}
+            name="password"
+            touched={touched.password}
+            type="password"
+            value={values.password}
+          />
+        </FormWithLinks>
+      )}
+      validationSchema={Yup.object().shape({
+        email: Yup.string()
+          .email()
+          .required(),
+        password: Yup.string().required(),
+      })}
+      onSubmit={onSubmit}
+    />
   )
 }
 
 LoginForm.propTypes = propTypes
 
-export default reduxForm({
-  form: 'login',
-  validate,
-})(LoginForm)
+export default LoginForm

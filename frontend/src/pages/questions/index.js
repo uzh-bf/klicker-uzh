@@ -57,6 +57,7 @@ const Index = ({
   const actionArea = (
     <div className="creationForm">
       <SessionCreationForm
+        intl={intl}
         onDiscard={handleCreationModeToggle}
         onSave={handleCreateSession('save')}
         onStart={handleCreateSession('start')}

@@ -8,3 +8,4 @@ export { default as SessionCreationForm } from './SessionCreationForm'
 
 export { default as FormWithLinks } from './components/FormWithLinks'
 export { default as SemanticInput } from './components/SemanticInput'
+export { default as FormikInput } from './components/FormikInput'

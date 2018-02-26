@@ -8,7 +8,7 @@ import { intlShape } from 'react-intl'
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionCreationForm } from '../../components/forms'
 import { pageWithIntl, withData, withDnD, withLogging } from '../../lib'
-import { QuestionListQuery, TagListQuery, CreateQuestionMutation } from '../../graphql'
+import { QuestionPoolQuery, TagListQuery, CreateQuestionMutation } from '../../graphql'
 
 const propTypes = {
   handleDiscard: PropTypes.func.isRequired,
@@ -61,7 +61,7 @@ export default compose(
         await mutate({
           // reload the list of questions and tags after creation
           // TODO: replace with optimistic updates
-          refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
+          refetchQueries: [{ query: QuestionPoolQuery }],
           variables: {
             description: content,
             options,
