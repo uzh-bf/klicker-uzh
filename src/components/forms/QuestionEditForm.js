@@ -95,7 +95,7 @@ const QuestionEditForm = ({
   <div className="questionEditForm">
     <Formik
       initialValues={initialValues}
-      validation={validate}
+      validate={validate}
       // validationSchema={Yup.object().shape({})}
       onSubmit={onSubmit}
     >
@@ -105,7 +105,7 @@ const QuestionEditForm = ({
         const OptionsInput = typeComponents[type]
 
         return (
-          <Form error onSubmit={handleSubmit}>
+          <Form onSubmit={handleSubmit}>
             <div className="questionInput questionType">
               <Form.Field>
                 <label htmlFor="type">
@@ -117,13 +117,13 @@ const QuestionEditForm = ({
 
             <div className="questionInput questionTitle">
               <FormikInput
-                error={errors.title}
+                /* error={errors.title}
                 errorMessage={
                   <FormattedMessage
                     defaultMessage="Please provide a valid question title (summary)."
                     id="form.questionTitle.invalid"
                   />
-                }
+                } */
                 handleBlur={handleBlur}
                 handleChange={handleChange}
                 intl={intl}

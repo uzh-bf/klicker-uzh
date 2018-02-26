@@ -115,7 +115,7 @@ const QuestionCreationForm = ({
           title: null,
           type: QUESTION_TYPES.SC,
         }}
-        validation={validate}
+        validate={validate}
         /* validationSchema={Yup.object().shape({
           content: Yup.string().required(),
           tags: Yup.array().min(1).required(),
@@ -138,18 +138,18 @@ const QuestionCreationForm = ({
           const OptionsInput = typeComponents[values.type].input
 
           return (
-            <Form error onSubmit={handleSubmit}>
+            <Form onSubmit={handleSubmit}>
               <div className="questionInput questionTitle">
                 <FormikInput
                   autoFocus
                   required
-                  error={errors.title}
+                  /* error={errors.title}
                   errorMessage={
                     <FormattedMessage
                       defaultMessage="Please provide a valid question title (summary)."
                       id="form.questionTitle.invalid"
                     />
-                  }
+                  } */
                   handleBlur={handleBlur}
                   handleChange={handleChange}
                   intl={intl}
