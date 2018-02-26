@@ -51,7 +51,7 @@
     "raven-js": "3.22.3",
     "react": "16.2.0",
     "react-addons-css-transition-group": "15.6.2",
-    "react-apollo": "1.4.16",
+    "react-apollo": "2.0.4",
     "react-autosuggest": "9.3.4",
     "react-d3-cloud": "0.6.0",
     "react-dnd": "2.5.4",
