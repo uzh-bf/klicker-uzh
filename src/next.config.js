@@ -7,7 +7,7 @@ const { ANALYZE } = process.env
 module.exports = {
   webpack: (config) => {
     // add the webpack context replacement plugin to remove moment locales
-    config.plugins.push(new webpack.ContextReplacementPlugin(/moment[/\\]locale$/, /de|en/))
+    config.plugins.push(new webpack.ContextReplacementPlugin(/moment[/\\]locale$/, /en/))
 
     // push graphql loaders into the webpack config
     config.module.rules.push({
