@@ -78,7 +78,7 @@
     "@storybook/addon-storyshots": "3.3.14",
     "@storybook/react": "3.3.14",
     "babel-eslint": "8.2.2",
-    "cypress": "2.0.3",
+    "cypress": "2.0.4",
     "enzyme": "3.3.0",
     "eslint": "4.18.1",
     "eslint-config-airbnb": "16.1.0",
