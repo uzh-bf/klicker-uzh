@@ -79,6 +79,7 @@ const StudentLayout = ({
             flex-direction: column;
 
             height: 100%;
+            min-height: 100vh;
 
             .header {
               flex: 0 0 auto;
