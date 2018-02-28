@@ -42,7 +42,7 @@ const StudentLayout = ({
     : [activeQuestionItem]
 
   return (
-    <CommonLayout baseFontSize="16px" nextMinHeight="100%" pageTitle={pageTitle}>
+    <CommonLayout baseFontSize="16px" nextMinHeight="100vh" pageTitle={pageTitle}>
       <div className="studentLayout">
         <div className="header">
           <Button
