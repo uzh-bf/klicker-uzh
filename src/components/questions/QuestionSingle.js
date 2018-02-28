@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import { FormattedMessage } from 'react-intl'
 
 const propTypes = {
   index: PropTypes.number,
@@ -19,7 +20,7 @@ const QuestionSingle = ({
   <div className="questionSingle">
     <div className="type">
       {index && `#${index} - `}
-      {type}
+      <FormattedMessage defaultMessage="-" id={`common.${type}.short`} />
     </div>
     <div className="title">
       {title} (v{version + 1})

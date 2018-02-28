@@ -46,7 +46,9 @@ export const TagListPres = ({ tags, types, handleTagClick }) => (
           onClick={() => handleTagClick(name, true)}
         >
           <List.Icon name={isActive ? 'folder' : 'folder outline'} />
-          <List.Content>{name}</List.Content>
+          <List.Content>
+            <FormattedMessage defaultMessage="type" id={`common.${name}.label`} />
+          </List.Content>
         </List.Item>
       ))}
       <List.Header className="listHeader tags">
