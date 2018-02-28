@@ -2,7 +2,7 @@
 
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Button, Icon, Menu, Popup, List } from 'semantic-ui-react'
+import { Button, Icon, Menu, Popup, List, Modal, Embed } from 'semantic-ui-react'
 import { intlShape, FormattedMessage } from 'react-intl'
 
 const propTypes = {
@@ -93,7 +93,7 @@ const SessionArea = ({ intl, runtime, sessionId }) => (
       }
     >
       <Popup.Content>
-        <div className="popupContent">
+        <div className="popupChanges popupContent">
           <h3>New features (major)</h3>
           <List bulleted>
             {changelog.new.map(({ text, items }, index) => (
@@ -117,6 +117,60 @@ const SessionArea = ({ intl, runtime, sessionId }) => (
       </Popup.Content>
     </Popup>
 
+    <Popup
+      basic
+      hoverable
+      on="click"
+      position="bottom right"
+      trigger={
+        <Menu.Item
+          content={intl.formatMessage({ defaultMessage: 'Support', id: 'sessionArea.support' })}
+          icon="help"
+        />
+      }
+    >
+      <Popup.Content>
+        <div className="popupHelp popupContent">
+          <h3>Support</h3>
+          <a href="mailto:support@klicker.uzh.ch">
+            <Button icon labelPosition="left">
+              <Icon name="mail" />
+              support@klicker.uzh.ch
+            </Button>
+          </a>
+
+          <a
+            href="https://uzh-bf.github.io/klicker-docs/"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <Button icon labelPosition="left">
+              <Icon name="external" />
+              Documentation
+            </Button>
+          </a>
+
+          <Modal
+            trigger={
+              <Button icon labelPosition="left">
+                <Icon name="video" />
+                Introductory Video
+              </Button>
+            }
+          >
+            <Modal.Header>Introductory Video</Modal.Header>
+            <Modal.Content>
+              <Embed
+                id="c_RXhpGUNoc"
+                placeholder="/assets/images/image-16by9.png"
+                source="youtube"
+              />
+            </Modal.Content>
+          </Modal>
+        </div>
+      </Popup.Content>
+    </Popup>
+
     <style jsx>{`
       h3 {
         font-size: 1.2rem;
@@ -129,6 +183,21 @@ const SessionArea = ({ intl, runtime, sessionId }) => (
 
       .popupContent {
         padding: 0;
+
+        :global(.button) {
+          width: 100%;
+
+          &:not(:last-child) {
+            margin-bottom: 1rem;
+          }
+        }
+      }
+
+      .popupHelp {
+        width: 15rem;
+      }
+
+      .popupChanges {
         width: 35rem;
       }
     `}</style>
