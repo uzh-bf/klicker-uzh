@@ -64,7 +64,7 @@ function EvaluationLayout({
   statistics,
 }) {
   return (
-    <CommonLayout baseFontSize="22px" pageTitle={pageTitle}>
+    <CommonLayout baseFontSize="22px" nextHeight="100%" pageTitle={pageTitle}>
       <div className={`evaluationLayout ${type}`}>
         {(() => {
           if (instanceSummary.length <= 0) {

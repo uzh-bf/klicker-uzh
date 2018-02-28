@@ -65,7 +65,7 @@ const TeacherLayout = ({
   ]
 
   return (
-    <CommonLayout baseFontSize="14px" pageTitle={pageTitle}>
+    <CommonLayout baseFontSize="14px" nextHeight="100%" pageTitle={pageTitle}>
       <div className="teacherLayout">
         {navbar && (
           <div className="navbar">
@@ -93,6 +93,12 @@ const TeacherLayout = ({
         </div>
 
         <div className="actionArea">{actionArea}</div>
+
+        <style global jsx>{`
+          #__next {
+            height: 100%;
+          }
+        `}</style>
 
         <style jsx>{`
           .teacherLayout {
