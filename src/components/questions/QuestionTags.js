@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import { FormattedMessage } from 'react-intl'
 
 const propTypes = {
   tags: PropTypes.arrayOf(
@@ -18,7 +19,9 @@ const QuestionTags = ({ tags, type }) => (
         {tag.name}
       </div>
     ))}
-    <div className="type tag">{type}</div>
+    <div className="type tag">
+      <FormattedMessage defaultMessage="-" id={`common.${type}.short`} />
+    </div>
 
     <style jsx>{`
       @import 'src/theme';

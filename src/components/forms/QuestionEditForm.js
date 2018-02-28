@@ -53,11 +53,13 @@ const validate = ({
 
 const propTypes = {
   activeVersion: PropTypes.number.isRequired,
+  editSuccess: PropTypes.object.isRequired,
   initialValues: PropTypes.object.isRequired,
   intl: intlShape.isRequired,
   isNewVersion: PropTypes.bool.isRequired,
   onActiveVersionChange: PropTypes.func.isRequired,
   onDiscard: PropTypes.func.isRequired,
+  onDismiss: PropTypes.func.isRequired,
   onSubmit: PropTypes.func.isRequired,
   tags: PropTypes.arrayOf(
     PropTypes.shape({
@@ -82,9 +84,11 @@ const typeComponents = {
 
 const QuestionEditForm = ({
   activeVersion,
+  editSuccess,
   initialValues,
   intl,
   isNewVersion,
+  onDismiss,
   tags,
   type,
   onSubmit,
@@ -94,24 +98,50 @@ const QuestionEditForm = ({
 }) => (
   <div className="questionEditForm">
     <Formik
+      enableReinitialize
       initialValues={initialValues}
       validate={validate}
       // validationSchema={Yup.object().shape({})}
       onSubmit={onSubmit}
     >
       {({
- values, errors, touched, handleChange, handleBlur, handleSubmit, setFieldValue,
-}) => {
+        values,
+        errors,
+        touched,
+        handleChange,
+        handleBlur,
+        handleSubmit,
+        setFieldValue,
+        isSubmitting,
+      }) => {
         const OptionsInput = typeComponents[type]
+        const { message, success } = editSuccess
 
         return (
-          <Form onSubmit={handleSubmit}>
+          <Form error={success === false} success={success === true} onSubmit={handleSubmit}>
+            <div className="infoMessage">
+              <Message success onDismiss={onDismiss}>
+                <FormattedMessage
+                  defaultMessage="Successfully modified question."
+                  id="editQuestion.sucess"
+                />
+              </Message>
+              <Message error onDismiss={onDismiss}>
+                <FormattedMessage
+                  defaultMessage="Could not modify question: {error}"
+                  id="editQuestion.error"
+                  values={{ error: message }}
+                />
+              </Message>
+            </div>
             <div className="questionInput questionType">
               <Form.Field>
                 <label htmlFor="type">
                   <FormattedMessage defaultMessage="Question Type" id="editQuestion.type" />
                 </label>
-                <div className="type">{type}</div>
+                <div className="type">
+                  <FormattedMessage defaultMessage="type" id={`common.${type}.label`} />
+                </div>
               </Form.Field>
             </div>
 
@@ -216,6 +246,7 @@ const QuestionEditForm = ({
                 primary
                 className="save"
                 disabled={!_isEmpty(errors) || _isEmpty(touched)}
+                loading={isSubmitting && success === null}
                 type="submit"
               >
                 <FormattedMessage defaultMessage="Save" id="common.button.save" />
@@ -263,6 +294,7 @@ const QuestionEditForm = ({
             grid-template-columns: 1fr 4fr;
             grid-template-rows: auto;
             grid-template-areas:
+              'message message'
               'type title'
               'tags tags'
               'version version'
@@ -272,6 +304,14 @@ const QuestionEditForm = ({
 
             .questionInput {
               margin-bottom: 0;
+            }
+
+            .infoMessage {
+              grid-area: message;
+
+              > :global(.message) {
+                margin-bottom: 0;
+              }
             }
 
             .questionTitle {

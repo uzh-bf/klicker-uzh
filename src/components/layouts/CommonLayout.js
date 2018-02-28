@@ -10,11 +10,15 @@ import { createLinks } from '../../lib'
 const propTypes = {
   baseFontSize: PropTypes.string,
   children: PropTypes.element.isRequired,
+  nextHeight: PropTypes.string,
+  nextMinHeight: PropTypes.string,
   pageTitle: PropTypes.string,
 }
 
 const defaultProps = {
   baseFontSize: '14px',
+  nextHeight: 'auto',
+  nextMinHeight: 0,
   pageTitle: 'CommonLayout',
 }
 
@@ -23,7 +27,9 @@ const links = [
   `https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/${SEMANTIC_VERSION}/semantic.min.css`,
 ]
 
-const CommonLayout = ({ baseFontSize, children, pageTitle }) => (
+const CommonLayout = ({
+  baseFontSize, children, nextHeight, nextMinHeight, pageTitle,
+}) => (
   <div className="commonLayout">
     <Helmet defer={false}>
       {createLinks(links)}
@@ -46,7 +52,8 @@ const CommonLayout = ({ baseFontSize, children, pageTitle }) => (
       }
 
       #__next {
-        height: 100%;
+        height: ${nextHeight};
+        min-height: ${nextMinHeight};
       }
 
       input,
