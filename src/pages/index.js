@@ -28,14 +28,24 @@ const Index = () => (
       <p className="description">Welcome to the open source instant audience response system.</p>
 
       <div className="boxes">
-        <div className="box hoverable">
+        <a
+          className="box hoverable"
+          href="https://uzh-bf.github.io/klicker-docs/"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
           <h2>Project</h2>
           <p>Learn more about Klicker.</p>
-        </div>
-        <div className="box hoverable">
+        </a>
+        <a
+          className="box hoverable"
+          href="https://uzh-bf.github.io/klicker-docs/"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
           <h2>Lecturer</h2>
           <p>How to use Klicker as a lecturer!</p>
-        </div>
+        </a>
         <div className="box">
           <h2>Development</h2>
           <List divided relaxed>
@@ -67,8 +77,8 @@ const Index = () => (
             <List.Item>
               <List.Icon name="mail" size="large" verticalAlign="middle" />
               <List.Content>
-                <List.Header as="a" href="mailto:klicker@bf.uzh.ch">
-                  klicker@bf.uzh.ch
+                <List.Header as="a" href="mailto:support@klicker.uzh.ch">
+                  support@klicker.uzh.ch
                 </List.Header>
                 <List.Description>Support</List.Description>
               </List.Content>
@@ -123,6 +133,8 @@ const Index = () => (
           display: flex;
           flex-direction: column;
           .box {
+            color: black;
+            display: block;
             padding: 1rem;
             margin-bottom: 0.3rem;
             border: 1px solid $color-primary;
@@ -157,12 +169,14 @@ const Index = () => (
             flex-direction: row;
             .box {
               padding: 1rem;
-              cursor: pointer;
               height: 17rem;
               width: 17rem;
               margin-right: 0.5rem;
               &:last-child {
                 margin-right: 0;
+              }
+              &.hoverable {
+                cursor: pointer;
               }
             }
           }
