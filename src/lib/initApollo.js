@@ -3,7 +3,7 @@
 
 import { ApolloClient } from 'apollo-client'
 import { HttpLink } from 'apollo-link-http'
-import { createPersistedQueryLink } from 'apollo-link-persisted-queries'
+// import { createPersistedQueryLink } from 'apollo-link-persisted-queries'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import fetch from 'isomorphic-unfetch'
 
@@ -17,7 +17,7 @@ if (!process.browser) {
 // HACK: this is a copy of the default persisted-queries disable function
 // it needs to be provided as the config passed in is not yet merged with defaults
 // otherwise it would lead to ".disable not defined" style errors...
-const defaultDisable = ({ graphQLErrors, operation }) => {
+/* const defaultDisable = ({ graphQLErrors, operation }) => {
   // if the server doesn't support persisted queries, don't try anymore
   if (
     graphQLErrors &&
@@ -34,7 +34,7 @@ const defaultDisable = ({ graphQLErrors, operation }) => {
   }
 
   return false
-}
+} */
 
 function create(initialState) {
   const cache = new InMemoryCache({
@@ -47,16 +47,17 @@ function create(initialState) {
     uri: process.env.API_URL || 'http://localhost:4000/graphql',
   })
 
-  const persistQueriesLink = createPersistedQueryLink({
+  /* const persistQueriesLink = createPersistedQueryLink({
     // we need to pass both disable and generateHash (or it will bug)
     disable: defaultDisable,
     generateHash: ({ documentId }) => documentId,
-  })
+  }) */
 
   const client = new ApolloClient({
     cache,
     connectToDevTools: process.browser,
-    link: persistQueriesLink.concat(link),
+    link,
+    // link: persistQueriesLink.concat(link),
     ssrMode: !process.browser, // Disables forceFetch on the server (so queries are only run once)
   })
 
@@ -77,56 +78,3 @@ export default function initApollo(initialState) {
 
   return apolloClient
 }
-
-/* import { ApolloClient, createNetworkInterface } from 'react-apollo'
-import { PersistedQueryNetworkInterface } from 'persistgraphql'
-import fetch from 'isomorphic-fetch'
-
-import queryMap from '../graphql/queryMap.json'
-
-const dev = process.env.NODE_ENV !== 'production'
-
-let apolloClient = null
-
-// Polyfill fetch() on the server (used by apollo-client)
-if (!process.browser) {
-  global.fetch = fetch
-}
-
-const networkOpts = {
-  opts: {
-    // Additional fetch() options like `credentials` or `headers`
-    // credentials: dev ? 'include' : 'same-origin',
-    // HACK: temporarily always include credentials
-    credentials: 'include',
-  },
-  queryMap,
-  // Server URL (must be absolute)
-  // https://api.graph.cool/simple/v1/klicker
-  // uri: 'http://localhost:4000/graphql',
-  uri: process.env.API_URL || 'http://localhost:4000/graphql',
-}
-
-function create() {
-  return new ApolloClient({
-    networkInterface: dev
-      ? createNetworkInterface(networkOpts)
-      : new PersistedQueryNetworkInterface(networkOpts),
-    ssrMode: !process.browser, // Disables forceFetch on the server (so queries are only run once)
-  })
-}
-
-export default function initApollo() {
-  // Make sure to create a new client for every server-side request so that data
-  // isn't shared between connections (which would be bad)
-  if (!process.browser) {
-    return create()
-  }
-
-  // Reuse client on the client-side
-  if (!apolloClient) {
-    apolloClient = create()
-  }
-
-  return apolloClient
-} */

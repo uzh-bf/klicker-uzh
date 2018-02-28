@@ -98,6 +98,7 @@ const QuestionEditForm = ({
 }) => (
   <div className="questionEditForm">
     <Formik
+      enableReinitialize
       initialValues={initialValues}
       validate={validate}
       // validationSchema={Yup.object().shape({})}
@@ -138,7 +139,9 @@ const QuestionEditForm = ({
                 <label htmlFor="type">
                   <FormattedMessage defaultMessage="Question Type" id="editQuestion.type" />
                 </label>
-                <div className="type">{type}</div>
+                <div className="type">
+                  <FormattedMessage defaultMessage="type" id={`common.${type}.label`} />
+                </div>
               </Form.Field>
             </div>
 

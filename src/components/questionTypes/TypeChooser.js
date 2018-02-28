@@ -17,29 +17,29 @@ const TypeChooser = ({ intl, value, onChange }) => {
   const types = [
     {
       name: intl.formatMessage({
-        defaultMessage: 'SC',
-        id: 'common.questionTypes.sc',
+        defaultMessage: 'Single Choice (SC)',
+        id: 'common.SC.label',
       }),
       value: QUESTION_TYPES.SC,
     },
     {
       name: intl.formatMessage({
-        defaultMessage: 'MC',
-        id: 'common.questionTypes.mc',
+        defaultMessage: 'Multiple Choice (MC)',
+        id: 'common.MC.label',
       }),
       value: QUESTION_TYPES.MC,
     },
     {
       name: intl.formatMessage({
-        defaultMessage: 'FREE',
-        id: 'common.questionTypes.free',
+        defaultMessage: 'Free Text (FT)',
+        id: 'common.FREE.label',
       }),
       value: QUESTION_TYPES.FREE,
     },
     {
       name: intl.formatMessage({
-        defaultMessage: 'FREE_RANGE',
-        id: 'common.questionTypes.freeRange',
+        defaultMessage: 'Number Range (NR)',
+        id: 'common.FREE_RANGE.label',
       }),
       value: QUESTION_TYPES.FREE_RANGE,
     },
