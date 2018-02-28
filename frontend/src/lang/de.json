@@ -1,4 +1,12 @@
 {
+  "common.SC.label": "Single Choice (SC)",
+  "common.SC.short": "SC",
+  "common.MC.label": "Multiple Choice (MC)",
+  "common.MC.short": "MC",
+  "common.FREE.label": "Freitext (FT)",
+  "common.FREE.short": "FT",
+  "common.FREE_RANGE.label": "Zahlenbereich (NR)",
+  "common.FREE_RANGE.short": "NR",
   "common.button.skip": "Überspringen",
   "common.button.submit": "Absenden",
   "common.string.settings": "Einstellungen",
