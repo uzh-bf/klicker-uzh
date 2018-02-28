@@ -26,7 +26,7 @@ const PasswordRequestForm = ({ intl, onSubmit }) => {
   return (
     <Formik
       initialValues={{
-        email: null,
+        email: '',
       }}
       render={({
         values,
