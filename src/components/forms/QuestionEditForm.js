@@ -53,11 +53,13 @@ const validate = ({
 
 const propTypes = {
   activeVersion: PropTypes.number.isRequired,
+  editSuccess: PropTypes.object.isRequired,
   initialValues: PropTypes.object.isRequired,
   intl: intlShape.isRequired,
   isNewVersion: PropTypes.bool.isRequired,
   onActiveVersionChange: PropTypes.func.isRequired,
   onDiscard: PropTypes.func.isRequired,
+  onDismiss: PropTypes.func.isRequired,
   onSubmit: PropTypes.func.isRequired,
   tags: PropTypes.arrayOf(
     PropTypes.shape({
