@@ -82,7 +82,8 @@ const SessionArea = ({ intl, runtime, sessionId }) => (
 
     <Popup
       basic
-      hideOnScroll
+      hoverable
+      on="click"
       position="bottom right"
       trigger={
         <Menu.Item

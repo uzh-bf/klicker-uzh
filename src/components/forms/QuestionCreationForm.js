@@ -102,7 +102,7 @@ const QuestionCreationForm = ({
     <div className="questionCreationForm">
       <Formik
         initialValues={{
-          content: null,
+          content: '',
           options: {
             choices: [],
             randomized: false,
@@ -112,7 +112,7 @@ const QuestionCreationForm = ({
             },
           },
           tags: null,
-          title: null,
+          title: '',
           type: QUESTION_TYPES.SC,
         }}
         validate={validate}
