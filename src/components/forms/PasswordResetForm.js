@@ -26,8 +26,8 @@ const PasswordResetForm = ({ intl, onSubmit }) => {
   return (
     <Formik
       initialValues={{
-        password: null,
-        passwordRepeat: null,
+        password: '',
+        passwordRepeat: '',
       }}
       render={({
         values,

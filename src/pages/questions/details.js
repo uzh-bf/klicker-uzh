@@ -21,7 +21,9 @@ import {
 const propTypes = {
   activeVersion: PropTypes.number.isRequired,
   allTags: PropTypes.array.isRequired,
+  editSuccess: PropTypes.bool.isRequired,
   handleDiscard: PropTypes.func.isRequired,
+  handleDismiss: PropTypes.func.isRequired,
   handleSave: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   isNewVersion: PropTypes.bool.isRequired,
@@ -44,6 +46,8 @@ const EditQuestion = ({
   handleSave,
   activeVersion,
   setActiveVersion,
+  editSuccess,
+  handleDismiss,
 }) => (
   <TeacherLayout
     intl={intl}
@@ -62,6 +66,7 @@ const EditQuestion = ({
     <QuestionEditForm
       activeVersion={activeVersion}
       allTags={allTags}
+      editSuccess={editSuccess}
       intl={intl}
       isNewVersion={isNewVersion}
       questionTags={questionTags}
@@ -70,6 +75,7 @@ const EditQuestion = ({
       versions={versions}
       onActiveVersionChange={setActiveVersion}
       onDiscard={handleDiscard}
+      onDismiss={handleDismiss}
       onSubmit={handleSave}
     />
   </TeacherLayout>
@@ -97,6 +103,10 @@ export default compose(
     'setActiveVersion',
     ({ details }) => details.question.versions.length - 1,
   ),
+  withState('editSuccess', 'setEditSuccess', {
+    message: null,
+    success: null,
+  }),
   withProps(({ activeVersion, details, tags }) => ({
     ..._pick(details.question, ['id', 'title', 'type', 'versions']),
     allTags: tags.tags,
@@ -109,9 +119,18 @@ export default compose(
       Router.push('/questions')
     },
 
+    handleDismiss: ({ setEditSuccess }) => {
+      setEditSuccess({
+        editSuccess: {
+          message: null,
+          success: null,
+        },
+      })
+    },
+
     // handle modifying a question
     handleSave: ({
-      id, mutate, isNewVersion, url,
+      id, mutate, isNewVersion, url, setEditSuccess,
     }) => async ({
       title,
       description,
@@ -119,6 +138,11 @@ export default compose(
       solution,
       tags,
     }) => {
+      setEditSuccess({
+        message: null,
+        success: null,
+      })
+
       try {
         await mutate({
           // reload the question details and tags after update
@@ -166,8 +190,18 @@ export default compose(
             _isNil,
           ),
         })
+
+        setEditSuccess({
+          message: null,
+          success: true,
+        })
       } catch ({ message }) {
         console.error(message)
+
+        setEditSuccess({
+          message,
+          success: false,
+        })
       }
     },
   }),
