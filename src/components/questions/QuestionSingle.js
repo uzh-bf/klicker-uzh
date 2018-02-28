@@ -20,7 +20,7 @@ const QuestionSingle = ({
   <div className="questionSingle">
     <div className="type">
       {index && `#${index} - `}
-      <FormattedMessage defaultMessage="-" id={`common.${type}.short`} />
+      <FormattedMessage defaultMessage={type} id={`common.${type}.short`} />
     </div>
     <div className="title">
       {title} (v{version + 1})
