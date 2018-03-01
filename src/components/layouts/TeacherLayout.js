@@ -94,12 +94,6 @@ const TeacherLayout = ({
 
         <div className="actionArea">{actionArea}</div>
 
-        <style global jsx>{`
-          #__next {
-            height: 100%;
-          }
-        `}</style>
-
         <style jsx>{`
           .teacherLayout {
             display: flex;
