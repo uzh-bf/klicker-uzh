@@ -166,6 +166,8 @@ function FeedbackArea({
 
           .feedbacks {
             margin-top: 1rem;
+
+            overflow-y: auto;
           }
 
           .feedback:not(:last-child) {
