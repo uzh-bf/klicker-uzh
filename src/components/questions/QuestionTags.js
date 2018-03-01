@@ -20,7 +20,7 @@ const QuestionTags = ({ tags, type }) => (
       </div>
     ))}
     <div className="type tag">
-      <FormattedMessage defaultMessage="-" id={`common.${type}.short`} />
+      <FormattedMessage defaultMessage={type} id={`common.${type}.short`} />
     </div>
 
     <style jsx>{`
