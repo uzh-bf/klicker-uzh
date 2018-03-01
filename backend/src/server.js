@@ -4,7 +4,7 @@
 if (process.env.APM_SERVER_URL) {
   require('elastic-apm-node').start({
     active: process.env.NODE_ENV === 'production',
-    appName: process.env.APM_NAME,
+    serviceName: process.env.APM_NAME,
     secretToken: process.env.APM_SECRET_TOKEN,
     serverUrl: process.env.APM_SERVER_URL,
   })
