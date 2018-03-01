@@ -6792,9 +6792,9 @@ logrocket-react@1.0.0:
     react "16"
     react-dom "16"
 
-logrocket@0.6.7:
-  version "0.6.7"
-  resolved "https://registry.yarnpkg.com/logrocket/-/logrocket-0.6.7.tgz#3b49ba5e30e1c7d69db9a691e8b2e360953ada23"
+logrocket@0.6.8:
+  version "0.6.8"
+  resolved "https://registry.yarnpkg.com/logrocket/-/logrocket-0.6.8.tgz#8175531c85508c96953c2bd343a213ac599b0a33"
 
 longest@^1.0.1:
   version "1.0.1"
@@ -8589,9 +8589,9 @@ range-parser@^1.0.3, range-parser@~1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/range-parser/-/range-parser-1.2.0.tgz#f49be6b487894ddc40dcc94a322f611092e00d5e"
 
-raven-js@3.22.3:
-  version "3.22.3"
-  resolved "https://registry.yarnpkg.com/raven-js/-/raven-js-3.22.3.tgz#8330dcc102b699ffbc2f48790978b997bf4d8f75"
+raven-js@3.22.4:
+  version "3.22.4"
+  resolved "https://registry.yarnpkg.com/raven-js/-/raven-js-3.22.4.tgz#e5ac2aef7cdbbe639eef0db04703e99b6a0bcb28"
 
 raw-body@2.3.2:
   version "2.3.2"
