@@ -186,15 +186,12 @@ const SessionArea = ({ intl, runtime, sessionId }) => (
 
         :global(.button) {
           width: 100%;
-
-          &:not(:last-child) {
-            margin-bottom: 1rem;
-          }
+          margin-bottom: 0.5rem;
         }
       }
 
       .popupHelp {
-        width: 15rem;
+        width: 20rem;
       }
 
       .popupChanges {
