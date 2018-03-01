@@ -3961,18 +3961,19 @@ nodemailer@4.6.0:
   version "4.6.0"
   resolved "https://registry.yarnpkg.com/nodemailer/-/nodemailer-4.6.0.tgz#b99391435aabbd34b74a1283112fbdfd34f7eb8f"
 
-nodemon@1.15.1:
-  version "1.15.1"
-  resolved "https://registry.yarnpkg.com/nodemon/-/nodemon-1.15.1.tgz#54daa72443d8d5a548f130866b92e65cded0ed58"
+nodemon@1.17.1:
+  version "1.17.1"
+  resolved "https://registry.yarnpkg.com/nodemon/-/nodemon-1.17.1.tgz#cdb4bc53d7a86d6162143a1a44d7adf927d8652f"
   dependencies:
     chokidar "^2.0.2"
     debug "^3.1.0"
     ignore-by-default "^1.0.1"
     minimatch "^3.0.4"
     pstree.remy "^1.1.0"
-    semver "^5.4.1"
+    semver "^5.5.0"
+    supports-color "^5.2.0"
     touch "^3.1.0"
-    undefsafe "^2.0.1"
+    undefsafe "^2.0.2"
     update-notifier "^2.3.0"
 
 nopt@^4.0.1:
@@ -4886,7 +4887,7 @@ semver-diff@^2.0.0:
   dependencies:
     semver "^5.0.3"
 
-"semver@2 || 3 || 4 || 5", semver@^5.0.3, semver@^5.1.0, semver@^5.3.0, semver@^5.4.1:
+"semver@2 || 3 || 4 || 5", semver@^5.0.3, semver@^5.1.0, semver@^5.3.0, semver@^5.4.1, semver@^5.5.0:
   version "5.5.0"
   resolved "https://registry.yarnpkg.com/semver/-/semver-5.5.0.tgz#dc4bbc7a6ca9d916dee5d43516f0092b58f7b8ab"
 
@@ -5540,7 +5541,7 @@ ultron@~1.1.0:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/ultron/-/ultron-1.1.1.tgz#9fe1536a10a664a65266a1e3ccf85fd36302bc9c"
 
-undefsafe@^2.0.1:
+undefsafe@^2.0.2:
   version "2.0.2"
   resolved "https://registry.yarnpkg.com/undefsafe/-/undefsafe-2.0.2.tgz#225f6b9e0337663e0d8e7cfd686fc2836ccace76"
   dependencies:
