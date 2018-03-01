@@ -2736,9 +2736,17 @@ concat-map@0.0.1:
   version "0.0.1"
   resolved "https://registry.yarnpkg.com/concat-map/-/concat-map-0.0.1.tgz#d8a96bd77fd68df7793a73036a3ba0d5405d477b"
 
-concat-stream@1.6.0, concat-stream@^1.5.0, concat-stream@^1.6.0:
+concat-stream@1.6.0:
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/concat-stream/-/concat-stream-1.6.0.tgz#0aac662fd52be78964d5532f694784e70110acf7"
+  dependencies:
+    inherits "^2.0.3"
+    readable-stream "^2.2.2"
+    typedarray "^0.0.6"
+
+concat-stream@^1.5.0, concat-stream@^1.6.0:
+  version "1.6.1"
+  resolved "https://registry.yarnpkg.com/concat-stream/-/concat-stream-1.6.1.tgz#261b8f518301f1d834e36342b9fea095d2620a26"
   dependencies:
     inherits "^2.0.3"
     readable-stream "^2.2.2"
@@ -6784,9 +6792,9 @@ logrocket-react@1.0.0:
     react "16"
     react-dom "16"
 
-logrocket@0.6.7:
-  version "0.6.7"
-  resolved "https://registry.yarnpkg.com/logrocket/-/logrocket-0.6.7.tgz#3b49ba5e30e1c7d69db9a691e8b2e360953ada23"
+logrocket@0.6.8:
+  version "0.6.8"
+  resolved "https://registry.yarnpkg.com/logrocket/-/logrocket-0.6.8.tgz#8175531c85508c96953c2bd343a213ac599b0a33"
 
 longest@^1.0.1:
   version "1.0.1"
@@ -8580,9 +8588,9 @@ range-parser@^1.0.3, range-parser@~1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/range-parser/-/range-parser-1.2.0.tgz#f49be6b487894ddc40dcc94a322f611092e00d5e"
 
-raven-js@3.22.3:
-  version "3.22.3"
-  resolved "https://registry.yarnpkg.com/raven-js/-/raven-js-3.22.3.tgz#8330dcc102b699ffbc2f48790978b997bf4d8f75"
+raven-js@3.22.4:
+  version "3.22.4"
+  resolved "https://registry.yarnpkg.com/raven-js/-/raven-js-3.22.4.tgz#e5ac2aef7cdbbe639eef0db04703e99b6a0bcb28"
 
 raw-body@2.3.2:
   version "2.3.2"
