@@ -6,7 +6,7 @@
   "author": "Roland Schläfli <roland.schlaefli@bf.uzh.ch>",
   "license": "AGPL-3.0",
   "dependencies": {
-    "accepts": "1.3.4",
+    "accepts": "1.3.5",
     "apollo-client-preset": "1.0.8",
     "apollo-link-persisted-queries": "0.1.0",
     "babel-plugin-add-react-displayname": "0.0.5",
