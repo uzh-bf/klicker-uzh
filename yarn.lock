@@ -2736,9 +2736,17 @@ concat-map@0.0.1:
   version "0.0.1"
   resolved "https://registry.yarnpkg.com/concat-map/-/concat-map-0.0.1.tgz#d8a96bd77fd68df7793a73036a3ba0d5405d477b"
 
-concat-stream@1.6.0, concat-stream@^1.5.0, concat-stream@^1.6.0:
+concat-stream@1.6.0:
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/concat-stream/-/concat-stream-1.6.0.tgz#0aac662fd52be78964d5532f694784e70110acf7"
+  dependencies:
+    inherits "^2.0.3"
+    readable-stream "^2.2.2"
+    typedarray "^0.0.6"
+
+concat-stream@^1.5.0, concat-stream@^1.6.0:
+  version "1.6.1"
+  resolved "https://registry.yarnpkg.com/concat-stream/-/concat-stream-1.6.1.tgz#261b8f518301f1d834e36342b9fea095d2620a26"
   dependencies:
     inherits "^2.0.3"
     readable-stream "^2.2.2"
@@ -3700,9 +3708,9 @@ elastic-apm-http-client@^5.1.0:
   dependencies:
     fast-safe-stringify "^1.2.0"
 
-elastic-apm-node@1.0.3:
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.0.3.tgz#93bd8cdd87f1ab8357ee0edb93fbd54018f6b872"
+elastic-apm-node@1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.1.0.tgz#43ea2d58d30d917c41dd34bf182588f424e213e0"
   dependencies:
     after-all-results "^2.0.0"
     console-log-level "^1.4.0"
@@ -3711,12 +3719,13 @@ elastic-apm-node@1.0.3:
     debug "^3.0.0"
     elastic-apm-http-client "^5.1.0"
     end-of-stream "^1.1.0"
-    fast-safe-stringify "^1.1.3"
+    fast-safe-stringify "^2.0.3"
     http-headers "^3.0.1"
     is-native "^1.0.1"
     normalize-bool "^1.0.0"
     original-url "^1.2.0"
     redact-secrets "^1.0.0"
+    require-ancestors "^1.0.0"
     require-in-the-middle "^2.1.2"
     semver "^5.3.0"
     sql-summary "^1.0.0"
@@ -4326,9 +4335,13 @@ fast-memoize@^2.2.7:
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/fast-memoize/-/fast-memoize-2.3.0.tgz#d7f81dc864489f582e30538923c423d85887af32"
 
-fast-safe-stringify@^1.1.3, fast-safe-stringify@^1.2.0:
+fast-safe-stringify@^1.2.0:
   version "1.2.3"
   resolved "https://registry.yarnpkg.com/fast-safe-stringify/-/fast-safe-stringify-1.2.3.tgz#9fe22c37fb2f7f86f06b8f004377dbf8f1ee7bc1"
+
+fast-safe-stringify@^2.0.3:
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/fast-safe-stringify/-/fast-safe-stringify-2.0.3.tgz#bb784fef97c2ece6ad64e84b2497e505dece3a3d"
 
 fastparse@^1.1.1:
   version "1.1.1"
@@ -9326,6 +9339,10 @@ request@~2.79.0:
     tough-cookie "~2.3.0"
     tunnel-agent "~0.4.1"
     uuid "^3.0.0"
+
+require-ancestors@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/require-ancestors/-/require-ancestors-1.0.0.tgz#807831f8f8081fb12863da81ddb15c8f2a73a004"
 
 require-directory@^2.1.1:
   version "2.1.1"
