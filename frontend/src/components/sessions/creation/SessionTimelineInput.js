@@ -102,7 +102,7 @@ const SessionTimelineInput = ({ value, onChange }) => {
           > .timelineItem {
             display: flex;
             flex-direction: column;
-            max-height: 15rem;
+            max-height: 25rem;
             overflow: hidden;
 
             .questions {
