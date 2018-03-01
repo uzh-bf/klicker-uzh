@@ -31,6 +31,8 @@ const StaticLayout = ({ children, pageTitle }) => (
         @import 'src/theme';
 
         .staticLayout {
+          height: 100%;
+
           display: flex;
           flex-direction: column;
 
