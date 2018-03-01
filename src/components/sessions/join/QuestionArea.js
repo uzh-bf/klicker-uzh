@@ -205,6 +205,8 @@ function QuestionArea({
           .options {
             margin-top: 1rem;
             flex: 1 1 50%;
+
+            overflow-y: auto;
           }
 
           @include desktop-tablet-only {

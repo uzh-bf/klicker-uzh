@@ -42,7 +42,7 @@ const StudentLayout = ({
     : [activeQuestionItem]
 
   return (
-    <CommonLayout baseFontSize="16px" nextMinHeight="100vh" pageTitle={pageTitle}>
+    <CommonLayout baseFontSize="16px" nextHeight="100%" pageTitle={pageTitle}>
       <div className="studentLayout">
         <div className="header">
           <Button
@@ -79,7 +79,6 @@ const StudentLayout = ({
             flex-direction: column;
 
             height: 100%;
-            min-height: 100vh;
 
             .header {
               flex: 0 0 auto;
