@@ -13,7 +13,7 @@ const defaultProps = {
 }
 
 const StaticLayout = ({ children, pageTitle }) => (
-  <CommonLayout baseFontSize="16px" pageTitle={pageTitle}>
+  <CommonLayout baseFontSize="16px" nextHeight="100%" pageTitle={pageTitle}>
     <div className="staticLayout">
       <main className="content">{children}</main>
 
@@ -33,7 +33,6 @@ const StaticLayout = ({ children, pageTitle }) => (
         .staticLayout {
           display: flex;
           flex-direction: column;
-          min-height: 100vh;
 
           @include desktop-tablet-only {
             .content {
