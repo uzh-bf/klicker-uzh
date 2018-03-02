@@ -178,7 +178,7 @@ app
     // prepare page configuration
     const pages = [
       {
-        cached: 60 * 60 * 24,
+        cached: 60 * 10,
         url: '/',
       },
       {
@@ -201,7 +201,7 @@ app
         url: '/questions/:questionId',
       },
       {
-        cached: 60,
+        cached: 30,
         mapParams: req => ({ shortname: req.params.shortname }),
         renderPath: '/join',
         url: '/join/:shortname',
