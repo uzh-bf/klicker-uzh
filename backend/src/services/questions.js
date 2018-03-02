@@ -1,7 +1,6 @@
 const _isNumber = require('lodash/isNumber')
 
 const { QuestionModel, TagModel, UserModel } = require('../models')
-
 const { QuestionGroups, QuestionTypes } = require('../constants')
 
 // process tags when editing or creating a question

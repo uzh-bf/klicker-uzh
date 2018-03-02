@@ -7,6 +7,7 @@ const nodemailer = require('nodemailer')
 const _has = require('lodash/has')
 
 const { UserModel } = require('../models')
+const { sendSlackNotification } = require('./notifications')
 
 const dev = process.env.NODE_ENV !== 'production'
 
@@ -68,6 +69,7 @@ const getToken = (req) => {
 // we can later use this promise as a return value for resolvers or similar
 const signup = async (email, password, shortname) => {
   // TODO: validation etc.
+  // TODO: activation of new accounts (send an email)
 
   // generate a salt with bcyrpt using 10 rounds
   // hash and salt the password
@@ -82,6 +84,10 @@ const signup = async (email, password, shortname) => {
   }).save()
 
   if (newUser) {
+    // send a slack notification (if configured)
+    sendSlackNotification(`[auth] New user has registered: ${email}, ${shortname}`)
+
+    // return the data of the newly created user
     return newUser
   }
 
@@ -97,6 +103,8 @@ const login = async (res, email, password) => {
 
   // check whether the user exists and hashed passwords match
   if (!user || !bcrypt.compareSync(password, user.password)) {
+    sendSlackNotification(`[auth] Login failed for ${email}`)
+
     throw new Error('INVALID_LOGIN')
   }
 
@@ -195,7 +203,7 @@ const requestPassword = async (res, email) => {
   if (process.env.NODE_ENV !== 'test') {
     try {
       await transporter.sendMail({
-        bcc: 'roland.schlaefli@bf.uzh.ch',
+        // bcc: 'roland.schlaefli@bf.uzh.ch',
         from: process.env.EMAIL_FROM,
         to: user.email,
         subject: 'IBF Klicker - Password Reset',
@@ -204,6 +212,10 @@ const requestPassword = async (res, email) => {
           jwt,
         }),
       })
+
+      // notify slack that a password has been requested
+      // TODO: remove this after the initial beta phase
+      sendSlackNotification(`[auth] Password has been requested for: ${user.email}`)
     } catch (e) {
       return 'PASSWORD_RESET_FAILED'
     }
