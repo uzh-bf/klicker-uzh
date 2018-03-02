@@ -112,6 +112,7 @@ const QuestionEditForm = ({
         handleBlur,
         handleSubmit,
         setFieldValue,
+        setFieldTouched,
         isSubmitting,
       }) => {
         const OptionsInput = typeComponents[type]
@@ -205,7 +206,7 @@ const QuestionEditForm = ({
                   onClick={() => onActiveVersionChange(versionOptions.length)}
                 >
                   <Icon name="plus" />
-                  New Version
+                  <FormattedMessage defaultMessage="New Version" id="editQuestion.newVersion" />
                 </Menu.Item>
               </Menu>
             </div>
@@ -214,7 +215,10 @@ const QuestionEditForm = ({
               <TagInput
                 tags={tags}
                 value={values.tags}
-                onChange={newTags => setFieldValue('tags', newTags)}
+                onChange={(newTags) => {
+                  setFieldTouched('tags', true, false)
+                  setFieldValue('tags', newTags)
+                }}
               />
             </div>
 
@@ -224,7 +228,10 @@ const QuestionEditForm = ({
                 error={errors.description}
                 touched={touched.description}
                 value={values.description}
-                onChange={newDescription => setFieldValue('description', newDescription)}
+                onChange={(newDescription) => {
+                  setFieldTouched('description', true, false)
+                  setFieldValue('description', newDescription)
+                }}
               />
             </div>
 
@@ -234,7 +241,10 @@ const QuestionEditForm = ({
                 intl={intl}
                 type={values.type}
                 value={values.options}
-                onChange={newOptions => setFieldValue('options', newOptions)}
+                onChange={(newOptions) => {
+                  setFieldTouched('options', true, false)
+                  setFieldValue('options', newOptions)
+                }}
               />
             </div>
 
