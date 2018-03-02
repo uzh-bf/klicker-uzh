@@ -77,8 +77,8 @@ const Index = () => (
             <List.Item>
               <List.Icon name="mail" size="large" verticalAlign="middle" />
               <List.Content>
-                <List.Header as="a" href="mailto:support@klicker.uzh.ch">
-                  support@klicker.uzh.ch
+                <List.Header as="a" href="mailto:klicker.support@uzh.ch">
+                  klicker.support@uzh.ch
                 </List.Header>
                 <List.Description>Support</List.Description>
               </List.Content>

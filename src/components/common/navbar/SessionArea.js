@@ -140,10 +140,10 @@ const SessionArea = ({ intl, runtime, sessionId }) => (
       <Popup.Content>
         <div className="popupHelp popupContent">
           <h3>Support</h3>
-          <a href="mailto:support@klicker.uzh.ch">
+          <a href="mailto:klicker.support@uzh.ch">
             <Button icon labelPosition="left">
               <Icon name="mail" />
-              support@klicker.uzh.ch
+              klicker.support@uzh.ch
             </Button>
           </a>
 
