@@ -83,6 +83,10 @@ const SessionArea = ({ intl, runtime, sessionId }) => (
     <Popup
       basic
       hoverable
+      closeOnDocumentClick={false}
+      closeOnPortalMouseLeave={false}
+      closeOnTriggerMouseLeave={false}
+      hideOnScroll={false}
       on="click"
       position="bottom right"
       trigger={
@@ -120,6 +124,10 @@ const SessionArea = ({ intl, runtime, sessionId }) => (
     <Popup
       basic
       hoverable
+      closeOnDocumentClick={false}
+      closeOnPortalMouseLeave={false}
+      closeOnTriggerMouseLeave={false}
+      hideOnScroll={false}
       on="click"
       position="bottom right"
       trigger={
@@ -151,6 +159,7 @@ const SessionArea = ({ intl, runtime, sessionId }) => (
           </a>
 
           <Modal
+            closeIcon
             trigger={
               <Button icon labelPosition="left">
                 <Icon name="video" />
