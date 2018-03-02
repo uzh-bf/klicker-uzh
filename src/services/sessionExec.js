@@ -3,7 +3,6 @@ const _isNumber = require('lodash/isNumber')
 
 const { QuestionInstanceModel, UserModel } = require('../models')
 const { QuestionGroups, QuestionTypes } = require('../constants')
-
 const { getRedis } = require('../redis')
 const { getRunningSession } = require('./sessionMgr')
 

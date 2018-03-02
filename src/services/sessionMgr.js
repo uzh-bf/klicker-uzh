@@ -2,6 +2,7 @@ const mongoose = require('mongoose')
 
 const { ObjectId } = mongoose.Types
 
+const { sendSlackNotification } = require('./notifications')
 const {
   QuestionInstanceModel, SessionModel, UserModel, QuestionModel,
 } = require('../models')
@@ -149,6 +150,8 @@ const startSession = async ({ id, userId, shortname }) => {
 
   await Promise.all(promises)
 
+  sendSlackNotification(`[sessions] New session started at /join/${shortname}`)
+
   return session
 }
 
@@ -194,6 +197,8 @@ const endSession = async ({ id, userId, shortname }) => {
   }
 
   await Promise.all(promises)
+
+  sendSlackNotification(`[session] Session finished for /join/${shortname}`)
 
   return session
 }
