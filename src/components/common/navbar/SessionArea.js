@@ -169,7 +169,7 @@ const SessionArea = ({ intl, runtime, sessionId }) => (
           >
             <Modal.Header>Introductory Video</Modal.Header>
             <Modal.Content>
-              <Embed id="fJxPr_XL1uQ" source="youtube" />
+              <Embed id="8nS-fvi86l0" source="youtube" />
             </Modal.Content>
           </Modal>
         </div>
