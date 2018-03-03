@@ -269,27 +269,9 @@ const StartAndEndSessionSerializer = {
 
 const AddFeedbackMutation = `
   mutation AddFeedback($fp: ID, $sessionId: ID!, $content: String!) {
-    addFeedback(fp: $fp, sessionId: $sessionId, content: $content) {
-      id
-      feedbacks {
-        id
-        content
-        votes
-      }
-    }
+    addFeedback(fp: $fp, sessionId: $sessionId, content: $content)
   }
 `
-const AddFeedbackSerializer = {
-  test: ({ addFeedback }) => !!addFeedback,
-  print: ({ addFeedback: { feedbacks } }) => `
-    addFeedback {
-      feedbacks: ${feedbacks.map(({ content, votes }) => `
-        content: ${content}
-        votes: ${votes}
-      `)}
-    }
-  `,
-}
 
 const DeleteFeedbackMutation = `
   mutation DeleteFeedback($sessionId: ID!, $feedbackId: ID!) {
@@ -306,27 +288,9 @@ const DeleteFeedbackMutation = `
 
 const AddConfusionTSMutation = `
   mutation AddConfusionTS($fp: ID, $sessionId: ID!, $difficulty: Int!, $speed: Int!) {
-    addConfusionTS(fp: $fp, sessionId: $sessionId, difficulty: $difficulty, speed: $speed) {
-      id
-      confusionTS {
-        difficulty
-        speed
-        createdAt
-      }
-    }
+    addConfusionTS(fp: $fp, sessionId: $sessionId, difficulty: $difficulty, speed: $speed)
   }
 `
-const AddConfusionTSSerializer = {
-  test: ({ addConfusionTS }) => !!addConfusionTS,
-  print: ({ addConfusionTS: { confusionTS } }) => `
-    addConfusionTS {
-      confusionTS: ${confusionTS.map(({ difficulty, speed }) => `
-        difficulty: ${difficulty}
-        speed: ${speed}
-      `)}
-    }
-  `,
-}
 
 const UpdateSessionSettingsMutation = `
   mutation UpdateSessionSettings($sessionId: ID!, $settings: Session_SettingsInput!) {
@@ -351,9 +315,7 @@ const UpdateSessionSettingsSerializer = {
 
 const AddResponseMutation = `
   mutation AddResponse($fp: ID, $instanceId: ID!, $response: QuestionInstance_ResponseInput!) {
-    addResponse(fp: $fp, instanceId: $instanceId, response: $response) {
-      id
-    }
+    addResponse(fp: $fp, instanceId: $instanceId, response: $response)
   }
 `
 
@@ -430,8 +392,6 @@ module.exports = {
     CreateQuestionSerializer,
     CreateSessionSerializer,
     StartAndEndSessionSerializer,
-    AddFeedbackSerializer,
-    AddConfusionTSSerializer,
     UpdateSessionSettingsSerializer,
     ActivateNextBlockSerializer,
     ChangePasswordSerializer,

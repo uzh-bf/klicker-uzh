@@ -60,9 +60,9 @@ const typeDefs = [
 
   type Mutation {
     activateNextBlock: Session!
-    addConfusionTS(fp: ID, sessionId: ID!, difficulty: Int!, speed: Int!): Session!
-    addFeedback(fp: ID, sessionId: ID!, content: String!): Session!
-    addResponse(fp: ID, instanceId: ID!, response: QuestionInstance_ResponseInput!): QuestionInstance!
+    addConfusionTS(fp: ID, sessionId: ID!, difficulty: Int!, speed: Int!): String!
+    addFeedback(fp: ID, sessionId: ID!, content: String!): String!
+    addResponse(fp: ID, instanceId: ID!, response: QuestionInstance_ResponseInput!): String!
     changePassword(newPassword: String!): User!
     createQuestion(question: QuestionInput!): Question!
     createSession(session: SessionInput!): Session!

@@ -265,40 +265,15 @@ exports[`Integration Session Creation works 1`] = `
 `;
 
 exports[`Integration Session Execution allows adding confusion timesteps 1`] = `
-
-    addConfusionTS {
-      confusionTS: 
-        difficulty: 2
-        speed: 4
-      ,
-        difficulty: -2
-        speed: 3
-      ,
-        difficulty: -5
-        speed: 3
-      ,
-        difficulty: 5
-        speed: 2
-      
-    }
-  
+Object {
+  "addConfusionTS": "CONFUSION_ADDED",
+}
 `;
 
 exports[`Integration Session Execution allows adding feedbacks 1`] = `
-
-    addFeedback {
-      feedbacks: 
-        content: my test feedback
-        votes: 0
-      ,
-        content: good lecture
-        votes: 0
-      ,
-        content: my test feedback
-        votes: 0
-      
-    }
-  
+Object {
+  "addFeedback": "FEEDBACK_ADDED",
+}
 `;
 
 exports[`Integration Session Execution allows completing sessions 1`] = `
