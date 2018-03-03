@@ -178,7 +178,6 @@ app
     // prepare page configuration
     const pages = [
       {
-        cached: 60 * 10,
         url: '/',
       },
       {
