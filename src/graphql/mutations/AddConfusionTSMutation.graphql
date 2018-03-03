@@ -9,12 +9,5 @@ mutation AddConfusionTS(
     sessionId: $sessionId
     difficulty: $difficulty
     speed: $speed
-  ) {
-    id
-    confusionTS {
-      difficulty
-      speed
-      createdAt
-    }
-  }
+  )
 }
