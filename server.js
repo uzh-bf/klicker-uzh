@@ -190,6 +190,12 @@ app
         url: '/questions/create',
       },
       {
+        cached: 600,
+        mapParams: req => ({ shortname: req.params.shortname }),
+        renderPath: '/qr',
+        url: '/qr/:shortname',
+      },
+      {
         mapParams: req => ({ sessionId: req.params.sessionId }),
         renderPath: '/sessions/evaluation',
         url: '/sessions/evaluation/:sessionId',

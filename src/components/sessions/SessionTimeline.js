@@ -106,6 +106,12 @@ const SessionTimeline = ({
               <div className="qr">
                 <QRCode value={`https://beta.klicker.uzh.ch/join/${shortname}`} />
               </div>
+
+              <a href={`/qr/${shortname}`} target="_blank">
+                <Button fluid primary>
+                  <FormattedMessage defaultMessage="Present QR" id="sessionArea.qrPresentation" />
+                </Button>
+              </a>
             </div>
           </Popup.Content>
         </Popup>
