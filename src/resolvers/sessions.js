@@ -65,27 +65,33 @@ const activateNextBlockMutation = (parentValue, args, { auth }) =>
 const endSessionMutation = (parentValue, { id }, { auth }) =>
   SessionMgrService.endSession({ id, userId: auth.sub, shortname: auth.shortname })
 
-const addFeedbackMutation = (parentValue, { fp, sessionId, content }, { ip }) =>
-  SessionExecService.addFeedback({
+const addFeedbackMutation = async (parentValue, { fp, sessionId, content }, { ip }) => {
+  await SessionExecService.addFeedback({
     fp,
     ip,
     sessionId,
     content,
   })
 
+  return 'FEEDBACK_ADDED'
+}
+
 const deleteFeedbackMutation = (parentValue, { sessionId, feedbackId }, { auth }) =>
   SessionExecService.deleteFeedback({ sessionId, feedbackId, userId: auth.sub })
 
-const addConfusionTSMutation = (parentValue, {
+const addConfusionTSMutation = async (parentValue, {
   fp, sessionId, difficulty, speed,
-}, { ip }) =>
-  SessionExecService.addConfusionTS({
+}, { ip }) => {
+  await SessionExecService.addConfusionTS({
     fp,
     ip,
     sessionId,
     difficulty,
     speed,
   })
+
+  return 'CONFUSION_ADDED'
+}
 
 const updateSessionSettingsMutation = (parentValue, { sessionId, settings }, { auth }) =>
   SessionMgrService.updateSettings({

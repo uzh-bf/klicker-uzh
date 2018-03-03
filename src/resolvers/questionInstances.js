@@ -27,13 +27,16 @@ const resultsByPVQuery = ({ results }) => {
 }
 
 /* ----- mutations ----- */
-const addResponseMutation = (parentValue, { fp, instanceId, response }, { ip }) =>
-  SessionExecService.addResponse({
+const addResponseMutation = async (parentValue, { fp, instanceId, response }, { ip }) => {
+  await SessionExecService.addResponse({
     fp,
     ip,
     instanceId,
     response,
   })
+
+  return 'RESPONSE_ADDED'
+}
 
 module.exports = {
   // queries
