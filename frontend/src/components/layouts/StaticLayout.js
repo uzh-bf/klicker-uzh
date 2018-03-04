@@ -20,8 +20,8 @@ const StaticLayout = ({ children, pageTitle }) => (
       <footer>
         <hr />
         <p>
-          &copy;2017 IBF Teaching Center, Department of Banking and Finance, University of Zurich.
-          All rights reserved.<br />
+          &copy;{new Date().getFullYear()} IBF Teaching Center, Department of Banking and Finance,
+          University of Zurich. All rights reserved.<br />
           Products and Services displayed herein are trademarks or registered trademarks of their
           respective owners.
         </p>
