@@ -4293,6 +4293,78 @@ exports[`Storyshots questions TagList 1`] = `
       </span>
     </div>
     <div
+      className="item listItem"
+      data-value={undefined}
+      onClick={[Function]}
+      role="listitem"
+    >
+      <i
+        aria-hidden="true"
+        className="folder outline icon"
+      />
+      <div
+        className="content"
+      >
+        <span>
+          SC
+        </span>
+      </div>
+    </div>
+    <div
+      className="item listItem"
+      data-value={undefined}
+      onClick={[Function]}
+      role="listitem"
+    >
+      <i
+        aria-hidden="true"
+        className="folder outline icon"
+      />
+      <div
+        className="content"
+      >
+        <span>
+          MC
+        </span>
+      </div>
+    </div>
+    <div
+      className="item listItem"
+      data-value={undefined}
+      onClick={[Function]}
+      role="listitem"
+    >
+      <i
+        aria-hidden="true"
+        className="folder outline icon"
+      />
+      <div
+        className="content"
+      >
+        <span>
+          FREE
+        </span>
+      </div>
+    </div>
+    <div
+      className="item listItem"
+      data-value={undefined}
+      onClick={[Function]}
+      role="listitem"
+    >
+      <i
+        aria-hidden="true"
+        className="folder outline icon"
+      />
+      <div
+        className="content"
+      >
+        <span>
+          FREE_RANGE
+        </span>
+      </div>
+    </div>
+    <div
       className="header listHeader tags"
     >
       <span>
