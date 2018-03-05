@@ -49,6 +49,25 @@ const calculatePercentage = (questionType, count, totalResponses) => {
   return ''
 }
 
+// break point for too small bars
+// if the percentual responses of a bar are smaller than the given
+// value, the label (A, B, ...)  is not displayed on top of the bar
+const smallBarBreak = 0.05
+
+const getPercentageIn = (questionType, count, totalResponses) => {
+  if (count / totalResponses > smallBarBreak) {
+    return calculatePercentage(questionType, count, totalResponses)
+  }
+  return ''
+}
+
+const getPercentageOut = (questionType, count, totalResponses) => {
+  if (count / totalResponses > smallBarBreak) {
+    return ''
+  }
+  return calculatePercentage(questionType, count, totalResponses)
+}
+
 const BarChart = ({ isSolutionShown, data, isColored }) => (
   <ResponsiveContainer>
     <BarChartComponent
@@ -92,7 +111,16 @@ const BarChart = ({ isSolutionShown, data, isColored }) => (
         maxBarSize="5rem"
       >
         <LabelList
-          dataKey="percentage"
+          dataKey="percentageOut"
+          fill="black"
+          offset={15}
+          position="top"
+          stroke="black"
+          strokeWidth={1}
+          style={{ fontSize: '2rem' }}
+        />
+        <LabelList
+          dataKey="percentageIn"
           fill="white"
           position="inside"
           stroke="white"
@@ -124,7 +152,8 @@ export default withProps(({ data, questionType, totalResponses }) => ({
       correct,
       count,
       label: questionType === 'FREE_RANGE' ? +value : String.fromCharCode(65 + index),
-      percentage: calculatePercentage(questionType, count, totalResponses),
+      percentageIn: getPercentageIn(questionType, count, totalResponses),
+      percentageOut: getPercentageOut(questionType, count, totalResponses),
       value,
     })),
     o => o.label,
