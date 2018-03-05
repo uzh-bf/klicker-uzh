@@ -206,7 +206,7 @@ const requestPassword = async (res, email) => {
         // bcc: 'roland.schlaefli@bf.uzh.ch',
         from: process.env.EMAIL_FROM,
         to: user.email,
-        subject: 'IBF Klicker - Password Reset',
+        subject: 'Klicker UZH - Password Reset',
         html: template({
           email: user.email,
           jwt,
