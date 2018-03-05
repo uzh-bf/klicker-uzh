@@ -72,14 +72,42 @@ const PieChart = ({ isSolutionShown, data }) => (
 PieChart.propTypes = propTypes
 PieChart.defaultProps = defaultProps
 
+const indexToLetter = index =>
+  // convert integer index into letters
+  // 65: A, 66: B , ...
+  String.fromCharCode(65 + index)
+
+// break point for too small pies
+// if the percentual responses of a pie are smaller than the given
+// value, the label (A, B, ...)  is not displayed within the pie
+// but outside right after the percentage
+const smallPieBreak = 0.05
+
+// determine whether the label (A,B, ...) is displayed within the pie or not
+const labelText = (count, totalResponses, index) => {
+  if (count / totalResponses < smallPieBreak) {
+    return ''
+  }
+  return `${indexToLetter(index)}`
+}
+
+// determine whether the label (A,B, ...) is displayed outside the pie or not
+// and add number of responses and percentual responses
+const percentageText = (count, totalResponses, index) => {
+  if (count / totalResponses > smallPieBreak) {
+    return `${count} | ${_round(100 * (count / totalResponses), 1)} %`
+  }
+  return `${count} | ${_round(100 * (count / totalResponses), 1)} % (${indexToLetter(index)})`
+}
+
 export default withProps(({ data, totalResponses }) => ({
   // filter out choices without any responses (weird labeling)
   // map data to contain percentages and char labels
   data: data.filter(({ count }) => count > 0).map(({ correct, count, value }, index) => ({
     correct,
     count,
-    label: String.fromCharCode(65 + index),
-    percentage: `${count} | ${_round(100 * (count / totalResponses), 1)} %`,
+    label: labelText(count, totalResponses, index),
+    percentage: percentageText(count, totalResponses, index),
     value,
   })),
 }))(PieChart)
