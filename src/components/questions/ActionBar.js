@@ -15,7 +15,7 @@ const defaultProps = {
   itemsChecked: 0,
 }
 
-function ActionBar({ creationMode, handleCreationModeToggle, itemsChecked }) {
+function ActionBar({ creationMode, handleCreationModeToggle, itemsChecked, handleQuickBlock, handleQuickBlocks }) {
   return (
     <div className="actionBar">
       <div className="actionButtons">
@@ -39,7 +39,7 @@ function ActionBar({ creationMode, handleCreationModeToggle, itemsChecked }) {
       {creationMode && (
         <React.Fragment>
           <div className="creationButtons">
-            <Button icon labelPosition="left">
+            <Button icon labelPosition="left" onClick={() => handleQuickBlocks()}>
               <Icon name="lightning" />
               <FormattedMessage
                 defaultMessage="Split into {num} block{end}"
@@ -51,7 +51,7 @@ function ActionBar({ creationMode, handleCreationModeToggle, itemsChecked }) {
               />
             </Button>
 
-            <Button icon labelPosition="left">
+            <Button icon labelPosition="left" onClick={() => handleQuickBlock()}>
               <Icon name="lightning" />
               <FormattedMessage
                 defaultMessage="Group into one block"

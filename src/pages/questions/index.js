@@ -21,6 +21,7 @@ import { TeacherLayout } from '../../components/layouts'
 import { QUESTION_SORTINGS } from '../../constants'
 
 const propTypes = {
+  checkedQuestions: PropTypes.arrayOf(PropTypes.string).isRequired,
   creationMode: PropTypes.bool.isRequired,
   data: PropTypes.object.isRequired,
   droppedQuestions: PropTypes.arrayOf(PropTypes.string).isRequired,
@@ -32,13 +33,16 @@ const propTypes = {
   handleSortByChange: PropTypes.func.isRequired,
   handleSortOrderToggle: PropTypes.func.isRequired,
   handleTagClick: PropTypes.func.isRequired,
+  initialBlocks: PropTypes.arrayOf(PropTypes.object).isRequired,
   intl: intlShape.isRequired,
   sort: PropTypes.object.isRequired,
 }
 
 const Index = ({
+  checkedQuestions,
   creationMode,
   droppedQuestions,
+  initialBlocks,
   intl,
   filters,
   data,
@@ -48,13 +52,17 @@ const Index = ({
   handleSortByChange,
   handleSortOrderToggle,
   handleTagClick,
+  handleQuestionChecked,
   handleQuestionDropped,
   handleCreationModeToggle,
+  handleQuickBlock,
+  handleQuickBlocks,
 }) => {
   // TODO: create a component for this?
   const actionArea = (
     <div className="creationForm">
       <SessionCreationForm
+        initialBlocks={initialBlocks}
         intl={intl}
         onDiscard={handleCreationModeToggle}
         onSave={handleCreateSession('save')}
@@ -119,7 +127,9 @@ const Index = ({
             <ActionBar
               creationMode={creationMode}
               handleCreationModeToggle={handleCreationModeToggle}
-              itemsChecked={10}
+              handleQuickBlock={handleQuickBlock}
+              handleQuickBlocks={handleQuickBlocks}
+              itemsChecked={checkedQuestions.length}
             />
 
             <div className="questionListContent">
@@ -129,6 +139,7 @@ const Index = ({
                 dropped={droppedQuestions}
                 filters={filters}
                 sort={sort}
+                onQuestionChecked={handleQuestionChecked}
                 onQuestionDropped={handleQuestionDropped}
               />
             </div>
@@ -221,8 +232,10 @@ export default compose(
   withSortingAndFiltering,
   withStateHandlers(
     {
+      checkedQuestions: [],
       creationMode: false,
       droppedQuestions: [],
+      initialBlocks: [],
     },
     {
       // handle toggling creation mode (display of session creation form)
@@ -237,6 +250,43 @@ export default compose(
 
         // turn on creation mode
         return { creationMode: true }
+      },
+
+      handleQuickBlock: ({ checkedQuestions }) => () => {
+        const result = {
+          initialBlocks: [{
+            questions: checkedQuestions,
+          }],
+        }
+
+        console.log(result)
+
+        return result
+      },
+
+      handleQuickBlocks: ({ checkedQuestions }) => () => {
+        const result = {
+          initialBlocks: checkedQuestions.map(id => ({
+            questions: [id],
+          })),
+        }
+
+        console.log(result)
+
+        return result
+      },
+
+      // handle checking of a new question
+      handleQuestionChecked: ({ checkedQuestions }) => (id) => {
+        if (checkedQuestions.includes(id)) {
+          return {
+            checkedQuestions: checkedQuestions.filter(item => item.id !== id),
+          }
+        }
+
+        return {
+          checkedQuestions: [...checkedQuestions, id],
+        }
       },
 
       // handle a new question that gets dropped on the session creation timeline

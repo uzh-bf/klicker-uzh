@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import moment from 'moment'
-import { compose, withState, withProps } from 'recompose'
+import { compose, withState, withProps, pure } from 'recompose'
 import { DragSource } from 'react-dnd'
 import { Dropdown } from 'semantic-ui-react'
 
@@ -38,7 +38,8 @@ const Question = ({
   type,
   description,
   versions,
-  // draggable,
+  onCheck,
+  draggable,
   creationMode,
   isDragging,
   connectDragSource,
@@ -47,18 +48,17 @@ const Question = ({
   // TODO: draggable rework
   connectDragSource(
     <div className={classNames('question', { creationMode, draggable: true, isDragging })}>
-      {/* creationMode && (
+      {creationMode && (
         <div className={classNames('sessionMembership', { active: !draggable })}>
           <input
-            disabled
-            checked={!draggable}
+            // checked={!draggable}
             className="ui checkbox"
             name={`check-${id}`}
             type="checkbox"
-            onClick={() => null}
+            onClick={onCheck}
           />
         </div>
-      ) */}
+      )}
 
       <div className="wrapper">
         <h2 className="title">{title}</h2>

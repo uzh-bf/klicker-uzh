@@ -21,6 +21,7 @@ const SessionCreationForm = ({
   intl, onSave, onDiscard, onStart,
 }) => (
   <Formik
+    enableReinitialize
     initialValues={{
       blocks: [],
       // initialize session name to the current date and time

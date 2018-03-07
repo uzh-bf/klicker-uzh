@@ -11,6 +11,7 @@ import { processItems, buildIndex } from '../../lib'
 const propTypes = {
   creationMode: PropTypes.bool,
   dropped: PropTypes.arrayOf(PropTypes.string),
+  onQuestionChecked: PropTypes.func.isRequired,
   onQuestionDropped: PropTypes.func.isRequired,
   questions: PropTypes.array,
 }
@@ -22,7 +23,7 @@ const defaultProps = {
 }
 
 export const QuestionListPres = ({
-  questions, dropped, onQuestionDropped, creationMode,
+  questions, dropped, onQuestionChecked, onQuestionDropped, creationMode,
 }) => (
   <div className="questionList">
     {questions.length === 0 ? (
@@ -51,6 +52,7 @@ export const QuestionListPres = ({
         title={question.title}
         type={question.type}
         versions={question.versions}
+        onCheck={() => onQuestionChecked(question.id)}
         onDrop={() => onQuestionDropped(question.id)}
       />
     ))}
