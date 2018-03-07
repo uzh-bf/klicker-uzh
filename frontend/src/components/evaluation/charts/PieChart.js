@@ -2,9 +2,9 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { Cell, Pie, PieChart as PieChartComponent, ResponsiveContainer, LabelList } from 'recharts'
 import { withProps } from 'recompose'
-import _round from 'lodash/round'
 
-import { CHART_COLORS } from '../../../constants'
+import { CHART_COLORS, CHART_TYPES } from '../../../constants'
+import { getLabelIn, getLabelOut } from '../../../lib'
 
 const propTypes = {
   data: PropTypes.arrayOf(
@@ -41,7 +41,7 @@ const PieChart = ({ isSolutionShown, data }) => (
         valueKey="count"
       >
         <LabelList
-          dataKey="percentage"
+          dataKey="labelOut"
           fill="black"
           offset={30}
           position="outside"
@@ -50,7 +50,7 @@ const PieChart = ({ isSolutionShown, data }) => (
           style={{ fontSize: '2rem' }}
         />
         <LabelList
-          dataKey="label"
+          dataKey="labelIn"
           fill="white"
           position="inside"
           stroke="white"
@@ -72,14 +72,16 @@ const PieChart = ({ isSolutionShown, data }) => (
 PieChart.propTypes = propTypes
 PieChart.defaultProps = defaultProps
 
-export default withProps(({ data, totalResponses }) => ({
+export default withProps(({ data, questionType, totalResponses }) => ({
   // filter out choices without any responses (weird labeling)
   // map data to contain percentages and char labels
-  data: data.filter(({ count }) => count > 0).map(({ correct, count, value }, index) => ({
-    correct,
-    count,
-    label: String.fromCharCode(65 + index),
-    percentage: `${count} | ${_round(100 * (count / totalResponses), 1)} %`,
-    value,
-  })),
+  data: data
+    .map(({ correct, count, value }, index) => ({
+      correct,
+      count,
+      labelIn: getLabelIn(CHART_TYPES.PIE_CHART, questionType, count, totalResponses, index),
+      labelOut: getLabelOut(CHART_TYPES.PIE_CHART, questionType, count, totalResponses, index),
+      value,
+    }))
+    .filter(({ count }) => count > 0),
 }))(PieChart)
