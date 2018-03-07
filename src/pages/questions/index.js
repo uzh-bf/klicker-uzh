@@ -1,11 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { compose, withHandlers, withStateHandlers } from 'recompose'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
-import { Button, Icon } from 'semantic-ui-react'
-import Link from 'next/link'
 import Router from 'next/router'
 
 import { pageWithIntl, withData, withDnD, withSortingAndFiltering, withLogging } from '../../lib'
@@ -18,7 +16,7 @@ import {
   QuestionPoolQuery,
 } from '../../graphql'
 import { SessionCreationForm } from '../../components/forms'
-import { QuestionList, TagList } from '../../components/questions'
+import { QuestionList, TagList, ActionBar } from '../../components/questions'
 import { TeacherLayout } from '../../components/layouts'
 import { QUESTION_SORTINGS } from '../../constants'
 
@@ -118,56 +116,12 @@ const Index = ({
         </div>
         <div className="wrapper">
           <div className="questionList">
-            <div className="buttons">
-              {creationMode && (
-                <div className="quickCreationButtons">
-                  <div className="checkedCounter">
-                    <FormattedMessage
-                      defaultMessage="{count} items checked."
-                      id="questionPool.itemsChecked"
-                      values={{
-                        count: 1,
-                      }}
-                    />
-                  </div>
-                  <Button icon labelPosition="left">
-                    <Icon name="lightning" />
-                    <FormattedMessage
-                      defaultMessage="Split into {num} block{end}"
-                      id="questionPool.button.quickCreateSeparate"
-                      values={{
-                        end: '',
-                        num: 1,
-                      }}
-                    />
-                  </Button>
-                  <Button icon labelPosition="left">
-                    <Icon name="lightning" />
-                    <FormattedMessage
-                      defaultMessage="Group into one block"
-                      id="questionPool.button.quickCreateSingle"
-                    />
-                  </Button>
-                </div>
-              )}
+            <ActionBar
+              creationMode={creationMode}
+              handleCreationModeToggle={handleCreationModeToggle}
+              itemsChecked={10}
+            />
 
-              <div className="actionButtons">
-                <Link href="/questions/create">
-                  <Button primary>
-                    <FormattedMessage
-                      defaultMessage="Create Question"
-                      id="questionPool.button.createQuestion"
-                    />
-                  </Button>
-                </Link>
-                <Button primary disabled={!!creationMode} onClick={handleCreationModeToggle}>
-                  <FormattedMessage
-                    defaultMessage="Create Session"
-                    id="questionPool.button.createSession"
-                  />
-                </Button>
-              </div>
-            </div>
             <div className="questionListContent">
               <QuestionList
                 creationMode={creationMode}
@@ -213,25 +167,6 @@ const Index = ({
               margin: 0 auto;
               max-width: $max-width;
 
-              .buttons {
-                border: 1px solid $color-primary;
-
-                flex: 0 0 auto;
-
-                padding: 0.5rem;
-              }
-
-              .buttons,
-              .quickCreationButtons,
-              .actionButtons {
-                display: flex;
-                flex-direction: column;
-
-                > :global(button) {
-                  margin-top: 0.5rem;
-                }
-              }
-
               .questionListContent {
                 flex: 1;
                 height: 100%;
@@ -256,35 +191,6 @@ const Index = ({
               padding: 1rem;
 
               .questionList {
-                .buttons,
-                .quickCreationButtons,
-                .actionButtons {
-                  flex-direction: row;
-
-                  > :global(button) {
-                    margin: 0;
-
-                    &:not(:last-child) {
-                      margin-right: 0.5rem;
-                    }
-                  }
-                }
-
-                .buttons {
-                  align-items: flex-end;
-                  justify-content: space-between;
-                }
-
-                .quickCreationButtons {
-                  flex-wrap: wrap;
-
-                  .checkedCounter {
-                    flex: 0 0 100%;
-
-                    margin-bottom: 0.5rem;
-                  }
-                }
-
                 .questionListContent {
                   overflow-y: auto;
                   padding: 1rem 1rem 0 0;

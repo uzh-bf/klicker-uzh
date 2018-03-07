@@ -121,7 +121,7 @@
     "start": "cross-env NODE_ENV=production node server.js",
     "start:inspect": "cross-env NODE_ENV=production node --inspect server.js",
     "start:pm": "NODE_ENV=production pm2-docker start --env production server.js",
-    "storybook": "start-storybook -p 6006",
+    "storybook": "start-storybook -p 6006 -c .storybook",
     "test": "jest",
     "test:ci": "jest --coverage",
     "test:watch": "jest --watch"
