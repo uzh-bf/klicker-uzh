@@ -14,7 +14,7 @@ import {
 import { withProps } from 'recompose'
 import _round from 'lodash/round'
 
-import { CHART_COLORS, QUESTION_TYPES } from '../../../constants'
+import { CHART_COLORS, QUESTION_TYPES, SMALL_BAR_THRESHOLD } from '../../../constants'
 
 const propTypes = {
   data: PropTypes.arrayOf(
@@ -49,20 +49,15 @@ const calculatePercentage = (questionType, count, totalResponses) => {
   return ''
 }
 
-// break point for too small bars
-// if the percentual responses of a bar are smaller than the given
-// value, the label (A, B, ...)  is not displayed on top of the bar
-const smallBarBreak = 0.05
-
 const getPercentageIn = (questionType, count, totalResponses) => {
-  if (count / totalResponses > smallBarBreak) {
+  if (count / totalResponses > SMALL_BAR_THRESHOLD) {
     return calculatePercentage(questionType, count, totalResponses)
   }
   return ''
 }
 
 const getPercentageOut = (questionType, count, totalResponses) => {
-  if (count / totalResponses > smallBarBreak) {
+  if (count / totalResponses > SMALL_BAR_THRESHOLD) {
     return ''
   }
   return calculatePercentage(questionType, count, totalResponses)

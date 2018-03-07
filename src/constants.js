@@ -50,6 +50,18 @@ export const QUESTION_SORTINGS = [
   { content: 'Title', id: 'TITLE', labelStart: 'sort alphabet' },
 ]
 
+// break point for too small bars
+// if the percentual responses of a bar are smaller than the given
+// value, the label (A, B, ...)  is not displayed within the bar
+// but on top of the bar
+export const SMALL_BAR_THRESHOLD = 0.05
+
+// break point for too small pies
+// if the percentual responses of a pie are smaller than the given
+// value, the label (A, B, ...)  is not displayed within the pie
+// but outside right after the percentage
+export const SMALL_PIE_THRESHOLD = 0.05
+
 // https://www.viget.com/articles/add-colors-to-your-palette-with-color-mixing
 // original circle
 /* export const CHART_COLORS = [

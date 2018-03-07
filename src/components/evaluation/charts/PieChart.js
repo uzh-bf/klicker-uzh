@@ -4,7 +4,7 @@ import { Cell, Pie, PieChart as PieChartComponent, ResponsiveContainer, LabelLis
 import { withProps } from 'recompose'
 import _round from 'lodash/round'
 
-import { CHART_COLORS } from '../../../constants'
+import { CHART_COLORS, SMALL_PIE_THRESHOLD } from '../../../constants'
 
 const propTypes = {
   data: PropTypes.arrayOf(
@@ -77,15 +77,9 @@ const indexToLetter = index =>
   // 65: A, 66: B , ...
   String.fromCharCode(65 + index)
 
-// break point for too small pies
-// if the percentual responses of a pie are smaller than the given
-// value, the label (A, B, ...)  is not displayed within the pie
-// but outside right after the percentage
-const smallPieBreak = 0.05
-
 // determine whether the label (A,B, ...) is displayed within the pie or not
 const labelText = (count, totalResponses, index) => {
-  if (count / totalResponses < smallPieBreak) {
+  if (count / totalResponses < SMALL_PIE_THRESHOLD) {
     return ''
   }
   return `${indexToLetter(index)}`
@@ -94,7 +88,7 @@ const labelText = (count, totalResponses, index) => {
 // determine whether the label (A,B, ...) is displayed outside the pie or not
 // and add number of responses and percentual responses
 const percentageText = (count, totalResponses, index) => {
-  if (count / totalResponses > smallPieBreak) {
+  if (count / totalResponses > SMALL_PIE_THRESHOLD) {
     return `${count} | ${_round(100 * (count / totalResponses), 1)} %`
   }
   return `${count} | ${_round(100 * (count / totalResponses), 1)} % (${indexToLetter(index)})`
