@@ -30,7 +30,6 @@ const LanguageSwitcher = ({ locale, handleChangeLocale }) => (
       fluid
       search
       selection
-      upward
       defaultValue={locale}
       options={languageOptions}
       placeholder={'Select Language'}

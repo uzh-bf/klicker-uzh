@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { intlShape } from 'react-intl'
-import { Checkbox, Menu } from 'semantic-ui-react'
+import { Checkbox, Dropdown, Menu } from 'semantic-ui-react'
 
 import { CommonLayout } from '.'
 import { Info, Possibilities, Statistics, VisualizationType } from '../evaluation'
@@ -64,23 +64,67 @@ function EvaluationLayout({
   statistics,
 }) {
   return (
-    <CommonLayout baseFontSize="22px" pageTitle={pageTitle}>
+    <CommonLayout baseFontSize="22px" nextHeight="100%" pageTitle={pageTitle}>
       <div className={`evaluationLayout ${type}`}>
-        {instanceSummary.length > 1 && (
-          <div className="instanceChooser">
-            <Menu fitted tabular>
-              {instanceSummary.map(({ title, totalResponses: count }, index) => (
+        {(() => {
+          if (instanceSummary.length <= 0) {
+            return null
+          }
+
+          if (instanceSummary.length > 10) {
+            const dropdownOptions = instanceSummary.map(
+              ({ title, totalResponses: count }, index) => ({
+                key: index,
+                text: `${title} (${count})`,
+                value: index,
+              }),
+            )
+
+            return (
+              <div className="instanceDropdown">
+                <Dropdown
+                  search
+                  selection
+                  defaultValue={0}
+                  options={dropdownOptions}
+                  placeholder="Select Question"
+                  onChange={(param, data) => onChangeActiveInstance(data.value)}
+                />
+              </div>
+            )
+          }
+
+          return (
+            <div className="instanceChooser">
+              <Menu fitted tabular>
                 <Menu.Item
-                  fitted
-                  active={index === activeInstance}
-                  onClick={onChangeActiveInstance(index)}
-                >
-                  {title} ({count})
-                </Menu.Item>
-              ))}
-            </Menu>
-          </div>
-        )}
+                  className="hoverable"
+                  disabled={activeInstance === 0}
+                  icon="arrow left"
+                  onClick={() => onChangeActiveInstance(activeInstance - 1)}
+                />
+
+                {instanceSummary.map(({ title, totalResponses: count }, index) => (
+                  <Menu.Item
+                    fitted
+                    active={index === activeInstance}
+                    className="hoverable"
+                    onClick={() => onChangeActiveInstance(index)}
+                  >
+                    {title.length > 15 ? `${title.substring(0, 15)} ...` : title} ({count})
+                  </Menu.Item>
+                ))}
+
+                <Menu.Item
+                  className="hoverable"
+                  disabled={activeInstance + 1 === instanceSummary.length}
+                  icon="arrow right"
+                  onClick={() => onChangeActiveInstance(activeInstance + 1)}
+                />
+              </Menu>
+            </div>
+          )
+        })()}
 
         <div className="questionDetails">
           <p>{description}</p>
@@ -88,15 +132,22 @@ function EvaluationLayout({
 
         <div className="info">
           <Info totalResponses={totalResponses} />
-          <Checkbox
-            toggle
-            defaultChecked={showSolution}
-            label={intl.formatMessage({
-              defaultMessage: 'Show solution',
-              id: 'teacher.evaluation.showSolution.label',
-            })}
-            onChange={onToggleShowSolution}
-          />
+          {/* don't show 'show solution' check box for free and free range questions
+          and word cloud charts */
+          type !== 'FREE' &&
+            type !== 'FREE_RANGE' &&
+            activeVisualization !== 'WORD_CLOUD' && (
+              <Checkbox
+                toggle
+                defaultChecked={showSolution}
+                label={intl.formatMessage({
+                  defaultMessage: 'Show solution',
+                  id: 'evaluation.showSolution.label',
+                })}
+                onChange={onToggleShowSolution}
+              />
+            )}
+
           <VisualizationType
             activeVisualization={activeVisualization}
             intl={intl}
@@ -116,7 +167,7 @@ function EvaluationLayout({
         {QUESTION_GROUPS.WITH_STATISTICS.includes(type) &&
           statistics && (
             <div className="statistics">
-              <Statistics {...statistics} />
+              <Statistics {...statistics} withBins={activeVisualization === 'HISTOGRAM'} />
             </div>
           )}
 
@@ -128,15 +179,18 @@ function EvaluationLayout({
               @include desktop-tablet-only {
                 display: grid;
                 height: 100vh;
+                width: 100vw;
+                max-height: 100vh;
+                max-width: 100vw;
 
                 grid-template-columns: auto 17rem;
                 grid-template-rows:
-                  minmax(auto, 0)
-                  minmax(auto, 2rem)
-                  minmax(auto, 0)
-                  minmax(auto, 0)
                   auto
-                  minmax(auto, 0);
+                  auto
+                  auto
+                  auto
+                  minmax(auto, 100%)
+                  auto;
                 grid-template-areas:
                   'instanceChooser instanceChooser'
                   'questionDetails questionDetails'
@@ -178,6 +232,10 @@ function EvaluationLayout({
                       background-color: $color-primary-background;
                       border-bottom: 1px solid $color-primary-background;
                     }
+
+                    :global(.item.hoverable:hover) {
+                      background-color: $color-primary-10p;
+                    }
                   }
                 }
 
@@ -199,7 +257,7 @@ function EvaluationLayout({
                   p {
                     font-size: 1.2rem;
                     font-weight: bold;
-                    line-height: 1.2rem;
+                    line-height: 1.5rem;
                   }
                 }
 

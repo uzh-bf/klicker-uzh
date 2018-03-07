@@ -7,9 +7,10 @@ import { Form, Button } from 'semantic-ui-react'
 
 import { ConfusionSlider } from '../../../components/confusion'
 import { Feedback } from '../../../components/feedbacks'
+import { withStorage } from '../../../lib'
 
 const propTypes = {
-  active: PropTypes.bool,
+  active: PropTypes.bool.isRequired,
   confusionDifficulty: PropTypes.number.isRequired,
   confusionSpeed: PropTypes.number.isRequired,
   feedbackInputValue: PropTypes.string.isRequired,
@@ -24,7 +25,6 @@ const propTypes = {
 }
 
 const defaultProps = {
-  active: false,
   feedbacks: [],
   isConfusionBarometerActive: false,
   isFeedbackChannelActive: false,
@@ -53,10 +53,10 @@ function FeedbackArea({
             handleChange={newValue => handleConfusionSpeedChange(newValue)}
             handleChangeComplete={handleNewConfusionTS}
             labels={{ max: 'fast', mid: 'optimal', min: 'slow' }}
-            max={10}
-            min={-10}
+            max={5}
+            min={-5}
             title={
-              <h2>
+              <h2 className="sectionTitle">
                 <FormattedMessage defaultMessage="Speed" id="common.string.speed" />
               </h2>
             }
@@ -67,10 +67,10 @@ function FeedbackArea({
             handleChange={newValue => handleConfusionDifficultyChange(newValue)}
             handleChangeComplete={handleNewConfusionTS}
             labels={{ max: 'hard', mid: 'optimal', min: 'easy' }}
-            max={10}
-            min={-10}
+            max={5}
+            min={-5}
             title={
-              <h2>
+              <h2 className="sectionTitle">
                 <FormattedMessage defaultMessage="Difficulty" id="common.string.difficulty" />
               </h2>
             }
@@ -80,6 +80,7 @@ function FeedbackArea({
       )}
 
       <div className="feedbacks">
+        <h2 className="sectionTitle">Feedbacks</h2>
         {isFeedbackChannelActive &&
           feedbacks &&
           feedbacks.map(({ id, content, votes }) => (
@@ -94,31 +95,35 @@ function FeedbackArea({
             </div>
           ))}
 
-        <Form className="newFeedback">
-          <Form.Field>
-            <label htmlFor="feedbackInput">
-              <FormattedMessage
-                defaultMessage="New Feedback"
-                id="joinSession.newFeedbackInput.label"
-              />
-              <textarea
-                name="feedbackInput"
-                value={feedbackInputValue}
-                onChange={handleFeedbackInputValueChange}
-              />
-            </label>
-          </Form.Field>
+        {isFeedbackChannelActive && (
+          <Form className="newFeedback">
+            <Form.Field>
+              <label htmlFor="feedbackInput">
+                <h2 className="sectionTitle">
+                  <FormattedMessage
+                    defaultMessage="New open feedback"
+                    id="joinSession.newFeedbackInput.label"
+                  />
+                </h2>
+                <textarea
+                  name="feedbackInput"
+                  value={feedbackInputValue}
+                  onChange={handleFeedbackInputValueChange}
+                />
+              </label>
+            </Form.Field>
 
-          <Button
-            primary
-            disabled={!feedbackInputValue}
-            floated="right"
-            type="submit"
-            onClick={handleNewFeedback}
-          >
-            <FormattedMessage defaultMessage="Submit" id="common.form.submit" />
-          </Button>
-        </Form>
+            <Button
+              primary
+              disabled={!feedbackInputValue}
+              floated="right"
+              type="submit"
+              onClick={handleNewFeedback}
+            >
+              <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+            </Button>
+          </Form>
+        )}
       </div>
 
       <style jsx>{`
@@ -146,10 +151,32 @@ function FeedbackArea({
           }
 
           .confusion {
-            margin-bottom: 0.5rem;
+            background-color: $color-primary-20p;
+            border: 1px solid $color-primary;
+            padding: 1rem;
+
+            > :global(*:first-child) {
+              margin-bottom: 5rem;
+            }
+
+            > :global(*:last-child) {
+              margin-bottom: 3rem;
+            }
+          }
+
+          .feedbacks {
+            margin-top: 1rem;
+
+            overflow-y: auto;
           }
 
           .feedback:not(:last-child) {
+            margin-bottom: 0.3rem;
+          }
+
+          .sectionTitle {
+            font-weight: bold;
+            font-size: 1rem;
             margin-bottom: 0.5rem;
           }
 
@@ -159,20 +186,11 @@ function FeedbackArea({
             left: 1rem;
             right: 1rem;
 
+            margin-bottom: 0;
+
             textarea {
               height: 7rem;
             }
-          }
-
-          .actionButton {
-            position: fixed;
-
-            bottom: 2rem;
-            right: 2rem;
-          }
-
-          .actionButton :global(button) {
-            margin-right: 0;
           }
 
           @include desktop-tablet-only {
@@ -195,12 +213,18 @@ FeedbackArea.propTypes = propTypes
 FeedbackArea.defaultProps = defaultProps
 
 export default compose(
+  withStorage({
+    json: true,
+    propDefault: { difficulty: undefined, speed: undefined },
+    propName: 'confusion',
+    storageType: 'session',
+  }),
   withStateHandlers(
-    {
-      confusionDifficulty: 0,
-      confusionSpeed: 0,
+    ({ confusion }) => ({
+      confusionDifficulty: confusion ? confusion.difficulty : undefined,
+      confusionSpeed: confusion ? confusion.speed : undefined,
       feedbackInputValue: undefined,
-    },
+    }),
     {
       handleConfusionDifficultyChange: () => confusionDifficulty => ({
         confusionDifficulty,
@@ -218,7 +242,14 @@ export default compose(
   ),
   withHandlers({
     handleNewConfusionTS: ({ confusionDifficulty, confusionSpeed, handleNewConfusionTS }) => () => {
+      // send the new confusion entry to the server
       handleNewConfusionTS({ difficulty: confusionDifficulty, speed: confusionSpeed })
+
+      // update the confusion cookie
+      sessionStorage.setItem(
+        'confusion',
+        JSON.stringify({ difficulty: confusionDifficulty, speed: confusionSpeed }),
+      )
     },
     handleNewFeedback: ({
       feedbackInputValue,

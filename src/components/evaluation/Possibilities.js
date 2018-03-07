@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import _isNumber from 'lodash/isNumber'
 import { FormattedMessage } from 'react-intl'
 
 import { CHART_COLORS, QUESTION_TYPES, QUESTION_GROUPS } from '../../constants'
@@ -15,19 +16,14 @@ const Possibilities = ({ questionOptions, questionType }) => (
     <h2>
       {(() => {
         if (QUESTION_GROUPS.CHOICES.includes(questionType)) {
-          return (
-            <FormattedMessage
-              defaultMessage="Choices"
-              id="teacher.evaluation.possibilities.choices"
-            />
-          )
+          return <FormattedMessage defaultMessage="Choices" id="evaluation.possibilities.choices" />
         }
 
         if (questionType === QUESTION_TYPES.FREE_RANGE) {
           return (
             <FormattedMessage
               defaultMessage="Restrictions"
-              id="teacher.evaluation.possibilities.restrictions"
+              id="evaluation.possibilities.restrictions"
             />
           )
         }
@@ -59,19 +55,34 @@ const Possibilities = ({ questionOptions, questionType }) => (
           <div>
             {(() => {
               const comp = []
-              if (restrictions.min) {
-                comp.push(<EvaluationListItem marker="MIN">{restrictions.min}</EvaluationListItem>)
+              if (restrictions && _isNumber(restrictions.min)) {
+                comp.push(
+                  <EvaluationListItem reverse marker="MIN">
+                    {restrictions.min}
+                  </EvaluationListItem>,
+                )
               }
 
-              if (restrictions.max) {
-                comp.push(<EvaluationListItem marker="MAX">{restrictions.max}</EvaluationListItem>)
+              if (restrictions && _isNumber(restrictions.max)) {
+                comp.push(
+                  <EvaluationListItem reverse marker="MAX">
+                    {restrictions.max}
+                  </EvaluationListItem>,
+                )
               }
 
               if (comp.length > 0) {
                 return comp
               }
 
-              return <div>No restrictions.</div>
+              return (
+                <div>
+                  <FormattedMessage
+                    defaultMessage="No restrictions."
+                    id="evaluation.possibilities.noRestrictions"
+                  />
+                </div>
+              )
             })()}
           </div>
         )

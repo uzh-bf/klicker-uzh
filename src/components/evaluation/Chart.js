@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
 
-import { BarChart, PieChart, TableChart, CloudChart, HistogramChart } from '.'
+import { BarChart, StackChart, PieChart, TableChart, CloudChart, HistogramChart } from '.'
 import { SESSION_STATUS } from '../../constants'
 import { statisticsShape } from '../../propTypes'
 
@@ -11,6 +11,8 @@ import { statisticsShape } from '../../propTypes'
 const propTypes = {
   activeVisualization: PropTypes.string.isRequired,
   handleShowGraph: PropTypes.func.isRequired,
+  numBins: PropTypes.number.isRequired,
+  questionType: PropTypes.string.isRequired,
   restrictions: PropTypes.shape({
     max: PropTypes.number,
     min: PropTypes.number,
@@ -41,6 +43,7 @@ const chartTypes = {
   BAR_CHART: BarChart,
   HISTOGRAM: HistogramChart,
   PIE_CHART: PieChart,
+  STACK_CHART: StackChart,
   TABLE: TableChart,
   WORD_CLOUD: CloudChart,
 }
@@ -50,6 +53,8 @@ function Chart({
   restrictions,
   results,
   handleShowGraph,
+  numBins,
+  questionType,
   sessionStatus,
   showGraph,
   showSolution,
@@ -63,10 +68,7 @@ function Chart({
           return (
             <div className="noChart">
               <Button className="showGraphButton" onClick={handleShowGraph}>
-                <FormattedMessage
-                  defaultMessage="Show Graph"
-                  id="teacher.evaluation.graph.showGraph"
-                />
+                <FormattedMessage defaultMessage="Show Graph" id="evaluation.graph.showGraph" />
               </Button>
             </div>
           )
@@ -77,7 +79,7 @@ function Chart({
             <div className="noChart">
               <FormattedMessage
                 defaultMessage="No Results Available"
-                id="teacher.evaluation.graph.noResults"
+                id="evaluation.graph.noResults"
               />
             </div>
           )
@@ -89,7 +91,10 @@ function Chart({
             <ChartComponent
               brush={sessionStatus !== SESSION_STATUS.RUNNING}
               data={results.data}
+              isColored={questionType !== 'FREE_RANGE'}
               isSolutionShown={showSolution}
+              numBins={numBins}
+              questionType={questionType}
               restrictions={restrictions}
               statistics={statistics}
               totalResponses={results.totalResponses}

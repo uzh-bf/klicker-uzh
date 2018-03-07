@@ -10,27 +10,35 @@ import _isNil from 'lodash/isNil'
 
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionEditForm } from '../../components/forms'
-import { pageWithIntl, withData, omitDeep } from '../../lib'
-import { QuestionListQuery, QuestionDetailsQuery, TagListQuery } from '../../graphql/queries'
-import { ModifyQuestionMutation } from '../../graphql/mutations'
+import { pageWithIntl, withData, omitDeep, withDnD, withLogging } from '../../lib'
+import {
+  TagListQuery,
+  QuestionPoolQuery,
+  QuestionDetailsQuery,
+  ModifyQuestionMutation,
+} from '../../graphql'
 
 const propTypes = {
   activeVersion: PropTypes.number.isRequired,
+  allTags: PropTypes.array.isRequired,
+  editSuccess: PropTypes.bool.isRequired,
   handleDiscard: PropTypes.func.isRequired,
+  handleDismiss: PropTypes.func.isRequired,
   handleSave: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   isNewVersion: PropTypes.bool.isRequired,
+  questionTags: PropTypes.array.isRequired,
   setActiveVersion: PropTypes.func.isRequired,
-  tags: PropTypes.arrayOf().isRequired,
   title: PropTypes.string.isRequired,
   type: PropTypes.string.isRequired,
-  versions: PropTypes.arrayOf().isRequired,
+  versions: PropTypes.array.isRequired,
 }
 
 const EditQuestion = ({
+  allTags,
   intl,
   isNewVersion,
-  tags,
+  questionTags,
   title,
   type,
   versions,
@@ -38,31 +46,36 @@ const EditQuestion = ({
   handleSave,
   activeVersion,
   setActiveVersion,
+  editSuccess,
+  handleDismiss,
 }) => (
   <TeacherLayout
     intl={intl}
     navbar={{
       title: intl.formatMessage({
         defaultMessage: 'Edit Question',
-        id: 'teacher.editQuestion.title',
+        id: 'editQuestion.title',
       }),
     }}
     pageTitle={intl.formatMessage({
       defaultMessage: 'Edit Question',
-      id: 'teacher.editQuestion.pageTitle',
+      id: 'editQuestion.pageTitle',
     })}
     sidebar={{ activeItem: 'editQuestion' }}
   >
     <QuestionEditForm
       activeVersion={activeVersion}
+      allTags={allTags}
+      editSuccess={editSuccess}
       intl={intl}
       isNewVersion={isNewVersion}
-      tags={tags.map(tag => tag.name)}
+      questionTags={questionTags}
       title={title}
       type={type}
       versions={versions}
       onActiveVersionChange={setActiveVersion}
       onDiscard={handleDiscard}
+      onDismiss={handleDismiss}
       onSubmit={handleSave}
     />
   </TeacherLayout>
@@ -71,17 +84,34 @@ const EditQuestion = ({
 EditQuestion.propTypes = propTypes
 
 export default compose(
+  withLogging(),
+  withDnD,
   withData,
   pageWithIntl,
+  graphql(TagListQuery, { name: 'tags' }),
   graphql(QuestionDetailsQuery, {
+    name: 'details',
     options: ({ url }) => ({ variables: { id: url.query.questionId } }),
   }),
-  branch(({ data }) => data.loading || !data.question, renderNothing),
+  branch(
+    ({ details, tags }) => details.loading || tags.loading || !details.question,
+    renderNothing,
+  ),
   graphql(ModifyQuestionMutation),
-  withState('activeVersion', 'setActiveVersion', ({ data }) => data.question.versions.length - 1),
-  withProps(({ activeVersion, data }) => ({
-    ..._pick(data.question, ['id', 'title', 'type', 'tags', 'versions']),
-    isNewVersion: activeVersion === data.question.versions.length,
+  withState(
+    'activeVersion',
+    'setActiveVersion',
+    ({ details }) => details.question.versions.length - 1,
+  ),
+  withState('editSuccess', 'setEditSuccess', {
+    message: null,
+    success: null,
+  }),
+  withProps(({ activeVersion, details, tags }) => ({
+    ..._pick(details.question, ['id', 'title', 'type', 'versions']),
+    allTags: tags.tags,
+    isNewVersion: activeVersion === details.question.versions.length,
+    questionTags: details.question.tags,
   })),
   withHandlers({
     // handle discarding question modification
@@ -89,9 +119,18 @@ export default compose(
       Router.push('/questions')
     },
 
+    handleDismiss: ({ setEditSuccess }) => {
+      setEditSuccess({
+        editSuccess: {
+          message: null,
+          success: null,
+        },
+      })
+    },
+
     // handle modifying a question
     handleSave: ({
-      id, mutate, isNewVersion, url,
+      id, mutate, isNewVersion, url, setEditSuccess,
     }) => async ({
       title,
       description,
@@ -99,11 +138,16 @@ export default compose(
       solution,
       tags,
     }) => {
+      setEditSuccess({
+        message: null,
+        success: null,
+      })
+
       try {
         await mutate({
           // reload the question details and tags after update
           // TODO: replace with optimistic updates
-          refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
+          refetchQueries: [{ query: QuestionPoolQuery }],
           // update the cache after the mutation has completed
           update: (store, { data: { modifyQuestion } }) => {
             const query = {
@@ -146,8 +190,18 @@ export default compose(
             _isNil,
           ),
         })
+
+        setEditSuccess({
+          message: null,
+          success: true,
+        })
       } catch ({ message }) {
         console.error(message)
+
+        setEditSuccess({
+          message,
+          success: false,
+        })
       }
     },
   }),

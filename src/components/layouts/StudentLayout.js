@@ -25,14 +25,14 @@ const StudentLayout = ({
   const activeQuestionItem = {
     href: 'activeQuestion',
     label: (
-      <FormattedMessage defaultMessage="Active Question" id="student.sidebar.activeQuestion" />
+      <FormattedMessage defaultMessage="Active Question" id="joinSessionsidebar.activeQuestion" />
     ),
     name: 'activeQuestion',
   }
   const feedbackChannelItem = {
     href: 'feedbackChannel',
     label: (
-      <FormattedMessage defaultMessage="Feedback-Channel" id="student.sidebar.feedbackChannel" />
+      <FormattedMessage defaultMessage="Feedback-Channel" id="joinSessionsidebar.feedbackChannel" />
     ),
     name: 'feedbackChannel',
   }
@@ -42,7 +42,7 @@ const StudentLayout = ({
     : [activeQuestionItem]
 
   return (
-    <CommonLayout baseFontSize="16px" pageTitle={pageTitle}>
+    <CommonLayout baseFontSize="16px" nextHeight="100%" pageTitle={pageTitle}>
       <div className="studentLayout">
         <div className="header">
           <Button
@@ -52,7 +52,12 @@ const StudentLayout = ({
             onClick={sidebar.handleToggleSidebarVisible}
           />
           <h1>{title}</h1>
-          <Button basic icon="refresh" onClick={() => window.location.reload()} />
+          <Button
+            basic
+            disabled={sidebar.activeItem !== 'activeQuestion'}
+            icon="refresh"
+            onClick={() => window.location.reload()}
+          />
         </div>
 
         <div className="content">
@@ -73,7 +78,7 @@ const StudentLayout = ({
             display: flex;
             flex-direction: column;
 
-            min-height: 100vh;
+            height: 100%;
 
             .header {
               flex: 0 0 auto;

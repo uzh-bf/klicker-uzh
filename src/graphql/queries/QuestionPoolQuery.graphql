@@ -1,0 +1,28 @@
+query QuestionPool {
+  questions: allQuestions {
+    id
+    title
+    type
+    instances {
+      id
+      version
+      createdAt
+      session
+    }
+    tags {
+      id
+      name
+    }
+    versions {
+      id
+      description
+      createdAt
+    }
+    createdAt
+    updatedAt
+  }
+  tags: allTags {
+    id
+    name
+  }
+}

@@ -2,54 +2,55 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import _get from 'lodash/get'
 import ReactTooltip from 'react-tooltip'
-import { Form, Input } from 'semantic-ui-react'
+import { Form, Icon, Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import { FaQuestionCircle } from 'react-icons/lib/fa'
 import { compose, withHandlers, mapProps } from 'recompose'
 
 import { QUESTION_TYPES } from '../../../constants'
 
 const propTypes = {
+  dirty: PropTypes.bool.isRequired,
+  disabled: PropTypes.bool,
   handleMaxChange: PropTypes.func.isRequired,
   handleMinChange: PropTypes.func.isRequired,
+  invalid: PropTypes.bool.isRequired,
   max: PropTypes.number,
-  meta: PropTypes.shape({
-    dirty: PropTypes.bool,
-    invalid: PropTypes.bool,
-  }).isRequired,
   min: PropTypes.number,
   type: PropTypes.string.isRequired,
 }
 
 const defaultProps = {
+  disabled: false,
   max: undefined,
   min: undefined,
 }
 
 const FREECreationOptions = ({
+  disabled,
   max,
   min,
   type,
   handleMaxChange,
   handleMinChange,
-  meta: { dirty, invalid },
+  dirty,
+  invalid,
 }) => (
   <div className="FREECreationOptions">
     <Form.Field required error={dirty && invalid}>
       <label htmlFor="options">
         <FormattedMessage
           defaultMessage="Input Restrictions"
-          id="teacher.createQuestion.optionsFREE.label"
+          id="createQuestion.optionsFREE.label"
         />
         <a data-tip data-for="FREECreationHelp">
-          <FaQuestionCircle />
+          <Icon name="question circle" />
         </a>
       </label>
 
       <ReactTooltip delayHide={250} delayShow={250} id="FREECreationHelp" place="right">
         <FormattedMessage
           defaultMessage="Choose the allowed format of incoming responses."
-          id="teacher.createQuestion.optionsFREE.tooltip"
+          id="createQuestion.optionsFREE.tooltip"
         />
       </ReactTooltip>
 
@@ -59,9 +60,10 @@ const FREECreationOptions = ({
         <div className="range">
           <Form.Field>
             <label htmlFor="min">
-              <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />
+              <FormattedMessage defaultMessage="Min" id="createQuestion.options.min" />
             </label>
             <Input
+              disabled={disabled}
               name="min"
               placeholder="-∞"
               type="number"
@@ -72,9 +74,10 @@ const FREECreationOptions = ({
 
           <Form.Field>
             <label htmlFor="max">
-              <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />
+              <FormattedMessage defaultMessage="Max" id="createQuestion.options.max" />
             </label>
             <Input
+              disabled={disabled}
               name="max"
               placeholder="∞"
               type="number"
@@ -131,9 +134,13 @@ FREECreationOptions.propTypes = propTypes
 FREECreationOptions.defaultProps = defaultProps
 
 export default compose(
-  mapProps(({ input: { onChange, value }, meta, type }) => ({
+  mapProps(({
+    disabled, onChange, value, dirty, invalid, type,
+  }) => ({
+    dirty,
+    disabled,
+    invalid,
     max: _get(value, 'restrictions.max'),
-    meta,
     min: _get(value, 'restrictions.min'),
     onChange,
     type,

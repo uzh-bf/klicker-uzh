@@ -42,6 +42,7 @@ const Sidebar = ({
           <SidebarItem
             active={item.name === activeItem}
             handleSidebarItemClick={handleSidebarItemClick(item.href)}
+            icon={item.icon}
             key={item.name}
             name={item.name}
           >
@@ -67,15 +68,9 @@ const Sidebar = ({
 
         :global(.sidebarMenu) {
           position: relative;
-          text-align: left;
           width: 75% !important;
 
           .langSwitcher {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-
             padding: 1rem;
           }
 

@@ -11,28 +11,30 @@ const defaultProps = {
 }
 
 const ListWithHeader = ({ children, items }) => (
-  <div>
-    <h3 className="listHeader">{children}</h3>
-    <ul className="list">
-      {items.map(item => (
-        <li className="listItem" key={item}>
-          {item}
-        </li>
-      ))}
-    </ul>
+  <div className="listWithHeader">
+    {children && <span className="listHeader">{children}</span>}
+    <ul className="list">{items.map(item => <li className="listItem">{item}</li>)}</ul>
 
     <style jsx>{`
-      .list {
-        margin: 0;
-        margin-top: 1rem;
-        padding: 0;
-      }
-      .listHeader {
-        font-size: 1rem;
-        margin: 0;
-      }
-      .listItem {
-        list-style: none;
+      @import 'src/theme';
+
+      .listWithHeader {
+        display: flex;
+        flex-direction: column;
+
+        padding: 0.7rem;
+
+        .list {
+          margin: 0;
+          padding: 0;
+        }
+        .listHeader {
+          font-size: 1rem;
+          margin-bottom: 0.5rem;
+        }
+        .listItem {
+          list-style: none;
+        }
       }
     `}</style>
   </div>

@@ -1,14 +1,15 @@
 import React from 'react'
 import Router from 'next/router'
 import PropTypes from 'prop-types'
+import Cookies from 'js-cookie'
 import { compose, withState, withHandlers } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 
 import { StaticLayout } from '../../components/layouts'
 import { LoginForm } from '../../components/forms'
-import { LoginMutation } from '../../graphql/mutations'
-import { pageWithIntl, withData } from '../../lib'
+import { LoginMutation } from '../../graphql'
+import { pageWithIntl, withData, withLogging } from '../../lib'
 
 const propTypes = {
   error: PropTypes.oneOfType(PropTypes.string, null).isRequired,
@@ -28,10 +29,10 @@ const Login = ({ intl, error, handleSubmit }) => (
         <FormattedMessage defaultMessage="Login" id="user.login.title" />
       </h1>
 
-      {/* TODO: improve message handling */}
-      {error && <div className="errorMessage message">Login failed: {error}</div>}
-
       <LoginForm intl={intl} onSubmit={handleSubmit} />
+
+      {/* TODO: improve message handling */}
+      {error && <div className="errorMessage message">Login failed ({error})</div>}
 
       <style jsx>{`
         @import 'src/theme';
@@ -65,6 +66,7 @@ const Login = ({ intl, error, handleSubmit }) => (
 Login.propTypes = propTypes
 
 export default compose(
+  withLogging(['ga', 'raven']),
   withData,
   pageWithIntl,
   graphql(LoginMutation),
@@ -73,7 +75,12 @@ export default compose(
     // handle form submission
     handleSubmit: ({ mutate, setError }) => async ({ email, password }) => {
       try {
-        await mutate({ variables: { email, password } })
+        const { data } = await mutate({ variables: { email, password } })
+
+        // save the user id in a cookie
+        if (data.login && data.login.id) {
+          Cookies.set('userId', data.login.id)
+        }
 
         // redirect to question pool
         Router.push('/questions')

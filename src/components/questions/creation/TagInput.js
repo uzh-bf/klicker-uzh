@@ -2,49 +2,47 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import TagsInput from 'react-tagsinput'
 import ReactTooltip from 'react-tooltip'
-import { Form } from 'semantic-ui-react'
+import { Form, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import { FaQuestionCircle } from 'react-icons/lib/fa'
 
 import { autocompleteRenderInput } from '../../common'
 
 const propTypes = {
-  disabled: PropTypes.bool.isRequired,
-  input: PropTypes.shape({
-    onChange: PropTypes.func.isRequired,
-    value: PropTypes.array,
-  }).isRequired,
-  meta: PropTypes.shape({
-    dirty: PropTypes.bool,
-    invalid: PropTypes.bool,
-  }).isRequired,
+  disabled: PropTypes.bool,
+  error: PropTypes.string,
+  onChange: PropTypes.func.isRequired,
   tags: PropTypes.arrayOf(
     PropTypes.shape({
       name: PropTypes.string.isRequired,
     }),
   ),
+  touched: PropTypes.bool.isRequired,
+  value: PropTypes.array,
 }
 
 const defaultProps = {
+  disabled: false,
+  error: null,
   tags: [],
+  value: [],
 }
 
 const TagInput = ({
-  tags, input: { value, onChange }, meta: { invalid, dirty }, disabled,
+  tags, value, onChange, error, touched, disabled,
 }) => (
   <div className="tagInput">
-    <Form.Field required error={dirty && invalid}>
+    <Form.Field required error={touched && error}>
       <label htmlFor="tags">
-        <FormattedMessage defaultMessage="Tags" id="teacher.createQuestion.tagInput.label" />
+        <FormattedMessage defaultMessage="Tags" id="createQuestion.tagInput.label" />
         <a data-tip data-for="tagHelp">
-          <FaQuestionCircle />
+          <Icon name="question circle" />
         </a>
       </label>
 
       <ReactTooltip delayHide={250} delayShow={250} id="tagHelp" place="right">
         <FormattedMessage
           defaultMessage="Add tags to your question to improve organization and reusability (similar to the folders used previously)."
-          id="teacher.createQuestion.tagInput.tooltip"
+          id="createQuestion.tagInput.tooltip"
         />
       </ReactTooltip>
 
@@ -53,7 +51,7 @@ const TagInput = ({
         onlyUnique
         disabled={disabled}
         name="tags"
-        renderInput={autocompleteRenderInput(tags, value)}
+        renderInput={autocompleteRenderInput(tags, value || [])}
         value={value || []}
         onChange={onChange}
       />
@@ -75,7 +73,6 @@ const TagInput = ({
 
         &-tag {
           background-color: $color-secondary;
-          border-radius: 2px;
           border: 1px solid grey;
           color: grey;
           display: inline-block;

@@ -1,0 +1,62 @@
+query EvaluateSession($sessionId: ID!) {
+  session(id: $sessionId) {
+    id
+    status
+    blocks {
+      id
+      status
+      instances {
+        id
+        isOpen
+        version
+        question {
+          id
+          title
+          type
+          versions {
+            description
+            options {
+              FREE_RANGE {
+                restrictions {
+                  min
+                  max
+                }
+              }
+              SC {
+                choices {
+                  correct
+                  name
+                }
+                randomized
+              }
+              MC {
+                choices {
+                  correct
+                  name
+                }
+                randomized
+              }
+            }
+          }
+        }
+        results {
+          ... on SCQuestionResults {
+            CHOICES
+          }
+          ... on FREEQuestionResults {
+            FREE {
+              count
+              key
+              value
+            }
+          }
+        }
+        responses {
+          id
+          value
+          createdAt
+        }
+      }
+    }
+  }
+}

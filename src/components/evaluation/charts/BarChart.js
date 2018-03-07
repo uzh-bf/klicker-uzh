@@ -1,12 +1,12 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import _sortBy from 'lodash/sortBy'
 import {
   Bar,
   BarChart as BarChartComponent,
   CartesianGrid,
   Cell,
   LabelList,
-  Label,
   ResponsiveContainer,
   XAxis,
   YAxis,
@@ -14,7 +14,7 @@ import {
 import { withProps } from 'recompose'
 import _round from 'lodash/round'
 
-import { CHART_COLORS } from '../../../constants'
+import { CHART_COLORS, QUESTION_TYPES } from '../../../constants'
 
 const propTypes = {
   data: PropTypes.arrayOf(
@@ -23,15 +23,33 @@ const propTypes = {
       value: PropTypes.string.isRequired,
     }),
   ),
+  isColored: PropTypes.bool,
   isSolutionShown: PropTypes.bool,
 }
 
 const defaultProps = {
   data: [],
+  isColored: true,
   isSolutionShown: false,
 }
 
-const BarChart = ({ isSolutionShown, data }) => (
+// TODO: extract to libraries
+const calculatePercentage = (questionType, count, totalResponses) => {
+  // no percentages needed for other question types
+  if (questionType !== QUESTION_TYPES.SC) {
+    return count
+  }
+
+  // only show percentage string if count is >0
+  if (count > 0) {
+    return `${count} | ${_round(100 * (count / totalResponses), 1)} %`
+  }
+
+  // return an empty string so it doesn't clutter the visualization
+  return ''
+}
+
+const BarChart = ({ isSolutionShown, data, isColored }) => (
   <ResponsiveContainer>
     <BarChartComponent
       data={data}
@@ -42,9 +60,15 @@ const BarChart = ({ isSolutionShown, data }) => (
         top: 24,
       }}
     >
-      <XAxis dataKey="label">
-        <Label offset={0} position="insideBottom" value="Choices" />
-      </XAxis>
+      <XAxis
+        dataKey="label"
+        tick={{
+          fill: 'black',
+          offset: 30,
+          stroke: 'black',
+          style: { fontSize: '2.5rem' },
+        }}
+      />
       <YAxis
         domain={[
           0,
@@ -69,22 +93,18 @@ const BarChart = ({ isSolutionShown, data }) => (
       >
         <LabelList
           dataKey="percentage"
-          fill="black"
-          offset={30}
-          position="top"
-          stroke="black"
-          style={{ fontSize: '1.5rem' }}
-        />
-        <LabelList
-          dataKey="label"
           fill="white"
           position="inside"
           stroke="white"
-          style={{ fontSize: '3rem' }}
+          style={{ fontSize: '2.5rem' }}
         />
         {data.map((row, index) => (
           <Cell
-            fill={isSolutionShown && row.correct ? '#00FF00' : CHART_COLORS[index % 12]}
+            fill={
+              isSolutionShown && row.correct // eslint-disable-line
+                ? '#00FF00'
+                : isColored ? CHART_COLORS[index % 12] : '#1395BA'
+            }
             key={row.value}
           />
         ))}
@@ -96,14 +116,17 @@ const BarChart = ({ isSolutionShown, data }) => (
 BarChart.propTypes = propTypes
 BarChart.defaultProps = defaultProps
 
-export default withProps(({ data, totalResponses }) => ({
+export default withProps(({ data, questionType, totalResponses }) => ({
   // filter out choices without any responses (weird labeling)
   // map data to contain percentages and char labels
-  data: data.filter(({ count }) => count > 0).map(({ correct, count, value }, index) => ({
-    correct,
-    count,
-    label: String.fromCharCode(65 + index),
-    percentage: `${count} | ${_round(100 * (count / totalResponses), 2)} %`,
-    value,
-  })),
+  data: _sortBy(
+    data.map(({ correct, count, value }, index) => ({
+      correct,
+      count,
+      label: questionType === 'FREE_RANGE' ? +value : String.fromCharCode(65 + index),
+      percentage: calculatePercentage(questionType, count, totalResponses),
+      value,
+    })),
+    o => o.label,
+  ),
 }))(BarChart)

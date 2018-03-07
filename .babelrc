@@ -11,7 +11,7 @@
           }
         ]
       ],
-      "plugins": ["inline-dotenv", "add-react-displayname", "react-intl"]
+      "plugins": ["inline-dotenv", "add-react-displayname"]
     },
     "production": {
       "presets": [
@@ -26,15 +26,8 @@
       ],
       "plugins": [
         "transform-inline-environment-variables",
-        ["lodash", { "id": ["lodash", "recompose", "semantic-ui-react"] }],
-        "add-react-displayname",
-        "graphql-tag",
-        [
-          "react-intl",
-          {
-            "messagesDir": "src/lang/.messages"
-          }
-        ]
+        ["lodash", { "id": ["lodash", "recompose", "semantic-ui-react", "ramda"] }],
+        "add-react-displayname"
       ]
     },
     "test": {
@@ -53,7 +46,8 @@
             }
           }
         ]
-      ]
+      ],
+      "plugins": ["babel-plugin-inline-import-graphql-ast"]
     }
   }
 }

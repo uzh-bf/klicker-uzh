@@ -2,46 +2,44 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
 import { FormattedMessage, intlShape } from 'react-intl'
-import { FaQuestionCircle } from 'react-icons/lib/fa'
+import { Icon } from 'semantic-ui-react'
 
 import { QUESTION_TYPES } from '../../constants'
 import { Button } from '../common'
 
 const propTypes = {
-  input: PropTypes.shape({
-    onChange: PropTypes.func.isRequired,
-    value: PropTypes.string.isRequired,
-  }).isRequired,
   intl: intlShape.isRequired,
+  onChange: PropTypes.func.isRequired,
+  value: PropTypes.string.isRequired,
 }
 
-const TypeChooser = ({ intl, input: { value, onChange } }) => {
+const TypeChooser = ({ intl, value, onChange }) => {
   const types = [
     {
       name: intl.formatMessage({
-        defaultMessage: 'SC',
-        id: 'common.questionTypes.sc',
+        defaultMessage: 'Single Choice (SC)',
+        id: 'common.SC.label',
       }),
       value: QUESTION_TYPES.SC,
     },
     {
       name: intl.formatMessage({
-        defaultMessage: 'MC',
-        id: 'common.questionTypes.mc',
+        defaultMessage: 'Multiple Choice (MC)',
+        id: 'common.MC.label',
       }),
       value: QUESTION_TYPES.MC,
     },
     {
       name: intl.formatMessage({
-        defaultMessage: 'FREE',
-        id: 'common.questionTypes.free',
+        defaultMessage: 'Free Text (FT)',
+        id: 'common.FREE.label',
       }),
       value: QUESTION_TYPES.FREE,
     },
     {
       name: intl.formatMessage({
-        defaultMessage: 'FREE_RANGE',
-        id: 'common.questionTypes.freeRange',
+        defaultMessage: 'Number Range (NR)',
+        id: 'common.FREE_RANGE.label',
       }),
       value: QUESTION_TYPES.FREE_RANGE,
     },
@@ -52,25 +50,27 @@ const TypeChooser = ({ intl, input: { value, onChange } }) => {
   return (
     <div className="required field typeChooser">
       <label htmlFor="types">
-        <FormattedMessage
-          defaultMessage="Question Type"
-          id="teacher.createQuestion.questionType.label"
-        />
+        <FormattedMessage defaultMessage="Question Type" id="createQuestion.questionType.label" />
         <a data-tip data-for="TypeChooserHelp">
-          <FaQuestionCircle />
+          <Icon name="question circle" />
         </a>
       </label>
 
       <ReactTooltip delayHide={250} delayShow={250} id="TypeChooserHelp" place="right">
         <FormattedMessage
           defaultMessage="Choose the type of question you would like to create."
-          id="teacher.createQuestion.questionType.tooltip"
+          id="createQuestion.questionType.tooltip"
         />
       </ReactTooltip>
 
       <div className="types">
         {types.map(({ name, value: typeValue }) => (
-          <Button active={typeValue === value} key={typeValue} onClick={handleClick(typeValue)}>
+          <Button
+            active={typeValue === value}
+            key={typeValue}
+            type="button"
+            onClick={handleClick(typeValue)}
+          >
             {name}
           </Button>
         ))}

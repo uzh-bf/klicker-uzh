@@ -1,4 +1,4 @@
-export const SEMANTIC_VERSION = '2.2.13'
+export const SEMANTIC_VERSION = '2.2.14'
 
 export const SESSION_STATUS = {
   COMPLETED: 'COMPLETED',
@@ -23,7 +23,7 @@ export const QUESTION_GROUPS = {
 export const CHART_DEFAULTS = {
   FREE: 'TABLE',
   FREE_RANGE: 'HISTOGRAM',
-  MC: 'BAR_CHART',
+  MC: 'STACK_CHART',
   OTHER: 'TABLE',
   SC: 'PIE_CHART',
 }
@@ -41,6 +41,13 @@ export const CHART_COLORS = [
   'rgb(92, 167, 147)', // 12
   'rgb(15, 91, 120)', // 3
   'rgb(236, 170, 56)', // 9
+]
+
+export const QUESTION_SORTINGS = [
+  { content: 'Creation Date', id: 'CREATED', labelStart: 'sort numeric' },
+  { content: 'Last Usage', id: 'USED', labelStart: 'sort numeric' },
+  { content: 'Question Type', id: 'TYPE', labelStart: 'sort content' },
+  { content: 'Title', id: 'TITLE', labelStart: 'sort alphabet' },
 ]
 
 // https://www.viget.com/articles/add-colors-to-your-palette-with-color-mixing

@@ -1,0 +1,10 @@
+query AccountSummary {
+  user {
+    id
+    shortname
+    runningSession {
+      id
+      runtime
+    }
+  }
+}

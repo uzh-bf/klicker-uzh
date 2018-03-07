@@ -3,9 +3,8 @@ import PropTypes from 'prop-types'
 import _truncate from 'lodash/truncate'
 import Link from 'next/link'
 
+import { Button, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import { FaEye } from 'react-icons/lib/fa'
-import { Button } from 'semantic-ui-react'
 
 import { ListWithHeader } from '../common'
 
@@ -22,29 +21,34 @@ const defaultProps = {
 const QuestionDetails = ({ questionId, description, lastUsed }) => {
   const truncatedDesc = _truncate(description, { length: 250 })
 
-  // TODO: internationalization
   return (
     <div className="questionDetails">
       <div className="column description">{truncatedDesc}</div>
-      <div className="column col2">
-        <p>
-          Antworten Total: <strong>999</strong>
-        </p>
-        <p>
-          Korrekte Antworten: <strong>88%</strong>
-        </p>
-      </div>
 
-      <div className="column col3">
-        <ListWithHeader items={lastUsed.length > 0 ? lastUsed : ['Never used']}>
-          <FormattedMessage defaultMessage="Last used" id="questionPool.question.lastUsed" />
+      <div className="column options" />
+
+      <div className="column lastUsed">
+        <ListWithHeader items={lastUsed.length > 0 ? lastUsed : ['-']}>
+          <Icon name="history" />
+          <FormattedMessage defaultMessage="Usage history" id="questionDetails.usageHistory" />
         </ListWithHeader>
       </div>
 
       <div className="column buttons">
-        <Link href={`/questions/${questionId}`}>
-          <Button className="button">
-            <FaEye />
+        <Link
+          as={`/questions/${questionId}`}
+          href={{ pathname: '/questions/details', query: { questionId } }}
+        >
+          <Button fluid>
+            <FormattedMessage defaultMessage="View" id="questionDetails.button.view" />
+          </Button>
+        </Link>
+        <Link
+          as={`/questions/${questionId}`}
+          href={{ pathname: '/questions/details', query: { questionId } }}
+        >
+          <Button fluid>
+            <FormattedMessage defaultMessage="Edit" id="questionDetails.button.edit" />
           </Button>
         </Link>
       </div>
@@ -70,12 +74,12 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
             background-color: $color-primary-background;
           }
 
-          .col2 {
+          .options {
             display: none;
             border-bottom: 1px solid $color-primary;
           }
 
-          .col3 {
+          .lastUsed {
             display: none;
             border-bottom: 1px solid $color-primary;
           }
@@ -99,7 +103,7 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
 
             .column {
               flex: 1;
-              padding: 1rem;
+              padding: 0.7rem;
               text-align: left;
 
               &:not(:last-child) {
@@ -111,14 +115,16 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
               border-bottom: none;
             }
 
-            .col2 {
-              display: block;
+            .options {
               border-bottom: none;
             }
 
-            .col3 {
+            .lastUsed {
               display: block;
               border-bottom: none;
+              text-align: center;
+
+              padding: 0;
             }
 
             .buttons {
@@ -126,7 +132,7 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
               flex: none;
               padding: 0.3rem;
 
-              :global(.button) {
+              :global(button) {
                 margin: 0;
                 margin-bottom: 0.3rem;
                 padding: 7px 12px;
@@ -134,23 +140,23 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
                 background-color: rgba(224, 225, 226, 0.73);
               }
 
-              :global(.button:last-child) {
+              :global(button:last-child) {
                 margin-bottom: 0;
               }
 
-              :global(.button:hover) {
+              :global(button:hover) {
                 color: $color-primary !important;
               }
             }
           }
 
           @include desktop-only {
-            .col2 {
-              flex: 0 0 250px;
+            .options {
+              flex: 0 0 12rem;
             }
 
-            .col3 {
-              flex: 0 0 250px;
+            .lastUsed {
+              flex: 0 0 12rem;
             }
           }
         }

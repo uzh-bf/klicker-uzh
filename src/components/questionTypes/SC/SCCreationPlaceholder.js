@@ -2,8 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { compose, withHandlers, withState } from 'recompose'
-import { FaFloppyO, FaPlus, FaTrash } from 'react-icons/lib/fa'
-
+import { Icon } from 'semantic-ui-react'
 import styles from './styles'
 
 const propTypes = {
@@ -28,7 +27,7 @@ const SCCreationPlaceholder = ({
 }) => (
   <div className={classNames('option', { inputMode })}>
     <button className="leftAction" type="button" onClick={handleModeToggle}>
-      {inputMode ? <FaTrash /> : <FaPlus />}
+      {inputMode ? <Icon name="trash" /> : <Icon name="plus" />}
     </button>
 
     <button
@@ -36,13 +35,13 @@ const SCCreationPlaceholder = ({
       type="button"
       onClick={handleCorrectToggle}
     >
-      {correct ? 'TRUE' : 'FALSE'}
+      {correct ? <Icon name="checkmark" /> : <Icon name="remove" />}
     </button>
 
     <input type="text" value={name} onChange={handleNameChange} />
 
     <button className="rightAction" type="button" onClick={handleSave}>
-      <FaFloppyO />
+      <Icon name="save" />
     </button>
 
     <style jsx>{styles}</style>
@@ -78,7 +77,7 @@ const SCCreationPlaceholder = ({
       }
 
       .inputMode > .toggle {
-        flex: 0 0 5rem;
+        flex: 0 0 auto;
       }
 
       .inputMode > input {

@@ -1,18 +1,17 @@
 /* eslint-disable import/no-extraneous-dependencies, react/prop-types */
 
 import React from 'react'
-import { Provider as ReduxProvider } from 'react-redux'
 import { storiesOf } from '@storybook/react'
 import { action } from '@storybook/addon-actions'
 import { DragDropContextProvider } from 'react-dnd'
 import HTML5Backend from 'react-dnd-html5-backend'
 
-import { configureStore, intlMock } from '../../../.storybook/utils'
+import { intlMock } from '../../../.storybook/utils'
 
 import {
   FormWithLinks,
   LoginForm,
-  PasswordResetForm,
+  PasswordRequestForm,
   QuestionCreationForm,
   QuestionEditForm,
   RegistrationForm,
@@ -20,23 +19,12 @@ import {
   SessionCreationForm,
 } from '.'
 
-let store
-const getStoryWithRedux = (getStory) => {
-  // initialize the redux store
-  if (!store) {
-    store = configureStore()
-  }
-
-  return <ReduxProvider store={store}>{getStory()}</ReduxProvider>
-}
-
 storiesOf('forms/components', module)
-  .addDecorator(getStoryWithRedux)
   .addDecorator(getStory => (
     <DragDropContextProvider backend={HTML5Backend}>{getStory()}</DragDropContextProvider>
   ))
   .add('LoginForm', () => <LoginForm intl={intlMock} />)
-  .add('PasswortResetForm', () => <PasswordResetForm intl={intlMock} />)
+  .add('PasswordRequestForm', () => <PasswordRequestForm intl={intlMock} />)
   .add('RegistrationForm [NoTest]', () => <RegistrationForm intl={intlMock} />)
   // HACK: disable test for QuestionCreationForm as autosuggest breaks...
   .add('QuestionCreationForm [NoTest]', () => <QuestionCreationForm intl={intlMock} />)
@@ -63,11 +51,10 @@ storiesOf('forms/components', module)
       versions={[1, 2, 3, 4, 5]}
     />
   ))
-  .add('SessionCreationForm', () => (
+  .add('SessionCreationForm [NoTest]', () => (
     <SessionCreationForm handleSubmit={() => null} intl={intlMock} />
   ))
 storiesOf('forms/helpers', module)
-  .addDecorator(getStoryWithRedux)
   .add('FormWithLinks', () => (
     <FormWithLinks
       button={{

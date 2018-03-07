@@ -7,9 +7,8 @@ import { intlShape } from 'react-intl'
 
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionCreationForm } from '../../components/forms'
-import { pageWithIntl, withData } from '../../lib'
-import { CreateQuestionMutation } from '../../graphql/mutations'
-import { QuestionListQuery, TagListQuery } from '../../graphql/queries'
+import { pageWithIntl, withData, withDnD, withLogging } from '../../lib'
+import { QuestionPoolQuery, TagListQuery, CreateQuestionMutation } from '../../graphql'
 
 const propTypes = {
   handleDiscard: PropTypes.func.isRequired,
@@ -26,12 +25,12 @@ const CreateQuestion = ({
     navbar={{
       title: intl.formatMessage({
         defaultMessage: 'Create Question',
-        id: 'teacher.createQuestion.title',
+        id: 'createQuestion.title',
       }),
     }}
     pageTitle={intl.formatMessage({
       defaultMessage: 'Create Question',
-      id: 'teacher.createQuestion.pageTitle',
+      id: 'createQuestion.pageTitle',
     })}
     sidebar={{ activeItem: 'createQuestion' }}
   >
@@ -42,6 +41,8 @@ const CreateQuestion = ({
 CreateQuestion.propTypes = propTypes
 
 export default compose(
+  withLogging(),
+  withDnD,
   withData,
   pageWithIntl,
   graphql(TagListQuery),
@@ -60,7 +61,7 @@ export default compose(
         await mutate({
           // reload the list of questions and tags after creation
           // TODO: replace with optimistic updates
-          refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
+          refetchQueries: [{ query: QuestionPoolQuery }],
           variables: {
             description: content,
             options,

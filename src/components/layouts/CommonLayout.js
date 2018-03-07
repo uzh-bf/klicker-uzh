@@ -1,35 +1,44 @@
+/* eslint-disable react/jsx-sort-props */
+
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Helmet } from 'react-helmet'
-import { compose, lifecycle } from 'recompose'
 
 import { SEMANTIC_VERSION } from '../../constants'
-import { createLinks, initLogging } from '../../lib'
+import { createLinks } from '../../lib'
 
 const propTypes = {
   baseFontSize: PropTypes.string,
   children: PropTypes.element.isRequired,
+  nextHeight: PropTypes.string,
+  nextMinHeight: PropTypes.string,
   pageTitle: PropTypes.string,
 }
 
 const defaultProps = {
   baseFontSize: '14px',
+  nextHeight: 'auto',
+  nextMinHeight: 0,
   pageTitle: 'CommonLayout',
 }
 
-const CommonLayout = ({ baseFontSize, children, pageTitle }) => (
+const links = [
+  'https://fonts.googleapis.com/css?family=Open Sans',
+  `https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/${SEMANTIC_VERSION}/semantic.min.css`,
+]
+
+const CommonLayout = ({
+  baseFontSize, children, nextHeight, nextMinHeight, pageTitle,
+}) => (
   <div className="commonLayout">
     <Helmet defer={false}>
-      {createLinks([
-        'https://fonts.googleapis.com/css?family=Open Sans',
-        `https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/${SEMANTIC_VERSION}/semantic.min.css`,
-      ])}
+      {createLinks(links)}
       <title>{pageTitle}</title>
     </Helmet>
 
     {children}
 
-    <style global jsx>{`
+    <style jsx global>{`
       *:not(i) {
         font-family: 'Open Sans', sans-serif !important;
       }
@@ -42,9 +51,13 @@ const CommonLayout = ({ baseFontSize, children, pageTitle }) => (
         font-size: 1rem !important;
       }
 
+      #__next {
+        height: ${nextHeight};
+        min-height: ${nextMinHeight};
+      }
+
       input,
       textarea,
-      button,
       .noBorder {
         border-radius: 0 !important;
       }
@@ -54,17 +67,15 @@ const CommonLayout = ({ baseFontSize, children, pageTitle }) => (
         box-shadow: none !important;
       }
     `}</style>
+    <style jsx>{`
+      .commonLayout {
+        height: 100%;
+      }
+    `}</style>
   </div>
 )
 
 CommonLayout.propTypes = propTypes
 CommonLayout.defaultProps = defaultProps
 
-export default compose(
-  lifecycle({
-    componentWillMount: () => {
-      // initialize sentry and logrocket (if appropriately configured)
-      initLogging()
-    },
-  }),
-)(CommonLayout)
+export default CommonLayout

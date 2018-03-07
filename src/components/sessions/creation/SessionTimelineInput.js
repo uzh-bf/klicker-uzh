@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import ReactTooltip from 'react-tooltip'
 import { adjust } from 'ramda'
 import { FormattedMessage } from 'react-intl'
 import { Icon, Message } from 'semantic-ui-react'
@@ -8,23 +9,21 @@ import QuestionDropzone from './QuestionDropzone'
 import QuestionSingle from '../../questions/QuestionSingle'
 
 const propTypes = {
-  input: PropTypes.shape({
-    onChange: PropTypes.func.isRequired,
-    value: PropTypes.arrayOf(
-      PropTypes.shape({
-        id: PropTypes.string.isRequired,
-        questions: PropTypes.arrayOf(
-          PropTypes.shape({
-            title: PropTypes.string.isRequired,
-            type: PropTypes.string.isRequired,
-          }),
-        ),
-      }),
-    ),
-  }).isRequired,
+  onChange: PropTypes.func.isRequired,
+  value: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      questions: PropTypes.arrayOf(
+        PropTypes.shape({
+          title: PropTypes.string.isRequired,
+          type: PropTypes.string.isRequired,
+        }),
+      ),
+    }),
+  ).isRequired,
 }
 
-const SessionTimelineInput = ({ input: { value, onChange } }) => {
+const SessionTimelineInput = ({ value, onChange }) => {
   // handle creation of an entirely new block
   const handleNewBlock = (newQuestion) => {
     onChange([...value, { questions: [newQuestion] }])
@@ -62,8 +61,18 @@ const SessionTimelineInput = ({ input: { value, onChange } }) => {
 
       <div className="timelineItem">
         <div className="title">
-          <FormattedMessage defaultMessage="New Block" id="teacher.sessionCreation.newBlock" />
+          <FormattedMessage defaultMessage="New Block" id="sessionCreation.newBlock" />
+          <a data-tip data-for="newBlockHelp">
+            <Icon name="question circle" />
+          </a>
         </div>
+
+        <ReactTooltip delayHide={250} delayShow={250} id="newBlockHelp" place="right">
+          <FormattedMessage
+            defaultMessage="Group questions inside a question block to activate and evaluate them simultaneously."
+            id="sessionCreation.newBlock.tooltip"
+          />
+        </ReactTooltip>
 
         <div className="blockDropzone">
           <QuestionDropzone onDrop={handleNewBlock} />
@@ -74,7 +83,7 @@ const SessionTimelineInput = ({ input: { value, onChange } }) => {
             <Message info>
               <FormattedMessage
                 defaultMessage="Drag & drop a question into the dropzone."
-                id="teacher.sessionCreation.emptyDropzoneInfo"
+                id="sessionCreation.emptyDropzoneInfo"
               />
             </Message>
           </div>
@@ -93,6 +102,12 @@ const SessionTimelineInput = ({ input: { value, onChange } }) => {
           > .timelineItem {
             display: flex;
             flex-direction: column;
+            max-height: 25rem;
+            overflow: hidden;
+
+            .questions {
+              overflow-y: auto;
+            }
 
             padding: 0.5rem;
 
@@ -107,6 +122,11 @@ const SessionTimelineInput = ({ input: { value, onChange } }) => {
 
               font-weight: bold;
               margin-bottom: 0.5rem;
+
+              a {
+                color: $color-primary;
+                font-size: 1.25rem;
+              }
             }
 
             .message,

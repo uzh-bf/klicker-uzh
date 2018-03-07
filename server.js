@@ -1,11 +1,25 @@
 require('dotenv').config()
 
+const dev = process.env.NODE_ENV !== 'production'
+
+// initialize elastic-apm if so configured
+let apm
+if (process.env.APM_SERVER_URL) {
+  apm = require('elastic-apm-node').start({
+    active: !dev,
+    serviceName: process.env.APM_NAME,
+    secretToken: process.env.APM_SECRET_TOKEN,
+    serverUrl: process.env.APM_SERVER_URL,
+  })
+}
+
 const IntlPolyfill = require('intl')
 
 const { basename, join } = require('path')
 const { readFileSync } = require('fs')
 const glob = require('glob')
 
+const accepts = require('accepts')
 const cookieParser = require('cookie-parser')
 const express = require('express')
 const next = require('next')
@@ -22,12 +36,27 @@ Intl.DateTimeFormat = IntlPolyfill.DateTimeFormat
 const APP_DIR = './src'
 
 // Bootstrap a new Next.js application
-const dev = process.env.NODE_ENV !== 'production'
 const app = next({ dev, dir: APP_DIR })
 const handle = app.getRequestHandler()
 
 // Get the supported languages by looking for translations in the `lang/` dir.
 const languages = glob.sync(`${APP_DIR}/lang/*.json`).map(f => basename(f, '.json'))
+
+const getLocale = (req) => {
+  // if a locale cookie was already set, use the locale saved within
+  if (req.cookies.locale && languages.includes(req.cookies.locale)) {
+    return {
+      locale: req.cookies.locale,
+    }
+  }
+
+  // if the accepts header is set, use its language
+  const accept = accepts(req)
+  return {
+    locale: accept.language(dev ? ['en'] : languages),
+    setCookie: true,
+  }
+}
 
 // We need to expose React Intl's locale data on the request for the user's
 // locale. This function will also cache the scripts by lang in memory.
@@ -75,7 +104,7 @@ const connectCache = async () => {
 const getCacheKey = req => `${req.url}:${req.locale}`
 
 // render a page to html and cache it in the appropriate place
-const renderAndCache = async (req, res, pagePath, queryParams) => {
+const renderAndCache = async (req, res, pagePath, queryParams, expiration = 60) => {
   const key = getCacheKey(req)
 
   let cached
@@ -100,13 +129,17 @@ const renderAndCache = async (req, res, pagePath, queryParams) => {
     const html = await app.renderToHTML(req, res, pagePath, queryParams)
 
     res.send(html)
-    cache.set(key, html)
+
+    // let the cache expire if redis is used
+    if (process.env.REDIS_URL) {
+      cache.set(key, html, 'EX', expiration)
+    } else {
+      cache.set(key, html)
+    }
   } catch (e) {
     app.renderError(e, req, res, pagePath, queryParams)
   }
 }
-const getLocale = req =>
-  (req.cookies.locale && languages.includes(req.cookies.locale) ? req.cookies.locale : 'en')
 
 app
   .prepare()
@@ -114,6 +147,12 @@ app
     const server = express()
 
     connectCache()
+
+    // if the server is behind a proxy, set the APP_PROXY env to true
+    // this will make express trust the X-* proxy headers and set corresponding req.ip
+    if (process.env.APP_PROXY) {
+      server.enable('trust proxy')
+    }
 
     const middleware = [
       // compress using gzip
@@ -139,19 +178,22 @@ app
     // prepare page configuration
     const pages = [
       {
-        cached: true,
         url: '/',
       },
       {
-        cached: true,
         url: '/user/login',
       },
       {
-        cached: true,
         url: '/user/registration',
       },
       {
         url: '/questions/create',
+      },
+      {
+        cached: 600,
+        mapParams: req => ({ shortname: req.params.shortname }),
+        renderPath: '/qr',
+        url: '/qr/:shortname',
       },
       {
         mapParams: req => ({ sessionId: req.params.sessionId }),
@@ -164,7 +206,7 @@ app
         url: '/questions/:questionId',
       },
       {
-        cached: true,
+        cached: 30,
         mapParams: req => ({ shortname: req.params.shortname }),
         renderPath: '/join',
         url: '/join/:shortname',
@@ -177,14 +219,25 @@ app
     }) => {
       server.get(url, (req, res) => {
         // setup locale and get messages for the specific route
-        const locale = getLocale(req)
+        const { locale, setCookie } = getLocale(req)
         req.locale = locale
         req.localeDataScript = getLocaleDataScript(locale)
         req.messages = dev ? {} : getMessages(locale)
 
+        // set a locale cookie with the specified language
+        if (setCookie) {
+          res.cookie('locale', locale)
+        }
+
         // if the route contents should be cached
         if (cached) {
-          renderAndCache(req, res, renderPath || url, mapParams ? mapParams(req) : undefined)
+          renderAndCache(
+            req,
+            res,
+            renderPath || url,
+            mapParams ? mapParams(req) : undefined,
+            cached,
+          )
         } else {
           app.render(req, res, renderPath || url, mapParams ? mapParams(req) : undefined)
         }
@@ -192,16 +245,40 @@ app
     })
 
     server.get('*', (req, res) => {
-      const locale = getLocale(req)
+      // setup locale and get messages for the specific route
+      const { locale, setCookie } = getLocale(req)
       req.locale = locale
       req.localeDataScript = getLocaleDataScript(locale)
       req.messages = dev ? {} : getMessages(locale)
+
+      // set a locale cookie with the specified language
+      if (setCookie) {
+        res.cookie('locale', locale)
+      }
+
+      // set the APM transaction name
+      if (apm) {
+        if (req.originalUrl.length > 6 && req.originalUrl.substring(0, 6) !== '/_next') {
+          apm.setTransactionName(`${req.method} ${req.originalUrl}`)
+        }
+
+        // set the user context if a cookie was set
+        if (req.cookies.userId) {
+          apm.setUserContext({ id: req.cookies.userId })
+        }
+      }
 
       return handle(req, res)
     })
 
     server.listen(3000, (err) => {
       if (err) throw err
+
+      // send a ready message to PM2
+      if (process.send) {
+        process.send('ready')
+      }
+
       console.log('[klicker-react] Ready on http://localhost:3000')
     })
   })
@@ -209,6 +286,17 @@ app
     console.error(err.stack)
     process.exit(1)
   })
+
+process.on('SIGINT', () => {
+  console.log('[klicker-react] Shutting down server')
+
+  if (process.env.REDIS_URL) {
+    cache.disconnect()
+  }
+
+  console.log('[klicker-react] Shutdown complete')
+  process.exit(0)
+})
 
 process.on('exit', () => {
   console.log('[klicker-react] Shutting down server')

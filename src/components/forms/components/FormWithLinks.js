@@ -31,7 +31,8 @@ const FormWithLinks = ({ button, children, links }) => (
         <Button
           primary
           className="semanticButton"
-          disabled={button.invalid}
+          disabled={button.invalid || button.disabled}
+          loading={button.loading}
           type="submit"
           onClick={button.onSubmit}
         >

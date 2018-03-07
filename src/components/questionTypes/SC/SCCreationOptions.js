@@ -4,22 +4,19 @@ import ReactTooltip from 'react-tooltip'
 import { arrayMove, SortableContainer, SortableElement } from 'react-sortable-hoc'
 import { FormattedMessage } from 'react-intl'
 import { compose, mapProps, withHandlers } from 'recompose'
-import { FaQuestionCircle } from 'react-icons/lib/fa'
-import { Form } from 'semantic-ui-react'
+import { Form, Icon } from 'semantic-ui-react'
 
 import SCCreationPlaceholder from './SCCreationPlaceholder'
 import SCCreationOption from './SCCreationOption'
 
 const propTypes = {
+  dirty: PropTypes.bool.isRequired,
   disabled: PropTypes.bool.isRequired,
   handleDeleteOption: PropTypes.func.isRequired,
   handleNewOption: PropTypes.func.isRequired,
   handleOptionToggleCorrect: PropTypes.func.isRequired,
   handleUpdateOrder: PropTypes.func.isRequired,
-  meta: PropTypes.shape({
-    dirty: PropTypes.bool,
-    invalid: PropTypes.bool,
-  }).isRequired,
+  invalid: PropTypes.bool.isRequired,
   value: PropTypes.arrayOf(PropTypes.shape(SCCreationOption.propTypes)).isRequired,
 }
 
@@ -31,7 +28,8 @@ const SCCreationOptions = ({
   handleUpdateOrder,
   handleOptionToggleCorrect,
   value,
-  meta: { dirty, invalid },
+  dirty,
+  invalid,
 }) => {
   const Option = props => (
     <div className="option">
@@ -74,17 +72,17 @@ const SCCreationOptions = ({
         <label htmlFor="options">
           <FormattedMessage
             defaultMessage="Available Choices"
-            id="teacher.createQuestion.optionsSC.label"
+            id="createQuestion.optionsSC.label"
           />
           <a data-tip data-for="SCCreationHelp">
-            <FaQuestionCircle />
+            <Icon name="question circle" />
           </a>
         </label>
 
         <ReactTooltip delayHide={250} delayShow={250} id="SCCreationHelp" place="right">
           <FormattedMessage
             defaultMessage="Add answering options the respondents can choose from."
-            id="teacher.createQuestion.optionsSC.tooltip"
+            id="createQuestion.optionsSC.tooltip"
           />
         </ReactTooltip>
 
@@ -111,10 +109,13 @@ const SCCreationOptions = ({
 SCCreationOptions.propTypes = propTypes
 
 export default compose(
-  mapProps(({ input: { onChange, value }, meta, disabled }) => ({
+  mapProps(({
+    onChange, value, dirty, invalid, disabled,
+  }) => ({
+    dirty,
     disabled,
     // HACK: mapping as a workaround for the value.choices problem
-    meta,
+    invalid,
     onChange: choices => onChange({ ...value, choices }),
     value: value.choices,
   })),

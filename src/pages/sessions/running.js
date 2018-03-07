@@ -6,22 +6,24 @@ import { graphql } from 'react-apollo'
 import { intlShape } from 'react-intl'
 import Router from 'next/router'
 
-import { pageWithIntl, withData } from '../../lib'
+import { pageWithIntl, withData, withLogging } from '../../lib'
 
 import { ConfusionBarometer } from '../../components/confusion'
 import { FeedbackChannel } from '../../components/feedbacks'
 import { SessionTimeline } from '../../components/sessions'
 import { TeacherLayout } from '../../components/layouts'
-import { AccountSummaryQuery, RunningSessionQuery } from '../../graphql/queries'
 import {
+  AccountSummaryQuery,
+  RunningSessionQuery,
   EndSessionMutation,
   UpdateSessionSettingsMutation,
   ActivateNextBlockMutation,
   DeleteFeedbackMutation,
-} from '../../graphql/mutations'
+} from '../../graphql'
 import { LoadingTeacherLayout, Messager } from '../../components/common'
 
 const propTypes = {
+  activeStep: PropTypes.number.isRequired,
   blocks: PropTypes.array.isRequired,
   confusionTS: PropTypes.array.isRequired,
   feedbacks: PropTypes.array.isRequired,
@@ -35,17 +37,20 @@ const propTypes = {
   isFeedbackChannelActive: PropTypes.bool.isRequired,
   isFeedbackChannelPublic: PropTypes.bool.isRequired,
   runtime: PropTypes.bool.isRequired,
+  shortname: PropTypes.string.isRequired,
   startedAt: PropTypes.string.isRequired,
 }
 
 const Running = ({
   id,
   intl,
+  activeStep,
   blocks,
   confusionTS,
   feedbacks,
   runtime,
   startedAt,
+  shortname,
   isConfusionBarometerActive,
   isFeedbackChannelActive,
   isFeedbackChannelPublic,
@@ -59,24 +64,26 @@ const Running = ({
     navbar={{
       title: intl.formatMessage({
         defaultMessage: 'Running Session',
-        id: 'teacher.runningSession.title',
+        id: 'runningSession.title',
       }),
     }}
     pageTitle={intl.formatMessage({
       defaultMessage: 'Running Session',
-      id: 'teacher.runningSession.pageTitle',
+      id: 'runningSession.pageTitle',
     })}
     sidebar={{ activeItem: 'runningSession' }}
   >
     <div className="runningSession">
       <div className="sessionProgress">
         <SessionTimeline
+          activeStep={activeStep}
           blocks={blocks}
           handleLeftActionClick={handleEndSession}
           handleRightActionClick={handleActivateNextBlock}
           intl={intl}
           runtime={runtime}
           sessionId={id}
+          shortname={shortname}
           startedAt={startedAt}
         />
       </div>
@@ -160,8 +167,13 @@ const Running = ({
 Running.propTypes = propTypes
 
 export default compose(
+  withLogging(),
   withData,
   pageWithIntl,
+  graphql(AccountSummaryQuery),
+  withProps(({ data }) => ({
+    shortname: data.user && data.user.shortname,
+  })),
   graphql(RunningSessionQuery, {
     // refetch the running session query every 10s
     options: { pollInterval: 10000 },
@@ -171,7 +183,12 @@ export default compose(
     ({ data }) => data.loading || !data.runningSession,
     renderComponent(({ intl }) => (
       <LoadingTeacherLayout intl={intl} pageId="runningSession">
-        <Messager intl={intl} message="No currently running session..." />
+        <Messager
+          message={intl.formatMessage({
+            defaultMessage: 'No currently running session...',
+            id: 'runningSession.noRunningSession',
+          })}
+        />
       </LoadingTeacherLayout>
     )),
   ),
@@ -240,6 +257,6 @@ export default compose(
   withProps(({ data: { runningSession } }) => ({
     ...runningSession,
     ...runningSession.settings,
-    startedAt: moment(runningSession.startedAt).format('h:mm:ss'),
+    startedAt: moment(runningSession.startedAt).format('HH:mm:ss'),
   })),
 )(Running)

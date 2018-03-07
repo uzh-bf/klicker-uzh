@@ -1,18 +1,17 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import _range from 'lodash/range'
 import _without from 'lodash/without'
-import Cookies from 'js-cookie'
 import { FormattedMessage } from 'react-intl'
 import { compose, withStateHandlers, withHandlers, withProps } from 'recompose'
 
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
 import { ActionMenu, Collapser } from '../../common'
 import { SCAnswerOptions, FREEAnswerOptions } from '../../questionTypes'
+import { withStorage } from '../../../lib'
 
 const propTypes = {
-  active: PropTypes.bool,
+  active: PropTypes.bool.isRequired,
   activeQuestion: PropTypes.number,
   handleActiveChoicesChange: PropTypes.func.isRequired,
   handleActiveQuestionChange: PropTypes.func.isRequired,
@@ -29,7 +28,6 @@ const propTypes = {
 }
 
 const defaultProps = {
-  active: false,
   activeQuestion: 0,
   questions: [],
   remainingQuestions: [],
@@ -50,37 +48,58 @@ function QuestionArea({
   handleFreeValueChange,
   handleSubmit,
 }) {
-  const currentQuestion = remainingQuestions.length > 0 && questions[activeQuestion]
+  const currentQuestion = questions[activeQuestion]
 
-  // TODO: internationalization
   const messages = {
     [QUESTION_TYPES.SC]: (
       <p>
-        Please choose a <strong>single</strong> option below:
+        <FormattedMessage
+          defaultMessage="Please choose a single option below:"
+          id="joinSession.questionArea.info.SC"
+        />
       </p>
     ),
     [QUESTION_TYPES.MC]: (
       <p>
-        Please choose <strong>one or multiple</strong> of the options below:
+        <FormattedMessage
+          defaultMessage="Please choose one or multiple of the options below:"
+          id="joinSession.questionArea.info.MC"
+        />
       </p>
     ),
-    [QUESTION_TYPES.FREE]: <p>Please enter your response below:</p>,
+    [QUESTION_TYPES.FREE]: (
+      <p>
+        <FormattedMessage
+          defaultMessage="Please enter your response below:"
+          id="joinSession.questionArea.info.FREE"
+        />
+      </p>
+    ),
 
-    [QUESTION_TYPES.FREE_RANGE]: <p>Please choose a number from the given range below:</p>,
+    [QUESTION_TYPES.FREE_RANGE]: (
+      <p>
+        <FormattedMessage
+          defaultMessage="Please choose a number from the given range below:"
+          id="joinSession.questionArea.info.FREE_RANGE"
+        />
+      </p>
+    ),
   }
 
   return (
     <div className={classNames('questionArea', { active })}>
-      <h1 className="header">Active Question</h1>
+      <h1 className="header">
+        <FormattedMessage defaultMessage="Question" id="joinSession.questionArea.title" />
+      </h1>
       {(() => {
         if (remainingQuestions.length === 0) {
           return (
-            <p className="space">
+            <div className="padded">
               <FormattedMessage
-                defaultMessage="You have completed all active questions."
-                id="joinSession.allQuestionsCompleted"
+                defaultMessage="You have already answered all active questions."
+                id="joinSession.questionArea.alreadyAnswered"
               />
-            </p>
+            </div>
           )
         }
 
@@ -126,12 +145,13 @@ function QuestionArea({
             </div>
 
             <ActionMenu
-              activeIndex={activeQuestion}
+              activeIndex={questions.length - remainingQuestions.length}
               isSkipModeActive={inputEmpty}
-              isSubmitDisabled={!inputEmpty && !inputValid}
-              items={_range(questions.length).map(index => ({
+              isSubmitDisabled={remainingQuestions.length === 0 || (!inputEmpty && !inputValid)}
+              numItems={questions.length}
+              /* items={_range(questions.length).map(index => ({
                 done: !remainingQuestions.includes(index),
-              }))}
+              }))} */
               setActiveIndex={handleActiveQuestionChange}
               onSubmit={handleSubmit}
             />
@@ -169,7 +189,6 @@ function QuestionArea({
             margin: 1rem;
           }
 
-          .collapser,
           .options,
           .padded {
             padding: 1rem;
@@ -179,12 +198,15 @@ function QuestionArea({
             flex: 0 0 auto;
 
             background-color: $color-primary-20p;
-            border-bottom: 1px solid -color-primary-50p;
+            border-bottom: 1px solid $color-primary;
+            padding: 0.5rem;
           }
 
           .options {
             margin-top: 1rem;
             flex: 1 1 50%;
+
+            overflow-y: auto;
           }
 
           @include desktop-tablet-only {
@@ -200,6 +222,7 @@ function QuestionArea({
             }
 
             .collapser {
+              border: 1px solid $color-primary;
               margin: 0 1rem;
             }
 
@@ -218,22 +241,21 @@ QuestionArea.propTypes = propTypes
 QuestionArea.defaultProps = defaultProps
 
 export default compose(
-  withProps(({ questions }) => {
-    const storedResponses = Cookies.getJSON('responses') || []
-
-    return {
-      remainingQuestions: questions
-        .map(({ instanceId }, index) => {
-          if (storedResponses.includes(instanceId)) {
-            return -1
-          }
-
-          return index
-        })
-        .filter(index => index !== -1),
-      storedResponses,
-    }
+  withStorage({
+    json: true,
+    propDefault: [],
+    propName: 'storedResponses',
+    storageType: 'local',
   }),
+  withProps(({ questions, storedResponses }) => ({
+    remainingQuestions: questions.reduce((indices, { instanceId }, index) => {
+      if (storedResponses && storedResponses.includes(instanceId)) {
+        return indices
+      }
+
+      return [...indices, index]
+    }, []),
+  })),
   withStateHandlers(
     ({ remainingQuestions }) => ({
       activeQuestion: remainingQuestions[0],
@@ -248,7 +270,7 @@ export default compose(
         const validateChoices = newValue =>
           (type === QUESTION_TYPES.SC ? newValue.length === 1 : newValue.length > 0)
 
-        if (inputValue) {
+        if (inputValue && type === QUESTION_TYPES.MC) {
           // if the choice is already active, remove it
           if (inputValue.includes(choice)) {
             const newInputValue = _without(inputValue, choice)
@@ -293,7 +315,7 @@ export default compose(
 
         return {
           // activate the first question that is still remaining
-          activeQuestion: newRemaining[0],
+          activeQuestion: newRemaining[0] || 0,
           inputEmpty: true,
           inputValid: false,
           inputValue: undefined,
@@ -316,7 +338,6 @@ export default compose(
       handleNewResponse,
       handleSubmit,
       inputValue,
-      storedResponses,
     }) => () => {
       const { instanceId, type } = questions[activeQuestion]
 
@@ -330,7 +351,11 @@ export default compose(
       }
 
       // update the stored responses
-      Cookies.set('responses', [...storedResponses, instanceId])
+      const prevResponses = JSON.parse(localStorage.getItem('storedResponses'))
+      localStorage.setItem(
+        'storedResponses',
+        JSON.stringify(prevResponses ? [...prevResponses, instanceId] : [instanceId]),
+      )
 
       handleSubmit()
     },

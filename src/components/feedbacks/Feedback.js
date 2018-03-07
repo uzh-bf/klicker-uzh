@@ -48,8 +48,8 @@ const Feedback = ({
       .feedback {
         display: flex;
 
-        background: lightgrey;
-        border: 1px solid grey;
+        background: $color-primary-10p;
+        border: 1px solid $color-primary;
 
         .content,
         .delete {

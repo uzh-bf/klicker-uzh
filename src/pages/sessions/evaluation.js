@@ -18,17 +18,22 @@ import {
   calculateMin,
   calculateMean,
   calculateMedian,
+  calculateFirstQuartile,
+  calculateThirdQuartile,
+  calculateStandardDeviation,
   pageWithIntl,
   withData,
+  withLogging,
 } from '../../lib'
 import { Chart } from '../../components/evaluation'
-import { SessionEvaluationQuery } from '../../graphql/queries'
+import { SessionEvaluationQuery } from '../../graphql'
 import { sessionStatusShape, statisticsShape } from '../../propTypes'
 
 const propTypes = {
   activeInstance: PropTypes.object.isRequired,
   activeInstanceIndex: PropTypes.number,
   activeVisualizations: PropTypes.object.isRequired,
+  bins: PropTypes.number.isRequired,
   handleChangeActiveInstance: PropTypes.func.isRequired,
   handleChangeVisualizationType: PropTypes.func.isRequired,
   handleShowGraph: PropTypes.func.isRequired,
@@ -51,6 +56,7 @@ function Evaluation({
   activeInstanceIndex,
   activeInstance,
   activeVisualizations,
+  bins,
   instanceSummary,
   intl,
   handleChangeActiveInstance,
@@ -72,6 +78,7 @@ function Evaluation({
       activeVisualization={activeVisualizations[type]}
       handleShowGraph={handleShowGraph}
       intl={intl}
+      numBins={bins}
       questionType={type}
       restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
       results={results}
@@ -96,7 +103,7 @@ function Evaluation({
     options,
     pageTitle: intl.formatMessage({
       defaultMessage: 'Evaluation',
-      id: 'teacher.evaluation.pageTitle',
+      id: 'evaluation.pageTitle',
     }),
     showSolution,
     statistics,
@@ -112,6 +119,7 @@ Evaluation.propTypes = propTypes
 Evaluation.defaultProps = defaultProps
 
 export default compose(
+  withLogging(),
   withData,
   pageWithIntl,
   graphql(SessionEvaluationQuery, {
@@ -149,8 +157,7 @@ export default compose(
           return {
             ...activeInstance,
             results: {
-              // HACK: versioning hardcoded
-              data: activeInstance.question.versions[0].options[
+              data: activeInstance.question.versions[activeInstance.version].options[
                 activeInstance.question.type
               ].choices.map((choice, index) => ({
                 correct: choice.correct,
@@ -163,10 +170,17 @@ export default compose(
         }
 
         if (QUESTION_GROUPS.FREE.includes(activeInstance.question.type)) {
+          let data = activeInstance.results ? activeInstance.results.FREE : []
+
+          // values in FREE_RANGE questions need to be numerical
+          if (activeInstance.question.type === QUESTION_TYPES.FREE_RANGE) {
+            data = data.map(({ value, ...rest }) => ({ ...rest, value: +value }))
+          }
+
           return {
             ...activeInstance,
             results: {
-              data: activeInstance.results ? activeInstance.results.FREE : [],
+              data,
               totalResponses: activeInstance.responses.length,
             },
           }
@@ -178,6 +192,7 @@ export default compose(
     return {
       activeInstances,
       instanceSummary: activeInstances.map(instance => ({
+        hasSolution: !!instance.solution,
         title: instance.question.title,
         totalResponses: instance.responses.length,
       })),
@@ -193,7 +208,8 @@ export default compose(
     ({ sessionStatus }) => ({
       activeInstanceIndex: 0,
       activeVisualizations: CHART_DEFAULTS,
-      showGraph: sessionStatus !== SESSION_STATUS.RUNNING,
+      bins: null,
+      showGraph: false,
       showSolution: sessionStatus !== SESSION_STATUS.RUNNING,
     }),
     {
@@ -201,6 +217,9 @@ export default compose(
       handleChangeActiveInstance: () => activeInstanceIndex => ({
         activeInstanceIndex,
       }),
+
+      // handle change in the number of bins
+      handleChangeBins: () => bins => ({ bins }),
 
       // handle change of vis. type
       handleChangeVisualizationType: ({ activeVisualizations }) => (
@@ -221,26 +240,39 @@ export default compose(
       handleToggleShowSolution: ({ showSolution }) => () => ({ showSolution: !showSolution }),
     },
   ),
-  withProps(({ activeInstances, activeInstanceIndex, handleChangeActiveInstance }) => {
-    const activeInstance = activeInstances[activeInstanceIndex]
-    const { question, results } = activeInstance
+  withProps(
+    ({
+      activeInstances,
+      activeInstanceIndex,
+      bins,
+      handleChangeBins,
+      handleChangeActiveInstance,
+    }) => {
+      const activeInstance = activeInstances[activeInstanceIndex]
+      const { question, results } = activeInstance
 
-    if (question.type === QUESTION_TYPES.FREE_RANGE) {
+      if (question.type === QUESTION_TYPES.FREE_RANGE) {
+        return {
+          activeInstance,
+          handleChangeActiveInstance,
+          statistics: {
+            bins,
+            max: calculateMax(results),
+            mean: calculateMean(results),
+            median: calculateMedian(results),
+            min: calculateMin(results),
+            onChangeBins: e => handleChangeBins(+e.target.value),
+            q1: calculateFirstQuartile(results),
+            q3: calculateThirdQuartile(results),
+            sd: calculateStandardDeviation(results),
+          },
+        }
+      }
+
       return {
         activeInstance,
-        handleChangeActiveInstance: index => () => handleChangeActiveInstance(index),
-        statistics: {
-          max: calculateMax(results),
-          mean: calculateMean(results),
-          median: calculateMedian(results),
-          min: calculateMin(results),
-        },
+        handleChangeActiveInstance,
       }
-    }
-
-    return {
-      activeInstance,
-      handleChangeActiveInstance: index => () => handleChangeActiveInstance(index),
-    }
-  }),
+    },
+  ),
 )(Evaluation)

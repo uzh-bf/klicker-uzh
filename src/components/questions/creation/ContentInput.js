@@ -1,48 +1,48 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
-import { Form } from 'semantic-ui-react'
+import { Form, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import { FaQuestionCircle } from 'react-icons/lib/fa'
 
 const propTypes = {
-  disabled: PropTypes.bool.isRequired,
-  input: PropTypes.shape({
-    onChange: PropTypes.func.isRequired,
-    value: PropTypes.string.isRequired,
-  }).isRequired,
-  meta: PropTypes.shape({
-    dirty: PropTypes.bool,
-    invalid: PropTypes.bool,
-  }).isRequired,
+  disabled: PropTypes.bool,
+  error: PropTypes.bool.isRequired,
+  onChange: PropTypes.func.isRequired,
+  touched: PropTypes.bool.isRequired,
+  value: PropTypes.string.isRequired,
 }
 
-const ContentInput = ({ input: { value, onChange }, meta: { dirty, invalid }, disabled }) => (
+const defaultProps = {
+  disabled: false,
+}
+
+const ContentInput = ({
+  value, onChange, error, touched, disabled,
+}) => (
   <div className="contentInput">
-    <Form.Field required error={dirty && invalid}>
+    <Form.Field required error={touched && error}>
       <label htmlFor="content">
-        <FormattedMessage
-          defaultMessage="Question"
-          id="teacher.createQuestion.contentInput.label"
-        />
+        <FormattedMessage defaultMessage="Question" id="createQuestion.contentInput.label" />
         <a data-tip data-for="contentHelp">
-          <FaQuestionCircle />
+          <Icon name="question circle" />
         </a>
       </label>
 
       <ReactTooltip delayHide={250} delayShow={250} id="contentHelp" place="right">
         <FormattedMessage
           defaultMessage="Enter the question you want to ask the audience."
-          id="teacher.createQuestion.contentInput.tooltip"
+          id="createQuestion.contentInput.tooltip"
         />
       </ReactTooltip>
 
-      <textarea disabled={disabled} name="content" value={value} onChange={onChange} />
+      <textarea
+        disabled={disabled}
+        name="content"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+      />
     </Form.Field>
 
-    <ReactTooltip delayHide={250} id="contentHelp" place="right">
-      <span>Enter the question to ask the audience.</span>
-    </ReactTooltip>
     <style jsx>{`
       @import 'src/theme';
 
@@ -64,5 +64,6 @@ const ContentInput = ({ input: { value, onChange }, meta: { dirty, invalid }, di
 )
 
 ContentInput.propTypes = propTypes
+ContentInput.defaultProps = defaultProps
 
 export default ContentInput

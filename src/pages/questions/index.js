@@ -1,30 +1,41 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { compose, withState, withHandlers } from 'recompose'
+import { compose, withHandlers, withStateHandlers } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
-import { Button, Icon } from 'semantic-ui-react'
+import { Button } from 'semantic-ui-react'
 import Link from 'next/link'
+import Router from 'next/router'
 
-import { pageWithIntl, withData } from '../../lib'
-import { AccountSummaryQuery, SessionListQuery, RunningSessionQuery } from '../../graphql/queries'
-import { CreateSessionMutation, StartSessionMutation } from '../../graphql/mutations'
+import { pageWithIntl, withData, withDnD, withSortingAndFiltering, withLogging } from '../../lib'
+import {
+  CreateSessionMutation,
+  StartSessionMutation,
+  AccountSummaryQuery,
+  SessionListQuery,
+  RunningSessionQuery,
+  QuestionPoolQuery,
+} from '../../graphql'
 import { SessionCreationForm } from '../../components/forms'
 import { QuestionList, TagList } from '../../components/questions'
 import { TeacherLayout } from '../../components/layouts'
+import { QUESTION_SORTINGS } from '../../constants'
 
 const propTypes = {
   creationMode: PropTypes.bool.isRequired,
+  data: PropTypes.object.isRequired,
   droppedQuestions: PropTypes.arrayOf(PropTypes.string).isRequired,
   filters: PropTypes.object.isRequired,
   handleCreateSession: PropTypes.func.isRequired,
   handleCreationModeToggle: PropTypes.func.isRequired,
   handleQuestionDropped: PropTypes.func.isRequired,
   handleSearch: PropTypes.func.isRequired,
-  handleSort: PropTypes.func.isRequired,
+  handleSortByChange: PropTypes.func.isRequired,
+  handleSortOrderToggle: PropTypes.func.isRequired,
   handleTagClick: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
+  sort: PropTypes.object.isRequired,
 }
 
 const Index = ({
@@ -32,9 +43,12 @@ const Index = ({
   droppedQuestions,
   intl,
   filters,
+  data,
+  sort,
   handleCreateSession,
   handleSearch,
-  handleSort,
+  handleSortByChange,
+  handleSortOrderToggle,
   handleTagClick,
   handleQuestionDropped,
   handleCreationModeToggle,
@@ -43,6 +57,7 @@ const Index = ({
   const actionArea = (
     <div className="creationForm">
       <SessionCreationForm
+        intl={intl}
         onDiscard={handleCreationModeToggle}
         onSave={handleCreateSession('save')}
         onStart={handleCreateSession('start')}
@@ -68,39 +83,42 @@ const Index = ({
 
   return (
     <TeacherLayout
+      fixedHeight
       actionArea={creationMode ? actionArea : null}
       intl={intl}
       navbar={{
         search: {
           handleSearch: _debounce(handleSearch, 200),
-          handleSort,
-          sortBy: '',
-          sortOrder: '',
+          handleSortByChange,
+          handleSortOrderToggle,
+          sortBy: sort.by,
+          sortingTypes: QUESTION_SORTINGS,
+          sortOrder: sort.asc,
+          withSorting: true,
         },
         title: intl.formatMessage({
           defaultMessage: 'Question Pool',
-          id: 'teacher.questionPool.title',
+          id: 'questionPool.title',
         }),
       }}
       pageTitle={intl.formatMessage({
         defaultMessage: 'Question Pool',
-        id: 'teacher.questionPool.pageTitle',
+        id: 'questionPool.pageTitle',
       })}
       sidebar={{ activeItem: 'questionPool' }}
     >
       <div className="questionPool">
         <div className="tagList">
-          <TagList activeTags={filters.tags} handleTagClick={handleTagClick} />
+          <TagList
+            activeTags={filters.tags}
+            activeType={filters.type}
+            data={data}
+            handleTagClick={handleTagClick}
+          />
         </div>
-        <div className="questionList">
-          <div className="actionArea">
-            <div className="actionButtons">
-              <Button primary onClick={handleCreationModeToggle}>
-                <FormattedMessage
-                  defaultMessage="Create Session"
-                  id="questionPool.button.createSession"
-                />
-              </Button>
+        <div className="wrapper">
+          <div className="questionList">
+            <div className="buttons">
               <Link href="/questions/create">
                 <Button primary>
                   <FormattedMessage
@@ -109,45 +127,24 @@ const Index = ({
                   />
                 </Button>
               </Link>
+              <Button primary onClick={handleCreationModeToggle}>
+                <FormattedMessage
+                  defaultMessage="Create Session"
+                  id="questionPool.button.createSession"
+                />
+              </Button>
             </div>
-            {creationMode && (
-              <div className="creationButtons">
-                <div className="checkedCounter">
-                  <FormattedMessage
-                    defaultMessage="{count} items checked."
-                    id="questionPool.itemsChecked"
-                    values={{
-                      count: 1,
-                    }}
-                  />
-                </div>
-                <Button icon labelPosition="left">
-                  <Icon name="lightning" />
-                  <FormattedMessage
-                    defaultMessage="Split into {num} block{end}"
-                    id="questionPool.button.quickCreateSeparate"
-                    values={{
-                      end: '',
-                      num: 1,
-                    }}
-                  />
-                </Button>
-                <Button icon labelPosition="left">
-                  <Icon name="lightning" />
-                  <FormattedMessage
-                    defaultMessage="Group into one block"
-                    id="questionPool.button.quickCreateSingle"
-                  />
-                </Button>
-              </div>
-            )}
+            <div className="questionListContent">
+              <QuestionList
+                creationMode={creationMode}
+                data={data}
+                dropped={droppedQuestions}
+                filters={filters}
+                sort={sort}
+                onQuestionDropped={handleQuestionDropped}
+              />
+            </div>
           </div>
-          <QuestionList
-            creationMode={creationMode}
-            dropped={droppedQuestions}
-            filters={filters}
-            onQuestionDropped={handleQuestionDropped}
-          />
         </div>
       </div>
 
@@ -159,69 +156,86 @@ const Index = ({
           flex-direction: column;
           height: 100%;
 
-          .questionList {
-            padding: 1rem;
+          overflow-y: auto;
 
-            .actionArea {
-              margin: 0 0 1rem 0;
+          .tagList {
+            height: 100%;
+            min-width: 5rem;
+
+            flex: 1;
+            background: $color-primary-10p;
+            padding: 0.5rem;
+          }
+
+          .wrapper {
+            height: 100%;
+
+            .questionList {
+              height: 100%;
 
               display: flex;
               flex-direction: column;
-              align-items: center;
 
-              :global(button:last-child) {
-                margin-right: 0;
+              margin: 0 auto;
+              max-width: $max-width;
+
+              .buttons {
+                border: 1px solid $color-primary;
+
+                flex: 0 0 auto;
+
+                display: flex;
+                justify-content: center;
+                padding: 0.5rem;
+
+                > :global(button) {
+                  margin-right: 0;
+
+                  &:first-child {
+                    margin-right: 0.5rem;
+                  }
+                }
+              }
+
+              .questionListContent {
+                flex: 1;
+                height: 100%;
+
+                padding: 1rem;
               }
             }
-          }
-
-          .tagList {
-            flex: 1;
-            background: #ebebeb;
-            padding: 0.5rem;
           }
 
           @include desktop-tablet-only {
             flex-flow: row wrap;
+            overflow-y: auto;
 
             .tagList {
+              overflow-y: auto;
               flex: 0 0 auto;
-              padding: 1rem;
+              padding: 2rem 1rem;
             }
 
-            .questionList {
+            .wrapper {
               flex: 1;
               padding: 1rem;
 
-              .actionArea {
-                display: flex;
-                flex-direction: row;
-                justify-content: space-between;
-              }
+              .questionList {
+                .buttons {
+                  display: flex;
+                  justify-content: flex-end;
+                }
 
-              .creationButtons {
-                display: flex;
-                flex-direction: row;
-                align-items: flex-end;
-              }
-
-              .checkedCounter {
-                color: grey;
-                margin-right: 1rem;
+                .questionListContent {
+                  overflow-y: auto;
+                  padding: 1rem 1rem 0 0;
+                }
               }
             }
           }
 
           @include desktop-only {
             padding: 0;
-
-            .tagList {
-              padding: 2rem;
-            }
-
-            .questionList {
-              padding: 2rem;
-            }
           }
         }
       `}</style>
@@ -232,73 +246,46 @@ const Index = ({
 Index.propTypes = propTypes
 
 export default compose(
+  withLogging(),
+  withDnD,
   withData,
   pageWithIntl,
-  withState('creationMode', 'setCreationMode', false),
-  withState('droppedQuestions', 'setDroppedQuestions', []),
-  withState('filters', 'setFilters', {
-    tags: [],
-    title: null,
-    type: null,
-  }),
-  withHandlers({
-    // handle toggling creation mode (display of session creation form)
-    handleCreationModeToggle: ({ creationMode, setCreationMode, setDroppedQuestions }) => () => {
-      // if the creation mode was activated before, reset dropped questions on toggle
-      if (creationMode) {
-        setDroppedQuestions([])
-      }
-
-      // toggle creation mode
-      setCreationMode(prevState => !prevState)
+  graphql(StartSessionMutation, { name: 'startSession' }),
+  graphql(CreateSessionMutation, { name: 'createSession' }),
+  graphql(QuestionPoolQuery),
+  withSortingAndFiltering,
+  withStateHandlers(
+    {
+      creationMode: false,
+      droppedQuestions: [],
     },
-
-    // handle a new question that gets dropped on the session creation timeline
-    handleQuestionDropped: ({ setDroppedQuestions }) => id => () =>
-      setDroppedQuestions(prevState => [...prevState, id]),
-
-    // handle an update in the search bar
-    handleSearch: ({ setFilters }) => title => setFilters(prevState => ({ ...prevState, title })),
-
-    // handle updated sort settings
-    handleSort: () => (by, order) => {
-      console.log(`sorted by ${by} in ${order} order`)
-    },
-
-    // handle clicking on a tag in the tag list
-    handleTagClick: ({ setFilters }) => tagName =>
-      setFilters((prevState) => {
-        // remove the tag from active tags
-        if (prevState.tags.includes(tagName)) {
+    {
+      // handle toggling creation mode (display of session creation form)
+      handleCreationModeToggle: ({ creationMode }) => () => {
+        // if the creation mode was activated before, reset dropped questions on toggle
+        if (creationMode) {
           return {
-            ...prevState,
-            tags: prevState.tags.filter(tag => tag !== tagName),
+            creationMode: false,
+            droppedQuestions: [],
           }
         }
 
-        // add the tag to active tags
-        return {
-          ...prevState,
-          tags: [...prevState.tags, tagName],
-        }
+        // turn on creation mode
+        return { creationMode: true }
+      },
+
+      // handle a new question that gets dropped on the session creation timeline
+      handleQuestionDropped: ({ droppedQuestions }) => id => ({
+        droppedQuestions: [...droppedQuestions, id],
       }),
-  }),
-  graphql(StartSessionMutation),
-  withHandlers({
-    // handle starting an existing or newly created session
-    handleStartSession: ({ mutate }) => id =>
-      mutate({
-        refetchQueries: [{ query: RunningSessionQuery }, { query: AccountSummaryQuery }],
-        variables: { id },
-      }),
-  }),
-  graphql(CreateSessionMutation),
+    },
+  ),
   withHandlers({
     // handle creating a new session
     handleCreateSession: ({
-      mutate,
+      createSession,
+      startSession,
       handleCreationModeToggle,
-      handleStartSession,
     }) => type => async ({ sessionName, blocks }) => {
       try {
         // prepare blocks for consumption through the api
@@ -307,14 +294,22 @@ export default compose(
         }))
 
         // create a new session
-        const result = await mutate({
+        const result = await createSession({
           refetchQueries: [{ query: SessionListQuery }],
           variables: { blocks: parsedBlocks, name: sessionName },
         })
 
         // start the session immediately if the respective button was clicked
         if (type === 'start') {
-          await handleStartSession({ id: result.data.createSession.id })
+          await startSession({
+            refetchQueries: [
+              { query: SessionListQuery },
+              { query: RunningSessionQuery },
+              { query: AccountSummaryQuery },
+            ],
+            variables: { id: result.data.createSession.id },
+          })
+          Router.push('/sessions/running')
         }
 
         // disable creation mode

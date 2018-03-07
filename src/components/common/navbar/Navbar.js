@@ -6,7 +6,7 @@ import { Icon, Menu } from 'semantic-ui-react'
 import { graphql } from 'react-apollo'
 import { compose, withProps } from 'recompose'
 
-import { AccountSummaryQuery } from '../../../graphql/queries'
+import { AccountSummaryQuery } from '../../../graphql'
 
 import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'
@@ -14,11 +14,24 @@ import SessionArea from './SessionArea'
 
 const propTypes = {
   accountShort: PropTypes.string,
+  // filters: PropTypes.object,
   handleSidebarToggle: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
+  runningSessionId: PropTypes.string,
+  runningSessionRuntime: PropTypes.string,
   search: PropTypes.shape({
     handleSearch: PropTypes.func.isRequired,
-    handleSort: PropTypes.func.isRequired,
+    handleSortByChange: PropTypes.func.isRequired,
+    handleSortOrderToggle: PropTypes.func.isRequired,
+    sortBy: PropTypes.string.isRequired,
+    sortingTypes: PropTypes.arrayOf(
+      PropTypes.shape({
+        content: PropTypes.string,
+        id: PropTypes.string,
+        labelStart: PropTypes.string,
+      }),
+    ).isRequired,
+    sortOrder: PropTypes.bool.isRequired,
   }),
   sidebarVisible: PropTypes.bool,
   title: PropTypes.string.isRequired,
@@ -26,6 +39,8 @@ const propTypes = {
 
 const defaultProps = {
   accountShort: 'ANON',
+  runningSessionId: undefined,
+  runningSessionRuntime: undefined,
   search: undefined,
   sidebarVisible: false,
 }
@@ -37,6 +52,8 @@ export const NavbarPres = ({
   sidebarVisible,
   title,
   handleSidebarToggle,
+  runningSessionId,
+  runningSessionRuntime,
 }) => (
   <div className="navbar">
     <div className="sideArea">
@@ -56,14 +73,25 @@ export const NavbarPres = ({
 
     {search && (
       <div className="searchArea">
-        <SearchArea handleSearch={search.handleSearch} handleSort={search.handleSort} intl={intl} />
+        <SearchArea
+          handleSearch={search.handleSearch}
+          handleSortByChange={search.handleSortByChange}
+          handleSortOrderToggle={search.handleSortOrderToggle}
+          intl={intl}
+          sortBy={search.sortBy}
+          sortOrder={search.sortOrder}
+          sortingTypes={search.sortingTypes}
+          withSorting={search.withSorting}
+        />
       </div>
     )}
 
     <div className="accountArea">
       <Menu borderless className="loginArea noBorder">
         <Menu.Menu position="right">
-          {accountShort && <SessionArea shortname={accountShort} />}
+          {accountShort && (
+            <SessionArea intl={intl} runtime={runningSessionRuntime} sessionId={runningSessionId} />
+          )}
           <AccountArea accountShort={accountShort} />
         </Menu.Menu>
       </Menu>
@@ -82,7 +110,7 @@ export const NavbarPres = ({
         padding: 3px 0 3px 0;
 
         background-color: $background-color;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+        border-bottom: 1px solid lightgrey;
 
         z-index: 100;
 
@@ -126,6 +154,11 @@ export const NavbarPres = ({
 
           :global(.menu) {
             background-color: $background-color;
+
+            :global(.item) {
+              padding-top: 0;
+              padding-bottom: 0;
+            }
           }
         }
 
@@ -140,14 +173,19 @@ export const NavbarPres = ({
             flex: 1 1 50%;
             order: 1;
 
-            padding: 0.2rem 2rem;
+            padding: 0.2rem 1rem;
           }
 
           .accountArea {
             flex: 0 0 auto;
             order: 2;
 
-            display: block;
+            display: initial;
+
+            :global(.item) {
+              padding-left: 0.5rem;
+              padding-right: 0.5rem;
+            }
           }
         }
       }
@@ -163,5 +201,6 @@ export default compose(
   withProps(({ data }) => ({
     accountShort: _get(data, 'user.shortname'),
     runningSessionId: _get(data, 'user.runningSession.id'),
+    runningSessionRuntime: _get(data, 'user.runningSession.runtime'),
   })),
 )(NavbarPres)

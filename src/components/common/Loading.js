@@ -1,10 +1,27 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { intlShape } from 'react-intl'
+import { Loader } from 'semantic-ui-react'
 
 import TeacherLayout from '../layouts/TeacherLayout'
 
-const LoadingDiv = () => <div className="ui indeterminate text loader">Loading</div>
+const LoadingDiv = () => (
+  <div className="loading">
+    <Loader active />
+
+    <style jsx>{`
+      .loading {
+        display: flex;
+        height: 100%;
+        width: 100%;
+
+        > :global(*) {
+          flex: 1;
+        }
+      }
+    `}</style>
+  </div>
+)
 
 const LoadingTeacherLayout = ({
   intl, pageId, title, children,
@@ -12,7 +29,7 @@ const LoadingTeacherLayout = ({
   const navbarConfig = {
     title: intl.formatMessage({
       defaultMessage: title,
-      id: `teacher.${pageId}.title`,
+      id: `${pageId}.title`,
     }),
   }
 
@@ -22,7 +39,7 @@ const LoadingTeacherLayout = ({
       navbar={navbarConfig}
       pageTitle={intl.formatMessage({
         defaultMessage: title,
-        id: `teacher.${pageId}.pageTitle`,
+        id: `${pageId}.pageTitle`,
       })}
       sidebar={{ activeItem: pageId }}
     >

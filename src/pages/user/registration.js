@@ -3,11 +3,12 @@ import PropTypes from 'prop-types'
 import { compose, withState, withHandlers } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
+import Link from 'next/link'
 
 import { StaticLayout } from '../../components/layouts'
 import { RegistrationForm } from '../../components/forms'
-import { RegistrationMutation } from '../../graphql/mutations'
-import { pageWithIntl, withData } from '../../lib'
+import { RegistrationMutation } from '../../graphql'
+import { pageWithIntl, withData, withLogging } from '../../lib'
 
 const propTypes = {
   error: PropTypes.oneOfType(PropTypes.string, null).isRequired,
@@ -30,13 +31,17 @@ const Registration = ({
         <FormattedMessage defaultMessage="Registration" id="user.registration.title" />
       </h1>
 
-      {/* TODO: improve message handling */}
-      {error && <div className="errorMessage message">Registration failed: {error}</div>}
-      {success && (
-        <div className="successMessage message">Successfully registered as {success}</div>
-      )}
+      {!success && <RegistrationForm intl={intl} onSubmit={handleSubmit} />}
 
-      <RegistrationForm intl={intl} onSubmit={handleSubmit} />
+      {/* TODO: improve message handling */}
+      {error && <div className="errorMessage message">Registration failed ({error})</div>}
+      {success && (
+        <div className="successMessage message">
+          Successfully registered as {success}. <br />
+          Please login at <Link href="/user/login">/user/login</Link> after the activation of your
+          account.
+        </div>
+      )}
 
       <style jsx>{`
         @import 'src/theme';
@@ -70,6 +75,7 @@ const Registration = ({
 Registration.propTypes = propTypes
 
 export default compose(
+  withLogging(['ga', 'raven']),
   withData,
   pageWithIntl,
   graphql(RegistrationMutation),
