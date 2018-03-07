@@ -4,6 +4,7 @@ import _isNumber from 'lodash/isNumber'
 import { FormattedMessage } from 'react-intl'
 
 import { CHART_COLORS, QUESTION_TYPES, QUESTION_GROUPS } from '../../constants'
+import { indexToLetter } from '../../lib'
 import { EvaluationListItem } from '.'
 
 const propTypes = {
@@ -37,10 +38,7 @@ const Possibilities = ({ questionOptions, questionType }) => (
         return (
           <div>
             {questionOptions[questionType].choices.map((choice, index) => (
-              <EvaluationListItem
-                color={CHART_COLORS[index % 12]}
-                marker={String.fromCharCode(65 + index)}
-              >
+              <EvaluationListItem color={CHART_COLORS[index % 12]} marker={indexToLetter(index)}>
                 {choice.name}
               </EvaluationListItem>
             ))}

@@ -75,11 +75,13 @@ PieChart.defaultProps = defaultProps
 export default withProps(({ data, questionType, totalResponses }) => ({
   // filter out choices without any responses (weird labeling)
   // map data to contain percentages and char labels
-  data: data.filter(({ count }) => count > 0).map(({ correct, count, value }, index) => ({
-    correct,
-    count,
-    labelIn: getLabelIn(CHART_TYPES.PIE_CHART, questionType, count, totalResponses, index),
-    labelOut: getLabelOut(CHART_TYPES.PIE_CHART, questionType, count, totalResponses, index),
-    value,
-  })),
+  data: data
+    .map(({ correct, count, value }, index) => ({
+      correct,
+      count,
+      labelIn: getLabelIn(CHART_TYPES.PIE_CHART, questionType, count, totalResponses, index),
+      labelOut: getLabelOut(CHART_TYPES.PIE_CHART, questionType, count, totalResponses, index),
+      value,
+    }))
+    .filter(({ count }) => count > 0),
 }))(PieChart)

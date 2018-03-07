@@ -4,8 +4,9 @@ describe('charts', () => {
   const data = [
     { index: 0, letter: 'A' },
     { index: 1, letter: 'B' },
-    { index: 24, letter: 'AA' },
-    { index: 48, letter: 'AAA' },
+    { index: 25, letter: 'Z' },
+    { index: 26, letter: 'AA' },
+    { index: 52, letter: 'AAA' },
   ]
 
   it('convert integer index to letter', () => {
