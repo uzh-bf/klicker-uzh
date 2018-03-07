@@ -4,7 +4,7 @@ import { compose, withHandlers, withStateHandlers } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
-import { Button } from 'semantic-ui-react'
+import { Button, Icon } from 'semantic-ui-react'
 import Link from 'next/link'
 import Router from 'next/router'
 
@@ -119,20 +119,54 @@ const Index = ({
         <div className="wrapper">
           <div className="questionList">
             <div className="buttons">
-              <Link href="/questions/create">
-                <Button primary>
+              {creationMode && (
+                <div className="quickCreationButtons">
+                  <div className="checkedCounter">
+                    <FormattedMessage
+                      defaultMessage="{count} items checked."
+                      id="questionPool.itemsChecked"
+                      values={{
+                        count: 1,
+                      }}
+                    />
+                  </div>
+                  <Button icon labelPosition="left">
+                    <Icon name="lightning" />
+                    <FormattedMessage
+                      defaultMessage="Split into {num} block{end}"
+                      id="questionPool.button.quickCreateSeparate"
+                      values={{
+                        end: '',
+                        num: 1,
+                      }}
+                    />
+                  </Button>
+                  <Button icon labelPosition="left">
+                    <Icon name="lightning" />
+                    <FormattedMessage
+                      defaultMessage="Group into one block"
+                      id="questionPool.button.quickCreateSingle"
+                    />
+                  </Button>
+                </div>
+              )}
+
+              <div className="actionButtons">
+                <Link href="/questions/create">
+                  <Button primary>
+                    <FormattedMessage
+                      defaultMessage="Create Question"
+                      id="questionPool.button.createQuestion"
+                    />
+                  </Button>
+                </Link>
+                <Button primary disabled={!!creationMode} onClick={handleCreationModeToggle}>
                   <FormattedMessage
-                    defaultMessage="Create Question"
-                    id="questionPool.button.createQuestion"
+                    defaultMessage="Create Session"
+                    id="questionPool.button.createSession"
                   />
                 </Button>
-              </Link>
-              <Button primary onClick={handleCreationModeToggle}>
-                <FormattedMessage
-                  defaultMessage="Create Session"
-                  id="questionPool.button.createSession"
-                />
-              </Button>
+              </div>
             </div>
             <div className="questionListContent">
               <QuestionList
@@ -184,16 +218,17 @@ const Index = ({
 
                 flex: 0 0 auto;
 
-                display: flex;
-                justify-content: center;
                 padding: 0.5rem;
+              }
+
+              .buttons,
+              .quickCreationButtons,
+              .actionButtons {
+                display: flex;
+                flex-direction: column;
 
                 > :global(button) {
-                  margin-right: 0;
-
-                  &:first-child {
-                    margin-right: 0.5rem;
-                  }
+                  margin-top: 0.5rem;
                 }
               }
 
@@ -221,9 +256,33 @@ const Index = ({
               padding: 1rem;
 
               .questionList {
+                .buttons,
+                .quickCreationButtons,
+                .actionButtons {
+                  flex-direction: row;
+
+                  > :global(button) {
+                    margin: 0;
+
+                    &:not(:last-child) {
+                      margin-right: 0.5rem;
+                    }
+                  }
+                }
+
                 .buttons {
-                  display: flex;
-                  justify-content: flex-end;
+                  align-items: flex-end;
+                  justify-content: space-between;
+                }
+
+                .quickCreationButtons {
+                  flex-wrap: wrap;
+
+                  .checkedCounter {
+                    flex: 0 0 100%;
+
+                    margin-bottom: 0.5rem;
+                  }
                 }
 
                 .questionListContent {
