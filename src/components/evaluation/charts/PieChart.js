@@ -2,10 +2,9 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { Cell, Pie, PieChart as PieChartComponent, ResponsiveContainer, LabelList } from 'recharts'
 import { withProps } from 'recompose'
-import _round from 'lodash/round'
 
-import { CHART_COLORS, SMALL_PIE_THRESHOLD } from '../../../constants'
-import { indexToLetter } from '../../../lib'
+import { CHART_COLORS, CHART_TYPES } from '../../../constants'
+import { getLabelIn, getLabelOut } from '../../../lib'
 
 const propTypes = {
   data: PropTypes.arrayOf(
@@ -42,7 +41,7 @@ const PieChart = ({ isSolutionShown, data }) => (
         valueKey="count"
       >
         <LabelList
-          dataKey="percentage"
+          dataKey="labelOut"
           fill="black"
           offset={30}
           position="outside"
@@ -51,7 +50,7 @@ const PieChart = ({ isSolutionShown, data }) => (
           style={{ fontSize: '2rem' }}
         />
         <LabelList
-          dataKey="label"
+          dataKey="labelIn"
           fill="white"
           position="inside"
           stroke="white"
@@ -73,31 +72,14 @@ const PieChart = ({ isSolutionShown, data }) => (
 PieChart.propTypes = propTypes
 PieChart.defaultProps = defaultProps
 
-// determine whether the label (A,B, ...) is displayed within the pie or not
-const labelText = (count, totalResponses, index) => {
-  if (count / totalResponses < SMALL_PIE_THRESHOLD) {
-    return ''
-  }
-  return `${indexToLetter(index)}`
-}
-
-// determine whether the label (A,B, ...) is displayed outside the pie or not
-// and add number of responses and percentual responses
-const percentageText = (count, totalResponses, index) => {
-  if (count / totalResponses > SMALL_PIE_THRESHOLD) {
-    return `${count} | ${_round(100 * (count / totalResponses), 1)} %`
-  }
-  return `${count} | ${_round(100 * (count / totalResponses), 1)} % (${indexToLetter(index)})`
-}
-
-export default withProps(({ data, totalResponses }) => ({
+export default withProps(({ data, questionType, totalResponses }) => ({
   // filter out choices without any responses (weird labeling)
   // map data to contain percentages and char labels
   data: data.filter(({ count }) => count > 0).map(({ correct, count, value }, index) => ({
     correct,
     count,
-    label: labelText(count, totalResponses, index),
-    percentage: percentageText(count, totalResponses, index),
+    labelIn: getLabelIn(CHART_TYPES.PIE_CHART, questionType, count, totalResponses, index),
+    labelOut: getLabelOut(CHART_TYPES.PIE_CHART, questionType, count, totalResponses, index),
     value,
   })),
 }))(PieChart)

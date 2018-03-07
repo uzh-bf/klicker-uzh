@@ -20,4 +20,4 @@ export {
   calculateStandardDeviation,
 } from './utils/math'
 export { SESSION_STATUS, QUESTION_TYPES } from '../constants'
-export { indexToLetter } from './utils/charts'
+export { indexToLetter, generatePercentageLabel, getLabelOut, getLabelIn } from './utils/charts'
