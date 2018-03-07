@@ -49,6 +49,7 @@ const calculatePercentage = (questionType, count, totalResponses) => {
   return ''
 }
 
+// determine whether the label (A,B, ...) is displayed within the bar or not
 const getPercentageIn = (questionType, count, totalResponses) => {
   if (count / totalResponses > SMALL_BAR_THRESHOLD) {
     return calculatePercentage(questionType, count, totalResponses)
@@ -56,6 +57,7 @@ const getPercentageIn = (questionType, count, totalResponses) => {
   return ''
 }
 
+// determine whether the label (A,B, ...) is displayed outside the bar or not
 const getPercentageOut = (questionType, count, totalResponses) => {
   if (count / totalResponses > SMALL_BAR_THRESHOLD) {
     return ''

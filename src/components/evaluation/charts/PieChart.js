@@ -5,6 +5,7 @@ import { withProps } from 'recompose'
 import _round from 'lodash/round'
 
 import { CHART_COLORS, SMALL_PIE_THRESHOLD } from '../../../constants'
+import { indexToLetter } from '../../../lib'
 
 const propTypes = {
   data: PropTypes.arrayOf(
@@ -71,11 +72,6 @@ const PieChart = ({ isSolutionShown, data }) => (
 
 PieChart.propTypes = propTypes
 PieChart.defaultProps = defaultProps
-
-const indexToLetter = index =>
-  // convert integer index into letters
-  // 65: A, 66: B , ...
-  String.fromCharCode(65 + index)
 
 // determine whether the label (A,B, ...) is displayed within the pie or not
 const labelText = (count, totalResponses, index) => {
