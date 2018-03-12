@@ -40,7 +40,7 @@
     "lodash": "4.17.5",
     "logrocket": "0.6.8",
     "logrocket-react": "1.0.0",
-    "lru-cache": "4.1.1",
+    "lru-cache": "4.1.2",
     "moment": "2.20.1",
     "morgan": "1.9.0",
     "next": "5.0.0",
