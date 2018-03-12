@@ -31,7 +31,7 @@
     "graphql-persisted-document-loader": "1.0.1",
     "graphql-tag": "2.8.0",
     "griddle-react": "1.11.2",
-    "helmet": "3.11.0",
+    "helmet": "3.12.0",
     "intl": "1.2.5",
     "ioredis": "3.2.2",
     "isomorphic-unfetch": "2.0.0",
