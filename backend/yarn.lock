@@ -3815,45 +3815,32 @@ moment@2.20.1, moment@2.x.x:
   version "2.20.1"
   resolved "https://registry.yarnpkg.com/moment/-/moment-2.20.1.tgz#d6eb1a46cbcc14a2b2f9434112c1ff8907f313fd"
 
-mongodb-core@3.0.2:
-  version "3.0.2"
-  resolved "https://registry.yarnpkg.com/mongodb-core/-/mongodb-core-3.0.2.tgz#914896092dd45427d9a4f98a7997a0bfb81d163b"
+mongodb-core@3.0.4:
+  version "3.0.4"
+  resolved "https://registry.yarnpkg.com/mongodb-core/-/mongodb-core-3.0.4.tgz#a3fdf466e697a2f1df87e458e5e2df1c26cc654b"
   dependencies:
     bson "~1.0.4"
     require_optional "^1.0.1"
 
-mongodb-core@3.0.3:
-  version "3.0.3"
-  resolved "https://registry.yarnpkg.com/mongodb-core/-/mongodb-core-3.0.3.tgz#496d7dd0052dc3a2e213edf9ddcddc78b47a712c"
+mongodb@3.0.4:
+  version "3.0.4"
+  resolved "https://registry.yarnpkg.com/mongodb/-/mongodb-3.0.4.tgz#ee0c0f7bc565edc5f40ee2d23170e522a8ad2286"
   dependencies:
-    bson "~1.0.4"
-    require_optional "^1.0.1"
-
-mongodb@3.0.2:
-  version "3.0.2"
-  resolved "https://registry.yarnpkg.com/mongodb/-/mongodb-3.0.2.tgz#28172302ed4e9388d8091e2cc4618057e6f5debc"
-  dependencies:
-    mongodb-core "3.0.2"
-
-mongodb@3.0.3:
-  version "3.0.3"
-  resolved "https://registry.yarnpkg.com/mongodb/-/mongodb-3.0.3.tgz#83b33e01f26b4a2e1f8a2b3427cabbaee31df017"
-  dependencies:
-    mongodb-core "3.0.3"
+    mongodb-core "3.0.4"
 
 mongoose-legacy-pluralize@1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/mongoose-legacy-pluralize/-/mongoose-legacy-pluralize-1.0.2.tgz#3ba9f91fa507b5186d399fb40854bff18fb563e4"
 
-mongoose@5.0.7:
-  version "5.0.7"
-  resolved "https://registry.yarnpkg.com/mongoose/-/mongoose-5.0.7.tgz#7c20a3c734ef4e8999f150e5a48e97dfa3f06951"
+mongoose@5.0.9:
+  version "5.0.9"
+  resolved "https://registry.yarnpkg.com/mongoose/-/mongoose-5.0.9.tgz#8eca121059d921f444d801534d0b94d2771b04dd"
   dependencies:
     async "2.1.4"
     bson "~1.0.4"
     kareem "2.0.5"
     lodash.get "4.4.2"
-    mongodb "3.0.2"
+    mongodb "3.0.4"
     mongoose-legacy-pluralize "1.0.2"
     mpath "0.3.0"
     mquery "3.0.0"
