@@ -1208,12 +1208,12 @@ babel-plugin-inline-dotenv@1.1.2:
   dependencies:
     dotenv "^4.0.0"
 
-babel-plugin-inline-import-graphql-ast@2.2.0:
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/babel-plugin-inline-import-graphql-ast/-/babel-plugin-inline-import-graphql-ast-2.2.0.tgz#e08142d099b14a1df241f97b4ea07d9c249f7bf3"
+babel-plugin-inline-import-graphql-ast@2.3.3:
+  version "2.3.3"
+  resolved "https://registry.yarnpkg.com/babel-plugin-inline-import-graphql-ast/-/babel-plugin-inline-import-graphql-ast-2.3.3.tgz#0972e946a282476c31bbc52549df156066051b69"
   dependencies:
     "@babel/core" "^7.0.0-beta.40"
-    graphql-tag "^2.7.3"
+    graphql-tag "^2.8.0"
 
 babel-plugin-istanbul@^4.1.5:
   version "4.1.5"
@@ -4881,7 +4881,7 @@ graphql-persisted-document-loader@1.0.1:
     loader-utils "^1.1.0"
     persistgraphql "^0.3.11"
 
-graphql-tag@2.8.0, graphql-tag@^2.0.0, graphql-tag@^2.4.2, graphql-tag@^2.7.3:
+graphql-tag@2.8.0, graphql-tag@^2.0.0, graphql-tag@^2.4.2, graphql-tag@^2.8.0:
   version "2.8.0"
   resolved "https://registry.yarnpkg.com/graphql-tag/-/graphql-tag-2.8.0.tgz#52cdea07a842154ec11a2e840c11b977f9b835ce"
 
