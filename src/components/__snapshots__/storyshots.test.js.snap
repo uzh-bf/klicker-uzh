@@ -554,7 +554,7 @@ exports[`Storyshots common/sidebar LanguageSwitcher 1`] = `
 
 exports[`Storyshots common/sidebar Sidebar (invisible) 1`] = `
 <div
-  className="jsx-485800020 sidebar"
+  className="jsx-1931465825 sidebar"
 >
   <div
     className="pushable"
@@ -575,101 +575,115 @@ exports[`Storyshots common/sidebar Sidebar (invisible) 1`] = `
         Item 2
       </a>
       <div
-        className="jsx-485800020 langSwitcher"
+        className="jsx-1931465825 extras"
       >
         <div
-          className="languageSwitcher"
+          className="jsx-1931465825 langSwitcher"
         >
           <div
-            aria-busy={undefined}
-            aria-disabled={undefined}
-            aria-expanded={false}
-            className="ui fluid search selection dropdown"
-            onBlur={[Function]}
-            onChange={[Function]}
-            onClick={[Function]}
-            onFocus={[Function]}
-            onMouseDown={[Function]}
-            role="combobox"
-            tabIndex={undefined}
+            className="languageSwitcher"
           >
-            <input
-              aria-autocomplete="list"
-              autoComplete="off"
-              className="search"
+            <div
+              aria-busy={undefined}
+              aria-disabled={undefined}
+              aria-expanded={false}
+              className="ui fluid search selection dropdown"
+              onBlur={[Function]}
               onChange={[Function]}
-              style={
-                Object {
-                  "width": undefined,
-                }
-              }
-              tabIndex={0}
-              type="text"
-              value=""
-            />
-            <div
-              aria-live="polite"
-              className="text"
-              role="alert"
-            >
-              English
-            </div>
-            <i
-              aria-hidden="true"
-              className="dropdown icon"
               onClick={[Function]}
-            />
-            <div
-              aria-multiselectable={undefined}
-              className="menu transition"
-              role="listbox"
+              onFocus={[Function]}
+              onMouseDown={[Function]}
+              role="combobox"
+              tabIndex={undefined}
             >
-              <div
-                aria-checked={true}
-                aria-disabled={undefined}
-                aria-selected={true}
-                className="active selected item"
-                onClick={[Function]}
-                role="option"
+              <input
+                aria-autocomplete="list"
+                autoComplete="off"
+                className="search"
+                onChange={[Function]}
                 style={
                   Object {
-                    "pointerEvents": "all",
+                    "width": undefined,
                   }
                 }
+                tabIndex={0}
+                type="text"
+                value=""
+              />
+              <div
+                aria-live="polite"
+                className="text"
+                role="alert"
               >
-                <i
-                  className="gb flag"
-                />
-                <span
-                  className="text"
-                >
-                  English
-                </span>
+                English
               </div>
-              <div
-                aria-checked={false}
-                aria-disabled={undefined}
-                aria-selected={false}
-                className="item"
+              <i
+                aria-hidden="true"
+                className="dropdown icon"
                 onClick={[Function]}
-                role="option"
-                style={
-                  Object {
-                    "pointerEvents": "all",
-                  }
-                }
+              />
+              <div
+                aria-multiselectable={undefined}
+                className="menu transition"
+                role="listbox"
               >
-                <i
-                  className="de flag"
-                />
-                <span
-                  className="text"
+                <div
+                  aria-checked={true}
+                  aria-disabled={undefined}
+                  aria-selected={true}
+                  className="active selected item"
+                  onClick={[Function]}
+                  role="option"
+                  style={
+                    Object {
+                      "pointerEvents": "all",
+                    }
+                  }
                 >
-                  Deutsch
-                </span>
+                  <i
+                    className="gb flag"
+                  />
+                  <span
+                    className="text"
+                  >
+                    English
+                  </span>
+                </div>
+                <div
+                  aria-checked={false}
+                  aria-disabled={undefined}
+                  aria-selected={false}
+                  className="item"
+                  onClick={[Function]}
+                  role="option"
+                  style={
+                    Object {
+                      "pointerEvents": "all",
+                    }
+                  }
+                >
+                  <i
+                    className="de flag"
+                  />
+                  <span
+                    className="text"
+                  >
+                    Deutsch
+                  </span>
+                </div>
               </div>
             </div>
           </div>
+        </div>
+        <div
+          className="jsx-1931465825 logo"
+        >
+          Klicker
+          <span
+            className="jsx-1931465825 high"
+          >
+            UZH
+          </span>
         </div>
       </div>
     </div>
@@ -684,7 +698,7 @@ exports[`Storyshots common/sidebar Sidebar (invisible) 1`] = `
 
 exports[`Storyshots common/sidebar Sidebar (visible) 1`] = `
 <div
-  className="jsx-485800020 sidebar"
+  className="jsx-1931465825 sidebar"
 >
   <div
     className="pushable"
@@ -705,101 +719,115 @@ exports[`Storyshots common/sidebar Sidebar (visible) 1`] = `
         Item 2
       </a>
       <div
-        className="jsx-485800020 langSwitcher"
+        className="jsx-1931465825 extras"
       >
         <div
-          className="languageSwitcher"
+          className="jsx-1931465825 langSwitcher"
         >
           <div
-            aria-busy={undefined}
-            aria-disabled={undefined}
-            aria-expanded={false}
-            className="ui fluid search selection dropdown"
-            onBlur={[Function]}
-            onChange={[Function]}
-            onClick={[Function]}
-            onFocus={[Function]}
-            onMouseDown={[Function]}
-            role="combobox"
-            tabIndex={undefined}
+            className="languageSwitcher"
           >
-            <input
-              aria-autocomplete="list"
-              autoComplete="off"
-              className="search"
+            <div
+              aria-busy={undefined}
+              aria-disabled={undefined}
+              aria-expanded={false}
+              className="ui fluid search selection dropdown"
+              onBlur={[Function]}
               onChange={[Function]}
-              style={
-                Object {
-                  "width": undefined,
-                }
-              }
-              tabIndex={0}
-              type="text"
-              value=""
-            />
-            <div
-              aria-live="polite"
-              className="text"
-              role="alert"
-            >
-              English
-            </div>
-            <i
-              aria-hidden="true"
-              className="dropdown icon"
               onClick={[Function]}
-            />
-            <div
-              aria-multiselectable={undefined}
-              className="menu transition"
-              role="listbox"
+              onFocus={[Function]}
+              onMouseDown={[Function]}
+              role="combobox"
+              tabIndex={undefined}
             >
-              <div
-                aria-checked={true}
-                aria-disabled={undefined}
-                aria-selected={true}
-                className="active selected item"
-                onClick={[Function]}
-                role="option"
+              <input
+                aria-autocomplete="list"
+                autoComplete="off"
+                className="search"
+                onChange={[Function]}
                 style={
                   Object {
-                    "pointerEvents": "all",
+                    "width": undefined,
                   }
                 }
+                tabIndex={0}
+                type="text"
+                value=""
+              />
+              <div
+                aria-live="polite"
+                className="text"
+                role="alert"
               >
-                <i
-                  className="gb flag"
-                />
-                <span
-                  className="text"
-                >
-                  English
-                </span>
+                English
               </div>
-              <div
-                aria-checked={false}
-                aria-disabled={undefined}
-                aria-selected={false}
-                className="item"
+              <i
+                aria-hidden="true"
+                className="dropdown icon"
                 onClick={[Function]}
-                role="option"
-                style={
-                  Object {
-                    "pointerEvents": "all",
-                  }
-                }
+              />
+              <div
+                aria-multiselectable={undefined}
+                className="menu transition"
+                role="listbox"
               >
-                <i
-                  className="de flag"
-                />
-                <span
-                  className="text"
+                <div
+                  aria-checked={true}
+                  aria-disabled={undefined}
+                  aria-selected={true}
+                  className="active selected item"
+                  onClick={[Function]}
+                  role="option"
+                  style={
+                    Object {
+                      "pointerEvents": "all",
+                    }
+                  }
                 >
-                  Deutsch
-                </span>
+                  <i
+                    className="gb flag"
+                  />
+                  <span
+                    className="text"
+                  >
+                    English
+                  </span>
+                </div>
+                <div
+                  aria-checked={false}
+                  aria-disabled={undefined}
+                  aria-selected={false}
+                  className="item"
+                  onClick={[Function]}
+                  role="option"
+                  style={
+                    Object {
+                      "pointerEvents": "all",
+                    }
+                  }
+                >
+                  <i
+                    className="de flag"
+                  />
+                  <span
+                    className="text"
+                  >
+                    Deutsch
+                  </span>
+                </div>
               </div>
             </div>
           </div>
+        </div>
+        <div
+          className="jsx-1931465825 logo"
+        >
+          Klicker
+          <span
+            className="jsx-1931465825 high"
+          >
+            UZH
+          </span>
         </div>
       </div>
     </div>

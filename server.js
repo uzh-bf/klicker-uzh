@@ -7,9 +7,9 @@ let apm
 if (process.env.APM_SERVER_URL) {
   apm = require('elastic-apm-node').start({
     active: !dev,
-    serviceName: process.env.APM_NAME,
     secretToken: process.env.APM_SECRET_TOKEN,
     serverUrl: process.env.APM_SERVER_URL,
+    serviceName: process.env.APM_NAME,
   })
 }
 
@@ -154,13 +154,32 @@ app
       server.enable('trust proxy')
     }
 
+    // secure the server with helmet
+    server.use(
+      helmet({
+        contentSecurityPolicy: process.env.HELMET_CSP
+          ? {
+            directives: {
+              defaultSrc: ["'self'"],
+              fontSrc: ["'fonts.gstatic.com'", "'cdnjs.cloudflare.com'"],
+              scriptSrc: ["'cdn.polyfill.io'"],
+              styleSrc: [
+                "'maxcdn.bootstrapcdn.com'",
+                "'fonts.googleapis.com'",
+                "'cdnjs.cloudflare.com'",
+              ],
+            },
+            reportOnly: true,
+          }
+          : false,
+        frameguard: !!process.env.HELMET_FRAMEGUARD,
+        hsts: !!process.env.HELMET_HSTS,
+      }),
+    )
+
     const middleware = [
       // compress using gzip
       compression(),
-      // secure the server with helmet
-      helmet({
-        hsts: false,
-      }),
       // enable cookie parsing for the locale cookie
       cookieParser(),
     ]

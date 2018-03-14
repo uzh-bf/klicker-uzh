@@ -15,7 +15,13 @@ const defaultProps = {
   itemsChecked: 0,
 }
 
-function ActionBar({ creationMode, handleCreationModeToggle, itemsChecked, handleQuickBlock, handleQuickBlocks }) {
+function ActionBar({
+  creationMode,
+  handleCreationModeToggle,
+  itemsChecked,
+  handleQuickBlock,
+  handleQuickBlocks,
+}) {
   return (
     <div className="actionBar">
       <div className="actionButtons">
@@ -36,40 +42,38 @@ function ActionBar({ creationMode, handleCreationModeToggle, itemsChecked, handl
         </Button>
       </div>
 
-      {creationMode && (
-        <React.Fragment>
-          <div className="creationButtons">
-            <Button icon labelPosition="left" onClick={() => handleQuickBlocks()}>
-              <Icon name="lightning" />
-              <FormattedMessage
-                defaultMessage="Split into {num} block{end}"
-                id="questionPool.button.quickCreateSeparate"
-                values={{
-                  end: '',
-                  num: +itemsChecked,
-                }}
-              />
-            </Button>
-
-            <Button icon labelPosition="left" onClick={() => handleQuickBlock()}>
-              <Icon name="lightning" />
-              <FormattedMessage
-                defaultMessage="Group into one block"
-                id="questionPool.button.quickCreateSingle"
-              />
-            </Button>
-          </div>
-          <div className="checkedCounter">
+      <React.Fragment>
+        <div className="creationButtons">
+          <Button icon labelPosition="left" onClick={() => handleQuickBlocks()}>
+            <Icon name="lightning" />
             <FormattedMessage
-              defaultMessage="{count} items checked."
-              id="questionPool.itemsChecked"
+              defaultMessage="Split into {num} block{end}"
+              id="questionPool.button.quickCreateSeparate"
               values={{
-                count: 1,
+                end: '',
+                num: +itemsChecked,
               }}
             />
-          </div>
-        </React.Fragment>
-      )}
+          </Button>
+
+          <Button icon labelPosition="left" onClick={() => handleQuickBlock()}>
+            <Icon name="lightning" />
+            <FormattedMessage
+              defaultMessage="Group into one block"
+              id="questionPool.button.quickCreateSingle"
+            />
+          </Button>
+        </div>
+        <div className="checkedCounter">
+          <FormattedMessage
+            defaultMessage="{count} items checked."
+            id="questionPool.itemsChecked"
+            values={{
+              count: 1,
+            }}
+          />
+        </div>
+      </React.Fragment>
 
       <style jsx>{`
         @import 'src/theme';
@@ -93,7 +97,7 @@ function ActionBar({ creationMode, handleCreationModeToggle, itemsChecked, handl
           @include desktop-tablet-only {
             flex-direction: row;
             align-items: center;
-            justify-content: ${creationMode ? 'space-between' : 'flex-end'};
+            justify-content: space-between;
 
             .creationButtons,
             .actionButtons {
