@@ -42,7 +42,8 @@ appSettings.forEach((envVar) => {
 // otherwise assume that no authentication needed (e.g. docker)
 const mongoConfig = {
   keepAlive: true,
-  reconnectTries: 10,
+  reconnectTries: Number.MAX_VALUE,
+  reconnectInterval: 1000,
 }
 if (process.env.MONGO_USER && process.env.MONGO_PASSWORD) {
   mongoose.connect(
