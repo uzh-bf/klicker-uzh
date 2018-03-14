@@ -154,20 +154,32 @@ app
       server.enable('trust proxy')
     }
 
+    // secure the server with helmet
+    server.use(
+      helmet({
+        contentSecurityPolicy: process.env.HELMET_CSP
+          ? {
+            directives: {
+              defaultSrc: ["'self'"],
+              fontSrc: ['fonts.gstatic.com', 'cdnjs.cloudflare.com'],
+              scriptSrc: ['cdn.polyfill.io'],
+              styleSrc: [
+                'maxcdn.bootstrapcdn.com',
+                'fonts.googleapis.com',
+                'cdnjs.cloudflare.com',
+              ],
+            },
+            reportOnly: true,
+          }
+          : false,
+        frameguard: !!process.env.HELMET_FRAMEGUARD,
+        hsts: !!process.env.HELMET_HSTS,
+      }),
+    )
+
     const middleware = [
       // compress using gzip
       compression(),
-      // secure the server with helmet
-      helmet({
-        contentSecurityPolicy: {
-          directives: {
-            defaultSrc: ["'self'"],
-          },
-          reportOnly: true,
-        },
-        frameguard: false,
-        hsts: false,
-      }),
       // enable cookie parsing for the locale cookie
       cookieParser(),
     ]
