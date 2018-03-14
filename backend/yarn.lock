@@ -210,28 +210,27 @@ apollo-cache-control@^0.0.x:
   dependencies:
     graphql-extensions "^0.0.x"
 
-apollo-engine-binary-darwin@0.2018.2-37-g678cbb68b:
-  version "0.2018.2-37-g678cbb68b"
-  resolved "https://registry.yarnpkg.com/apollo-engine-binary-darwin/-/apollo-engine-binary-darwin-0.2018.2-37-g678cbb68b.tgz#a7dbf5fd56d5090ebe955e28f9574228a10500fe"
+apollo-engine-binary-darwin@0.2018.2-90-g65206681c:
+  version "0.2018.2-90-g65206681c"
+  resolved "https://registry.yarnpkg.com/apollo-engine-binary-darwin/-/apollo-engine-binary-darwin-0.2018.2-90-g65206681c.tgz#13ac5f6580da30c2c9cfc8b644b19e1e23ff5a02"
 
-apollo-engine-binary-linux@0.2018.2-37-g678cbb68b:
-  version "0.2018.2-37-g678cbb68b"
-  resolved "https://registry.yarnpkg.com/apollo-engine-binary-linux/-/apollo-engine-binary-linux-0.2018.2-37-g678cbb68b.tgz#c348a89e0c3164f08687fa1701e71f378e862e57"
+apollo-engine-binary-linux@0.2018.2-90-g65206681c:
+  version "0.2018.2-90-g65206681c"
+  resolved "https://registry.yarnpkg.com/apollo-engine-binary-linux/-/apollo-engine-binary-linux-0.2018.2-90-g65206681c.tgz#89072edbf853b5a52379900499f89a39a9220878"
 
-apollo-engine-binary-windows@0.2018.2-37-g678cbb68b:
-  version "0.2018.2-37-g678cbb68b"
-  resolved "https://registry.yarnpkg.com/apollo-engine-binary-windows/-/apollo-engine-binary-windows-0.2018.2-37-g678cbb68b.tgz#f6541b7b670b42b54efed4781abc724977009234"
+apollo-engine-binary-windows@0.2018.2-90-g65206681c:
+  version "0.2018.2-90-g65206681c"
+  resolved "https://registry.yarnpkg.com/apollo-engine-binary-windows/-/apollo-engine-binary-windows-0.2018.2-90-g65206681c.tgz#ca5077e7c3cf39c65d11ca71095d9e9660ddf4ef"
 
-apollo-engine@0.8.10:
-  version "0.8.10"
-  resolved "https://registry.yarnpkg.com/apollo-engine/-/apollo-engine-0.8.10.tgz#1f57260fee31997eb4abed6bd3b6ac11a5c17340"
+apollo-engine@0.9.1:
+  version "0.9.1"
+  resolved "https://registry.yarnpkg.com/apollo-engine/-/apollo-engine-0.9.1.tgz#6a245c92e968364784840088467e21fcdc82efcc"
   dependencies:
     request "^2.81.0"
-    stream-json "^0.5.2"
   optionalDependencies:
-    apollo-engine-binary-darwin "0.2018.2-37-g678cbb68b"
-    apollo-engine-binary-linux "0.2018.2-37-g678cbb68b"
-    apollo-engine-binary-windows "0.2018.2-37-g678cbb68b"
+    apollo-engine-binary-darwin "0.2018.2-90-g65206681c"
+    apollo-engine-binary-linux "0.2018.2-90-g65206681c"
+    apollo-engine-binary-windows "0.2018.2-90-g65206681c"
 
 apollo-link@^1.2.1:
   version "1.2.1"
@@ -4226,10 +4225,6 @@ parse5@4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/parse5/-/parse5-4.0.0.tgz#6d78656e3da8d78b4ec0b906f7c08ef1dfe3f608"
 
-parser-toolkit@>=0.0.3:
-  version "0.0.5"
-  resolved "https://registry.yarnpkg.com/parser-toolkit/-/parser-toolkit-0.0.5.tgz#ec4b61729c86318b56ea971bfba6b3c672d62c01"
-
 parseurl@~1.3.2:
   version "1.3.2"
   resolved "https://registry.yarnpkg.com/parseurl/-/parseurl-1.3.2.tgz#fc289d4ed8993119460c156253262cdc8de65bf3"
@@ -5169,12 +5164,6 @@ stream-combiner@~0.0.4:
   resolved "https://registry.yarnpkg.com/stream-combiner/-/stream-combiner-0.0.4.tgz#4d5e433c185261dde623ca3f44c586bcf5c4ad14"
   dependencies:
     duplexer "~0.1.1"
-
-stream-json@^0.5.2:
-  version "0.5.2"
-  resolved "https://registry.yarnpkg.com/stream-json/-/stream-json-0.5.2.tgz#f4256c0ef1a905f2ef2d473706b4b3ff827653cf"
-  dependencies:
-    parser-toolkit ">=0.0.3"
 
 stream-to-observable@^0.2.0:
   version "0.2.0"
