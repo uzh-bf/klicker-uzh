@@ -23,7 +23,7 @@
     "d3": "4.13.0",
     "dotenv": "5.0.1",
     "elastic-apm-node": "1.1.1",
-    "express": "4.16.2",
+    "express": "4.16.3",
     "fingerprintjs2": "1.6.1",
     "formik": "0.11.11",
     "glob": "7.1.2",
