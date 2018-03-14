@@ -159,6 +159,13 @@ app
       compression(),
       // secure the server with helmet
       helmet({
+        contentSecurityPolicy: {
+          directives: {
+            defaultSrc: ["'self'"],
+          },
+          reportOnly: true,
+        },
+        frameguard: false,
         hsts: false,
       }),
       // enable cookie parsing for the locale cookie
