@@ -3,6 +3,7 @@ const moment = require('moment')
 const SessionMgrService = require('../services/sessionMgr')
 const SessionExecService = require('../services/sessionExec')
 const { SessionModel, UserModel } = require('../models')
+const { ensureLoaders } = require('../lib/utils')
 
 /* ----- queries ----- */
 const allSessionsQuery = async (parentValue, args, { auth, loaders }) => {
@@ -10,20 +11,21 @@ const allSessionsQuery = async (parentValue, args, { auth, loaders }) => {
   const results = await SessionModel.find({ user: auth.sub }).sort({ createdAt: -1 })
 
   // prime the dataloader cache
-  results.forEach(session => loaders.sessions.prime(session.id, session))
+  results.forEach(session => ensureLoaders(loaders).sessions.prime(session.id, session))
 
   return results
 }
 
-const sessionQuery = async (parentValue, { id }, { loaders }) => loaders.sessions.load(id)
+const sessionQuery = async (parentValue, { id }, { loaders }) => ensureLoaders(loaders).sessions.load(id)
 const sessionByPVQuery = (parentValue, args, { loaders }) => {
   if (!parentValue.runningSession) {
     return null
   }
 
-  return loaders.sessions.load(parentValue.runningSession)
+  return ensureLoaders(loaders).sessions.load(parentValue.runningSession)
 }
-const sessionsByPVQuery = (parentValue, args, { loaders }) => loaders.sessions.loadMany(parentValue.sessions)
+const sessionsByPVQuery = (parentValue, args, { loaders }) =>
+  ensureLoaders(loaders).sessions.loadMany(parentValue.sessions)
 const sessionIdByPVQuery = parentValue => parentValue.session
 
 const runningSessionQuery = async (parentValue, args, { auth }) => {
