@@ -161,12 +161,12 @@ app
           ? {
             directives: {
               defaultSrc: ["'self'"],
-              fontSrc: ['fonts.gstatic.com', 'cdnjs.cloudflare.com'],
-              scriptSrc: ['cdn.polyfill.io'],
+              fontSrc: ["'fonts.gstatic.com'", "'cdnjs.cloudflare.com'"],
+              scriptSrc: ["'cdn.polyfill.io'"],
               styleSrc: [
-                'maxcdn.bootstrapcdn.com',
-                'fonts.googleapis.com',
-                'cdnjs.cloudflare.com',
+                "'maxcdn.bootstrapcdn.com'",
+                "'fonts.googleapis.com'",
+                "'cdnjs.cloudflare.com'",
               ],
             },
             reportOnly: true,
