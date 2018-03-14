@@ -233,7 +233,7 @@ apollo-engine@0.8.10:
     apollo-engine-binary-linux "0.2018.2-37-g678cbb68b"
     apollo-engine-binary-windows "0.2018.2-37-g678cbb68b"
 
-apollo-link@^1.1.0:
+apollo-link@^1.2.1:
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/apollo-link/-/apollo-link-1.2.1.tgz#c120b16059f9bd93401b9f72b94d2f80f3f305d2"
   dependencies:
@@ -2151,11 +2151,11 @@ graphql-subscriptions@0.5.8:
   dependencies:
     iterall "^1.2.1"
 
-graphql-tools@2.21.0:
-  version "2.21.0"
-  resolved "https://registry.yarnpkg.com/graphql-tools/-/graphql-tools-2.21.0.tgz#c0d0fbda6f40a87c8d267a2989ade2ae8b9a288e"
+graphql-tools@2.22.0:
+  version "2.22.0"
+  resolved "https://registry.yarnpkg.com/graphql-tools/-/graphql-tools-2.22.0.tgz#0341805efad0d626982e08c5918e2d9308dbca6e"
   dependencies:
-    apollo-link "^1.1.0"
+    apollo-link "^1.2.1"
     apollo-utilities "^1.0.1"
     deprecated-decorator "^0.1.6"
     iterall "^1.1.3"
