@@ -48,17 +48,19 @@ const ListWithHeader = ({ children, items, limit }) => (
         .listHeader,
         .more {
           font-size: 1rem;
-
-          padding: 0.2rem 0;
+          line-height: 1rem;
         }
 
         .listHeader {
           border-bottom: 1px solid $color-primary;
+          padding: 0.4rem 0;
         }
 
         .more {
           border-top: 1px solid $color-primary;
           cursor: pointer;
+          padding: 0.2rem 0;
+          vertical-align: middle;
         }
 
         :global(.list) {
