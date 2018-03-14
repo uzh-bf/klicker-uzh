@@ -49,8 +49,13 @@ const Sidebar = ({
             {item.label}
           </SidebarItem>
         ))}
-        <div className="langSwitcher">
-          <LanguageSwitcher />
+        <div className="extras">
+          <div className="langSwitcher">
+            <LanguageSwitcher />
+          </div>
+          <div className="logo">
+            Klicker<span className="high">UZH</span>
+          </div>
         </div>
       </SemanticSidebar>
       <SemanticSidebar.Pusher>{children}</SemanticSidebar.Pusher>
@@ -70,8 +75,30 @@ const Sidebar = ({
           position: relative;
           width: 75% !important;
 
+          display: flex !important;
+          flex-direction: column;
+
+          .extras {
+            display: flex;
+            flex-direction: column;
+
+            justify-content: space-between;
+          }
+
           .langSwitcher {
             padding: 1rem;
+          }
+
+          .logo {
+            padding: 2rem 1rem;
+            font-size: 2rem;
+            line-height: 2rem;
+
+            .high {
+              font-size: 1rem;
+              line-height: 1rem;
+              vertical-align: top;
+            }
           }
 
           @include desktop-tablet-only {
