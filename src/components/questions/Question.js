@@ -2,9 +2,9 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import moment from 'moment'
-import { compose, withState, withProps, pure } from 'recompose'
+import { compose, withState, withProps } from 'recompose'
 import { DragSource } from 'react-dnd'
-import { Dropdown } from 'semantic-ui-react'
+import { Checkbox, Dropdown } from 'semantic-ui-react'
 
 import QuestionDetails from './QuestionDetails'
 import QuestionTags from './QuestionTags'
@@ -47,18 +47,10 @@ const Question = ({
 }) =>
   // TODO: draggable rework
   connectDragSource(
-    <div className={classNames('question', { creationMode, draggable: true, isDragging })}>
-      {creationMode && (
-        <div className={classNames('sessionMembership', { active: !draggable })}>
-          <input
-            // checked={!draggable}
-            className="ui checkbox"
-            name={`check-${id}`}
-            type="checkbox"
-            onClick={onCheck}
-          />
-        </div>
-      )}
+    <div className={classNames('question', { creationMode, draggable: creationMode, isDragging })}>
+      <div className={classNames('checker', { active: !draggable })}>
+        <Checkbox id={`check-${id}`} type="checkbox" onClick={onCheck} />
+      </div>
 
       <div className="wrapper">
         <h2 className="title">{title}</h2>
@@ -113,17 +105,11 @@ const Question = ({
             opacity: 0.5;
           }
 
-          .sessionMembership {
+          .checker {
             flex: 0 0 auto;
             display: flex;
 
-            color: darkred;
             padding: 0.5rem;
-            text-align: left;
-
-            .active {
-              color: green;
-            }
           }
 
           .wrapper {
@@ -139,7 +125,7 @@ const Question = ({
           @include desktop-tablet-only {
             flex-flow: row wrap;
 
-            .sessionMembership {
+            .checker {
               flex: 0 0 1rem;
               display: flex;
               align-items: center;
