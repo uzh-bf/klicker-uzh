@@ -1,11 +1,13 @@
 const _map = require('lodash/map')
-
+const { ensureLoaders } = require('../lib/utils')
 const SessionExecService = require('../services/sessionExec')
 
 /* ----- queries ----- */
-const questionInstanceByIDQuery = (parentValue, { id }, { loaders }) => loaders.questionInstances.load(id)
+const questionInstanceByIDQuery = (parentValue, { id }, { loaders }) =>
+  ensureLoaders(loaders).questionInstances.load(id)
+
 const questionInstancesByPVQuery = (parentValue, args, { loaders }) =>
-  loaders.questionInstances.loadMany(parentValue.instances)
+  ensureLoaders(loaders).questionInstances.loadMany(parentValue.instances)
 
 const responsesByPVQuery = parentValue =>
   parentValue.responses.map(({ id, value, createdAt }) => ({ id, ...value, createdAt }))

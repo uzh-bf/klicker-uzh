@@ -1,4 +1,5 @@
 const QuestionService = require('../services/questions')
+const { ensureLoaders } = require('../lib/utils')
 const { QuestionModel } = require('../models')
 
 /* ----- queries ----- */
@@ -7,14 +8,16 @@ const allQuestionsQuery = async (parentValue, args, { auth, loaders }) => {
   const results = await QuestionModel.find({ user: auth.sub }).sort({ createdAt: -1 })
 
   // prime the dataloader cache
-  results.forEach(question => loaders.questions.prime(question.id, question))
+  results.forEach(question => ensureLoaders(loaders).questions.prime(question.id, question))
 
   return results
 }
 
-const questionQuery = async (parentValue, { id }, { loaders }) => loaders.questions.load(id)
-const questionByPVQuery = (parentValue, args, { loaders }) => loaders.questions.load(parentValue.question)
-const questionsByPVQuery = (parentValue, args, { loaders }) => loaders.questions.loadMany(parentValue.questions)
+const questionQuery = async (parentValue, { id }, { loaders }) => ensureLoaders(loaders).questions.load(id)
+const questionByPVQuery = (parentValue, args, { loaders }) =>
+  ensureLoaders(loaders).questions.load(parentValue.question)
+const questionsByPVQuery = (parentValue, args, { loaders }) =>
+  ensureLoaders(loaders).questions.loadMany(parentValue.questions)
 
 /* ----- mutations ----- */
 const createQuestionMutation = (parentValue, { question }, { auth }) =>
