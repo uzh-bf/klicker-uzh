@@ -57,6 +57,8 @@ const Index = ({
   handleCreationModeToggle,
   handleQuickBlock,
   handleQuickBlocks,
+  handleReset,
+  handleToggleArchive,
 }) => {
   // TODO: create a component for this?
   const actionArea = (
@@ -119,7 +121,10 @@ const Index = ({
             activeTags={filters.tags}
             activeType={filters.type}
             data={data}
+            handleReset={handleReset}
             handleTagClick={handleTagClick}
+            handleToggleArchive={handleToggleArchive}
+            isArchiveActive={filters.archive}
           />
         </div>
         <div className="wrapper">
@@ -252,11 +257,31 @@ export default compose(
         return { creationMode: true }
       },
 
+      // handle checking of a new question
+      handleQuestionChecked: ({ checkedQuestions }) => (id) => {
+        if (checkedQuestions.includes(id)) {
+          return {
+            checkedQuestions: checkedQuestions.filter(item => item.id !== id),
+          }
+        }
+
+        return {
+          checkedQuestions: [...checkedQuestions, id],
+        }
+      },
+
+      // handle a new question that gets dropped on the session creation timeline
+      handleQuestionDropped: ({ droppedQuestions }) => id => ({
+        droppedQuestions: [...droppedQuestions, id],
+      }),
+
       handleQuickBlock: ({ checkedQuestions }) => () => {
         const result = {
-          initialBlocks: [{
-            questions: checkedQuestions,
-          }],
+          initialBlocks: [
+            {
+              questions: checkedQuestions,
+            },
+          ],
         }
 
         console.log(result)
@@ -275,24 +300,6 @@ export default compose(
 
         return result
       },
-
-      // handle checking of a new question
-      handleQuestionChecked: ({ checkedQuestions }) => (id) => {
-        if (checkedQuestions.includes(id)) {
-          return {
-            checkedQuestions: checkedQuestions.filter(item => item.id !== id),
-          }
-        }
-
-        return {
-          checkedQuestions: [...checkedQuestions, id],
-        }
-      },
-
-      // handle a new question that gets dropped on the session creation timeline
-      handleQuestionDropped: ({ droppedQuestions }) => id => ({
-        droppedQuestions: [...droppedQuestions, id],
-      }),
     },
   ),
   withHandlers({

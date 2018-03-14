@@ -60,15 +60,22 @@ function filterQuestions(questions, filters, index) {
 
   // if either type or tags were selected, filter the results
   if (filters.type || filters.tags) {
-    results = results.filter(({ type, tags }) => {
+    results = results.filter(({ archived, type, tags }) => {
+      // if the archive is activated and a question is not archived
+      if (filters.archive && !archived) {
+        return false
+      }
+
       // compare the type selected and the type of each question
       if (filters.type && type !== filters.type) {
         return false
       }
+
       // compare the tags selected and check whether the question fulfills all of them
       if (filters.tags && !_every(filters.tags, tag => tags.map(t => t.name).includes(tag))) {
         return false
       }
+
       return true
     })
   }
