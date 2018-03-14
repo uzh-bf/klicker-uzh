@@ -17,7 +17,7 @@
     "cross-env": "5.1.4",
     "dataloader": "1.4.0",
     "dotenv": "5.0.1",
-    "elastic-apm-node": "1.1.1",
+    "elastic-apm-node": "1.2.0",
     "express": "4.16.3",
     "express-jwt": "5.3.1",
     "express-rate-limit": "2.11.0",
