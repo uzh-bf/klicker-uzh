@@ -18,7 +18,7 @@
     "dataloader": "1.4.0",
     "dotenv": "5.0.1",
     "elastic-apm-node": "1.1.1",
-    "express": "4.16.2",
+    "express": "4.16.3",
     "express-jwt": "5.3.1",
     "express-rate-limit": "2.11.0",
     "graphql": "0.13.1",
