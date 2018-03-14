@@ -179,7 +179,6 @@ function EvaluationLayout({
               @include desktop-tablet-only {
                 display: grid;
                 height: 100vh;
-                width: 100vw;
                 max-height: 100vh;
                 max-width: 100vw;
 

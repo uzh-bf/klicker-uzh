@@ -13,6 +13,14 @@ export const QUESTION_TYPES = {
   SC: 'SC',
 }
 
+export const CHART_TYPES = {
+  BAR_CHART: 'BAR_CHART',
+  HISTOGRAM: 'HISTOGRAM',
+  PIE_CHART: 'PIE_CHART',
+  STACK_CHART: 'STACK_CHART',
+  TABLE: 'TABLE',
+}
+
 export const QUESTION_GROUPS = {
   CHOICES: [QUESTION_TYPES.SC, QUESTION_TYPES.MC],
   FREE: [QUESTION_TYPES.FREE, QUESTION_TYPES.FREE_RANGE],
@@ -21,11 +29,11 @@ export const QUESTION_GROUPS = {
 }
 
 export const CHART_DEFAULTS = {
-  FREE: 'TABLE',
-  FREE_RANGE: 'HISTOGRAM',
-  MC: 'STACK_CHART',
-  OTHER: 'TABLE',
-  SC: 'PIE_CHART',
+  FREE: CHART_TYPES.TABLE,
+  FREE_RANGE: CHART_TYPES.HISTOGRAM,
+  MC: CHART_TYPES.STACK_CHART,
+  OTHER: CHART_TYPES.TABLE,
+  SC: CHART_TYPES.PIE_CHART,
 }
 
 export const CHART_COLORS = [
@@ -49,6 +57,18 @@ export const QUESTION_SORTINGS = [
   { content: 'Question Type', id: 'TYPE', labelStart: 'sort content' },
   { content: 'Title', id: 'TITLE', labelStart: 'sort alphabet' },
 ]
+
+// break point for too small bars
+// if the percentual responses of a bar are smaller than the given
+// value, the label (A, B, ...)  is not displayed within the bar
+// but on top of the bar
+export const SMALL_BAR_THRESHOLD = 0.05
+
+// break point for too small pies
+// if the percentual responses of a pie are smaller than the given
+// value, the label (A, B, ...)  is not displayed within the pie
+// but outside right after the percentage
+export const SMALL_PIE_THRESHOLD = 0.05
 
 // https://www.viget.com/articles/add-colors-to-your-palette-with-color-mixing
 // original circle

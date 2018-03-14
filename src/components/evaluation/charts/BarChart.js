@@ -12,9 +12,9 @@ import {
   YAxis,
 } from 'recharts'
 import { withProps } from 'recompose'
-import _round from 'lodash/round'
 
-import { CHART_COLORS, QUESTION_TYPES } from '../../../constants'
+import { CHART_COLORS, CHART_TYPES } from '../../../constants'
+import { indexToLetter, getLabelIn, getLabelOut } from '../../../lib'
 
 const propTypes = {
   data: PropTypes.arrayOf(
@@ -31,22 +31,6 @@ const defaultProps = {
   data: [],
   isColored: true,
   isSolutionShown: false,
-}
-
-// TODO: extract to libraries
-const calculatePercentage = (questionType, count, totalResponses) => {
-  // no percentages needed for other question types
-  if (questionType !== QUESTION_TYPES.SC) {
-    return count
-  }
-
-  // only show percentage string if count is >0
-  if (count > 0) {
-    return `${count} | ${_round(100 * (count / totalResponses), 1)} %`
-  }
-
-  // return an empty string so it doesn't clutter the visualization
-  return ''
 }
 
 const BarChart = ({ isSolutionShown, data, isColored }) => (
@@ -92,7 +76,16 @@ const BarChart = ({ isSolutionShown, data, isColored }) => (
         maxBarSize="5rem"
       >
         <LabelList
-          dataKey="percentage"
+          dataKey="labelOut"
+          fill="black"
+          offset={15}
+          position="top"
+          stroke="black"
+          strokeWidth={1}
+          style={{ fontSize: '2rem' }}
+        />
+        <LabelList
+          dataKey="labelIn"
           fill="white"
           position="inside"
           stroke="white"
@@ -123,8 +116,9 @@ export default withProps(({ data, questionType, totalResponses }) => ({
     data.map(({ correct, count, value }, index) => ({
       correct,
       count,
-      label: questionType === 'FREE_RANGE' ? +value : String.fromCharCode(65 + index),
-      percentage: calculatePercentage(questionType, count, totalResponses),
+      label: questionType === 'FREE_RANGE' ? +value : indexToLetter(index),
+      labelIn: getLabelIn(CHART_TYPES.BAR_CHART, questionType, count, totalResponses, index),
+      labelOut: getLabelOut(CHART_TYPES.BAR_CHART, questionType, count, totalResponses, index),
       value,
     })),
     o => o.label,
