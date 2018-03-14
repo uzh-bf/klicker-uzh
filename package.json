@@ -48,7 +48,7 @@
     "prop-types": "15.6.1",
     "qrcode.react": "0.8.0",
     "ramda": "0.25.0",
-    "raven-js": "3.23.1",
+    "raven-js": "3.23.2",
     "react": "16.2.0",
     "react-addons-css-transition-group": "15.6.2",
     "react-apollo": "2.0.4",
