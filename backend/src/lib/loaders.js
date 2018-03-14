@@ -26,12 +26,18 @@ const questionsLoader = createBasicLoader(QuestionModel)
 const sessionsLoader = createBasicLoader(SessionModel)
 const questionInstancesLoader = createBasicLoader(QuestionInstanceModel)
 
-const createLoaders = auth => ({
-  questions: questionsLoader(auth),
-  questionInstances: questionInstancesLoader(auth),
-  sessions: sessionsLoader(auth),
-  tags: tagsLoader(auth),
-})
+const createLoaders = (auth) => {
+  if (!auth) {
+    return null
+  }
+
+  return {
+    questions: questionsLoader(auth),
+    questionInstances: questionInstancesLoader(auth),
+    sessions: sessionsLoader(auth),
+    tags: tagsLoader(auth),
+  }
+}
 
 module.exports = {
   createLoaders,
