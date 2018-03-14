@@ -3698,22 +3698,22 @@ ejs@^2.5.7:
   version "2.5.7"
   resolved "https://registry.yarnpkg.com/ejs/-/ejs-2.5.7.tgz#cc872c168880ae3c7189762fd5ffc00896c9518a"
 
-elastic-apm-http-client@^5.1.0:
+elastic-apm-http-client@^5.2.0:
   version "5.2.0"
   resolved "https://registry.yarnpkg.com/elastic-apm-http-client/-/elastic-apm-http-client-5.2.0.tgz#703a410669c95d6ed77f744c7d97212f471af5b2"
   dependencies:
     fast-safe-stringify "^1.2.0"
 
-elastic-apm-node@1.1.1:
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.1.1.tgz#337d2293df3a741a66cdaa6c39c8c706e8832d51"
+elastic-apm-node@1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.2.0.tgz#e336b5686f4756af75a2f4ee80e0a6d2600f4874"
   dependencies:
     after-all-results "^2.0.0"
     console-log-level "^1.4.0"
     cookie "^0.3.1"
     core-util-is "^1.0.2"
     debug "^3.0.0"
-    elastic-apm-http-client "^5.1.0"
+    elastic-apm-http-client "^5.2.0"
     end-of-stream "^1.1.0"
     fast-safe-stringify "^2.0.3"
     http-headers "^3.0.1"
