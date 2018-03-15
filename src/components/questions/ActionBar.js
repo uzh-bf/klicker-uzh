@@ -21,6 +21,7 @@ function ActionBar({
   itemsChecked,
   handleQuickBlock,
   handleQuickBlocks,
+  handleArchiveQuestions,
 }) {
   return (
     <div className="actionBar">
@@ -42,38 +43,56 @@ function ActionBar({
         </Button>
       </div>
 
-      <React.Fragment>
-        <div className="creationButtons">
-          <Button icon labelPosition="left" onClick={() => handleQuickBlocks()}>
-            <Icon name="lightning" />
-            <FormattedMessage
-              defaultMessage="Split into {num} block{end}"
-              id="questionPool.button.quickCreateSeparate"
-              values={{
-                end: '',
-                num: +itemsChecked,
-              }}
-            />
-          </Button>
+      <div className="creationButtons">
+        {creationMode ? (
+          <React.Fragment>
+            <Button icon labelPosition="left" onClick={() => handleQuickBlocks()}>
+              <Icon name="lightning" />
+              <FormattedMessage
+                defaultMessage="Split into {num} block{end}"
+                id="questionPool.button.quickCreateSeparate"
+                values={{
+                  end: itemsChecked > 1 ? 's' : '',
+                  num: +itemsChecked,
+                }}
+              />
+            </Button>
 
-          <Button icon labelPosition="left" onClick={() => handleQuickBlock()}>
-            <Icon name="lightning" />
-            <FormattedMessage
-              defaultMessage="Group into one block"
-              id="questionPool.button.quickCreateSingle"
-            />
-          </Button>
-        </div>
-        <div className="checkedCounter">
-          <FormattedMessage
-            defaultMessage="{count} items checked."
-            id="questionPool.itemsChecked"
-            values={{
-              count: 1,
-            }}
-          />
-        </div>
-      </React.Fragment>
+            <Button icon labelPosition="left" onClick={() => handleQuickBlock()}>
+              <Icon name="lightning" />
+              <FormattedMessage
+                defaultMessage="Group into one block"
+                id="questionPool.button.quickCreateSingle"
+              />
+            </Button>
+          </React.Fragment>
+        ) : (
+          <React.Fragment>
+            <Button icon labelPosition="left" onClick={() => handleArchiveQuestions()}>
+              <Icon name="archive" />
+              <FormattedMessage
+                defaultMessage="Archive {num} question{end}"
+                id="questionPool.button.archiveQuestions"
+                values={{
+                  end: itemsChecked > 1 ? 's' : '',
+                  num: +itemsChecked,
+                }}
+              />
+            </Button>
+          </React.Fragment>
+        )}
+      </div>
+
+      <div className="checkedCounter">
+        <FormattedMessage
+          defaultMessage="{count} item{end} checked"
+          id="questionPool.string.itemsChecked"
+          values={{
+            count: +itemsChecked,
+            end: itemsChecked > 1 ? 's' : '',
+          }}
+        />
+      </div>
 
       <style jsx>{`
         @import 'src/theme';

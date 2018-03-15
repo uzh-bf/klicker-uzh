@@ -35,8 +35,8 @@ export default (services = ['ga', 'raven', 'logrocket']) =>
 
             // setup why-did-you-update
             // eslint-disable-next-line import/no-extraneous-dependencies
-            const { whyDidYouUpdate } = require('why-did-you-update')
-            whyDidYouUpdate(React)
+            // const { whyDidYouUpdate } = require('why-did-you-update')
+            // whyDidYouUpdate(React)
 
             window.INIT_PERF = true
           }
