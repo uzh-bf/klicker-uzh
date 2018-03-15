@@ -6,7 +6,14 @@ import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
 import Router from 'next/router'
 
-import { pageWithIntl, withData, withDnD, withSortingAndFiltering, withLogging } from '../../lib'
+import {
+  pageWithIntl,
+  withData,
+  withDnD,
+  withSortingAndFiltering,
+  withLogging,
+  withSelection,
+} from '../../lib'
 import {
   CreateSessionMutation,
   StartSessionMutation,
@@ -21,7 +28,6 @@ import { TeacherLayout } from '../../components/layouts'
 import { QUESTION_SORTINGS } from '../../constants'
 
 const propTypes = {
-  checkedQuestions: PropTypes.arrayOf(PropTypes.string).isRequired,
   creationMode: PropTypes.bool.isRequired,
   data: PropTypes.object.isRequired,
   droppedQuestions: PropTypes.arrayOf(PropTypes.string).isRequired,
@@ -35,11 +41,12 @@ const propTypes = {
   handleTagClick: PropTypes.func.isRequired,
   initialBlocks: PropTypes.arrayOf(PropTypes.object).isRequired,
   intl: intlShape.isRequired,
+  numSelectedItems: PropTypes.number.isRequired,
   sort: PropTypes.object.isRequired,
 }
 
 const Index = ({
-  checkedQuestions,
+  numSelectedItems,
   creationMode,
   droppedQuestions,
   initialBlocks,
@@ -47,12 +54,12 @@ const Index = ({
   filters,
   data,
   sort,
+  handleSelectItem,
   handleCreateSession,
   handleSearch,
   handleSortByChange,
   handleSortOrderToggle,
   handleTagClick,
-  handleQuestionChecked,
   handleQuestionDropped,
   handleCreationModeToggle,
   handleQuickBlock,
@@ -134,7 +141,7 @@ const Index = ({
               handleCreationModeToggle={handleCreationModeToggle}
               handleQuickBlock={handleQuickBlock}
               handleQuickBlocks={handleQuickBlocks}
-              itemsChecked={checkedQuestions.length}
+              itemsChecked={numSelectedItems}
             />
 
             <div className="questionListContent">
@@ -144,7 +151,7 @@ const Index = ({
                 dropped={droppedQuestions}
                 filters={filters}
                 sort={sort}
-                onQuestionChecked={handleQuestionChecked}
+                onQuestionChecked={handleSelectItem}
                 onQuestionDropped={handleQuestionDropped}
               />
             </div>
@@ -235,9 +242,9 @@ export default compose(
   graphql(CreateSessionMutation, { name: 'createSession' }),
   graphql(QuestionPoolQuery),
   withSortingAndFiltering,
+  withSelection,
   withStateHandlers(
     {
-      checkedQuestions: [],
       creationMode: false,
       droppedQuestions: [],
       initialBlocks: [],
@@ -257,46 +264,33 @@ export default compose(
         return { creationMode: true }
       },
 
-      // handle checking of a new question
-      handleQuestionChecked: ({ checkedQuestions }) => (id) => {
-        if (checkedQuestions.includes(id)) {
-          return {
-            checkedQuestions: checkedQuestions.filter(item => item.id !== id),
-          }
-        }
-
-        return {
-          checkedQuestions: [...checkedQuestions, id],
-        }
-      },
-
       // handle a new question that gets dropped on the session creation timeline
       handleQuestionDropped: ({ droppedQuestions }) => id => ({
         droppedQuestions: [...droppedQuestions, id],
       }),
 
-      handleQuickBlock: ({ checkedQuestions }) => () => {
+      handleQuickBlock: ({ initialBlocks }, { selectedItems }) => () => {
         const result = {
           initialBlocks: [
             {
-              questions: checkedQuestions,
+              questions: selectedItems.toArray(),
             },
           ],
         }
 
-        console.log(result)
+        console.log(result, initialBlocks)
 
         return result
       },
 
-      handleQuickBlocks: ({ checkedQuestions }) => () => {
+      handleQuickBlocks: ({ initialBlocks }, { selectedItems }) => () => {
         const result = {
-          initialBlocks: checkedQuestions.map(id => ({
+          initialBlocks: selectedItems.toArray().map(id => ({
             questions: [id],
           })),
         }
 
-        console.log(result)
+        console.log(result, initialBlocks)
 
         return result
       },
