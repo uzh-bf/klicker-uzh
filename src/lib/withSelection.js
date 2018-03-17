@@ -1,4 +1,4 @@
-import { compose, withStateHandlers } from 'recompose'
+import { compose, withStateHandlers, withProps } from 'recompose'
 import { OrderedMap } from 'immutable'
 
 const initialState = {
@@ -18,14 +18,15 @@ export default (ComposedComponent) => {
           ? selectedItems.delete(id)
           : selectedItems.set(id, item)
 
-        console.log(newMap)
-
         return {
           numSelectedItems: newMap.size,
           selectedItems: newMap,
         }
       },
     }),
+    withProps(({ handleSelectItem }) => ({
+      handleSelectItem: (id, item) => () => handleSelectItem(id, item),
+    })),
   )(ComposedComponent)
 
   withSelection.displayName = `withSelection(${ComposedComponent.displayName ||
