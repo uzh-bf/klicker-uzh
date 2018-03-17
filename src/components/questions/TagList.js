@@ -40,6 +40,19 @@ export const TagListPres = ({
       <FormattedMessage defaultMessage="Reset filters" id="tagList.button.reset" />
     </Button>
     <List selection size="large">
+      <List.Header className="listHeader archive">
+        <FormattedMessage defaultMessage="Archive" id="tagList.header.archive" />
+      </List.Header>
+      <List.Item
+        active={isArchiveActive}
+        className="listItem archiveItem"
+        onClick={() => handleToggleArchive()}
+      >
+        <List.Icon name="archive" />
+        <List.Content>
+          <FormattedMessage defaultMessage="Show archived" id="tagList.string.archive" />
+        </List.Content>
+      </List.Item>
       <List.Header className="listHeader types">
         <FormattedMessage defaultMessage="Types" id="tagList.header.types" />
       </List.Header>
@@ -90,16 +103,6 @@ export const TagListPres = ({
       <List.Header className="listHeader tags">
         <FormattedMessage defaultMessage="Tags" id="tagList.header.tags" />
       </List.Header>
-      <List.Item
-        active={isArchiveActive}
-        className="listItem archiveItem"
-        onClick={() => handleToggleArchive()}
-      >
-        <List.Icon name="archive" />
-        <List.Content>
-          <FormattedMessage defaultMessage="ARCHIVE" id="tagList.string.archive" />
-        </List.Content>
-      </List.Item>
       {tags.length === 0 ? (
         <FormattedMessage defaultMessage="No tags available." id="tagList.string.noTags" />
       ) : (
@@ -130,7 +133,8 @@ export const TagListPres = ({
           font-weight: bold;
           padding: 0 1rem;
         }
-        :global(.listHeader.tags) {
+        :global(.listHeader.tags),
+        :global(.listHeader.types) {
           margin-top: 1rem;
         }
         :global(.listItem.item) {
