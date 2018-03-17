@@ -51,7 +51,10 @@ function buildIndex(name, items, searchIndices) {
 }
 
 function filterQuestions(questions, filters, index) {
-  let results = questions
+  let results = questions.filter(
+    ({ isArchived }) =>
+      (typeof isArchived === 'undefined' && !filters.archive) || isArchived === filters.archive,
+  )
 
   // if a title (query) was given, search the index with it
   if (filters.title) {
@@ -61,11 +64,6 @@ function filterQuestions(questions, filters, index) {
   // if either type or tags were selected, filter the results
   if (filters.type || filters.tags) {
     results = results.filter(({ archived, type, tags }) => {
-      // if the archive is activated and a question is not archived
-      if (filters.archive && !archived) {
-        return false
-      }
-
       // compare the type selected and the type of each question
       if (filters.type && type !== filters.type) {
         return false
