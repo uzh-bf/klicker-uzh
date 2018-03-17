@@ -7,9 +7,9 @@ let apm
 if (process.env.APM_SERVER_URL) {
   apm = require('elastic-apm-node').start({
     active: !dev,
-    serviceName: process.env.APM_NAME,
     secretToken: process.env.APM_SECRET_TOKEN,
     serverUrl: process.env.APM_SERVER_URL,
+    serviceName: process.env.APM_NAME,
   })
 }
 

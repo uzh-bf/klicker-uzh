@@ -18,9 +18,10 @@ const propTypes = {
 }
 
 const SessionCreationForm = ({
-  intl, onSave, onDiscard, onStart,
+  blocks, intl, onSave, onDiscard, onStart,
 }) => (
   <Formik
+    enableReinitialize
     initialValues={{
       blocks: [],
       // initialize session name to the current date and time
@@ -85,8 +86,11 @@ const SessionCreationForm = ({
 
         <div className="sessionTimeline">
           <SessionTimelineInput
-            value={values.blocks}
-            onChange={blocks => setFieldValue('blocks', blocks)}
+            value={blocks}
+            onChange={(inputBlocks) => {
+              // TODO: handle blocks change from page...
+              setFieldValue('blocks', inputBlocks)
+            }}
           />
         </div>
 

@@ -1,14 +1,19 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { compose, withHandlers, withStateHandlers } from 'recompose'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
-import { Button } from 'semantic-ui-react'
-import Link from 'next/link'
 import Router from 'next/router'
 
-import { pageWithIntl, withData, withDnD, withSortingAndFiltering, withLogging } from '../../lib'
+import {
+  pageWithIntl,
+  withData,
+  withDnD,
+  withSortingAndFiltering,
+  withLogging,
+  withSelection,
+} from '../../lib'
 import {
   CreateSessionMutation,
   StartSessionMutation,
@@ -18,7 +23,7 @@ import {
   QuestionPoolQuery,
 } from '../../graphql'
 import { SessionCreationForm } from '../../components/forms'
-import { QuestionList, TagList } from '../../components/questions'
+import { QuestionList, TagList, ActionBar } from '../../components/questions'
 import { TeacherLayout } from '../../components/layouts'
 import { QUESTION_SORTINGS } from '../../constants'
 
@@ -34,17 +39,22 @@ const propTypes = {
   handleSortByChange: PropTypes.func.isRequired,
   handleSortOrderToggle: PropTypes.func.isRequired,
   handleTagClick: PropTypes.func.isRequired,
+  initialBlocks: PropTypes.arrayOf(PropTypes.object).isRequired,
   intl: intlShape.isRequired,
+  numSelectedItems: PropTypes.number.isRequired,
   sort: PropTypes.object.isRequired,
 }
 
 const Index = ({
+  numSelectedItems,
   creationMode,
   droppedQuestions,
+  initialBlocks,
   intl,
   filters,
   data,
   sort,
+  handleSelectItem,
   handleCreateSession,
   handleSearch,
   handleSortByChange,
@@ -52,11 +62,16 @@ const Index = ({
   handleTagClick,
   handleQuestionDropped,
   handleCreationModeToggle,
+  handleQuickBlock,
+  handleQuickBlocks,
+  handleReset,
+  handleToggleArchive,
 }) => {
   // TODO: create a component for this?
   const actionArea = (
     <div className="creationForm">
       <SessionCreationForm
+        initialBlocks={initialBlocks}
         intl={intl}
         onDiscard={handleCreationModeToggle}
         onSave={handleCreateSession('save')}
@@ -113,27 +128,22 @@ const Index = ({
             activeTags={filters.tags}
             activeType={filters.type}
             data={data}
+            handleReset={handleReset}
             handleTagClick={handleTagClick}
+            handleToggleArchive={handleToggleArchive}
+            isArchiveActive={filters.archive}
           />
         </div>
         <div className="wrapper">
           <div className="questionList">
-            <div className="buttons">
-              <Link href="/questions/create">
-                <Button primary>
-                  <FormattedMessage
-                    defaultMessage="Create Question"
-                    id="questionPool.button.createQuestion"
-                  />
-                </Button>
-              </Link>
-              <Button primary onClick={handleCreationModeToggle}>
-                <FormattedMessage
-                  defaultMessage="Create Session"
-                  id="questionPool.button.createSession"
-                />
-              </Button>
-            </div>
+            <ActionBar
+              creationMode={creationMode}
+              handleCreationModeToggle={handleCreationModeToggle}
+              handleQuickBlock={handleQuickBlock}
+              handleQuickBlocks={handleQuickBlocks}
+              itemsChecked={numSelectedItems}
+            />
+
             <div className="questionListContent">
               <QuestionList
                 creationMode={creationMode}
@@ -141,6 +151,7 @@ const Index = ({
                 dropped={droppedQuestions}
                 filters={filters}
                 sort={sort}
+                onQuestionChecked={handleSelectItem}
                 onQuestionDropped={handleQuestionDropped}
               />
             </div>
@@ -179,24 +190,6 @@ const Index = ({
               margin: 0 auto;
               max-width: $max-width;
 
-              .buttons {
-                border: 1px solid $color-primary;
-
-                flex: 0 0 auto;
-
-                display: flex;
-                justify-content: center;
-                padding: 0.5rem;
-
-                > :global(button) {
-                  margin-right: 0;
-
-                  &:first-child {
-                    margin-right: 0.5rem;
-                  }
-                }
-              }
-
               .questionListContent {
                 flex: 1;
                 height: 100%;
@@ -221,11 +214,6 @@ const Index = ({
               padding: 1rem;
 
               .questionList {
-                .buttons {
-                  display: flex;
-                  justify-content: flex-end;
-                }
-
                 .questionListContent {
                   overflow-y: auto;
                   padding: 1rem 1rem 0 0;
@@ -254,10 +242,12 @@ export default compose(
   graphql(CreateSessionMutation, { name: 'createSession' }),
   graphql(QuestionPoolQuery),
   withSortingAndFiltering,
+  withSelection,
   withStateHandlers(
     {
       creationMode: false,
       droppedQuestions: [],
+      initialBlocks: [],
     },
     {
       // handle toggling creation mode (display of session creation form)
@@ -278,6 +268,32 @@ export default compose(
       handleQuestionDropped: ({ droppedQuestions }) => id => ({
         droppedQuestions: [...droppedQuestions, id],
       }),
+
+      handleQuickBlock: ({ initialBlocks }, { selectedItems }) => () => {
+        const result = {
+          initialBlocks: [
+            {
+              questions: selectedItems.toArray(),
+            },
+          ],
+        }
+
+        console.log(result, initialBlocks)
+
+        return result
+      },
+
+      handleQuickBlocks: ({ initialBlocks }, { selectedItems }) => () => {
+        const result = {
+          initialBlocks: selectedItems.toArray().map(id => ({
+            questions: [id],
+          })),
+        }
+
+        console.log(result, initialBlocks)
+
+        return result
+      },
     },
   ),
   withHandlers({
