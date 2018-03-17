@@ -60,12 +60,9 @@ function ActionBar({
             >
               <Icon name="lightning" />
               <FormattedMessage
-                defaultMessage="Split into {num} block{end}"
+                defaultMessage="Split questions into {num} blocks"
                 id="questionPool.button.quickCreateSeparate"
-                values={{
-                  end: itemsChecked > 1 ? 's' : '',
-                  num: +itemsChecked,
-                }}
+                values={{ num: +itemsChecked }}
               />
             </Button>
 
@@ -77,8 +74,9 @@ function ActionBar({
             >
               <Icon name="lightning" />
               <FormattedMessage
-                defaultMessage="Group into one block"
+                defaultMessage="Group questions into one block ({num}->1)"
                 id="questionPool.button.quickCreateSingle"
+                values={{ num: +itemsChecked }}
               />
             </Button>
           </React.Fragment>
@@ -93,21 +91,15 @@ function ActionBar({
               <Icon name="archive" />
               {isArchiveActive ? (
                 <FormattedMessage
-                  defaultMessage="Unarchive {num} question{end}"
+                  defaultMessage="Unarchive questions ({num})"
                   id="questionPool.button.unarchiveQuestions"
-                  values={{
-                    end: itemsChecked > 1 ? 's' : '',
-                    num: +itemsChecked,
-                  }}
+                  values={{ num: +itemsChecked }}
                 />
               ) : (
                 <FormattedMessage
-                  defaultMessage="Archive {num} question{end}"
+                  defaultMessage="Archive questions ({num})"
                   id="questionPool.button.archiveQuestions"
-                  values={{
-                    end: itemsChecked > 1 ? 's' : '',
-                    num: +itemsChecked,
-                  }}
+                  values={{ num: +itemsChecked }}
                 />
               )}
             </Button>
@@ -137,8 +129,9 @@ function ActionBar({
         }
 
         .actionBar {
+          background-color: $color-primary-05p;
           border: 1px solid $color-primary;
-          padding: 0.3rem;
+          padding: 0.5rem;
 
           .actionButtons,
           .creationButtons {
@@ -161,10 +154,10 @@ function ActionBar({
             }
 
             .checkedCounter {
-              padding-left: 1rem;
-
               color: grey;
               order: 1;
+
+              padding-left: 1rem;
             }
 
             .creationButtons {
