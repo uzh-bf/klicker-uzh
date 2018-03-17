@@ -2,9 +2,10 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import moment from 'moment'
+import { FormattedMessage } from 'react-intl'
 import { compose, withState, withProps } from 'recompose'
 import { DragSource } from 'react-dnd'
-import { Checkbox, Dropdown } from 'semantic-ui-react'
+import { Checkbox, Dropdown, Label } from 'semantic-ui-react'
 
 import QuestionDetails from './QuestionDetails'
 import QuestionTags from './QuestionTags'
@@ -13,8 +14,8 @@ const propTypes = {
   checked: PropTypes.bool,
   connectDragSource: PropTypes.func.isRequired,
   creationMode: PropTypes.bool,
-  // draggable: PropTypes.bool,
   id: PropTypes.string.isRequired,
+  isArchived: PropTypes.bool.isRequired,
   isDragging: PropTypes.bool,
   lastUsed: PropTypes.array,
   tags: PropTypes.array,
@@ -25,7 +26,7 @@ const propTypes = {
 const defaultProps = {
   checked: false,
   creationMode: false,
-  // draggable: false,
+  isArchived: false,
   isDragging: false,
   lastUsed: [],
   tags: [],
@@ -45,18 +46,33 @@ const Question = ({
   draggable,
   creationMode,
   isDragging,
+  isArchived,
   connectDragSource,
   handleSetActiveVersion,
 }) =>
   // TODO: draggable rework
   connectDragSource(
-    <div className={classNames('question', { creationMode, draggable: creationMode, isDragging })}>
+    <div
+      className={classNames('question', {
+        creationMode,
+        draggable: creationMode,
+        isArchived,
+        isDragging,
+      })}
+    >
       <div className={classNames('checker', { active: !draggable })}>
         <Checkbox checked={checked} id={`check-${id}`} type="checkbox" onClick={onCheck} />
       </div>
 
       <div className="wrapper">
-        <h2 className="title">{title}</h2>
+        <h2 className="title">
+          {isArchived && (
+            <Label color="red" size="tiny">
+              <FormattedMessage defaultMessage="ARCHIVED" id="questionPool.question.titleArchive" />
+            </Label>
+          )}{' '}
+          {title}
+        </h2>
 
         <div className="versionChooser">
           <Dropdown

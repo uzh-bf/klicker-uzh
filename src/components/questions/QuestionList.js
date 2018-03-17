@@ -10,6 +10,7 @@ import { processItems, buildIndex } from '../../lib'
 
 const propTypes = {
   creationMode: PropTypes.bool,
+  isArchiveActive: PropTypes.bool,
   onQuestionChecked: PropTypes.func.isRequired,
   questions: PropTypes.array,
   // FIXME: immutable ordered map
@@ -18,11 +19,16 @@ const propTypes = {
 
 const defaultProps = {
   creationMode: false,
+  isArchiveActive: false,
   questions: [],
 }
 
 export const QuestionListPres = ({
-  questions, onQuestionChecked, creationMode, selectedItems,
+  questions,
+  onQuestionChecked,
+  creationMode,
+  selectedItems,
+  isArchiveActive,
 }) => (
   <div className="questionList">
     {questions.length === 0 ? (
@@ -42,6 +48,7 @@ export const QuestionListPres = ({
         creationMode={creationMode}
         draggable={creationMode}
         id={question.id}
+        isArchived={isArchiveActive}
         key={question.id}
         lastUsed={question.instances.map(({ createdAt, session, version }) => (
           <a href={`/sessions/evaluation/${session}`} target="_blank">
@@ -52,7 +59,7 @@ export const QuestionListPres = ({
         title={question.title}
         type={question.type}
         versions={question.versions}
-        onCheck={() => onQuestionChecked(question.id, question)}
+        onCheck={onQuestionChecked(question.id, question)}
       />
     ))}
 
