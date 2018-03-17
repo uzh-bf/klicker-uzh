@@ -22,8 +22,8 @@ import {
   SessionListQuery,
   RunningSessionQuery,
   QuestionPoolQuery,
+  ArchiveQuestionsMutation,
 } from '../../graphql'
-// import { SessionCreationForm } from '../../components/forms'
 import SessionCreationForm from '../../components/forms/SessionCreationForm2'
 import { QuestionList, TagList, ActionBar } from '../../components/questions'
 import { TeacherLayout } from '../../components/layouts'
@@ -32,19 +32,27 @@ import { QUESTION_SORTINGS } from '../../constants'
 const propTypes = {
   creationMode: PropTypes.bool.isRequired,
   data: PropTypes.object.isRequired,
-  droppedQuestions: PropTypes.arrayOf(PropTypes.string).isRequired,
   filters: PropTypes.object.isRequired,
   handleCreateSession: PropTypes.func.isRequired,
   handleCreationModeToggle: PropTypes.func.isRequired,
-  handleQuestionDropped: PropTypes.func.isRequired,
   handleSearch: PropTypes.func.isRequired,
   handleSortByChange: PropTypes.func.isRequired,
   handleSortOrderToggle: PropTypes.func.isRequired,
   handleTagClick: PropTypes.func.isRequired,
-  initialBlocks: PropTypes.arrayOf(PropTypes.object).isRequired,
   intl: intlShape.isRequired,
   numSelectedItems: PropTypes.number.isRequired,
   sort: PropTypes.object.isRequired,
+  selectedItems: PropTypes.any,
+  sessionName: PropTypes.string.isRequired,
+  sessionBlocks: PropTypes.any,
+  handleSelectItem: PropTypes.func.isRequired,
+  handleQuickBlock: PropTypes.func.isRequired,
+  handleQuickBlocks: PropTypes.func.isRequired,
+  handleReset: PropTypes.func.isRequired,
+  handleToggleArchive: PropTypes.func.isRequired,
+  handleChangeName: PropTypes.func.isRequired,
+  handleChangeBlocks: PropTypes.func.isRequired,
+  handleArchiveQuestions: PropTypes.func.isRequired,
 }
 
 const Index = ({
@@ -57,7 +65,6 @@ const Index = ({
   selectedItems,
   sessionName,
   sessionBlocks,
-  handleResetSelection,
   handleSelectItem,
   handleCreateSession,
   handleSearch,
@@ -71,12 +78,11 @@ const Index = ({
   handleToggleArchive,
   handleChangeName,
   handleChangeBlocks,
+  handleArchiveQuestions,
 }) => {
-  // TODO: create a component for this?
-  const actionArea = (
+  const creationForm = (
     <div className="creationForm">
       <SessionCreationForm
-        // initialBlocks={initialBlocks}
         blocks={sessionBlocks}
         handleChangeBlocks={handleChangeBlocks}
         handleChangeName={handleChangeName}
@@ -107,7 +113,7 @@ const Index = ({
   return (
     <TeacherLayout
       fixedHeight
-      actionArea={creationMode ? actionArea : null}
+      actionArea={creationMode ? creationForm : null}
       intl={intl}
       navbar={{
         search: {
@@ -146,9 +152,11 @@ const Index = ({
           <div className="questionList">
             <ActionBar
               creationMode={creationMode}
+              handleArchiveQuestions={handleArchiveQuestions}
               handleCreationModeToggle={handleCreationModeToggle}
               handleQuickBlock={handleQuickBlock}
               handleQuickBlocks={handleQuickBlocks}
+              isArchiveActive={filters.archive}
               itemsChecked={numSelectedItems}
             />
 
@@ -157,6 +165,7 @@ const Index = ({
                 creationMode={creationMode}
                 data={data}
                 filters={filters}
+                isArchiveActive={filters.archive}
                 selectedItems={selectedItems}
                 sort={sort}
                 onQuestionChecked={handleSelectItem}
@@ -181,7 +190,7 @@ const Index = ({
             min-width: 5rem;
 
             flex: 1;
-            background: $color-primary-10p;
+            background: $color-primary-05p;
             padding: 0.5rem;
           }
 
@@ -214,6 +223,8 @@ const Index = ({
               overflow-y: auto;
               flex: 0 0 auto;
               padding: 2rem 1rem;
+
+              border-right: 1px solid $color-primary;
             }
 
             .wrapper {
@@ -247,6 +258,7 @@ export default compose(
   withData,
   graphql(StartSessionMutation, { name: 'startSession' }),
   graphql(CreateSessionMutation, { name: 'createSession' }),
+  graphql(ArchiveQuestionsMutation, { name: 'archiveQuestions' }),
   graphql(QuestionPoolQuery),
   withSortingAndFiltering,
   withSelection,
@@ -307,9 +319,36 @@ export default compose(
           ],
         }
       },
+
+      // override the toggle archive function
+      // need to reset the selection on toggling archive to not apply actions to hidden questions
+      handleToggleArchive: (_, { handleResetSelection, handleToggleArchive }) => () => {
+        handleResetSelection()
+        handleToggleArchive()
+      },
     },
   ),
   withHandlers({
+    // handle archiving a question
+    handleArchiveQuestions: ({
+      archiveQuestions,
+      handleResetSelection,
+      selectedItems,
+    }) => async () => {
+      try {
+        // archive the questions
+        await archiveQuestions({
+          refetchQueries: [{ query: QuestionPoolQuery }],
+          variables: { ids: [...selectedItems.keys()] },
+        })
+
+        handleResetSelection()
+      } catch ({ message }) {
+        // TODO: if anything fails, display the error
+        console.error(message)
+      }
+    },
+
     // handle creating a new session
     handleCreateSession: ({
       sessionName,
