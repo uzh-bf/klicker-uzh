@@ -3,6 +3,7 @@ query QuestionPool {
     id
     title
     type
+    isArchived
     instances {
       id
       version

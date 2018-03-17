@@ -1,0 +1,6 @@
+mutation ArchiveQuestion($id: ID!) {
+  archiveQuestion(id: $id) {
+    id
+    isArchived
+  }
+}
