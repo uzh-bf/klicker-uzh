@@ -110,7 +110,7 @@ export const NavbarPres = ({
         padding: 3px 0 3px 0;
 
         background-color: $background-color;
-        border-bottom: 1px solid lightgrey;
+        border-bottom: 1px solid $color-primary;
 
         z-index: 100;
 
