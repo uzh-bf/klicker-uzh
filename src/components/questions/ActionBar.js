@@ -161,6 +161,8 @@ function ActionBar({
             }
 
             .checkedCounter {
+              padding-left: 1rem;
+
               color: grey;
               order: 1;
             }
