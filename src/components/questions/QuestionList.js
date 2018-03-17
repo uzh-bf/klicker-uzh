@@ -10,20 +10,19 @@ import { processItems, buildIndex } from '../../lib'
 
 const propTypes = {
   creationMode: PropTypes.bool,
-  dropped: PropTypes.arrayOf(PropTypes.string),
   onQuestionChecked: PropTypes.func.isRequired,
-  onQuestionDropped: PropTypes.func.isRequired,
   questions: PropTypes.array,
+  // FIXME: immutable ordered map
+  selectedItems: PropTypes.any.isRequired,
 }
 
 const defaultProps = {
   creationMode: false,
-  dropped: [],
   questions: [],
 }
 
 export const QuestionListPres = ({
-  questions, dropped, onQuestionChecked, onQuestionDropped, creationMode,
+  questions, onQuestionChecked, creationMode, selectedItems,
 }) => (
   <div className="questionList">
     {questions.length === 0 ? (
@@ -39,8 +38,9 @@ export const QuestionListPres = ({
 
     {questions.map(question => (
       <Question
+        checked={selectedItems.has(question.id)}
         creationMode={creationMode}
-        draggable={creationMode && !dropped.includes(question.id)}
+        draggable={creationMode}
         id={question.id}
         key={question.id}
         lastUsed={question.instances.map(({ createdAt, session, version }) => (
@@ -52,8 +52,7 @@ export const QuestionListPres = ({
         title={question.title}
         type={question.type}
         versions={question.versions}
-        onCheck={() => onQuestionChecked(question.id)}
-        onDrop={() => onQuestionDropped(question.id)}
+        onCheck={() => onQuestionChecked(question.id, question)}
       />
     ))}
 

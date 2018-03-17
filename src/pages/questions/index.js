@@ -5,6 +5,7 @@ import { intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
 import Router from 'next/router'
+import moment from 'moment'
 
 import {
   pageWithIntl,
@@ -22,7 +23,8 @@ import {
   RunningSessionQuery,
   QuestionPoolQuery,
 } from '../../graphql'
-import { SessionCreationForm } from '../../components/forms'
+// import { SessionCreationForm } from '../../components/forms'
+import SessionCreationForm from '../../components/forms/SessionCreationForm2'
 import { QuestionList, TagList, ActionBar } from '../../components/questions'
 import { TeacherLayout } from '../../components/layouts'
 import { QUESTION_SORTINGS } from '../../constants'
@@ -48,34 +50,40 @@ const propTypes = {
 const Index = ({
   numSelectedItems,
   creationMode,
-  droppedQuestions,
-  initialBlocks,
   intl,
   filters,
   data,
   sort,
+  selectedItems,
+  sessionName,
+  sessionBlocks,
+  handleResetSelection,
   handleSelectItem,
   handleCreateSession,
   handleSearch,
   handleSortByChange,
   handleSortOrderToggle,
   handleTagClick,
-  handleQuestionDropped,
   handleCreationModeToggle,
   handleQuickBlock,
   handleQuickBlocks,
   handleReset,
   handleToggleArchive,
+  handleChangeName,
+  handleChangeBlocks,
 }) => {
   // TODO: create a component for this?
   const actionArea = (
     <div className="creationForm">
       <SessionCreationForm
-        initialBlocks={initialBlocks}
+        // initialBlocks={initialBlocks}
+        blocks={sessionBlocks}
+        handleChangeBlocks={handleChangeBlocks}
+        handleChangeName={handleChangeName}
+        handleDiscard={handleCreationModeToggle}
+        handleSubmit={handleCreateSession}
         intl={intl}
-        onDiscard={handleCreationModeToggle}
-        onSave={handleCreateSession('save')}
-        onStart={handleCreateSession('start')}
+        name={sessionName}
       />
 
       <style jsx>{`
@@ -148,11 +156,10 @@ const Index = ({
               <QuestionList
                 creationMode={creationMode}
                 data={data}
-                dropped={droppedQuestions}
                 filters={filters}
+                selectedItems={selectedItems}
                 sort={sort}
                 onQuestionChecked={handleSelectItem}
-                onQuestionDropped={handleQuestionDropped}
               />
             </div>
           </div>
@@ -236,8 +243,8 @@ Index.propTypes = propTypes
 export default compose(
   withLogging(),
   withDnD,
-  withData,
   pageWithIntl,
+  withData,
   graphql(StartSessionMutation, { name: 'startSession' }),
   graphql(CreateSessionMutation, { name: 'createSession' }),
   graphql(QuestionPoolQuery),
@@ -246,17 +253,21 @@ export default compose(
   withStateHandlers(
     {
       creationMode: false,
-      droppedQuestions: [],
-      initialBlocks: [],
+      sessionBlocks: [],
+      sessionName: moment().format('DD.MM.YYYY HH:mm'),
     },
     {
+      // handlers for session creation form fields
+      handleChangeBlocks: () => sessionBlocks => ({ sessionBlocks }),
+      handleChangeName: () => sessionName => ({ sessionName }),
+
       // handle toggling creation mode (display of session creation form)
       handleCreationModeToggle: ({ creationMode }) => () => {
-        // if the creation mode was activated before, reset dropped questions on toggle
+        // if the creation mode was activated before, reset blocks on toggle
         if (creationMode) {
           return {
             creationMode: false,
-            droppedQuestions: [],
+            sessionBlocks: [],
           }
         }
 
@@ -264,55 +275,59 @@ export default compose(
         return { creationMode: true }
       },
 
-      // handle a new question that gets dropped on the session creation timeline
-      handleQuestionDropped: ({ droppedQuestions }) => id => ({
-        droppedQuestions: [...droppedQuestions, id],
-      }),
+      // build a single block from all the checked questions
+      handleQuickBlock: ({ sessionBlocks }, { handleResetSelection, selectedItems }) => () => {
+        // reset the checked questions
+        handleResetSelection()
 
-      handleQuickBlock: ({ initialBlocks }, { selectedItems }) => () => {
-        const result = {
-          initialBlocks: [
+        return {
+          sessionBlocks: [
+            ...sessionBlocks,
             {
-              questions: selectedItems.toArray(),
+              questions: selectedItems.toIndexedSeq().toArray(),
             },
           ],
         }
-
-        console.log(result, initialBlocks)
-
-        return result
       },
 
-      handleQuickBlocks: ({ initialBlocks }, { selectedItems }) => () => {
-        const result = {
-          initialBlocks: selectedItems.toArray().map(id => ({
-            questions: [id],
-          })),
+      // build a separate block for each checked question
+      handleQuickBlocks: ({ sessionBlocks }, { handleResetSelection, selectedItems }) => () => {
+        // reset the checked questions
+        handleResetSelection()
+
+        return {
+          sessionBlocks: [
+            ...sessionBlocks,
+            ...selectedItems
+              .toIndexedSeq()
+              .toArray()
+              .map(item => ({
+                questions: [item],
+              })),
+          ],
         }
-
-        console.log(result, initialBlocks)
-
-        return result
       },
     },
   ),
   withHandlers({
     // handle creating a new session
     handleCreateSession: ({
+      sessionName,
+      sessionBlocks,
       createSession,
       startSession,
       handleCreationModeToggle,
-    }) => type => async ({ sessionName, blocks }) => {
+    }) => type => async () => {
       try {
         // prepare blocks for consumption through the api
-        const parsedBlocks = blocks.map(({ questions }) => ({
+        const blocks = sessionBlocks.map(({ questions }) => ({
           questions: questions.map(({ id, version }) => ({ question: id, version })),
         }))
 
         // create a new session
         const result = await createSession({
           refetchQueries: [{ query: SessionListQuery }],
-          variables: { blocks: parsedBlocks, name: sessionName },
+          variables: { blocks, name: sessionName },
         })
 
         // start the session immediately if the respective button was clicked

@@ -10,6 +10,7 @@ import QuestionDetails from './QuestionDetails'
 import QuestionTags from './QuestionTags'
 
 const propTypes = {
+  checked: PropTypes.bool,
   connectDragSource: PropTypes.func.isRequired,
   creationMode: PropTypes.bool,
   // draggable: PropTypes.bool,
@@ -22,6 +23,7 @@ const propTypes = {
 }
 
 const defaultProps = {
+  checked: false,
   creationMode: false,
   // draggable: false,
   isDragging: false,
@@ -30,6 +32,7 @@ const defaultProps = {
 }
 
 const Question = ({
+  checked,
   activeVersion,
   id,
   lastUsed,
@@ -49,7 +52,7 @@ const Question = ({
   connectDragSource(
     <div className={classNames('question', { creationMode, draggable: creationMode, isDragging })}>
       <div className={classNames('checker', { active: !draggable })}>
-        <Checkbox id={`check-${id}`} type="checkbox" onClick={onCheck} />
+        <Checkbox checked={checked} id={`check-${id}`} type="checkbox" onClick={onCheck} />
       </div>
 
       <div className="wrapper">
