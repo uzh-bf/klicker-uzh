@@ -1,26 +1,31 @@
 import { compose, withStateHandlers } from 'recompose'
-import { OrderedSet } from 'immutable'
+import { OrderedMap } from 'immutable'
+
+const initialState = {
+  numSelectedItems: 0,
+  selectedItems: OrderedMap(),
+}
 
 export default (ComposedComponent) => {
   const withSelection = compose(
-    withStateHandlers(
-      {
-        numSelectedItems: 0,
-        selectedItems: OrderedSet(),
-      },
-      {
-        handleSelectItem: ({ selectedItems }) => (id) => {
-          const newSet = selectedItems.has(id) ? selectedItems.delete(id) : selectedItems.add(id)
+    withStateHandlers(initialState, {
+      // reset the selection to the initial state
+      handleResetSelection: () => () => initialState,
 
-          console.log(newSet)
+      // handle the selection of a new item (toggle)
+      handleSelectItem: ({ selectedItems }) => (id, item) => {
+        const newMap = selectedItems.has(id)
+          ? selectedItems.delete(id)
+          : selectedItems.set(id, item)
 
-          return {
-            numSelectedItems: newSet.size,
-            selectedItems: newSet,
-          }
-        },
+        console.log(newMap)
+
+        return {
+          numSelectedItems: newMap.size,
+          selectedItems: newMap,
+        }
       },
-    ),
+    }),
   )(ComposedComponent)
 
   withSelection.displayName = `withSelection(${ComposedComponent.displayName ||
