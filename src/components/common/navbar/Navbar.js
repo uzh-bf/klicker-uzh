@@ -99,18 +99,19 @@ export const NavbarPres = ({
 
     <style jsx>{`
       @import 'src/theme';
-      $background-color: #f5f5f5;
+      $background-color: $color-primary-nav;
 
       .navbar {
+        color: white;
+
         display: flex;
         align-items: center;
         flex-flow: row wrap;
         justify-content: space-between;
 
-        padding: 3px 0 3px 0;
+        padding: 2px 0 2px 0;
 
         background-color: $background-color;
-        border-bottom: 1px solid $color-primary;
 
         z-index: 100;
 
@@ -119,16 +120,19 @@ export const NavbarPres = ({
           order: 0;
 
           h1 {
-            font-size: 1.3rem;
+            font-size: $font-size-h1;
             margin: 0;
-            padding-left: 1rem;
+            padding: 0 0.5rem;
             display: flex;
             align-items: center;
+            font-weight: bold;
           }
 
           :global(.sidebar),
           :global(.menu) {
+            color: white;
             border-radius: 0;
+            font-size: $font-size-h1;
             background-color: $background-color;
           }
 

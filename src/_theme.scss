@@ -12,6 +12,7 @@ $color-primary-20p: rgba($color-primary, 0.2);
 $color-primary-10p: rgba($color-primary, 0.1);
 $color-primary-05p: rgba($color-primary, 0.05);
 $color-primary-background: rgb(239, 246, 252); // rgba(124, 184, 228, 0.12);
+$color-primary-nav: rgb(72, 157, 218);
 $color-secondary: rgb(211, 211, 211); // lightgrey
 $color-borders: rgb(211, 211, 211); // lightgrey
 $color-error-font: #9f3a38;
@@ -24,9 +25,9 @@ $color-focus: rgb(133, 183, 217); // same as in semantic ui
 $font-base-mobile: 20px;
 $font-base-tablet: 16px;
 $font-base-desktop: 14px;
-$font-size-h1: 1.3rem;
-$font-size-h2: 1.2rem;
-$font-size-h3: 1.1rem;
+$font-size-h1: 1.286rem;
+$font-size-h2: 1.143rem;
+$font-size-h3: 1.071rem;
 
 // mixins
 @mixin tooltip-icon {
