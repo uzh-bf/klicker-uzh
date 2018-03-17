@@ -6,16 +6,22 @@ import { Button, Icon } from 'semantic-ui-react'
 
 const propTypes = {
   creationMode: PropTypes.bool,
+  handleArchiveQuestions: PropTypes.func.isRequired,
   handleCreationModeToggle: PropTypes.func.isRequired,
+  handleQuickBlock: PropTypes.func.isRequired,
+  handleQuickBlocks: PropTypes.func.isRequired,
+  isArchiveActive: PropTypes.bool,
   itemsChecked: PropTypes.number,
 }
 
 const defaultProps = {
   creationMode: false,
+  isArchiveActive: false,
   itemsChecked: 0,
 }
 
 function ActionBar({
+  isArchiveActive,
   creationMode,
   handleCreationModeToggle,
   itemsChecked,
@@ -46,7 +52,12 @@ function ActionBar({
       <div className="creationButtons">
         {creationMode ? (
           <React.Fragment>
-            <Button icon labelPosition="left" onClick={() => handleQuickBlocks()}>
+            <Button
+              icon
+              disabled={itemsChecked === 0}
+              labelPosition="left"
+              onClick={() => handleQuickBlocks()}
+            >
               <Icon name="lightning" />
               <FormattedMessage
                 defaultMessage="Split into {num} block{end}"
@@ -58,7 +69,12 @@ function ActionBar({
               />
             </Button>
 
-            <Button icon labelPosition="left" onClick={() => handleQuickBlock()}>
+            <Button
+              icon
+              disabled={itemsChecked === 0}
+              labelPosition="left"
+              onClick={() => handleQuickBlock()}
+            >
               <Icon name="lightning" />
               <FormattedMessage
                 defaultMessage="Group into one block"
@@ -68,16 +84,32 @@ function ActionBar({
           </React.Fragment>
         ) : (
           <React.Fragment>
-            <Button icon labelPosition="left" onClick={() => handleArchiveQuestions()}>
+            <Button
+              icon
+              disabled={itemsChecked === 0}
+              labelPosition="left"
+              onClick={() => handleArchiveQuestions()}
+            >
               <Icon name="archive" />
-              <FormattedMessage
-                defaultMessage="Archive {num} question{end}"
-                id="questionPool.button.archiveQuestions"
-                values={{
-                  end: itemsChecked > 1 ? 's' : '',
-                  num: +itemsChecked,
-                }}
-              />
+              {isArchiveActive ? (
+                <FormattedMessage
+                  defaultMessage="Unarchive {num} question{end}"
+                  id="questionPool.button.unarchiveQuestions"
+                  values={{
+                    end: itemsChecked > 1 ? 's' : '',
+                    num: +itemsChecked,
+                  }}
+                />
+              ) : (
+                <FormattedMessage
+                  defaultMessage="Archive {num} question{end}"
+                  id="questionPool.button.archiveQuestions"
+                  values={{
+                    end: itemsChecked > 1 ? 's' : '',
+                    num: +itemsChecked,
+                  }}
+                />
+              )}
             </Button>
           </React.Fragment>
         )}
