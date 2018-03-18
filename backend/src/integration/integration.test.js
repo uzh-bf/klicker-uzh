@@ -786,4 +786,34 @@ describe('Integration', () => {
       expect(evaluateSession).toMatchSnapshot()
     })
   })
+
+  describe('Question Archiving', () => {
+    it('can archive questions', async () => {
+      const data = ensureNoErrors(await sendQuery(
+        {
+          query: mutations.ArchiveQuestionsMutation,
+          variables: {
+            ids: [questions.FREE_RANGE, questions.SC],
+          },
+        },
+        authCookie,
+      ))
+
+      expect(data).toMatchSnapshot()
+    })
+
+    it('can unarchive questions', async () => {
+      const data = ensureNoErrors(await sendQuery(
+        {
+          query: mutations.ArchiveQuestionsMutation,
+          variables: {
+            ids: [questions.FREE_RANGE, questions.SC],
+          },
+        },
+        authCookie,
+      ))
+
+      expect(data).toMatchSnapshot()
+    })
+  })
 })

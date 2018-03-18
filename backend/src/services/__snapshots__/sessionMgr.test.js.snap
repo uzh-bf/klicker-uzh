@@ -166,6 +166,30 @@ exports[`SessionMgrService createSession allows creating a valid session 1`] = `
     }
 `;
 
+exports[`SessionMgrService createSession allows creating sessions without question blocks 1`] = `
+
+    SESSION
+
+    Name: empty feedback session
+    Status: CREATED
+
+    ActiveBlock: -1
+    ActiveStep: 0
+    ActiveInstances: 0
+
+    Blocks: []
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: false
+    }
+`;
+
 exports[`SessionMgrService createSession skips over question blocks without questions 1`] = `
 
     SESSION

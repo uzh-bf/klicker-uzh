@@ -5,6 +5,7 @@ const questionSerializer = {
 
     Title: ${val.title}
     Type: ${val.type}
+    IsArchived: ${val.isArchived}
 
     Instances: [${val.instances}]
     Tags: [${val.tags.map(tag => tag.name)}]

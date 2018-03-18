@@ -74,6 +74,7 @@ const Question = `
     id: ID!
     title: String!
     type: Question_Type!
+    isArchived: Boolean
 
     user: User!
 
