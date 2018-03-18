@@ -301,11 +301,13 @@ export default compose(
               questions: selectedItems
                 .toIndexedSeq()
                 .toArray()
-                .map(({ id, title, type }) => ({
+                .map(({
+                  id, title, type, version,
+                }) => ({
                   id,
                   title,
                   type,
-                  version: 0,
+                  version,
                 })),
             },
           ],
@@ -323,13 +325,15 @@ export default compose(
             ...selectedItems
               .toIndexedSeq()
               .toArray()
-              .map(({ id, title, type }) => ({
+              .map(({
+                id, title, type, version,
+              }) => ({
                 questions: [
                   {
                     id,
                     title,
                     type,
-                    version: 0,
+                    version,
                   },
                 ],
               })),

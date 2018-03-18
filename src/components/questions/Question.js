@@ -61,7 +61,12 @@ const Question = ({
       })}
     >
       <div className={classNames('checker', { active: !draggable })}>
-        <Checkbox checked={checked} id={`check-${id}`} type="checkbox" onClick={onCheck} />
+        <Checkbox
+          checked={checked}
+          id={`check-${id}`}
+          type="checkbox"
+          onClick={() => onCheck({ version: activeVersion })}
+        />
       </div>
 
       <div className="wrapper">

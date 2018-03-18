@@ -18,6 +18,8 @@ export default (ComposedComponent) => {
           ? selectedItems.delete(id)
           : selectedItems.set(id, item)
 
+        console.log(newMap.toJS())
+
         return {
           numSelectedItems: newMap.size,
           selectedItems: newMap,
@@ -25,7 +27,9 @@ export default (ComposedComponent) => {
       },
     }),
     withProps(({ handleSelectItem }) => ({
-      handleSelectItem: (id, item) => () => handleSelectItem(id, item),
+      // the extra parameter allows us to pass in the activeVersion
+      // from within the onCheck callback in the question component
+      handleSelectItem: (id, item) => extra => handleSelectItem(id, { ...item, ...extra }),
     })),
   )(ComposedComponent)
 
