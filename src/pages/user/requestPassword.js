@@ -65,7 +65,9 @@ const RequestPassword = ({
 RequestPassword.propTypes = propTypes
 
 export default compose(
-  withLogging(['ga', 'raven']),
+  withLogging({
+    logRocket: false,
+  }),
   withData,
   pageWithIntl,
   graphql(RequestPasswordMutation),

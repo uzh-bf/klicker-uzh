@@ -186,4 +186,9 @@ const Index = () => (
   </StaticLayout>
 )
 
-export default compose(withLogging(['ga', 'raven']))(Index)
+export default compose(
+  withLogging({
+    chatlio: false,
+    logRocket: false,
+  }),
+)(Index)
