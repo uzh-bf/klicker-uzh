@@ -17,7 +17,7 @@ const propTypes = {
 }
 
 const schema = Yup.object().shape({
-  blocks: Yup.array().required(),
+  blocks: Yup.array().default([]),
   name: Yup.string()
     .min(1)
     .required(),

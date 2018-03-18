@@ -18,8 +18,6 @@ export default (ComposedComponent) => {
           ? selectedItems.delete(id)
           : selectedItems.set(id, item)
 
-        console.log(newMap.toJS())
-
         return {
           numSelectedItems: newMap.size,
           selectedItems: newMap,
