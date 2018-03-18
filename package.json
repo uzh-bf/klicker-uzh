@@ -1,6 +1,6 @@
 {
   "name": "klicker-api",
-  "version": "1.0.0-beta.7",
+  "version": "1.0.0-public.beta.5",
   "main": "src/server.js",
   "repository": "https://github.com/uzh-bf/klicker-api.git",
   "author": "Roland Schläfli <roland.schlaefli@bf.uzh.ch>",

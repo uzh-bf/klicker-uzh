@@ -13,6 +13,7 @@ const QuestionListQuery = `
       id
       title
       type
+      isArchived
       instances {
         id
         version

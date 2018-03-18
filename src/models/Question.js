@@ -20,6 +20,11 @@ const Question = new mongoose.Schema({
     required: true,
     index: true,
   },
+  isArchived: {
+    type: Boolean,
+    default: false,
+    index: true,
+  },
 
   versions: [{ type: QuestionVersion, required: true }],
   instances: [{ type: ObjectId, ref: 'QuestionInstance' }],

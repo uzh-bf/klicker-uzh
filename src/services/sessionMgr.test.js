@@ -37,12 +37,15 @@ describe('SessionMgrService', () => {
   })
 
   describe('createSession', () => {
-    it('prevents creating sessions without question blocks', async () => {
-      expect(SessionMgrService.createSession({
-        name: 'empty session',
+    it('allows creating sessions without question blocks', async () => {
+      const newSession = await SessionMgrService.createSession({
+        name: 'empty feedback session',
         questionBlocks: [],
         userId: user.id,
-      })).rejects.toEqual(new Error('EMPTY_SESSION'))
+      })
+
+      expect(newSession.blocks.length).toEqual(0)
+      expect(newSession).toMatchSnapshot()
     })
 
     it('skips over question blocks without questions', async () => {

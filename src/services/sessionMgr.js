@@ -41,12 +41,7 @@ const getRunningSession = async (sessionId) => {
 }
 
 // create a new session
-const createSession = async ({ name, questionBlocks, userId }) => {
-  // ensure that the session contains at least one question block
-  if (questionBlocks.length === 0) {
-    throw new Error('EMPTY_SESSION')
-  }
-
+const createSession = async ({ name, questionBlocks = [], userId }) => {
   // initialize a store for newly created instance models
   let instances = []
 

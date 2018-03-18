@@ -1,11 +1,242 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`QuestionService archiveQuestion allows archiving a question 1`] = `
+Array [
+  
+    QUESTION
+
+    Title: modified title
+    Type: SC
+    IsArchived: true
+
+    Instances: []
+    Tags: [,]
+    Versions: [
+      Description: blabla
+      Instances: []
+      Options: {
+        SC: {
+          Choices: [{
+              Correct: false
+              Name: option1
+            },{
+              Correct: true
+              Name: option2
+            },{
+              Correct: false
+              Name: option2
+            }
+          ]
+          Randomized: true
+        }
+        MC: undefined
+        FREE_RANGE: undefined
+      }
+      Solution: {
+        SC: [false,true,false]
+        MC: [false,true,false]
+        FREE: undefined
+        FREE_RANGE: undefined
+      }
+      
+    ,
+      Description: This is the new description for version 2
+      Instances: []
+      Options: {
+        SC: {
+          Choices: [{
+              Correct: true
+              Name: option3
+            },{
+              Correct: false
+              Name: option4
+            }
+          ]
+          Randomized: true
+        }
+        MC: undefined
+        FREE_RANGE: undefined
+      }
+      Solution: undefined
+    ]
+  ,
+  
+    QUESTION
+
+    Title: question without tags
+    Type: MC
+    IsArchived: true
+
+    Instances: []
+    Tags: [,]
+    Versions: [
+      Description: blabla
+      Instances: []
+      Options: {
+        SC: undefined
+        MC: {
+          Choices: [{
+              Correct: false
+              Name: option1
+            },{
+              Correct: true
+              Name: option2
+            },{
+              Correct: false
+              Name: option2
+            }
+          ]
+          Randomized: true
+        }
+        FREE_RANGE: undefined
+      }
+      Solution: {
+        SC: []
+        MC: []
+        FREE: undefined
+        FREE_RANGE: undefined
+      }
+      
+    ]
+  ,
+  
+    QUESTION
+
+    Title: question without tags
+    Type: FREE
+    IsArchived: true
+
+    Instances: []
+    Tags: [,]
+    Versions: [
+      Description: blabla
+      Instances: []
+      Options: {
+        SC: undefined
+        MC: undefined
+        FREE_RANGE: undefined
+      }
+      Solution: {
+        SC: []
+        MC: []
+        FREE: Schweiz
+        FREE_RANGE: undefined
+      }
+      
+    ]
+  ,
+]
+`;
+
+exports[`QuestionService archiveQuestion allows unarchiving a question 1`] = `
+Array [
+  
+    QUESTION
+
+    Title: modified title
+    Type: SC
+    IsArchived: false
+
+    Instances: []
+    Tags: [,]
+    Versions: [
+      Description: blabla
+      Instances: []
+      Options: {
+        SC: {
+          Choices: [{
+              Correct: false
+              Name: option1
+            },{
+              Correct: true
+              Name: option2
+            },{
+              Correct: false
+              Name: option2
+            }
+          ]
+          Randomized: true
+        }
+        MC: undefined
+        FREE_RANGE: undefined
+      }
+      Solution: {
+        SC: [false,true,false]
+        MC: [false,true,false]
+        FREE: undefined
+        FREE_RANGE: undefined
+      }
+      
+    ,
+      Description: This is the new description for version 2
+      Instances: []
+      Options: {
+        SC: {
+          Choices: [{
+              Correct: true
+              Name: option3
+            },{
+              Correct: false
+              Name: option4
+            }
+          ]
+          Randomized: true
+        }
+        MC: undefined
+        FREE_RANGE: undefined
+      }
+      Solution: undefined
+    ]
+  ,
+  
+    QUESTION
+
+    Title: question without tags
+    Type: MC
+    IsArchived: false
+
+    Instances: []
+    Tags: [,]
+    Versions: [
+      Description: blabla
+      Instances: []
+      Options: {
+        SC: undefined
+        MC: {
+          Choices: [{
+              Correct: false
+              Name: option1
+            },{
+              Correct: true
+              Name: option2
+            },{
+              Correct: false
+              Name: option2
+            }
+          ]
+          Randomized: true
+        }
+        FREE_RANGE: undefined
+      }
+      Solution: {
+        SC: []
+        MC: []
+        FREE: undefined
+        FREE_RANGE: undefined
+      }
+      
+    ]
+  ,
+]
+`;
+
 exports[`QuestionService createQuestion allows creating a partly restricted FREE_RANGE question 1`] = `
 
     QUESTION
 
     Title: question without tags
     Type: FREE_RANGE
+    IsArchived: false
 
     Instances: []
     Tags: [,]
@@ -39,6 +270,7 @@ exports[`QuestionService createQuestion allows creating a valid FREE question 1`
 
     Title: question without tags
     Type: FREE
+    IsArchived: false
 
     Instances: []
     Tags: [,]
@@ -67,6 +299,7 @@ exports[`QuestionService createQuestion allows creating a valid FREE_RANGE quest
 
     Title: question without tags
     Type: FREE_RANGE
+    IsArchived: false
 
     Instances: []
     Tags: [,]
@@ -100,6 +333,7 @@ exports[`QuestionService createQuestion allows creating a valid MC question 1`] 
 
     Title: question without tags
     Type: MC
+    IsArchived: false
 
     Instances: []
     Tags: [,]
@@ -141,6 +375,7 @@ exports[`QuestionService createQuestion allows creating a valid SC question 1`] 
 
     Title: question without tags
     Type: SC
+    IsArchived: false
 
     Instances: []
     Tags: [,]
@@ -182,6 +417,7 @@ exports[`QuestionService createQuestion allows creating an unrestricted FREE_RAN
 
     Title: question without tags
     Type: FREE_RANGE
+    IsArchived: false
 
     Instances: []
     Tags: [,]
@@ -215,6 +451,7 @@ exports[`QuestionService modifyQuestion allows creating a new question version 1
 
     Title: modified title
     Type: SC
+    IsArchived: false
 
     Instances: []
     Tags: [ABCD,XYZ]
@@ -275,6 +512,7 @@ exports[`QuestionService modifyQuestion allows modifying the question tags 1`] =
 
     Title: modified title
     Type: SC
+    IsArchived: false
 
     Instances: []
     Tags: [,]
@@ -316,6 +554,7 @@ exports[`QuestionService modifyQuestion allows modifying the question title 1`] 
 
     Title: modified title
     Type: SC
+    IsArchived: false
 
     Instances: []
     Tags: [ABCD,test]
