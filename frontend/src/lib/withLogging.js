@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import React from 'react'
 import { registerObserver } from 'react-perf-devtool'
 import { initGA, logPageView, logException } from '.'
@@ -13,8 +15,20 @@ if (process.env.LOGROCKET) {
   LogRocketReact = require('logrocket-react')
 }
 
-export default (services = ['ga', 'raven', 'logrocket']) =>
+export default (cfg = {}) =>
   function withLogging(Child) {
+    // merge default and passed config
+    const config = {
+      chatlio: true,
+      googleAnalytics: true,
+      logRocket: true,
+      sentry: true,
+      ...cfg,
+    }
+
+    const isProd = process.env.NODE_ENV === 'production'
+    const isDev = process.env.NODE_ENV === 'development'
+
     return class WrappedComponent extends React.Component {
       static getInitialProps(context) {
         if (Child.getInitialProps) {
@@ -29,7 +43,7 @@ export default (services = ['ga', 'raven', 'logrocket']) =>
 
       componentDidMount() {
         if (typeof window !== 'undefined') {
-          if (process.env.NODE_ENV === 'development' && !window.INIT_PERF) {
+          if (isDev && !window.INIT_PERF) {
             // setup react-perf-devtool
             registerObserver()
 
@@ -50,12 +64,7 @@ export default (services = ['ga', 'raven', 'logrocket']) =>
           }
 
           // embed logrocket if enabled
-          if (
-            process.env.NODE_ENV === 'production' &&
-            process.env.LOGROCKET &&
-            services.includes('logrocket') &&
-            !window.INIT_LR
-          ) {
+          if (isProd && process.env.LOGROCKET && config.logRocket && !window.INIT_LR) {
             LogRocket.init(process.env.LOGROCKET)
             LogRocketReact(LogRocket)
 
@@ -63,19 +72,14 @@ export default (services = ['ga', 'raven', 'logrocket']) =>
           }
 
           // embed sentry if enabled
-          if (
-            process.env.NODE_ENV === 'production' &&
-            services.includes('raven') &&
-            Raven &&
-            !window.INIT_RAVEN
-          ) {
+          if (isProd && config.sentry && Raven && !window.INIT_RAVEN) {
             Raven.config(process.env.SENTRY_DSN, {
               environment: process.env.NODE_ENV,
               release: process.env.VERSION,
             }).install()
 
             // connect logrocket to sentry
-            if (process.env.LOGROCKET && services.includes('logrocket')) {
+            if (process.env.LOGROCKET && config.logRocket) {
               Raven.setDataCallback(data =>
                 Object.assign({}, data, {
                   extra: {
@@ -87,13 +91,55 @@ export default (services = ['ga', 'raven', 'logrocket']) =>
 
             window.INIT_RAVEN = true
           }
+
+          if (isProd && config.chatlio) {
+            window._chatlio = window._chatlio || []
+            !(function() {
+              const t = document.getElementById('chatlio-widget-embed')
+              if (t && window.ChatlioReact && _chatlio.init) {
+                return void _chatlio.init(t, ChatlioReact)
+              }
+              for (
+                let e = function(t) {
+                    return function() {
+                      _chatlio.push([t].concat(arguments))
+                    }
+                  },
+                  i = [
+                    'configure',
+                    'identify',
+                    'track',
+                    'show',
+                    'hide',
+                    'isShown',
+                    'isOnline',
+                    'page',
+                    'open',
+                    'showOrHide',
+                  ],
+                  a = 0;
+                a < i.length;
+                a++
+              ) {
+                _chatlio[i[a]] || (_chatlio[i[a]] = e(i[a]))
+              }
+              let n = document.createElement('script'),
+                c = document.getElementsByTagName('script')[0]
+              ;(n.id = 'chatlio-widget-embed'),
+                (n.src = 'https://w.chatlio.com/w.chatlio-widget.js'),
+                (n.async = !0),
+                n.setAttribute('data-embed-version', '2.3')
+              n.setAttribute('data-widget-id', 'd4ec6614-f2cb-4d8a-621d-3d2d1ff2f70c')
+              c.parentNode.insertBefore(n, c)
+            })()
+          }
         }
       }
 
       componentDidCatch(error, errorInfo) {
         this.setState({ error })
 
-        if (process.env.NODE_ENV === 'production' && services.includes('raven')) {
+        if (isProd && config.sentry) {
           Raven.captureException(error, { extra: errorInfo })
           logException(error)
         }

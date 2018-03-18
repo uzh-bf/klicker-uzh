@@ -66,7 +66,10 @@ const Login = ({ intl, error, handleSubmit }) => (
 Login.propTypes = propTypes
 
 export default compose(
-  withLogging(['ga', 'raven']),
+  withLogging({
+    chatlio: false,
+    logRocket: false,
+  }),
   withData,
   pageWithIntl,
   graphql(LoginMutation),
