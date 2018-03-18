@@ -60,6 +60,7 @@ export const QuestionListPres = ({
         type={question.type}
         versions={question.versions}
         onCheck={onQuestionChecked(question.id, question)}
+        // onDrop={() => null}
       />
     ))}
 

@@ -209,11 +209,11 @@ const source = {
     return draggable
   }, */
   // if the element is dropped somewhere
-  endDrag({ onDrop }, monitor) {
+  /* endDrag({ onDrop }, monitor) {
     if (monitor.didDrop()) {
       onDrop()
     }
-  },
+  }, */
 }
 
 // define what information the Question component should collect
