@@ -83,14 +83,21 @@ const Session = ({
         flex-direction: column;
         flex: 1;
       }
+
+      .title {
+        color: $color-primary-strong;
+      }
+
       .title,
       .date {
         margin: auto;
         margin-bottom: 0.5rem;
       }
+
       .block {
         margin-bottom: 0.5rem;
       }
+
       .actionArea {
         display: flex;
         flex-direction: column;

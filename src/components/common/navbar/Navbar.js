@@ -94,7 +94,7 @@ export const NavbarPres = ({
 
     <style jsx>{`
       @import 'src/theme';
-      $background-color: $color-primary-nav;
+      $background-color: $color-primary-strong;
 
       .navbar {
         color: $color-white;

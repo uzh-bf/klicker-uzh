@@ -79,8 +79,8 @@ const SearchArea = ({
 
         :global(.dropdown),
         input {
-          background-color: $color-primary-nav-input;
-          color: $color-primary-nav;
+          background-color: $color-primary-input;
+          color: $color-primary-strong;
           line-height: 1rem;
           font-size: 1rem;
         }

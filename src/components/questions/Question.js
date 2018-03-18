@@ -128,7 +128,10 @@ const Question = ({
             flex: 0 0 auto;
             display: flex;
 
+            align-self: center;
+
             padding: 0.5rem;
+            padding-left: 0;
           }
 
           .wrapper {
@@ -136,8 +139,10 @@ const Question = ({
             flex-flow: column nowrap;
 
             .title {
-              font-size: 1.2rem;
+              color: $color-primary-strong;
+              font-size: $font-size-h1;
               margin: 0;
+              margin-top: 0.2rem;
             }
           }
 
@@ -150,6 +155,7 @@ const Question = ({
               align-items: center;
 
               padding: 1rem;
+              padding-left: 0.5rem;
             }
 
             .wrapper {
