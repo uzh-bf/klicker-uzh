@@ -4,6 +4,7 @@ import { compose, withHandlers, withStateHandlers } from 'recompose'
 import { intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
+import _get from 'lodash/get'
 import Router from 'next/router'
 import moment from 'moment'
 
@@ -24,7 +25,7 @@ import {
   QuestionPoolQuery,
   ArchiveQuestionsMutation,
 } from '../../graphql'
-import SessionCreationForm from '../../components/forms/SessionCreationForm2'
+import { SessionCreationForm } from '../../components/forms'
 import { QuestionList, TagList, ActionBar } from '../../components/questions'
 import { TeacherLayout } from '../../components/layouts'
 import { QUESTION_SORTINGS } from '../../constants'
@@ -89,6 +90,7 @@ const Index = ({
         handleDiscard={handleCreationModeToggle}
         handleSubmit={handleCreateSession}
         intl={intl}
+        isSessionRunning={_get(data, 'runningSession.id')}
         name={sessionName}
       />
 
@@ -271,7 +273,7 @@ export default compose(
     {
       // handlers for session creation form fields
       handleChangeBlocks: () => sessionBlocks => ({ sessionBlocks }),
-      handleChangeName: () => sessionName => ({ sessionName }),
+      handleChangeName: () => e => ({ sessionName: e.target.value }),
 
       // handle toggling creation mode (display of session creation form)
       handleCreationModeToggle: ({ creationMode }) => () => {
@@ -296,7 +298,15 @@ export default compose(
           sessionBlocks: [
             ...sessionBlocks,
             {
-              questions: selectedItems.toIndexedSeq().toArray(),
+              questions: selectedItems
+                .toIndexedSeq()
+                .toArray()
+                .map(({ id, title, type }) => ({
+                  id,
+                  title,
+                  type,
+                  version: 0,
+                })),
             },
           ],
         }
@@ -313,8 +323,15 @@ export default compose(
             ...selectedItems
               .toIndexedSeq()
               .toArray()
-              .map(item => ({
-                questions: [item],
+              .map(({ id, title, type }) => ({
+                questions: [
+                  {
+                    id,
+                    title,
+                    type,
+                    version: 0,
+                  },
+                ],
               })),
           ],
         }
@@ -356,7 +373,10 @@ export default compose(
       createSession,
       startSession,
       handleCreationModeToggle,
-    }) => type => async () => {
+    }) => type => async (e) => {
+      // prevent a page reload on submit
+      e.preventDefault()
+
       try {
         // prepare blocks for consumption through the api
         const blocks = sessionBlocks.map(({ questions }) => ({
