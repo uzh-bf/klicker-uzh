@@ -18,7 +18,6 @@ const propTypes = {
   handleSidebarToggle: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   runningSessionId: PropTypes.string,
-  runningSessionRuntime: PropTypes.string,
   search: PropTypes.shape({
     handleSearch: PropTypes.func.isRequired,
     handleSortByChange: PropTypes.func.isRequired,
@@ -40,7 +39,6 @@ const propTypes = {
 const defaultProps = {
   accountShort: 'ANON',
   runningSessionId: undefined,
-  runningSessionRuntime: undefined,
   search: undefined,
   sidebarVisible: false,
 }
@@ -53,7 +51,6 @@ export const NavbarPres = ({
   title,
   handleSidebarToggle,
   runningSessionId,
-  runningSessionRuntime,
 }) => (
   <div className="navbar">
     <div className="sideArea">
@@ -89,9 +86,7 @@ export const NavbarPres = ({
     <div className="accountArea">
       <Menu borderless className="loginArea noBorder">
         <Menu.Menu position="right">
-          {accountShort && (
-            <SessionArea intl={intl} runtime={runningSessionRuntime} sessionId={runningSessionId} />
-          )}
+          {accountShort && <SessionArea intl={intl} sessionId={runningSessionId} />}
           <AccountArea accountShort={accountShort} />
         </Menu.Menu>
       </Menu>
@@ -102,14 +97,14 @@ export const NavbarPres = ({
       $background-color: $color-primary-nav;
 
       .navbar {
-        color: white;
+        color: $color-white;
 
         display: flex;
         align-items: center;
         flex-flow: row wrap;
         justify-content: space-between;
 
-        padding: 2px 0 2px 0;
+        padding: 0;
 
         background-color: $background-color;
 
@@ -122,7 +117,7 @@ export const NavbarPres = ({
           h1 {
             font-size: $font-size-h1;
             margin: 0;
-            padding: 0 0.5rem;
+            padding: 0 1rem 0 0.5rem;
             display: flex;
             align-items: center;
             font-weight: bold;
@@ -158,8 +153,10 @@ export const NavbarPres = ({
 
           :global(.menu) {
             background-color: $background-color;
+            color: $color-white;
 
             :global(.item) {
+              color: $color-white;
               padding-top: 0;
               padding-bottom: 0;
             }
@@ -205,6 +202,5 @@ export default compose(
   withProps(({ data }) => ({
     accountShort: _get(data, 'user.shortname'),
     runningSessionId: _get(data, 'user.runningSession.id'),
-    runningSessionRuntime: _get(data, 'user.runningSession.runtime'),
   })),
 )(NavbarPres)

@@ -67,12 +67,22 @@ const SearchArea = ({
 
     <style jsx>{`
       .searchArea {
+        @import 'src/theme';
+
         display: flex;
         justify-content: flex-start;
 
         > :global(.input) {
           flex: 1;
           margin-right: 1rem;
+        }
+
+        :global(.dropdown),
+        input {
+          background-color: $color-primary-nav-input;
+          color: $color-primary-nav;
+          line-height: 1rem;
+          font-size: 1rem;
         }
       }
     `}</style>

@@ -12,7 +12,8 @@ $color-primary-20p: rgba($color-primary, 0.2);
 $color-primary-10p: rgba($color-primary, 0.1);
 $color-primary-05p: rgba($color-primary, 0.05);
 $color-primary-background: rgb(239, 246, 252); // rgba(124, 184, 228, 0.12);
-$color-primary-nav: rgb(72, 157, 218);
+$color-primary-nav: rgb(55, 81, 100);
+$color-primary-nav-input: rgb(250, 253, 255);
 $color-secondary: rgb(211, 211, 211); // lightgrey
 $color-borders: rgb(211, 211, 211); // lightgrey
 $color-error-font: #9f3a38;
@@ -20,6 +21,7 @@ $color-error-border: #e0b4b4;
 $color-error-bg: #fff6f6;
 $color-success: green;
 $color-focus: rgb(133, 183, 217); // same as in semantic ui
+$color-white: rgb(253, 253, 253);
 
 // font definitions
 $font-base-mobile: 20px;
