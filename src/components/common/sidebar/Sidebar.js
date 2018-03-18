@@ -90,6 +90,7 @@ const Sidebar = ({
           }
 
           .logo {
+            color: $color-primary-strong;
             padding: 2rem 1rem;
             font-size: 2rem;
             line-height: 2rem;

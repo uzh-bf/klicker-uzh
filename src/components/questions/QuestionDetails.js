@@ -28,7 +28,7 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
       <div className="column options" />
 
       <div className="column lastUsed">
-        <ListWithHeader items={lastUsed.length > 0 ? lastUsed : ['-']}>
+        <ListWithHeader items={lastUsed.length > 0 ? lastUsed : ['-']} limit={2}>
           <Icon name="history" />
           <FormattedMessage defaultMessage="Usage history" id="questionDetails.usageHistory" />
         </ListWithHeader>

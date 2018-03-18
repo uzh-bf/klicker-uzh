@@ -3,6 +3,7 @@ query QuestionPool {
     id
     title
     type
+    isArchived
     instances {
       id
       version
@@ -24,5 +25,8 @@ query QuestionPool {
   tags: allTags {
     id
     name
+  }
+  runningSession {
+    id
   }
 }

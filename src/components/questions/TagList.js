@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { List } from 'semantic-ui-react'
+import { Button, Icon, List } from 'semantic-ui-react'
 import { compose, withProps, branch, renderComponent } from 'recompose'
 import { FormattedMessage } from 'react-intl'
 
@@ -9,7 +9,10 @@ import { QUESTION_TYPES } from '../../lib'
 
 const propTypes = {
   activeType: PropTypes.string.isRequired,
+  handleReset: PropTypes.func.isRequired,
   handleTagClick: PropTypes.func.isRequired,
+  handleToggleArchive: PropTypes.func.isRequired,
+  isArchiveActive: PropTypes.bool,
   tags: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.string.isRequired,
@@ -19,17 +22,37 @@ const propTypes = {
 }
 
 const defaultProps = {
+  isArchiveActive: false,
   tags: [],
 }
 
-export const TagListPres = ({ activeType, tags, handleTagClick }) => (
+export const TagListPres = ({
+  isArchiveActive,
+  activeType,
+  tags,
+  handleTagClick,
+  handleReset,
+  handleToggleArchive,
+}) => (
   <div className="tagList">
-    {tags.length === 0 ? (
-      <FormattedMessage defaultMessage="No tags available." id="tagList.string.noTags" />
-    ) : (
-      []
-    )}
+    <Button basic fluid onClick={() => handleReset()}>
+      <Icon name="remove circle" />
+      <FormattedMessage defaultMessage="Reset filters" id="tagList.button.reset" />
+    </Button>
     <List selection size="large">
+      <List.Header className="listHeader archive">
+        <FormattedMessage defaultMessage="Archive" id="tagList.header.archive" />
+      </List.Header>
+      <List.Item
+        active={isArchiveActive}
+        className="listItem archiveItem"
+        onClick={() => handleToggleArchive()}
+      >
+        <List.Icon name="archive" />
+        <List.Content>
+          <FormattedMessage defaultMessage="Show archived" id="tagList.string.archive" />
+        </List.Content>
+      </List.Item>
       <List.Header className="listHeader types">
         <FormattedMessage defaultMessage="Types" id="tagList.header.types" />
       </List.Header>
@@ -80,20 +103,26 @@ export const TagListPres = ({ activeType, tags, handleTagClick }) => (
       <List.Header className="listHeader tags">
         <FormattedMessage defaultMessage="Tags" id="tagList.header.tags" />
       </List.Header>
-      {tags.map(({ isActive, id, name }) => (
-        <List.Item
-          active={isActive}
-          className="listItem"
-          key={id}
-          onClick={() => handleTagClick(name)}
-        >
-          <List.Icon name="tag" />
-          <List.Content>{name}</List.Content>
-        </List.Item>
-      ))}
+      {tags.length === 0 ? (
+        <FormattedMessage defaultMessage="No tags available." id="tagList.string.noTags" />
+      ) : (
+        tags.map(({ isActive, id, name }) => (
+          <List.Item
+            active={isActive}
+            className="listItem"
+            key={id}
+            onClick={() => handleTagClick(name)}
+          >
+            <List.Icon name="tag" />
+            <List.Content>{name}</List.Content>
+          </List.Item>
+        ))
+      )}
     </List>
 
     <style jsx>{`
+      @import 'src/theme';
+
       .tagList {
         font-size: 0.9rem;
         min-width: 10rem;
@@ -104,7 +133,8 @@ export const TagListPres = ({ activeType, tags, handleTagClick }) => (
           font-weight: bold;
           padding: 0 1rem;
         }
-        :global(.listHeader.tags) {
+        :global(.listHeader.tags),
+        :global(.listHeader.types) {
           margin-top: 1rem;
         }
         :global(.listItem.item) {

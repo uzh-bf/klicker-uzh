@@ -13,6 +13,7 @@ import RequestPasswordMutation from './mutations/RequestPasswordMutation.graphql
 import RegistrationMutation from './mutations/RegistrationMutation.graphql'
 import StartSessionMutation from './mutations/StartSessionMutation.graphql'
 import UpdateSessionSettingsMutation from './mutations/UpdateSessionSettingsMutation.graphql'
+import ArchiveQuestionsMutation from './mutations/ArchiveQuestionsMutation.graphql'
 
 import AccountSummaryQuery from './queries/AccountSummaryQuery.graphql'
 import JoinSessionQuery from './queries/JoinSessionQuery.graphql'
@@ -28,6 +29,7 @@ const queries = [
   AddConfusionTSMutation,
   AddFeedbackMutation,
   AddResponseMutation,
+  ArchiveQuestionsMutation,
   ChangePasswordMutation,
   CreateQuestionMutation,
   CreateSessionMutation,
@@ -60,6 +62,7 @@ export {
   AddConfusionTSMutation,
   AddFeedbackMutation,
   AddResponseMutation,
+  ArchiveQuestionsMutation,
   ChangePasswordMutation,
   CreateQuestionMutation,
   CreateSessionMutation,

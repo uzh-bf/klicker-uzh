@@ -4,6 +4,7 @@ import React from 'react'
 import { storiesOf } from '@storybook/react'
 import { DragDropContextProvider } from 'react-dnd'
 import HTML5Backend from 'react-dnd-html5-backend'
+import { OrderedMap } from 'immutable'
 
 import fixtures from '../../../.storybook/fixtures'
 import {
@@ -33,10 +34,21 @@ storiesOf('questions', module)
     />
   ))
   .add('QuestionList', () => (
-    <QuestionListPres questions={fixtures.questions} onQuestionDropped={() => null} />
+    <QuestionListPres
+      questions={fixtures.questions}
+      selectedItems={OrderedMap()}
+      onQuestionChecked={() => null}
+      onQuestionDropped={() => null}
+    />
   ))
   .add('QuestionList (creation mode)', () => (
-    <QuestionListPres creationMode questions={fixtures.questions} onQuestionDropped={() => null} />
+    <QuestionListPres
+      creationMode
+      questions={fixtures.questions}
+      selectedItems={OrderedMap()}
+      onQuestionChecked={() => null}
+      onQuestionDropped={() => null}
+    />
   ))
   .add('QuestionBlock', () => (
     <QuestionBlock {...fixtures.questionBlock} showSolutions={false} timeLimit={60} />

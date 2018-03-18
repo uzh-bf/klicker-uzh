@@ -1,19 +1,42 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 
+import { List, Popup } from 'semantic-ui-react'
+
 const propTypes = {
   children: PropTypes.node.isRequired,
   items: PropTypes.arrayOf(PropTypes.string.isRequired),
+  limit: PropTypes.number,
 }
 
 const defaultProps = {
   items: [],
+  limit: undefined,
 }
 
-const ListWithHeader = ({ children, items }) => (
+const mapItems = items => items.map(item => <List.Item>{item}</List.Item>)
+
+const ListWithHeader = ({ children, items, limit }) => (
   <div className="listWithHeader">
     {children && <span className="listHeader">{children}</span>}
-    <ul className="list">{items.map(item => <li className="listItem">{item}</li>)}</ul>
+
+    {items.length > limit ? (
+      <React.Fragment>
+        <List>{mapItems(items.slice(0, limit))}</List>
+        <Popup
+          hideOnScroll
+          on="click"
+          position="bottom center"
+          trigger={<div className="more">...</div>}
+        >
+          <div className="remainingPopup">
+            <List>{mapItems(items.slice(limit))}</List>
+          </div>
+        </Popup>
+      </React.Fragment>
+    ) : (
+      <List>{mapItems(items)}</List>
+    )}
 
     <style jsx>{`
       @import 'src/theme';
@@ -22,18 +45,27 @@ const ListWithHeader = ({ children, items }) => (
         display: flex;
         flex-direction: column;
 
-        padding: 0.7rem;
-
-        .list {
-          margin: 0;
-          padding: 0;
-        }
-        .listHeader {
+        .listHeader,
+        .more {
           font-size: 1rem;
-          margin-bottom: 0.5rem;
+          line-height: 1rem;
         }
-        .listItem {
-          list-style: none;
+
+        .listHeader {
+          border-bottom: 1px solid $color-primary;
+          padding: 0.4rem 0;
+        }
+
+        .more {
+          border-top: 1px solid $color-primary;
+          cursor: pointer;
+          padding: 0.2rem 0;
+          vertical-align: middle;
+        }
+
+        :global(.list) {
+          margin: 0;
+          padding: 0.5rem 0;
         }
       }
     `}</style>

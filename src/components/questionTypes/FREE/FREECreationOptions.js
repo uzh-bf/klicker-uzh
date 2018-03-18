@@ -9,12 +9,12 @@ import { compose, withHandlers, mapProps } from 'recompose'
 import { QUESTION_TYPES } from '../../../constants'
 
 const propTypes = {
+  dirty: PropTypes.bool.isRequired,
   disabled: PropTypes.bool,
   handleMaxChange: PropTypes.func.isRequired,
   handleMinChange: PropTypes.func.isRequired,
+  invalid: PropTypes.bool.isRequired,
   max: PropTypes.number,
-  dirty: PropTypes.bool,
-  invalid: PropTypes.bool,
   min: PropTypes.number,
   type: PropTypes.string.isRequired,
 }
@@ -137,10 +137,10 @@ export default compose(
   mapProps(({
     disabled, onChange, value, dirty, invalid, type,
   }) => ({
-    disabled,
-    max: _get(value, 'restrictions.max'),
     dirty,
+    disabled,
     invalid,
+    max: _get(value, 'restrictions.max'),
     min: _get(value, 'restrictions.min'),
     onChange,
     type,
