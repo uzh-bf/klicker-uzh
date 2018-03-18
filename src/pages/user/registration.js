@@ -75,7 +75,9 @@ const Registration = ({
 Registration.propTypes = propTypes
 
 export default compose(
-  withLogging(['ga', 'raven']),
+  withLogging({
+    logRocket: false,
+  }),
   withData,
   pageWithIntl,
   graphql(RegistrationMutation),
