@@ -15,10 +15,7 @@ if (process.env.LOGROCKET) {
   LogRocketReact = require('logrocket-react')
 }
 
-const isProd = process.env.NODE_ENV === 'production'
-const isDev = process.env.NODE_ENV === 'development'
-
-export default cfg =>
+export default (cfg = {}) =>
   function withLogging(Child) {
     // merge default and passed config
     const config = {
@@ -28,6 +25,9 @@ export default cfg =>
       sentry: true,
       ...cfg,
     }
+
+    const isProd = process.env.NODE_ENV === 'production'
+    const isDev = process.env.NODE_ENV === 'development'
 
     return class WrappedComponent extends React.Component {
       static getInitialProps(context) {
@@ -92,7 +92,7 @@ export default cfg =>
             window.INIT_RAVEN = true
           }
 
-          if (config.chatlio) {
+          if (isProd && config.chatlio) {
             window._chatlio = window._chatlio || []
             !(function() {
               const t = document.getElementById('chatlio-widget-embed')
@@ -119,7 +119,7 @@ export default cfg =>
                   ],
                   a = 0;
                 a < i.length;
-                a
+                a++
               ) {
                 _chatlio[i[a]] || (_chatlio[i[a]] = e(i[a]))
               }
@@ -129,7 +129,7 @@ export default cfg =>
                 (n.src = 'https://w.chatlio.com/w.chatlio-widget.js'),
                 (n.async = !0),
                 n.setAttribute('data-embed-version', '2.3')
-              n.setAttribute('data-widget-id', process.env.CHATLIO_ID)
+              n.setAttribute('data-widget-id', 'd4ec6614-f2cb-4d8a-621d-3d2d1ff2f70c')
               c.parentNode.insertBefore(n, c)
             })()
           }
@@ -139,7 +139,7 @@ export default cfg =>
       componentDidCatch(error, errorInfo) {
         this.setState({ error })
 
-        if (process.env.NODE_ENV === 'production' && config.sentry) {
+        if (isProd && config.sentry) {
           Raven.captureException(error, { extra: errorInfo })
           logException(error)
         }
