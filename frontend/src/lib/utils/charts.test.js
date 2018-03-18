@@ -10,7 +10,7 @@ describe('charts', () => {
   ]
 
   it('convert integer index to letter', () => {
-    for (let i = 0; i < data.length; i++) {
+    for (let i = 0; i < data.length; i += 1) {
       expect(indexToLetter(data[i].index)).toEqual(data[i].letter)
     }
   })

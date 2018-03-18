@@ -10,19 +10,25 @@ import { processItems, buildIndex } from '../../lib'
 
 const propTypes = {
   creationMode: PropTypes.bool,
-  dropped: PropTypes.arrayOf(PropTypes.string),
-  onQuestionDropped: PropTypes.func.isRequired,
+  isArchiveActive: PropTypes.bool,
+  onQuestionChecked: PropTypes.func.isRequired,
   questions: PropTypes.array,
+  // FIXME: immutable ordered map
+  selectedItems: PropTypes.any.isRequired,
 }
 
 const defaultProps = {
   creationMode: false,
-  dropped: [],
+  isArchiveActive: false,
   questions: [],
 }
 
 export const QuestionListPres = ({
-  questions, dropped, onQuestionDropped, creationMode,
+  questions,
+  onQuestionChecked,
+  creationMode,
+  selectedItems,
+  isArchiveActive,
 }) => (
   <div className="questionList">
     {questions.length === 0 ? (
@@ -38,9 +44,11 @@ export const QuestionListPres = ({
 
     {questions.map(question => (
       <Question
+        checked={selectedItems.has(question.id)}
         creationMode={creationMode}
-        draggable={creationMode && !dropped.includes(question.id)}
+        draggable={creationMode}
         id={question.id}
+        isArchived={isArchiveActive}
         key={question.id}
         lastUsed={question.instances.map(({ createdAt, session, version }) => (
           <a href={`/sessions/evaluation/${session}`} target="_blank">
@@ -51,7 +59,8 @@ export const QuestionListPres = ({
         title={question.title}
         type={question.type}
         versions={question.versions}
-        onDrop={() => onQuestionDropped(question.id)}
+        onCheck={onQuestionChecked(question.id, question)}
+        // onDrop={() => null}
       />
     ))}
 

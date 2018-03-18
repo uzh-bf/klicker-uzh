@@ -18,7 +18,6 @@ const propTypes = {
   handleSidebarToggle: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   runningSessionId: PropTypes.string,
-  runningSessionRuntime: PropTypes.string,
   search: PropTypes.shape({
     handleSearch: PropTypes.func.isRequired,
     handleSortByChange: PropTypes.func.isRequired,
@@ -40,7 +39,6 @@ const propTypes = {
 const defaultProps = {
   accountShort: 'ANON',
   runningSessionId: undefined,
-  runningSessionRuntime: undefined,
   search: undefined,
   sidebarVisible: false,
 }
@@ -53,7 +51,6 @@ export const NavbarPres = ({
   title,
   handleSidebarToggle,
   runningSessionId,
-  runningSessionRuntime,
 }) => (
   <div className="navbar">
     <div className="sideArea">
@@ -89,9 +86,7 @@ export const NavbarPres = ({
     <div className="accountArea">
       <Menu borderless className="loginArea noBorder">
         <Menu.Menu position="right">
-          {accountShort && (
-            <SessionArea intl={intl} runtime={runningSessionRuntime} sessionId={runningSessionId} />
-          )}
+          {accountShort && <SessionArea intl={intl} sessionId={runningSessionId} />}
           <AccountArea accountShort={accountShort} />
         </Menu.Menu>
       </Menu>
@@ -99,18 +94,19 @@ export const NavbarPres = ({
 
     <style jsx>{`
       @import 'src/theme';
-      $background-color: #f5f5f5;
+      $background-color: $color-primary-strong;
 
       .navbar {
+        color: $color-white;
+
         display: flex;
         align-items: center;
         flex-flow: row wrap;
         justify-content: space-between;
 
-        padding: 3px 0 3px 0;
+        padding: 0;
 
         background-color: $background-color;
-        border-bottom: 1px solid lightgrey;
 
         z-index: 100;
 
@@ -119,16 +115,19 @@ export const NavbarPres = ({
           order: 0;
 
           h1 {
-            font-size: 1.3rem;
+            font-size: $font-size-h1;
             margin: 0;
-            padding-left: 1rem;
+            padding: 0 1rem 0 0.5rem;
             display: flex;
             align-items: center;
+            font-weight: bold;
           }
 
           :global(.sidebar),
           :global(.menu) {
+            color: white;
             border-radius: 0;
+            font-size: $font-size-h1;
             background-color: $background-color;
           }
 
@@ -154,8 +153,10 @@ export const NavbarPres = ({
 
           :global(.menu) {
             background-color: $background-color;
+            color: $color-white;
 
             :global(.item) {
+              color: $color-white;
               padding-top: 0;
               padding-bottom: 0;
             }
@@ -201,6 +202,5 @@ export default compose(
   withProps(({ data }) => ({
     accountShort: _get(data, 'user.shortname'),
     runningSessionId: _get(data, 'user.runningSession.id'),
-    runningSessionRuntime: _get(data, 'user.runningSession.runtime'),
   })),
 )(NavbarPres)
