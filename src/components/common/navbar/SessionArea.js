@@ -18,6 +18,13 @@ const changelog = {
   new: [
     {
       items: [
+        'Archiving and unarchiving questions to enable question clean-up',
+        'Quick creation of question blocks and sessions',
+      ],
+      text: '1.0.0-public.beta.7',
+    },
+    {
+      items: [
         'Multiple-choice questions can be created and evaluated.',
         'One can define solutions for SC- and MC-questions and display them while presenting the results (optional).',
         'More advanced visualizations for all question types, including word clouds and aggregated tables.',
@@ -50,7 +57,7 @@ const changelog = {
   ],
   planned: [
     { text: 'Many overall improvements for performance and user experience.' },
-    { text: 'Advanced session management (quick creation, copying and other modifications).' },
+    { text: 'Advanced session management (copying and other modifications).' },
     {
       text:
         'On-the-fly modification of running sessions (e.g., adding questions while a session is already running and starting "empty" sessions).',

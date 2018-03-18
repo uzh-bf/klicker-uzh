@@ -180,7 +180,10 @@ Join.propTypes = propTypes
 Join.defaultProps = defaultProps
 
 export default compose(
-  withLogging(['ga', 'raven']),
+  withLogging({
+    chatlio: false,
+    logRocket: false,
+  }),
   withData,
   /* withStorage({
     propDefault: 'activeQuestion',
