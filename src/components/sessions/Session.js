@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import moment from 'moment'
-import { Button, Icon } from 'semantic-ui-react'
+import { Button, Icon, Message } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 import { QuestionBlock } from '../questions'
@@ -25,125 +25,139 @@ const defaultProps = {
 
 const Session = ({
   button, createdAt, id, name, blocks,
-}) => (
-  <div className="session">
-    <h2 className="title">{name}</h2>
-    <div className="date">
-      <FormattedMessage defaultMessage="Created on" id="sessionList.string.createdOn" />{' '}
-      {moment(createdAt).format('DD.MM.YY HH:mm')}
-    </div>
+}) => {
+  const isFeedbackSession = blocks.length === 0
 
-    <div className="details">
-      {blocks.map(({
+  return (
+    <div className="session">
+      <h2 className="title">{name}</h2>
+      <div className="date">
+        <FormattedMessage defaultMessage="Created on" id="sessionList.string.createdOn" />{' '}
+        {moment(createdAt).format('DD.MM.YY HH:mm')}
+      </div>
+
+      <div className="details">
+        {isFeedbackSession && (
+          <div className="block">
+            <Message info>
+              <FormattedMessage
+                defaultMessage="This feedback session does not contain any questions."
+                id="runningSession.message.feedbackSession"
+              />
+            </Message>
+          </div>
+        )}
+        {blocks.map(({
  id: blockId, instances, showSolutions, timeLimit,
 }) => (
   <div className="block" key={blockId}>
     <QuestionBlock
       noDetails
       questions={instances.map(({ id: instanceId, question, version }) => ({
-              id: instanceId,
-              title: question.title,
-              type: question.type,
-              version,
-            }))}
+                id: instanceId,
+                title: question.title,
+                type: question.type,
+                version,
+              }))}
       showSolutions={showSolutions}
       timeLimit={timeLimit}
     />
   </div>
-      ))}
-      <div className="actionArea">
-        <a href={`/sessions/evaluation/${id}`} target="_blank">
-          <Button icon labelPosition="left">
-            <Icon name="external" />
-            Evaluation
-          </Button>
-        </a>
-        {!button.hidden && (
-          <Button
-            icon
-            primary
-            className="lastButton"
-            disabled={button.disabled}
-            labelPosition="left"
-            onClick={button.onClick}
-          >
-            <Icon name={button.icon} />
-            {button.message}
-          </Button>
-        )}
+        ))}
+        <div className="actionArea">
+          <a href={`/sessions/evaluation/${id}`} target="_blank">
+            <Button icon disabled={isFeedbackSession} labelPosition="left">
+              <Icon name="external" />
+              Evaluation
+            </Button>
+          </a>
+          {!button.hidden && (
+            <Button
+              icon
+              primary
+              className="lastButton"
+              disabled={button.disabled}
+              labelPosition="left"
+              onClick={button.onClick}
+            >
+              <Icon name={button.icon} />
+              {button.message}
+            </Button>
+          )}
+        </div>
       </div>
-    </div>
 
-    <style jsx>{`
-      @import 'src/theme';
+      <style jsx>{`
+        @import 'src/theme';
 
-      .session,
-      .details {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-      }
-
-      .title {
-        color: $color-primary-strong;
-      }
-
-      .title,
-      .date {
-        margin: auto;
-        margin-bottom: 0.5rem;
-      }
-
-      .block {
-        margin-bottom: 0.5rem;
-      }
-
-      .actionArea {
-        display: flex;
-        flex-direction: column;
-
-        :global(.button) {
-          margin-right: 0 !important;
-        }
-
-        :global(.lastButton) {
-          margin-top: 0.3rem !important;
-        }
-      }
-
-      @include desktop-tablet-only {
         .session,
         .details {
-          flex-flow: row wrap;
+          display: flex;
+          flex-direction: column;
+          flex: 1;
         }
+
+        .title {
+          color: $color-primary-strong;
+        }
+
         .title,
         .date {
-          flex: 0 0 50%;
-          margin: 0;
-        }
-        .title {
-          font-size: 1.2rem;
+          margin: auto;
           margin-bottom: 0.5rem;
         }
-        .date {
-          align-self: center;
-          text-align: right;
-        }
-        .details {
-          //border: 1px solid lightgrey;
-        }
+
         .block {
-          flex: 1;
-          margin: 0;
-          margin-right: 0.5rem;
+          margin-bottom: 0.5rem;
         }
+
         .actionArea {
-          align-self: flex-end;
+          display: flex;
+          flex-direction: column;
+
+          :global(.button) {
+            margin-right: 0 !important;
+          }
+
+          :global(.lastButton) {
+            margin-top: 0.3rem !important;
+          }
         }
-      }
-    `}</style>
-  </div>
-)
+
+        @include desktop-tablet-only {
+          .session,
+          .details {
+            flex-flow: row wrap;
+          }
+          .title,
+          .date {
+            flex: 0 0 50%;
+            margin: 0;
+          }
+          .title {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+          }
+          .date {
+            align-self: center;
+            text-align: right;
+          }
+          .details {
+            //border: 1px solid lightgrey;
+          }
+          .block {
+            flex: 1;
+            margin: 0;
+            margin-right: 0.5rem;
+          }
+          .actionArea {
+            align-self: flex-end;
+          }
+        }
+      `}</style>
+    </div>
+  )
+}
 
 Session.propTypes = propTypes
 Session.defaultProps = defaultProps

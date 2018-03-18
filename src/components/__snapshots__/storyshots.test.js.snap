@@ -4687,15 +4687,15 @@ exports[`Storyshots sessions QuestionDropzone 1`] = `
 
 exports[`Storyshots sessions Session 1`] = `
 <div
-  className="jsx-1413748780 session"
+  className="jsx-1915206423 session"
 >
   <h2
-    className="jsx-1413748780 title"
+    className="jsx-1915206423 title"
   >
     Long session
   </h2>
   <div
-    className="jsx-1413748780 date"
+    className="jsx-1915206423 date"
   >
     <span>
       Created on
@@ -4704,10 +4704,10 @@ exports[`Storyshots sessions Session 1`] = `
     08.02.15 14:32
   </div>
   <div
-    className="jsx-1413748780 details"
+    className="jsx-1915206423 details"
   >
     <div
-      className="jsx-1413748780 block"
+      className="jsx-1915206423 block"
     >
       <div
         className="jsx-4251158648 questionBlock"
@@ -4779,10 +4779,10 @@ exports[`Storyshots sessions Session 1`] = `
       </div>
     </div>
     <div
-      className="jsx-1413748780 actionArea"
+      className="jsx-1915206423 actionArea"
     >
       <a
-        className="jsx-1413748780"
+        className="jsx-1915206423"
         href="/sessions/evaluation/4c821db7-0940-4a24-b31a-7969104bbc9f"
         target="_blank"
       >
@@ -4844,15 +4844,15 @@ exports[`Storyshots sessions SessionList 1`] = `
     className="jsx-1288682727 session"
   >
     <div
-      className="jsx-1413748780 session"
+      className="jsx-1915206423 session"
     >
       <h2
-        className="jsx-1413748780 title"
+        className="jsx-1915206423 title"
       >
         Long session
       </h2>
       <div
-        className="jsx-1413748780 date"
+        className="jsx-1915206423 date"
       >
         <span>
           Created on
@@ -4861,10 +4861,10 @@ exports[`Storyshots sessions SessionList 1`] = `
         08.02.15 14:32
       </div>
       <div
-        className="jsx-1413748780 details"
+        className="jsx-1915206423 details"
       >
         <div
-          className="jsx-1413748780 block"
+          className="jsx-1915206423 block"
         >
           <div
             className="jsx-4251158648 questionBlock"
@@ -4936,10 +4936,10 @@ exports[`Storyshots sessions SessionList 1`] = `
           </div>
         </div>
         <div
-          className="jsx-1413748780 actionArea"
+          className="jsx-1915206423 actionArea"
         >
           <a
-            className="jsx-1413748780"
+            className="jsx-1915206423"
             href="/sessions/evaluation/4c821db7-0940-4a24-b31a-7969104bbc9f"
             target="_blank"
           >
@@ -4978,15 +4978,15 @@ exports[`Storyshots sessions SessionList 1`] = `
     className="jsx-1288682727 session"
   >
     <div
-      className="jsx-1413748780 session"
+      className="jsx-1915206423 session"
     >
       <h2
-        className="jsx-1413748780 title"
+        className="jsx-1915206423 title"
       >
         Long session
       </h2>
       <div
-        className="jsx-1413748780 date"
+        className="jsx-1915206423 date"
       >
         <span>
           Created on
@@ -4995,10 +4995,10 @@ exports[`Storyshots sessions SessionList 1`] = `
         08.02.15 14:32
       </div>
       <div
-        className="jsx-1413748780 details"
+        className="jsx-1915206423 details"
       >
         <div
-          className="jsx-1413748780 block"
+          className="jsx-1915206423 block"
         >
           <div
             className="jsx-4251158648 questionBlock"
@@ -5070,10 +5070,10 @@ exports[`Storyshots sessions SessionList 1`] = `
           </div>
         </div>
         <div
-          className="jsx-1413748780 actionArea"
+          className="jsx-1915206423 actionArea"
         >
           <a
-            className="jsx-1413748780"
+            className="jsx-1915206423"
             href="/sessions/evaluation/4c821db7-0940-4a24-b31a-7969104bbc9f"
             target="_blank"
           >
@@ -5113,16 +5113,16 @@ exports[`Storyshots sessions SessionList 1`] = `
 
 exports[`Storyshots sessions SessionTimeline 1`] = `
 <div
-  className="jsx-2239088075 sessionTimeline"
+  className="jsx-4107093464 sessionTimeline"
 >
   <div
-    className="jsx-2239088075 topRow"
+    className="jsx-4107093464 topRow"
   >
     <div
-      className="jsx-2239088075 infos"
+      className="jsx-4107093464 infos"
     >
       <div
-        className="jsx-2239088075 startingTime"
+        className="jsx-4107093464 startingTime"
       >
         <i
           aria-hidden="true"
@@ -5132,7 +5132,7 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
         00:00:00
       </div>
       <div
-        className="jsx-2239088075 runningTime"
+        className="jsx-4107093464 runningTime"
       >
         <i
           aria-hidden="true"
@@ -5143,10 +5143,10 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
       </div>
     </div>
     <div
-      className="jsx-2239088075 actions"
+      className="jsx-4107093464 actions"
     >
       <div
-        className="jsx-2239088075 qrTrigger"
+        className="jsx-4107093464 qrTrigger"
         onBlur={[Function]}
         onClick={[Function]}
         onFocus={[Function]}
@@ -5167,7 +5167,7 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
         </button>
       </div>
       <a
-        className="jsx-2239088075"
+        className="jsx-4107093464"
         href="/join/undefined"
         target="_blank"
       >
@@ -5188,7 +5188,7 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
         </button>
       </a>
       <a
-        className="jsx-2239088075"
+        className="jsx-4107093464"
         href="/sessions/evaluation/undefined"
         target="_blank"
       >
@@ -5211,13 +5211,13 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
     </div>
   </div>
   <div
-    className="jsx-2239088075 blocks"
+    className="jsx-4107093464 blocks"
   >
     <div
-      className="jsx-2239088075 blockWrap"
+      className="jsx-4107093464 blockWrap"
     >
       <div
-        className="jsx-2239088075 waiting first"
+        className="jsx-4107093464 waiting first"
       >
         <i
           aria-hidden="true"
@@ -5225,7 +5225,7 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
         />
       </div>
       <div
-        className="jsx-2239088075 block"
+        className="jsx-4107093464 block"
       >
         <div
           className="jsx-4251158648 questionBlock"
@@ -5308,7 +5308,7 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
         </div>
       </div>
       <div
-        className="jsx-2239088075 waiting last"
+        className="jsx-4107093464 waiting last"
       >
         <i
           aria-hidden="true"
@@ -5318,7 +5318,7 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
     </div>
   </div>
   <div
-    className="jsx-2239088075 buttons"
+    className="jsx-4107093464 buttons"
   >
     <button
       className="ui blue large icon left labeled button"
