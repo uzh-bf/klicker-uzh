@@ -26,4 +26,7 @@ query QuestionPool {
     id
     name
   }
+  runningSession {
+    id
+  }
 }
