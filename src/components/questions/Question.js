@@ -2,18 +2,20 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import moment from 'moment'
+import { FormattedMessage } from 'react-intl'
 import { compose, withState, withProps } from 'recompose'
 import { DragSource } from 'react-dnd'
-import { Dropdown } from 'semantic-ui-react'
+import { Checkbox, Dropdown, Label } from 'semantic-ui-react'
 
 import QuestionDetails from './QuestionDetails'
 import QuestionTags from './QuestionTags'
 
 const propTypes = {
+  checked: PropTypes.bool,
   connectDragSource: PropTypes.func.isRequired,
   creationMode: PropTypes.bool,
-  // draggable: PropTypes.bool,
   id: PropTypes.string.isRequired,
+  isArchived: PropTypes.bool.isRequired,
   isDragging: PropTypes.bool,
   lastUsed: PropTypes.array,
   tags: PropTypes.array,
@@ -22,14 +24,16 @@ const propTypes = {
 }
 
 const defaultProps = {
+  checked: false,
   creationMode: false,
-  // draggable: false,
+  isArchived: false,
   isDragging: false,
   lastUsed: [],
   tags: [],
 }
 
 const Question = ({
+  checked,
   activeVersion,
   id,
   lastUsed,
@@ -38,30 +42,42 @@ const Question = ({
   type,
   description,
   versions,
-  // draggable,
+  onCheck,
+  draggable,
   creationMode,
   isDragging,
+  isArchived,
   connectDragSource,
   handleSetActiveVersion,
 }) =>
   // TODO: draggable rework
   connectDragSource(
-    <div className={classNames('question', { creationMode, draggable: true, isDragging })}>
-      {/* creationMode && (
-        <div className={classNames('sessionMembership', { active: !draggable })}>
-          <input
-            disabled
-            checked={!draggable}
-            className="ui checkbox"
-            name={`check-${id}`}
-            type="checkbox"
-            onClick={() => null}
-          />
-        </div>
-      ) */}
+    <div
+      className={classNames('question', {
+        creationMode,
+        draggable: creationMode,
+        isArchived,
+        isDragging,
+      })}
+    >
+      <div className={classNames('checker', { active: !draggable })}>
+        <Checkbox
+          checked={checked}
+          id={`check-${id}`}
+          type="checkbox"
+          onClick={() => onCheck({ version: activeVersion })}
+        />
+      </div>
 
       <div className="wrapper">
-        <h2 className="title">{title}</h2>
+        <h2 className="title">
+          {isArchived && (
+            <Label color="red" size="tiny">
+              <FormattedMessage defaultMessage="ARCHIVED" id="questionPool.question.titleArchive" />
+            </Label>
+          )}{' '}
+          {title}
+        </h2>
 
         <div className="versionChooser">
           <Dropdown
@@ -113,17 +129,14 @@ const Question = ({
             opacity: 0.5;
           }
 
-          .sessionMembership {
+          .checker {
             flex: 0 0 auto;
             display: flex;
 
-            color: darkred;
-            padding: 0.5rem;
-            text-align: left;
+            align-self: center;
 
-            .active {
-              color: green;
-            }
+            padding: 0.5rem;
+            padding-left: 0;
           }
 
           .wrapper {
@@ -131,20 +144,23 @@ const Question = ({
             flex-flow: column nowrap;
 
             .title {
-              font-size: 1.2rem;
+              color: $color-primary-strong;
+              font-size: $font-size-h1;
               margin: 0;
+              margin-top: 0.2rem;
             }
           }
 
           @include desktop-tablet-only {
             flex-flow: row wrap;
 
-            .sessionMembership {
+            .checker {
               flex: 0 0 1rem;
               display: flex;
               align-items: center;
 
               padding: 1rem;
+              padding-left: 0.5rem;
             }
 
             .wrapper {
@@ -198,11 +214,11 @@ const source = {
     return draggable
   }, */
   // if the element is dropped somewhere
-  endDrag({ onDrop }, monitor) {
+  /* endDrag({ onDrop }, monitor) {
     if (monitor.didDrop()) {
       onDrop()
     }
-  },
+  }, */
 }
 
 // define what information the Question component should collect

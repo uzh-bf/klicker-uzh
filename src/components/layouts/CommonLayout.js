@@ -56,13 +56,8 @@ const CommonLayout = ({
         min-height: ${nextMinHeight};
       }
 
-      input,
-      textarea,
       .noBorder {
         border-radius: 0 !important;
-      }
-
-      .noBorder {
         border: 0 !important;
         box-shadow: none !important;
       }

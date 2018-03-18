@@ -1,186 +1,147 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { FormattedMessage, intlShape } from 'react-intl'
-import { Button, Icon } from 'semantic-ui-react'
-import moment from 'moment'
-import { Formik } from 'formik'
+import { FormattedMessage } from 'react-intl'
+import { Button, Icon, Input } from 'semantic-ui-react'
 import Yup from 'yup'
-import _isEmpty from 'lodash/isEmpty'
 
-import { FormikInput } from '.'
 import { SessionTimelineInput } from '../sessions'
 
 const propTypes = {
-  intl: intlShape.isRequired,
-  onDiscard: PropTypes.func.isRequired,
-  onSave: PropTypes.func.isRequired,
-  onStart: PropTypes.func.isRequired,
+  blocks: PropTypes.array.isRequired,
+  handleChangeBlocks: PropTypes.func.isRequired,
+  handleChangeName: PropTypes.func.isRequired,
+  handleDiscard: PropTypes.func.isRequired,
+  handleSubmit: PropTypes.func.isRequired,
+  isSessionRunning: PropTypes.bool.isRequired,
+  name: PropTypes.string.isRequired,
 }
 
+const schema = Yup.object().shape({
+  blocks: Yup.array().default([]),
+  name: Yup.string()
+    .min(1)
+    .required(),
+})
+
 const SessionCreationForm = ({
-  intl, onSave, onDiscard, onStart,
-}) => (
-  <Formik
-    initialValues={{
-      blocks: [],
-      // initialize session name to the current date and time
-      sessionName: moment().format('DD.MM.YYYY HH:mm'),
-    }}
-    validationSchema={Yup.object().shape({
-      blocks: Yup.array()
-        .min(1)
-        .required(),
-      sessionName: Yup.string().required(),
-    })}
-    onSubmit={({ start, ...values }) => {
-      // if it should be immediately started
-      if (start) {
-        onStart(values)
-      }
+  name,
+  blocks,
+  isSessionRunning,
+  handleChangeName,
+  handleChangeBlocks,
+  handleSubmit,
+  handleDiscard,
+}) => {
+  // synchronously validate the schema
+  const isValid = schema.isValidSync({
+    blocks,
+    name,
+  })
 
-      // if the session should only be saved
-      onSave(values)
-    }}
-  >
-    {({
-      values,
-      errors,
-      touched,
-      handleChange,
-      handleBlur,
-      handleSubmit,
-      submitForm,
-      isSubmitting,
-      setFieldValue,
-    }) => (
-      <form className="ui form sessionCreation" onSubmit={handleSubmit}>
-        <div className="upper">
-          <h2 className="title">
-            <FormattedMessage defaultMessage="Create Session" id="sessionCreation.title" />
-          </h2>
+  return (
+    <form className="ui form sessionCreation" onSubmit={handleSubmit('save')}>
+      <div className="upper">
+        <h1 className="title">
+          <FormattedMessage defaultMessage="Create Session" id="sessionCreation.title" />
+        </h1>
 
-          <div className="sessionSettings">
-            <div className="sessionName">
-              <FormikInput
-                autoFocus
-                required
-                error={errors.sessionName}
-                errorMessage={intl.formatMessage({
-                  defaultMessage: 'Please provide a valid name for your session.',
-                  id: 'form.sessionName.invalid',
-                })}
-                handleBlur={handleBlur}
-                handleChange={handleChange}
-                inlineLabel="Name"
-                labelPosition="left"
-                name="sessionName"
-                placeholder="Session #1"
-                touched={touched.sessionName}
-                type="text"
-                value={values.sessionName}
-              />
-            </div>
+        <div className="sessionSettings">
+          <div className="sessionName">
+            <Input fluid label="Name" type="text" value={name} onChange={handleChangeName} />
           </div>
         </div>
+      </div>
 
-        <div className="sessionTimeline">
-          <SessionTimelineInput
-            value={values.blocks}
-            onChange={blocks => setFieldValue('blocks', blocks)}
+      <div className="sessionTimeline">
+        <SessionTimelineInput value={blocks} onChange={handleChangeBlocks} />
+      </div>
+
+      <div className="actionArea">
+        <Button fluid icon labelPosition="left" onClick={handleDiscard}>
+          <Icon name="trash" />
+          <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+        </Button>
+
+        <Button fluid icon disabled={!isValid} labelPosition="left" type="submit">
+          <Icon name="save" />
+          <FormattedMessage defaultMessage="Save & Close" id="form.createSession.button.save" />
+        </Button>
+
+        <Button
+          fluid
+          icon
+          primary
+          disabled={!isValid || isSessionRunning}
+          labelPosition="left"
+          onClick={handleSubmit('start')}
+        >
+          <Icon name="play" />
+          <FormattedMessage defaultMessage="Start" id="common.button.start" />
+        </Button>
+        {isSessionRunning && (
+          <FormattedMessage
+            defaultMessage="A session is already running"
+            id="form.createSession.string.alreadyRunning"
           />
-        </div>
+        )}
+      </div>
 
-        <div className="actionArea">
-          <Button fluid icon labelPosition="left" onClick={onDiscard}>
-            <Icon name="trash" />
-            <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
-          </Button>
+      <style jsx>{`
+        @import 'src/theme';
 
-          <Button
-            fluid
-            icon
-            disabled={!_isEmpty(errors)}
-            labelPosition="left"
-            loading={isSubmitting}
-            type="submit"
-          >
-            <Icon name="save" />
-            <FormattedMessage defaultMessage="Save & Close" id="form.createSession.button.save" />
-          </Button>
+        .sessionCreation {
+          display: flex;
+          flex-flow: row wrap;
 
-          <Button
-            fluid
-            icon
-            primary
-            disabled={!_isEmpty(errors)}
-            labelPosition="left"
-            loading={isSubmitting}
-            onClick={() => {
-              setFieldValue('start', true)
-              submitForm()
-            }}
-          >
-            <Icon name="play" />
-            <FormattedMessage defaultMessage="Start" id="common.button.start" />
-          </Button>
-        </div>
+          background-color: white;
 
-        <style jsx>{`
-          @import 'src/theme';
+          .title {
+            color: $color-primary-strong;
+            font-size: $font-size-h1;
+            margin: 0;
 
-          .sessionCreation {
-            display: flex;
-            flex-flow: row wrap;
+            padding: 0.5rem 1rem;
+          }
 
-            background-color: white;
+          .upper {
+            flex: 0 0 100%;
 
-            .title {
-              font-size: 1.5rem;
-              margin: 0;
+            border-bottom: 1px solid lightgrey;
+            border-top: 1px solid lightgrey;
+            text-align: center;
+            padding: 0 1rem 0.5rem 1rem;
+          }
 
-              padding: 0.5rem 1rem;
-            }
+          .sessionTimeline {
+            flex: 1;
+          }
 
-            .upper {
-              flex: 0 0 100%;
+          .actionArea {
+            flex: 0 0 auto;
 
-              border-bottom: 1px solid lightgrey;
-              border-top: 1px solid lightgrey;
-              text-align: center;
-              padding: 0 1rem 1rem 1rem;
-            }
+            border: 1px solid lightgrey;
+            border-top: 0;
+            padding: 0.5rem;
 
-            .sessionTimeline {
-              flex: 1;
-            }
+            > :global(button) {
+              :global(span) {
+                margin-left: 2rem;
+              }
 
-            .actionArea {
-              flex: 0 0 auto;
+              &:not(:last-child) {
+                margin-bottom: 0.5rem;
+              }
 
-              border: 1px solid lightgrey;
-              border-top: 0;
-              padding: 0.5rem;
-
-              > :global(button) {
-                :global(span) {
-                  margin-left: 2rem;
-                }
-
-                &:not(:last-child) {
-                  margin-bottom: 0.5rem;
-                }
-
-                &:first-child {
-                  margin-bottom: 2rem;
-                }
+              &:first-child {
+                margin-bottom: 2rem;
               }
             }
           }
-        `}</style>
-      </form>
-    )}
-  </Formik>
-)
+        }
+      `}</style>
+    </form>
+  )
+}
 
 SessionCreationForm.propTypes = propTypes
 

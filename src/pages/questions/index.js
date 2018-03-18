@@ -1,14 +1,21 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { compose, withHandlers, withStateHandlers } from 'recompose'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
-import { Button } from 'semantic-ui-react'
-import Link from 'next/link'
+import _get from 'lodash/get'
 import Router from 'next/router'
+import moment from 'moment'
 
-import { pageWithIntl, withData, withDnD, withSortingAndFiltering, withLogging } from '../../lib'
+import {
+  pageWithIntl,
+  withData,
+  withDnD,
+  withSortingAndFiltering,
+  withLogging,
+  withSelection,
+} from '../../lib'
 import {
   CreateSessionMutation,
   StartSessionMutation,
@@ -16,51 +23,75 @@ import {
   SessionListQuery,
   RunningSessionQuery,
   QuestionPoolQuery,
+  ArchiveQuestionsMutation,
 } from '../../graphql'
 import { SessionCreationForm } from '../../components/forms'
-import { QuestionList, TagList } from '../../components/questions'
+import { QuestionList, TagList, ActionBar } from '../../components/questions'
 import { TeacherLayout } from '../../components/layouts'
 import { QUESTION_SORTINGS } from '../../constants'
 
 const propTypes = {
   creationMode: PropTypes.bool.isRequired,
   data: PropTypes.object.isRequired,
-  droppedQuestions: PropTypes.arrayOf(PropTypes.string).isRequired,
   filters: PropTypes.object.isRequired,
   handleCreateSession: PropTypes.func.isRequired,
   handleCreationModeToggle: PropTypes.func.isRequired,
-  handleQuestionDropped: PropTypes.func.isRequired,
   handleSearch: PropTypes.func.isRequired,
   handleSortByChange: PropTypes.func.isRequired,
   handleSortOrderToggle: PropTypes.func.isRequired,
   handleTagClick: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
+  numSelectedItems: PropTypes.number.isRequired,
   sort: PropTypes.object.isRequired,
+  selectedItems: PropTypes.any,
+  sessionName: PropTypes.string.isRequired,
+  sessionBlocks: PropTypes.any,
+  handleSelectItem: PropTypes.func.isRequired,
+  handleQuickBlock: PropTypes.func.isRequired,
+  handleQuickBlocks: PropTypes.func.isRequired,
+  handleReset: PropTypes.func.isRequired,
+  handleToggleArchive: PropTypes.func.isRequired,
+  handleChangeName: PropTypes.func.isRequired,
+  handleChangeBlocks: PropTypes.func.isRequired,
+  handleArchiveQuestions: PropTypes.func.isRequired,
 }
 
 const Index = ({
+  numSelectedItems,
   creationMode,
-  droppedQuestions,
   intl,
   filters,
   data,
   sort,
+  selectedItems,
+  sessionName,
+  sessionBlocks,
+  handleSelectItem,
   handleCreateSession,
   handleSearch,
   handleSortByChange,
   handleSortOrderToggle,
   handleTagClick,
-  handleQuestionDropped,
   handleCreationModeToggle,
+  handleQuickBlock,
+  handleQuickBlocks,
+  handleReset,
+  handleToggleArchive,
+  handleChangeName,
+  handleChangeBlocks,
+  handleArchiveQuestions,
 }) => {
-  // TODO: create a component for this?
-  const actionArea = (
+  const creationForm = (
     <div className="creationForm">
       <SessionCreationForm
+        blocks={sessionBlocks}
+        handleChangeBlocks={handleChangeBlocks}
+        handleChangeName={handleChangeName}
+        handleDiscard={handleCreationModeToggle}
+        handleSubmit={handleCreateSession}
         intl={intl}
-        onDiscard={handleCreationModeToggle}
-        onSave={handleCreateSession('save')}
-        onStart={handleCreateSession('start')}
+        isSessionRunning={_get(data, 'runningSession.id')}
+        name={sessionName}
       />
 
       <style jsx>{`
@@ -84,7 +115,7 @@ const Index = ({
   return (
     <TeacherLayout
       fixedHeight
-      actionArea={creationMode ? actionArea : null}
+      actionArea={creationMode ? creationForm : null}
       intl={intl}
       navbar={{
         search: {
@@ -113,35 +144,33 @@ const Index = ({
             activeTags={filters.tags}
             activeType={filters.type}
             data={data}
+            handleReset={handleReset}
             handleTagClick={handleTagClick}
+            handleToggleArchive={handleToggleArchive}
+            isArchiveActive={filters.archive}
           />
         </div>
         <div className="wrapper">
           <div className="questionList">
-            <div className="buttons">
-              <Link href="/questions/create">
-                <Button primary>
-                  <FormattedMessage
-                    defaultMessage="Create Question"
-                    id="questionPool.button.createQuestion"
-                  />
-                </Button>
-              </Link>
-              <Button primary onClick={handleCreationModeToggle}>
-                <FormattedMessage
-                  defaultMessage="Create Session"
-                  id="questionPool.button.createSession"
-                />
-              </Button>
-            </div>
+            <ActionBar
+              creationMode={creationMode}
+              handleArchiveQuestions={handleArchiveQuestions}
+              handleCreationModeToggle={handleCreationModeToggle}
+              handleQuickBlock={handleQuickBlock}
+              handleQuickBlocks={handleQuickBlocks}
+              isArchiveActive={filters.archive}
+              itemsChecked={numSelectedItems}
+            />
+
             <div className="questionListContent">
               <QuestionList
                 creationMode={creationMode}
                 data={data}
-                dropped={droppedQuestions}
                 filters={filters}
+                isArchiveActive={filters.archive}
+                selectedItems={selectedItems}
                 sort={sort}
-                onQuestionDropped={handleQuestionDropped}
+                onQuestionChecked={handleSelectItem}
               />
             </div>
           </div>
@@ -163,7 +192,7 @@ const Index = ({
             min-width: 5rem;
 
             flex: 1;
-            background: $color-primary-10p;
+            background: $color-primary-05p;
             padding: 0.5rem;
           }
 
@@ -178,24 +207,6 @@ const Index = ({
 
               margin: 0 auto;
               max-width: $max-width;
-
-              .buttons {
-                border: 1px solid $color-primary;
-
-                flex: 0 0 auto;
-
-                display: flex;
-                justify-content: center;
-                padding: 0.5rem;
-
-                > :global(button) {
-                  margin-right: 0;
-
-                  &:first-child {
-                    margin-right: 0.5rem;
-                  }
-                }
-              }
 
               .questionListContent {
                 flex: 1;
@@ -214,6 +225,8 @@ const Index = ({
               overflow-y: auto;
               flex: 0 0 auto;
               padding: 2rem 1rem;
+
+              border-right: 1px solid $color-primary;
             }
 
             .wrapper {
@@ -221,11 +234,6 @@ const Index = ({
               padding: 1rem;
 
               .questionList {
-                .buttons {
-                  display: flex;
-                  justify-content: flex-end;
-                }
-
                 .questionListContent {
                   overflow-y: auto;
                   padding: 1rem 1rem 0 0;
@@ -248,25 +256,32 @@ Index.propTypes = propTypes
 export default compose(
   withLogging(),
   withDnD,
-  withData,
   pageWithIntl,
+  withData,
   graphql(StartSessionMutation, { name: 'startSession' }),
   graphql(CreateSessionMutation, { name: 'createSession' }),
+  graphql(ArchiveQuestionsMutation, { name: 'archiveQuestions' }),
   graphql(QuestionPoolQuery),
   withSortingAndFiltering,
+  withSelection,
   withStateHandlers(
     {
       creationMode: false,
-      droppedQuestions: [],
+      sessionBlocks: [],
+      sessionName: moment().format('DD.MM.YYYY HH:mm'),
     },
     {
+      // handlers for session creation form fields
+      handleChangeBlocks: () => sessionBlocks => ({ sessionBlocks }),
+      handleChangeName: () => e => ({ sessionName: e.target.value }),
+
       // handle toggling creation mode (display of session creation form)
       handleCreationModeToggle: ({ creationMode }) => () => {
-        // if the creation mode was activated before, reset dropped questions on toggle
+        // if the creation mode was activated before, reset blocks on toggle
         if (creationMode) {
           return {
             creationMode: false,
-            droppedQuestions: [],
+            sessionBlocks: [],
           }
         }
 
@@ -274,29 +289,108 @@ export default compose(
         return { creationMode: true }
       },
 
-      // handle a new question that gets dropped on the session creation timeline
-      handleQuestionDropped: ({ droppedQuestions }) => id => ({
-        droppedQuestions: [...droppedQuestions, id],
-      }),
+      // build a single block from all the checked questions
+      handleQuickBlock: ({ sessionBlocks }, { handleResetSelection, selectedItems }) => () => {
+        // reset the checked questions
+        handleResetSelection()
+
+        return {
+          sessionBlocks: [
+            ...sessionBlocks,
+            {
+              questions: selectedItems
+                .toIndexedSeq()
+                .toArray()
+                .map(({
+                  id, title, type, version,
+                }) => ({
+                  id,
+                  title,
+                  type,
+                  version,
+                })),
+            },
+          ],
+        }
+      },
+
+      // build a separate block for each checked question
+      handleQuickBlocks: ({ sessionBlocks }, { handleResetSelection, selectedItems }) => () => {
+        // reset the checked questions
+        handleResetSelection()
+
+        return {
+          sessionBlocks: [
+            ...sessionBlocks,
+            ...selectedItems
+              .toIndexedSeq()
+              .toArray()
+              .map(({
+                id, title, type, version,
+              }) => ({
+                questions: [
+                  {
+                    id,
+                    title,
+                    type,
+                    version,
+                  },
+                ],
+              })),
+          ],
+        }
+      },
+
+      // override the toggle archive function
+      // need to reset the selection on toggling archive to not apply actions to hidden questions
+      handleToggleArchive: (_, { handleResetSelection, handleToggleArchive }) => () => {
+        handleResetSelection()
+        handleToggleArchive()
+      },
     },
   ),
   withHandlers({
+    // handle archiving a question
+    handleArchiveQuestions: ({
+      archiveQuestions,
+      handleResetSelection,
+      selectedItems,
+    }) => async () => {
+      try {
+        // archive the questions
+        await archiveQuestions({
+          refetchQueries: [{ query: QuestionPoolQuery }],
+          variables: { ids: [...selectedItems.keys()] },
+        })
+
+        handleResetSelection()
+      } catch ({ message }) {
+        // TODO: if anything fails, display the error
+        console.error(message)
+      }
+    },
+
     // handle creating a new session
     handleCreateSession: ({
+      sessionName,
+      sessionBlocks,
       createSession,
       startSession,
       handleCreationModeToggle,
-    }) => type => async ({ sessionName, blocks }) => {
+    }) => type => async (e) => {
+      // prevent a page reload on submit
+      e.preventDefault()
+
       try {
         // prepare blocks for consumption through the api
-        const parsedBlocks = blocks.map(({ questions }) => ({
+        const blocks = sessionBlocks.map(({ questions }) => ({
           questions: questions.map(({ id, version }) => ({ question: id, version })),
         }))
 
         // create a new session
         const result = await createSession({
           refetchQueries: [{ query: SessionListQuery }],
-          variables: { blocks: parsedBlocks, name: sessionName },
+          variables: { blocks, name: sessionName },
         })
 
         // start the session immediately if the respective button was clicked
