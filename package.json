@@ -27,7 +27,7 @@
     "fingerprintjs2": "1.6.1",
     "formik": "0.11.11",
     "glob": "7.1.2",
-    "graphql": "0.13.1",
+    "graphql": "0.13.2",
     "graphql-persisted-document-loader": "1.0.1",
     "graphql-tag": "2.8.0",
     "griddle-react": "1.11.2",
