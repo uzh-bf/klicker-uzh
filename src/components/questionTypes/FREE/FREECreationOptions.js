@@ -54,7 +54,7 @@ const FREECreationOptions = ({
         />
       </ReactTooltip>
 
-      {type === QUESTION_TYPES.FREE && <div>Unrestricted input.</div>}
+      {/* type === QUESTION_TYPES.FREE && <div>Unrestricted input.</div> */}
 
       {type === QUESTION_TYPES.FREE_RANGE && (
         <div className="range">

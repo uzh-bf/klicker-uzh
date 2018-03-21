@@ -8,6 +8,7 @@ import QuestionSingle from './QuestionSingle'
 const propTypes = {
   index: PropTypes.number,
   noDetails: PropTypes.bool,
+  noVersions: PropTypes.bool,
   questions: PropTypes.arrayOf(PropTypes.shape(QuestionSingle.propTypes)).isRequired,
   status: PropTypes.string,
   timeLimit: PropTypes.number,
@@ -16,12 +17,13 @@ const propTypes = {
 const defaultProps = {
   index: undefined,
   noDetails: false,
+  noVersions: false,
   status: 'PLANNED',
   timeLimit: undefined,
 }
 
 const QuestionBlock = ({
-  index, status, questions, timeLimit, noDetails,
+  index, status, questions, timeLimit, noDetails, noVersions,
 }) => (
   <div className={classNames('questionBlock', { active: status === 'ACTIVE' })}>
     {index >= 0 && <div className="index">Block {index}</div>}
@@ -32,14 +34,28 @@ const QuestionBlock = ({
           {timeLimit}s
         </div>
       )}
-    {!noDetails && <div className="sessionStatus">{status}</div>}
+    {!noDetails && (
+      <div className="sessionStatus">
+        {(() => {
+          if (status === 'EXECUTED') {
+            return <Icon name="checkmark" />
+          }
+
+          if (status === 'ACTIVE') {
+            return <Icon name="comments" />
+          }
+
+          return null
+        })()}
+      </div>
+    )}
     <div className="questions">
-      {questions.map((question, singleIndex) => (
+      {questions.map(question => (
         // HACK: prettier failure with destructuring for question
         <QuestionSingle
           id={question.id}
-          index={singleIndex + 1}
           key={question.id}
+          noDetails={noDetails || noVersions}
           title={question.title}
           type={question.type}
           version={question.version}
@@ -55,11 +71,16 @@ const QuestionBlock = ({
         background-color: #eaeaea;
         border: 2px solid #c5c5c5;
         flex-flow: row wrap;
-        padding: 0.2rem;
+        padding: 0.4rem;
 
         &.active {
           border: 2px solid rgb(0, 97, 0);
           background-color: rgb(198, 293, 206);
+        }
+
+        .index {
+          color: $color-primary-strong;
+          font-weight: bold;
         }
 
         .index,
@@ -70,16 +91,17 @@ const QuestionBlock = ({
           margin-bottom: 0.2rem;
         }
 
-        .index {
-          font-weight: bold;
-        }
-
         .showSolution {
           text-align: center;
         }
 
         .sessionStatus {
+          font-size: 1.1rem;
           text-align: right;
+
+          > :global(icon) {
+            margin: 0;
+          }
         }
 
         .questions {
