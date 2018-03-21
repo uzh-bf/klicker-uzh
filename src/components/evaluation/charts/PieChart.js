@@ -57,9 +57,9 @@ const PieChart = ({ isSolutionShown, data }) => (
           strokeWidth={1}
           style={{ fontSize: '3rem' }}
         />
-        {data.map((row, index) => (
+        {data.map(row => (
           <Cell
-            fill={isSolutionShown && row.correct ? '#00FF00' : CHART_COLORS[index % 12]}
+            fill={isSolutionShown && row.correct ? '#00FF00' : row.fill}
             key={row.value}
             strokeWidth={5}
           />
@@ -79,6 +79,7 @@ export default withProps(({ data, questionType, totalResponses }) => ({
     .map(({ correct, count, value }, index) => ({
       correct,
       count,
+      fill: CHART_COLORS[index % 12],
       labelIn: getLabelIn(CHART_TYPES.PIE_CHART, questionType, count, totalResponses, index),
       labelOut: getLabelOut(CHART_TYPES.PIE_CHART, questionType, count, totalResponses, index),
       value,
