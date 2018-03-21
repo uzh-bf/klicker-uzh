@@ -152,6 +152,7 @@ const SessionTimeline = ({
             </div>
             <div className="block" key={block.id}>
               <QuestionBlock
+                noVersions
                 showSolutions
                 index={index + 1}
                 questions={block.instances.map(({ id, question, version }) => ({

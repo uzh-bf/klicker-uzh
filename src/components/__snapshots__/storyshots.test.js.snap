@@ -3359,10 +3359,10 @@ exports[`Storyshots questions Question (SC, 1 version) 1`] = `
 
 exports[`Storyshots questions QuestionBlock (empty) 1`] = `
 <div
-  className="jsx-4251158648 questionBlock"
+  className="jsx-936553283 questionBlock"
 >
   <div
-    className="jsx-4251158648 timeLimit"
+    className="jsx-936553283 timeLimit"
   >
     <i
       aria-hidden="true"
@@ -3372,22 +3372,20 @@ exports[`Storyshots questions QuestionBlock (empty) 1`] = `
     s
   </div>
   <div
-    className="jsx-4251158648 sessionStatus"
-  >
-    PLANNED
-  </div>
+    className="jsx-936553283 sessionStatus"
+  />
   <div
-    className="jsx-4251158648 questions"
+    className="jsx-936553283 questions"
   />
 </div>
 `;
 
 exports[`Storyshots questions QuestionBlock 1`] = `
 <div
-  className="jsx-4251158648 questionBlock"
+  className="jsx-936553283 questionBlock"
 >
   <div
-    className="jsx-4251158648 timeLimit"
+    className="jsx-936553283 timeLimit"
   >
     <i
       aria-hidden="true"
@@ -3397,71 +3395,81 @@ exports[`Storyshots questions QuestionBlock 1`] = `
     s
   </div>
   <div
-    className="jsx-4251158648 sessionStatus"
-  >
-    PLANNED
-  </div>
+    className="jsx-936553283 sessionStatus"
+  />
   <div
-    className="jsx-4251158648 questions"
+    className="jsx-936553283 questions"
   >
     <div
-      className="jsx-338700453 questionSingle"
+      className="jsx-2787287577 questionSingle"
     >
       <div
-        className="jsx-338700453 type"
+        className="jsx-2787287577 type"
       >
-        #1 - 
         <span>
           SC
         </span>
       </div>
       <div
-        className="jsx-338700453 title"
+        className="jsx-2787287577 title"
       >
         This is a long question
-         (v
-        1
-        )
+         
+        <span
+          className="jsx-2787287577"
+        >
+          (v
+          1
+          )
+        </span>
       </div>
     </div>
     <div
-      className="jsx-338700453 questionSingle"
+      className="jsx-2787287577 questionSingle"
     >
       <div
-        className="jsx-338700453 type"
+        className="jsx-2787287577 type"
       >
-        #2 - 
         <span>
           SC
         </span>
       </div>
       <div
-        className="jsx-338700453 title"
+        className="jsx-2787287577 title"
       >
         This is a long question
-         (v
-        1
-        )
+         
+        <span
+          className="jsx-2787287577"
+        >
+          (v
+          1
+          )
+        </span>
       </div>
     </div>
     <div
-      className="jsx-338700453 questionSingle"
+      className="jsx-2787287577 questionSingle"
     >
       <div
-        className="jsx-338700453 type"
+        className="jsx-2787287577 type"
       >
-        #3 - 
         <span>
           SC
         </span>
       </div>
       <div
-        className="jsx-338700453 title"
+        className="jsx-2787287577 title"
       >
         This is a long question
-         (v
-        1
-        )
+         
+        <span
+          className="jsx-2787287577"
+        >
+          (v
+          1
+          )
+        </span>
       </div>
     </div>
   </div>
@@ -4451,22 +4459,27 @@ exports[`Storyshots questions QuestionList 1`] = `
 
 exports[`Storyshots questions QuestionSingle 1`] = `
 <div
-  className="jsx-338700453 questionSingle"
+  className="jsx-2787287577 questionSingle"
 >
   <div
-    className="jsx-338700453 type"
+    className="jsx-2787287577 type"
   >
     <span>
       SC
     </span>
   </div>
   <div
-    className="jsx-338700453 title"
+    className="jsx-2787287577 title"
   >
     This is a long question
-     (v
-    1
-    )
+     
+    <span
+      className="jsx-2787287577"
+    >
+      (v
+      1
+      )
+    </span>
   </div>
 </div>
 `;
@@ -4710,69 +4723,81 @@ exports[`Storyshots sessions Session 1`] = `
       className="jsx-1915206423 block"
     >
       <div
-        className="jsx-4251158648 questionBlock"
+        className="jsx-936553283 questionBlock"
       >
         <div
-          className="jsx-4251158648 questions"
+          className="jsx-936553283 questions"
         >
           <div
-            className="jsx-338700453 questionSingle"
+            className="jsx-2787287577 questionSingle"
           >
             <div
-              className="jsx-338700453 type"
+              className="jsx-2787287577 type"
             >
-              #1 - 
               <span>
                 SC
               </span>
             </div>
             <div
-              className="jsx-338700453 title"
+              className="jsx-2787287577 title"
             >
               This is a long question
-               (v
-              1
-              )
+               
+              <span
+                className="jsx-2787287577"
+              >
+                (v
+                1
+                )
+              </span>
             </div>
           </div>
           <div
-            className="jsx-338700453 questionSingle"
+            className="jsx-2787287577 questionSingle"
           >
             <div
-              className="jsx-338700453 type"
+              className="jsx-2787287577 type"
             >
-              #2 - 
               <span>
                 SC
               </span>
             </div>
             <div
-              className="jsx-338700453 title"
+              className="jsx-2787287577 title"
             >
               This is a long question
-               (v
-              1
-              )
+               
+              <span
+                className="jsx-2787287577"
+              >
+                (v
+                1
+                )
+              </span>
             </div>
           </div>
           <div
-            className="jsx-338700453 questionSingle"
+            className="jsx-2787287577 questionSingle"
           >
             <div
-              className="jsx-338700453 type"
+              className="jsx-2787287577 type"
             >
-              #3 - 
               <span>
                 SC
               </span>
             </div>
             <div
-              className="jsx-338700453 title"
+              className="jsx-2787287577 title"
             >
               This is a long question
-               (v
-              1
-              )
+               
+              <span
+                className="jsx-2787287577"
+              >
+                (v
+                1
+                )
+              </span>
             </div>
           </div>
         </div>
@@ -4867,69 +4892,81 @@ exports[`Storyshots sessions SessionList 1`] = `
           className="jsx-1915206423 block"
         >
           <div
-            className="jsx-4251158648 questionBlock"
+            className="jsx-936553283 questionBlock"
           >
             <div
-              className="jsx-4251158648 questions"
+              className="jsx-936553283 questions"
             >
               <div
-                className="jsx-338700453 questionSingle"
+                className="jsx-2787287577 questionSingle"
               >
                 <div
-                  className="jsx-338700453 type"
+                  className="jsx-2787287577 type"
                 >
-                  #1 - 
                   <span>
                     SC
                   </span>
                 </div>
                 <div
-                  className="jsx-338700453 title"
+                  className="jsx-2787287577 title"
                 >
                   This is a long question
-                   (v
-                  1
-                  )
+                   
+                  <span
+                    className="jsx-2787287577"
+                  >
+                    (v
+                    1
+                    )
+                  </span>
                 </div>
               </div>
               <div
-                className="jsx-338700453 questionSingle"
+                className="jsx-2787287577 questionSingle"
               >
                 <div
-                  className="jsx-338700453 type"
+                  className="jsx-2787287577 type"
                 >
-                  #2 - 
                   <span>
                     SC
                   </span>
                 </div>
                 <div
-                  className="jsx-338700453 title"
+                  className="jsx-2787287577 title"
                 >
                   This is a long question
-                   (v
-                  1
-                  )
+                   
+                  <span
+                    className="jsx-2787287577"
+                  >
+                    (v
+                    1
+                    )
+                  </span>
                 </div>
               </div>
               <div
-                className="jsx-338700453 questionSingle"
+                className="jsx-2787287577 questionSingle"
               >
                 <div
-                  className="jsx-338700453 type"
+                  className="jsx-2787287577 type"
                 >
-                  #3 - 
                   <span>
                     SC
                   </span>
                 </div>
                 <div
-                  className="jsx-338700453 title"
+                  className="jsx-2787287577 title"
                 >
                   This is a long question
-                   (v
-                  1
-                  )
+                   
+                  <span
+                    className="jsx-2787287577"
+                  >
+                    (v
+                    1
+                    )
+                  </span>
                 </div>
               </div>
             </div>
@@ -5001,69 +5038,81 @@ exports[`Storyshots sessions SessionList 1`] = `
           className="jsx-1915206423 block"
         >
           <div
-            className="jsx-4251158648 questionBlock"
+            className="jsx-936553283 questionBlock"
           >
             <div
-              className="jsx-4251158648 questions"
+              className="jsx-936553283 questions"
             >
               <div
-                className="jsx-338700453 questionSingle"
+                className="jsx-2787287577 questionSingle"
               >
                 <div
-                  className="jsx-338700453 type"
+                  className="jsx-2787287577 type"
                 >
-                  #1 - 
                   <span>
                     SC
                   </span>
                 </div>
                 <div
-                  className="jsx-338700453 title"
+                  className="jsx-2787287577 title"
                 >
                   This is a long question
-                   (v
-                  1
-                  )
+                   
+                  <span
+                    className="jsx-2787287577"
+                  >
+                    (v
+                    1
+                    )
+                  </span>
                 </div>
               </div>
               <div
-                className="jsx-338700453 questionSingle"
+                className="jsx-2787287577 questionSingle"
               >
                 <div
-                  className="jsx-338700453 type"
+                  className="jsx-2787287577 type"
                 >
-                  #2 - 
                   <span>
                     SC
                   </span>
                 </div>
                 <div
-                  className="jsx-338700453 title"
+                  className="jsx-2787287577 title"
                 >
                   This is a long question
-                   (v
-                  1
-                  )
+                   
+                  <span
+                    className="jsx-2787287577"
+                  >
+                    (v
+                    1
+                    )
+                  </span>
                 </div>
               </div>
               <div
-                className="jsx-338700453 questionSingle"
+                className="jsx-2787287577 questionSingle"
               >
                 <div
-                  className="jsx-338700453 type"
+                  className="jsx-2787287577 type"
                 >
-                  #3 - 
                   <span>
                     SC
                   </span>
                 </div>
                 <div
-                  className="jsx-338700453 title"
+                  className="jsx-2787287577 title"
                 >
                   This is a long question
-                   (v
-                  1
-                  )
+                   
+                  <span
+                    className="jsx-2787287577"
+                  >
+                    (v
+                    1
+                    )
+                  </span>
                 </div>
               </div>
             </div>
@@ -5228,80 +5277,69 @@ exports[`Storyshots sessions SessionTimeline 1`] = `
         className="jsx-4107093464 block"
       >
         <div
-          className="jsx-4251158648 questionBlock"
+          className="jsx-936553283 questionBlock"
         >
           <div
-            className="jsx-4251158648 index"
+            className="jsx-936553283 index"
           >
             Block 
             1
           </div>
           <div
-            className="jsx-4251158648 sessionStatus"
-          >
-            PLANNED
-          </div>
+            className="jsx-936553283 sessionStatus"
+          />
           <div
-            className="jsx-4251158648 questions"
+            className="jsx-936553283 questions"
           >
             <div
-              className="jsx-338700453 questionSingle"
+              className="jsx-2787287577 questionSingle"
             >
               <div
-                className="jsx-338700453 type"
+                className="jsx-2787287577 type"
               >
-                #1 - 
                 <span>
                   SC
                 </span>
               </div>
               <div
-                className="jsx-338700453 title"
+                className="jsx-2787287577 title"
               >
                 This is a long question
-                 (v
-                1
-                )
+                 
               </div>
             </div>
             <div
-              className="jsx-338700453 questionSingle"
+              className="jsx-2787287577 questionSingle"
             >
               <div
-                className="jsx-338700453 type"
+                className="jsx-2787287577 type"
               >
-                #2 - 
                 <span>
                   SC
                 </span>
               </div>
               <div
-                className="jsx-338700453 title"
+                className="jsx-2787287577 title"
               >
                 This is a long question
-                 (v
-                1
-                )
+                 
               </div>
             </div>
             <div
-              className="jsx-338700453 questionSingle"
+              className="jsx-2787287577 questionSingle"
             >
               <div
-                className="jsx-338700453 type"
+                className="jsx-2787287577 type"
               >
-                #3 - 
                 <span>
                   SC
                 </span>
               </div>
               <div
-                className="jsx-338700453 title"
+                className="jsx-2787287577 title"
               >
                 This is a long question
-                 (v
-                1
-                )
+                 
               </div>
             </div>
           </div>
