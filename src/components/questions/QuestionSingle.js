@@ -38,12 +38,11 @@ const QuestionSingle = ({
         }
 
         .type {
-
+          background-color: $color-primary-20p;
           text-align: center;
         }
 
         .title {
-          background-color: $color-primary-20p;
           text-align: center;
           color: $color-primary-strong;
         }

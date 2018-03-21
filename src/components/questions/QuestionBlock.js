@@ -55,7 +55,7 @@ const QuestionBlock = ({
         <QuestionSingle
           id={question.id}
           key={question.id}
-          noDetails={noDetails || noVersions}
+          noDetails={noVersions}
           title={question.title}
           type={question.type}
           version={question.version}
