@@ -91,12 +91,12 @@ const BarChart = ({ isSolutionShown, data, isColored }) => (
           stroke="white"
           style={{ fontSize: '2.5rem' }}
         />
-        {data.map((row, index) => (
+        {data.map(row => (
           <Cell
             fill={
               isSolutionShown && row.correct // eslint-disable-line
                 ? '#00FF00'
-                : isColored ? CHART_COLORS[index % 12] : '#1395BA'
+                : isColored ? row.fill : '#1395BA'
             }
             key={row.value}
           />
@@ -116,6 +116,7 @@ export default withProps(({ data, questionType, totalResponses }) => ({
     data.map(({ correct, count, value }, index) => ({
       correct,
       count,
+      fill: CHART_COLORS[index % 12],
       label: questionType === 'FREE_RANGE' ? +value : indexToLetter(index),
       labelIn: getLabelIn(CHART_TYPES.BAR_CHART, questionType, count, totalResponses, index),
       labelOut: getLabelOut(CHART_TYPES.BAR_CHART, questionType, count, totalResponses, index),

@@ -85,7 +85,7 @@ const StackChart = ({ isSolutionShown, data }) => (
           stroke="white"
           style={{ fontSize: '3rem' }}
         />
-        {data.map((row, index) => <Cell fill={CHART_COLORS[index % 12]} key={row.value} />)}
+        {data.map(row => <Cell fill={row.fill} key={row.value} />)}
       </Bar>
 
       <Bar
@@ -133,6 +133,7 @@ export default withProps(({ data, totalResponses }) => ({
   data: data.map(({ correct, count, value }, index) => ({
     correct,
     count: count || null, // if count is 0, return null
+    fill: CHART_COLORS[index % 12],
     index,
     residual: totalResponses - count || null, // if residual is 0, return null
     value,
