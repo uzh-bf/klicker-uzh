@@ -177,7 +177,7 @@ export default compose(
                 // HACK: omitDeep for typename removal
                 // TODO: check https://github.com/apollographql/apollo-client/issues/1564
                 // this shouldn't be necessary at all
-                options: omitDeep(options, '__typename'),
+                options: options && omitDeep(options, '__typename'),
                 solution,
                 tags,
                 title,
