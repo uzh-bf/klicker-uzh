@@ -14,10 +14,10 @@ expect.addSnapshotSerializer(questionSerializer)
 
 describe('QuestionService', () => {
   const questions = {}
-  let user
+  let userId
 
   beforeAll(async () => {
-    ({ user } = await initializeDb({
+    ({ userId } = await initializeDb({
       mongoose,
       email: 'testQuestions@bf.uzh.ch',
       shortname: 'questi',
@@ -26,7 +26,7 @@ describe('QuestionService', () => {
   })
   afterAll((done) => {
     mongoose.disconnect(done)
-    user = undefined
+    userId = undefined
   })
 
   describe('createQuestion', () => {
@@ -69,7 +69,7 @@ describe('QuestionService', () => {
     it('allows creating a valid SC question', async () => {
       const newQuestion = await QuestionService.createQuestion({
         ...question,
-        userId: user.id,
+        userId,
         solution: { SC: [false, true, false] },
       })
 
@@ -83,7 +83,7 @@ describe('QuestionService', () => {
       const newQuestion = await QuestionService.createQuestion({
         ...question,
         type: 'MC',
-        userId: user.id,
+        userId,
         solution: { MC: [true, true, false] },
       })
 
@@ -96,7 +96,7 @@ describe('QuestionService', () => {
     it('allows creating a valid FREE question', async () => {
       const newQuestion = await QuestionService.createQuestion({
         ...question,
-        userId: user.id,
+        userId,
         type: 'FREE',
         options: {},
         solution: { FREE: 'Schweiz' },
@@ -111,7 +111,7 @@ describe('QuestionService', () => {
     it('allows creating a valid FREE_RANGE question', async () => {
       const newQuestion = await QuestionService.createQuestion({
         ...question,
-        userId: user.id,
+        userId,
         type: 'FREE_RANGE',
         options: {
           restrictions: {
@@ -131,7 +131,7 @@ describe('QuestionService', () => {
     it('allows creating a partly restricted FREE_RANGE question', async () => {
       const newQuestion = await QuestionService.createQuestion({
         ...question,
-        userId: user.id,
+        userId,
         type: 'FREE_RANGE',
         options: {
           restrictions: {
@@ -151,7 +151,7 @@ describe('QuestionService', () => {
     it('allows creating an unrestricted FREE_RANGE question', async () => {
       const newQuestion = await QuestionService.createQuestion({
         ...question,
-        userId: user.id,
+        userId,
         type: 'FREE_RANGE',
         options: {
           restrictions: {

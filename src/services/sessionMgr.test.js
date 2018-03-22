@@ -19,11 +19,11 @@ expect.addSnapshotSerializer(questionInstanceSerializer)
 const prepareSession = prepareSessionFactory(SessionMgrService)
 
 describe('SessionMgrService', () => {
-  let user
+  let userId
   let questions
 
   beforeAll(async () => {
-    ({ user, questions } = await initializeDb({
+    ({ userId, questions } = await initializeDb({
       mongoose,
       email: 'testSessionMgr@bf.uzh.ch',
       shortname: 'sesMgr',
@@ -33,7 +33,7 @@ describe('SessionMgrService', () => {
   })
   afterAll((done) => {
     mongoose.disconnect(done)
-    user = undefined
+    userId = undefined
   })
 
   describe('createSession', () => {
@@ -41,7 +41,7 @@ describe('SessionMgrService', () => {
       const newSession = await SessionMgrService.createSession({
         name: 'empty feedback session',
         questionBlocks: [],
-        userId: user.id,
+        userId,
       })
 
       expect(newSession.blocks.length).toEqual(0)
@@ -68,7 +68,7 @@ describe('SessionMgrService', () => {
             ],
           },
         ],
-        userId: user.id,
+        userId,
       })
 
       expect(newSession.blocks.length).toEqual(2)
@@ -92,7 +92,7 @@ describe('SessionMgrService', () => {
             ],
           },
         ],
-        userId: user.id,
+        userId,
       })
 
       expect(newSession).toMatchSnapshot()
@@ -103,13 +103,13 @@ describe('SessionMgrService', () => {
     let preparedSession
 
     beforeAll(async () => {
-      preparedSession = await prepareSession(user.id)
+      preparedSession = await prepareSession(userId)
     })
 
     it('allows starting a created session', async () => {
       const startedSession = await SessionMgrService.startSession({
         id: preparedSession.id,
-        userId: user.id,
+        userId,
       })
 
       expect(startedSession.status).toEqual(SessionMgrService.SessionStatus.RUNNING)
@@ -119,12 +119,12 @@ describe('SessionMgrService', () => {
     it('prevents starting an already completed session', async () => {
       await SessionMgrService.endSession({
         id: preparedSession.id,
-        userId: user.id,
+        userId,
       })
 
       expect(SessionMgrService.startSession({
         id: preparedSession.id,
-        userId: user.id,
+        userId,
       })).rejects.toEqual(new Error('SESSION_ALREADY_COMPLETED'))
     })
   })
@@ -133,25 +133,25 @@ describe('SessionMgrService', () => {
     let preparedSession
 
     beforeAll(async () => {
-      preparedSession = await prepareSession(user.id)
+      preparedSession = await prepareSession(userId)
     })
 
     it('prevents completing a newly created session', async () => {
       expect(SessionMgrService.endSession({
         id: preparedSession.id,
-        userId: user.id,
+        userId,
       })).rejects.toEqual(new Error('SESSION_NOT_STARTED'))
     })
 
     it('allows ending a running session', async () => {
       await SessionMgrService.startSession({
         id: preparedSession.id,
-        userId: user.id,
+        userId,
       })
 
       const endedSession = await SessionMgrService.endSession({
         id: preparedSession.id,
-        userId: user.id,
+        userId,
       })
 
       expect(endedSession.status).toEqual(SessionMgrService.SessionStatus.COMPLETED)
@@ -161,7 +161,7 @@ describe('SessionMgrService', () => {
     it('returns on an already completed session', async () => {
       const session = await SessionMgrService.endSession({
         id: preparedSession.id,
-        userId: user.id,
+        userId,
       })
 
       expect(session).toMatchSnapshot()
@@ -172,10 +172,10 @@ describe('SessionMgrService', () => {
     let preparedSession
 
     beforeAll(async () => {
-      preparedSession = await prepareSession(user.id)
+      preparedSession = await prepareSession(userId)
       await SessionMgrService.startSession({
         id: preparedSession.id,
-        userId: user.id,
+        userId,
       })
     })
 
@@ -183,7 +183,7 @@ describe('SessionMgrService', () => {
       // update isConfusionBarometerActive
       const session = await SessionMgrService.updateSettings({
         sessionId: preparedSession.id,
-        userId: user.id,
+        userId,
         settings: { isConfusionBarometerActive: true },
       })
       expect(session.settings.isConfusionBarometerActive).toBeTruthy()
@@ -192,7 +192,7 @@ describe('SessionMgrService', () => {
       // update isFeedbackChannelActive
       const session2 = await SessionMgrService.updateSettings({
         sessionId: preparedSession.id,
-        userId: user.id,
+        userId,
         settings: { isFeedbackChannelActive: true },
       })
       expect(session2.settings.isFeedbackChannelActive).toBeTruthy()
@@ -201,7 +201,7 @@ describe('SessionMgrService', () => {
       // update isFeedbackChannelPublic
       const session3 = await SessionMgrService.updateSettings({
         sessionId: preparedSession.id,
-        userId: user.id,
+        userId,
         settings: { isFeedbackChannelPublic: true },
       })
       expect(session3.settings.isFeedbackChannelPublic).toBeTruthy()
@@ -210,7 +210,7 @@ describe('SessionMgrService', () => {
       // update isConfusionBarometerActive
       const session4 = await SessionMgrService.updateSettings({
         sessionId: preparedSession.id,
-        userId: user.id,
+        userId,
         settings: { isConfusionBarometerActive: false },
       })
       expect(session4.settings.isConfusionBarometerActive).toBeFalsy()
@@ -219,7 +219,7 @@ describe('SessionMgrService', () => {
       // update isFeedbackChannelActive
       const session5 = await SessionMgrService.updateSettings({
         sessionId: preparedSession.id,
-        userId: user.id,
+        userId,
         settings: { isFeedbackChannelActive: false },
       })
       expect(session5.settings.isFeedbackChannelActive).toBeFalsy()
@@ -229,7 +229,7 @@ describe('SessionMgrService', () => {
     it('allows changing all settings at once', async () => {
       const session = await SessionMgrService.updateSettings({
         sessionId: preparedSession.id,
-        userId: user.id,
+        userId,
         settings: {
           isConfusionBarometerActive: false,
           isFeedbackChannelActive: false,
@@ -246,7 +246,7 @@ describe('SessionMgrService', () => {
     afterAll(async () => {
       await SessionMgrService.endSession({
         id: preparedSession.id,
-        userId: user.id,
+        userId,
       })
     })
   })
@@ -255,14 +255,14 @@ describe('SessionMgrService', () => {
     let preparedSession
 
     beforeAll(async () => {
-      preparedSession = await prepareSession(user.id)
+      preparedSession = await prepareSession(userId)
     })
 
     it('has a valid initial state', async () => {
       // start a new session
       const session = await SessionMgrService.startSession({
         id: preparedSession.id,
-        userId: user.id,
+        userId,
       })
       // find all instances that belong to the new session
       const instances = await QuestionInstanceModel.find({
@@ -280,7 +280,7 @@ describe('SessionMgrService', () => {
 
     it('allows activating the first question block', async () => {
       // activate the next block of the running session
-      const session = await SessionMgrService.activateNextBlock({ userId: user.id })
+      const session = await SessionMgrService.activateNextBlock({ userId })
       // find all instances that belong to the current session
       const instances = await QuestionInstanceModel.find({
         _id: { $in: session.blocks[0].instances },
@@ -298,7 +298,7 @@ describe('SessionMgrService', () => {
 
     it('recognizes that the final block has been active', async () => {
       // finish the session
-      const session = await SessionMgrService.activateNextBlock({ userId: user.id })
+      const session = await SessionMgrService.activateNextBlock({ userId })
       // find all instances that belong to the current session
       const instances = await QuestionInstanceModel.find({
         _id: { $in: session.blocks[0].instances },
@@ -316,7 +316,7 @@ describe('SessionMgrService', () => {
     afterAll(async () => {
       await SessionMgrService.endSession({
         id: preparedSession.id,
-        userId: user.id,
+        userId,
       })
     })
   })
