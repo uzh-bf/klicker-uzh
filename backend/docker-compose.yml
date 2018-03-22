@@ -7,15 +7,12 @@ services:
     environment:
       APP_DOMAIN: "localhost"
       APP_SECRET: "hello-world"
-      MONGO_URL: "klicker:klicker@ds161042.mlab.com:61042/klicker-dev"
-      REDIS_URL: ":klicker-dev@144.76.118.94:6379"
+      APP_FILTERING_FP:
+      APP_FILTERING_IP:
+      MONGO_URL: "klicker:klicker@ds125388.mlab.com:25388/klicker-migration"
+      REDIS_URL: ":klicker-dev@144.76.118.118:6379"
       ORIGIN: "http://localhost:3000"
       PORT: 3000
-      # OPBEAT_APP_ID: ""
-      # OPBEAT_ORG_ID: ""
-      # OPBEAT_SECRET_TOKEN: ""
-      # MONGO_URL: "mongodb/klicker"
-      # REDIS_URL: "redis"
 
   #redis:
     #image: "redis:3-32bit"
