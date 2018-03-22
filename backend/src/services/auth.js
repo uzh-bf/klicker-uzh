@@ -105,6 +105,11 @@ const login = async (res, email, password) => {
   if (!user || !bcrypt.compareSync(password, user.password)) {
     sendSlackNotification(`[auth] Login failed for ${email}`)
 
+    // redirect the user to the login page
+    if (process.env.NODE_ENV !== 'test') {
+      res.redirect('/user/login')
+    }
+
     throw new Error('INVALID_LOGIN')
   }
 
