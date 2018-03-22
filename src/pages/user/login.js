@@ -81,8 +81,8 @@ export default compose(
         const { data } = await mutate({ variables: { email, password } })
 
         // save the user id in a cookie
-        if (data.login && data.login.id) {
-          Cookies.set('userId', data.login.id)
+        if (data.login) {
+          Cookies.set('userId', data.login)
         }
 
         // redirect to question pool
