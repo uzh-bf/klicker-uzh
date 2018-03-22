@@ -382,7 +382,7 @@ export default compose(
     return {
       initialValues: {
         description: versions[initializeVersion].description,
-        options: versions[initializeVersion].options[type],
+        options: versions[initializeVersion].options[type] || {},
         tags: questionTags.map(tag => tag.name),
         title,
         type,
