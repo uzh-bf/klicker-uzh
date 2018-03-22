@@ -20,11 +20,11 @@ expect.addSnapshotSerializer(questionInstanceSerializer)
 const prepareSession = prepareSessionFactory(SessionMgrService)
 
 describe('SessionExecService', () => {
-  let user
+  let userId
   let questions
 
   beforeAll(async () => {
-    ({ user, questions } = await initializeDb({
+    ({ userId, questions } = await initializeDb({
       mongoose,
       email: 'testSessionExec@bf.uzh.ch',
       shortname: 'sesExc',
@@ -34,14 +34,14 @@ describe('SessionExecService', () => {
   })
   afterAll((done) => {
     mongoose.disconnect(done)
-    user = undefined
+    userId = undefined
   })
 
   describe('addFeedback', () => {
     let preparedSession
 
     beforeAll(async () => {
-      preparedSession = await prepareSession(user.id)
+      preparedSession = await prepareSession(userId)
     })
 
     it('prevents adding feedbacks if a session is not yet running', () => {
@@ -54,7 +54,7 @@ describe('SessionExecService', () => {
     it('prevents adding feedbacks if the functionality is deactivated', async () => {
       await SessionMgrService.startSession({
         id: preparedSession.id,
-        userId: user.id,
+        userId,
       })
 
       expect(SessionExecService.addFeedback({
@@ -66,7 +66,7 @@ describe('SessionExecService', () => {
     it('allows adding new feedbacks to a running session', async () => {
       await SessionMgrService.updateSettings({
         sessionId: preparedSession.id,
-        userId: user.id,
+        userId,
         settings: {
           isFeedbackChannelActive: true,
         },
@@ -88,7 +88,7 @@ describe('SessionExecService', () => {
     it('prevents adding feedbacks to an already finished session', async () => {
       await SessionMgrService.endSession({
         id: preparedSession.id,
-        userId: user.id,
+        userId,
       })
 
       // TODO: add assertion
@@ -103,7 +103,7 @@ describe('SessionExecService', () => {
     let preparedSession
 
     beforeAll(async () => {
-      preparedSession = await prepareSession(user.id)
+      preparedSession = await prepareSession(userId)
     })
 
     it('prevents adding timesteps if a session is not yet running', () => {
@@ -117,7 +117,7 @@ describe('SessionExecService', () => {
     it('prevents adding timesteps if the functionality is deactivated', async () => {
       await SessionMgrService.startSession({
         id: preparedSession.id,
-        userId: user.id,
+        userId,
       })
 
       expect(SessionExecService.addConfusionTS({
@@ -130,7 +130,7 @@ describe('SessionExecService', () => {
     it('allows adding new timesteps', async () => {
       await SessionMgrService.updateSettings({
         sessionId: preparedSession.id,
-        userId: user.id,
+        userId,
         settings: {
           isConfusionBarometerActive: true,
         },
@@ -154,7 +154,7 @@ describe('SessionExecService', () => {
     it('prevents adding timesteps to an already finished session', async () => {
       await SessionMgrService.endSession({
         id: preparedSession.id,
-        userId: user.id,
+        userId,
       })
 
       // TODO: add assertion
@@ -167,7 +167,7 @@ describe('SessionExecService', () => {
     beforeEach(async () => {
       // prepare a session with a SC question
       preparedSession = await prepareSession(
-        user.id,
+        userId,
         [
           { question: questions[QuestionTypes.SC].id, version: 0 },
           { question: questions[QuestionTypes.MC].id, version: 0 },
@@ -182,7 +182,7 @@ describe('SessionExecService', () => {
       // end the session
       await SessionMgrService.endSession({
         id: preparedSession.id,
-        userId: user.id,
+        userId,
       })
     })
 
@@ -201,7 +201,7 @@ describe('SessionExecService', () => {
 
       // activate the next block of the running session
       // this opens the instances for responses
-      const session = await SessionMgrService.activateNextBlock({ userId: user.id })
+      const session = await SessionMgrService.activateNextBlock({ userId })
       expect(session).toMatchSnapshot()
 
       // add a response
@@ -245,7 +245,7 @@ describe('SessionExecService', () => {
 
       // activate the next block of the running session
       // this opens the instances for responses
-      const session = await SessionMgrService.activateNextBlock({ userId: user.id })
+      const session = await SessionMgrService.activateNextBlock({ userId })
       expect(session).toMatchSnapshot()
 
       // add a response
@@ -272,7 +272,7 @@ describe('SessionExecService', () => {
 
       // activate the next block of the running session
       // this opens the instances for responses
-      const session = await SessionMgrService.activateNextBlock({ userId: user.id })
+      const session = await SessionMgrService.activateNextBlock({ userId })
       expect(session).toMatchSnapshot()
 
       // try adding an invalid response
@@ -325,7 +325,7 @@ describe('SessionExecService', () => {
 
       // activate the next block of the running session
       // this opens the instances for responses
-      const session = await SessionMgrService.activateNextBlock({ userId: user.id })
+      const session = await SessionMgrService.activateNextBlock({ userId })
       expect(session).toMatchSnapshot()
 
       // try adding an invalid response

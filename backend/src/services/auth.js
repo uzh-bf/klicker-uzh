@@ -139,7 +139,7 @@ const login = async (res, email, password) => {
   }
 
   // resolve with data about the user
-  return user
+  return user.id
 }
 
 // change the password of an existing user

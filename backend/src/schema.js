@@ -71,7 +71,7 @@ const typeDefs = [
     createUser(email: String!, password: String!, shortname: String!): User!
     deleteFeedback(sessionId: ID!, feedbackId: ID!): Session!
     endSession(id: ID!): Session!
-    login(email: String!, password: String!): User!
+    login(email: String!, password: String!): ID!
     modifyQuestion(id: ID!, question: QuestionModifyInput!): Question!
     requestPassword(email: String!): String!
     startSession(id: ID!): Session!

@@ -155,14 +155,11 @@ describe('AuthService', () => {
     })
 
     it('works with a real user', async () => {
-      const user = await login(res, 'testAuth@bf.uzh.ch', 'somePassword')
+      const userId = await login(res, 'testAuth@bf.uzh.ch', 'somePassword')
 
       // expect the returned user to contain the correct email and shortname
       // the shortname is only saved in the database (thus the connection must work)
-      expect(user).toEqual(expect.objectContaining({
-        email: 'testAuth@bf.uzh.ch',
-        shortname: 'auth',
-      }))
+      expect(userId).toBeTruthy()
 
       // expect a new cookie to have been set
       expect(cookieStore[0]).toEqual('jwt')
@@ -170,14 +167,11 @@ describe('AuthService', () => {
 
     it('allows changing the password', async () => {
       // expect the old login to work and the promise to resolve
-      const user = await login(res, 'testAuth@bf.uzh.ch', 'somePassword')
-      expect(user).toEqual(expect.objectContaining({
-        email: 'testAuth@bf.uzh.ch',
-        shortname: 'auth',
-      }))
+      const userId = await login(res, 'testAuth@bf.uzh.ch', 'somePassword')
+      expect(userId).toBeTruthy()
 
       // change the user's password
-      const updatedUser = await changePassword(user.id, 'someOtherPassword')
+      const updatedUser = await changePassword(userId, 'someOtherPassword')
       expect(updatedUser).toEqual(expect.objectContaining({
         email: 'testAuth@bf.uzh.ch',
         shortname: 'auth',
@@ -187,10 +181,7 @@ describe('AuthService', () => {
       expect(login(res, 'testAuth@bf.uzh.ch', 'somePassword')).rejects.toEqual(new Error('INVALID_LOGIN'))
 
       // expect the new login to work
-      expect(login(res, 'testAuth@bf.uzh.ch', 'someOtherPassword')).resolves.toEqual(expect.objectContaining({
-        email: 'testAuth@bf.uzh.ch',
-        shortname: 'auth',
-      }))
+      expect(login(res, 'testAuth@bf.uzh.ch', 'someOtherPassword')).resolves.toBeTruthy()
     })
 
     it('allows requesting a password reset link', async () => {})

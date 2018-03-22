@@ -63,7 +63,7 @@ const initializeDb = async ({
 
   if (withLogin) {
     const result = {
-      user: await AuthService.login(null, email, 'somePassword'),
+      userId: await AuthService.login(null, email, 'somePassword'),
     }
 
     if (withQuestions) {
@@ -81,7 +81,7 @@ const initializeDb = async ({
           tags: ['CDEF'],
           title: 'second question',
           type: QuestionTypes.SC,
-          userId: result.user.id,
+          userId: result.userId,
         }),
         [QuestionTypes.MC]: await QuestionService.createQuestion({
           description: 'very good',
@@ -96,7 +96,7 @@ const initializeDb = async ({
           tags: ['CDEF'],
           title: 'second question',
           type: QuestionTypes.MC,
-          userId: result.user.id,
+          userId: result.userId,
         }),
         [QuestionTypes.FREE]: await QuestionService.createQuestion({
           description: 'a description',
@@ -104,7 +104,7 @@ const initializeDb = async ({
           tags: ['AZA', 'BBB'],
           title: 'first question',
           type: QuestionTypes.FREE,
-          userId: result.user.id,
+          userId: result.userId,
         }),
         [QuestionTypes.FREE_RANGE]: await QuestionService.createQuestion({
           description: 'a description',
@@ -117,7 +117,7 @@ const initializeDb = async ({
           tags: ['AZA', 'BBB'],
           title: 'first question',
           type: QuestionTypes.FREE_RANGE,
-          userId: result.user.id,
+          userId: result.userId,
         }),
         FREE_RANGE_PART: await QuestionService.createQuestion({
           description: 'a description',
@@ -130,7 +130,7 @@ const initializeDb = async ({
           tags: ['CDEF', 'BBB'],
           title: 'partly restricted free range',
           type: QuestionTypes.FREE_RANGE,
-          userId: result.user.id,
+          userId: result.userId,
         }),
         FREE_RANGE_OPEN: await QuestionService.createQuestion({
           description: 'a description',
@@ -143,7 +143,7 @@ const initializeDb = async ({
           tags: ['CDEF', 'BBB'],
           title: 'unrestricted free range',
           type: QuestionTypes.FREE_RANGE,
-          userId: result.user.id,
+          userId: result.userId,
         }),
       }
     }

@@ -1,15 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Integration Login works with valid credentials 1`] = `
-
-    login {
-      email: testIntegration@bf.uzh.ch
-      shortname: integr
-      runningSession: false
-    }
-  
-`;
-
 exports[`Integration Question Archiving can archive questions 1`] = `
 
     archiveQuestions: [

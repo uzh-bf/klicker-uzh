@@ -19,26 +19,9 @@ const RegistrationSerializer = {
 
 const LoginMutation = `
   mutation Login($email: String!, $password: String!) {
-    login(email: $email, password: $password) {
-      id
-      email
-      shortname
-      runningSession {
-        id
-      }
-    }
+    login(email: $email, password: $password)
   }
 `
-const LoginSerializer = {
-  test: ({ login }) => !!login,
-  print: ({ login: { email, shortname, runningSession } }) => `
-    login {
-      email: ${email}
-      shortname: ${shortname}
-      runningSession: ${!!runningSession}
-    }
-  `,
-}
 
 const CreateQuestionMutation = `
   mutation CreateQuestion(
@@ -407,7 +390,6 @@ module.exports = {
   ArchiveQuestionsMutation,
   serializers: [
     RegistrationSerializer,
-    LoginSerializer,
     CreateQuestionSerializer,
     CreateSessionSerializer,
     StartAndEndSessionSerializer,
