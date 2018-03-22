@@ -7,16 +7,12 @@ services:
         API_URL: "http://localhost:4000/graphql"
         FINGERPRINTING: "true"
         VERSION: "docker-compose"
-        # LOGROCKET: "vqm2qj/klicker"
-        # HOTJAR: ""
-        # OPBEAT_APP_ID_REACT: ""
-        # OPBEAT_ORG_ID_REACT: ""
-        # SENTRY_DSN: "https://16014e4cbb9e48a39a439e2c076ccc4f@sentry.ibf-devops.ch/6"
     environment:
-      REDIS_URL: ":klicker-dev@144.76.118.94:6379"
+      API_URL: "http://localhost:4000/graphql"
+      APP_FINGERPRINTING: "true"
+      APM_NAME:
+      HELMET_CSP:
+      REDIS_URL: ":klicker-dev@144.76.118.118:6379"
       STATIC_PATH: "/"
-      # OPBEAT_APP_ID_NEXT: ""
-      # OPBEAT_ORG_ID_NEXT: ""
-      # OPBEAT_SECRET_TOKEN: ""
     ports:
       - "3000:3000"
