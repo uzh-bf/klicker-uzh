@@ -127,11 +127,5 @@ jobs:
           --build-arg VERSION=$TRAVIS_TAG
           -t $IMAGE_NAME:stable
           -t $IMAGE_NAME:$TRAVIS_TAG
-        - docker push $IMAGE_NAME:$TRAVIS_TAG
-        - docker push $IMAGE_NAME:stable
-        - >
-          curl $OPBEAT_URL
-          -H "Authorization: Bearer $OPBEAT_TOKEN"
-          -d rev=`git log -n 1 --pretty=format:%H`
-          -d branch=`git rev-parse --abbrev-ref HEAD`
-          -d status=completed
+        - travis_retry docker push $IMAGE_NAME:$TRAVIS_TAG
+        - travis_retry docker push $IMAGE_NAME:stable
