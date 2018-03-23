@@ -125,5 +125,5 @@ jobs:
           --build-arg VERSION=$TRAVIS_TAG
           -t $IMAGE_NAME:stable
           -t $IMAGE_NAME:$TRAVIS_TAG
-        - docker push $IMAGE_NAME:$TRAVIS_TAG
-        - docker push $IMAGE_NAME:stable
+        - travis_retry docker push $IMAGE_NAME:$TRAVIS_TAG
+        - travis_retry docker push $IMAGE_NAME:stable
