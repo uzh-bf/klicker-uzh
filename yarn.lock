@@ -955,15 +955,15 @@ async-limiter@~1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/async-limiter/-/async-limiter-1.0.0.tgz#78faed8c3d074ab81f22b4e985d79e8738f720f8"
 
-async-value-promise@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/async-value-promise/-/async-value-promise-1.0.0.tgz#472339b269944c277f4bf4ee421db44ff72fc614"
+async-value-promise@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/async-value-promise/-/async-value-promise-1.1.0.tgz#886774424961be7f2b26e148d4fbbcada8762c88"
   dependencies:
-    async-value "^1.0.0"
+    async-value "^1.2.2"
 
-async-value@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/async-value/-/async-value-1.0.0.tgz#669c89045e157f214737c733e185d2c0d8e2eea8"
+async-value@^1.2.2:
+  version "1.2.2"
+  resolved "https://registry.yarnpkg.com/async-value/-/async-value-1.2.2.tgz#84517a1e7cb6b1a5b5e181fa31be10437b7fb125"
 
 async@2.1.4:
   version "2.1.4"
@@ -3799,12 +3799,12 @@ elastic-apm-http-client@^5.2.0:
   dependencies:
     fast-safe-stringify "^1.2.0"
 
-elastic-apm-node@1.2.1:
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.2.1.tgz#6e8f6eb365fe1237615185fe1fb4e5b84f0b8769"
+elastic-apm-node@1.3.0:
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.3.0.tgz#a429d28ec7edbff8eaa7e62990925a727e3e3651"
   dependencies:
     after-all-results "^2.0.0"
-    async-value-promise "^1.0.0"
+    async-value-promise "^1.1.0"
     console-log-level "^1.4.0"
     cookie "^0.3.1"
     core-util-is "^1.0.2"
