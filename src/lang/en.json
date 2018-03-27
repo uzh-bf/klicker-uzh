@@ -87,7 +87,7 @@
   "session.button.completed.content": "Copy",
   "session.button.created.content": "Start",
   "session.button.running.content": "Running",
-  "sessionArea.toJoinSession": "Student View",
+  "sessionArea.toJoinSession": "Audience View",
   "runningSession.button.evaluation": "Evaluation (Results)",
   "joinSession.noEvaluationActive": "No evaluation active.",
   "joinSession.noFeedbackChannel": "Feedback-Channel deactivated.",

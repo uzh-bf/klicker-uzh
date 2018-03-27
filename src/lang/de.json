@@ -93,7 +93,7 @@
   "session.button.completed.content": "Kopieren",
   "session.button.created.content": "Starten",
   "session.button.running.content": "Laufend",
-  "sessionArea.toJoinSession": "Studentenansicht",
+  "sessionArea.toJoinSession": "Publikumsansicht",
   "runningSession.button.evaluation": "Auswertung (Resultate)",
   "joinSession.noEvaluationActive": "Es ist keine Auswertung aktiv.",
   "joinSession.noFeedbackChannel": "Der Feedback-Channel ist deaktiviert.",
