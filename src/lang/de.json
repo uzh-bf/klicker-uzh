@@ -117,5 +117,6 @@
   "runningSession.confusion.difficulty": "Schwierigkeit",
   "runningSession.confusion.speed": "Geschwindigkeit",
   "common.string.activated": "Aktiviert",
-  "runningSession.feedbackChannel.publishQuestions": "Feedbacks veröffentlichen"
+  "runningSession.feedbackChannel.publishQuestions": "Feedbacks veröffentlichen",
+  "runningSession.pageTitle": "Laufende Session"
 }

@@ -102,5 +102,6 @@
   "form.password.invalid": "Please provide a valid password (8+ characters).",
   "form.shortname.invalid": "Please provide a valid account identifier (3-6 characters).",
   "form.passwordRepeat.invalid": "Please ensure that both passwords match.",
-  "form.institution.invalid": "Please provide a valid institution."
+  "form.institution.invalid": "Please provide a valid institution.",
+  "runningSession.pageTitle": "Running Session"
 }
