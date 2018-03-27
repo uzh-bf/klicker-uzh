@@ -54,6 +54,7 @@
     "react-addons-css-transition-group": "15.6.2",
     "react-apollo": "2.1.1",
     "react-autosuggest": "9.3.4",
+    "react-beautiful-dnd": "^6.0.0",
     "react-d3-cloud": "0.6.0",
     "react-dnd": "2.6.0",
     "react-dnd-html5-backend": "2.6.0",
