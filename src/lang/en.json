@@ -47,8 +47,7 @@
   "createQuestion.tagInput.tooltip":
     "Add tags to your question to improve organization and reusability (similar to the folders used previously).",
   "createQuestion.titleInput.label": "Question Title",
-  "createQuestion.titleInput.tooltip":
-    "Enter a short summarizing title for the question. This is only visible to you!",
+  "createQuestion.titleInput.tooltip": "Enter a short summarizing title for the question.",
   "questionDetails.usageHistory": "Usage history",
   "questionDetails.button.view": "View",
   "questionDetails.button.edit": "Edit",
