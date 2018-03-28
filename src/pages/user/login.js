@@ -1,8 +1,7 @@
 import React from 'react'
 import Router from 'next/router'
-import PropTypes from 'prop-types'
 import Cookies from 'js-cookie'
-import { compose, withProps } from 'recompose'
+import { compose } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Mutation } from 'react-apollo'
 
@@ -12,11 +11,10 @@ import { LoginMutation } from '../../graphql'
 import { pageWithIntl, withData, withLogging } from '../../lib'
 
 const propTypes = {
-  handleSubmit: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
 }
 
-const Login = ({ intl, handleSubmit }) => (
+const Login = ({ intl }) => (
   <StaticLayout
     pageTitle={intl.formatMessage({
       defaultMessage: 'Login',
@@ -31,7 +29,22 @@ const Login = ({ intl, handleSubmit }) => (
       <Mutation mutation={LoginMutation}>
         {(login, { loading, error }) => (
           <React.Fragment>
-            <LoginForm intl={intl} loading={loading} onSubmit={handleSubmit(login)} />
+            <LoginForm
+              intl={intl}
+              loading={loading}
+              onSubmit={async ({ email, password }) => {
+                // perform the login
+                const { data } = await login({ variables: { email, password } })
+
+                // save the user id in a cookie
+                if (data.login) {
+                  Cookies.set('userId', data.login)
+                }
+
+                // redirect to question pool
+                Router.push('/questions')
+              }}
+            />
             {error && <div className="errorMessage message">Login failed ({error.message})</div>}
           </React.Fragment>
         )}
@@ -75,18 +88,4 @@ export default compose(
   }),
   withData,
   pageWithIntl,
-  withProps({
-    // handle form submission
-    handleSubmit: login => async ({ email, password }) => {
-      const { data } = await login({ variables: { email, password } })
-
-      // save the user id in a cookie
-      if (data.login) {
-        Cookies.set('userId', data.login)
-      }
-
-      // redirect to question pool
-      Router.push('/questions')
-    },
-  }),
 )(Login)
