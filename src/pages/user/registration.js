@@ -31,7 +31,7 @@ const Registration = ({ intl }) => (
 
           if (newEmail) {
             return (
-              <div className="successMessage message">
+              <div className="successMessage">
                 <FormattedMessage
                   defaultMessage="Successfully registered as {newEmail}.{br} Please login at {link} after the activation of your account."
                   id="user.registration.successNotification"
@@ -47,18 +47,14 @@ const Registration = ({ intl }) => (
 
           return (
             <React.Fragment>
-              {!newEmail && (
-                <RegistrationForm
-                  intl={intl}
-                  loading={loading}
-                  onSubmit={({ email, password, shortname }) => {
-                    register({ variables: { email, password, shortname } })
-                  }}
-                />
-              )}
-              {error && (
-                <div className="errorMessage message">Registration failed ({error.message})</div>
-              )}
+              <RegistrationForm
+                intl={intl}
+                loading={loading}
+                onSubmit={({ email, password, shortname }) => {
+                  register({ variables: { email, password, shortname } })
+                }}
+              />
+              {error && <div className="errorMessage">Registration failed ({error.message})</div>}
             </React.Fragment>
           )
         }}
@@ -74,7 +70,8 @@ const Registration = ({ intl }) => (
             margin-top: 0;
           }
 
-          .message {
+          .errorMessage,
+          .successMessage {
             font-weight: bold;
           }
           .errorMessage {
