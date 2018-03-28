@@ -3590,9 +3590,9 @@ jws@^3.1.4:
     jwa "^1.1.4"
     safe-buffer "^5.0.1"
 
-kareem@2.0.5:
-  version "2.0.5"
-  resolved "https://registry.yarnpkg.com/kareem/-/kareem-2.0.5.tgz#437e1e40f1be304ee21b3e4790eb3a05418b35ca"
+kareem@2.0.6:
+  version "2.0.6"
+  resolved "https://registry.yarnpkg.com/kareem/-/kareem-2.0.6.tgz#011ed59fd718bb147c63141a799fc888cd5a211b"
 
 kind-of@^3.0.2, kind-of@^3.0.3, kind-of@^3.2.0:
   version "3.2.2"
@@ -4151,13 +4151,13 @@ mongoose-legacy-pluralize@1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/mongoose-legacy-pluralize/-/mongoose-legacy-pluralize-1.0.2.tgz#3ba9f91fa507b5186d399fb40854bff18fb563e4"
 
-mongoose@5.0.11:
-  version "5.0.11"
-  resolved "https://registry.yarnpkg.com/mongoose/-/mongoose-5.0.11.tgz#bb31a98591cd2377312ded28155281110a9e1da0"
+mongoose@5.0.12:
+  version "5.0.12"
+  resolved "https://registry.yarnpkg.com/mongoose/-/mongoose-5.0.12.tgz#608a3829bf2edae47b0078cd1970ede2a033b3a0"
   dependencies:
     async "2.1.4"
     bson "~1.0.4"
-    kareem "2.0.5"
+    kareem "2.0.6"
     lodash.get "4.4.2"
     mongodb "3.0.4"
     mongoose-legacy-pluralize "1.0.2"
