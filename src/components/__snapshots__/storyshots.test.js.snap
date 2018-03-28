@@ -185,17 +185,17 @@ exports[`Storyshots common/components ListWithHeader 1`] = `
 exports[`Storyshots common/navbar AccountArea 1`] = `
 <div
   aria-busy={undefined}
-  aria-disabled={true}
+  aria-disabled={undefined}
   aria-expanded={false}
   aria-multiselectable={undefined}
-  className="ui disabled item simple dropdown"
+  className="ui item simple dropdown"
   onBlur={[Function]}
   onChange={[Function]}
   onClick={[Function]}
   onFocus={[Function]}
   onMouseDown={[Function]}
   role="listbox"
-  tabIndex={-1}
+  tabIndex={0}
 >
   <div
     aria-live="polite"
@@ -230,10 +230,10 @@ exports[`Storyshots common/navbar AccountArea 1`] = `
 
 exports[`Storyshots common/navbar Navbar 1`] = `
 <div
-  className="jsx-578192029 navbar"
+  className="jsx-189722198 navbar"
 >
   <div
-    className="jsx-578192029 sideArea"
+    className="jsx-189722198 sideArea"
   >
     <div
       className="ui borderless noBorder menu"
@@ -248,14 +248,14 @@ exports[`Storyshots common/navbar Navbar 1`] = `
         />
       </div>
       <h1
-        className="jsx-578192029"
+        className="jsx-189722198"
       >
         Example page
       </h1>
     </div>
   </div>
   <div
-    className="jsx-578192029 searchArea"
+    className="jsx-189722198 searchArea"
   >
     <div
       className="jsx-2877258603 searchArea"
@@ -275,7 +275,7 @@ exports[`Storyshots common/navbar Navbar 1`] = `
     </div>
   </div>
   <div
-    className="jsx-578192029 accountArea"
+    className="jsx-189722198 accountArea"
   >
     <div
       className="ui borderless loginArea noBorder menu"
@@ -335,17 +335,17 @@ exports[`Storyshots common/navbar Navbar 1`] = `
         </a>
         <div
           aria-busy={undefined}
-          aria-disabled={true}
+          aria-disabled={undefined}
           aria-expanded={false}
           aria-multiselectable={undefined}
-          className="ui disabled item simple dropdown"
+          className="ui item simple dropdown"
           onBlur={[Function]}
           onChange={[Function]}
           onClick={[Function]}
           onFocus={[Function]}
           onMouseDown={[Function]}
           role="listbox"
-          tabIndex={-1}
+          tabIndex={0}
         >
           <div
             aria-live="polite"
