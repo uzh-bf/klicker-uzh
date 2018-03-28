@@ -5,16 +5,17 @@ import { FormattedMessage } from 'react-intl'
 
 const propTypes = {
   accountShort: PropTypes.string.isRequired,
+  onLogout: PropTypes.func.isRequired,
 }
 
-const AccountArea = ({ accountShort }) => (
+const AccountArea = ({ accountShort, onLogout }) => (
   <React.Fragment>
-    <Dropdown disabled item simple icon="user" text={accountShort.toUpperCase()}>
+    <Dropdown item simple icon="user" text={accountShort.toUpperCase()}>
       <Dropdown.Menu>
         {/* <Dropdown.Item disabled>
           <FormattedMessage defaultMessage="Settings" id="common.string.settings" />
         </Dropdown.Item> */}
-        <Dropdown.Item>
+        <Dropdown.Item onClick={onLogout}>
           <FormattedMessage defaultMessage="Logout" id="common.string.logout" />
         </Dropdown.Item>
       </Dropdown.Menu>
