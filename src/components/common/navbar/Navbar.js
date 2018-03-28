@@ -6,7 +6,7 @@ import { Icon, Menu } from 'semantic-ui-react'
 import { graphql } from 'react-apollo'
 import { compose, withProps } from 'recompose'
 
-import { AccountSummaryQuery } from '../../../graphql'
+import { AccountSummaryQuery, LogoutMutation } from '../../../graphql'
 
 import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'
@@ -199,6 +199,7 @@ NavbarPres.defaultProps = defaultProps
 
 export default compose(
   graphql(AccountSummaryQuery),
+  graphql(LogoutMutation, { name: 'logout' }),
   withProps(({ data }) => ({
     accountShort: _get(data, 'user.shortname'),
     runningSessionId: _get(data, 'user.runningSession.id'),
