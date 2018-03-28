@@ -128,7 +128,7 @@ export const NavbarPres = ({
 
           :global(.sidebar),
           :global(.menu) {
-            color: white;
+            color: $color-white;
             border-radius: 0;
             font-size: $font-size-h1;
             background-color: $background-color;
@@ -209,7 +209,7 @@ export default compose(
   })),
   withHandlers({
     // handle logout
-    handleLogout: ({ logout }) => () => async () => {
+    handleLogout: ({ logout }) => async () => {
       await logout()
 
       // redirect to the landing page
