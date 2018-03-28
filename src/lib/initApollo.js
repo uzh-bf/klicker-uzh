@@ -2,7 +2,10 @@
 // https://github.com/zeit/next.js/blob/canary/examples/with-apollo/lib/initApollo.js
 
 import { ApolloClient } from 'apollo-client'
-import { HttpLink } from 'apollo-link-http'
+import { BatchHttpLink } from 'apollo-link-batch-http'
+import { onError } from 'apollo-link-error'
+import { withClientState } from 'apollo-link-state'
+import { ApolloLink } from 'apollo-link'
 // import { createPersistedQueryLink } from 'apollo-link-persisted-queries'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import fetch from 'isomorphic-unfetch'
@@ -42,10 +45,29 @@ function create(initialState) {
     dataIdFromObject: o => o.id,
   }).restore(initialState || {})
 
-  const link = new HttpLink({
-    credentials: 'include', // Additional fetch() options like `credentials` or `headers`
-    uri: process.env.API_URL || 'http://localhost:4000/graphql',
-  })
+  const link = ApolloLink.from([
+    withClientState({
+      cache,
+      resolvers: {
+        // TODO: add useful resolvers for local state
+      },
+    }),
+    onError(({ graphQLErrors, networkError }) => {
+      if (graphQLErrors) {
+        // TODO: log errors to sentry?
+        graphQLErrors.map(({ message, locations, path }) =>
+          console.log(
+            `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`,
+          ),
+        )
+      }
+      if (networkError) console.log(`[Network error]: ${networkError}`)
+    }),
+    new BatchHttpLink({
+      credentials: 'include', // Additional fetch() options like `credentials` or `headers`
+      uri: process.env.API_URL || 'http://localhost:4000/graphql',
+    }),
+  ])
 
   /* const persistQueriesLink = createPersistedQueryLink({
     // we need to pass both disable and generateHash (or it will bug)
