@@ -147,6 +147,20 @@ const login = async (res, email, password) => {
   return user.id
 }
 
+// log the user out (remove the cookie and redirect)
+const logout = async (res) => {
+  if (res && res.cookie) {
+    res.cookie('jwt', null, {
+      domain: process.env.APP_DOMAIN,
+      httpOnly: true,
+      maxAge: -1,
+      path: process.env.APP_PATH ? `${process.env.APP_PATH}/graphql` : '/graphql',
+      secure: !dev && process.env.APP_HTTPS,
+    })
+  }
+  return 'LOGGED_OUT'
+}
+
 // change the password of an existing user
 const changePassword = async (userId, newPassword) => {
   // look for a user with the given id
@@ -236,6 +250,7 @@ module.exports = {
   getToken,
   signup,
   login,
+  logout,
   changePassword,
   requestPassword,
 }

@@ -23,6 +23,12 @@ const LoginMutation = `
   }
 `
 
+const LogoutMutation = `
+  mutation Logout {
+    logout
+  }
+`
+
 const CreateQuestionMutation = `
   mutation CreateQuestion(
     $title: String!
@@ -374,6 +380,7 @@ const ChangePasswordSerializer = {
 module.exports = {
   RegistrationMutation,
   LoginMutation,
+  LogoutMutation,
   CreateQuestionMutation,
   ModifyQuestionMutation,
   CreateSessionMutation,

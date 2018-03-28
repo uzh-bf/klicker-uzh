@@ -33,7 +33,7 @@ const {
 } = require('./resolvers/sessions')
 const { allTags, tags } = require('./resolvers/tags')
 const {
-  createUser, login, user, authUser, changePassword, requestPassword,
+  createUser, login, logout, user, authUser, changePassword, requestPassword,
 } = require('./resolvers/users')
 const { allTypes } = require('./types')
 
@@ -72,6 +72,7 @@ const typeDefs = [
     deleteFeedback(sessionId: ID!, feedbackId: ID!): Session!
     endSession(id: ID!): Session!
     login(email: String!, password: String!): ID!
+    logout: String!
     modifyQuestion(id: ID!, question: QuestionModifyInput!): Question!
     requestPassword(email: String!): String!
     startSession(id: ID!): Session!
@@ -106,6 +107,7 @@ const resolvers = {
     createUser,
     endSession: requireAuth(endSession),
     login,
+    logout,
     modifyQuestion: requireAuth(modifyQuestion),
     requestPassword,
     startSession: requireAuth(startSession),

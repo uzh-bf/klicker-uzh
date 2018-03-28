@@ -6,7 +6,7 @@ const JWT = require('jsonwebtoken')
 mongoose.Promise = Promise
 
 const {
-  isAuthenticated, isValidJWT, signup, login, requireAuth, getToken, changePassword,
+  isAuthenticated, isValidJWT, signup, login, logout, requireAuth, getToken, changePassword,
 } = require('./auth')
 const { UserModel } = require('../models')
 const { initializeDb } = require('../lib/test/setup')
@@ -182,6 +182,20 @@ describe('AuthService', () => {
 
       // expect the new login to work
       expect(login(res, 'testAuth@bf.uzh.ch', 'someOtherPassword')).resolves.toBeTruthy()
+    })
+
+    it('allows logging the user out', async () => {
+      // expect the login to work and the promise to resolve
+      const userId = await login(res, 'testAuth@bf.uzh.ch', 'someOtherPassword')
+      expect(userId).toBeTruthy()
+
+      // expect a new cookie to have been set
+      expect(cookieStore[0]).toEqual('jwt')
+
+      // logout
+      await logout(res)
+
+      // TODO: expect something
     })
 
     it('allows requesting a password reset link', async () => {})
