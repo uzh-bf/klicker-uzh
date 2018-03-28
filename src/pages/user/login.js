@@ -2,7 +2,7 @@ import React from 'react'
 import Router from 'next/router'
 import PropTypes from 'prop-types'
 import Cookies from 'js-cookie'
-import { compose, withHandlers } from 'recompose'
+import { compose, withProps } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Mutation } from 'react-apollo'
 
@@ -29,10 +29,10 @@ const Login = ({ intl, handleSubmit }) => (
       </h1>
 
       <Mutation mutation={LoginMutation}>
-        {(login, { error }) => (
+        {(login, { loading, error }) => (
           <React.Fragment>
-            <LoginForm intl={intl} onSubmit={handleSubmit(login)} />
-            {error && <div className="errorMessage message">Login failed ({error})</div>}
+            <LoginForm intl={intl} loading={loading} onSubmit={handleSubmit(login)} />
+            {error && <div className="errorMessage message">Login failed ({error.message})</div>}
           </React.Fragment>
         )}
       </Mutation>
@@ -75,22 +75,18 @@ export default compose(
   }),
   withData,
   pageWithIntl,
-  withHandlers({
+  withProps({
     // handle form submission
     handleSubmit: login => async ({ email, password }) => {
-      try {
-        const { data } = await login({ variables: { email, password } })
+      const { data } = await login({ variables: { email, password } })
 
-        // save the user id in a cookie
-        if (data.login) {
-          Cookies.set('userId', data.login)
-        }
-
-        // redirect to question pool
-        Router.push('/questions')
-      } catch ({ message }) {
-        console.error(message)
+      // save the user id in a cookie
+      if (data.login) {
+        Cookies.set('userId', data.login)
       }
+
+      // redirect to question pool
+      Router.push('/questions')
     },
   }),
 )(Login)
