@@ -11,6 +11,8 @@ const createUserMutation = (parentValue, { email, password, shortname }) =>
 
 const loginMutation = (parentValue, { email, password }, { res }) => AuthService.login(res, email, password)
 
+const logoutMutation = (parentValue, args, { res }) => AuthService.logout(res)
+
 const changePasswordMutation = (parentValue, { newPassword }, { auth }) =>
   AuthService.changePassword(auth.sub, newPassword)
 
@@ -25,5 +27,6 @@ module.exports = {
   changePassword: changePasswordMutation,
   createUser: createUserMutation,
   login: loginMutation,
+  logout: logoutMutation,
   requestPassword: requestPasswordMutation,
 }

@@ -1,5 +1,28 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Integration Logout works 1`] = `
+Object {
+  "logout": "LOGGED_OUT",
+}
+`;
+
+exports[`Integration Logout works 2`] = `
+Array [
+  Object {
+    "locations": Array [
+      Object {
+        "column": 5,
+        "line": 3,
+      },
+    ],
+    "message": "INVALID_LOGIN",
+    "path": Array [
+      "archiveQuestions",
+    ],
+  },
+]
+`;
+
 exports[`Integration Question Archiving can archive questions 1`] = `
 
     archiveQuestions: [

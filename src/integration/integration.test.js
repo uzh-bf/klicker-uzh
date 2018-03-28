@@ -816,4 +816,37 @@ describe('Integration', () => {
       expect(data).toMatchSnapshot()
     })
   })
+
+  describe('Logout', () => {
+    it('works', async () => {
+      const response = await sendQuery(
+        {
+          query: mutations.LogoutMutation,
+        },
+        authCookie,
+      )
+
+      const data = ensureNoErrors(response)
+      expect(data).toMatchSnapshot()
+
+      // save the authorization cookie
+      authCookie = response.header['set-cookie']
+      expect(authCookie.length).toEqual(1)
+
+      // try to archive questions (should not work)
+      const response2 = await sendQuery(
+        {
+          query: mutations.ArchiveQuestionsMutation,
+          variables: {
+            ids: [questions.FREE_RANGE, questions.SC],
+          },
+        },
+        authCookie,
+      )
+
+      // expect the response to contain "INVALID_LOGIN"
+      expect(response2.body.errors).toMatchSnapshot()
+      // expect(response2.body.archiveQuestions.errors[0]).toEqual('INVALID_LOGIN')
+    })
+  })
 })
