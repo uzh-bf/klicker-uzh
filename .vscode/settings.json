@@ -1,5 +1,1 @@
-{
-  // Place your settings in this file to overwrite default and user settings.
-  "javascript.format.enable": false,
-  "jest.autoEnable": true
-}
+{}
