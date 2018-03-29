@@ -1,8 +1,8 @@
 import React from 'react'
-import { compose, branch, renderNothing, withProps, withHandlers, withState } from 'recompose'
+import { compose, withState } from 'recompose'
 import Router from 'next/router'
 import { intlShape } from 'react-intl'
-import { graphql } from 'react-apollo'
+import { Query, Mutation } from 'react-apollo'
 import { PropTypes } from 'prop-types'
 import _pick from 'lodash/pick'
 import _omitBy from 'lodash/omitBy'
@@ -19,36 +19,11 @@ import {
 } from '../../graphql'
 
 const propTypes = {
-  activeVersion: PropTypes.number.isRequired,
-  allTags: PropTypes.array.isRequired,
-  editSuccess: PropTypes.bool.isRequired,
-  handleDiscard: PropTypes.func.isRequired,
-  handleDismiss: PropTypes.func.isRequired,
-  handleSave: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  isNewVersion: PropTypes.bool.isRequired,
-  questionTags: PropTypes.array.isRequired,
-  setActiveVersion: PropTypes.func.isRequired,
-  title: PropTypes.string.isRequired,
-  type: PropTypes.string.isRequired,
-  versions: PropTypes.array.isRequired,
+  url: PropTypes.object.isRequired,
 }
 
-const EditQuestion = ({
-  allTags,
-  intl,
-  isNewVersion,
-  questionTags,
-  title,
-  type,
-  versions,
-  handleDiscard,
-  handleSave,
-  activeVersion,
-  setActiveVersion,
-  editSuccess,
-  handleDismiss,
-}) => (
+const EditQuestion = ({ intl, url }) => (
   <TeacherLayout
     intl={intl}
     navbar={{
@@ -63,146 +38,118 @@ const EditQuestion = ({
     })}
     sidebar={{ activeItem: 'editQuestion' }}
   >
-    <QuestionEditForm
-      activeVersion={activeVersion}
-      allTags={allTags}
-      editSuccess={editSuccess}
-      intl={intl}
-      isNewVersion={isNewVersion}
-      questionTags={questionTags}
-      title={title}
-      type={type}
-      versions={versions}
-      onActiveVersionChange={setActiveVersion}
-      onDiscard={handleDiscard}
-      onDismiss={handleDismiss}
-      onSubmit={handleSave}
-    />
+    <Query query={TagListQuery}>
+      {({ data: tagList, loading: tagsLoading }) => (
+        <Query query={QuestionDetailsQuery} variables={{ id: url.query.questionId }}>
+          {({ data: questionDetails, loading: questionLoading }) => {
+            // if the tags or the question is still loading, return null
+            if (tagsLoading || questionLoading || !tagList.tags || !questionDetails.question) {
+              return null
+            }
+
+            // if everything was loaded successfully, render the edit form
+            return (
+              <Mutation mutation={ModifyQuestionMutation}>
+                {(editQuestion, { loading, data, error }) => {
+                  const {
+ id, tags, title, type, versions,
+} = _pick(questionDetails.question, [
+                    'id',
+                    'tags',
+                    'title',
+                    'type',
+                    'versions',
+                  ])
+
+                  // enhance the form with state for the active version
+                  const EditForm = withState(
+                    'activeVersion',
+                    'onActiveVersionChange',
+                    versions.length - 1,
+                  )(QuestionEditForm)
+
+                  return (
+                    <EditForm
+                      allTags={tagList.tags}
+                      editSuccess={{
+                        message: (error && error.message) || null,
+                        success: (data && !error) || null,
+                      }}
+                      intl={intl}
+                      loading={loading}
+                      questionTags={tags}
+                      title={title}
+                      type={type}
+                      versions={versions}
+                      onDiscard={() => {
+                        Router.push('/questions')
+                      }}
+                      onSubmit={isNewVersion => async ({
+                        title: newTitle,
+                        description,
+                        options,
+                        solution,
+                        tags: newTags,
+                      }) => {
+                        await editQuestion({
+                          // reload the question details and tags after update
+                          // TODO: replace with optimistic updates
+                          refetchQueries: [{ query: QuestionPoolQuery }],
+                          // update the cache after the mutation has completed
+                          update: (store, { data: { modifyQuestion } }) => {
+                            const query = {
+                              query: QuestionDetailsQuery,
+                              variables: { id: url.query.questionId },
+                            }
+
+                            // get the data from the store
+                            // replace the feedbacks
+                            const cache = store.readQuery(query)
+
+                            cache.question.title = modifyQuestion.title
+                            cache.question.versions = modifyQuestion.versions
+                            cache.question.tags = modifyQuestion.tags
+
+                            // write the updated data to the store
+                            store.writeQuery({
+                              ...query,
+                              data: cache,
+                            })
+                          },
+                          variables: _omitBy(
+                            isNewVersion
+                              ? {
+                                  description,
+                                  id,
+                                  // HACK: omitDeep for typename removal
+                                  // TODO: check https://github.com/apollographql/apollo-client/issues/1564
+                                  // this shouldn't be necessary at all
+                                  options: options && omitDeep(options, '__typename'),
+                                  solution,
+                                  tags: newTags,
+                                  title: newTitle,
+                                }
+                              : {
+                                  id,
+                                  tags: newTags,
+                                  title: newTitle,
+                                },
+                            _isNil,
+                          ),
+                        })
+                      }}
+                    />
+                  )
+                }}
+              </Mutation>
+            )
+          }}
+        </Query>
+      )}
+    </Query>
   </TeacherLayout>
 )
 
 EditQuestion.propTypes = propTypes
 
-export default compose(
-  withLogging(),
-  withDnD,
-  withData,
-  pageWithIntl,
-  graphql(TagListQuery, { name: 'tags' }),
-  graphql(QuestionDetailsQuery, {
-    name: 'details',
-    options: ({ url }) => ({ variables: { id: url.query.questionId } }),
-  }),
-  branch(
-    ({ details, tags }) => details.loading || tags.loading || !details.question,
-    renderNothing,
-  ),
-  graphql(ModifyQuestionMutation),
-  withState(
-    'activeVersion',
-    'setActiveVersion',
-    ({ details }) => details.question.versions.length - 1,
-  ),
-  withState('editSuccess', 'setEditSuccess', {
-    message: null,
-    success: null,
-  }),
-  withProps(({ activeVersion, details, tags }) => ({
-    ..._pick(details.question, ['id', 'title', 'type', 'versions']),
-    allTags: tags.tags,
-    isNewVersion: activeVersion === details.question.versions.length,
-    questionTags: details.question.tags,
-  })),
-  withHandlers({
-    // handle discarding question modification
-    handleDiscard: () => () => {
-      Router.push('/questions')
-    },
-
-    handleDismiss: ({ setEditSuccess }) => {
-      setEditSuccess({
-        editSuccess: {
-          message: null,
-          success: null,
-        },
-      })
-    },
-
-    // handle modifying a question
-    handleSave: ({
-      id, mutate, isNewVersion, url, setEditSuccess,
-    }) => async ({
-      title,
-      description,
-      options,
-      solution,
-      tags,
-    }) => {
-      setEditSuccess({
-        message: null,
-        success: null,
-      })
-
-      try {
-        await mutate({
-          // reload the question details and tags after update
-          // TODO: replace with optimistic updates
-          refetchQueries: [{ query: QuestionPoolQuery }],
-          // update the cache after the mutation has completed
-          update: (store, { data: { modifyQuestion } }) => {
-            const query = {
-              query: QuestionDetailsQuery,
-              variables: { id: url.query.questionId },
-            }
-
-            // get the data from the store
-            // replace the feedbacks
-            const data = store.readQuery(query)
-
-            data.question.title = modifyQuestion.title
-            data.question.versions = modifyQuestion.versions
-            data.question.tags = modifyQuestion.tags
-
-            // write the updated data to the store
-            store.writeQuery({
-              ...query,
-              data,
-            })
-          },
-          variables: _omitBy(
-            isNewVersion
-              ? {
-                description,
-                id,
-                // HACK: omitDeep for typename removal
-                // TODO: check https://github.com/apollographql/apollo-client/issues/1564
-                // this shouldn't be necessary at all
-                options: options && omitDeep(options, '__typename'),
-                solution,
-                tags,
-                title,
-              }
-              : {
-                id,
-                tags,
-                title,
-              },
-            _isNil,
-          ),
-        })
-
-        setEditSuccess({
-          message: null,
-          success: true,
-        })
-      } catch ({ message }) {
-        console.error(message)
-
-        setEditSuccess({
-          message,
-          success: false,
-        })
-      }
-    },
-  }),
-)(EditQuestion)
+export default compose(withLogging(), withDnD, withData, pageWithIntl)(EditQuestion)

@@ -36,10 +36,9 @@ const CreateQuestion = ({ intl }) => (
               intl={intl}
               loading={loading}
               tags={data.tags}
-              onDiscard={() => {
-                // handle discarding a new question
-                Router.push('/questions')
-              }}
+              // handle discarding a new question
+              onDiscard={() => Router.push('/questions')}
+              // handle submitting a new question
               onSubmit={async ({
  content, options, tags, title, type,
 }) => {
