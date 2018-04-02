@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { FormattedMessage } from 'react-intl'
+import { generateTypesShort } from '../../lib'
 
 const propTypes = {
   tags: PropTypes.arrayOf(
@@ -12,16 +12,14 @@ const propTypes = {
   type: PropTypes.string.isRequired,
 }
 
-const QuestionTags = ({ tags, type }) => (
+const QuestionTags = ({ intl, tags, type }) => (
   <div className="questionTags">
     {tags.map(tag => (
       <div className="tag" key={tag.id}>
         {tag.name}
       </div>
     ))}
-    <div className="type tag">
-      <FormattedMessage defaultMessage={type} id={`common.${type}.short`} />
-    </div>
+    <div className="type tag">{generateTypesShort(intl)[type]}</div>
 
     <style jsx>{`
       @import 'src/theme';

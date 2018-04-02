@@ -3,12 +3,23 @@ import PropTypes from 'prop-types'
 import Router from 'next/router'
 import { compose, withHandlers, withProps } from 'recompose'
 import { graphql } from 'react-apollo'
-import { intlShape } from 'react-intl'
+import { defineMessages, intlShape } from 'react-intl'
 
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionCreationForm } from '../../components/forms'
 import { pageWithIntl, withData, withDnD, withLogging } from '../../lib'
 import { QuestionPoolQuery, TagListQuery, CreateQuestionMutation } from '../../graphql'
+
+const messages = defineMessages({
+  pageTitle: {
+    defaultMessage: 'Create Question',
+    id: 'createQuestion.pageTitle',
+  },
+  title: {
+    defaultMessage: 'Create Question',
+    id: 'createQuestion.title',
+  },
+})
 
 const propTypes = {
   handleDiscard: PropTypes.func.isRequired,
@@ -23,15 +34,9 @@ const CreateQuestion = ({
   <TeacherLayout
     intl={intl}
     navbar={{
-      title: intl.formatMessage({
-        defaultMessage: 'Create Question',
-        id: 'createQuestion.title',
-      }),
+      title: intl.formatMessage(messages.title),
     }}
-    pageTitle={intl.formatMessage({
-      defaultMessage: 'Create Question',
-      id: 'createQuestion.pageTitle',
-    })}
+    pageTitle={intl.formatMessage(messages.pageTitle)}
     sidebar={{ activeItem: 'createQuestion' }}
   >
     <QuestionCreationForm intl={intl} tags={tags} onDiscard={handleDiscard} onSubmit={handleSave} />

@@ -3,13 +3,20 @@ import Router from 'next/router'
 import PropTypes from 'prop-types'
 import Cookies from 'js-cookie'
 import { compose, withState, withHandlers } from 'recompose'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 
 import { StaticLayout } from '../../components/layouts'
 import { LoginForm } from '../../components/forms'
 import { LoginMutation } from '../../graphql'
 import { pageWithIntl, withData, withLogging } from '../../lib'
+
+const messages = defineMessages({
+  pageTitle: {
+    defaultMessage: 'Login',
+    id: 'user.login.pageTitle',
+  },
+})
 
 const propTypes = {
   error: PropTypes.oneOfType(PropTypes.string, null).isRequired,
@@ -18,12 +25,7 @@ const propTypes = {
 }
 
 const Login = ({ intl, error, handleSubmit }) => (
-  <StaticLayout
-    pageTitle={intl.formatMessage({
-      defaultMessage: 'Login',
-      id: 'user.login.pageTitle',
-    })}
-  >
+  <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
     <div className="login">
       <h1>
         <FormattedMessage defaultMessage="Login" id="user.login.title" />

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import moment from 'moment'
 import { compose, withHandlers, branch, renderComponent, withProps } from 'recompose'
 import { graphql } from 'react-apollo'
-import { intlShape } from 'react-intl'
+import { defineMessages, intlShape } from 'react-intl'
 import Router from 'next/router'
 
 import { pageWithIntl, withData, withLogging } from '../../lib'
@@ -21,6 +21,21 @@ import {
   DeleteFeedbackMutation,
 } from '../../graphql'
 import { LoadingTeacherLayout, Messager } from '../../components/common'
+
+const messages = defineMessages({
+  noRunningSession: {
+    defaultMessage: 'No currently running session...',
+    id: 'runningSession.noRunningSession',
+  },
+  pageTitle: {
+    defaultMessage: 'Running Session',
+    id: 'runningSession.pageTitle',
+  },
+  title: {
+    defaultMessage: 'Running Session',
+    id: 'runningSession.title',
+  },
+})
 
 const propTypes = {
   activeStep: PropTypes.number.isRequired,
@@ -62,15 +77,9 @@ const Running = ({
   <TeacherLayout
     intl={intl}
     navbar={{
-      title: intl.formatMessage({
-        defaultMessage: 'Running Session',
-        id: 'runningSession.title',
-      }),
+      title: intl.formatMessage(messages.title),
     }}
-    pageTitle={intl.formatMessage({
-      defaultMessage: 'Running Session',
-      id: 'runningSession.pageTitle',
-    })}
+    pageTitle={intl.formatMessage(messages.pageTitle)}
     sidebar={{ activeItem: 'runningSession' }}
   >
     <div className="runningSession">
@@ -183,12 +192,7 @@ export default compose(
     ({ data }) => data.loading || !data.runningSession,
     renderComponent(({ intl }) => (
       <LoadingTeacherLayout intl={intl} pageId="runningSession">
-        <Messager
-          message={intl.formatMessage({
-            defaultMessage: 'No currently running session...',
-            id: 'runningSession.noRunningSession',
-          })}
-        />
+        <Messager message={intl.formatMessage(messages.noRunningSession)} />
       </LoadingTeacherLayout>
     )),
   ),

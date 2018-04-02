@@ -1,8 +1,15 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { intlShape } from 'react-intl'
+import { defineMessages, intlShape } from 'react-intl'
 import { Button, Dropdown, Input } from 'semantic-ui-react'
 import _find from 'lodash/find'
+
+const messages = defineMessages({
+  searchPlaceholder: {
+    defaultMessage: 'Search...',
+    id: 'common.input.search.placeholder',
+  },
+})
 
 const propTypes = {
   handleSearch: PropTypes.func.isRequired,
@@ -39,10 +46,7 @@ const SearchArea = ({
     <Input
       fluid
       icon="search"
-      placeholder={intl.formatMessage({
-        defaultMessage: 'Search...',
-        id: 'common.input.search.placeholder',
-      })}
+      placeholder={intl.formatMessage(messages.searchPlaceholder)}
       onChange={e => handleSearch(e.target.value)}
     >
       <input />

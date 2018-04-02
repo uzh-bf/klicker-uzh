@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import { Button, Form } from 'semantic-ui-react'
 import { Formik } from 'formik'
 import isEmpty from 'validator/lib/isEmpty'
@@ -19,6 +19,41 @@ import { QUESTION_TYPES } from '../../lib'
 import { QUESTION_GROUPS } from '../../constants'
 import { FormikInput } from '.'
 
+const messages = defineMessages({
+  contentEmpty: {
+    defaultMessage: 'Please add a question.',
+    id: 'form.createQuestion.content.empty',
+  },
+  minMaxRangeInvalid: {
+    defaultMessage: 'Please specify a range from min to max.',
+    id: 'form.createQuestion.options.minMaxRange.invalid',
+  },
+  optionsEmpty: {
+    defaultMessage: 'Please add at least one answer option.',
+    id: 'form.createQuestion.options.empty',
+  },
+  optionsInvalid: {
+    defaultMessage: 'Invalid options',
+    id: 'form.createQuestion.options.invalid',
+  },
+  tagsEmpty: {
+    defaultMessage: 'Please add at least one tag.',
+    id: 'form.createQuestion.tags.empty',
+  },
+  titleEmpty: {
+    defaultMessage: 'Please add a title.',
+    id: 'form.createQuestion.title.empty',
+  },
+  titleInput: {
+    defaultMessage: 'Question Title',
+    id: 'createQuestion.titleInput.label',
+  },
+  typeEmpty: {
+    defaultMessage: 'Please choose a question type.',
+    id: 'form.createQuestion.type.empty',
+  },
+})
+
 // form validation
 const validate = ({
   content, options, tags, title, type,
@@ -26,23 +61,23 @@ const validate = ({
   const errors = {}
 
   if (!title || isEmpty(title)) {
-    errors.title = 'form.createQuestion.title.empty'
+    errors.title = messages.titleEmpty
   }
 
   if (!content || isEmpty(content)) {
-    errors.content = 'form.createQuestion.content.empty'
+    errors.content = messages.contentEmpty
   }
 
   if (!tags || tags.length === 0) {
-    errors.tags = 'form.createQuestion.tags.empty'
+    errors.tags = messages.tagsEmpty
   }
 
   if (!type || isEmpty(type)) {
-    errors.type = 'form.createQuestion.type.empty'
+    errors.type = messages.typeEmpty
   }
 
   if (QUESTION_GROUPS.CHOICES.includes(type) && (!options || options.choices.length === 0)) {
-    errors.options = 'form.createQuestion.options.empty'
+    errors.options = messages.optionsEmpty
   }
 
   if (type === QUESTION_TYPES.FREE_RANGE) {
@@ -51,10 +86,10 @@ const validate = ({
       const isMaxNum = _isNumber(options.restrictions.max)
 
       if (isMinNum && isMaxNum && options.restrictions.min >= options.restrictions.max) {
-        errors.options = 'form.createQuestion.options.minGteMax'
+        errors.options = messages.minMaxRangeInvalid
       }
     } else {
-      errors.options = 'form.createQuestion.options.invalid'
+      errors.options = messages.optionsInvalid
     }
   }
 
@@ -153,10 +188,7 @@ const QuestionCreationForm = ({
                   handleBlur={handleBlur}
                   handleChange={handleChange}
                   intl={intl}
-                  label={intl.formatMessage({
-                    defaultMessage: 'Question Title',
-                    id: 'createQuestion.titleInput.label',
-                  })}
+                  label={intl.formatMessage(messages.titleInput)}
                   name="title"
                   tooltip={
                     <FormattedMessage

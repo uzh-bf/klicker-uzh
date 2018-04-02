@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { intlShape } from 'react-intl'
+import { defineMessages, intlShape } from 'react-intl'
 import {
   compose,
   withProps,
@@ -28,6 +28,13 @@ import {
 import { Chart } from '../../components/evaluation'
 import { SessionEvaluationQuery } from '../../graphql'
 import { sessionStatusShape, statisticsShape } from '../../propTypes'
+
+const messages = defineMessages({
+  pageTitle: {
+    defaultMessage: 'Evaluation',
+    id: 'evaluation.pageTitle',
+  },
+})
 
 const propTypes = {
   activeInstance: PropTypes.object.isRequired,
@@ -101,10 +108,7 @@ function Evaluation({
     onChangeVisualizationType: handleChangeVisualizationType,
     onToggleShowSolution: handleToggleShowSolution,
     options,
-    pageTitle: intl.formatMessage({
-      defaultMessage: 'Evaluation',
-      id: 'evaluation.pageTitle',
-    }),
+    pageTitle: intl.formatMessage(messages.pageTitle),
     showSolution,
     statistics,
     title,

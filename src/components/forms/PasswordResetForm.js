@@ -1,11 +1,38 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import _isEmpty from 'lodash/isEmpty'
-import { intlShape } from 'react-intl'
+import { defineMessages, intlShape } from 'react-intl'
 import { Formik } from 'formik'
 import Yup from 'yup'
 
 import { FormWithLinks, FormikInput } from '.'
+
+const messages = defineMessages({
+  backToLogin: {
+    defaultMessage: 'Back to login',
+    id: 'form.passwordReset.backToLogin',
+  },
+  passwordInvalid: {
+    defaultMessage: 'Please provide a valid password (8+ characters).',
+    id: 'form.password.invalid',
+  },
+  passwordLabel: {
+    defaultMessage: 'Password',
+    id: 'form.password.label',
+  },
+  passwordRepeatInvalid: {
+    defaultMessage: 'Please ensure that passwords match.',
+    id: 'form.passwordRepeat.invalid',
+  },
+  passwordRepeatLabel: {
+    defaultMessage: 'Repeat password',
+    id: 'form.passwordRepeat.label',
+  },
+  submit: {
+    defaultMessage: 'Submit',
+    id: 'form.common.button.submit',
+  },
+})
 
 const propTypes = {
   intl: intlShape.isRequired,
@@ -16,10 +43,7 @@ const PasswordResetForm = ({ intl, onSubmit }) => {
   const links = [
     {
       href: '/user/login',
-      label: intl.formatMessage({
-        defaultMessage: 'Back to login',
-        id: 'form.passwordReset.backToLogin',
-      }),
+      label: intl.formatMessage(messages.backToLogin),
     },
   ]
 
@@ -41,10 +65,7 @@ const PasswordResetForm = ({ intl, onSubmit }) => {
         <FormWithLinks
           button={{
             disabled: !_isEmpty(errors) || _isEmpty(touched),
-            label: intl.formatMessage({
-              defaultMessage: 'Submit',
-              id: 'form.common.button.submit',
-            }),
+            label: intl.formatMessage(messages.submit),
             loading: isSubmitting,
             onSubmit: handleSubmit,
           }}
@@ -54,18 +75,12 @@ const PasswordResetForm = ({ intl, onSubmit }) => {
             autoFocus
             required
             error={errors.password}
-            errorMessage={intl.formatMessage({
-              defaultMessage: 'Please provide a valid password (8+ characters).',
-              id: 'form.password.invalid',
-            })}
+            errorMessage={intl.formatMessage(messages.passwordInvalid)}
             handleBlur={handleBlur}
             handleChange={handleChange}
             icon="privacy"
             intl={intl}
-            label={intl.formatMessage({
-              defaultMessage: 'Password',
-              id: 'form.password.label',
-            })}
+            label={intl.formatMessage(messages.passwordLabel)}
             name="password"
             touched={touched.password}
             type="password"
@@ -74,18 +89,12 @@ const PasswordResetForm = ({ intl, onSubmit }) => {
           <FormikInput
             required
             error={errors.passwordRepeat}
-            errorMessage={intl.formatMessage({
-              defaultMessage: 'Please ensure that passwords match.',
-              id: 'form.passwordRepeat.invalid',
-            })}
+            errorMessage={intl.formatMessage(messages.passwordRepeatInvalid)}
             handleBlur={handleBlur}
             handleChange={handleChange}
             icon="privacy"
             intl={intl}
-            label={intl.formatMessage({
-              defaultMessage: 'Repeat password',
-              id: 'form.passwordRepeat.label',
-            })}
+            label={intl.formatMessage(messages.passwordRepeatLabel)}
             name="passwordRepeat"
             touched={touched.passwordRepeat}
             type="password"

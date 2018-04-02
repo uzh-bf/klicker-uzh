@@ -1,7 +1,7 @@
 import React from 'react'
 import { compose, branch, renderNothing, withProps, withHandlers, withState } from 'recompose'
 import Router from 'next/router'
-import { intlShape } from 'react-intl'
+import { defineMessages, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import { PropTypes } from 'prop-types'
 import _pick from 'lodash/pick'
@@ -17,6 +17,17 @@ import {
   QuestionDetailsQuery,
   ModifyQuestionMutation,
 } from '../../graphql'
+
+const messages = defineMessages({
+  pageTitle: {
+    defaultMessage: 'Edit Question',
+    id: 'editQuestion.pageTitle',
+  },
+  title: {
+    defaultMessage: 'Edit Question',
+    id: 'editQuestion.title',
+  },
+})
 
 const propTypes = {
   activeVersion: PropTypes.number.isRequired,
@@ -52,15 +63,9 @@ const EditQuestion = ({
   <TeacherLayout
     intl={intl}
     navbar={{
-      title: intl.formatMessage({
-        defaultMessage: 'Edit Question',
-        id: 'editQuestion.title',
-      }),
+      title: intl.formatMessage(messages.title),
     }}
-    pageTitle={intl.formatMessage({
-      defaultMessage: 'Edit Question',
-      id: 'editQuestion.pageTitle',
-    })}
+    pageTitle={intl.formatMessage(messages.pageTitle)}
     sidebar={{ activeItem: 'editQuestion' }}
   >
     <QuestionEditForm

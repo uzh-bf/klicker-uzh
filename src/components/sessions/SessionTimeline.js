@@ -2,10 +2,29 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import QRCode from 'qrcode.react'
-import { intlShape, FormattedMessage } from 'react-intl'
+import { defineMessages, intlShape, FormattedMessage } from 'react-intl'
 import { Button, Icon, Popup } from 'semantic-ui-react'
 
 import { QuestionBlock } from '../questions'
+
+const messages = defineMessages({
+  buttonCloseBlock: {
+    defaultMessage: 'Close current block',
+    id: 'runningSession.button.closeBlock',
+  },
+  buttonFinish: {
+    defaultMessage: 'Finish session',
+    id: 'runningSession.button.finish',
+  },
+  buttonOpenBlock: {
+    defaultMessage: 'Open next block',
+    id: 'runningSession.button.openBlock',
+  },
+  buttonStart: {
+    defaultMessage: 'Open first block',
+    id: 'runningSession.button.start',
+  },
+})
 
 const propTypes = {
   activeStep: PropTypes.number.isRequired,
@@ -29,39 +48,27 @@ const getMessage = (intl, num, max) => {
   if (num === 0) {
     return {
       icon: 'play',
-      label: intl.formatMessage({
-        defaultMessage: 'Open first block',
-        id: 'runningSession.button.start',
-      }),
+      label: intl.formatMessage(messages.buttonStart),
     }
   }
 
   if (num % 2 === 1) {
     return {
       icon: 'right arrow',
-      label: intl.formatMessage({
-        defaultMessage: 'Close current block',
-        id: 'runningSession.button.closeBlock',
-      }),
+      label: intl.formatMessage(messages.buttonCloseBlock),
     }
   }
 
   if (num === max) {
     return {
       icon: 'stop',
-      label: intl.formatMessage({
-        defaultMessage: 'Finish session',
-        id: 'runningSession.button.finish',
-      }),
+      label: intl.formatMessage(messages.buttonFinish),
     }
   }
 
   return {
     icon: 'right arrow',
-    label: intl.formatMessage({
-      defaultMessage: 'Open next block',
-      id: 'runningSession.button.openBlock',
-    }),
+    label: intl.formatMessage(messages.buttonOpenBlock),
   }
 }
 

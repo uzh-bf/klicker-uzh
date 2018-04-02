@@ -1,12 +1,35 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Checkbox } from 'semantic-ui-react'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import { compose, withProps } from 'recompose'
 import _sumBy from 'lodash/sumBy'
 import moment from 'moment'
 
 import ConfusionSection from './ConfusionSection'
+
+const messages = defineMessages({
+  activated: {
+    defaultMessage: 'Activated',
+    id: 'common.string.activated',
+  },
+  difficultyRange: {
+    defaultMessage: 'easy - hard',
+    id: 'runningSession.confusion.difficulty.Range',
+  },
+  difficultyTitle: {
+    defaultMessage: 'Difficulty',
+    id: 'runningSession.confusion.difficulty.Title',
+  },
+  speedRange: {
+    defaultMessage: 'slow - fast',
+    id: 'runningSession.confusion.speed.Range',
+  },
+  speedTitle: {
+    defaultMessage: 'Speed',
+    id: 'runningSession.confusion.speed.Title',
+  },
+})
 
 const propTypes = {
   confusionTS: PropTypes.arrayOf(
@@ -37,10 +60,7 @@ const ConfusionBarometer = ({
     <Checkbox
       toggle
       defaultChecked={isActive}
-      label={intl.formatMessage({
-        defaultMessage: 'Activated',
-        id: 'common.string.activated',
-      })}
+      label={intl.formatMessage(messages.activated)}
       value={isActive}
       onChange={handleActiveToggle}
     />
@@ -55,14 +75,8 @@ const ConfusionBarometer = ({
                 value: difficulty,
                 valueRunning: difficultyRunning,
               }))}
-              title={intl.formatMessage({
-                defaultMessage: 'Difficulty',
-                id: 'runningSession.confusion.difficulty',
-              })}
-              ylabel={intl.formatMessage({
-                defaultMessage: 'easy - hard',
-                id: 'runningSession.confusion.difficultyY',
-              })}
+              title={intl.formatMessage(messages.difficultyTitle)}
+              ylabel={intl.formatMessage(messages.difficultyRange)}
             />
             <ConfusionSection
               data={confusionTS.map(({ timestamp, speed, speedRunning }) => ({
@@ -70,14 +84,8 @@ const ConfusionBarometer = ({
                 value: speed,
                 valueRunning: speedRunning,
               }))}
-              title={intl.formatMessage({
-                defaultMessage: 'Speed',
-                id: 'runningSession.confusion.speed',
-              })}
-              ylabel={intl.formatMessage({
-                defaultMessage: 'slow - fast',
-                id: 'runningSession.confusion.speedY',
-              })}
+              title={intl.formatMessage(messages.speedTitle)}
+              ylabel={intl.formatMessage(messages.speedRange)}
             />
           </React.Fragment>
         )

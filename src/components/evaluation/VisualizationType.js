@@ -1,7 +1,14 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Dropdown } from 'semantic-ui-react'
-import { intlShape } from 'react-intl'
+import { defineMessages, intlShape } from 'react-intl'
+
+const messages = defineMessages({
+  title: {
+    defaultMessage: 'Visualization',
+    id: 'evaluation.visualization.title',
+  },
+})
 
 // TODO
 const propTypes = {
@@ -28,10 +35,7 @@ const VisualizationType = ({
       selection
       upward
       options={options.filter(o => o.withinType.includes(questionType))}
-      placeholder={intl.formatMessage({
-        defaultMessage: 'Visualization',
-        id: 'evaluation.visualization.title',
-      })}
+      placeholder={intl.formatMessage(messages.title)}
       value={activeVisualization}
       onChange={(param, data) => onChangeType(questionType, data.value)}
     />

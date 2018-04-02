@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import { Button, Icon } from 'semantic-ui-react'
 import moment from 'moment'
 import { Formik } from 'formik'
@@ -9,6 +9,13 @@ import _isEmpty from 'lodash/isEmpty'
 
 import { FormikInput } from '.'
 import { SessionTimelineInput } from '../sessions'
+
+const messages = defineMessages({
+  sessionNameInvalid: {
+    defaultMessage: 'Please provide a valid name for your session.',
+    id: 'form.sessionName.invalid',
+  },
+})
 
 const propTypes = {
   intl: intlShape.isRequired,
@@ -65,10 +72,7 @@ const SessionCreationForm = ({
                 autoFocus
                 required
                 error={errors.sessionName}
-                errorMessage={intl.formatMessage({
-                  defaultMessage: 'Please provide a valid name for your session.',
-                  id: 'form.sessionName.invalid',
-                })}
+                errorMessage={intl.formatMessage(messages.sessionNameInvalid)}
                 handleBlur={handleBlur}
                 handleChange={handleChange}
                 inlineLabel="Name"

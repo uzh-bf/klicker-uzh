@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { compose, withState, withHandlers } from 'recompose'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import Link from 'next/link'
 
@@ -9,6 +9,13 @@ import { StaticLayout } from '../../components/layouts'
 import { RegistrationForm } from '../../components/forms'
 import { RegistrationMutation } from '../../graphql'
 import { pageWithIntl, withData, withLogging } from '../../lib'
+
+const messages = defineMessages({
+  pageTitle: {
+    defaultMessage: 'Registration',
+    id: 'user.registration.pageTitle',
+  },
+})
 
 const propTypes = {
   error: PropTypes.oneOfType(PropTypes.string, null).isRequired,
@@ -20,12 +27,7 @@ const propTypes = {
 const Registration = ({
   intl, error, success, handleSubmit,
 }) => (
-  <StaticLayout
-    pageTitle={intl.formatMessage({
-      defaultMessage: 'Registration',
-      id: 'user.registration.pageTitle',
-    })}
-  >
+  <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
     <div className="registration">
       <h1>
         <FormattedMessage defaultMessage="Registration" id="user.registration.title" />

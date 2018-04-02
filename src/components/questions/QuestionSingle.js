@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { FormattedMessage } from 'react-intl'
+import { generateTypesShort } from '../../lib'
 
 const propTypes = {
   index: PropTypes.number,
@@ -15,12 +15,12 @@ const defaultProps = {
 }
 
 const QuestionSingle = ({
-  index, type, title, version,
+  index, intl, type, title, version,
 }) => (
   <div className="questionSingle">
     <div className="type">
       {index && `#${index} - `}
-      <FormattedMessage defaultMessage={type} id={`common.${type}.short`} />
+      {generateTypesShort(intl)[type]}
     </div>
     <div className="title">
       {title} (v{version + 1})

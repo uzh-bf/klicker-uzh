@@ -10,7 +10,7 @@ import {
   branch,
   renderComponent,
 } from 'recompose'
-import { intlShape, FormattedMessage } from 'react-intl'
+import { defineMessages, intlShape, FormattedMessage } from 'react-intl'
 import { graphql } from 'react-apollo'
 
 import FeedbackArea from '../components/sessions/join/FeedbackArea'
@@ -23,6 +23,17 @@ import {
   AddResponseMutation,
 } from '../graphql'
 import { StudentLayout } from '../components/layouts'
+
+const messages = defineMessages({
+  activeQuestionTitle: {
+    defaultMessage: 'Active Question',
+    id: 'joinSessionactiveQuestion.title',
+  },
+  feedbackChannelTitle: {
+    defaultMessage: 'Feedback-Channel',
+    id: 'joinSessionfeedbackChannel.title',
+  },
+})
 
 const propTypes = {
   activeQuestions: PropTypes.array,
@@ -65,14 +76,8 @@ const Join = ({
 }) => {
   const title =
     sidebarActiveItem === 'activeQuestion'
-      ? intl.formatMessage({
-        defaultMessage: 'Active Question',
-        id: 'joinSessionactiveQuestion.title',
-      })
-      : intl.formatMessage({
-        defaultMessage: 'Feedback-Channel',
-        id: 'joinSessionfeedbackChannel.title',
-      })
+      ? intl.formatMessage(messages.activeQuestionTitle)
+      : intl.formatMessage(messages.feedbackChannelTitle)
 
   return (
     <StudentLayout

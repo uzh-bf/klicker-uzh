@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { compose, withHandlers } from 'recompose'
-import { intlShape } from 'react-intl'
+import { defineMessages, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
 
@@ -14,6 +14,17 @@ import {
 } from '../../graphql'
 import { TeacherLayout } from '../../components/layouts'
 import { SessionList } from '../../components/sessions'
+
+const messages = defineMessages({
+  pageTitle: {
+    defaultMessage: 'Session List',
+    id: 'sessionList.pageTitle',
+  },
+  title: {
+    defaultMessage: 'Session List',
+    id: 'sessionList.title',
+  },
+})
 
 const propTypes = {
   filters: PropTypes.object.isRequired,
@@ -44,15 +55,9 @@ const Index = ({
         sortBy: '',
         sortOrder: '',
       },
-      title: intl.formatMessage({
-        defaultMessage: 'Session List',
-        id: 'sessionList.title',
-      }),
+      title: intl.formatMessage(messages.title),
     }}
-    pageTitle={intl.formatMessage({
-      defaultMessage: 'Session List',
-      id: 'sessionList.pageTitle',
-    })}
+    pageTitle={intl.formatMessage(messages.pageTitle)}
     sidebar={{ activeItem: 'sessionList' }}
   >
     <div className="sessionList">

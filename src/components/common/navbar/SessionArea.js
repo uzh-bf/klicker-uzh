@@ -3,7 +3,18 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Button, Icon, Menu, Popup, List, Modal, Embed } from 'semantic-ui-react'
-import { intlShape, FormattedMessage } from 'react-intl'
+import { defineMessages, intlShape, FormattedMessage } from 'react-intl'
+
+const messages = defineMessages({
+  support: {
+    defaultMessage: 'Support',
+    id: 'sessionArea.support',
+  },
+  whatsNew: {
+    defaultMessage: 'Updates',
+    id: 'sessionArea.whatsNew',
+  },
+})
 
 const propTypes = {
   intl: intlShape.isRequired,
@@ -89,12 +100,7 @@ const SessionArea = ({ intl, runtime, sessionId }) => (
       hideOnScroll={false}
       on="click"
       position="bottom right"
-      trigger={
-        <Menu.Item
-          content={intl.formatMessage({ defaultMessage: 'Updates', id: 'sessionArea.whatsNew' })}
-          icon="info"
-        />
-      }
+      trigger={<Menu.Item content={intl.formatMessage(messages.whatsNew)} icon="info" />}
     >
       <Popup.Content>
         <div className="popupChanges popupContent">
@@ -130,12 +136,7 @@ const SessionArea = ({ intl, runtime, sessionId }) => (
       hideOnScroll={false}
       on="click"
       position="bottom right"
-      trigger={
-        <Menu.Item
-          content={intl.formatMessage({ defaultMessage: 'Support', id: 'sessionArea.support' })}
-          icon="help"
-        />
-      }
+      trigger={<Menu.Item content={intl.formatMessage(messages.support)} icon="help" />}
     >
       <Popup.Content>
         <div className="popupHelp popupContent">

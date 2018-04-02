@@ -4,14 +4,46 @@ import { compose, withProps } from 'recompose'
 import isEmpty from 'validator/lib/isEmpty'
 import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import { Button, Form, Icon, Menu, Message } from 'semantic-ui-react'
 import { Formik } from 'formik'
 
 import { FormikInput } from '.'
+import { generateTypesLabel } from '../../lib'
 import { ContentInput, TagInput } from '../questions'
 import { FREECreationOptions, SCCreationOptions } from '../../components/questionTypes'
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../constants'
+
+const messages = defineMessages({
+  contentEmpty: {
+    defaultMessage: 'Please add a question.',
+    id: 'form.editQuestion.content.empty',
+  },
+  minMaxRangeInvalid: {
+    defaultMessage: 'Please specify a range from min to max.',
+    id: 'form.editQuestion.options.minMaxRange.invalid',
+  },
+  optionsEmpty: {
+    defaultMessage: 'Please add at least one answer option.',
+    id: 'form.editQuestion.options.empty',
+  },
+  optionsInvalid: {
+    defaultMessage: 'Invalid options',
+    id: 'form.editQuestion.options.invalid',
+  },
+  tagsEmpty: {
+    defaultMessage: 'Please add at least one tag.',
+    id: 'form.editQuestion.tags.empty',
+  },
+  titleEmpty: {
+    defaultMessage: 'Please add a question title.',
+    id: 'form.editQuestion.title.empty',
+  },
+  titleInput: {
+    defaultMessage: 'Question Title',
+    id: 'editQuestion.titleInput.label',
+  },
+})
 
 // form validation
 const validate = ({
@@ -20,19 +52,19 @@ const validate = ({
   const errors = {}
 
   if (!title || isEmpty(title)) {
-    errors.title = 'form.editQuestion.content.empty'
+    errors.title = messages.titleEmpty
   }
 
   if (!description || isEmpty(description)) {
-    errors.description = 'form.editQuestion.content.empty'
+    errors.description = messages.conentEmpty
   }
 
   if (!tags || tags.length === 0) {
-    errors.tags = 'form.editQuestion.tags.empty'
+    errors.tags = messages.tagsEmpty
   }
 
   if (QUESTION_GROUPS.CHOICES.includes(type) && (!options || options.choices.length === 0)) {
-    errors.options = 'form.createQuestion.options.empty'
+    errors.options = messages.optionsEmpty
   }
 
   if (type === QUESTION_TYPES.FREE_RANGE) {
@@ -41,10 +73,10 @@ const validate = ({
       const isMaxNum = _isNumber(options.restrictions.max)
 
       if (isMinNum && isMaxNum && options.restrictions.min >= options.restrictions.max) {
-        errors.options = 'form.createQuestion.options.minGteMax'
+        errors.options = messages.minMaxRangeInvalid
       }
     } else {
-      errors.options = 'form.createQuestion.options.invalid'
+      errors.options = messages.optionsInvalid
     }
   }
 
@@ -128,6 +160,7 @@ const QuestionEditForm = ({
                 />
               </Message>
               <Message error onDismiss={onDismiss}>
+                {/* TODO: change default message {error} as dynamic messages won't work */}
                 <FormattedMessage
                   defaultMessage="Could not modify question: {error}"
                   id="editQuestion.error"
@@ -140,9 +173,7 @@ const QuestionEditForm = ({
                 <label htmlFor="type">
                   <FormattedMessage defaultMessage="Question Type" id="editQuestion.type" />
                 </label>
-                <div className="type">
-                  <FormattedMessage defaultMessage="type" id={`common.${type}.label`} />
-                </div>
+                <div className="type">{generateTypesLabel(intl)[type]}</div>
               </Form.Field>
             </div>
 
@@ -158,10 +189,7 @@ const QuestionEditForm = ({
                 handleBlur={handleBlur}
                 handleChange={handleChange}
                 intl={intl}
-                label={intl.formatMessage({
-                  defaultMessage: 'Question Title',
-                  id: 'createQuestion.titleInput.label',
-                })}
+                label={intl.formatMessage(messages.titleInput)}
                 name="title"
                 tooltip={
                   <FormattedMessage

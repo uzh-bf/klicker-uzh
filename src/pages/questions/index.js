@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { compose, withHandlers, withStateHandlers } from 'recompose'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
 import { Button } from 'semantic-ui-react'
@@ -21,6 +21,17 @@ import { SessionCreationForm } from '../../components/forms'
 import { QuestionList, TagList } from '../../components/questions'
 import { TeacherLayout } from '../../components/layouts'
 import { QUESTION_SORTINGS } from '../../constants'
+
+const messages = defineMessages({
+  pageTitle: {
+    defaultMessage: 'Question Pool',
+    id: 'questionPool.pageTitle',
+  },
+  title: {
+    defaultMessage: 'Question Pool',
+    id: 'questionPool.title',
+  },
+})
 
 const propTypes = {
   creationMode: PropTypes.bool.isRequired,
@@ -96,15 +107,9 @@ const Index = ({
           sortOrder: sort.asc,
           withSorting: true,
         },
-        title: intl.formatMessage({
-          defaultMessage: 'Question Pool',
-          id: 'questionPool.title',
-        }),
+        title: intl.formatMessage(messages.title),
       }}
-      pageTitle={intl.formatMessage({
-        defaultMessage: 'Question Pool',
-        id: 'questionPool.pageTitle',
-      })}
+      pageTitle={intl.formatMessage(messages.pageTitle)}
       sidebar={{ activeItem: 'questionPool' }}
     >
       <div className="questionPool">
