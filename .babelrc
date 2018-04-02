@@ -27,7 +27,13 @@
       "plugins": [
         "transform-inline-environment-variables",
         ["lodash", { "id": ["lodash", "recompose", "semantic-ui-react", "ramda"] }],
-        "add-react-displayname"
+        "add-react-displayname",
+        [
+          "react-intl",
+          {
+            "messagesDir": "src/lang/.messages"
+          }
+        ]
       ]
     },
     "test": {
