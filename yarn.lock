@@ -9222,9 +9222,9 @@ react-themeable@^1.1.0:
   dependencies:
     object-assign "^3.0.0"
 
-react-tooltip@3.4.0:
-  version "3.4.0"
-  resolved "https://registry.yarnpkg.com/react-tooltip/-/react-tooltip-3.4.0.tgz#037f38f797c3e6b1b58d2534ccc8c2c76af4f52d"
+react-tooltip@3.4.3:
+  version "3.4.3"
+  resolved "https://registry.yarnpkg.com/react-tooltip/-/react-tooltip-3.4.3.tgz#449531f1758487c5fbb2abf812fd8b7a89a506cf"
   dependencies:
     classnames "^2.2.5"
     prop-types "^15.6.0"
