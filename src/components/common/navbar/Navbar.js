@@ -4,9 +4,10 @@ import _get from 'lodash/get'
 import { intlShape } from 'react-intl'
 import { Icon, Menu } from 'semantic-ui-react'
 import { graphql } from 'react-apollo'
-import { compose, withProps } from 'recompose'
+import { compose, withProps, withHandlers } from 'recompose'
+import Router from 'next/router'
 
-import { AccountSummaryQuery } from '../../../graphql'
+import { AccountSummaryQuery, LogoutMutation } from '../../../graphql'
 
 import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'
@@ -15,6 +16,7 @@ import SessionArea from './SessionArea'
 const propTypes = {
   accountShort: PropTypes.string,
   // filters: PropTypes.object,
+  handleLogout: PropTypes.func.isRequired,
   handleSidebarToggle: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   runningSessionId: PropTypes.string,
@@ -49,6 +51,7 @@ export const NavbarPres = ({
   search,
   sidebarVisible,
   title,
+  handleLogout,
   handleSidebarToggle,
   runningSessionId,
 }) => (
@@ -87,7 +90,7 @@ export const NavbarPres = ({
       <Menu borderless className="loginArea noBorder">
         <Menu.Menu position="right">
           {accountShort && <SessionArea intl={intl} sessionId={runningSessionId} />}
-          <AccountArea accountShort={accountShort} />
+          <AccountArea accountShort={accountShort} onLogout={handleLogout} />
         </Menu.Menu>
       </Menu>
     </div>
@@ -125,7 +128,7 @@ export const NavbarPres = ({
 
           :global(.sidebar),
           :global(.menu) {
-            color: white;
+            color: $color-white;
             border-radius: 0;
             font-size: $font-size-h1;
             background-color: $background-color;
@@ -199,8 +202,18 @@ NavbarPres.defaultProps = defaultProps
 
 export default compose(
   graphql(AccountSummaryQuery),
+  graphql(LogoutMutation, { name: 'logout' }),
   withProps(({ data }) => ({
     accountShort: _get(data, 'user.shortname'),
     runningSessionId: _get(data, 'user.runningSession.id'),
   })),
+  withHandlers({
+    // handle logout
+    handleLogout: ({ logout }) => async () => {
+      await logout()
+
+      // redirect to the landing page
+      Router.push('/')
+    },
+  }),
 )(NavbarPres)
