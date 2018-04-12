@@ -47,7 +47,7 @@ jobs:
       env:
         - IMAGE_NAME="uzhbf/klicker-react"
       before_script:
-        - docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+        - echo $DOCKER_PASSWORD | docker login --username $DOCKER_USER --password-stdin
       script:
         - docker pull $IMAGE_NAME:latest
         - >
@@ -95,7 +95,7 @@ jobs:
         - PASSWORD=$DOCKER_PASSWORD
         - IMAGE_NAME="uzhbf/klicker-react"
       before_script:
-        - docker login -u $USER -p $PASSWORD
+        - echo $DOCKER_PASSWORD | docker login --username $DOCKER_USER --password-stdin
       script:
         - >
           docker build .
@@ -115,7 +115,7 @@ jobs:
         - REGISTRY="registry.appuio.ch"
         - IMAGE_NAME="registry.appuio.ch/uniz-klicker/klicker-react"
       before_script:
-        - docker login -u $USER -p $PASSWORD $REGISTRY
+        - echo $PASSWORD | docker login --username $USER --password-stdin $REGISTRY
       script:
         - >
           docker build .
