@@ -95,7 +95,7 @@ jobs:
         - PASSWORD=$DOCKER_PASSWORD
         - IMAGE_NAME="uzhbf/klicker-react"
       before_script:
-        - echo $DOCKER_PASSWORD | docker login --username $DOCKER_USER --password-stdin
+        - echo $PASSWORD | docker login --username $USER --password-stdin
       script:
         - >
           docker build .
