@@ -1,6 +1,8 @@
 /* eslint-disable global-require */
 require('dotenv').config()
 
+const isProd = process.env.NODE_ENV === 'production'
+
 // initialize APM if so configured
 let apm
 if (process.env.APM_SERVER_URL) {
@@ -69,7 +71,7 @@ mongoose.connection
 
 // setup Apollo Engine (GraphQL API metrics)
 let apolloEngine
-if (process.env.NODE_ENV === 'production' && process.env.ENGINE_API_KEY) {
+if (isProd && process.env.ENGINE_API_KEY) {
   const { Engine } = require('apollo-engine')
   apolloEngine = new Engine({
     engineConfig: {
@@ -192,7 +194,7 @@ if (process.env.APP_RATE_LIMITING) {
   next()
 }) */
 
-if (process.env.NODE_ENV === 'production') {
+if (isProd) {
   // add the morgan logging middleware in production
   middleware.push(morgan('combined'))
 
