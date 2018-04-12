@@ -98,7 +98,7 @@
     "prettier-eslint-cli": "4.7.1",
     "react-addons-test-utils": "15.6.2",
     "react-dnd-test-backend": "2.6.0",
-    "react-test-renderer": "16.2.0",
+    "react-test-renderer": "16.3.1",
     "semantic-ui-css": "2.3.1",
     "storybook-addon-intl": "2.3.0",
     "webpack-bundle-analyzer": "2.11.1",
