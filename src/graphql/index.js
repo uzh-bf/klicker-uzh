@@ -8,6 +8,7 @@ import CreateSessionMutation from './mutations/CreateSessionMutation.graphql'
 import DeleteFeedbackMutation from './mutations/DeleteFeedbackMutation.graphql'
 import EndSessionMutation from './mutations/EndSessionMutation.graphql'
 import LoginMutation from './mutations/LoginMutation.graphql'
+import LogoutMutation from './mutations/LogoutMutation.graphql'
 import ModifyQuestionMutation from './mutations/ModifyQuestionMutation.graphql'
 import RequestPasswordMutation from './mutations/RequestPasswordMutation.graphql'
 import RegistrationMutation from './mutations/RegistrationMutation.graphql'
@@ -36,6 +37,7 @@ const queries = [
   DeleteFeedbackMutation,
   EndSessionMutation,
   LoginMutation,
+  LogoutMutation,
   ModifyQuestionMutation,
   RequestPasswordMutation,
   RegistrationMutation,
@@ -69,6 +71,7 @@ export {
   DeleteFeedbackMutation,
   EndSessionMutation,
   LoginMutation,
+  LogoutMutation,
   ModifyQuestionMutation,
   RegistrationMutation,
   StartSessionMutation,
