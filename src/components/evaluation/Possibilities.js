@@ -47,7 +47,9 @@ const Possibilities = ({ questionOptions, questionType }) => (
       }
 
       if (questionType === QUESTION_TYPES.FREE_RANGE) {
-        const { FREE_RANGE: { restrictions } } = questionOptions
+        const {
+          FREE_RANGE: { restrictions },
+        } = questionOptions
 
         return (
           <div>
