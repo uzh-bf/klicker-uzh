@@ -531,6 +531,12 @@
     ms "2.1.1"
     update-notifier "2.3.0"
 
+"@zeit/next-bundle-analyzer@^0.1.1":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@zeit/next-bundle-analyzer/-/next-bundle-analyzer-0.1.1.tgz#b84a9703cab6a97a249c1b7b98f8f66bf9d6fb4e"
+  dependencies:
+    webpack-bundle-analyzer "2.11.1"
+
 "@zeit/source-map-support@0.6.2":
   version "0.6.2"
   resolved "https://registry.yarnpkg.com/@zeit/source-map-support/-/source-map-support-0.6.2.tgz#0efd478f24a606726948165e53a8efe89e24036f"

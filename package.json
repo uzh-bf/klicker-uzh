@@ -6,6 +6,7 @@
   "author": "Roland Schläfli <roland.schlaefli@bf.uzh.ch>",
   "license": "AGPL-3.0",
   "dependencies": {
+    "@zeit/next-bundle-analyzer": "^0.1.1",
     "accepts": "1.3.5",
     "apollo-cache-persist": "0.1.1",
     "apollo-client-preset": "1.0.8",
@@ -113,22 +114,22 @@
   "scripts": {
     "precommit": "lint-staged",
     "prepush": "yarn run test --onlyChanged",
-    "analyze": "cross-env ANALYZE=1 next build src",
+    "analyze": "cross-env BUNDLE_ANALYZE=both NODE_ENV=development next build src",
     "build": "next build src",
     "build:lang": "next build src && node ./src/lib/defaultLang",
     "compile-queries": "persistgraphql src/graphql/ --add_typename",
     "cypress:open": "cypress open",
-    "dev": "nodemon --delay 1000ms -w .env -w package.json -w yarn.lock -w server.js server.js",
+    "dev":
+      "cross-env NODE_ENV=development nodemon --delay 1000ms -w .env -w package.json -w yarn.lock -w server.js server.js",
     "dev:inspect":
-      "nodemon --delay 1000ms -w .env -w package.json -w yarn.lock -w server.js --inspect server.js",
+      "cross-env NODE_ENV=development nodemon --delay 1000ms -w .env -w package.json -w yarn.lock -w server.js --inspect server.js",
     "format": "prettier-eslint --singleQuote --no-semi --write server.js \"src/**/*.js\"",
     "format:ci":
       "prettier-eslint --singleQuote --no-semi --list-different server.js \"src/**/*.js\"",
     "lint": "eslint server.js \"src/**/*.js\"",
     "start": "cross-env NODE_ENV=production node server.js",
     "start:inspect": "cross-env NODE_ENV=production node --inspect server.js",
-    "start:pm": "NODE_ENV=production pm2-docker start --env production server.js",
-    "storybook": "start-storybook -p 6006 -c .storybook",
+    "storybook": "cross-env NODE_ENV=development start-storybook -p 6006 -c .storybook",
     "test": "jest",
     "test:ci": "jest --coverage",
     "test:watch": "jest --watch"
