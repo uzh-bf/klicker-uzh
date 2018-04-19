@@ -96,7 +96,9 @@ const BarChart = ({ isSolutionShown, data, isColored }) => (
             fill={
               isSolutionShown && row.correct // eslint-disable-line
                 ? '#00FF00'
-                : isColored ? row.fill : '#1395BA'
+                : isColored
+                  ? row.fill
+                  : '#1395BA'
             }
             key={row.value}
           />
