@@ -4,7 +4,7 @@ import React from 'react'
 import { storiesOf } from '@storybook/react'
 import { DragDropContextProvider } from 'react-dnd'
 import HTML5Backend from 'react-dnd-html5-backend'
-import { OrderedMap } from 'immutable'
+// import { OrderedMap } from 'immutable'
 
 import fixtures from '../../../.storybook/fixtures'
 import {
@@ -17,8 +17,8 @@ import {
   TitleInput,
   ContentInput,
 } from '.'
-import { TagListPres } from './TagList'
-import { QuestionListPres } from './QuestionList'
+// import { TagListPres } from './TagList'
+// import { QuestionListPres } from './QuestionList'
 
 storiesOf('questions', module)
   .addDecorator(getStory => (
@@ -33,7 +33,7 @@ storiesOf('questions', module)
       lastUsed={['20.12.2017', '19.12.2017', '10.10.2017']}
     />
   ))
-  .add('QuestionList', () => (
+  /* .add('QuestionList', () => (
     <QuestionListPres
       questions={fixtures.questions}
       selectedItems={OrderedMap()}
@@ -49,7 +49,7 @@ storiesOf('questions', module)
       onQuestionChecked={() => null}
       onQuestionDropped={() => null}
     />
-  ))
+  )) */
   .add('QuestionBlock', () => (
     <QuestionBlock {...fixtures.questionBlock} showSolutions={false} timeLimit={60} />
   ))
@@ -63,12 +63,12 @@ storiesOf('questions', module)
   ))
   .add('QuestionSingle', () => <QuestionSingle {...fixtures.question} />)
   .add('QuestionTags', () => <QuestionTags tags={fixtures.question.tags} type="SC" />)
-  .add('TagList', () => (
+  /* .add('TagList', () => (
     <TagListPres
       handleTagClick={() => null}
       tags={[{ id: '1', isActive: false, name: 'CAPM' }, { id: '2', isActive: true, name: 'CF' }]}
     />
-  ))
+  )) */
   // HACK: disable test for TagInput as autosuggest breaks...
   .add('TagInput [NoTest]', () => (
     <form className="ui form">
