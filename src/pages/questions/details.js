@@ -13,7 +13,7 @@ import { QuestionEditForm } from '../../components/forms'
 import { pageWithIntl, withData, omitDeep, withDnD, withLogging } from '../../lib'
 import {
   TagListQuery,
-  QuestionPoolQuery,
+  QuestionListQuery,
   QuestionDetailsQuery,
   ModifyQuestionMutation,
 } from '../../graphql'
@@ -94,7 +94,7 @@ const EditQuestion = ({ intl, url }) => (
                         await editQuestion({
                           // reload the question details and tags after update
                           // TODO: replace with optimistic updates
-                          refetchQueries: [{ query: QuestionPoolQuery }],
+                          refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
                           // update the cache after the mutation has completed
                           update: (store, { data: { modifyQuestion } }) => {
                             const query = {
