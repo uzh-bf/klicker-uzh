@@ -22,7 +22,6 @@ const propTypes = {
   handleSort: PropTypes.func.isRequired,
   handleStartSession: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  sessions: PropTypes.array.isRequired,
 }
 
 const Index = ({
@@ -31,7 +30,6 @@ const Index = ({
   handleSearch,
   handleSort,
   handleStartSession,
-  sessions,
   filters,
 }) => (
   <TeacherLayout
@@ -57,7 +55,6 @@ const Index = ({
   >
     <div className="sessionList">
       <SessionList
-        data={sessions}
         filters={filters}
         handleCopySession={handleCopySession}
         handleStartSession={handleStartSession}
@@ -104,7 +101,11 @@ export default compose(
     handleStartSession: ({ mutate }) => id => async () => {
       try {
         await mutate({
-          refetchQueries: [{ query: RunningSessionQuery }, { query: AccountSummaryQuery }],
+          refetchQueries: [
+            { query: SessionListQuery },
+            { query: RunningSessionQuery },
+            { query: AccountSummaryQuery },
+          ],
           variables: { id },
         })
       } catch ({ message }) {
@@ -112,5 +113,4 @@ export default compose(
       }
     },
   }),
-  graphql(SessionListQuery, { name: 'sessions' }),
 )(Index)

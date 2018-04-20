@@ -71,19 +71,20 @@ const Session = ({
               Evaluation
             </Button>
           </a>
-          {!button.hidden && (
-            <Button
-              icon
-              primary
-              className="lastButton"
-              disabled={button.disabled}
-              labelPosition="left"
-              onClick={button.onClick}
-            >
-              <Icon name={button.icon} />
-              {button.message}
-            </Button>
-          )}
+          {button &&
+            !button.hidden && (
+              <Button
+                icon
+                primary
+                className="lastButton"
+                disabled={button.disabled}
+                labelPosition="left"
+                onClick={button.onClick}
+              >
+                <Icon name={button.icon} />
+                {button.message}
+              </Button>
+            )}
         </div>
       </div>
 
