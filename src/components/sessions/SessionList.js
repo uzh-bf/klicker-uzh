@@ -73,9 +73,6 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
             )
           }
 
-          // create a session index
-          const sessionIndex = buildIndex('sessions', sessions, ['name', 'createdAt'])
-
           // extract the running session from all sessions
           const runningSession = sessions
             .filter(session => session.status === SESSION_STATUS.RUNNING)
@@ -86,6 +83,9 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
                 onClick: () => Router.push('/sessions/running'),
               },
             }))
+
+          // create a session index
+          const sessionIndex = buildIndex('sessions', sessions, ['name', 'createdAt'])
 
           const processedSessions = filterSessions(sessions, filters, sessionIndex).map(
             session => ({
@@ -117,7 +117,7 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
                     />
                   </h2>
                   <div className="session">
-                    <Session {...runningSession} />
+                    <Session {...runningSession[0]} />
                   </div>
                 </div>
               ) : (

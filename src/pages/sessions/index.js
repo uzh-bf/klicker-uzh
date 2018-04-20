@@ -6,7 +6,12 @@ import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
 
 import { pageWithIntl, withData, withLogging, withSortingAndFiltering } from '../../lib'
-import { AccountSummaryQuery, RunningSessionQuery, StartSessionMutation } from '../../graphql'
+import {
+  AccountSummaryQuery,
+  RunningSessionQuery,
+  StartSessionMutation,
+  SessionListQuery,
+} from '../../graphql'
 import { TeacherLayout } from '../../components/layouts'
 import { SessionList } from '../../components/sessions'
 
@@ -96,7 +101,11 @@ export default compose(
     handleStartSession: ({ mutate }) => id => async () => {
       try {
         await mutate({
-          refetchQueries: [{ query: RunningSessionQuery }, { query: AccountSummaryQuery }],
+          refetchQueries: [
+            { query: SessionListQuery },
+            { query: RunningSessionQuery },
+            { query: AccountSummaryQuery },
+          ],
           variables: { id },
         })
       } catch ({ message }) {
