@@ -29,7 +29,7 @@ const FREECreationPreview = ({ questionType, options: { restrictions }, descript
 
   return (
     <div className="preview">
-      <div className="description">{description}</div>
+      <div className="description">{/* FIXME: description */}</div>
       {(() => {
         // if the type is FREE_RANGE and both restrictions are specified
         // display a slider and selection

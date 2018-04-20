@@ -1,6 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
+import Editor from 'draft-js-plugins-editor'
 import { Form, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
@@ -35,12 +36,7 @@ const ContentInput = ({
         />
       </ReactTooltip>
 
-      <textarea
-        disabled={disabled}
-        name="content"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-      />
+      <Editor disabled={disabled} editorState={value} onChange={onChange} />
     </Form.Field>
 
     <style jsx>{`

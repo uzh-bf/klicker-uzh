@@ -18,7 +18,7 @@ const defaultProps = {
 
 const SCCreationPreview = ({ description, options }) => (
   <div className="preview">
-    <div className="description">{description}</div>
+    <div className="description">{/* FIXME: description */}</div>
     <div className="options">
       <SCAnswerOptions
         disabled

@@ -6,6 +6,7 @@ import { Formik } from 'formik'
 import isEmpty from 'validator/lib/isEmpty'
 import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
+import { EditorState } from 'draft-js'
 
 import { ContentInput, TagInput } from '../questions'
 import {
@@ -29,9 +30,9 @@ const validate = ({
     errors.title = 'form.createQuestion.title.empty'
   }
 
-  if (!content || isEmpty(content)) {
+  /* FIXME: if (!content || isEmpty(content)) {
     errors.content = 'form.createQuestion.content.empty'
-  }
+  } */
 
   if (!tags || tags.length === 0) {
     errors.tags = 'form.createQuestion.tags.empty'
@@ -102,7 +103,7 @@ const QuestionCreationForm = ({
     <div className="questionCreationForm">
       <Formik
         initialValues={{
-          content: '',
+          content: EditorState.createEmpty(),
           options: {
             choices: [],
             randomized: false,
