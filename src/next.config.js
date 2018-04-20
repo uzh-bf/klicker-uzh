@@ -1,44 +1,56 @@
 /* eslint-disable import/no-extraneous-dependencies */
 
 const webpack = require('webpack')
+const { PHASE_DEVELOPMENT_SERVER } = require('next/constants')
 
-const { ANALYZE } = process.env
+module.exports = (phase) => {
+  const baseConfig = {
+    publicRuntimeConfig: {},
+    serverRuntimeConfig: {},
+    webpack: (config) => {
+      // add the webpack context replacement plugin to remove moment locales
+      config.plugins.push(new webpack.ContextReplacementPlugin(/moment[/\\]locale$/, /en/))
 
-module.exports = {
-  webpack: (config, { isServer }) => {
-    // add the webpack context replacement plugin to remove moment locales
-    config.plugins.push(new webpack.ContextReplacementPlugin(/moment[/\\]locale$/, /en/))
+      // ignore test files when bundling
+      config.plugins.push(new webpack.IgnorePlugin(/src\/pages.*\/test.*/))
 
-    // ignore test files when bundling
-    config.plugins.push(new webpack.IgnorePlugin(/src\/pages.*\/test.*/))
-
-    // push graphql loaders into the webpack config
-    config.module.rules.push({
-      test: /\.graphql$/,
-      use: [
-        {
-          loader: 'graphql-persisted-document-loader',
-          options: {
-            addTypename: true,
+      // push graphql loaders into the webpack config
+      config.module.rules.push({
+        test: /\.graphql$/,
+        use: [
+          {
+            loader: 'graphql-persisted-document-loader',
+            options: {
+              addTypename: true,
+            },
           },
+          { loader: 'graphql-tag/loader' },
+        ],
+      })
+
+      return config
+    },
+  }
+
+  if (phase === PHASE_DEVELOPMENT_SERVER) {
+    const withBundleAnalyzer = require('@zeit/next-bundle-analyzer')
+    // const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
+
+    withBundleAnalyzer({
+      analyzeBrowser: ['browser', 'both'].includes(process.env.BUNDLE_ANALYZE),
+      analyzeServer: ['server', 'both'].includes(process.env.BUNDLE_ANALYZE),
+      bundleAnalyzerConfig: {
+        browser: {
+          analyzerMode: 'static',
+          reportFilename: '../bundles/client.html',
         },
-        { loader: 'graphql-tag/loader' },
-      ],
+        server: {
+          analyzerMode: 'static',
+          reportFilename: '../../bundles/server.html',
+        },
+      },
     })
+  }
 
-    // add the bundle analyzer plugin if enabled
-    if (ANALYZE) {
-      const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
-
-      config.plugins.push(
-        new BundleAnalyzerPlugin({
-          analyzerMode: 'server',
-          analyzerPort: isServer ? 8888 : 8889,
-          openAnalyzer: true,
-        }),
-      )
-    }
-
-    return config
-  },
+  return baseConfig
 }

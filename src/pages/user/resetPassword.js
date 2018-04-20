@@ -1,8 +1,8 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { compose, withState, withHandlers } from 'recompose'
+import { compose } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
-import { graphql } from 'react-apollo'
+import { Mutation } from 'react-apollo'
 import { Message } from 'semantic-ui-react'
 import Link from 'next/link'
 
@@ -12,15 +12,11 @@ import { pageWithIntl, withData, withLogging } from '../../lib'
 import { ChangePasswordMutation } from '../../graphql'
 
 const propTypes = {
-  error: PropTypes.oneOfType(PropTypes.string, null).isRequired,
-  handleSubmit: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  success: PropTypes.oneOfType(PropTypes.string, null).isRequired,
+  url: PropTypes.object.isRequired,
 }
 
-const ResetPassword = ({
-  intl, handleSubmit, success, error,
-}) => (
+const ResetPassword = ({ intl, url }) => (
   <StaticLayout
     pageTitle={intl.formatMessage({
       defaultMessage: 'Reset password',
@@ -32,19 +28,40 @@ const ResetPassword = ({
         <FormattedMessage defaultMessage="Reset your password" id="user.resetPassword.title" />
       </h1>
 
-      {success && (
-        <Message success>
-          <FormattedMessage
-            defaultMessage="Your password was successfully changed. You can now {login}."
-            id="user.resetPassword.success"
-            values={{
-              login: <Link href="/user/login">login</Link>,
-            }}
-          />
-        </Message>
-      )}
-      {!success && <PasswordResetForm intl={intl} onSubmit={handleSubmit} />}
-      {error && <Message error>{error}</Message>}
+      <Mutation mutation={ChangePasswordMutation}>
+        {(changePassword, { data, error, loading }) => {
+          const success = data && !error
+
+          if (success) {
+            return (
+              <Message success>
+                <FormattedMessage
+                  defaultMessage="Your password was successfully changed. You can now {login}."
+                  id="user.resetPassword.success"
+                  values={{
+                    login: <Link href="/user/login">login</Link>,
+                  }}
+                />
+              </Message>
+            )
+          }
+
+          return (
+            <React.Fragment>
+              <PasswordResetForm
+                intl={intl}
+                loading={loading}
+                onSubmit={({ password }) => {
+                  changePassword({
+                    variables: { jwt: url.query.resetToken, newPassword: password },
+                  })
+                }}
+              />
+              {error && <Message error>{error.message}</Message>}
+            </React.Fragment>
+          )
+        }}
+      </Mutation>
 
       <style jsx>{`
         @import 'src/theme';
@@ -74,21 +91,4 @@ export default compose(
   }),
   withData,
   pageWithIntl,
-  graphql(ChangePasswordMutation),
-  withState('error', 'setError', null),
-  withState('success', 'setSuccess', null),
-  withHandlers({
-    // handle form submission
-    handleSubmit: ({
-      mutate, setError, setSuccess, url,
-    }) => async ({ password }) => {
-      try {
-        await mutate({ variables: { jwt: url.query.resetToken, newPassword: password } })
-        setSuccess('Success')
-      } catch ({ message }) {
-        console.error(message)
-        setError(message)
-      }
-    },
-  }),
 )(ResetPassword)
