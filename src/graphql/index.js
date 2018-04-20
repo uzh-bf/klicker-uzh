@@ -19,6 +19,7 @@ import ArchiveQuestionsMutation from './mutations/ArchiveQuestionsMutation.graph
 import AccountSummaryQuery from './queries/AccountSummaryQuery.graphql'
 import JoinSessionQuery from './queries/JoinSessionQuery.graphql'
 import QuestionDetailsQuery from './queries/QuestionDetailsQuery.graphql'
+import QuestionListQuery from './queries/QuestionListQuery.graphql'
 import RunningSessionQuery from './queries/RunningSessionQuery.graphql'
 import SessionEvaluationQuery from './queries/SessionEvaluationQuery.graphql'
 import SessionListQuery from './queries/SessionListQuery.graphql'
@@ -46,6 +47,7 @@ const queries = [
   AccountSummaryQuery,
   JoinSessionQuery,
   QuestionDetailsQuery,
+  QuestionListQuery,
   RunningSessionQuery,
   SessionEvaluationQuery,
   SessionListQuery,
@@ -85,5 +87,6 @@ export {
   SessionListQuery,
   QuestionPoolQuery,
   TagListQuery,
+  QuestionListQuery,
   queryMap,
 }

@@ -112,10 +112,10 @@ const Index = ({
 
   return (
     <Query query={QuestionPoolQuery}>
-      {questionPool => (
+      {({ data }) => (
         <TeacherLayout
           fixedHeight
-          actionArea={creationMode ? creationForm(_get(questionPool, 'runningSession.id')) : null}
+          actionArea={creationMode ? creationForm(_get(data, 'runningSession.id')) : null}
           intl={intl}
           navbar={{
             search: {
@@ -143,7 +143,6 @@ const Index = ({
               <TagList
                 activeTags={filters.tags}
                 activeType={filters.type}
-                data={questionPool}
                 handleReset={handleReset}
                 handleTagClick={handleTagClick}
                 handleToggleArchive={handleToggleArchive}
@@ -165,7 +164,6 @@ const Index = ({
                 <div className="questionListContent">
                   <QuestionList
                     creationMode={creationMode}
-                    data={questionPool}
                     filters={filters}
                     isArchiveActive={filters.archive}
                     selectedItems={selectedItems}
