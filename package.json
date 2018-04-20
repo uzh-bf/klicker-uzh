@@ -28,6 +28,8 @@
     "cross-env": "5.1.4",
     "d3": "5.1.0",
     "dotenv": "5.0.1",
+    "draft-js": "^0.10.5",
+    "draft-js-plugins-editor": "^2.0.4",
     "elastic-apm-node": "1.4.0",
     "express": "4.16.3",
     "fingerprintjs2": "1.6.1",
