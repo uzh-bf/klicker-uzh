@@ -2,16 +2,11 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { compose, withHandlers } from 'recompose'
 import { intlShape } from 'react-intl'
-import { graphql, Query } from 'react-apollo'
+import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
 
 import { pageWithIntl, withData, withLogging, withSortingAndFiltering } from '../../lib'
-import {
-  AccountSummaryQuery,
-  RunningSessionQuery,
-  StartSessionMutation,
-  SessionListQuery,
-} from '../../graphql'
+import { AccountSummaryQuery, RunningSessionQuery, StartSessionMutation } from '../../graphql'
 import { TeacherLayout } from '../../components/layouts'
 import { SessionList } from '../../components/sessions'
 
@@ -53,19 +48,14 @@ const Index = ({
     })}
     sidebar={{ activeItem: 'sessionList' }}
   >
-    <Query query={SessionListQuery}>
-      {sessions => (
-        <div className="sessionList">
-          <SessionList
-            data={sessions}
-            filters={filters}
-            handleCopySession={handleCopySession}
-            handleStartSession={handleStartSession}
-            intl={intl}
-          />
-        </div>
-      )}
-    </Query>
+    <div className="sessionList">
+      <SessionList
+        filters={filters}
+        handleCopySession={handleCopySession}
+        handleStartSession={handleStartSession}
+        intl={intl}
+      />
+    </div>
 
     <style jsx>{`
       @import 'src/theme';
