@@ -1,25 +1,19 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import Router from 'next/router'
-import { compose, withHandlers, withProps } from 'recompose'
-import { graphql } from 'react-apollo'
+import { compose } from 'recompose'
+import { Query, Mutation } from 'react-apollo'
 import { intlShape } from 'react-intl'
 
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionCreationForm } from '../../components/forms'
 import { pageWithIntl, withData, withDnD, withLogging } from '../../lib'
-import { QuestionPoolQuery, TagListQuery, CreateQuestionMutation } from '../../graphql'
+import { QuestionListQuery, TagListQuery, CreateQuestionMutation } from '../../graphql'
 
 const propTypes = {
-  handleDiscard: PropTypes.func.isRequired,
-  handleSave: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  tags: PropTypes.array.isRequired,
 }
 
-const CreateQuestion = ({
-  tags, intl, handleDiscard, handleSave,
-}) => (
+const CreateQuestion = ({ intl }) => (
   <TeacherLayout
     intl={intl}
     navbar={{
@@ -34,51 +28,43 @@ const CreateQuestion = ({
     })}
     sidebar={{ activeItem: 'createQuestion' }}
   >
-    <QuestionCreationForm intl={intl} tags={tags} onDiscard={handleDiscard} onSubmit={handleSave} />
+    <Query query={TagListQuery}>
+      {({ data }) => (
+        <Mutation mutation={CreateQuestionMutation}>
+          {(createQuestion, { loading }) => (
+            <QuestionCreationForm
+              intl={intl}
+              loading={loading}
+              tags={data.tags}
+              // handle discarding a new question
+              onDiscard={() => Router.push('/questions')}
+              // handle submitting a new question
+              onSubmit={async ({
+ content, options, tags, title, type,
+}) => {
+                await createQuestion({
+                  // reload the list of questions and tags after creation
+                  // TODO: replace with optimistic updates
+                  refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
+                  variables: {
+                    description: content,
+                    options,
+                    tags,
+                    title,
+                    type,
+                  },
+                })
+
+                Router.push('/questions')
+              }}
+            />
+          )}
+        </Mutation>
+      )}
+    </Query>
   </TeacherLayout>
 )
 
 CreateQuestion.propTypes = propTypes
 
-export default compose(
-  withLogging(),
-  withDnD,
-  withData,
-  pageWithIntl,
-  graphql(TagListQuery),
-  graphql(CreateQuestionMutation),
-  withHandlers({
-    // handle discarding a new question
-    handleDiscard: () => () => {
-      Router.push('/questions')
-    },
-
-    // handle saving a new question
-    handleSave: ({ mutate }) => async ({
-      content, options, tags, title, type,
-    }) => {
-      try {
-        await mutate({
-          // reload the list of questions and tags after creation
-          // TODO: replace with optimistic updates
-          refetchQueries: [{ query: QuestionPoolQuery }],
-          variables: {
-            description: content,
-            options,
-            tags,
-            title,
-            type,
-          },
-        })
-
-        // redirect to the question pool
-        Router.push('/questions')
-      } catch ({ message }) {
-        console.error(message)
-      }
-    },
-  }),
-  withProps(({ data }) => ({
-    tags: data.tags,
-  })),
-)(CreateQuestion)
+export default compose(withLogging(), withDnD, withData, pageWithIntl)(CreateQuestion)

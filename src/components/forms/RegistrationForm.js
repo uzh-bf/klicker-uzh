@@ -9,35 +9,13 @@ import _isEmpty from 'lodash/isEmpty'
 
 import { FormikInput } from '.'
 
-/* const validate = ({
-  institution, email, shortname, password, passwordRepeat, useCase,
-}) => {
-  const errors = {}
-
-
-  // the shortname is allowed to be within 3 to 6 chars
-  if (!shortname || !isAlphanumeric(shortname) || !isLength(shortname, { max: 6, min: 3 })) {
-    errors.shortname = 'form.shortname.invalid'
-  }
-
-  // both password fields need to match
-  if (!passwordRepeat || passwordRepeat !== password) {
-    errors.passwordRepeat = 'form.passwordRepeat.invalid'
-  }
-
-  if (useCase && !isAlphanumeric(useCase)) {
-    errors.useCase = 'form.useCase.invalid'
-  }
-
-  return errors
-} */
-
 const propTypes = {
   intl: intlShape.isRequired,
+  loading: PropTypes.bool.isRequired,
   onSubmit: PropTypes.func.isRequired,
 }
 
-const RegistrationForm = ({ intl, onSubmit }) => (
+const RegistrationForm = ({ intl, loading, onSubmit }) => (
   <div className="registrationForm">
     <Formik
       initialValues={{
@@ -194,7 +172,7 @@ const RegistrationForm = ({ intl, onSubmit }) => (
             primary
             disabled={!_isEmpty(errors) || _isEmpty(touched)}
             floated="right"
-            loading={isSubmitting}
+            loading={loading && isSubmitting}
             type="submit"
           >
             <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
@@ -205,7 +183,7 @@ const RegistrationForm = ({ intl, onSubmit }) => (
         email: Yup.string()
           .email()
           .required(),
-        insitution: Yup.string().required(),
+        institution: Yup.string().required(),
         password: Yup.string()
           .min(8)
           .required(),

@@ -1,10 +1,9 @@
 import React from 'react'
 import Router from 'next/router'
-import PropTypes from 'prop-types'
 import Cookies from 'js-cookie'
-import { compose, withState, withHandlers } from 'recompose'
+import { compose } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
-import { graphql } from 'react-apollo'
+import { Mutation } from 'react-apollo'
 
 import { StaticLayout } from '../../components/layouts'
 import { LoginForm } from '../../components/forms'
@@ -12,12 +11,10 @@ import { LoginMutation } from '../../graphql'
 import { pageWithIntl, withData, withLogging } from '../../lib'
 
 const propTypes = {
-  error: PropTypes.oneOfType(PropTypes.string, null).isRequired,
-  handleSubmit: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
 }
 
-const Login = ({ intl, error, handleSubmit }) => (
+const Login = ({ intl }) => (
   <StaticLayout
     pageTitle={intl.formatMessage({
       defaultMessage: 'Login',
@@ -29,10 +26,29 @@ const Login = ({ intl, error, handleSubmit }) => (
         <FormattedMessage defaultMessage="Login" id="user.login.title" />
       </h1>
 
-      <LoginForm intl={intl} onSubmit={handleSubmit} />
+      <Mutation mutation={LoginMutation}>
+        {(login, { loading, error }) => (
+          <React.Fragment>
+            <LoginForm
+              intl={intl}
+              loading={loading}
+              onSubmit={async ({ email, password }) => {
+                // perform the login
+                const { data } = await login({ variables: { email, password } })
 
-      {/* TODO: improve message handling */}
-      {error && <div className="errorMessage message">Login failed ({error})</div>}
+                // save the user id in a cookie
+                if (data.login) {
+                  Cookies.set('userId', data.login)
+                }
+
+                // redirect to question pool
+                Router.push('/questions')
+              }}
+            />
+            {error && <div className="errorMessage message">Login failed ({error.message})</div>}
+          </React.Fragment>
+        )}
+      </Mutation>
 
       <style jsx>{`
         @import 'src/theme';
@@ -72,25 +88,4 @@ export default compose(
   }),
   withData,
   pageWithIntl,
-  graphql(LoginMutation),
-  withState('error', 'setError', null),
-  withHandlers({
-    // handle form submission
-    handleSubmit: ({ mutate, setError }) => async ({ email, password }) => {
-      try {
-        const { data } = await mutate({ variables: { email, password } })
-
-        // save the user id in a cookie
-        if (data.login) {
-          Cookies.set('userId', data.login)
-        }
-
-        // redirect to question pool
-        Router.push('/questions')
-      } catch ({ message }) {
-        console.error(message)
-        setError(message)
-      }
-    },
-  }),
 )(Login)

@@ -57,9 +57,9 @@ const propTypes = {
   initialValues: PropTypes.object.isRequired,
   intl: intlShape.isRequired,
   isNewVersion: PropTypes.bool.isRequired,
+  loading: PropTypes.bool.isRequired,
   onActiveVersionChange: PropTypes.func.isRequired,
   onDiscard: PropTypes.func.isRequired,
-  onDismiss: PropTypes.func.isRequired,
   onSubmit: PropTypes.func.isRequired,
   tags: PropTypes.arrayOf(
     PropTypes.shape({
@@ -88,7 +88,7 @@ const QuestionEditForm = ({
   initialValues,
   intl,
   isNewVersion,
-  onDismiss,
+  loading,
   tags,
   type,
   onSubmit,
@@ -121,13 +121,13 @@ const QuestionEditForm = ({
         return (
           <Form error={success === false} success={success === true} onSubmit={handleSubmit}>
             <div className="infoMessage">
-              <Message success onDismiss={onDismiss}>
+              <Message success>
                 <FormattedMessage
                   defaultMessage="Successfully modified question."
                   id="editQuestion.sucess"
                 />
               </Message>
-              <Message error onDismiss={onDismiss}>
+              <Message error>
                 <FormattedMessage
                   defaultMessage="Could not modify question: {error}"
                   id="editQuestion.error"
@@ -256,7 +256,7 @@ const QuestionEditForm = ({
                 primary
                 className="save"
                 disabled={!_isEmpty(errors) || _isEmpty(touched)}
-                loading={isSubmitting && success === null}
+                loading={loading && isSubmitting}
                 type="submit"
               >
                 <FormattedMessage defaultMessage="Save" id="common.button.save" />
@@ -376,8 +376,9 @@ QuestionEditForm.defaultProps = defaultProps
 
 export default compose(
   withProps(({
-    allTags, isNewVersion, activeVersion, versions, questionTags, title, type,
+    allTags, activeVersion, versions, questionTags, title, type, onSubmit,
   }) => {
+    const isNewVersion = activeVersion === versions.length
     const initializeVersion = isNewVersion ? versions.length - 1 : activeVersion
     return {
       initialValues: {
@@ -388,6 +389,8 @@ export default compose(
         type,
         versions,
       },
+      isNewVersion,
+      onSubmit: onSubmit(isNewVersion),
       tags: allTags,
       versionOptions: versions.map(({ id }, index) => ({
         text: `v${index + 1}`,

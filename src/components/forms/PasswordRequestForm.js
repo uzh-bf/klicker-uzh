@@ -9,10 +9,11 @@ import { FormWithLinks, FormikInput } from '.'
 
 const propTypes = {
   intl: intlShape.isRequired,
+  loading: PropTypes.bool.isRequired,
   onSubmit: PropTypes.func.isRequired,
 }
 
-const PasswordRequestForm = ({ intl, onSubmit }) => {
+const PasswordRequestForm = ({ intl, loading, onSubmit }) => {
   const links = [
     {
       href: '/user/login',
@@ -44,7 +45,7 @@ const PasswordRequestForm = ({ intl, onSubmit }) => {
               defaultMessage: 'Submit',
               id: 'form.common.button.submit',
             }),
-            loading: isSubmitting,
+            loading: loading && isSubmitting,
             onSubmit: handleSubmit,
           }}
           links={links}

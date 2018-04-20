@@ -1,35 +1,29 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Button, Icon, List } from 'semantic-ui-react'
-import { compose, withProps, branch, renderComponent } from 'recompose'
+import { Button, Icon, List, Loader, Message } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
+import { Query } from 'react-apollo'
 
-import { LoadingDiv } from '../common'
 import { QUESTION_TYPES } from '../../lib'
+import { TagListQuery } from '../../graphql'
 
 const propTypes = {
+  activeTags: PropTypes.array.isRequired,
   activeType: PropTypes.string.isRequired,
   handleReset: PropTypes.func.isRequired,
   handleTagClick: PropTypes.func.isRequired,
   handleToggleArchive: PropTypes.func.isRequired,
   isArchiveActive: PropTypes.bool,
-  tags: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-    }),
-  ),
 }
 
 const defaultProps = {
   isArchiveActive: false,
-  tags: [],
 }
 
 export const TagListPres = ({
+  activeTags,
   isArchiveActive,
   activeType,
-  tags,
   handleTagClick,
   handleReset,
   handleToggleArchive,
@@ -103,21 +97,36 @@ export const TagListPres = ({
       <List.Header className="listHeader tags">
         <FormattedMessage defaultMessage="Tags" id="tagList.header.tags" />
       </List.Header>
-      {tags.length === 0 ? (
-        <FormattedMessage defaultMessage="No tags available." id="tagList.string.noTags" />
-      ) : (
-        tags.map(({ isActive, id, name }) => (
-          <List.Item
-            active={isActive}
-            className="listItem"
-            key={id}
-            onClick={() => handleTagClick(name)}
-          >
-            <List.Icon name="tag" />
-            <List.Content>{name}</List.Content>
-          </List.Item>
-        ))
-      )}
+
+      <Query query={TagListQuery}>
+        {({ data: { tags }, error, loading }) => {
+          if (loading) {
+            return <Loader active />
+          }
+
+          if (error) {
+            return <Message error>{error.message}</Message>
+          }
+
+          if (tags.length === 0) {
+            return (
+              <FormattedMessage defaultMessage="No tags available." id="tagList.string.noTags" />
+            )
+          }
+
+          return tags.map(({ id, name }) => (
+            <List.Item
+              active={activeTags.includes(name)}
+              className="listItem"
+              key={id}
+              onClick={() => handleTagClick(name)}
+            >
+              <List.Icon name="tag" />
+              <List.Content>{name}</List.Content>
+            </List.Item>
+          ))
+        }}
+      </Query>
     </List>
 
     <style jsx>{`
@@ -125,7 +134,7 @@ export const TagListPres = ({
 
       .tagList {
         font-size: 0.9rem;
-        min-width: 10rem;
+        min-width: 12rem;
 
         :global(.listHeader) {
           color: grey;
@@ -154,15 +163,4 @@ export const TagListPres = ({
 TagListPres.propTypes = propTypes
 TagListPres.defaultProps = defaultProps
 
-export default compose(
-  branch(({ data }) => data.loading, renderComponent(LoadingDiv)),
-  branch(({ data }) => data.error, renderComponent(({ data }) => <div>{data.error}</div>)),
-  withProps(({ activeTags, data: { loading, tags } }) => ({
-    loading,
-    tags: tags && tags.map(tag => ({ ...tag, isActive: activeTags.includes(tag.name) })),
-    /* types: ['SC', 'MC', 'FREE', 'FREE_RANGE'].map(type => ({
-      isActive: type === activeType,
-      name: type,
-    })), */
-  })),
-)(TagListPres)
+export default TagListPres

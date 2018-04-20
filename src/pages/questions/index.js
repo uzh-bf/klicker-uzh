@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { compose, withHandlers, withStateHandlers } from 'recompose'
 import { intlShape } from 'react-intl'
-import { graphql } from 'react-apollo'
+import { graphql, Query } from 'react-apollo'
 import _debounce from 'lodash/debounce'
 import _get from 'lodash/get'
 import Router from 'next/router'
@@ -32,7 +32,6 @@ import { QUESTION_SORTINGS } from '../../constants'
 
 const propTypes = {
   creationMode: PropTypes.bool.isRequired,
-  data: PropTypes.object.isRequired,
   filters: PropTypes.object.isRequired,
   handleArchiveQuestions: PropTypes.func.isRequired,
   handleChangeBlocks: PropTypes.func.isRequired,
@@ -61,7 +60,6 @@ const Index = ({
   creationMode,
   intl,
   filters,
-  data,
   sort,
   selectedItems,
   sessionName,
@@ -81,7 +79,7 @@ const Index = ({
   handleChangeBlocks,
   handleArchiveQuestions,
 }) => {
-  const creationForm = (
+  const creationForm = runningSessionId => (
     <div className="creationForm">
       <SessionCreationForm
         blocks={sessionBlocks}
@@ -90,7 +88,7 @@ const Index = ({
         handleDiscard={handleCreationModeToggle}
         handleSubmit={handleCreateSession}
         intl={intl}
-        isSessionRunning={_get(data, 'runningSession.id')}
+        isSessionRunning={!!runningSessionId}
         name={sessionName}
       />
 
@@ -113,141 +111,143 @@ const Index = ({
   )
 
   return (
-    <TeacherLayout
-      fixedHeight
-      actionArea={creationMode ? creationForm : null}
-      intl={intl}
-      navbar={{
-        search: {
-          handleSearch: _debounce(handleSearch, 200),
-          handleSortByChange,
-          handleSortOrderToggle,
-          sortBy: sort.by,
-          sortingTypes: QUESTION_SORTINGS,
-          sortOrder: sort.asc,
-          withSorting: true,
-        },
-        title: intl.formatMessage({
-          defaultMessage: 'Question Pool',
-          id: 'questionPool.title',
-        }),
-      }}
-      pageTitle={intl.formatMessage({
-        defaultMessage: 'Question Pool',
-        id: 'questionPool.pageTitle',
-      })}
-      sidebar={{ activeItem: 'questionPool' }}
-    >
-      <div className="questionPool">
-        <div className="tagList">
-          <TagList
-            activeTags={filters.tags}
-            activeType={filters.type}
-            data={data}
-            handleReset={handleReset}
-            handleTagClick={handleTagClick}
-            handleToggleArchive={handleToggleArchive}
-            isArchiveActive={filters.archive}
-          />
-        </div>
-        <div className="wrapper">
-          <div className="questionList">
-            <ActionBar
-              creationMode={creationMode}
-              handleArchiveQuestions={handleArchiveQuestions}
-              handleCreationModeToggle={handleCreationModeToggle}
-              handleQuickBlock={handleQuickBlock}
-              handleQuickBlocks={handleQuickBlocks}
-              isArchiveActive={filters.archive}
-              itemsChecked={numSelectedItems}
-            />
-
-            <div className="questionListContent">
-              <QuestionList
-                creationMode={creationMode}
-                data={data}
-                filters={filters}
+    <Query query={QuestionPoolQuery}>
+      {({ data }) => (
+        <TeacherLayout
+          fixedHeight
+          actionArea={creationMode ? creationForm(_get(data, 'runningSession.id')) : null}
+          intl={intl}
+          navbar={{
+            search: {
+              handleSearch: _debounce(handleSearch, 200),
+              handleSortByChange,
+              handleSortOrderToggle,
+              sortBy: sort.by,
+              sortingTypes: QUESTION_SORTINGS,
+              sortOrder: sort.asc,
+              withSorting: true,
+            },
+            title: intl.formatMessage({
+              defaultMessage: 'Question Pool',
+              id: 'questionPool.title',
+            }),
+          }}
+          pageTitle={intl.formatMessage({
+            defaultMessage: 'Question Pool',
+            id: 'questionPool.pageTitle',
+          })}
+          sidebar={{ activeItem: 'questionPool' }}
+        >
+          <div className="questionPool">
+            <div className="tagList">
+              <TagList
+                activeTags={filters.tags}
+                activeType={filters.type}
+                handleReset={handleReset}
+                handleTagClick={handleTagClick}
+                handleToggleArchive={handleToggleArchive}
                 isArchiveActive={filters.archive}
-                selectedItems={selectedItems}
-                sort={sort}
-                onQuestionChecked={handleSelectItem}
               />
             </div>
+            <div className="wrapper">
+              <div className="questionList">
+                <ActionBar
+                  creationMode={creationMode}
+                  handleArchiveQuestions={handleArchiveQuestions}
+                  handleCreationModeToggle={handleCreationModeToggle}
+                  handleQuickBlock={handleQuickBlock}
+                  handleQuickBlocks={handleQuickBlocks}
+                  isArchiveActive={filters.archive}
+                  itemsChecked={numSelectedItems}
+                />
+
+                <div className="questionListContent">
+                  <QuestionList
+                    creationMode={creationMode}
+                    filters={filters}
+                    isArchiveActive={filters.archive}
+                    selectedItems={selectedItems}
+                    sort={sort}
+                    onQuestionChecked={handleSelectItem}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      <style jsx>{`
-        @import 'src/theme';
+          <style jsx>{`
+            @import 'src/theme';
 
-        .questionPool {
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-
-          overflow-y: auto;
-
-          .tagList {
-            height: 100%;
-            min-width: 5rem;
-
-            flex: 1;
-            background: $color-primary-05p;
-            padding: 0.5rem;
-          }
-
-          .wrapper {
-            height: 100%;
-
-            .questionList {
-              height: 100%;
-
+            .questionPool {
               display: flex;
               flex-direction: column;
+              height: 100%;
 
-              margin: 0 auto;
-              max-width: $max-width;
+              overflow-y: auto;
 
-              .questionListContent {
+              .tagList {
+                height: 100%;
+                min-width: 5rem;
+
                 flex: 1;
+                background: $color-primary-05p;
+                padding: 0.5rem;
+              }
+
+              .wrapper {
                 height: 100%;
 
-                padding: 1rem;
-              }
-            }
-          }
+                .questionList {
+                  height: 100%;
 
-          @include desktop-tablet-only {
-            flex-flow: row wrap;
-            overflow-y: auto;
+                  display: flex;
+                  flex-direction: column;
 
-            .tagList {
-              overflow-y: auto;
-              flex: 0 0 auto;
-              padding: 2rem 1rem;
+                  margin: 0 auto;
+                  max-width: $max-width;
 
-              border-right: 1px solid $color-primary;
-            }
+                  .questionListContent {
+                    flex: 1;
+                    height: 100%;
 
-            .wrapper {
-              flex: 1;
-              padding: 1rem;
-
-              .questionList {
-                .questionListContent {
-                  overflow-y: auto;
-                  padding: 1rem 1rem 0 0;
+                    padding: 1rem;
+                  }
                 }
               }
-            }
-          }
 
-          @include desktop-only {
-            padding: 0;
-          }
-        }
-      `}</style>
-    </TeacherLayout>
+              @include desktop-tablet-only {
+                flex-flow: row wrap;
+                overflow-y: auto;
+
+                .tagList {
+                  overflow-y: auto;
+                  flex: 0 0 auto;
+                  padding: 2rem 1rem;
+
+                  border-right: 1px solid $color-primary;
+                }
+
+                .wrapper {
+                  flex: 1;
+                  padding: 1rem;
+
+                  .questionList {
+                    .questionListContent {
+                      overflow-y: auto;
+                      padding: 1rem 1rem 0 0;
+                    }
+                  }
+                }
+              }
+
+              @include desktop-only {
+                padding: 0;
+              }
+            }
+          `}</style>
+        </TeacherLayout>
+      )}
+    </Query>
   )
 }
 
@@ -261,7 +261,6 @@ export default compose(
   graphql(StartSessionMutation, { name: 'startSession' }),
   graphql(CreateSessionMutation, { name: 'createSession' }),
   graphql(ArchiveQuestionsMutation, { name: 'archiveQuestions' }),
-  graphql(QuestionPoolQuery),
   withSortingAndFiltering,
   withSelection,
   withStateHandlers(
