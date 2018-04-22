@@ -62,6 +62,7 @@ const TagInput = ({
 
       .react-tagsinput {
         border: 1px solid $color-borders;
+        border-radius: 4px;
         overflow: hidden;
         padding-left: 0.5rem;
         padding-top: 0.5rem;
