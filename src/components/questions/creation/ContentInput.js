@@ -2,9 +2,19 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
 import Editor from 'draft-js-plugins-editor'
-import createToolbarPlugin from 'draft-js-static-toolbar-plugin'
+import createToolbarPlugin, { Separator } from 'draft-js-static-toolbar-plugin'
 import { Form, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
+import {
+  ItalicButton,
+  BoldButton,
+  UnderlineButton,
+  CodeButton,
+  UnorderedListButton,
+  OrderedListButton,
+  BlockquoteButton,
+  CodeBlockButton,
+} from 'draft-js-buttons'
 
 const propTypes = {
   disabled: PropTypes.bool,
@@ -19,7 +29,19 @@ const defaultProps = {
 }
 
 // instantiate the static toolbar plugin
-const toolbarPlugin = createToolbarPlugin()
+const toolbarPlugin = createToolbarPlugin({
+  structure: [
+    BoldButton,
+    ItalicButton,
+    UnderlineButton,
+    CodeButton,
+    Separator,
+    UnorderedListButton,
+    OrderedListButton,
+    BlockquoteButton,
+    CodeBlockButton,
+  ],
+})
 const { Toolbar } = toolbarPlugin
 
 const ContentInput = ({
@@ -41,14 +63,14 @@ const ContentInput = ({
         />
       </ReactTooltip>
 
-      <Toolbar />
-
       <Editor
         disabled={disabled}
         editorState={value}
         plugins={[toolbarPlugin]}
         onChange={onChange}
       />
+
+      <Toolbar />
     </Form.Field>
 
     <style global jsx>{`
@@ -119,7 +141,7 @@ const ContentInput = ({
           border-radius: 4px;
           height: 20rem;
           padding: 1rem;
-          margin-top: 0.5rem;
+          margin-bottom: 0.5rem;
 
           &:focus {
             border-color: $color-focus;

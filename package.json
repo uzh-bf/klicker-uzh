@@ -29,6 +29,7 @@
     "d3": "5.1.0",
     "dotenv": "5.0.1",
     "draft-js": "^0.10.5",
+    "draft-js-buttons": "^2.0.1",
     "draft-js-plugins-editor": "^2.0.4",
     "draft-js-static-toolbar-plugin": "^2.0.1",
     "elastic-apm-node": "1.4.0",
