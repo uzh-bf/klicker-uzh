@@ -4,13 +4,17 @@ import { Dropdown } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 const propTypes = {
-  accountShort: PropTypes.string.isRequired,
+  accountShort: PropTypes.string,
   onLogout: PropTypes.func.isRequired,
+}
+
+const defaultProps = {
+  accountShort: '-',
 }
 
 const AccountArea = ({ accountShort, onLogout }) => (
   <React.Fragment>
-    <Dropdown item simple icon="user" text={accountShort.toUpperCase()}>
+    <Dropdown item simple icon="user" text={`${accountShort.toUpperCase()} `}>
       <Dropdown.Menu>
         {/* <Dropdown.Item disabled>
           <FormattedMessage defaultMessage="Settings" id="common.string.settings" />
@@ -24,5 +28,6 @@ const AccountArea = ({ accountShort, onLogout }) => (
 )
 
 AccountArea.propTypes = propTypes
+AccountArea.defaultProps = defaultProps
 
 export default AccountArea
