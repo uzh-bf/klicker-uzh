@@ -8,7 +8,7 @@ import { compose, withHandlers, withState } from 'recompose'
 import { intlMock } from '../../../.storybook/utils'
 
 import { ActionMenu, Button, ListWithHeader, Collapser } from '.'
-import { AccountArea, SearchArea, SessionArea, NavbarPres } from './navbar'
+import { AccountArea, SearchArea, SessionArea } from './navbar'
 import { Sidebar, SidebarItem, LanguageSwitcher } from './sidebar'
 
 const sidebarItems = [
@@ -59,7 +59,7 @@ storiesOf('common/components', module)
   ))
 
 storiesOf('common/navbar', module)
-  .add('Navbar', () => (
+  /* .add('Navbar', () => (
     <NavbarPres
       accountShort="AW"
       intl={intlMock}
@@ -70,7 +70,7 @@ storiesOf('common/navbar', module)
       }}
       title="Example page"
     />
-  ))
+  )) */
   .add('AccountArea', () => <AccountArea accountShort="AW" />)
   .add('SearchArea', () => (
     <SearchArea handleSearch={query => action(`search ${query}`)} intl={intlMock} />
