@@ -76,8 +76,16 @@ export const NavbarPres = ({
     <div className="accountArea">
       <Query query={AccountSummaryQuery}>
         {({ data }) => {
+          const accountId = _get(data, 'user.id')
           const accountShort = _get(data, 'user.shortname')
           const runningSessionId = _get(data, 'user.runningSession.id')
+
+          // identify in logrocket
+          if (window.INIT_LR && window.LogRocket) {
+            window.LogRocket.identify(accountId, {
+              name: accountShort,
+            })
+          }
 
           return (
             <Menu borderless className="loginArea noBorder">
