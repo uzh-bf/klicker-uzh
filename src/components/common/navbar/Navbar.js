@@ -3,8 +3,7 @@ import PropTypes from 'prop-types'
 import _get from 'lodash/get'
 import { intlShape } from 'react-intl'
 import { Icon, Menu } from 'semantic-ui-react'
-import { graphql } from 'react-apollo'
-import { compose, withProps, withHandlers } from 'recompose'
+import { Query, Mutation } from 'react-apollo'
 import Router from 'next/router'
 
 import { AccountSummaryQuery, LogoutMutation } from '../../../graphql'
@@ -14,12 +13,9 @@ import SearchArea from './SearchArea'
 import SessionArea from './SessionArea'
 
 const propTypes = {
-  accountShort: PropTypes.string,
   // filters: PropTypes.object,
-  handleLogout: PropTypes.func.isRequired,
   handleSidebarToggle: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  runningSessionId: PropTypes.string,
   search: PropTypes.shape({
     handleSearch: PropTypes.func.isRequired,
     handleSortByChange: PropTypes.func.isRequired,
@@ -39,21 +35,12 @@ const propTypes = {
 }
 
 const defaultProps = {
-  accountShort: 'ANON',
-  runningSessionId: undefined,
   search: undefined,
   sidebarVisible: false,
 }
 
 export const NavbarPres = ({
-  accountShort,
-  intl,
-  search,
-  sidebarVisible,
-  title,
-  handleLogout,
-  handleSidebarToggle,
-  runningSessionId,
+  intl, search, sidebarVisible, title, handleSidebarToggle,
 }) => (
   <div className="navbar">
     <div className="sideArea">
@@ -87,12 +74,35 @@ export const NavbarPres = ({
     )}
 
     <div className="accountArea">
-      <Menu borderless className="loginArea noBorder">
-        <Menu.Menu position="right">
-          {accountShort && <SessionArea intl={intl} sessionId={runningSessionId} />}
-          <AccountArea accountShort={accountShort} onLogout={handleLogout} />
-        </Menu.Menu>
-      </Menu>
+      <Query query={AccountSummaryQuery}>
+        {({ data }) => {
+          const accountShort = _get(data, 'user.shortname')
+          const runningSessionId = _get(data, 'user.runningSession.id')
+
+          return (
+            <Menu borderless className="loginArea noBorder">
+              <Menu.Menu position="right">
+                {accountShort && <SessionArea intl={intl} sessionId={runningSessionId} />}
+
+                <Mutation mutation={LogoutMutation}>
+                  {logout => (
+                    <AccountArea
+                      accountShort={accountShort}
+                      onLogout={async () => {
+                        // logout
+                        await logout()
+
+                        // redirect to the landing page
+                        Router.push('/')
+                      }}
+                    />
+                  )}
+                </Mutation>
+              </Menu.Menu>
+            </Menu>
+          )
+        }}
+      </Query>
     </div>
 
     <style jsx>{`
@@ -200,20 +210,4 @@ export const NavbarPres = ({
 NavbarPres.propTypes = propTypes
 NavbarPres.defaultProps = defaultProps
 
-export default compose(
-  graphql(AccountSummaryQuery),
-  graphql(LogoutMutation, { name: 'logout' }),
-  withProps(({ data }) => ({
-    accountShort: _get(data, 'user.shortname'),
-    runningSessionId: _get(data, 'user.runningSession.id'),
-  })),
-  withHandlers({
-    // handle logout
-    handleLogout: ({ logout }) => async () => {
-      await logout()
-
-      // redirect to the landing page
-      Router.push('/')
-    },
-  }),
-)(NavbarPres)
+export default NavbarPres
