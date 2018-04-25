@@ -61,8 +61,8 @@ const getToken = (req) => {
 
   // if no token was found, but would be needed
   // additionally look for a token in the GraphQL variables
-  if (_has(req, 'body.variables.jwt') && isValidJWT(req.body.variables.jwt, process.env.APP_SECRET)) {
-    return req.body.variables.jwt
+  if (_has(req, 'body[0].variables.jwt') && isValidJWT(req.body[0].variables.jwt, process.env.APP_SECRET)) {
+    return req.body[0].variables.jwt
   }
 
   // no token found
