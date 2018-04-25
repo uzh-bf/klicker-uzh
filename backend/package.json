@@ -32,7 +32,7 @@
     "md5": "2.2.1",
     "moment": "2.22.1",
     "mongodb": "3.0.7",
-    "mongoose": "5.0.15",
+    "mongoose": "5.0.16",
     "morgan": "1.9.0",
     "nodemailer": "4.6.4",
     "rate-limit-redis": "1.4.0",
