@@ -7149,9 +7149,9 @@ loader-utils@^0.2.16:
     json5 "^0.5.0"
     object-assign "^4.0.1"
 
-localforage@1.6.0:
-  version "1.6.0"
-  resolved "https://registry.yarnpkg.com/localforage/-/localforage-1.6.0.tgz#8b0059beeb3875c48124286ca7fdbf23d52b8c97"
+localforage@1.7.1:
+  version "1.7.1"
+  resolved "https://registry.yarnpkg.com/localforage/-/localforage-1.7.1.tgz#e4927e042302b864db30f3211f13b5c6f0de965d"
   dependencies:
     lie "3.1.1"
 
