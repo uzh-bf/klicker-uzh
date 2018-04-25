@@ -35,7 +35,7 @@
     "glob": "7.1.2",
     "graphql": "0.13.2",
     "graphql-persisted-document-loader": "1.0.1",
-    "graphql-tag": "2.8.0",
+    "graphql-tag": "2.9.1",
     "griddle-react": "1.13.0",
     "helmet": "3.12.0",
     "immutable": "4.0.0-rc.9",
