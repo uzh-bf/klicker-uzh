@@ -12,7 +12,7 @@
     "apollo-client-preset": "1.0.8",
     "apollo-link": "1.2.2",
     "apollo-link-batch-http": "1.2.2",
-    "apollo-link-error": "1.0.7",
+    "apollo-link-error": "1.0.9",
     "apollo-link-persisted-queries": "0.2.0",
     "apollo-link-state": "0.4.1",
     "babel-plugin-add-react-displayname": "0.0.5",
