@@ -1,9 +1,11 @@
 import React from 'react'
 import Router from 'next/router'
 import Cookies from 'js-cookie'
+import Link from 'next/link'
 import { compose } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Mutation } from 'react-apollo'
+import { Message } from 'semantic-ui-react'
 
 import { StaticLayout } from '../../components/layouts'
 import { LoginForm } from '../../components/forms'
@@ -29,6 +31,16 @@ const Login = ({ intl }) => (
       <Mutation mutation={LoginMutation}>
         {(login, { loading, error }) => (
           <React.Fragment>
+            <Message info>
+              <Message.Header>Public Beta</Message.Header>
+              <Message.Content>
+                To participate in the Klicker 2018 public beta, please{' '}
+                <Link href="/user/requestPassword">reset your password</Link> first.
+                <div className="marginTop">
+                  25.04.18 11:05 - A bug in the reset form has been fixed.
+                </div>
+              </Message.Content>
+            </Message>
             <LoginForm
               intl={intl}
               loading={loading}
@@ -68,6 +80,10 @@ const Login = ({ intl }) => (
           }
           .successMessage {
             color: $color-success;
+          }
+
+          .marginTop {
+            margin-top: 0.5rem;
           }
 
           @include desktop-tablet-only {
