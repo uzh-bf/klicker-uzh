@@ -36,6 +36,9 @@ const Login = ({ intl }) => (
               <Message.Content>
                 To participate in the Klicker 2018 public beta, please{' '}
                 <Link href="/user/requestPassword">reset your password</Link> first.
+                <div className="marginTop">
+                  25.04.18 11:05 - A bug in the reset form has been fixed.
+                </div>
               </Message.Content>
             </Message>
             <LoginForm
@@ -77,6 +80,10 @@ const Login = ({ intl }) => (
           }
           .successMessage {
             color: $color-success;
+          }
+
+          .marginTop {
+            margin-top: 0.5rem;
           }
 
           @include desktop-tablet-only {
