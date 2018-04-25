@@ -823,11 +823,11 @@ apollo-link-dedup@^1.0.0:
   dependencies:
     apollo-link "^1.2.1"
 
-apollo-link-error@1.0.7:
-  version "1.0.7"
-  resolved "https://registry.yarnpkg.com/apollo-link-error/-/apollo-link-error-1.0.7.tgz#df6d7b13e9b73f9a615547b65ec9a4c930ca7f18"
+apollo-link-error@1.0.9:
+  version "1.0.9"
+  resolved "https://registry.yarnpkg.com/apollo-link-error/-/apollo-link-error-1.0.9.tgz#83bbe019a3bca7c602c399889b313a7e5e22713f"
   dependencies:
-    apollo-link "^1.2.1"
+    apollo-link "^1.2.2"
 
 apollo-link-http-common@^0.2.2:
   version "0.2.2"
@@ -5320,7 +5320,11 @@ graphql-persisted-document-loader@1.0.1:
     loader-utils "^1.1.0"
     persistgraphql "^0.3.11"
 
-graphql-tag@2.8.0, graphql-tag@^2.0.0, graphql-tag@^2.4.2, graphql-tag@^2.8.0:
+graphql-tag@2.9.1:
+  version "2.9.1"
+  resolved "https://registry.yarnpkg.com/graphql-tag/-/graphql-tag-2.9.1.tgz#1ab090ef7d3518b06d8c97d1393672145fe91587"
+
+graphql-tag@^2.0.0, graphql-tag@^2.4.2, graphql-tag@^2.8.0:
   version "2.8.0"
   resolved "https://registry.yarnpkg.com/graphql-tag/-/graphql-tag-2.8.0.tgz#52cdea07a842154ec11a2e840c11b977f9b835ce"
 
@@ -7196,9 +7200,9 @@ loader-utils@^0.2.16:
     json5 "^0.5.0"
     object-assign "^4.0.1"
 
-localforage@1.6.0:
-  version "1.6.0"
-  resolved "https://registry.yarnpkg.com/localforage/-/localforage-1.6.0.tgz#8b0059beeb3875c48124286ca7fdbf23d52b8c97"
+localforage@1.7.1:
+  version "1.7.1"
+  resolved "https://registry.yarnpkg.com/localforage/-/localforage-1.7.1.tgz#e4927e042302b864db30f3211f13b5c6f0de965d"
   dependencies:
     lie "3.1.1"
 
@@ -7434,9 +7438,9 @@ logrocket-react@1.0.0:
     react "16"
     react-dom "16"
 
-logrocket@0.6.10:
-  version "0.6.10"
-  resolved "https://registry.yarnpkg.com/logrocket/-/logrocket-0.6.10.tgz#ed2b6c68b6555167e1be9f9a3fd5b3f359ced224"
+logrocket@0.6.11:
+  version "0.6.11"
+  resolved "https://registry.yarnpkg.com/logrocket/-/logrocket-0.6.11.tgz#02ae85940de62729699b061d1f27101410386319"
 
 longest@^1.0.1:
   version "1.0.1"
@@ -9458,9 +9462,9 @@ react-fuzzy@^0.5.2:
     fuse.js "^3.0.1"
     prop-types "^15.5.9"
 
-react-ga@2.4.1:
-  version "2.4.1"
-  resolved "https://registry.yarnpkg.com/react-ga/-/react-ga-2.4.1.tgz#dfbd5f028ed39a07067f7a8bf57dc0d240000767"
+react-ga@2.5.0:
+  version "2.5.0"
+  resolved "https://registry.yarnpkg.com/react-ga/-/react-ga-2.5.0.tgz#fbba2b33d41ce727f7d4cf383d54dbbfbf96c507"
   optionalDependencies:
     prop-types "^15.6.0"
     react "^15.6.2 || ^16.0"
@@ -9519,6 +9523,10 @@ react-intl@2.4.0:
 react-is@^16.3.2:
   version "16.3.2"
   resolved "https://registry.yarnpkg.com/react-is/-/react-is-16.3.2.tgz#f4d3d0e2f5fbb6ac46450641eb2e25bf05d36b22"
+
+react-lifecycles-compat@^3.0.2:
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/react-lifecycles-compat/-/react-lifecycles-compat-3.0.2.tgz#7279047275bd727a912e25f734c0559527e84eff"
 
 react-modal@^3.3.2:
   version "3.3.2"
@@ -9797,13 +9805,15 @@ rechoir@^0.6.2:
   dependencies:
     resolve "^1.1.6"
 
-recompose@0.26.0:
-  version "0.26.0"
-  resolved "https://registry.yarnpkg.com/recompose/-/recompose-0.26.0.tgz#9babff039cb72ba5bd17366d55d7232fbdfb2d30"
+recompose@0.27.0:
+  version "0.27.0"
+  resolved "https://registry.yarnpkg.com/recompose/-/recompose-0.27.0.tgz#8230ebd651bf1159097006f79083fe224b1501cf"
   dependencies:
+    babel-runtime "^6.26.0"
     change-emitter "^0.1.2"
     fbjs "^0.8.1"
     hoist-non-react-statics "^2.3.1"
+    react-lifecycles-compat "^3.0.2"
     symbol-observable "^1.0.4"
 
 recompose@^0.21.2:
