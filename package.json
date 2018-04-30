@@ -153,10 +153,7 @@
   },
   "bundlesize": [
     {
-      "path": "./src/.next/static/main.js"
-    },
-    {
-      "path": "./src/.next/static/main-*.js"
+      "path": "./src/.next/static/commons/main-*.js"
     }
   ]
 }
