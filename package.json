@@ -124,6 +124,7 @@
     "analyze": "cross-env BUNDLE_ANALYZE=both NODE_ENV=development next build src",
     "build": "next build src",
     "build:lang": "next build src && node ./src/lib/defaultLang",
+    "bundlesize": "bundlesize",
     "compile-queries": "persistgraphql src/graphql/ --add_typename",
     "cypress:open": "cypress open",
     "dev":
