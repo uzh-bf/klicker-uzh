@@ -4,7 +4,6 @@ import { compose, withHandlers, withStateHandlers } from 'recompose'
 import { intlShape } from 'react-intl'
 import { graphql, Query } from 'react-apollo'
 import _debounce from 'lodash/debounce'
-import _get from 'lodash/get'
 import Router from 'next/router'
 import moment from 'moment'
 
@@ -115,7 +114,7 @@ const Index = ({
       {({ data }) => (
         <TeacherLayout
           fixedHeight
-          actionArea={creationMode ? creationForm(_get(data, 'runningSession.id')) : null}
+          actionArea={creationMode ? creationForm(data.runningSession?.id) : null}
           intl={intl}
           navbar={{
             search: {
