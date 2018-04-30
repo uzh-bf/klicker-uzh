@@ -82,12 +82,12 @@
     "yup": "0.24.1"
   },
   "devDependencies": {
-    "@storybook/addon-actions": "3.4.2",
-    "@storybook/addon-info": "3.4.2",
-    "@storybook/addon-links": "3.4.2",
-    "@storybook/addon-storyshots": "3.4.2",
-    "@storybook/addons": "3.4.2",
-    "@storybook/react": "3.4.2",
+    "@storybook/addon-actions": "3.4.3",
+    "@storybook/addon-info": "3.4.3",
+    "@storybook/addon-links": "3.4.3",
+    "@storybook/addon-storyshots": "3.4.3",
+    "@storybook/addons": "3.4.3",
+    "@storybook/react": "3.4.3",
     "babel-eslint": "8.2.3",
     "cypress": "2.1.0",
     "enzyme": "3.3.0",
