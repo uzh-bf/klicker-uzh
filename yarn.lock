@@ -471,14 +471,14 @@
     "@babel/helper-plugin-utils" "7.0.0-beta.46"
     "@babel/plugin-syntax-optional-catch-binding" "7.0.0-beta.46"
 
-"@babel/plugin-proposal-optional-chaining@^7.0.0-beta.46":
+"@babel/plugin-proposal-optional-chaining@7.0.0-beta.46":
   version "7.0.0-beta.46"
   resolved "https://registry.yarnpkg.com/@babel/plugin-proposal-optional-chaining/-/plugin-proposal-optional-chaining-7.0.0-beta.46.tgz#2c8926e6c8c70bbb3844bb2cce61dcd9287176ee"
   dependencies:
     "@babel/helper-plugin-utils" "7.0.0-beta.46"
     "@babel/plugin-syntax-optional-chaining" "7.0.0-beta.46"
 
-"@babel/plugin-proposal-pipeline-operator@^7.0.0-beta.46":
+"@babel/plugin-proposal-pipeline-operator@7.0.0-beta.46":
   version "7.0.0-beta.46"
   resolved "https://registry.yarnpkg.com/@babel/plugin-proposal-pipeline-operator/-/plugin-proposal-pipeline-operator-7.0.0-beta.46.tgz#0804b24052d83d6ff45b5020f8b47c1bedd410eb"
   dependencies:
@@ -1022,7 +1022,7 @@
     invariant "^2.2.2"
     semver "^5.3.0"
 
-"@babel/preset-env@^7.0.0-beta.46":
+"@babel/preset-env@7.0.0-beta.46":
   version "7.0.0-beta.46"
   resolved "https://registry.yarnpkg.com/@babel/preset-env/-/preset-env-7.0.0-beta.46.tgz#ae1b731ef71c2bb50c47e0cda4b6359ea2c61f09"
   dependencies:
@@ -5160,7 +5160,7 @@ eslint-module-utils@^2.2.0:
     debug "^2.6.8"
     pkg-dir "^1.0.0"
 
-eslint-plugin-babel@^5.1.0:
+eslint-plugin-babel@5.1.0:
   version "5.1.0"
   resolved "https://registry.yarnpkg.com/eslint-plugin-babel/-/eslint-plugin-babel-5.1.0.tgz#9c76e476162041e50b6ba69aa4eae3bdd6a4e1c3"
   dependencies:
