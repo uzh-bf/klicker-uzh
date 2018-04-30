@@ -149,5 +149,13 @@
   "lint-staged": {
     "*.js": ["prettier-eslint --single-quote --no-semi --write", "eslint", "git add"],
     "*.json": ["prettier-eslint --single-quote --no-semi --write", "git add"]
-  }
+  },
+  "bundlesize": [
+    {
+      "path": "./src/.next/static/main.js"
+    },
+    {
+      "path": "./src/.next/static/main-*.js"
+    }
+  ]
 }
