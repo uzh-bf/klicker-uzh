@@ -11,7 +11,12 @@
           }
         ]
       ],
-      "plugins": ["inline-dotenv", "add-react-displayname"]
+      "plugins": [
+        "@babel/plugin-proposal-pipeline-operator",
+        "@babel/plugin-proposal-optional-chaining",
+        "inline-dotenv",
+        "add-react-displayname"
+      ]
     },
     "production": {
       "presets": [
@@ -25,15 +30,21 @@
         ]
       ],
       "plugins": [
-        "transform-inline-environment-variables",
         ["lodash", { "id": ["lodash", "recompose", "semantic-ui-react", "ramda"] }],
+        "@babel/plugin-proposal-pipeline-operator",
+        "@babel/plugin-proposal-optional-chaining",
+        [
+          "@babel/plugin-transform-react-constant-elements",
+          { "allowMutablePropsOnTags": ["FormattedMessage"] }
+        ],
+        "transform-inline-environment-variables",
         "add-react-displayname"
       ]
     },
     "test": {
       "presets": [
         [
-          "env",
+          "@babel/preset-env",
           {
             "modules": "commonjs"
           }
@@ -47,7 +58,11 @@
           }
         ]
       ],
-      "plugins": ["babel-plugin-inline-import-graphql-ast"]
+      "plugins": [
+        "@babel/plugin-proposal-pipeline-operator",
+        "@babel/plugin-proposal-optional-chaining",
+        "babel-plugin-inline-import-graphql-ast"
+      ]
     }
   }
 }
