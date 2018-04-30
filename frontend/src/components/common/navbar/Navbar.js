@@ -1,6 +1,5 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import _get from 'lodash/get'
 import { intlShape } from 'react-intl'
 import { Icon, Menu } from 'semantic-ui-react'
 import { Query, Mutation } from 'react-apollo'
@@ -76,9 +75,9 @@ export const NavbarPres = ({
     <div className="accountArea">
       <Query query={AccountSummaryQuery}>
         {({ data }) => {
-          const accountId = _get(data, 'user.id')
-          const accountShort = _get(data, 'user.shortname')
-          const runningSessionId = _get(data, 'user.runningSession.id')
+          const accountId = data.user?.id
+          const accountShort = data.user?.shortname
+          const runningSessionId = data.user?.runningSession?.id
 
           // identify in logrocket
           if (window.INIT_LR && window.LogRocket) {

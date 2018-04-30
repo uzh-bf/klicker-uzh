@@ -1,6 +1,5 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import _get from 'lodash/get'
 import ReactTooltip from 'react-tooltip'
 import { Form, Icon, Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
@@ -140,8 +139,8 @@ export default compose(
     dirty,
     disabled,
     invalid,
-    max: _get(value, 'restrictions.max'),
-    min: _get(value, 'restrictions.min'),
+    max: value?.restrictions?.max,
+    min: value?.restrictions?.min,
     onChange,
     type,
     value,
