@@ -64,9 +64,9 @@ const ContentInput = ({
       </ReactTooltip>
 
       <Editor
-        disabled={disabled}
         editorState={value}
         plugins={[toolbarPlugin]}
+        readOnly={disabled}
         onChange={onChange}
       />
 
