@@ -35,6 +35,11 @@ jobs:
       script:
         - yarn run format:ci
 
+    - <<: *test-setup
+      script:
+        - yarn run build
+        - yarn run bundlesize
+
     # build all merges into master that are not tagged
     # trigger a new staging deployment
     - &build-setup

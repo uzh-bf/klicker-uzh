@@ -47,7 +47,7 @@
       "automerge": "minor"
     },
     {
-      "packagePatterns": ["^babel"],
+      "packagePatterns": ["^babel", "^@babel"],
       "groupName": "babel"
     },
     {
