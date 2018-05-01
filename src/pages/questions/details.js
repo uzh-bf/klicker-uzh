@@ -1,6 +1,7 @@
 import React from 'react'
 import { compose, withState } from 'recompose'
 import Router from 'next/router'
+import { convertToRaw } from 'draft-js'
 import { intlShape } from 'react-intl'
 import { Query, Mutation } from 'react-apollo'
 import { PropTypes } from 'prop-types'
@@ -86,11 +87,14 @@ const EditQuestion = ({ intl, url }) => (
                       }}
                       onSubmit={isNewVersion => async ({
                         title: newTitle,
-                        description,
+                        content,
                         options,
                         solution,
                         tags: newTags,
                       }) => {
+                        // convert the draft.js editor state content into a js object
+                        const rawContent = convertToRaw(content.getCurrentContent())
+
                         await editQuestion({
                           // reload the question details and tags after update
                           // TODO: replace with optimistic updates
@@ -119,7 +123,7 @@ const EditQuestion = ({ intl, url }) => (
                           variables: _omitBy(
                             isNewVersion
                               ? {
-                                  description,
+                                  content: rawContent,
                                   id,
                                   // HACK: omitDeep for typename removal
                                   // TODO: check https://github.com/apollographql/apollo-client/issues/1564

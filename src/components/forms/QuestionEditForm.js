@@ -4,6 +4,7 @@ import { compose, withProps } from 'recompose'
 import isEmpty from 'validator/lib/isEmpty'
 import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
+import { EditorState, ContentState } from 'draft-js'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Button, Form, Icon, Menu, Message } from 'semantic-ui-react'
 import { Formik } from 'formik'
@@ -15,7 +16,7 @@ import { QUESTION_TYPES, QUESTION_GROUPS } from '../../constants'
 
 // form validation
 const validate = ({
-  title, description, options, tags, type,
+  title, content, options, tags, type,
 }) => {
   const errors = {}
 
@@ -23,8 +24,9 @@ const validate = ({
     errors.title = 'form.editQuestion.content.empty'
   }
 
-  if (!description || isEmpty(description)) {
-    errors.description = 'form.editQuestion.content.empty'
+  // TODO: validation for draftjs content
+  if (!content) {
+    errors.content = 'form.editQuestion.content.empty'
   }
 
   if (!tags || tags.length === 0) {
@@ -225,12 +227,12 @@ const QuestionEditForm = ({
             <div className="questionInput questionContent">
               <ContentInput
                 disabled={!isNewVersion}
-                error={errors.description}
-                touched={touched.description}
-                value={values.description}
-                onChange={(newDescription) => {
-                  setFieldTouched('description', true, false)
-                  setFieldValue('description', newDescription)
+                error={errors.content}
+                touched={touched.content}
+                value={values.content}
+                onChange={(newContent) => {
+                  setFieldTouched('content', true, false)
+                  setFieldValue('content', newContent)
                 }}
               />
             </div>
@@ -378,11 +380,21 @@ export default compose(
   withProps(({
     allTags, activeVersion, versions, questionTags, title, type, onSubmit,
   }) => {
+    // if the active version would be out of array bounds, we are creating a new one
     const isNewVersion = activeVersion === versions.length
+
+    // calculate the version with which to initialize the version fields (the current or last one)
     const initializeVersion = isNewVersion ? versions.length - 1 : activeVersion
+
     return {
       initialValues: {
-        description: versions[initializeVersion].description,
+        content:
+          // get the version description
+          versions[initializeVersion].description
+          |> // create a new draftjs content state from plain text
+          ContentState.createFromText
+          |> // create a new draftjs editor state from the content state
+          EditorState.createWithContent,
         options: versions[initializeVersion].options[type] || {},
         tags: questionTags.map(tag => tag.name),
         title,

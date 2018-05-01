@@ -1,7 +1,7 @@
 mutation ModifyQuestion(
   $id: ID!
   $title: String
-  $description: String
+  $content: JSON
   $options: QuestionOptionsInput
   $solution: Question_SolutionInput
   $tags: [ID!]
@@ -10,7 +10,7 @@ mutation ModifyQuestion(
     id: $id
     question: {
       title: $title
-      description: $description
+      content: $content
       options: $options
       solution: $solution
       tags: $tags
@@ -25,6 +25,7 @@ mutation ModifyQuestion(
     }
     versions {
       id
+      content
       description
       options {
         SC {
