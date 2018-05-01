@@ -95,6 +95,7 @@
     "@storybook/react": "3.4.3",
     "babel-eslint": "8.2.1",
     "babel-jest": "^22.4.3",
+    "bundlesize": "^0.17.0",
     "cypress": "2.1.0",
     "enzyme": "3.3.0",
     "eslint": "4.19.1",
@@ -123,6 +124,7 @@
     "analyze": "cross-env BUNDLE_ANALYZE=both NODE_ENV=development next build src",
     "build": "next build src",
     "build:lang": "next build src && node ./src/lib/defaultLang",
+    "bundlesize": "bundlesize",
     "compile-queries": "persistgraphql src/graphql/ --add_typename",
     "cypress:open": "cypress open",
     "dev":
@@ -148,5 +150,10 @@
   "lint-staged": {
     "*.js": ["prettier-eslint --single-quote --no-semi --write", "eslint", "git add"],
     "*.json": ["prettier-eslint --single-quote --no-semi --write", "git add"]
-  }
+  },
+  "bundlesize": [
+    {
+      "path": "./src/.next/static/commons/main-*.js"
+    }
+  ]
 }
