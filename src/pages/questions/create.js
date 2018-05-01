@@ -3,6 +3,7 @@ import Router from 'next/router'
 import { compose } from 'recompose'
 import { Query, Mutation } from 'react-apollo'
 import { intlShape } from 'react-intl'
+import { convertToRaw } from 'draft-js'
 
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionCreationForm } from '../../components/forms'
@@ -42,12 +43,16 @@ const CreateQuestion = ({ intl }) => (
               onSubmit={async ({
  content, options, tags, title, type,
 }) => {
+                // convert the draft.js editor state content into a js object
+                const rawContent = convertToRaw(content.getCurrentContent())
+
+                // create the question
                 await createQuestion({
                   // reload the list of questions and tags after creation
                   // TODO: replace with optimistic updates
                   refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
                   variables: {
-                    description: content,
+                    content: rawContent,
                     options,
                     tags,
                     title,
