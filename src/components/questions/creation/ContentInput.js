@@ -2,18 +2,18 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
 import Editor from 'draft-js-plugins-editor'
-import createToolbarPlugin, { Separator } from 'draft-js-static-toolbar-plugin'
+import createToolbarPlugin /* Separator */ from 'draft-js-static-toolbar-plugin'
 import { Form, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import {
   ItalicButton,
   BoldButton,
   UnderlineButton,
-  CodeButton,
+  // CodeButton,
   UnorderedListButton,
   OrderedListButton,
-  BlockquoteButton,
-  CodeBlockButton,
+  // BlockquoteButton,
+  // CodeBlockButton,
 } from 'draft-js-buttons'
 
 const propTypes = {
@@ -34,12 +34,12 @@ const toolbarPlugin = createToolbarPlugin({
     BoldButton,
     ItalicButton,
     UnderlineButton,
-    CodeButton,
-    Separator,
+    // CodeButton,
+    // Separator,
     UnorderedListButton,
     OrderedListButton,
-    BlockquoteButton,
-    CodeBlockButton,
+    // BlockquoteButton,
+    // CodeBlockButton,
   ],
 })
 const { Toolbar } = toolbarPlugin

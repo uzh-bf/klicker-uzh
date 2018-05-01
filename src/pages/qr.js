@@ -30,10 +30,7 @@ const QR = ({ shortname }) => (
 QR.propTypes = propTypes
 
 export default compose(
-  withLogging({
-    chatlio: false,
-    logRocket: false,
-  }),
+  withLogging(),
   withProps(({ url }) => ({
     shortname: url.query.shortname,
   })),

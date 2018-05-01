@@ -80,8 +80,9 @@ export const NavbarPres = ({
           const runningSessionId = data.user?.runningSession?.id
 
           // identify in logrocket
-          if (window && window.INIT_LR && window.LogRocket) {
-            window.LogRocket.identify(accountId, {
+          if (typeof window !== 'undefined' && window.INIT_LR) {
+            const LogRocket = require('logrocket')
+            LogRocket.identify(accountId, {
               name: accountShort,
             })
           }
