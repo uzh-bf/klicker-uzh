@@ -851,7 +851,7 @@
     "@babel/helper-get-function-arity" "7.0.0-beta.46"
     "@babel/helper-plugin-utils" "7.0.0-beta.46"
 
-"@babel/plugin-transform-react-constant-elements@^7.0.0-beta.46":
+"@babel/plugin-transform-react-constant-elements@7.0.0-beta.46":
   version "7.0.0-beta.46"
   resolved "https://registry.yarnpkg.com/@babel/plugin-transform-react-constant-elements/-/plugin-transform-react-constant-elements-7.0.0-beta.46.tgz#beaa603a93dedb4d06ab7853bd9443e2a2d735db"
   dependencies:
@@ -2373,7 +2373,7 @@ babel-helpers@^6.24.1:
     babel-runtime "^6.22.0"
     babel-template "^6.24.1"
 
-babel-jest@^22.4.3:
+babel-jest@22.4.3, babel-jest@^22.4.3:
   version "22.4.3"
   resolved "https://registry.yarnpkg.com/babel-jest/-/babel-jest-22.4.3.tgz#4b7a0b6041691bbd422ab49b3b73654a49a6627a"
   dependencies:
@@ -3466,7 +3466,7 @@ builtin-status-codes@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/builtin-status-codes/-/builtin-status-codes-3.0.0.tgz#85982878e21b98e1c66425e03d0174788f569ee8"
 
-bundlesize@^0.17.0:
+bundlesize@0.17.0:
   version "0.17.0"
   resolved "https://registry.yarnpkg.com/bundlesize/-/bundlesize-0.17.0.tgz#212ae5731ab0554d2acd509d23e1de18640b2008"
   dependencies:
