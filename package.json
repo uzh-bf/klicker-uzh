@@ -93,7 +93,7 @@
     "@storybook/addon-storyshots": "3.4.3",
     "@storybook/addons": "3.4.3",
     "@storybook/react": "3.4.3",
-    "babel-eslint": "8.2.1",
+    "babel-eslint": "8.2.3",
     "babel-jest": "22.4.3",
     "bundlesize": "0.17.0",
     "cypress": "2.1.0",
