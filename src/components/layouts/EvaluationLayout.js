@@ -6,7 +6,7 @@ import { Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
 
 import { CommonLayout } from '.'
 import { Info, Possibilities, Statistics, VisualizationType } from '../evaluation'
-import { QUESTION_GROUPS } from '../../constants'
+import { QUESTION_GROUPS, CHART_TYPES, QUESTION_TYPES } from '../../constants'
 
 const propTypes = {
   activeInstance: PropTypes.number,
@@ -70,7 +70,11 @@ function EvaluationLayout({
 }) {
   return (
     <CommonLayout baseFontSize="22px" nextHeight="100%" pageTitle={pageTitle}>
-      <div className={`evaluationLayout ${type}`}>
+      <div
+        className={classNames('evaluationLayout', {
+          fullScreen: [CHART_TYPES.CLOUD_CHART, CHART_TYPES.TABLE].includes(activeVisualization),
+        })}
+      >
         {(() => {
           if (instanceSummary.length <= 0) {
             return null
@@ -141,9 +145,9 @@ function EvaluationLayout({
           <Info totalResponses={totalResponses} />
           {/* don't show 'show solution' check box for free and free range questions
           and word cloud charts */
-          type !== 'FREE' &&
-            type !== 'FREE_RANGE' &&
-            activeVisualization !== 'WORD_CLOUD' && (
+          type !== QUESTION_TYPES.FREE &&
+            type !== QUESTION_TYPES.FREE_RANGE &&
+            activeVisualization !== CHART_TYPES.CLOUD_CHART && (
               <Checkbox
                 toggle
                 defaultChecked={showSolution}
@@ -165,24 +169,28 @@ function EvaluationLayout({
 
         <div className="chart">{children}</div>
 
-        {QUESTION_GROUPS.WITH_POSSIBILITIES.includes(type) && (
-          <div className="optionDisplay">
-            <Possibilities
-              data={data}
-              questionOptions={options}
-              questionType={type}
-              showGraph={showGraph}
-              showSolution={showSolution}
-            />
-          </div>
-        )}
+        {activeVisualization !== CHART_TYPES.TABLE && (
+          <React.Fragment>
+            {QUESTION_GROUPS.WITH_POSSIBILITIES.includes(type) && (
+              <div className="optionDisplay">
+                <Possibilities
+                  data={data}
+                  questionOptions={options}
+                  questionType={type}
+                  showGraph={showGraph}
+                  showSolution={showSolution}
+                />
+              </div>
+            )}
 
-        {QUESTION_GROUPS.WITH_STATISTICS.includes(type) &&
-          statistics && (
-            <div className="statistics">
-              <Statistics {...statistics} withBins={activeVisualization === 'HISTOGRAM'} />
-            </div>
-          )}
+            {QUESTION_GROUPS.WITH_STATISTICS.includes(type) &&
+              statistics && (
+                <div className="statistics">
+                  <Statistics {...statistics} withBins={activeVisualization === 'HISTOGRAM'} />
+                </div>
+              )}
+          </React.Fragment>
+        )}
 
         <style jsx>{`
           @import 'src/theme';
@@ -211,7 +219,7 @@ function EvaluationLayout({
                   'graph statistics'
                   'info info';
 
-                &.FREE {
+                &.fullScreen {
                   grid-template-areas:
                     'instanceChooser instanceChooser'
                     'questionDetails questionDetails'
