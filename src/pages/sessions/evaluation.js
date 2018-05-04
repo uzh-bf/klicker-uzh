@@ -10,6 +10,7 @@ import {
   renderNothing,
 } from 'recompose'
 import { graphql } from 'react-apollo'
+import _round from 'lodash/round'
 
 import { CHART_DEFAULTS, QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
@@ -88,6 +89,7 @@ function Evaluation({
       defaultMessage: 'Evaluation',
       id: 'evaluation.pageTitle',
     }),
+    showGraph,
     showSolution,
     statistics,
     title,
@@ -99,16 +101,17 @@ function Evaluation({
     <EvaluationLayout {...layoutProps}>
       <Chart
         activeVisualization={activeVisualizations[type]}
+        data={results.data}
         handleShowGraph={handleShowGraph}
         intl={intl}
         numBins={bins}
         questionType={type}
         restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
-        results={results}
         sessionStatus={sessionStatus}
         showGraph={showGraph}
         showSolution={showSolution}
         statistics={statistics}
+        totalResponses={results.totalResponses}
       />
     </EvaluationLayout>
   )
@@ -283,8 +286,22 @@ export default compose(
         }
       }
 
+      const resultsWithPercentages = {
+        ...activeInstance.results,
+        data: activeInstance.results.data.map(({ correct, count, value }) => ({
+          correct,
+          count,
+          percentage: _round(100 * (count / activeInstance.results.totalResponses), 1),
+          value,
+        })),
+        totalResponses: activeInstance.results.totalResponses,
+      }
+
       return {
-        activeInstance,
+        activeInstance: {
+          ...activeInstance,
+          results: resultsWithPercentages,
+        },
         handleChangeActiveInstance,
       }
     },
