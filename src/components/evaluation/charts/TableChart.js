@@ -1,6 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import Griddle, { plugins, RowDefinition, ColumnDefinition } from 'griddle-react'
+import { QUESTION_GROUPS } from '../../../constants'
 
 const propTypes = {
   data: PropTypes.arrayOf(
@@ -11,6 +12,7 @@ const propTypes = {
     }),
   ),
   isSolutionShown: PropTypes.bool,
+  questionType: PropTypes.string.isRequired,
 }
 
 const defaultProps = {
@@ -41,7 +43,7 @@ ColumnWithSolution.propTypes = {
 }
 
 // virtual scrolling: use plugins.PositionPlugin({ tableHeight: 500 })?
-function TableChart({ data, isSolutionShown }) {
+function TableChart({ data, isSolutionShown, questionType }) {
   return (
     <div className="tableChart">
       <Griddle
@@ -59,14 +61,19 @@ function TableChart({ data, isSolutionShown }) {
             title="Count"
             width="3rem"
           />
+
           <ColumnDefinition id="value" title="Value" />
-          <ColumnDefinition
-            cssClassName="griddle-cell percentageColumn"
-            headerCssClassName="griddle-table-heading-cell percentageColumn"
-            id="percentage"
-            title="%"
-            width="2rem"
-          />
+
+          {QUESTION_GROUPS.WITH_PERCENTAGES.includes(questionType) && (
+            <ColumnDefinition
+              cssClassName="griddle-cell percentageColumn"
+              headerCssClassName="griddle-table-heading-cell percentageColumn"
+              id="percentage"
+              title="%"
+              width="2rem"
+            />
+          )}
+
           <ColumnDefinition
             cssClassName="griddle-cell solutionColumn"
             customComponent={ColumnWithSolution}
