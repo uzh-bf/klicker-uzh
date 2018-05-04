@@ -1,7 +1,7 @@
-import _round from 'lodash/round'
+// import _round from 'lodash/round'
 
 import {
-  QUESTION_TYPES,
+  // QUESTION_TYPES,
   SMALL_BAR_THRESHOLD,
   SMALL_PIE_THRESHOLD,
   CHART_TYPES,
@@ -19,26 +19,11 @@ export function indexToLetter(index) {
   return Array(n + 1).join(String.fromCharCode(65 + index % 26))
 }
 
-export function generatePercentageLabel(questionType, count, totalResponses) {
-  // no percentages needed for other question types
-  if (questionType !== QUESTION_TYPES.SC) {
-    return count
-  }
-
-  // only show percentage string if count is >0
-  if (count > 0) {
-    return `${count} | ${_round(100 * (count / totalResponses), 1)} %`
-  }
-
-  // return an empty string so it doesn't clutter the visualization
-  return ''
-}
-
 // determine whether the label (A,B, ...) is displayed within the bar or not
 export function getLabelIn(chartType, questionType, count, totalResponses, index) {
   if (chartType === CHART_TYPES.BAR_CHART) {
     if (count / totalResponses > SMALL_BAR_THRESHOLD) {
-      return generatePercentageLabel(questionType, count, totalResponses)
+      return count
     }
   }
 
@@ -55,20 +40,18 @@ export function getLabelIn(chartType, questionType, count, totalResponses, index
 export function getLabelOut(chartType, questionType, count, totalResponses, index) {
   if (chartType === CHART_TYPES.BAR_CHART) {
     if (count / totalResponses <= SMALL_BAR_THRESHOLD) {
-      return generatePercentageLabel(questionType, count, totalResponses)
+      return count
     }
 
     return ''
   }
 
   if (chartType === CHART_TYPES.PIE_CHART) {
-    const percentage = generatePercentageLabel(questionType, count, totalResponses)
-
     if (count / totalResponses <= SMALL_PIE_THRESHOLD) {
-      return `${percentage} (${indexToLetter(index)})`
+      return `${count} (${indexToLetter(index)})`
     }
 
-    return `${percentage}`
+    return count
   }
 
   return ''
