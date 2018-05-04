@@ -106,7 +106,7 @@ const Join = ({
           </div>
         )}
 
-        {isConfusionBarometerActive || isFeedbackChannelActive ? (
+        {(isConfusionBarometerActive || isFeedbackChannelActive) && (
           <FeedbackArea
             active={sidebarActiveItem === 'feedbackChannel'}
             feedbacks={feedbacks}
@@ -115,17 +115,6 @@ const Join = ({
             isConfusionBarometerActive={isConfusionBarometerActive}
             isFeedbackChannelActive={isFeedbackChannelActive}
           />
-        ) : (
-          <div
-            className={classNames('feedbackArea', {
-              inactive: sidebarActiveItem !== 'feedbackChannel',
-            })}
-          >
-            <FormattedMessage
-              defaultMessage="Feedback-Channel deactivated."
-              id="joinSession.noFeedbackChannel"
-            />
-          </div>
         )}
 
         <style jsx>{`

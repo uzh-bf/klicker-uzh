@@ -1,16 +1,17 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import classNames from 'classnames'
 import { intlShape } from 'react-intl'
-import { Checkbox, Dropdown, Menu } from 'semantic-ui-react'
+import { Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
 
 import { CommonLayout } from '.'
 import { Info, Possibilities, Statistics, VisualizationType } from '../evaluation'
-import { QUESTION_GROUPS } from '../../constants'
+import { QUESTION_GROUPS, CHART_TYPES, QUESTION_TYPES } from '../../constants'
 
 const propTypes = {
   activeInstance: PropTypes.number,
   activeVisualization: PropTypes.string.isRequired,
-  chart: PropTypes.element.isRequired,
+  children: PropTypes.element.isRequired,
   choices: PropTypes.arrayOf(
     PropTypes.shape({
       correct: PropTypes.bool,
@@ -26,6 +27,7 @@ const propTypes = {
   onToggleShowSolution: PropTypes.func.isRequired,
   options: PropTypes.object.isRequired,
   pageTitle: PropTypes.string,
+  showGraph: PropTypes.bool,
   showSolution: PropTypes.bool,
   statistics: PropTypes.shape({
     mean: PropTypes.number.isRequired,
@@ -41,6 +43,7 @@ const defaultProps = {
   description: undefined,
   instanceSummary: [],
   pageTitle: 'EvaluationLayout',
+  showGraph: false,
   showSolution: false,
   statistics: undefined,
   totalResponses: undefined,
@@ -48,11 +51,13 @@ const defaultProps = {
 
 function EvaluationLayout({
   activeVisualization,
+  data,
   intl,
   pageTitle,
+  showGraph,
   showSolution,
   onToggleShowSolution,
-  chart,
+  children,
   type,
   description,
   onChangeVisualizationType,
@@ -65,15 +70,20 @@ function EvaluationLayout({
 }) {
   return (
     <CommonLayout baseFontSize="22px" nextHeight="100%" pageTitle={pageTitle}>
-      <div className={`evaluationLayout ${type}`}>
+      <div
+        className={classNames('evaluationLayout', {
+          fullScreen: [CHART_TYPES.CLOUD_CHART, CHART_TYPES.TABLE].includes(activeVisualization),
+        })}
+      >
         {(() => {
           if (instanceSummary.length <= 0) {
             return null
           }
 
-          if (instanceSummary.length > 10) {
+          if (instanceSummary.length > 8) {
             const dropdownOptions = instanceSummary.map(
-              ({ title, totalResponses: count }, index) => ({
+              ({ blockStatus, title, totalResponses: count }, index) => ({
+                icon: blockStatus === 'ACTIVE' ? 'comments' : 'checkmark',
                 key: index,
                 text: `${title} (${count})`,
                 value: index,
@@ -85,10 +95,10 @@ function EvaluationLayout({
                 <Dropdown
                   search
                   selection
-                  defaultValue={0}
+                  defaultValue={activeInstance}
                   options={dropdownOptions}
                   placeholder="Select Question"
-                  onChange={(param, data) => onChangeActiveInstance(data.value)}
+                  onChange={(param, { value }) => onChangeActiveInstance(value)}
                 />
               </div>
             )
@@ -104,14 +114,15 @@ function EvaluationLayout({
                   onClick={() => onChangeActiveInstance(activeInstance - 1)}
                 />
 
-                {instanceSummary.map(({ title, totalResponses: count }, index) => (
+                {instanceSummary.map(({ blockStatus, title, totalResponses: count }, index) => (
                   <Menu.Item
                     fitted
                     active={index === activeInstance}
-                    className="hoverable"
+                    className={classNames('hoverable', { executed: blockStatus === 'EXECUTED' })}
                     onClick={() => onChangeActiveInstance(index)}
                   >
-                    {title.length > 15 ? `${title.substring(0, 15)} ...` : title} ({count})
+                    <Icon name={blockStatus === 'ACTIVE' ? 'comments' : 'checkmark'} />
+                    {title.length > 15 ? `${title.substring(0, 15)}...` : title} ({count})
                   </Menu.Item>
                 ))}
 
@@ -134,9 +145,9 @@ function EvaluationLayout({
           <Info totalResponses={totalResponses} />
           {/* don't show 'show solution' check box for free and free range questions
           and word cloud charts */
-          type !== 'FREE' &&
-            type !== 'FREE_RANGE' &&
-            activeVisualization !== 'WORD_CLOUD' && (
+          type !== QUESTION_TYPES.FREE &&
+            type !== QUESTION_TYPES.FREE_RANGE &&
+            activeVisualization !== CHART_TYPES.CLOUD_CHART && (
               <Checkbox
                 toggle
                 defaultChecked={showSolution}
@@ -156,20 +167,30 @@ function EvaluationLayout({
           />
         </div>
 
-        <div className="chart">{chart}</div>
+        <div className="chart">{children}</div>
 
-        {QUESTION_GROUPS.WITH_POSSIBILITIES.includes(type) && (
-          <div className="optionDisplay">
-            <Possibilities questionOptions={options} questionType={type} />
-          </div>
+        {activeVisualization !== CHART_TYPES.TABLE && (
+          <React.Fragment>
+            {QUESTION_GROUPS.WITH_POSSIBILITIES.includes(type) && (
+              <div className="optionDisplay">
+                <Possibilities
+                  data={data}
+                  questionOptions={options}
+                  questionType={type}
+                  showGraph={showGraph}
+                  showSolution={showSolution}
+                />
+              </div>
+            )}
+
+            {QUESTION_GROUPS.WITH_STATISTICS.includes(type) &&
+              statistics && (
+                <div className="statistics">
+                  <Statistics {...statistics} withBins={activeVisualization === 'HISTOGRAM'} />
+                </div>
+              )}
+          </React.Fragment>
         )}
-
-        {QUESTION_GROUPS.WITH_STATISTICS.includes(type) &&
-          statistics && (
-            <div className="statistics">
-              <Statistics {...statistics} withBins={activeVisualization === 'HISTOGRAM'} />
-            </div>
-          )}
 
         <style jsx>{`
           @import 'src/theme';
@@ -198,7 +219,7 @@ function EvaluationLayout({
                   'graph statistics'
                   'info info';
 
-                &.FREE {
+                &.fullScreen {
                   grid-template-areas:
                     'instanceChooser instanceChooser'
                     'questionDetails questionDetails'
@@ -235,7 +256,15 @@ function EvaluationLayout({
                     :global(.item.hoverable:hover) {
                       background-color: $color-primary-10p;
                     }
+
+                    :global(.item.executed) {
+                      color: grey;
+                    }
                   }
+                }
+
+                .instanceDropdown {
+                  font-size: 0.8rem;
                 }
 
                 .questionDetails {
