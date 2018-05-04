@@ -52,7 +52,8 @@ const Possibilities = ({
                 color={CHART_COLORS[index % 12]}
                 correct={showGraph && showSolution && correct}
                 marker={indexToLetter(index)}
-                percentage={showGraph && `${percentage}%`}
+                percentage={percentage}
+                showGraph={showGraph}
               >
                 {value}
               </EvaluationListItem>

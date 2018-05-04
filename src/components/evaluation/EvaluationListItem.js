@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
-
+import _isFinite from 'lodash/isFinite'
 import { Icon } from 'semantic-ui-react'
 
 const propTypes = {
@@ -11,6 +11,7 @@ const propTypes = {
   marker: PropTypes.string,
   percentage: PropTypes.number,
   reverse: PropTypes.bool,
+  showGraph: PropTypes.bool,
 }
 
 const defaultProps = {
@@ -19,10 +20,17 @@ const defaultProps = {
   marker: undefined,
   percentage: undefined,
   reverse: false,
+  showGraph: false,
 }
 
 const EvaluationListItem = ({
-  color, correct, children, marker, reverse, percentage,
+  color,
+  correct,
+  children,
+  marker,
+  reverse,
+  percentage,
+  showGraph,
 }) => (
   <div className={classNames('evaluationListItem', { correct, reverse })}>
     {color && (
@@ -33,7 +41,7 @@ const EvaluationListItem = ({
 
     {marker && reverse && <div className="marker">{marker}</div>}
     <div className="content">{children}</div>
-    <div className="percentage">{percentage}</div>
+    {showGraph && _isFinite(percentage) && <div className="percentage">{percentage}%</div>}
     {marker && !reverse && <div className="marker">{marker}</div>}
 
     <style jsx>{`
@@ -75,6 +83,7 @@ const EvaluationListItem = ({
 
         .percentage {
           flex: 0 0 2rem;
+          font-size: 0.8rem;
           text-align: right;
         }
 
