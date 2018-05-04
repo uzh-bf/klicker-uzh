@@ -7,20 +7,24 @@ import { Icon } from 'semantic-ui-react'
 const propTypes = {
   children: PropTypes.element.isRequired,
   color: PropTypes.string,
+  correct: PropTypes.bool,
   marker: PropTypes.string,
+  percentage: PropTypes.number,
   reverse: PropTypes.bool,
 }
 
 const defaultProps = {
   color: undefined,
+  correct: false,
   marker: undefined,
+  percentage: undefined,
   reverse: false,
 }
 
 const EvaluationListItem = ({
-  color, children, marker, reverse,
+  color, correct, children, marker, reverse, percentage,
 }) => (
-  <div className={classNames('evaluationListItem', { reverse })}>
+  <div className={classNames('evaluationListItem', { correct, reverse })}>
     {color && (
       <div className="colorSquare">
         <Icon name="square icon" />
@@ -29,9 +33,12 @@ const EvaluationListItem = ({
 
     {marker && reverse && <div className="marker">{marker}</div>}
     <div className="content">{children}</div>
+    <div className="percentage">{percentage}</div>
     {marker && !reverse && <div className="marker">{marker}</div>}
 
     <style jsx>{`
+      @import 'src/theme';
+
       .evaluationListItem {
         display: flex;
         flex-flow: row wrap;
@@ -45,6 +52,10 @@ const EvaluationListItem = ({
           border-top: 1px solid lightgrey;
         }
 
+        &.correct {
+          background-color: $color-correct;
+        }
+
         .colorSquare :global(i) {
           flex: 0 0 auto;
 
@@ -52,13 +63,19 @@ const EvaluationListItem = ({
         }
 
         .marker {
-          flex: 0 0 auto;
+          flex: 0 0 1.5rem;
+          text-align: center;
 
           font-weight: bold;
         }
 
         .content {
           flex: 1;
+        }
+
+        .percentage {
+          flex: 0 0 2rem;
+          text-align: right;
         }
 
         &.reverse {

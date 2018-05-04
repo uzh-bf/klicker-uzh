@@ -27,6 +27,7 @@ const propTypes = {
   onToggleShowSolution: PropTypes.func.isRequired,
   options: PropTypes.object.isRequired,
   pageTitle: PropTypes.string,
+  showGraph: PropTypes.bool,
   showSolution: PropTypes.bool,
   statistics: PropTypes.shape({
     mean: PropTypes.number.isRequired,
@@ -42,6 +43,7 @@ const defaultProps = {
   description: undefined,
   instanceSummary: [],
   pageTitle: 'EvaluationLayout',
+  showGraph: false,
   showSolution: false,
   statistics: undefined,
   totalResponses: undefined,
@@ -49,8 +51,10 @@ const defaultProps = {
 
 function EvaluationLayout({
   activeVisualization,
+  data,
   intl,
   pageTitle,
+  showGraph,
   showSolution,
   onToggleShowSolution,
   children,
@@ -90,7 +94,7 @@ function EvaluationLayout({
                   defaultValue={activeInstance}
                   options={dropdownOptions}
                   placeholder="Select Question"
-                  onChange={(param, data) => onChangeActiveInstance(data.value)}
+                  onChange={(param, { value }) => onChangeActiveInstance(value)}
                 />
               </div>
             )
@@ -163,7 +167,13 @@ function EvaluationLayout({
 
         {QUESTION_GROUPS.WITH_POSSIBILITIES.includes(type) && (
           <div className="optionDisplay">
-            <Possibilities questionOptions={options} questionType={type} />
+            <Possibilities
+              data={data}
+              questionOptions={options}
+              questionType={type}
+              showGraph={showGraph}
+              showSolution={showSolution}
+            />
           </div>
         )}
 
