@@ -222,13 +222,18 @@ export default compose(
     renderComponent(() => <div>No evaluation currently active.</div>),
   ),
   withStateHandlers(
-    ({ activeInstances, sessionStatus }) => ({
-      activeInstanceIndex: activeInstances.findIndex(instance => instance.blockStatus === 'ACTIVE'),
-      activeVisualizations: CHART_DEFAULTS,
-      bins: null,
-      showGraph: false,
-      showSolution: sessionStatus !== SESSION_STATUS.RUNNING,
-    }),
+    ({ activeInstances, sessionStatus }) => {
+      const firstActiveIndex = activeInstances.findIndex(
+        instance => instance.blockStatus === 'ACTIVE',
+      )
+      return {
+        activeInstanceIndex: firstActiveIndex >= 0 ? firstActiveIndex : 0,
+        activeVisualizations: CHART_DEFAULTS,
+        bins: null,
+        showGraph: false,
+        showSolution: sessionStatus !== SESSION_STATUS.RUNNING,
+      }
+    },
     {
       // handle change of active instance
       handleChangeActiveInstance: () => activeInstanceIndex => ({
