@@ -53,6 +53,7 @@ const Possibilities = ({
                 correct={showGraph && showSolution && correct}
                 marker={indexToLetter(index)}
                 percentage={percentage}
+                questionType={questionType}
                 showGraph={showGraph}
               >
                 {value}

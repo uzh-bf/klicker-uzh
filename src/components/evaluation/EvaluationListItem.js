@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import _isFinite from 'lodash/isFinite'
 import { Icon } from 'semantic-ui-react'
+import { QUESTION_TYPES } from '../../constants'
 
 const propTypes = {
   children: PropTypes.element.isRequired,
@@ -30,6 +31,7 @@ const EvaluationListItem = ({
   marker,
   reverse,
   percentage,
+  questionType,
   showGraph,
 }) => (
   <div className={classNames('evaluationListItem', { correct, reverse })}>
@@ -41,7 +43,9 @@ const EvaluationListItem = ({
 
     {marker && reverse && <div className="marker">{marker}</div>}
     <div className="content">{children}</div>
-    {showGraph && _isFinite(percentage) && <div className="percentage">{percentage}%</div>}
+    {QUESTION_TYPES.WITH_PERCENTAGES.includes(questionType) &&
+      showGraph &&
+      _isFinite(percentage) && <div className="percentage">{percentage}%</div>}
     {marker && !reverse && <div className="marker">{marker}</div>}
 
     <style jsx>{`
