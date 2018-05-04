@@ -142,17 +142,23 @@ export default compose(
     }),
   ),
   withProps(({ data: { session } }) => {
-    let { blocks } = session
-
-    // if the session is running, only show open question instances in the evaluation
-    if (session.status === SESSION_STATUS.RUNNING) {
-      blocks = blocks.filter(block => block.status === 'ACTIVE')
-    }
+    const { blocks } = session
 
     // reduce question blocks to the active instances
     const activeInstances = blocks
-      .map(block => block.instances) // map blocks to the instances contained within
-      .reduce((acc, val) => [...acc, ...val], []) // reduce array of arrays [[], [], []] to [...]
+      // filter out future blocks as we don't want to display them too early
+      .filter(block => block.status !== 'PLANNED')
+      .reduce((allInstances, { instances, status }, index) => {
+        // inject the status of the block into the instance object
+        const instancesWithBlockStatus = instances.map(instance => ({
+          ...instance,
+          blockNumber: index + 1,
+          blockStatus: status,
+        }))
+        // reduce to a list of all instances, no matter the block status
+        // reduce array of arrays [[], [], []] to [...]
+        return [...allInstances, ...instancesWithBlockStatus]
+      }, [])
       .map((activeInstance) => {
         // map the array of all instances with the custom mapper
         if (QUESTION_GROUPS.CHOICES.includes(activeInstance.question.type)) {
@@ -193,11 +199,17 @@ export default compose(
 
     return {
       activeInstances,
-      instanceSummary: activeInstances.map(instance => ({
-        hasSolution: !!instance.solution,
-        title: instance.question.title,
-        totalResponses: instance.responses.length,
-      })),
+      // generate an instance summary for easy display of "tabs"
+      instanceSummary: activeInstances.map(
+        ({
+          blockStatus, blockNumber, solution, question, responses,
+        }) => ({
+          blockStatus,
+          hasSolution: !!solution,
+          title: `B${blockNumber} ${question.title}`,
+          totalResponses: responses.length,
+        }),
+      ),
       sessionStatus: session.status,
     }
   }),
@@ -207,8 +219,8 @@ export default compose(
     renderComponent(() => <div>No evaluation currently active.</div>),
   ),
   withStateHandlers(
-    ({ sessionStatus }) => ({
-      activeInstanceIndex: 0,
+    ({ activeInstances, sessionStatus }) => ({
+      activeInstanceIndex: activeInstances.findIndex(instance => instance.blockStatus === 'ACTIVE'),
       activeVisualizations: CHART_DEFAULTS,
       bins: null,
       showGraph: false,

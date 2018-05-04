@@ -1,5 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import classNames from 'classnames'
 import { intlShape } from 'react-intl'
 import { Checkbox, Dropdown, Menu } from 'semantic-ui-react'
 
@@ -104,14 +105,14 @@ function EvaluationLayout({
                   onClick={() => onChangeActiveInstance(activeInstance - 1)}
                 />
 
-                {instanceSummary.map(({ title, totalResponses: count }, index) => (
+                {instanceSummary.map(({ blockStatus, title, totalResponses: count }, index) => (
                   <Menu.Item
                     fitted
                     active={index === activeInstance}
-                    className="hoverable"
+                    className={classNames('hoverable', { executed: blockStatus === 'EXECUTED' })}
                     onClick={() => onChangeActiveInstance(index)}
                   >
-                    {title.length > 15 ? `${title.substring(0, 15)} ...` : title} ({count})
+                    {title.length > 20 ? `${title.substring(0, 20)}...` : title} ({count})
                   </Menu.Item>
                 ))}
 
@@ -234,6 +235,10 @@ function EvaluationLayout({
 
                     :global(.item.hoverable:hover) {
                       background-color: $color-primary-10p;
+                    }
+
+                    :global(.item.executed) {
+                      color: grey;
                     }
                   }
                 }
