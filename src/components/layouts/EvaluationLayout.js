@@ -11,7 +11,7 @@ import { QUESTION_GROUPS } from '../../constants'
 const propTypes = {
   activeInstance: PropTypes.number,
   activeVisualization: PropTypes.string.isRequired,
-  chart: PropTypes.element.isRequired,
+  children: PropTypes.element.isRequired,
   choices: PropTypes.arrayOf(
     PropTypes.shape({
       correct: PropTypes.bool,
@@ -53,7 +53,7 @@ function EvaluationLayout({
   pageTitle,
   showSolution,
   onToggleShowSolution,
-  chart,
+  children,
   type,
   description,
   onChangeVisualizationType,
@@ -159,7 +159,7 @@ function EvaluationLayout({
           />
         </div>
 
-        <div className="chart">{chart}</div>
+        <div className="chart">{children}</div>
 
         {QUESTION_GROUPS.WITH_POSSIBILITIES.includes(type) && (
           <div className="optionDisplay">

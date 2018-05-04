@@ -73,26 +73,9 @@ function Evaluation({
   const { totalResponses, data } = results
   const { description, options } = question.versions[version]
 
-  const chart = (
-    <Chart
-      activeVisualization={activeVisualizations[type]}
-      handleShowGraph={handleShowGraph}
-      intl={intl}
-      numBins={bins}
-      questionType={type}
-      restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
-      results={results}
-      sessionStatus={sessionStatus}
-      showGraph={showGraph}
-      showSolution={showSolution}
-      statistics={statistics}
-    />
-  )
-
   const layoutProps = {
     activeInstance: activeInstanceIndex,
     activeVisualization: activeVisualizations[type],
-    chart,
     data,
     description,
     instanceSummary,
@@ -112,7 +95,23 @@ function Evaluation({
     type,
   }
 
-  return <EvaluationLayout {...layoutProps} />
+  return (
+    <EvaluationLayout {...layoutProps}>
+      <Chart
+        activeVisualization={activeVisualizations[type]}
+        handleShowGraph={handleShowGraph}
+        intl={intl}
+        numBins={bins}
+        questionType={type}
+        restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
+        results={results}
+        sessionStatus={sessionStatus}
+        showGraph={showGraph}
+        showSolution={showSolution}
+        statistics={statistics}
+      />
+    </EvaluationLayout>
+  )
 }
 
 Evaluation.propTypes = propTypes

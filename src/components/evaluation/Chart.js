@@ -1,7 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import _round from 'lodash/round'
 import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
+import { withProps } from 'recompose'
 
 import { BarChart, StackChart, PieChart, TableChart, CloudChart, HistogramChart } from '.'
 import { SESSION_STATUS } from '../../constants'
@@ -10,6 +12,12 @@ import { statisticsShape } from '../../propTypes'
 // TODO
 const propTypes = {
   activeVisualization: PropTypes.string.isRequired,
+  data: PropTypes.arrayOf({
+    correct: PropTypes.bool,
+    count: PropTypes.number,
+    name: PropTypes.string,
+    percentage: PropTypes.number,
+  }),
   handleShowGraph: PropTypes.func.isRequired,
   numBins: PropTypes.number.isRequired,
   questionType: PropTypes.string.isRequired,
@@ -17,26 +25,20 @@ const propTypes = {
     max: PropTypes.number,
     min: PropTypes.number,
   }),
-  results: PropTypes.shape({
-    choices: PropTypes.arrayOf({
-      correct: PropTypes.bool,
-      count: PropTypes.number,
-      name: PropTypes.string,
-    }),
-    totalResponses: PropTypes.number,
-  }),
   sessionStatus: PropTypes.string.isRequired,
   showGraph: PropTypes.bool,
   showSolution: PropTypes.bool,
   statistics: statisticsShape,
+  totalResponses: PropTypes.number,
 }
 
 const defaultProps = {
+  data: undefined,
   restrictions: undefined,
-  results: undefined,
   showGraph: false,
   showSolution: true,
   statistics: undefined,
+  totalResponses: undefined,
 }
 
 const chartTypes = {
@@ -50,8 +52,8 @@ const chartTypes = {
 
 function Chart({
   activeVisualization,
+  data,
   restrictions,
-  results,
   handleShowGraph,
   numBins,
   questionType,
@@ -59,6 +61,7 @@ function Chart({
   showGraph,
   showSolution,
   statistics,
+  totalResponses,
 }) {
   return (
     <div className="chart">
@@ -74,7 +77,7 @@ function Chart({
           )
         }
 
-        if (results.totalResponses === 0) {
+        if (totalResponses === 0) {
           return (
             <div className="noChart">
               <FormattedMessage
@@ -90,14 +93,14 @@ function Chart({
           return (
             <ChartComponent
               brush={sessionStatus !== SESSION_STATUS.RUNNING}
-              data={results.data}
+              data={data}
               isColored={questionType !== 'FREE_RANGE'}
               isSolutionShown={showSolution}
               numBins={numBins}
               questionType={questionType}
               restrictions={restrictions}
               statistics={statistics}
-              totalResponses={results.totalResponses}
+              totalResponses={totalResponses}
             />
           )
         }
@@ -126,4 +129,12 @@ function Chart({
 Chart.propTypes = propTypes
 Chart.defaultProps = defaultProps
 
-export default Chart
+export default withProps(({ results: { data, totalResponses } }) => ({
+  data: data.map(({ correct, count, value }) => ({
+    correct,
+    count,
+    percentage: _round(100 * (count / totalResponses), 1),
+    value,
+  })),
+  totalResponses,
+}))(Chart)

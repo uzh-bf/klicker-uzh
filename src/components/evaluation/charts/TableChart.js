@@ -6,6 +6,7 @@ const propTypes = {
   data: PropTypes.arrayOf(
     PropTypes.shape({
       count: PropTypes.number.isRequired,
+      percentage: PropTypes.number.isRequired,
       value: PropTypes.string.isRequired,
     }),
   ),
@@ -60,6 +61,11 @@ function TableChart({ data, isSolutionShown }) {
           />
           <ColumnDefinition id="value" title="Value" />
           <ColumnDefinition
+            cssClassName="griddle-cell percentageColumn"
+            id="percentage"
+            title="%"
+          />
+          <ColumnDefinition
             cssClassName="griddle-cell solutionColumn"
             customComponent={ColumnWithSolution}
             headerCssClassName="griddle-table-heading-cell solutionColumn"
@@ -96,7 +102,7 @@ function TableChart({ data, isSolutionShown }) {
             display: ${isSolutionShown ? 'table-cell' : 'none'};
           }
 
-          :global(.griddle-row:nth-child(2)) {
+          :global(.griddle-row:nth-child(2n)) {
             background-color: #efefef;
           }
 
