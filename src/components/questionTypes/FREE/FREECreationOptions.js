@@ -35,27 +35,27 @@ const FREECreationOptions = ({
   invalid,
 }) => (
   <div className="FREECreationOptions">
-    <Form.Field required error={dirty && invalid}>
-      <label htmlFor="options">
-        <FormattedMessage
-          defaultMessage="Input Restrictions"
-          id="createQuestion.optionsFREE.label"
-        />
-        <a data-tip data-for="FREECreationHelp">
-          <Icon name="question circle" />
-        </a>
-      </label>
+    {type === QUESTION_TYPES.FREE_RANGE && (
+      <Form.Field required error={dirty && invalid}>
+        <label htmlFor="options">
+          <FormattedMessage
+            defaultMessage="Input Restrictions"
+            id="createQuestion.optionsFREE.label"
+          />
+          <a data-tip data-for="FREECreationHelp">
+            <Icon name="question circle" />
+          </a>
+        </label>
 
-      <ReactTooltip delayHide={250} delayShow={250} id="FREECreationHelp" place="right">
-        <FormattedMessage
-          defaultMessage="Choose the allowed format of incoming responses."
-          id="createQuestion.optionsFREE.tooltip"
-        />
-      </ReactTooltip>
+        <ReactTooltip delayHide={250} delayShow={250} id="FREECreationHelp" place="right">
+          <FormattedMessage
+            defaultMessage="Choose the allowed format of incoming responses."
+            id="createQuestion.optionsFREE.tooltip"
+          />
+        </ReactTooltip>
 
-      {/* type === QUESTION_TYPES.FREE && <div>Unrestricted input.</div> */}
+        {/* type === QUESTION_TYPES.FREE && <div>Unrestricted input.</div> */}
 
-      {type === QUESTION_TYPES.FREE_RANGE && (
         <div className="range">
           <Form.Field>
             <label htmlFor="min">
@@ -85,8 +85,8 @@ const FREECreationOptions = ({
             />
           </Form.Field>
         </div>
-      )}
-    </Form.Field>
+      </Form.Field>
+    )}
 
     <style jsx>{`
       @import 'src/theme';
