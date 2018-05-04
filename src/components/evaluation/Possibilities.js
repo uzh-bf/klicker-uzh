@@ -8,11 +8,21 @@ import { indexToLetter } from '../../lib'
 import { EvaluationListItem } from '.'
 
 const propTypes = {
+  data: PropTypes.array.isRequired,
   questionOptions: PropTypes.object.isRequired,
   questionType: PropTypes.string.isRequired,
+  showGraph: PropTypes.bool,
+  showSolution: PropTypes.bool,
 }
 
-const Possibilities = ({ questionOptions, questionType }) => (
+const defaultProps = {
+  showGraph: false,
+  showSolution: false,
+}
+
+const Possibilities = ({
+  data, questionOptions, questionType, showGraph, showSolution,
+}) => (
   <div className="possibilities">
     <h2>
       {(() => {
@@ -37,9 +47,16 @@ const Possibilities = ({ questionOptions, questionType }) => (
       if (QUESTION_GROUPS.CHOICES.includes(questionType)) {
         return (
           <div>
-            {questionOptions[questionType].choices.map((choice, index) => (
-              <EvaluationListItem color={CHART_COLORS[index % 12]} marker={indexToLetter(index)}>
-                {choice.name}
+            {data.map(({ correct, percentage, value }, index) => (
+              <EvaluationListItem
+                color={CHART_COLORS[index % 12]}
+                correct={showGraph && showSolution && correct}
+                marker={indexToLetter(index)}
+                percentage={percentage}
+                questionType={questionType}
+                showGraph={showGraph}
+              >
+                {value}
               </EvaluationListItem>
             ))}
           </div>
@@ -104,5 +121,6 @@ const Possibilities = ({ questionOptions, questionType }) => (
 )
 
 Possibilities.propTypes = propTypes
+Possibilities.defaultProps = defaultProps
 
 export default Possibilities

@@ -10,6 +10,7 @@ import {
   renderNothing,
 } from 'recompose'
 import { graphql } from 'react-apollo'
+import _round from 'lodash/round'
 
 import { CHART_DEFAULTS, QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
@@ -73,26 +74,9 @@ function Evaluation({
   const { totalResponses, data } = results
   const { description, options } = question.versions[version]
 
-  const chart = (
-    <Chart
-      activeVisualization={activeVisualizations[type]}
-      handleShowGraph={handleShowGraph}
-      intl={intl}
-      numBins={bins}
-      questionType={type}
-      restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
-      results={results}
-      sessionStatus={sessionStatus}
-      showGraph={showGraph}
-      showSolution={showSolution}
-      statistics={statistics}
-    />
-  )
-
   const layoutProps = {
     activeInstance: activeInstanceIndex,
     activeVisualization: activeVisualizations[type],
-    chart,
     data,
     description,
     instanceSummary,
@@ -105,6 +89,7 @@ function Evaluation({
       defaultMessage: 'Evaluation',
       id: 'evaluation.pageTitle',
     }),
+    showGraph,
     showSolution,
     statistics,
     title,
@@ -112,7 +97,24 @@ function Evaluation({
     type,
   }
 
-  return <EvaluationLayout {...layoutProps} />
+  return (
+    <EvaluationLayout {...layoutProps}>
+      <Chart
+        activeVisualization={activeVisualizations[type]}
+        data={results.data}
+        handleShowGraph={handleShowGraph}
+        intl={intl}
+        numBins={bins}
+        questionType={type}
+        restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
+        sessionStatus={sessionStatus}
+        showGraph={showGraph}
+        showSolution={showSolution}
+        statistics={statistics}
+        totalResponses={results.totalResponses}
+      />
+    </EvaluationLayout>
+  )
 }
 
 Evaluation.propTypes = propTypes
@@ -142,17 +144,23 @@ export default compose(
     }),
   ),
   withProps(({ data: { session } }) => {
-    let { blocks } = session
-
-    // if the session is running, only show open question instances in the evaluation
-    if (session.status === SESSION_STATUS.RUNNING) {
-      blocks = blocks.filter(block => block.status === 'ACTIVE')
-    }
+    const { blocks } = session
 
     // reduce question blocks to the active instances
     const activeInstances = blocks
-      .map(block => block.instances) // map blocks to the instances contained within
-      .reduce((acc, val) => [...acc, ...val], []) // reduce array of arrays [[], [], []] to [...]
+      // filter out future blocks as we don't want to display them too early
+      .filter(block => block.status !== 'PLANNED')
+      .reduce((allInstances, { instances, status }, index) => {
+        // inject the status of the block into the instance object
+        const instancesWithBlockStatus = instances.map(instance => ({
+          ...instance,
+          blockNumber: index + 1,
+          blockStatus: status,
+        }))
+        // reduce to a list of all instances, no matter the block status
+        // reduce array of arrays [[], [], []] to [...]
+        return [...allInstances, ...instancesWithBlockStatus]
+      }, [])
       .map((activeInstance) => {
         // map the array of all instances with the custom mapper
         if (QUESTION_GROUPS.CHOICES.includes(activeInstance.question.type)) {
@@ -193,11 +201,18 @@ export default compose(
 
     return {
       activeInstances,
-      instanceSummary: activeInstances.map(instance => ({
-        hasSolution: !!instance.solution,
-        title: instance.question.title,
-        totalResponses: instance.responses.length,
-      })),
+      // generate an instance summary for easy display of "tabs"
+      instanceSummary: activeInstances.map(
+        ({
+          blockStatus, blockNumber, solution, question, responses,
+        }) => ({
+          blockNumber,
+          blockStatus,
+          hasSolution: !!solution,
+          title: question.title,
+          totalResponses: responses.length,
+        }),
+      ),
       sessionStatus: session.status,
     }
   }),
@@ -207,13 +222,18 @@ export default compose(
     renderComponent(() => <div>No evaluation currently active.</div>),
   ),
   withStateHandlers(
-    ({ sessionStatus }) => ({
-      activeInstanceIndex: 0,
-      activeVisualizations: CHART_DEFAULTS,
-      bins: null,
-      showGraph: false,
-      showSolution: sessionStatus !== SESSION_STATUS.RUNNING,
-    }),
+    ({ activeInstances, sessionStatus }) => {
+      const firstActiveIndex = activeInstances.findIndex(
+        instance => instance.blockStatus === 'ACTIVE',
+      )
+      return {
+        activeInstanceIndex: firstActiveIndex >= 0 ? firstActiveIndex : 0,
+        activeVisualizations: CHART_DEFAULTS,
+        bins: null,
+        showGraph: false,
+        showSolution: sessionStatus !== SESSION_STATUS.RUNNING,
+      }
+    },
     {
       // handle change of active instance
       handleChangeActiveInstance: () => activeInstanceIndex => ({
@@ -271,8 +291,22 @@ export default compose(
         }
       }
 
+      const resultsWithPercentages = {
+        ...activeInstance.results,
+        data: activeInstance.results.data.map(({ correct, count, value }) => ({
+          correct,
+          count,
+          percentage: _round(100 * (count / activeInstance.results.totalResponses), 1),
+          value,
+        })),
+        totalResponses: activeInstance.results.totalResponses,
+      }
+
       return {
-        activeInstance,
+        activeInstance: {
+          ...activeInstance,
+          results: resultsWithPercentages,
+        },
         handleChangeActiveInstance,
       }
     },
