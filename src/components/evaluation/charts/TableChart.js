@@ -62,8 +62,10 @@ function TableChart({ data, isSolutionShown }) {
           <ColumnDefinition id="value" title="Value" />
           <ColumnDefinition
             cssClassName="griddle-cell percentageColumn"
+            headerCssClassName="griddle-table-heading-cell percentageColumn"
             id="percentage"
             title="%"
+            width="2rem"
           />
           <ColumnDefinition
             cssClassName="griddle-cell solutionColumn"
@@ -94,7 +96,7 @@ function TableChart({ data, isSolutionShown }) {
             text-align: left;
           }
 
-          :global(.countColumn, .solutionColumn) {
+          :global(.countColumn, .solutionColumn, .percentageColumn) {
             text-align: center;
           }
 

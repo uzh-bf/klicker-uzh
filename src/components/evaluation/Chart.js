@@ -1,9 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import _round from 'lodash/round'
 import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
-import { withProps } from 'recompose'
 
 import { BarChart, StackChart, PieChart, TableChart, CloudChart, HistogramChart } from '.'
 import { SESSION_STATUS } from '../../constants'
@@ -129,12 +127,4 @@ function Chart({
 Chart.propTypes = propTypes
 Chart.defaultProps = defaultProps
 
-export default withProps(({ results: { data, totalResponses } }) => ({
-  data: data.map(({ correct, count, value }) => ({
-    correct,
-    count,
-    percentage: _round(100 * (count / totalResponses), 1),
-    value,
-  })),
-  totalResponses,
-}))(Chart)
+export default Chart
