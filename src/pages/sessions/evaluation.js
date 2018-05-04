@@ -204,9 +204,10 @@ export default compose(
         ({
           blockStatus, blockNumber, solution, question, responses,
         }) => ({
+          blockNumber,
           blockStatus,
           hasSolution: !!solution,
-          title: `B${blockNumber} ${question.title}`,
+          title: question.title,
           totalResponses: responses.length,
         }),
       ),

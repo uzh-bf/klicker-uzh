@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { intlShape } from 'react-intl'
-import { Checkbox, Dropdown, Menu } from 'semantic-ui-react'
+import { Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
 
 import { CommonLayout } from '.'
 import { Info, Possibilities, Statistics, VisualizationType } from '../evaluation'
@@ -72,9 +72,10 @@ function EvaluationLayout({
             return null
           }
 
-          if (instanceSummary.length > 10) {
+          if (instanceSummary.length > 8) {
             const dropdownOptions = instanceSummary.map(
-              ({ title, totalResponses: count }, index) => ({
+              ({ blockStatus, title, totalResponses: count }, index) => ({
+                icon: blockStatus === 'ACTIVE' ? 'comments' : 'checkmark',
                 key: index,
                 text: `${title} (${count})`,
                 value: index,
@@ -86,7 +87,7 @@ function EvaluationLayout({
                 <Dropdown
                   search
                   selection
-                  defaultValue={0}
+                  defaultValue={activeInstance}
                   options={dropdownOptions}
                   placeholder="Select Question"
                   onChange={(param, data) => onChangeActiveInstance(data.value)}
@@ -112,7 +113,8 @@ function EvaluationLayout({
                     className={classNames('hoverable', { executed: blockStatus === 'EXECUTED' })}
                     onClick={() => onChangeActiveInstance(index)}
                   >
-                    {title.length > 20 ? `${title.substring(0, 20)}...` : title} ({count})
+                    <Icon name={blockStatus === 'ACTIVE' ? 'comments' : 'checkmark'} />
+                    {title.length > 15 ? `${title.substring(0, 15)}...` : title} ({count})
                   </Menu.Item>
                 ))}
 
@@ -241,6 +243,10 @@ function EvaluationLayout({
                       color: grey;
                     }
                   }
+                }
+
+                .instanceDropdown {
+                  font-size: 0.8rem;
                 }
 
                 .questionDetails {
