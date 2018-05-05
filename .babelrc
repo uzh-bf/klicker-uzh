@@ -33,10 +33,6 @@
         ["lodash", { "id": ["lodash", "recompose", "semantic-ui-react", "ramda"] }],
         "@babel/plugin-proposal-pipeline-operator",
         "@babel/plugin-proposal-optional-chaining",
-        [
-          "@babel/plugin-transform-react-constant-elements",
-          { "allowMutablePropsOnTags": ["FormattedMessage"] }
-        ],
         "transform-inline-environment-variables",
         "add-react-displayname"
       ]
