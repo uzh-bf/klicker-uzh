@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import Slider from 'react-rangeslider'
-import { Helmet } from 'react-helmet'
+import Head from 'next/head'
 
 import { createLinks } from '../../lib'
 
@@ -37,9 +37,7 @@ const ConfusionSlider = ({
 
   return (
     <div className="confusionSlider">
-      <Helmet defer={false}>
-        {createLinks(['https://unpkg.com/react-rangeslider/umd/rangeslider.min.css'])}
-      </Helmet>
+      <Head>{createLinks(['https://unpkg.com/react-rangeslider/umd/rangeslider.min.css'])}</Head>
 
       {title && <div className="title">{title}</div>}
 
