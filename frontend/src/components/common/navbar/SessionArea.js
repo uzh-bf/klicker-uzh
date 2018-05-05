@@ -18,6 +18,13 @@ const changelog = {
   new: [
     {
       items: [
+        'Executed question blocks can still be evaluated during a running session',
+        'General improvements for the evaluation screen (added and moved around percentages and labels)',
+      ],
+      text: '1.0.0-public.beta.15',
+    },
+    {
+      items: [
         'Archiving and unarchiving questions to enable question clean-up',
         'Quick creation of question blocks and sessions',
       ],
