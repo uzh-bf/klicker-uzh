@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import Slider from 'react-rangeslider'
 import { FormattedMessage } from 'react-intl'
-import { Helmet } from 'react-helmet'
+import Head from 'next/head'
 import { Input } from 'semantic-ui-react'
 
 import { createLinks } from '../../../lib'
@@ -32,9 +32,7 @@ const FREEAnswerOptions = ({
   disabled, onChange, options, value, questionType,
 }) => (
   <div className="ui form freeAnswerOptions">
-    <Helmet defer={false}>
-      {createLinks(['https://unpkg.com/react-rangeslider/umd/rangeslider.min.css'])}
-    </Helmet>
+    <Head>{createLinks(['https://unpkg.com/react-rangeslider/umd/rangeslider.min.css'])}</Head>
 
     {(() => {
       if (
