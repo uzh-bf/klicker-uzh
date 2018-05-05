@@ -2,7 +2,7 @@
 
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Helmet } from 'react-helmet'
+import Head from 'next/head'
 
 import { SEMANTIC_VERSION } from '../../constants'
 import { createLinks } from '../../lib'
@@ -22,19 +22,17 @@ const defaultProps = {
   pageTitle: 'CommonLayout',
 }
 
-const links = [
-  'https://fonts.googleapis.com/css?family=Open Sans',
-  `https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/${SEMANTIC_VERSION}/semantic.min.css`,
-]
-
 const CommonLayout = ({
   baseFontSize, children, nextHeight, nextMinHeight, pageTitle,
 }) => (
   <div className="commonLayout">
-    <Helmet defer={false}>
-      {createLinks(links)}
+    <Head>
+      {createLinks([
+        'https://fonts.googleapis.com/css?family=Open Sans',
+        `https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/${SEMANTIC_VERSION}/semantic.min.css`,
+      ])}
       <title>{pageTitle}</title>
-    </Helmet>
+    </Head>
 
     {children}
 
