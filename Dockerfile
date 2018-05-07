@@ -33,7 +33,6 @@ ARG CHATLIO
 ARG FINGERPRINTING="true"
 ARG VERSION="staging"
 RUN set -x \
-  && yarn run build:semantic \
   && yarn run build
 
 # run next in production mode
