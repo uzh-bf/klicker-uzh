@@ -36,6 +36,7 @@
     "dotenv": "5.0.1",
     "elastic-apm-node": "1.4.0",
     "express": "4.16.3",
+    "file-loader": "^1.1.11",
     "fingerprintjs2": "1.8.0",
     "formik": "0.11.11",
     "glob": "7.1.2",
