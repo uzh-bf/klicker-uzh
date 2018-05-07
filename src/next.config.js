@@ -2,21 +2,23 @@
 
 const webpack = require('webpack')
 const withCSS = require('@zeit/next-css')
-const { PHASE_DEVELOPMENT_SERVER } = require('next/constants')
+const { DEVELOPMENT_SERVER, PHASE_PRODUCTION_BUILD } = require('next/constants')
 
 module.exports = (phase) => {
-  const baseConfig = withCSS({
+  let config = {
+    // custom runtime configuration
     publicRuntimeConfig: {},
     serverRuntimeConfig: {},
-    webpack: (config) => {
+    // setup custom webpack configuration
+    webpack: (webpackConfig, { isServer }) => {
       // add the webpack context replacement plugin to remove moment locales
-      config.plugins.push(new webpack.ContextReplacementPlugin(/moment[/\\]locale$/, /en/))
+      webpackConfig.plugins.push(new webpack.ContextReplacementPlugin(/moment[/\\]locale$/, /en/))
 
       // ignore test files when bundling
-      config.plugins.push(new webpack.IgnorePlugin(/src\/pages.*\/test.*/))
+      webpackConfig.plugins.push(new webpack.IgnorePlugin(/src\/pages.*\/test.*/))
 
       // push graphql loaders into the webpack config
-      config.module.rules.push({
+      webpackConfig.module.rules.push({
         test: /\.graphql$/,
         use: [
           {
@@ -29,14 +31,43 @@ module.exports = (phase) => {
         ],
       })
 
-      return config
+      // push url-loader to enable loading fonts
+      webpackConfig.module.rules.push({
+        test: /\.(jpe?g|png|svg|gif|eot|ttf|woff|woff2)$/,
+        use: [
+          {
+            loader: 'url-loader',
+            options: {
+              fallback: 'file-loader',
+              limit: 8192,
+              name: '[name]-[hash].[ext]',
+              outputPath: `${isServer ? '../' : ''}static/images/`,
+              publicPath: '/_next/static/images/',
+            },
+          },
+        ],
+      })
+
+      return webpackConfig
     },
-  })
+  }
 
-  if (phase === PHASE_DEVELOPMENT_SERVER) {
+  // enable next-css plugin
+  // allows importing css files
+  config = withCSS(config)
+
+  // development only configuration
+  if (phase === DEVELOPMENT_SERVER) {
+    config = {
+      ...config,
+    }
+  }
+
+  // build only configuration
+  if (phase === PHASE_PRODUCTION_BUILD) {
+    // setup the bundle analyzer plugin
     const withBundleAnalyzer = require('@zeit/next-bundle-analyzer')
-
-    return withBundleAnalyzer({
+    config = withBundleAnalyzer({
       analyzeBrowser: ['browser', 'both'].includes(process.env.BUNDLE_ANALYZE),
       analyzeServer: ['server', 'both'].includes(process.env.BUNDLE_ANALYZE),
       bundleAnalyzerConfig: {
@@ -49,9 +80,9 @@ module.exports = (phase) => {
           reportFilename: '../../bundles/server.html',
         },
       },
-      ...baseConfig,
+      ...config,
     })
   }
 
-  return baseConfig
+  return config
 }
