@@ -70,7 +70,6 @@
     "react-dnd-html5-backend": "2.6.0",
     "react-dom": "16.3.2",
     "react-ga": "2.5.0",
-    "react-helmet": "5.2.0",
     "react-intl": "2.4.0",
     "react-perf-devtool": "3.0.5",
     "react-rangeslider": "2.2.0",
