@@ -1,7 +1,6 @@
 /* eslint-disable react/no-danger */
 
 import Document, { Head, Main, NextScript } from 'next/document'
-import Helmet from 'react-helmet'
 import React from 'react'
 
 // The document (which is SSR-only) needs to be customized to expose the locale
@@ -15,27 +14,9 @@ export default class IntlDocument extends Document {
 
     return {
       ...props,
-      helmet: Helmet.renderStatic(),
       locale,
       localeDataScript,
     }
-  }
-
-  // should render on <html>
-  get helmetHtmlAttrComponents() {
-    return this.props.helmet.htmlAttributes.toComponent()
-  }
-
-  // should render on <body>
-  get helmetBodyAttrComponents() {
-    return this.props.helmet.bodyAttributes.toComponent()
-  }
-
-  // should render on <head>
-  get helmetHeadComponents() {
-    return Object.keys(this.props.helmet)
-      .filter(el => el !== 'htmlAttributes' && el !== 'bodyAttributes')
-      .map(el => this.props.helmet[el].toComponent())
   }
 
   render() {
@@ -44,22 +25,13 @@ export default class IntlDocument extends Document {
       ?features=Intl.~locale.${this.props.locale}`
 
     return (
-      <html lang={this.props.locale} {...this.helmetHtmlAttrComponents}>
+      <html lang={this.props.locale}>
         <Head>
           <meta content="text/html; charset=utf-8" httpEquiv="Content-type" />
           <meta content="width=device-width, initial-scale=1" name="viewport" />
           <meta content="IE=Edge" httpEquiv="X-UA-Compatible" />
-
-          <link
-            crossOrigin="anonymous"
-            href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
-            integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN"
-            rel="stylesheet"
-          />
-
-          {this.helmetHeadComponents}
         </Head>
-        <body {...this.helmetBodyAttrComponents}>
+        <body>
           <Main />
           <script src={polyfill} />
           <script
