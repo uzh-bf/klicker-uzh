@@ -1,6 +1,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 
 const webpack = require('webpack')
+const withCSS = require('@zeit/next-css')
 const { PHASE_DEVELOPMENT_SERVER } = require('next/constants')
 
 module.exports = (phase) => {
@@ -34,9 +35,8 @@ module.exports = (phase) => {
 
   if (phase === PHASE_DEVELOPMENT_SERVER) {
     const withBundleAnalyzer = require('@zeit/next-bundle-analyzer')
-    // const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
 
-    withBundleAnalyzer({
+    return withBundleAnalyzer({
       analyzeBrowser: ['browser', 'both'].includes(process.env.BUNDLE_ANALYZE),
       analyzeServer: ['server', 'both'].includes(process.env.BUNDLE_ANALYZE),
       bundleAnalyzerConfig: {
@@ -49,8 +49,9 @@ module.exports = (phase) => {
           reportFilename: '../../bundles/server.html',
         },
       },
+      ...baseConfig,
     })
   }
 
-  return baseConfig
+  return withCSS(baseConfig)
 }
