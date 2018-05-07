@@ -37,7 +37,6 @@ jobs:
 
     - <<: *test-setup
       script:
-        - yarn run build:semantic
         - yarn run build
         - yarn run bundlesize
 
