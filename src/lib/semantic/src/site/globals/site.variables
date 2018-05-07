@@ -2,3 +2,4 @@
      User Global Variables
 *******************************/
 @fontName          : 'Open Sans';
+@googleFontName    : 'Open+Sans';
