@@ -16,7 +16,7 @@
     },
     "clean": "dist/"
   },
-  "permission": false,
+  "permission": true,
   "rtl": false,
   "components": [
     "reset",
