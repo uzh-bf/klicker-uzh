@@ -5,7 +5,7 @@ const withCSS = require('@zeit/next-css')
 const { PHASE_DEVELOPMENT_SERVER } = require('next/constants')
 
 module.exports = (phase) => {
-  const baseConfig = {
+  const baseConfig = withCSS({
     publicRuntimeConfig: {},
     serverRuntimeConfig: {},
     webpack: (config) => {
@@ -31,7 +31,7 @@ module.exports = (phase) => {
 
       return config
     },
-  }
+  })
 
   if (phase === PHASE_DEVELOPMENT_SERVER) {
     const withBundleAnalyzer = require('@zeit/next-bundle-analyzer')
@@ -53,5 +53,5 @@ module.exports = (phase) => {
     })
   }
 
-  return withCSS(baseConfig)
+  return baseConfig
 }
