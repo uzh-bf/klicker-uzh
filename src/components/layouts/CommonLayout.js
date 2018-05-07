@@ -4,9 +4,6 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import Head from 'next/head'
 
-// import { SEMANTIC_VERSION } from '../../constants'
-// import { createLinks } from '../../lib'
-
 import '../../lib/semantic/dist/semantic.css'
 
 const propTypes = {
