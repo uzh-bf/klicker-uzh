@@ -3,6 +3,7 @@ node_modules/
 
 src/.next
 src/lang/.messages
+src/lib/semantic/dist
 *.log
 
 .idea/
