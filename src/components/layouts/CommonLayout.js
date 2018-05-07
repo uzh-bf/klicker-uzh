@@ -4,8 +4,10 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import Head from 'next/head'
 
-import { SEMANTIC_VERSION } from '../../constants'
-import { createLinks } from '../../lib'
+// import { SEMANTIC_VERSION } from '../../constants'
+// import { createLinks } from '../../lib'
+
+import '../../lib/semantic/dist/semantic.css'
 
 const propTypes = {
   baseFontSize: PropTypes.string,
@@ -27,10 +29,10 @@ const CommonLayout = ({
 }) => (
   <div className="commonLayout">
     <Head>
-      {createLinks([
+      {/* createLinks([
         'https://fonts.googleapis.com/css?family=Open Sans',
         `https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/${SEMANTIC_VERSION}/semantic.min.css`,
-      ])}
+      ]) */}
       <title>{pageTitle}</title>
     </Head>
 
