@@ -20,6 +20,7 @@
   "rtl": false,
   "components": [
     "reset",
+    "site",
     "button",
     "divider",
     "flag",
