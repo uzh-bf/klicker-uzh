@@ -1202,12 +1202,9 @@
           html += `${'' + '<div class="message '}${type}">`
           // message type
           if (type == 'empty') {
-            html +=
-              `${'' +
+            html += `${'' +
               '<div class="header">No Results</div class="header">' +
-              '<div class="description">'}${
-                message
-              }</div class="description">`
+              '<div class="description">'}${message}</div class="description">`
           } else {
             html += ` <div class="description">${message}</div>`
           }
@@ -1238,11 +1235,7 @@
                 }
                 if (result[fields.image] !== undefined) {
                   html +=
-                    `${'' +
-                    '<div class="image">' +
-                    ' <img src="'}${
-                      result[fields.image]
-                    }">` +
+                    `${'' + '<div class="image">' + ' <img src="'}${result[fields.image]}">` +
                     '</div>'
                 }
                 html += '<div class="content">'
@@ -1263,13 +1256,9 @@
             }
           })
           if (response[fields.action]) {
-            html +=
-              `${'' +
-              '<a href="'}${
-                response[fields.action][fields.actionURL]
-              }" class="action">${
-                response[fields.action][fields.actionText]
-              }</a>`
+            html += `${'' + '<a href="'}${
+              response[fields.action][fields.actionURL]
+            }" class="action">${response[fields.action][fields.actionText]}</a>`
           }
           return html
         }
@@ -1304,13 +1293,9 @@
           })
 
           if (response[fields.action]) {
-            html +=
-              `${'' +
-              '<a href="'}${
-                response[fields.action][fields.actionURL]
-              }" class="action">${
-                response[fields.action][fields.actionText]
-              }</a>`
+            html += `${'' + '<a href="'}${
+              response[fields.action][fields.actionURL]
+            }" class="action">${response[fields.action][fields.actionText]}</a>`
           }
           return html
         }

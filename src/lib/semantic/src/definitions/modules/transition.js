@@ -465,14 +465,9 @@
                 module.can.transition() && !module.has.direction()
                   ? `${module.get.direction()} `
                   : ''
-            return (
-              `${className.animating
-              } ${
-                className.transition
-              } ${
-                directionClass
-              }${animationClass}`
-            )
+            return `${className.animating} ${
+              className.transition
+            } ${directionClass}${animationClass}`
           },
           currentAnimation() {
             return module.cache && module.cache.animation !== undefined

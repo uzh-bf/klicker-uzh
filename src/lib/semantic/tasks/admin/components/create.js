@@ -121,126 +121,138 @@ module.exports = function (callback) {
         }
 
       // copy dist files into output folder adjusting asset paths
-      gulp.task(task.repo, false, () => gulp
-        .src(`${release.source + component}.*`)
-        .pipe(plumber())
-        .pipe(flatten())
-        .pipe(replace(release.paths.source, release.paths.output))
-        .pipe(gulp.dest(outputDirectory)))
+      gulp.task(task.repo, false, () =>
+        gulp
+          .src(`${release.source + component}.*`)
+          .pipe(plumber())
+          .pipe(flatten())
+          .pipe(replace(release.paths.source, release.paths.output))
+          .pipe(gulp.dest(outputDirectory)),
+      )
 
       // create npm module
-      gulp.task(task.npm, false, () => gulp
-        .src(`${release.source + component}!(*.min|*.map).js`)
-        .pipe(plumber())
-        .pipe(flatten())
-        .pipe(replace(regExp.match.componentExport, regExp.replace.componentExport))
-        .pipe(replace(regExp.match.componentReference, regExp.replace.componentReference))
-        .pipe(replace(regExp.match.settingsExport, regExp.replace.settingsExport))
-        .pipe(replace(regExp.match.settingsReference, regExp.replace.settingsReference))
-        .pipe(replace(regExp.match.jQuery, regExp.replace.jQuery))
-        .pipe(rename('index.js'))
-        .pipe(gulp.dest(outputDirectory)))
+      gulp.task(task.npm, false, () =>
+        gulp
+          .src(`${release.source + component}!(*.min|*.map).js`)
+          .pipe(plumber())
+          .pipe(flatten())
+          .pipe(replace(regExp.match.componentExport, regExp.replace.componentExport))
+          .pipe(replace(regExp.match.componentReference, regExp.replace.componentReference))
+          .pipe(replace(regExp.match.settingsExport, regExp.replace.settingsExport))
+          .pipe(replace(regExp.match.settingsReference, regExp.replace.settingsReference))
+          .pipe(replace(regExp.match.jQuery, regExp.replace.jQuery))
+          .pipe(rename('index.js'))
+          .pipe(gulp.dest(outputDirectory)),
+      )
 
       // create readme
-      gulp.task(task.readme, false, () => gulp
-        .src(release.templates.readme)
-        .pipe(plumber())
-        .pipe(flatten())
-        .pipe(replace(regExp.match.name, regExp.replace.name))
-        .pipe(replace(regExp.match.titleName, regExp.replace.titleName))
-        .pipe(gulp.dest(outputDirectory)))
+      gulp.task(task.readme, false, () =>
+        gulp
+          .src(release.templates.readme)
+          .pipe(plumber())
+          .pipe(flatten())
+          .pipe(replace(regExp.match.name, regExp.replace.name))
+          .pipe(replace(regExp.match.titleName, regExp.replace.titleName))
+          .pipe(gulp.dest(outputDirectory)),
+      )
 
       // extend bower.json
-      gulp.task(task.bower, false, () => gulp
-        .src(release.templates.bower)
-        .pipe(plumber())
-        .pipe(flatten())
-        .pipe(
-          jsonEditor((bower) => {
-            bower.name = packageName
-            bower.description = `${capitalizedComponent} - Semantic UI`
-            if (isJavascript) {
-              if (isCSS) {
-                bower.main = [`${component}.js`, `${component}.css`]
+      gulp.task(task.bower, false, () =>
+        gulp
+          .src(release.templates.bower)
+          .pipe(plumber())
+          .pipe(flatten())
+          .pipe(
+            jsonEditor((bower) => {
+              bower.name = packageName
+              bower.description = `${capitalizedComponent} - Semantic UI`
+              if (isJavascript) {
+                if (isCSS) {
+                  bower.main = [`${component}.js`, `${component}.css`]
+                } else {
+                  bower.main = [`${component}.js`]
+                }
+                bower.dependencies = {
+                  jquery: '>=1.8',
+                }
               } else {
-                bower.main = [`${component}.js`]
+                bower.main = [`${component}.css`]
               }
-              bower.dependencies = {
-                jquery: '>=1.8',
-              }
-            } else {
-              bower.main = [`${component}.css`]
-            }
-            return bower
-          }),
-        )
-        .pipe(gulp.dest(outputDirectory)))
+              return bower
+            }),
+          )
+          .pipe(gulp.dest(outputDirectory)),
+      )
 
       // extend package.json
-      gulp.task(task.package, false, () => gulp
-        .src(release.templates.package)
-        .pipe(plumber())
-        .pipe(flatten())
-        .pipe(
-          jsonEditor((npm) => {
-            if (isJavascript) {
-              npm.dependencies = {
-                jquery: 'x.x.x',
+      gulp.task(task.package, false, () =>
+        gulp
+          .src(release.templates.package)
+          .pipe(plumber())
+          .pipe(flatten())
+          .pipe(
+            jsonEditor((npm) => {
+              if (isJavascript) {
+                npm.dependencies = {
+                  jquery: 'x.x.x',
+                }
+                npm.main = 'index.js'
               }
-              npm.main = 'index.js'
-            }
-            npm.name = packageName
-            if (version) {
-              npm.version = version
-            }
-            npm.title = `Semantic UI - ${capitalizedComponent}`
-            npm.description = `Single component release of ${component}`
-            npm.repository = {
-              type: 'git',
-              url: gitURL,
-            }
-            return npm
-          }),
-        )
-        .pipe(gulp.dest(outputDirectory)))
+              npm.name = packageName
+              if (version) {
+                npm.version = version
+              }
+              npm.title = `Semantic UI - ${capitalizedComponent}`
+              npm.description = `Single component release of ${component}`
+              npm.repository = {
+                type: 'git',
+                url: gitURL,
+              }
+              return npm
+            }),
+          )
+          .pipe(gulp.dest(outputDirectory)),
+      )
 
       // extend composer.json
-      gulp.task(task.composer, false, () => gulp
-        .src(release.templates.composer)
-        .pipe(plumber())
-        .pipe(flatten())
-        .pipe(
-          jsonEditor((composer) => {
-            if (isJavascript) {
-              composer.dependencies = {
-                jquery: 'x.x.x',
+      gulp.task(task.composer, false, () =>
+        gulp
+          .src(release.templates.composer)
+          .pipe(plumber())
+          .pipe(flatten())
+          .pipe(
+            jsonEditor((composer) => {
+              if (isJavascript) {
+                composer.dependencies = {
+                  jquery: 'x.x.x',
+                }
+                composer.main = `${component}.js`
               }
-              composer.main = `${component}.js`
-            }
-            composer.name = `semantic/${component}`
-            if (version) {
-              composer.version = version
-            }
-            composer.description = `Single component release of ${component}`
-            return composer
-          }),
-        )
-        .pipe(gulp.dest(outputDirectory)))
+              composer.name = `semantic/${component}`
+              if (version) {
+                composer.version = version
+              }
+              composer.description = `Single component release of ${component}`
+              return composer
+            }),
+          )
+          .pipe(gulp.dest(outputDirectory)),
+      )
 
       // create release notes
-      gulp.task(task.notes, false, () => (
+      gulp.task(task.notes, false, () =>
         gulp
           .src(release.templates.notes)
           .pipe(plumber())
           .pipe(flatten())
-        // Remove release notes for lines not mentioning component
+          // Remove release notes for lines not mentioning component
           .pipe(replace(regExp.match.unrelatedNotes, regExp.replace.unrelatedNotes))
           .pipe(replace(regExp.match.whitespace, regExp.replace.whitespace))
           .pipe(replace(regExp.match.spacedVersions, regExp.replace.spacedVersions))
           .pipe(replace(regExp.match.spacedLists, regExp.replace.spacedLists))
           .pipe(replace(regExp.match.trim, regExp.replace.trim))
-          .pipe(gulp.dest(outputDirectory))
-      ))
+          .pipe(gulp.dest(outputDirectory)),
+      )
 
       // Creates meteor package.js
       gulp.task(task.meteor, () => {

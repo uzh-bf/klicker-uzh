@@ -444,9 +444,7 @@
               return $field.filter(`[name="${identifier}"]`)
             } else if ($field.filter(`[name="${identifier}[]"]`).length > 0) {
               return $field.filter(`[name="${identifier}[]"]`)
-            } else if (
-              $field.filter(`[data-${metadata.validate}="${identifier}"]`).length > 0
-            ) {
+            } else if ($field.filter(`[data-${metadata.validate}="${identifier}"]`).length > 0) {
               return $field.filter(`[data-${metadata.validate}="${identifier}"]`)
             }
             return $('<input/>')
@@ -537,9 +535,7 @@
               return true
             } else if ($field.filter(`[name="${identifier}"]`).length > 0) {
               return true
-            } else if (
-              $field.filter(`[data-${metadata.validate}="${identifier}"]`).length > 0
-            ) {
+            } else if ($field.filter(`[data-${metadata.validate}="${identifier}"]`).length > 0) {
               return true
             }
             return false

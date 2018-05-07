@@ -350,12 +350,9 @@
                 z: -($activeSide.outerHeight(true) / 2),
               }
               return {
-                transform:
-                  `translateY(${
-                    translate.y
-                  }px) translateZ(${
-                    translate.z
-                  }px) rotateX(-90deg)`,
+                transform: `translateY(${translate.y}px) translateZ(${
+                  translate.z
+                }px) rotateX(-90deg)`,
               }
             },
 
@@ -365,12 +362,9 @@
                 z: -($activeSide.outerHeight(true) / 2),
               }
               return {
-                transform:
-                  `translateY(${
-                    translate.y
-                  }px) translateZ(${
-                    translate.z
-                  }px) rotateX(90deg)`,
+                transform: `translateY(${translate.y}px) translateZ(${
+                  translate.z
+                }px) rotateX(90deg)`,
               }
             },
 
@@ -380,12 +374,9 @@
                 z: -($activeSide.outerWidth(true) / 2),
               }
               return {
-                transform:
-                  `translateX(${
-                    translate.x
-                  }px) translateZ(${
-                    translate.z
-                  }px) rotateY(90deg)`,
+                transform: `translateX(${translate.x}px) translateZ(${
+                  translate.z
+                }px) rotateY(90deg)`,
               }
             },
 
@@ -395,12 +386,9 @@
                 z: -($activeSide.outerWidth(true) / 2),
               }
               return {
-                transform:
-                  `translateX(${
-                    translate.x
-                  }px) translateZ(${
-                    translate.z
-                  }px) rotateY(-90deg)`,
+                transform: `translateX(${translate.x}px) translateZ(${
+                  translate.z
+                }px) rotateY(-90deg)`,
               }
             },
 

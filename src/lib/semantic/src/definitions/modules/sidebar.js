@@ -93,7 +93,7 @@
 
         create: {
           id() {
-            id = (`${Math.random().toString(16)}000000000`).substr(2, 8)
+            id = `${Math.random().toString(16)}000000000`.substr(2, 8)
             elementNamespace = `.${id}`
             module.verbose('Creating unique id for element', id)
           },
@@ -199,35 +199,17 @@
             if (direction === 'left' || direction === 'right') {
               module.debug('Adding CSS rules for animation distance', width)
               style +=
-                `${'' +
-                ' .ui.visible.'}${
-                  direction
-                }.sidebar ~ .fixed,` +
-                ` .ui.visible.${
-                  direction
-                }.sidebar ~ .pusher {` +
-                `   -webkit-transform: translate3d(${
-                  distance[direction]
-                }px, 0, 0);` +
-                `           transform: translate3d(${
-                  distance[direction]
-                }px, 0, 0);` +
+                `${'' + ' .ui.visible.'}${direction}.sidebar ~ .fixed,` +
+                ` .ui.visible.${direction}.sidebar ~ .pusher {` +
+                `   -webkit-transform: translate3d(${distance[direction]}px, 0, 0);` +
+                `           transform: translate3d(${distance[direction]}px, 0, 0);` +
                 ' }'
             } else if (direction === 'top' || direction == 'bottom') {
               style +=
-                `${'' +
-                ' .ui.visible.'}${
-                  direction
-                }.sidebar ~ .fixed,` +
-                ` .ui.visible.${
-                  direction
-                }.sidebar ~ .pusher {` +
-                `   -webkit-transform: translate3d(0, ${
-                  distance[direction]
-                }px, 0);` +
-                `           transform: translate3d(0, ${
-                  distance[direction]
-                }px, 0);` +
+                `${'' + ' .ui.visible.'}${direction}.sidebar ~ .fixed,` +
+                ` .ui.visible.${direction}.sidebar ~ .pusher {` +
+                `   -webkit-transform: translate3d(0, ${distance[direction]}px, 0);` +
+                `           transform: translate3d(0, ${distance[direction]}px, 0);` +
                 ' }'
             }
 
@@ -237,29 +219,15 @@
               if (direction === 'left' || direction === 'right') {
                 module.debug('Adding CSS rules for animation distance', width)
                 style +=
-                  `${'' +
-                  ' body.pushable > .ui.visible.'}${
-                    direction
-                  }.sidebar ~ .pusher:after {` +
-                  `   -webkit-transform: translate3d(${
-                    distance[direction]
-                  }px, 0, 0);` +
-                  `           transform: translate3d(${
-                    distance[direction]
-                  }px, 0, 0);` +
+                  `${'' + ' body.pushable > .ui.visible.'}${direction}.sidebar ~ .pusher:after {` +
+                  `   -webkit-transform: translate3d(${distance[direction]}px, 0, 0);` +
+                  `           transform: translate3d(${distance[direction]}px, 0, 0);` +
                   ' }'
               } else if (direction === 'top' || direction == 'bottom') {
                 style +=
-                  `${'' +
-                  ' body.pushable > .ui.visible.'}${
-                    direction
-                  }.sidebar ~ .pusher:after {` +
-                  `   -webkit-transform: translate3d(0, ${
-                    distance[direction]
-                  }px, 0);` +
-                  `           transform: translate3d(0, ${
-                    distance[direction]
-                  }px, 0);` +
+                  `${'' + ' body.pushable > .ui.visible.'}${direction}.sidebar ~ .pusher:after {` +
+                  `   -webkit-transform: translate3d(0, ${distance[direction]}px, 0);` +
+                  `           transform: translate3d(0, ${distance[direction]}px, 0);` +
                   ' }'
               }
               /* opposite sides visible forces content overlay */

@@ -248,7 +248,7 @@
         },
 
         createID() {
-          id = (`${Math.random().toString(16)}000000000`).substr(2, 8)
+          id = `${Math.random().toString(16)}000000000`.substr(2, 8)
           elementNamespace = `.${id}`
           module.verbose('Creating unique id for element', id)
         },
@@ -724,7 +724,10 @@
             module.debug('Determining popup position from calculations', position, calculations)
 
             if (module.is.rtl()) {
-              position = position.replace(/left|right/g, match => (match == 'left' ? 'right' : 'left'))
+              position = position.replace(
+                /left|right/g,
+                match => (match == 'left' ? 'right' : 'left'),
+              )
               module.debug('RTL: Popup position updated', position)
             }
 

@@ -78,10 +78,10 @@
 
         observeChanges() {
           if ('MutationObserver' in window) {
-            observer = new MutationObserver(((mutations) => {
+            observer = new MutationObserver((mutations) => {
               module.debug('DOM tree modified, updating selector cache')
               module.refresh()
-            }))
+            })
             observer.observe(element, {
               childList: true,
               subtree: true,

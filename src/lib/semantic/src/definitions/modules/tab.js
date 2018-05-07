@@ -513,9 +513,7 @@
             return module.utilities.pathToArray(module.get.defaultPath(tabPath))
           },
           defaultPath(tabPath) {
-            let $defaultNav = $allModules
-                .filter(`[data-${metadata.tab}^="${tabPath}/"]`)
-                .eq(0),
+            let $defaultNav = $allModules.filter(`[data-${metadata.tab}^="${tabPath}/"]`).eq(0),
               defaultTab = $defaultNav.data(metadata.tab) || false
             if (defaultTab) {
               module.debug('Found default tab', defaultTab)

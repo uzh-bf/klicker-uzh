@@ -156,7 +156,7 @@
 
         create: {
           id() {
-            id = (`${Math.random().toString(16)}000000000`).substr(2, 8)
+            id = `${Math.random().toString(16)}000000000`.substr(2, 8)
             elementNamespace = `.${id}`
             module.verbose('Creating unique id for element', id)
           },
@@ -1406,7 +1406,6 @@
             if (module.can.activate($(element))) {
               module.set.selected(value, $(element))
               if (module.is.multiple() && !module.is.allFiltered()) {
-
               } else {
                 module.hideAndClear()
               }
@@ -2592,9 +2591,8 @@
               escapedValue = escapedValue.toLowerCase()
             }
             return (
-              $labels.filter(
-                `[data-${metadata.value}="${module.escape.string(escapedValue)}"]`,
-              ).length > 0
+              $labels.filter(`[data-${metadata.value}="${module.escape.string(escapedValue)}"]`)
+                .length > 0
             )
           },
           maxSelections() {
@@ -3380,14 +3378,9 @@
       $.each(values, (index, option) => {
         let maybeText = option[fields.text] ? `data-text="${option[fields.text]}"` : '',
           maybeDisabled = option[fields.disabled] ? 'disabled ' : ''
-        html +=
-          `<div class="${
-            maybeDisabled
-          }item" data-value="${
-            option[fields.value]
-          }"${
-            maybeText
-          }>`
+        html += `<div class="${maybeDisabled}item" data-value="${
+          option[fields.value]
+        }"${maybeText}>`
         html += option[fields.name]
         html += '</div>'
       })

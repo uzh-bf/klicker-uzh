@@ -106,7 +106,7 @@
             $dimmer = $dimmable.dimmer('get dimmer')
           },
           id() {
-            id = (`${Math.random().toString(16)}000000000`).substr(2, 8)
+            id = `${Math.random().toString(16)}000000000`.substr(2, 8)
             elementEventNamespace = `.${id}`
             module.verbose('Creating unique id for element', id)
           },
@@ -123,10 +123,10 @@
 
         observeChanges() {
           if ('MutationObserver' in window) {
-            observer = new MutationObserver(((mutations) => {
+            observer = new MutationObserver((mutations) => {
               module.debug('DOM tree modified, refreshing')
               module.refresh()
-            }))
+            })
             observer.observe(element, {
               childList: true,
               subtree: true,
@@ -171,7 +171,7 @@
 
         get: {
           id() {
-            return (`${Math.random().toString(16)}000000000`).substr(2, 8)
+            return `${Math.random().toString(16)}000000000`.substr(2, 8)
           },
         },
 
@@ -374,9 +374,7 @@
         },
 
         hideAll(callback) {
-          const $visibleModals = $allModals.filter(
-            `.${className.active}, .${className.animating}`,
-          )
+          const $visibleModals = $allModals.filter(`.${className.active}, .${className.animating}`)
           callback = $.isFunction(callback) ? callback : function () {}
           if ($visibleModals.length > 0) {
             module.debug('Hiding all visible modals')

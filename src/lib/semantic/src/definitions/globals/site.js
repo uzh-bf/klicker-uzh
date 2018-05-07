@@ -427,9 +427,12 @@
   // allows for selection of elements with data attributes
   $.extend($.expr[':'], {
     data: $.expr.createPseudo
-      ? $.expr.createPseudo(dataName => function (elem) {
-        return !!$.data(elem, dataName)
-      })
+      ? $.expr.createPseudo(
+        dataName =>
+          function (elem) {
+            return !!$.data(elem, dataName)
+          },
+      )
       : function (elem, i, match) {
         // support: jQuery < 1.8
         return !!$.data(elem, match[3])

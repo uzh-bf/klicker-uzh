@@ -43,99 +43,115 @@ module.exports = function (gulp) {
       Packaged
   ---------------*/
 
-  gulp.task('package uncompressed css', () => gulp
-    .src(`${output.uncompressed}/**/${globs.components}${globs.ignored}.css`)
-    .pipe(plumber())
-    .pipe(dedupe())
-    .pipe(replace(assets.uncompressed, assets.packaged))
-    .pipe(concatCSS(filenames.concatenatedCSS, settings.concatCSS))
-    .pipe(gulpif(config.hasPermission, chmod(config.permission)))
-    .pipe(header(banner, settings.header))
-    .pipe(gulp.dest(output.packaged))
-    .pipe(print(log.created)))
+  gulp.task('package uncompressed css', () =>
+    gulp
+      .src(`${output.uncompressed}/**/${globs.components}${globs.ignored}.css`)
+      .pipe(plumber())
+      .pipe(dedupe())
+      .pipe(replace(assets.uncompressed, assets.packaged))
+      .pipe(concatCSS(filenames.concatenatedCSS, settings.concatCSS))
+      .pipe(gulpif(config.hasPermission, chmod(config.permission)))
+      .pipe(header(banner, settings.header))
+      .pipe(gulp.dest(output.packaged))
+      .pipe(print(log.created)),
+  )
 
-  gulp.task('package compressed css', () => gulp
-    .src(`${output.uncompressed}/**/${globs.components}${globs.ignored}.css`)
-    .pipe(plumber())
-    .pipe(dedupe())
-    .pipe(replace(assets.uncompressed, assets.packaged))
-    .pipe(concatCSS(filenames.concatenatedMinifiedCSS, settings.concatCSS))
-    .pipe(gulpif(config.hasPermission, chmod(config.permission)))
-    .pipe(minifyCSS(settings.concatMinify))
-    .pipe(header(banner, settings.header))
-    .pipe(gulp.dest(output.packaged))
-    .pipe(print(log.created)))
+  gulp.task('package compressed css', () =>
+    gulp
+      .src(`${output.uncompressed}/**/${globs.components}${globs.ignored}.css`)
+      .pipe(plumber())
+      .pipe(dedupe())
+      .pipe(replace(assets.uncompressed, assets.packaged))
+      .pipe(concatCSS(filenames.concatenatedMinifiedCSS, settings.concatCSS))
+      .pipe(gulpif(config.hasPermission, chmod(config.permission)))
+      .pipe(minifyCSS(settings.concatMinify))
+      .pipe(header(banner, settings.header))
+      .pipe(gulp.dest(output.packaged))
+      .pipe(print(log.created)),
+  )
 
-  gulp.task('package uncompressed js', () => gulp
-    .src(`${output.uncompressed}/**/${globs.components}${globs.ignored}.js`)
-    .pipe(plumber())
-    .pipe(dedupe())
-    .pipe(replace(assets.uncompressed, assets.packaged))
-    .pipe(concat(filenames.concatenatedJS))
-    .pipe(header(banner, settings.header))
-    .pipe(gulpif(config.hasPermission, chmod(config.permission)))
-    .pipe(gulp.dest(output.packaged))
-    .pipe(print(log.created)))
+  gulp.task('package uncompressed js', () =>
+    gulp
+      .src(`${output.uncompressed}/**/${globs.components}${globs.ignored}.js`)
+      .pipe(plumber())
+      .pipe(dedupe())
+      .pipe(replace(assets.uncompressed, assets.packaged))
+      .pipe(concat(filenames.concatenatedJS))
+      .pipe(header(banner, settings.header))
+      .pipe(gulpif(config.hasPermission, chmod(config.permission)))
+      .pipe(gulp.dest(output.packaged))
+      .pipe(print(log.created)),
+  )
 
-  gulp.task('package compressed js', () => gulp
-    .src(`${output.uncompressed}/**/${globs.components}${globs.ignored}.js`)
-    .pipe(plumber())
-    .pipe(dedupe())
-    .pipe(replace(assets.uncompressed, assets.packaged))
-    .pipe(concat(filenames.concatenatedMinifiedJS))
-    .pipe(uglify(settings.concatUglify))
-    .pipe(header(banner, settings.header))
-    .pipe(gulpif(config.hasPermission, chmod(config.permission)))
-    .pipe(gulp.dest(output.packaged))
-    .pipe(print(log.created)))
+  gulp.task('package compressed js', () =>
+    gulp
+      .src(`${output.uncompressed}/**/${globs.components}${globs.ignored}.js`)
+      .pipe(plumber())
+      .pipe(dedupe())
+      .pipe(replace(assets.uncompressed, assets.packaged))
+      .pipe(concat(filenames.concatenatedMinifiedJS))
+      .pipe(uglify(settings.concatUglify))
+      .pipe(header(banner, settings.header))
+      .pipe(gulpif(config.hasPermission, chmod(config.permission)))
+      .pipe(gulp.dest(output.packaged))
+      .pipe(print(log.created)),
+  )
 
   /*--------------
         RTL
   ---------------*/
 
   if (config.rtl) {
-    gulp.task('package uncompressed rtl css', () => gulp
-      .src(`${output.uncompressed}/**/${globs.components}${globs.ignoredRTL}.rtl.css`)
-      .pipe(dedupe())
-      .pipe(replace(assets.uncompressed, assets.packaged))
-      .pipe(concatCSS(filenames.concatenatedRTLCSS, settings.concatCSS))
-      .pipe(gulpif(config.hasPermission, chmod(config.permission)))
-      .pipe(header(banner, settings.header))
-      .pipe(gulp.dest(output.packaged))
-      .pipe(print(log.created)))
+    gulp.task('package uncompressed rtl css', () =>
+      gulp
+        .src(`${output.uncompressed}/**/${globs.components}${globs.ignoredRTL}.rtl.css`)
+        .pipe(dedupe())
+        .pipe(replace(assets.uncompressed, assets.packaged))
+        .pipe(concatCSS(filenames.concatenatedRTLCSS, settings.concatCSS))
+        .pipe(gulpif(config.hasPermission, chmod(config.permission)))
+        .pipe(header(banner, settings.header))
+        .pipe(gulp.dest(output.packaged))
+        .pipe(print(log.created)),
+    )
 
-    gulp.task('package compressed rtl css', () => gulp
-      .src(`${output.uncompressed}/**/${globs.components}${globs.ignoredRTL}.rtl.css`)
-      .pipe(dedupe())
-      .pipe(replace(assets.uncompressed, assets.packaged))
-      .pipe(concatCSS(filenames.concatenatedMinifiedRTLCSS, settings.concatCSS))
-      .pipe(gulpif(config.hasPermission, chmod(config.permission)))
-      .pipe(minifyCSS(settings.concatMinify))
-      .pipe(header(banner, settings.header))
-      .pipe(gulp.dest(output.packaged))
-      .pipe(print(log.created)))
+    gulp.task('package compressed rtl css', () =>
+      gulp
+        .src(`${output.uncompressed}/**/${globs.components}${globs.ignoredRTL}.rtl.css`)
+        .pipe(dedupe())
+        .pipe(replace(assets.uncompressed, assets.packaged))
+        .pipe(concatCSS(filenames.concatenatedMinifiedRTLCSS, settings.concatCSS))
+        .pipe(gulpif(config.hasPermission, chmod(config.permission)))
+        .pipe(minifyCSS(settings.concatMinify))
+        .pipe(header(banner, settings.header))
+        .pipe(gulp.dest(output.packaged))
+        .pipe(print(log.created)),
+    )
 
-    gulp.task('package uncompressed docs css', () => gulp
-      .src(`${output.uncompressed}/**/${globs.components}${globs.ignored}.css`)
-      .pipe(dedupe())
-      .pipe(plumber())
-      .pipe(replace(assets.uncompressed, assets.packaged))
-      .pipe(concatCSS(filenames.concatenatedCSS, settings.concatCSS))
-      .pipe(gulpif(config.hasPermission, chmod(config.permission)))
-      .pipe(gulp.dest(output.packaged))
-      .pipe(print(log.created)))
+    gulp.task('package uncompressed docs css', () =>
+      gulp
+        .src(`${output.uncompressed}/**/${globs.components}${globs.ignored}.css`)
+        .pipe(dedupe())
+        .pipe(plumber())
+        .pipe(replace(assets.uncompressed, assets.packaged))
+        .pipe(concatCSS(filenames.concatenatedCSS, settings.concatCSS))
+        .pipe(gulpif(config.hasPermission, chmod(config.permission)))
+        .pipe(gulp.dest(output.packaged))
+        .pipe(print(log.created)),
+    )
 
-    gulp.task('package compressed docs css', () => gulp
-      .src(`${output.uncompressed}/**/${globs.components}${globs.ignored}.css`)
-      .pipe(dedupe())
-      .pipe(plumber())
-      .pipe(replace(assets.uncompressed, assets.packaged))
-      .pipe(concatCSS(filenames.concatenatedMinifiedCSS, settings.concatCSS))
-      .pipe(minifyCSS(settings.concatMinify))
-      .pipe(header(banner, settings.header))
-      .pipe(gulpif(config.hasPermission, chmod(config.permission)))
-      .pipe(gulp.dest(output.packaged))
-      .pipe(print(log.created)))
+    gulp.task('package compressed docs css', () =>
+      gulp
+        .src(`${output.uncompressed}/**/${globs.components}${globs.ignored}.css`)
+        .pipe(dedupe())
+        .pipe(plumber())
+        .pipe(replace(assets.uncompressed, assets.packaged))
+        .pipe(concatCSS(filenames.concatenatedMinifiedCSS, settings.concatCSS))
+        .pipe(minifyCSS(settings.concatMinify))
+        .pipe(header(banner, settings.header))
+        .pipe(gulpif(config.hasPermission, chmod(config.permission)))
+        .pipe(gulp.dest(output.packaged))
+        .pipe(print(log.created)),
+    )
   }
 
   /*--------------
@@ -144,48 +160,56 @@ module.exports = function (gulp) {
 
   const docsOutput = docsConfig.paths.output
 
-  gulp.task('package uncompressed docs css', () => gulp
-    .src(`${docsOutput.uncompressed}/**/${globs.components}${globs.ignored}.css`)
-    .pipe(dedupe())
-    .pipe(plumber())
-    .pipe(replace(assets.uncompressed, assets.packaged))
-    .pipe(concatCSS(filenames.concatenatedCSS, settings.concatCSS))
-    .pipe(gulpif(config.hasPermission, chmod(config.permission)))
-    .pipe(gulp.dest(docsOutput.packaged))
-    .pipe(print(log.created)))
+  gulp.task('package uncompressed docs css', () =>
+    gulp
+      .src(`${docsOutput.uncompressed}/**/${globs.components}${globs.ignored}.css`)
+      .pipe(dedupe())
+      .pipe(plumber())
+      .pipe(replace(assets.uncompressed, assets.packaged))
+      .pipe(concatCSS(filenames.concatenatedCSS, settings.concatCSS))
+      .pipe(gulpif(config.hasPermission, chmod(config.permission)))
+      .pipe(gulp.dest(docsOutput.packaged))
+      .pipe(print(log.created)),
+  )
 
-  gulp.task('package compressed docs css', () => gulp
-    .src(`${docsOutput.uncompressed}/**/${globs.components}${globs.ignored}.css`)
-    .pipe(dedupe())
-    .pipe(plumber())
-    .pipe(replace(assets.uncompressed, assets.packaged))
-    .pipe(concatCSS(filenames.concatenatedMinifiedCSS, settings.concatCSS))
-    .pipe(minifyCSS(settings.concatMinify))
-    .pipe(header(banner, settings.header))
-    .pipe(gulpif(config.hasPermission, chmod(config.permission)))
-    .pipe(gulp.dest(docsOutput.packaged))
-    .pipe(print(log.created)))
+  gulp.task('package compressed docs css', () =>
+    gulp
+      .src(`${docsOutput.uncompressed}/**/${globs.components}${globs.ignored}.css`)
+      .pipe(dedupe())
+      .pipe(plumber())
+      .pipe(replace(assets.uncompressed, assets.packaged))
+      .pipe(concatCSS(filenames.concatenatedMinifiedCSS, settings.concatCSS))
+      .pipe(minifyCSS(settings.concatMinify))
+      .pipe(header(banner, settings.header))
+      .pipe(gulpif(config.hasPermission, chmod(config.permission)))
+      .pipe(gulp.dest(docsOutput.packaged))
+      .pipe(print(log.created)),
+  )
 
-  gulp.task('package uncompressed docs js', () => gulp
-    .src(`${docsOutput.uncompressed}/**/${globs.components}${globs.ignored}.js`)
-    .pipe(dedupe())
-    .pipe(plumber())
-    .pipe(replace(assets.uncompressed, assets.packaged))
-    .pipe(concat(filenames.concatenatedJS))
-    .pipe(header(banner, settings.header))
-    .pipe(gulpif(config.hasPermission, chmod(config.permission)))
-    .pipe(gulp.dest(docsOutput.packaged))
-    .pipe(print(log.created)))
+  gulp.task('package uncompressed docs js', () =>
+    gulp
+      .src(`${docsOutput.uncompressed}/**/${globs.components}${globs.ignored}.js`)
+      .pipe(dedupe())
+      .pipe(plumber())
+      .pipe(replace(assets.uncompressed, assets.packaged))
+      .pipe(concat(filenames.concatenatedJS))
+      .pipe(header(banner, settings.header))
+      .pipe(gulpif(config.hasPermission, chmod(config.permission)))
+      .pipe(gulp.dest(docsOutput.packaged))
+      .pipe(print(log.created)),
+  )
 
-  gulp.task('package compressed docs js', () => gulp
-    .src(`${docsOutput.uncompressed}/**/${globs.components}${globs.ignored}.js`)
-    .pipe(dedupe())
-    .pipe(plumber())
-    .pipe(replace(assets.uncompressed, assets.packaged))
-    .pipe(concat(filenames.concatenatedMinifiedJS))
-    .pipe(uglify(settings.concatUglify))
-    .pipe(header(banner, settings.header))
-    .pipe(gulpif(config.hasPermission, chmod(config.permission)))
-    .pipe(gulp.dest(docsOutput.packaged))
-    .pipe(print(log.created)))
+  gulp.task('package compressed docs js', () =>
+    gulp
+      .src(`${docsOutput.uncompressed}/**/${globs.components}${globs.ignored}.js`)
+      .pipe(dedupe())
+      .pipe(plumber())
+      .pipe(replace(assets.uncompressed, assets.packaged))
+      .pipe(concat(filenames.concatenatedMinifiedJS))
+      .pipe(uglify(settings.concatUglify))
+      .pipe(header(banner, settings.header))
+      .pipe(gulpif(config.hasPermission, chmod(config.permission)))
+      .pipe(gulp.dest(docsOutput.packaged))
+      .pipe(print(log.created)),
+  )
 }

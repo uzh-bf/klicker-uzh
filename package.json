@@ -124,7 +124,7 @@
     "precommit": "lint-staged",
     "prepush": "jest --onlyChanged",
     "analyze": "cross-env BUNDLE_ANALYZE=both NODE_ENV=production next build src",
-    "build": "yarn run build:semantic && next build src",
+    "build": "next build src",
     "build:lang": "next build src && node ./src/lib/defaultLang",
     "build:semantic": "cd src/lib/semantic && gulp build-css build-assets",
     "bundlesize": "bundlesize",
@@ -140,10 +140,9 @@
     "lint": "eslint server.js \"src/**/*.js\"",
     "start": "cross-env NODE_ENV=production node server.js",
     "start:inspect": "cross-env NODE_ENV=production node --inspect server.js",
-    "storybook":
-      "yarn run build:semantic && cross-env NODE_ENV=development start-storybook -p 6006 -c .storybook",
-    "test": "yarn run build:semantic && jest",
-    "test:ci": "yarn run build:semantic && jest --coverage",
+    "storybook": "cross-env NODE_ENV=development start-storybook -p 6006 -c .storybook",
+    "test": "jest",
+    "test:ci": "jest --coverage",
     "test:watch": "jest --watch"
   },
   "jest": {
