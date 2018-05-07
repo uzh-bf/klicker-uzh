@@ -38,6 +38,7 @@ const req = require.context('../src/components', true, /\.stories2\.js$/)
 function loadStories() {
   // load css needed for each story
   // require('../node_modules/semantic-ui-css/semantic.min.css')
+  require('../src/lib/semantic/dist/semantic.min.css')
   require('./base.css')
 
   req.keys().forEach(filename => req(filename))
