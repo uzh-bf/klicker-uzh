@@ -92,7 +92,7 @@ export default (cfg = {}) =>
             window.INIT_RAVEN = true
           }
 
-          /* if (isProd && config.chatlio) {
+          if (isProd && process.env.CHATLIO && config.chatlio) {
             window._chatlio = window._chatlio || []
             !(function() {
               const t = document.getElementById('chatlio-widget-embed')
@@ -129,10 +129,10 @@ export default (cfg = {}) =>
                 (n.src = 'https://w.chatlio.com/w.chatlio-widget.js'),
                 (n.async = !0),
                 n.setAttribute('data-embed-version', '2.3')
-              n.setAttribute('data-widget-id', 'd4ec6614-f2cb-4d8a-621d-3d2d1ff2f70c')
+              n.setAttribute('data-widget-id', process.env.CHATLIO)
               c.parentNode.insertBefore(n, c)
             })()
-          } */
+          }
         }
       }
 
