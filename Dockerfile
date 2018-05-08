@@ -29,9 +29,11 @@ COPY --chown=1000:0 . $KLICKER_DIR/
 ARG API_URL
 ARG SENTRY_DSN
 ARG LOGROCKET
+ARG CHATLIO
 ARG FINGERPRINTING="true"
 ARG VERSION="staging"
-RUN set -x && yarn run build
+RUN set -x \
+  && yarn run build
 
 # run next in production mode
 ENTRYPOINT ["/sbin/tini", "--"]
