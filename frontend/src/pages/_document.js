@@ -30,6 +30,7 @@ export default class IntlDocument extends Document {
           <meta content="text/html; charset=utf-8" httpEquiv="Content-type" />
           <meta content="width=device-width, initial-scale=1" name="viewport" />
           <meta content="IE=Edge" httpEquiv="X-UA-Compatible" />
+          <link href="/_next/static/style.css" rel="stylesheet" />
         </Head>
         <body>
           <Main />
