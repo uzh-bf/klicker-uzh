@@ -84,7 +84,6 @@
     "semantic-ui-react": "0.79.1",
     "styled-jsx-plugin-sass": "0.2.4",
     "url-loader": "1.0.1",
-    "validator": "9.4.1",
     "webpack": "3.11.0",
     "yup": "0.24.1"
   },
