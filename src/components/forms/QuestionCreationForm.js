@@ -3,7 +3,6 @@ import PropTypes from 'prop-types'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Button, Form } from 'semantic-ui-react'
 import { Formik } from 'formik'
-import isEmpty from 'validator/lib/isEmpty'
 import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
 
@@ -25,11 +24,11 @@ const validate = ({
 }) => {
   const errors = {}
 
-  if (!title || isEmpty(title)) {
+  if (!title || _isEmpty(title)) {
     errors.title = 'form.createQuestion.title.empty'
   }
 
-  if (!content || isEmpty(content)) {
+  if (!content || _isEmpty(content)) {
     errors.content = 'form.createQuestion.content.empty'
   }
 
@@ -37,7 +36,7 @@ const validate = ({
     errors.tags = 'form.createQuestion.tags.empty'
   }
 
-  if (!type || isEmpty(type)) {
+  if (!type || _isEmpty(type)) {
     errors.type = 'form.createQuestion.type.empty'
   }
 
