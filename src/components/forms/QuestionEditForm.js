@@ -1,7 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { compose, withProps } from 'recompose'
-import isEmpty from 'validator/lib/isEmpty'
 import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
 import { FormattedMessage, intlShape } from 'react-intl'
@@ -19,11 +18,11 @@ const validate = ({
 }) => {
   const errors = {}
 
-  if (!title || isEmpty(title)) {
+  if (!title || _isEmpty(title)) {
     errors.title = 'form.editQuestion.content.empty'
   }
 
-  if (!description || isEmpty(description)) {
+  if (!description || _isEmpty(description)) {
     errors.description = 'form.editQuestion.content.empty'
   }
 
