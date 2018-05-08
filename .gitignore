@@ -1,6 +1,7 @@
 coverage/
 node_modules/
 
+src/bundles
 src/.next
 src/lang/.messages
 *.log
