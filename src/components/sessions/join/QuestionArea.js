@@ -7,7 +7,7 @@ import { compose, withStateHandlers, withHandlers, withProps } from 'recompose'
 
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
 import { ActionMenu, Collapser } from '../../common'
-import { SCAnswerOptions, FREEAnswerOptions } from '../../questionTypes'
+import { QuestionDescription, SCAnswerOptions, FREEAnswerOptions } from '../../questionTypes'
 import { withStorage } from '../../../lib'
 
 const propTypes = {
@@ -103,13 +103,15 @@ function QuestionArea({
           )
         }
 
-        const { description, options, type } = currentQuestion
+        const {
+ content, description, options, type,
+} = currentQuestion
 
         return (
           <div>
             <div className="collapser">
               <Collapser collapsed={isCollapsed} handleCollapseToggle={toggleIsCollapsed}>
-                {description}
+                <QuestionDescription content={content} description={description} />
               </Collapser>
             </div>
 
