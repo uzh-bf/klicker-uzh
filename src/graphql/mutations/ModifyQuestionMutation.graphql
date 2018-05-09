@@ -1,7 +1,7 @@
 mutation ModifyQuestion(
   $id: ID!
   $title: String
-  $content: JSON
+  $content: String
   $options: QuestionOptionsInput
   $solution: Question_SolutionInput
   $tags: [ID!]

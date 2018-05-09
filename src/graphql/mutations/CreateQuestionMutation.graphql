@@ -1,6 +1,6 @@
 mutation CreateQuestion(
   $title: String!
-  $content: JSON!
+  $content: String!
   $options: QuestionOptionsInput!
   $solution: Question_SolutionInput
   $type: Question_Type!
