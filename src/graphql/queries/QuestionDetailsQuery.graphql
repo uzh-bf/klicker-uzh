@@ -13,6 +13,7 @@ query QuestionDetails($id: ID!) {
     }
     versions {
       id
+      content
       description
       options {
         SC {
