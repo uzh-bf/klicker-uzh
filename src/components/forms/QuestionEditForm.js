@@ -1,7 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { compose, withProps } from 'recompose'
-import isEmpty from 'validator/lib/isEmpty'
 import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
 import { EditorState, ContentState } from 'draft-js'
@@ -20,12 +19,12 @@ const validate = ({
 }) => {
   const errors = {}
 
-  if (!title || isEmpty(title)) {
+  if (!title || _isEmpty(title)) {
     errors.title = 'form.editQuestion.content.empty'
   }
 
   // TODO: validation for draftjs content
-  if (!content) {
+  if (!content || _isEmpty(content)) {
     errors.content = 'form.editQuestion.content.empty'
   }
 
@@ -391,10 +390,8 @@ export default compose(
         content:
           // get the version description
           versions[initializeVersion].description
-          |> // create a new draftjs content state from plain text
-          ContentState.createFromText
-          |> // create a new draftjs editor state from the content state
-          EditorState.createWithContent,
+          |> ContentState.createFromText // create a new draftjs content state from text
+          |> EditorState.createWithContent, // create a new draftjs editor state
         options: versions[initializeVersion].options[type] || {},
         tags: questionTags.map(tag => tag.name),
         title,
