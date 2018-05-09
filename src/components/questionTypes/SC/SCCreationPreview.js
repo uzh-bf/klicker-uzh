@@ -2,6 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 
+import { QuestionDescription } from '../'
 import SCAnswerOptions from './SCAnswerOptions'
 
 const propTypes = {
@@ -18,7 +19,9 @@ const defaultProps = {
 
 const SCCreationPreview = ({ description, options }) => (
   <div className="preview">
-    <div className="description">{/* FIXME: description */}</div>
+    <div className="description">
+      <QuestionDescription content={description} />
+    </div>
     <div className="options">
       <SCAnswerOptions
         disabled
