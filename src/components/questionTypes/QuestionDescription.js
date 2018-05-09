@@ -11,7 +11,7 @@ const propTypes = {
 const QuestionDescription = ({ content, description }) => {
   // create the markup for "unsafe" display
   const createMarkup = () => ({
-    __html: toSanitizedHTML(content) || description,
+    __html: toSanitizedHTML(content) || description || null,
   })
 
   // return the content div with "unsafe" HTML
