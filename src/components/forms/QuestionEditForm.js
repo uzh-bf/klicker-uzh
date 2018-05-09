@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { compose, withProps } from 'recompose'
 import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
-import { EditorState, ContentState } from 'draft-js'
+import { EditorState, ContentState, convertFromRaw } from 'draft-js'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Button, Form, Icon, Menu, Message } from 'semantic-ui-react'
 import { Formik } from 'formik'
@@ -387,11 +387,15 @@ export default compose(
 
     return {
       initialValues: {
-        content:
-          // get the version description
+        content: versions[initializeVersion].content
+          ? versions[initializeVersion].content
+            |> JSON.parse
+            |> convertFromRaw // create a new draftjs content state from text
+            |> EditorState.createWithContent
+          : // get the version description
           versions[initializeVersion].description
-          |> ContentState.createFromText // create a new draftjs content state from text
-          |> EditorState.createWithContent, // create a new draftjs editor state
+            |> ContentState.createFromText // create a new draftjs content state from text
+            |> EditorState.createWithContent, // create a new draftjs editor state
         options: versions[initializeVersion].options[type] || {},
         tags: questionTags.map(tag => tag.name),
         title,
