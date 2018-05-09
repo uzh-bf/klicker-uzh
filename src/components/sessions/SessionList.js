@@ -74,7 +74,7 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
           }
 
           // extract the running session from all sessions
-          const runningSession = sessions
+          const runningSessions = sessions
             .filter(session => session.status === SESSION_STATUS.RUNNING)
             .map(session => ({
               ...session,
@@ -108,7 +108,7 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
 
           return (
             <React.Fragment>
-              {runningSession.length > 0 ? (
+              {runningSessions.length > 0 ? (
                 <div className="runningSession">
                   <h2>
                     <FormattedMessage
@@ -117,7 +117,7 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
                     />
                   </h2>
                   <div className="session">
-                    <Session {...runningSession[0]} />
+                    {runningSessions.map(running => <Session {...running} />)}
                   </div>
                 </div>
               ) : (

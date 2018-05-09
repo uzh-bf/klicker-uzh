@@ -18,6 +18,7 @@
   },
   "permission": false,
   "rtl": false,
+  "version": "2.3.1",
   "components": [
     "reset",
     "site",
@@ -38,13 +39,13 @@
     "table",
     "item",
     "checkbox",
+    "dimmer",
     "dropdown",
     "embed",
     "modal",
     "popup",
-    "progress",
     "sidebar",
-    "tab"
-  ],
-  "version": "2.3.1"
+    "tab",
+    "transition"
+  ]
 }
