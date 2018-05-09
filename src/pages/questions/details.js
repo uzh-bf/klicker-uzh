@@ -92,9 +92,6 @@ const EditQuestion = ({ intl, url }) => (
                         solution,
                         tags: newTags,
                       }) => {
-                        // convert the draft.js editor state content into a js object
-                        const rawContent = convertToRaw(content.getCurrentContent())
-
                         await editQuestion({
                           // reload the question details and tags after update
                           // TODO: replace with optimistic updates
@@ -123,7 +120,8 @@ const EditQuestion = ({ intl, url }) => (
                           variables: _omitBy(
                             isNewVersion
                               ? {
-                                  content: rawContent,
+                                  content:
+                                    content.getCurrentContent() |> convertToRaw |> JSON.stringify,
                                   id,
                                   // HACK: omitDeep for typename removal
                                   // TODO: check https://github.com/apollographql/apollo-client/issues/1564

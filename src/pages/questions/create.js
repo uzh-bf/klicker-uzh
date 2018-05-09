@@ -43,16 +43,13 @@ const CreateQuestion = ({ intl }) => (
               onSubmit={async ({
  content, options, tags, title, type,
 }) => {
-                // convert the draft.js editor state content into a js object
-                const rawContent = convertToRaw(content.getCurrentContent())
-
                 // create the question
                 await createQuestion({
                   // reload the list of questions and tags after creation
                   // TODO: replace with optimistic updates
                   refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
                   variables: {
-                    content: rawContent,
+                    content: content.getCurrentContent() |> convertToRaw |> JSON.stringify,
                     options,
                     tags,
                     title,
