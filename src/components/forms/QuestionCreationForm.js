@@ -212,7 +212,7 @@ const QuestionCreationForm = ({
                   />
                 </h2>
                 <Preview
-                  description={values.content}
+                  description={values.content.getCurrentContent()}
                   options={values.options}
                   questionType={values.type}
                   title={values.title}
