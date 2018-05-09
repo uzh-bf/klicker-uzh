@@ -19,8 +19,9 @@ import {
   UpdateSessionSettingsMutation,
   ActivateNextBlockMutation,
   DeleteFeedbackMutation,
+  SessionListQuery,
 } from '../../graphql'
-import { LoadingTeacherLayout, Messager } from '../../components/common'
+import { Messager } from '../../components/common'
 
 const propTypes = {
   intl: intlShape.isRequired,
@@ -46,27 +47,23 @@ const Running = ({ intl, shortname }) => (
       {({ data, loading, error }) => {
         if (loading || !data || !data.runningSession) {
           return (
-            <LoadingTeacherLayout intl={intl} pageId="runningSession">
-              <Messager
-                message={intl.formatMessage({
-                  defaultMessage: 'No currently running session...',
-                  id: 'runningSession.noRunningSession',
-                })}
-              />
-            </LoadingTeacherLayout>
+            <Messager
+              message={intl.formatMessage({
+                defaultMessage: 'No currently running session...',
+                id: 'runningSession.noRunningSession',
+              })}
+            />
           )
         }
 
         if (error) {
           return (
-            <LoadingTeacherLayout intl={intl} pageId="runningSession">
-              <Messager
-                message={intl.formatMessage({
-                  defaultMessage: 'Failed loading current session...',
-                  id: 'runningSession.errorLoading',
-                })}
-              />
-            </LoadingTeacherLayout>
+            <Messager
+              message={intl.formatMessage({
+                defaultMessage: 'Failed loading current session...',
+                id: 'runningSession.errorLoading',
+              })}
+            />
           )
         }
 
@@ -95,6 +92,7 @@ const Running = ({ intl, shortname }) => (
                           // run the mutation
                           await endSession({
                             refetchQueries: [
+                              { query: SessionListQuery },
                               { query: RunningSessionQuery },
                               { query: AccountSummaryQuery },
                             ],
