@@ -34,7 +34,7 @@
     "cross-env": "5.1.4",
     "d3": "5.2.0",
     "dotenv": "5.0.1",
-    "elastic-apm-node": "1.4.0",
+    "elastic-apm-node": "1.5.0",
     "express": "4.16.3",
     "file-loader": "1.1.11",
     "fingerprintjs2": "1.8.0",
