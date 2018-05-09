@@ -33,7 +33,7 @@ const VisualizationType = ({
         id: 'evaluation.visualization.title',
       })}
       value={activeVisualization}
-      onChange={(param, data) => onChangeType(questionType, data.value)}
+      onChange={(param, { value }) => onChangeType(questionType, value)}
     />
   </div>
 )

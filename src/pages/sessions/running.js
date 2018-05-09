@@ -19,6 +19,7 @@ import {
   UpdateSessionSettingsMutation,
   ActivateNextBlockMutation,
   DeleteFeedbackMutation,
+  SessionListQuery,
 } from '../../graphql'
 import { Messager } from '../../components/common'
 
@@ -91,6 +92,7 @@ const Running = ({ intl, shortname }) => (
                           // run the mutation
                           await endSession({
                             refetchQueries: [
+                              { query: SessionListQuery },
                               { query: RunningSessionQuery },
                               { query: AccountSummaryQuery },
                             ],

@@ -50,6 +50,14 @@ const CommonLayout = ({
         border: 0 !important;
         box-shadow: none !important;
       }
+
+      /* FIXME: workarounds for modal placement */
+      /* .ui.dimmer {
+        display: flex !important;
+      }
+      .ui.modal {
+        margin-top: 0;
+      } */
     `}</style>
     <style jsx>{`
       .commonLayout {
