@@ -1,21 +1,22 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 
-import { stateToHTML } from 'draft-js-export-html'
+import { toSanitizedHTML } from '../../lib'
 
 const propTypes = {
-  description: PropTypes.object.isRequired, // draftjs contentstate
+  content: PropTypes.object.isRequired, // draftjs contentstate
+  description: PropTypes.string.isRequired,
 }
 
-const QuestionDescription = ({ description }) => {
-  let htmlContent
-  try {
-    htmlContent = stateToHTML(description)
-  } catch (e) {
-    console.error(e)
-  }
+const QuestionDescription = ({ content, description }) => {
+  // create the markup for "unsafe" display
+  const createMarkup = () => ({
+    __html: toSanitizedHTML(content) || description,
+  })
 
-  return <div className="description">{htmlContent || 'No content'}</div>
+  // return the content div with "unsafe" HTML
+  // eslint-disable-next-line
+  return <div className="description" dangerouslySetInnerHTML={createMarkup()} />
 }
 
 QuestionDescription.propTypes = propTypes
