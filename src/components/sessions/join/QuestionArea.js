@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import _without from 'lodash/without'
 import { FormattedMessage } from 'react-intl'
+import { convertFromRaw } from 'draft-js'
 import { compose, withStateHandlers, withHandlers, withProps } from 'recompose'
 
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
@@ -107,11 +108,13 @@ function QuestionArea({
  content, description, options, type,
 } = currentQuestion
 
+        const contentState = content |> JSON.parse |> convertFromRaw
+
         return (
           <div>
             <div className="collapser">
               <Collapser collapsed={isCollapsed} handleCollapseToggle={toggleIsCollapsed}>
-                <QuestionDescription content={content} description={description} />
+                <QuestionDescription content={contentState} description={description} />
               </Collapser>
             </div>
 
