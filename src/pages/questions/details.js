@@ -1,6 +1,6 @@
 import React from 'react'
 import { compose, withState } from 'recompose'
-import Router from 'next/router'
+import { withRouter } from 'next/router'
 import { convertToRaw } from 'draft-js'
 import { intlShape } from 'react-intl'
 import { Query, Mutation } from 'react-apollo'
@@ -21,10 +21,10 @@ import {
 
 const propTypes = {
   intl: intlShape.isRequired,
-  url: PropTypes.object.isRequired,
+  router: PropTypes.object.isRequired,
 }
 
-const EditQuestion = ({ intl, url }) => (
+const EditQuestion = ({ intl, router }) => (
   <TeacherLayout
     intl={intl}
     navbar={{
@@ -41,7 +41,7 @@ const EditQuestion = ({ intl, url }) => (
   >
     <Query query={TagListQuery}>
       {({ data: tagList, loading: tagsLoading }) => (
-        <Query query={QuestionDetailsQuery} variables={{ id: url.query.questionId }}>
+        <Query query={QuestionDetailsQuery} variables={{ id: router.query.questionId }}>
           {({ data: questionDetails, loading: questionLoading }) => {
             // if the tags or the question is still loading, return null
             if (tagsLoading || questionLoading || !tagList.tags || !questionDetails.question) {
@@ -83,7 +83,7 @@ const EditQuestion = ({ intl, url }) => (
                       type={type}
                       versions={versions}
                       onDiscard={() => {
-                        Router.push('/questions')
+                        router.push('/questions')
                       }}
                       onSubmit={isNewVersion => async ({
                         title: newTitle,
@@ -100,7 +100,7 @@ const EditQuestion = ({ intl, url }) => (
                           update: (store, { data: { modifyQuestion } }) => {
                             const query = {
                               query: QuestionDetailsQuery,
-                              variables: { id: url.query.questionId },
+                              variables: { id: router.query.questionId },
                             }
 
                             // get the data from the store
@@ -154,4 +154,4 @@ const EditQuestion = ({ intl, url }) => (
 
 EditQuestion.propTypes = propTypes
 
-export default compose(withLogging(), withDnD, pageWithIntl)(EditQuestion)
+export default compose(withRouter, withLogging(), withDnD, pageWithIntl)(EditQuestion)

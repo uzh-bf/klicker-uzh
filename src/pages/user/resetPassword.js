@@ -5,6 +5,7 @@ import { FormattedMessage, intlShape } from 'react-intl'
 import { Mutation } from 'react-apollo'
 import { Message } from 'semantic-ui-react'
 import Link from 'next/link'
+import { withRouter } from 'next/router'
 
 import { StaticLayout } from '../../components/layouts'
 import { PasswordResetForm } from '../../components/forms'
@@ -13,10 +14,10 @@ import { ChangePasswordMutation } from '../../graphql'
 
 const propTypes = {
   intl: intlShape.isRequired,
-  url: PropTypes.object.isRequired,
+  router: PropTypes.object.isRequired,
 }
 
-const ResetPassword = ({ intl, url }) => (
+const ResetPassword = ({ intl, router }) => (
   <StaticLayout
     pageTitle={intl.formatMessage({
       defaultMessage: 'Reset password',
@@ -53,7 +54,7 @@ const ResetPassword = ({ intl, url }) => (
                 loading={loading}
                 onSubmit={({ password }) => {
                   changePassword({
-                    variables: { jwt: url.query.resetToken, newPassword: password },
+                    variables: { jwt: router.query.resetToken, newPassword: password },
                   })
                 }}
               />
@@ -86,6 +87,7 @@ const ResetPassword = ({ intl, url }) => (
 ResetPassword.propTypes = propTypes
 
 export default compose(
+  withRouter,
   withLogging({
     logRocket: false,
   }),

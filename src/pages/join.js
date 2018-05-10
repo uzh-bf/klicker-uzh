@@ -12,6 +12,7 @@ import {
 } from 'recompose'
 import { intlShape, FormattedMessage } from 'react-intl'
 import { graphql } from 'react-apollo'
+import { withRouter } from 'next/router'
 
 import FeedbackArea from '../components/sessions/join/FeedbackArea'
 import QuestionArea from '../components/sessions/join/QuestionArea'
@@ -169,6 +170,7 @@ Join.propTypes = propTypes
 Join.defaultProps = defaultProps
 
 export default compose(
+  withRouter,
   withLogging({
     chatlio: false,
     logRocket: false,
@@ -198,7 +200,7 @@ export default compose(
     },
   ),
   graphql(JoinSessionQuery, {
-    options: ({ url }) => ({ variables: { shortname: url.query.shortname } }),
+    options: ({ router }) => ({ variables: { shortname: router.query.shortname } }),
   }),
   branch(({ data }) => data.loading, renderComponent(() => <div />)),
   branch(
@@ -212,8 +214,11 @@ export default compose(
   graphql(AddConfusionTSMutation, { name: 'newConfusionTS' }),
   graphql(AddFeedbackMutation, { name: 'newFeedback' }),
   graphql(AddResponseMutation, { name: 'newResponse' }),
-  withProps(({ newConfusionTS }) => ({
+  withProps(({ data: { joinSession }, router, newConfusionTS }) => ({
     newConfusionTS: _throttle(newConfusionTS, 4000, { trailing: true }),
+    ...joinSession,
+    ...joinSession.settings,
+    shortname: router.query.shortname,
   })),
   withHandlers({
     // handle creation of a new confusion timestep
@@ -237,8 +242,10 @@ export default compose(
 
     // handle creation of a new feedback
     handleNewFeedback: ({
-      data: { joinSession }, fp, newFeedback, url,
-    }) => async ({ content }) => {
+      data: { joinSession }, fp, newFeedback, router,
+    }) => async ({
+      content,
+    }) => {
       try {
         if (joinSession.settings.isFeedbackChannelPublic) {
           newFeedback({
@@ -261,7 +268,7 @@ export default compose(
             update: (store, { data: { addFeedback } }) => {
               const query = {
                 query: JoinSessionQuery,
-                variables: { shortname: url.query.shortname },
+                variables: { shortname: router.query.shortname },
               }
 
               // get the data from the store
@@ -301,9 +308,4 @@ export default compose(
       handleSidebarActiveItemChange(newItem)
     },
   }),
-  withProps(({ data: { joinSession }, url }) => ({
-    ...joinSession,
-    ...joinSession.settings,
-    shortname: url.query.shortname,
-  })),
 )(Join)

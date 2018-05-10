@@ -32,6 +32,10 @@ export default App =>
             apolloState={apolloState}
             router={router}
           />,
+          {
+            // FIXME: workaround for https://github.com/zeit/next.js/issues/2908
+            router: { asPath: ctx.asPath, pathname: ctx.pathname, query: ctx.query },
+          },
         )
       } catch (error) {
         // Prevent Apollo Client GraphQL errors from crashing SSR.
