@@ -108,7 +108,8 @@ function QuestionArea({
  content, description, options, type,
 } = currentQuestion
 
-        const contentState = content |> JSON.parse |> convertFromRaw
+        // if the content is set, parse it and convert into a content state
+        const contentState = content ? content |> JSON.parse |> convertFromRaw : null
 
         return (
           <div>
