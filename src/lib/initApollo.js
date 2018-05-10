@@ -48,9 +48,9 @@ function create(initialState) {
     dataIdFromObject: o => o.id,
   }).restore(initialState || {})
 
-  const wsClient = new SubscriptionClient(process.env.API_URL_WS, {
+  /* const wsClient = new SubscriptionClient(process.env.API_URL_WS, {
     reconnect: true,
-  })
+  }) */
 
   const link = ApolloLink.from([
     withClientState({
@@ -70,7 +70,7 @@ function create(initialState) {
       }
       if (networkError) console.log(`[Network error]: ${networkError}`)
     }),
-    new WebSocketLink(wsClient),
+    // new WebSocketLink(wsClient),
     new BatchHttpLink({
       credentials: 'include', // Additional fetch() options like `credentials` or `headers`
       uri: process.env.API_URL || 'http://localhost:4000/graphql',
@@ -83,15 +83,13 @@ function create(initialState) {
     generateHash: ({ documentId }) => documentId,
   }) */
 
-  const client = new ApolloClient({
+  return new ApolloClient({
     cache,
     connectToDevTools: process.browser,
     link,
     // link: persistQueriesLink.concat(link),
     ssrMode: !process.browser, // Disables forceFetch on the server (so queries are only run once)
   })
-
-  return client
 }
 
 export default function initApollo(initialState) {
