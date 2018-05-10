@@ -4,6 +4,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { Button, Icon, Menu, Popup, List, Modal, Embed } from 'semantic-ui-react'
 import { intlShape, FormattedMessage } from 'react-intl'
+import { CHANGELOG } from '../../../constants'
 
 const propTypes = {
   intl: intlShape.isRequired,
@@ -12,66 +13,6 @@ const propTypes = {
 
 const defaultProps = {
   sessionId: undefined,
-}
-
-const changelog = {
-  new: [
-    {
-      items: [
-        'Executed question blocks can still be evaluated during a running session',
-        'General improvements for the evaluation screen (added and moved around percentages and labels)',
-      ],
-      text: '1.0.0-public.beta.15',
-    },
-    {
-      items: [
-        'Archiving and unarchiving questions to enable question clean-up',
-        'Quick creation of question blocks and sessions',
-      ],
-      text: '1.0.0-public.beta.7',
-    },
-    {
-      items: [
-        'Multiple-choice questions can be created and evaluated.',
-        'One can define solutions for SC- and MC-questions and display them while presenting the results (optional).',
-        'More advanced visualizations for all question types, including word clouds and aggregated tables.',
-      ],
-      text: 'Extended question types and visualizations',
-    },
-    {
-      items: [
-        'Questions can be grouped into sessions and question blocks.',
-        'Each session could e.g. correspond to a single lecture.',
-        'A question block is part of a session and represents a group of questions that are evaluated simultaneously.',
-        'The parts of a session are activated on a predefined timeline.',
-      ],
-      text: 'Sessions & question blocks',
-    },
-    {
-      items: [
-        'The new feedback channel enables the collection of open text feedbacks over the course of the entire session (optional).',
-        'It also allows the students to give feedback on the speed and difficulty of the session at any point in time (optional).',
-      ],
-      text: 'Feedback-Channel (experimental)',
-    },
-    {
-      items: [
-        'Currently supported languages are English and German.',
-        'The tool is easily translateable to other languages (open-source).',
-      ],
-      text: 'Support for multiple languages',
-    },
-  ],
-  planned: [
-    { text: 'Many overall improvements for performance and user experience.' },
-    { text: 'Advanced session management (copying and other modifications).' },
-    {
-      text:
-        'On-the-fly modification of running sessions (e.g., adding questions while a session is already running and starting "empty" sessions).',
-    },
-
-    { text: 'Open-source documentation to encourage collaboration.' },
-  ],
 }
 
 const SessionArea = ({ intl, sessionId }) => (
@@ -103,7 +44,7 @@ const SessionArea = ({ intl, sessionId }) => (
         <div className="popupChanges popupContent">
           <h3>New features (major)</h3>
           <List bulleted>
-            {changelog.new.map(({ text, items }, index) => (
+            {CHANGELOG.new.map(({ text, items }, index) => (
               <List.Item key={index}>
                 {items ? <h4>{text}</h4> : text}
                 {items && <List.List>{items.map(item => <List.Item>{item}</List.Item>)}</List.List>}
