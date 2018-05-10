@@ -87,3 +87,60 @@ export const SMALL_PIE_THRESHOLD = 0.05
   rgb(162, 184, 108),// 11
   rgb(92, 167, 147),// 12
 ] */
+
+export const CHANGELOG = {
+  new: [
+    {
+      items: [
+        'Rich-Text formatting for question content (for creation, modification and display on joining a session)',
+        'The feature is experimental and formatting is not yet displayed on the evaluation screen',
+      ],
+      text: '1.0.0-public.beta.19',
+    },
+    {
+      items: [
+        'Executed question blocks can still be evaluated during a running session',
+        'General improvements for the evaluation screen (added and moved around percentages and labels)',
+      ],
+      text: '1.0.0-public.beta.15',
+    },
+    {
+      items: [
+        'Archiving and unarchiving questions to enable question clean-up',
+        'Quick creation of question blocks and sessions',
+      ],
+      text: '1.0.0-public.beta.7',
+    },
+    {
+      items: [
+        'Multiple-choice questions can be created and evaluated.',
+        'One can define solutions for SC- and MC-questions and display them while presenting the results (optional).',
+        'More advanced visualizations for all question types, including word clouds and aggregated tables.',
+      ],
+      text: 'Extended question types and visualizations',
+    },
+    {
+      items: [
+        'Questions can be grouped into sessions and question blocks.',
+        'Each session could e.g. correspond to a single lecture.',
+        'A question block is part of a session and represents a group of questions that are evaluated simultaneously.',
+        'The parts of a session are activated on a predefined timeline.',
+      ],
+      text: 'Sessions & question blocks',
+    },
+    {
+      items: [
+        'The new feedback channel enables the collection of open text feedbacks over the course of the entire session (optional).',
+        'It also allows the students to give feedback on the speed and difficulty of the session at any point in time (optional).',
+      ],
+      text: 'Feedback-Channel (experimental)',
+    },
+    {
+      items: [
+        'Currently supported languages are English and German.',
+        'The tool is easily translateable to other languages (open-source).',
+      ],
+      text: 'Support for multiple languages',
+    },
+  ],
+}
