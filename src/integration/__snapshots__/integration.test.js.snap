@@ -50,6 +50,7 @@ exports[`Integration Question Creation creates FREE questions 1`] = `
       type: FREE
       tags: TestTag
       versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple FREE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple FREE question.
         options: {"SC":null,"MC":null,"FREE_RANGE":null}
         solution: {"SC":[],"MC":[],"FREE":"This is true.","FREE_RANGE":null}
@@ -65,6 +66,7 @@ exports[`Integration Question Creation creates FREE_RANGE questions 1`] = `
       type: FREE_RANGE
       tags: TestTag
       versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple FREE_RANGE question.
         options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":0,"max":10}}}
         solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":5}
@@ -80,6 +82,7 @@ exports[`Integration Question Creation creates MC questions 1`] = `
       type: MC
       tags: TestTag
       versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple MC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple MC question.
         options: {"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false},"FREE_RANGE":null}
         solution: {"SC":[],"MC":[false,true,true],"FREE":null,"FREE_RANGE":null}
@@ -95,6 +98,7 @@ exports[`Integration Question Creation creates SC questions 1`] = `
       type: SC
       tags: TestTag
       versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple SC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple SC question.
         options: {"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null,"FREE_RANGE":null}
         solution: {"SC":[false,true],"MC":[],"FREE":null,"FREE_RANGE":null}
@@ -110,6 +114,7 @@ exports[`Integration Question Creation creates partly restricted FREE_RANGE ques
       type: FREE_RANGE
       tags: TestTag
       versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple partly restricted FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple partly restricted FREE_RANGE question.
         options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":10,"max":null}}}
         solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":15}
@@ -125,6 +130,7 @@ exports[`Integration Question Creation creates unrestricted FREE_RANGE questions
       type: FREE_RANGE
       tags: TestTag
       versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple unrestricted FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple unrestricted FREE_RANGE question.
         options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":null,"max":null}}}
         solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":20}
@@ -140,10 +146,12 @@ exports[`Integration Question Modification modifies FREE questions 1`] = `
       type: FREE
       tags: TestTag,AdditionalTag
       versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple FREE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple FREE question.
         options: {"SC":null,"MC":null,"FREE_RANGE":null}
         solution: {"SC":[],"MC":[],"FREE":"This is true.","FREE_RANGE":null}
       ,
+        content: {"blocks":[{"data":{},"text":"This is a simple modified FREE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple modified FREE question.
         options: {"SC":null,"MC":null,"FREE_RANGE":null}
         solution: {"SC":[],"MC":[],"FREE":"New solution.","FREE_RANGE":null}
@@ -159,10 +167,12 @@ exports[`Integration Question Modification modifies FREE_RANGE questions 1`] = `
       type: FREE_RANGE
       tags: TestTag,AdditionalTag
       versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple FREE_RANGE question.
         options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":0,"max":10}}}
         solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":5}
       ,
+        content: {"blocks":[{"data":{},"text":"This is a simple modified FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple modified FREE_RANGE question.
         options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":-10,"max":40}}}
         solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":16}
@@ -178,10 +188,12 @@ exports[`Integration Question Modification modifies MC questions 1`] = `
       type: MC
       tags: TestTag,AdditionalTag
       versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple MC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple MC question.
         options: {"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false},"FREE_RANGE":null}
         solution: {"SC":[],"MC":[false,true,true],"FREE":null,"FREE_RANGE":null}
       ,
+        content: {"blocks":[{"data":{},"text":"This is a simple modified MC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple modified MC question.
         options: {"SC":null,"MC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"},{"correct":true,"name":"option5"}],"randomized":false},"FREE_RANGE":null}
         solution: {"SC":[],"MC":[true,false,true],"FREE":null,"FREE_RANGE":null}
@@ -197,10 +209,12 @@ exports[`Integration Question Modification modifies SC questions 1`] = `
       type: SC
       tags: TestTag,AdditionalTag
       versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple SC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple SC question.
         options: {"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null,"FREE_RANGE":null}
         solution: {"SC":[false,true],"MC":[],"FREE":null,"FREE_RANGE":null}
       ,
+        content: {"blocks":[{"data":{},"text":"This is a simple modified SC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple modified SC question.
         options: {"SC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"}],"randomized":false},"MC":null,"FREE_RANGE":null}
         solution: {"SC":[true,false],"MC":[],"FREE":null,"FREE_RANGE":null}
@@ -216,14 +230,17 @@ exports[`Integration Question Modification modifies partly restricted FREE_RANGE
       type: FREE_RANGE
       tags: TestTag,AdditionalTag
       versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple FREE_RANGE question.
         options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":0,"max":10}}}
         solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":5}
       ,
+        content: {"blocks":[{"data":{},"text":"This is a simple modified FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple modified FREE_RANGE question.
         options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":-10,"max":40}}}
         solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":16}
       ,
+        content: {"blocks":[{"data":{},"text":"This is a simple modified FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple modified FREE_RANGE question.
         options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":null,"max":10}}}
         solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":6}
@@ -239,18 +256,22 @@ exports[`Integration Question Modification modifies unrestricted FREE_RANGE ques
       type: FREE_RANGE
       tags: TestTag,AdditionalTag
       versions: 
+        content: {"blocks":[{"data":{},"text":"This is a simple FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple FREE_RANGE question.
         options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":0,"max":10}}}
         solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":5}
       ,
+        content: {"blocks":[{"data":{},"text":"This is a simple modified FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple modified FREE_RANGE question.
         options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":-10,"max":40}}}
         solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":16}
       ,
+        content: {"blocks":[{"data":{},"text":"This is a simple modified FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple modified FREE_RANGE question.
         options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":null,"max":10}}}
         solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":6}
       ,
+        content: {"blocks":[{"data":{},"text":"This is a simple modified FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple modified FREE_RANGE question.
         options: {"SC":null,"MC":null,"FREE_RANGE":{"restrictions":{"min":null,"max":null}}}
         solution: {"SC":[],"MC":[],"FREE":null,"FREE_RANGE":16}
@@ -1331,11 +1352,13 @@ exports[`Integration Session Execution allows running the full session flow (res
       settings: {"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true,"isConfusionBarometerActive":true}
       activeQuestions: 
         title: Test SC #2
+        content: {"blocks":[{"data":{},"text":"This is a simple SC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple SC question.
         type: SC
         options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
       ,
         title: Test MC #2
+        content: {"blocks":[{"data":{},"text":"This is a simple MC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple MC question.
         type: MC
         options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
@@ -1360,6 +1383,7 @@ exports[`Integration Session Execution allows running the full session flow (res
       settings: {"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true,"isConfusionBarometerActive":true}
       activeQuestions: 
         title: Test FREE #2
+        content: {"blocks":[{"data":{},"text":"This is a simple FREE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple FREE question.
         type: FREE
         options: {"FREE_RANGE":null,"SC":null,"MC":null}
@@ -1384,16 +1408,19 @@ exports[`Integration Session Execution allows running the full session flow (res
       settings: {"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true,"isConfusionBarometerActive":true}
       activeQuestions: 
         title: Test FREE_RANGE #2
+        content: {"blocks":[{"data":{},"text":"This is a simple FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple FREE_RANGE question.
         type: FREE_RANGE
         options: {"FREE_RANGE":{"restrictions":{"min":0,"max":10}},"SC":null,"MC":null}
       ,
         title: Test partly restricted FREE_RANGE
+        content: {"blocks":[{"data":{},"text":"This is a simple partly restricted FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple partly restricted FREE_RANGE question.
         type: FREE_RANGE
         options: {"FREE_RANGE":{"restrictions":{"min":10,"max":null}},"SC":null,"MC":null}
       ,
         title: Test unrestricted FREE_RANGE
+        content: {"blocks":[{"data":{},"text":"This is a simple unrestricted FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple unrestricted FREE_RANGE question.
         type: FREE_RANGE
         options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}

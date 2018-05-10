@@ -3,7 +3,7 @@ const moment = require('moment')
 const SessionMgrService = require('../services/sessionMgr')
 const SessionExecService = require('../services/sessionExec')
 const { SessionModel, UserModel } = require('../models')
-const { ensureLoaders } = require('../lib/utils')
+const { ensureLoaders } = require('../lib/loaders')
 
 /* ----- queries ----- */
 const allSessionsQuery = async (parentValue, args, { auth, loaders }) => {

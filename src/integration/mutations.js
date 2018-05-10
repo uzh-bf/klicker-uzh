@@ -1,3 +1,5 @@
+const { draftContentSerializer } = require('../lib/test/serializers')
+
 const RegistrationMutation = `
   mutation CreateUser($email: String!, $password: String!, $shortname: String!) {
     createUser(email: $email, password: $password, shortname: $shortname) {
@@ -32,7 +34,7 @@ const LogoutMutation = `
 const CreateQuestionMutation = `
   mutation CreateQuestion(
     $title: String!
-    $description: String!
+    $content: String!
     $options: QuestionOptionsInput!
     $solution: Question_SolutionInput
     $type: Question_Type!
@@ -41,7 +43,7 @@ const CreateQuestionMutation = `
     createQuestion(
       question: {
         title: $title
-        description: $description
+        content: $content
         options: $options
         solution: $solution
         type: $type
@@ -57,6 +59,7 @@ const CreateQuestionMutation = `
       }
       versions {
         id
+        content
         description
         options {
           SC {
@@ -96,7 +99,7 @@ const ModifyQuestionMutation = `
   mutation ModifyQuestion(
     $id: ID!
     $title: String
-    $description: String
+    $content: String
     $options: QuestionOptionsInput
     $solution: Question_SolutionInput
     $tags: [ID!]
@@ -105,7 +108,7 @@ const ModifyQuestionMutation = `
       id: $id
       question: {
         title: $title
-        description: $description
+        content: $content
         options: $options
         solution: $solution
         tags: $tags
@@ -120,6 +123,7 @@ const ModifyQuestionMutation = `
       }
       versions {
         id
+        content
         description
         options {
           SC {
@@ -166,7 +170,10 @@ const CreateQuestionSerializer = {
       title: ${title}
       type: ${type}
       tags: ${tags.map(tag => tag.name)}
-      versions: ${versions.map(({ description, options, solution }) => `
+      versions: ${versions.map(({
+    content, description, options, solution,
+  }) => `
+        content: ${draftContentSerializer(content)}
         description: ${description}
         options: ${JSON.stringify(options)}
         solution: ${JSON.stringify(solution)}

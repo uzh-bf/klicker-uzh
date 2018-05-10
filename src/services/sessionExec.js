@@ -273,6 +273,7 @@ const joinSession = async ({ shortname }) => {
         instanceId,
         title: question.title,
         type: question.type,
+        content: version.content,
         description: version.description,
         options: version.options,
       }

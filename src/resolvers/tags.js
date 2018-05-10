@@ -1,5 +1,5 @@
 const { TagModel } = require('../models')
-const { ensureLoaders } = require('../lib/utils')
+const { ensureLoaders } = require('../lib/loaders')
 /* ----- queries ----- */
 const allTagsQuery = async (parentValue, args, { auth, loaders }) => {
   // get all the tags for the given user

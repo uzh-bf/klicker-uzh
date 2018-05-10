@@ -1,5 +1,5 @@
 const _map = require('lodash/map')
-const { ensureLoaders } = require('../lib/utils')
+const { ensureLoaders } = require('../lib/loaders')
 const SessionExecService = require('../services/sessionExec')
 
 /* ----- queries ----- */

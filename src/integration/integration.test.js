@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 
 const server = require('../app')
 const { initializeDb } = require('../lib/test/setup')
+const { createContentState } = require('../lib/draft')
 const queries = require('./queries')
 const mutations = require('./mutations')
 const { QuestionTypes } = require('../constants')
@@ -84,12 +85,13 @@ describe('Integration', () => {
 
   describe('Question Creation', () => {
     it('creates SC questions', async () => {
+      const questionContent = 'This is a simple SC question.'
       const data = ensureNoErrors(await sendQuery(
         {
           query: mutations.CreateQuestionMutation,
           variables: {
             title: 'Test SC',
-            description: 'This is a simple SC question.',
+            content: createContentState(questionContent),
             type: 'SC',
             options: {
               choices: [{ correct: false, name: 'option1' }, { correct: true, name: 'option2' }],
@@ -115,7 +117,7 @@ describe('Integration', () => {
           query: mutations.CreateQuestionMutation,
           variables: {
             title: 'Test MC',
-            description: 'This is a simple MC question.',
+            content: createContentState('This is a simple MC question.'),
             type: 'MC',
             options: {
               choices: [
@@ -145,7 +147,7 @@ describe('Integration', () => {
           query: mutations.CreateQuestionMutation,
           variables: {
             title: 'Test FREE',
-            description: 'This is a simple FREE question.',
+            content: createContentState('This is a simple FREE question.'),
             type: 'FREE',
             options: {},
             solution: {
@@ -168,7 +170,7 @@ describe('Integration', () => {
           query: mutations.CreateQuestionMutation,
           variables: {
             title: 'Test FREE_RANGE',
-            description: 'This is a simple FREE_RANGE question.',
+            content: createContentState('This is a simple FREE_RANGE question.'),
             type: 'FREE_RANGE',
             options: {
               restrictions: { min: 0, max: 10 },
@@ -193,7 +195,7 @@ describe('Integration', () => {
           query: mutations.CreateQuestionMutation,
           variables: {
             title: 'Test partly restricted FREE_RANGE',
-            description: 'This is a simple partly restricted FREE_RANGE question.',
+            content: createContentState('This is a simple partly restricted FREE_RANGE question.'),
             type: 'FREE_RANGE',
             options: {
               restrictions: { min: 10, max: null },
@@ -218,7 +220,7 @@ describe('Integration', () => {
           query: mutations.CreateQuestionMutation,
           variables: {
             title: 'Test unrestricted FREE_RANGE',
-            description: 'This is a simple unrestricted FREE_RANGE question.',
+            content: createContentState('This is a simple unrestricted FREE_RANGE question.'),
             type: 'FREE_RANGE',
             options: {
               restrictions: { min: null, max: null },
@@ -246,7 +248,7 @@ describe('Integration', () => {
           variables: {
             id: questions.SC,
             title: 'Test SC #2',
-            description: 'This is a simple modified SC question.',
+            content: createContentState('This is a simple modified SC question.'),
             options: {
               choices: [{ correct: true, name: 'option3' }, { correct: false, name: 'option4' }],
               randomized: false,
@@ -270,7 +272,7 @@ describe('Integration', () => {
           variables: {
             id: questions.MC,
             title: 'Test MC #2',
-            description: 'This is a simple modified MC question.',
+            content: createContentState('This is a simple modified MC question.'),
             options: {
               choices: [
                 { correct: true, name: 'option3' },
@@ -298,7 +300,7 @@ describe('Integration', () => {
           variables: {
             id: questions.FREE,
             title: 'Test FREE #2',
-            description: 'This is a simple modified FREE question.',
+            content: createContentState('This is a simple modified FREE question.'),
             options: {},
             solution: {
               FREE: 'New solution.',
@@ -319,7 +321,7 @@ describe('Integration', () => {
           variables: {
             id: questions.FREE_RANGE,
             title: 'Test FREE_RANGE #2',
-            description: 'This is a simple modified FREE_RANGE question.',
+            content: createContentState('This is a simple modified FREE_RANGE question.'),
             options: {
               restrictions: { min: -10, max: 40 },
             },
@@ -342,7 +344,7 @@ describe('Integration', () => {
           variables: {
             id: questions.FREE_RANGE,
             title: 'Test FREE_RANGE #2',
-            description: 'This is a simple modified FREE_RANGE question.',
+            content: createContentState('This is a simple modified FREE_RANGE question.'),
             options: {
               restrictions: { min: null, max: 10 },
             },
@@ -365,7 +367,7 @@ describe('Integration', () => {
           variables: {
             id: questions.FREE_RANGE,
             title: 'Test FREE_RANGE #2',
-            description: 'This is a simple modified FREE_RANGE question.',
+            content: createContentState('This is a simple modified FREE_RANGE question.'),
             options: {
               restrictions: { min: null, max: null },
             },

@@ -39,10 +39,19 @@ const createLoaders = (auth) => {
   }
 }
 
+const ensureLoaders = (loaders) => {
+  if (!loaders) {
+    throw new Error('LOADERS_NOT_INITIALIZED')
+  }
+
+  return loaders
+}
+
 module.exports = {
   createLoaders,
   questions: questionsLoader,
   questionInstances: questionInstancesLoader,
   sessions: sessionsLoader,
   tags: tagsLoader,
+  ensureLoaders,
 }

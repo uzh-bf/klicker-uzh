@@ -12,6 +12,7 @@ Array [
     Instances: []
     Tags: [,]
     Versions: [
+      Content: {"blocks":[{"data":{},"text":"blabla","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
       Description: blabla
       Instances: []
       Options: {
@@ -40,6 +41,7 @@ Array [
       }
       
     ,
+      Content: {"blocks":[{"data":{},"text":"This is the new description for version 2","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
       Description: This is the new description for version 2
       Instances: []
       Options: {
@@ -70,6 +72,7 @@ Array [
     Instances: []
     Tags: [,]
     Versions: [
+      Content: {"blocks":[{"data":{},"text":"blabla","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
       Description: blabla
       Instances: []
       Options: {
@@ -109,6 +112,7 @@ Array [
     Instances: []
     Tags: [,]
     Versions: [
+      Content: {"blocks":[{"data":{},"text":"blabla","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
       Description: blabla
       Instances: []
       Options: {
@@ -140,6 +144,7 @@ Array [
     Instances: []
     Tags: [,]
     Versions: [
+      Content: {"blocks":[{"data":{},"text":"blabla","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
       Description: blabla
       Instances: []
       Options: {
@@ -168,6 +173,7 @@ Array [
       }
       
     ,
+      Content: {"blocks":[{"data":{},"text":"This is the new description for version 2","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
       Description: This is the new description for version 2
       Instances: []
       Options: {
@@ -198,6 +204,7 @@ Array [
     Instances: []
     Tags: [,]
     Versions: [
+      Content: {"blocks":[{"data":{},"text":"blabla","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
       Description: blabla
       Instances: []
       Options: {
@@ -241,6 +248,7 @@ exports[`QuestionService createQuestion allows creating a partly restricted FREE
     Instances: []
     Tags: [,]
     Versions: [
+      Content: {"blocks":[{"data":{},"text":"blabla","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
       Description: blabla
       Instances: []
       Options: {
@@ -275,6 +283,7 @@ exports[`QuestionService createQuestion allows creating a valid FREE question 1`
     Instances: []
     Tags: [,]
     Versions: [
+      Content: {"blocks":[{"data":{},"text":"blabla","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
       Description: blabla
       Instances: []
       Options: {
@@ -304,6 +313,7 @@ exports[`QuestionService createQuestion allows creating a valid FREE_RANGE quest
     Instances: []
     Tags: [,]
     Versions: [
+      Content: {"blocks":[{"data":{},"text":"blabla","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
       Description: blabla
       Instances: []
       Options: {
@@ -338,6 +348,7 @@ exports[`QuestionService createQuestion allows creating a valid MC question 1`] 
     Instances: []
     Tags: [,]
     Versions: [
+      Content: {"blocks":[{"data":{},"text":"blabla","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
       Description: blabla
       Instances: []
       Options: {
@@ -380,6 +391,7 @@ exports[`QuestionService createQuestion allows creating a valid SC question 1`] 
     Instances: []
     Tags: [,]
     Versions: [
+      Content: {"blocks":[{"data":{},"text":"blabla","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
       Description: blabla
       Instances: []
       Options: {
@@ -422,6 +434,7 @@ exports[`QuestionService createQuestion allows creating an unrestricted FREE_RAN
     Instances: []
     Tags: [,]
     Versions: [
+      Content: {"blocks":[{"data":{},"text":"blabla","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
       Description: blabla
       Instances: []
       Options: {
@@ -456,6 +469,7 @@ exports[`QuestionService modifyQuestion allows creating a new question version 1
     Instances: []
     Tags: [ABCD,XYZ]
     Versions: [
+      Content: {"blocks":[{"data":{},"text":"blabla","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
       Description: blabla
       Instances: []
       Options: {
@@ -484,6 +498,7 @@ exports[`QuestionService modifyQuestion allows creating a new question version 1
       }
       
     ,
+      Content: {"blocks":[{"data":{},"text":"This is the new description for version 2","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
       Description: This is the new description for version 2
       Instances: []
       Options: {
@@ -517,6 +532,7 @@ exports[`QuestionService modifyQuestion allows modifying the question tags 1`] =
     Instances: []
     Tags: [,]
     Versions: [
+      Content: {"blocks":[{"data":{},"text":"blabla","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
       Description: blabla
       Instances: []
       Options: {
@@ -559,6 +575,7 @@ exports[`QuestionService modifyQuestion allows modifying the question title 1`] 
     Instances: []
     Tags: [ABCD,test]
     Versions: [
+      Content: {"blocks":[{"data":{},"text":"blabla","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
       Description: blabla
       Instances: []
       Options: {

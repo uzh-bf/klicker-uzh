@@ -3,6 +3,7 @@ const {
 } = require('../../models')
 const AuthService = require('../../services/auth')
 const QuestionService = require('../../services/questions')
+const { createContentState } = require('../../lib/draft')
 
 const { QuestionTypes } = require('../../constants')
 
@@ -69,7 +70,7 @@ const initializeDb = async ({
     if (withQuestions) {
       result.questions = {
         [QuestionTypes.SC]: await QuestionService.createQuestion({
-          description: 'very good',
+          content: createContentState('very good'),
           options: {
             choices: [
               { correct: false, name: 'option1' },
@@ -84,7 +85,7 @@ const initializeDb = async ({
           userId: result.userId,
         }),
         [QuestionTypes.MC]: await QuestionService.createQuestion({
-          description: 'very good',
+          content: createContentState('very good'),
           options: {
             choices: [
               { correct: false, name: 'option1' },
@@ -99,7 +100,7 @@ const initializeDb = async ({
           userId: result.userId,
         }),
         [QuestionTypes.FREE]: await QuestionService.createQuestion({
-          description: 'a description',
+          content: createContentState('a description'),
           options: {},
           tags: ['AZA', 'BBB'],
           title: 'first question',
@@ -107,7 +108,7 @@ const initializeDb = async ({
           userId: result.userId,
         }),
         [QuestionTypes.FREE_RANGE]: await QuestionService.createQuestion({
-          description: 'a description',
+          content: createContentState('a description'),
           options: {
             restrictions: {
               min: 10,
@@ -120,7 +121,7 @@ const initializeDb = async ({
           userId: result.userId,
         }),
         FREE_RANGE_PART: await QuestionService.createQuestion({
-          description: 'a description',
+          content: createContentState('a description'),
           options: {
             restrictions: {
               min: 10,
@@ -133,7 +134,7 @@ const initializeDb = async ({
           userId: result.userId,
         }),
         FREE_RANGE_OPEN: await QuestionService.createQuestion({
-          description: 'a description',
+          content: createContentState('a description'),
           options: {
             restrictions: {
               min: null,

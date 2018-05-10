@@ -47,6 +47,7 @@ const Question = `
     instanceId: ID!
     title: String!
     type: Question_Type!
+    content: String
     description: String!
 
     options: Question_Options
@@ -56,7 +57,7 @@ const Question = `
   input QuestionInput {
     title: String!
     type: Question_Type!
-    description: String!
+    content: String!
 
     options: QuestionOptionsInput!
     solution: Question_SolutionInput
@@ -65,7 +66,7 @@ const Question = `
   }
   input QuestionModifyInput {
     title: String
-    description: String
+    content: String
     options: QuestionOptionsInput
     solution: Question_SolutionInput
     tags: [ID!]
@@ -88,6 +89,7 @@ const Question = `
 
   type Question_Version {
     id: ID!
+    content: String
     description: String!
 
     options: Question_Options

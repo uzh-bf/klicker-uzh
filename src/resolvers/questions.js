@@ -1,5 +1,5 @@
 const QuestionService = require('../services/questions')
-const { ensureLoaders } = require('../lib/utils')
+const { ensureLoaders } = require('../lib/loaders')
 const { QuestionModel } = require('../models')
 
 /* ----- queries ----- */

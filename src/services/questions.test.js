@@ -5,6 +5,7 @@ const mongoose = require('mongoose')
 const QuestionService = require('./questions')
 const { initializeDb } = require('../lib/test/setup')
 const { questionSerializer } = require('../lib/test/serializers')
+const { createContentState } = require('../lib/draft')
 
 mongoose.Promise = Promise
 
@@ -31,7 +32,7 @@ describe('QuestionService', () => {
 
   describe('createQuestion', () => {
     const question = {
-      description: 'blabla',
+      content: createContentState('blabla'),
       options: {
         choices: [
           { correct: false, name: 'option1' },
@@ -188,7 +189,7 @@ describe('QuestionService', () => {
 
     it('allows creating a new question version', async () => {
       const modifiedQuestion = await QuestionService.modifyQuestion(questions.SC.id, questions.SC.user, {
-        description: 'This is the new description for version 2',
+        content: createContentState('This is the new description for version 2'),
         options: {
           choices: [{ correct: true, name: 'option3' }, { correct: false, name: 'option4' }],
           randomized: true,
