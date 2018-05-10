@@ -6,6 +6,9 @@ import { BatchHttpLink } from 'apollo-link-batch-http'
 import { onError } from 'apollo-link-error'
 import { withClientState } from 'apollo-link-state'
 import { ApolloLink } from 'apollo-link'
+import { WebSocketLink } from 'apollo-link-ws'
+import { SubscriptionClient } from 'subscriptions-transport-ws'
+
 // import { createPersistedQueryLink } from 'apollo-link-persisted-queries'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import fetch from 'isomorphic-unfetch'
@@ -45,6 +48,10 @@ function create(initialState) {
     dataIdFromObject: o => o.id,
   }).restore(initialState || {})
 
+  const wsClient = new SubscriptionClient(process.env.API_URL_WS, {
+    reconnect: true,
+  })
+
   const link = ApolloLink.from([
     withClientState({
       cache,
@@ -63,6 +70,7 @@ function create(initialState) {
       }
       if (networkError) console.log(`[Network error]: ${networkError}`)
     }),
+    new WebSocketLink(wsClient),
     new BatchHttpLink({
       credentials: 'include', // Additional fetch() options like `credentials` or `headers`
       uri: process.env.API_URL || 'http://localhost:4000/graphql',
