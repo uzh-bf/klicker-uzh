@@ -31,7 +31,7 @@ const Feedback = ({
     <div className="content">{content}</div>
     {showDelete && (
       <div className="delete">
-        <Button basic fluid icon="trash outline" onClick={onDelete} />
+        <Button basic fluid icon="trash" onClick={onDelete} />
       </div>
     )}
 

@@ -72,7 +72,7 @@ const FeedbackChannel = ({
               content={content}
               key={id}
               votes={votes}
-              onDelete={handleDeleteFeedback(id)}
+              onDelete={() => handleDeleteFeedback(id)}
             />
           </div>
         ))}

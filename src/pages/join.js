@@ -223,7 +223,7 @@ export default compose(
       speed,
     }) => {
       try {
-        await newConfusionTS({
+        newConfusionTS({
           variables: {
             difficulty,
             fp: await fp,
@@ -242,7 +242,7 @@ export default compose(
     }) => async ({ content }) => {
       try {
         if (joinSession.settings.isFeedbackChannelPublic) {
-          await newFeedback({
+          newFeedback({
             // optimistically add the feedback to the array already
             optimisticResponse: {
               addFeedback: {
@@ -279,7 +279,7 @@ export default compose(
             variables: { content, fp: await fp, sessionId: joinSession.id },
           })
         } else {
-          await newFeedback({ variables: { content, fp, sessionId: joinSession.id } })
+          newFeedback({ variables: { content, fp, sessionId: joinSession.id } })
         }
       } catch ({ message }) {
         console.error(message)
@@ -289,7 +289,7 @@ export default compose(
     // handle creation of a new response
     handleNewResponse: ({ fp, newResponse }) => async ({ instanceId, response }) => {
       try {
-        await newResponse({
+        newResponse({
           variables: { fp: await fp, instanceId, response },
         })
       } catch ({ message }) {
