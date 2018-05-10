@@ -23,7 +23,6 @@ import {
   calculateThirdQuartile,
   calculateStandardDeviation,
   pageWithIntl,
-  withData,
   withLogging,
 } from '../../lib'
 import { Chart } from '../../components/evaluation'
@@ -122,7 +121,6 @@ Evaluation.defaultProps = defaultProps
 
 export default compose(
   withLogging(),
-  withData,
   pageWithIntl,
   graphql(SessionEvaluationQuery, {
     // refetch the active instances query every 10s

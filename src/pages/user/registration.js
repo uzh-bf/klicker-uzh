@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { StaticLayout } from '../../components/layouts'
 import { RegistrationForm } from '../../components/forms'
 import { RegistrationMutation } from '../../graphql'
-import { pageWithIntl, withData, withLogging } from '../../lib'
+import { pageWithIntl, withLogging } from '../../lib'
 
 const propTypes = {
   intl: intlShape.isRequired,
@@ -96,6 +96,5 @@ export default compose(
   withLogging({
     logRocket: false,
   }),
-  withData,
   pageWithIntl,
 )(Registration)

@@ -10,7 +10,7 @@ import { Message } from 'semantic-ui-react'
 import { StaticLayout } from '../../components/layouts'
 import { LoginForm } from '../../components/forms'
 import { LoginMutation } from '../../graphql'
-import { pageWithIntl, withData, withLogging } from '../../lib'
+import { pageWithIntl, withLogging } from '../../lib'
 
 const propTypes = {
   intl: intlShape.isRequired,
@@ -102,6 +102,5 @@ export default compose(
     chatlio: false,
     logRocket: false,
   }),
-  withData,
   pageWithIntl,
 )(Login)

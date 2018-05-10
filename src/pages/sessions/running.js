@@ -6,7 +6,7 @@ import { graphql, Query, Mutation } from 'react-apollo'
 import { intlShape } from 'react-intl'
 import Router from 'next/router'
 
-import { pageWithIntl, withData, withLogging } from '../../lib'
+import { pageWithIntl, withLogging } from '../../lib'
 
 import { ConfusionBarometer } from '../../components/confusion'
 import { FeedbackChannel } from '../../components/feedbacks'
@@ -243,7 +243,6 @@ Running.propTypes = propTypes
 
 export default compose(
   withLogging(),
-  withData,
   pageWithIntl,
   graphql(AccountSummaryQuery),
   withProps(({ data }) => ({

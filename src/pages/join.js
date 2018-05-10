@@ -15,7 +15,7 @@ import { graphql } from 'react-apollo'
 
 import FeedbackArea from '../components/sessions/join/FeedbackArea'
 import QuestionArea from '../components/sessions/join/QuestionArea'
-import { pageWithIntl, withData, withFingerprint, withLogging } from '../lib'
+import { pageWithIntl, withFingerprint, withLogging } from '../lib'
 import {
   JoinSessionQuery,
   AddConfusionTSMutation,
@@ -173,7 +173,6 @@ export default compose(
     chatlio: false,
     logRocket: false,
   }),
-  withData,
   /* withStorage({
     propDefault: 'activeQuestion',
     propName: 'sidebarActiveItem',

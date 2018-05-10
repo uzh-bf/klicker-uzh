@@ -8,7 +8,7 @@ import Link from 'next/link'
 
 import { StaticLayout } from '../../components/layouts'
 import { PasswordResetForm } from '../../components/forms'
-import { pageWithIntl, withData, withLogging } from '../../lib'
+import { pageWithIntl, withLogging } from '../../lib'
 import { ChangePasswordMutation } from '../../graphql'
 
 const propTypes = {
@@ -89,6 +89,5 @@ export default compose(
   withLogging({
     logRocket: false,
   }),
-  withData,
   pageWithIntl,
 )(ResetPassword)

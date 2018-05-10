@@ -6,7 +6,7 @@ import { Message } from 'semantic-ui-react'
 
 import { StaticLayout } from '../../components/layouts'
 import { PasswordRequestForm } from '../../components/forms'
-import { pageWithIntl, withData, withLogging } from '../../lib'
+import { pageWithIntl, withLogging } from '../../lib'
 import { RequestPasswordMutation } from '../../graphql'
 
 const propTypes = {
@@ -77,4 +77,4 @@ const RequestPassword = ({ intl }) => (
 
 RequestPassword.propTypes = propTypes
 
-export default compose(withLogging(), withData, pageWithIntl)(RequestPassword)
+export default compose(withLogging(), pageWithIntl)(RequestPassword)

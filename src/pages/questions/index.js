@@ -9,7 +9,6 @@ import moment from 'moment'
 
 import {
   pageWithIntl,
-  withData,
   withDnD,
   withSortingAndFiltering,
   withLogging,
@@ -256,7 +255,6 @@ export default compose(
   withLogging(),
   withDnD,
   pageWithIntl,
-  withData,
   graphql(StartSessionMutation, { name: 'startSession' }),
   graphql(CreateSessionMutation, { name: 'createSession' }),
   graphql(ArchiveQuestionsMutation, { name: 'archiveQuestions' }),

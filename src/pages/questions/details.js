@@ -11,7 +11,7 @@ import _isNil from 'lodash/isNil'
 
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionEditForm } from '../../components/forms'
-import { pageWithIntl, withData, omitDeep, withDnD, withLogging } from '../../lib'
+import { pageWithIntl, omitDeep, withDnD, withLogging } from '../../lib'
 import {
   TagListQuery,
   QuestionListQuery,
@@ -154,4 +154,4 @@ const EditQuestion = ({ intl, url }) => (
 
 EditQuestion.propTypes = propTypes
 
-export default compose(withLogging(), withDnD, withData, pageWithIntl)(EditQuestion)
+export default compose(withLogging(), withDnD, pageWithIntl)(EditQuestion)
