@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import moment from 'moment'
 import { compose, withProps } from 'recompose'
-import { graphql, Query, Mutation } from 'react-apollo'
+import { graphql, Query, Mutation, Subscription } from 'react-apollo'
 import { intlShape } from 'react-intl'
 import Router from 'next/router'
 
@@ -20,6 +20,8 @@ import {
   ActivateNextBlockMutation,
   DeleteFeedbackMutation,
   SessionListQuery,
+  FeedbackAddedSubscription,
+  ConfusionAddedSubscription,
 } from '../../graphql'
 import { Messager } from '../../components/common'
 
@@ -43,7 +45,7 @@ const Running = ({ intl, shortname }) => (
     })}
     sidebar={{ activeItem: 'runningSession' }}
   >
-    <Query pollInterval={10000} query={RunningSessionQuery}>
+    <Query query={RunningSessionQuery}>
       {({ data, loading, error }) => {
         if (loading || !data || !data.runningSession) {
           return (
@@ -80,6 +82,18 @@ const Running = ({ intl, shortname }) => (
 
         return (
           <div className="runningSession">
+            <Subscription query={FeedbackAddedSubscription} variables={{ sessionId: id }}>
+              {({ data: { feedbackAdded }, loading: subscriptionLoading }) => (
+                <div>New feedback: {!subscriptionLoading && feedbackAdded.content}</div>
+              )}
+            </Subscription>
+
+            <Subscription query={ConfusionAddedSubscription} variables={{ sessionId: id }}>
+              {({ data: { confusionAdded }, loading: subscriptionLoading }) => (
+                <div>New confusion: {!subscriptionLoading && confusionAdded.difficulty}</div>
+              )}
+            </Subscription>
+
             <div className="sessionProgress">
               <Mutation mutation={EndSessionMutation}>
                 {endSession => (
