@@ -9,6 +9,16 @@
   "timezone": "Europe/Zurich",
   "packageRules": [
     {
+      "packagePatterns": ["^apollo", "react-apollo"],
+      "groupName": "apollo",
+      "automerge": "minor"
+    },
+    {
+      "packagePatterns": ["^draftjs"],
+      "groupName": "draftjs",
+      "automerge": "minor"
+    },
+    {
       "packagePatterns": ["^babel-eslint", "^eslint"],
       "groupName": "eslint",
       "automerge": "minor"
@@ -32,13 +42,8 @@
       "automerge": "minor"
     },
     {
-      "packageNames": ["jest", "react-addons-test-utils", "enzyme"],
+      "packageNames": ["jest", "react-addons-test-utils", "enzyme", "cypress"],
       "groupName": "test",
-      "automerge": "minor"
-    },
-    {
-      "packagePatterns": ["^prosemirror"],
-      "groupName": "prosemirror",
       "automerge": "minor"
     },
     {
