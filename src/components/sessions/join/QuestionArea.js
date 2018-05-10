@@ -3,11 +3,12 @@ import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import _without from 'lodash/without'
 import { FormattedMessage } from 'react-intl'
+import { convertFromRaw } from 'draft-js'
 import { compose, withStateHandlers, withHandlers, withProps } from 'recompose'
 
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
 import { ActionMenu, Collapser } from '../../common'
-import { SCAnswerOptions, FREEAnswerOptions } from '../../questionTypes'
+import { QuestionDescription, SCAnswerOptions, FREEAnswerOptions } from '../../questionTypes'
 import { withStorage } from '../../../lib'
 
 const propTypes = {
@@ -103,13 +104,18 @@ function QuestionArea({
           )
         }
 
-        const { description, options, type } = currentQuestion
+        const {
+ content, description, options, type,
+} = currentQuestion
+
+        // if the content is set, parse it and convert into a content state
+        const contentState = content ? content |> JSON.parse |> convertFromRaw : null
 
         return (
           <div>
             <div className="collapser">
               <Collapser collapsed={isCollapsed} handleCollapseToggle={toggleIsCollapsed}>
-                {description}
+                <QuestionDescription content={contentState} description={description} />
               </Collapser>
             </div>
 
