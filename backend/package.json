@@ -17,6 +17,7 @@
     "cross-env": "5.1.4",
     "dataloader": "1.4.0",
     "dotenv": "5.0.1",
+    "draft-js": "0.10.5",
     "elastic-apm-node": "1.5.0",
     "express": "4.16.3",
     "express-jwt": "5.3.1",
@@ -36,6 +37,8 @@
     "morgan": "1.9.0",
     "nodemailer": "4.6.4",
     "rate-limit-redis": "1.4.0",
+    "react": "16.3.2",
+    "react-dom": "16.3.2",
     "request": "2.85.0",
     "request-promise": "4.2.2",
     "subscriptions-transport-ws": "0.9.9"

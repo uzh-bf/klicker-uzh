@@ -1,7 +1,10 @@
 const _isNumber = require('lodash/isNumber')
+// TODO: find a way to use draft.js without needing react and react-dom
+const { ContentState, convertToRaw } = require('draft-js')
 
 const { QuestionModel, TagModel, UserModel } = require('../models')
 const { QuestionGroups, QuestionTypes } = require('../constants')
+const { convertToPlainText } = require('../lib/draft')
 
 // process tags when editing or creating a question
 const processTags = (existingTags, newTags, userId) => {
@@ -29,7 +32,7 @@ const processTags = (existingTags, newTags, userId) => {
 
 // create a new question
 const createQuestion = async ({
-  title, type, description, options, solution, tags, userId,
+  title, type, content, options, solution, tags, userId,
 }) => {
   // if no tags have been assigned, throw
   if (!tags || tags.length === 0) {
@@ -87,7 +90,8 @@ const createQuestion = async ({
     user: userId,
     versions: [
       {
-        description,
+        content,
+        description: convertToPlainText(content),
         options: QuestionGroups.WITH_OPTIONS.includes(type) && {
           [type]: options,
         },
@@ -114,12 +118,12 @@ const createQuestion = async ({
 }
 
 const modifyQuestion = async (questionId, userId, {
-  title, tags, description, options, solution,
+  title, tags, content, options, solution,
 }) => {
   const promises = []
 
-  // check if both description and options are set for a new version
-  if (description ? !options : options) {
+  // check if both content and options are set for a new version
+  if (content ? !options : options) {
     throw new Error('INVALID_VERSION_DEFINITION')
   }
 
@@ -183,10 +187,31 @@ const modifyQuestion = async (questionId, userId, {
     promises.concat(user.save(), allTagsUpdate, oldTagsUpdate)
   }
 
-  // if description and options are set, add a new version
-  if (description && options) {
+  // migrate old question versions without content field
+  for (let i = 0; i < question.versions.length; i += 1) {
+    // if the content field is not set on any old version
+    if (!question.versions[i].content) {
+      // get the description of the old version
+      const { description } = question.versions[i]
+
+      // instantiate a content state
+      const contentState = ContentState.createFromText(description)
+
+      // convert the content state to raw json
+      const rawContent = JSON.stringify(convertToRaw(contentState))
+
+      // set the content of the version to the raw state
+      question.versions[i].content = rawContent
+      question.markModified(`versions.${i}`)
+    }
+  }
+
+  // TODO: ensure that content is not empty
+  // if content and options are set, add a new version
+  if (content && options) {
     question.versions.push({
-      description,
+      content,
+      description: convertToPlainText(content),
       options: QuestionGroups.WITH_OPTIONS.includes(question.type) && {
         // HACK: manually ensure randomized is default set to false
         // TODO: mongoose should do this..?

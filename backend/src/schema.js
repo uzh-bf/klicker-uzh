@@ -1,5 +1,4 @@
 const { makeExecutableSchema } = require('graphql-tools')
-
 const { requireAuth } = require('./services/auth')
 const {
   allQuestions,
@@ -85,6 +84,7 @@ const typeDefs = [
 // define graphql resolvers for schema above
 // everything imported from their respective modules in resolvers/
 const resolvers = {
+  // map queries and mutations
   Query: {
     allQuestions: requireAuth(allQuestions),
     allSessions: requireAuth(allSessions),
@@ -114,6 +114,7 @@ const resolvers = {
     updateSessionSettings: requireAuth(updateSessionSettings),
     activateNextBlock: requireAuth(activateNextBlock),
   },
+  // map our own types
   Question: {
     instances: questionInstancesByPV,
     tags,

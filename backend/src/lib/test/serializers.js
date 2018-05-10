@@ -1,3 +1,17 @@
+const { pick: _pick } = require('lodash')
+
+const draftContentSerializer = (content) => {
+  // parse the stringified JSON
+  const object = JSON.parse(content)
+
+  // map over the blocks and pick everything except the keys
+  object.blocks = object.blocks.map(block =>
+    _pick(block, ['data', 'text', 'type', 'depth', 'inlineStyleRanges', 'entityRanges']))
+
+  // stringify the resulting object
+  return JSON.stringify(object)
+}
+
 const questionSerializer = {
   test: val => val.id && val.instances && val.tags && val.title && val.type && val.versions,
   print: val => `
@@ -10,8 +24,9 @@ const questionSerializer = {
     Instances: [${val.instances}]
     Tags: [${val.tags.map(tag => tag.name)}]
     Versions: [${val.versions.map(({
-    description, instances, options, solution,
+    content, description, instances, options, solution,
   }) => `
+      Content: ${draftContentSerializer(content)}
       Description: ${description}
       Instances: [${instances}]
       Options: {
@@ -119,6 +134,7 @@ const questionInstanceSerializer = {
 }
 
 module.exports = {
+  draftContentSerializer,
   questionSerializer,
   sessionSerializer,
   questionInstanceSerializer,

@@ -5,7 +5,7 @@ const rp = require('request-promise')
 async function sendSlackNotification(text) {
   // check if slack integration is appropriately configured
   if (process.env.NODE_ENV === 'production' && process.env.SLACK_WEBHOOK) {
-    console.log(`> Sending slack notification: ${text}`)
+    // console.log(`> Sending slack notification: ${text}`)
 
     return rp({
       method: 'POST',
