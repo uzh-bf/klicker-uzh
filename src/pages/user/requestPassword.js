@@ -77,10 +77,4 @@ const RequestPassword = ({ intl }) => (
 
 RequestPassword.propTypes = propTypes
 
-export default compose(
-  withLogging({
-    logRocket: false,
-  }),
-  withData,
-  pageWithIntl,
-)(RequestPassword)
+export default compose(withLogging(), withData, pageWithIntl)(RequestPassword)

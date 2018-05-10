@@ -40,17 +40,14 @@
     "react/no-unused-prop-types": 1,
     "jsx-a11y/anchor-is-valid": 0,
     "function-paren-newline": 0,
-    "react/jsx-curly-spacing": [1, {
-      "when": "never",
-      "children": true
-    }],
     "react/jsx-curly-brace-presence": 0,
     "react/jsx-closing-tag-location": 0,
     "import/extensions": 0,
     "react/destructuring-assignment": [2, "always"],
     "react/boolean-prop-naming": 2,
     "react/jsx-no-bind": 0,
-    "no-mixed-operators": 0
+    "no-mixed-operators": 0,
+    "import/prefer-default-export": 0
   },
   "env": {
     "browser": true,

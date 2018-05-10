@@ -2,6 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 
+import { QuestionDescription } from '../'
 import { QUESTION_TYPES } from '../../../constants'
 
 const propTypes = {
@@ -29,7 +30,9 @@ const FREECreationPreview = ({ questionType, options: { restrictions }, descript
 
   return (
     <div className="preview">
-      <div className="description">{description}</div>
+      <div className="description">
+        <QuestionDescription content={description} />
+      </div>
       {(() => {
         // if the type is FREE_RANGE and both restrictions are specified
         // display a slider and selection

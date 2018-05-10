@@ -5,6 +5,7 @@ import { Button, Form } from 'semantic-ui-react'
 import { Formik } from 'formik'
 import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
+import { EditorState } from 'draft-js'
 
 import { ContentInput, TagInput } from '../questions'
 import {
@@ -101,7 +102,7 @@ const QuestionCreationForm = ({
     <div className="questionCreationForm">
       <Formik
         initialValues={{
-          content: '',
+          content: EditorState.createEmpty(),
           options: {
             choices: [],
             randomized: false,
@@ -211,7 +212,7 @@ const QuestionCreationForm = ({
                   />
                 </h2>
                 <Preview
-                  description={values.content}
+                  description={values.content.getCurrentContent()}
                   options={values.options}
                   questionType={values.type}
                   title={values.title}
