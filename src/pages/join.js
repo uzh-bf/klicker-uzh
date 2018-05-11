@@ -1,29 +1,28 @@
-import React from 'react'
-import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import _throttle from 'lodash/debounce'
-import {
-  compose,
-  withHandlers,
-  withStateHandlers,
-  withProps,
-  branch,
-  renderComponent,
-} from 'recompose'
-import { intlShape, FormattedMessage } from 'react-intl'
-import { graphql } from 'react-apollo'
 import { withRouter } from 'next/router'
-
+import PropTypes from 'prop-types'
+import React from 'react'
+import { graphql } from 'react-apollo'
+import { FormattedMessage, intlShape } from 'react-intl'
+import {
+  branch,
+  compose,
+  renderComponent,
+  withHandlers,
+  withProps,
+  withStateHandlers,
+} from 'recompose'
+import { StudentLayout } from '../components/layouts'
 import FeedbackArea from '../components/sessions/join/FeedbackArea'
 import QuestionArea from '../components/sessions/join/QuestionArea'
-import { pageWithIntl, withFingerprint, withLogging } from '../lib'
 import {
-  JoinSessionQuery,
   AddConfusionTSMutation,
   AddFeedbackMutation,
   AddResponseMutation,
+  JoinSessionQuery,
 } from '../graphql'
-import { StudentLayout } from '../components/layouts'
+import { pageWithIntl, withFingerprint, withLogging } from '../lib'
 
 const propTypes = {
   activeQuestions: PropTypes.array,

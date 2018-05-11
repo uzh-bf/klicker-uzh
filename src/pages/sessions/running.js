@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import moment from 'moment'
 import { compose, withProps } from 'recompose'
-import { graphql, Query, Mutation, Subscription } from 'react-apollo'
+import { graphql, Query, Mutation } from 'react-apollo'
 import { intlShape } from 'react-intl'
 import Router from 'next/router'
 
@@ -46,7 +46,9 @@ const Running = ({ intl, shortname }) => (
     sidebar={{ activeItem: 'runningSession' }}
   >
     <Query query={RunningSessionQuery}>
-      {({ data, loading, error }) => {
+      {({
+ data, loading, error, subscribeToMore,
+}) => {
         if (loading || !data || !data.runningSession) {
           return (
             <Messager
@@ -82,18 +84,6 @@ const Running = ({ intl, shortname }) => (
 
         return (
           <div className="runningSession">
-            <Subscription query={FeedbackAddedSubscription} variables={{ sessionId: id }}>
-              {({ data: { feedbackAdded }, loading: subscriptionLoading }) => (
-                <div>New feedback: {!subscriptionLoading && feedbackAdded.content}</div>
-              )}
-            </Subscription>
-
-            <Subscription query={ConfusionAddedSubscription} variables={{ sessionId: id }}>
-              {({ data: { confusionAdded }, loading: subscriptionLoading }) => (
-                <div>New confusion: {!subscriptionLoading && confusionAdded.difficulty}</div>
-              )}
-            </Subscription>
-
             <div className="sessionProgress">
               <Mutation mutation={EndSessionMutation}>
                 {endSession => (
@@ -152,6 +142,23 @@ const Running = ({ intl, shortname }) => (
                     }}
                     intl={intl}
                     isActive={settings.isConfusionBarometerActive}
+                    subscribeToMore={() => {
+                      subscribeToMore({
+                        document: ConfusionAddedSubscription,
+                        updateQuery: (prev, { subscriptionData }) => {
+                          if (!subscriptionData.data) return prev
+
+                          const newConfusion = subscriptionData.data.confusionAdded
+
+                          return Object.assign({}, prev, {
+                            runningSession: {
+                              confusionTS: [...prev.runningSession.confusionTS, newConfusion],
+                            },
+                          })
+                        },
+                        variables: { sessionId: id },
+                      })
+                    }}
                   />
                 )}
               </Mutation>
@@ -194,6 +201,23 @@ const Running = ({ intl, shortname }) => (
                         intl={intl}
                         isActive={settings.isFeedbackChannelActive}
                         isPublic={settings.isFeedbackChannelPublic}
+                        subscribeToMore={() => {
+                          subscribeToMore({
+                            document: FeedbackAddedSubscription,
+                            updateQuery: (prev, { subscriptionData }) => {
+                              if (!subscriptionData.data) return prev
+
+                              const newFeedback = subscriptionData.data.feedbackAdded
+
+                              return Object.assign({}, prev, {
+                                runningSession: {
+                                  feedbacks: [...prev.runningSession.feedbacks, newFeedback],
+                                },
+                              })
+                            },
+                            variables: { sessionId: id },
+                          })
+                        }}
                       />
                     )}
                   </Mutation>
