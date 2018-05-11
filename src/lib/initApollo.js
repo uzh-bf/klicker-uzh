@@ -61,6 +61,10 @@ function create(initialState) {
   if (!ssrMode) {
     // instantiate a basic subscription client
     const wsClient = new SubscriptionClient(process.env.API_URL_WS, {
+      // TODO: include JWT
+      /* connectionParams: {
+        authToken: user.authToken,
+      }, */
       reconnect: true,
     })
 
