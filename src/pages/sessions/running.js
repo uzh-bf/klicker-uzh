@@ -147,14 +147,16 @@ const Running = ({ intl, shortname }) => (
                         document: ConfusionAddedSubscription,
                         updateQuery: (prev, { subscriptionData }) => {
                           if (!subscriptionData.data) return prev
-
-                          const newConfusion = subscriptionData.data.confusionAdded
-
-                          return Object.assign({}, prev, {
+                          return {
+                            ...prev,
                             runningSession: {
-                              confusionTS: [...prev.runningSession.confusionTS, newConfusion],
+                              ...prev.runningSession,
+                              confusionTS: [
+                                ...prev.runningSession.confusionTS,
+                                subscriptionData.data.confusionAdded,
+                              ],
                             },
-                          })
+                          }
                         },
                         variables: { sessionId: id },
                       })
@@ -206,14 +208,16 @@ const Running = ({ intl, shortname }) => (
                             document: FeedbackAddedSubscription,
                             updateQuery: (prev, { subscriptionData }) => {
                               if (!subscriptionData.data) return prev
-
-                              const newFeedback = subscriptionData.data.feedbackAdded
-
-                              return Object.assign({}, prev, {
+                              return {
+                                ...prev,
                                 runningSession: {
-                                  feedbacks: [...prev.runningSession.feedbacks, newFeedback],
+                                  ...prev.runningSession,
+                                  feedbacks: [
+                                    ...prev.runningSession.feedbacks,
+                                    subscriptionData.data.feedbackAdded,
+                                  ],
                                 },
-                              })
+                              }
                             },
                             variables: { sessionId: id },
                           })
