@@ -36,56 +36,55 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
         isSubmitting,
       }) => (
         <Form error onSubmit={handleSubmit}>
-          <div className="personal">
-            <FormikInput
-              autoFocus
-              required
-              error={errors.email}
-              errorMessage={intl.formatMessage({
-                defaultMessage: 'Please provide a valid email address.',
-                id: 'form.email.invalid',
-              })}
-              handleBlur={handleBlur}
-              handleChange={handleChange}
-              icon="mail"
-              intl={intl}
-              label={intl.formatMessage({
-                defaultMessage: 'Email',
-                id: 'form.email.label',
-              })}
-              name="email"
-              touched={touched.email}
-              type="email"
-              value={values.email}
-            />
-            <FormikInput
-              required
-              error={errors.shortname}
-              errorMessage={intl.formatMessage({
-                defaultMessage: 'Please provide a valid account ID (3-6 characters).',
-                id: 'form.shortname.invalid',
-              })}
-              handleBlur={handleBlur}
-              handleChange={handleChange}
-              icon="hashtag"
-              intl={intl}
-              label={intl.formatMessage({
-                defaultMessage: 'Account ID',
-                id: 'form.shortname.label',
-              })}
-              name="shortname"
-              placeholder="klicker.uzh.ch/join/ID..."
-              tooltip={intl.formatMessage({
-                defaultMessage:
-                  'A unique identifier for your account. Must be between 3 and 6 characters long (alphanumeric).',
-                id: 'tooltip',
-              })}
-              touched={touched.shortname}
-              type="text"
-              value={values.shortname}
-            />
-          </div>
-          <div className="account">
+          <FormikInput
+            autoFocus
+            required
+            error={errors.email}
+            errorMessage={intl.formatMessage({
+              defaultMessage: 'Please provide a valid email address.',
+              id: 'form.email.invalid',
+            })}
+            handleBlur={handleBlur}
+            handleChange={handleChange}
+            icon="mail"
+            intl={intl}
+            label={intl.formatMessage({
+              defaultMessage: 'Email',
+              id: 'form.email.label',
+            })}
+            name="email"
+            touched={touched.email}
+            type="email"
+            value={values.email}
+          />
+          <FormikInput
+            required
+            error={errors.shortname}
+            errorMessage={intl.formatMessage({
+              defaultMessage: 'Please provide a valid account ID (3-8 characters).',
+              id: 'form.shortname.invalid',
+            })}
+            handleBlur={handleBlur}
+            handleChange={handleChange}
+            icon="hashtag"
+            inlineLabel="beta.klicker.uzh.ch/join/"
+            intl={intl}
+            label={intl.formatMessage({
+              defaultMessage: 'Account ID / Join Link',
+              id: 'form.shortname.label',
+            })}
+            name="shortname"
+            placeholder="xyz123"
+            tooltip={intl.formatMessage({
+              defaultMessage:
+                'A unique identifier for your account. Must be between 3 and 6 characters long (alphanumeric).',
+              id: 'tooltip',
+            })}
+            touched={touched.shortname}
+            type="text"
+            value={values.shortname}
+          />
+          <div className="password">
             <FormikInput
               required
               error={errors.password}
@@ -127,56 +126,56 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
               value={values.passwordRepeat}
             />
           </div>
-          <div className="use">
-            <FormikInput
-              required
-              error={errors.institution}
-              errorMessage={intl.formatMessage({
-                defaultMessage: 'Please provide a valid institution.',
-                id: 'form.institution.invalid',
-              })}
-              handleBlur={handleBlur}
-              handleChange={handleChange}
-              icon="university"
-              intl={intl}
-              label={intl.formatMessage({
-                defaultMessage: 'Institution',
-                id: 'form.institution.label',
-              })}
-              name="institution"
-              touched={touched.institution}
-              type="text"
-              value={values.institution}
-            />
-            <FormikInput
-              error={errors.useCase}
-              handleBlur={handleBlur}
-              handleChange={handleChange}
-              icon="university"
-              intl={intl}
-              label={intl.formatMessage({
-                defaultMessage: 'Use case description',
-                id: 'form.useCase.label',
-              })}
-              name="useCase"
-              tooltip={intl.formatMessage({
-                defaultMessage: 'Short description of your planned use case for the IBF Klicker.',
-                id: 'tooltip',
-              })}
-              touched={touched.useCase}
-              type="text"
-              value={values.useCase}
-            />
+          <FormikInput
+            required
+            error={errors.institution}
+            errorMessage={intl.formatMessage({
+              defaultMessage: 'Please provide a valid institution.',
+              id: 'form.institution.invalid',
+            })}
+            handleBlur={handleBlur}
+            handleChange={handleChange}
+            icon="university"
+            intl={intl}
+            label={intl.formatMessage({
+              defaultMessage: 'Institution',
+              id: 'form.institution.label',
+            })}
+            name="institution"
+            touched={touched.institution}
+            type="text"
+            value={values.institution}
+          />
+          <FormikInput
+            error={errors.useCase}
+            handleBlur={handleBlur}
+            handleChange={handleChange}
+            icon="university"
+            intl={intl}
+            label={intl.formatMessage({
+              defaultMessage: 'Use case description',
+              id: 'form.useCase.label',
+            })}
+            name="useCase"
+            tooltip={intl.formatMessage({
+              defaultMessage: 'Short description of your planned use case for the Klicker UZH.',
+              id: 'tooltip',
+            })}
+            touched={touched.useCase}
+            type="text"
+            value={values.useCase}
+          />
+          <div className="submit">
+            <Button
+              primary
+              disabled={!_isEmpty(errors) || _isEmpty(touched)}
+              floated="right"
+              loading={loading && isSubmitting}
+              type="submit"
+            >
+              <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+            </Button>
           </div>
-          <Button
-            primary
-            disabled={!_isEmpty(errors) || _isEmpty(touched)}
-            floated="right"
-            loading={loading && isSubmitting}
-            type="submit"
-          >
-            <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
-          </Button>
         </Form>
       )}
       validationSchema={Yup.object().shape({
@@ -193,7 +192,9 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
           .required(),
         shortname: Yup.string()
           .min(3)
-          .max(6)
+          .max(8)
+          .matches(/^[A-Za-z0-9]+$/)
+          .lowercase()
           .required(),
         useCase: Yup.string(),
       })}
@@ -206,34 +207,28 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
       .registrationForm > :global(form) {
         display: flex;
         flex-direction: column;
-        .account {
-          margin-top: 1rem;
-        }
-        .use {
-          display: flex;
-          flex-direction: column;
 
-          margin-top: 1rem;
+        .password {
+          margin-bottom: 1rem;
         }
 
         @include desktop-tablet-only {
-          flex-flow: row wrap;
           border: 1px solid $color-primary;
           padding: 1rem;
           background-color: rgba(124, 184, 228, 0.12);
 
-          .personal,
-          .account {
-            flex: 1 1 50%;
-          }
-          .personal {
-            padding-right: 0.5rem;
-          }
-          .account {
-            margin: 0;
-          }
-          .use {
-            flex: 1;
+          .password {
+            display: flex;
+            flex-direction: row;
+            margin-bottom: 0;
+
+            :global(.field) {
+              flex: 1;
+
+              &:first-child {
+                margin-right: 1rem;
+              }
+            }
           }
         }
       }
