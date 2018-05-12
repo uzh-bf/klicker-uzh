@@ -34,6 +34,7 @@ const { allTags, tags } = require('./resolvers/tags')
 const {
   createUser, login, logout, user, authUser, changePassword, requestPassword,
 } = require('./resolvers/users')
+const { confusionAdded, feedbackAdded } = require('./resolvers/subscriptions')
 const { allTypes } = require('./types')
 
 // create graphql schema in schema language
@@ -44,6 +45,7 @@ const typeDefs = [
   schema {
     query: Query
     mutation: Mutation
+    subscription: Subscription
   }
 
   type Query {
@@ -76,6 +78,11 @@ const typeDefs = [
     requestPassword(email: String!): String!
     startSession(id: ID!): Session!
     updateSessionSettings(sessionId: ID!, settings: Session_SettingsInput!): Session!
+  }
+
+  type Subscription {
+    confusionAdded(sessionId: ID!): Session_ConfusionTimestep
+    feedbackAdded(sessionId: ID!): Session_Feedback
   }
 `,
   ...allTypes,
@@ -113,6 +120,11 @@ const resolvers = {
     startSession: requireAuth(startSession),
     updateSessionSettings: requireAuth(updateSessionSettings),
     activateNextBlock: requireAuth(activateNextBlock),
+  },
+  Subscription: {
+    // TODO: authentication
+    confusionAdded,
+    feedbackAdded,
   },
   // map our own types
   Question: {

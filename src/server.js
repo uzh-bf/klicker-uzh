@@ -1,4 +1,8 @@
 /* eslint-disable global-require */
+const { execute, subscribe } = require('graphql')
+const { createServer } = require('http')
+const { SubscriptionServer } = require('subscriptions-transport-ws')
+const schema = require('./schema')
 
 // initialize APM if so configured
 if (process.env.APM_SERVER_URL) {
@@ -15,42 +19,53 @@ const mongoose = require('mongoose')
 const server = require('./app')
 const { getRedis } = require('./redis')
 
+// get the redis singleton
 const redis = getRedis()
 
-server.listen(process.env.PORT, (err) => {
+// wrap express for websockets
+const ws = createServer(server)
+
+ws.listen(process.env.PORT, (err) => {
   if (err) throw err
 
-  // send a ready message to PM2
-  if (process.send) {
-    process.send('ready')
+  console.log(`[klicker-api] GraphQL ready on http://${process.env.APP_DOMAIN}:${process.env.PORT}${process.env.APP_PATH}!`)
+
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[klicker-api] GraphiQL ready on http://${process.env.APP_DOMAIN}:${process.env.PORT}/graphiql!`)
   }
 
-  console.log(`[klicker-api] ready on http://${process.env.APP_DOMAIN}:${process.env.PORT}${process.env.APP_PATH}!`)
+  // setup a subscription server
+  // eslint-disable-next-line no-new
+  new SubscriptionServer(
+    {
+      execute,
+      subscribe,
+      schema,
+    },
+    {
+      server: ws,
+      path: '/subscriptions',
+    },
+  )
 })
 
-process.on('SIGINT', async () => {
+const shutdown = async () => {
   console.log('[klicker-api] Shutting down server')
   await mongoose.disconnect()
   await redis.disconnect()
 
   console.log('[klicker-api] Shutdown complete')
   process.exit(0)
+}
+
+process.on('SIGINT', async () => {
+  await shutdown()
 })
 
 process.on('exit', async () => {
-  console.log('[klicker-api] Shutting down server')
-  await mongoose.disconnect()
-  await redis.disconnect()
-
-  console.log('[klicker-api] Shutdown complete')
-  process.exit(0)
+  await shutdown()
 })
 
 process.once('SIGUSR2', async () => {
-  console.log('[klicker-api] Shutting down server')
-  await mongoose.disconnect()
-  await redis.disconnect()
-
-  console.log('[klicker-api] Shutdown complete')
-  process.exit(0)
+  await shutdown()
 })

@@ -20,7 +20,7 @@ const compression = require('compression')
 const helmet = require('helmet')
 const morgan = require('morgan')
 const RateLimit = require('express-rate-limit')
-const { graphqlExpress } = require('apollo-server-express')
+const { graphqlExpress, graphiqlExpress } = require('apollo-server-express')
 
 const schema = require('./schema')
 const AuthService = require('./services/auth')
@@ -69,29 +69,6 @@ mongoose.connection
     exceptTest(() => console.warn('> Warning: ', error))
   })
 
-// setup Apollo Engine (GraphQL API metrics)
-let apolloEngine
-if (isProd && process.env.ENGINE_API_KEY) {
-  const { Engine } = require('apollo-engine')
-  apolloEngine = new Engine({
-    engineConfig: {
-      apiKey: process.env.ENGINE_API_KEY,
-      stores: [
-        {
-          name: 'pq',
-          inMemory: {
-            cacheSize: '5000000',
-          },
-        },
-      ],
-      persistedQueries: {
-        store: 'pq',
-      },
-    },
-  })
-  apolloEngine.start()
-}
-
 // initialize an express server
 const server = express()
 
@@ -103,8 +80,6 @@ if (process.env.APP_PROXY) {
 
 // setup middleware stack
 let middleware = [
-  // enable gzip compression
-  compression(),
   // secure the server with helmet
   helmet({
     // TODO: activate security settings with environment vars
@@ -131,8 +106,8 @@ let middleware = [
   }),
 ]
 
-if (process.env.ENGINE_API_KEY) {
-  middleware = [apolloEngine.expressMiddleware(), ...middleware]
+if (isProd) {
+  middleware = [compression(), ...middleware]
 }
 
 if (process.env.APP_RATE_LIMITING) {
@@ -212,6 +187,17 @@ if (isProd) {
 
     next()
   })
+}
+
+// start up graphiql in development mode
+if (process.env.NODE_ENV === 'development') {
+  server.use(
+    '/graphiql',
+    graphiqlExpress({
+      endpointURL: '/graphql',
+      subscriptionsEndpoint: 'ws://localhost:4000/subscriptions',
+    }),
+  )
 }
 
 // expose the GraphQL API endpoint
