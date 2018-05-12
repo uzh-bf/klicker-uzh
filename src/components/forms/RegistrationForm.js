@@ -77,7 +77,7 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
             placeholder="xyz123"
             tooltip={intl.formatMessage({
               defaultMessage:
-                'A unique identifier for your account. Must be between 3 and 6 characters long (alphanumeric).',
+                'A unique identifier for your account. Must be between 3 and 8 characters long (only alphanumeric and hyphen).',
               id: 'tooltip',
             })}
             touched={touched.shortname}
@@ -193,7 +193,7 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
         shortname: Yup.string()
           .min(3)
           .max(8)
-          .matches(/^[A-Za-z0-9]+$/)
+          .matches(/^[A-Za-z0-9-]+$/)
           .lowercase()
           .required(),
         useCase: Yup.string(),

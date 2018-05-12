@@ -50,8 +50,18 @@ const Registration = ({ intl }) => (
               <RegistrationForm
                 intl={intl}
                 loading={loading}
-                onSubmit={({ email, password, shortname }) => {
-                  register({ variables: { email, password, shortname } })
+                onSubmit={({
+ email, password, shortname, institution, useCase,
+}) => {
+                  register({
+                    variables: {
+                      email,
+                      institution,
+                      password,
+                      shortname,
+                      useCase,
+                    },
+                  })
                 }}
               />
               {error && <div className="errorMessage">Registration failed ({error.message})</div>}
