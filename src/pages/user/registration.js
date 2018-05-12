@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { StaticLayout } from '../../components/layouts'
 import { RegistrationForm } from '../../components/forms'
 import { RegistrationMutation } from '../../graphql'
-import { pageWithIntl, withData, withLogging } from '../../lib'
+import { pageWithIntl, withLogging } from '../../lib'
 
 const propTypes = {
   intl: intlShape.isRequired,
@@ -34,7 +34,7 @@ const Registration = ({ intl }) => (
             return (
               <div className="successMessage">
                 <FormattedMessage
-                  defaultMessage="Successfully registered as {newEmail}.{br} Please login at {link} after the activation of your account."
+                  defaultMessage="Successfully registered as {newEmail}.{br} Please login at {link}."
                   id="user.registration.successNotification"
                   values={{
                     br: <br />,
@@ -50,7 +50,10 @@ const Registration = ({ intl }) => (
             <React.Fragment>
               <Message info>
                 <Message.Header>Public Beta</Message.Header>
-                <Message.Content>Sign up for the Klicker 2018 public beta.</Message.Content>
+                <Message.Content>
+                  Sign up for the Klicker 2018 public beta. Already have an account?{' '}
+                  <Link href="/user/login">Login here.</Link>
+                </Message.Content>
               </Message>
               <RegistrationForm
                 intl={intl}
@@ -111,6 +114,5 @@ export default compose(
   withLogging({
     logRocket: false,
   }),
-  withData,
   pageWithIntl,
 )(Registration)
