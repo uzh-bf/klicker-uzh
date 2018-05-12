@@ -117,12 +117,14 @@ describe('AuthService', () => {
       await UserModel.findOneAndRemove({ email: 'testSignup@bf.uzh.ch' })
 
       // try creating a new user with valid data
-      const newUser = await signup('testSignup@bf.uzh.ch', 'somePassword', 'signup')
+      const newUser = await signup('testSignup@bf.uzh.ch', 'somePassword', 'signup', 'IBF Testitution', 'Work stuff..')
 
       // expect the new user to contain correct data
       expect(newUser).toEqual(expect.objectContaining({
         email: 'testSignup@bf.uzh.ch',
         shortname: 'signup',
+        institution: 'IBF Testitution',
+        useCase: 'Work stuff..',
         isAAI: false,
         isActive: false,
       }))

@@ -4,7 +4,7 @@ const handlebars = require('handlebars')
 const bcrypt = require('bcryptjs')
 const JWT = require('jsonwebtoken')
 const nodemailer = require('nodemailer')
-const _has = require('lodash/has')
+const _get = require('lodash/get')
 
 const { UserModel } = require('../models')
 const { sendSlackNotification } = require('./notifications')
@@ -60,9 +60,10 @@ const getToken = (req) => {
   }
 
   // if no token was found, but would be needed
-  // additionally look for a token in the GraphQL variables
-  if (_has(req, 'body[0].variables.jwt') && isValidJWT(req.body[0].variables.jwt, process.env.APP_SECRET)) {
-    return req.body[0].variables.jwt
+  // additionally look for a token in the GraphQL variables (for normal and batch requests)
+  const inlineJWT = _get(req, 'body.variables.jwt') || _get(req, 'body[0].variables.jwt')
+  if (inlineJWT && isValidJWT(inlineJWT, process.env.APP_SECRET)) {
+    return inlineJWT
   }
 
   // no token found
@@ -72,8 +73,8 @@ const getToken = (req) => {
 // signup a new user
 // make this an async function such that it returns a promise
 // we can later use this promise as a return value for resolvers or similar
-const signup = async (email, password, shortname) => {
-  // TODO: validation etc.
+const signup = async (email, password, shortname, institution, useCase, { isAAI, isActive } = {}) => {
+  // TODO: validation etc. (shortname!)
   // TODO: activation of new accounts (send an email)
 
   // generate a salt with bcyrpt using 10 rounds
@@ -85,12 +86,15 @@ const signup = async (email, password, shortname) => {
     email,
     password: hash,
     shortname,
-    isAAI: false,
+    institution,
+    useCase,
+    isAAI,
+    isActive,
   }).save()
 
   if (newUser) {
     // send a slack notification (if configured)
-    sendSlackNotification(`[auth] New user has registered: ${email}, ${shortname}`)
+    sendSlackNotification(`[auth] New user has registered: ${email}, ${shortname}, ${institution}, ${useCase || '-'}`)
 
     // return the data of the newly created user
     return newUser
@@ -233,7 +237,6 @@ const requestPassword = async (res, email) => {
       })
 
       // notify slack that a password has been requested
-      // TODO: remove this after the initial beta phase
       sendSlackNotification(`[auth] Password has been requested for: ${user.email}`)
     } catch (e) {
       return 'PASSWORD_RESET_FAILED'
