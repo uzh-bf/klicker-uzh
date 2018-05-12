@@ -11,10 +11,10 @@ const links = [
     href: '/user/login',
     label: 'Login',
   },
-  /* {
+  {
     href: '/user/registration',
-    label: 'Register',
-  }, */
+    label: 'Sign Up',
+  },
 ]
 
 const Index = () => (
