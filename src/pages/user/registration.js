@@ -2,6 +2,7 @@ import React from 'react'
 import { compose } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Mutation } from 'react-apollo'
+import { Message } from 'semantic-ui-react'
 import Link from 'next/link'
 
 import { StaticLayout } from '../../components/layouts'
@@ -47,11 +48,25 @@ const Registration = ({ intl }) => (
 
           return (
             <React.Fragment>
+              <Message info>
+                <Message.Header>Public Beta</Message.Header>
+                <Message.Content>Sign up for the Klicker 2018 public beta.</Message.Content>
+              </Message>
               <RegistrationForm
                 intl={intl}
                 loading={loading}
-                onSubmit={({ email, password, shortname }) => {
-                  register({ variables: { email, password, shortname } })
+                onSubmit={({
+ email, password, shortname, institution, useCase,
+}) => {
+                  register({
+                    variables: {
+                      email,
+                      institution,
+                      password,
+                      shortname,
+                      useCase,
+                    },
+                  })
                 }}
               />
               {error && <div className="errorMessage">Registration failed ({error.message})</div>}
