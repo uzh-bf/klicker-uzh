@@ -23,6 +23,7 @@
     "express-jwt": "5.3.1",
     "express-rate-limit": "2.11.0",
     "graphql": "0.13.2",
+    "graphql-redis-subscriptions": "1.5.0",
     "graphql-subscriptions": "0.5.8",
     "graphql-tools": "3.0.1",
     "handlebars": "4.0.11",
@@ -60,8 +61,10 @@
   "scripts": {
     "precommit": "lint-staged",
     "prepush": "yarn run test --onlyChanged",
-    "dev": "nodemon --delay 1000ms -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock src/server.js",
-    "dev:inspect": "nodemon 1000ms -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock --inspect src/server.js",
+    "dev":
+      "cross-env NODE_ENV=development nodemon --delay 1000ms -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock src/server.js",
+    "dev:inspect":
+      "cross-env NODE_ENV=development nodemon 1000ms -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock --inspect src/server.js",
     "format": "prettier-eslint --singleQuote --no-semi --write \"src/**/*.js\"",
     "format:ci": "prettier-eslint --singleQuote --no-semi --list-different \"src/**/*.js\"",
     "lint": "eslint \"src/**/*.js\"",

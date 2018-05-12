@@ -5,16 +5,13 @@ const { QuestionInstanceModel, UserModel } = require('../models')
 const { QuestionGroups, QuestionTypes } = require('../constants')
 const { getRedis } = require('../redis')
 const { getRunningSession } = require('./sessionMgr')
+const { pubsub, CONFUSION_ADDED, FEEDBACK_ADDED } = require('../resolvers/subscriptions')
 
 // initialize redis if available
 const redis = getRedis(2)
 
 // add a new feedback to a session
 const addFeedback = async ({ sessionId, content }) => {
-  // TODO: security
-  // TODO: redis?
-  // TODO: ...
-
   const session = await getRunningSession(sessionId)
 
   // if the feedback channel is not activated, do not allow new additions
@@ -23,10 +20,16 @@ const addFeedback = async ({ sessionId, content }) => {
   }
 
   // push a new feedback into the array
-  session.feedbacks.push({ content, createdAt: Date.now() })
+  session.feedbacks.push({ content })
 
   // save the updated session
   await session.save()
+
+  // extract the saved feedback and convert it to a plain object
+  // then readd the mongo _id field under the id key and publish the result
+  // this is needed as redis swallows the _id field and the client could break!
+  const savedFeedback = session.feedbacks[session.feedbacks.length - 1].toObject()
+  pubsub.publish(FEEDBACK_ADDED, { [FEEDBACK_ADDED]: { ...savedFeedback, id: savedFeedback._id }, sessionId })
 
   // return the updated session
   return session
@@ -51,18 +54,7 @@ const deleteFeedback = async ({ sessionId, feedbackId, userId }) => {
 }
 
 // add a new confusion timestep to the session
-const addConfusionTS = async ({
-  ip, fp, sessionId, difficulty, speed,
-}) => {
-  // TODO: security
-  // TODO: redis?
-  // TODO: ...
-
-  // if redis is available, put the new confusion data in the store
-  if (redis) {
-    await redis.hset(`${sessionId}:confusion`, fp || ip, JSON.stringify({ difficulty, speed }))
-  }
-
+const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
   const session = await getRunningSession(sessionId)
 
   // if the confusion barometer is not activated, do not allow new additions
@@ -71,10 +63,16 @@ const addConfusionTS = async ({
   }
 
   // push a new timestep into the array
-  session.confusionTS.push({ createdAt: Date.now(), difficulty, speed })
+  session.confusionTS.push({ difficulty, speed })
 
   // save the updated session
   await session.save()
+
+  // extract the saved confusion timestep and convert it to a plain object
+  // then readd the mongo _id field under the id key and publish the result
+  // this is needed as redis swallows the _id field and the client could break!
+  const savedConfusion = session.confusionTS[session.confusionTS.length - 1].toObject()
+  pubsub.publish(CONFUSION_ADDED, { [CONFUSION_ADDED]: { ...savedConfusion, id: savedConfusion._id }, sessionId })
 
   // return the updated session
   return session
