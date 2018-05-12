@@ -7,7 +7,7 @@ import { convertToRaw } from 'draft-js'
 
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionCreationForm } from '../../components/forms'
-import { pageWithIntl, withData, withDnD, withLogging } from '../../lib'
+import { pageWithIntl, withDnD, withLogging } from '../../lib'
 import { QuestionListQuery, TagListQuery, CreateQuestionMutation } from '../../graphql'
 
 const propTypes = {
@@ -69,4 +69,4 @@ const CreateQuestion = ({ intl }) => (
 
 CreateQuestion.propTypes = propTypes
 
-export default compose(withLogging(), withDnD, withData, pageWithIntl)(CreateQuestion)
+export default compose(withLogging(), withDnD, pageWithIntl)(CreateQuestion)

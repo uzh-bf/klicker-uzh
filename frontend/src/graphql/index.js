@@ -26,6 +26,9 @@ import SessionListQuery from './queries/SessionListQuery.graphql'
 import QuestionPoolQuery from './queries/QuestionPoolQuery.graphql'
 import TagListQuery from './queries/TagListQuery.graphql'
 
+import ConfusionAddedSubscription from './subscriptions/ConfusionAddedSubscription.graphql'
+import FeedbackAddedSubscription from './subscriptions/FeedbackAddedSubscription.graphql'
+
 const queries = [
   ActivateNextBlockMutation,
   AddConfusionTSMutation,
@@ -53,6 +56,8 @@ const queries = [
   SessionListQuery,
   QuestionPoolQuery,
   TagListQuery,
+  ConfusionAddedSubscription,
+  FeedbackAddedSubscription,
 ]
 
 // build a query map from the queries above
@@ -88,5 +93,7 @@ export {
   QuestionPoolQuery,
   TagListQuery,
   QuestionListQuery,
+  FeedbackAddedSubscription,
+  ConfusionAddedSubscription,
   queryMap,
 }

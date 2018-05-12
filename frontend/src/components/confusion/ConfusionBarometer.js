@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { Checkbox } from 'semantic-ui-react'
 import { FormattedMessage, intlShape } from 'react-intl'
-import { compose, withProps } from 'recompose'
+import { compose, withProps, lifecycle } from 'recompose'
 import _sumBy from 'lodash/sumBy'
 import moment from 'moment'
 
@@ -130,6 +130,11 @@ ConfusionBarometer.propTypes = propTypes
 ConfusionBarometer.defaultProps = defaultProps
 
 export default compose(
+  lifecycle({
+    componentDidMount() {
+      this.props.subscribeToMore()
+    },
+  }),
   withProps(({ confusionTS }) => ({
     confusionTS: confusionTS.reduce((acc, { createdAt, speed, difficulty }) => {
       const tempAcc = [...acc, { difficulty, speed }]

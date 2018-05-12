@@ -9,6 +9,7 @@ import {
   renderComponent,
   renderNothing,
 } from 'recompose'
+import { withRouter } from 'next/router'
 import { graphql } from 'react-apollo'
 import _round from 'lodash/round'
 
@@ -23,7 +24,6 @@ import {
   calculateThirdQuartile,
   calculateStandardDeviation,
   pageWithIntl,
-  withData,
   withLogging,
 } from '../../lib'
 import { Chart } from '../../components/evaluation'
@@ -121,12 +121,12 @@ Evaluation.propTypes = propTypes
 Evaluation.defaultProps = defaultProps
 
 export default compose(
+  withRouter,
   withLogging(),
-  withData,
   pageWithIntl,
   graphql(SessionEvaluationQuery, {
     // refetch the active instances query every 10s
-    options: ({ url }) => ({ variables: { sessionId: url.query.sessionId } }),
+    options: ({ router }) => ({ variables: { sessionId: router.query.sessionId } }),
   }),
   // if the query is still loading, display nothing
   branch(({ data }) => data.loading, renderNothing),
@@ -135,9 +135,9 @@ export default compose(
     ({ data: { session } }) => session.status === SESSION_STATUS.RUNNING,
     graphql(SessionEvaluationQuery, {
       // refetch the active instances query every 10s
-      options: ({ url }) => ({
+      options: ({ router }) => ({
         pollInterval: 10000,
-        variables: { sessionId: url.query.sessionId },
+        variables: { sessionId: router.query.sessionId },
       }),
     }),
   ),

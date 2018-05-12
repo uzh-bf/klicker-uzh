@@ -1,19 +1,25 @@
 /* eslint-disable import/no-extraneous-dependencies */
 // https://github.com/zeit/next.js/blob/canary/examples/with-apollo/lib/initApollo.js
+// websockets: https://github.com/zeit/next.js/issues/3261
 
 import { ApolloClient } from 'apollo-client'
 import { BatchHttpLink } from 'apollo-link-batch-http'
 import { onError } from 'apollo-link-error'
 import { withClientState } from 'apollo-link-state'
-import { ApolloLink } from 'apollo-link'
+import { ApolloLink, split } from 'apollo-link'
+import { WebSocketLink } from 'apollo-link-ws'
+import { SubscriptionClient } from 'subscriptions-transport-ws'
+
 // import { createPersistedQueryLink } from 'apollo-link-persisted-queries'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import fetch from 'isomorphic-unfetch'
+import { getMainDefinition } from 'apollo-utilities'
 
+const ssrMode = !process.browser
 let apolloClient = null
 
 // Polyfill fetch() on the server (used by apollo-client)
-if (!process.browser) {
+if (ssrMode) {
   global.fetch = fetch
 }
 
@@ -45,6 +51,38 @@ function create(initialState) {
     dataIdFromObject: o => o.id,
   }).restore(initialState || {})
 
+  // initialize the basic http link for both SSR and client-side usage
+  let httpLink = new BatchHttpLink({
+    credentials: 'include', // Additional fetch() options like `credentials` or `headers`
+    uri: process.env.API_URL || 'http://localhost:4000/graphql',
+  })
+
+  // on the client, differentiate between websockets and http requests
+  if (!ssrMode) {
+    // instantiate a basic subscription client
+    const wsClient = new SubscriptionClient(process.env.API_URL_WS, {
+      // TODO: include JWT
+      /* connectionParams: {
+        authToken: user.authToken,
+      }, */
+      reconnect: true,
+    })
+
+    // create a websocket link from the client
+    const wsLink = new WebSocketLink(wsClient)
+
+    // swap out the http link with a split based on operation type
+    // use websocket link for subscriptions, http link for remainder
+    httpLink = split(
+      ({ query }) => {
+        const { kind, operation } = getMainDefinition(query)
+        return kind === 'OperationDefinition' && operation === 'subscription'
+      },
+      wsLink,
+      httpLink,
+    )
+  }
+
   const link = ApolloLink.from([
     withClientState({
       cache,
@@ -63,10 +101,7 @@ function create(initialState) {
       }
       if (networkError) console.log(`[Network error]: ${networkError}`)
     }),
-    new BatchHttpLink({
-      credentials: 'include', // Additional fetch() options like `credentials` or `headers`
-      uri: process.env.API_URL || 'http://localhost:4000/graphql',
-    }),
+    httpLink,
   ])
 
   /* const persistQueriesLink = createPersistedQueryLink({
@@ -75,15 +110,13 @@ function create(initialState) {
     generateHash: ({ documentId }) => documentId,
   }) */
 
-  const client = new ApolloClient({
+  return new ApolloClient({
     cache,
     connectToDevTools: process.browser,
     link,
     // link: persistQueriesLink.concat(link),
     ssrMode: !process.browser, // Disables forceFetch on the server (so queries are only run once)
   })
-
-  return client
 }
 
 export default function initApollo(initialState) {
