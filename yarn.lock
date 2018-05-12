@@ -899,6 +899,10 @@ bson@~1.0.4:
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/bson/-/bson-1.0.5.tgz#34563b73ff1fde9387c1b9fb5afd845ecc4ba623"
 
+bson@~1.0.5:
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/bson/-/bson-1.0.6.tgz#444db59ddd4c24f0cb063aabdc5c8c7b0ceca912"
+
 buffer-equal-constant-time@1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/buffer-equal-constant-time/-/buffer-equal-constant-time-1.0.1.tgz#f8e71132f7ffe6e01a5c9697a4c6f3e48d5cc819"
@@ -1281,9 +1285,9 @@ create-error-class@^3.0.0:
   dependencies:
     capture-stack-trace "^1.0.0"
 
-cross-env@5.1.4:
-  version "5.1.4"
-  resolved "https://registry.yarnpkg.com/cross-env/-/cross-env-5.1.4.tgz#f61c14291f7cc653bb86457002ea80a04699d022"
+cross-env@5.1.5:
+  version "5.1.5"
+  resolved "https://registry.yarnpkg.com/cross-env/-/cross-env-5.1.5.tgz#31daf7f3a52ef337c8ddda585f08175cce5d1fa5"
   dependencies:
     cross-spawn "^5.1.0"
     is-windows "^1.0.0"
@@ -1556,9 +1560,9 @@ elastic-apm-http-client@^5.2.0:
   dependencies:
     fast-safe-stringify "^1.2.0"
 
-elastic-apm-node@1.5.0:
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.5.0.tgz#ea6ffe2fbe4f163d75d748787f7c262442611a46"
+elastic-apm-node@1.5.2:
+  version "1.5.2"
+  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.5.2.tgz#cf22638361abdfb5ace0b1f5e7e246e054b5a4f1"
   dependencies:
     after-all-results "^2.0.0"
     async-value-promise "^1.1.0"
@@ -4213,25 +4217,12 @@ moment@2.22.1:
   version "2.22.1"
   resolved "https://registry.yarnpkg.com/moment/-/moment-2.22.1.tgz#529a2e9bf973f259c9643d237fda84de3a26e8ad"
 
-mongodb-core@3.0.7:
-  version "3.0.7"
-  resolved "https://registry.yarnpkg.com/mongodb-core/-/mongodb-core-3.0.7.tgz#a9941f14883a75768d554cef5fd67756a9cc0f25"
-  dependencies:
-    bson "~1.0.4"
-    require_optional "^1.0.1"
-
 mongodb-core@3.0.8:
   version "3.0.8"
   resolved "https://registry.yarnpkg.com/mongodb-core/-/mongodb-core-3.0.8.tgz#8d401f4eab6056c0d874a3d5844a4844f761d4d7"
   dependencies:
     bson "~1.0.4"
     require_optional "^1.0.1"
-
-mongodb@3.0.7:
-  version "3.0.7"
-  resolved "https://registry.yarnpkg.com/mongodb/-/mongodb-3.0.7.tgz#cfcbaee992d78dabca67177f8f9db9cf13ac3a44"
-  dependencies:
-    mongodb-core "3.0.7"
 
 mongodb@3.0.8:
   version "3.0.8"
@@ -4243,15 +4234,15 @@ mongoose-legacy-pluralize@1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/mongoose-legacy-pluralize/-/mongoose-legacy-pluralize-1.0.2.tgz#3ba9f91fa507b5186d399fb40854bff18fb563e4"
 
-mongoose@5.0.17:
-  version "5.0.17"
-  resolved "https://registry.yarnpkg.com/mongoose/-/mongoose-5.0.17.tgz#7c70e663b8ac567460902dca636ebb59f36a540a"
+mongoose@5.1.0:
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/mongoose/-/mongoose-5.1.0.tgz#5002b9e4af8ea3f131b443756a01c979d22decb3"
   dependencies:
     async "2.1.4"
-    bson "~1.0.4"
+    bson "~1.0.5"
     kareem "2.0.7"
     lodash.get "4.4.2"
-    mongodb "3.0.7"
+    mongodb "3.0.8"
     mongoose-legacy-pluralize "1.0.2"
     mpath "0.4.1"
     mquery "3.0.0"
