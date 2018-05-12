@@ -10,7 +10,7 @@ import { Message } from 'semantic-ui-react'
 import { StaticLayout } from '../../components/layouts'
 import { LoginForm } from '../../components/forms'
 import { LoginMutation } from '../../graphql'
-import { pageWithIntl, withData, withLogging } from '../../lib'
+import { pageWithIntl, withLogging } from '../../lib'
 
 const propTypes = {
   intl: intlShape.isRequired,
@@ -34,8 +34,9 @@ const Login = ({ intl }) => (
             <Message info>
               <Message.Header>Public Beta</Message.Header>
               <Message.Content>
-                To participate in the Klicker 2018 public beta, please{' '}
-                <Link href="/user/requestPassword">reset your password</Link> first.
+                To participate in the Klicker 2018 public beta with a legacy account, please{' '}
+                <Link href="/user/requestPassword">reset your password</Link> first. If you need a
+                new account, you can <Link href="/user/registration">sign up here</Link>.
               </Message.Content>
             </Message>
             <LoginForm
@@ -99,6 +100,5 @@ export default compose(
     chatlio: false,
     logRocket: false,
   }),
-  withData,
   pageWithIntl,
 )(Login)

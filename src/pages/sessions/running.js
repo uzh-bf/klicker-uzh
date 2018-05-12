@@ -6,7 +6,7 @@ import { graphql, Query, Mutation } from 'react-apollo'
 import { intlShape } from 'react-intl'
 import Router from 'next/router'
 
-import { pageWithIntl, withData, withLogging } from '../../lib'
+import { pageWithIntl, withLogging } from '../../lib'
 
 import { ConfusionBarometer } from '../../components/confusion'
 import { FeedbackChannel } from '../../components/feedbacks'
@@ -20,6 +20,8 @@ import {
   ActivateNextBlockMutation,
   DeleteFeedbackMutation,
   SessionListQuery,
+  FeedbackAddedSubscription,
+  ConfusionAddedSubscription,
 } from '../../graphql'
 import { Messager } from '../../components/common'
 
@@ -43,8 +45,10 @@ const Running = ({ intl, shortname }) => (
     })}
     sidebar={{ activeItem: 'runningSession' }}
   >
-    <Query pollInterval={10000} query={RunningSessionQuery}>
-      {({ data, loading, error }) => {
+    <Query query={RunningSessionQuery}>
+      {({
+ data, loading, error, subscribeToMore,
+}) => {
         if (loading || !data || !data.runningSession) {
           return (
             <Messager
@@ -138,6 +142,25 @@ const Running = ({ intl, shortname }) => (
                     }}
                     intl={intl}
                     isActive={settings.isConfusionBarometerActive}
+                    subscribeToMore={() => {
+                      subscribeToMore({
+                        document: ConfusionAddedSubscription,
+                        updateQuery: (prev, { subscriptionData }) => {
+                          if (!subscriptionData.data) return prev
+                          return {
+                            ...prev,
+                            runningSession: {
+                              ...prev.runningSession,
+                              confusionTS: [
+                                ...prev.runningSession.confusionTS,
+                                subscriptionData.data.confusionAdded,
+                              ],
+                            },
+                          }
+                        },
+                        variables: { sessionId: id },
+                      })
+                    }}
                   />
                 )}
               </Mutation>
@@ -180,6 +203,25 @@ const Running = ({ intl, shortname }) => (
                         intl={intl}
                         isActive={settings.isFeedbackChannelActive}
                         isPublic={settings.isFeedbackChannelPublic}
+                        subscribeToMore={() => {
+                          subscribeToMore({
+                            document: FeedbackAddedSubscription,
+                            updateQuery: (prev, { subscriptionData }) => {
+                              if (!subscriptionData.data) return prev
+                              return {
+                                ...prev,
+                                runningSession: {
+                                  ...prev.runningSession,
+                                  feedbacks: [
+                                    ...prev.runningSession.feedbacks,
+                                    subscriptionData.data.feedbackAdded,
+                                  ],
+                                },
+                              }
+                            },
+                            variables: { sessionId: id },
+                          })
+                        }}
                       />
                     )}
                   </Mutation>
@@ -243,7 +285,6 @@ Running.propTypes = propTypes
 
 export default compose(
   withLogging(),
-  withData,
   pageWithIntl,
   graphql(AccountSummaryQuery),
   withProps(({ data }) => ({

@@ -25,26 +25,30 @@ export default ({
     componentWillMount() {
       let data
 
-      if (typeof window !== 'undefined') {
-        if (storageType === 'session') {
-          data = sessionStorage.getItem(propName)
-        } else if (storageType === 'local') {
-          data = localStorage.getItem(propName)
-        }
-
-        if (json) {
-          data = JSON.parse(data)
-        }
-
-        this.setState((prevState) => {
-          if (prevState[propName] === data) {
-            return undefined
+      try {
+        if (typeof window !== 'undefined') {
+          if (storageType === 'session') {
+            data = sessionStorage.getItem(propName)
+          } else if (storageType === 'local') {
+            data = localStorage.getItem(propName)
           }
 
-          return {
-            [propName]: data,
+          if (json) {
+            data = JSON.parse(data)
           }
-        })
+
+          this.setState((prevState) => {
+            if (prevState[propName] === data) {
+              return undefined
+            }
+
+            return {
+              [propName]: data,
+            }
+          })
+        }
+      } catch (e) {
+        console.error(e)
       }
     }
 

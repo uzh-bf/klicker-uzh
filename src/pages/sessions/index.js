@@ -5,7 +5,7 @@ import { intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
 
-import { pageWithIntl, withData, withLogging, withSortingAndFiltering } from '../../lib'
+import { pageWithIntl, withLogging, withSortingAndFiltering } from '../../lib'
 import {
   AccountSummaryQuery,
   RunningSessionQuery,
@@ -87,7 +87,6 @@ Index.propTypes = propTypes
 
 export default compose(
   withLogging(),
-  withData,
   pageWithIntl,
   graphql(StartSessionMutation),
   withSortingAndFiltering,

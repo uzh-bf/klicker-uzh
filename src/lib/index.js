@@ -1,6 +1,6 @@
 export { default as initApollo } from './initApollo'
 export { default as pageWithIntl } from './pageWithIntl'
-export { default as withData } from './withData'
+export { default as withApolloClient } from './withApolloClient'
 export { default as withFingerprint } from './withFingerprint'
 export { default as withStorage } from './withStorage'
 export { default as omitDeep } from './utils/omitDeep'
