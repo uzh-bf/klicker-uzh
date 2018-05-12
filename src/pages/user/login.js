@@ -34,8 +34,9 @@ const Login = ({ intl }) => (
             <Message info>
               <Message.Header>Public Beta</Message.Header>
               <Message.Content>
-                To participate in the Klicker 2018 public beta, please{' '}
-                <Link href="/user/requestPassword">reset your password</Link> first.
+                To participate in the Klicker 2018 public beta with a legacy account, please{' '}
+                <Link href="/user/requestPassword">reset your password</Link> first. If you need a
+                new account, you can <Link href="/user/registration">sign up here</Link>.
               </Message.Content>
             </Message>
             <LoginForm
