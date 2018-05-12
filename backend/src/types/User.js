@@ -14,6 +14,8 @@ const User = `
     email: String
     password: String
     shortname: String
+    institution: String
+    useCase: String
   }
   type User {
     id: ID!
@@ -21,6 +23,8 @@ const User = `
     isActive: Boolean!
     isAAI: Boolean!
     shortname: String!
+    institution: String!
+    useCase: String
 
     runningSession: Session
 

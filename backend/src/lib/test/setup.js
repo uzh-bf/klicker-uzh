@@ -23,7 +23,7 @@ const setupTestEnv = async ({ email, password, shortname }) => {
   }
 
   // sign up a fresh user
-  return AuthService.signup(email, password, shortname)
+  return AuthService.signup(email, password, shortname, 'IBF Test', 'Testing')
 }
 
 // prepare a new session instance

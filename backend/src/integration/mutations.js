@@ -1,20 +1,28 @@
 const { draftContentSerializer } = require('../lib/test/serializers')
 
 const RegistrationMutation = `
-  mutation CreateUser($email: String!, $password: String!, $shortname: String!) {
-    createUser(email: $email, password: $password, shortname: $shortname) {
+  mutation CreateUser($email: String!, $password: String!, $shortname: String!, $institution: String!, $useCase: String) {
+    createUser(email: $email, password: $password, shortname: $shortname, institution: $institution, useCase: $useCase) {
       id
       email
       shortname
+      institution
+      useCase
     }
   }
 `
 const RegistrationSerializer = {
   test: ({ createUser }) => !!createUser,
-  print: ({ createUser: { email, shortname } }) => `
+  print: ({
+    createUser: {
+      email, shortname, institution, useCase,
+    },
+  }) => `
     createUser {
       email: ${email}
       shortname: ${shortname}
+      institution: ${institution}
+      useCase: ${useCase}
     }
   `,
 }
