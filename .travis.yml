@@ -71,6 +71,7 @@ jobs:
         - >
           docker build .
           --build-arg API_URL=$STAGING_API_URL
+          --build-arg API_URL_WS=$STAGING_API_URL_WS
           --build-arg VERSION=nightly-$TRAVIS_PULL_REQUEST
           --cache-from $IMAGE_NAME:nightly
           -t $IMAGE_NAME:nightly
@@ -105,6 +106,7 @@ jobs:
         - >
           docker build .
           --build-arg API_URL=$PROD_API_URL
+          --build-arg API_URL_WS=$PROD_API_URL_WS
           --build-arg VERSION=$TRAVIS_TAG
           -t $IMAGE_NAME:stable
           -t $IMAGE_NAME:$TRAVIS_TAG
@@ -125,6 +127,7 @@ jobs:
         - >
           docker build .
           --build-arg API_URL=$PROD_API_URL
+          --build-arg API_URL_WS=$PROD_API_URL_WS
           --build-arg LOGROCKET=$PROD_LOGROCKET
           --build-arg SENTRY_DSN=$PROD_SENTRY
           --build-arg VERSION=$TRAVIS_TAG
