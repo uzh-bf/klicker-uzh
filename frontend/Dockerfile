@@ -27,6 +27,7 @@ COPY --chown=1000:0 . $KLICKER_DIR/
 # define available build arguments
 # these are then bundled into the js
 ARG API_URL
+ARG API_URL_WS
 ARG SENTRY_DSN
 ARG LOGROCKET
 ARG CHATLIO
