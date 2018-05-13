@@ -58,6 +58,7 @@ jobs:
         - >
           docker build .
           --build-arg API_URL=$STAGING_API_URL
+          --build-arg API_URL_WS=$STAGING_API_URL_WS
           --cache-from $IMAGE_NAME:latest
           -t $IMAGE_NAME:latest
         - docker push $IMAGE_NAME:latest
