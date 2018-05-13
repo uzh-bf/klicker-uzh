@@ -213,8 +213,6 @@ server.use(
       res,
     },
     schema,
-    tracing: !!process.env.ENGINE_API_KEY,
-    cacheControl: !!process.env.ENGINE_API_KEY,
   })),
 )
 
