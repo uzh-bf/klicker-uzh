@@ -60,13 +60,16 @@ function create(initialState) {
   // on the client, differentiate between websockets and http requests
   if (!ssrMode) {
     // instantiate a basic subscription client
-    const wsClient = new SubscriptionClient(process.env.API_URL_WS, {
-      // TODO: include JWT
-      /* connectionParams: {
+    const wsClient = new SubscriptionClient(
+      process.env.API_URL_WS || 'ws://localhost:4000/subscriptions',
+      {
+        // TODO: include JWT
+        /* connectionParams: {
         authToken: user.authToken,
       }, */
-      reconnect: true,
-    })
+        reconnect: true,
+      },
+    )
 
     // create a websocket link from the client
     const wsLink = new WebSocketLink(wsClient)
