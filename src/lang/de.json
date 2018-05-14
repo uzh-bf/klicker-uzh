@@ -39,7 +39,7 @@
   "joinSessionsidebar.feedbackChannel": "Feedback-Channel",
   "questionPool.title": "Fragepool",
   "sessionList.title": "Sessionübersicht",
-  "runningSession.title": "Laufende Session",
+  "runningSession.title": "Laufende / pausierte Sessions",
   "createQuestion.title": "Frage erstellen",
   "createQuestion.contentInput.label": "Frage",
   "createQuestion.contentInput.tooltip":
