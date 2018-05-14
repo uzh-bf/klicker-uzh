@@ -7,7 +7,7 @@ const {
   QuestionInstanceModel, SessionModel, UserModel, QuestionModel,
 } = require('../models')
 const { getRedis } = require('../redis')
-const { SessionStatus, QuestionBlockStatus } = require('../constants')
+const { SESSION_STATUS, QUESTION_BLOCK_STATUS, SESSION_ACTIONS } = require('../constants')
 const { logDebug } = require('../lib/utils')
 
 const redisCache = getRedis()
@@ -28,12 +28,12 @@ const getRunningSession = async (sessionId) => {
   const session = await SessionModel.findById(sessionId)
 
   // if the session is not yet running, throw an error
-  if (session.status === SessionStatus.CREATED) {
+  if (session.status === SESSION_STATUS.CREATED) {
     throw new Error('SESSION_NOT_STARTED')
   }
 
   // if the session has already finished, throw an error
-  if (session.status === SessionStatus.COMPLETED) {
+  if (session.status === SESSION_STATUS.COMPLETED) {
     throw new Error('SESSION_FINISHED')
   }
 
@@ -100,39 +100,86 @@ const createSession = async ({ name, questionBlocks = [], userId }) => {
   return newSession
 }
 
-// start an existing session
-const startSession = async ({ id, userId, shortname }) => {
-  // TODO: hydrate caches?
-  // TODO: ...
+// generic session action handler (start, pause, stop...)
+const sessionAction = async ({ sessionId, userId, shortname }, actionType) => {
+  // get the current user instance
   const user = await UserModel.findById(userId)
-
-  if (user.runningSession) {
-    throw new Error('RUNNING_ANOTHER_SESSION')
-  }
-
-  const session = await SessionModel.findById(id)
+  const session = await SessionModel.findById(sessionId)
 
   // ensure the user is authorized to modify this session
-  if (!session.user.equals(userId)) {
+  if (!user || !session || !session.user.equals(userId)) {
     throw new Error('UNAUTHORIZED')
   }
 
-  // if the session is already running, return it
-  if (session.status === SessionStatus.RUNNING) {
-    return session
+  // perform the action specified by the actionType
+  switch (actionType) {
+    case SESSION_ACTIONS.START:
+      // the user can't be running another session to start one
+      if (user.runningSession) {
+        throw new Error('RUNNING_ANOTHER_SESSION')
+      }
+
+      // if the session is already running, just return it
+      if (session.status === SESSION_STATUS.RUNNING) {
+        return session
+      }
+
+      // if the session to start was already completed, throw an error
+      if (session.status === SESSION_STATUS.COMPLETED) {
+        throw new Error('SESSION_ALREADY_COMPLETED')
+      }
+
+      // update the session status to RUNNING
+      // this will also continue the session when it has been paused
+      session.status = SESSION_STATUS.RUNNING
+
+      // if the session has not been paused, initialize the startedAt date
+      if (session.status !== SESSION_STATUS.PAUSED) {
+        session.startedAt = Date.now()
+      }
+
+      break
+
+    case SESSION_ACTIONS.PAUSE:
+      if (!user.runningSession || session.status !== SESSION_STATUS.RUNNING) {
+        throw new Error('SESSION_NOT_RUNNING')
+      }
+
+      // if the session is already paused, return it
+      if (session.status === SESSION_STATUS.PAUSED) {
+        return session
+      }
+
+      // set the session status to be paused
+      session.status = SESSION_STATUS.PAUSED
+
+      break
+
+    case SESSION_ACTIONS.STOP:
+      // if the session is not yet running, throw an error
+      if (session.status === SESSION_STATUS.CREATED) {
+        throw new Error('SESSION_NOT_STARTED')
+      }
+
+      // if the session was already completed, return it
+      if (session.status === SESSION_STATUS.COMPLETED) {
+        return session
+      }
+
+      // update the session status to COMPLETED
+      session.status = SESSION_STATUS.COMPLETED
+
+      session.finishedAt = Date.now()
+
+      break
+
+    default:
+      throw new Error('INVALID_SESSION_ACTION')
   }
 
-  // if the session was already completed, throw an error
-  if (session.status === SessionStatus.COMPLETED) {
-    throw new Error('SESSION_ALREADY_COMPLETED')
-  }
-
-  // update the session status to RUNNING
-  session.status = SessionStatus.RUNNING
-  session.startedAt = Date.now()
-
-  const updatedUser = await UserModel.findByIdAndUpdate(userId, {
-    runningSession: session.id,
+  // update the runningSession of the user depending on the action taken
+  const updatedUser = UserModel.findByIdAndUpdate(userId, {
+    runningSession: actionType === SESSION_ACTIONS.START ? session.id : null,
     $currentDate: { updatedAt: true },
   })
 
@@ -145,58 +192,22 @@ const startSession = async ({ id, userId, shortname }) => {
 
   await Promise.all(promises)
 
-  sendSlackNotification(`[sessions] New session started at /join/${shortname}`)
+  sendSlackNotification(`[sessions] ${actionType} session at /join/${shortname}`)
 
   return session
 }
+
+// start an existing session
+const startSession = ({ id, userId, shortname }) =>
+  sessionAction({ sessionId: id, userId, shortname }, SESSION_ACTIONS.START)
+
+// pause a running session
+const pauseSession = ({ id, userId, shortname }) =>
+  sessionAction({ sessionId: id, userId, shortname }, SESSION_ACTIONS.PAUSE)
 
 // end (complete) an existing session
-const endSession = async ({ id, userId, shortname }) => {
-  // TODO: date compression? data aggregation?
-  // TODO: cleanup caches?
-  // TODO: ...
-
-  const session = await SessionModel.findById(id)
-
-  // ensure the user is authorized to modify this session
-  if (!session.user.equals(userId)) {
-    throw new Error('UNAUTHORIZED')
-  }
-
-  // if the session is not yet running, throw an error
-  if (session.status === SessionStatus.CREATED) {
-    throw new Error('SESSION_NOT_STARTED')
-  }
-
-  // if the session was already completed, return it
-  if (session.status === SessionStatus.COMPLETED) {
-    return session
-  }
-
-  // update the session status to COMPLETED
-  session.status = SessionStatus.COMPLETED
-
-  session.finishedAt = Date.now()
-
-  // reset the running session id on the user
-  const updatedUser = UserModel.findByIdAndUpdate(userId, {
-    runningSession: null,
-    $currentDate: { updatedAt: true },
-  })
-
-  const promises = [session.save(), updatedUser]
-
-  // if redis is in use, cleanup the page cache
-  if (redisCache) {
-    promises.push(cleanCache(shortname))
-  }
-
-  await Promise.all(promises)
-
-  sendSlackNotification(`[session] Session finished for /join/${shortname}`)
-
-  return session
-}
+const endSession = ({ id, userId, shortname }) =>
+  sessionAction({ sessionId: id, userId, shortname }, SESSION_ACTIONS.STOP)
 
 // update session settings
 const updateSettings = async ({
@@ -271,7 +282,7 @@ const activateNextBlock = async ({ userId, shortname }) => {
       await QuestionInstanceModel.update({ _id: { $in: nextBlock.instances } }, { isOpen: true }, { multi: true })
 
       // set the status of the instances in the next block to active
-      runningSession.blocks[nextBlockIndex].status = QuestionBlockStatus.ACTIVE
+      runningSession.blocks[nextBlockIndex].status = QUESTION_BLOCK_STATUS.ACTIVE
 
       // set the instances of the next block to be the users active instances
       runningSession.activeInstances = nextBlock.instances
@@ -288,7 +299,7 @@ const activateNextBlock = async ({ userId, shortname }) => {
       runningSession.activeInstances = []
 
       // set the status of the previous block to executed
-      runningSession.blocks[prevBlockIndex].status = QuestionBlockStatus.EXECUTED
+      runningSession.blocks[prevBlockIndex].status = QUESTION_BLOCK_STATUS.EXECUTED
 
       // if redis is available, cleanup the instance data from the previous block
       if (redisControl) {
@@ -312,7 +323,7 @@ const activateNextBlock = async ({ userId, shortname }) => {
     // if the final block was reached above, reset the users active instances
 
     // set the status of the previous block to executed
-    runningSession.blocks[prevBlockIndex].status = QuestionBlockStatus.EXECUTED
+    runningSession.blocks[prevBlockIndex].status = QUESTION_BLOCK_STATUS.EXECUTED
 
     runningSession.activeInstances = []
     runningSession.activeStep += 1
@@ -335,7 +346,7 @@ module.exports = {
   startSession,
   endSession,
   updateSettings,
-  SessionStatus,
   activateNextBlock,
   getRunningSession,
+  pauseSession,
 }

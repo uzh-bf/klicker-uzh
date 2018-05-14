@@ -36,6 +36,7 @@ const User = new mongoose.Schema({
 
   runningSession: { type: ObjectId, ref: 'Session' },
 
+  lastLoginAt: { type: Date },
   createdAt: { type: Date, default: Date.now() },
   updatedAt: { type: Date, default: Date.now() },
 })

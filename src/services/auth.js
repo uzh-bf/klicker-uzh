@@ -147,6 +147,14 @@ const login = async (res, email, password) => {
     })
   }
 
+  // update the last login date
+  await UserModel.findOneAndUpdate(
+    { email },
+    {
+      $currentDate: { lastLoginAt: true, updatedAt: true },
+    },
+  )
+
   // resolve with data about the user
   return user.id
 }

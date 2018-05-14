@@ -9,6 +9,7 @@ const Session = `
   enum Session_Status {
     CREATED
     RUNNING
+    PAUSED
     COMPLETED
   }
 

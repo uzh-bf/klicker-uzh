@@ -6,14 +6,14 @@ const { ObjectId } = mongoose.Schema.Types
 const Feedback = require('./Feedback')
 const ConfusionTimestep = require('./ConfusionTimestep')
 const { QuestionBlock } = require('./QuestionBlock')
-const { SessionStatus } = require('../constants')
+const { SESSION_STATUS } = require('../constants')
 
 const Session = new mongoose.Schema({
   name: { type: String, default: Date.now(), index: true },
   status: {
     type: String,
-    enum: _values(SessionStatus),
-    default: SessionStatus.CREATED,
+    enum: _values(SESSION_STATUS),
+    default: SESSION_STATUS.CREATED,
     index: true,
   },
   settings: {

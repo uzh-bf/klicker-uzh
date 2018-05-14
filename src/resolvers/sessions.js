@@ -64,6 +64,9 @@ const startSessionMutation = (parentValue, { id }, { auth }) =>
 const activateNextBlockMutation = (parentValue, args, { auth }) =>
   SessionMgrService.activateNextBlock({ userId: auth.sub, shortname: auth.shortname })
 
+const pauseSessionMutation = (parentValue, { id }, { auth }) =>
+  SessionMgrService.pauseSession({ id, userId: auth.sub, shortname: auth.shrotname })
+
 const endSessionMutation = (parentValue, { id }, { auth }) =>
   SessionMgrService.endSession({ id, userId: auth.sub, shortname: auth.shortname })
 
@@ -117,6 +120,7 @@ module.exports = {
   createSession: createSessionMutation,
   endSession: endSessionMutation,
   activateNextBlock: activateNextBlockMutation,
+  pauseSession: pauseSessionMutation,
   startSession: startSessionMutation,
   addFeedback: addFeedbackMutation,
   deleteFeedback: deleteFeedbackMutation,

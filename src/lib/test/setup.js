@@ -5,7 +5,7 @@ const AuthService = require('../../services/auth')
 const QuestionService = require('../../services/questions')
 const { createContentState } = require('../../lib/draft')
 
-const { QuestionTypes } = require('../../constants')
+const { QUESTION_TYPES } = require('../../constants')
 
 const setupTestEnv = async ({ email, password, shortname }) => {
   // find the id of the user to reset
@@ -69,7 +69,7 @@ const initializeDb = async ({
 
     if (withQuestions) {
       result.questions = {
-        [QuestionTypes.SC]: await QuestionService.createQuestion({
+        [QUESTION_TYPES.SC]: await QuestionService.createQuestion({
           content: createContentState('very good'),
           options: {
             choices: [
@@ -81,10 +81,10 @@ const initializeDb = async ({
           },
           tags: ['CDEF'],
           title: 'second question',
-          type: QuestionTypes.SC,
+          type: QUESTION_TYPES.SC,
           userId: result.userId,
         }),
-        [QuestionTypes.MC]: await QuestionService.createQuestion({
+        [QUESTION_TYPES.MC]: await QuestionService.createQuestion({
           content: createContentState('very good'),
           options: {
             choices: [
@@ -96,18 +96,18 @@ const initializeDb = async ({
           },
           tags: ['CDEF'],
           title: 'second question',
-          type: QuestionTypes.MC,
+          type: QUESTION_TYPES.MC,
           userId: result.userId,
         }),
-        [QuestionTypes.FREE]: await QuestionService.createQuestion({
+        [QUESTION_TYPES.FREE]: await QuestionService.createQuestion({
           content: createContentState('a description'),
           options: {},
           tags: ['AZA', 'BBB'],
           title: 'first question',
-          type: QuestionTypes.FREE,
+          type: QUESTION_TYPES.FREE,
           userId: result.userId,
         }),
-        [QuestionTypes.FREE_RANGE]: await QuestionService.createQuestion({
+        [QUESTION_TYPES.FREE_RANGE]: await QuestionService.createQuestion({
           content: createContentState('a description'),
           options: {
             restrictions: {
@@ -117,7 +117,7 @@ const initializeDb = async ({
           },
           tags: ['AZA', 'BBB'],
           title: 'first question',
-          type: QuestionTypes.FREE_RANGE,
+          type: QUESTION_TYPES.FREE_RANGE,
           userId: result.userId,
         }),
         FREE_RANGE_PART: await QuestionService.createQuestion({
@@ -130,7 +130,7 @@ const initializeDb = async ({
           },
           tags: ['CDEF', 'BBB'],
           title: 'partly restricted free range',
-          type: QuestionTypes.FREE_RANGE,
+          type: QUESTION_TYPES.FREE_RANGE,
           userId: result.userId,
         }),
         FREE_RANGE_OPEN: await QuestionService.createQuestion({
@@ -143,7 +143,7 @@ const initializeDb = async ({
           },
           tags: ['CDEF', 'BBB'],
           title: 'unrestricted free range',
-          type: QuestionTypes.FREE_RANGE,
+          type: QUESTION_TYPES.FREE_RANGE,
           userId: result.userId,
         }),
       }
