@@ -126,7 +126,7 @@
     "semantic-ui": "2.3.1",
     "semantic-ui-css": "2.3.1",
     "storybook-addon-intl": "2.3.0",
-    "webpack-bundle-analyzer": "2.11.2",
+    "webpack-bundle-analyzer": "2.11.3",
     "why-did-you-update": "0.1.1"
   },
   "scripts": {
