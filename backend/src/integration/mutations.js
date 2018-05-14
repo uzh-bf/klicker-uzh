@@ -272,6 +272,15 @@ const StartSessionMutation = `
     }
   }
 `
+
+const PauseSessionMutation = `
+  mutation PauseSession($id: ID!) {
+    pauseSession(id: $id) {
+      id
+      status
+    }
+  }
+`
 const EndSessionMutation = `
   mutation EndSession($id: ID!) {
     endSession(id: $id) {
@@ -281,12 +290,19 @@ const EndSessionMutation = `
   }
 `
 const StartAndEndSessionSerializer = {
-  test: ({ endSession, startSession }) => endSession || startSession,
-  print: ({ endSession, startSession }) => `
-    startSession / endSession {
-      status: ${endSession ? endSession.status : startSession.status}
+  test: ({ endSession, startSession, pauseSession }) => endSession || startSession || pauseSession,
+  print: ({ endSession, startSession, pauseSession }) => {
+    const status =
+      (endSession && endSession.status) ||
+      (startSession && startSession.status) ||
+      (pauseSession && pauseSession.status)
+
+    return `
+    startSession / pauseSession / endSession {
+      status: ${status}
     }
-  `,
+    `
+  },
 }
 
 const AddFeedbackMutation = `
@@ -400,6 +416,7 @@ module.exports = {
   ModifyQuestionMutation,
   CreateSessionMutation,
   StartSessionMutation,
+  PauseSessionMutation,
   EndSessionMutation,
   AddFeedbackMutation,
   DeleteFeedbackMutation,

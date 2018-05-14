@@ -1,31 +1,39 @@
-const QuestionTypes = {
+const QUESTION_TYPES = {
   SC: 'SC',
   MC: 'MC',
   FREE: 'FREE',
   FREE_RANGE: 'FREE_RANGE',
 }
 
-const QuestionGroups = {
-  CHOICES: [QuestionTypes.SC, QuestionTypes.MC],
-  FREE: [QuestionTypes.FREE, QuestionTypes.FREE_RANGE],
-  WITH_OPTIONS: [QuestionTypes.SC, QuestionTypes.MC, QuestionTypes.FREE_RANGE],
+const QUESTION_GROUPS = {
+  CHOICES: [QUESTION_TYPES.SC, QUESTION_TYPES.MC],
+  FREE: [QUESTION_TYPES.FREE, QUESTION_TYPES.FREE_RANGE],
+  WITH_OPTIONS: [QUESTION_TYPES.SC, QUESTION_TYPES.MC, QUESTION_TYPES.FREE_RANGE],
 }
 
-const QuestionBlockStatus = {
+const QUESTION_BLOCK_STATUS = {
   PLANNED: 'PLANNED',
   ACTIVE: 'ACTIVE',
   EXECUTED: 'EXECUTED',
 }
 
-const SessionStatus = {
+const SESSION_STATUS = {
   CREATED: 'CREATED',
   RUNNING: 'RUNNING',
+  PAUSED: 'PAUSED',
   COMPLETED: 'COMPLETED',
 }
 
+const SESSION_ACTIONS = {
+  START: 'START',
+  PAUSE: 'PAUSE',
+  STOP: 'STOP',
+}
+
 module.exports = {
-  QuestionTypes,
-  QuestionGroups,
-  QuestionBlockStatus,
-  SessionStatus,
+  QUESTION_TYPES,
+  QUESTION_GROUPS,
+  QUESTION_BLOCK_STATUS,
+  SESSION_STATUS,
+  SESSION_ACTIONS,
 }

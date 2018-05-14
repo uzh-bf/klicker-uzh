@@ -7,7 +7,7 @@ const { QuestionInstanceModel } = require('../models')
 const { initializeDb, prepareSessionFactory } = require('../lib/test/setup')
 const { sessionSerializer, questionInstanceSerializer } = require('../lib/test/serializers')
 
-const { QuestionTypes } = require('../constants')
+const { SESSION_STATUS, QUESTION_TYPES } = require('../constants')
 
 mongoose.Promise = Promise
 
@@ -54,8 +54,8 @@ describe('SessionMgrService', () => {
         questionBlocks: [
           {
             questions: [
-              { question: questions[QuestionTypes.SC].id, version: 0 },
-              { question: questions[QuestionTypes.MC].id, version: 0 },
+              { question: questions[QUESTION_TYPES.SC].id, version: 0 },
+              { question: questions[QUESTION_TYPES.MC].id, version: 0 },
             ],
           },
           {
@@ -63,8 +63,8 @@ describe('SessionMgrService', () => {
           },
           {
             questions: [
-              { question: questions[QuestionTypes.FREE].id, version: 0 },
-              { question: questions[QuestionTypes.FREE_RANGE].id, version: 0 },
+              { question: questions[QUESTION_TYPES.FREE].id, version: 0 },
+              { question: questions[QUESTION_TYPES.FREE_RANGE].id, version: 0 },
             ],
           },
         ],
@@ -81,14 +81,14 @@ describe('SessionMgrService', () => {
         questionBlocks: [
           {
             questions: [
-              { question: questions[QuestionTypes.SC].id, version: 0 },
-              { question: questions[QuestionTypes.MC].id, version: 0 },
+              { question: questions[QUESTION_TYPES.SC].id, version: 0 },
+              { question: questions[QUESTION_TYPES.MC].id, version: 0 },
             ],
           },
           {
             questions: [
-              { question: questions[QuestionTypes.FREE].id, version: 0 },
-              { question: questions[QuestionTypes.FREE_RANGE].id, version: 0 },
+              { question: questions[QUESTION_TYPES.FREE].id, version: 0 },
+              { question: questions[QUESTION_TYPES.FREE_RANGE].id, version: 0 },
             ],
           },
         ],
@@ -112,7 +112,7 @@ describe('SessionMgrService', () => {
         userId,
       })
 
-      expect(startedSession.status).toEqual(SessionMgrService.SessionStatus.RUNNING)
+      expect(startedSession.status).toEqual(SESSION_STATUS.RUNNING)
       expect(startedSession).toMatchSnapshot()
     })
 
@@ -126,6 +126,48 @@ describe('SessionMgrService', () => {
         id: preparedSession.id,
         userId,
       })).rejects.toEqual(new Error('SESSION_ALREADY_COMPLETED'))
+    })
+  })
+
+  describe('pauseSession', () => {
+    let preparedSession
+
+    beforeAll(async () => {
+      preparedSession = await prepareSession(userId)
+    })
+
+    it('prevents pausing a created session', async () => {
+      expect(SessionMgrService.pauseSession({
+        id: preparedSession.id,
+        userId,
+      })).rejects.toEqual(new Error('SESSION_NOT_RUNNING'))
+    })
+
+    it('allows pausing a running session and continuing it later', async () => {
+      const runningSession = await SessionMgrService.startSession({
+        id: preparedSession.id,
+        userId,
+      })
+      expect(runningSession.status).toEqual(SESSION_STATUS.RUNNING)
+
+      const pausedSession = await SessionMgrService.pauseSession({
+        id: preparedSession.id,
+        userId,
+      })
+      expect(pausedSession.status).toEqual(SESSION_STATUS.PAUSED)
+
+      const continuedSession = await SessionMgrService.startSession({
+        id: preparedSession.id,
+        userId,
+      })
+      expect(continuedSession.status).toEqual(SESSION_STATUS.RUNNING)
+    })
+
+    afterAll(async () => {
+      await SessionMgrService.endSession({
+        id: preparedSession.id,
+        userId,
+      })
     })
   })
 
@@ -154,7 +196,7 @@ describe('SessionMgrService', () => {
         userId,
       })
 
-      expect(endedSession.status).toEqual(SessionMgrService.SessionStatus.COMPLETED)
+      expect(endedSession.status).toEqual(SESSION_STATUS.COMPLETED)
       expect(endedSession).toMatchSnapshot()
     })
 

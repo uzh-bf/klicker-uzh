@@ -2,7 +2,7 @@ const md5 = require('md5')
 const _isNumber = require('lodash/isNumber')
 
 const { QuestionInstanceModel, UserModel } = require('../models')
-const { QuestionGroups, QuestionTypes } = require('../constants')
+const { QUESTION_GROUPS, QUESTION_TYPES } = require('../constants')
 const { getRedis } = require('../redis')
 const { getRunningSession } = require('./sessionMgr')
 const { pubsub, CONFUSION_ADDED, FEEDBACK_ADDED } = require('../resolvers/subscriptions')
@@ -162,14 +162,14 @@ const addResponse = async ({
   const currentVersion = instance.question.versions[instance.version]
 
   // result parsing for SC/MC questions
-  if (QuestionGroups.CHOICES.includes(questionType)) {
+  if (QUESTION_GROUPS.CHOICES.includes(questionType)) {
     // if the response doesn't contain any valid choices, throw
     if (!response.choices || !response.choices.length > 0) {
       throw new Error('INVALID_RESPONSE')
     }
 
     // if the response contains multiple choices for a SC question
-    if (questionType === QuestionTypes.SC && response.choices.length > 1) {
+    if (questionType === QUESTION_TYPES.SC && response.choices.length > 1) {
       throw new Error('TOO_MANY_CHOICES')
     }
 
@@ -187,12 +187,12 @@ const addResponse = async ({
     })
     instance.results.totalParticipants += 1
     instance.markModified('results.CHOICES')
-  } else if (QuestionGroups.FREE.includes(questionType)) {
+  } else if (QUESTION_GROUPS.FREE.includes(questionType)) {
     if (!response.value || response.value.length > 1000) {
       throw new Error('INVALID_RESPONSE')
     }
 
-    if (questionType === QuestionTypes.FREE_RANGE) {
+    if (questionType === QUESTION_TYPES.FREE_RANGE) {
       if (!_isNumber(response.value * 1)) {
         throw new Error('INVALID_RESPONSE')
       }
