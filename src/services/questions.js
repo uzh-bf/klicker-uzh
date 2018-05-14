@@ -3,7 +3,7 @@ const _isNumber = require('lodash/isNumber')
 const { ContentState, convertToRaw } = require('draft-js')
 
 const { QuestionModel, TagModel, UserModel } = require('../models')
-const { QuestionGroups, QuestionTypes } = require('../constants')
+const { QUESTION_GROUPS, QUESTION_TYPES } = require('../constants')
 const { convertToPlainText } = require('../lib/draft')
 
 // process tags when editing or creating a question
@@ -40,12 +40,12 @@ const createQuestion = async ({
   }
 
   // if no options have been assigned, throw
-  if (QuestionGroups.WITH_OPTIONS.includes(type) && !options) {
+  if (QUESTION_GROUPS.WITH_OPTIONS.includes(type) && !options) {
     throw new Error('NO_OPTIONS_SPECIFIED')
   }
 
   // validation for SC and MC questions
-  if (QuestionGroups.CHOICES.includes(type)) {
+  if (QUESTION_GROUPS.CHOICES.includes(type)) {
     if (options.choices.length === 0) {
       throw new Error('NO_CHOICES_SPECIFIED')
     }
@@ -56,7 +56,7 @@ const createQuestion = async ({
   }
 
   // validation for FREE_RANGE questions
-  if (type === QuestionTypes.FREE_RANGE) {
+  if (type === QUESTION_TYPES.FREE_RANGE) {
     if (!options.restrictions) {
       throw new Error('MISSING_RESTRICTIONS')
     }
@@ -92,7 +92,7 @@ const createQuestion = async ({
       {
         content,
         description: convertToPlainText(content),
-        options: QuestionGroups.WITH_OPTIONS.includes(type) && {
+        options: QUESTION_GROUPS.WITH_OPTIONS.includes(type) && {
           [type]: options,
         },
         solution,
@@ -139,7 +139,7 @@ const modifyQuestion = async (questionId, userId, {
   }
 
   if (
-    QuestionGroups.CHOICES.includes(question.type) &&
+    QUESTION_GROUPS.CHOICES.includes(question.type) &&
     solution &&
     options.choices.length !== solution[question.type].length
   ) {
@@ -212,10 +212,10 @@ const modifyQuestion = async (questionId, userId, {
     question.versions.push({
       content,
       description: convertToPlainText(content),
-      options: QuestionGroups.WITH_OPTIONS.includes(question.type) && {
+      options: QUESTION_GROUPS.WITH_OPTIONS.includes(question.type) && {
         // HACK: manually ensure randomized is default set to false
         // TODO: mongoose should do this..?
-        [question.type]: QuestionGroups.CHOICES.includes(question.type) ? { randomized: false, ...options } : options,
+        [question.type]: QUESTION_GROUPS.CHOICES.includes(question.type) ? { randomized: false, ...options } : options,
       },
       solution,
     })

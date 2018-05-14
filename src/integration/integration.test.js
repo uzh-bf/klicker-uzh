@@ -6,7 +6,7 @@ const { initializeDb } = require('../lib/test/setup')
 const { createContentState } = require('../lib/draft')
 const queries = require('./queries')
 const mutations = require('./mutations')
-const { QuestionTypes } = require('../constants')
+const { QUESTION_TYPES } = require('../constants')
 
 process.env.NODE_ENV = 'test'
 
@@ -106,7 +106,7 @@ describe('Integration', () => {
         authCookie,
       ))
 
-      questions[QuestionTypes.SC] = data.createQuestion.id
+      questions[QUESTION_TYPES.SC] = data.createQuestion.id
 
       expect(data).toMatchSnapshot()
     })
@@ -136,7 +136,7 @@ describe('Integration', () => {
         authCookie,
       ))
 
-      questions[QuestionTypes.MC] = data.createQuestion.id
+      questions[QUESTION_TYPES.MC] = data.createQuestion.id
 
       expect(data).toMatchSnapshot()
     })
@@ -159,7 +159,7 @@ describe('Integration', () => {
         authCookie,
       ))
 
-      questions[QuestionTypes.FREE] = data.createQuestion.id
+      questions[QUESTION_TYPES.FREE] = data.createQuestion.id
 
       expect(data).toMatchSnapshot()
     })
@@ -184,7 +184,7 @@ describe('Integration', () => {
         authCookie,
       ))
 
-      questions[QuestionTypes.FREE_RANGE] = data.createQuestion.id
+      questions[QUESTION_TYPES.FREE_RANGE] = data.createQuestion.id
 
       expect(data).toMatchSnapshot()
     })
@@ -394,14 +394,14 @@ describe('Integration', () => {
             blocks: [
               {
                 questions: [
-                  { question: questions[QuestionTypes.SC], version: 0 },
-                  { question: questions[QuestionTypes.MC], version: 0 },
+                  { question: questions[QUESTION_TYPES.SC], version: 0 },
+                  { question: questions[QUESTION_TYPES.MC], version: 0 },
                 ],
               },
-              { questions: [{ question: questions[QuestionTypes.FREE], version: 0 }] },
+              { questions: [{ question: questions[QUESTION_TYPES.FREE], version: 0 }] },
               {
                 questions: [
-                  { question: questions[QuestionTypes.FREE_RANGE], version: 0 },
+                  { question: questions[QUESTION_TYPES.FREE_RANGE], version: 0 },
                   { question: questions.FREE_RANGE_PART, version: 0 },
                   { question: questions.FREE_RANGE_OPEN, version: 0 },
                 ],
@@ -596,6 +596,30 @@ describe('Integration', () => {
           authCookie,
         ))
         expect(evaluateSession).toMatchSnapshot()
+      })
+
+      it('LECTURER: can pause the session', async () => {
+        const data = ensureNoErrors(await sendQuery(
+          {
+            query: mutations.PauseSessionMutation,
+            variables: { id: sessionId },
+          },
+          authCookie,
+        ))
+
+        expect(data).toMatchSnapshot()
+      })
+
+      it('LECTURER: can continue the session', async () => {
+        const data = ensureNoErrors(await sendQuery(
+          {
+            query: mutations.StartSessionMutation,
+            variables: { id: sessionId },
+          },
+          authCookie,
+        ))
+
+        expect(data).toMatchSnapshot()
       })
 
       it('LECTURER: can close the first question block', async () => {

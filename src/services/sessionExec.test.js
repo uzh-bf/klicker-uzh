@@ -8,7 +8,7 @@ const SessionExecService = require('./sessionExec')
 const { initializeDb, prepareSessionFactory } = require('../lib/test/setup')
 const { sessionSerializer, questionInstanceSerializer } = require('../lib/test/serializers')
 
-const { QuestionTypes } = require('../constants')
+const { QUESTION_TYPES } = require('../constants')
 
 mongoose.Promise = Promise
 
@@ -169,10 +169,10 @@ describe('SessionExecService', () => {
       preparedSession = await prepareSession(
         userId,
         [
-          { question: questions[QuestionTypes.SC].id, version: 0 },
-          { question: questions[QuestionTypes.MC].id, version: 0 },
-          { question: questions[QuestionTypes.FREE].id, version: 0 },
-          { question: questions[QuestionTypes.FREE_RANGE].id, version: 0 },
+          { question: questions[QUESTION_TYPES.SC].id, version: 0 },
+          { question: questions[QUESTION_TYPES.MC].id, version: 0 },
+          { question: questions[QUESTION_TYPES.FREE].id, version: 0 },
+          { question: questions[QUESTION_TYPES.FREE_RANGE].id, version: 0 },
         ],
         true,
       )
