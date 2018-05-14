@@ -124,13 +124,14 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
 
           return (
             <React.Fragment>
-              {runningSessions.length > 0 ? (
+              {runningSessions.length + pausedSessions.length > 0 ? (
                 <div className="runningSessions">
                   <h2>
                     <FormattedMessage
                       defaultMessage="Running / paused sessions"
                       id="sessionList.title.runningSession"
-                    />
+                    />{' '}
+                    ({runningSessions.length + pausedSessions.length})
                   </h2>
                   <div className="sessions">
                     {[...runningSessions, ...pausedSessions].map(running => (
