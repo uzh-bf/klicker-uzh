@@ -136,7 +136,6 @@ export const NavbarPres = ({
           order: 0;
 
           h1 {
-            font-size: $font-size-h1;
             margin: 0;
             padding: 0 1rem 0 0.5rem;
             display: flex;

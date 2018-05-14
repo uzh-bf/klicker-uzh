@@ -81,7 +81,7 @@
   "joinSession.questionArea.alreadyAnswered": "You have already answered all active questions.",
   "sessionList.string.createdOn": "Created on",
   "sessionList.string.noSessions": "No session was found.",
-  "sessionList.title.runningSession": "Running session",
+  "sessionList.title.runningSession": "Running / paused sessions",
   "sessionList.string.noSessionRunning": "No session is currently running.",
   "sessionList.title.plannedSessions": "Planned sessions",
   "sessionList.title.completedSessions": "Completed sessions",
