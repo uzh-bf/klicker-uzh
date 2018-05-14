@@ -24,6 +24,10 @@ const statusCases = {
     icon: 'play',
     message: <FormattedMessage defaultMessage="Running" id="session.button.running.content" />,
   },
+  [SESSION_STATUS.PAUSED]: {
+    icon: 'pause',
+    message: <FormattedMessage defaultMessage="Continue" id="session.button.paused.content" />,
+  },
 }
 
 const propTypes = {
@@ -35,7 +39,7 @@ const propTypes = {
 export const SessionListPres = ({ filters, handleCopySession, handleStartSession }) => {
   // calculate what action to take on button click based on session status
   const handleSessionAction = (sessionId, status) => {
-    if (status === SESSION_STATUS.CREATED) {
+    if (status === SESSION_STATUS.CREATED || status === SESSION_STATUS.PAUSED) {
       return handleStartSession(sessionId)
     }
 
@@ -84,6 +88,18 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
               },
             }))
 
+          // extract paused sessions
+          const pausedSessions = sessions
+            .filter(session => session.status === SESSION_STATUS.PAUSED)
+            .map(session => ({
+              ...session,
+              button: {
+                ...statusCases[SESSION_STATUS.PAUSED],
+                disabled: runningSessions.length > 0,
+                onClick: handleSessionAction(session.id, session.status),
+              },
+            }))
+
           // create a session index
           const sessionIndex = buildIndex('sessions', sessions, ['name', 'createdAt'])
 
@@ -109,19 +125,23 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
           return (
             <React.Fragment>
               {runningSessions.length > 0 ? (
-                <div className="runningSession">
+                <div className="runningSessions">
                   <h2>
                     <FormattedMessage
-                      defaultMessage="Running session"
+                      defaultMessage="Running / paused sessions"
                       id="sessionList.title.runningSession"
                     />
                   </h2>
-                  <div className="session">
-                    {runningSessions.map(running => <Session {...running} />)}
+                  <div className="sessions">
+                    {[...runningSessions, ...pausedSessions].map(running => (
+                      <div className="runningSession">
+                        <Session {...running} />
+                      </div>
+                    ))}
                   </div>
                 </div>
               ) : (
-                <div className="session">
+                <div className="sessions">
                   <FormattedMessage
                     defaultMessage="No session is currently running."
                     id="sessionList.string.noSessionRunning"
@@ -170,16 +190,23 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
       <style jsx>{`
         @import 'src/theme';
 
-        .session {
+        .session,
+        .sessions {
           margin-bottom: 1rem;
           padding: 0.5rem;
           border: 1px solid lightgrey;
           background-color: #f9f9f9;
         }
 
-        .runningSession > .session {
-          background-color: #f9f9f9;
-          border: 1px solid $color-primary;
+        .runningSessions {
+          & > .sessions {
+            background-color: #f9f9f9;
+            border: 1px solid $color-primary;
+          }
+
+          .runningSession:not(:last-child) {
+            margin-bottom: 0.5rem;
+          }
         }
       `}</style>
     </div>
