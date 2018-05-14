@@ -332,10 +332,10 @@ Object {
 
 exports[`Integration Session Execution allows completing sessions 1`] = `
 
-    startSession / endSession {
+    startSession / pauseSession / endSession {
       status: COMPLETED
     }
-  
+    
 `;
 
 exports[`Integration Session Execution allows evaluating sessions after completion 1`] = `
@@ -552,6 +552,14 @@ exports[`Integration Session Execution allows running the full session flow (res
       
     }
   
+`;
+
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can continue the session 1`] = `
+
+    startSession / pauseSession / endSession {
+      status: RUNNING
+    }
+    
 `;
 
 exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can evaluate the first question block 1`] = `
@@ -1346,6 +1354,14 @@ exports[`Integration Session Execution allows running the full session flow (res
   
 `;
 
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can pause the session 1`] = `
+
+    startSession / pauseSession / endSession {
+      status: PAUSED
+    }
+    
+`;
+
 exports[`Integration Session Execution allows running the full session flow (responding and evaluation) PARTICIPANT: can join the session initially 1`] = `
 
     joinSession {
@@ -1441,10 +1457,10 @@ exports[`Integration Session Execution allows running the full session flow (res
 
 exports[`Integration Session Execution allows starting sessions 1`] = `
 
-    startSession / endSession {
+    startSession / pauseSession / endSession {
       status: RUNNING
     }
-  
+    
 `;
 
 exports[`Integration Session Execution allows updating session settings 1`] = `

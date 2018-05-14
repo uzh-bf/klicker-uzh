@@ -3,14 +3,14 @@ const _values = require('lodash/values')
 
 const { ObjectId } = mongoose.Schema.Types
 
-const { QuestionBlockStatus } = require('../constants')
+const { QUESTION_BLOCK_STATUS } = require('../constants')
 
 module.exports = {
   QuestionBlock: new mongoose.Schema({
     status: {
       type: String,
-      enum: _values(QuestionBlockStatus),
-      default: QuestionBlockStatus.PLANNED,
+      enum: _values(QUESTION_BLOCK_STATUS),
+      default: QUESTION_BLOCK_STATUS.PLANNED,
     },
     timeLimit: { type: Number, default: -1, min: -1 },
     showSolutions: { type: Boolean, default: false },

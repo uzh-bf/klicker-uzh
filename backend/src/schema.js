@@ -18,6 +18,7 @@ const {
   addConfusionTS,
   allSessions,
   createSession,
+  pauseSession,
   endSession,
   joinSession,
   runningSession,
@@ -75,6 +76,7 @@ const typeDefs = [
     login(email: String!, password: String!): ID!
     logout: String!
     modifyQuestion(id: ID!, question: QuestionModifyInput!): Question!
+    pauseSession(id: ID!): Session!
     requestPassword(email: String!): String!
     startSession(id: ID!): Session!
     updateSessionSettings(sessionId: ID!, settings: Session_SettingsInput!): Session!
@@ -116,6 +118,7 @@ const resolvers = {
     login,
     logout,
     modifyQuestion: requireAuth(modifyQuestion),
+    pauseSession: requireAuth(pauseSession),
     requestPassword,
     startSession: requireAuth(startSession),
     updateSessionSettings: requireAuth(updateSessionSettings),
