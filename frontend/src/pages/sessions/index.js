@@ -4,6 +4,7 @@ import { compose, withHandlers } from 'recompose'
 import { intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
+import Router from 'next/router'
 
 import { pageWithIntl, withLogging, withSortingAndFiltering } from '../../lib'
 import {
@@ -107,6 +108,8 @@ export default compose(
           ],
           variables: { id },
         })
+
+        Router.push('/sessions/running')
       } catch ({ message }) {
         console.error(message)
       }

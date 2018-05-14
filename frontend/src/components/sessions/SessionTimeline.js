@@ -9,9 +9,10 @@ import { QuestionBlock } from '../questions'
 
 const propTypes = {
   activeStep: PropTypes.number.isRequired,
-  blocks: PropTypes.array, // TODO: extend
-  handleLeftActionClick: PropTypes.func.isRequired,
-  handleRightActionClick: PropTypes.func.isRequired,
+  blocks: PropTypes.array,
+  handleEndSession: PropTypes.func.isRequired,
+  handleNextBlock: PropTypes.func.isRequired,
+  handlePauseSession: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   runtime: PropTypes.string,
   sessionId: PropTypes.string.isRequired,
@@ -73,8 +74,9 @@ const SessionTimeline = ({
   startedAt,
   shortname,
   activeStep,
-  handleLeftActionClick,
-  handleRightActionClick,
+  handleNextBlock,
+  handleEndSession,
+  handlePauseSession,
 }) => {
   const isFeedbackSession = blocks.length === 0
 
@@ -187,6 +189,13 @@ const SessionTimeline = ({
         )}
       </div>
       <div className="buttons">
+        <div className="left">
+          <Button icon labelPosition="left" size="small" onClick={handlePauseSession}>
+            <Icon name="pause" />
+            <FormattedMessage defaultMessage="Pause Session" id="sessionArea.button.pauseSession" />
+          </Button>
+        </div>
+
         {isFeedbackSession ? (
           <Button
             // show the session finish button for feedback sessions
@@ -194,8 +203,7 @@ const SessionTimeline = ({
             content={getMessage(intl, 2, 2).label}
             icon={getMessage(intl, 2, 2).icon}
             labelPosition="left"
-            size="large"
-            onClick={handleLeftActionClick}
+            onClick={handleEndSession}
           />
         ) : (
           <Button
@@ -204,10 +212,7 @@ const SessionTimeline = ({
             content={getMessage(intl, activeStep, blocks.length * 2).label}
             icon={getMessage(intl, activeStep, blocks.length * 2).icon}
             labelPosition="left"
-            size="large"
-            onClick={
-              activeStep >= blocks.length * 2 ? handleLeftActionClick : handleRightActionClick
-            }
+            onClick={activeStep >= blocks.length * 2 ? handleEndSession : handleNextBlock}
           />
         )}
       </div>
@@ -228,10 +233,11 @@ const SessionTimeline = ({
           .infos,
           .actions {
             display: flex;
+            flex-flow: row wrap;
             align-items: flex-end;
           }
 
-          .actions > :global(*:last-child) {
+          .actions > a:last-child > :global(button) {
             margin: 0;
           }
 
@@ -306,9 +312,9 @@ const SessionTimeline = ({
 
             display: flex;
             flex-flow: row wrap;
-            justify-content: flex-end;
+            justify-content: space-between;
 
-            margin-top: 1rem;
+            margin-top: 0.5rem;
 
             > :global(button) {
               margin-right: 0;
@@ -321,10 +327,7 @@ const SessionTimeline = ({
             .topRow {
               flex: 0 0 100%;
 
-              padding-bottom: 0.25rem;
-
-              .actions {
-              }
+              padding-bottom: 0.5rem;
             }
 
             .blocks {

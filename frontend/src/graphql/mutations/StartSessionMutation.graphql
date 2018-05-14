@@ -2,5 +2,10 @@ mutation StartSession($id: ID!) {
   startSession(id: $id) {
     id
     status
+    settings {
+      isConfusionBarometerActive
+      isFeedbackChannelActive
+      isFeedbackChannelPublic
+    }
   }
 }

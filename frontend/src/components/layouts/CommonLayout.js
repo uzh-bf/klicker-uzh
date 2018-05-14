@@ -32,12 +32,26 @@ const CommonLayout = ({
     {children}
 
     <style jsx global>{`
+      @import 'src/theme';
+
       html {
         font-size: ${baseFontSize} !important;
       }
 
       body {
         font-size: 1rem !important;
+      }
+
+      h1 {
+        font-size: $font-size-h1 !important;
+      }
+
+      h2 {
+        font-size: $font-size-h2 !important;
+      }
+
+      h3 {
+        font-size: $font-size-h3 !important;
       }
 
       #__next {
