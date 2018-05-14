@@ -92,6 +92,10 @@ export const SMALL_PIE_THRESHOLD = 0.05
 export const CHANGELOG = {
   new: [
     {
+      items: ['Pausing sessions'],
+      text: '1.0.0-public.beta.22',
+    },
+    {
       items: [
         'Rich-Text formatting for question content (for creation, modification and display on joining a session)',
         'The feature is experimental and formatting is not yet displayed on the evaluation screen',
