@@ -39,7 +39,7 @@
     "rate-limit-redis": "1.4.0",
     "react": "16.3.2",
     "react-dom": "16.3.2",
-    "request": "2.85.0",
+    "request": "2.86.0",
     "request-promise": "4.2.2",
     "subscriptions-transport-ws": "0.9.9"
   },
