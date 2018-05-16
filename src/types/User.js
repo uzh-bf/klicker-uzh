@@ -23,7 +23,7 @@ const User = `
     isActive: Boolean!
     isAAI: Boolean!
     shortname: String!
-    institution: String!
+    institution: String
     useCase: String
 
     runningSession: Session
