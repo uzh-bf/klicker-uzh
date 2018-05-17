@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 import { Button, Icon, Input } from 'semantic-ui-react'
-import Yup from 'yup'
+import { object, array, string } from 'yup'
 
 import { SessionTimelineInput } from '../sessions'
 
@@ -16,9 +16,9 @@ const propTypes = {
   name: PropTypes.string.isRequired,
 }
 
-const schema = Yup.object().shape({
-  blocks: Yup.array().default([]),
-  name: Yup.string()
+const schema = object().shape({
+  blocks: array().default([]),
+  name: string()
     .min(1)
     .required(),
 })
