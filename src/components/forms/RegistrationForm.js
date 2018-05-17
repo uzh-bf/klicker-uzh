@@ -4,7 +4,7 @@ import { FormattedMessage, intlShape } from 'react-intl'
 import { Button, Form } from 'semantic-ui-react'
 
 import { Formik } from 'formik'
-import Yup from 'yup'
+import { object, string, ref } from 'yup'
 import _isEmpty from 'lodash/isEmpty'
 
 import { FormikInput } from '.'
@@ -178,25 +178,25 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
           </div>
         </Form>
       )}
-      validationSchema={Yup.object().shape({
-        email: Yup.string()
+      validationSchema={object().shape({
+        email: string()
           .email()
           .required(),
-        institution: Yup.string().required(),
-        password: Yup.string()
+        institution: string().required(),
+        password: string()
           .min(8)
           .required(),
-        passwordRepeat: Yup.string()
+        passwordRepeat: string()
           .min(8)
-          .oneOf([Yup.ref('password'), null])
+          .oneOf([ref('password'), null])
           .required(),
-        shortname: Yup.string()
+        shortname: string()
           .min(3)
           .max(8)
           .matches(/^[A-Za-z0-9-]+$/)
           .lowercase()
           .required(),
-        useCase: Yup.string(),
+        useCase: string(),
       })}
       onSubmit={onSubmit}
     />
