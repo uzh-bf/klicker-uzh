@@ -11,6 +11,21 @@ const { sendSlackNotification } = require('./notifications')
 
 const dev = process.env.NODE_ENV !== 'production'
 
+const AUTH_COOKIE_SETTINGS = {
+  domain: process.env.APP_DOMAIN,
+  httpOnly: true,
+  maxAge: 86400000,
+  path: process.env.APP_PATH ? `${process.env.APP_PATH}/graphql` : '/graphql',
+  secure: !dev && process.env.APP_HTTPS,
+}
+
+const generateJwtSettings = user => ({
+  expiresIn: 86400,
+  sub: user.id,
+  scope: ['user'],
+  shortname: user.shortname,
+})
+
 // check whether an authentication object is valid
 const isAuthenticated = (auth) => {
   if (auth && auth.sub) {
@@ -120,15 +135,7 @@ const login = async (res, email, password) => {
   // generate a JWT for future authentication
   // expiresIn: one day equals 86400 seconds
   // TODO: add more necessary properties for the JWT
-  const jwt = JWT.sign(
-    {
-      expiresIn: 86400,
-      sub: user.id,
-      scope: ['user'],
-      shortname: user.shortname,
-    },
-    process.env.APP_SECRET,
-  )
+  const jwt = JWT.sign(generateJwtSettings(user), process.env.APP_SECRET)
 
   // set a cookie with the generated JWT
   // domain: the domain the cookie should be valid for
@@ -138,13 +145,7 @@ const login = async (res, email, password) => {
   // secure: whether the cookie should only be sent over https
   // TODO: set other important cookie settings
   if (res && res.cookie) {
-    res.cookie('jwt', jwt, {
-      domain: process.env.APP_DOMAIN,
-      httpOnly: true,
-      maxAge: 86400000,
-      path: process.env.APP_PATH ? `${process.env.APP_PATH}/graphql` : '/graphql',
-      secure: !dev && process.env.APP_HTTPS,
-    })
+    res.cookie('jwt', jwt, AUTH_COOKIE_SETTINGS)
   }
 
   // update the last login date
@@ -163,11 +164,8 @@ const login = async (res, email, password) => {
 const logout = async (res) => {
   if (res && res.cookie) {
     res.cookie('jwt', null, {
-      domain: process.env.APP_DOMAIN,
-      httpOnly: true,
+      ...AUTH_COOKIE_SETTINGS,
       maxAge: -1,
-      path: process.env.APP_PATH ? `${process.env.APP_PATH}/graphql` : '/graphql',
-      secure: !dev && process.env.APP_HTTPS,
     })
   }
   return 'LOGGED_OUT'
@@ -205,15 +203,7 @@ const requestPassword = async (res, email) => {
   }
 
   // generate a temporary JWT for password reset
-  const jwt = JWT.sign(
-    {
-      expiresIn: 86400,
-      sub: user.id,
-      scope: ['user'],
-      shortname: user.shortname,
-    },
-    process.env.APP_SECRET,
-  )
+  const jwt = JWT.sign(generateJwtSettings(user), process.env.APP_SECRET)
 
   // create reusable transporter object using the default SMTP transport
   const transporter = nodemailer.createTransport({

@@ -3,7 +3,7 @@ require('dotenv').config()
 const mongoose = require('mongoose')
 const JWT = require('jsonwebtoken')
 
-mongoose.Promise = Promise
+mongoose.Promise = require('bluebird')
 
 const {
   isAuthenticated, isValidJWT, signup, login, logout, requireAuth, getToken, changePassword,
