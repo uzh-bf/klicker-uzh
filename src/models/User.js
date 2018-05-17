@@ -21,7 +21,6 @@ const User = new mongoose.Schema({
   },
   institution: {
     type: String,
-    required: true,
   },
   useCase: {
     type: String,
