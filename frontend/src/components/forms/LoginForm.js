@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { intlShape } from 'react-intl'
 import { Formik } from 'formik'
-import Yup from 'yup'
+import { object, string } from 'yup'
 import _isEmpty from 'lodash/isEmpty'
 
 import { FormWithLinks, FormikInput } from '.'
@@ -98,11 +98,11 @@ const LoginForm = ({ intl, loading, onSubmit }) => {
           />
         </FormWithLinks>
       )}
-      validationSchema={Yup.object().shape({
-        email: Yup.string()
+      validationSchema={object().shape({
+        email: string()
           .email()
           .required(),
-        password: Yup.string().required(),
+        password: string().required(),
       })}
       onSubmit={onSubmit}
     />
