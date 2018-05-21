@@ -10542,9 +10542,9 @@ next-line@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/next-line/-/next-line-1.1.0.tgz#fcae57853052b6a9bae8208e40dd7d3c2d304603"
 
-next@6.0.2:
-  version "6.0.2"
-  resolved "https://registry.yarnpkg.com/next/-/next-6.0.2.tgz#d72525eb725ed1aa85129bd2c1e67226e2690d5c"
+next@6.0.3:
+  version "6.0.3"
+  resolved "https://registry.yarnpkg.com/next/-/next-6.0.3.tgz#b759fde2ec4864f92116cee4fcd805aaf285136c"
   dependencies:
     "@babel/core" "7.0.0-beta.42"
     "@babel/plugin-proposal-class-properties" "7.0.0-beta.42"
