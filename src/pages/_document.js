@@ -22,7 +22,7 @@ export default class IntlDocument extends Document {
   render() {
     // Polyfill Intl API for older browsers
     const polyfill = `https://cdn.polyfill.io/v2/polyfill.min.js
-      ?features=default-3.6,Intl,Intl.~locale.de,Intl.~locale.en,Array.prototype.includes,String.prototype.repeat`
+      ?features=default-3.6,Intl,Intl.~locale.de,Intl.~locale.en,Array.prototype.includes,String.prototype.repeat,Symbol,Symbol.iterator`
 
     return (
       <html lang={this.props.locale}>
