@@ -20,7 +20,7 @@ const AUTH_COOKIE_SETTINGS = {
 }
 
 const generateJwtSettings = user => ({
-  expiresIn: 86400,
+  // expiresIn: 86400,
   sub: user.id,
   scope: ['user'],
   shortname: user.shortname,
@@ -53,7 +53,12 @@ const isValidJWT = (jwt, secret) => {
   try {
     JWT.verify(jwt, secret)
     return true
-  } catch (err) {
+  } catch ({ name }) {
+    // if the token is expired, throw
+    if (name === 'TokenExpiredError') {
+      throw new Error('TOKEN_EXPIRED')
+    }
+
     return false
   }
 }
@@ -135,7 +140,9 @@ const login = async (res, email, password) => {
   // generate a JWT for future authentication
   // expiresIn: one day equals 86400 seconds
   // TODO: add more necessary properties for the JWT
-  const jwt = JWT.sign(generateJwtSettings(user), process.env.APP_SECRET)
+  const jwt = JWT.sign(generateJwtSettings(user), process.env.APP_SECRET, {
+    expiresIn: '1d',
+  })
 
   // set a cookie with the generated JWT
   // domain: the domain the cookie should be valid for
@@ -203,7 +210,9 @@ const requestPassword = async (res, email) => {
   }
 
   // generate a temporary JWT for password reset
-  const jwt = JWT.sign(generateJwtSettings(user), process.env.APP_SECRET)
+  const jwt = JWT.sign(generateJwtSettings(user), process.env.APP_SECRET, {
+    expiresIn: '1d',
+  })
 
   // create reusable transporter object using the default SMTP transport
   const transporter = nodemailer.createTransport({
