@@ -10,4 +10,3 @@ src/lang/.messages
 .DS_Store
 
 .env
-.env.prod
