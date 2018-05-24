@@ -2,6 +2,7 @@
 
 const webpack = require('webpack')
 const withCSS = require('@zeit/next-css')
+const withSourceMaps = require('@zeit/next-source-maps')
 const { DEVELOPMENT_SERVER, PHASE_PRODUCTION_BUILD } = require('next/constants')
 
 module.exports = (phase) => {
@@ -55,6 +56,9 @@ module.exports = (phase) => {
   // enable next-css plugin
   // allows importing css files
   config = withCSS(config)
+
+  // enable sourcemaps
+  config = withSourceMaps(config)
 
   // development only configuration
   if (phase === DEVELOPMENT_SERVER) {
