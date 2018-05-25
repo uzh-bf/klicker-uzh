@@ -90,7 +90,7 @@ export const NavbarPres = ({
           }
 
           // eslint-disable-next-line no-undef
-          if (typeof window !== 'undefined' && _chatlio) {
+          if (typeof window !== 'undefined' && typeof _chatlio !== 'undefined') {
             // eslint-disable-next-line no-undef
             _chatlio.identify(accountId, {
               email: userEmail,
