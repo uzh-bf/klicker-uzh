@@ -76,6 +76,7 @@ export const NavbarPres = ({
       <Query query={AccountSummaryQuery}>
         {({ data }) => {
           const accountId = data.user?.id
+          const userEmail = data.user?.email
           const accountShort = data.user?.shortname
           const runningSessionId = data.user?.runningSession?.id
 
@@ -83,16 +84,20 @@ export const NavbarPres = ({
           if (typeof window !== 'undefined' && window.INIT_LR) {
             const LogRocket = require('logrocket')
             LogRocket.identify(accountId, {
+              email: userEmail,
               name: accountShort,
             })
           }
-          
+
+          // eslint-disable-next-line no-undef
           if (typeof window !== 'undefined' && _chatlio) {
+            // eslint-disable-next-line no-undef
             _chatlio.identify(accountId, {
+              email: userEmail,
               name: accountShort,
             })
           }
-               
+
           return (
             <Menu borderless className="loginArea noBorder">
               <Menu.Menu position="right">
