@@ -14,7 +14,7 @@ const defaultProps = {
 
 const AccountArea = ({ accountShort, onLogout }) => (
   <React.Fragment>
-    <Dropdown item simple icon="user" text={`${accountShort.toUpperCase()} `}>
+    <Dropdown item simple icon="user" text={`${accountShort} `}>
       <Dropdown.Menu>
         {/* <Dropdown.Item disabled>
           <FormattedMessage defaultMessage="Settings" id="common.string.settings" />
