@@ -1,3 +1,5 @@
+/* eslint-disable no-underscore-dangle */
+
 import React from 'react'
 import PropTypes from 'prop-types'
 import { intlShape } from 'react-intl'
@@ -80,22 +82,28 @@ export const NavbarPres = ({
           const accountShort = data.user?.shortname
           const runningSessionId = data.user?.runningSession?.id
 
-          // identify in logrocket
-          if (typeof window !== 'undefined' && window.INIT_LR) {
-            const LogRocket = require('logrocket')
-            LogRocket.identify(accountId, {
-              email: userEmail,
-              name: accountShort,
-            })
-          }
+          if (typeof window !== 'undefined') {
+            if (window.INIT_LR) {
+              const LogRocket = require('logrocket')
+              LogRocket.identify(accountId, {
+                email: userEmail,
+                name: accountShort,
+              })
+            }
 
-          // eslint-disable-next-line no-undef
-          if (typeof window !== 'undefined' && typeof _chatlio !== 'undefined') {
-            // eslint-disable-next-line no-undef
-            _chatlio.identify(accountId, {
-              email: userEmail,
-              name: accountShort,
-            })
+            if (window._chatlio) {
+              window._chatlio.identify(accountId, {
+                email: userEmail,
+                name: accountShort,
+              })
+            }
+
+            if (window.INIT_RAVEN) {
+              const Raven = require('raven-js')
+              Raven.identify(accountId, {
+                name: accountShort,
+              })
+            }
           }
 
           return (
