@@ -86,7 +86,13 @@ export const NavbarPres = ({
               name: accountShort,
             })
           }
-
+          
+          if (typeof window !== 'undefined' && _chatlio) {
+            _chatlio.identify(accountId, {
+              name: accountShort,
+            })
+          }
+               
           return (
             <Menu borderless className="loginArea noBorder">
               <Menu.Menu position="right">
