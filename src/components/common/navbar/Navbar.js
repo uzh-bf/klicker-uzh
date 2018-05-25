@@ -1,4 +1,4 @@
-/* eslint-disable no-underscore-dangle */
+/* eslint-disable no-undef, no-underscore-dangle */
 
 import React from 'react'
 import PropTypes from 'prop-types'
@@ -91,7 +91,7 @@ export const NavbarPres = ({
               })
             }
 
-            if (window._chatlio) {
+            if (typeof window._chatlio !== 'undefined') {
               window._chatlio.identify(accountId, {
                 email: userEmail,
                 name: accountShort,
