@@ -40,7 +40,7 @@
     "draft-js-export-html": "1.2.0",
     "draft-js-plugins-editor": "2.0.8",
     "draft-js-static-toolbar-plugin": "2.0.2",
-    "elastic-apm-node": "1.5.4",
+    "elastic-apm-node": "1.6.0",
     "express": "4.16.3",
     "file-loader": "1.1.11",
     "fingerprintjs2": "1.8.0",
