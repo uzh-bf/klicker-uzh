@@ -36,7 +36,6 @@ jobs:
         - chmod +x ./cc-test-reporter
         - ./cc-test-reporter before-build
       script:
-        - mv .env .env.dev
         - mv .env.travis .env
         - yarn test:ci
       after_script:
