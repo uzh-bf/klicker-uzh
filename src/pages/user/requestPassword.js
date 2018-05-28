@@ -77,4 +77,7 @@ const RequestPassword = ({ intl }) => (
 
 RequestPassword.propTypes = propTypes
 
-export default compose(withLogging(), pageWithIntl)(RequestPassword)
+export default compose(
+  withLogging(),
+  pageWithIntl,
+)(RequestPassword)

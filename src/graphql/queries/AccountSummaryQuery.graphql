@@ -1,6 +1,7 @@
 query AccountSummary {
   user {
     id
+    email
     shortname
     runningSession {
       id

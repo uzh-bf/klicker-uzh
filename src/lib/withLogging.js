@@ -56,8 +56,8 @@ export default (cfg = {}) =>
           }
 
           // include google analytics
-          if (!window.INIT_GA) {
-            initGA()
+          if (isProd && process.env.G_ANALYTICS && !window.INIT_GA) {
+            initGA(process.env.G_ANALYTICS)
             logPageView()
 
             window.INIT_GA = true
