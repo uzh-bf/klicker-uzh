@@ -141,6 +141,7 @@ export default (cfg = {}) =>
 
         if (isProd && config.sentry) {
           Raven.captureException(error, { extra: errorInfo })
+          Raven.showReportDialog()
           logException(error)
         }
       }
