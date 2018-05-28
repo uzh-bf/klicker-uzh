@@ -15,6 +15,7 @@ import {
   // BlockquoteButton,
   // CodeBlockButton,
 } from 'draft-js-buttons'
+import createMathjaxPlugin from 'draft-js-mathjax-plugin'
 
 const propTypes = {
   disabled: PropTypes.bool,
@@ -44,6 +45,9 @@ const toolbarPlugin = createToolbarPlugin({
 })
 const { Toolbar } = toolbarPlugin
 
+// instantiate the mathjax plugin
+const mathjaxPlugin = createMathjaxPlugin({})
+
 const ContentInput = ({
   value, onChange, error, touched, disabled,
 }) => (
@@ -65,7 +69,7 @@ const ContentInput = ({
 
       <Editor
         editorState={value}
-        plugins={[toolbarPlugin]}
+        plugins={[toolbarPlugin, mathjaxPlugin]}
         readOnly={disabled}
         onChange={onChange}
       />
