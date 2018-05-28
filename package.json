@@ -50,7 +50,7 @@
     "eslint-plugin-import": "2.12.0",
     "husky": "0.14.3",
     "jest": "22.4.3",
-    "lint-staged": "7.1.0",
+    "lint-staged": "7.1.2",
     "nodemon": "1.17.5",
     "prettier": "1.13.0",
     "prettier-eslint": "8.8.1",
@@ -60,10 +60,8 @@
   "scripts": {
     "precommit": "lint-staged",
     "prepush": "yarn run test --onlyChanged",
-    "dev":
-      "cross-env NODE_ENV=development nodemon --delay 1000ms -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock src/server.js",
-    "dev:inspect":
-      "cross-env NODE_ENV=development nodemon 1000ms -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock --inspect src/server.js",
+    "dev": "cross-env NODE_ENV=development nodemon --delay 1000ms -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock src/server.js",
+    "dev:inspect": "cross-env NODE_ENV=development nodemon 1000ms -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock --inspect src/server.js",
     "format": "prettier-eslint --singleQuote --no-semi --write \"src/**/*.js\"",
     "format:ci": "prettier-eslint --singleQuote --no-semi --list-different \"src/**/*.js\"",
     "lint": "eslint \"src/**/*.js\"",
@@ -77,10 +75,19 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "roots": ["src/"]
+    "roots": [
+      "src/"
+    ]
   },
   "lint-staged": {
-    "*.js": ["prettier-eslint --single-quote --no-semi --write", "eslint", "git add"],
-    "*.json": ["prettier-eslint --single-quote --no-semi --write", "git add"]
+    "*.js": [
+      "prettier-eslint --single-quote --no-semi --write",
+      "eslint",
+      "git add"
+    ],
+    "*.json": [
+      "prettier-eslint --single-quote --no-semi --write",
+      "git add"
+    ]
   }
 }
