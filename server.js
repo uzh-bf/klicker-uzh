@@ -63,7 +63,7 @@ const getLocale = (req) => {
 // locale. This function will also cache the scripts by lang in memory.
 const localeDataCache = new Map()
 const getLocaleDataScript = (locale) => {
-  const lang = locale.split('-')[0]
+  const lang = typeof locale === 'string' ? locale.split('-')[0] : 'en'
   if (!localeDataCache.has(lang)) {
     const localeDataFile = require.resolve(`react-intl/locale-data/${lang}`)
     const localeDataScript = readFileSync(localeDataFile, 'utf8')
@@ -241,7 +241,8 @@ app
     }) => {
       server.get(url, (req, res) => {
         // setup locale and get messages for the specific route
-        const { locale, setCookie } = getLocale(req)
+        const { locale, setCookie } = getLocale(req) || { locale: 'en' }
+
         req.locale = locale
         req.localeDataScript = getLocaleDataScript(locale)
         req.messages = isDev ? {} : getMessages(locale)
