@@ -131,6 +131,7 @@ jobs:
           --build-arg API_URL_WS=$PROD_API_URL_WS
           --build-arg LOGROCKET=$PROD_LOGROCKET
           --build-arg SENTRY_DSN=$PROD_SENTRY
+          --build-arg G_ANALYTICS=$PROD_G_ANALYTICS
           --build-arg VERSION=$TRAVIS_TAG
           --build-arg CHATLIO=$PROD_CHATLIO
           -t $IMAGE_NAME:stable
