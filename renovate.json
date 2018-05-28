@@ -42,7 +42,7 @@
       "automerge": "minor"
     },
     {
-      "packageNames": ["jest", "react-addons-test-utils", "enzyme", "cypress"],
+      "packageNames": ["jest", "react-addons-test-utils", "enzyme", "cypress", "babel-jest"],
       "groupName": "test",
       "automerge": "minor"
     },
