@@ -32,7 +32,7 @@
     "classnames": "2.2.5",
     "compression": "1.7.2",
     "cookie-parser": "1.4.3",
-    "cross-env": "5.1.5",
+    "cross-env": "5.1.6",
     "d3": "5.4.0",
     "dotenv": "5.0.1",
     "draft-js": "0.10.5",
