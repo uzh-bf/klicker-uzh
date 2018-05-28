@@ -126,8 +126,8 @@
     "prettier-eslint-cli": "4.7.1",
     "react-dnd-test-backend": "2.6.0",
     "react-test-renderer": "16.4.0",
-    "semantic-ui": "2.3.1",
-    "semantic-ui-css": "2.3.1",
+    "semantic-ui": "2.2.14",
+    "semantic-ui-css": "2.2.14",
     "storybook-addon-intl": "2.3.0",
     "webpack-bundle-analyzer": "2.13.1",
     "why-did-you-update": "0.1.1"

@@ -13738,9 +13738,9 @@ section-iterator@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/section-iterator/-/section-iterator-2.0.0.tgz#bf444d7afeeb94ad43c39ad2fb26151627ccba2a"
 
-semantic-ui-css@2.3.1:
-  version "2.3.1"
-  resolved "https://registry.yarnpkg.com/semantic-ui-css/-/semantic-ui-css-2.3.1.tgz#a5485c640c98cce29d8ddde3eff3434566a068e0"
+semantic-ui-css@2.2.14:
+  version "2.2.14"
+  resolved "https://registry.yarnpkg.com/semantic-ui-css/-/semantic-ui-css-2.2.14.tgz#1888c386c74e5c0abfa00508a94940e93a55465b"
   dependencies:
     jquery x.*
 
@@ -13754,9 +13754,9 @@ semantic-ui-react@0.79.1:
     lodash "^4.17.4"
     prop-types "^15.5.10"
 
-semantic-ui@2.3.1:
-  version "2.3.1"
-  resolved "https://registry.yarnpkg.com/semantic-ui/-/semantic-ui-2.3.1.tgz#ff33ac086e9a9daf63ab2b729f15b436d67bb859"
+semantic-ui@2.2.14:
+  version "2.2.14"
+  resolved "https://registry.yarnpkg.com/semantic-ui/-/semantic-ui-2.2.14.tgz#e57867831ddde68aa035c2944be1b2891a5810d1"
   dependencies:
     better-console "*"
     del "^3.0.0"
