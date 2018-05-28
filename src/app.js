@@ -9,6 +9,11 @@ if (process.env.APM_SERVER_URL) {
   apm = require('elastic-apm-node')
 }
 
+let Raven
+if (process.env.SENTRY_DSN) {
+  Raven = require('raven')
+}
+
 const bodyParser = require('body-parser')
 const cors = require('cors')
 const cookieParser = require('cookie-parser')
@@ -110,7 +115,13 @@ let middleware = [
 ]
 
 if (isProd) {
-  middleware = [compression(), ...middleware]
+  // if a sentry dsn is set, configure raven
+  if (process.env.SENTRY_DSN) {
+    Raven.config(process.env.SENTRY_DSN).install()
+    middleware = [Raven.requestHandler(), compression(), ...middleware, Raven.errorHandler()]
+  } else {
+    middleware = [compression(), ...middleware]
+  }
 }
 
 if (process.env.APP_RATE_LIMITING) {
@@ -129,6 +140,10 @@ if (process.env.APP_RATE_LIMITING) {
 
         if (apm) {
           apm.captureError(error)
+        }
+
+        if (Raven) {
+          Raven.captureError(error)
         }
       }),
   }

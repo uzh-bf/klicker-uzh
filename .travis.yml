@@ -128,3 +128,8 @@ jobs:
           -t $IMAGE_NAME:$TRAVIS_TAG
         - travis_retry docker push $IMAGE_NAME:$TRAVIS_TAG
         - travis_retry docker push $IMAGE_NAME:stable
+        - >
+          curl https://sentry.ibf-devops.ch/api/hooks/release/builtin/7/af53c4ae2cec8a39f25c6152a3ecd778752800711c21116bffbd21bfccbe3cc2/
+          -X POST
+          -H 'Content-Type: application/json'
+          -d '{"version": $TRAVIS_TAG}'
