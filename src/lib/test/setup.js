@@ -54,11 +54,14 @@ const prepareSessionFactory = SessionMgrService => async (
 const initializeDb = async ({
   mongoose, email, shortname, withLogin = false, withQuestions = false,
 }) => {
-  await mongoose.connect(`mongodb://${process.env.MONGO_URL}`, {
-    keepAlive: true,
-    promiseLibrary: global.Promise,
-    reconnectTries: 10,
-  })
+  await mongoose.connect(
+    `mongodb://${process.env.MONGO_URL}`,
+    {
+      keepAlive: true,
+      promiseLibrary: global.Promise,
+      reconnectTries: 10,
+    },
+  )
 
   await setupTestEnv({ email, password: 'somePassword', shortname })
 
