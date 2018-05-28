@@ -164,6 +164,7 @@ app
               directives: {
                 defaultSrc: ["'self'"],
                 fontSrc: ["'fonts.gstatic.com'", "'cdnjs.cloudflare.com'"],
+                reportUri: process.env.HELMET_CSP_REPORT_URI,
                 scriptSrc: ["'cdn.polyfill.io'"],
                 styleSrc: [
                   "'maxcdn.bootstrapcdn.com'",
