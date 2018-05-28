@@ -16,7 +16,7 @@ export function indexToLetter(index) {
   // index: letter
   // 65: A, 66: B , ...
   // return n times a letter from A to Z
-  return Array(n + 1).join(String.fromCharCode(65 + index % 26))
+  return Array(n + 1).join(String.fromCharCode(65 + (index % 26)))
 }
 
 // determine whether the label (A,B, ...) is displayed within the bar or not
