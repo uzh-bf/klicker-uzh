@@ -12,6 +12,7 @@
         ]
       ],
       "plugins": [
+        "@babel/plugin-syntax-do-expressions",
         "@babel/plugin-proposal-pipeline-operator",
         "@babel/plugin-proposal-optional-chaining",
         "inline-dotenv",
@@ -31,6 +32,7 @@
       ],
       "plugins": [
         ["lodash", { "id": ["lodash", "recompose", "semantic-ui-react", "ramda"] }],
+        "@babel/plugin-syntax-do-expressions",
         "@babel/plugin-proposal-pipeline-operator",
         "@babel/plugin-proposal-optional-chaining",
         "transform-inline-environment-variables",
@@ -55,6 +57,7 @@
         ]
       ],
       "plugins": [
+        "@babel/plugin-syntax-do-expressions",
         "@babel/plugin-proposal-pipeline-operator",
         "@babel/plugin-proposal-optional-chaining",
         "babel-plugin-inline-import-graphql-ast"
