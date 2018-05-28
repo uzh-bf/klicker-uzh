@@ -154,4 +154,9 @@ const EditQuestion = ({ intl, router }) => (
 
 EditQuestion.propTypes = propTypes
 
-export default compose(withRouter, withLogging(), withDnD, pageWithIntl)(EditQuestion)
+export default compose(
+  withRouter,
+  withLogging(),
+  withDnD,
+  pageWithIntl,
+)(EditQuestion)
