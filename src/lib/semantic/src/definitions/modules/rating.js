@@ -8,419 +8,501 @@
  *
  */
 
-(function ($, window, document, undefined) {
-  window =
-    typeof window !== 'undefined' && window.Math == Math
-      ? window
-      : typeof self !== 'undefined' && self.Math == Math
-        ? self
-        : Function('return this')()
+;(function ($, window, document, undefined) {
 
-  $.fn.rating = function (parameters) {
-    let $allModules = $(this),
-      moduleSelector = $allModules.selector || '',
-      time = new Date().getTime(),
-      performance = [],
-      query = arguments[0],
-      methodInvoked = typeof query === 'string',
-      queryArguments = [].slice.call(arguments, 1),
-      returnedValue
-    $allModules.each(function () {
-      let settings = $.isPlainObject(parameters)
+"use strict";
+
+window = (typeof window != 'undefined' && window.Math == Math)
+  ? window
+  : (typeof self != 'undefined' && self.Math == Math)
+    ? self
+    : Function('return this')()
+;
+
+$.fn.rating = function(parameters) {
+  var
+    $allModules     = $(this),
+    moduleSelector  = $allModules.selector || '',
+
+    time            = new Date().getTime(),
+    performance     = [],
+
+    query           = arguments[0],
+    methodInvoked   = (typeof query == 'string'),
+    queryArguments  = [].slice.call(arguments, 1),
+    returnedValue
+  ;
+  $allModules
+    .each(function() {
+      var
+        settings        = ( $.isPlainObject(parameters) )
           ? $.extend(true, {}, $.fn.rating.settings, parameters)
           : $.extend({}, $.fn.rating.settings),
-        namespace = settings.namespace,
-        className = settings.className,
-        metadata = settings.metadata,
-        selector = settings.selector,
-        error = settings.error,
-        eventNamespace = `.${namespace}`,
-        moduleNamespace = `module-${namespace}`,
-        element = this,
-        instance = $(this).data(moduleNamespace),
-        $module = $(this),
-        $icon = $module.find(selector.icon),
+
+        namespace       = settings.namespace,
+        className       = settings.className,
+        metadata        = settings.metadata,
+        selector        = settings.selector,
+        error           = settings.error,
+
+        eventNamespace  = '.' + namespace,
+        moduleNamespace = 'module-' + namespace,
+
+        element         = this,
+        instance        = $(this).data(moduleNamespace),
+
+        $module         = $(this),
+        $icon           = $module.find(selector.icon),
+
         initialLoad,
         module
+      ;
 
       module = {
-        initialize() {
-          module.verbose('Initializing rating module', settings)
 
-          if ($icon.length === 0) {
-            module.setup.layout()
+        initialize: function() {
+          module.verbose('Initializing rating module', settings);
+
+          if($icon.length === 0) {
+            module.setup.layout();
           }
 
-          if (settings.interactive) {
-            module.enable()
-          } else {
-            module.disable()
+          if(settings.interactive) {
+            module.enable();
           }
-          module.set.initialLoad()
-          module.set.rating(module.get.initialRating())
-          module.remove.initialLoad()
-          module.instantiate()
+          else {
+            module.disable();
+          }
+          module.set.initialLoad();
+          module.set.rating( module.get.initialRating() );
+          module.remove.initialLoad();
+          module.instantiate();
         },
 
-        instantiate() {
-          module.verbose('Instantiating module', settings)
-          instance = module
-          $module.data(moduleNamespace, module)
+        instantiate: function() {
+          module.verbose('Instantiating module', settings);
+          instance = module;
+          $module
+            .data(moduleNamespace, module)
+          ;
         },
 
-        destroy() {
-          module.verbose('Destroying previous instance', instance)
-          module.remove.events()
-          $module.removeData(moduleNamespace)
+        destroy: function() {
+          module.verbose('Destroying previous instance', instance);
+          module.remove.events();
+          $module
+            .removeData(moduleNamespace)
+          ;
         },
 
-        refresh() {
-          $icon = $module.find(selector.icon)
+        refresh: function() {
+          $icon   = $module.find(selector.icon);
         },
 
         setup: {
-          layout() {
-            let maxRating = module.get.maxRating(),
-              html = $.fn.rating.settings.templates.icon(maxRating)
-            module.debug('Generating icon html dynamically')
-            $module.html(html)
-            module.refresh()
-          },
+          layout: function() {
+            var
+              maxRating = module.get.maxRating(),
+              html      = $.fn.rating.settings.templates.icon(maxRating)
+            ;
+            module.debug('Generating icon html dynamically');
+            $module
+              .html(html)
+            ;
+            module.refresh();
+          }
         },
 
         event: {
-          mouseenter() {
-            const $activeIcon = $(this)
-            $activeIcon.nextAll().removeClass(className.selected)
-            $module.addClass(className.selected)
+          mouseenter: function() {
+            var
+              $activeIcon = $(this)
+            ;
+            $activeIcon
+              .nextAll()
+                .removeClass(className.selected)
+            ;
+            $module
+              .addClass(className.selected)
+            ;
             $activeIcon
               .addClass(className.selected)
-              .prevAll()
-              .addClass(className.selected)
+                .prevAll()
+                .addClass(className.selected)
+            ;
           },
-          mouseleave() {
-            $module.removeClass(className.selected)
-            $icon.removeClass(className.selected)
+          mouseleave: function() {
+            $module
+              .removeClass(className.selected)
+            ;
+            $icon
+              .removeClass(className.selected)
+            ;
           },
-          click() {
-            let $activeIcon = $(this),
+          click: function() {
+            var
+              $activeIcon   = $(this),
               currentRating = module.get.rating(),
-              rating = $icon.index($activeIcon) + 1,
-              canClear = settings.clearable == 'auto' ? $icon.length === 1 : settings.clearable
-            if (canClear && currentRating == rating) {
-              module.clearRating()
-            } else {
-              module.set.rating(rating)
+              rating        = $icon.index($activeIcon) + 1,
+              canClear      = (settings.clearable == 'auto')
+               ? ($icon.length === 1)
+               : settings.clearable
+            ;
+            if(canClear && currentRating == rating) {
+              module.clearRating();
             }
-          },
+            else {
+              module.set.rating( rating );
+            }
+          }
         },
 
-        clearRating() {
-          module.debug('Clearing current rating')
-          module.set.rating(0)
+        clearRating: function() {
+          module.debug('Clearing current rating');
+          module.set.rating(0);
         },
 
         bind: {
-          events() {
-            module.verbose('Binding events')
+          events: function() {
+            module.verbose('Binding events');
             $module
-              .on(`mouseenter${eventNamespace}`, selector.icon, module.event.mouseenter)
-              .on(`mouseleave${eventNamespace}`, selector.icon, module.event.mouseleave)
-              .on(`click${eventNamespace}`, selector.icon, module.event.click)
-          },
+              .on('mouseenter' + eventNamespace, selector.icon, module.event.mouseenter)
+              .on('mouseleave' + eventNamespace, selector.icon, module.event.mouseleave)
+              .on('click'      + eventNamespace, selector.icon, module.event.click)
+            ;
+          }
         },
 
         remove: {
-          events() {
-            module.verbose('Removing events')
-            $module.off(eventNamespace)
+          events: function() {
+            module.verbose('Removing events');
+            $module
+              .off(eventNamespace)
+            ;
           },
-          initialLoad() {
-            initialLoad = false
-          },
+          initialLoad: function() {
+            initialLoad = false;
+          }
         },
 
-        enable() {
-          module.debug('Setting rating to interactive mode')
-          module.bind.events()
-          $module.removeClass(className.disabled)
+        enable: function() {
+          module.debug('Setting rating to interactive mode');
+          module.bind.events();
+          $module
+            .removeClass(className.disabled)
+          ;
         },
 
-        disable() {
-          module.debug('Setting rating to read-only mode')
-          module.remove.events()
-          $module.addClass(className.disabled)
+        disable: function() {
+          module.debug('Setting rating to read-only mode');
+          module.remove.events();
+          $module
+            .addClass(className.disabled)
+          ;
         },
 
         is: {
-          initialLoad() {
-            return initialLoad
-          },
+          initialLoad: function() {
+            return initialLoad;
+          }
         },
 
         get: {
-          initialRating() {
-            if ($module.data(metadata.rating) !== undefined) {
-              $module.removeData(metadata.rating)
-              return $module.data(metadata.rating)
+          initialRating: function() {
+            if($module.data(metadata.rating) !== undefined) {
+              $module.removeData(metadata.rating);
+              return $module.data(metadata.rating);
             }
-            return settings.initialRating
+            return settings.initialRating;
           },
-          maxRating() {
-            if ($module.data(metadata.maxRating) !== undefined) {
-              $module.removeData(metadata.maxRating)
-              return $module.data(metadata.maxRating)
+          maxRating: function() {
+            if($module.data(metadata.maxRating) !== undefined) {
+              $module.removeData(metadata.maxRating);
+              return $module.data(metadata.maxRating);
             }
-            return settings.maxRating
+            return settings.maxRating;
           },
-          rating() {
-            const currentRating = $icon.filter(`.${className.active}`).length
-            module.verbose('Current rating retrieved', currentRating)
-            return currentRating
-          },
+          rating: function() {
+            var
+              currentRating = $icon.filter('.' + className.active).length
+            ;
+            module.verbose('Current rating retrieved', currentRating);
+            return currentRating;
+          }
         },
 
         set: {
-          rating(rating) {
-            let ratingIndex = rating - 1 >= 0 ? rating - 1 : 0,
+          rating: function(rating) {
+            var
+              ratingIndex = (rating - 1 >= 0)
+                ? (rating - 1)
+                : 0,
               $activeIcon = $icon.eq(ratingIndex)
-            $module.removeClass(className.selected)
-            $icon.removeClass(className.selected).removeClass(className.active)
-            if (rating > 0) {
-              module.verbose('Setting current rating to', rating)
+            ;
+            $module
+              .removeClass(className.selected)
+            ;
+            $icon
+              .removeClass(className.selected)
+              .removeClass(className.active)
+            ;
+            if(rating > 0) {
+              module.verbose('Setting current rating to', rating);
               $activeIcon
                 .prevAll()
                 .addBack()
-                .addClass(className.active)
+                  .addClass(className.active)
+              ;
             }
-            if (!module.is.initialLoad()) {
-              settings.onRate.call(element, rating)
+            if(!module.is.initialLoad()) {
+              settings.onRate.call(element, rating);
             }
           },
-          initialLoad() {
-            initialLoad = true
-          },
+          initialLoad: function() {
+            initialLoad = true;
+          }
         },
 
-        setting(name, value) {
-          module.debug('Changing setting', name, value)
-          if ($.isPlainObject(name)) {
-            $.extend(true, settings, name)
-          } else if (value !== undefined) {
-            if ($.isPlainObject(settings[name])) {
-              $.extend(true, settings[name], value)
-            } else {
-              settings[name] = value
+        setting: function(name, value) {
+          module.debug('Changing setting', name, value);
+          if( $.isPlainObject(name) ) {
+            $.extend(true, settings, name);
+          }
+          else if(value !== undefined) {
+            if($.isPlainObject(settings[name])) {
+              $.extend(true, settings[name], value);
             }
-          } else {
-            return settings[name]
-          }
-        },
-        internal(name, value) {
-          if ($.isPlainObject(name)) {
-            $.extend(true, module, name)
-          } else if (value !== undefined) {
-            module[name] = value
-          } else {
-            return module[name]
-          }
-        },
-        debug() {
-          if (!settings.silent && settings.debug) {
-            if (settings.performance) {
-              module.performance.log(arguments)
-            } else {
-              module.debug = Function.prototype.bind.call(
-                console.info,
-                console,
-                `${settings.name}:`,
-              )
-              module.debug.apply(console, arguments)
+            else {
+              settings[name] = value;
             }
           }
+          else {
+            return settings[name];
+          }
         },
-        verbose() {
-          if (!settings.silent && settings.verbose && settings.debug) {
-            if (settings.performance) {
-              module.performance.log(arguments)
-            } else {
-              module.verbose = Function.prototype.bind.call(
-                console.info,
-                console,
-                `${settings.name}:`,
-              )
-              module.verbose.apply(console, arguments)
+        internal: function(name, value) {
+          if( $.isPlainObject(name) ) {
+            $.extend(true, module, name);
+          }
+          else if(value !== undefined) {
+            module[name] = value;
+          }
+          else {
+            return module[name];
+          }
+        },
+        debug: function() {
+          if(!settings.silent && settings.debug) {
+            if(settings.performance) {
+              module.performance.log(arguments);
+            }
+            else {
+              module.debug = Function.prototype.bind.call(console.info, console, settings.name + ':');
+              module.debug.apply(console, arguments);
             }
           }
         },
-        error() {
-          if (!settings.silent) {
-            module.error = Function.prototype.bind.call(console.error, console, `${settings.name}:`)
-            module.error.apply(console, arguments)
+        verbose: function() {
+          if(!settings.silent && settings.verbose && settings.debug) {
+            if(settings.performance) {
+              module.performance.log(arguments);
+            }
+            else {
+              module.verbose = Function.prototype.bind.call(console.info, console, settings.name + ':');
+              module.verbose.apply(console, arguments);
+            }
+          }
+        },
+        error: function() {
+          if(!settings.silent) {
+            module.error = Function.prototype.bind.call(console.error, console, settings.name + ':');
+            module.error.apply(console, arguments);
           }
         },
         performance: {
-          log(message) {
-            let currentTime,
+          log: function(message) {
+            var
+              currentTime,
               executionTime,
               previousTime
-            if (settings.performance) {
-              currentTime = new Date().getTime()
-              previousTime = time || currentTime
-              executionTime = currentTime - previousTime
-              time = currentTime
+            ;
+            if(settings.performance) {
+              currentTime   = new Date().getTime();
+              previousTime  = time || currentTime;
+              executionTime = currentTime - previousTime;
+              time          = currentTime;
               performance.push({
-                Name: message[0],
-                Arguments: [].slice.call(message, 1) || '',
-                Element: element,
-                'Execution Time': executionTime,
-              })
+                'Name'           : message[0],
+                'Arguments'      : [].slice.call(message, 1) || '',
+                'Element'        : element,
+                'Execution Time' : executionTime
+              });
             }
-            clearTimeout(module.performance.timer)
-            module.performance.timer = setTimeout(module.performance.display, 500)
+            clearTimeout(module.performance.timer);
+            module.performance.timer = setTimeout(module.performance.display, 500);
           },
-          display() {
-            let title = `${settings.name}:`,
+          display: function() {
+            var
+              title = settings.name + ':',
               totalTime = 0
-            time = false
-            clearTimeout(module.performance.timer)
-            $.each(performance, (index, data) => {
-              totalTime += data['Execution Time']
-            })
-            title += ` ${totalTime}ms`
-            if (moduleSelector) {
-              title += ` '${moduleSelector}'`
+            ;
+            time = false;
+            clearTimeout(module.performance.timer);
+            $.each(performance, function(index, data) {
+              totalTime += data['Execution Time'];
+            });
+            title += ' ' + totalTime + 'ms';
+            if(moduleSelector) {
+              title += ' \'' + moduleSelector + '\'';
             }
-            if ($allModules.length > 1) {
-              title += `${' ' + '('}${$allModules.length})`
+            if($allModules.length > 1) {
+              title += ' ' + '(' + $allModules.length + ')';
             }
-            if (
-              (console.group !== undefined || console.table !== undefined) &&
-              performance.length > 0
-            ) {
-              console.groupCollapsed(title)
-              if (console.table) {
-                console.table(performance)
-              } else {
-                $.each(performance, (index, data) => {
-                  console.log(`${data.Name}: ${data['Execution Time']}ms`)
-                })
+            if( (console.group !== undefined || console.table !== undefined) && performance.length > 0) {
+              console.groupCollapsed(title);
+              if(console.table) {
+                console.table(performance);
               }
-              console.groupEnd()
+              else {
+                $.each(performance, function(index, data) {
+                  console.log(data['Name'] + ': ' + data['Execution Time']+'ms');
+                });
+              }
+              console.groupEnd();
             }
-            performance = []
-          },
+            performance = [];
+          }
         },
-        invoke(query, passedArguments, context) {
-          let object = instance,
+        invoke: function(query, passedArguments, context) {
+          var
+            object = instance,
             maxDepth,
             found,
             response
-          passedArguments = passedArguments || queryArguments
-          context = element || context
-          if (typeof query === 'string' && object !== undefined) {
-            query = query.split(/[\. ]/)
-            maxDepth = query.length - 1
-            $.each(query, (depth, value) => {
-              const camelCaseValue =
-                depth != maxDepth
-                  ? value + query[depth + 1].charAt(0).toUpperCase() + query[depth + 1].slice(1)
-                  : query
-              if ($.isPlainObject(object[camelCaseValue]) && depth != maxDepth) {
-                object = object[camelCaseValue]
-              } else if (object[camelCaseValue] !== undefined) {
-                found = object[camelCaseValue]
-                return false
-              } else if ($.isPlainObject(object[value]) && depth != maxDepth) {
-                object = object[value]
-              } else if (object[value] !== undefined) {
-                found = object[value]
-                return false
-              } else {
-                return false
+          ;
+          passedArguments = passedArguments || queryArguments;
+          context         = element         || context;
+          if(typeof query == 'string' && object !== undefined) {
+            query    = query.split(/[\. ]/);
+            maxDepth = query.length - 1;
+            $.each(query, function(depth, value) {
+              var camelCaseValue = (depth != maxDepth)
+                ? value + query[depth + 1].charAt(0).toUpperCase() + query[depth + 1].slice(1)
+                : query
+              ;
+              if( $.isPlainObject( object[camelCaseValue] ) && (depth != maxDepth) ) {
+                object = object[camelCaseValue];
               }
-            })
+              else if( object[camelCaseValue] !== undefined ) {
+                found = object[camelCaseValue];
+                return false;
+              }
+              else if( $.isPlainObject( object[value] ) && (depth != maxDepth) ) {
+                object = object[value];
+              }
+              else if( object[value] !== undefined ) {
+                found = object[value];
+                return false;
+              }
+              else {
+                return false;
+              }
+            });
           }
-          if ($.isFunction(found)) {
-            response = found.apply(context, passedArguments)
-          } else if (found !== undefined) {
-            response = found
+          if ( $.isFunction( found ) ) {
+            response = found.apply(context, passedArguments);
           }
-          if ($.isArray(returnedValue)) {
-            returnedValue.push(response)
-          } else if (returnedValue !== undefined) {
-            returnedValue = [returnedValue, response]
-          } else if (response !== undefined) {
-            returnedValue = response
+          else if(found !== undefined) {
+            response = found;
           }
-          return found
-        },
+          if($.isArray(returnedValue)) {
+            returnedValue.push(response);
+          }
+          else if(returnedValue !== undefined) {
+            returnedValue = [returnedValue, response];
+          }
+          else if(response !== undefined) {
+            returnedValue = response;
+          }
+          return found;
+        }
+      };
+      if(methodInvoked) {
+        if(instance === undefined) {
+          module.initialize();
+        }
+        module.invoke(query);
       }
-      if (methodInvoked) {
-        if (instance === undefined) {
-          module.initialize()
+      else {
+        if(instance !== undefined) {
+          instance.invoke('destroy');
         }
-        module.invoke(query)
-      } else {
-        if (instance !== undefined) {
-          instance.invoke('destroy')
-        }
-        module.initialize()
+        module.initialize();
       }
     })
+  ;
 
-    return returnedValue !== undefined ? returnedValue : this
+  return (returnedValue !== undefined)
+    ? returnedValue
+    : this
+  ;
+};
+
+$.fn.rating.settings = {
+
+  name          : 'Rating',
+  namespace     : 'rating',
+
+  slent         : false,
+  debug         : false,
+  verbose       : false,
+  performance   : true,
+
+  initialRating : 0,
+  interactive   : true,
+  maxRating     : 4,
+  clearable     : 'auto',
+
+  fireOnInit    : false,
+
+  onRate        : function(rating){},
+
+  error         : {
+    method    : 'The method you called is not defined',
+    noMaximum : 'No maximum rating specified. Cannot generate HTML automatically'
+  },
+
+
+  metadata: {
+    rating    : 'rating',
+    maxRating : 'maxRating'
+  },
+
+  className : {
+    active   : 'active',
+    disabled : 'disabled',
+    selected : 'selected',
+    loading  : 'loading'
+  },
+
+  selector  : {
+    icon : '.icon'
+  },
+
+  templates: {
+    icon: function(maxRating) {
+      var
+        icon = 1,
+        html = ''
+      ;
+      while(icon <= maxRating) {
+        html += '<i class="icon"></i>';
+        icon++;
+      }
+      return html;
+    }
   }
 
-  $.fn.rating.settings = {
-    name: 'Rating',
-    namespace: 'rating',
+};
 
-    slent: false,
-    debug: false,
-    verbose: false,
-    performance: true,
-
-    initialRating: 0,
-    interactive: true,
-    maxRating: 4,
-    clearable: 'auto',
-
-    fireOnInit: false,
-
-    onRate(rating) {},
-
-    error: {
-      method: 'The method you called is not defined',
-      noMaximum: 'No maximum rating specified. Cannot generate HTML automatically',
-    },
-
-    metadata: {
-      rating: 'rating',
-      maxRating: 'maxRating',
-    },
-
-    className: {
-      active: 'active',
-      disabled: 'disabled',
-      selected: 'selected',
-      loading: 'loading',
-    },
-
-    selector: {
-      icon: '.icon',
-    },
-
-    templates: {
-      icon(maxRating) {
-        let icon = 1,
-          html = ''
-        while (icon <= maxRating) {
-          html += '<i class="icon"></i>'
-          icon++
-        }
-        return html
-      },
-    },
-  }
-}(jQuery, window, document))
+})( jQuery, window, document );
