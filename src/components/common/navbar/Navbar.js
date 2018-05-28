@@ -84,25 +84,38 @@ export const NavbarPres = ({
 
           if (typeof window !== 'undefined') {
             if (window.INIT_LR) {
-              const LogRocket = require('logrocket')
-              LogRocket.identify(accountId, {
-                email: userEmail,
-                name: accountShort,
-              })
+              try {
+                const LogRocket = require('logrocket')
+
+                LogRocket.identify(accountId, {
+                  email: userEmail,
+                  name: accountShort,
+                })
+              } catch (e) {
+                //
+              }
             }
 
             if (typeof window._chatlio !== 'undefined') {
-              window._chatlio.identify(accountId, {
-                email: userEmail,
-                name: accountShort,
-              })
+              try {
+                window._chatlio.identify(accountId, {
+                  email: userEmail,
+                  name: accountShort,
+                })
+              } catch (e) {
+                //
+              }
             }
 
             if (window.INIT_RAVEN) {
-              const Raven = require('raven-js')
-              Raven.identify(accountId, {
-                name: accountShort,
-              })
+              try {
+                const Raven = require('raven-js')
+                Raven.identify(accountId, {
+                  name: accountShort,
+                })
+              } catch (e) {
+                //
+              }
             }
           }
 
