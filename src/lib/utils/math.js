@@ -53,7 +53,7 @@ export const calculateMedian = (values) => {
 export const calculatePercentile = (values, percentile) => {
   const sorted = sortValues(values)
   const { length } = sorted
-  const index = percentile / 100 * (length - 1)
+  const index = (percentile / 100) * (length - 1)
 
   if (Math.floor(index) === index) {
     // return the value if the index matches exactly
