@@ -143,7 +143,7 @@ if (process.env.APP_RATE_LIMITING) {
         }
 
         if (Raven) {
-          Raven.captureError(error)
+          Raven.captureException(error)
         }
       }),
   }
