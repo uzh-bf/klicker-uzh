@@ -8,3 +8,5 @@ src/lang/.messages
 
 .idea/
 .DS_Store
+
+.env
