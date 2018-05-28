@@ -1,12 +1,16 @@
-/** *****************************
+/*******************************
         Define Sub-Tasks
-****************************** */
+*******************************/
 
-module.exports = function (gulp) {
-  let // rtl
-    buildRTL = require('./../rtl/build'),
-    watchRTL = require('./../rtl/watch')
+module.exports = function(gulp) {
 
-  gulp.task('watch-rtl', 'Build all files as RTL', watchRTL)
-  gulp.task('build-rtl', 'Watch files as RTL ', buildRTL)
-}
+  var
+    // rtl
+    buildRTL     = require('./../rtl/build'),
+    watchRTL     = require('./../rtl/watch')
+  ;
+
+  gulp.task('watch-rtl', 'Build all files as RTL', watchRTL);
+  gulp.task('build-rtl', 'Watch files as RTL ', buildRTL);
+
+};
