@@ -39,7 +39,7 @@ function ColumnWithSolution({ value }) {
   return <span>{value ? 'T' : 'F'}</span>
 }
 ColumnWithSolution.propTypes = {
-  value: PropTypes.bool.isRequired,
+  value: PropTypes.bool.isRequired, // eslint-disable-line react/boolean-prop-naming
 }
 
 // virtual scrolling: use plugins.PositionPlugin({ tableHeight: 500 })?
