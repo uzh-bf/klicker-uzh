@@ -69,4 +69,8 @@ const CreateQuestion = ({ intl }) => (
 
 CreateQuestion.propTypes = propTypes
 
-export default compose(withLogging(), withDnD, pageWithIntl)(CreateQuestion)
+export default compose(
+  withLogging(),
+  withDnD,
+  pageWithIntl,
+)(CreateQuestion)
