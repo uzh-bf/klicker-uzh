@@ -53,7 +53,10 @@ if (process.env.MONGO_USER && process.env.MONGO_PASSWORD) {
     mongoConfig,
   )
 } else {
-  mongoose.connect(`mongodb://${process.env.MONGO_URL}`, mongoConfig)
+  mongoose.connect(
+    `mongodb://${process.env.MONGO_URL}`,
+    mongoConfig,
+  )
 }
 
 if (process.env.MONGO_DEBUG) {
