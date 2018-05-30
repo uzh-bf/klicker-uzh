@@ -1,0 +1,3 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`toSanitizedHTML works 1`] = `"<p>&lt;script src=&quot;bla&quot; /&gt;&lt;br /&gt;&lt;strong&gt;Hello World&lt;/strong&gt;&lt;br /&gt;&lt;img src=&quot;blu&quot; /&gt;&lt;link rel=&quot;bla&quot; /&gt;</p>"`;

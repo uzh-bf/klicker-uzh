@@ -2,10 +2,9 @@
 
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Helmet } from 'react-helmet'
+import Head from 'next/head'
 
-import { SEMANTIC_VERSION } from '../../constants'
-import { createLinks } from '../../lib'
+import '../../lib/semantic/dist/semantic.css'
 
 const propTypes = {
   baseFontSize: PropTypes.string,
@@ -22,26 +21,18 @@ const defaultProps = {
   pageTitle: 'CommonLayout',
 }
 
-const links = [
-  'https://fonts.googleapis.com/css?family=Open Sans',
-  `https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/${SEMANTIC_VERSION}/semantic.min.css`,
-]
-
 const CommonLayout = ({
   baseFontSize, children, nextHeight, nextMinHeight, pageTitle,
 }) => (
   <div className="commonLayout">
-    <Helmet defer={false}>
-      {createLinks(links)}
+    <Head>
       <title>{pageTitle}</title>
-    </Helmet>
+    </Head>
 
     {children}
 
     <style jsx global>{`
-      *:not(i) {
-        font-family: 'Open Sans', sans-serif !important;
-      }
+      @import 'src/theme';
 
       html {
         font-size: ${baseFontSize} !important;
@@ -51,20 +42,35 @@ const CommonLayout = ({
         font-size: 1rem !important;
       }
 
+      h1 {
+        font-size: $font-size-h1 !important;
+      }
+
+      h2 {
+        font-size: $font-size-h2 !important;
+      }
+
+      h3 {
+        font-size: $font-size-h3 !important;
+      }
+
       #__next {
         height: ${nextHeight};
         min-height: ${nextMinHeight};
       }
 
-      input,
-      textarea,
       .noBorder {
         border-radius: 0 !important;
-      }
-
-      .noBorder {
         border: 0 !important;
         box-shadow: none !important;
+      }
+
+      /* FIXME: workarounds for modal placement */
+      .ui.dimmer {
+        display: flex !important;
+      }
+      .ui.modal {
+        margin-top: 0;
       }
     `}</style>
     <style jsx>{`

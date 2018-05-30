@@ -63,7 +63,10 @@ const SearchArea = ({
         />
         <Dropdown
           selection
-          options={sortingTypes.map(({ content, id }) => ({ text: content, value: id }))}
+          options={sortingTypes.map(({ content, id }) => ({
+            text: content,
+            value: id,
+          }))}
           onChange={(param, data) => handleSortByChange(data.value)}
         />
       </React.Fragment>
@@ -71,12 +74,22 @@ const SearchArea = ({
 
     <style jsx>{`
       .searchArea {
+        @import 'src/theme';
+
         display: flex;
         justify-content: flex-start;
 
         > :global(.input) {
           flex: 1;
           margin-right: 1rem;
+        }
+
+        :global(.dropdown),
+        input {
+          background-color: $color-primary-input;
+          color: $color-primary-strong;
+          line-height: 1rem;
+          font-size: 1rem;
         }
       }
     `}</style>

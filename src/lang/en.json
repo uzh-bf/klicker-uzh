@@ -147,7 +147,7 @@
   "sessionList.title": "Session List",
   "sessionList.title.completedSessions": "Completed sessions",
   "sessionList.title.plannedSessions": "Planned sessions",
-  "sessionList.title.runningSession": "Running session",
+  "sessionList.title.runningSession": "Running / paused sessions",
   "tagList.header.tags": "Tags",
   "tagList.header.types": "Types",
   "tagList.string.noTags": "No tags available.",

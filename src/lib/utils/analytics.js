@@ -1,7 +1,7 @@
 import ReactGA from 'react-ga'
 
-export const initGA = () => {
-  ReactGA.initialize('UA-33258666-18')
+export const initGA = (id) => {
+  ReactGA.initialize(id)
 }
 
 export const logPageView = () => {
@@ -11,7 +11,7 @@ export const logPageView = () => {
 
 export const logEvent = (category = '', action = '') => {
   if (category && action) {
-    ReactGA.event({ category, action })
+    ReactGA.event({ action, category })
   }
 }
 

@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { defineMessages, intlShape } from 'react-intl'
-import Yup from 'yup'
+import { object, string } from 'yup'
 import _isEmpty from 'lodash/isEmpty'
 import { Formik } from 'formik'
 
@@ -28,10 +28,11 @@ const messages = defineMessages({
 
 const propTypes = {
   intl: intlShape.isRequired,
+  loading: PropTypes.bool.isRequired,
   onSubmit: PropTypes.func.isRequired,
 }
 
-const PasswordRequestForm = ({ intl, onSubmit }) => {
+const PasswordRequestForm = ({ intl, loading, onSubmit }) => {
   const links = [
     {
       href: '/user/login',
@@ -57,7 +58,7 @@ const PasswordRequestForm = ({ intl, onSubmit }) => {
           button={{
             disabled: !_isEmpty(errors),
             label: intl.formatMessage(messages.submit),
-            loading: isSubmitting,
+            loading: loading && isSubmitting,
             onSubmit: handleSubmit,
           }}
           links={links}
@@ -79,8 +80,8 @@ const PasswordRequestForm = ({ intl, onSubmit }) => {
           />
         </FormWithLinks>
       )}
-      validationSchema={Yup.object().shape({
-        email: Yup.string()
+      validationSchema={object().shape({
+        email: string()
           .email()
           .required(),
       })}

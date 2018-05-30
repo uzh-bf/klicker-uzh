@@ -10,13 +10,13 @@ import SCCreationPlaceholder from './SCCreationPlaceholder'
 import SCCreationOption from './SCCreationOption'
 
 const propTypes = {
+  dirty: PropTypes.bool.isRequired,
   disabled: PropTypes.bool.isRequired,
   handleDeleteOption: PropTypes.func.isRequired,
   handleNewOption: PropTypes.func.isRequired,
   handleOptionToggleCorrect: PropTypes.func.isRequired,
   handleUpdateOrder: PropTypes.func.isRequired,
-  dirty: PropTypes.bool,
-  invalid: PropTypes.bool,
+  invalid: PropTypes.bool.isRequired,
   value: PropTypes.arrayOf(PropTypes.shape(SCCreationOption.propTypes)).isRequired,
 }
 
@@ -112,9 +112,9 @@ export default compose(
   mapProps(({
     onChange, value, dirty, invalid, disabled,
   }) => ({
+    dirty,
     disabled,
     // HACK: mapping as a workaround for the value.choices problem
-    dirty,
     invalid,
     onChange: choices => onChange({ ...value, choices }),
     value: value.choices,

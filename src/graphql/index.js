@@ -8,45 +8,58 @@ import CreateSessionMutation from './mutations/CreateSessionMutation.graphql'
 import DeleteFeedbackMutation from './mutations/DeleteFeedbackMutation.graphql'
 import EndSessionMutation from './mutations/EndSessionMutation.graphql'
 import LoginMutation from './mutations/LoginMutation.graphql'
+import LogoutMutation from './mutations/LogoutMutation.graphql'
 import ModifyQuestionMutation from './mutations/ModifyQuestionMutation.graphql'
 import RequestPasswordMutation from './mutations/RequestPasswordMutation.graphql'
 import RegistrationMutation from './mutations/RegistrationMutation.graphql'
 import StartSessionMutation from './mutations/StartSessionMutation.graphql'
 import UpdateSessionSettingsMutation from './mutations/UpdateSessionSettingsMutation.graphql'
+import ArchiveQuestionsMutation from './mutations/ArchiveQuestionsMutation.graphql'
+import PauseSessionMutation from './mutations/PauseSessionMutation.graphql'
 
 import AccountSummaryQuery from './queries/AccountSummaryQuery.graphql'
 import JoinSessionQuery from './queries/JoinSessionQuery.graphql'
 import QuestionDetailsQuery from './queries/QuestionDetailsQuery.graphql'
+import QuestionListQuery from './queries/QuestionListQuery.graphql'
 import RunningSessionQuery from './queries/RunningSessionQuery.graphql'
 import SessionEvaluationQuery from './queries/SessionEvaluationQuery.graphql'
 import SessionListQuery from './queries/SessionListQuery.graphql'
 import QuestionPoolQuery from './queries/QuestionPoolQuery.graphql'
 import TagListQuery from './queries/TagListQuery.graphql'
 
+import ConfusionAddedSubscription from './subscriptions/ConfusionAddedSubscription.graphql'
+import FeedbackAddedSubscription from './subscriptions/FeedbackAddedSubscription.graphql'
+
 const queries = [
   ActivateNextBlockMutation,
   AddConfusionTSMutation,
   AddFeedbackMutation,
   AddResponseMutation,
+  ArchiveQuestionsMutation,
   ChangePasswordMutation,
   CreateQuestionMutation,
   CreateSessionMutation,
   DeleteFeedbackMutation,
   EndSessionMutation,
   LoginMutation,
+  LogoutMutation,
   ModifyQuestionMutation,
   RequestPasswordMutation,
   RegistrationMutation,
   StartSessionMutation,
   UpdateSessionSettingsMutation,
+  PauseSessionMutation,
   AccountSummaryQuery,
   JoinSessionQuery,
   QuestionDetailsQuery,
+  QuestionListQuery,
   RunningSessionQuery,
   SessionEvaluationQuery,
   SessionListQuery,
   QuestionPoolQuery,
   TagListQuery,
+  ConfusionAddedSubscription,
+  FeedbackAddedSubscription,
 ]
 
 // build a query map from the queries above
@@ -60,13 +73,16 @@ export {
   AddConfusionTSMutation,
   AddFeedbackMutation,
   AddResponseMutation,
+  ArchiveQuestionsMutation,
   ChangePasswordMutation,
   CreateQuestionMutation,
   CreateSessionMutation,
   DeleteFeedbackMutation,
   EndSessionMutation,
   LoginMutation,
+  LogoutMutation,
   ModifyQuestionMutation,
+  PauseSessionMutation,
   RegistrationMutation,
   StartSessionMutation,
   UpdateSessionSettingsMutation,
@@ -79,5 +95,8 @@ export {
   SessionListQuery,
   QuestionPoolQuery,
   TagListQuery,
+  QuestionListQuery,
+  FeedbackAddedSubscription,
+  ConfusionAddedSubscription,
   queryMap,
 }

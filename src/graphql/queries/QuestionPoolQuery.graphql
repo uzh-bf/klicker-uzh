@@ -1,28 +1,5 @@
 query QuestionPool {
-  questions: allQuestions {
+  runningSession {
     id
-    title
-    type
-    instances {
-      id
-      version
-      createdAt
-      session
-    }
-    tags {
-      id
-      name
-    }
-    versions {
-      id
-      description
-      createdAt
-    }
-    createdAt
-    updatedAt
-  }
-  tags: allTags {
-    id
-    name
   }
 }

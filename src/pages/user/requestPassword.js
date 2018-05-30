@@ -1,13 +1,12 @@
 import React from 'react'
-import PropTypes from 'prop-types'
-import { compose, withState, withHandlers } from 'recompose'
+import { compose } from 'recompose'
 import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
-import { graphql } from 'react-apollo'
+import { Mutation } from 'react-apollo'
 import { Message } from 'semantic-ui-react'
 
 import { StaticLayout } from '../../components/layouts'
 import { PasswordRequestForm } from '../../components/forms'
-import { pageWithIntl, withData, withLogging } from '../../lib'
+import { pageWithIntl, withLogging } from '../../lib'
 import { RequestPasswordMutation } from '../../graphql'
 
 const messages = defineMessages({
@@ -18,31 +17,45 @@ const messages = defineMessages({
 })
 
 const propTypes = {
-  error: PropTypes.oneOfType(PropTypes.string, null).isRequired,
-  handleSubmit: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  success: PropTypes.oneOfType(PropTypes.string, null).isRequired,
 }
 
-const RequestPassword = ({
-  intl, handleSubmit, success, error,
-}) => (
+const RequestPassword = ({ intl }) => (
   <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
     <div className="resetPassword">
       <h1>
         <FormattedMessage defaultMessage="Reset your password" id="user.requestPassword.title" />
       </h1>
 
-      {success && (
-        <Message success>
-          <FormattedMessage
-            defaultMessage="An email has been sent to the provided address. Please follow the instructions therein to regain access to your account."
-            id="user.requestPassword.success"
-          />
-        </Message>
-      )}
-      {!success && <PasswordRequestForm intl={intl} onSubmit={handleSubmit} />}
-      {error && <Message error>{error}</Message>}
+      <Mutation mutation={RequestPasswordMutation}>
+        {(requestPassword, { data, error, loading }) => {
+          const success = data && !error
+
+          if (success) {
+            return (
+              <Message success>
+                <FormattedMessage
+                  defaultMessage="An email has been sent to the provided address. Please follow the instructions therein to regain access to your account."
+                  id="user.requestPassword.success"
+                />
+              </Message>
+            )
+          }
+
+          return (
+            <React.Fragment>
+              <PasswordRequestForm
+                intl={intl}
+                loading={loading}
+                onSubmit={({ email }) => {
+                  requestPassword({ variables: { email } })
+                }}
+              />
+              {error && <Message error>{error.message}</Message>}
+            </React.Fragment>
+          )
+        }}
+      </Mutation>
 
       <style jsx>{`
         @import 'src/theme';
@@ -67,22 +80,6 @@ const RequestPassword = ({
 RequestPassword.propTypes = propTypes
 
 export default compose(
-  withLogging(['ga', 'raven']),
-  withData,
+  withLogging(),
   pageWithIntl,
-  graphql(RequestPasswordMutation),
-  withState('error', 'setError', null),
-  withState('success', 'setSuccess', null),
-  withHandlers({
-    // handle form submission
-    handleSubmit: ({ mutate, setError, setSuccess }) => async ({ email }) => {
-      try {
-        await mutate({ variables: { email } })
-        setSuccess(email)
-      } catch ({ message }) {
-        console.error(message)
-        setError(message)
-      }
-    },
-  }),
 )(RequestPassword)

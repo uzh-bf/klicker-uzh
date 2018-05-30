@@ -4,8 +4,9 @@ import { compose, withHandlers } from 'recompose'
 import { defineMessages, intlShape } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
+import Router from 'next/router'
 
-import { pageWithIntl, withData, withLogging, withSortingAndFiltering } from '../../lib'
+import { pageWithIntl, withLogging, withSortingAndFiltering } from '../../lib'
 import {
   AccountSummaryQuery,
   RunningSessionQuery,
@@ -33,7 +34,6 @@ const propTypes = {
   handleSort: PropTypes.func.isRequired,
   handleStartSession: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  sessions: PropTypes.array.isRequired,
 }
 
 const Index = ({
@@ -42,7 +42,6 @@ const Index = ({
   handleSearch,
   handleSort,
   handleStartSession,
-  sessions,
   filters,
 }) => (
   <TeacherLayout
@@ -62,7 +61,6 @@ const Index = ({
   >
     <div className="sessionList">
       <SessionList
-        data={sessions}
         filters={filters}
         handleCopySession={handleCopySession}
         handleStartSession={handleStartSession}
@@ -95,7 +93,6 @@ Index.propTypes = propTypes
 
 export default compose(
   withLogging(),
-  withData,
   pageWithIntl,
   graphql(StartSessionMutation),
   withSortingAndFiltering,
@@ -109,13 +106,18 @@ export default compose(
     handleStartSession: ({ mutate }) => id => async () => {
       try {
         await mutate({
-          refetchQueries: [{ query: RunningSessionQuery }, { query: AccountSummaryQuery }],
+          refetchQueries: [
+            { query: SessionListQuery },
+            { query: RunningSessionQuery },
+            { query: AccountSummaryQuery },
+          ],
           variables: { id },
         })
+
+        Router.push('/sessions/running')
       } catch ({ message }) {
         console.error(message)
       }
     },
   }),
-  graphql(SessionListQuery, { name: 'sessions' }),
 )(Index)

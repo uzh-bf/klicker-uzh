@@ -48,33 +48,25 @@ storiesOf('evaluation/components', module)
   .add('Info', () => <Info />)
   .add('Possibilities (SC)', () => (
     <Possibilities
+      data={[
+        { correct: true, value: 'This is the first possible answer' },
+        { correct: false, value: 'This is the second possible answer' },
+        { correct: false, value: 'This is the third possible answer' },
+        { correct: false, value: 'This is the fourth possible answer' },
+      ]}
       intl={intlMock}
-      questionOptions={{
-        SC: {
-          choices: [
-            { correct: true, name: 'This is the first possible answer' },
-            { correct: false, name: 'This is the second possible answer' },
-            { correct: false, name: 'This is the third possible answer' },
-            { correct: false, name: 'This is the fourth possible answer' },
-          ],
-        },
-      }}
       questionType="SC"
     />
   ))
   .add('Possibilities (MC)', () => (
     <Possibilities
+      data={[
+        { correct: true, value: 'This is the first possible answer' },
+        { correct: true, value: 'This is the second possible answer' },
+        { correct: false, value: 'This is the third possible answer' },
+        { correct: false, value: 'This is the fourth possible answer' },
+      ]}
       intl={intlMock}
-      questionOptions={{
-        MC: {
-          choices: [
-            { correct: true, name: 'This is the first possible answer' },
-            { correct: true, name: 'This is the second possible answer' },
-            { correct: false, name: 'This is the third possible answer' },
-            { correct: false, name: 'This is the fourth possible answer' },
-          ],
-        },
-      }}
       questionType="MC"
     />
   ))

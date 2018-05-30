@@ -1,14 +1,19 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { compose, withHandlers, withStateHandlers } from 'recompose'
-import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
-import { graphql } from 'react-apollo'
+import { defineMessages, intlShape } from 'react-intl'
+import { graphql, Query } from 'react-apollo'
 import _debounce from 'lodash/debounce'
-import { Button } from 'semantic-ui-react'
-import Link from 'next/link'
 import Router from 'next/router'
+import moment from 'moment'
 
-import { pageWithIntl, withData, withDnD, withSortingAndFiltering, withLogging } from '../../lib'
+import {
+  pageWithIntl,
+  withDnD,
+  withSortingAndFiltering,
+  withLogging,
+  withSelection,
+} from '../../lib'
 import {
   CreateSessionMutation,
   StartSessionMutation,
@@ -16,9 +21,10 @@ import {
   SessionListQuery,
   RunningSessionQuery,
   QuestionPoolQuery,
+  ArchiveQuestionsMutation,
 } from '../../graphql'
 import { SessionCreationForm } from '../../components/forms'
-import { QuestionList, TagList } from '../../components/questions'
+import { QuestionList, TagList, ActionBar } from '../../components/questions'
 import { TeacherLayout } from '../../components/layouts'
 import { QUESTION_SORTINGS } from '../../constants'
 
@@ -35,43 +41,64 @@ const messages = defineMessages({
 
 const propTypes = {
   creationMode: PropTypes.bool.isRequired,
-  data: PropTypes.object.isRequired,
-  droppedQuestions: PropTypes.arrayOf(PropTypes.string).isRequired,
   filters: PropTypes.object.isRequired,
+  handleArchiveQuestions: PropTypes.func.isRequired,
+  handleChangeBlocks: PropTypes.func.isRequired,
+  handleChangeName: PropTypes.func.isRequired,
   handleCreateSession: PropTypes.func.isRequired,
   handleCreationModeToggle: PropTypes.func.isRequired,
-  handleQuestionDropped: PropTypes.func.isRequired,
+  handleQuickBlock: PropTypes.func.isRequired,
+  handleQuickBlocks: PropTypes.func.isRequired,
+  handleReset: PropTypes.func.isRequired,
   handleSearch: PropTypes.func.isRequired,
+  handleSelectItem: PropTypes.func.isRequired,
   handleSortByChange: PropTypes.func.isRequired,
   handleSortOrderToggle: PropTypes.func.isRequired,
   handleTagClick: PropTypes.func.isRequired,
+  handleToggleArchive: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
+  numSelectedItems: PropTypes.number.isRequired,
+  selectedItems: PropTypes.any.isRequired,
+  sessionBlocks: PropTypes.any.isRequired,
+  sessionName: PropTypes.string.isRequired,
   sort: PropTypes.object.isRequired,
 }
 
 const Index = ({
+  numSelectedItems,
   creationMode,
-  droppedQuestions,
   intl,
   filters,
-  data,
   sort,
+  selectedItems,
+  sessionName,
+  sessionBlocks,
+  handleSelectItem,
   handleCreateSession,
   handleSearch,
   handleSortByChange,
   handleSortOrderToggle,
   handleTagClick,
-  handleQuestionDropped,
   handleCreationModeToggle,
+  handleQuickBlock,
+  handleQuickBlocks,
+  handleReset,
+  handleToggleArchive,
+  handleChangeName,
+  handleChangeBlocks,
+  handleArchiveQuestions,
 }) => {
-  // TODO: create a component for this?
-  const actionArea = (
+  const creationForm = runningSessionId => (
     <div className="creationForm">
       <SessionCreationForm
+        blocks={sessionBlocks}
+        handleChangeBlocks={handleChangeBlocks}
+        handleChangeName={handleChangeName}
+        handleDiscard={handleCreationModeToggle}
+        handleSubmit={handleCreateSession}
         intl={intl}
-        onDiscard={handleCreationModeToggle}
-        onSave={handleCreateSession('save')}
-        onStart={handleCreateSession('start')}
+        isSessionRunning={!!runningSessionId}
+        name={sessionName}
       />
 
       <style jsx>{`
@@ -93,158 +120,137 @@ const Index = ({
   )
 
   return (
-    <TeacherLayout
-      fixedHeight
-      actionArea={creationMode ? actionArea : null}
-      intl={intl}
-      navbar={{
-        search: {
-          handleSearch: _debounce(handleSearch, 200),
-          handleSortByChange,
-          handleSortOrderToggle,
-          sortBy: sort.by,
-          sortingTypes: QUESTION_SORTINGS,
-          sortOrder: sort.asc,
-          withSorting: true,
-        },
-        title: intl.formatMessage(messages.title),
-      }}
-      pageTitle={intl.formatMessage(messages.pageTitle)}
-      sidebar={{ activeItem: 'questionPool' }}
-    >
-      <div className="questionPool">
-        <div className="tagList">
-          <TagList
-            activeTags={filters.tags}
-            activeType={filters.type}
-            data={data}
-            handleTagClick={handleTagClick}
-          />
-        </div>
-        <div className="wrapper">
-          <div className="questionList">
-            <div className="buttons">
-              <Link href="/questions/create">
-                <Button primary>
-                  <FormattedMessage
-                    defaultMessage="Create Question"
-                    id="questionPool.button.createQuestion"
-                  />
-                </Button>
-              </Link>
-              <Button primary onClick={handleCreationModeToggle}>
-                <FormattedMessage
-                  defaultMessage="Create Session"
-                  id="questionPool.button.createSession"
-                />
-              </Button>
-            </div>
-            <div className="questionListContent">
-              <QuestionList
-                creationMode={creationMode}
-                data={data}
-                dropped={droppedQuestions}
-                filters={filters}
-                sort={sort}
-                onQuestionDropped={handleQuestionDropped}
+    <Query query={QuestionPoolQuery}>
+      {({ data }) => (
+        <TeacherLayout
+          fixedHeight
+          actionArea={creationMode ? creationForm(data.runningSession?.id) : null}
+          intl={intl}
+          navbar={{
+            search: {
+              handleSearch: _debounce(handleSearch, 200),
+              handleSortByChange,
+              handleSortOrderToggle,
+              sortBy: sort.by,
+              sortingTypes: QUESTION_SORTINGS,
+              sortOrder: sort.asc,
+              withSorting: true,
+            },
+            title: intl.formatMessage(messages.title),
+          }}
+          pageTitle={intl.formatMessage(messages.pageTitle)}
+          sidebar={{ activeItem: 'questionPool' }}
+        >
+          <div className="questionPool">
+            <div className="tagList">
+              <TagList
+                activeTags={filters.tags}
+                activeType={filters.type}
+                handleReset={handleReset}
+                handleTagClick={handleTagClick}
+                handleToggleArchive={handleToggleArchive}
+                isArchiveActive={filters.archive}
               />
             </div>
+            <div className="wrapper">
+              <div className="questionList">
+                <ActionBar
+                  creationMode={creationMode}
+                  handleArchiveQuestions={handleArchiveQuestions}
+                  handleCreationModeToggle={handleCreationModeToggle}
+                  handleQuickBlock={handleQuickBlock}
+                  handleQuickBlocks={handleQuickBlocks}
+                  isArchiveActive={filters.archive}
+                  itemsChecked={numSelectedItems}
+                />
+
+                <div className="questionListContent">
+                  <QuestionList
+                    creationMode={creationMode}
+                    filters={filters}
+                    isArchiveActive={filters.archive}
+                    selectedItems={selectedItems}
+                    sort={sort}
+                    onQuestionChecked={handleSelectItem}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      <style jsx>{`
-        @import 'src/theme';
+          <style jsx>{`
+            @import 'src/theme';
 
-        .questionPool {
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-
-          overflow-y: auto;
-
-          .tagList {
-            height: 100%;
-            min-width: 5rem;
-
-            flex: 1;
-            background: $color-primary-10p;
-            padding: 0.5rem;
-          }
-
-          .wrapper {
-            height: 100%;
-
-            .questionList {
-              height: 100%;
-
+            .questionPool {
               display: flex;
               flex-direction: column;
+              height: 100%;
 
-              margin: 0 auto;
-              max-width: $max-width;
+              overflow-y: auto;
 
-              .buttons {
-                border: 1px solid $color-primary;
+              .tagList {
+                height: 100%;
+                min-width: 5rem;
 
-                flex: 0 0 auto;
-
-                display: flex;
-                justify-content: center;
+                flex: 1;
+                background: $color-primary-05p;
                 padding: 0.5rem;
+              }
 
-                > :global(button) {
-                  margin-right: 0;
+              .wrapper {
+                height: 100%;
 
-                  &:first-child {
-                    margin-right: 0.5rem;
+                .questionList {
+                  height: 100%;
+
+                  display: flex;
+                  flex-direction: column;
+
+                  margin: 0 auto;
+                  max-width: $max-width;
+
+                  .questionListContent {
+                    flex: 1;
+                    height: 100%;
+
+                    padding: 1rem;
                   }
                 }
               }
 
-              .questionListContent {
-                flex: 1;
-                height: 100%;
+              @include desktop-tablet-only {
+                flex-flow: row wrap;
+                overflow-y: auto;
 
-                padding: 1rem;
-              }
-            }
-          }
-
-          @include desktop-tablet-only {
-            flex-flow: row wrap;
-            overflow-y: auto;
-
-            .tagList {
-              overflow-y: auto;
-              flex: 0 0 auto;
-              padding: 2rem 1rem;
-            }
-
-            .wrapper {
-              flex: 1;
-              padding: 1rem;
-
-              .questionList {
-                .buttons {
-                  display: flex;
-                  justify-content: flex-end;
-                }
-
-                .questionListContent {
+                .tagList {
                   overflow-y: auto;
-                  padding: 1rem 1rem 0 0;
+                  flex: 0 0 auto;
+                  padding: 2rem 1rem;
+
+                  border-right: 1px solid $color-primary;
+                }
+
+                .wrapper {
+                  flex: 1;
+                  padding: 1rem;
+
+                  .questionList {
+                    .questionListContent {
+                      overflow-y: auto;
+                      padding: 1rem 1rem 0 0;
+                    }
+                  }
                 }
               }
-            }
-          }
 
-          @include desktop-only {
-            padding: 0;
-          }
-        }
-      `}</style>
-    </TeacherLayout>
+              @include desktop-only {
+                padding: 0;
+              }
+            }
+          `}</style>
+        </TeacherLayout>
+      )}
+    </Query>
   )
 }
 
@@ -253,25 +259,30 @@ Index.propTypes = propTypes
 export default compose(
   withLogging(),
   withDnD,
-  withData,
   pageWithIntl,
   graphql(StartSessionMutation, { name: 'startSession' }),
   graphql(CreateSessionMutation, { name: 'createSession' }),
-  graphql(QuestionPoolQuery),
+  graphql(ArchiveQuestionsMutation, { name: 'archiveQuestions' }),
   withSortingAndFiltering,
+  withSelection,
   withStateHandlers(
     {
       creationMode: false,
-      droppedQuestions: [],
+      sessionBlocks: [],
+      sessionName: moment().format('DD.MM.YYYY HH:mm'),
     },
     {
+      // handlers for session creation form fields
+      handleChangeBlocks: () => sessionBlocks => ({ sessionBlocks }),
+      handleChangeName: () => e => ({ sessionName: e.target.value }),
+
       // handle toggling creation mode (display of session creation form)
       handleCreationModeToggle: ({ creationMode }) => () => {
-        // if the creation mode was activated before, reset dropped questions on toggle
+        // if the creation mode was activated before, reset blocks on toggle
         if (creationMode) {
           return {
             creationMode: false,
-            droppedQuestions: [],
+            sessionBlocks: [],
           }
         }
 
@@ -279,29 +290,111 @@ export default compose(
         return { creationMode: true }
       },
 
-      // handle a new question that gets dropped on the session creation timeline
-      handleQuestionDropped: ({ droppedQuestions }) => id => ({
-        droppedQuestions: [...droppedQuestions, id],
-      }),
+      // build a single block from all the checked questions
+      handleQuickBlock: ({ sessionBlocks }, { handleResetSelection, selectedItems }) => () => {
+        // reset the checked questions
+        handleResetSelection()
+
+        return {
+          sessionBlocks: [
+            ...sessionBlocks,
+            {
+              questions: selectedItems
+                .toIndexedSeq()
+                .toArray()
+                .map(({
+                  id, title, type, version,
+                }) => ({
+                  id,
+                  title,
+                  type,
+                  version,
+                })),
+            },
+          ],
+        }
+      },
+
+      // build a separate block for each checked question
+      handleQuickBlocks: ({ sessionBlocks }, { handleResetSelection, selectedItems }) => () => {
+        // reset the checked questions
+        handleResetSelection()
+
+        return {
+          sessionBlocks: [
+            ...sessionBlocks,
+            ...selectedItems
+              .toIndexedSeq()
+              .toArray()
+              .map(({
+                id, title, type, version,
+              }) => ({
+                questions: [
+                  {
+                    id,
+                    title,
+                    type,
+                    version,
+                  },
+                ],
+              })),
+          ],
+        }
+      },
+
+      // override the toggle archive function
+      // need to reset the selection on toggling archive to not apply actions to hidden questions
+      handleToggleArchive: (_, { handleResetSelection, handleToggleArchive }) => () => {
+        handleResetSelection()
+        handleToggleArchive()
+      },
     },
   ),
   withHandlers({
+    // handle archiving a question
+    handleArchiveQuestions: ({
+      archiveQuestions,
+      handleResetSelection,
+      selectedItems,
+    }) => async () => {
+      try {
+        // archive the questions
+        await archiveQuestions({
+          refetchQueries: [{ query: QuestionPoolQuery }],
+          variables: { ids: [...selectedItems.keys()] },
+        })
+
+        handleResetSelection()
+      } catch ({ message }) {
+        // TODO: if anything fails, display the error
+        console.error(message)
+      }
+    },
+
     // handle creating a new session
     handleCreateSession: ({
+      sessionName,
+      sessionBlocks,
       createSession,
       startSession,
       handleCreationModeToggle,
-    }) => type => async ({ sessionName, blocks }) => {
+    }) => type => async (e) => {
+      // prevent a page reload on submit
+      e.preventDefault()
+
       try {
         // prepare blocks for consumption through the api
-        const parsedBlocks = blocks.map(({ questions }) => ({
-          questions: questions.map(({ id, version }) => ({ question: id, version })),
+        const blocks = sessionBlocks.map(({ questions }) => ({
+          questions: questions.map(({ id, version }) => ({
+            question: id,
+            version,
+          })),
         }))
 
         // create a new session
         const result = await createSession({
           refetchQueries: [{ query: SessionListQuery }],
-          variables: { blocks: parsedBlocks, name: sessionName },
+          variables: { blocks, name: sessionName },
         })
 
         // start the session immediately if the respective button was clicked

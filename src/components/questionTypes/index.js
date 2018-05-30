@@ -1,5 +1,6 @@
 // common components
 export { default as TypeChooser } from './TypeChooser'
+export { default as QuestionDescription } from './QuestionDescription'
 
 // SC-MC
 export { default as SCAnswerOptions } from './SC/SCAnswerOptions'

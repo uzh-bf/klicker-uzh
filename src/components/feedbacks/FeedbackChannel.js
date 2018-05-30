@@ -2,6 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { Checkbox } from 'semantic-ui-react'
 import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
+import { lifecycle } from 'recompose'
 
 import Feedback from './Feedback'
 
@@ -77,7 +78,7 @@ const FeedbackChannel = ({
               content={content}
               key={id}
               votes={votes}
-              onDelete={handleDeleteFeedback(id)}
+              onDelete={() => handleDeleteFeedback(id)}
             />
           </div>
         ))}
@@ -143,4 +144,8 @@ const FeedbackChannel = ({
 FeedbackChannel.propTypes = propTypes
 FeedbackChannel.defaultProps = defaultProps
 
-export default FeedbackChannel
+export default lifecycle({
+  componentDidMount() {
+    this.props.subscribeToMore()
+  },
+})(FeedbackChannel)

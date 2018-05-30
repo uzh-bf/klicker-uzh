@@ -1,5 +1,4 @@
 import React from 'react'
-import Fingerprint2 from 'fingerprintjs2'
 
 export default (ComposedComponent) => {
   let fingerprint
@@ -13,6 +12,7 @@ export default (ComposedComponent) => {
 
       // otherwise generate a new fingerprint and store it in a cookie
       try {
+        const Fingerprint2 = require('fingerprintjs2')
         new Fingerprint2().get((result) => {
           sessionStorage.setItem('fp', result)
           resolve(result)

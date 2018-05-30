@@ -4,7 +4,7 @@ import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import { Button, Form } from 'semantic-ui-react'
 
 import { Formik } from 'formik'
-import Yup from 'yup'
+import { object, string, ref } from 'yup'
 import _isEmpty from 'lodash/isEmpty'
 
 import { FormikInput } from '.'
@@ -43,16 +43,16 @@ const messages = defineMessages({
     id: 'form.passwordRepeat.label',
   },
   shortnameInvalid: {
-    defaultMessage: 'Please provide a valid account ID (3-6 characters).',
+    defaultMessage: 'Please provide a valid account ID (3-8 characters).',
     id: 'form.shortname.invalid',
   },
   shortnameLabel: {
-    defaultMessage: 'Account ID',
+    defaultMessage: 'Account ID / Join Link',
     id: 'form.shortname.label',
   },
   shortnameTooltip: {
     defaultMessage:
-      'A unique identifier for your account. Must be between 3 and 6 characters long (alphanumeric).',
+      'A unique identifier for your account. Must be between 3 and 8 characters long (only alphanumeric and hyphen).',
     id: 'form.shortname.tooltip',
   },
   useCaseLabel: {
@@ -60,42 +60,17 @@ const messages = defineMessages({
     id: 'form.useCase.label',
   },
   useCaseTooltip: {
-    defaultMessage: 'Short description of your planned use case for the IBF Klicker.',
+    defaultMessage: 'Short description of your planned use case for the Klicker UZH.',
     id: 'useCase.tooltip',
   },
 })
-
-/*
-// add proper error messages with defineMessages if uncommented
-const validate = ({
-  institution, email, shortname, password, passwordRepeat, useCase,
-}) => {
-  const errors = {}
-
-
-  // the shortname is allowed to be within 3 to 6 chars
-  if (!shortname || !isAlphanumeric(shortname) || !isLength(shortname, { max: 6, min: 3 })) {
-    errors.shortname = 'form.shortname.invalid'
-  }
-
-  // both password fields need to match
-  if (!passwordRepeat || passwordRepeat !== password) {
-    errors.passwordRepeat = 'form.passwordRepeat.invalid'
-  }
-
-  if (useCase && !isAlphanumeric(useCase)) {
-    errors.useCase = 'form.useCase.invalid'
-  }
-
-  return errors
-} */
-
 const propTypes = {
   intl: intlShape.isRequired,
+  loading: PropTypes.bool.isRequired,
   onSubmit: PropTypes.func.isRequired,
 }
 
-const RegistrationForm = ({ intl, onSubmit }) => (
+const RegistrationForm = ({ intl, loading, onSubmit }) => (
   <div className="registrationForm">
     <Formik
       initialValues={{
@@ -116,40 +91,39 @@ const RegistrationForm = ({ intl, onSubmit }) => (
         isSubmitting,
       }) => (
         <Form error onSubmit={handleSubmit}>
-          <div className="personal">
-            <FormikInput
-              autoFocus
-              required
-              error={errors.email}
-              errorMessage={intl.formatMessage(messages.emailInvalid)}
-              handleBlur={handleBlur}
-              handleChange={handleChange}
-              icon="mail"
-              intl={intl}
-              label={intl.formatMessage(messages.emailLabel)}
-              name="email"
-              touched={touched.email}
-              type="email"
-              value={values.email}
-            />
-            <FormikInput
-              required
-              error={errors.shortname}
-              errorMessage={intl.formatMessage(messages.shortnameInvalid)}
-              handleBlur={handleBlur}
-              handleChange={handleChange}
-              icon="hashtag"
-              intl={intl}
-              label={intl.formatMessage(messages.shortnameLabel)}
-              name="shortname"
-              placeholder="klicker.uzh.ch/join/ID..."
-              tooltip={intl.formatMessage(messages.shortnameTooltip)}
-              touched={touched.shortname}
-              type="text"
-              value={values.shortname}
-            />
-          </div>
-          <div className="account">
+          <FormikInput
+            autoFocus
+            required
+            error={errors.email}
+            errorMessage={intl.formatMessage(messages.emailInvalid)}
+            handleBlur={handleBlur}
+            handleChange={handleChange}
+            icon="mail"
+            intl={intl}
+            label={intl.formatMessage(messages.emailLabel)}
+            name="email"
+            touched={touched.email}
+            type="email"
+            value={values.email}
+          />
+          <FormikInput
+            required
+            error={errors.shortname}
+            errorMessage={intl.formatMessage(messages.shortnameInvalid)}
+            handleBlur={handleBlur}
+            handleChange={handleChange}
+            icon="hashtag"
+            inlineLabel="beta.klicker.uzh.ch/join/"
+            intl={intl}
+            label={intl.formatMessage(messages.shortnameLabel)}
+            name="shortname"
+            placeholder="xyz123"
+            tooltip={intl.formatMessage(messages.shortnameTooltip)}
+            touched={touched.shortname}
+            type="text"
+            value={values.shortname}
+          />
+          <div className="password">
             <FormikInput
               required
               error={errors.password}
@@ -179,63 +153,65 @@ const RegistrationForm = ({ intl, onSubmit }) => (
               value={values.passwordRepeat}
             />
           </div>
-          <div className="use">
-            <FormikInput
-              required
-              error={errors.institution}
-              errorMessage={intl.formatMessage(messages.institutionInvalid)}
-              handleBlur={handleBlur}
-              handleChange={handleChange}
-              icon="university"
-              intl={intl}
-              label={intl.formatMessage(messages.institutionLabel)}
-              name="institution"
-              touched={touched.institution}
-              type="text"
-              value={values.institution}
-            />
-            <FormikInput
-              error={errors.useCase}
-              handleBlur={handleBlur}
-              handleChange={handleChange}
-              icon="university"
-              intl={intl}
-              label={intl.formatMessage(messages.useCaseLabel)}
-              name="useCase"
-              tooltip={intl.formatMessage(messages.useCaseTooltip)}
-              touched={touched.useCase}
-              type="text"
-              value={values.useCase}
-            />
+          <FormikInput
+            required
+            error={errors.institution}
+            errorMessage={intl.formatMessage(messages.institutionInvalid)}
+            handleBlur={handleBlur}
+            handleChange={handleChange}
+            icon="university"
+            intl={intl}
+            label={intl.formatMessage(messages.institutionLabel)}
+            name="institution"
+            touched={touched.institution}
+            type="text"
+            value={values.institution}
+          />
+          <FormikInput
+            error={errors.useCase}
+            handleBlur={handleBlur}
+            handleChange={handleChange}
+            icon="university"
+            intl={intl}
+            label={intl.formatMessage(messages.useCaseLabel)}
+            name="useCase"
+            tooltip={intl.formatMessage(messages.useCaseTooltip)}
+            touched={touched.useCase}
+            type="text"
+            value={values.useCase}
+          />
+          <div className="submit">
+            <Button
+              primary
+              disabled={!_isEmpty(errors) || _isEmpty(touched)}
+              floated="right"
+              loading={loading && isSubmitting}
+              type="submit"
+            >
+              <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+            </Button>
           </div>
-          <Button
-            primary
-            disabled={!_isEmpty(errors) || _isEmpty(touched)}
-            floated="right"
-            loading={isSubmitting}
-            type="submit"
-          >
-            <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
-          </Button>
         </Form>
       )}
-      validationSchema={Yup.object().shape({
-        email: Yup.string()
+      validationSchema={object().shape({
+        email: string()
           .email()
           .required(),
-        insitution: Yup.string().required(),
-        password: Yup.string()
+        institution: string().required(),
+        password: string()
           .min(8)
           .required(),
-        passwordRepeat: Yup.string()
+        passwordRepeat: string()
           .min(8)
-          .oneOf([Yup.ref('password'), null])
+          .oneOf([ref('password'), null])
           .required(),
-        shortname: Yup.string()
+        shortname: string()
           .min(3)
-          .max(6)
+          .max(8)
+          .matches(/^[A-Za-z0-9-]+$/)
+          .lowercase()
           .required(),
-        useCase: Yup.string(),
+        useCase: string(),
       })}
       onSubmit={onSubmit}
     />
@@ -246,34 +222,28 @@ const RegistrationForm = ({ intl, onSubmit }) => (
       .registrationForm > :global(form) {
         display: flex;
         flex-direction: column;
-        .account {
-          margin-top: 1rem;
-        }
-        .use {
-          display: flex;
-          flex-direction: column;
 
-          margin-top: 1rem;
+        .password {
+          margin-bottom: 1rem;
         }
 
         @include desktop-tablet-only {
-          flex-flow: row wrap;
           border: 1px solid $color-primary;
           padding: 1rem;
           background-color: rgba(124, 184, 228, 0.12);
 
-          .personal,
-          .account {
-            flex: 1 1 50%;
-          }
-          .personal {
-            padding-right: 0.5rem;
-          }
-          .account {
-            margin: 0;
-          }
-          .use {
-            flex: 1;
+          .password {
+            display: flex;
+            flex-direction: row;
+            margin-bottom: 0;
+
+            :global(.field) {
+              flex: 1;
+
+              &:first-child {
+                margin-right: 1rem;
+              }
+            }
           }
         }
       }

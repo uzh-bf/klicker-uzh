@@ -1,9 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { compose, withProps } from 'recompose'
-import isEmpty from 'validator/lib/isEmpty'
 import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
+import { EditorState, ContentState, convertFromRaw } from 'draft-js'
 import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import { Button, Form, Icon, Menu, Message } from 'semantic-ui-react'
 import { Formik } from 'formik'
@@ -47,16 +47,17 @@ const messages = defineMessages({
 
 // form validation
 const validate = ({
-  title, description, options, tags, type,
+  title, content, options, tags, type,
 }) => {
   const errors = {}
 
-  if (!title || isEmpty(title)) {
+  if (!title || _isEmpty(title)) {
     errors.title = messages.titleEmpty
   }
 
-  if (!description || isEmpty(description)) {
-    errors.description = messages.conentEmpty
+  // TODO: validation for draftjs content
+  if (!content || _isEmpty(content)) {
+    errors.content = messages.contentEmpty
   }
 
   if (!tags || tags.length === 0) {
@@ -89,9 +90,9 @@ const propTypes = {
   initialValues: PropTypes.object.isRequired,
   intl: intlShape.isRequired,
   isNewVersion: PropTypes.bool.isRequired,
+  loading: PropTypes.bool.isRequired,
   onActiveVersionChange: PropTypes.func.isRequired,
   onDiscard: PropTypes.func.isRequired,
-  onDismiss: PropTypes.func.isRequired,
   onSubmit: PropTypes.func.isRequired,
   tags: PropTypes.arrayOf(
     PropTypes.shape({
@@ -120,7 +121,7 @@ const QuestionEditForm = ({
   initialValues,
   intl,
   isNewVersion,
-  onDismiss,
+  loading,
   tags,
   type,
   onSubmit,
@@ -153,14 +154,13 @@ const QuestionEditForm = ({
         return (
           <Form error={success === false} success={success === true} onSubmit={handleSubmit}>
             <div className="infoMessage">
-              <Message success onDismiss={onDismiss}>
+              <Message success>
                 <FormattedMessage
                   defaultMessage="Successfully modified question."
                   id="editQuestion.sucess"
                 />
               </Message>
-              <Message error onDismiss={onDismiss}>
-                {/* TODO: change default message {error} as dynamic messages won't work */}
+              <Message error>
                 <FormattedMessage
                   defaultMessage="Could not modify question: {error}"
                   id="editQuestion.error"
@@ -253,12 +253,12 @@ const QuestionEditForm = ({
             <div className="questionInput questionContent">
               <ContentInput
                 disabled={!isNewVersion}
-                error={errors.description}
-                touched={touched.description}
-                value={values.description}
-                onChange={(newDescription) => {
-                  setFieldTouched('description', true, false)
-                  setFieldValue('description', newDescription)
+                error={errors.content}
+                touched={touched.content}
+                value={values.content}
+                onChange={(newContent) => {
+                  setFieldTouched('content', true, false)
+                  setFieldValue('content', newContent)
                 }}
               />
             </div>
@@ -284,7 +284,7 @@ const QuestionEditForm = ({
                 primary
                 className="save"
                 disabled={!_isEmpty(errors) || _isEmpty(touched)}
-                loading={isSubmitting && success === null}
+                loading={loading && isSubmitting}
                 type="submit"
               >
                 <FormattedMessage defaultMessage="Save" id="common.button.save" />
@@ -404,18 +404,33 @@ QuestionEditForm.defaultProps = defaultProps
 
 export default compose(
   withProps(({
-    allTags, isNewVersion, activeVersion, versions, questionTags, title, type,
+    allTags, activeVersion, versions, questionTags, title, type, onSubmit,
   }) => {
+    // if the active version would be out of array bounds, we are creating a new one
+    const isNewVersion = activeVersion === versions.length
+
+    // calculate the version with which to initialize the version fields (the current or last one)
     const initializeVersion = isNewVersion ? versions.length - 1 : activeVersion
+
     return {
       initialValues: {
-        description: versions[initializeVersion].description,
-        options: versions[initializeVersion].options[type],
+        content: versions[initializeVersion].content
+          ? versions[initializeVersion].content
+            |> JSON.parse
+            |> convertFromRaw // create a new draftjs content state from text
+            |> EditorState.createWithContent
+          : // get the version description
+          versions[initializeVersion].description
+            |> ContentState.createFromText // create a new draftjs content state from text
+            |> EditorState.createWithContent, // create a new draftjs editor state
+        options: versions[initializeVersion].options[type] || {},
         tags: questionTags.map(tag => tag.name),
         title,
         type,
         versions,
       },
+      isNewVersion,
+      onSubmit: onSubmit(isNewVersion),
       tags: allTags,
       versionOptions: versions.map(({ id }, index) => ({
         text: `v${index + 1}`,

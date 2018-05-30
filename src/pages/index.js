@@ -11,10 +11,10 @@ const links = [
     href: '/user/login',
     label: 'Login',
   },
-  /* {
+  {
     href: '/user/registration',
-    label: 'Register',
-  }, */
+    label: 'Sign Up',
+  },
 ]
 
 const Index = () => (
@@ -186,4 +186,4 @@ const Index = () => (
   </StaticLayout>
 )
 
-export default compose(withLogging(['ga', 'raven']))(Index)
+export default compose(withLogging())(Index)

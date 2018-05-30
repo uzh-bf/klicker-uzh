@@ -20,10 +20,22 @@ const propTypes = {
 
 const options = [
   { text: 'Pie Chart', value: 'PIE_CHART', withinType: ['SC'] },
-  { text: 'Bar Chart', value: 'BAR_CHART', withinType: ['SC', 'MC', 'FREE_RANGE'] },
+  {
+    text: 'Bar Chart',
+    value: 'BAR_CHART',
+    withinType: ['SC', 'MC', 'FREE_RANGE'],
+  },
   { text: 'Stacked Chart', value: 'STACK_CHART', withinType: ['MC'] },
-  { text: 'Word Cloud', value: 'WORD_CLOUD', withinType: ['FREE', 'FREE_RANGE'] },
-  { text: 'Table', value: 'TABLE', withinType: ['SC', 'MC', 'FREE', 'FREE_RANGE'] },
+  {
+    text: 'Word Cloud',
+    value: 'WORD_CLOUD',
+    withinType: ['FREE', 'FREE_RANGE'],
+  },
+  {
+    text: 'Table',
+    value: 'TABLE',
+    withinType: ['SC', 'MC', 'FREE', 'FREE_RANGE'],
+  },
   { text: 'Histogram', value: 'HISTOGRAM', withinType: ['FREE_RANGE'] },
 ]
 
@@ -37,7 +49,7 @@ const VisualizationType = ({
       options={options.filter(o => o.withinType.includes(questionType))}
       placeholder={intl.formatMessage(messages.title)}
       value={activeVisualization}
-      onChange={(param, data) => onChangeType(questionType, data.value)}
+      onChange={(param, { value }) => onChangeType(questionType, value)}
     />
   </div>
 )

@@ -2,6 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { compose, withProps } from 'recompose'
 import QRCode from 'qrcode.react'
+import { withRouter } from 'next/router'
 
 import { StaticLayout } from '../components/layouts'
 import { withLogging } from '../lib'
@@ -30,8 +31,9 @@ const QR = ({ shortname }) => (
 QR.propTypes = propTypes
 
 export default compose(
-  withLogging(['ga', 'raven']),
-  withProps(({ url }) => ({
-    shortname: url.query.shortname,
+  withRouter,
+  withLogging(),
+  withProps(({ router }) => ({
+    shortname: router.query.shortname,
   })),
 )(QR)

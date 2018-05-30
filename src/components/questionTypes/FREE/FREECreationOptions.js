@@ -1,6 +1,5 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import _get from 'lodash/get'
 import ReactTooltip from 'react-tooltip'
 import { Form, Icon, Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
@@ -9,12 +8,12 @@ import { compose, withHandlers, mapProps } from 'recompose'
 import { QUESTION_TYPES } from '../../../constants'
 
 const propTypes = {
+  dirty: PropTypes.bool.isRequired,
   disabled: PropTypes.bool,
   handleMaxChange: PropTypes.func.isRequired,
   handleMinChange: PropTypes.func.isRequired,
+  invalid: PropTypes.bool.isRequired,
   max: PropTypes.number,
-  dirty: PropTypes.bool,
-  invalid: PropTypes.bool,
   min: PropTypes.number,
   type: PropTypes.string.isRequired,
 }
@@ -36,27 +35,27 @@ const FREECreationOptions = ({
   invalid,
 }) => (
   <div className="FREECreationOptions">
-    <Form.Field required error={dirty && invalid}>
-      <label htmlFor="options">
-        <FormattedMessage
-          defaultMessage="Input Restrictions"
-          id="createQuestion.optionsFREE.label"
-        />
-        <a data-tip data-for="FREECreationHelp">
-          <Icon name="question circle" />
-        </a>
-      </label>
+    {type === QUESTION_TYPES.FREE_RANGE && (
+      <Form.Field required error={dirty && invalid}>
+        <label htmlFor="options">
+          <FormattedMessage
+            defaultMessage="Input Restrictions"
+            id="createQuestion.optionsFREE.label"
+          />
+          <a data-tip data-for="FREECreationHelp">
+            <Icon name="question circle" />
+          </a>
+        </label>
 
-      <ReactTooltip delayHide={250} delayShow={250} id="FREECreationHelp" place="right">
-        <FormattedMessage
-          defaultMessage="Choose the allowed format of incoming responses."
-          id="createQuestion.optionsFREE.tooltip"
-        />
-      </ReactTooltip>
+        <ReactTooltip delayHide={250} delayShow={250} id="FREECreationHelp" place="right">
+          <FormattedMessage
+            defaultMessage="Choose the allowed format of incoming responses."
+            id="createQuestion.optionsFREE.tooltip"
+          />
+        </ReactTooltip>
 
-      {type === QUESTION_TYPES.FREE && <div>Unrestricted input.</div>}
+        {/* type === QUESTION_TYPES.FREE && <div>Unrestricted input.</div> */}
 
-      {type === QUESTION_TYPES.FREE_RANGE && (
         <div className="range">
           <Form.Field>
             <label htmlFor="min">
@@ -86,8 +85,8 @@ const FREECreationOptions = ({
             />
           </Form.Field>
         </div>
-      )}
-    </Form.Field>
+      </Form.Field>
+    )}
 
     <style jsx>{`
       @import 'src/theme';
@@ -137,11 +136,11 @@ export default compose(
   mapProps(({
     disabled, onChange, value, dirty, invalid, type,
   }) => ({
-    disabled,
-    max: _get(value, 'restrictions.max'),
     dirty,
+    disabled,
     invalid,
-    min: _get(value, 'restrictions.min'),
+    max: value?.restrictions?.max,
+    min: value?.restrictions?.min,
     onChange,
     type,
     value,

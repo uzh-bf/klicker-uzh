@@ -15,7 +15,6 @@ import {
   QuestionCreationForm,
   QuestionEditForm,
   RegistrationForm,
-  SemanticInput,
   SessionCreationForm,
 } from '.'
 
@@ -54,31 +53,22 @@ storiesOf('forms/components', module)
   .add('SessionCreationForm [NoTest]', () => (
     <SessionCreationForm handleSubmit={() => null} intl={intlMock} />
   ))
-storiesOf('forms/helpers', module)
-  .add('FormWithLinks', () => (
-    <FormWithLinks
-      button={{
-        invalid: false,
-        label: 'button',
-        onSubmit: (e) => {
-          e.preventDefault()
-          action('submit')
-        },
-      }}
-      links={[
-        { href: 'href1', label: 'link1' },
-        { href: 'href2', label: 'link2' },
-        { href: 'href3', label: 'link3' },
-      ]}
-    >
-      form fields
-    </FormWithLinks>
-  ))
-  .add('SemanticInput', () => <SemanticInput input={{}} label="label" meta={{}} />)
-  .add('SemanticInput (with error)', () => (
-    <SemanticInput
-      input={{}}
-      label="label"
-      meta={{ error: 'fail', invalid: true, touched: true }}
-    />
-  ))
+storiesOf('forms/helpers', module).add('FormWithLinks', () => (
+  <FormWithLinks
+    button={{
+      invalid: false,
+      label: 'button',
+      onSubmit: (e) => {
+        e.preventDefault()
+        action('submit')
+      },
+    }}
+    links={[
+      { href: 'href1', label: 'link1' },
+      { href: 'href2', label: 'link2' },
+      { href: 'href3', label: 'link3' },
+    ]}
+  >
+    form fields
+  </FormWithLinks>
+))

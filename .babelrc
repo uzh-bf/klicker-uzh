@@ -11,7 +11,13 @@
           }
         ]
       ],
-      "plugins": ["inline-dotenv", "add-react-displayname"]
+      "plugins": [
+        "@babel/plugin-syntax-do-expressions",
+        "@babel/plugin-proposal-pipeline-operator",
+        "@babel/plugin-proposal-optional-chaining",
+        "inline-dotenv",
+        "add-react-displayname"
+      ]
     },
     "production": {
       "presets": [
@@ -25,8 +31,12 @@
         ]
       ],
       "plugins": [
-        "transform-inline-environment-variables",
         ["lodash", { "id": ["lodash", "recompose", "semantic-ui-react", "ramda"] }],
+        "@babel/plugin-syntax-do-expressions",
+        "@babel/plugin-proposal-pipeline-operator",
+        "@babel/plugin-proposal-optional-chaining",
+        "transform-inline-environment-variables",
+        
         "add-react-displayname",
         [
           "react-intl",
@@ -39,7 +49,7 @@
     "test": {
       "presets": [
         [
-          "env",
+          "@babel/preset-env",
           {
             "modules": "commonjs"
           }
@@ -53,7 +63,12 @@
           }
         ]
       ],
-      "plugins": ["babel-plugin-inline-import-graphql-ast"]
+      "plugins": [
+        "@babel/plugin-syntax-do-expressions",
+        "@babel/plugin-proposal-pipeline-operator",
+        "@babel/plugin-proposal-optional-chaining",
+        "babel-plugin-inline-import-graphql-ast"
+      ]
     }
   }
 }

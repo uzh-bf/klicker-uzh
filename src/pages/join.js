@@ -1,28 +1,28 @@
-import React from 'react'
-import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import _throttle from 'lodash/debounce'
-import {
-  compose,
-  withHandlers,
-  withStateHandlers,
-  withProps,
-  branch,
-  renderComponent,
-} from 'recompose'
-import { defineMessages, intlShape, FormattedMessage } from 'react-intl'
+import { withRouter } from 'next/router'
+import PropTypes from 'prop-types'
+import React from 'react'
 import { graphql } from 'react-apollo'
-
+import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
+import {
+  branch,
+  compose,
+  renderComponent,
+  withHandlers,
+  withProps,
+  withStateHandlers,
+} from 'recompose'
+import { StudentLayout } from '../components/layouts'
 import FeedbackArea from '../components/sessions/join/FeedbackArea'
 import QuestionArea from '../components/sessions/join/QuestionArea'
-import { pageWithIntl, withData, withFingerprint, withLogging } from '../lib'
 import {
-  JoinSessionQuery,
   AddConfusionTSMutation,
   AddFeedbackMutation,
   AddResponseMutation,
+  JoinSessionQuery,
 } from '../graphql'
-import { StudentLayout } from '../components/layouts'
+import { pageWithIntl, withFingerprint, withLogging } from '../lib'
 
 const messages = defineMessages({
   activeQuestionTitle: {
@@ -111,7 +111,7 @@ const Join = ({
           </div>
         )}
 
-        {isConfusionBarometerActive || isFeedbackChannelActive ? (
+        {(isConfusionBarometerActive || isFeedbackChannelActive) && (
           <FeedbackArea
             active={sidebarActiveItem === 'feedbackChannel'}
             feedbacks={feedbacks}
@@ -120,17 +120,6 @@ const Join = ({
             isConfusionBarometerActive={isConfusionBarometerActive}
             isFeedbackChannelActive={isFeedbackChannelActive}
           />
-        ) : (
-          <div
-            className={classNames('feedbackArea', {
-              inactive: sidebarActiveItem !== 'feedbackChannel',
-            })}
-          >
-            <FormattedMessage
-              defaultMessage="Feedback-Channel deactivated."
-              id="joinSession.noFeedbackChannel"
-            />
-          </div>
         )}
 
         <style jsx>{`
@@ -185,8 +174,11 @@ Join.propTypes = propTypes
 Join.defaultProps = defaultProps
 
 export default compose(
-  withLogging(['ga', 'raven']),
-  withData,
+  withRouter,
+  withLogging({
+    chatlio: false,
+    logRocket: false,
+  }),
   /* withStorage({
     propDefault: 'activeQuestion',
     propName: 'sidebarActiveItem',
@@ -212,7 +204,9 @@ export default compose(
     },
   ),
   graphql(JoinSessionQuery, {
-    options: ({ url }) => ({ variables: { shortname: url.query.shortname } }),
+    options: ({ router }) => ({
+      variables: { shortname: router.query.shortname },
+    }),
   }),
   branch(({ data }) => data.loading, renderComponent(() => <div />)),
   branch(
@@ -226,8 +220,11 @@ export default compose(
   graphql(AddConfusionTSMutation, { name: 'newConfusionTS' }),
   graphql(AddFeedbackMutation, { name: 'newFeedback' }),
   graphql(AddResponseMutation, { name: 'newResponse' }),
-  withProps(({ newConfusionTS }) => ({
+  withProps(({ data: { joinSession }, router, newConfusionTS }) => ({
     newConfusionTS: _throttle(newConfusionTS, 4000, { trailing: true }),
+    ...joinSession,
+    ...joinSession.settings,
+    shortname: router.query.shortname,
   })),
   withHandlers({
     // handle creation of a new confusion timestep
@@ -236,7 +233,7 @@ export default compose(
       speed,
     }) => {
       try {
-        await newConfusionTS({
+        newConfusionTS({
           variables: {
             difficulty,
             fp: await fp,
@@ -251,11 +248,13 @@ export default compose(
 
     // handle creation of a new feedback
     handleNewFeedback: ({
-      data: { joinSession }, fp, newFeedback, url,
-    }) => async ({ content }) => {
+      data: { joinSession }, fp, newFeedback, router,
+    }) => async ({
+      content,
+    }) => {
       try {
         if (joinSession.settings.isFeedbackChannelPublic) {
-          await newFeedback({
+          newFeedback({
             // optimistically add the feedback to the array already
             optimisticResponse: {
               addFeedback: {
@@ -275,7 +274,7 @@ export default compose(
             update: (store, { data: { addFeedback } }) => {
               const query = {
                 query: JoinSessionQuery,
-                variables: { shortname: url.query.shortname },
+                variables: { shortname: router.query.shortname },
               }
 
               // get the data from the store
@@ -292,7 +291,7 @@ export default compose(
             variables: { content, fp: await fp, sessionId: joinSession.id },
           })
         } else {
-          await newFeedback({ variables: { content, fp, sessionId: joinSession.id } })
+          newFeedback({ variables: { content, fp, sessionId: joinSession.id } })
         }
       } catch ({ message }) {
         console.error(message)
@@ -302,7 +301,7 @@ export default compose(
     // handle creation of a new response
     handleNewResponse: ({ fp, newResponse }) => async ({ instanceId, response }) => {
       try {
-        await newResponse({
+        newResponse({
           variables: { fp: await fp, instanceId, response },
         })
       } catch ({ message }) {
@@ -315,9 +314,4 @@ export default compose(
       handleSidebarActiveItemChange(newItem)
     },
   }),
-  withProps(({ data: { joinSession }, url }) => ({
-    ...joinSession,
-    ...joinSession.settings,
-    shortname: url.query.shortname,
-  })),
 )(Join)

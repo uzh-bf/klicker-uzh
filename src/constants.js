@@ -1,8 +1,9 @@
-export const SEMANTIC_VERSION = '2.2.14'
+export const SEMANTIC_VERSION = '2.3.1'
 
 export const SESSION_STATUS = {
   COMPLETED: 'COMPLETED',
   CREATED: 'CREATED',
+  PAUSED: 'PAUSED',
   RUNNING: 'RUNNING',
 }
 
@@ -13,19 +14,28 @@ export const QUESTION_TYPES = {
   SC: 'SC',
 }
 
+export const CHART_TYPES = {
+  BAR_CHART: 'BAR_CHART',
+  HISTOGRAM: 'HISTOGRAM',
+  PIE_CHART: 'PIE_CHART',
+  STACK_CHART: 'STACK_CHART',
+  TABLE: 'TABLE',
+}
+
 export const QUESTION_GROUPS = {
   CHOICES: [QUESTION_TYPES.SC, QUESTION_TYPES.MC],
   FREE: [QUESTION_TYPES.FREE, QUESTION_TYPES.FREE_RANGE],
+  WITH_PERCENTAGES: [QUESTION_TYPES.SC, QUESTION_TYPES.FREE],
   WITH_POSSIBILITIES: [QUESTION_TYPES.SC, QUESTION_TYPES.MC, QUESTION_TYPES.FREE_RANGE],
   WITH_STATISTICS: [QUESTION_TYPES.FREE_RANGE],
 }
 
 export const CHART_DEFAULTS = {
-  FREE: 'TABLE',
-  FREE_RANGE: 'HISTOGRAM',
-  MC: 'STACK_CHART',
-  OTHER: 'TABLE',
-  SC: 'PIE_CHART',
+  FREE: CHART_TYPES.TABLE,
+  FREE_RANGE: CHART_TYPES.HISTOGRAM,
+  MC: CHART_TYPES.STACK_CHART,
+  OTHER: CHART_TYPES.TABLE,
+  SC: CHART_TYPES.PIE_CHART,
 }
 
 export const CHART_COLORS = [
@@ -50,6 +60,18 @@ export const QUESTION_SORTINGS = [
   { content: 'Title', id: 'TITLE', labelStart: 'sort alphabet' },
 ]
 
+// break point for too small bars
+// if the percentual responses of a bar are smaller than the given
+// value, the label (A, B, ...)  is not displayed within the bar
+// but on top of the bar
+export const SMALL_BAR_THRESHOLD = 0.05
+
+// break point for too small pies
+// if the percentual responses of a pie are smaller than the given
+// value, the label (A, B, ...)  is not displayed within the pie
+// but outside right after the percentage
+export const SMALL_PIE_THRESHOLD = 0.05
+
 // https://www.viget.com/articles/add-colors-to-your-palette-with-color-mixing
 // original circle
 /* export const CHART_COLORS = [
@@ -66,3 +88,64 @@ export const QUESTION_SORTINGS = [
   rgb(162, 184, 108),// 11
   rgb(92, 167, 147),// 12
 ] */
+
+export const CHANGELOG = {
+  new: [
+    {
+      items: ['Pausing sessions'],
+      text: '1.0.0-public.beta.22',
+    },
+    {
+      items: [
+        'Rich-Text formatting for question content (for creation, modification and display on joining a session)',
+        'The feature is experimental and formatting is not yet displayed on the evaluation screen',
+      ],
+      text: '1.0.0-public.beta.19',
+    },
+    {
+      items: [
+        'Executed question blocks can still be evaluated during a running session',
+        'General improvements for the evaluation screen (added and moved around percentages and labels)',
+      ],
+      text: '1.0.0-public.beta.15',
+    },
+    {
+      items: [
+        'Archiving and unarchiving questions to enable question clean-up',
+        'Quick creation of question blocks and sessions',
+      ],
+      text: '1.0.0-public.beta.7',
+    },
+    {
+      items: [
+        'Multiple-choice questions can be created and evaluated.',
+        'One can define solutions for SC- and MC-questions and display them while presenting the results (optional).',
+        'More advanced visualizations for all question types, including word clouds and aggregated tables.',
+      ],
+      text: 'Extended question types and visualizations',
+    },
+    {
+      items: [
+        'Questions can be grouped into sessions and question blocks.',
+        'Each session could e.g. correspond to a single lecture.',
+        'A question block is part of a session and represents a group of questions that are evaluated simultaneously.',
+        'The parts of a session are activated on a predefined timeline.',
+      ],
+      text: 'Sessions & question blocks',
+    },
+    {
+      items: [
+        'The new feedback channel enables the collection of open text feedbacks over the course of the entire session (optional).',
+        'It also allows the students to give feedback on the speed and difficulty of the session at any point in time (optional).',
+      ],
+      text: 'Feedback-Channel (experimental)',
+    },
+    {
+      items: [
+        'Currently supported languages are English and German.',
+        'The tool is easily translateable to other languages (open-source).',
+      ],
+      text: 'Support for multiple languages',
+    },
+  ],
+}

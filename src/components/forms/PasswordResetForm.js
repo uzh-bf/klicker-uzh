@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import _isEmpty from 'lodash/isEmpty'
 import { defineMessages, intlShape } from 'react-intl'
 import { Formik } from 'formik'
-import Yup from 'yup'
+import { object, string, ref } from 'yup'
 
 import { FormWithLinks, FormikInput } from '.'
 
@@ -36,10 +36,11 @@ const messages = defineMessages({
 
 const propTypes = {
   intl: intlShape.isRequired,
+  loading: PropTypes.bool.isRequired,
   onSubmit: PropTypes.func.isRequired,
 }
 
-const PasswordResetForm = ({ intl, onSubmit }) => {
+const PasswordResetForm = ({ intl, loading, onSubmit }) => {
   const links = [
     {
       href: '/user/login',
@@ -66,7 +67,7 @@ const PasswordResetForm = ({ intl, onSubmit }) => {
           button={{
             disabled: !_isEmpty(errors) || _isEmpty(touched),
             label: intl.formatMessage(messages.submit),
-            loading: isSubmitting,
+            loading: loading && isSubmitting,
             onSubmit: handleSubmit,
           }}
           links={links}
@@ -102,13 +103,13 @@ const PasswordResetForm = ({ intl, onSubmit }) => {
           />
         </FormWithLinks>
       )}
-      validationSchema={Yup.object().shape({
-        password: Yup.string()
+      validationSchema={object().shape({
+        password: string()
           .min(8)
           .required(),
-        passwordRepeat: Yup.string()
+        passwordRepeat: string()
           .min(8)
-          .oneOf([Yup.ref('password'), null])
+          .oneOf([ref('password'), null])
           .required(),
       })}
       onSubmit={onSubmit}

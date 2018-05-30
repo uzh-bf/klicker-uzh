@@ -1,24 +1,22 @@
+/* eslint-disable no-undef, no-underscore-dangle */
+
 import React from 'react'
 import PropTypes from 'prop-types'
-import _get from 'lodash/get'
 import { intlShape } from 'react-intl'
 import { Icon, Menu } from 'semantic-ui-react'
-import { graphql } from 'react-apollo'
-import { compose, withProps } from 'recompose'
+import { Query, Mutation } from 'react-apollo'
+import Router from 'next/router'
 
-import { AccountSummaryQuery } from '../../../graphql'
+import { AccountSummaryQuery, LogoutMutation } from '../../../graphql'
 
 import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'
 import SessionArea from './SessionArea'
 
 const propTypes = {
-  accountShort: PropTypes.string,
   // filters: PropTypes.object,
   handleSidebarToggle: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  runningSessionId: PropTypes.string,
-  runningSessionRuntime: PropTypes.string,
   search: PropTypes.shape({
     handleSearch: PropTypes.func.isRequired,
     handleSortByChange: PropTypes.func.isRequired,
@@ -38,22 +36,12 @@ const propTypes = {
 }
 
 const defaultProps = {
-  accountShort: 'ANON',
-  runningSessionId: undefined,
-  runningSessionRuntime: undefined,
   search: undefined,
   sidebarVisible: false,
 }
 
 export const NavbarPres = ({
-  accountShort,
-  intl,
-  search,
-  sidebarVisible,
-  title,
-  handleSidebarToggle,
-  runningSessionId,
-  runningSessionRuntime,
+  intl, search, sidebarVisible, title, handleSidebarToggle,
 }) => (
   <div className="navbar">
     <div className="sideArea">
@@ -87,30 +75,91 @@ export const NavbarPres = ({
     )}
 
     <div className="accountArea">
-      <Menu borderless className="loginArea noBorder">
-        <Menu.Menu position="right">
-          {accountShort && (
-            <SessionArea intl={intl} runtime={runningSessionRuntime} sessionId={runningSessionId} />
-          )}
-          <AccountArea accountShort={accountShort} />
-        </Menu.Menu>
-      </Menu>
+      <Query query={AccountSummaryQuery}>
+        {({ data }) => {
+          const accountId = data.user?.id
+          const userEmail = data.user?.email
+          const accountShort = data.user?.shortname
+          const runningSessionId = data.user?.runningSession?.id
+
+          if (typeof window !== 'undefined') {
+            if (window.INIT_LR) {
+              try {
+                const LogRocket = require('logrocket')
+
+                LogRocket.identify(accountId, {
+                  email: userEmail,
+                  name: accountShort,
+                })
+              } catch (e) {
+                //
+              }
+            }
+
+            if (typeof window._chatlio !== 'undefined') {
+              try {
+                window._chatlio.identify(accountId, {
+                  email: userEmail,
+                  name: accountShort,
+                })
+              } catch (e) {
+                //
+              }
+            }
+
+            if (window.INIT_RAVEN) {
+              try {
+                const Raven = require('raven-js')
+                Raven.identify(accountId, {
+                  name: accountShort,
+                })
+              } catch (e) {
+                //
+              }
+            }
+          }
+
+          return (
+            <Menu borderless className="loginArea noBorder">
+              <Menu.Menu position="right">
+                {accountShort && <SessionArea intl={intl} sessionId={runningSessionId} />}
+
+                <Mutation mutation={LogoutMutation}>
+                  {logout => (
+                    <AccountArea
+                      accountShort={accountShort}
+                      onLogout={async () => {
+                        // logout
+                        await logout()
+
+                        // redirect to the landing page
+                        Router.push('/')
+                      }}
+                    />
+                  )}
+                </Mutation>
+              </Menu.Menu>
+            </Menu>
+          )
+        }}
+      </Query>
     </div>
 
     <style jsx>{`
       @import 'src/theme';
-      $background-color: #f5f5f5;
+      $background-color: $color-primary-strong;
 
       .navbar {
+        color: $color-white;
+
         display: flex;
         align-items: center;
         flex-flow: row wrap;
         justify-content: space-between;
 
-        padding: 3px 0 3px 0;
+        padding: 0;
 
         background-color: $background-color;
-        border-bottom: 1px solid lightgrey;
 
         z-index: 100;
 
@@ -119,16 +168,18 @@ export const NavbarPres = ({
           order: 0;
 
           h1 {
-            font-size: 1.3rem;
             margin: 0;
-            padding-left: 1rem;
+            padding: 0 1rem 0 0.5rem;
             display: flex;
             align-items: center;
+            font-weight: bold;
           }
 
           :global(.sidebar),
           :global(.menu) {
+            color: $color-white;
             border-radius: 0;
+            font-size: $font-size-h1;
             background-color: $background-color;
           }
 
@@ -154,8 +205,10 @@ export const NavbarPres = ({
 
           :global(.menu) {
             background-color: $background-color;
+            color: $color-white;
 
             :global(.item) {
+              color: $color-white;
               padding-top: 0;
               padding-bottom: 0;
             }
@@ -196,11 +249,4 @@ export const NavbarPres = ({
 NavbarPres.propTypes = propTypes
 NavbarPres.defaultProps = defaultProps
 
-export default compose(
-  graphql(AccountSummaryQuery),
-  withProps(({ data }) => ({
-    accountShort: _get(data, 'user.shortname'),
-    runningSessionId: _get(data, 'user.runningSession.id'),
-    runningSessionRuntime: _get(data, 'user.runningSession.runtime'),
-  })),
-)(NavbarPres)
+export default NavbarPres

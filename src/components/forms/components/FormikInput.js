@@ -7,24 +7,26 @@ import { Form, Icon, Input } from 'semantic-ui-react'
 
 const propTypes = {
   disabled: PropTypes.bool,
+  error: PropTypes.string,
   errorMessage: PropTypes.string,
+  handleBlur: PropTypes.func.isRequired,
+  handleChange: PropTypes.func.isRequired,
   inlineLabel: PropTypes.string,
   input: PropTypes.object.isRequired,
   label: PropTypes.string,
-  meta: PropTypes.shape({
-    error: PropTypes.string,
-    invalid: PropTypes.bool,
-    touched: PropTypes.bool,
-  }).isRequired,
+  name: PropTypes.string.isRequired,
   placeholder: PropTypes.string,
   renderInput: PropTypes.func,
   required: PropTypes.bool,
   tooltip: PropTypes.string,
+  touched: PropTypes.bool.isRequired,
+  value: PropTypes.oneOf([PropTypes.string, PropTypes.number]).isRequired,
   width: PropTypes.number,
 }
 
 const defaultProps = {
   disabled: false,
+  error: undefined,
   errorMessage: undefined,
   inlineLabel: undefined,
   label: undefined,
@@ -66,7 +68,11 @@ const FormikInput = ({
 
   // construct input props
   // define the default placeholder to be equal to the label
-  const inputProps = { label: inlineLabel, placeholder: placeholder || label, ...rest }
+  const inputProps = {
+    label: inlineLabel,
+    placeholder: placeholder || label,
+    ...rest,
+  }
   const showError = touched && !!error
 
   return (

@@ -1,14 +1,14 @@
 import React from 'react'
-import PropTypes from 'prop-types'
-import { compose, withState, withHandlers } from 'recompose'
+import { compose } from 'recompose'
 import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
-import { graphql } from 'react-apollo'
+import { Mutation } from 'react-apollo'
+import { Message } from 'semantic-ui-react'
 import Link from 'next/link'
 
 import { StaticLayout } from '../../components/layouts'
 import { RegistrationForm } from '../../components/forms'
 import { RegistrationMutation } from '../../graphql'
-import { pageWithIntl, withData, withLogging } from '../../lib'
+import { pageWithIntl, withLogging } from '../../lib'
 
 const messages = defineMessages({
   pageTitle: {
@@ -18,32 +18,67 @@ const messages = defineMessages({
 })
 
 const propTypes = {
-  error: PropTypes.oneOfType(PropTypes.string, null).isRequired,
-  handleSubmit: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  success: PropTypes.oneOfType(PropTypes.string, null).isRequired,
 }
 
-const Registration = ({
-  intl, error, success, handleSubmit,
-}) => (
+const Registration = ({ intl }) => (
   <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
     <div className="registration">
       <h1>
         <FormattedMessage defaultMessage="Registration" id="user.registration.title" />
       </h1>
 
-      {!success && <RegistrationForm intl={intl} onSubmit={handleSubmit} />}
+      <Mutation mutation={RegistrationMutation}>
+        {(register, { loading, data, error }) => {
+          const newEmail = data && data.createUser.email
 
-      {/* TODO: improve message handling */}
-      {error && <div className="errorMessage message">Registration failed ({error})</div>}
-      {success && (
-        <div className="successMessage message">
-          Successfully registered as {success}. <br />
-          Please login at <Link href="/user/login">/user/login</Link> after the activation of your
-          account.
-        </div>
-      )}
+          if (newEmail) {
+            return (
+              <div className="successMessage">
+                <FormattedMessage
+                  defaultMessage="Successfully registered as {newEmail}.{br} Please login at {link}."
+                  id="user.registration.successNotification"
+                  values={{
+                    br: <br />,
+                    link: <Link href="/user/login">/user/login</Link>,
+                    newEmail,
+                  }}
+                />
+              </div>
+            )
+          }
+
+          return (
+            <React.Fragment>
+              <Message info>
+                <Message.Header>Public Beta</Message.Header>
+                <Message.Content>
+                  Sign up for the Klicker 2018 public beta. Already have an account?{' '}
+                  <Link href="/user/login">Login here.</Link>
+                </Message.Content>
+              </Message>
+              <RegistrationForm
+                intl={intl}
+                loading={loading}
+                onSubmit={({
+ email, password, shortname, institution, useCase,
+}) => {
+                  register({
+                    variables: {
+                      email,
+                      institution,
+                      password,
+                      shortname,
+                      useCase,
+                    },
+                  })
+                }}
+              />
+              {error && <div className="errorMessage">Registration failed ({error.message})</div>}
+            </React.Fragment>
+          )
+        }}
+      </Mutation>
 
       <style jsx>{`
         @import 'src/theme';
@@ -55,7 +90,8 @@ const Registration = ({
             margin-top: 0;
           }
 
-          .message {
+          .errorMessage,
+          .successMessage {
             font-weight: bold;
           }
           .errorMessage {
@@ -77,22 +113,8 @@ const Registration = ({
 Registration.propTypes = propTypes
 
 export default compose(
-  withLogging(['ga', 'raven']),
-  withData,
-  pageWithIntl,
-  graphql(RegistrationMutation),
-  withState('error', 'setError', null),
-  withState('success', 'setSuccess', null),
-  withHandlers({
-    // handle form submission
-    handleSubmit: ({ mutate, setError, setSuccess }) => async ({ email, password, shortname }) => {
-      try {
-        const result = await mutate({ variables: { email, password, shortname } })
-        setSuccess(result.data.createUser.email)
-      } catch ({ message }) {
-        console.error(message)
-        setError(message)
-      }
-    },
+  withLogging({
+    logRocket: false,
   }),
+  pageWithIntl,
 )(Registration)
