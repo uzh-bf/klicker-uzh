@@ -136,7 +136,10 @@ export default compose(
     }),
   }),
   // if the query is still loading, display nothing
-  branch(({ data }) => data.loading, renderNothing),
+  branch(
+    ({ data: { loading, session } }) => loading || !session,
+    renderNothing,
+  ),
   // override the session evaluation query with a polling query
   branch(
     ({ data: { session } }) => session.status === SESSION_STATUS.RUNNING,
