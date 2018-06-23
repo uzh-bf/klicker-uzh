@@ -9,6 +9,9 @@ Object {
 exports[`Integration Logout works 2`] = `
 Array [
   Object {
+    "extensions": Object {
+      "code": "UNAUTHENTICATED",
+    },
     "locations": Array [
       Object {
         "column": 5,

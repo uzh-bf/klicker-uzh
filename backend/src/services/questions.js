@@ -1,6 +1,7 @@
 const _isNumber = require('lodash/isNumber')
 // TODO: find a way to use draft.js without needing react and react-dom
 const { ContentState, convertToRaw } = require('draft-js')
+const { UserInputError } = require('apollo-server-express')
 
 const { QuestionModel, TagModel, UserModel } = require('../models')
 const { QUESTION_GROUPS, QUESTION_TYPES } = require('../constants')
@@ -42,29 +43,29 @@ const createQuestion = async ({
 }) => {
   // if no tags have been assigned, throw
   if (!tags || tags.length === 0) {
-    throw new Error('NO_TAGS_SPECIFIED')
+    throw new UserInputError('NO_TAGS_SPECIFIED')
   }
 
   // if no options have been assigned, throw
   if (QUESTION_GROUPS.WITH_OPTIONS.includes(type) && !options) {
-    throw new Error('NO_OPTIONS_SPECIFIED')
+    throw new UserInputError('NO_OPTIONS_SPECIFIED')
   }
 
   // validation for SC and MC questions
   if (QUESTION_GROUPS.CHOICES.includes(type)) {
     if (options.choices.length === 0) {
-      throw new Error('NO_CHOICES_SPECIFIED')
+      throw new UserInputError('NO_CHOICES_SPECIFIED')
     }
 
     if (solution && options.choices.length !== solution[type].length) {
-      throw new Error('INVALID_SOLUTION')
+      throw new UserInputError('INVALID_SOLUTION')
     }
   }
 
   // validation for FREE_RANGE questions
   if (type === QUESTION_TYPES.FREE_RANGE) {
     if (!options.restrictions) {
-      throw new Error('MISSING_RESTRICTIONS')
+      throw new UserInputError('MISSING_RESTRICTIONS')
     }
 
     // if at least one restriction is set, the restrictions need to be evaluated
@@ -78,7 +79,7 @@ const createQuestion = async ({
           && options.restrictions.max
           && options.restrictions.max <= options.restrictions.min)
       ) {
-        throw new Error('INVALID_RESTRICTIONS')
+        throw new UserInputError('INVALID_RESTRICTIONS')
       }
     }
   }
@@ -140,12 +141,12 @@ const modifyQuestion = async (
 
   // check if both content and options are set for a new version
   if (content ? !options : options) {
-    throw new Error('INVALID_VERSION_DEFINITION')
+    throw new UserInputError('INVALID_VERSION_DEFINITION')
   }
 
   // if no tags have been assigned, throw
   if (tags && tags.length === 0) {
-    throw new Error('NO_TAGS_SPECIFIED')
+    throw new UserInputError('NO_TAGS_SPECIFIED')
   }
 
   // get the question to be modified
@@ -154,7 +155,7 @@ const modifyQuestion = async (
     user: userId,
   }).populate(['tags'])
   if (!question) {
-    throw new Error('INVALID_QUESTION')
+    throw new UserInputError('INVALID_QUESTION')
   }
 
   if (
@@ -162,7 +163,7 @@ const modifyQuestion = async (
     && solution
     && options.choices.length !== solution[question.type].length
   ) {
-    throw new Error('INVALID_SOLUTION')
+    throw new UserInputError('INVALID_SOLUTION')
   }
 
   // if the title is set to be modified

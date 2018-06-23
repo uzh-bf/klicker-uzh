@@ -1,7 +1,7 @@
 const request = require('supertest')
 const mongoose = require('mongoose')
 
-const server = require('../app')
+const { app } = require('../app')
 const { initializeDb } = require('../lib/test/setup')
 const { createContentState } = require('../lib/draft')
 const queries = require('./queries')
@@ -15,13 +15,13 @@ serializers.forEach(serializer => expect.addSnapshotSerializer(serializer))
 
 const sendQuery = (body, authCookie) => {
   if (authCookie) {
-    return request(server)
+    return request(app)
       .post('/graphql')
       .set('Cookie', authCookie)
       .send(body)
   }
 
-  return request(server)
+  return request(app)
     .post('/graphql')
     .send(body)
 }
@@ -47,7 +47,7 @@ describe('Integration', () => {
 
   afterAll(async () => {
     await mongoose.disconnect()
-    await server.close()
+    await app.close()
     authCookie = null
   })
 

@@ -1,4 +1,3 @@
-const { makeExecutableSchema } = require('graphql-tools')
 const { requireAuth } = require('./services/auth')
 const {
   allQuestions,
@@ -196,7 +195,7 @@ const resolvers = {
 }
 
 // use graphql-tools to generate a usable schema for export
-module.exports = makeExecutableSchema({
+module.exports = {
   resolvers,
   typeDefs,
-})
+}
