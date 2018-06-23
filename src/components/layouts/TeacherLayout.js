@@ -5,8 +5,8 @@ import { compose, withState, withHandlers } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
 
 import { CommonLayout } from '.'
-import { Navbar } from '../../components/common/navbar'
-import { Sidebar } from '../../components/common/sidebar'
+import { Navbar } from '../common/navbar'
+import { Sidebar } from '../common/sidebar'
 
 const propTypes = {
   actionArea: PropTypes.element,
@@ -92,34 +92,38 @@ const TeacherLayout = ({
           </Sidebar>
         </div>
 
-        <div className="actionArea">{actionArea}</div>
+        <div className="actionArea">
+          {actionArea}
+        </div>
 
-        <style jsx>{`
-          .teacherLayout {
-            display: flex;
-            flex-direction: column;
-            height: ${fixedHeight ? '100vh' : 'initial'};
-            min-height: ${fixedHeight ? 'initial' : '100vh'};
-
-            .navbar {
-              flex: 0 0 auto;
-            }
-
-            .content {
-              background-color: white;
-
-              flex: 1;
-
+        <style jsx>
+          {`
+            .teacherLayout {
               display: flex;
+              flex-direction: column;
+              height: ${fixedHeight ? '100vh' : 'initial'};
+              min-height: ${fixedHeight ? 'initial' : '100vh'};
 
-              overflow: hidden;
-            }
+              .navbar {
+                flex: 0 0 auto;
+              }
 
-            .actionArea {
-              flex: 0 0 auto;
+              .content {
+                background-color: white;
+
+                flex: 1;
+
+                display: flex;
+
+                overflow: hidden;
+              }
+
+              .actionArea {
+                flex: 0 0 auto;
+              }
             }
-          }
-        `}</style>
+          `}
+        </style>
       </div>
     </CommonLayout>
   )

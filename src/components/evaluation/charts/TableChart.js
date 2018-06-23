@@ -36,7 +36,11 @@ Layout.propTypes = {
 }
 
 function ColumnWithSolution({ value }) {
-  return <span>{value ? 'T' : 'F'}</span>
+  return (
+    <span>
+      {value ? 'T' : 'F'}
+    </span>
+  )
 }
 ColumnWithSolution.propTypes = {
   value: PropTypes.bool.isRequired, // eslint-disable-line react/boolean-prop-naming
@@ -85,45 +89,47 @@ function TableChart({ data, isSolutionShown, questionType }) {
         </RowDefinition>
       </Griddle>
 
-      <style jsx>{`
-        .tableChart {
-          width: 100%;
-
-          :global(.griddle-table) {
+      <style jsx>
+        {`
+          .tableChart {
             width: 100%;
-          }
 
-          :global(.griddle-table-heading) {
-            background-color: lightgrey;
-          }
+            :global(.griddle-table) {
+              width: 100%;
+            }
 
-          :global(.griddle-table-heading-cell, .griddle-cell) {
-            font-size: 1.25rem;
-            padding: 0.5rem;
-            text-align: left;
-          }
+            :global(.griddle-table-heading) {
+              background-color: lightgrey;
+            }
 
-          :global(.countColumn, .solutionColumn, .percentageColumn) {
-            text-align: center;
-          }
+            :global(.griddle-table-heading-cell, .griddle-cell) {
+              font-size: 1.25rem;
+              padding: 0.5rem;
+              text-align: left;
+            }
 
-          :global(.solutionColumn) {
-            display: ${isSolutionShown ? 'table-cell' : 'none'};
-          }
+            :global(.countColumn, .solutionColumn, .percentageColumn) {
+              text-align: center;
+            }
 
-          :global(.griddle-row:nth-child(2n)) {
-            background-color: #efefef;
-          }
+            :global(.solutionColumn) {
+              display: ${isSolutionShown ? 'table-cell' : 'none'};
+            }
 
-          :global(.griddle-pagination) {
-            margin-top: 5px;
+            :global(.griddle-row:nth-child(2n)) {
+              background-color: #efefef;
+            }
 
-            :global(.griddle-page-select) {
-              margin-left: 5px;
+            :global(.griddle-pagination) {
+              margin-top: 5px;
+
+              :global(.griddle-page-select) {
+                margin-left: 5px;
+              }
             }
           }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   )
 }

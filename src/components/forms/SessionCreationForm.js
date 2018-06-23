@@ -86,59 +86,61 @@ const SessionCreationForm = ({
         )}
       </div>
 
-      <style jsx>{`
-        @import 'src/theme';
+      <style jsx>
+        {`
+          @import 'src/theme';
 
-        .sessionCreation {
-          display: flex;
-          flex-flow: row wrap;
+          .sessionCreation {
+            display: flex;
+            flex-flow: row wrap;
 
-          background-color: white;
+            background-color: white;
 
-          .title {
-            color: $color-primary-strong;
-            font-size: $font-size-h1;
-            margin: 0;
+            .title {
+              color: $color-primary-strong;
+              font-size: $font-size-h1;
+              margin: 0;
 
-            padding: 0.5rem 1rem;
-          }
+              padding: 0.5rem 1rem;
+            }
 
-          .upper {
-            flex: 0 0 100%;
+            .upper {
+              flex: 0 0 100%;
 
-            border-bottom: 1px solid lightgrey;
-            border-top: 1px solid lightgrey;
-            text-align: center;
-            padding: 0 1rem 0.5rem 1rem;
-          }
+              border-bottom: 1px solid lightgrey;
+              border-top: 1px solid lightgrey;
+              text-align: center;
+              padding: 0 1rem 0.5rem 1rem;
+            }
 
-          .sessionTimeline {
-            flex: 1;
-          }
+            .sessionTimeline {
+              flex: 1;
+            }
 
-          .actionArea {
-            flex: 0 0 auto;
+            .actionArea {
+              flex: 0 0 auto;
 
-            border: 1px solid lightgrey;
-            border-top: 0;
-            padding: 0.5rem;
+              border: 1px solid lightgrey;
+              border-top: 0;
+              padding: 0.5rem;
 
-            > :global(button) {
-              :global(span) {
-                margin-left: 2rem;
-              }
+              > :global(button) {
+                :global(span) {
+                  margin-left: 2rem;
+                }
 
-              &:not(:last-child) {
-                margin-bottom: 0.5rem;
-              }
+                &:not(:last-child) {
+                  margin-bottom: 0.5rem;
+                }
 
-              &:first-child {
-                margin-bottom: 2rem;
+                &:first-child {
+                  margin-bottom: 2rem;
+                }
               }
             }
           }
-        }
-      `}</style>
+        `}
+      </style>
     </form>
   )
 }

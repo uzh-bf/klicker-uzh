@@ -52,8 +52,7 @@ function buildIndex(name, items, searchIndices) {
 
 function filterQuestions(questions, filters, index) {
   let results = questions.filter(
-    ({ isArchived }) =>
-      (typeof isArchived === 'undefined' && !filters.archive) || isArchived === filters.archive,
+    ({ isArchived }) => (typeof isArchived === 'undefined' && !filters.archive) || isArchived === filters.archive,
   )
 
   // if a title (query) was given, search the index with it
@@ -119,9 +118,9 @@ function sortQuestions(questions, sort) {
       // compare the dates of the latest created instances
       // this allows us to sort by "last usage"
       return (
-        factor *
-        (moment(a.instances[a.instances.length - 1].createdAt) -
-          moment(b.instances[b.instances.length - 1].createdAt))
+        factor
+        * (moment(a.instances[a.instances.length - 1].createdAt)
+          - moment(b.instances[b.instances.length - 1].createdAt))
       )
     })
   }

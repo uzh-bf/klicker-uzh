@@ -26,14 +26,20 @@ const QuestionBlock = ({
   index, status, questions, timeLimit, noDetails, noVersions,
 }) => (
   <div className={classNames('questionBlock', { active: status === 'ACTIVE' })}>
-    {index >= 0 && <div className="index">Block {index}</div>}
-    {!noDetails &&
-      timeLimit && (
+    {index >= 0 && (
+      <div className="index">
+        Block
+        {index}
+      </div>
+    )}
+    {!noDetails
+      && timeLimit && (
         <div className="timeLimit">
           <Icon name="clock" />
-          {timeLimit}s
+          {timeLimit}
+          s
         </div>
-      )}
+    )}
     {!noDetails && (
       <div className="sessionStatus">
         {(() => {
@@ -62,63 +68,65 @@ const QuestionBlock = ({
         />
       ))}
     </div>
-    <style jsx>{`
-      @import 'src/theme';
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-      .questionBlock {
-        display: flex;
+        .questionBlock {
+          display: flex;
 
-        background-color: #eaeaea;
-        border: 2px solid #c5c5c5;
-        flex-flow: row wrap;
-        padding: 0.4rem;
+          background-color: #eaeaea;
+          border: 2px solid #c5c5c5;
+          flex-flow: row wrap;
+          padding: 0.4rem;
 
-        &.active {
-          border: 2px solid rgb(0, 97, 0);
-          background-color: rgb(198, 293, 206);
-        }
-
-        .index {
-          color: $color-primary-strong;
-          font-weight: bold;
-        }
-
-        .index,
-        .timeLimit,
-        .showSolution,
-        .sessionStatus {
-          flex: 1 1 33%;
-          margin-bottom: 0.2rem;
-        }
-
-        .showSolution {
-          text-align: center;
-        }
-
-        .sessionStatus {
-          font-size: 1.1rem;
-          text-align: right;
-
-          > :global(icon) {
-            margin: 0;
+          &.active {
+            border: 2px solid rgb(0, 97, 0);
+            background-color: rgb(198, 293, 206);
           }
-        }
 
-        .questions {
-          flex: 0 0 100%;
-          height: 100%;
-          background-color: white;
+          .index {
+            color: $color-primary-strong;
+            font-weight: bold;
+          }
 
-          > :global(*) {
-            border: 1px solid grey;
+          .index,
+          .timeLimit,
+          .showSolution,
+          .sessionStatus {
+            flex: 1 1 33%;
+            margin-bottom: 0.2rem;
+          }
 
-            &:not(:first-child) {
-              margin-top: 0.2rem;
+          .showSolution {
+            text-align: center;
+          }
+
+          .sessionStatus {
+            font-size: 1.1rem;
+            text-align: right;
+
+            > :global(icon) {
+              margin: 0;
+            }
+          }
+
+          .questions {
+            flex: 0 0 100%;
+            height: 100%;
+            background-color: white;
+
+            > :global(*) {
+              border: 1px solid grey;
+
+              &:not(:first-child) {
+                margin-top: 0.2rem;
+              }
             }
           }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

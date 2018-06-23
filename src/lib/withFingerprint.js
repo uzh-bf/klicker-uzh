@@ -25,8 +25,8 @@ export default (ComposedComponent) => {
 
   const WithFingerpint = props => <ComposedComponent {...props} fp={fingerprint} />
 
-  WithFingerpint.displayName = `WithFingerprint(${ComposedComponent.displayName ||
-    ComposedComponent.name})`
+  WithFingerpint.displayName = `WithFingerprint(${ComposedComponent.displayName
+    || ComposedComponent.name})`
 
   return WithFingerpint
 }

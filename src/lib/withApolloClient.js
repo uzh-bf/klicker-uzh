@@ -6,9 +6,9 @@ import { getDataFromTree } from 'react-apollo'
 import Head from 'next/head'
 import initApollo from './initApollo'
 
-export default App =>
-  class Apollo extends React.Component {
+export default App => class Apollo extends React.Component {
     static displayName = 'withApollo(App)'
+
     static async getInitialProps(ctx) {
       const { Component, router } = ctx
 
@@ -69,4 +69,4 @@ export default App =>
     render() {
       return <App {...this.props} apolloClient={this.apolloClient} />
     }
-  }
+}

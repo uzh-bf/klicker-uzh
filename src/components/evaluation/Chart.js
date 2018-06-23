@@ -3,7 +3,9 @@ import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
 
-import { BarChart, StackChart, PieChart, TableChart, CloudChart, HistogramChart } from '.'
+import {
+  BarChart, StackChart, PieChart, TableChart, CloudChart, HistogramChart,
+} from '.'
 import { SESSION_STATUS } from '../../constants'
 import { statisticsShape } from '../../propTypes'
 
@@ -103,23 +105,29 @@ function Chart({
           )
         }
 
-        return <div>This chart type is not implemented yet.</div>
+        return (
+          <div>
+This chart type is not implemented yet.
+          </div>
+        )
       })()}
 
-      <style jsx>{`
-        .chart {
-          height: 100%;
-          width: 100%;
-
-          .noChart {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-
+      <style jsx>
+        {`
+          .chart {
             height: 100%;
+            width: 100%;
+
+            .noChart {
+              display: flex;
+              justify-content: center;
+              align-items: center;
+
+              height: 100%;
+            }
           }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   )
 }

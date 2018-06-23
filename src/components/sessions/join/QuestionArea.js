@@ -4,7 +4,9 @@ import classNames from 'classnames'
 import _without from 'lodash/without'
 import { FormattedMessage } from 'react-intl'
 import { convertFromRaw } from 'draft-js'
-import { compose, withStateHandlers, withHandlers, withProps } from 'recompose'
+import {
+  compose, withStateHandlers, withHandlers, withProps,
+} from 'recompose'
 
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
 import { ActionMenu, Collapser } from '../../common'
@@ -105,8 +107,8 @@ function QuestionArea({
         }
 
         const {
- content, description, options, type,
-} = currentQuestion
+          content, description, options, type,
+        } = currentQuestion
 
         // if the content is set, parse it and convert into a content state
         const contentState = content ? content |> JSON.parse |> convertFromRaw : null
@@ -165,80 +167,82 @@ function QuestionArea({
         )
       })()}
 
-      <style jsx>{`
-        @import 'src/theme';
+      <style jsx>
+        {`
+          @import 'src/theme';
 
-        .questionArea {
-          display: none;
-
-          flex: 1;
-
-          background-color: white;
-
-          > div {
-            display: flex;
-
-            flex-direction: column;
+          .questionArea {
+            display: none;
 
             flex: 1;
-          }
 
-          &.active {
-            display: flex;
-          }
+            background-color: white;
 
-          .header {
-            display: none;
-          }
+            > div {
+              display: flex;
 
-          .space {
-            margin: 1rem;
-          }
+              flex-direction: column;
 
-          .options,
-          .padded {
-            padding: 1rem;
-          }
+              flex: 1;
+            }
 
-          .collapser {
-            flex: 0 0 auto;
-
-            background-color: $color-primary-20p;
-            border-bottom: 1px solid $color-primary;
-            padding: 0.5rem;
-          }
-
-          .options {
-            margin-top: 1rem;
-            flex: 1 1 50%;
-
-            overflow-y: auto;
-          }
-
-          @include desktop-tablet-only {
-            display: flex;
-            flex-direction: column;
-
-            border: 1px solid $color-primary;
-            margin-right: 0.25rem;
+            &.active {
+              display: flex;
+            }
 
             .header {
-              display: block;
+              display: none;
+            }
+
+            .space {
               margin: 1rem;
             }
 
+            .options,
+            .padded {
+              padding: 1rem;
+            }
+
             .collapser {
-              border: 1px solid $color-primary;
-              margin: 0 1rem;
+              flex: 0 0 auto;
+
+              background-color: $color-primary-20p;
+              border-bottom: 1px solid $color-primary;
+              padding: 0.5rem;
             }
 
             .options {
-              padding: 0;
-              margin: 1rem 1rem 0 1rem;
+              margin-top: 1rem;
+              flex: 1 1 50%;
+
+              overflow-y: auto;
+            }
+
+            @include desktop-tablet-only {
+              display: flex;
+              flex-direction: column;
+
+              border: 1px solid $color-primary;
+              margin-right: 0.25rem;
+
+              .header {
+                display: block;
+                margin: 1rem;
+              }
+
+              .collapser {
+                border: 1px solid $color-primary;
+                margin: 0 1rem;
+              }
+
+              .options {
+                padding: 0;
+                margin: 1rem 1rem 0 1rem;
+              }
             }
           }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   )
 }
@@ -273,8 +277,7 @@ export default compose(
     }),
     {
       handleActiveChoicesChange: ({ inputValue }) => (choice, type) => {
-        const validateChoices = newValue =>
-          (type === QUESTION_TYPES.SC ? newValue.length === 1 : newValue.length > 0)
+        const validateChoices = newValue => (type === QUESTION_TYPES.SC ? newValue.length === 1 : newValue.length > 0)
 
         if (inputValue && type === QUESTION_TYPES.MC) {
           // if the choice is already active, remove it
@@ -332,12 +335,9 @@ export default compose(
     },
   ),
   withHandlers({
-    handleActiveChoicesChange: ({ handleActiveChoicesChange }) => type => choice => () =>
-      handleActiveChoicesChange(choice, type),
-    handleActiveQuestionChange: ({ handleActiveQuestionChange }) => index => () =>
-      handleActiveQuestionChange(index),
-    handleCompleteQuestion: ({ handleCompleteQuestion }) => index => () =>
-      handleCompleteQuestion(index),
+    handleActiveChoicesChange: ({ handleActiveChoicesChange }) => type => choice => () => handleActiveChoicesChange(choice, type),
+    handleActiveQuestionChange: ({ handleActiveQuestionChange }) => index => () => handleActiveQuestionChange(index),
+    handleCompleteQuestion: ({ handleCompleteQuestion }) => index => () => handleCompleteQuestion(index),
     handleSubmit: ({
       activeQuestion,
       questions,

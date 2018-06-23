@@ -37,7 +37,11 @@ storiesOf('confusion', module)
       labels={{ max: 'High', mid: 'Okay', min: 'Low' }}
       max={10}
       min={-10}
-      title={<h2>Speed</h2>}
+      title={(
+        <h2>
+Speed
+        </h2>
+)}
     />
   ))
   .add('ConfusionBarometer', () => <BarometerWithState confusionTS={data} intl={intlMock} />)

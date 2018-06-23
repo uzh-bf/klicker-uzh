@@ -88,44 +88,46 @@ const FREECreationOptions = ({
       </Form.Field>
     )}
 
-    <style jsx>{`
-      @import 'src/theme';
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-      .FREECreationOptions {
-        @include tooltip-icon;
+        .FREECreationOptions {
+          @include tooltip-icon;
 
-        .optionsChooser {
-          display: flex;
+          .optionsChooser {
+            display: flex;
 
-          > :global(*):not(:last-child) {
-            margin-right: 1rem;
-          }
-        }
-
-        .range {
-          display: flex;
-          flex-direction: column;
-
-          margin-top: 1rem;
-
-          :global(.field) > label {
-            font-size: 1rem;
+            > :global(*):not(:last-child) {
+              margin-right: 1rem;
+            }
           }
 
-          @include desktop-tablet-only {
-            flex-direction: row;
+          .range {
+            display: flex;
+            flex-direction: column;
 
-            :global(.field) {
-              width: 10rem;
+            margin-top: 1rem;
 
-              &:not(:last-child) {
-                margin-right: 1rem;
+            :global(.field) > label {
+              font-size: 1rem;
+            }
+
+            @include desktop-tablet-only {
+              flex-direction: row;
+
+              :global(.field) {
+                width: 10rem;
+
+                &:not(:last-child) {
+                  margin-right: 1rem;
+                }
               }
             }
           }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

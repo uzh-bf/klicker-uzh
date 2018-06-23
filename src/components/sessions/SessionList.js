@@ -63,7 +63,11 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
           }
 
           if (error) {
-            return <Message error>{error.message}</Message>
+            return (
+              <Message error>
+                {error.message}
+              </Message>
+            )
           }
 
           if (sessions.length === 0) {
@@ -130,8 +134,11 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
                     <FormattedMessage
                       defaultMessage="Running / paused sessions"
                       id="sessionList.title.runningSession"
-                    />{' '}
-                    ({runningSessions.length + pausedSessions.length})
+                    />
+                    {' '}
+                    (
+                    {runningSessions.length + pausedSessions.length}
+                    )
                   </h2>
                   <div className="sessions">
                     {[...runningSessions, ...pausedSessions].map(running => (
@@ -156,8 +163,11 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
                     <FormattedMessage
                       defaultMessage="Planned sessions"
                       id="sessionList.title.plannedSessions"
-                    />{' '}
-                    ({remainingSessions.length})
+                    />
+                    {' '}
+                    (
+                    {remainingSessions.length}
+                    )
                   </h2>
                   {remainingSessions.map(session => (
                     <div className="session" key={session.id}>
@@ -173,8 +183,11 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
                     <FormattedMessage
                       defaultMessage="Completed sessions"
                       id="sessionList.title.completedSessions"
-                    />{' '}
-                    ({completedSessions.length})
+                    />
+                    {' '}
+                    (
+                    {completedSessions.length}
+                    )
                   </h2>
                   {completedSessions.map(session => (
                     <div className="session" key={session.id}>
@@ -188,28 +201,30 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
         }}
       </Query>
 
-      <style jsx>{`
-        @import 'src/theme';
+      <style jsx>
+        {`
+          @import 'src/theme';
 
-        .session,
-        .sessions {
-          margin-bottom: 1rem;
-          padding: 0.5rem;
-          border: 1px solid lightgrey;
-          background-color: #f9f9f9;
-        }
-
-        .runningSessions {
-          & > .sessions {
+          .session,
+          .sessions {
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border: 1px solid lightgrey;
             background-color: #f9f9f9;
-            border: 1px solid $color-primary;
           }
 
-          .runningSession:not(:last-child) {
-            margin-bottom: 0.5rem;
+          .runningSessions {
+            & > .sessions {
+              background-color: #f9f9f9;
+              border: 1px solid $color-primary;
+            }
+
+            .runningSession:not(:last-child) {
+              margin-bottom: 0.5rem;
+            }
           }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   )
 }

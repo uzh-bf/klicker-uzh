@@ -26,58 +26,64 @@ const CommonLayout = ({
 }) => (
   <div className="commonLayout">
     <Head>
-      <title>{pageTitle}</title>
+      <title>
+        {pageTitle}
+      </title>
     </Head>
 
     {children}
 
-    <style jsx global>{`
-      @import 'src/theme';
+    <style jsx global>
+      {`
+        @import 'src/theme';
 
-      html {
-        font-size: ${baseFontSize} !important;
-      }
+        html {
+          font-size: ${baseFontSize} !important;
+        }
 
-      body {
-        font-size: 1rem !important;
-      }
+        body {
+          font-size: 1rem !important;
+        }
 
-      h1 {
-        font-size: $font-size-h1 !important;
-      }
+        h1 {
+          font-size: $font-size-h1 !important;
+        }
 
-      h2 {
-        font-size: $font-size-h2 !important;
-      }
+        h2 {
+          font-size: $font-size-h2 !important;
+        }
 
-      h3 {
-        font-size: $font-size-h3 !important;
-      }
+        h3 {
+          font-size: $font-size-h3 !important;
+        }
 
-      #__next {
-        height: ${nextHeight};
-        min-height: ${nextMinHeight};
-      }
+        #__next {
+          height: ${nextHeight};
+          min-height: ${nextMinHeight};
+        }
 
-      .noBorder {
-        border-radius: 0 !important;
-        border: 0 !important;
-        box-shadow: none !important;
-      }
+        .noBorder {
+          border-radius: 0 !important;
+          border: 0 !important;
+          box-shadow: none !important;
+        }
 
-      /* FIXME: workarounds for modal placement */
-      .ui.dimmer {
-        display: flex !important;
-      }
-      .ui.modal {
-        margin-top: 0;
-      }
-    `}</style>
-    <style jsx>{`
-      .commonLayout {
-        height: 100%;
-      }
-    `}</style>
+        /* FIXME: workarounds for modal placement */
+        .ui.dimmer {
+          display: flex !important;
+        }
+        .ui.modal {
+          margin-top: 0;
+        }
+      `}
+    </style>
+    <style jsx>
+      {`
+        .commonLayout {
+          height: 100%;
+        }
+      `}
+    </style>
   </div>
 )
 

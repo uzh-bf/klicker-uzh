@@ -108,15 +108,17 @@ const Possibilities = ({
       return null
     })()}
 
-    <style jsx>{`
-      .possibilities {
-        h2 {
-          font-size: 1.2rem;
-          line-height: 1.2rem;
-          margin-bottom: 0.5rem;
+    <style jsx>
+      {`
+        .possibilities {
+          h2 {
+            font-size: 1.2rem;
+            line-height: 1.2rem;
+            margin-bottom: 0.5rem;
+          }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

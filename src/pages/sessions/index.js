@@ -63,24 +63,26 @@ const Index = ({
       />
     </div>
 
-    <style jsx>{`
-      @import 'src/theme';
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-      .sessionList {
-        padding: 1rem 0.7rem;
-
-        height: 100%;
-      }
-
-      @include desktop-tablet-only {
         .sessionList {
-          margin: auto;
-          padding: 2rem;
+          padding: 1rem 0.7rem;
 
-          max-width: $max-width;
+          height: 100%;
         }
-      }
-    `}</style>
+
+        @include desktop-tablet-only {
+          .sessionList {
+            margin: auto;
+            padding: 2rem;
+
+            max-width: $max-width;
+          }
+        }
+      `}
+    </style>
   </TeacherLayout>
 )
 

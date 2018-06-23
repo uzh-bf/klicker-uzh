@@ -30,9 +30,12 @@ const Session = ({
 
   return (
     <div className="session">
-      <h2 className="title">{name}</h2>
+      <h2 className="title">
+        {name}
+      </h2>
       <div className="date">
-        <FormattedMessage defaultMessage="Created on" id="sessionList.string.createdOn" />{' '}
+        <FormattedMessage defaultMessage="Created on" id="sessionList.string.createdOn" />
+        {' '}
         {moment(createdAt).format('DD.MM.YY HH:mm')}
       </div>
 
@@ -48,21 +51,21 @@ const Session = ({
           </div>
         )}
         {blocks.map(({
- id: blockId, instances, showSolutions, timeLimit,
-}) => (
-  <div className="block" key={blockId}>
-    <QuestionBlock
-      noDetails
-      questions={instances.map(({ id: instanceId, question, version }) => ({
+          id: blockId, instances, showSolutions, timeLimit,
+        }) => (
+          <div className="block" key={blockId}>
+            <QuestionBlock
+              noDetails
+              questions={instances.map(({ id: instanceId, question, version }) => ({
                 id: instanceId,
                 title: question.title,
                 type: question.type,
                 version,
               }))}
-      showSolutions={showSolutions}
-      timeLimit={timeLimit}
-    />
-  </div>
+              showSolutions={showSolutions}
+              timeLimit={timeLimit}
+            />
+          </div>
         ))}
         <div className="actionArea">
           <a href={`/sessions/evaluation/${id}`} target="_blank">
@@ -71,8 +74,8 @@ const Session = ({
               Evaluation
             </Button>
           </a>
-          {button &&
-            !button.hidden && (
+          {button
+            && !button.hidden && (
               <Button
                 icon
                 primary
@@ -84,78 +87,80 @@ const Session = ({
                 <Icon name={button.icon} />
                 {button.message}
               </Button>
-            )}
+          )}
         </div>
       </div>
 
-      <style jsx>{`
-        @import 'src/theme';
+      <style jsx>
+        {`
+          @import 'src/theme';
 
-        .session,
-        .details {
-          display: flex;
-          flex-direction: column;
-          flex: 1;
-        }
-
-        .title {
-          color: $color-primary-strong;
-        }
-
-        .title,
-        .date {
-          margin: auto;
-          margin-bottom: 0.5rem;
-        }
-
-        .block {
-          margin-bottom: 0.5rem;
-        }
-
-        .actionArea {
-          display: flex;
-          flex-direction: column;
-
-          :global(.button) {
-            margin-right: 0 !important;
-          }
-
-          :global(.lastButton) {
-            margin-top: 0.3rem !important;
-          }
-        }
-
-        @include desktop-tablet-only {
           .session,
           .details {
-            flex-flow: row wrap;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
           }
+
+          .title {
+            color: $color-primary-strong;
+          }
+
           .title,
           .date {
-            flex: 0 0 50%;
-            margin: 0;
-          }
-          .title {
-            font-size: 1.2rem;
+            margin: auto;
             margin-bottom: 0.5rem;
           }
-          .date {
-            align-self: center;
-            text-align: right;
-          }
-          .details {
-            //border: 1px solid lightgrey;
-          }
+
           .block {
-            flex: 1;
-            margin: 0;
-            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
           }
+
           .actionArea {
-            align-self: flex-end;
+            display: flex;
+            flex-direction: column;
+
+            :global(.button) {
+              margin-right: 0 !important;
+            }
+
+            :global(.lastButton) {
+              margin-top: 0.3rem !important;
+            }
           }
-        }
-      `}</style>
+
+          @include desktop-tablet-only {
+            .session,
+            .details {
+              flex-flow: row wrap;
+            }
+            .title,
+            .date {
+              flex: 0 0 50%;
+              margin: 0;
+            }
+            .title {
+              font-size: 1.2rem;
+              margin-bottom: 0.5rem;
+            }
+            .date {
+              align-self: center;
+              text-align: right;
+            }
+            .details {
+              //border: 1px solid lightgrey;
+            }
+            .block {
+              flex: 1;
+              margin: 0;
+              margin-right: 0.5rem;
+            }
+            .actionArea {
+              align-self: flex-end;
+            }
+          }
+        `}
+      </style>
     </div>
   )
 }

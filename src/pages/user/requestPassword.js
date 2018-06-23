@@ -49,28 +49,34 @@ const RequestPassword = ({ intl }) => (
                   requestPassword({ variables: { email } })
                 }}
               />
-              {error && <Message error>{error.message}</Message>}
+              {error && (
+              <Message error>
+                {error.message}
+              </Message>
+              )}
             </React.Fragment>
           )
         }}
       </Mutation>
 
-      <style jsx>{`
-        @import 'src/theme';
+      <style jsx>
+        {`
+          @import 'src/theme';
 
-        .resetPassword {
-          padding: 1rem;
+          .resetPassword {
+            padding: 1rem;
 
-          h1 {
-            margin-top: 0;
+            h1 {
+              margin-top: 0;
+            }
+
+            @include desktop-tablet-only {
+              margin: 0 15%;
+              width: 500px;
+            }
           }
-
-          @include desktop-tablet-only {
-            margin: 0 15%;
-            width: 500px;
-          }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   </StaticLayout>
 )

@@ -32,11 +32,22 @@ const Login = ({ intl }) => (
         {(login, { loading, error }) => (
           <React.Fragment>
             <Message info>
-              <Message.Header>Public Beta</Message.Header>
+              <Message.Header>
+Public Beta
+              </Message.Header>
               <Message.Content>
-                To participate in the Klicker 2018 public beta with a legacy account, please{' '}
-                <Link href="/user/requestPassword">reset your password</Link> first. If you need a
-                new account, you can <Link href="/user/registration">sign up here</Link>.
+                To participate in the Klicker 2018 public beta with a legacy account, please
+                {' '}
+                <Link href="/user/requestPassword">
+reset your password
+                </Link>
+                {' '}
+first. If you need a
+                new account, you can
+                <Link href="/user/registration">
+sign up here
+                </Link>
+                .
               </Message.Content>
             </Message>
             <LoginForm
@@ -55,40 +66,48 @@ const Login = ({ intl }) => (
                 Router.push('/questions')
               }}
             />
-            {error && <div className="errorMessage message">Login failed ({error.message})</div>}
+            {error && (
+              <div className="errorMessage message">
+                Login failed (
+                {error.message}
+                )
+              </div>
+            )}
           </React.Fragment>
         )}
       </Mutation>
 
-      <style jsx>{`
-        @import 'src/theme';
+      <style jsx>
+        {`
+          @import 'src/theme';
 
-        .login {
-          padding: 1rem;
+          .login {
+            padding: 1rem;
 
-          h1 {
-            margin-top: 0;
-          }
+            h1 {
+              margin-top: 0;
+            }
 
-          .message {
-            font-weight: bold;
-          }
-          .errorMessage {
-            color: $color-error-font;
-          }
-          .successMessage {
-            color: $color-success;
-          }
+            .message {
+              font-weight: bold;
+            }
+            .errorMessage {
+              color: $color-error-font;
+            }
+            .successMessage {
+              color: $color-success;
+            }
 
-          .marginTop {
-            margin-top: 0.5rem;
-          }
+            .marginTop {
+              margin-top: 0.5rem;
+            }
 
-          @include desktop-tablet-only {
-            width: 500px;
+            @include desktop-tablet-only {
+              width: 500px;
+            }
           }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   </StaticLayout>
 )

@@ -13,30 +13,32 @@ function Button({ children, ...props }) {
         {children}
       </SemanticButton>
 
-      <style jsx>{`
-        @import 'src/theme';
+      <style jsx>
+        {`
+          @import 'src/theme';
 
-        .klicker-button {
-          > :global(button) {
-            background-color: #ffffff;
-            border: 1px solid $color-primary-20p;
+          .klicker-button {
+            > :global(button) {
+              background-color: #ffffff;
+              border: 1px solid $color-primary-20p;
 
-            &:hover,
-            &:focus {
-              background-color: $color-primary-10p;
+              &:hover,
+              &:focus {
+                background-color: $color-primary-10p;
+              }
+            }
+
+            > :global(button.active) {
+              background-color: #ffffff;
+              border: 1px solid $color-primary;
+
+              &:focus {
+                background-color: $color-primary-10p;
+              }
             }
           }
-
-          > :global(button.active) {
-            background-color: #ffffff;
-            border: 1px solid $color-primary;
-
-            &:focus {
-              background-color: $color-primary-10p;
-            }
-          }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   )
 }

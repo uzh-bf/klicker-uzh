@@ -63,16 +63,15 @@ const Join = ({
   handleNewFeedback,
   handleNewResponse,
 }) => {
-  const title =
-    sidebarActiveItem === 'activeQuestion'
-      ? intl.formatMessage({
-        defaultMessage: 'Active Question',
-        id: 'joinSessionactiveQuestion.title',
-      })
-      : intl.formatMessage({
-        defaultMessage: 'Feedback-Channel',
-        id: 'joinSessionfeedbackChannel.title',
-      })
+  const title = sidebarActiveItem === 'activeQuestion'
+    ? intl.formatMessage({
+      defaultMessage: 'Active Question',
+      id: 'joinSessionactiveQuestion.title',
+    })
+    : intl.formatMessage({
+      defaultMessage: 'Feedback-Channel',
+      id: 'joinSessionfeedbackChannel.title',
+    })
 
   return (
     <StudentLayout
@@ -117,49 +116,51 @@ const Join = ({
           />
         )}
 
-        <style jsx>{`
-          @import 'src/theme';
+        <style jsx>
+          {`
+            @import 'src/theme';
 
-          .joinSession {
-            display: flex;
-            height: 100%;
+            .joinSession {
+              display: flex;
+              height: 100%;
 
-            background-color: lightgray;
+              background-color: lightgray;
 
-            > * {
-              flex: 0 0 50%;
-            }
-
-            .questionArea,
-            .feedbackArea {
-              padding: 1rem;
-
-              &.inactive {
-                display: none;
-              }
-            }
-
-            @include desktop-tablet-only {
-              padding: 1rem;
-
-              .questionArea {
-                border: 1px solid $color-primary;
-                background-color: white;
-                margin-right: 0.25rem;
+              > * {
+                flex: 0 0 50%;
               }
 
+              .questionArea,
               .feedbackArea {
-                border: 1px solid $color-primary;
-                background-color: white;
-                margin-left: 0.25rem;
+                padding: 1rem;
 
                 &.inactive {
-                  display: block;
+                  display: none;
+                }
+              }
+
+              @include desktop-tablet-only {
+                padding: 1rem;
+
+                .questionArea {
+                  border: 1px solid $color-primary;
+                  background-color: white;
+                  margin-right: 0.25rem;
+                }
+
+                .feedbackArea {
+                  border: 1px solid $color-primary;
+                  background-color: white;
+                  margin-left: 0.25rem;
+
+                  &.inactive {
+                    display: block;
+                  }
                 }
               }
             }
-          }
-        `}</style>
+          `}
+        </style>
       </div>
     </StudentLayout>
   )

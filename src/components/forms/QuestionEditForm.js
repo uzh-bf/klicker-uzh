@@ -5,12 +5,14 @@ import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
 import { EditorState, ContentState, convertFromRaw } from 'draft-js'
 import { FormattedMessage, intlShape } from 'react-intl'
-import { Button, Form, Icon, Menu, Message } from 'semantic-ui-react'
+import {
+  Button, Form, Icon, Menu, Message,
+} from 'semantic-ui-react'
 import { Formik } from 'formik'
 
 import { FormikInput } from '.'
 import { ContentInput, TagInput } from '../questions'
-import { FREECreationOptions, SCCreationOptions } from '../../components/questionTypes'
+import { FREECreationOptions, SCCreationOptions } from '../questionTypes'
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../constants'
 
 // form validation
@@ -164,12 +166,12 @@ const QuestionEditForm = ({
                   id: 'createQuestion.titleInput.label',
                 })}
                 name="title"
-                tooltip={
+                tooltip={(
                   <FormattedMessage
                     defaultMessage="Enter a short summarizing title for the question. This is only visible to you!"
                     id="createQuestion.titleInput.tooltip"
                   />
-                }
+)}
                 touched={touched.title}
                 type="text"
                 value={values.title}
@@ -268,107 +270,109 @@ const QuestionEditForm = ({
       }}
     </Formik>
 
-    <style jsx>{`
-      @import 'src/theme';
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-      .questionEditForm > :global(form) {
-        display: flex;
-        flex-direction: column;
-
-        padding: 1rem;
-
-        .questionInput,
-        .questionPreview {
-          margin-bottom: 1rem;
-        }
-
-        // HACK: currently one field item in question div to full-fill bigger font-size
-        .questionInput > :global(.field > label) {
-          font-size: 1.2rem;
-        }
-
-        .questionVersion > :global(.field),
-        .actionArea {
+        .questionEditForm > :global(form) {
           display: flex;
           flex-direction: column;
 
-          :global(button) {
-            margin-right: 0;
+          padding: 1rem;
+
+          .questionInput,
+          .questionPreview {
+            margin-bottom: 1rem;
           }
-        }
 
-        @supports (grid-gap: 1rem) {
-          @include desktop-tablet-only {
-            display: grid;
+          // HACK: currently one field item in question div to full-fill bigger font-size
+          .questionInput > :global(.field > label) {
+            font-size: 1.2rem;
+          }
 
-            grid-gap: 1rem;
-            grid-template-columns: 1fr 4fr;
-            grid-template-rows: auto;
-            grid-template-areas:
-              'message message'
-              'type title'
-              'tags tags'
-              'version version'
-              'content content'
-              'options options'
-              'actions actions';
+          .questionVersion > :global(.field),
+          .actionArea {
+            display: flex;
+            flex-direction: column;
 
-            .questionInput {
-              margin-bottom: 0;
+            :global(button) {
+              margin-right: 0;
             }
+          }
 
-            .infoMessage {
-              grid-area: message;
+          @supports (grid-gap: 1rem) {
+            @include desktop-tablet-only {
+              display: grid;
 
-              > :global(.message) {
+              grid-gap: 1rem;
+              grid-template-columns: 1fr 4fr;
+              grid-template-rows: auto;
+              grid-template-areas:
+                'message message'
+                'type title'
+                'tags tags'
+                'version version'
+                'content content'
+                'options options'
+                'actions actions';
+
+              .questionInput {
                 margin-bottom: 0;
+              }
+
+              .infoMessage {
+                grid-area: message;
+
+                > :global(.message) {
+                  margin-bottom: 0;
+                }
+              }
+
+              .questionTitle {
+                grid-area: title;
+              }
+
+              .questionType {
+                grid-area: type;
+              }
+
+              .questionVersion {
+                grid-area: version;
+              }
+
+              .questionTags {
+                grid-area: tags;
+              }
+
+              .questionPreview {
+                grid-area: preview;
+                margin-bottom: 0;
+              }
+
+              .questionContent {
+                grid-area: content;
+              }
+
+              .questionOptions {
+                grid-area: options;
+              }
+
+              .actionArea {
+                grid-area: actions;
+                flex-direction: row;
+
+                justify-content: space-between;
               }
             }
 
-            .questionTitle {
-              grid-area: title;
+            @include desktop-only {
+              margin: 0 20%;
+              padding: 1rem 0;
             }
-
-            .questionType {
-              grid-area: type;
-            }
-
-            .questionVersion {
-              grid-area: version;
-            }
-
-            .questionTags {
-              grid-area: tags;
-            }
-
-            .questionPreview {
-              grid-area: preview;
-              margin-bottom: 0;
-            }
-
-            .questionContent {
-              grid-area: content;
-            }
-
-            .questionOptions {
-              grid-area: options;
-            }
-
-            .actionArea {
-              grid-area: actions;
-              flex-direction: row;
-
-              justify-content: space-between;
-            }
-          }
-
-          @include desktop-only {
-            margin: 0 20%;
-            padding: 1rem 0;
           }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

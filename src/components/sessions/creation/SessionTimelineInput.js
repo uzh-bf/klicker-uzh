@@ -41,15 +41,18 @@ const SessionTimelineInput = ({ value, onChange }) => {
       {value.map((block, index) => (
         <div className="timelineItem" key={block.id}>
           <div className="title">
-            <span>Block {index + 1}</span>
+            <span>
+              Block
+              {index + 1}
+            </span>
             <Icon name="settings" />
           </div>
 
           <div className="questions">
             {block.questions.map(({
- id, title, type, version,
-}) => (
-  <QuestionSingle id={id} title={title} type={type} version={version} />
+              id, title, type, version,
+            }) => (
+              <QuestionSingle id={id} title={title} type={type} version={version} />
             ))}
           </div>
 
@@ -89,77 +92,79 @@ const SessionTimelineInput = ({ value, onChange }) => {
           </div>
         )}
       </div>
-      <style jsx>{`
-        @import 'src/theme';
+      <style jsx>
+        {`
+          @import 'src/theme';
 
-        .sessionTimeline {
-          display: flex;
-          flex-direction: column;
-
-          height: 100%;
-          padding: 0.5rem;
-
-          > .timelineItem {
+          .sessionTimeline {
             display: flex;
             flex-direction: column;
-            max-height: 25rem;
-            overflow: hidden;
 
-            .questions {
-              overflow-y: auto;
-            }
-
+            height: 100%;
             padding: 0.5rem;
 
-            > :global(*):not(:first-child) {
-              margin-top: -2px;
-            }
-
-            .title {
+            > .timelineItem {
               display: flex;
-              flex-direction: row;
-              justify-content: space-between;
+              flex-direction: column;
+              max-height: 25rem;
+              overflow: hidden;
 
-              font-weight: bold;
-              margin-bottom: 0.5rem;
-
-              a {
-                color: $color-primary;
-                font-size: 1.25rem;
+              .questions {
+                overflow-y: auto;
               }
-            }
 
-            .message,
-            .questionDropzone {
-              margin-top: 0.5rem;
-            }
-
-            .questions {
-              font-size: 0.9rem;
+              padding: 0.5rem;
 
               > :global(*):not(:first-child) {
                 margin-top: -2px;
               }
+
+              .title {
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+
+                font-weight: bold;
+                margin-bottom: 0.5rem;
+
+                a {
+                  color: $color-primary;
+                  font-size: 1.25rem;
+                }
+              }
+
+              .message,
+              .questionDropzone {
+                margin-top: 0.5rem;
+              }
+
+              .questions {
+                font-size: 0.9rem;
+
+                > :global(*):not(:first-child) {
+                  margin-top: -2px;
+                }
+              }
             }
-          }
 
-          @include desktop-tablet-only {
-            flex-flow: row wrap;
+            @include desktop-tablet-only {
+              flex-flow: row wrap;
 
-            border-left: 1px solid lightgrey;
-            border-bottom: 1px solid lightgrey;
+              border-left: 1px solid lightgrey;
+              border-bottom: 1px solid lightgrey;
 
-            > .timelineItem {
-              width: 15rem;
+              > .timelineItem {
+                width: 15rem;
 
-              &:not(:last-child) {
-                border-right: 1px solid lightgrey;
-                margin-bottom: 0;
+                &:not(:last-child) {
+                  border-right: 1px solid lightgrey;
+                  margin-bottom: 0;
+                }
               }
             }
           }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   )
 }

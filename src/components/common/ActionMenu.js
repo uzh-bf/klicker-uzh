@@ -61,31 +61,32 @@ function ActionMenu({
         </Button>
       </div>
 
-      <style jsx>{`
-        @import 'src/theme';
+      <style jsx>
+        {`
+          @import 'src/theme';
 
-        .actionMenu {
-          align-items: center;
-          border-top: 1px solid $color-primary-20p;
-          display: flex;
-          flex-direction: row;
+          .actionMenu {
+            align-items: center;
+            border-top: 1px solid $color-primary-20p;
+            display: flex;
+            flex-direction: row;
 
-          padding: 0.5rem 1rem;
+            padding: 0.5rem 1rem;
 
-          .progress {
-            flex: 1;
-            margin-right: 1rem;
+            .progress {
+              flex: 1;
+              margin-right: 1rem;
 
-            :global(.ui.progress) {
-              margin: 0;
+              :global(.ui.progress) {
+                margin: 0;
+              }
             }
-          }
 
-          .actions {
-            flex: 0 0 7rem;
-          }
+            .actions {
+              flex: 0 0 7rem;
+            }
 
-          /* :global(.item.active) {
+            /* :global(.item.active) {
             background-color: $color-primary-50p;
 
             &:hover {
@@ -93,11 +94,12 @@ function ActionMenu({
             }
           } */
 
-          :global(.item.submitButton button.button) {
-            margin: 0;
+            :global(.item.submitButton button.button) {
+              margin: 0;
+            }
           }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   )
 }

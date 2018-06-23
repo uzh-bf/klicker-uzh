@@ -2,10 +2,14 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { intlShape } from 'react-intl'
-import { Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
+import {
+  Checkbox, Dropdown, Menu, Icon,
+} from 'semantic-ui-react'
 
 import { CommonLayout } from '.'
-import { Info, Possibilities, Statistics, VisualizationType } from '../evaluation'
+import {
+  Info, Possibilities, Statistics, VisualizationType,
+} from '../evaluation'
 import { QUESTION_GROUPS, CHART_TYPES, QUESTION_TYPES } from '../../constants'
 
 const propTypes = {
@@ -122,7 +126,11 @@ function EvaluationLayout({
                     onClick={() => onChangeActiveInstance(index)}
                   >
                     <Icon name={blockStatus === 'ACTIVE' ? 'comments' : 'checkmark'} />
-                    {title.length > 15 ? `${title.substring(0, 15)}...` : title} ({count})
+                    {title.length > 15 ? `${title.substring(0, 15)}...` : title}
+                    {' '}
+(
+                    {count}
+                    )
                   </Menu.Item>
                 ))}
 
@@ -138,16 +146,18 @@ function EvaluationLayout({
         })()}
 
         <div className="questionDetails">
-          <p>{description}</p>
+          <p>
+            {description}
+          </p>
         </div>
 
         <div className="info">
           <Info totalResponses={totalResponses} />
           {/* don't show 'show solution' check box for free and free range questions
           and word cloud charts */
-          type !== QUESTION_TYPES.FREE &&
-            type !== QUESTION_TYPES.FREE_RANGE &&
-            activeVisualization !== CHART_TYPES.CLOUD_CHART && (
+          type !== QUESTION_TYPES.FREE
+            && type !== QUESTION_TYPES.FREE_RANGE
+            && activeVisualization !== CHART_TYPES.CLOUD_CHART && (
               <Checkbox
                 toggle
                 defaultChecked={showSolution}
@@ -157,7 +167,7 @@ function EvaluationLayout({
                 })}
                 onChange={onToggleShowSolution}
               />
-            )}
+          )}
 
           <VisualizationType
             activeVisualization={activeVisualization}
@@ -167,7 +177,9 @@ function EvaluationLayout({
           />
         </div>
 
-        <div className="chart">{children}</div>
+        <div className="chart">
+          {children}
+        </div>
 
         {activeVisualization !== CHART_TYPES.TABLE && (
           <React.Fragment>
@@ -183,163 +195,165 @@ function EvaluationLayout({
               </div>
             )}
 
-            {QUESTION_GROUPS.WITH_STATISTICS.includes(type) &&
-              statistics && (
+            {QUESTION_GROUPS.WITH_STATISTICS.includes(type)
+              && statistics && (
                 <div className="statistics">
                   <Statistics {...statistics} withBins={activeVisualization === 'HISTOGRAM'} />
                 </div>
-              )}
+            )}
           </React.Fragment>
         )}
 
-        <style jsx>{`
-          @import 'src/theme';
+        <style jsx>
+          {`
+            @import 'src/theme';
 
-          .evaluationLayout {
-            @supports (grid-gap: 1rem) {
-              @include desktop-tablet-only {
-                display: grid;
-                height: 100vh;
-                max-height: 100vh;
-                max-width: 100vw;
+            .evaluationLayout {
+              @supports (grid-gap: 1rem) {
+                @include desktop-tablet-only {
+                  display: grid;
+                  height: 100vh;
+                  max-height: 100vh;
+                  max-width: 100vw;
 
-                grid-template-columns: auto 17rem;
-                grid-template-rows:
-                  auto
-                  auto
-                  auto
-                  auto
-                  minmax(auto, 100%)
-                  auto;
-                grid-template-areas:
-                  'instanceChooser instanceChooser'
-                  'questionDetails questionDetails'
-                  'graph optionDisplay'
-                  'graph statistics'
-                  'graph statistics'
-                  'info info';
-
-                &.fullScreen {
+                  grid-template-columns: auto 17rem;
+                  grid-template-rows:
+                    auto
+                    auto
+                    auto
+                    auto
+                    minmax(auto, 100%)
+                    auto;
                   grid-template-areas:
                     'instanceChooser instanceChooser'
                     'questionDetails questionDetails'
-                    'graph graph'
-                    'graph graph'
-                    'graph graph'
+                    'graph optionDisplay'
+                    'graph statistics'
+                    'graph statistics'
                     'info info';
-                }
 
-                .instanceChooser {
-                  grid-area: instanceChooser;
-                  padding: 0.3rem;
-                  padding-bottom: 0;
-                  border-bottom: 1px solid $color-primary;
+                  &.fullScreen {
+                    grid-template-areas:
+                      'instanceChooser instanceChooser'
+                      'questionDetails questionDetails'
+                      'graph graph'
+                      'graph graph'
+                      'graph graph'
+                      'info info';
+                  }
 
-                  :global(.menu) {
-                    min-height: 0;
-                    margin-bottom: -1px;
+                  .instanceChooser {
+                    grid-area: instanceChooser;
+                    padding: 0.3rem;
+                    padding-bottom: 0;
                     border-bottom: 1px solid $color-primary;
 
-                    :global(.item) {
-                      font-size: 0.7rem;
-                      padding: 0 0.6rem;
-                      margin: 0 0 -1px 0;
-                      height: 2rem;
+                    :global(.menu) {
+                      min-height: 0;
+                      margin-bottom: -1px;
+                      border-bottom: 1px solid $color-primary;
+
+                      :global(.item) {
+                        font-size: 0.7rem;
+                        padding: 0 0.6rem;
+                        margin: 0 0 -1px 0;
+                        height: 2rem;
+                      }
+
+                      :global(.item.active) {
+                        border-color: $color-primary;
+                        background-color: $color-primary-background;
+                        border-bottom: 1px solid $color-primary-background;
+                      }
+
+                      :global(.item.hoverable:hover) {
+                        background-color: $color-primary-10p;
+                      }
+
+                      :global(.item.executed) {
+                        color: grey;
+                      }
+                    }
+                  }
+
+                  .instanceDropdown {
+                    font-size: 0.8rem;
+                  }
+
+                  .questionDetails {
+                    grid-area: questionDetails;
+                    align-self: start;
+
+                    background-color: $color-primary-background;
+                    border-bottom: 1px solid $color-primary;
+                    padding: 1rem;
+                    text-align: left;
+
+                    h1 {
+                      font-size: 1.5rem;
+                      line-height: 1.5rem;
+                      margin-bottom: 0.5rem;
                     }
 
-                    :global(.item.active) {
-                      border-color: $color-primary;
-                      background-color: $color-primary-background;
-                      border-bottom: 1px solid $color-primary-background;
-                    }
-
-                    :global(.item.hoverable:hover) {
-                      background-color: $color-primary-10p;
-                    }
-
-                    :global(.item.executed) {
-                      color: grey;
+                    p {
+                      font-size: 1.2rem;
+                      font-weight: bold;
+                      line-height: 1.5rem;
                     }
                   }
-                }
 
-                .instanceDropdown {
-                  font-size: 0.8rem;
-                }
+                  .chart {
+                    grid-area: graph;
 
-                .questionDetails {
-                  grid-area: questionDetails;
-                  align-self: start;
+                    height: 100%;
+                    padding: 1rem 0.5rem 1rem 1rem;
 
-                  background-color: $color-primary-background;
-                  border-bottom: 1px solid $color-primary;
-                  padding: 1rem;
-                  text-align: left;
-
-                  h1 {
-                    font-size: 1.5rem;
-                    line-height: 1.5rem;
-                    margin-bottom: 0.5rem;
+                    :global(> *) {
+                      border: 1px solid lightgrey;
+                    }
                   }
 
-                  p {
-                    font-size: 1.2rem;
-                    font-weight: bold;
-                    line-height: 1.5rem;
+                  .chartType {
+                    padding: 1rem;
                   }
-                }
 
-                .chart {
-                  grid-area: graph;
-
-                  height: 100%;
-                  padding: 1rem 0.5rem 1rem 1rem;
-
-                  :global(> *) {
-                    border: 1px solid lightgrey;
+                  .optionDisplay,
+                  .statistics {
+                    padding: 1rem 1rem 1rem 0.5rem;
                   }
-                }
 
-                .chartType {
-                  padding: 1rem;
-                }
+                  .info {
+                    grid-area: info;
 
-                .optionDisplay,
-                .statistics {
-                  padding: 1rem 1rem 1rem 0.5rem;
-                }
+                    align-self: end;
 
-                .info {
-                  grid-area: info;
-
-                  align-self: end;
-
-                  display: flex;
-                  flex-direction: row;
-                  align-items: center;
-                  justify-content: space-between;
-                  border-top: 1px solid lightgrey;
-                  background-color: #f3f3f3;
-                  padding: 0.5rem 1rem;
-                }
-
-                .optionDisplay {
-                  grid-area: optionDisplay;
-
-                  h2 {
-                    font-size: 1.5rem;
-                    line-height: 1.5rem;
-                    margin-bottom: 0.5rem;
+                    display: flex;
+                    flex-direction: row;
+                    align-items: center;
+                    justify-content: space-between;
+                    border-top: 1px solid lightgrey;
+                    background-color: #f3f3f3;
+                    padding: 0.5rem 1rem;
                   }
-                }
 
-                .statistics {
-                  grid-area: statistics;
+                  .optionDisplay {
+                    grid-area: optionDisplay;
+
+                    h2 {
+                      font-size: 1.5rem;
+                      line-height: 1.5rem;
+                      margin-bottom: 0.5rem;
+                    }
+                  }
+
+                  .statistics {
+                    grid-area: statistics;
+                  }
                 }
               }
             }
-          }
-        `}</style>
+          `}
+        </style>
       </div>
     </CommonLayout>
   )

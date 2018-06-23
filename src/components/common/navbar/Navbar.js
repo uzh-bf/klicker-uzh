@@ -55,7 +55,9 @@ export const NavbarPres = ({
         >
           <Icon name="sidebar" />
         </Menu.Item>
-        <h1>{title}</h1>
+        <h1>
+          {title}
+        </h1>
       </Menu>
     </div>
 
@@ -145,104 +147,106 @@ export const NavbarPres = ({
       </Query>
     </div>
 
-    <style jsx>{`
-      @import 'src/theme';
-      $background-color: $color-primary-strong;
+    <style jsx>
+      {`
+        @import 'src/theme';
+        $background-color: $color-primary-strong;
 
-      .navbar {
-        color: $color-white;
+        .navbar {
+          color: $color-white;
 
-        display: flex;
-        align-items: center;
-        flex-flow: row wrap;
-        justify-content: space-between;
+          display: flex;
+          align-items: center;
+          flex-flow: row wrap;
+          justify-content: space-between;
 
-        padding: 0;
+          padding: 0;
 
-        background-color: $background-color;
+          background-color: $background-color;
 
-        z-index: 100;
-
-        .sideArea {
-          flex: 1;
-          order: 0;
-
-          h1 {
-            margin: 0;
-            padding: 0 1rem 0 0.5rem;
-            display: flex;
-            align-items: center;
-            font-weight: bold;
-          }
-
-          :global(.sidebar),
-          :global(.menu) {
-            color: $color-white;
-            border-radius: 0;
-            font-size: $font-size-h1;
-            background-color: $background-color;
-          }
-
-          :global(.sidebar.active) {
-            background-color: $color-primary-20p;
-          }
-        }
-
-        .searchArea {
-          flex: 0 0 100%;
-          order: 1;
-
-          padding: 1rem;
-          padding-top: 0.5rem;
-
-          @include desktop-only {
-            padding: 0.2rem 3rem;
-          }
-        }
-
-        .accountArea {
-          display: none;
-
-          :global(.menu) {
-            background-color: $background-color;
-            color: $color-white;
-
-            :global(.item) {
-              color: $color-white;
-              padding-top: 0;
-              padding-bottom: 0;
-            }
-          }
-        }
-
-        @include desktop-tablet-only {
-          flex-wrap: nowrap;
+          z-index: 100;
 
           .sideArea {
-            flex: 0 0 auto;
+            flex: 1;
+            order: 0;
+
+            h1 {
+              margin: 0;
+              padding: 0 1rem 0 0.5rem;
+              display: flex;
+              align-items: center;
+              font-weight: bold;
+            }
+
+            :global(.sidebar),
+            :global(.menu) {
+              color: $color-white;
+              border-radius: 0;
+              font-size: $font-size-h1;
+              background-color: $background-color;
+            }
+
+            :global(.sidebar.active) {
+              background-color: $color-primary-20p;
+            }
           }
 
           .searchArea {
-            flex: 1 1 50%;
+            flex: 0 0 100%;
             order: 1;
 
-            padding: 0.2rem 1rem;
+            padding: 1rem;
+            padding-top: 0.5rem;
+
+            @include desktop-only {
+              padding: 0.2rem 3rem;
+            }
           }
 
           .accountArea {
-            flex: 0 0 auto;
-            order: 2;
+            display: none;
 
-            display: initial;
+            :global(.menu) {
+              background-color: $background-color;
+              color: $color-white;
 
-            :global(.item) {
-              padding-left: 0.5rem;
-              padding-right: 0.5rem;
+              :global(.item) {
+                color: $color-white;
+                padding-top: 0;
+                padding-bottom: 0;
+              }
+            }
+          }
+
+          @include desktop-tablet-only {
+            flex-wrap: nowrap;
+
+            .sideArea {
+              flex: 0 0 auto;
+            }
+
+            .searchArea {
+              flex: 1 1 50%;
+              order: 1;
+
+              padding: 0.2rem 1rem;
+            }
+
+            .accountArea {
+              flex: 0 0 auto;
+              order: 2;
+
+              display: initial;
+
+              :global(.item) {
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+              }
             }
           }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

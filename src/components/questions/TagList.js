@@ -1,6 +1,8 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Button, Icon, List, Loader, Message } from 'semantic-ui-react'
+import {
+  Button, Icon, List, Loader, Message,
+} from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import { Query } from 'react-apollo'
 
@@ -105,7 +107,11 @@ export const TagListPres = ({
           }
 
           if (error) {
-            return <Message error>{error.message}</Message>
+            return (
+              <Message error>
+                {error.message}
+              </Message>
+            )
           }
 
           if (tags.length === 0) {
@@ -122,41 +128,45 @@ export const TagListPres = ({
               onClick={() => handleTagClick(name)}
             >
               <List.Icon name="tag" />
-              <List.Content>{name}</List.Content>
+              <List.Content>
+                {name}
+              </List.Content>
             </List.Item>
           ))
         }}
       </Query>
     </List>
 
-    <style jsx>{`
-      @import 'src/theme';
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-      .tagList {
-        font-size: 0.9rem;
-        min-width: 12rem;
+        .tagList {
+          font-size: 0.9rem;
+          min-width: 12rem;
 
-        :global(.listHeader) {
-          color: grey;
-          font-size: 1rem;
-          font-weight: bold;
-          padding: 0 1rem;
-        }
-        :global(.listHeader.tags),
-        :global(.listHeader.types) {
-          margin-top: 1rem;
-        }
-        :global(.listItem.item) {
-          border-radius: 0;
-          padding: 0.3rem 1rem;
+          :global(.listHeader) {
+            color: grey;
+            font-size: 1rem;
+            font-weight: bold;
+            padding: 0 1rem;
+          }
+          :global(.listHeader.tags),
+          :global(.listHeader.types) {
+            margin-top: 1rem;
+          }
+          :global(.listItem.item) {
+            border-radius: 0;
+            padding: 0.3rem 1rem;
 
-          &:hover :global(.content),
-          &:hover :global(i) {
-            color: #2185d0;
+            &:hover :global(.content),
+            &:hover :global(i) {
+              color: #2185d0;
+            }
           }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

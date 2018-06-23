@@ -3,7 +3,9 @@ import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import QRCode from 'qrcode.react'
 import { intlShape, FormattedMessage } from 'react-intl'
-import { Button, Icon, Popup, Message } from 'semantic-ui-react'
+import {
+  Button, Icon, Popup, Message,
+} from 'semantic-ui-react'
 
 import { QuestionBlock } from '../questions'
 
@@ -85,10 +87,14 @@ const SessionTimeline = ({
       <div className="topRow">
         <div className="infos">
           <div className="startingTime">
-            <Icon name="time" /> {startedAt}
+            <Icon name="time" />
+            {' '}
+            {startedAt}
           </div>
           <div className="runningTime">
-            <Icon name="play circle" /> {runtime}
+            <Icon name="play circle" />
+            {' '}
+            {runtime}
           </div>
         </div>
 
@@ -98,13 +104,13 @@ const SessionTimeline = ({
             hideOnScroll
             on="click"
             position="bottom right"
-            trigger={
+            trigger={(
               <div className="qrTrigger">
                 <Button icon size="small">
                   <Icon name="qrcode" />
                 </Button>
               </div>
-            }
+)}
           >
             <Popup.Content>
               <div className="popupContent">
@@ -216,164 +222,166 @@ const SessionTimeline = ({
           />
         )}
       </div>
-      <style jsx>{`
-        @import 'src/theme';
+      <style jsx>
+        {`
+          @import 'src/theme';
 
-        .sessionTimeline {
-          display: flex;
-          flex-direction: column;
-
-          .topRow {
-            flex: 1;
-
-            justify-content: space-between;
-          }
-
-          .topRow,
-          .infos,
-          .actions {
-            display: flex;
-            flex-flow: row wrap;
-            align-items: flex-end;
-          }
-
-          .actions > a:last-child > :global(button) {
-            margin: 0;
-          }
-
-          .runningTime {
-            margin-left: 2rem;
-          }
-
-          .popupContent {
+          .sessionTimeline {
             display: flex;
             flex-direction: column;
-            align-items: center;
-
-            .qr {
-              margin-bottom: 0.5rem;
-            }
-          }
-
-          .blocks {
-            flex: 1;
-
-            display: flex;
-            flex-direction: column;
-
-            border: 1px solid lightgray;
-            padding: 1rem;
-          }
-
-          .blockWrap {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-
-            background: linear-gradient(
-              to right,
-              transparent 0%,
-              transparent calc(50% - 1.01px),
-              lightgrey calc(50% - 1px),
-              lightgrey calc(50% + 1px),
-              transparent calc(50% + 1.01px),
-              transparent 100%
-            );
-
-            .block {
-              flex: 1;
-              width: 100%;
-            }
-
-            .waiting {
-              margin: 0.2rem 0;
-              padding: 0.5rem 0;
-
-              &.first {
-                padding-top: 0;
-                margin-top: 0;
-              }
-
-              &.last {
-                padding-bottom: 0;
-                margin-bottom: 0;
-              }
-
-              :global(i) {
-                background-color: white;
-                color: lightgrey;
-                margin-right: 0;
-              }
-            }
-          }
-
-          .buttons {
-            flex: 1;
-
-            display: flex;
-            flex-flow: row wrap;
-            justify-content: space-between;
-
-            margin-top: 0.5rem;
-
-            > :global(button) {
-              margin-right: 0;
-            }
-          }
-
-          @include desktop-tablet-only {
-            flex-flow: row wrap;
 
             .topRow {
-              flex: 0 0 100%;
+              flex: 1;
 
-              padding-bottom: 0.5rem;
+              justify-content: space-between;
+            }
+
+            .topRow,
+            .infos,
+            .actions {
+              display: flex;
+              flex-flow: row wrap;
+              align-items: flex-end;
+            }
+
+            .actions > a:last-child > :global(button) {
+              margin: 0;
+            }
+
+            .runningTime {
+              margin-left: 2rem;
+            }
+
+            .popupContent {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+
+              .qr {
+                margin-bottom: 0.5rem;
+              }
             }
 
             .blocks {
-              flex: 0 0 100%;
+              flex: 1;
 
-              flex-direction: row;
+              display: flex;
+              flex-direction: column;
 
-              padding: 0.5rem;
+              border: 1px solid lightgray;
+              padding: 1rem;
             }
 
             .blockWrap {
-              flex-direction: row;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+
               background: linear-gradient(
-                to bottom,
+                to right,
                 transparent 0%,
-                transparent calc(50% - 0.81px),
-                lightgrey calc(50% - 0.8px),
-                lightgrey calc(50% + 0.8px),
-                transparent calc(50% + 0.81px),
+                transparent calc(50% - 1.01px),
+                lightgrey calc(50% - 1px),
+                lightgrey calc(50% + 1px),
+                transparent calc(50% + 1.01px),
                 transparent 100%
               );
 
-              .block,
-              .block:not(:first-child) {
-                margin: 0.3rem;
-                width: 17rem;
+              .block {
+                flex: 1;
+                width: 100%;
               }
 
               .waiting {
-                margin: 0 0.2rem;
-                padding: 0 0.7rem;
+                margin: 0.2rem 0;
+                padding: 0.5rem 0;
 
                 &.first {
-                  padding-left: 0;
-                  margin-left: 0;
+                  padding-top: 0;
+                  margin-top: 0;
                 }
 
                 &.last {
-                  padding-right: 0;
+                  padding-bottom: 0;
+                  margin-bottom: 0;
+                }
+
+                :global(i) {
+                  background-color: white;
+                  color: lightgrey;
                   margin-right: 0;
                 }
               }
             }
+
+            .buttons {
+              flex: 1;
+
+              display: flex;
+              flex-flow: row wrap;
+              justify-content: space-between;
+
+              margin-top: 0.5rem;
+
+              > :global(button) {
+                margin-right: 0;
+              }
+            }
+
+            @include desktop-tablet-only {
+              flex-flow: row wrap;
+
+              .topRow {
+                flex: 0 0 100%;
+
+                padding-bottom: 0.5rem;
+              }
+
+              .blocks {
+                flex: 0 0 100%;
+
+                flex-direction: row;
+
+                padding: 0.5rem;
+              }
+
+              .blockWrap {
+                flex-direction: row;
+                background: linear-gradient(
+                  to bottom,
+                  transparent 0%,
+                  transparent calc(50% - 0.81px),
+                  lightgrey calc(50% - 0.8px),
+                  lightgrey calc(50% + 0.8px),
+                  transparent calc(50% + 0.81px),
+                  transparent 100%
+                );
+
+                .block,
+                .block:not(:first-child) {
+                  margin: 0.3rem;
+                  width: 17rem;
+                }
+
+                .waiting {
+                  margin: 0 0.2rem;
+                  padding: 0 0.7rem;
+
+                  &.first {
+                    padding-left: 0;
+                    margin-left: 0;
+                  }
+
+                  &.last {
+                    padding-right: 0;
+                    margin-right: 0;
+                  }
+                }
+              }
+            }
           }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   )
 }

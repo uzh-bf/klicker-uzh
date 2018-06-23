@@ -1,6 +1,8 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Cell, Pie, PieChart as PieChartComponent, ResponsiveContainer, LabelList } from 'recharts'
+import {
+  Cell, Pie, PieChart as PieChartComponent, ResponsiveContainer, LabelList,
+} from 'recharts'
 import { withProps } from 'recompose'
 
 import { CHART_COLORS, CHART_TYPES } from '../../../constants'

@@ -40,25 +40,25 @@ const Statistics = ({
     </h2>
 
     <div>
-      <EvaluationListItem reverse /* color="white" */ marker="MIN">
+      <EvaluationListItem reverse marker="MIN">
         {_isNumber(min) ? _round(min, 2) : '-'}
       </EvaluationListItem>
-      <EvaluationListItem reverse /* color="black" */ marker="Q1">
+      <EvaluationListItem reverse marker="Q1">
         {_isNumber(q1) ? _round(q1, 2) : '-'}
       </EvaluationListItem>
-      <EvaluationListItem reverse /* color="red" */ marker="MEDIAN">
+      <EvaluationListItem reverse marker="MEDIAN">
         {_isNumber(median) ? _round(median, 2) : '-'}
       </EvaluationListItem>
-      <EvaluationListItem reverse /* color="Blue" */ marker="MEAN">
+      <EvaluationListItem reverse marker="MEAN">
         {_isNumber(mean) ? _round(mean, 2) : '-'}
       </EvaluationListItem>
-      <EvaluationListItem reverse /* color="black" */ marker="Q3">
+      <EvaluationListItem reverse marker="Q3">
         {_isNumber(q3) ? _round(q3, 2) : '-'}
       </EvaluationListItem>
-      <EvaluationListItem reverse /* color="white" */ marker="MAX">
+      <EvaluationListItem reverse marker="MAX">
         {_isNumber(max) ? _round(max, 2) : '-'}
       </EvaluationListItem>
-      <EvaluationListItem reverse /* color="white" */ marker="SD">
+      <EvaluationListItem reverse marker="SD">
         {_isNumber(sd) ? _round(sd, 2) : '-'}
       </EvaluationListItem>
     </div>
@@ -84,24 +84,26 @@ const Statistics = ({
       </div>
     )}
 
-    <style jsx>{`
-      .statistics {
-        h2 {
-          font-size: 1.2rem;
-          line-height: 1.2rem;
-          margin-bottom: 0.5rem;
-        }
+    <style jsx>
+      {`
+        .statistics {
+          h2 {
+            font-size: 1.2rem;
+            line-height: 1.2rem;
+            margin-bottom: 0.5rem;
+          }
 
-        .bins {
-          margin-top: 1rem;
+          .bins {
+            margin-top: 1rem;
 
-          :global(.message) {
-            margin-top: 0.5rem;
-            padding: 1rem;
+            :global(.message) {
+              margin-top: 0.5rem;
+              padding: 1rem;
+            }
           }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

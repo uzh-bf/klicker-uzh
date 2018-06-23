@@ -28,10 +28,7 @@ export const calculateMax = (values) => {
 }
 
 // calculate the mean using reduce
-export const calculateMean = values =>
-  // sum all values according their count
-  // and divide trough the total count of values
-  values.data.reduce((sum, { count, value }) => sum + count * value, 0) / values.totalResponses
+export const calculateMean = values => values.data.reduce((sum, { count, value }) => sum + count * value, 0) / values.totalResponses
 
 // calculate the median using reduce
 export const calculateMedian = (values) => {

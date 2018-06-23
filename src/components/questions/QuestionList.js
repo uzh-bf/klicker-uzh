@@ -40,7 +40,11 @@ export const QuestionListPres = ({
         }
 
         if (error) {
-          return <Message error>{error.message}</Message>
+          return (
+            <Message error>
+              {error.message}
+            </Message>
+          )
         }
 
         if (questions.length === 0) {
@@ -85,7 +89,11 @@ export const QuestionListPres = ({
             key={question.id}
             lastUsed={question.instances.map(({ createdAt, session, version }) => (
               <a href={`/sessions/evaluation/${session}`} target="_blank">
-                {moment(createdAt).format('DD.MM.YYYY HH:mm')} (v{version + 1})
+                {moment(createdAt).format('DD.MM.YYYY HH:mm')}
+                {' '}
+(v
+                {version + 1}
+                )
               </a>
             ))}
             tags={question.tags}
@@ -99,20 +107,22 @@ export const QuestionListPres = ({
       }}
     </Query>
 
-    <style jsx>{`
-      .questionList {
-        :global(> *) {
-          margin-bottom: 1rem;
-        }
+    <style jsx>
+      {`
+        .questionList {
+          :global(> *) {
+            margin-bottom: 1rem;
+          }
 
-        .message {
-          margin-bottom: 1rem;
-          padding: 0.75rem;
-          border: 1px solid lightgray;
-          background-color: #f9f9f9;
+          .message {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            border: 1px solid lightgray;
+            background-color: #f9f9f9;
+          }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

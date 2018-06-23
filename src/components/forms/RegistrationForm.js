@@ -201,38 +201,40 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
       onSubmit={onSubmit}
     />
 
-    <style jsx>{`
-      @import 'src/theme';
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-      .registrationForm > :global(form) {
-        display: flex;
-        flex-direction: column;
-
-        .password {
-          margin-bottom: 1rem;
-        }
-
-        @include desktop-tablet-only {
-          border: 1px solid $color-primary;
-          padding: 1rem;
-          background-color: rgba(124, 184, 228, 0.12);
+        .registrationForm > :global(form) {
+          display: flex;
+          flex-direction: column;
 
           .password {
-            display: flex;
-            flex-direction: row;
-            margin-bottom: 0;
+            margin-bottom: 1rem;
+          }
 
-            :global(.field) {
-              flex: 1;
+          @include desktop-tablet-only {
+            border: 1px solid $color-primary;
+            padding: 1rem;
+            background-color: rgba(124, 184, 228, 0.12);
 
-              &:first-child {
-                margin-right: 1rem;
+            .password {
+              display: flex;
+              flex-direction: row;
+              margin-bottom: 0;
+
+              :global(.field) {
+                flex: 1;
+
+                &:first-child {
+                  margin-right: 1rem;
+                }
               }
             }
           }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

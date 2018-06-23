@@ -38,7 +38,9 @@ const Registration = ({ intl }) => (
                   id="user.registration.successNotification"
                   values={{
                     br: <br />,
-                    link: <Link href="/user/login">/user/login</Link>,
+                    link: <Link href="/user/login">
+/user/login
+                    </Link>,
                     newEmail,
                   }}
                 />
@@ -49,18 +51,23 @@ const Registration = ({ intl }) => (
           return (
             <React.Fragment>
               <Message info>
-                <Message.Header>Public Beta</Message.Header>
+                <Message.Header>
+Public Beta
+                </Message.Header>
                 <Message.Content>
-                  Sign up for the Klicker 2018 public beta. Already have an account?{' '}
-                  <Link href="/user/login">Login here.</Link>
+                  Sign up for the Klicker 2018 public beta. Already have an account?
+                  {' '}
+                  <Link href="/user/login">
+Login here.
+                  </Link>
                 </Message.Content>
               </Message>
               <RegistrationForm
                 intl={intl}
                 loading={loading}
                 onSubmit={({
- email, password, shortname, institution, useCase,
-}) => {
+                  email, password, shortname, institution, useCase,
+                }) => {
                   register({
                     variables: {
                       email,
@@ -72,38 +79,46 @@ const Registration = ({ intl }) => (
                   })
                 }}
               />
-              {error && <div className="errorMessage">Registration failed ({error.message})</div>}
+              {error && (
+                <div className="errorMessage">
+                  Registration failed (
+                  {error.message}
+                  )
+                </div>
+              )}
             </React.Fragment>
           )
         }}
       </Mutation>
 
-      <style jsx>{`
-        @import 'src/theme';
+      <style jsx>
+        {`
+          @import 'src/theme';
 
-        .registration {
-          padding: 1rem;
+          .registration {
+            padding: 1rem;
 
-          h1 {
-            margin-top: 0;
-          }
+            h1 {
+              margin-top: 0;
+            }
 
-          .errorMessage,
-          .successMessage {
-            font-weight: bold;
-          }
-          .errorMessage {
-            color: $color-error-font;
-          }
-          .successMessage {
-            color: $color-success;
-          }
+            .errorMessage,
+            .successMessage {
+              font-weight: bold;
+            }
+            .errorMessage {
+              color: $color-error-font;
+            }
+            .successMessage {
+              color: $color-success;
+            }
 
-          @include desktop-tablet-only {
-            width: 750px;
+            @include desktop-tablet-only {
+              width: 750px;
+            }
           }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   </StaticLayout>
 )

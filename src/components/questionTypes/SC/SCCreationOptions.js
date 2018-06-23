@@ -34,12 +34,14 @@ const SCCreationOptions = ({
   const Option = props => (
     <div className="option">
       <SCCreationOption disabled={disabled} {...props} />
-      <style jsx>{`
-        .option {
-          cursor: grab;
-          margin-bottom: 0.5rem;
-        }
-      `}</style>
+      <style jsx>
+        {`
+          .option {
+            cursor: grab;
+            margin-bottom: 0.5rem;
+          }
+        `}
+      </style>
     </div>
   )
 
@@ -96,12 +98,14 @@ const SCCreationOptions = ({
         {!disabled && <SCCreationPlaceholder handleSave={handleNewOption} />}
       </Form.Field>
 
-      <style jsx>{`
-        @import 'src/theme';
-        .SCCreationOptions {
-          @include tooltip-icon;
-        }
-      `}</style>
+      <style jsx>
+        {`
+          @import 'src/theme';
+          .SCCreationOptions {
+            @include tooltip-icon;
+          }
+        `}
+      </style>
     </div>
   )
 }
@@ -120,8 +124,7 @@ export default compose(
     value: value.choices,
   })),
   withHandlers({
-    handleDeleteOption: ({ onChange, value }) => index => () =>
-      onChange([...value.slice(0, index), ...value.slice(index + 1)]),
+    handleDeleteOption: ({ onChange, value }) => index => () => onChange([...value.slice(0, index), ...value.slice(index + 1)]),
 
     handleNewOption: ({ onChange, value }) => newOption => onChange([...value, newOption]),
 
@@ -134,7 +137,6 @@ export default compose(
       ])
     },
 
-    handleUpdateOrder: ({ onChange, value }) => ({ oldIndex, newIndex }) =>
-      onChange(arrayMove(value, oldIndex, newIndex)),
+    handleUpdateOrder: ({ onChange, value }) => ({ oldIndex, newIndex }) => onChange(arrayMove(value, oldIndex, newIndex)),
   }),
 )(SCCreationOptions)

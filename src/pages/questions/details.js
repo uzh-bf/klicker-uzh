@@ -11,7 +11,9 @@ import _isNil from 'lodash/isNil'
 
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionEditForm } from '../../components/forms'
-import { pageWithIntl, omitDeep, withDnD, withLogging } from '../../lib'
+import {
+  pageWithIntl, omitDeep, withDnD, withLogging,
+} from '../../lib'
 import {
   TagListQuery,
   QuestionListQuery,
@@ -53,8 +55,8 @@ const EditQuestion = ({ intl, router }) => (
               <Mutation mutation={ModifyQuestionMutation}>
                 {(editQuestion, { loading, data, error }) => {
                   const {
- id, tags, title, type, versions,
-} = _pick(questionDetails.question, [
+                    id, tags, title, type, versions,
+                  } = _pick(questionDetails.question, [
                     'id',
                     'tags',
                     'title',
@@ -120,22 +122,22 @@ const EditQuestion = ({ intl, router }) => (
                           variables: _omitBy(
                             isNewVersion
                               ? {
-                                  content:
+                                content:
                                     content.getCurrentContent() |> convertToRaw |> JSON.stringify,
-                                  id,
-                                  // HACK: omitDeep for typename removal
-                                  // TODO: check https://github.com/apollographql/apollo-client/issues/1564
-                                  // this shouldn't be necessary at all
-                                  options: options && omitDeep(options, '__typename'),
-                                  solution,
-                                  tags: newTags,
-                                  title: newTitle,
-                                }
+                                id,
+                                // HACK: omitDeep for typename removal
+                                // TODO: check https://github.com/apollographql/apollo-client/issues/1564
+                                // this shouldn't be necessary at all
+                                options: options && omitDeep(options, '__typename'),
+                                solution,
+                                tags: newTags,
+                                title: newTitle,
+                              }
                               : {
-                                  id,
-                                  tags: newTags,
-                                  title: newTitle,
-                                },
+                                id,
+                                tags: newTags,
+                                title: newTitle,
+                              },
                             _isNil,
                           ),
                         })

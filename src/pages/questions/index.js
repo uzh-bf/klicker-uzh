@@ -90,21 +90,23 @@ const Index = ({
         name={sessionName}
       />
 
-      <style jsx>{`
-        .creationForm {
-          animation-name: slide-in;
-          animation-duration: 0.5s;
-        }
+      <style jsx>
+        {`
+          .creationForm {
+            animation-name: slide-in;
+            animation-duration: 0.5s;
+          }
 
-        @keyframes slide-in {
-          0% {
-            transform: translateY(300px);
+          @keyframes slide-in {
+            0% {
+              transform: translateY(300px);
+            }
+            100% {
+              transform: translateY(0);
+            }
           }
-          100% {
-            transform: translateY(0);
-          }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   )
 
@@ -173,76 +175,78 @@ const Index = ({
             </div>
           </div>
 
-          <style jsx>{`
-            @import 'src/theme';
+          <style jsx>
+            {`
+              @import 'src/theme';
 
-            .questionPool {
-              display: flex;
-              flex-direction: column;
-              height: 100%;
-
-              overflow-y: auto;
-
-              .tagList {
-                height: 100%;
-                min-width: 5rem;
-
-                flex: 1;
-                background: $color-primary-05p;
-                padding: 0.5rem;
-              }
-
-              .wrapper {
+              .questionPool {
+                display: flex;
+                flex-direction: column;
                 height: 100%;
 
-                .questionList {
-                  height: 100%;
-
-                  display: flex;
-                  flex-direction: column;
-
-                  margin: 0 auto;
-                  max-width: $max-width;
-
-                  .questionListContent {
-                    flex: 1;
-                    height: 100%;
-
-                    padding: 1rem;
-                  }
-                }
-              }
-
-              @include desktop-tablet-only {
-                flex-flow: row wrap;
                 overflow-y: auto;
 
                 .tagList {
-                  overflow-y: auto;
-                  flex: 0 0 auto;
-                  padding: 2rem 1rem;
+                  height: 100%;
+                  min-width: 5rem;
 
-                  border-right: 1px solid $color-primary;
+                  flex: 1;
+                  background: $color-primary-05p;
+                  padding: 0.5rem;
                 }
 
                 .wrapper {
-                  flex: 1;
-                  padding: 1rem;
+                  height: 100%;
 
                   .questionList {
+                    height: 100%;
+
+                    display: flex;
+                    flex-direction: column;
+
+                    margin: 0 auto;
+                    max-width: $max-width;
+
                     .questionListContent {
-                      overflow-y: auto;
-                      padding: 1rem 1rem 0 0;
+                      flex: 1;
+                      height: 100%;
+
+                      padding: 1rem;
                     }
                   }
                 }
-              }
 
-              @include desktop-only {
-                padding: 0;
+                @include desktop-tablet-only {
+                  flex-flow: row wrap;
+                  overflow-y: auto;
+
+                  .tagList {
+                    overflow-y: auto;
+                    flex: 0 0 auto;
+                    padding: 2rem 1rem;
+
+                    border-right: 1px solid $color-primary;
+                  }
+
+                  .wrapper {
+                    flex: 1;
+                    padding: 1rem;
+
+                    .questionList {
+                      .questionListContent {
+                        overflow-y: auto;
+                        padding: 1rem 1rem 0 0;
+                      }
+                    }
+                  }
+                }
+
+                @include desktop-only {
+                  padding: 0;
+                }
               }
-            }
-          `}</style>
+            `}
+          </style>
         </TeacherLayout>
       )}
     </Query>

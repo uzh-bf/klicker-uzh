@@ -41,8 +41,8 @@ const CreateQuestion = ({ intl }) => (
               onDiscard={() => Router.push('/questions')}
               // handle submitting a new question
               onSubmit={async ({
- content, options, tags, title, type,
-}) => {
+                content, options, tags, title, type,
+              }) => {
                 // create the question
                 await createQuestion({
                   // reload the list of questions and tags after creation

@@ -13,7 +13,9 @@ import { withRouter } from 'next/router'
 import { graphql } from 'react-apollo'
 import _round from 'lodash/round'
 
-import { CHART_DEFAULTS, QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
+import {
+  CHART_DEFAULTS, QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS,
+} from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
 import {
   calculateMax,
@@ -217,7 +219,11 @@ export default compose(
   // if the query has finished loading but there are no active instances, show a simple message
   branch(
     ({ activeInstances }) => !(activeInstances && activeInstances.length > 0),
-    renderComponent(() => <div>No evaluation currently active.</div>),
+    renderComponent(() => (
+      <div>
+No evaluation currently active.
+      </div>
+    )),
   ),
   withStateHandlers(
     ({ activeInstances, sessionStatus }) => {

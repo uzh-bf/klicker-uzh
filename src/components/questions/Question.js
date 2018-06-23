@@ -49,149 +49,150 @@ const Question = ({
   isArchived,
   connectDragSource,
   handleSetActiveVersion,
-}) =>
-  // TODO: draggable rework
-  connectDragSource(
-    <div
-      className={classNames('question', {
-        creationMode,
-        draggable: creationMode,
-        isArchived,
-        isDragging,
-      })}
-    >
-      <div className={classNames('checker', { active: !draggable })}>
-        <Checkbox
-          checked={checked}
-          id={`check-${id}`}
-          type="checkbox"
-          onClick={() => onCheck({ version: activeVersion })}
+}) => connectDragSource(
+  <div
+    className={classNames('question', {
+      creationMode,
+      draggable: creationMode,
+      isArchived,
+      isDragging,
+    })}
+  >
+    <div className={classNames('checker', { active: !draggable })}>
+      <Checkbox
+        checked={checked}
+        id={`check-${id}`}
+        type="checkbox"
+        onClick={() => onCheck({ version: activeVersion })}
+      />
+    </div>
+
+    <div className="wrapper">
+      <h2 className="title">
+        {isArchived && (
+        <Label color="red" size="tiny">
+          <FormattedMessage defaultMessage="ARCHIVED" id="questionPool.question.titleArchive" />
+        </Label>
+        )}
+        {' '}
+        {title}
+      </h2>
+
+      <div className="versionChooser">
+        <Dropdown
+          disabled={versions.length === 1}
+          options={versions.map((version, index) => ({
+            key: index,
+            text: `v${index + 1} - ${moment(version.createdAt).format('DD.MM.YYYY HH:mm')}`,
+            value: index,
+          }))}
+          value={activeVersion}
+          onChange={(param, data) => handleSetActiveVersion(data.value)}
         />
       </div>
 
-      <div className="wrapper">
-        <h2 className="title">
-          {isArchived && (
-            <Label color="red" size="tiny">
-              <FormattedMessage defaultMessage="ARCHIVED" id="questionPool.question.titleArchive" />
-            </Label>
-          )}{' '}
-          {title}
-        </h2>
-
-        <div className="versionChooser">
-          <Dropdown
-            disabled={versions.length === 1}
-            options={versions.map((version, index) => ({
-              key: index,
-              text: `v${index + 1} - ${moment(version.createdAt).format('DD.MM.YYYY HH:mm')}`,
-              value: index,
-            }))}
-            value={activeVersion}
-            onChange={(param, data) => handleSetActiveVersion(data.value)}
-          />
-        </div>
-
-        <div className="tags">
-          <QuestionTags tags={tags} type={type} />
-        </div>
-
-        <div className="details">
-          <QuestionDetails
-            description={description}
-            lastUsed={lastUsed}
-            questionId={id}
-            questionType={type}
-          />
-        </div>
+      <div className="tags">
+        <QuestionTags tags={tags} type={type} />
       </div>
 
-      <style jsx>{`
-        @import 'src/theme';
+      <div className="details">
+        <QuestionDetails
+          description={description}
+          lastUsed={lastUsed}
+          questionId={id}
+          questionType={type}
+        />
+      </div>
+    </div>
 
-        .question {
-          display: flex;
-          flex-flow: column nowrap;
+    <style jsx>
+      {`
+          @import 'src/theme';
 
-          padding: 0.5rem;
-          border: 1px solid lightgray;
-          background-color: #f9f9f9;
-
-          &.draggable {
-            cursor: grab;
-
-            &:hover {
-              box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.1);
-            }
-          }
-
-          &.isDragging {
-            opacity: 0.5;
-          }
-
-          .checker {
-            flex: 0 0 auto;
-            display: flex;
-
-            align-self: center;
-
-            padding: 0.5rem;
-            padding-left: 0;
-          }
-
-          .wrapper {
+          .question {
             display: flex;
             flex-flow: column nowrap;
 
-            .title {
-              color: $color-primary-strong;
-              font-size: $font-size-h1;
-              margin: 0;
-              margin-top: 0.2rem;
-            }
-          }
+            padding: 0.5rem;
+            border: 1px solid lightgray;
+            background-color: #f9f9f9;
 
-          @include desktop-tablet-only {
-            flex-flow: row wrap;
+            &.draggable {
+              cursor: grab;
+
+              &:hover {
+                box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.1);
+              }
+            }
+
+            &.isDragging {
+              opacity: 0.5;
+            }
 
             .checker {
-              flex: 0 0 1rem;
+              flex: 0 0 auto;
               display: flex;
-              align-items: center;
 
-              padding: 1rem;
-              padding-left: 0.5rem;
+              align-self: center;
+
+              padding: 0.5rem;
+              padding-left: 0;
             }
 
             .wrapper {
-              flex: 1;
-              flex-flow: row wrap;
+              display: flex;
+              flex-flow: column nowrap;
 
               .title {
-                flex: 0 0 auto;
+                color: $color-primary-strong;
+                font-size: $font-size-h1;
+                margin: 0;
+                margin-top: 0.2rem;
+              }
+            }
+
+            @include desktop-tablet-only {
+              flex-flow: row wrap;
+
+              .checker {
+                flex: 0 0 1rem;
+                display: flex;
+                align-items: center;
+
+                padding: 1rem;
+                padding-left: 0.5rem;
               }
 
-              .versionChooser {
-                flex: 1 1 auto;
-                padding-right: 1rem;
-                text-align: right;
-                align-self: center;
-              }
+              .wrapper {
+                flex: 1;
+                flex-flow: row wrap;
 
-              .tags {
-                flex: 0 0 auto;
-                align-self: flex-end;
-              }
+                .title {
+                  flex: 0 0 auto;
+                }
 
-              .details {
-                flex: 0 0 100%;
+                .versionChooser {
+                  flex: 1 1 auto;
+                  padding-right: 1rem;
+                  text-align: right;
+                  align-self: center;
+                }
+
+                .tags {
+                  flex: 0 0 auto;
+                  align-self: flex-end;
+                }
+
+                .details {
+                  flex: 0 0 100%;
+                }
               }
             }
           }
-        }
-      `}</style>
-    </div>,
-  )
+        `}
+    </style>
+  </div>,
+)
 
 Question.propTypes = propTypes
 Question.defaultProps = defaultProps

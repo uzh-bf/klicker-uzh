@@ -76,22 +76,24 @@ const TypeChooser = ({ intl, value, onChange }) => {
         ))}
       </div>
 
-      <style jsx>{`
-        @import 'src/theme';
+      <style jsx>
+        {`
+          @import 'src/theme';
 
-        .typeChooser {
-          @include tooltip-icon;
+          .typeChooser {
+            @include tooltip-icon;
 
-          .types {
-            display: flex;
-            flex-direction: column;
+            .types {
+              display: flex;
+              flex-direction: column;
 
-            > :global(*):not(:last-child) {
-              margin-bottom: 0.5rem;
+              > :global(*):not(:last-child) {
+                margin-bottom: 0.5rem;
+              }
             }
           }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   )
 }

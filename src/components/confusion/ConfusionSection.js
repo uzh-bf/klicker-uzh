@@ -21,7 +21,9 @@ const propTypes = {
 
 const ConfusionSection = ({ data, title, ylabel }) => (
   <div className="confusionSection">
-    <h3>{title}</h3>
+    <h3>
+      {title}
+    </h3>
 
     <div className="chart">
       {(() => {
@@ -72,20 +74,22 @@ const ConfusionSection = ({ data, title, ylabel }) => (
       })()}
     </div>
 
-    <style jsx>{`
-      .confusionSection {
-        display: flex;
-        flex-direction: column;
+    <style jsx>
+      {`
+        .confusionSection {
+          display: flex;
+          flex-direction: column;
 
-        height: 15rem;
+          height: 15rem;
 
-        .chart {
-          flex: 1;
+          .chart {
+            flex: 1;
 
-          height: 10rem;
+            height: 10rem;
+          }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

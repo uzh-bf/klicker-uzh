@@ -20,7 +20,9 @@ import {
 
 storiesOf('forms/components', module)
   .addDecorator(getStory => (
-    <DragDropContextProvider backend={HTML5Backend}>{getStory()}</DragDropContextProvider>
+    <DragDropContextProvider backend={HTML5Backend}>
+      {getStory()}
+    </DragDropContextProvider>
   ))
   .add('LoginForm', () => <LoginForm intl={intlMock} />)
   .add('PasswordRequestForm', () => <PasswordRequestForm intl={intlMock} />)

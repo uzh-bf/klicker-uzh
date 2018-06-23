@@ -9,17 +9,19 @@ const LoadingDiv = () => (
   <div className="loading">
     <Loader active />
 
-    <style jsx>{`
-      .loading {
-        display: flex;
-        height: 100%;
-        width: 100%;
+    <style jsx>
+      {`
+        .loading {
+          display: flex;
+          height: 100%;
+          width: 100%;
 
-        > :global(*) {
-          flex: 1;
+          > :global(*) {
+            flex: 1;
+          }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 
