@@ -1,18 +1,17 @@
 /* eslint-disable import/no-extraneous-dependencies */
 // https://github.com/zeit/next.js/blob/canary/examples/with-apollo/lib/initApollo.js
 // websockets: https://github.com/zeit/next.js/issues/3261
+import fetch from 'isomorphic-unfetch'
 
 import { ApolloClient } from 'apollo-client'
 import { BatchHttpLink } from 'apollo-link-batch-http'
 import { onError } from 'apollo-link-error'
-import { withClientState } from 'apollo-link-state'
+// import { withClientState } from 'apollo-link-state'
 import { ApolloLink, split } from 'apollo-link'
 import { WebSocketLink } from 'apollo-link-ws'
 import { SubscriptionClient } from 'subscriptions-transport-ws'
-
 // import { createPersistedQueryLink } from 'apollo-link-persisted-queries'
 import { InMemoryCache } from 'apollo-cache-inmemory'
-import fetch from 'isomorphic-unfetch'
 import { getMainDefinition } from 'apollo-utilities'
 
 const ssrMode = !process.browser
@@ -22,28 +21,6 @@ let apolloClient = null
 if (ssrMode) {
   global.fetch = fetch
 }
-
-// HACK: this is a copy of the default persisted-queries disable function
-// it needs to be provided as the config passed in is not yet merged with defaults
-// otherwise it would lead to ".disable not defined" style errors...
-/* const defaultDisable = ({ graphQLErrors, operation }) => {
-  // if the server doesn't support persisted queries, don't try anymore
-  if (
-    graphQLErrors &&
-    graphQLErrors.some(({ message }) => message === 'PersistedQueryNotSupported')
-  ) {
-    return true
-  }
-
-  const { response } = operation.getContext()
-  // if the server responds with bad request
-  // apollo-server responds with 400 for GET and 500 for POST when no query is found
-  if (response && response.status && (response.status === 400 || response.status === 500)) {
-    return true
-  }
-
-  return false
-} */
 
 function create(initialState) {
   const cache = new InMemoryCache({
@@ -61,12 +38,8 @@ function create(initialState) {
   if (!ssrMode) {
     // instantiate a basic subscription client
     const wsClient = new SubscriptionClient(
-      process.env.API_URL_WS || 'ws://localhost:4000/subscriptions',
+      process.env.API_URL_WS || 'ws://localhost:4000/graphql',
       {
-        // TODO: include JWT
-        /* connectionParams: {
-        authToken: user.authToken,
-      }, */
         reconnect: true,
       },
     )
@@ -87,12 +60,18 @@ function create(initialState) {
   }
 
   const link = ApolloLink.from([
-    withClientState({
+    /* TODO: work with persisted queries
+      createPersistedQueryLink({
+      // we need to pass both disable and generateHash (or it will bug)
+      // disable: defaultDisable,
+      generateHash: ({ documentId }) => documentId,
+    }), */
+    /* withClientState({
       cache,
       resolvers: {
         // TODO: add useful resolvers for local state
       },
-    }),
+    }), */
     onError(({ graphQLErrors, networkError }) => {
       if (graphQLErrors) {
         // TODO: log errors to sentry?
@@ -105,12 +84,6 @@ function create(initialState) {
     }),
     httpLink,
   ])
-
-  /* const persistQueriesLink = createPersistedQueryLink({
-    // we need to pass both disable and generateHash (or it will bug)
-    disable: defaultDisable,
-    generateHash: ({ documentId }) => documentId,
-  }) */
 
   return new ApolloClient({
     cache,
