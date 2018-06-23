@@ -37,7 +37,7 @@
     "morgan": "1.9.0",
     "nodemailer": "4.6.5",
     "rate-limit-redis": "1.4.0",
-    "raven": "2.6.2",
+    "raven": "2.6.3",
     "react": "16.4.0",
     "react-dom": "16.4.0",
     "request": "2.87.0",
