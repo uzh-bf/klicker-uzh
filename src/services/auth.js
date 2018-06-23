@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs')
 const JWT = require('jsonwebtoken')
 const nodemailer = require('nodemailer')
 const _get = require('lodash/get')
+const { AuthenticationError, UserInputError } = require('apollo-server-express')
 
 const { UserModel } = require('../models')
 const { sendSlackNotification } = require('./notifications')
@@ -43,7 +44,7 @@ const requireAuth = wrapped => (parentValue, args, context) => {
       context.res.redirect('/user/login')
     }
 
-    throw new Error('INVALID_LOGIN')
+    throw new AuthenticationError('INVALID_LOGIN')
   }
   return wrapped(parentValue, args, context)
 }
@@ -56,7 +57,7 @@ const isValidJWT = (jwt, secret) => {
   } catch ({ name }) {
     // if the token is expired, throw
     if (name === 'TokenExpiredError') {
-      throw new Error('TOKEN_EXPIRED')
+      throw new AuthenticationError('TOKEN_EXPIRED')
     }
 
     return false
@@ -134,7 +135,7 @@ const signup = async (
     return newUser
   }
 
-  throw new Error('SIGNUP_FAILED')
+  throw new UserInputError('SIGNUP_FAILED')
 }
 
 // login an existing user
@@ -148,7 +149,7 @@ const login = async (res, email, password) => {
   if (!user || !bcrypt.compareSync(password, user.password)) {
     sendSlackNotification(`[auth] Login failed for ${email}`)
 
-    throw new Error('INVALID_LOGIN')
+    throw new AuthenticationError('INVALID_LOGIN')
   }
 
   // generate a JWT for future authentication
@@ -198,7 +199,7 @@ const changePassword = async (userId, newPassword) => {
   // and check whether the user exists
   const user = await UserModel.findById(userId)
   if (!user) {
-    throw new Error('PASSWORD_UPDATE_FAILED')
+    throw new UserInputError('PASSWORD_UPDATE_FAILED')
   }
 
   // generate a salt with bcyrpt using 10 rounds
@@ -207,7 +208,7 @@ const changePassword = async (userId, newPassword) => {
   user.password = bcrypt.hashSync(newPassword, 10)
   const updatedUser = await user.save()
   if (!updatedUser) {
-    throw new Error('PASSWORD_UPDATE_FAILED')
+    throw new UserInputError('PASSWORD_UPDATE_FAILED')
   }
 
   // return the updated user

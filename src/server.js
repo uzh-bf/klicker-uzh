@@ -1,7 +1,5 @@
 /* eslint-disable global-require */
-const { execute, subscribe } = require('graphql')
 const { createServer } = require('http')
-const { SubscriptionServer } = require('subscriptions-transport-ws')
 const mongoose = require('mongoose')
 
 // initialize APM if so configured
@@ -14,46 +12,23 @@ if (process.env.APM_SERVER_URL) {
   })
 }
 
-/* eslint-disable global-require */
-const schema = require('./schema')
-const server = require('./app')
+const { app, apollo } = require('./app')
 const { getRedis } = require('./redis')
 
 // get the redis singleton
 const redis = getRedis()
 
 // wrap express for websockets
-const ws = createServer(server)
+const httpServer = createServer(app)
+apollo.installSubscriptionHandlers(httpServer)
 
-ws.listen(process.env.PORT, (err) => {
+httpServer.listen(process.env.PORT, (err) => {
   if (err) throw err
 
   console.log(
     `[klicker-api] GraphQL ready on http://${process.env.APP_DOMAIN}:${
       process.env.PORT
     }${process.env.APP_PATH}!`,
-  )
-
-  if (process.env.NODE_ENV === 'development') {
-    console.log(
-      `[klicker-api] GraphiQL ready on http://${process.env.APP_DOMAIN}:${
-        process.env.PORT
-      }/graphiql!`,
-    )
-  }
-
-  // setup a subscription server
-  // eslint-disable-next-line no-new
-  new SubscriptionServer(
-    {
-      execute,
-      subscribe,
-      schema,
-    },
-    {
-      server: ws,
-      path: '/subscriptions',
-    },
   )
 })
 

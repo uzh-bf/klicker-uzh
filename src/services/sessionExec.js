@@ -1,5 +1,6 @@
 const md5 = require('md5')
 const _isNumber = require('lodash/isNumber')
+const { ForbiddenError, UserInputError } = require('apollo-server-express')
 
 const { QuestionInstanceModel, UserModel } = require('../models')
 const { QUESTION_GROUPS, QUESTION_TYPES } = require('../constants')
@@ -20,7 +21,7 @@ const addFeedback = async ({ sessionId, content }) => {
 
   // if the feedback channel is not activated, do not allow new additions
   if (!session.settings.isFeedbackChannelActive) {
-    throw new Error('SESSION_FEEDBACKS_DEACTIVATED')
+    throw new ForbiddenError('SESSION_FEEDBACKS_DEACTIVATED')
   }
 
   // push a new feedback into the array
@@ -50,7 +51,7 @@ const deleteFeedback = async ({ sessionId, feedbackId, userId }) => {
 
   // ensure the user is authorized to modify this session
   if (!session.user.equals(userId)) {
-    throw new Error('UNAUTHORIZED')
+    throw new ForbiddenError('UNAUTHORIZED')
   }
 
   session.feedbacks = session.feedbacks.filter(
@@ -70,7 +71,7 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
 
   // if the confusion barometer is not activated, do not allow new additions
   if (!session.settings.isConfusionBarometerActive) {
-    throw new Error('SESSION_CONFUSION_DEACTIVATED')
+    throw new ForbiddenError('SESSION_CONFUSION_DEACTIVATED')
   }
 
   // push a new timestep into the array
@@ -116,7 +117,7 @@ const addResponse = async ({
       redis.rpush(`${instanceId}:dropped`, JSON.stringify({ response }))
 
       // if strict filtering fails, drop here
-      throw new Error('ALREADY_RESPONDED')
+      throw new ForbiddenError('ALREADY_RESPONDED')
     }
 
     // if ip filtering is enabled, try adding the ip to redis
@@ -174,7 +175,7 @@ const addResponse = async ({
 
   // if the instance is closed, don't allow adding any responses
   if (!instance) {
-    throw new Error('INSTANCE_CLOSED')
+    throw new ForbiddenError('INSTANCE_CLOSED')
   }
 
   const questionType = instance.question.type
@@ -184,12 +185,12 @@ const addResponse = async ({
   if (QUESTION_GROUPS.CHOICES.includes(questionType)) {
     // if the response doesn't contain any valid choices, throw
     if (!response.choices || !response.choices.length > 0) {
-      throw new Error('INVALID_RESPONSE')
+      throw new UserInputError('INVALID_RESPONSE')
     }
 
     // if the response contains multiple choices for a SC question
     if (questionType === QUESTION_TYPES.SC && response.choices.length > 1) {
-      throw new Error('TOO_MANY_CHOICES')
+      throw new UserInputError('TOO_MANY_CHOICES')
     }
 
     // if it is the very first response, initialize results
@@ -210,18 +211,18 @@ const addResponse = async ({
     instance.markModified('results.CHOICES')
   } else if (QUESTION_GROUPS.FREE.includes(questionType)) {
     if (!response.value || response.value.length > 1000) {
-      throw new Error('INVALID_RESPONSE')
+      throw new UserInputError('INVALID_RESPONSE')
     }
 
     if (questionType === QUESTION_TYPES.FREE_RANGE) {
       if (!_isNumber(response.value * 1)) {
-        throw new Error('INVALID_RESPONSE')
+        throw new UserInputError('INVALID_RESPONSE')
       }
 
       // validate that the response lies within the specified range if given
       const { min, max } = currentVersion.options.FREE_RANGE.restrictions
       if ((min && response.value < min) || (max && response.value > max)) {
-        throw new Error('RESPONSE_OUT_OF_RANGE')
+        throw new UserInputError('RESPONSE_OUT_OF_RANGE')
       }
     }
 

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const { ForbiddenError } = require('apollo-server-express')
 
 const { ObjectId } = mongoose.Types
 
@@ -36,12 +37,12 @@ const getRunningSession = async (sessionId) => {
 
   // if the session is not yet running, throw an error
   if (session.status === SESSION_STATUS.CREATED) {
-    throw new Error('SESSION_NOT_STARTED')
+    throw new ForbiddenError('SESSION_NOT_STARTED')
   }
 
   // if the session has already finished, throw an error
   if (session.status === SESSION_STATUS.COMPLETED) {
-    throw new Error('SESSION_FINISHED')
+    throw new ForbiddenError('SESSION_FINISHED')
   }
 
   return session
@@ -119,7 +120,7 @@ const sessionAction = async ({ sessionId, userId, shortname }, actionType) => {
 
   // ensure the user is authorized to modify this session
   if (!user || !session || !session.user.equals(userId)) {
-    throw new Error('UNAUTHORIZED')
+    throw new ForbiddenError('UNAUTHORIZED')
   }
 
   // perform the action specified by the actionType
@@ -127,7 +128,7 @@ const sessionAction = async ({ sessionId, userId, shortname }, actionType) => {
     case SESSION_ACTIONS.START:
       // the user can't be running another session to start one
       if (user.runningSession) {
-        throw new Error('RUNNING_ANOTHER_SESSION')
+        throw new ForbiddenError('RUNNING_ANOTHER_SESSION')
       }
 
       // if the session is already running, just return it
@@ -137,7 +138,7 @@ const sessionAction = async ({ sessionId, userId, shortname }, actionType) => {
 
       // if the session to start was already completed, throw an error
       if (session.status === SESSION_STATUS.COMPLETED) {
-        throw new Error('SESSION_ALREADY_COMPLETED')
+        throw new ForbiddenError('SESSION_ALREADY_COMPLETED')
       }
 
       // update the session status to RUNNING
@@ -153,7 +154,7 @@ const sessionAction = async ({ sessionId, userId, shortname }, actionType) => {
 
     case SESSION_ACTIONS.PAUSE:
       if (!user.runningSession || session.status !== SESSION_STATUS.RUNNING) {
-        throw new Error('SESSION_NOT_RUNNING')
+        throw new ForbiddenError('SESSION_NOT_RUNNING')
       }
 
       // if the session is already paused, return it
@@ -169,7 +170,7 @@ const sessionAction = async ({ sessionId, userId, shortname }, actionType) => {
     case SESSION_ACTIONS.STOP:
       // if the session is not yet running, throw an error
       if (session.status === SESSION_STATUS.CREATED) {
-        throw new Error('SESSION_NOT_STARTED')
+        throw new ForbiddenError('SESSION_NOT_STARTED')
       }
 
       // if the session was already completed, return it
@@ -185,7 +186,7 @@ const sessionAction = async ({ sessionId, userId, shortname }, actionType) => {
       break
 
     default:
-      throw new Error('INVALID_SESSION_ACTION')
+      throw new ForbiddenError('INVALID_SESSION_ACTION')
   }
 
   // update the runningSession of the user depending on the action taken
@@ -230,7 +231,7 @@ const updateSettings = async ({
 
   // ensure the user is authorized to modify this session
   if (!session.user.equals(userId)) {
-    throw new Error('UNAUTHORIZED')
+    throw new ForbiddenError('UNAUTHORIZED')
   }
 
   // merge the existing settings with the new settings
@@ -266,7 +267,7 @@ const activateNextBlock = async ({ userId, shortname }) => {
   const { runningSession } = user
 
   if (!runningSession) {
-    throw new Error('NO_RUNNING_SESSION')
+    throw new ForbiddenError('NO_RUNNING_SESSION')
   }
 
   // if all the blocks have already been activated, simply return the session
