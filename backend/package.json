@@ -35,7 +35,7 @@
     "mongodb": "3.0.8",
     "mongoose": "5.1.2",
     "morgan": "1.9.0",
-    "nodemailer": "4.6.5",
+    "nodemailer": "4.6.7",
     "rate-limit-redis": "1.4.0",
     "raven": "2.6.3",
     "react": "16.4.0",
