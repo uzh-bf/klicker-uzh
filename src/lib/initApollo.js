@@ -1,6 +1,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 // https://github.com/zeit/next.js/blob/canary/examples/with-apollo/lib/initApollo.js
 // websockets: https://github.com/zeit/next.js/issues/3261
+import fetch from 'isomorphic-unfetch'
 
 import { ApolloClient } from 'apollo-client'
 import { BatchHttpLink } from 'apollo-link-batch-http'
@@ -9,10 +10,8 @@ import { withClientState } from 'apollo-link-state'
 import { ApolloLink, split } from 'apollo-link'
 import { WebSocketLink } from 'apollo-link-ws'
 import { SubscriptionClient } from 'subscriptions-transport-ws'
-
-// import { createPersistedQueryLink } from 'apollo-link-persisted-queries'
+import { createPersistedQueryLink } from 'apollo-link-persisted-queries'
 import { InMemoryCache } from 'apollo-cache-inmemory'
-import fetch from 'isomorphic-unfetch'
 import { getMainDefinition } from 'apollo-utilities'
 
 const ssrMode = !process.browser
@@ -61,12 +60,8 @@ function create(initialState) {
   if (!ssrMode) {
     // instantiate a basic subscription client
     const wsClient = new SubscriptionClient(
-      process.env.API_URL_WS || 'ws://localhost:4000/subscriptions',
+      process.env.API_URL_WS || 'ws://localhost:4000/graphql',
       {
-        // TODO: include JWT
-        /* connectionParams: {
-        authToken: user.authToken,
-      }, */
         reconnect: true,
       },
     )
@@ -103,14 +98,13 @@ function create(initialState) {
       }
       if (networkError) console.log(`[Network error]: ${networkError}`)
     }),
+    createPersistedQueryLink({
+      // we need to pass both disable and generateHash (or it will bug)
+      // disable: defaultDisable,
+      generateHash: ({ documentId }) => documentId,
+    }),
     httpLink,
   ])
-
-  /* const persistQueriesLink = createPersistedQueryLink({
-    // we need to pass both disable and generateHash (or it will bug)
-    disable: defaultDisable,
-    generateHash: ({ documentId }) => documentId,
-  }) */
 
   return new ApolloClient({
     cache,
