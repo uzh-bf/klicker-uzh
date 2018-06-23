@@ -64,7 +64,12 @@ export default (cfg = {}) =>
           }
 
           // embed logrocket if enabled
-          if (isProd && process.env.LOGROCKET && config.logRocket && !window.INIT_LR) {
+          if (
+            isProd &&
+            process.env.LOGROCKET &&
+            config.logRocket &&
+            !window.INIT_LR
+          ) {
             LogRocket.init(process.env.LOGROCKET)
             LogRocketReact(LogRocket)
 

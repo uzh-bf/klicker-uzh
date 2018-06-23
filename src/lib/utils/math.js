@@ -28,10 +28,8 @@ export const calculateMax = (values) => {
 }
 
 // calculate the mean using reduce
-export const calculateMean = values =>
-  // sum all values according their count
-  // and divide trough the total count of values
-  values.data.reduce((sum, { count, value }) => sum + count * value, 0) / values.totalResponses
+export const calculateMean = values => values.data.reduce((sum, { count, value }) => sum + count * value, 0)
+  / values.totalResponses
 
 // calculate the median using reduce
 export const calculateMedian = (values) => {
@@ -78,7 +76,9 @@ export const calculateThirdQuartile = values => calculatePercentile(values, 75)
 export const calculateStandardDeviation = (values) => {
   // get the mean and squared differences of all values to the mean
   const mean = calculateMean(values)
-  const sqrdDiffs = values.data.map(({ count, value }) => count * (value - mean) ** 2)
+  const sqrdDiffs = values.data.map(
+    ({ count, value }) => count * (value - mean) ** 2,
+  )
 
   // get the sum of all squared differences
   const sqrdDiffsSum = sqrdDiffs.reduce((sum, value) => sum + value, 0)

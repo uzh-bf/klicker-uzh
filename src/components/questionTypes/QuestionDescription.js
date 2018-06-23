@@ -1,3 +1,5 @@
+/* eslint-disable react/no-danger */
+
 import React from 'react'
 import PropTypes from 'prop-types'
 
@@ -15,8 +17,9 @@ const QuestionDescription = ({ content, description }) => {
   })
 
   // return the content div with "unsafe" HTML
-  // eslint-disable-next-line
-  return <div className="description" dangerouslySetInnerHTML={createMarkup()} />
+  return (
+    <div className="description" dangerouslySetInnerHTML={createMarkup()} />
+  )
 }
 
 QuestionDescription.propTypes = propTypes

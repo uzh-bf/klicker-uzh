@@ -90,21 +90,23 @@ const Index = ({
         name={sessionName}
       />
 
-      <style jsx>{`
-        .creationForm {
-          animation-name: slide-in;
-          animation-duration: 0.5s;
-        }
+      <style jsx>
+        {`
+          .creationForm {
+            animation-name: slide-in;
+            animation-duration: 0.5s;
+          }
 
-        @keyframes slide-in {
-          0% {
-            transform: translateY(300px);
+          @keyframes slide-in {
+            0% {
+              transform: translateY(300px);
+            }
+            100% {
+              transform: translateY(0);
+            }
           }
-          100% {
-            transform: translateY(0);
-          }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   )
 
@@ -113,7 +115,9 @@ const Index = ({
       {({ data }) => (
         <TeacherLayout
           fixedHeight
-          actionArea={creationMode ? creationForm(data.runningSession?.id) : null}
+          actionArea={
+            creationMode ? creationForm(data.runningSession?.id) : null
+          }
           intl={intl}
           navbar={{
             search: {
@@ -173,76 +177,78 @@ const Index = ({
             </div>
           </div>
 
-          <style jsx>{`
-            @import 'src/theme';
+          <style jsx>
+            {`
+              @import 'src/theme';
 
-            .questionPool {
-              display: flex;
-              flex-direction: column;
-              height: 100%;
-
-              overflow-y: auto;
-
-              .tagList {
-                height: 100%;
-                min-width: 5rem;
-
-                flex: 1;
-                background: $color-primary-05p;
-                padding: 0.5rem;
-              }
-
-              .wrapper {
+              .questionPool {
+                display: flex;
+                flex-direction: column;
                 height: 100%;
 
-                .questionList {
-                  height: 100%;
-
-                  display: flex;
-                  flex-direction: column;
-
-                  margin: 0 auto;
-                  max-width: $max-width;
-
-                  .questionListContent {
-                    flex: 1;
-                    height: 100%;
-
-                    padding: 1rem;
-                  }
-                }
-              }
-
-              @include desktop-tablet-only {
-                flex-flow: row wrap;
                 overflow-y: auto;
 
                 .tagList {
-                  overflow-y: auto;
-                  flex: 0 0 auto;
-                  padding: 2rem 1rem;
+                  height: 100%;
+                  min-width: 5rem;
 
-                  border-right: 1px solid $color-primary;
+                  flex: 1;
+                  background: $color-primary-05p;
+                  padding: 0.5rem;
                 }
 
                 .wrapper {
-                  flex: 1;
-                  padding: 1rem;
+                  height: 100%;
 
                   .questionList {
+                    height: 100%;
+
+                    display: flex;
+                    flex-direction: column;
+
+                    margin: 0 auto;
+                    max-width: $max-width;
+
                     .questionListContent {
-                      overflow-y: auto;
-                      padding: 1rem 1rem 0 0;
+                      flex: 1;
+                      height: 100%;
+
+                      padding: 1rem;
                     }
                   }
                 }
-              }
 
-              @include desktop-only {
-                padding: 0;
+                @include desktop-tablet-only {
+                  flex-flow: row wrap;
+                  overflow-y: auto;
+
+                  .tagList {
+                    overflow-y: auto;
+                    flex: 0 0 auto;
+                    padding: 2rem 1rem;
+
+                    border-right: 1px solid $color-primary;
+                  }
+
+                  .wrapper {
+                    flex: 1;
+                    padding: 1rem;
+
+                    .questionList {
+                      .questionListContent {
+                        overflow-y: auto;
+                        padding: 1rem 1rem 0 0;
+                      }
+                    }
+                  }
+                }
+
+                @include desktop-only {
+                  padding: 0;
+                }
               }
-            }
-          `}</style>
+            `}
+          </style>
         </TeacherLayout>
       )}
     </Query>
@@ -286,7 +292,10 @@ export default compose(
       },
 
       // build a single block from all the checked questions
-      handleQuickBlock: ({ sessionBlocks }, { handleResetSelection, selectedItems }) => () => {
+      handleQuickBlock: (
+        { sessionBlocks },
+        { handleResetSelection, selectedItems },
+      ) => () => {
         // reset the checked questions
         handleResetSelection()
 
@@ -311,7 +320,10 @@ export default compose(
       },
 
       // build a separate block for each checked question
-      handleQuickBlocks: ({ sessionBlocks }, { handleResetSelection, selectedItems }) => () => {
+      handleQuickBlocks: (
+        { sessionBlocks },
+        { handleResetSelection, selectedItems },
+      ) => () => {
         // reset the checked questions
         handleResetSelection()
 
@@ -339,7 +351,10 @@ export default compose(
 
       // override the toggle archive function
       // need to reset the selection on toggling archive to not apply actions to hidden questions
-      handleToggleArchive: (_, { handleResetSelection, handleToggleArchive }) => () => {
+      handleToggleArchive: (
+        _,
+        { handleResetSelection, handleToggleArchive },
+      ) => () => {
         handleResetSelection()
         handleToggleArchive()
       },
@@ -380,7 +395,10 @@ export default compose(
       try {
         // prepare blocks for consumption through the api
         const blocks = sessionBlocks.map(({ questions }) => ({
-          questions: questions.map(({ id, version }) => ({ question: id, version })),
+          questions: questions.map(({ id, version }) => ({
+            question: id,
+            version,
+          })),
         }))
 
         // create a new session

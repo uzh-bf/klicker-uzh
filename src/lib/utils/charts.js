@@ -20,7 +20,13 @@ export function indexToLetter(index) {
 }
 
 // determine whether the label (A,B, ...) is displayed within the bar or not
-export function getLabelIn(chartType, questionType, count, totalResponses, index) {
+export function getLabelIn(
+  chartType,
+  questionType,
+  count,
+  totalResponses,
+  index,
+) {
   if (chartType === CHART_TYPES.BAR_CHART) {
     if (count / totalResponses > SMALL_BAR_THRESHOLD) {
       return count
@@ -37,7 +43,13 @@ export function getLabelIn(chartType, questionType, count, totalResponses, index
 }
 
 // determine whether the label (A,B, ...) is displayed outside the bar or not
-export function getLabelOut(chartType, questionType, count, totalResponses, index) {
+export function getLabelOut(
+  chartType,
+  questionType,
+  count,
+  totalResponses,
+  index,
+) {
   if (chartType === CHART_TYPES.BAR_CHART) {
     if (count / totalResponses <= SMALL_BAR_THRESHOLD) {
       return count

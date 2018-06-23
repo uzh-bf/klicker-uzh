@@ -4,7 +4,10 @@ import React from 'react'
 import Autosuggest from 'react-autosuggest'
 import _sortBy from 'lodash/sortBy'
 
-const autocompleteRenderInput = (tags, currentValue) => ({ addTag, ...props }) => {
+const autocompleteRenderInput = (tags, currentValue) => ({
+  addTag,
+  ...props
+}) => {
   const { ref, value } = props
 
   const handleOnChange = (e, { newValue, method }) => {
@@ -20,15 +23,19 @@ const autocompleteRenderInput = (tags, currentValue) => ({ addTag, ...props }) =
 
   // calculate suggestions for possible tags
   const suggestions = tags.filter(
-    ({ name }) =>
-      name.toLowerCase().slice(0, inputLength) === inputValue && !currentValue.includes(name),
+    ({ name }) => name.toLowerCase().slice(0, inputLength) === inputValue
+      && !currentValue.includes(name),
   )
 
   // sort the suggestions
   const sortedSuggestions = _sortBy(suggestions, ['name'])
 
   const getSuggestionValue = ({ name }) => name
-  const renderSuggestion = ({ name }) => <span>{name}</span>
+  const renderSuggestion = ({ name }) => (
+    <span>
+      {name}
+    </span>
+  )
 
   return (
     <Autosuggest

@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 
-import { QuestionDescription } from '../'
+import { QuestionDescription } from '..'
 import SCAnswerOptions from './SCAnswerOptions'
 
 const propTypes = {
@@ -34,39 +34,41 @@ const SCCreationPreview = ({ description, options }) => (
       <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
     </div>
 
-    <style jsx>{`
-      @import 'src/theme';
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-      .preview {
-        display: flex;
-        flex-direction: column;
+        .preview {
+          display: flex;
+          flex-direction: column;
 
-        border: 1px solid lightgrey;
-        height: 100%;
-        padding: 1rem;
+          border: 1px solid lightgrey;
+          height: 100%;
+          padding: 1rem;
 
-        @include desktop-tablet-only {
-          min-height: 18.5rem;
+          @include desktop-tablet-only {
+            min-height: 18.5rem;
+          }
         }
-      }
 
-      .title,
-      .description,
-      .options {
-        margin-bottom: 1rem;
-      }
+        .title,
+        .description,
+        .options {
+          margin-bottom: 1rem;
+        }
 
-      .title {
-        font-weight: bold;
-      }
+        .title {
+          font-weight: bold;
+        }
 
-      .button {
-        align-self: flex-end;
+        .button {
+          align-self: flex-end;
 
-        border: 1px solid lightgrey;
-        padding: 0.5rem;
-      }
-    `}</style>
+          border: 1px solid lightgrey;
+          padding: 0.5rem;
+        }
+      `}
+    </style>
   </div>
 )
 

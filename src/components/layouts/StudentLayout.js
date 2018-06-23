@@ -10,7 +10,7 @@ const propTypes = {
   children: PropTypes.node.isRequired,
   isInteractionEnabled: PropTypes.bool,
   pageTitle: PropTypes.string,
-  sidebar: PropTypes.shape(Sidebar.propTypes).isRequired,
+  sidebar: PropTypes.object.isRequired,
   title: PropTypes.string.isRequired,
 }
 
@@ -20,19 +20,29 @@ const defaultProps = {
 }
 
 const StudentLayout = ({
-  children, isInteractionEnabled, pageTitle, sidebar, title,
+  children,
+  isInteractionEnabled,
+  pageTitle,
+  sidebar,
+  title,
 }) => {
   const activeQuestionItem = {
     href: 'activeQuestion',
     label: (
-      <FormattedMessage defaultMessage="Active Question" id="joinSessionsidebar.activeQuestion" />
+      <FormattedMessage
+        defaultMessage="Active Question"
+        id="joinSessionsidebar.activeQuestion"
+      />
     ),
     name: 'activeQuestion',
   }
   const feedbackChannelItem = {
     href: 'feedbackChannel',
     label: (
-      <FormattedMessage defaultMessage="Feedback-Channel" id="joinSessionsidebar.feedbackChannel" />
+      <FormattedMessage
+        defaultMessage="Feedback-Channel"
+        id="joinSessionsidebar.feedbackChannel"
+      />
     ),
     name: 'feedbackChannel',
   }
@@ -51,7 +61,9 @@ const StudentLayout = ({
             icon="content"
             onClick={sidebar.handleToggleSidebarVisible}
           />
-          <h1>{title}</h1>
+          <h1>
+            {title}
+          </h1>
           <Button
             basic
             disabled={sidebar.activeItem !== 'activeQuestion'}
@@ -71,46 +83,48 @@ const StudentLayout = ({
           </Sidebar>
         </div>
 
-        <style jsx>{`
-          @import 'src/theme';
+        <style jsx>
+          {`
+            @import 'src/theme';
 
-          .studentLayout {
-            display: flex;
-            flex-direction: column;
-
-            height: 100%;
-
-            .header {
-              flex: 0 0 auto;
-
+            .studentLayout {
               display: flex;
-              justify-content: space-between;
+              flex-direction: column;
 
-              align-items: center;
+              height: 100%;
 
-              border-bottom: 1px solid lightgrey;
-              padding: 0.5rem;
-            }
-
-            .header > h1 {
-              font-size: 1.5rem;
-              margin: 0;
-              margin-left: 1rem;
-            }
-
-            .content {
-              flex: 1;
-
-              display: flex;
-            }
-
-            @include desktop-tablet-only {
               .header {
-                display: none;
+                flex: 0 0 auto;
+
+                display: flex;
+                justify-content: space-between;
+
+                align-items: center;
+
+                border-bottom: 1px solid lightgrey;
+                padding: 0.5rem;
+              }
+
+              .header > h1 {
+                font-size: 1.5rem;
+                margin: 0;
+                margin-left: 1rem;
+              }
+
+              .content {
+                flex: 1;
+
+                display: flex;
+              }
+
+              @include desktop-tablet-only {
+                .header {
+                  display: none;
+                }
               }
             }
-          }
-        `}</style>
+          `}
+        </style>
       </div>
     </CommonLayout>
   )

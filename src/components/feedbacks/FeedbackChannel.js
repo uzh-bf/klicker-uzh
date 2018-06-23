@@ -7,7 +7,7 @@ import { lifecycle } from 'recompose'
 import Feedback from './Feedback'
 
 const propTypes = {
-  feedbacks: PropTypes.arrayOf(Feedback.propTypes),
+  feedbacks: PropTypes.arrayOf(PropTypes.object),
   handleActiveToggle: PropTypes.func.isRequired,
   handleDeleteFeedback: PropTypes.func.isRequired,
   handlePublicToggle: PropTypes.func.isRequired,
@@ -80,59 +80,61 @@ const FeedbackChannel = ({
       </div>
     )}
 
-    <style jsx>{`
-      @import 'src/theme';
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-      .feedbackChannel {
-        display: flex;
-        flex-direction: column;
-      }
-
-      h2,
-      .toggle,
-      .feedbacks {
-        flex: 1;
-      }
-
-      h2 {
-        margin-bottom: 1rem;
-      }
-
-      .publicationToggle {
-        margin-top: 1rem;
-      }
-
-      .feedbacks {
-        margin-top: 1rem;
-      }
-
-      .feedback:not(:last-child) {
-        margin-bottom: 1rem;
-      }
-
-      @include desktop-tablet-only {
         .feedbackChannel {
-          flex-flow: row wrap;
+          display: flex;
+          flex-direction: column;
         }
 
         h2,
+        .toggle,
         .feedbacks {
-          flex: 0 0 100%;
+          flex: 1;
         }
 
-        .toggle {
-          flex: 0 0 auto;
+        h2 {
+          margin-bottom: 1rem;
         }
 
         .publicationToggle {
-          margin: 0 0 0 2rem;
+          margin-top: 1rem;
+        }
+
+        .feedbacks {
+          margin-top: 1rem;
         }
 
         .feedback:not(:last-child) {
-          margin-bottom: 0.5rem;
+          margin-bottom: 1rem;
         }
-      }
-    `}</style>
+
+        @include desktop-tablet-only {
+          .feedbackChannel {
+            flex-flow: row wrap;
+          }
+
+          h2,
+          .feedbacks {
+            flex: 0 0 100%;
+          }
+
+          .toggle {
+            flex: 0 0 auto;
+          }
+
+          .publicationToggle {
+            margin: 0 0 0 2rem;
+          }
+
+          .feedback:not(:last-child) {
+            margin-bottom: 0.5rem;
+          }
+        }
+      `}
+    </style>
   </div>
 )
 

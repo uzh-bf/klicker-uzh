@@ -18,24 +18,38 @@ const defaultProps = {
 }
 
 const SCCreationOption = ({
-  correct, disabled, name, handleCorrectToggle, handleDelete,
+  correct,
+  disabled,
+  name,
+  handleCorrectToggle,
+  handleDelete,
 }) => (
   <div className={classNames('option', { correct })}>
-    <button className="leftAction" disabled={disabled} onClick={handleDelete}>
+    <button
+      className="leftAction"
+      disabled={disabled}
+      type="button"
+      onClick={handleDelete}
+    >
       <Icon name="trash" />
     </button>
 
     <button
       className={classNames('toggle', { correct })}
       disabled={disabled}
+      type="button"
       onClick={handleCorrectToggle}
     >
       {correct ? <Icon name="checkmark" /> : <Icon name="remove" />}
     </button>
 
-    <div className="name">{name}</div>
+    <div className="name">
+      {name}
+    </div>
 
-    <style jsx>{styles}</style>
+    <style jsx>
+      {styles}
+    </style>
   </div>
 )
 
