@@ -1,6 +1,6 @@
 {
   "name": "klicker-react",
-  "version": "1.0.0-public.beta.32",
+  "version": "0.0.0-development",
   "main": "server.js",
   "repository": "https://github.com/uzh-bf/klicker-react.git",
   "author": "Roland Schläfli <roland.schlaefli@bf.uzh.ch>",
@@ -132,7 +132,9 @@
     "semantic-ui-css": "2.3.2",
     "storybook-addon-intl": "2.3.0",
     "webpack-bundle-analyzer": "2.13.1",
-    "why-did-you-update": "0.1.1"
+    "why-did-you-update": "0.1.1",
+    "travis-deploy-once": "5.0.0",
+    "semantic-release": "15.6.0"
   },
   "scripts": {
     "precommit": "lint-staged",
@@ -155,7 +157,9 @@
     "storybook": "cross-env NODE_ENV=development start-storybook -p 6006 -c .storybook",
     "test": "jest",
     "test:ci": "jest --coverage",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "travis-deploy-once": "travis-deploy-once",
+    "semantic-release": "semantic-release"
   },
   "jest": {
     "testEnvironment": "node",
