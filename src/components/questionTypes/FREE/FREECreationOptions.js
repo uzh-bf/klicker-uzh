@@ -47,7 +47,12 @@ const FREECreationOptions = ({
           </a>
         </label>
 
-        <ReactTooltip delayHide={250} delayShow={250} id="FREECreationHelp" place="right">
+        <ReactTooltip
+          delayHide={250}
+          delayShow={250}
+          id="FREECreationHelp"
+          place="right"
+        >
           <FormattedMessage
             defaultMessage="Choose the allowed format of incoming responses."
             id="createQuestion.optionsFREE.tooltip"
@@ -59,7 +64,10 @@ const FREECreationOptions = ({
         <div className="range">
           <Form.Field>
             <label htmlFor="min">
-              <FormattedMessage defaultMessage="Min" id="createQuestion.options.min" />
+              <FormattedMessage
+                defaultMessage="Min"
+                id="createQuestion.options.min"
+              />
             </label>
             <Input
               disabled={disabled}
@@ -73,7 +81,10 @@ const FREECreationOptions = ({
 
           <Form.Field>
             <label htmlFor="max">
-              <FormattedMessage defaultMessage="Max" id="createQuestion.options.max" />
+              <FormattedMessage
+                defaultMessage="Max"
+                id="createQuestion.options.max"
+              />
             </label>
             <Input
               disabled={disabled}
@@ -88,44 +99,46 @@ const FREECreationOptions = ({
       </Form.Field>
     )}
 
-    <style jsx>{`
-      @import 'src/theme';
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-      .FREECreationOptions {
-        @include tooltip-icon;
+        .FREECreationOptions {
+          @include tooltip-icon;
 
-        .optionsChooser {
-          display: flex;
+          .optionsChooser {
+            display: flex;
 
-          > :global(*):not(:last-child) {
-            margin-right: 1rem;
-          }
-        }
-
-        .range {
-          display: flex;
-          flex-direction: column;
-
-          margin-top: 1rem;
-
-          :global(.field) > label {
-            font-size: 1rem;
+            > :global(*):not(:last-child) {
+              margin-right: 1rem;
+            }
           }
 
-          @include desktop-tablet-only {
-            flex-direction: row;
+          .range {
+            display: flex;
+            flex-direction: column;
 
-            :global(.field) {
-              width: 10rem;
+            margin-top: 1rem;
 
-              &:not(:last-child) {
-                margin-right: 1rem;
+            :global(.field) > label {
+              font-size: 1rem;
+            }
+
+            @include desktop-tablet-only {
+              flex-direction: row;
+
+              :global(.field) {
+                width: 10rem;
+
+                &:not(:last-child) {
+                  margin-right: 1rem;
+                }
               }
             }
           }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

@@ -1,7 +1,11 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
-import { arrayMove, SortableContainer, SortableElement } from 'react-sortable-hoc'
+import {
+  arrayMove,
+  SortableContainer,
+  SortableElement,
+} from 'react-sortable-hoc'
 import { FormattedMessage } from 'react-intl'
 import { compose, mapProps, withHandlers } from 'recompose'
 import { Form, Icon } from 'semantic-ui-react'
@@ -17,7 +21,7 @@ const propTypes = {
   handleOptionToggleCorrect: PropTypes.func.isRequired,
   handleUpdateOrder: PropTypes.func.isRequired,
   invalid: PropTypes.bool.isRequired,
-  value: PropTypes.arrayOf(PropTypes.shape(SCCreationOption.propTypes)).isRequired,
+  value: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 // create the purely functional component
@@ -34,12 +38,14 @@ const SCCreationOptions = ({
   const Option = props => (
     <div className="option">
       <SCCreationOption disabled={disabled} {...props} />
-      <style jsx>{`
-        .option {
-          cursor: grab;
-          margin-bottom: 0.5rem;
-        }
-      `}</style>
+      <style jsx>
+        {`
+          .option {
+            cursor: grab;
+            margin-bottom: 0.5rem;
+          }
+        `}
+      </style>
     </div>
   )
 
@@ -79,7 +85,12 @@ const SCCreationOptions = ({
           </a>
         </label>
 
-        <ReactTooltip delayHide={250} delayShow={250} id="SCCreationHelp" place="right">
+        <ReactTooltip
+          delayHide={250}
+          delayShow={250}
+          id="SCCreationHelp"
+          place="right"
+        >
           <FormattedMessage
             defaultMessage="Add answering options the respondents can choose from."
             id="createQuestion.optionsSC.tooltip"
@@ -96,12 +107,14 @@ const SCCreationOptions = ({
         {!disabled && <SCCreationPlaceholder handleSave={handleNewOption} />}
       </Form.Field>
 
-      <style jsx>{`
-        @import 'src/theme';
-        .SCCreationOptions {
-          @include tooltip-icon;
-        }
-      `}</style>
+      <style jsx>
+        {`
+          @import 'src/theme';
+          .SCCreationOptions {
+            @include tooltip-icon;
+          }
+        `}
+      </style>
     </div>
   )
 }
@@ -120,8 +133,7 @@ export default compose(
     value: value.choices,
   })),
   withHandlers({
-    handleDeleteOption: ({ onChange, value }) => index => () =>
-      onChange([...value.slice(0, index), ...value.slice(index + 1)]),
+    handleDeleteOption: ({ onChange, value }) => index => () => onChange([...value.slice(0, index), ...value.slice(index + 1)]),
 
     handleNewOption: ({ onChange, value }) => newOption => onChange([...value, newOption]),
 
@@ -134,7 +146,6 @@ export default compose(
       ])
     },
 
-    handleUpdateOrder: ({ onChange, value }) => ({ oldIndex, newIndex }) =>
-      onChange(arrayMove(value, oldIndex, newIndex)),
+    handleUpdateOrder: ({ onChange, value }) => ({ oldIndex, newIndex }) => onChange(arrayMove(value, oldIndex, newIndex)),
   }),
 )(SCCreationOptions)

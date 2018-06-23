@@ -29,28 +29,46 @@ const defaultProps = {
 }
 
 const FREEAnswerOptions = ({
-  disabled, onChange, options, value, questionType,
+  disabled,
+  onChange,
+  options,
+  value,
+  questionType,
 }) => (
   <div className="ui form freeAnswerOptions">
-    <Head>{createLinks(['https://unpkg.com/react-rangeslider/umd/rangeslider.min.css'])}</Head>
+    <Head>
+      {createLinks([
+        'https://unpkg.com/react-rangeslider/umd/rangeslider.min.css',
+      ])}
+    </Head>
 
     {(() => {
       if (
-        questionType === QUESTION_TYPES.FREE_RANGE &&
-        options.restrictions.min !== null &&
-        options.restrictions.max !== null
+        questionType === QUESTION_TYPES.FREE_RANGE
+        && options.restrictions.min !== null
+        && options.restrictions.max !== null
       ) {
         return (
           <div className="field slider">
             <span className="min">
               <strong>
-                <FormattedMessage defaultMessage="Min" id="createQuestion.options.min" />
-              </strong>: {options.restrictions.min}
+                <FormattedMessage
+                  defaultMessage="Min"
+                  id="createQuestion.options.min"
+                />
+              </strong>
+              :
+              {options.restrictions.min}
             </span>
             <span className="max">
               <strong>
-                <FormattedMessage defaultMessage="Max" id="createQuestion.options.max" />
-              </strong>: {options.restrictions.max}
+                <FormattedMessage
+                  defaultMessage="Max"
+                  id="createQuestion.options.max"
+                />
+              </strong>
+              :
+              {options.restrictions.max}
             </span>
             <Slider
               disabled={disabled}
@@ -87,16 +105,26 @@ const FREEAnswerOptions = ({
               {options.FREE_RANGE.restrictions.min !== null && (
                 <div>
                   <strong>
-                    <FormattedMessage defaultMessage="Min" id="createQuestion.options.min" />
-                  </strong>: {options.restrictions.min}
+                    <FormattedMessage
+                      defaultMessage="Min"
+                      id="createQuestion.options.min"
+                    />
+                  </strong>
+                  :
+                  {options.restrictions.min}
                 </div>
               )}
 
               {options.FREE_RANGE.restrictions.max !== null && (
                 <div>
                   <strong>
-                    <FormattedMessage defaultMessage="Max" id="createQuestion.options.max" />
-                  </strong>: {options.restrictions.max}
+                    <FormattedMessage
+                      defaultMessage="Max"
+                      id="createQuestion.options.max"
+                    />
+                  </strong>
+                  :
+                  {options.restrictions.max}
                 </div>
               )}
             </div>
@@ -105,51 +133,53 @@ const FREEAnswerOptions = ({
       )
     })()}
 
-    <style jsx>{`
-      @import 'src/theme';
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-      .freeAnswerOptions {
-        .slider {
-          .min,
-          .max {
-            font-size: 1rem;
+        .freeAnswerOptions {
+          .slider {
+            .min,
+            .max {
+              font-size: 1rem;
+            }
+
+            .max {
+              float: right;
+            }
           }
 
-          .max {
-            float: right;
-          }
-        }
-
-        textarea {
-          height: 100%;
-          min-height: 10rem;
-          width: 100%;
-        }
-
-        :global(.rangeslider__fill) {
-          background-color: $color-primary;
-        }
-
-        :global(.rangeslider__handle) {
-          padding: 1rem;
-
-          &:after {
-            display: none;
+          textarea {
+            height: 100%;
+            min-height: 10rem;
+            width: 100%;
           }
 
-          &:focus {
-            outline: none;
+          :global(.rangeslider__fill) {
+            background-color: $color-primary;
+          }
+
+          :global(.rangeslider__handle) {
+            padding: 1rem;
+
+            &:after {
+              display: none;
+            }
+
+            &:focus {
+              outline: none;
+            }
+          }
+
+          :global(.rangeslider__handle-label) {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate3d(-50%, -50%, 0);
           }
         }
-
-        :global(.rangeslider__handle-label) {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate3d(-50%, -50%, 0);
-        }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

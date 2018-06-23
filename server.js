@@ -41,7 +41,9 @@ const app = next({ dev: isDev, dir: APP_DIR })
 const handle = app.getRequestHandler()
 
 // Get the supported languages by looking for translations in the `lang/` dir.
-const languages = glob.sync(`${APP_DIR}/lang/*.json`).map(f => basename(f, '.json'))
+const languages = glob
+  .sync(`${APP_DIR}/lang/*.json`)
+  .map(f => basename(f, '.json'))
 
 const getLocale = (req) => {
   // if a locale cookie was already set, use the locale saved within
@@ -105,7 +107,13 @@ const connectCache = async () => {
 const getCacheKey = req => `${req.url}:${req.locale}`
 
 // render a page to html and cache it in the appropriate place
-const renderAndCache = async (req, res, pagePath, queryParams, expiration = 60) => {
+const renderAndCache = async (
+  req,
+  res,
+  pagePath,
+  queryParams,
+  expiration = 60,
+) => {
   const key = getCacheKey(req)
 
   let cached
@@ -263,7 +271,12 @@ app
             cached,
           )
         } else {
-          app.render(req, res, renderPath || url, mapParams ? mapParams(req) : undefined)
+          app.render(
+            req,
+            res,
+            renderPath || url,
+            mapParams ? mapParams(req) : undefined,
+          )
         }
       })
     })
@@ -282,7 +295,10 @@ app
 
       // set the APM transaction name
       if (apm) {
-        if (req.originalUrl.length > 6 && req.originalUrl.substring(0, 6) !== '/_next') {
+        if (
+          req.originalUrl.length > 6
+          && req.originalUrl.substring(0, 6) !== '/_next'
+        ) {
           apm.setTransactionName(`${req.method} ${req.originalUrl}`)
         }
 
