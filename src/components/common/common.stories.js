@@ -7,7 +7,9 @@ import { compose, withHandlers, withState } from 'recompose'
 
 import { intlMock } from '../../../.storybook/utils'
 
-import { ActionMenu, Button, ListWithHeader, Collapser } from '.'
+import {
+  ActionMenu, Button, ListWithHeader, Collapser,
+} from '.'
 import { AccountArea, SearchArea, SessionArea } from './navbar'
 import { Sidebar, SidebarItem, LanguageSwitcher } from './sidebar'
 
@@ -32,7 +34,9 @@ const collapserContent = (
       fact very very long. the end is even hidden at the beginning.
     </p>
 
-    <p>wow, is this a long question. i could never have imagined seeing such a question.</p>
+    <p>
+wow, is this a long question. i could never have imagined seeing such a question.
+    </p>
   </div>
 )
 
@@ -40,8 +44,16 @@ storiesOf('common/components', module)
   .add('ActionMenu', () => (
     <ActionMenu items={[{ done: false }, { done: true }]} setActiveIndex={f => f} />
   ))
-  .add('Button', () => <Button>Hello World!</Button>)
-  .add('Button (active)', () => <Button active>Hello World!</Button>)
+  .add('Button', () => (
+    <Button>
+Hello World!
+    </Button>
+  ))
+  .add('Button (active)', () => (
+    <Button active>
+Hello World!
+    </Button>
+  ))
   .add('Collapser', () => (
     <CollapserWithState>
       {collapserContent}
@@ -55,7 +67,9 @@ storiesOf('common/components', module)
     </Collapser>
   ))
   .add('ListWithHeader', () => (
-    <ListWithHeader items={['abcd', 'cdef']}>hello world</ListWithHeader>
+    <ListWithHeader items={['abcd', 'cdef']}>
+hello world
+    </ListWithHeader>
   ))
 
 storiesOf('common/navbar', module)

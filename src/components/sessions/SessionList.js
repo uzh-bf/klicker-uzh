@@ -14,19 +14,39 @@ import { buildIndex, filterSessions } from '../../lib'
 const statusCases = {
   [SESSION_STATUS.COMPLETED]: {
     icon: 'copy',
-    message: <FormattedMessage defaultMessage="Copy" id="session.button.completed.content" />,
+    message: (
+      <FormattedMessage
+        defaultMessage="Copy"
+        id="session.button.completed.content"
+      />
+    ),
   },
   [SESSION_STATUS.CREATED]: {
     icon: 'play',
-    message: <FormattedMessage defaultMessage="Start" id="session.button.created.content" />,
+    message: (
+      <FormattedMessage
+        defaultMessage="Start"
+        id="session.button.created.content"
+      />
+    ),
   },
   [SESSION_STATUS.RUNNING]: {
     icon: 'play',
-    message: <FormattedMessage defaultMessage="Running" id="session.button.running.content" />,
+    message: (
+      <FormattedMessage
+        defaultMessage="Running"
+        id="session.button.running.content"
+      />
+    ),
   },
   [SESSION_STATUS.PAUSED]: {
     icon: 'pause',
-    message: <FormattedMessage defaultMessage="Continue" id="session.button.paused.content" />,
+    message: (
+      <FormattedMessage
+        defaultMessage="Continue"
+        id="session.button.paused.content"
+      />
+    ),
   },
 }
 
@@ -36,7 +56,11 @@ const propTypes = {
   handleStartSession: PropTypes.func.isRequired,
 }
 
-export const SessionListPres = ({ filters, handleCopySession, handleStartSession }) => {
+export const SessionListPres = ({
+  filters,
+  handleCopySession,
+  handleStartSession,
+}) => {
   // calculate what action to take on button click based on session status
   const handleSessionAction = (sessionId, status) => {
     if (status === SESSION_STATUS.CREATED || status === SESSION_STATUS.PAUSED) {
@@ -63,7 +87,11 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
           }
 
           if (error) {
-            return <Message error>{error.message}</Message>
+            return (
+              <Message error>
+                {error.message}
+              </Message>
+            )
           }
 
           if (sessions.length === 0) {
@@ -101,19 +129,24 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
             }))
 
           // create a session index
-          const sessionIndex = buildIndex('sessions', sessions, ['name', 'createdAt'])
+          const sessionIndex = buildIndex('sessions', sessions, [
+            'name',
+            'createdAt',
+          ])
 
-          const processedSessions = filterSessions(sessions, filters, sessionIndex).map(
-            session => ({
-              ...session,
-              button: {
-                ...statusCases[session.status],
-                disabled: session.status === SESSION_STATUS.COMPLETED,
-                hidden: session.status === SESSION_STATUS.COMPLETED,
-                onClick: handleSessionAction(session.id, session.status),
-              },
-            }),
-          )
+          const processedSessions = filterSessions(
+            sessions,
+            filters,
+            sessionIndex,
+          ).map(session => ({
+            ...session,
+            button: {
+              ...statusCases[session.status],
+              disabled: session.status === SESSION_STATUS.COMPLETED,
+              hidden: session.status === SESSION_STATUS.COMPLETED,
+              onClick: handleSessionAction(session.id, session.status),
+            },
+          }))
 
           const remainingSessions = processedSessions.filter(
             session => session.status === SESSION_STATUS.CREATED,
@@ -130,8 +163,11 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
                     <FormattedMessage
                       defaultMessage="Running / paused sessions"
                       id="sessionList.title.runningSession"
-                    />{' '}
-                    ({runningSessions.length + pausedSessions.length})
+                    />
+                    {' '}
+                    (
+                    {runningSessions.length + pausedSessions.length}
+                    )
                   </h2>
                   <div className="sessions">
                     {[...runningSessions, ...pausedSessions].map(running => (
@@ -156,8 +192,11 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
                     <FormattedMessage
                       defaultMessage="Planned sessions"
                       id="sessionList.title.plannedSessions"
-                    />{' '}
-                    ({remainingSessions.length})
+                    />
+                    {' '}
+                    (
+                    {remainingSessions.length}
+                    )
                   </h2>
                   {remainingSessions.map(session => (
                     <div className="session" key={session.id}>
@@ -173,8 +212,11 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
                     <FormattedMessage
                       defaultMessage="Completed sessions"
                       id="sessionList.title.completedSessions"
-                    />{' '}
-                    ({completedSessions.length})
+                    />
+                    {' '}
+                    (
+                    {completedSessions.length}
+                    )
                   </h2>
                   {completedSessions.map(session => (
                     <div className="session" key={session.id}>
@@ -188,28 +230,30 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
         }}
       </Query>
 
-      <style jsx>{`
-        @import 'src/theme';
+      <style jsx>
+        {`
+          @import 'src/theme';
 
-        .session,
-        .sessions {
-          margin-bottom: 1rem;
-          padding: 0.5rem;
-          border: 1px solid lightgrey;
-          background-color: #f9f9f9;
-        }
-
-        .runningSessions {
-          & > .sessions {
+          .session,
+          .sessions {
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border: 1px solid lightgrey;
             background-color: #f9f9f9;
-            border: 1px solid $color-primary;
           }
 
-          .runningSession:not(:last-child) {
-            margin-bottom: 0.5rem;
+          .runningSessions {
+            & > .sessions {
+              background-color: #f9f9f9;
+              border: 1px solid $color-primary;
+            }
+
+            .runningSession:not(:last-child) {
+              margin-bottom: 0.5rem;
+            }
           }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   )
 }

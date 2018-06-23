@@ -5,8 +5,8 @@ import { FormattedMessage } from 'react-intl'
 import { compose, withStateHandlers, withHandlers } from 'recompose'
 import { Form, Button } from 'semantic-ui-react'
 
-import { ConfusionSlider } from '../../../components/confusion'
-import { Feedback } from '../../../components/feedbacks'
+import { ConfusionSlider } from '../../confusion'
+import { Feedback } from '../../feedbacks'
 import { withStorage } from '../../../lib'
 
 const propTypes = {
@@ -46,7 +46,9 @@ function FeedbackArea({
 }) {
   return (
     <div className={classNames('feedbackArea', { active })}>
-      <h1 className="header">Feedback-Channel</h1>
+      <h1 className="header">
+Feedback-Channel
+      </h1>
       {isConfusionBarometerActive && (
         <div className="confusion">
           <ConfusionSlider
@@ -55,11 +57,14 @@ function FeedbackArea({
             labels={{ max: 'fast', mid: 'optimal', min: 'slow' }}
             max={5}
             min={-5}
-            title={
+            title={(
               <h2 className="sectionTitle">
-                <FormattedMessage defaultMessage="Speed" id="common.string.speed" />
+                <FormattedMessage
+                  defaultMessage="Speed"
+                  id="common.string.speed"
+                />
               </h2>
-            }
+)}
             value={confusionSpeed}
           />
 
@@ -69,21 +74,26 @@ function FeedbackArea({
             labels={{ max: 'hard', mid: 'optimal', min: 'easy' }}
             max={5}
             min={-5}
-            title={
+            title={(
               <h2 className="sectionTitle">
-                <FormattedMessage defaultMessage="Difficulty" id="common.string.difficulty" />
+                <FormattedMessage
+                  defaultMessage="Difficulty"
+                  id="common.string.difficulty"
+                />
               </h2>
-            }
+)}
             value={confusionDifficulty}
           />
         </div>
       )}
 
       <div className="feedbacks">
-        <h2 className="sectionTitle">Feedbacks</h2>
-        {isFeedbackChannelActive &&
-          feedbacks &&
-          feedbacks.map(({ id, content, votes }) => (
+        <h2 className="sectionTitle">
+Feedbacks
+        </h2>
+        {isFeedbackChannelActive
+          && feedbacks
+          && feedbacks.map(({ id, content, votes }) => (
             <div className="feedback" key={id}>
               <Feedback
                 alreadyVoted={false}
@@ -120,91 +130,96 @@ function FeedbackArea({
               type="submit"
               onClick={handleNewFeedback}
             >
-              <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+              <FormattedMessage
+                defaultMessage="Submit"
+                id="common.button.submit"
+              />
             </Button>
           </Form>
         )}
       </div>
 
-      <style jsx>{`
-        @import 'src/theme';
+      <style jsx>
+        {`
+          @import 'src/theme';
 
-        .feedbackArea {
-          position: relative;
+          .feedbackArea {
+            position: relative;
 
-          display: none;
-          flex-direction: column;
-
-          padding: 1rem;
-          padding-bottom: 15rem;
-
-          flex: 1;
-
-          background-color: white;
-
-          &.active {
-            display: flex;
-          }
-
-          .header {
             display: none;
-          }
+            flex-direction: column;
 
-          .confusion {
-            background-color: $color-primary-20p;
-            border: 1px solid $color-primary;
             padding: 1rem;
+            padding-bottom: 15rem;
 
-            > :global(*:first-child) {
-              margin-bottom: 5rem;
+            flex: 1;
+
+            background-color: white;
+
+            &.active {
+              display: flex;
             }
-
-            > :global(*:last-child) {
-              margin-bottom: 3rem;
-            }
-          }
-
-          .feedbacks {
-            margin-top: 1rem;
-
-            overflow-y: auto;
-          }
-
-          .feedback:not(:last-child) {
-            margin-bottom: 0.3rem;
-          }
-
-          .sectionTitle {
-            font-weight: bold;
-            font-size: 1rem;
-            margin-bottom: 0.5rem;
-          }
-
-          :global(form.newFeedback) {
-            position: absolute;
-            bottom: 1rem;
-            left: 1rem;
-            right: 1rem;
-
-            margin-bottom: 0;
-
-            textarea {
-              height: 7rem;
-            }
-          }
-
-          @include desktop-tablet-only {
-            display: flex;
-
-            border: 1px solid $color-primary;
-            margin-left: 0.25rem;
 
             .header {
-              display: block;
+              display: none;
+            }
+
+            .confusion {
+              background-color: $color-primary-20p;
+              border: 1px solid $color-primary;
+              padding: 1rem;
+
+              > :global(*:first-child) {
+                margin-bottom: 5rem;
+              }
+
+              > :global(*:last-child) {
+                margin-bottom: 3rem;
+              }
+            }
+
+            .feedbacks {
+              margin-top: 1rem;
+
+              overflow-y: auto;
+            }
+
+            .feedback:not(:last-child) {
+              margin-bottom: 0.3rem;
+            }
+
+            .sectionTitle {
+              font-weight: bold;
+              font-size: 1rem;
+              margin-bottom: 0.5rem;
+            }
+
+            :global(form.newFeedback) {
+              position: absolute;
+              bottom: 1rem;
+              left: 1rem;
+              right: 1rem;
+
+              margin-bottom: 0;
+
+              textarea {
+                height: 7rem;
+              }
+            }
+
+            @include desktop-tablet-only {
+              display: flex;
+
+              border: 1px solid $color-primary;
+              margin-left: 0.25rem;
+
+              .header {
+                display: block;
+              }
             }
           }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   )
 }
@@ -241,14 +256,24 @@ export default compose(
     },
   ),
   withHandlers({
-    handleNewConfusionTS: ({ confusionDifficulty, confusionSpeed, handleNewConfusionTS }) => () => {
+    handleNewConfusionTS: ({
+      confusionDifficulty,
+      confusionSpeed,
+      handleNewConfusionTS,
+    }) => () => {
       // send the new confusion entry to the server
-      handleNewConfusionTS({ difficulty: confusionDifficulty, speed: confusionSpeed })
+      handleNewConfusionTS({
+        difficulty: confusionDifficulty,
+        speed: confusionSpeed,
+      })
 
       // update the confusion cookie
       sessionStorage.setItem(
         'confusion',
-        JSON.stringify({ difficulty: confusionDifficulty, speed: confusionSpeed }),
+        JSON.stringify({
+          difficulty: confusionDifficulty,
+          speed: confusionSpeed,
+        }),
       )
     },
     handleNewFeedback: ({

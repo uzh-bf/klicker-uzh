@@ -41,7 +41,11 @@ function ActionBar({
           </Button>
         </Link>
 
-        <Button primary disabled={!!creationMode} onClick={handleCreationModeToggle}>
+        <Button
+          primary
+          disabled={!!creationMode}
+          onClick={handleCreationModeToggle}
+        >
           <FormattedMessage
             defaultMessage="Create Session"
             id="questionPool.button.createSession"
@@ -118,58 +122,60 @@ function ActionBar({
         />
       </div>
 
-      <style jsx>{`
-        @import 'src/theme';
+      <style jsx>
+        {`
+          @import 'src/theme';
 
-        .actionBar,
-        .actionButtons,
-        .creationButtons {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .actionBar {
-          background-color: $color-primary-05p;
-          border: 1px solid $color-primary;
-          padding: 0.5rem;
-
+          .actionBar,
           .actionButtons,
           .creationButtons {
-            flex: 1;
+            display: flex;
+            flex-direction: column;
           }
 
-          @include desktop-tablet-only {
-            flex-direction: row;
-            align-items: center;
-            justify-content: space-between;
+          .actionBar {
+            background-color: $color-primary-05p;
+            border: 1px solid $color-primary;
+            padding: 0.5rem;
 
-            .creationButtons,
-            .actionButtons {
-              flex: 0 0 auto;
+            .actionButtons,
+            .creationButtons {
+              flex: 1;
+            }
+
+            @include desktop-tablet-only {
               flex-direction: row;
+              align-items: center;
+              justify-content: space-between;
 
-              > :global(button:last-child) {
-                margin-right: 0;
+              .creationButtons,
+              .actionButtons {
+                flex: 0 0 auto;
+                flex-direction: row;
+
+                > :global(button:last-child) {
+                  margin-right: 0;
+                }
+              }
+
+              .checkedCounter {
+                color: grey;
+                order: 1;
+
+                padding-left: 1rem;
+              }
+
+              .creationButtons {
+                order: 2;
+              }
+
+              .actionButtons {
+                order: 3;
               }
             }
-
-            .checkedCounter {
-              color: grey;
-              order: 1;
-
-              padding-left: 1rem;
-            }
-
-            .creationButtons {
-              order: 2;
-            }
-
-            .actionButtons {
-              order: 3;
-            }
           }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   )
 }
