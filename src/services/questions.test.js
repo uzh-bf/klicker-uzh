@@ -47,24 +47,30 @@ describe('QuestionService', () => {
     }
 
     it('prevents creating a question without tags', () => {
-      expect(QuestionService.createQuestion({
-        ...question,
-        tags: [],
-      })).rejects.toEqual(new Error('NO_TAGS_SPECIFIED'))
+      expect(
+        QuestionService.createQuestion({
+          ...question,
+          tags: [],
+        }),
+      ).rejects.toEqual(new Error('NO_TAGS_SPECIFIED'))
     })
 
     it('prevents creating a question without options', () => {
-      expect(QuestionService.createQuestion({
-        ...question,
-        options: undefined,
-      })).rejects.toEqual(new Error('NO_OPTIONS_SPECIFIED'))
+      expect(
+        QuestionService.createQuestion({
+          ...question,
+          options: undefined,
+        }),
+      ).rejects.toEqual(new Error('NO_OPTIONS_SPECIFIED'))
     })
 
     it('prevents creating a question with invalid solution', () => {
-      expect(QuestionService.createQuestion({
-        ...question,
-        solution: { SC: [true] },
-      })).rejects.toEqual(new Error('INVALID_SOLUTION'))
+      expect(
+        QuestionService.createQuestion({
+          ...question,
+          solution: { SC: [true] },
+        }),
+      ).rejects.toEqual(new Error('INVALID_SOLUTION'))
     })
 
     it('allows creating a valid SC question', async () => {
@@ -172,29 +178,46 @@ describe('QuestionService', () => {
 
   describe('modifyQuestion', () => {
     it('allows modifying the question title', async () => {
-      const modifiedQuestion = await QuestionService.modifyQuestion(questions.SC.id, questions.SC.user, {
-        title: 'modified title',
-      })
+      const modifiedQuestion = await QuestionService.modifyQuestion(
+        questions.SC.id,
+        questions.SC.user,
+        {
+          title: 'modified title',
+        },
+      )
 
       expect(modifiedQuestion).toMatchSnapshot()
     })
 
     it('allows modifying the question tags', async () => {
-      const modifiedQuestion = await QuestionService.modifyQuestion(questions.SC.id, questions.SC.user, {
-        tags: ['ABCD', 'XYZ'],
-      })
+      const modifiedQuestion = await QuestionService.modifyQuestion(
+        questions.SC.id,
+        questions.SC.user,
+        {
+          tags: ['ABCD', 'XYZ'],
+        },
+      )
 
       expect(modifiedQuestion).toMatchSnapshot()
     })
 
     it('allows creating a new question version', async () => {
-      const modifiedQuestion = await QuestionService.modifyQuestion(questions.SC.id, questions.SC.user, {
-        content: createContentState('This is the new description for version 2'),
-        options: {
-          choices: [{ correct: true, name: 'option3' }, { correct: false, name: 'option4' }],
-          randomized: true,
+      const modifiedQuestion = await QuestionService.modifyQuestion(
+        questions.SC.id,
+        questions.SC.user,
+        {
+          content: createContentState(
+            'This is the new description for version 2',
+          ),
+          options: {
+            choices: [
+              { correct: true, name: 'option3' },
+              { correct: false, name: 'option4' },
+            ],
+            randomized: true,
+          },
         },
-      })
+      )
 
       expect(modifiedQuestion).toMatchSnapshot()
     })

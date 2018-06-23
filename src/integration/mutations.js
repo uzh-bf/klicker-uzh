@@ -178,14 +178,16 @@ const CreateQuestionSerializer = {
       title: ${title}
       type: ${type}
       tags: ${tags.map(tag => tag.name)}
-      versions: ${versions.map(({
-    content, description, options, solution,
-  }) => `
+      versions: ${versions.map(
+    ({
+      content, description, options, solution,
+    }) => `
         content: ${draftContentSerializer(content)}
         description: ${description}
         options: ${JSON.stringify(options)}
         solution: ${JSON.stringify(solution)}
-      `)}
+      `,
+  )}
     }
   `
   },
@@ -203,9 +205,11 @@ const ArchiveQuestionsMutation = `
 const ArchiveQuestionsSerializer = {
   test: ({ archiveQuestions }) => !!archiveQuestions,
   print: ({ archiveQuestions }) => `
-    archiveQuestions: [${archiveQuestions.map(({ isArchived }) => `
+    archiveQuestions: [${archiveQuestions.map(
+    ({ isArchived }) => `
       isArchived: ${isArchived}
-    `)}]
+    `,
+  )}]
   `,
 }
 
@@ -252,13 +256,17 @@ const CreateSessionSerializer = {
     createSession {
       confusionTS: ${confusionTS}
       feedbacks: ${feedbacks}
-      blocks: ${blocks.map(({ status, instances }) => `
+      blocks: ${blocks.map(
+    ({ status, instances }) => `
         status: ${status}
-        instances: ${instances.map(({ question }) => `
+        instances: ${instances.map(
+    ({ question }) => `
           title: ${question.title}
           type: ${question.type}
-        `)}
-      `)}
+        `,
+  )}
+      `,
+  )}
       settings: ${JSON.stringify(settings)}
     }
   `,
@@ -292,10 +300,9 @@ const EndSessionMutation = `
 const StartAndEndSessionSerializer = {
   test: ({ endSession, startSession, pauseSession }) => endSession || startSession || pauseSession,
   print: ({ endSession, startSession, pauseSession }) => {
-    const status =
-      (endSession && endSession.status) ||
-      (startSession && startSession.status) ||
-      (pauseSession && pauseSession.status)
+    const status = (endSession && endSession.status)
+      || (startSession && startSession.status)
+      || (pauseSession && pauseSession.status)
 
     return `
     startSession / pauseSession / endSession {
@@ -376,10 +383,12 @@ const ActivateNextBlockSerializer = {
   test: ({ activateNextBlock }) => !!activateNextBlock,
   print: ({ activateNextBlock: { blocks } }) => `
     activateNextBlock {
-      blocks: ${blocks.map(({ status, instances }) => `
+      blocks: ${blocks.map(
+    ({ status, instances }) => `
         status: ${status}
         instances: ${instances.map(instance => instance.isOpen)}
-      `)}
+      `,
+  )}
     }
   `,
 }

@@ -6,7 +6,10 @@
     "semi": 0,
     "no-console": 0,
     "no-underscore-dangle": 0,
-    "max-len": [1, 120]
+    "max-len": [0],
+
+    "import/extensions": 0,
+    "import/prefer-default-export": 0
   },
   "env": {
     "node": true,

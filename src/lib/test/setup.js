@@ -1,5 +1,9 @@
 const {
-  QuestionModel, QuestionInstanceModel, SessionModel, TagModel, UserModel,
+  QuestionModel,
+  QuestionInstanceModel,
+  SessionModel,
+  TagModel,
+  UserModel,
 } = require('../../models')
 const AuthService = require('../../services/auth')
 const QuestionService = require('../../services/questions')
@@ -52,7 +56,11 @@ const prepareSessionFactory = SessionMgrService => async (
 }
 
 const initializeDb = async ({
-  mongoose, email, shortname, withLogin = false, withQuestions = false,
+  mongoose,
+  email,
+  shortname,
+  withLogin = false,
+  withQuestions = false,
 }) => {
   await mongoose.connect(
     `mongodb://${process.env.MONGO_URL}`,
