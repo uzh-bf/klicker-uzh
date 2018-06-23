@@ -1,6 +1,8 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Button, Icon, List, Loader, Message } from 'semantic-ui-react'
+import {
+  Button, Icon, List, Loader, Message,
+} from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import { Query } from 'react-apollo'
 
@@ -31,11 +33,17 @@ export const TagListPres = ({
   <div className="tagList">
     <Button basic fluid onClick={() => handleReset()}>
       <Icon name="remove circle" />
-      <FormattedMessage defaultMessage="Reset filters" id="tagList.button.reset" />
+      <FormattedMessage
+        defaultMessage="Reset filters"
+        id="tagList.button.reset"
+      />
     </Button>
     <List selection size="large">
       <List.Header className="listHeader archive">
-        <FormattedMessage defaultMessage="Archive" id="tagList.header.archive" />
+        <FormattedMessage
+          defaultMessage="Archive"
+          id="tagList.header.archive"
+        />
       </List.Header>
       <List.Item
         active={isArchiveActive}
@@ -44,7 +52,10 @@ export const TagListPres = ({
       >
         <List.Icon name="archive" />
         <List.Content>
-          <FormattedMessage defaultMessage="Show archived" id="tagList.string.archive" />
+          <FormattedMessage
+            defaultMessage="Show archived"
+            id="tagList.string.archive"
+          />
         </List.Content>
       </List.Item>
       <List.Header className="listHeader types">
@@ -56,7 +67,9 @@ export const TagListPres = ({
         key="SC"
         onClick={() => handleTagClick('SC', true)}
       >
-        <List.Icon name={activeType === QUESTION_TYPES.SC ? 'folder' : 'folder outline'} />
+        <List.Icon
+          name={activeType === QUESTION_TYPES.SC ? 'folder' : 'folder outline'}
+        />
         <List.Content>
           <FormattedMessage defaultMessage="SC" id="common.SC.label" />
         </List.Content>
@@ -67,7 +80,9 @@ export const TagListPres = ({
         key="MC"
         onClick={() => handleTagClick('MC', true)}
       >
-        <List.Icon name={activeType === QUESTION_TYPES.MC ? 'folder' : 'folder outline'} />
+        <List.Icon
+          name={activeType === QUESTION_TYPES.MC ? 'folder' : 'folder outline'}
+        />
         <List.Content>
           <FormattedMessage defaultMessage="MC" id="common.MC.label" />
         </List.Content>
@@ -78,7 +93,11 @@ export const TagListPres = ({
         key="FREE"
         onClick={() => handleTagClick('FREE', true)}
       >
-        <List.Icon name={activeType === QUESTION_TYPES.FREE ? 'folder' : 'folder outline'} />
+        <List.Icon
+          name={
+            activeType === QUESTION_TYPES.FREE ? 'folder' : 'folder outline'
+          }
+        />
         <List.Content>
           <FormattedMessage defaultMessage="FREE" id="common.FREE.label" />
         </List.Content>
@@ -89,9 +108,18 @@ export const TagListPres = ({
         key="FREE_RANGE"
         onClick={() => handleTagClick('FREE_RANGE', true)}
       >
-        <List.Icon name={activeType === QUESTION_TYPES.FREE_RANGE ? 'folder' : 'folder outline'} />
+        <List.Icon
+          name={
+            activeType === QUESTION_TYPES.FREE_RANGE
+              ? 'folder'
+              : 'folder outline'
+          }
+        />
         <List.Content>
-          <FormattedMessage defaultMessage="FREE_RANGE" id="common.FREE_RANGE.label" />
+          <FormattedMessage
+            defaultMessage="FREE_RANGE"
+            id="common.FREE_RANGE.label"
+          />
         </List.Content>
       </List.Item>
       <List.Header className="listHeader tags">
@@ -105,12 +133,19 @@ export const TagListPres = ({
           }
 
           if (error) {
-            return <Message error>{error.message}</Message>
+            return (
+              <Message error>
+                {error.message}
+              </Message>
+            )
           }
 
           if (tags.length === 0) {
             return (
-              <FormattedMessage defaultMessage="No tags available." id="tagList.string.noTags" />
+              <FormattedMessage
+                defaultMessage="No tags available."
+                id="tagList.string.noTags"
+              />
             )
           }
 
@@ -122,41 +157,45 @@ export const TagListPres = ({
               onClick={() => handleTagClick(name)}
             >
               <List.Icon name="tag" />
-              <List.Content>{name}</List.Content>
+              <List.Content>
+                {name}
+              </List.Content>
             </List.Item>
           ))
         }}
       </Query>
     </List>
 
-    <style jsx>{`
-      @import 'src/theme';
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-      .tagList {
-        font-size: 0.9rem;
-        min-width: 12rem;
+        .tagList {
+          font-size: 0.9rem;
+          min-width: 12rem;
 
-        :global(.listHeader) {
-          color: grey;
-          font-size: 1rem;
-          font-weight: bold;
-          padding: 0 1rem;
-        }
-        :global(.listHeader.tags),
-        :global(.listHeader.types) {
-          margin-top: 1rem;
-        }
-        :global(.listItem.item) {
-          border-radius: 0;
-          padding: 0.3rem 1rem;
+          :global(.listHeader) {
+            color: grey;
+            font-size: 1rem;
+            font-weight: bold;
+            padding: 0 1rem;
+          }
+          :global(.listHeader.tags),
+          :global(.listHeader.types) {
+            margin-top: 1rem;
+          }
+          :global(.listItem.item) {
+            border-radius: 0;
+            padding: 0.3rem 1rem;
 
-          &:hover :global(.content),
-          &:hover :global(i) {
-            color: #2185d0;
+            &:hover :global(.content),
+            &:hover :global(i) {
+              color: #2185d0;
+            }
           }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

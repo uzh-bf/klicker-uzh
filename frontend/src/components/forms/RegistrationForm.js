@@ -61,7 +61,8 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
             required
             error={errors.shortname}
             errorMessage={intl.formatMessage({
-              defaultMessage: 'Please provide a valid account ID (3-8 characters).',
+              defaultMessage:
+                'Please provide a valid account ID (3-8 characters).',
               id: 'form.shortname.invalid',
             })}
             handleBlur={handleBlur}
@@ -89,7 +90,8 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
               required
               error={errors.password}
               errorMessage={intl.formatMessage({
-                defaultMessage: 'Please provide a valid password (8+ characters).',
+                defaultMessage:
+                  'Please provide a valid password (8+ characters).',
                 id: 'form.password.invalid',
               })}
               handleBlur={handleBlur}
@@ -158,7 +160,8 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
             })}
             name="useCase"
             tooltip={intl.formatMessage({
-              defaultMessage: 'Short description of your planned use case for the Klicker UZH.',
+              defaultMessage:
+                'Short description of your planned use case for the Klicker UZH.',
               id: 'tooltip',
             })}
             touched={touched.useCase}
@@ -173,7 +176,10 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
               loading={loading && isSubmitting}
               type="submit"
             >
-              <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+              <FormattedMessage
+                defaultMessage="Submit"
+                id="common.button.submit"
+              />
             </Button>
           </div>
         </Form>
@@ -201,38 +207,40 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
       onSubmit={onSubmit}
     />
 
-    <style jsx>{`
-      @import 'src/theme';
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-      .registrationForm > :global(form) {
-        display: flex;
-        flex-direction: column;
-
-        .password {
-          margin-bottom: 1rem;
-        }
-
-        @include desktop-tablet-only {
-          border: 1px solid $color-primary;
-          padding: 1rem;
-          background-color: rgba(124, 184, 228, 0.12);
+        .registrationForm > :global(form) {
+          display: flex;
+          flex-direction: column;
 
           .password {
-            display: flex;
-            flex-direction: row;
-            margin-bottom: 0;
+            margin-bottom: 1rem;
+          }
 
-            :global(.field) {
-              flex: 1;
+          @include desktop-tablet-only {
+            border: 1px solid $color-primary;
+            padding: 1rem;
+            background-color: rgba(124, 184, 228, 0.12);
 
-              &:first-child {
-                margin-right: 1rem;
+            .password {
+              display: flex;
+              flex-direction: row;
+              margin-bottom: 0;
+
+              :global(.field) {
+                flex: 1;
+
+                &:first-child {
+                  margin-right: 1rem;
+                }
               }
             }
           }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

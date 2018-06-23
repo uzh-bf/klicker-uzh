@@ -22,32 +22,42 @@ const QuestionSingle = ({
       <FormattedMessage defaultMessage={type} id={`common.${type}.label`} />
     </div>
     <div className="title">
-      {title} {!noDetails && <span>(v{version + 1})</span>}
+      {title}
+      {' '}
+      {!noDetails && (
+        <span>
+          (v
+          {version + 1}
+          )
+        </span>
+      )}
     </div>
 
-    <style jsx>{`
-      @import 'src/theme';
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-      .questionSingle {
-        border: 1px solid $color-primary !important;
-        background-color: $color-primary-background;
+        .questionSingle {
+          border: 1px solid $color-primary !important;
+          background-color: $color-primary-background;
 
-        .type,
-        .title {
-          padding: 0.2rem 0;
+          .type,
+          .title {
+            padding: 0.2rem 0;
+          }
+
+          .type {
+            background-color: $color-primary-20p;
+            text-align: center;
+          }
+
+          .title {
+            text-align: center;
+            color: $color-primary-strong;
+          }
         }
-
-        .type {
-          background-color: $color-primary-20p;
-          text-align: center;
-        }
-
-        .title {
-          text-align: center;
-          color: $color-primary-strong;
-        }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

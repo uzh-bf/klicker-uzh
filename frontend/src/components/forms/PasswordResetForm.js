@@ -56,7 +56,8 @@ const PasswordResetForm = ({ intl, loading, onSubmit }) => {
             required
             error={errors.password}
             errorMessage={intl.formatMessage({
-              defaultMessage: 'Please provide a valid password (8+ characters).',
+              defaultMessage:
+                'Please provide a valid password (8+ characters).',
               id: 'form.password.invalid',
             })}
             handleBlur={handleBlur}

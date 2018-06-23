@@ -14,7 +14,7 @@ import {
   SCCreationPreview,
   FREECreationOptions,
   FREECreationPreview,
-} from '../../components/questionTypes'
+} from '../questionTypes'
 import { QUESTION_TYPES } from '../../lib'
 import { QUESTION_GROUPS } from '../../constants'
 import { FormikInput } from '.'
@@ -41,7 +41,10 @@ const validate = ({
     errors.type = 'form.createQuestion.type.empty'
   }
 
-  if (QUESTION_GROUPS.CHOICES.includes(type) && (!options || options.choices.length === 0)) {
+  if (
+    QUESTION_GROUPS.CHOICES.includes(type)
+    && (!options || options.choices.length === 0)
+  ) {
     errors.options = 'form.createQuestion.options.empty'
   }
 
@@ -50,7 +53,11 @@ const validate = ({
       const isMinNum = _isNumber(options.restrictions.min)
       const isMaxNum = _isNumber(options.restrictions.max)
 
-      if (isMinNum && isMaxNum && options.restrictions.min >= options.restrictions.max) {
+      if (
+        isMinNum
+        && isMaxNum
+        && options.restrictions.min >= options.restrictions.max
+      ) {
         errors.options = 'form.createQuestion.options.minGteMax'
       }
     } else {
@@ -158,12 +165,12 @@ const QuestionCreationForm = ({
                     id: 'createQuestion.titleInput.label',
                   })}
                   name="title"
-                  tooltip={
+                  tooltip={(
                     <FormattedMessage
                       defaultMessage="Enter a short summarizing title for the question. This is only visible to you!"
                       id="createQuestion.titleInput.tooltip"
                     />
-                  }
+)}
                   touched={touched.title}
                   type="text"
                   value={values.title}
@@ -220,7 +227,10 @@ const QuestionCreationForm = ({
               </div>
 
               <Button className="discard" type="reset" onClick={onDiscard}>
-                <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+                <FormattedMessage
+                  defaultMessage="Discard"
+                  id="common.button.discard"
+                />
               </Button>
               <Button
                 primary
@@ -229,86 +239,91 @@ const QuestionCreationForm = ({
                 loading={isSubmitting}
                 type="submit"
               >
-                <FormattedMessage defaultMessage="Save" id="common.button.save" />
+                <FormattedMessage
+                  defaultMessage="Save"
+                  id="common.button.save"
+                />
               </Button>
             </Form>
           )
         }}
       </Formik>
 
-      <style jsx>{`
-        @import 'src/theme';
+      <style jsx>
+        {`
+          @import 'src/theme';
 
-        .questionCreationForm > :global(form) {
-          display: flex;
-          flex-direction: column;
+          .questionCreationForm > :global(form) {
+            display: flex;
+            flex-direction: column;
 
-          padding: 1rem;
+            padding: 1rem;
 
-          .questionInput,
-          .questionPreview {
-            margin-bottom: 1rem;
-          }
-
-          .questionInput :global(.field > label),
-          .questionPreview > h2 {
-            font-size: 1.2rem;
-            margin: 0;
-            margin-bottom: 0.5rem;
-          }
-
-          @supports (grid-gap: 1rem) {
-            @include desktop-tablet-only {
-              display: grid;
-              align-content: start;
-
-              grid-gap: 1rem;
-              grid-template-columns: repeat(6, 1fr);
-              grid-template-rows: 5rem auto auto auto;
-              grid-template-areas:
-                'title title title title preview preview'
-                'type type tags tags preview preview'
-                'content content content content content content'
-                'options options options options options options';
-
-              .questionInput,
-              .questionPreview {
-                margin: 0;
-              }
-
-              .questionTitle {
-                grid-area: title;
-              }
-
-              .questionType {
-                grid-area: type;
-              }
-
-              .questionTags {
-                grid-area: tags;
-              }
-
-              .questionPreview {
-                grid-area: preview;
-                align-self: stretch;
-              }
-
-              .questionContent {
-                grid-area: content;
-              }
-
-              .questionOptions {
-                grid-area: options;
-              }
+            .questionInput,
+            .questionPreview {
+              margin-bottom: 1rem;
             }
 
-            @include desktop-only {
-              margin: 0 20%;
-              padding: 1rem 0;
+            .questionInput :global(.field > label),
+            .questionPreview > h2 {
+              font-size: 1.2rem;
+              margin: 0;
+              margin-bottom: 0.5rem;
+            }
+
+            @supports (grid-gap: 1rem) {
+              @include desktop-tablet-only {
+                display: grid;
+                align-content: start;
+
+                grid-gap: 1rem;
+                grid-template-columns: repeat(6, 1fr);
+                grid-template-rows: 5rem auto auto auto;
+                grid-template-areas:
+                  'title title title title preview preview'
+                  'type type tags tags preview preview'
+                  'content content content content content content'
+                  'options options options options options options';
+
+                .questionInput,
+                .questionPreview {
+                  margin: 0;
+                }
+
+                .questionTitle {
+                  grid-area: title;
+                }
+
+                .questionType {
+                  grid-area: type;
+                }
+
+                .questionTags {
+                  grid-area: tags;
+                }
+
+                .questionPreview {
+                  grid-area: preview;
+                  align-self: stretch;
+                }
+
+                .questionContent {
+                  grid-area: content;
+                }
+
+                .questionOptions {
+                  grid-area: options;
+                }
+              }
+
+              @include desktop-only {
+                margin: 0 20%;
+                padding: 1rem 0;
+              }
             }
           }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   )
 }

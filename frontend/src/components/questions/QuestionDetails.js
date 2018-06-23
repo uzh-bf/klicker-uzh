@@ -23,14 +23,22 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
 
   return (
     <div className="questionDetails">
-      <div className="column description">{truncatedDesc}</div>
+      <div className="column description">
+        {truncatedDesc}
+      </div>
 
       <div className="column options" />
 
       <div className="column lastUsed">
-        <ListWithHeader items={lastUsed.length > 0 ? lastUsed : ['-']} limit={2}>
+        <ListWithHeader
+          items={lastUsed.length > 0 ? lastUsed : ['-']}
+          limit={2}
+        >
           <Icon name="history" />
-          <FormattedMessage defaultMessage="Usage history" id="questionDetails.usageHistory" />
+          <FormattedMessage
+            defaultMessage="Usage history"
+            id="questionDetails.usageHistory"
+          />
         </ListWithHeader>
       </div>
 
@@ -40,7 +48,10 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
           href={{ pathname: '/questions/details', query: { questionId } }}
         >
           <Button fluid>
-            <FormattedMessage defaultMessage="View" id="questionDetails.button.view" />
+            <FormattedMessage
+              defaultMessage="View"
+              id="questionDetails.button.view"
+            />
           </Button>
         </Link>
         <Link
@@ -48,119 +59,124 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
           href={{ pathname: '/questions/details', query: { questionId } }}
         >
           <Button fluid>
-            <FormattedMessage defaultMessage="Edit" id="questionDetails.button.edit" />
+            <FormattedMessage
+              defaultMessage="Edit"
+              id="questionDetails.button.edit"
+            />
           </Button>
         </Link>
       </div>
 
-      <style jsx>{`
-        // TODO: externalize colors
+      <style jsx>
+        {`
+          // TODO: externalize colors
 
-        @import 'src/theme';
+          @import 'src/theme';
 
-        .questionDetails {
-          display: flex;
-          flex-direction: column;
-
-          background-color: white;
-          border: 1px solid $color-primary;
-
-          .column {
-            padding: 0.25rem;
-          }
-
-          .description {
-            border-bottom: 1px solid $color-primary;
-            background-color: $color-primary-background;
-          }
-
-          .options {
-            display: none;
-            border-bottom: 1px solid $color-primary;
-          }
-
-          .lastUsed {
-            display: none;
-            border-bottom: 1px solid $color-primary;
-          }
-
-          .buttons {
+          .questionDetails {
             display: flex;
-            padding: 0;
+            flex-direction: column;
 
-            :global(.button) {
-              flex: 1;
-              margin-right: 0.5rem;
-            }
-
-            :global(.button:last-child) {
-              margin-right: 0;
-            }
-          }
-
-          @include desktop-tablet-only {
-            flex-direction: row;
+            background-color: white;
+            border: 1px solid $color-primary;
 
             .column {
-              flex: 1;
-              padding: 0.7rem;
-              text-align: left;
-
-              &:not(:last-child) {
-                border-right: 1px solid $color-primary;
-              }
+              padding: 0.25rem;
             }
 
             .description {
-              border-bottom: none;
+              border-bottom: 1px solid $color-primary;
+              background-color: $color-primary-background;
             }
 
             .options {
-              border-bottom: none;
+              display: none;
+              border-bottom: 1px solid $color-primary;
             }
 
             .lastUsed {
-              display: block;
-              border-bottom: none;
-              text-align: center;
-
-              padding: 0;
+              display: none;
+              border-bottom: 1px solid $color-primary;
             }
 
             .buttons {
-              display: block;
-              flex: none;
-              padding: 0.3rem;
+              display: flex;
+              padding: 0;
 
-              :global(button) {
-                margin: 0;
-                margin-bottom: 0.3rem;
-                padding: 7px 12px;
+              :global(.button) {
+                flex: 1;
+                margin-right: 0.5rem;
+              }
+
+              :global(.button:last-child) {
+                margin-right: 0;
+              }
+            }
+
+            @include desktop-tablet-only {
+              flex-direction: row;
+
+              .column {
+                flex: 1;
+                padding: 0.7rem;
+                text-align: left;
+
+                &:not(:last-child) {
+                  border-right: 1px solid $color-primary;
+                }
+              }
+
+              .description {
+                border-bottom: none;
+              }
+
+              .options {
+                border-bottom: none;
+              }
+
+              .lastUsed {
                 display: block;
-                background-color: rgba(224, 225, 226, 0.73);
+                border-bottom: none;
+                text-align: center;
+
+                padding: 0;
               }
 
-              :global(button:last-child) {
-                margin-bottom: 0;
+              .buttons {
+                display: block;
+                flex: none;
+                padding: 0.3rem;
+
+                :global(button) {
+                  margin: 0;
+                  margin-bottom: 0.3rem;
+                  padding: 7px 12px;
+                  display: block;
+                  background-color: rgba(224, 225, 226, 0.73);
+                }
+
+                :global(button:last-child) {
+                  margin-bottom: 0;
+                }
+
+                :global(button:hover) {
+                  color: $color-primary !important;
+                }
+              }
+            }
+
+            @include desktop-only {
+              .options {
+                flex: 0 0 12rem;
               }
 
-              :global(button:hover) {
-                color: $color-primary !important;
+              .lastUsed {
+                flex: 0 0 12rem;
               }
             }
           }
-
-          @include desktop-only {
-            .options {
-              flex: 0 0 12rem;
-            }
-
-            .lastUsed {
-              flex: 0 0 12rem;
-            }
-          }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   )
 }

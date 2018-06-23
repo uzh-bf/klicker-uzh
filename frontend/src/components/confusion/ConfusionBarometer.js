@@ -27,11 +27,17 @@ const defaultProps = {
 }
 
 const ConfusionBarometer = ({
-  confusionTS, intl, isActive, handleActiveToggle,
+  confusionTS,
+  intl,
+  isActive,
+  handleActiveToggle,
 }) => (
   <div className="confusionBarometer">
     <h2>
-      <FormattedMessage defaultMessage="Confusion-Barometer" id="runningSession.confusion.title" />
+      <FormattedMessage
+        defaultMessage="Confusion-Barometer"
+        id="runningSession.confusion.title"
+      />
     </h2>
 
     <Checkbox
@@ -50,11 +56,13 @@ const ConfusionBarometer = ({
         return (
           <React.Fragment>
             <ConfusionSection
-              data={confusionTS.map(({ timestamp, difficulty, difficultyRunning }) => ({
-                timestamp,
-                value: difficulty,
-                valueRunning: difficultyRunning,
-              }))}
+              data={confusionTS.map(
+                ({ timestamp, difficulty, difficultyRunning }) => ({
+                  timestamp,
+                  value: difficulty,
+                  valueRunning: difficultyRunning,
+                }),
+              )}
               title={intl.formatMessage({
                 defaultMessage: 'Difficulty',
                 id: 'runningSession.confusion.difficulty',
@@ -86,43 +94,45 @@ const ConfusionBarometer = ({
       return null
     })()}
 
-    <style jsx>{`
-      @import 'src/theme';
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-      .confusionBarometer {
-        display: flex;
-        flex-direction: column;
+        .confusionBarometer {
+          display: flex;
+          flex-direction: column;
 
-        h2 {
-          margin-bottom: 1rem;
-        }
+          h2 {
+            margin-bottom: 1rem;
+          }
 
-        h3 {
-          margin: 0 0 0.5rem 0;
-        }
+          h3 {
+            margin: 0 0 0.5rem 0;
+          }
 
-        :global(.checkbox) {
-          margin-bottom: 1rem;
-        }
+          :global(.checkbox) {
+            margin-bottom: 1rem;
+          }
 
-        .confusionSection {
-          flex: 1;
+          .confusionSection {
+            flex: 1;
 
-          background: lightgrey;
-          border: 1px solid grey;
-          margin-top: 1rem;
-          padding: 1rem;
+            background: lightgrey;
+            border: 1px solid grey;
+            margin-top: 1rem;
+            padding: 1rem;
 
-          @include desktop-tablet-only {
-            padding: 0.5rem;
+            @include desktop-tablet-only {
+              padding: 0.5rem;
 
-            &:last-child {
-              margin-top: 0.5rem;
+              &:last-child {
+                margin-top: 0.5rem;
+              }
             }
           }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 
