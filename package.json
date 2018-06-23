@@ -111,6 +111,7 @@
     "bundlesize": "0.17.0",
     "commitizen": "2.10.1",
     "cypress": "3.0.1",
+    "cz-conventional-changelog": "2.1.0",
     "enzyme": "3.3.0",
     "eslint": "5.0.0",
     "eslint-config-airbnb": "17.0.0",
@@ -181,5 +182,10 @@
     {
       "path": "./src/.next/static/commons/main-*.js"
     }
-  ]
+  ],
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  }
 }
