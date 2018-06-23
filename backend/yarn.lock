@@ -395,9 +395,9 @@ async-limiter@~1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/async-limiter/-/async-limiter-1.0.0.tgz#78faed8c3d074ab81f22b4e985d79e8738f720f8"
 
-async-value-promise@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/async-value-promise/-/async-value-promise-1.1.0.tgz#886774424961be7f2b26e148d4fbbcada8762c88"
+async-value-promise@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/async-value-promise/-/async-value-promise-1.1.1.tgz#68957819e3eace804f3b4b69477e2bd276c15378"
   dependencies:
     async-value "^1.2.2"
 
@@ -1437,36 +1437,36 @@ ee-first@1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/ee-first/-/ee-first-1.1.1.tgz#590c61156b0ae2f4f0255732a158b266bc56b21d"
 
-elastic-apm-http-client@^5.2.0:
-  version "5.2.0"
-  resolved "https://registry.yarnpkg.com/elastic-apm-http-client/-/elastic-apm-http-client-5.2.0.tgz#703a410669c95d6ed77f744c7d97212f471af5b2"
+elastic-apm-http-client@^5.2.1:
+  version "5.2.1"
+  resolved "https://registry.yarnpkg.com/elastic-apm-http-client/-/elastic-apm-http-client-5.2.1.tgz#71106cb1fb8523ca6da1f7136fdc2b23d4f5ddbb"
   dependencies:
-    fast-safe-stringify "^1.2.0"
+    fast-safe-stringify "^2.0.4"
 
-elastic-apm-node@1.6.0:
-  version "1.6.0"
-  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.6.0.tgz#c618cb03b6fb9a38b41a91257a953bc0ad30bd17"
+elastic-apm-node@1.7.1:
+  version "1.7.1"
+  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.7.1.tgz#1c8a1f1ae154da6dfe04a25343d03d539545720f"
   dependencies:
     after-all-results "^2.0.0"
-    async-value-promise "^1.1.0"
+    async-value-promise "^1.1.1"
     console-log-level "^1.4.0"
     cookie "^0.3.1"
     core-util-is "^1.0.2"
-    elastic-apm-http-client "^5.2.0"
-    end-of-stream "^1.1.0"
-    fast-safe-stringify "^2.0.3"
-    http-headers "^3.0.1"
+    elastic-apm-http-client "^5.2.1"
+    end-of-stream "^1.4.1"
+    fast-safe-stringify "^2.0.4"
+    http-headers "^3.0.2"
     is-native "^1.0.1"
     normalize-bool "^1.0.0"
-    original-url "^1.2.0"
+    original-url "^1.2.1"
     redact-secrets "^1.0.0"
     require-ancestors "^1.0.0"
-    require-in-the-middle "^2.1.2"
-    semver "^5.3.0"
+    require-in-the-middle "^2.2.2"
+    semver "^5.5.0"
     sql-summary "^1.0.0"
-    stackman "^3.0.1"
+    stackman "^3.0.2"
     unicode-byte-truncate "^1.0.0"
-    uuid "^3.0.1"
+    uuid "^3.2.1"
 
 elegant-spinner@^1.0.1:
   version "1.0.1"
@@ -1482,7 +1482,7 @@ encoding@^0.1.11:
   dependencies:
     iconv-lite "~0.4.13"
 
-end-of-stream@^1.1.0:
+end-of-stream@^1.4.1:
   version "1.4.1"
   resolved "https://registry.yarnpkg.com/end-of-stream/-/end-of-stream-1.4.1.tgz#ed29634d19baba463b6ce6b80a37213eab71ec43"
   dependencies:
@@ -1938,13 +1938,9 @@ fast-levenshtein@~2.0.4:
   version "2.0.6"
   resolved "https://registry.yarnpkg.com/fast-levenshtein/-/fast-levenshtein-2.0.6.tgz#3d8a5c66883a16a30ca8643e851f19baa7797917"
 
-fast-safe-stringify@^1.2.0:
-  version "1.2.3"
-  resolved "https://registry.yarnpkg.com/fast-safe-stringify/-/fast-safe-stringify-1.2.3.tgz#9fe22c37fb2f7f86f06b8f004377dbf8f1ee7bc1"
-
-fast-safe-stringify@^2.0.3:
-  version "2.0.3"
-  resolved "https://registry.yarnpkg.com/fast-safe-stringify/-/fast-safe-stringify-2.0.3.tgz#bb784fef97c2ece6ad64e84b2497e505dece3a3d"
+fast-safe-stringify@^2.0.4:
+  version "2.0.4"
+  resolved "https://registry.yarnpkg.com/fast-safe-stringify/-/fast-safe-stringify-2.0.4.tgz#4fe828718aa61dbcf9119c3c24e79cc4dea973b2"
 
 fb-watchman@^2.0.0:
   version "2.0.0"
@@ -2511,7 +2507,7 @@ http-errors@1.6.3, http-errors@~1.6.3:
     setprototypeof "1.1.0"
     statuses ">= 1.4.0 < 2"
 
-http-headers@^3.0.1:
+http-headers@^3.0.2:
   version "3.0.2"
   resolved "https://registry.yarnpkg.com/http-headers/-/http-headers-3.0.2.tgz#5147771292f0b39d6778d930a3a59a76fc7ef44d"
   dependencies:
@@ -4125,7 +4121,7 @@ mixin-deep@^1.2.0:
   dependencies:
     minimist "0.0.8"
 
-module-details-from-path@^1.0.2:
+module-details-from-path@^1.0.3:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/module-details-from-path/-/module-details-from-path-1.0.3.tgz#114c949673e2a8a35e9d35788527aa37b679da2b"
 
@@ -4471,7 +4467,7 @@ ora@^0.2.3:
     cli-spinners "^0.1.2"
     object-assign "^4.0.1"
 
-original-url@^1.2.0:
+original-url@^1.2.1:
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/original-url/-/original-url-1.2.1.tgz#44c659b769b170458d5302c835b59753c05d5c8a"
   dependencies:
@@ -5151,12 +5147,12 @@ require-directory@^2.1.1:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/require-directory/-/require-directory-2.1.1.tgz#8c64ad5fd30dab1c976e2344ffe7f792a6a6df42"
 
-require-in-the-middle@^2.1.2:
-  version "2.1.2"
-  resolved "https://registry.yarnpkg.com/require-in-the-middle/-/require-in-the-middle-2.1.2.tgz#bddb89316d45bcdb08e2c6186bd2e6e819a8eeae"
+require-in-the-middle@^2.2.2:
+  version "2.2.2"
+  resolved "https://registry.yarnpkg.com/require-in-the-middle/-/require-in-the-middle-2.2.2.tgz#1d3124709cf43bf2c1f225082e6d8394e2f9d4f4"
   dependencies:
-    module-details-from-path "^1.0.2"
-    resolve "^1.1.7"
+    module-details-from-path "^1.0.3"
+    resolve "^1.5.0"
 
 require-main-filename@^1.0.1:
   version "1.0.1"
@@ -5210,7 +5206,7 @@ resolve@1.1.7:
   version "1.1.7"
   resolved "https://registry.yarnpkg.com/resolve/-/resolve-1.1.7.tgz#203114d82ad2c5ed9e8e0411b3932875e889e97b"
 
-resolve@^1.1.7, resolve@^1.5.0:
+resolve@^1.5.0:
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/resolve/-/resolve-1.5.0.tgz#1f09acce796c9a762579f31b2c1cc4c3cddf9f36"
   dependencies:
@@ -5591,9 +5587,9 @@ stack-utils@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/stack-utils/-/stack-utils-1.0.1.tgz#d4f33ab54e8e38778b0ca5cfd3b3afb12db68620"
 
-stackman@^3.0.1:
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/stackman/-/stackman-3.0.1.tgz#915a77753201d66e3f2df64252c2381a177f374b"
+stackman@^3.0.2:
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/stackman/-/stackman-3.0.2.tgz#9679e36f10868c8626b17ba2fea9cfc761baec89"
   dependencies:
     after-all-results "^2.0.0"
     async-cache "^1.1.0"
@@ -6094,7 +6090,7 @@ uuid@3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-3.0.0.tgz#6728fc0459c450d796a99c31837569bdf672d728"
 
-uuid@^3.0.0, uuid@^3.0.1, uuid@^3.1.0:
+uuid@^3.0.0, uuid@^3.1.0, uuid@^3.2.1:
   version "3.2.1"
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-3.2.1.tgz#12c528bb9d58d0b9265d9a2f6f0fe8be17ff1f14"
 
