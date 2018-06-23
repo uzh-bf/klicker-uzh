@@ -1,6 +1,10 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import Griddle, { plugins, RowDefinition, ColumnDefinition } from 'griddle-react'
+import Griddle, {
+  plugins,
+  RowDefinition,
+  ColumnDefinition,
+} from 'griddle-react'
 import { QUESTION_GROUPS } from '../../../constants'
 
 const propTypes = {

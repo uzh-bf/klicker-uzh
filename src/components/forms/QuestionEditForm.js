@@ -34,7 +34,10 @@ const validate = ({
     errors.tags = 'form.editQuestion.tags.empty'
   }
 
-  if (QUESTION_GROUPS.CHOICES.includes(type) && (!options || options.choices.length === 0)) {
+  if (
+    QUESTION_GROUPS.CHOICES.includes(type)
+    && (!options || options.choices.length === 0)
+  ) {
     errors.options = 'form.createQuestion.options.empty'
   }
 
@@ -43,7 +46,11 @@ const validate = ({
       const isMinNum = _isNumber(options.restrictions.min)
       const isMaxNum = _isNumber(options.restrictions.max)
 
-      if (isMinNum && isMaxNum && options.restrictions.min >= options.restrictions.max) {
+      if (
+        isMinNum
+        && isMaxNum
+        && options.restrictions.min >= options.restrictions.max
+      ) {
         errors.options = 'form.createQuestion.options.minGteMax'
       }
     } else {
@@ -122,7 +129,11 @@ const QuestionEditForm = ({
         const { message, success } = editSuccess
 
         return (
-          <Form error={success === false} success={success === true} onSubmit={handleSubmit}>
+          <Form
+            error={success === false}
+            success={success === true}
+            onSubmit={handleSubmit}
+          >
             <div className="infoMessage">
               <Message success>
                 <FormattedMessage
@@ -141,10 +152,16 @@ const QuestionEditForm = ({
             <div className="questionInput questionType">
               <Form.Field>
                 <label htmlFor="type">
-                  <FormattedMessage defaultMessage="Question Type" id="editQuestion.type" />
+                  <FormattedMessage
+                    defaultMessage="Question Type"
+                    id="editQuestion.type"
+                  />
                 </label>
                 <div className="type">
-                  <FormattedMessage defaultMessage="type" id={`common.${type}.label`} />
+                  <FormattedMessage
+                    defaultMessage="type"
+                    id={`common.${type}.label`}
+                  />
                 </div>
               </Form.Field>
             </div>
@@ -209,7 +226,10 @@ const QuestionEditForm = ({
                   onClick={() => onActiveVersionChange(versionOptions.length)}
                 >
                   <Icon name="plus" />
-                  <FormattedMessage defaultMessage="New Version" id="editQuestion.newVersion" />
+                  <FormattedMessage
+                    defaultMessage="New Version"
+                    id="editQuestion.newVersion"
+                  />
                 </Menu.Item>
               </Menu>
             </div>
@@ -253,7 +273,10 @@ const QuestionEditForm = ({
 
             <div className="actionArea">
               <Button className="discard" type="reset" onClick={onDiscard}>
-                <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+                <FormattedMessage
+                  defaultMessage="Discard"
+                  id="common.button.discard"
+                />
               </Button>
               <Button
                 primary
@@ -262,7 +285,10 @@ const QuestionEditForm = ({
                 loading={loading && isSubmitting}
                 type="submit"
               >
-                <FormattedMessage defaultMessage="Save" id="common.button.save" />
+                <FormattedMessage
+                  defaultMessage="Save"
+                  id="common.button.save"
+                />
               </Button>
             </div>
           </Form>
@@ -380,39 +406,48 @@ QuestionEditForm.propTypes = propTypes
 QuestionEditForm.defaultProps = defaultProps
 
 export default compose(
-  withProps(({
-    allTags, activeVersion, versions, questionTags, title, type, onSubmit,
-  }) => {
-    // if the active version would be out of array bounds, we are creating a new one
-    const isNewVersion = activeVersion === versions.length
+  withProps(
+    ({
+      allTags,
+      activeVersion,
+      versions,
+      questionTags,
+      title,
+      type,
+      onSubmit,
+    }) => {
+      // if the active version would be out of array bounds, we are creating a new one
+      const isNewVersion = activeVersion === versions.length
 
-    // calculate the version with which to initialize the version fields (the current or last one)
-    const initializeVersion = isNewVersion ? versions.length - 1 : activeVersion
+      // calculate the version with which to initialize the version fields (the current or last one)
+      const initializeVersion = isNewVersion
+        ? versions.length - 1
+        : activeVersion
 
-    return {
-      initialValues: {
-        content: versions[initializeVersion].content
-          ? versions[initializeVersion].content
-            |> JSON.parse
-            |> convertFromRaw // create a new draftjs content state from text
-            |> EditorState.createWithContent
-          : // get the version description
-          versions[initializeVersion].description
-            |> ContentState.createFromText // create a new draftjs content state from text
-            |> EditorState.createWithContent, // create a new draftjs editor state
-        options: versions[initializeVersion].options[type] || {},
-        tags: questionTags.map(tag => tag.name),
-        title,
-        type,
-        versions,
-      },
-      isNewVersion,
-      onSubmit: onSubmit(isNewVersion),
-      tags: allTags,
-      versionOptions: versions.map(({ id }, index) => ({
-        text: `v${index + 1}`,
-        value: id,
-      })),
-    }
-  }),
+      return {
+        initialValues: {
+          content: versions[initializeVersion].content
+            ? versions[initializeVersion].content
+              |> JSON.parse
+              |> convertFromRaw // create a new draftjs content state from text
+              |> EditorState.createWithContent
+            : versions[initializeVersion].description // get the version description
+              |> ContentState.createFromText // create a new draftjs content state from text
+              |> EditorState.createWithContent, // create a new draftjs editor state
+          options: versions[initializeVersion].options[type] || {},
+          tags: questionTags.map(tag => tag.name),
+          title,
+          type,
+          versions,
+        },
+        isNewVersion,
+        onSubmit: onSubmit(isNewVersion),
+        tags: allTags,
+        versionOptions: versions.map(({ id }, index) => ({
+          text: `v${index + 1}`,
+          value: id,
+        })),
+      }
+    },
+  ),
 )(QuestionEditForm)

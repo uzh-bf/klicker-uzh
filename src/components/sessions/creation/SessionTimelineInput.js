@@ -32,7 +32,11 @@ const SessionTimelineInput = ({ value, onChange }) => {
   // handle extending a block with a further question
   const handleExtendBlock = blockIndex => (newQuestion) => {
     onChange(
-      adjust(prev => ({ ...prev, questions: [...prev.questions, newQuestion] }), blockIndex, value),
+      adjust(
+        prev => ({ ...prev, questions: [...prev.questions, newQuestion] }),
+        blockIndex,
+        value,
+      ),
     )
   }
 
@@ -52,7 +56,12 @@ const SessionTimelineInput = ({ value, onChange }) => {
             {block.questions.map(({
               id, title, type, version,
             }) => (
-              <QuestionSingle id={id} title={title} type={type} version={version} />
+              <QuestionSingle
+                id={id}
+                title={title}
+                type={type}
+                version={version}
+              />
             ))}
           </div>
 
@@ -64,13 +73,21 @@ const SessionTimelineInput = ({ value, onChange }) => {
 
       <div className="timelineItem">
         <div className="title">
-          <FormattedMessage defaultMessage="New Block" id="sessionCreation.newBlock" />
+          <FormattedMessage
+            defaultMessage="New Block"
+            id="sessionCreation.newBlock"
+          />
           <a data-tip data-for="newBlockHelp">
             <Icon name="question circle" />
           </a>
         </div>
 
-        <ReactTooltip delayHide={250} delayShow={250} id="newBlockHelp" place="right">
+        <ReactTooltip
+          delayHide={250}
+          delayShow={250}
+          id="newBlockHelp"
+          place="right"
+        >
           <FormattedMessage
             defaultMessage="Group questions inside a question block to activate and evaluate them simultaneously."
             id="sessionCreation.newBlock.tooltip"

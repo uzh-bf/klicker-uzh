@@ -75,7 +75,9 @@ const Join = ({
 
   return (
     <StudentLayout
-      isInteractionEnabled={isConfusionBarometerActive || isFeedbackChannelActive}
+      isInteractionEnabled={
+        isConfusionBarometerActive || isFeedbackChannelActive
+      }
       pageTitle={`Join ${shortname}`}
       sidebar={{
         activeItem: sidebarActiveItem,
@@ -200,14 +202,19 @@ export default compose(
     },
   ),
   graphql(JoinSessionQuery, {
-    options: ({ router }) => ({ variables: { shortname: router.query.shortname } }),
+    options: ({ router }) => ({
+      variables: { shortname: router.query.shortname },
+    }),
   }),
   branch(({ data }) => data.loading, renderComponent(() => <div />)),
   branch(
     ({ data }) => data.errors || !data.joinSession,
     renderComponent(() => (
       <div>
-        <FormattedMessage defaultMessage="No session active." id="joinSession.noSessionActive" />
+        <FormattedMessage
+          defaultMessage="No session active."
+          id="joinSession.noSessionActive"
+        />
       </div>
     )),
   ),
@@ -222,10 +229,11 @@ export default compose(
   })),
   withHandlers({
     // handle creation of a new confusion timestep
-    handleNewConfusionTS: ({ fp, data: { joinSession }, newConfusionTS }) => async ({
-      difficulty,
-      speed,
-    }) => {
+    handleNewConfusionTS: ({
+      fp,
+      data: { joinSession },
+      newConfusionTS,
+    }) => async ({ difficulty, speed }) => {
       try {
         newConfusionTS({
           variables: {
@@ -242,10 +250,11 @@ export default compose(
 
     // handle creation of a new feedback
     handleNewFeedback: ({
-      data: { joinSession }, fp, newFeedback, router,
-    }) => async ({
-      content,
-    }) => {
+      data: { joinSession },
+      fp,
+      newFeedback,
+      router,
+    }) => async ({ content }) => {
       try {
         if (joinSession.settings.isFeedbackChannelPublic) {
           newFeedback({
@@ -293,7 +302,10 @@ export default compose(
     },
 
     // handle creation of a new response
-    handleNewResponse: ({ fp, newResponse }) => async ({ instanceId, response }) => {
+    handleNewResponse: ({ fp, newResponse }) => async ({
+      instanceId,
+      response,
+    }) => {
       try {
         newResponse({
           variables: { fp: await fp, instanceId, response },
@@ -303,7 +315,9 @@ export default compose(
       }
     },
 
-    handleSidebarActiveItemChange: ({ handleSidebarActiveItemChange }) => newItem => () => {
+    handleSidebarActiveItemChange: ({
+      handleSidebarActiveItemChange,
+    }) => newItem => () => {
       // sessionStorage.setItem('sidebarActiveItem', newItem)
       handleSidebarActiveItemChange(newItem)
     },

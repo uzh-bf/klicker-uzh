@@ -10,7 +10,11 @@ import {
 
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
 import { ActionMenu, Collapser } from '../../common'
-import { QuestionDescription, SCAnswerOptions, FREEAnswerOptions } from '../../questionTypes'
+import {
+  QuestionDescription,
+  SCAnswerOptions,
+  FREEAnswerOptions,
+} from '../../questionTypes'
 import { withStorage } from '../../../lib'
 
 const propTypes = {
@@ -22,8 +26,11 @@ const propTypes = {
   handleSubmit: PropTypes.func.isRequired,
   inputEmpty: PropTypes.bool.isRequired,
   inputValid: PropTypes.bool.isRequired,
-  inputValue: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.object])
-    .isRequired,
+  inputValue: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.number,
+    PropTypes.object,
+  ]).isRequired,
   isCollapsed: PropTypes.bool.isRequired,
   questions: PropTypes.array,
   remainingQuestions: PropTypes.array,
@@ -92,7 +99,10 @@ function QuestionArea({
   return (
     <div className={classNames('questionArea', { active })}>
       <h1 className="header">
-        <FormattedMessage defaultMessage="Question" id="joinSession.questionArea.title" />
+        <FormattedMessage
+          defaultMessage="Question"
+          id="joinSession.questionArea.title"
+        />
       </h1>
       {(() => {
         if (remainingQuestions.length === 0) {
@@ -111,13 +121,21 @@ function QuestionArea({
         } = currentQuestion
 
         // if the content is set, parse it and convert into a content state
-        const contentState = content ? content |> JSON.parse |> convertFromRaw : null
+        const contentState = content
+          ? content |> JSON.parse |> convertFromRaw
+          : null
 
         return (
           <div>
             <div className="collapser">
-              <Collapser collapsed={isCollapsed} handleCollapseToggle={toggleIsCollapsed}>
-                <QuestionDescription content={contentState} description={description} />
+              <Collapser
+                collapsed={isCollapsed}
+                handleCollapseToggle={toggleIsCollapsed}
+              >
+                <QuestionDescription
+                  content={contentState}
+                  description={description}
+                />
               </Collapser>
             </div>
 
@@ -155,7 +173,9 @@ function QuestionArea({
             <ActionMenu
               activeIndex={questions.length - remainingQuestions.length}
               isSkipModeActive={inputEmpty}
-              isSubmitDisabled={remainingQuestions.length === 0 || (!inputEmpty && !inputValid)}
+              isSubmitDisabled={
+                remainingQuestions.length === 0 || (!inputEmpty && !inputValid)
+              }
               numItems={questions.length}
               /* items={_range(questions.length).map(index => ({
                 done: !remainingQuestions.includes(index),
@@ -277,7 +297,9 @@ export default compose(
     }),
     {
       handleActiveChoicesChange: ({ inputValue }) => (choice, type) => {
-        const validateChoices = newValue => (type === QUESTION_TYPES.SC ? newValue.length === 1 : newValue.length > 0)
+        const validateChoices = newValue => (type === QUESTION_TYPES.SC
+          ? newValue.length === 1
+          : newValue.length > 0)
 
         if (inputValue && type === QUESTION_TYPES.MC) {
           // if the choice is already active, remove it
@@ -314,7 +336,8 @@ export default compose(
         inputValue: undefined,
       }),
       handleFreeValueChange: () => inputValue => ({
-        inputEmpty: inputValue !== 0 && (!inputValue || inputValue.length === 0),
+        inputEmpty:
+          inputValue !== 0 && (!inputValue || inputValue.length === 0),
         inputValid: !!inputValue || inputValue === 0,
         inputValue,
       }),
@@ -331,12 +354,18 @@ export default compose(
           remainingQuestions: newRemaining,
         }
       },
-      toggleIsCollapsed: ({ isCollapsed }) => () => ({ isCollapsed: !isCollapsed }),
+      toggleIsCollapsed: ({ isCollapsed }) => () => ({
+        isCollapsed: !isCollapsed,
+      }),
     },
   ),
   withHandlers({
-    handleActiveChoicesChange: ({ handleActiveChoicesChange }) => type => choice => () => handleActiveChoicesChange(choice, type),
-    handleActiveQuestionChange: ({ handleActiveQuestionChange }) => index => () => handleActiveQuestionChange(index),
+    handleActiveChoicesChange: ({
+      handleActiveChoicesChange,
+    }) => type => choice => () => handleActiveChoicesChange(choice, type),
+    handleActiveQuestionChange: ({
+      handleActiveQuestionChange,
+    }) => index => () => handleActiveQuestionChange(index),
     handleCompleteQuestion: ({ handleCompleteQuestion }) => index => () => handleCompleteQuestion(index),
     handleSubmit: ({
       activeQuestion,
@@ -360,7 +389,9 @@ export default compose(
       const prevResponses = JSON.parse(localStorage.getItem('storedResponses'))
       localStorage.setItem(
         'storedResponses',
-        JSON.stringify(prevResponses ? [...prevResponses, instanceId] : [instanceId]),
+        JSON.stringify(
+          prevResponses ? [...prevResponses, instanceId] : [instanceId],
+        ),
       )
 
       handleSubmit()

@@ -4,7 +4,12 @@ import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
 
 import {
-  BarChart, StackChart, PieChart, TableChart, CloudChart, HistogramChart,
+  BarChart,
+  StackChart,
+  PieChart,
+  TableChart,
+  CloudChart,
+  HistogramChart,
 } from '.'
 import { SESSION_STATUS } from '../../constants'
 import { statisticsShape } from '../../propTypes'
@@ -71,7 +76,10 @@ function Chart({
           return (
             <div className="noChart">
               <Button className="showGraphButton" onClick={handleShowGraph}>
-                <FormattedMessage defaultMessage="Show Graph" id="evaluation.graph.showGraph" />
+                <FormattedMessage
+                  defaultMessage="Show Graph"
+                  id="evaluation.graph.showGraph"
+                />
               </Button>
             </div>
           )

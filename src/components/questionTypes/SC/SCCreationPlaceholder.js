@@ -105,7 +105,12 @@ export default compose(
     handleNameChange: ({ setName }) => e => setName(e.target.value),
 
     handleSave: ({
-      correct, name, handleSave, setCorrect, setInputMode, setName,
+      correct,
+      name,
+      handleSave,
+      setCorrect,
+      setInputMode,
+      setName,
     }) => () => {
       setCorrect(false)
       setInputMode(false)

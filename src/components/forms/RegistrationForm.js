@@ -61,7 +61,8 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
             required
             error={errors.shortname}
             errorMessage={intl.formatMessage({
-              defaultMessage: 'Please provide a valid account ID (3-8 characters).',
+              defaultMessage:
+                'Please provide a valid account ID (3-8 characters).',
               id: 'form.shortname.invalid',
             })}
             handleBlur={handleBlur}
@@ -89,7 +90,8 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
               required
               error={errors.password}
               errorMessage={intl.formatMessage({
-                defaultMessage: 'Please provide a valid password (8+ characters).',
+                defaultMessage:
+                  'Please provide a valid password (8+ characters).',
                 id: 'form.password.invalid',
               })}
               handleBlur={handleBlur}
@@ -158,7 +160,8 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
             })}
             name="useCase"
             tooltip={intl.formatMessage({
-              defaultMessage: 'Short description of your planned use case for the Klicker UZH.',
+              defaultMessage:
+                'Short description of your planned use case for the Klicker UZH.',
               id: 'tooltip',
             })}
             touched={touched.useCase}
@@ -173,7 +176,10 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
               loading={loading && isSubmitting}
               type="submit"
             >
-              <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+              <FormattedMessage
+                defaultMessage="Submit"
+                id="common.button.submit"
+              />
             </Button>
           </div>
         </Form>

@@ -27,11 +27,17 @@ const defaultProps = {
 }
 
 const ConfusionBarometer = ({
-  confusionTS, intl, isActive, handleActiveToggle,
+  confusionTS,
+  intl,
+  isActive,
+  handleActiveToggle,
 }) => (
   <div className="confusionBarometer">
     <h2>
-      <FormattedMessage defaultMessage="Confusion-Barometer" id="runningSession.confusion.title" />
+      <FormattedMessage
+        defaultMessage="Confusion-Barometer"
+        id="runningSession.confusion.title"
+      />
     </h2>
 
     <Checkbox
@@ -50,11 +56,13 @@ const ConfusionBarometer = ({
         return (
           <React.Fragment>
             <ConfusionSection
-              data={confusionTS.map(({ timestamp, difficulty, difficultyRunning }) => ({
-                timestamp,
-                value: difficulty,
-                valueRunning: difficultyRunning,
-              }))}
+              data={confusionTS.map(
+                ({ timestamp, difficulty, difficultyRunning }) => ({
+                  timestamp,
+                  value: difficulty,
+                  valueRunning: difficultyRunning,
+                }),
+              )}
               title={intl.formatMessage({
                 defaultMessage: 'Difficulty',
                 id: 'runningSession.confusion.difficulty',

@@ -33,11 +33,17 @@ export const TagListPres = ({
   <div className="tagList">
     <Button basic fluid onClick={() => handleReset()}>
       <Icon name="remove circle" />
-      <FormattedMessage defaultMessage="Reset filters" id="tagList.button.reset" />
+      <FormattedMessage
+        defaultMessage="Reset filters"
+        id="tagList.button.reset"
+      />
     </Button>
     <List selection size="large">
       <List.Header className="listHeader archive">
-        <FormattedMessage defaultMessage="Archive" id="tagList.header.archive" />
+        <FormattedMessage
+          defaultMessage="Archive"
+          id="tagList.header.archive"
+        />
       </List.Header>
       <List.Item
         active={isArchiveActive}
@@ -46,7 +52,10 @@ export const TagListPres = ({
       >
         <List.Icon name="archive" />
         <List.Content>
-          <FormattedMessage defaultMessage="Show archived" id="tagList.string.archive" />
+          <FormattedMessage
+            defaultMessage="Show archived"
+            id="tagList.string.archive"
+          />
         </List.Content>
       </List.Item>
       <List.Header className="listHeader types">
@@ -58,7 +67,9 @@ export const TagListPres = ({
         key="SC"
         onClick={() => handleTagClick('SC', true)}
       >
-        <List.Icon name={activeType === QUESTION_TYPES.SC ? 'folder' : 'folder outline'} />
+        <List.Icon
+          name={activeType === QUESTION_TYPES.SC ? 'folder' : 'folder outline'}
+        />
         <List.Content>
           <FormattedMessage defaultMessage="SC" id="common.SC.label" />
         </List.Content>
@@ -69,7 +80,9 @@ export const TagListPres = ({
         key="MC"
         onClick={() => handleTagClick('MC', true)}
       >
-        <List.Icon name={activeType === QUESTION_TYPES.MC ? 'folder' : 'folder outline'} />
+        <List.Icon
+          name={activeType === QUESTION_TYPES.MC ? 'folder' : 'folder outline'}
+        />
         <List.Content>
           <FormattedMessage defaultMessage="MC" id="common.MC.label" />
         </List.Content>
@@ -80,7 +93,11 @@ export const TagListPres = ({
         key="FREE"
         onClick={() => handleTagClick('FREE', true)}
       >
-        <List.Icon name={activeType === QUESTION_TYPES.FREE ? 'folder' : 'folder outline'} />
+        <List.Icon
+          name={
+            activeType === QUESTION_TYPES.FREE ? 'folder' : 'folder outline'
+          }
+        />
         <List.Content>
           <FormattedMessage defaultMessage="FREE" id="common.FREE.label" />
         </List.Content>
@@ -91,9 +108,18 @@ export const TagListPres = ({
         key="FREE_RANGE"
         onClick={() => handleTagClick('FREE_RANGE', true)}
       >
-        <List.Icon name={activeType === QUESTION_TYPES.FREE_RANGE ? 'folder' : 'folder outline'} />
+        <List.Icon
+          name={
+            activeType === QUESTION_TYPES.FREE_RANGE
+              ? 'folder'
+              : 'folder outline'
+          }
+        />
         <List.Content>
-          <FormattedMessage defaultMessage="FREE_RANGE" id="common.FREE_RANGE.label" />
+          <FormattedMessage
+            defaultMessage="FREE_RANGE"
+            id="common.FREE_RANGE.label"
+          />
         </List.Content>
       </List.Item>
       <List.Header className="listHeader tags">
@@ -116,7 +142,10 @@ export const TagListPres = ({
 
           if (tags.length === 0) {
             return (
-              <FormattedMessage defaultMessage="No tags available." id="tagList.string.noTags" />
+              <FormattedMessage
+                defaultMessage="No tags available."
+                id="tagList.string.noTags"
+              />
             )
           }
 

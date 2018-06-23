@@ -12,7 +12,9 @@ export default ({
   storageType = 'session',
   json = false,
 }) => ComposedComponent => class WithStorage extends React.Component {
-    static displayName = `WithStorage(${getComponentDisplayName(ComposedComponent)})`
+    static displayName = `WithStorage(${getComponentDisplayName(
+      ComposedComponent,
+    )})`
 
     constructor(props) {
       super(props)

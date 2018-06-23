@@ -25,7 +25,11 @@ const defaultProps = {
 }
 
 const Sidebar = ({
-  activeItem, children, items, visible, handleSidebarItemClick,
+  activeItem,
+  children,
+  items,
+  visible,
+  handleSidebarItemClick,
 }) => (
   <div className="sidebar">
     <SemanticSidebar.Pushable>

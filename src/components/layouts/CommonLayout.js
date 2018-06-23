@@ -22,7 +22,11 @@ const defaultProps = {
 }
 
 const CommonLayout = ({
-  baseFontSize, children, nextHeight, nextMinHeight, pageTitle,
+  baseFontSize,
+  children,
+  nextHeight,
+  nextMinHeight,
+  pageTitle,
 }) => (
   <div className="commonLayout">
     <Head>

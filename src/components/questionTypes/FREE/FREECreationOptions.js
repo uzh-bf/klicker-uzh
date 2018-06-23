@@ -47,7 +47,12 @@ const FREECreationOptions = ({
           </a>
         </label>
 
-        <ReactTooltip delayHide={250} delayShow={250} id="FREECreationHelp" place="right">
+        <ReactTooltip
+          delayHide={250}
+          delayShow={250}
+          id="FREECreationHelp"
+          place="right"
+        >
           <FormattedMessage
             defaultMessage="Choose the allowed format of incoming responses."
             id="createQuestion.optionsFREE.tooltip"
@@ -59,7 +64,10 @@ const FREECreationOptions = ({
         <div className="range">
           <Form.Field>
             <label htmlFor="min">
-              <FormattedMessage defaultMessage="Min" id="createQuestion.options.min" />
+              <FormattedMessage
+                defaultMessage="Min"
+                id="createQuestion.options.min"
+              />
             </label>
             <Input
               disabled={disabled}
@@ -73,7 +81,10 @@ const FREECreationOptions = ({
 
           <Form.Field>
             <label htmlFor="max">
-              <FormattedMessage defaultMessage="Max" id="createQuestion.options.max" />
+              <FormattedMessage
+                defaultMessage="Max"
+                id="createQuestion.options.max"
+              />
             </label>
             <Input
               disabled={disabled}

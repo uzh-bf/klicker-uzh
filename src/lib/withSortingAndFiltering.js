@@ -24,11 +24,15 @@ export default (ComposedComponent) => {
       }),
 
       // handle an update in the search bar
-      handleSearch: ({ filters }) => title => ({ filters: { ...filters, title } }),
+      handleSearch: ({ filters }) => title => ({
+        filters: { ...filters, title },
+      }),
 
       // handle updated sort settings
       handleSortByChange: ({ sort }) => by => ({ sort: { ...sort, by } }),
-      handleSortOrderToggle: ({ sort }) => () => ({ sort: { ...sort, asc: !sort.asc } }),
+      handleSortOrderToggle: ({ sort }) => () => ({
+        sort: { ...sort, asc: !sort.asc },
+      }),
 
       // handle clicking on a tag in the tag list
       handleTagClick: ({ filters }) => (tagName, questionType = false) => {

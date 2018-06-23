@@ -115,7 +115,9 @@ const Index = ({
       {({ data }) => (
         <TeacherLayout
           fixedHeight
-          actionArea={creationMode ? creationForm(data.runningSession?.id) : null}
+          actionArea={
+            creationMode ? creationForm(data.runningSession?.id) : null
+          }
           intl={intl}
           navbar={{
             search: {
@@ -290,7 +292,10 @@ export default compose(
       },
 
       // build a single block from all the checked questions
-      handleQuickBlock: ({ sessionBlocks }, { handleResetSelection, selectedItems }) => () => {
+      handleQuickBlock: (
+        { sessionBlocks },
+        { handleResetSelection, selectedItems },
+      ) => () => {
         // reset the checked questions
         handleResetSelection()
 
@@ -315,7 +320,10 @@ export default compose(
       },
 
       // build a separate block for each checked question
-      handleQuickBlocks: ({ sessionBlocks }, { handleResetSelection, selectedItems }) => () => {
+      handleQuickBlocks: (
+        { sessionBlocks },
+        { handleResetSelection, selectedItems },
+      ) => () => {
         // reset the checked questions
         handleResetSelection()
 
@@ -343,7 +351,10 @@ export default compose(
 
       // override the toggle archive function
       // need to reset the selection on toggling archive to not apply actions to hidden questions
-      handleToggleArchive: (_, { handleResetSelection, handleToggleArchive }) => () => {
+      handleToggleArchive: (
+        _,
+        { handleResetSelection, handleToggleArchive },
+      ) => () => {
         handleResetSelection()
         handleToggleArchive()
       },
@@ -384,7 +395,10 @@ export default compose(
       try {
         // prepare blocks for consumption through the api
         const blocks = sessionBlocks.map(({ questions }) => ({
-          questions: questions.map(({ id, version }) => ({ question: id, version })),
+          questions: questions.map(({ id, version }) => ({
+            question: id,
+            version,
+          })),
         }))
 
         // create a new session

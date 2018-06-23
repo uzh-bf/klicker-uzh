@@ -9,7 +9,7 @@ const propTypes = {
   index: PropTypes.number,
   noDetails: PropTypes.bool,
   noVersions: PropTypes.bool,
-  questions: PropTypes.arrayOf(PropTypes.shape(QuestionSingle.propTypes)).isRequired,
+  questions: PropTypes.arrayOf(PropTypes.object).isRequired,
   status: PropTypes.string,
   timeLimit: PropTypes.number,
 }
@@ -23,7 +23,12 @@ const defaultProps = {
 }
 
 const QuestionBlock = ({
-  index, status, questions, timeLimit, noDetails, noVersions,
+  index,
+  status,
+  questions,
+  timeLimit,
+  noDetails,
+  noVersions,
 }) => (
   <div className={classNames('questionBlock', { active: status === 'ACTIVE' })}>
     {index >= 0 && (

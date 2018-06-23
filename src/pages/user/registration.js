@@ -23,7 +23,10 @@ const Registration = ({ intl }) => (
   >
     <div className="registration">
       <h1>
-        <FormattedMessage defaultMessage="Registration" id="user.registration.title" />
+        <FormattedMessage
+          defaultMessage="Registration"
+          id="user.registration.title"
+        />
       </h1>
 
       <Mutation mutation={RegistrationMutation}>
@@ -55,7 +58,8 @@ const Registration = ({ intl }) => (
 Public Beta
                 </Message.Header>
                 <Message.Content>
-                  Sign up for the Klicker 2018 public beta. Already have an account?
+                  Sign up for the Klicker 2018 public beta. Already have an
+                  account?
                   {' '}
                   <Link href="/user/login">
 Login here.
@@ -66,7 +70,11 @@ Login here.
                 intl={intl}
                 loading={loading}
                 onSubmit={({
-                  email, password, shortname, institution, useCase,
+                  email,
+                  password,
+                  shortname,
+                  institution,
+                  useCase,
                 }) => {
                   register({
                     variables: {

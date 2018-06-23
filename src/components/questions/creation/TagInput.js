@@ -33,7 +33,10 @@ const TagInput = ({
   <div className="tagInput">
     <Form.Field required error={touched && error}>
       <label htmlFor="tags">
-        <FormattedMessage defaultMessage="Tags" id="createQuestion.tagInput.label" />
+        <FormattedMessage
+          defaultMessage="Tags"
+          id="createQuestion.tagInput.label"
+        />
         <a data-tip data-for="tagHelp">
           <Icon name="question circle" />
         </a>

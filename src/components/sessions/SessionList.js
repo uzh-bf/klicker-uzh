@@ -14,19 +14,39 @@ import { buildIndex, filterSessions } from '../../lib'
 const statusCases = {
   [SESSION_STATUS.COMPLETED]: {
     icon: 'copy',
-    message: <FormattedMessage defaultMessage="Copy" id="session.button.completed.content" />,
+    message: (
+      <FormattedMessage
+        defaultMessage="Copy"
+        id="session.button.completed.content"
+      />
+    ),
   },
   [SESSION_STATUS.CREATED]: {
     icon: 'play',
-    message: <FormattedMessage defaultMessage="Start" id="session.button.created.content" />,
+    message: (
+      <FormattedMessage
+        defaultMessage="Start"
+        id="session.button.created.content"
+      />
+    ),
   },
   [SESSION_STATUS.RUNNING]: {
     icon: 'play',
-    message: <FormattedMessage defaultMessage="Running" id="session.button.running.content" />,
+    message: (
+      <FormattedMessage
+        defaultMessage="Running"
+        id="session.button.running.content"
+      />
+    ),
   },
   [SESSION_STATUS.PAUSED]: {
     icon: 'pause',
-    message: <FormattedMessage defaultMessage="Continue" id="session.button.paused.content" />,
+    message: (
+      <FormattedMessage
+        defaultMessage="Continue"
+        id="session.button.paused.content"
+      />
+    ),
   },
 }
 
@@ -36,7 +56,11 @@ const propTypes = {
   handleStartSession: PropTypes.func.isRequired,
 }
 
-export const SessionListPres = ({ filters, handleCopySession, handleStartSession }) => {
+export const SessionListPres = ({
+  filters,
+  handleCopySession,
+  handleStartSession,
+}) => {
   // calculate what action to take on button click based on session status
   const handleSessionAction = (sessionId, status) => {
     if (status === SESSION_STATUS.CREATED || status === SESSION_STATUS.PAUSED) {
@@ -105,19 +129,24 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
             }))
 
           // create a session index
-          const sessionIndex = buildIndex('sessions', sessions, ['name', 'createdAt'])
+          const sessionIndex = buildIndex('sessions', sessions, [
+            'name',
+            'createdAt',
+          ])
 
-          const processedSessions = filterSessions(sessions, filters, sessionIndex).map(
-            session => ({
-              ...session,
-              button: {
-                ...statusCases[session.status],
-                disabled: session.status === SESSION_STATUS.COMPLETED,
-                hidden: session.status === SESSION_STATUS.COMPLETED,
-                onClick: handleSessionAction(session.id, session.status),
-              },
-            }),
-          )
+          const processedSessions = filterSessions(
+            sessions,
+            filters,
+            sessionIndex,
+          ).map(session => ({
+            ...session,
+            button: {
+              ...statusCases[session.status],
+              disabled: session.status === SESSION_STATUS.COMPLETED,
+              hidden: session.status === SESSION_STATUS.COMPLETED,
+              onClick: handleSessionAction(session.id, session.status),
+            },
+          }))
 
           const remainingSessions = processedSessions.filter(
             session => session.status === SESSION_STATUS.CREATED,

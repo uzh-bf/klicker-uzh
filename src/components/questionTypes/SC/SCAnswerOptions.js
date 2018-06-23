@@ -27,7 +27,10 @@ const SCAnswerOptions = ({
 }) => (
   <div className="options">
     {options.map((option, index) => (
-      <div className={classNames('option', { active: value.includes(index) })} key={option.id}>
+      <div
+        className={classNames('option', { active: value.includes(index) })}
+        key={option.id}
+      >
         <Button fluid disabled={disabled} onClick={onChange(index)}>
           {option.name}
         </Button>

@@ -112,7 +112,9 @@ const Running = ({ intl, shortname }) => (
                             }}
                             handleNextBlock={() => {
                               activateNextBlock({
-                                refetchQueries: [{ query: RunningSessionQuery }],
+                                refetchQueries: [
+                                  { query: RunningSessionQuery },
+                                ],
                               })
                             }}
                             handlePauseSession={async () => {

@@ -59,7 +59,10 @@ Feedback-Channel
             min={-5}
             title={(
               <h2 className="sectionTitle">
-                <FormattedMessage defaultMessage="Speed" id="common.string.speed" />
+                <FormattedMessage
+                  defaultMessage="Speed"
+                  id="common.string.speed"
+                />
               </h2>
 )}
             value={confusionSpeed}
@@ -73,7 +76,10 @@ Feedback-Channel
             min={-5}
             title={(
               <h2 className="sectionTitle">
-                <FormattedMessage defaultMessage="Difficulty" id="common.string.difficulty" />
+                <FormattedMessage
+                  defaultMessage="Difficulty"
+                  id="common.string.difficulty"
+                />
               </h2>
 )}
             value={confusionDifficulty}
@@ -124,7 +130,10 @@ Feedbacks
               type="submit"
               onClick={handleNewFeedback}
             >
-              <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+              <FormattedMessage
+                defaultMessage="Submit"
+                id="common.button.submit"
+              />
             </Button>
           </Form>
         )}
@@ -247,14 +256,24 @@ export default compose(
     },
   ),
   withHandlers({
-    handleNewConfusionTS: ({ confusionDifficulty, confusionSpeed, handleNewConfusionTS }) => () => {
+    handleNewConfusionTS: ({
+      confusionDifficulty,
+      confusionSpeed,
+      handleNewConfusionTS,
+    }) => () => {
       // send the new confusion entry to the server
-      handleNewConfusionTS({ difficulty: confusionDifficulty, speed: confusionSpeed })
+      handleNewConfusionTS({
+        difficulty: confusionDifficulty,
+        speed: confusionSpeed,
+      })
 
       // update the confusion cookie
       sessionStorage.setItem(
         'confusion',
-        JSON.stringify({ difficulty: confusionDifficulty, speed: confusionSpeed }),
+        JSON.stringify({
+          difficulty: confusionDifficulty,
+          speed: confusionSpeed,
+        }),
       )
     },
     handleNewFeedback: ({

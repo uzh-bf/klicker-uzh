@@ -38,7 +38,11 @@ const Feedback = ({
     )}
 
     {showVotes && (
-      <Button className="votes" disabled={alreadyVoted} onClick={updateVotes && updateVotes()}>
+      <Button
+        className="votes"
+        disabled={alreadyVoted}
+        onClick={updateVotes && updateVotes()}
+      >
         <Icon name={alreadyVoted ? 'thumbs up' : 'thumbs outline up'} />
         {votes}
       </Button>

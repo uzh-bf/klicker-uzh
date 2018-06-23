@@ -34,7 +34,10 @@ const Session = ({
         {name}
       </h2>
       <div className="date">
-        <FormattedMessage defaultMessage="Created on" id="sessionList.string.createdOn" />
+        <FormattedMessage
+          defaultMessage="Created on"
+          id="sessionList.string.createdOn"
+        />
         {' '}
         {moment(createdAt).format('DD.MM.YY HH:mm')}
       </div>
@@ -56,19 +59,25 @@ const Session = ({
           <div className="block" key={blockId}>
             <QuestionBlock
               noDetails
-              questions={instances.map(({ id: instanceId, question, version }) => ({
-                id: instanceId,
-                title: question.title,
-                type: question.type,
-                version,
-              }))}
+              questions={instances.map(
+                ({ id: instanceId, question, version }) => ({
+                  id: instanceId,
+                  title: question.title,
+                  type: question.type,
+                  version,
+                }),
+              )}
               showSolutions={showSolutions}
               timeLimit={timeLimit}
             />
           </div>
         ))}
         <div className="actionArea">
-          <a href={`/sessions/evaluation/${id}`} target="_blank">
+          <a
+            href={`/sessions/evaluation/${id}`}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
             <Button icon disabled={isFeedbackSession} labelPosition="left">
               <Icon name="external" />
               Evaluation

@@ -87,15 +87,21 @@ export const QuestionListPres = ({
             id={question.id}
             isArchived={isArchiveActive}
             key={question.id}
-            lastUsed={question.instances.map(({ createdAt, session, version }) => (
-              <a href={`/sessions/evaluation/${session}`} target="_blank">
-                {moment(createdAt).format('DD.MM.YYYY HH:mm')}
-                {' '}
+            lastUsed={question.instances.map(
+              ({ createdAt, session, version }) => (
+                <a
+                  href={`/sessions/evaluation/${session}`}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  {moment(createdAt).format('DD.MM.YYYY HH:mm')}
+                  {' '}
 (v
-                {version + 1}
-                )
-              </a>
-            ))}
+                  {version + 1}
+                  )
+                </a>
+              ),
+            )}
             tags={question.tags}
             title={question.title}
             type={question.type}

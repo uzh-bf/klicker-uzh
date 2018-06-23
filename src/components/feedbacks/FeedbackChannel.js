@@ -7,7 +7,7 @@ import { lifecycle } from 'recompose'
 import Feedback from './Feedback'
 
 const propTypes = {
-  feedbacks: PropTypes.arrayOf(Feedback.propTypes),
+  feedbacks: PropTypes.arrayOf(PropTypes.object),
   handleActiveToggle: PropTypes.func.isRequired,
   handleDeleteFeedback: PropTypes.func.isRequired,
   handlePublicToggle: PropTypes.func.isRequired,

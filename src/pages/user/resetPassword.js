@@ -26,7 +26,10 @@ const ResetPassword = ({ intl, router }) => (
   >
     <div className="resetPassword">
       <h1>
-        <FormattedMessage defaultMessage="Reset your password" id="user.resetPassword.title" />
+        <FormattedMessage
+          defaultMessage="Reset your password"
+          id="user.resetPassword.title"
+        />
       </h1>
 
       <Mutation mutation={ChangePasswordMutation}>
@@ -56,7 +59,10 @@ login
                 loading={loading}
                 onSubmit={({ password }) => {
                   changePassword({
-                    variables: { jwt: router.query.resetToken, newPassword: password },
+                    variables: {
+                      jwt: router.query.resetToken,
+                      newPassword: password,
+                    },
                   })
                 }}
               />

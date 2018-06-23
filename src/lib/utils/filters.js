@@ -52,7 +52,8 @@ function buildIndex(name, items, searchIndices) {
 
 function filterQuestions(questions, filters, index) {
   let results = questions.filter(
-    ({ isArchived }) => (typeof isArchived === 'undefined' && !filters.archive) || isArchived === filters.archive,
+    ({ isArchived }) => (typeof isArchived === 'undefined' && !filters.archive)
+      || isArchived === filters.archive,
   )
 
   // if a title (query) was given, search the index with it
@@ -69,7 +70,10 @@ function filterQuestions(questions, filters, index) {
       }
 
       // compare the tags selected and check whether the question fulfills all of them
-      if (filters.tags && !_every(filters.tags, tag => tags.map(t => t.name).includes(tag))) {
+      if (
+        filters.tags
+        && !_every(filters.tags, tag => tags.map(t => t.name).includes(tag))
+      ) {
         return false
       }
 
@@ -102,7 +106,9 @@ function sortQuestions(questions, sort) {
   }
 
   if (sort.by === 'CREATED') {
-    return questions.sort((a, b) => factor * (moment(a.createdAt) - moment(b.createdAt)))
+    return questions.sort(
+      (a, b) => factor * (moment(a.createdAt) - moment(b.createdAt)),
+    )
   }
 
   if (sort.by === 'USED') {

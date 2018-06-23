@@ -42,12 +42,21 @@ const SessionCreationForm = ({
     <form className="ui form sessionCreation" onSubmit={handleSubmit('save')}>
       <div className="upper">
         <h1 className="title">
-          <FormattedMessage defaultMessage="Create Session" id="sessionCreation.title" />
+          <FormattedMessage
+            defaultMessage="Create Session"
+            id="sessionCreation.title"
+          />
         </h1>
 
         <div className="sessionSettings">
           <div className="sessionName">
-            <Input fluid label="Name" type="text" value={name} onChange={handleChangeName} />
+            <Input
+              fluid
+              label="Name"
+              type="text"
+              value={name}
+              onChange={handleChangeName}
+            />
           </div>
         </div>
       </div>
@@ -59,12 +68,24 @@ const SessionCreationForm = ({
       <div className="actionArea">
         <Button fluid icon labelPosition="left" onClick={handleDiscard}>
           <Icon name="trash" />
-          <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+          <FormattedMessage
+            defaultMessage="Discard"
+            id="common.button.discard"
+          />
         </Button>
 
-        <Button fluid icon disabled={!isValid} labelPosition="left" type="submit">
+        <Button
+          fluid
+          icon
+          disabled={!isValid}
+          labelPosition="left"
+          type="submit"
+        >
           <Icon name="save" />
-          <FormattedMessage defaultMessage="Save & Close" id="form.createSession.button.save" />
+          <FormattedMessage
+            defaultMessage="Save & Close"
+            id="form.createSession.button.save"
+          />
         </Button>
 
         <Button

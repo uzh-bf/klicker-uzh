@@ -63,20 +63,33 @@ const ContentInput = ({
     <div className="contentInput">
       <Form.Field required error={touched && error}>
         <label htmlFor="content">
-          <FormattedMessage defaultMessage="Question" id="createQuestion.contentInput.label" />
+          <FormattedMessage
+            defaultMessage="Question"
+            id="createQuestion.contentInput.label"
+          />
           <a data-tip data-for="contentHelp">
             <Icon name="question circle" />
           </a>
         </label>
 
-        <ReactTooltip delayHide={250} delayShow={250} id="contentHelp" place="right">
+        <ReactTooltip
+          delayHide={250}
+          delayShow={250}
+          id="contentHelp"
+          place="right"
+        >
           <FormattedMessage
             defaultMessage="Enter the question you want to ask the audience."
             id="createQuestion.contentInput.tooltip"
           />
         </ReactTooltip>
 
-        <Editor editorState={value} plugins={plugins} readOnly={disabled} onChange={onChange} />
+        <Editor
+          editorState={value}
+          plugins={plugins}
+          readOnly={disabled}
+          onChange={onChange}
+        />
 
         <Toolbar />
       </Form.Field>

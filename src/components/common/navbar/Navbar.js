@@ -41,7 +41,11 @@ const defaultProps = {
 }
 
 export const NavbarPres = ({
-  intl, search, sidebarVisible, title, handleSidebarToggle,
+  intl,
+  search,
+  sidebarVisible,
+  title,
+  handleSidebarToggle,
 }) => (
   <div className="navbar">
     <div className="sideArea">
@@ -124,7 +128,9 @@ export const NavbarPres = ({
           return (
             <Menu borderless className="loginArea noBorder">
               <Menu.Menu position="right">
-                {accountShort && <SessionArea intl={intl} sessionId={runningSessionId} />}
+                {accountShort && (
+                  <SessionArea intl={intl} sessionId={runningSessionId} />
+                )}
 
                 <Mutation mutation={LogoutMutation}>
                   {logout => (

@@ -10,7 +10,7 @@ const propTypes = {
   children: PropTypes.node.isRequired,
   isInteractionEnabled: PropTypes.bool,
   pageTitle: PropTypes.string,
-  sidebar: PropTypes.shape(Sidebar.propTypes).isRequired,
+  sidebar: PropTypes.object.isRequired,
   title: PropTypes.string.isRequired,
 }
 
@@ -20,19 +20,29 @@ const defaultProps = {
 }
 
 const StudentLayout = ({
-  children, isInteractionEnabled, pageTitle, sidebar, title,
+  children,
+  isInteractionEnabled,
+  pageTitle,
+  sidebar,
+  title,
 }) => {
   const activeQuestionItem = {
     href: 'activeQuestion',
     label: (
-      <FormattedMessage defaultMessage="Active Question" id="joinSessionsidebar.activeQuestion" />
+      <FormattedMessage
+        defaultMessage="Active Question"
+        id="joinSessionsidebar.activeQuestion"
+      />
     ),
     name: 'activeQuestion',
   }
   const feedbackChannelItem = {
     href: 'feedbackChannel',
     label: (
-      <FormattedMessage defaultMessage="Feedback-Channel" id="joinSessionsidebar.feedbackChannel" />
+      <FormattedMessage
+        defaultMessage="Feedback-Channel"
+        id="joinSessionsidebar.feedbackChannel"
+      />
     ),
     name: 'feedbackChannel',
   }

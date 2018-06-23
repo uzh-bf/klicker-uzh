@@ -28,7 +28,7 @@ UZH
         </span>
       </h1>
       <p className="description">
-Welcome to the open source instant audience response system.
+        Welcome to the open source instant audience response system.
       </p>
 
       <div className="boxes">
@@ -102,7 +102,10 @@ Support
             <List.Item>
               <List.Icon name="trello" size="large" verticalAlign="middle" />
               <List.Content>
-                <List.Header as="a" href="https://trello.com/b/xw0D1k6l/klicker-roadmap">
+                <List.Header
+                  as="a"
+                  href="https://trello.com/b/xw0D1k6l/klicker-roadmap"
+                >
                   klicker-roadmap
                 </List.Header>
                 <List.Description>
@@ -166,7 +169,8 @@ Public Trello Board
             }
             .hoverable:hover {
               background-color: $color-primary-20p;
-              box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.1);
+              box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.2),
+                0 6px 20px 0 rgba(0, 0, 0, 0.1);
             }
           }
           > :global(.list.userLinks) {

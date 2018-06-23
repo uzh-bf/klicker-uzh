@@ -3,7 +3,13 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import {
-  Button, Icon, Menu, Popup, List, Modal, Embed,
+  Button,
+  Icon,
+  Menu,
+  Popup,
+  List,
+  Modal,
+  Embed,
 } from 'semantic-ui-react'
 import { intlShape, FormattedMessage } from 'react-intl'
 import { CHANGELOG } from '../../../constants'
@@ -20,9 +26,18 @@ const defaultProps = {
 const SessionArea = ({ intl, sessionId }) => (
   <React.Fragment>
     <Menu.Item button>
-      <Button icon as="a" disabled={!sessionId} href="/sessions/running" labelPosition="left">
+      <Button
+        icon
+        as="a"
+        disabled={!sessionId}
+        href="/sessions/running"
+        labelPosition="left"
+      >
         <Icon name="play" />
-        <FormattedMessage defaultMessage="Running Session" id="sessionArea.toRunningSession" />
+        <FormattedMessage
+          defaultMessage="Running Session"
+          id="sessionArea.toRunningSession"
+        />
       </Button>
     </Menu.Item>
 
@@ -37,7 +52,10 @@ const SessionArea = ({ intl, sessionId }) => (
       position="bottom right"
       trigger={(
         <Menu.Item
-          content={intl.formatMessage({ defaultMessage: 'Updates', id: 'sessionArea.whatsNew' })}
+          content={intl.formatMessage({
+            defaultMessage: 'Updates',
+            id: 'sessionArea.whatsNew',
+          })}
           icon="info"
         />
 )}
@@ -56,13 +74,13 @@ New features (major)
                   </h4>
                 ) : text}
                 {items && (
-                <List.List>
-                  {items.map(item => (
-                    <List.Item>
-                      {item}
-                    </List.Item>
-                  ))}
-                </List.List>
+                  <List.List>
+                    {items.map(item => (
+                      <List.Item>
+                        {item}
+                      </List.Item>
+                    ))}
+                  </List.List>
                 )}
               </List.Item>
             ))}
@@ -75,7 +93,11 @@ Planned features (major)
             <strong>
               A public roadmap is available on
               {' '}
-              <a href="https://trello.com/b/xw0D1k6l" rel="noopener noreferrer" target="_blank">
+              <a
+                href="https://trello.com/b/xw0D1k6l"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
                 https://trello.com/b/xw0D1k6l
               </a>
               .
@@ -96,7 +118,10 @@ Planned features (major)
       position="bottom right"
       trigger={(
         <Menu.Item
-          content={intl.formatMessage({ defaultMessage: 'Support', id: 'sessionArea.support' })}
+          content={intl.formatMessage({
+            defaultMessage: 'Support',
+            id: 'sessionArea.support',
+          })}
           icon="help"
         />
 )}

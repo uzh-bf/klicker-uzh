@@ -68,7 +68,11 @@ const FormikInput = ({
 
   // construct input props
   // define the default placeholder to be equal to the label
-  const inputProps = { label: inlineLabel, placeholder: placeholder || label, ...rest }
+  const inputProps = {
+    label: inlineLabel,
+    placeholder: placeholder || label,
+    ...rest,
+  }
   const showError = touched && !!error
 
   return (

@@ -25,11 +25,11 @@ const StaticLayout = ({ children, pageTitle }) => (
           &copy;
           {new Date().getFullYear()}
           {' '}
-IBF Teaching Center, Department of Banking and Finance,
-          University of Zurich. All rights reserved.
+IBF Teaching Center, Department of Banking
+          and Finance, University of Zurich. All rights reserved.
           <br />
-          Products and Services displayed herein are trademarks or registered trademarks of their
-          respective owners.
+          Products and Services displayed herein are trademarks or registered
+          trademarks of their respective owners.
         </p>
       </footer>
 

@@ -41,7 +41,11 @@ function ActionBar({
           </Button>
         </Link>
 
-        <Button primary disabled={!!creationMode} onClick={handleCreationModeToggle}>
+        <Button
+          primary
+          disabled={!!creationMode}
+          onClick={handleCreationModeToggle}
+        >
           <FormattedMessage
             defaultMessage="Create Session"
             id="questionPool.button.createSession"

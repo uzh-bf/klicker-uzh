@@ -21,13 +21,22 @@ const defaultProps = {
 }
 
 const Possibilities = ({
-  data, questionOptions, questionType, showGraph, showSolution,
+  data,
+  questionOptions,
+  questionType,
+  showGraph,
+  showSolution,
 }) => (
   <div className="possibilities">
     <h2>
       {(() => {
         if (QUESTION_GROUPS.CHOICES.includes(questionType)) {
-          return <FormattedMessage defaultMessage="Choices" id="evaluation.possibilities.choices" />
+          return (
+            <FormattedMessage
+              defaultMessage="Choices"
+              id="evaluation.possibilities.choices"
+            />
+          )
         }
 
         if (questionType === QUESTION_TYPES.FREE_RANGE) {

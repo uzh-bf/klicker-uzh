@@ -59,7 +59,10 @@ const SearchArea = ({
         />
         <Dropdown
           selection
-          options={sortingTypes.map(({ content, id }) => ({ text: content, value: id }))}
+          options={sortingTypes.map(({ content, id }) => ({
+            text: content,
+            value: id,
+          }))}
           onChange={(param, data) => handleSortByChange(data.value)}
         />
       </React.Fragment>

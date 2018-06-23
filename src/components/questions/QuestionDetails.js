@@ -30,9 +30,15 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
       <div className="column options" />
 
       <div className="column lastUsed">
-        <ListWithHeader items={lastUsed.length > 0 ? lastUsed : ['-']} limit={2}>
+        <ListWithHeader
+          items={lastUsed.length > 0 ? lastUsed : ['-']}
+          limit={2}
+        >
           <Icon name="history" />
-          <FormattedMessage defaultMessage="Usage history" id="questionDetails.usageHistory" />
+          <FormattedMessage
+            defaultMessage="Usage history"
+            id="questionDetails.usageHistory"
+          />
         </ListWithHeader>
       </div>
 
@@ -42,7 +48,10 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
           href={{ pathname: '/questions/details', query: { questionId } }}
         >
           <Button fluid>
-            <FormattedMessage defaultMessage="View" id="questionDetails.button.view" />
+            <FormattedMessage
+              defaultMessage="View"
+              id="questionDetails.button.view"
+            />
           </Button>
         </Link>
         <Link
@@ -50,7 +59,10 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
           href={{ pathname: '/questions/details', query: { questionId } }}
         >
           <Button fluid>
-            <FormattedMessage defaultMessage="Edit" id="questionDetails.button.edit" />
+            <FormattedMessage
+              defaultMessage="Edit"
+              id="questionDetails.button.edit"
+            />
           </Button>
         </Link>
       </div>

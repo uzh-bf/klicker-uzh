@@ -29,11 +29,17 @@ const defaultProps = {
 }
 
 const FREEAnswerOptions = ({
-  disabled, onChange, options, value, questionType,
+  disabled,
+  onChange,
+  options,
+  value,
+  questionType,
 }) => (
   <div className="ui form freeAnswerOptions">
     <Head>
-      {createLinks(['https://unpkg.com/react-rangeslider/umd/rangeslider.min.css'])}
+      {createLinks([
+        'https://unpkg.com/react-rangeslider/umd/rangeslider.min.css',
+      ])}
     </Head>
 
     {(() => {
@@ -46,14 +52,20 @@ const FREEAnswerOptions = ({
           <div className="field slider">
             <span className="min">
               <strong>
-                <FormattedMessage defaultMessage="Min" id="createQuestion.options.min" />
+                <FormattedMessage
+                  defaultMessage="Min"
+                  id="createQuestion.options.min"
+                />
               </strong>
               :
               {options.restrictions.min}
             </span>
             <span className="max">
               <strong>
-                <FormattedMessage defaultMessage="Max" id="createQuestion.options.max" />
+                <FormattedMessage
+                  defaultMessage="Max"
+                  id="createQuestion.options.max"
+                />
               </strong>
               :
               {options.restrictions.max}
@@ -93,7 +105,10 @@ const FREEAnswerOptions = ({
               {options.FREE_RANGE.restrictions.min !== null && (
                 <div>
                   <strong>
-                    <FormattedMessage defaultMessage="Min" id="createQuestion.options.min" />
+                    <FormattedMessage
+                      defaultMessage="Min"
+                      id="createQuestion.options.min"
+                    />
                   </strong>
                   :
                   {options.restrictions.min}
@@ -103,7 +118,10 @@ const FREEAnswerOptions = ({
               {options.FREE_RANGE.restrictions.max !== null && (
                 <div>
                   <strong>
-                    <FormattedMessage defaultMessage="Max" id="createQuestion.options.max" />
+                    <FormattedMessage
+                      defaultMessage="Max"
+                      id="createQuestion.options.max"
+                    />
                   </strong>
                   :
                   {options.restrictions.max}

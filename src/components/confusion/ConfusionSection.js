@@ -14,7 +14,7 @@ import {
 import { FormattedMessage } from 'react-intl'
 
 const propTypes = {
-  data: LineChart.propTypes.data.isRequired,
+  data: PropTypes.array.isRequired,
   title: PropTypes.string.isRequired,
   ylabel: PropTypes.string.isRequired,
 }
@@ -66,7 +66,12 @@ const ConfusionSection = ({ data, title, ylabel }) => (
               </YAxis>
               <ReferenceLine stroke="black" y={0} />
               <Line dataKey="value" stroke="lightgrey" type="monotone" />
-              <Line dataKey="valueRunning" name="running average" stroke="green" type="monotone" />
+              <Line
+                dataKey="valueRunning"
+                name="running average"
+                stroke="green"
+                type="monotone"
+              />
               <Legend />
             </LineChart>
           </ResponsiveContainer>

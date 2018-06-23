@@ -14,7 +14,10 @@ import { graphql } from 'react-apollo'
 import _round from 'lodash/round'
 
 import {
-  CHART_DEFAULTS, QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS,
+  CHART_DEFAULTS,
+  QUESTION_GROUPS,
+  QUESTION_TYPES,
+  SESSION_STATUS,
 } from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
 import {
@@ -128,7 +131,9 @@ export default compose(
   pageWithIntl,
   graphql(SessionEvaluationQuery, {
     // refetch the active instances query every 10s
-    options: ({ router }) => ({ variables: { sessionId: router.query.sessionId } }),
+    options: ({ router }) => ({
+      variables: { sessionId: router.query.sessionId },
+    }),
   }),
   // if the query is still loading, display nothing
   branch(({ data }) => data.loading, renderNothing),
@@ -167,13 +172,17 @@ export default compose(
           return {
             ...activeInstance,
             results: {
-              data: activeInstance.question.versions[activeInstance.version].options[
-                activeInstance.question.type
-              ].choices.map((choice, index) => ({
-                correct: choice.correct,
-                count: activeInstance.results ? activeInstance.results.CHOICES[index] : 0,
-                value: choice.name,
-              })),
+              data: activeInstance.question.versions[
+                activeInstance.version
+              ].options[activeInstance.question.type].choices.map(
+                (choice, index) => ({
+                  correct: choice.correct,
+                  count: activeInstance.results
+                    ? activeInstance.results.CHOICES[index]
+                    : 0,
+                  value: choice.name,
+                }),
+              ),
               totalResponses: activeInstance.responses.length,
             },
           }
@@ -184,7 +193,10 @@ export default compose(
 
           // values in FREE_RANGE questions need to be numerical
           if (activeInstance.question.type === QUESTION_TYPES.FREE_RANGE) {
-            data = data.map(({ value, ...rest }) => ({ ...rest, value: +value }))
+            data = data.map(({ value, ...rest }) => ({
+              ...rest,
+              value: +value,
+            }))
           }
 
           return {
@@ -263,7 +275,9 @@ No evaluation currently active.
       handleShowGraph: () => () => ({ showGraph: true }),
 
       // handle toggle of the solution overlay
-      handleToggleShowSolution: ({ showSolution }) => () => ({ showSolution: !showSolution }),
+      handleToggleShowSolution: ({ showSolution }) => () => ({
+        showSolution: !showSolution,
+      }),
     },
   ),
   withProps(
@@ -300,7 +314,10 @@ No evaluation currently active.
         data: activeInstance.results.data.map(({ correct, count, value }) => ({
           correct,
           count,
-          percentage: _round(100 * (count / activeInstance.results.totalResponses), 1),
+          percentage: _round(
+            100 * (count / activeInstance.results.totalResponses),
+            1,
+          ),
           value,
         })),
         totalResponses: activeInstance.results.totalResponses,

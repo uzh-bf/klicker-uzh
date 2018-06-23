@@ -41,7 +41,10 @@ const validate = ({
     errors.type = 'form.createQuestion.type.empty'
   }
 
-  if (QUESTION_GROUPS.CHOICES.includes(type) && (!options || options.choices.length === 0)) {
+  if (
+    QUESTION_GROUPS.CHOICES.includes(type)
+    && (!options || options.choices.length === 0)
+  ) {
     errors.options = 'form.createQuestion.options.empty'
   }
 
@@ -50,7 +53,11 @@ const validate = ({
       const isMinNum = _isNumber(options.restrictions.min)
       const isMaxNum = _isNumber(options.restrictions.max)
 
-      if (isMinNum && isMaxNum && options.restrictions.min >= options.restrictions.max) {
+      if (
+        isMinNum
+        && isMaxNum
+        && options.restrictions.min >= options.restrictions.max
+      ) {
         errors.options = 'form.createQuestion.options.minGteMax'
       }
     } else {
@@ -220,7 +227,10 @@ const QuestionCreationForm = ({
               </div>
 
               <Button className="discard" type="reset" onClick={onDiscard}>
-                <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+                <FormattedMessage
+                  defaultMessage="Discard"
+                  id="common.button.discard"
+                />
               </Button>
               <Button
                 primary
@@ -229,7 +239,10 @@ const QuestionCreationForm = ({
                 loading={isSubmitting}
                 type="submit"
               >
-                <FormattedMessage defaultMessage="Save" id="common.button.save" />
+                <FormattedMessage
+                  defaultMessage="Save"
+                  id="common.button.save"
+                />
               </Button>
             </Form>
           )

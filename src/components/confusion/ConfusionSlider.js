@@ -38,7 +38,9 @@ const ConfusionSlider = ({
   return (
     <div className="confusionSlider">
       <Head>
-        {createLinks(['https://unpkg.com/react-rangeslider/umd/rangeslider.min.css'])}
+        {createLinks([
+          'https://unpkg.com/react-rangeslider/umd/rangeslider.min.css',
+        ])}
       </Head>
 
       {title && (

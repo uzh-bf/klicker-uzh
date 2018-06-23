@@ -1,7 +1,11 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
-import { arrayMove, SortableContainer, SortableElement } from 'react-sortable-hoc'
+import {
+  arrayMove,
+  SortableContainer,
+  SortableElement,
+} from 'react-sortable-hoc'
 import { FormattedMessage } from 'react-intl'
 import { compose, mapProps, withHandlers } from 'recompose'
 import { Form, Icon } from 'semantic-ui-react'
@@ -17,7 +21,7 @@ const propTypes = {
   handleOptionToggleCorrect: PropTypes.func.isRequired,
   handleUpdateOrder: PropTypes.func.isRequired,
   invalid: PropTypes.bool.isRequired,
-  value: PropTypes.arrayOf(PropTypes.shape(SCCreationOption.propTypes)).isRequired,
+  value: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 // create the purely functional component
@@ -81,7 +85,12 @@ const SCCreationOptions = ({
           </a>
         </label>
 
-        <ReactTooltip delayHide={250} delayShow={250} id="SCCreationHelp" place="right">
+        <ReactTooltip
+          delayHide={250}
+          delayShow={250}
+          id="SCCreationHelp"
+          place="right"
+        >
           <FormattedMessage
             defaultMessage="Add answering options the respondents can choose from."
             id="createQuestion.optionsSC.tooltip"

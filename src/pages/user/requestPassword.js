@@ -22,7 +22,10 @@ const RequestPassword = ({ intl }) => (
   >
     <div className="resetPassword">
       <h1>
-        <FormattedMessage defaultMessage="Reset your password" id="user.requestPassword.title" />
+        <FormattedMessage
+          defaultMessage="Reset your password"
+          id="user.requestPassword.title"
+        />
       </h1>
 
       <Mutation mutation={RequestPasswordMutation}>
