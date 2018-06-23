@@ -10,7 +10,10 @@ const {
   archiveQuestions,
 } = require('./resolvers/questions')
 const {
-  questionInstancesByPV, addResponse, responsesByPV, resultsByPV,
+  questionInstancesByPV,
+  addResponse,
+  responsesByPV,
+  resultsByPV,
 } = require('./resolvers/questionInstances')
 const {
   addFeedback,
@@ -33,7 +36,13 @@ const {
 } = require('./resolvers/sessions')
 const { allTags, tags } = require('./resolvers/tags')
 const {
-  createUser, login, logout, user, authUser, changePassword, requestPassword,
+  createUser,
+  login,
+  logout,
+  user,
+  authUser,
+  changePassword,
+  requestPassword,
 } = require('./resolvers/users')
 const { confusionAdded, feedbackAdded } = require('./resolvers/subscriptions')
 const { allTypes } = require('./types')

@@ -6,7 +6,14 @@ const JWT = require('jsonwebtoken')
 mongoose.Promise = require('bluebird')
 
 const {
-  isAuthenticated, isValidJWT, signup, login, logout, requireAuth, getToken, changePassword,
+  isAuthenticated,
+  isValidJWT,
+  signup,
+  login,
+  logout,
+  requireAuth,
+  getToken,
+  changePassword,
 } = require('./auth')
 const { UserModel } = require('../models')
 const { initializeDb } = require('../lib/test/setup')
@@ -15,7 +22,11 @@ const appSecret = process.env.APP_SECRET
 
 describe('AuthService', () => {
   beforeAll(async () => {
-    await initializeDb({ mongoose, email: 'testAuth@bf.uzh.ch', shortname: 'auth' })
+    await initializeDb({
+      mongoose,
+      email: 'testAuth@bf.uzh.ch',
+      shortname: 'auth',
+    })
   })
   afterAll((done) => {
     mongoose.disconnect(done)
@@ -44,9 +55,15 @@ describe('AuthService', () => {
 
       const wrappedFunction = requireAuth(() => 'something')
 
-      expect(() => wrappedFunction(null, null, { auth: auth1 })).toThrow('INVALID_LOGIN')
-      expect(() => wrappedFunction(null, null, { auth: auth2 })).toThrow('INVALID_LOGIN')
-      expect(() => wrappedFunction(null, null, { auth: auth3 })).toThrow('INVALID_LOGIN')
+      expect(() => wrappedFunction(null, null, { auth: auth1 })).toThrow(
+        'INVALID_LOGIN',
+      )
+      expect(() => wrappedFunction(null, null, { auth: auth2 })).toThrow(
+        'INVALID_LOGIN',
+      )
+      expect(() => wrappedFunction(null, null, { auth: auth3 })).toThrow(
+        'INVALID_LOGIN',
+      )
       expect(wrappedFunction(null, null, { auth: auth4 })).toEqual('something')
     })
   })
@@ -76,38 +93,46 @@ describe('AuthService', () => {
 
     it('extracts tokens from cookies', () => {
       // invalid JWT handling
-      expect(getToken({
-        ...baseReq,
-        cookies: {
-          jwt: 'invalid-token',
-        },
-      })).toBeNull()
+      expect(
+        getToken({
+          ...baseReq,
+          cookies: {
+            jwt: 'invalid-token',
+          },
+        }),
+      ).toBeNull()
 
       // valid JWT handling
-      expect(getToken({
-        ...baseReq,
-        cookies: {
-          jwt: validJWT,
-        },
-      })).toEqual(validJWT)
+      expect(
+        getToken({
+          ...baseReq,
+          cookies: {
+            jwt: validJWT,
+          },
+        }),
+      ).toEqual(validJWT)
     })
 
     it('extracts tokens from headers', () => {
       // invalid JWT handling
-      expect(getToken({
-        ...baseReq,
-        headers: {
-          authorization: 'Bearer invalid-token',
-        },
-      })).toBeNull()
+      expect(
+        getToken({
+          ...baseReq,
+          headers: {
+            authorization: 'Bearer invalid-token',
+          },
+        }),
+      ).toBeNull()
 
       // valid JWT handling
-      expect(getToken({
-        ...baseReq,
-        headers: {
-          authorization: `Bearer ${validJWT}`,
-        },
-      })).toEqual(validJWT)
+      expect(
+        getToken({
+          ...baseReq,
+          headers: {
+            authorization: `Bearer ${validJWT}`,
+          },
+        }),
+      ).toEqual(validJWT)
     })
   })
 
@@ -117,17 +142,25 @@ describe('AuthService', () => {
       await UserModel.findOneAndRemove({ email: 'testSignup@bf.uzh.ch' })
 
       // try creating a new user with valid data
-      const newUser = await signup('testSignup@bf.uzh.ch', 'somePassword', 'signup', 'IBF Testitution', 'Work stuff..')
+      const newUser = await signup(
+        'testSignup@bf.uzh.ch',
+        'somePassword',
+        'signup',
+        'IBF Testitution',
+        'Work stuff..',
+      )
 
       // expect the new user to contain correct data
-      expect(newUser).toEqual(expect.objectContaining({
-        email: 'testSignup@bf.uzh.ch',
-        shortname: 'signup',
-        institution: 'IBF Testitution',
-        useCase: 'Work stuff..',
-        isAAI: false,
-        isActive: false,
-      }))
+      expect(newUser).toEqual(
+        expect.objectContaining({
+          email: 'testSignup@bf.uzh.ch',
+          shortname: 'signup',
+          institution: 'IBF Testitution',
+          useCase: 'Work stuff..',
+          isAAI: false,
+          isActive: false,
+        }),
+      )
 
       // expect the password to not be the same (as it is hashed)
       expect(newUser.password).not.toEqual('somePassword')
@@ -150,7 +183,9 @@ describe('AuthService', () => {
 
     it('fails with wrong email/password combination', () => {
       // expect the login to fail and the promise to reject
-      expect(login(res, 'notExistent', 'abcd')).rejects.toEqual(new Error('INVALID_LOGIN'))
+      expect(login(res, 'notExistent', 'abcd')).rejects.toEqual(
+        new Error('INVALID_LOGIN'),
+      )
 
       // expect that cookies should not have been touched
       expect(cookieStore).toBeUndefined()
@@ -174,16 +209,22 @@ describe('AuthService', () => {
 
       // change the user's password
       const updatedUser = await changePassword(userId, 'someOtherPassword')
-      expect(updatedUser).toEqual(expect.objectContaining({
-        email: 'testAuth@bf.uzh.ch',
-        shortname: 'auth',
-      }))
+      expect(updatedUser).toEqual(
+        expect.objectContaining({
+          email: 'testAuth@bf.uzh.ch',
+          shortname: 'auth',
+        }),
+      )
 
       // expect the old login to fail and the promise to reject
-      expect(login(res, 'testAuth@bf.uzh.ch', 'somePassword')).rejects.toEqual(new Error('INVALID_LOGIN'))
+      expect(login(res, 'testAuth@bf.uzh.ch', 'somePassword')).rejects.toEqual(
+        new Error('INVALID_LOGIN'),
+      )
 
       // expect the new login to work
-      expect(login(res, 'testAuth@bf.uzh.ch', 'someOtherPassword')).resolves.toBeTruthy()
+      expect(
+        login(res, 'testAuth@bf.uzh.ch', 'someOtherPassword'),
+      ).resolves.toBeTruthy()
     })
 
     it('allows logging the user out', async () => {

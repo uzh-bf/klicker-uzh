@@ -32,7 +32,13 @@ const processTags = (existingTags, newTags, userId) => {
 
 // create a new question
 const createQuestion = async ({
-  title, type, content, options, solution, tags, userId,
+  title,
+  type,
+  content,
+  options,
+  solution,
+  tags,
+  userId,
 }) => {
   // if no tags have been assigned, throw
   if (!tags || tags.length === 0) {
@@ -66,9 +72,11 @@ const createQuestion = async ({
       const isMinNum = !options.restrictions.min || _isNumber(options.restrictions.min)
       const isMaxNum = !options.restrictions.max || _isNumber(options.restrictions.max)
       if (
-        !isMinNum ||
-        !isMaxNum ||
-        (options.restrictions.min && options.restrictions.max && options.restrictions.max <= options.restrictions.min)
+        !isMinNum
+        || !isMaxNum
+        || (options.restrictions.min
+          && options.restrictions.max
+          && options.restrictions.max <= options.restrictions.min)
       ) {
         throw new Error('INVALID_RESTRICTIONS')
       }
@@ -78,7 +86,11 @@ const createQuestion = async ({
   const user = await UserModel.findById(userId).populate(['tags'])
 
   // process tags
-  const { allTagIds, allTags, createdTagIds } = processTags(user.tags, tags, userId)
+  const { allTagIds, allTags, createdTagIds } = processTags(
+    user.tags,
+    tags,
+    userId,
+  )
 
   // create a new question
   // pass the list of tag ids for reference
@@ -117,9 +129,13 @@ const createQuestion = async ({
   return newQuestion
 }
 
-const modifyQuestion = async (questionId, userId, {
-  title, tags, content, options, solution,
-}) => {
+const modifyQuestion = async (
+  questionId,
+  userId,
+  {
+    title, tags, content, options, solution,
+  },
+) => {
   const promises = []
 
   // check if both content and options are set for a new version
@@ -133,15 +149,18 @@ const modifyQuestion = async (questionId, userId, {
   }
 
   // get the question to be modified
-  const question = await QuestionModel.findOne({ _id: questionId, user: userId }).populate(['tags'])
+  const question = await QuestionModel.findOne({
+    _id: questionId,
+    user: userId,
+  }).populate(['tags'])
   if (!question) {
     throw new Error('INVALID_QUESTION')
   }
 
   if (
-    QUESTION_GROUPS.CHOICES.includes(question.type) &&
-    solution &&
-    options.choices.length !== solution[question.type].length
+    QUESTION_GROUPS.CHOICES.includes(question.type)
+    && solution
+    && options.choices.length !== solution[question.type].length
   ) {
     throw new Error('INVALID_SOLUTION')
   }
@@ -169,7 +188,9 @@ const modifyQuestion = async (questionId, userId, {
       return tag.save()
     })
 
-    const oldTags = question.tags.filter(prevTag => !allTagIds.includes(prevTag.id))
+    const oldTags = question.tags.filter(
+      prevTag => !allTagIds.includes(prevTag.id),
+    )
     const oldTagsUpdate = oldTags.map((tag) => {
       // remove the current question from any old tag
       tag.questions = tag.questions.filter(({ id }) => id !== question.id) // eslint-disable-line
@@ -215,7 +236,9 @@ const modifyQuestion = async (questionId, userId, {
       options: QUESTION_GROUPS.WITH_OPTIONS.includes(question.type) && {
         // HACK: manually ensure randomized is default set to false
         // TODO: mongoose should do this..?
-        [question.type]: QUESTION_GROUPS.CHOICES.includes(question.type) ? { randomized: false, ...options } : options,
+        [question.type]: QUESTION_GROUPS.CHOICES.includes(question.type)
+          ? { randomized: false, ...options }
+          : options,
       },
       solution,
     })
@@ -230,7 +253,10 @@ const modifyQuestion = async (questionId, userId, {
 
 const archiveQuestions = async (questionIds, userId) => {
   // get the question instance from the DB
-  const questions = await QuestionModel.find({ _id: { $in: questionIds }, user: userId })
+  const questions = await QuestionModel.find({
+    _id: { $in: questionIds },
+    user: userId,
+  })
 
   // set the questions to be archived if it does not yet have the attribute
   // otherwise invert the previously set value

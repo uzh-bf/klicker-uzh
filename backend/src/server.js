@@ -2,7 +2,7 @@
 const { execute, subscribe } = require('graphql')
 const { createServer } = require('http')
 const { SubscriptionServer } = require('subscriptions-transport-ws')
-const schema = require('./schema')
+const mongoose = require('mongoose')
 
 // initialize APM if so configured
 if (process.env.APM_SERVER_URL) {
@@ -15,7 +15,7 @@ if (process.env.APM_SERVER_URL) {
 }
 
 /* eslint-disable global-require */
-const mongoose = require('mongoose')
+const schema = require('./schema')
 const server = require('./app')
 const { getRedis } = require('./redis')
 
@@ -28,10 +28,18 @@ const ws = createServer(server)
 ws.listen(process.env.PORT, (err) => {
   if (err) throw err
 
-  console.log(`[klicker-api] GraphQL ready on http://${process.env.APP_DOMAIN}:${process.env.PORT}${process.env.APP_PATH}!`)
+  console.log(
+    `[klicker-api] GraphQL ready on http://${process.env.APP_DOMAIN}:${
+      process.env.PORT
+    }${process.env.APP_PATH}!`,
+  )
 
   if (process.env.NODE_ENV === 'development') {
-    console.log(`[klicker-api] GraphiQL ready on http://${process.env.APP_DOMAIN}:${process.env.PORT}/graphiql!`)
+    console.log(
+      `[klicker-api] GraphiQL ready on http://${process.env.APP_DOMAIN}:${
+        process.env.PORT
+      }/graphiql!`,
+    )
   }
 
   // setup a subscription server

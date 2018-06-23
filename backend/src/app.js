@@ -39,7 +39,9 @@ const { createLoaders } = require('./lib/loaders')
 const appSettings = ['APP_DOMAIN', 'PORT', 'APP_SECRET', 'MONGO_URL', 'ORIGIN']
 appSettings.forEach((envVar) => {
   if (!process.env[envVar]) {
-    exceptTest(() => console.warn(`> Error: Please pass ${envVar} as an environment variable.`))
+    exceptTest(() => console.warn(
+      `> Error: Please pass ${envVar} as an environment variable.`,
+    ))
     process.exit(1)
   }
 })
@@ -54,7 +56,9 @@ const mongoConfig = {
 }
 if (process.env.MONGO_USER && process.env.MONGO_PASSWORD) {
   mongoose.connect(
-    `mongodb://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_URL}`,
+    `mongodb://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${
+      process.env.MONGO_URL
+    }`,
     mongoConfig,
   )
 } else {
@@ -118,7 +122,12 @@ if (isProd) {
   // if a sentry dsn is set, configure raven
   if (process.env.SENTRY_DSN) {
     Raven.config(process.env.SENTRY_DSN).install()
-    middleware = [Raven.requestHandler(), compression(), ...middleware, Raven.errorHandler()]
+    middleware = [
+      Raven.requestHandler(),
+      compression(),
+      ...middleware,
+      Raven.errorHandler(),
+    ]
   } else {
     middleware = [compression(), ...middleware]
   }
@@ -132,20 +141,20 @@ if (process.env.APP_RATE_LIMITING) {
     delayAfter: 200, // start delaying responses after 100 requests
     delayMs: 50, // delay responses by 250ms * (numResponses - delayAfter)
     keyGenerator: req => `${req.auth ? req.auth.sub : req.ip}`,
-    onLimitReached: req =>
-      exceptTest(() => {
-        const error = `> Rate-Limited a Request from ${req.ip} ${req.auth.sub || 'anon'}!`
+    onLimitReached: req => exceptTest(() => {
+      const error = `> Rate-Limited a Request from ${req.ip} ${req.auth.sub
+          || 'anon'}!`
 
-        console.error(error)
+      console.error(error)
 
-        if (apm) {
-          apm.captureError(error)
-        }
+      if (apm) {
+        apm.captureError(error)
+      }
 
-        if (Raven) {
-          Raven.captureException(error)
-        }
-      }),
+      if (Raven) {
+        Raven.captureException(error)
+      }
+    }),
   }
 
   // if redis is available, use it to centrally store rate limiting dataconst
@@ -156,8 +165,8 @@ if (process.env.APP_RATE_LIMITING) {
     limiter = new RateLimit({
       ...limiterSettings,
       store:
-        redis &&
-        new RedisStore({
+        redis
+        && new RedisStore({
           client: redis,
           expiry: 5 * 60,
           prefix: 'rl-api:',

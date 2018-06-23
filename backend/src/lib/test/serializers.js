@@ -5,15 +5,26 @@ const draftContentSerializer = (content) => {
   const object = JSON.parse(content)
 
   // map over the blocks and pick everything except the keys
-  object.blocks = object.blocks.map(block =>
-    _pick(block, ['data', 'text', 'type', 'depth', 'inlineStyleRanges', 'entityRanges']))
+  object.blocks = object.blocks.map(block => _pick(block, [
+    'data',
+    'text',
+    'type',
+    'depth',
+    'inlineStyleRanges',
+    'entityRanges',
+  ]))
 
   // stringify the resulting object
   return JSON.stringify(object)
 }
 
 const questionSerializer = {
-  test: val => val.id && val.instances && val.tags && val.title && val.type && val.versions,
+  test: val => val.id
+    && val.instances
+    && val.tags
+    && val.title
+    && val.type
+    && val.versions,
   print: val => `
     QUESTION
 
@@ -23,51 +34,57 @@ const questionSerializer = {
 
     Instances: [${val.instances}]
     Tags: [${val.tags.map(tag => tag.name)}]
-    Versions: [${val.versions.map(({
-    content, description, instances, options, solution,
-  }) => `
+    Versions: [${val.versions.map(
+    ({
+      content, description, instances, options, solution,
+    }) => `
       Content: ${draftContentSerializer(content)}
       Description: ${description}
       Instances: [${instances}]
       Options: {
-        SC: ${options.SC &&
-          `{
-          Choices: ${options.SC.choices &&
-            `[${options.SC.choices.map(({ correct, name }) => `{
+        SC: ${options.SC
+          && `{
+          Choices: ${options.SC.choices
+            && `[${options.SC.choices.map(
+              ({ correct, name }) => `{
               Correct: ${correct}
               Name: ${name}
-            }`)}
+            }`,
+            )}
           ]`}
           Randomized: ${options.SC.randomized}
         }`}
-        MC: ${options.MC &&
-          `{
-          Choices: ${options.MC.choices &&
-            `[${options.MC.choices.map(({ correct, name }) => `{
+        MC: ${options.MC
+          && `{
+          Choices: ${options.MC.choices
+            && `[${options.MC.choices.map(
+              ({ correct, name }) => `{
               Correct: ${correct}
               Name: ${name}
-            }`)}
+            }`,
+            )}
           ]`}
           Randomized: ${options.MC.randomized}
         }`}
-        FREE_RANGE: ${options.FREE_RANGE &&
-          `
-          Restrictions: ${options.FREE_RANGE.restrictions &&
-            `{
+        FREE_RANGE: ${options.FREE_RANGE
+          && `
+          Restrictions: ${options.FREE_RANGE.restrictions
+            && `{
             Max: ${options.FREE_RANGE.restrictions.max}
             Min: ${options.FREE_RANGE.restrictions.min}
           }`}
         `}
       }
-      Solution: ${solution &&
-        `{
+      Solution: ${solution
+        && `{
         SC: ${solution.SC && JSON.stringify(solution.SC)}
         MC: ${solution.SC && JSON.stringify(solution.SC)}
         FREE: ${solution.SC && solution.FREE}
         FREE_RANGE: ${solution.SC && solution.FREE_RANGE}
       }
       `}
-    `)}]
+    `,
+  )}]
   `,
 }
 
@@ -83,22 +100,28 @@ const sessionSerializer = {
     ActiveStep: ${val.activeStep}
     ActiveInstances: ${val.activeInstances.length}
 
-    Blocks: [${val.blocks.map(block => `{
+    Blocks: [${val.blocks.map(
+    block => `{
       Show solutions: ${block.showSolutions}
       Status: ${block.status}
       Time limit: ${block.timeLimit}
       Number of instances: ${block.instances.length}
-    }`)}]
+    }`,
+  )}]
 
-    ConfusionTS: [${val.confusionTS.map(TS => `{
+    ConfusionTS: [${val.confusionTS.map(
+    TS => `{
       Difficulty: ${TS.difficulty}
       Speed: ${TS.speed}
-    }`)}]
+    }`,
+  )}]
 
-    Feedbacks: [${val.feedbacks.map(feedback => `{
+    Feedbacks: [${val.feedbacks.map(
+    feedback => `{
       Content: ${feedback.content}
       Votes: ${feedback.votes}
-    }`)}]
+    }`,
+  )}]
 
     Settings: {
       ConfusionActive: ${val.settings.isConfusionBarometerActive}
@@ -115,7 +138,8 @@ const questionInstanceSerializer = {
     isOpen: ${val.isOpen}
     version: ${val.version}
 
-    responses: [${val.responses.map(response => `
+    responses: [${val.responses.map(
+    response => `
       ipUnique: ${response.ipUnique}
       fpUnique: ${response.fpUnique}
       value: {
@@ -123,10 +147,11 @@ const questionInstanceSerializer = {
         text: ${response.value.text}
         value: ${response.value.value}
       }
-    `)}]
+    `,
+  )}]
 
-    results: ${val.results &&
-      `{
+    results: ${val.results
+      && `{
       CHOICES: [${val.results.CHOICES}]
       FREE: ${val.results.FREE}
     }`}

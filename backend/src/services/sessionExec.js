@@ -5,7 +5,11 @@ const { QuestionInstanceModel, UserModel } = require('../models')
 const { QUESTION_GROUPS, QUESTION_TYPES } = require('../constants')
 const { getRedis } = require('../redis')
 const { getRunningSession } = require('./sessionMgr')
-const { pubsub, CONFUSION_ADDED, FEEDBACK_ADDED } = require('../resolvers/subscriptions')
+const {
+  pubsub,
+  CONFUSION_ADDED,
+  FEEDBACK_ADDED,
+} = require('../resolvers/subscriptions')
 
 // initialize redis if available
 const redis = getRedis(2)
@@ -28,8 +32,13 @@ const addFeedback = async ({ sessionId, content }) => {
   // extract the saved feedback and convert it to a plain object
   // then readd the mongo _id field under the id key and publish the result
   // this is needed as redis swallows the _id field and the client could break!
-  const savedFeedback = session.feedbacks[session.feedbacks.length - 1].toObject()
-  pubsub.publish(FEEDBACK_ADDED, { [FEEDBACK_ADDED]: { ...savedFeedback, id: savedFeedback._id }, sessionId })
+  const savedFeedback = session.feedbacks[
+    session.feedbacks.length - 1
+  ].toObject()
+  pubsub.publish(FEEDBACK_ADDED, {
+    [FEEDBACK_ADDED]: { ...savedFeedback, id: savedFeedback._id },
+    sessionId,
+  })
 
   // return the updated session
   return session
@@ -44,7 +53,9 @@ const deleteFeedback = async ({ sessionId, feedbackId, userId }) => {
     throw new Error('UNAUTHORIZED')
   }
 
-  session.feedbacks = session.feedbacks.filter(feedback => feedback.id !== feedbackId)
+  session.feedbacks = session.feedbacks.filter(
+    feedback => feedback.id !== feedbackId,
+  )
 
   // save the updated session
   await session.save()
@@ -71,8 +82,13 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
   // extract the saved confusion timestep and convert it to a plain object
   // then readd the mongo _id field under the id key and publish the result
   // this is needed as redis swallows the _id field and the client could break!
-  const savedConfusion = session.confusionTS[session.confusionTS.length - 1].toObject()
-  pubsub.publish(CONFUSION_ADDED, { [CONFUSION_ADDED]: { ...savedConfusion, id: savedConfusion._id }, sessionId })
+  const savedConfusion = session.confusionTS[
+    session.confusionTS.length - 1
+  ].toObject()
+  pubsub.publish(CONFUSION_ADDED, {
+    [CONFUSION_ADDED]: { ...savedConfusion, id: savedConfusion._id },
+    sessionId,
+  })
 
   // return the updated session
   return session
@@ -151,7 +167,10 @@ const addResponse = async ({
 
   // find the specified question instance
   // only find instances that are open
-  const instance = await QuestionInstanceModel.findOne({ _id: instanceId, isOpen: true }).populate('question')
+  const instance = await QuestionInstanceModel.findOne({
+    _id: instanceId,
+    isOpen: true,
+  }).populate('question')
 
   // if the instance is closed, don't allow adding any responses
   if (!instance) {
@@ -176,7 +195,9 @@ const addResponse = async ({
     // if it is the very first response, initialize results
     if (!instance.results) {
       instance.results = {
-        CHOICES: new Array(currentVersion.options[questionType].choices.length).fill(+0),
+        CHOICES: new Array(
+          currentVersion.options[questionType].choices.length,
+        ).fill(+0),
         totalParticipants: 0,
       }
     }
@@ -276,7 +297,10 @@ const joinSession = async ({ shortname }) => {
         options: version.options,
       }
     }),
-    feedbacks: settings.isFeedbackChannelActive && settings.isFeedbackChannelPublic ? feedbacks : null,
+    feedbacks:
+      settings.isFeedbackChannelActive && settings.isFeedbackChannelPublic
+        ? feedbacks
+        : null,
   }
 }
 

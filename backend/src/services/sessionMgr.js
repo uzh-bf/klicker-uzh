@@ -4,10 +4,17 @@ const { ObjectId } = mongoose.Types
 
 const { sendSlackNotification } = require('./notifications')
 const {
-  QuestionInstanceModel, SessionModel, UserModel, QuestionModel,
+  QuestionInstanceModel,
+  SessionModel,
+  UserModel,
+  QuestionModel,
 } = require('../models')
 const { getRedis } = require('../redis')
-const { SESSION_STATUS, QUESTION_BLOCK_STATUS, SESSION_ACTIONS } = require('../constants')
+const {
+  SESSION_STATUS,
+  QUESTION_BLOCK_STATUS,
+  SESSION_ACTIONS,
+} = require('../constants')
 const { logDebug } = require('../lib/utils')
 
 const redisCache = getRedis()
@@ -51,28 +58,32 @@ const createSession = async ({ name, questionBlocks = [], userId }) => {
   // skip any blocks that are empty (erroneous blocks)
   // create question instances for all questions within
   const sessionId = ObjectId()
-  const blocks = questionBlocks.filter(block => block.questions.length > 0).map(block => ({
-    instances: block.questions.map(({ question, version }) => {
-      // create a new question instance model
-      const instance = new QuestionInstanceModel({
-        question,
-        session: sessionId,
-        user: userId,
-        version,
-      })
+  const blocks = questionBlocks
+    .filter(block => block.questions.length > 0)
+    .map(block => ({
+      instances: block.questions.map(({ question, version }) => {
+        // create a new question instance model
+        const instance = new QuestionInstanceModel({
+          question,
+          session: sessionId,
+          user: userId,
+          version,
+        })
 
-      // update the question with the corresponding instances
-      promises.push(QuestionModel.findByIdAndUpdate(question, {
-        $push: { instances: instance.id },
-      }))
+        // update the question with the corresponding instances
+        promises.push(
+          QuestionModel.findByIdAndUpdate(question, {
+            $push: { instances: instance.id },
+          }),
+        )
 
-      // append the new question instance to the store
-      instances = [...instances, instance]
+        // append the new question instance to the store
+        instances = [...instances, instance]
 
-      // return only the id of the new instance
-      return instance.id
-    }),
-  }))
+        // return only the id of the new instance
+        return instance.id
+      }),
+    }))
 
   // create a new session model
   // pass in the list of blocks created above
@@ -192,22 +203,21 @@ const sessionAction = async ({ sessionId, userId, shortname }, actionType) => {
 
   await Promise.all(promises)
 
-  sendSlackNotification(`[sessions] ${actionType} session at /join/${shortname}`)
+  sendSlackNotification(
+    `[sessions] ${actionType} session at /join/${shortname}`,
+  )
 
   return session
 }
 
 // start an existing session
-const startSession = ({ id, userId, shortname }) =>
-  sessionAction({ sessionId: id, userId, shortname }, SESSION_ACTIONS.START)
+const startSession = ({ id, userId, shortname }) => sessionAction({ sessionId: id, userId, shortname }, SESSION_ACTIONS.START)
 
 // pause a running session
-const pauseSession = ({ id, userId, shortname }) =>
-  sessionAction({ sessionId: id, userId, shortname }, SESSION_ACTIONS.PAUSE)
+const pauseSession = ({ id, userId, shortname }) => sessionAction({ sessionId: id, userId, shortname }, SESSION_ACTIONS.PAUSE)
 
 // end (complete) an existing session
-const endSession = ({ id, userId, shortname }) =>
-  sessionAction({ sessionId: id, userId, shortname }, SESSION_ACTIONS.STOP)
+const endSession = ({ id, userId, shortname }) => sessionAction({ sessionId: id, userId, shortname }, SESSION_ACTIONS.STOP)
 
 // update session settings
 const updateSettings = async ({
@@ -249,7 +259,10 @@ const updateSettings = async ({
 
 // activate the next question block
 const activateNextBlock = async ({ userId, shortname }) => {
-  const user = await UserModel.findById(userId).populate(['activeInstances', 'runningSession'])
+  const user = await UserModel.findById(userId).populate([
+    'activeInstances',
+    'runningSession',
+  ])
   const { runningSession } = user
 
   if (!runningSession) {
@@ -279,7 +292,11 @@ const activateNextBlock = async ({ userId, shortname }) => {
       const nextBlock = runningSession.blocks[nextBlockIndex]
 
       // update the instances in the new active block to be open
-      await QuestionInstanceModel.update({ _id: { $in: nextBlock.instances } }, { isOpen: true }, { multi: true })
+      await QuestionInstanceModel.update(
+        { _id: { $in: nextBlock.instances } },
+        { isOpen: true },
+        { multi: true },
+      )
 
       // set the status of the instances in the next block to active
       runningSession.blocks[nextBlockIndex].status = QUESTION_BLOCK_STATUS.ACTIVE
@@ -294,7 +311,11 @@ const activateNextBlock = async ({ userId, shortname }) => {
       const previousBlock = runningSession.blocks[prevBlockIndex]
 
       // update the instances in the currently active block to be closed
-      await QuestionInstanceModel.update({ _id: { $in: previousBlock.instances } }, { isOpen: false }, { multi: true })
+      await QuestionInstanceModel.update(
+        { _id: { $in: previousBlock.instances } },
+        { isOpen: false },
+        { multi: true },
+      )
 
       runningSession.activeInstances = []
 
@@ -305,11 +326,19 @@ const activateNextBlock = async ({ userId, shortname }) => {
       if (redisControl) {
         // calculate the keys to be unlinked
         const keys = previousBlock.instances.reduce(
-          (prevKeys, instanceId) => [...prevKeys, `${instanceId}:fp`, `${instanceId}:ip`, `${instanceId}:responses`],
+          (prevKeys, instanceId) => [
+            ...prevKeys,
+            `${instanceId}:fp`,
+            `${instanceId}:ip`,
+            `${instanceId}:responses`,
+          ],
           [],
         )
 
-        logDebug(() => console.log('[redis] Cleaning up participant data for instances:', keys))
+        logDebug(() => console.log(
+          '[redis] Cleaning up participant data for instances:',
+          keys,
+        ))
 
         // unlink the keys from the redis store
         // const unlinkKeys = await redis.unlink(keys)

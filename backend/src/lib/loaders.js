@@ -1,6 +1,9 @@
 const DataLoader = require('dataloader')
 const {
-  QuestionInstanceModel, SessionModel, QuestionModel, TagModel,
+  QuestionInstanceModel,
+  SessionModel,
+  QuestionModel,
+  TagModel,
 } = require('../models')
 
 // create a mapping from a mongo result array to a dataloader array
@@ -13,12 +16,11 @@ function createMapping(arr) {
 }
 
 // create a factory function for simple dataloaders
-const createBasicLoader = model => auth =>
-  new DataLoader(async (ids) => {
-    const results = await model.find({ _id: { $in: ids }, user: auth.sub })
-    const mapping = createMapping(results)
-    return ids.map(id => mapping[id])
-  })
+const createBasicLoader = model => auth => new DataLoader(async (ids) => {
+  const results = await model.find({ _id: { $in: ids }, user: auth.sub })
+  const mapping = createMapping(results)
+  return ids.map(id => mapping[id])
+})
 
 // setup the real loaders using the factory
 const tagsLoader = createBasicLoader(TagModel)

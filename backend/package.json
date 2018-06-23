@@ -1,6 +1,6 @@
 {
   "name": "klicker-api",
-  "version": "1.0.0-public.beta.21",
+  "version": "1.0.0-public.beta.32",
   "main": "src/server.js",
   "repository": "https://github.com/uzh-bf/klicker-api.git",
   "author": "Roland Schläfli <roland.schlaefli@bf.uzh.ch>",
@@ -45,9 +45,9 @@
     "subscriptions-transport-ws": "0.9.11"
   },
   "devDependencies": {
-    "babel-eslint": "8.2.3",
-    "eslint": "4.19.1",
-    "eslint-config-airbnb-base": "12.1.0",
+    "babel-eslint": "8.2.4",
+    "eslint": "5.0.0",
+    "eslint-config-airbnb-base": "13.0.0",
     "eslint-plugin-import": "2.12.0",
     "husky": "0.14.3",
     "jest": "23.1.0",

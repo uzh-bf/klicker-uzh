@@ -100,14 +100,16 @@ const QuestionDetailsSerializer = {
       tags: ${JSON.stringify(tags.map(tag => tag.name))}
 
       instances: ${instances.length}
-      versions: ${versions.map(({
-    content, description, options, solution,
-  }) => `
+      versions: ${versions.map(
+    ({
+      content, description, options, solution,
+    }) => `
         content: ${draftContentSerializer(content)}
         description: ${description}
         options: ${JSON.stringify(options)}
         solution: ${JSON.stringify(solution)}
-      `)}
+      `,
+  )}
     }
   `,
 }
@@ -185,25 +187,33 @@ const RunningSessionSerializer = {
   }) => `
     runningSession {
       activeStep: ${activeStep}
-      confusionTS: ${confusionTS.map(({ difficulty, speed }) => `
+      confusionTS: ${confusionTS.map(
+    ({ difficulty, speed }) => `
         difficulty: ${difficulty}
         speed: ${speed}
-      `)}
-      feedbacks: ${feedbacks.map(({ content, votes }) => `
+      `,
+  )}
+      feedbacks: ${feedbacks.map(
+    ({ content, votes }) => `
         content: ${content}
         votes: ${votes}
-      `)}
-      blocks: ${blocks.map(({ status, instances }) => `
+      `,
+  )}
+      blocks: ${blocks.map(
+    ({ status, instances }) => `
         status: ${status}
-        instances: ${instances.map(({ isOpen, question, version }) => `
+        instances: ${instances.map(
+    ({ isOpen, question, version }) => `
           isOpen: ${isOpen}
           version: ${version}
           question {
             title: ${question.title}
             type: ${question.type}
           }
-        `)}
-      `)}
+        `,
+  )}
+      `,
+  )}
       settings: ${JSON.stringify(settings)}
     }
   `,
@@ -274,19 +284,23 @@ const JoinSessionSerializer = {
   print: ({ joinSession: { settings, activeQuestions, feedbacks } }) => `
     joinSession {
       settings: ${JSON.stringify(settings)}
-      activeQuestions: ${activeQuestions.map(({
-    title, content, description, type, options,
-  }) => `
+      activeQuestions: ${activeQuestions.map(
+    ({
+      title, content, description, type, options,
+    }) => `
         title: ${title}
         content: ${draftContentSerializer(content)}
         description: ${description}
         type: ${type}
         options: ${JSON.stringify(options)}
-      `)}
-      feedbacks: ${feedbacks.map(({ content, votes }) => `
+      `,
+  )}
+      feedbacks: ${feedbacks.map(
+    ({ content, votes }) => `
         content: ${content}
         votes: ${votes}
-      `)}
+      `,
+  )}
     }
   `,
 }
@@ -360,25 +374,31 @@ const SessionEvaluationSerializer = {
   print: ({ session: { status, blocks } }) => `
     evaluateSession {
       status: ${status}
-      blocks: ${blocks.map(({ status: status2, instances }) => `
+      blocks: ${blocks.map(
+    ({ status: status2, instances }) => `
         status: ${status2}
-        instances: ${instances.map(({
-    isOpen, version, question, results, responses,
-  }) => `
+        instances: ${instances.map(
+    ({
+      isOpen, version, question, results, responses,
+    }) => `
           isOpen: ${isOpen}
           version: ${version}
           question {
             title: ${question.title}
             type: ${question.type}
-            versions: ${question.versions.map(({ description, options }) => `
+            versions: ${question.versions.map(
+    ({ description, options }) => `
               description: ${description}
               options: ${JSON.stringify(options)}
-            `)}
+            `,
+  )}
           }
           results: ${JSON.stringify(results)}
           responses: ${responses.map(response => response.value)}
-        `)}
-      `)}
+        `,
+  )}
+      `,
+  )}
     }
   `,
 }

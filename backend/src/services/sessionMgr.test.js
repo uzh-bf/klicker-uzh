@@ -5,7 +5,10 @@ const mongoose = require('mongoose')
 const SessionMgrService = require('./sessionMgr')
 const { QuestionInstanceModel } = require('../models')
 const { initializeDb, prepareSessionFactory } = require('../lib/test/setup')
-const { sessionSerializer, questionInstanceSerializer } = require('../lib/test/serializers')
+const {
+  sessionSerializer,
+  questionInstanceSerializer,
+} = require('../lib/test/serializers')
 
 const { SESSION_STATUS, QUESTION_TYPES } = require('../constants')
 
@@ -122,10 +125,12 @@ describe('SessionMgrService', () => {
         userId,
       })
 
-      expect(SessionMgrService.startSession({
-        id: preparedSession.id,
-        userId,
-      })).rejects.toEqual(new Error('SESSION_ALREADY_COMPLETED'))
+      expect(
+        SessionMgrService.startSession({
+          id: preparedSession.id,
+          userId,
+        }),
+      ).rejects.toEqual(new Error('SESSION_ALREADY_COMPLETED'))
     })
   })
 
@@ -137,10 +142,12 @@ describe('SessionMgrService', () => {
     })
 
     it('prevents pausing a created session', async () => {
-      expect(SessionMgrService.pauseSession({
-        id: preparedSession.id,
-        userId,
-      })).rejects.toEqual(new Error('SESSION_NOT_RUNNING'))
+      expect(
+        SessionMgrService.pauseSession({
+          id: preparedSession.id,
+          userId,
+        }),
+      ).rejects.toEqual(new Error('SESSION_NOT_RUNNING'))
     })
 
     it('allows pausing a running session and continuing it later', async () => {
@@ -179,10 +186,12 @@ describe('SessionMgrService', () => {
     })
 
     it('prevents completing a newly created session', async () => {
-      expect(SessionMgrService.endSession({
-        id: preparedSession.id,
-        userId,
-      })).rejects.toEqual(new Error('SESSION_NOT_STARTED'))
+      expect(
+        SessionMgrService.endSession({
+          id: preparedSession.id,
+          userId,
+        }),
+      ).rejects.toEqual(new Error('SESSION_NOT_STARTED'))
     })
 
     it('allows ending a running session', async () => {
@@ -278,7 +287,11 @@ describe('SessionMgrService', () => {
           isFeedbackChannelPublic: false,
         },
       })
-      const { isConfusionBarometerActive, isFeedbackChannelActive, isFeedbackChannelPublic } = session.settings
+      const {
+        isConfusionBarometerActive,
+        isFeedbackChannelActive,
+        isFeedbackChannelPublic,
+      } = session.settings
       expect(isConfusionBarometerActive).toBeFalsy()
       expect(isFeedbackChannelActive).toBeFalsy()
       expect(isFeedbackChannelPublic).toBeFalsy()
@@ -332,7 +345,9 @@ describe('SessionMgrService', () => {
       expect(session.activeBlock).toEqual(0)
       expect(session.activeStep).toEqual(1)
       // expect the session to have some active instances
-      expect(session.activeInstances.map(v => v.toString())).toEqual(session.blocks[0].instances.map(v => v.toString()))
+      expect(session.activeInstances.map(v => v.toString())).toEqual(
+        session.blocks[0].instances.map(v => v.toString()),
+      )
       // expect matching snapshots
       expect(session).toMatchSnapshot()
       expect(instances).toMatchSnapshot()

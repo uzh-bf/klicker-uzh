@@ -6,7 +6,10 @@ const md5 = require('md5')
 const SessionMgrService = require('./sessionMgr')
 const SessionExecService = require('./sessionExec')
 const { initializeDb, prepareSessionFactory } = require('../lib/test/setup')
-const { sessionSerializer, questionInstanceSerializer } = require('../lib/test/serializers')
+const {
+  sessionSerializer,
+  questionInstanceSerializer,
+} = require('../lib/test/serializers')
 
 const { QUESTION_TYPES } = require('../constants')
 
@@ -45,10 +48,12 @@ describe('SessionExecService', () => {
     })
 
     it('prevents adding feedbacks if a session is not yet running', () => {
-      expect(SessionExecService.addFeedback({
-        sessionId: preparedSession.id,
-        content: 'FAIL',
-      })).rejects.toEqual(new Error('SESSION_NOT_STARTED'))
+      expect(
+        SessionExecService.addFeedback({
+          sessionId: preparedSession.id,
+          content: 'FAIL',
+        }),
+      ).rejects.toEqual(new Error('SESSION_NOT_STARTED'))
     })
 
     it('prevents adding feedbacks if the functionality is deactivated', async () => {
@@ -57,10 +62,12 @@ describe('SessionExecService', () => {
         userId,
       })
 
-      expect(SessionExecService.addFeedback({
-        sessionId: preparedSession.id,
-        content: 'FAIL',
-      })).rejects.toEqual(new Error('SESSION_FEEDBACKS_DEACTIVATED'))
+      expect(
+        SessionExecService.addFeedback({
+          sessionId: preparedSession.id,
+          content: 'FAIL',
+        }),
+      ).rejects.toEqual(new Error('SESSION_FEEDBACKS_DEACTIVATED'))
     })
 
     it('allows adding new feedbacks to a running session', async () => {
@@ -107,11 +114,13 @@ describe('SessionExecService', () => {
     })
 
     it('prevents adding timesteps if a session is not yet running', () => {
-      expect(SessionExecService.addConfusionTS({
-        sessionId: preparedSession.id,
-        difficulty: 3,
-        speed: -4,
-      })).rejects.toEqual(new Error('SESSION_NOT_STARTED'))
+      expect(
+        SessionExecService.addConfusionTS({
+          sessionId: preparedSession.id,
+          difficulty: 3,
+          speed: -4,
+        }),
+      ).rejects.toEqual(new Error('SESSION_NOT_STARTED'))
     })
 
     it('prevents adding timesteps if the functionality is deactivated', async () => {
@@ -120,11 +129,13 @@ describe('SessionExecService', () => {
         userId,
       })
 
-      expect(SessionExecService.addConfusionTS({
-        sessionId: preparedSession.id,
-        difficulty: 2,
-        speed: -3,
-      })).rejects.toEqual(new Error('SESSION_CONFUSION_DEACTIVATED'))
+      expect(
+        SessionExecService.addConfusionTS({
+          sessionId: preparedSession.id,
+          difficulty: 2,
+          speed: -3,
+        }),
+      ).rejects.toEqual(new Error('SESSION_CONFUSION_DEACTIVATED'))
     })
 
     it('allows adding new timesteps', async () => {
@@ -219,7 +230,11 @@ describe('SessionExecService', () => {
           choices: [1],
         },
       })
-      expect(instanceWithResponses.toObject().results.CHOICES).toEqual([1, 1, 0])
+      expect(instanceWithResponses.toObject().results.CHOICES).toEqual([
+        1,
+        1,
+        0,
+      ])
       expect(instanceWithResponses).toMatchSnapshot()
 
       const instanceWithResponses2 = await SessionExecService.addResponse({
@@ -228,7 +243,11 @@ describe('SessionExecService', () => {
           choices: [1],
         },
       })
-      expect(instanceWithResponses2.toObject().results.CHOICES).toEqual([1, 2, 0])
+      expect(instanceWithResponses2.toObject().results.CHOICES).toEqual([
+        1,
+        2,
+        0,
+      ])
       expect(instanceWithResponses2).toMatchSnapshot()
 
       const tooManyChoices = SessionExecService.addResponse({
@@ -263,7 +282,11 @@ describe('SessionExecService', () => {
           choices: [0, 1, 2],
         },
       })
-      expect(instanceWithResponses.toObject().results.CHOICES).toEqual([2, 1, 1])
+      expect(instanceWithResponses.toObject().results.CHOICES).toEqual([
+        2,
+        1,
+        1,
+      ])
       expect(instanceWithResponses).toMatchSnapshot()
     })
 
@@ -276,12 +299,14 @@ describe('SessionExecService', () => {
       expect(session).toMatchSnapshot()
 
       // try adding an invalid response
-      expect(SessionExecService.addResponse({
-        instanceId: session.activeInstances[activeInstance],
-        response: {
-          xyz: 23,
-        },
-      })).rejects.toEqual(new Error('INVALID_RESPONSE'))
+      expect(
+        SessionExecService.addResponse({
+          instanceId: session.activeInstances[activeInstance],
+          response: {
+            xyz: 23,
+          },
+        }),
+      ).rejects.toEqual(new Error('INVALID_RESPONSE'))
 
       // add a response
       const instanceWithResponse = await SessionExecService.addResponse({
@@ -329,20 +354,24 @@ describe('SessionExecService', () => {
       expect(session).toMatchSnapshot()
 
       // try adding an invalid response
-      expect(SessionExecService.addResponse({
-        instanceId: session.activeInstances[activeInstance],
-        response: {
-          xyz: 'asd',
-        },
-      })).rejects.toEqual(new Error('INVALID_RESPONSE'))
+      expect(
+        SessionExecService.addResponse({
+          instanceId: session.activeInstances[activeInstance],
+          response: {
+            xyz: 'asd',
+          },
+        }),
+      ).rejects.toEqual(new Error('INVALID_RESPONSE'))
 
       // try adding a valua that is out-of-range
-      expect(SessionExecService.addResponse({
-        instanceId: session.activeInstances[activeInstance],
-        response: {
-          value: 99999,
-        },
-      })).rejects.toEqual(new Error('RESPONSE_OUT_OF_RANGE'))
+      expect(
+        SessionExecService.addResponse({
+          instanceId: session.activeInstances[activeInstance],
+          response: {
+            value: 99999,
+          },
+        }),
+      ).rejects.toEqual(new Error('RESPONSE_OUT_OF_RANGE'))
 
       // add a response
       const instanceWithResponse = await SessionExecService.addResponse({
