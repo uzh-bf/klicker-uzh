@@ -53,6 +53,10 @@
     {
       "packagePatterns": ["^react-dnd"],
       "groupName": "react-dnd"
+    },
+    {
+      "packagePatterns": ["^semantic-ui"],
+      "groupName": "semantic-ui"
     }
   ]
 }
