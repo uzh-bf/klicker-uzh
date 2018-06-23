@@ -93,7 +93,7 @@
     "sanitize-html": "1.18.2",
     "semantic-ui-react": "0.81.1",
     "styled-jsx-plugin-sass": "0.2.4",
-    "subscriptions-transport-ws": "0.9.9",
+    "subscriptions-transport-ws": "0.9.11",
     "url-loader": "1.0.1",
     "webpack": "3.12.0",
     "yup": "0.25.1"

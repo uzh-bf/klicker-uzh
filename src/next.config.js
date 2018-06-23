@@ -66,9 +66,7 @@ module.exports = (phase) => {
 
   // development only configuration
   if (phase === DEVELOPMENT_SERVER) {
-    config = {
-      ...config,
-    }
+    // do something in dev only?
   }
 
   // build only configuration
