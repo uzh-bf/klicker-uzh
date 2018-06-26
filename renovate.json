@@ -9,6 +9,17 @@
   "timezone": "Europe/Zurich",
   "packageRules": [
     {
+      "packageNames": [
+        "jest",
+        "react-addons-test-utils",
+        "enzyme",
+        "cypress",
+        "babel-jest"
+      ],
+      "groupName": "test",
+      "automerge": "minor"
+    },
+    {
       "packagePatterns": ["^apollo", "react-apollo"],
       "groupName": "apollo",
       "automerge": "minor"
@@ -39,17 +50,6 @@
     {
       "packagePatterns": ["^@storybook", "^storybook"],
       "groupName": "storybook",
-      "automerge": "minor"
-    },
-    {
-      "packageNames": [
-        "jest",
-        "react-addons-test-utils",
-        "enzyme",
-        "cypress",
-        "babel-jest"
-      ],
-      "groupName": "test",
       "automerge": "minor"
     },
     {
