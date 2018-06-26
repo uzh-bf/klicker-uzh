@@ -13820,16 +13820,16 @@ semantic-ui-css@2.3.2:
   dependencies:
     jquery x.*
 
-semantic-ui-react@0.81.1:
-  version "0.81.1"
-  resolved "https://registry.yarnpkg.com/semantic-ui-react/-/semantic-ui-react-0.81.1.tgz#9bf8e1949aac8584173f0acb11c6ce05008bcbfc"
+semantic-ui-react@0.81.2:
+  version "0.81.2"
+  resolved "https://registry.yarnpkg.com/semantic-ui-react/-/semantic-ui-react-0.81.2.tgz#ceb98a1d4fd0189831c225e4e92ec82b0250d6e3"
   dependencies:
     "@babel/runtime" "^7.0.0-beta.49"
     classnames "^2.2.5"
-    fbjs "^0.8.16"
     keyboard-key "^1.0.1"
     lodash "^4.17.10"
     prop-types "^15.6.1"
+    shallowequal "^1.0.2"
 
 semantic-ui@2.3.2:
   version "2.3.2"
