@@ -12552,14 +12552,14 @@ react-addons-create-fragment@^15.5.3:
     loose-envify "^1.3.1"
     object-assign "^4.1.0"
 
-react-apollo@2.1.6:
-  version "2.1.6"
-  resolved "https://registry.yarnpkg.com/react-apollo/-/react-apollo-2.1.6.tgz#13be92689009eda9023948c78532f4102cbc3d57"
+react-apollo@2.1.7:
+  version "2.1.7"
+  resolved "https://registry.yarnpkg.com/react-apollo/-/react-apollo-2.1.7.tgz#629d3b80786e5bc1cccf415d29d00f1dd85e22f2"
   dependencies:
     fbjs "^0.8.16"
     hoist-non-react-statics "^2.5.0"
     invariant "^2.2.2"
-    lodash "4.17.10"
+    lodash "^4.17.10"
     prop-types "^15.6.0"
 
 react-autosuggest@9.3.4:
