@@ -1694,9 +1694,9 @@ elastic-apm-http-client@^5.2.1:
   dependencies:
     fast-safe-stringify "^2.0.4"
 
-elastic-apm-node@1.8.0:
-  version "1.8.0"
-  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.8.0.tgz#a043595706d2a9069c301400ed7439de0da27940"
+elastic-apm-node@1.8.1:
+  version "1.8.1"
+  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.8.1.tgz#6c7abcea566ce914e512a2a1b2f551c6e79072b5"
   dependencies:
     after-all-results "^2.0.0"
     async-value-promise "^1.1.1"
@@ -1712,7 +1712,7 @@ elastic-apm-node@1.8.0:
     original-url "^1.2.1"
     redact-secrets "^1.0.0"
     require-ancestors "^1.0.0"
-    require-in-the-middle "^2.2.2"
+    require-in-the-middle "^3.0.0"
     semver "^5.5.0"
     sql-summary "^1.0.0"
     stackman "^3.0.2"
@@ -5611,9 +5611,9 @@ require-directory@^2.1.1:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/require-directory/-/require-directory-2.1.1.tgz#8c64ad5fd30dab1c976e2344ffe7f792a6a6df42"
 
-require-in-the-middle@^2.2.2:
-  version "2.2.2"
-  resolved "https://registry.yarnpkg.com/require-in-the-middle/-/require-in-the-middle-2.2.2.tgz#1d3124709cf43bf2c1f225082e6d8394e2f9d4f4"
+require-in-the-middle@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/require-in-the-middle/-/require-in-the-middle-3.0.0.tgz#cd6c2b955ee39a71f7b99f90074252e29d14decb"
   dependencies:
     module-details-from-path "^1.0.3"
     resolve "^1.5.0"
