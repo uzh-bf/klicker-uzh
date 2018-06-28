@@ -4,9 +4,15 @@ const Redis = require('ioredis')
 
 const newRedis = (db = 0) => {
   // otherwise initialize a new redis client for the respective url and database
-  if (process.env.REDIS_URL && process.env.NODE_ENV !== 'test') {
+  if (process.env.REDIS_HOST && process.env.NODE_ENV !== 'test') {
     try {
-      const newClient = new Redis(`redis://${process.env.REDIS_URL}/${db}`)
+      const newClient = new Redis({
+        db,
+        family: 4,
+        host: process.env.REDIS_HOST,
+        password: process.env.REDIS_PASS,
+        port: process.env.REDIS_PORT || 6379,
+      })
       console.log(`[redis] Connected to db ${db}`)
       return newClient
     } catch ({ message }) {
