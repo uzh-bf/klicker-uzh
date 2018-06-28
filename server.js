@@ -86,9 +86,15 @@ const connectCache = async () => {
     return cache
   }
 
-  if (process.env.REDIS_URL) {
+  if (process.env.REDIS_HOST) {
     const Redis = require('ioredis')
-    cache = new Redis(`redis://${process.env.REDIS_URL}`)
+    cache = new Redis({
+      db: 0,
+      family: 4,
+      host: process.env.REDIS_HOST,
+      password: process.env.REDIS_PASS,
+      port: process.env.REDIS_PORT || 6379,
+    })
     console.log('[redis] Connected to db 0')
   } else {
     const LRUCache = require('lru-cache')
