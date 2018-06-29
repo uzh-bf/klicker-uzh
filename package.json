@@ -109,7 +109,7 @@
     "babel-eslint": "8.2.5",
     "babel-jest": "23.2.0",
     "bundlesize": "0.17.0",
-    "cypress": "3.0.1",
+    "cypress": "3.0.2",
     "enzyme": "3.3.0",
     "eslint": "5.0.1",
     "eslint-config-airbnb": "17.0.0",
