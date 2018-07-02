@@ -62,7 +62,7 @@ const messages = defineMessages({
   useCaseTooltip: {
     defaultMessage:
       'Short description of your planned use case for the Klicker UZH.',
-    id: 'useCase.tooltip',
+    id: 'form.useCase.tooltip',
   },
 })
 const propTypes = {
