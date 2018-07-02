@@ -1,8 +1,10 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { FormattedMessage } from 'react-intl'
+import { injectIntl, intlShape } from 'react-intl'
+import { generateTypesShort } from '../../lib'
 
 const propTypes = {
+  intl: intlShape.isRequired,
   noDetails: PropTypes.bool,
   title: PropTypes.string.isRequired,
   type: PropTypes.string.isRequired,
@@ -15,11 +17,11 @@ const defaultProps = {
 }
 
 const QuestionSingle = ({
-  type, title, version, noDetails,
+  type, intl, title, version, noDetails,
 }) => (
   <div className="questionSingle">
     <div className="type">
-      <FormattedMessage defaultMessage={type} id={`common.${type}.label`} />
+      {generateTypesShort(intl)[type]}
     </div>
     <div className="title">
       {title}
@@ -64,4 +66,4 @@ const QuestionSingle = ({
 QuestionSingle.propTypes = propTypes
 QuestionSingle.defaultProps = defaultProps
 
-export default QuestionSingle
+export default injectIntl(QuestionSingle)

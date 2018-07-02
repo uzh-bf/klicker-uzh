@@ -1,10 +1,21 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Checkbox } from 'semantic-ui-react'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import { lifecycle } from 'recompose'
 
 import Feedback from './Feedback'
+
+const messages = defineMessages({
+  activated: {
+    defaultMessage: 'Activated',
+    id: 'common.string.activated',
+  },
+  publishQuestions: {
+    defaultMessage: 'Publish questions',
+    id: 'runningSession.feedbackChannel.publishQuestions',
+  },
+})
 
 const propTypes = {
   feedbacks: PropTypes.arrayOf(PropTypes.object),
@@ -42,10 +53,7 @@ const FeedbackChannel = ({
       <Checkbox
         toggle
         defaultChecked={isActive}
-        label={intl.formatMessage({
-          defaultMessage: 'Activated',
-          id: 'common.string.activated',
-        })}
+        label={intl.formatMessage(messages.activated)}
         value={isActive}
         onChange={handleActiveToggle}
       />
@@ -56,10 +64,7 @@ const FeedbackChannel = ({
         className="publishCheckbox"
         defaultChecked={isPublic}
         disabled={!isActive}
-        label={intl.formatMessage({
-          defaultMessage: 'Publish questions',
-          id: 'runningSession.feedbackChannel.publishQuestions',
-        })}
+        label={intl.formatMessage(messages.publishQuestions)}
         value={isPublic}
         onChange={handlePublicToggle}
       />

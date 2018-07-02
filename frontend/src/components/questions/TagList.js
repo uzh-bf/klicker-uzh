@@ -71,7 +71,10 @@ export const TagListPres = ({
           name={activeType === QUESTION_TYPES.SC ? 'folder' : 'folder outline'}
         />
         <List.Content>
-          <FormattedMessage defaultMessage="SC" id="common.SC.label" />
+          <FormattedMessage
+            defaultMessage="Single Choice (SC)"
+            id="common.SC.label"
+          />
         </List.Content>
       </List.Item>
       <List.Item
@@ -84,7 +87,10 @@ export const TagListPres = ({
           name={activeType === QUESTION_TYPES.MC ? 'folder' : 'folder outline'}
         />
         <List.Content>
-          <FormattedMessage defaultMessage="MC" id="common.MC.label" />
+          <FormattedMessage
+            defaultMessage="Multiple Choice (MC)"
+            id="common.MC.label"
+          />
         </List.Content>
       </List.Item>
       <List.Item
@@ -99,7 +105,10 @@ export const TagListPres = ({
           }
         />
         <List.Content>
-          <FormattedMessage defaultMessage="FREE" id="common.FREE.label" />
+          <FormattedMessage
+            defaultMessage="Free Text (FT)"
+            id="common.FREE.label"
+          />
         </List.Content>
       </List.Item>
       <List.Item
@@ -117,7 +126,7 @@ export const TagListPres = ({
         />
         <List.Content>
           <FormattedMessage
-            defaultMessage="FREE_RANGE"
+            defaultMessage="Number Range (NR)"
             id="common.FREE_RANGE.label"
           />
         </List.Content>
