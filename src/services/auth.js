@@ -5,10 +5,12 @@ const bcrypt = require('bcryptjs')
 const JWT = require('jsonwebtoken')
 const nodemailer = require('nodemailer')
 const _get = require('lodash/get')
+const { isLength, isEmail, normalizeEmail } = require('validator')
 const { AuthenticationError, UserInputError } = require('apollo-server-express')
 
 const { UserModel } = require('../models')
 const { sendSlackNotification } = require('./notifications')
+const { Errors } = require('../constants')
 
 const dev = process.env.NODE_ENV !== 'production'
 
@@ -106,16 +108,26 @@ const signup = async (
   useCase,
   { isAAI, isActive } = {},
 ) => {
-  // TODO: validation etc. (shortname!)
   // TODO: activation of new accounts (send an email)
 
-  // generate a salt with bcyrpt using 10 rounds
+  if (!isEmail(email)) {
+    throw new UserInputError(Errors.INVALID_EMAIL)
+  }
+
+  if (!isLength(password, { min: 8 })) {
+    throw new UserInputError(Errors.INVALID_PASSWORD)
+  }
+
+  // normalize the email address
+  const normalizedEmail = normalizeEmail(email)
+
+  // generate a salt with bcrypt using 10 rounds
   // hash and salt the password
   const hash = bcrypt.hashSync(password, 10)
 
   // create a new user based on the passed data
   const newUser = await new UserModel({
-    email,
+    email: normalizedEmail,
     password: hash,
     shortname,
     institution,
@@ -127,7 +139,7 @@ const signup = async (
   if (newUser) {
     // send a slack notification (if configured)
     sendSlackNotification(
-      `[auth] New user has registered: ${email}, ${shortname}, ${institution}, ${useCase
+      `[auth] New user has registered: ${normalizedEmail}, ${shortname}, ${institution}, ${useCase
         || '-'}`,
     )
 
@@ -142,8 +154,15 @@ const signup = async (
 // make this an async function such that it returns a promise
 // we can later use this promise as a return value for resolvers or similar
 const login = async (res, email, password) => {
+  if (!isEmail(email)) {
+    throw new UserInputError(Errors.INVALID_EMAIL)
+  }
+
+  // normalize the email address
+  const normalizedEmail = normalizeEmail(email)
+
   // look for a single user with the given email
-  const user = await UserModel.findOne({ email })
+  const user = await UserModel.findOne({ email: normalizedEmail })
 
   // check whether the user exists and hashed passwords match
   if (!user || !bcrypt.compareSync(password, user.password)) {
@@ -217,9 +236,16 @@ const changePassword = async (userId, newPassword) => {
 
 // request a password reset link
 const requestPassword = async (res, email) => {
+  if (!isEmail(email)) {
+    throw new UserInputError(Errors.INVALID_EMAIL)
+  }
+
+  // normalize the email address
+  const normalizedEmail = normalizeEmail(email)
+
   // look for a user with the given email
   // and check whether the user exists
-  const user = await UserModel.findOne({ email })
+  const user = await UserModel.findOne({ email: normalizedEmail })
   if (!user) {
     return 'PASSWORD_RESET_FAILED'
   }

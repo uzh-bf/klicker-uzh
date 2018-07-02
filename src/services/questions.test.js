@@ -20,7 +20,7 @@ describe('QuestionService', () => {
   beforeAll(async () => {
     ({ userId } = await initializeDb({
       mongoose,
-      email: 'testQuestions@bf.uzh.ch',
+      email: 'testquestions@bf.uzh.ch',
       shortname: 'questi',
       withLogin: true,
     }))

@@ -42,7 +42,8 @@
     "react-dom": "16.4.1",
     "request": "2.87.0",
     "request-promise": "4.2.2",
-    "subscriptions-transport-ws": "0.9.12"
+    "subscriptions-transport-ws": "0.9.12",
+    "validator": "10.4.0"
   },
   "devDependencies": {
     "babel-eslint": "8.2.5",
