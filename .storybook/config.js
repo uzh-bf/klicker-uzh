@@ -19,11 +19,7 @@ addDecorator(story => <IntlProvider locale="en">{story()}</IntlProvider>)
 
 // dynamically load stories from the components directory
 // load all files with *.stories.js in the end
-const req = require.context(
-  '../src/components/__stories__',
-  true,
-  /\.stories\.js$/,
-)
+const req = require.context('../src/__stories__', true, /\.stories\.js$/)
 
 function loadStories() {
   // load css needed for each story
