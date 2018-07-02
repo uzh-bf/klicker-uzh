@@ -150,7 +150,7 @@ function EvaluationLayout({
                       {' '}
                       (
                       {count}
-)
+                      )
                     </Menu.Item>
                   ),
                 )}

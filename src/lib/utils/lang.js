@@ -3,19 +3,19 @@ import { defineMessages } from 'react-intl'
 export const generateTypesLabel = (intl) => {
   const messages = defineMessages({
     freeLabel: {
-      defaultMessage: 'FREE',
+      defaultMessage: 'Free Text (FT)',
       id: 'common.FREE.label',
     },
     freeRangeLabel: {
-      defaultMessage: 'FREE_RANGE',
+      defaultMessage: 'Number Range (NR)',
       id: 'common.FREE_RANGE.label',
     },
     mcLabel: {
-      defaultMessage: 'MC',
+      defaultMessage: 'Multiple Choice (MC)',
       id: 'common.MC.label',
     },
     scLabel: {
-      defaultMessage: 'SC',
+      defaultMessage: 'Single Choice (SC)',
       id: 'common.SC.label',
     },
   })
@@ -31,11 +31,11 @@ export const generateTypesLabel = (intl) => {
 export const generateTypesShort = (intl) => {
   const messages = defineMessages({
     freeRangeShort: {
-      defaultMessage: 'FREE_RANGE',
+      defaultMessage: 'NR',
       id: 'common.FREE_RANGE.short',
     },
     freeShort: {
-      defaultMessage: 'FREE',
+      defaultMessage: 'FT',
       id: 'common.FREE.short',
     },
     mcShort: {

@@ -1,8 +1,10 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import { injectIntl, intlShape } from 'react-intl'
 import { generateTypesShort } from '../../lib'
 
 const propTypes = {
+  intl: intlShape.isRequired,
   tags: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.string.isRequired,
@@ -69,4 +71,4 @@ const QuestionTags = ({ intl, tags, type }) => (
 
 QuestionTags.propTypes = propTypes
 
-export default QuestionTags
+export default injectIntl(QuestionTags)

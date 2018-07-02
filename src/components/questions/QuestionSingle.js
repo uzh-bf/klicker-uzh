@@ -1,8 +1,10 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import { injectIntl, intlShape } from 'react-intl'
 import { generateTypesShort } from '../../lib'
 
 const propTypes = {
+  intl: intlShape.isRequired,
   noDetails: PropTypes.bool,
   title: PropTypes.string.isRequired,
   type: PropTypes.string.isRequired,
@@ -64,4 +66,4 @@ const QuestionSingle = ({
 QuestionSingle.propTypes = propTypes
 QuestionSingle.defaultProps = defaultProps
 
-export default QuestionSingle
+export default injectIntl(QuestionSingle)
