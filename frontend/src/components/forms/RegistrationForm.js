@@ -200,6 +200,7 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
       validationSchema={object().shape({
         email: string()
           .email()
+          .lowercase()
           .required(),
         institution: string().required(),
         password: string()
@@ -212,7 +213,7 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
         shortname: string()
           .min(3)
           .max(8)
-          .matches(/^[A-Za-z0-9-]+$/)
+          .matches(/^[A-Za-z0-9]+$/)
           .lowercase()
           .required(),
         useCase: string(),
