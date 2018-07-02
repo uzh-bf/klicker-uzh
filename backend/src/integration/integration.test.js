@@ -40,7 +40,7 @@ describe('Integration', () => {
   beforeAll(async () => {
     await initializeDb({
       mongoose,
-      email: 'testIntegration@bf.uzh.ch',
+      email: 'testintegration@bf.uzh.ch',
       shortname: 'integr',
     })
   })
@@ -57,7 +57,7 @@ describe('Integration', () => {
       const response = await sendQuery({
         query: mutations.LoginMutation,
         variables: {
-          email: 'testIntegration@bf.uzh.ch',
+          email: 'testintegration@bf.uzh.ch',
           password: 'somePassword',
         },
       })
@@ -88,7 +88,7 @@ describe('Integration', () => {
       ensureNoErrors(
         await sendQuery({
           query: mutations.RequestPasswordMutation,
-          variables: { email: 'testIntegration@bf.uzh.ch' },
+          variables: { email: 'testintegration@bf.uzh.ch' },
         }),
       )
     })

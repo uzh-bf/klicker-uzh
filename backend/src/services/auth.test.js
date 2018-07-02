@@ -3,6 +3,8 @@ require('dotenv').config()
 const mongoose = require('mongoose')
 const JWT = require('jsonwebtoken')
 
+const { UserInputError } = require('apollo-server-express')
+
 mongoose.Promise = require('bluebird')
 
 const {
@@ -17,6 +19,7 @@ const {
 } = require('./auth')
 const { UserModel } = require('../models')
 const { initializeDb } = require('../lib/test/setup')
+const { Errors } = require('../constants')
 
 const appSecret = process.env.APP_SECRET
 
@@ -24,7 +27,7 @@ describe('AuthService', () => {
   beforeAll(async () => {
     await initializeDb({
       mongoose,
-      email: 'testAuth@bf.uzh.ch',
+      email: 'testauth@bf.uzh.ch',
       shortname: 'auth',
     })
   })
@@ -137,13 +140,53 @@ describe('AuthService', () => {
   })
 
   describe('signup', () => {
+    it.each`
+      email                | password       | expected
+      ${'invalidEmail'}    | ${'validPass'} | ${new UserInputError(Errors.INVALID_EMAIL)}
+      ${'valid@bf.uzh.ch'} | ${'ps'}        | ${new UserInputError(Errors.INVALID_PASSWORD)}
+    `(
+  'fails with invalid email or password',
+  ({ email, password, expected }) => {
+    expect(
+      signup(email, password, 'validsrt', 'Institution', 'Testing...'),
+    ).rejects.toThrowError(expected)
+  },
+)
+    it.each`
+      shortname
+      ${'toolongshort'}
+      ${'sh'}
+      ${'srt-inv'}
+    `('fails with invalid shortname', ({ shortname }) => {
+  expect(signup(shortname, 'Institution', 'Testing...')).rejects.toThrow()
+})
+
+    it.each`
+      email                  | expected
+      ${'Abc.Abc@BF.uzh.CH'} | ${'abc.abc@bf.uzh.ch'}
+      ${'abc.abc@gmail.com'} | ${'abcabc@gmail.com'}
+    `('normalizes emails', async ({ email, expected }) => {
+  await UserModel.findOneAndRemove({ email: expected })
+
+  const newUser = await signup(
+    email,
+    'somePassword',
+    'normaliz',
+    'IBF Test',
+    'Testing...',
+  )
+  expect(newUser.email).toEqual(expected)
+
+  await UserModel.findOneAndRemove({ email: expected })
+})
+
     it('works with valid user data', async () => {
       // remove a user with the given test email if he already exists
-      await UserModel.findOneAndRemove({ email: 'testSignup@bf.uzh.ch' })
+      await UserModel.findOneAndRemove({ email: 'testsignup@bf.uzh.ch' })
 
       // try creating a new user with valid data
       const newUser = await signup(
-        'testSignup@bf.uzh.ch',
+        'testsignup@bf.uzh.ch',
         'somePassword',
         'signup',
         'IBF Testitution',
@@ -153,7 +196,7 @@ describe('AuthService', () => {
       // expect the new user to contain correct data
       expect(newUser).toEqual(
         expect.objectContaining({
-          email: 'testSignup@bf.uzh.ch',
+          email: 'testsignup@bf.uzh.ch',
           shortname: 'signup',
           institution: 'IBF Testitution',
           useCase: 'Work stuff..',
@@ -181,9 +224,18 @@ describe('AuthService', () => {
       cookieStore = undefined
     })
 
+    it('fails with invalid email', () => {
+      expect(login(res, 'thisisinvalid', 'abcd')).rejects.toEqual(
+        new UserInputError(Errors.INVALID_EMAIL),
+      )
+
+      // expect that cookies should not have been touched
+      expect(cookieStore).toBeUndefined()
+    })
+
     it('fails with wrong email/password combination', () => {
       // expect the login to fail and the promise to reject
-      expect(login(res, 'notExistent', 'abcd')).rejects.toEqual(
+      expect(login(res, 'blaa@bluub.com', 'abcd')).rejects.toEqual(
         new Error('INVALID_LOGIN'),
       )
 
@@ -192,7 +244,7 @@ describe('AuthService', () => {
     })
 
     it('works with a real user', async () => {
-      const userId = await login(res, 'testAuth@bf.uzh.ch', 'somePassword')
+      const userId = await login(res, 'testauth@bf.uzh.ch', 'somePassword')
 
       // expect the returned user to contain the correct email and shortname
       // the shortname is only saved in the database (thus the connection must work)
@@ -204,32 +256,32 @@ describe('AuthService', () => {
 
     it('allows changing the password', async () => {
       // expect the old login to work and the promise to resolve
-      const userId = await login(res, 'testAuth@bf.uzh.ch', 'somePassword')
+      const userId = await login(res, 'testauth@bf.uzh.ch', 'somePassword')
       expect(userId).toBeTruthy()
 
       // change the user's password
       const updatedUser = await changePassword(userId, 'someOtherPassword')
       expect(updatedUser).toEqual(
         expect.objectContaining({
-          email: 'testAuth@bf.uzh.ch',
+          email: 'testauth@bf.uzh.ch',
           shortname: 'auth',
         }),
       )
 
       // expect the old login to fail and the promise to reject
-      expect(login(res, 'testAuth@bf.uzh.ch', 'somePassword')).rejects.toEqual(
+      expect(login(res, 'testauth@bf.uzh.ch', 'somePassword')).rejects.toEqual(
         new Error('INVALID_LOGIN'),
       )
 
       // expect the new login to work
       expect(
-        login(res, 'testAuth@bf.uzh.ch', 'someOtherPassword'),
+        login(res, 'testauth@bf.uzh.ch', 'someOtherPassword'),
       ).resolves.toBeTruthy()
     })
 
     it('allows logging the user out', async () => {
       // expect the login to work and the promise to resolve
-      const userId = await login(res, 'testAuth@bf.uzh.ch', 'someOtherPassword')
+      const userId = await login(res, 'testauth@bf.uzh.ch', 'someOtherPassword')
       expect(userId).toBeTruthy()
 
       // expect a new cookie to have been set

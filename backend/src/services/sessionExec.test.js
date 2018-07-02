@@ -29,7 +29,7 @@ describe('SessionExecService', () => {
   beforeAll(async () => {
     ({ userId, questions } = await initializeDb({
       mongoose,
-      email: 'testSessionExec@bf.uzh.ch',
+      email: 'testsessionexec@bf.uzh.ch',
       shortname: 'sesExc',
       withLogin: true,
       withQuestions: true,

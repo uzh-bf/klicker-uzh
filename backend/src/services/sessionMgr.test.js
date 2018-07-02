@@ -28,7 +28,7 @@ describe('SessionMgrService', () => {
   beforeAll(async () => {
     ({ userId, questions } = await initializeDb({
       mongoose,
-      email: 'testSessionMgr@bf.uzh.ch',
+      email: 'testsessionmgr@bf.uzh.ch',
       shortname: 'sesMgr',
       withLogin: true,
       withQuestions: true,
