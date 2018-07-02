@@ -27,6 +27,10 @@ import {
 import { Messager } from '../../components/common'
 
 const messages = defineMessages({
+  errorLoading: {
+    defaultMessage: 'Failed loading current session...',
+    id: 'runningSession.errorLoading',
+  },
   noRunningSession: {
     defaultMessage: 'No currently running session...',
     id: 'runningSession.noRunningSession',
@@ -61,23 +65,13 @@ const Running = ({ intl, shortname }) => (
       }) => {
         if (loading || !data || !data.runningSession) {
           return (
-            <Messager
-              message={intl.formatMessage({
-                defaultMessage: 'No currently running session...',
-                id: 'runningSession.noRunningSession',
-              })}
-            />
+            <Messager message={intl.formatMessage(messages.noRunningSession)} />
           )
         }
 
         if (error) {
           return (
-            <Messager
-              message={intl.formatMessage({
-                defaultMessage: 'Failed loading current session...',
-                id: 'runningSession.errorLoading',
-              })}
-            />
+            <Messager message={intl.formatMessage(messages.errorLoading)} />
           )
         }
 

@@ -46,10 +46,6 @@ const LoginForm = ({ intl, loading, onSubmit }) => {
       href: '/user/requestPassword',
       label: intl.formatMessage(messages.forgotPassword),
     },
-    /* { TODO: enable AAI button
-      href: '/user/aaiLogin',
-      label: intl.formatMessage({ defaultMessage: 'Login with AAI', id: 'form.aaiLogin.label' }),
-    }, */
   ]
 
   return (
