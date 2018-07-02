@@ -14,6 +14,7 @@ export { toSanitizedHTML } from './utils/html'
 export { initGA, logException, logPageView } from './utils/analytics'
 export { createLinks } from './utils/css'
 export { filterSessions, processItems, buildIndex } from './utils/filters'
+export { generateTypesLabel, generateTypesShort } from './utils/lang'
 export {
   calculateMax,
   calculateMin,

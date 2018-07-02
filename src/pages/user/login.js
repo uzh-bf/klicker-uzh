@@ -3,26 +3,27 @@ import Router from 'next/router'
 import Cookies from 'js-cookie'
 import Link from 'next/link'
 import { compose } from 'recompose'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import { Mutation } from 'react-apollo'
 import { Message } from 'semantic-ui-react'
-
 import { StaticLayout } from '../../components/layouts'
 import { LoginForm } from '../../components/forms'
 import { LoginMutation } from '../../graphql'
 import { pageWithIntl, withLogging } from '../../lib'
+
+const messages = defineMessages({
+  pageTitle: {
+    defaultMessage: 'Login',
+    id: 'user.login.pageTitle',
+  },
+})
 
 const propTypes = {
   intl: intlShape.isRequired,
 }
 
 const Login = ({ intl }) => (
-  <StaticLayout
-    pageTitle={intl.formatMessage({
-      defaultMessage: 'Login',
-      id: 'user.login.pageTitle',
-    })}
-  >
+  <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
     <div className="login">
       <h1>
         <FormattedMessage defaultMessage="Login" id="user.login.title" />

@@ -4,16 +4,48 @@ import { compose, withProps } from 'recompose'
 import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
 import { EditorState, ContentState, convertFromRaw } from 'draft-js'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import {
   Button, Form, Icon, Menu, Message,
 } from 'semantic-ui-react'
 import { Formik } from 'formik'
 
 import { FormikInput } from '.'
+import { generateTypesLabel } from '../../lib'
 import { ContentInput, TagInput } from '../questions'
 import { FREECreationOptions, SCCreationOptions } from '../questionTypes'
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../constants'
+
+const messages = defineMessages({
+  contentEmpty: {
+    defaultMessage: 'Please add a question.',
+    id: 'form.editQuestion.content.empty',
+  },
+  minMaxRangeInvalid: {
+    defaultMessage: 'Please specify a range from min to max.',
+    id: 'form.editQuestion.options.minMaxRange.invalid',
+  },
+  optionsEmpty: {
+    defaultMessage: 'Please add at least one answer option.',
+    id: 'form.editQuestion.options.empty',
+  },
+  optionsInvalid: {
+    defaultMessage: 'Invalid options',
+    id: 'form.editQuestion.options.invalid',
+  },
+  tagsEmpty: {
+    defaultMessage: 'Please add at least one tag.',
+    id: 'form.editQuestion.tags.empty',
+  },
+  titleEmpty: {
+    defaultMessage: 'Please add a question title.',
+    id: 'form.editQuestion.title.empty',
+  },
+  titleInput: {
+    defaultMessage: 'Question Title',
+    id: 'editQuestion.titleInput.label',
+  },
+})
 
 // form validation
 const validate = ({
@@ -22,23 +54,23 @@ const validate = ({
   const errors = {}
 
   if (!title || _isEmpty(title)) {
-    errors.title = 'form.editQuestion.content.empty'
+    errors.title = messages.titleEmpty
   }
 
   // TODO: validation for draftjs content
   if (!content || _isEmpty(content)) {
-    errors.content = 'form.editQuestion.content.empty'
+    errors.content = messages.contentEmpty
   }
 
   if (!tags || tags.length === 0) {
-    errors.tags = 'form.editQuestion.tags.empty'
+    errors.tags = messages.tagsEmpty
   }
 
   if (
     QUESTION_GROUPS.CHOICES.includes(type)
     && (!options || options.choices.length === 0)
   ) {
-    errors.options = 'form.createQuestion.options.empty'
+    errors.options = messages.optionsEmpty
   }
 
   if (type === QUESTION_TYPES.FREE_RANGE) {
@@ -51,10 +83,10 @@ const validate = ({
         && isMaxNum
         && options.restrictions.min >= options.restrictions.max
       ) {
-        errors.options = 'form.createQuestion.options.minGteMax'
+        errors.options = messages.minMaxRangeInvalid
       }
     } else {
-      errors.options = 'form.createQuestion.options.invalid'
+      errors.options = messages.optionsInvalid
     }
   }
 
@@ -158,10 +190,7 @@ const QuestionEditForm = ({
                   />
                 </label>
                 <div className="type">
-                  <FormattedMessage
-                    defaultMessage="type"
-                    id={`common.${type}.label`}
-                  />
+                  {generateTypesLabel(intl)[type]}
                 </div>
               </Form.Field>
             </div>
@@ -178,10 +207,7 @@ const QuestionEditForm = ({
                 handleBlur={handleBlur}
                 handleChange={handleChange}
                 intl={intl}
-                label={intl.formatMessage({
-                  defaultMessage: 'Question Title',
-                  id: 'createQuestion.titleInput.label',
-                })}
+                label={intl.formatMessage(messages.titleInput)}
                 name="title"
                 tooltip={(
                   <FormattedMessage

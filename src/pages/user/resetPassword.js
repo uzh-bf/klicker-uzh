@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { compose } from 'recompose'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import { Mutation } from 'react-apollo'
 import { Message } from 'semantic-ui-react'
 import Link from 'next/link'
@@ -12,18 +12,20 @@ import { PasswordResetForm } from '../../components/forms'
 import { pageWithIntl, withLogging } from '../../lib'
 import { ChangePasswordMutation } from '../../graphql'
 
+const messages = defineMessages({
+  pageTitle: {
+    defaultMessage: 'Reset password',
+    id: 'user.resetPassword.pageTitle',
+  },
+})
+
 const propTypes = {
   intl: intlShape.isRequired,
   router: PropTypes.object.isRequired,
 }
 
 const ResetPassword = ({ intl, router }) => (
-  <StaticLayout
-    pageTitle={intl.formatMessage({
-      defaultMessage: 'Reset password',
-      id: 'user.resetPassword.pageTitle',
-    })}
-  >
+  <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
     <div className="resetPassword">
       <h1>
         <FormattedMessage

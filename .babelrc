@@ -36,7 +36,14 @@
         "@babel/plugin-proposal-pipeline-operator",
         "@babel/plugin-proposal-optional-chaining",
         "transform-inline-environment-variables",
-        "add-react-displayname"
+        
+        "add-react-displayname",
+        [
+          "react-intl",
+          {
+            "messagesDir": "src/lang/.messages"
+          }
+        ]
       ]
     },
     "test": {

@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import { Button, Form } from 'semantic-ui-react'
 
 import { Formik } from 'formik'
@@ -9,6 +9,62 @@ import _isEmpty from 'lodash/isEmpty'
 
 import { FormikInput } from '.'
 
+const messages = defineMessages({
+  emailInvalid: {
+    defaultMessage: 'Please provide a valid email address.',
+    id: 'form.email.invalid',
+  },
+  emailLabel: {
+    defaultMessage: 'Email',
+    id: 'form.email.label',
+  },
+  institutionInvalid: {
+    defaultMessage: 'Please provide a valid institution.',
+    id: 'form.institution.invalid',
+  },
+  institutionLabel: {
+    defaultMessage: 'Institution',
+    id: 'form.institution.label',
+  },
+  passwordInvalid: {
+    defaultMessage: 'Please provide a valid password (8+ characters).',
+    id: 'form.password.invalid',
+  },
+  passwordLabel: {
+    defaultMessage: 'Password',
+    id: 'form.password.label',
+  },
+  passwordRepeatInvalid: {
+    defaultMessage: 'Please ensure that passwords match.',
+    id: 'form.passwordRepeat.invalid',
+  },
+  passwordRepeatLabel: {
+    defaultMessage: 'Repeat password',
+    id: 'form.passwordRepeat.label',
+  },
+  shortnameInvalid: {
+    defaultMessage: 'Please provide a valid account ID (3-8 characters).',
+    id: 'form.shortname.invalid',
+  },
+  shortnameLabel: {
+    defaultMessage: 'Account ID / Join Link',
+    id: 'form.shortname.label',
+  },
+  shortnameTooltip: {
+    defaultMessage:
+      'A unique identifier for your account. Must be between 3 and 8 characters long (only alphanumeric and hyphen).',
+    id: 'form.shortname.tooltip',
+  },
+  useCaseLabel: {
+    defaultMessage: 'Use case description',
+    id: 'form.useCase.label',
+  },
+  useCaseTooltip: {
+    defaultMessage:
+      'Short description of your planned use case for the Klicker UZH.',
+    id: 'form.useCase.tooltip',
+  },
+})
 const propTypes = {
   intl: intlShape.isRequired,
   loading: PropTypes.bool.isRequired,
@@ -40,18 +96,12 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
             autoFocus
             required
             error={errors.email}
-            errorMessage={intl.formatMessage({
-              defaultMessage: 'Please provide a valid email address.',
-              id: 'form.email.invalid',
-            })}
+            errorMessage={intl.formatMessage(messages.emailInvalid)}
             handleBlur={handleBlur}
             handleChange={handleChange}
             icon="mail"
             intl={intl}
-            label={intl.formatMessage({
-              defaultMessage: 'Email',
-              id: 'form.email.label',
-            })}
+            label={intl.formatMessage(messages.emailLabel)}
             name="email"
             touched={touched.email}
             type="email"
@@ -60,27 +110,16 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
           <FormikInput
             required
             error={errors.shortname}
-            errorMessage={intl.formatMessage({
-              defaultMessage:
-                'Please provide a valid account ID (3-8 characters).',
-              id: 'form.shortname.invalid',
-            })}
+            errorMessage={intl.formatMessage(messages.shortnameInvalid)}
             handleBlur={handleBlur}
             handleChange={handleChange}
             icon="hashtag"
             inlineLabel="beta.klicker.uzh.ch/join/"
             intl={intl}
-            label={intl.formatMessage({
-              defaultMessage: 'Account ID / Join Link',
-              id: 'form.shortname.label',
-            })}
+            label={intl.formatMessage(messages.shortnameLabel)}
             name="shortname"
             placeholder="xyz123"
-            tooltip={intl.formatMessage({
-              defaultMessage:
-                'A unique identifier for your account. Must be between 3 and 8 characters long (only alphanumeric and hyphen).',
-              id: 'tooltip',
-            })}
+            tooltip={intl.formatMessage(messages.shortnameTooltip)}
             touched={touched.shortname}
             type="text"
             value={values.shortname}
@@ -89,19 +128,12 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
             <FormikInput
               required
               error={errors.password}
-              errorMessage={intl.formatMessage({
-                defaultMessage:
-                  'Please provide a valid password (8+ characters).',
-                id: 'form.password.invalid',
-              })}
+              errorMessage={intl.formatMessage(messages.passwordInvalid)}
               handleBlur={handleBlur}
               handleChange={handleChange}
               icon="privacy"
               intl={intl}
-              label={intl.formatMessage({
-                defaultMessage: 'Password',
-                id: 'form.password.label',
-              })}
+              label={intl.formatMessage(messages.passwordLabel)}
               name="password"
               touched={touched.password}
               type="password"
@@ -110,18 +142,12 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
             <FormikInput
               required
               error={errors.passwordRepeat}
-              errorMessage={intl.formatMessage({
-                defaultMessage: 'Please ensure that passwords match.',
-                id: 'form.passwordRepeat.invalid',
-              })}
+              errorMessage={intl.formatMessage(messages.passwordRepeatInvalid)}
               handleBlur={handleBlur}
               handleChange={handleChange}
               icon="privacy"
               intl={intl}
-              label={intl.formatMessage({
-                defaultMessage: 'Repeat password',
-                id: 'form.passwordRepeat.label',
-              })}
+              label={intl.formatMessage(messages.passwordRepeatLabel)}
               name="passwordRepeat"
               touched={touched.passwordRepeat}
               type="password"
@@ -131,18 +157,12 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
           <FormikInput
             required
             error={errors.institution}
-            errorMessage={intl.formatMessage({
-              defaultMessage: 'Please provide a valid institution.',
-              id: 'form.institution.invalid',
-            })}
+            errorMessage={intl.formatMessage(messages.institutionInvalid)}
             handleBlur={handleBlur}
             handleChange={handleChange}
             icon="university"
             intl={intl}
-            label={intl.formatMessage({
-              defaultMessage: 'Institution',
-              id: 'form.institution.label',
-            })}
+            label={intl.formatMessage(messages.institutionLabel)}
             name="institution"
             touched={touched.institution}
             type="text"
@@ -154,16 +174,9 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
             handleChange={handleChange}
             icon="university"
             intl={intl}
-            label={intl.formatMessage({
-              defaultMessage: 'Use case description',
-              id: 'form.useCase.label',
-            })}
+            label={intl.formatMessage(messages.useCaseLabel)}
             name="useCase"
-            tooltip={intl.formatMessage({
-              defaultMessage:
-                'Short description of your planned use case for the Klicker UZH.',
-              id: 'tooltip',
-            })}
+            tooltip={intl.formatMessage(messages.useCaseTooltip)}
             touched={touched.useCase}
             type="text"
             value={values.useCase}

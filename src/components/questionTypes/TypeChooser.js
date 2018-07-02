@@ -1,11 +1,30 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import { Icon } from 'semantic-ui-react'
 
 import { QUESTION_TYPES } from '../../constants'
 import { Button } from '../common'
+
+const messages = defineMessages({
+  freeLabel: {
+    defaultMessage: 'Free Text (FT)',
+    id: 'common.FREE.label',
+  },
+  freeRangeLabel: {
+    defaultMessage: 'Number Range (NR)',
+    id: 'common.FREE_RANGE.label',
+  },
+  mcLabel: {
+    defaultMessage: 'Multiple Choice (MC)',
+    id: 'common.MC.label',
+  },
+  scLabel: {
+    defaultMessage: 'Single Choice (SC)',
+    id: 'common.SC.label',
+  },
+})
 
 const propTypes = {
   intl: intlShape.isRequired,
@@ -16,31 +35,19 @@ const propTypes = {
 const TypeChooser = ({ intl, value, onChange }) => {
   const types = [
     {
-      name: intl.formatMessage({
-        defaultMessage: 'Single Choice (SC)',
-        id: 'common.SC.label',
-      }),
+      name: intl.formatMessage(messages.scLabel),
       value: QUESTION_TYPES.SC,
     },
     {
-      name: intl.formatMessage({
-        defaultMessage: 'Multiple Choice (MC)',
-        id: 'common.MC.label',
-      }),
+      name: intl.formatMessage(messages.mcLabel),
       value: QUESTION_TYPES.MC,
     },
     {
-      name: intl.formatMessage({
-        defaultMessage: 'Free Text (FT)',
-        id: 'common.FREE.label',
-      }),
+      name: intl.formatMessage(messages.freeLabel),
       value: QUESTION_TYPES.FREE,
     },
     {
-      name: intl.formatMessage({
-        defaultMessage: 'Number Range (NR)',
-        id: 'common.FREE_RANGE.label',
-      }),
+      name: intl.formatMessage(messages.freeRangeLabel),
       value: QUESTION_TYPES.FREE_RANGE,
     },
   ]

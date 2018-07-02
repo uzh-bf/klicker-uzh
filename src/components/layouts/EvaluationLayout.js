@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import { intlShape } from 'react-intl'
+import { defineMessages, intlShape } from 'react-intl'
 import {
   Checkbox, Dropdown, Menu, Icon,
 } from 'semantic-ui-react'
@@ -15,6 +15,12 @@ import {
 } from '../evaluation'
 import { QUESTION_GROUPS, CHART_TYPES, QUESTION_TYPES } from '../../constants'
 
+const messages = defineMessages({
+  showSolutionLabel: {
+    defaultMessage: 'Show solution',
+    id: 'evaluation.showSolution.label',
+  },
+})
 const propTypes = {
   activeInstance: PropTypes.number,
   activeVisualization: PropTypes.string.isRequired,
@@ -176,10 +182,7 @@ function EvaluationLayout({
               <Checkbox
                 toggle
                 defaultChecked={showSolution}
-                label={intl.formatMessage({
-                  defaultMessage: 'Show solution',
-                  id: 'evaluation.showSolution.label',
-                })}
+                label={intl.formatMessage(messages.showSolutionLabel)}
                 onChange={onToggleShowSolution}
               />
           )}
