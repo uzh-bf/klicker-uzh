@@ -1,11 +1,30 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { intlShape } from 'react-intl'
+import { defineMessages, intlShape } from 'react-intl'
 import { object, string } from 'yup'
 import _isEmpty from 'lodash/isEmpty'
 import { Formik } from 'formik'
 
 import { FormWithLinks, FormikInput } from '.'
+
+const messages = defineMessages({
+  backToLogin: {
+    defaultMessage: 'Back to login',
+    id: 'form.passwordReset.backToLogin',
+  },
+  emailInvalid: {
+    defaultMessage: 'Please provide a valid email address.',
+    id: 'form.email.invalid',
+  },
+  emailLabel: {
+    defaultMessage: 'Email',
+    id: 'form.email.label',
+  },
+  submit: {
+    defaultMessage: 'Submit',
+    id: 'form.common.button.submit',
+  },
+})
 
 const propTypes = {
   intl: intlShape.isRequired,
@@ -17,10 +36,7 @@ const PasswordRequestForm = ({ intl, loading, onSubmit }) => {
   const links = [
     {
       href: '/user/login',
-      label: intl.formatMessage({
-        defaultMessage: 'Back to login',
-        id: 'form.passwordReset.backToLogin',
-      }),
+      label: intl.formatMessage(messages.backToLogin),
     },
   ]
 
@@ -41,10 +57,7 @@ const PasswordRequestForm = ({ intl, loading, onSubmit }) => {
         <FormWithLinks
           button={{
             disabled: !_isEmpty(errors),
-            label: intl.formatMessage({
-              defaultMessage: 'Submit',
-              id: 'form.common.button.submit',
-            }),
+            label: intl.formatMessage(messages.submit),
             loading: loading && isSubmitting,
             onSubmit: handleSubmit,
           }}
@@ -54,18 +67,12 @@ const PasswordRequestForm = ({ intl, loading, onSubmit }) => {
             autoFocus
             required
             error={errors.email}
-            errorMessage={intl.formatMessage({
-              defaultMessage: 'Please provide a valid email address.',
-              id: 'form.email.invalid',
-            })}
+            errorMessage={intl.formatMessage(messages.emailInvalid)}
             handleBlur={handleBlur}
             handleChange={handleChange}
             icon="mail"
             intl={intl}
-            label={intl.formatMessage({
-              defaultMessage: 'Email',
-              id: 'form.email.label',
-            })}
+            label={intl.formatMessage(messages.emailLabel)}
             name="email"
             touched={touched.email}
             type="email"

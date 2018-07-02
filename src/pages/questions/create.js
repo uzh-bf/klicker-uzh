@@ -2,9 +2,8 @@ import React from 'react'
 import Router from 'next/router'
 import { compose } from 'recompose'
 import { Query, Mutation } from 'react-apollo'
-import { intlShape } from 'react-intl'
+import { defineMessages, intlShape } from 'react-intl'
 import { convertToRaw } from 'draft-js'
-
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionCreationForm } from '../../components/forms'
 import { pageWithIntl, withDnD, withLogging } from '../../lib'
@@ -14,6 +13,17 @@ import {
   CreateQuestionMutation,
 } from '../../graphql'
 
+const messages = defineMessages({
+  pageTitle: {
+    defaultMessage: 'Create Question',
+    id: 'createQuestion.pageTitle',
+  },
+  title: {
+    defaultMessage: 'Create Question',
+    id: 'createQuestion.title',
+  },
+})
+
 const propTypes = {
   intl: intlShape.isRequired,
 }
@@ -22,15 +32,9 @@ const CreateQuestion = ({ intl }) => (
   <TeacherLayout
     intl={intl}
     navbar={{
-      title: intl.formatMessage({
-        defaultMessage: 'Create Question',
-        id: 'createQuestion.title',
-      }),
+      title: intl.formatMessage(messages.title),
     }}
-    pageTitle={intl.formatMessage({
-      defaultMessage: 'Create Question',
-      id: 'createQuestion.pageTitle',
-    })}
+    pageTitle={intl.formatMessage(messages.pageTitle)}
     sidebar={{ activeItem: 'createQuestion' }}
   >
     <Query query={TagListQuery}>

@@ -2,7 +2,7 @@ import React from 'react'
 import { compose, withState } from 'recompose'
 import { withRouter } from 'next/router'
 import { convertToRaw } from 'draft-js'
-import { intlShape } from 'react-intl'
+import { defineMessages, intlShape } from 'react-intl'
 import { Query, Mutation } from 'react-apollo'
 import { PropTypes } from 'prop-types'
 import _pick from 'lodash/pick'
@@ -21,6 +21,17 @@ import {
   ModifyQuestionMutation,
 } from '../../graphql'
 
+const messages = defineMessages({
+  pageTitle: {
+    defaultMessage: 'Edit Question',
+    id: 'editQuestion.pageTitle',
+  },
+  title: {
+    defaultMessage: 'Edit Question',
+    id: 'editQuestion.title',
+  },
+})
+
 const propTypes = {
   intl: intlShape.isRequired,
   router: PropTypes.object.isRequired,
@@ -30,15 +41,9 @@ const EditQuestion = ({ intl, router }) => (
   <TeacherLayout
     intl={intl}
     navbar={{
-      title: intl.formatMessage({
-        defaultMessage: 'Edit Question',
-        id: 'editQuestion.title',
-      }),
+      title: intl.formatMessage(messages.title),
     }}
-    pageTitle={intl.formatMessage({
-      defaultMessage: 'Edit Question',
-      id: 'editQuestion.pageTitle',
-    })}
+    pageTitle={intl.formatMessage(messages.pageTitle)}
     sidebar={{ activeItem: 'editQuestion' }}
   >
     <Query query={TagListQuery}>

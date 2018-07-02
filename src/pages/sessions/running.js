@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import moment from 'moment'
 import { compose, withProps } from 'recompose'
 import { graphql, Query, Mutation } from 'react-apollo'
-import { intlShape } from 'react-intl'
+import { defineMessages, intlShape } from 'react-intl'
 import Router from 'next/router'
 
 import { pageWithIntl, withLogging } from '../../lib'
@@ -26,6 +26,25 @@ import {
 } from '../../graphql'
 import { Messager } from '../../components/common'
 
+const messages = defineMessages({
+  errorLoading: {
+    defaultMessage: 'Failed loading current session...',
+    id: 'runningSession.errorLoading',
+  },
+  noRunningSession: {
+    defaultMessage: 'No currently running session...',
+    id: 'runningSession.noRunningSession',
+  },
+  pageTitle: {
+    defaultMessage: 'Running Session',
+    id: 'runningSession.pageTitle',
+  },
+  title: {
+    defaultMessage: 'Running Session',
+    id: 'runningSession.title',
+  },
+})
+
 const propTypes = {
   intl: intlShape.isRequired,
   shortname: PropTypes.string.isRequired,
@@ -35,15 +54,9 @@ const Running = ({ intl, shortname }) => (
   <TeacherLayout
     intl={intl}
     navbar={{
-      title: intl.formatMessage({
-        defaultMessage: 'Running Session',
-        id: 'runningSession.title',
-      }),
+      title: intl.formatMessage(messages.title),
     }}
-    pageTitle={intl.formatMessage({
-      defaultMessage: 'Running Session',
-      id: 'runningSession.pageTitle',
-    })}
+    pageTitle={intl.formatMessage(messages.pageTitle)}
     sidebar={{ activeItem: 'runningSession' }}
   >
     <Query query={RunningSessionQuery}>
@@ -52,23 +65,13 @@ const Running = ({ intl, shortname }) => (
       }) => {
         if (loading || !data || !data.runningSession) {
           return (
-            <Messager
-              message={intl.formatMessage({
-                defaultMessage: 'No currently running session...',
-                id: 'runningSession.noRunningSession',
-              })}
-            />
+            <Messager message={intl.formatMessage(messages.noRunningSession)} />
           )
         }
 
         if (error) {
           return (
-            <Messager
-              message={intl.formatMessage({
-                defaultMessage: 'Failed loading current session...',
-                id: 'runningSession.errorLoading',
-              })}
-            />
+            <Messager message={intl.formatMessage(messages.errorLoading)} />
           )
         }
 

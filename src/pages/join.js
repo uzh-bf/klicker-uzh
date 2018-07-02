@@ -4,7 +4,7 @@ import { withRouter } from 'next/router'
 import PropTypes from 'prop-types'
 import React from 'react'
 import { graphql } from 'react-apollo'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import {
   branch,
   compose,
@@ -23,6 +23,17 @@ import {
   JoinSessionQuery,
 } from '../graphql'
 import { pageWithIntl, withFingerprint, withLogging } from '../lib'
+
+const messages = defineMessages({
+  activeQuestionTitle: {
+    defaultMessage: 'Active Question',
+    id: 'joinSessionactiveQuestion.title',
+  },
+  feedbackChannelTitle: {
+    defaultMessage: 'Feedback-Channel',
+    id: 'joinSessionfeedbackChannel.title',
+  },
+})
 
 const propTypes = {
   activeQuestions: PropTypes.array,
@@ -64,14 +75,8 @@ const Join = ({
   handleNewResponse,
 }) => {
   const title = sidebarActiveItem === 'activeQuestion'
-    ? intl.formatMessage({
-      defaultMessage: 'Active Question',
-      id: 'joinSessionactiveQuestion.title',
-    })
-    : intl.formatMessage({
-      defaultMessage: 'Feedback-Channel',
-      id: 'joinSessionfeedbackChannel.title',
-    })
+    ? intl.formatMessage(messages.activeQuestionTitle)
+    : intl.formatMessage(messages.feedbackChannelTitle)
 
   return (
     <StudentLayout

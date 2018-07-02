@@ -1,8 +1,10 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { FormattedMessage } from 'react-intl'
+import { injectIntl, intlShape } from 'react-intl'
+import { generateTypesShort } from '../../lib'
 
 const propTypes = {
+  intl: intlShape.isRequired,
   tags: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.string.isRequired,
@@ -12,7 +14,7 @@ const propTypes = {
   type: PropTypes.string.isRequired,
 }
 
-const QuestionTags = ({ tags, type }) => (
+const QuestionTags = ({ intl, tags, type }) => (
   <div className="questionTags">
     {tags.map(tag => (
       <div className="tag" key={tag.id}>
@@ -20,7 +22,7 @@ const QuestionTags = ({ tags, type }) => (
       </div>
     ))}
     <div className="type tag">
-      <FormattedMessage defaultMessage={type} id={`common.${type}.short`} />
+      {generateTypesShort(intl)[type]}
     </div>
 
     <style jsx>
@@ -69,4 +71,4 @@ const QuestionTags = ({ tags, type }) => (
 
 QuestionTags.propTypes = propTypes
 
-export default QuestionTags
+export default injectIntl(QuestionTags)
