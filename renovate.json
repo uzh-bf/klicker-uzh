@@ -4,10 +4,21 @@
   "assignees": ["rschlaefli"],
   "labels": ["dependencies"],
   "reviewers": ["rschlaefli"],
-  "schedule": ["after 9am and before 4pm on monday and wednesday"],
+  "schedule": ["after 7pm and before 8am on every weekday"],
   "semanticCommits": false,
   "timezone": "Europe/Zurich",
   "packageRules": [
+    {
+      "packageNames": [
+        "jest",
+        "react-addons-test-utils",
+        "enzyme",
+        "cypress",
+        "babel-jest"
+      ],
+      "groupName": "test",
+      "automerge": "minor"
+    },
     {
       "packagePatterns": ["^apollo", "react-apollo"],
       "groupName": "apollo",
@@ -42,17 +53,16 @@
       "automerge": "minor"
     },
     {
-      "packageNames": ["jest", "react-addons-test-utils", "enzyme", "cypress", "babel-jest"],
-      "groupName": "test",
-      "automerge": "minor"
-    },
-    {
       "packagePatterns": ["^babel", "^@babel"],
       "groupName": "babel"
     },
     {
       "packagePatterns": ["^react-dnd"],
       "groupName": "react-dnd"
+    },
+    {
+      "packagePatterns": ["^semantic-ui"],
+      "groupName": "semantic-ui"
     }
   ]
 }

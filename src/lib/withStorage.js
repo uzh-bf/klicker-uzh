@@ -11,9 +11,10 @@ export default ({
   propDefault,
   storageType = 'session',
   json = false,
-}) => ComposedComponent =>
-  class WithStorage extends React.Component {
-    static displayName = `WithStorage(${getComponentDisplayName(ComposedComponent)})`
+}) => ComposedComponent => class WithStorage extends React.Component {
+    static displayName = `WithStorage(${getComponentDisplayName(
+      ComposedComponent,
+    )})`
 
     constructor(props) {
       super(props)
@@ -55,4 +56,4 @@ export default ({
     render() {
       return <ComposedComponent {...this.props} {...this.state} />
     }
-  }
+}

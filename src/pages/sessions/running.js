@@ -57,8 +57,8 @@ const Running = ({ intl, shortname }) => (
   >
     <Query query={RunningSessionQuery}>
       {({
- data, loading, error, subscribeToMore,
-}) => {
+        data, loading, error, subscribeToMore,
+      }) => {
         if (loading || !data || !data.runningSession) {
           return (
             <Messager
@@ -121,7 +121,9 @@ const Running = ({ intl, shortname }) => (
                             }}
                             handleNextBlock={() => {
                               activateNextBlock({
-                                refetchQueries: [{ query: RunningSessionQuery }],
+                                refetchQueries: [
+                                  { query: RunningSessionQuery },
+                                ],
                               })
                             }}
                             handlePauseSession={async () => {
@@ -255,51 +257,53 @@ const Running = ({ intl, shortname }) => (
       }}
     </Query>
 
-    <style jsx>{`
-      @import 'src/theme';
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-      .runningSession {
-        display: flex;
-        flex-direction: column;
-
-        padding: 1rem;
-      }
-
-      .sessionProgress,
-      .confusionBarometer,
-      .feedbackChannel {
-        flex: 1;
-
-        margin-bottom: 1rem;
-      }
-
-      @include desktop-tablet-only {
         .runningSession {
-          flex-flow: row wrap;
+          display: flex;
+          flex-direction: column;
 
-          padding: 2rem;
+          padding: 1rem;
         }
 
         .sessionProgress,
         .confusionBarometer,
         .feedbackChannel {
-          padding: 0.5rem;
+          flex: 1;
+
+          margin-bottom: 1rem;
         }
 
-        .sessionProgress {
-          flex: 0 0 100%;
-        }
-        .confusionBarometer {
-          flex: 0 0 30%;
-        }
-      }
+        @include desktop-tablet-only {
+          .runningSession {
+            flex-flow: row wrap;
 
-      @include desktop-only {
-        .runningSession {
-          padding: 2rem 10%;
+            padding: 2rem;
+          }
+
+          .sessionProgress,
+          .confusionBarometer,
+          .feedbackChannel {
+            padding: 0.5rem;
+          }
+
+          .sessionProgress {
+            flex: 0 0 100%;
+          }
+          .confusionBarometer {
+            flex: 0 0 30%;
+          }
         }
-      }
-    `}</style>
+
+        @include desktop-only {
+          .runningSession {
+            padding: 2rem 10%;
+          }
+        }
+      `}
+    </style>
   </TeacherLayout>
 )
 

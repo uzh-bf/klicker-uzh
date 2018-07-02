@@ -11,7 +11,9 @@ import _isNil from 'lodash/isNil'
 
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionEditForm } from '../../components/forms'
-import { pageWithIntl, omitDeep, withDnD, withLogging } from '../../lib'
+import {
+  pageWithIntl, omitDeep, withDnD, withLogging,
+} from '../../lib'
 import {
   TagListQuery,
   QuestionListQuery,
@@ -46,10 +48,18 @@ const EditQuestion = ({ intl, router }) => (
   >
     <Query query={TagListQuery}>
       {({ data: tagList, loading: tagsLoading }) => (
-        <Query query={QuestionDetailsQuery} variables={{ id: router.query.questionId }}>
+        <Query
+          query={QuestionDetailsQuery}
+          variables={{ id: router.query.questionId }}
+        >
           {({ data: questionDetails, loading: questionLoading }) => {
             // if the tags or the question is still loading, return null
-            if (tagsLoading || questionLoading || !tagList.tags || !questionDetails.question) {
+            if (
+              tagsLoading
+              || questionLoading
+              || !tagList.tags
+              || !questionDetails.question
+            ) {
               return null
             }
 
@@ -58,14 +68,11 @@ const EditQuestion = ({ intl, router }) => (
               <Mutation mutation={ModifyQuestionMutation}>
                 {(editQuestion, { loading, data, error }) => {
                   const {
- id, tags, title, type, versions,
-} = _pick(questionDetails.question, [
-                    'id',
-                    'tags',
-                    'title',
-                    'type',
-                    'versions',
-                  ])
+                    id, tags, title, type, versions,
+                  } = _pick(
+                    questionDetails.question,
+                    ['id', 'tags', 'title', 'type', 'versions'],
+                  )
 
                   // enhance the form with state for the active version
                   const EditForm = withState(
@@ -100,7 +107,10 @@ const EditQuestion = ({ intl, router }) => (
                         await editQuestion({
                           // reload the question details and tags after update
                           // TODO: replace with optimistic updates
-                          refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
+                          refetchQueries: [
+                            { query: QuestionListQuery },
+                            { query: TagListQuery },
+                          ],
                           // update the cache after the mutation has completed
                           update: (store, { data: { modifyQuestion } }) => {
                             const query = {
@@ -125,22 +135,25 @@ const EditQuestion = ({ intl, router }) => (
                           variables: _omitBy(
                             isNewVersion
                               ? {
-                                  content:
-                                    content.getCurrentContent() |> convertToRaw |> JSON.stringify,
-                                  id,
-                                  // HACK: omitDeep for typename removal
-                                  // TODO: check https://github.com/apollographql/apollo-client/issues/1564
-                                  // this shouldn't be necessary at all
-                                  options: options && omitDeep(options, '__typename'),
-                                  solution,
-                                  tags: newTags,
-                                  title: newTitle,
-                                }
+                                content:
+                                    content.getCurrentContent()
+                                    |> convertToRaw
+                                    |> JSON.stringify,
+                                id,
+                                // HACK: omitDeep for typename removal
+                                // TODO: check https://github.com/apollographql/apollo-client/issues/1564
+                                // this shouldn't be necessary at all
+                                options:
+                                    options && omitDeep(options, '__typename'),
+                                solution,
+                                tags: newTags,
+                                title: newTitle,
+                              }
                               : {
-                                  id,
-                                  tags: newTags,
-                                  title: newTitle,
-                                },
+                                id,
+                                tags: newTags,
+                                title: newTitle,
+                              },
                             _isNil,
                           ),
                         })

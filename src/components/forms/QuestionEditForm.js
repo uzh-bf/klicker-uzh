@@ -5,13 +5,15 @@ import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
 import { EditorState, ContentState, convertFromRaw } from 'draft-js'
 import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
-import { Button, Form, Icon, Menu, Message } from 'semantic-ui-react'
+import {
+  Button, Form, Icon, Menu, Message,
+} from 'semantic-ui-react'
 import { Formik } from 'formik'
 
 import { FormikInput } from '.'
 import { generateTypesLabel } from '../../lib'
 import { ContentInput, TagInput } from '../questions'
-import { FREECreationOptions, SCCreationOptions } from '../../components/questionTypes'
+import { FREECreationOptions, SCCreationOptions } from '../questionTypes'
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../constants'
 
 const messages = defineMessages({
@@ -64,7 +66,10 @@ const validate = ({
     errors.tags = messages.tagsEmpty
   }
 
-  if (QUESTION_GROUPS.CHOICES.includes(type) && (!options || options.choices.length === 0)) {
+  if (
+    QUESTION_GROUPS.CHOICES.includes(type)
+    && (!options || options.choices.length === 0)
+  ) {
     errors.options = messages.optionsEmpty
   }
 
@@ -73,7 +78,11 @@ const validate = ({
       const isMinNum = _isNumber(options.restrictions.min)
       const isMaxNum = _isNumber(options.restrictions.max)
 
-      if (isMinNum && isMaxNum && options.restrictions.min >= options.restrictions.max) {
+      if (
+        isMinNum
+        && isMaxNum
+        && options.restrictions.min >= options.restrictions.max
+      ) {
         errors.options = messages.minMaxRangeInvalid
       }
     } else {
@@ -152,7 +161,11 @@ const QuestionEditForm = ({
         const { message, success } = editSuccess
 
         return (
-          <Form error={success === false} success={success === true} onSubmit={handleSubmit}>
+          <Form
+            error={success === false}
+            success={success === true}
+            onSubmit={handleSubmit}
+          >
             <div className="infoMessage">
               <Message success>
                 <FormattedMessage
@@ -171,9 +184,14 @@ const QuestionEditForm = ({
             <div className="questionInput questionType">
               <Form.Field>
                 <label htmlFor="type">
-                  <FormattedMessage defaultMessage="Question Type" id="editQuestion.type" />
+                  <FormattedMessage
+                    defaultMessage="Question Type"
+                    id="editQuestion.type"
+                  />
                 </label>
-                <div className="type">{generateTypesLabel(intl)[type]}</div>
+                <div className="type">
+                  {generateTypesLabel(intl)[type]}
+                </div>
               </Form.Field>
             </div>
 
@@ -191,12 +209,12 @@ const QuestionEditForm = ({
                 intl={intl}
                 label={intl.formatMessage(messages.titleInput)}
                 name="title"
-                tooltip={
+                tooltip={(
                   <FormattedMessage
                     defaultMessage="Enter a short summarizing title for the question. This is only visible to you!"
                     id="createQuestion.titleInput.tooltip"
                   />
-                }
+)}
                 touched={touched.title}
                 type="text"
                 value={values.title}
@@ -234,7 +252,10 @@ const QuestionEditForm = ({
                   onClick={() => onActiveVersionChange(versionOptions.length)}
                 >
                   <Icon name="plus" />
-                  <FormattedMessage defaultMessage="New Version" id="editQuestion.newVersion" />
+                  <FormattedMessage
+                    defaultMessage="New Version"
+                    id="editQuestion.newVersion"
+                  />
                 </Menu.Item>
               </Menu>
             </div>
@@ -278,7 +299,10 @@ const QuestionEditForm = ({
 
             <div className="actionArea">
               <Button className="discard" type="reset" onClick={onDiscard}>
-                <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+                <FormattedMessage
+                  defaultMessage="Discard"
+                  id="common.button.discard"
+                />
               </Button>
               <Button
                 primary
@@ -287,7 +311,10 @@ const QuestionEditForm = ({
                 loading={loading && isSubmitting}
                 type="submit"
               >
-                <FormattedMessage defaultMessage="Save" id="common.button.save" />
+                <FormattedMessage
+                  defaultMessage="Save"
+                  id="common.button.save"
+                />
               </Button>
             </div>
           </Form>
@@ -295,107 +322,109 @@ const QuestionEditForm = ({
       }}
     </Formik>
 
-    <style jsx>{`
-      @import 'src/theme';
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-      .questionEditForm > :global(form) {
-        display: flex;
-        flex-direction: column;
-
-        padding: 1rem;
-
-        .questionInput,
-        .questionPreview {
-          margin-bottom: 1rem;
-        }
-
-        // HACK: currently one field item in question div to full-fill bigger font-size
-        .questionInput > :global(.field > label) {
-          font-size: 1.2rem;
-        }
-
-        .questionVersion > :global(.field),
-        .actionArea {
+        .questionEditForm > :global(form) {
           display: flex;
           flex-direction: column;
 
-          :global(button) {
-            margin-right: 0;
+          padding: 1rem;
+
+          .questionInput,
+          .questionPreview {
+            margin-bottom: 1rem;
           }
-        }
 
-        @supports (grid-gap: 1rem) {
-          @include desktop-tablet-only {
-            display: grid;
+          // HACK: currently one field item in question div to full-fill bigger font-size
+          .questionInput > :global(.field > label) {
+            font-size: 1.2rem;
+          }
 
-            grid-gap: 1rem;
-            grid-template-columns: 1fr 4fr;
-            grid-template-rows: auto;
-            grid-template-areas:
-              'message message'
-              'type title'
-              'tags tags'
-              'version version'
-              'content content'
-              'options options'
-              'actions actions';
+          .questionVersion > :global(.field),
+          .actionArea {
+            display: flex;
+            flex-direction: column;
 
-            .questionInput {
-              margin-bottom: 0;
+            :global(button) {
+              margin-right: 0;
             }
+          }
 
-            .infoMessage {
-              grid-area: message;
+          @supports (grid-gap: 1rem) {
+            @include desktop-tablet-only {
+              display: grid;
 
-              > :global(.message) {
+              grid-gap: 1rem;
+              grid-template-columns: 1fr 4fr;
+              grid-template-rows: auto;
+              grid-template-areas:
+                'message message'
+                'type title'
+                'tags tags'
+                'version version'
+                'content content'
+                'options options'
+                'actions actions';
+
+              .questionInput {
                 margin-bottom: 0;
+              }
+
+              .infoMessage {
+                grid-area: message;
+
+                > :global(.message) {
+                  margin-bottom: 0;
+                }
+              }
+
+              .questionTitle {
+                grid-area: title;
+              }
+
+              .questionType {
+                grid-area: type;
+              }
+
+              .questionVersion {
+                grid-area: version;
+              }
+
+              .questionTags {
+                grid-area: tags;
+              }
+
+              .questionPreview {
+                grid-area: preview;
+                margin-bottom: 0;
+              }
+
+              .questionContent {
+                grid-area: content;
+              }
+
+              .questionOptions {
+                grid-area: options;
+              }
+
+              .actionArea {
+                grid-area: actions;
+                flex-direction: row;
+
+                justify-content: space-between;
               }
             }
 
-            .questionTitle {
-              grid-area: title;
+            @include desktop-only {
+              margin: 0 20%;
+              padding: 1rem 0;
             }
-
-            .questionType {
-              grid-area: type;
-            }
-
-            .questionVersion {
-              grid-area: version;
-            }
-
-            .questionTags {
-              grid-area: tags;
-            }
-
-            .questionPreview {
-              grid-area: preview;
-              margin-bottom: 0;
-            }
-
-            .questionContent {
-              grid-area: content;
-            }
-
-            .questionOptions {
-              grid-area: options;
-            }
-
-            .actionArea {
-              grid-area: actions;
-              flex-direction: row;
-
-              justify-content: space-between;
-            }
-          }
-
-          @include desktop-only {
-            margin: 0 20%;
-            padding: 1rem 0;
           }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 
@@ -403,39 +432,48 @@ QuestionEditForm.propTypes = propTypes
 QuestionEditForm.defaultProps = defaultProps
 
 export default compose(
-  withProps(({
-    allTags, activeVersion, versions, questionTags, title, type, onSubmit,
-  }) => {
-    // if the active version would be out of array bounds, we are creating a new one
-    const isNewVersion = activeVersion === versions.length
+  withProps(
+    ({
+      allTags,
+      activeVersion,
+      versions,
+      questionTags,
+      title,
+      type,
+      onSubmit,
+    }) => {
+      // if the active version would be out of array bounds, we are creating a new one
+      const isNewVersion = activeVersion === versions.length
 
-    // calculate the version with which to initialize the version fields (the current or last one)
-    const initializeVersion = isNewVersion ? versions.length - 1 : activeVersion
+      // calculate the version with which to initialize the version fields (the current or last one)
+      const initializeVersion = isNewVersion
+        ? versions.length - 1
+        : activeVersion
 
-    return {
-      initialValues: {
-        content: versions[initializeVersion].content
-          ? versions[initializeVersion].content
-            |> JSON.parse
-            |> convertFromRaw // create a new draftjs content state from text
-            |> EditorState.createWithContent
-          : // get the version description
-          versions[initializeVersion].description
-            |> ContentState.createFromText // create a new draftjs content state from text
-            |> EditorState.createWithContent, // create a new draftjs editor state
-        options: versions[initializeVersion].options[type] || {},
-        tags: questionTags.map(tag => tag.name),
-        title,
-        type,
-        versions,
-      },
-      isNewVersion,
-      onSubmit: onSubmit(isNewVersion),
-      tags: allTags,
-      versionOptions: versions.map(({ id }, index) => ({
-        text: `v${index + 1}`,
-        value: id,
-      })),
-    }
-  }),
+      return {
+        initialValues: {
+          content: versions[initializeVersion].content
+            ? versions[initializeVersion].content
+              |> JSON.parse
+              |> convertFromRaw // create a new draftjs content state from text
+              |> EditorState.createWithContent
+            : versions[initializeVersion].description // get the version description
+              |> ContentState.createFromText // create a new draftjs content state from text
+              |> EditorState.createWithContent, // create a new draftjs editor state
+          options: versions[initializeVersion].options[type] || {},
+          tags: questionTags.map(tag => tag.name),
+          title,
+          type,
+          versions,
+        },
+        isNewVersion,
+        onSubmit: onSubmit(isNewVersion),
+        tags: allTags,
+        versionOptions: versions.map(({ id }, index) => ({
+          text: `v${index + 1}`,
+          value: id,
+        })),
+      }
+    },
+  ),
 )(QuestionEditForm)

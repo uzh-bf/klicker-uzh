@@ -15,38 +15,39 @@ const defaultProps = {
   isOver: false,
 }
 
-const QuestionDropzone = ({ canDrop, isOver, connectDropTarget }) =>
-  connectDropTarget(
-    <div className={classNames('dropzone', { canDrop, isOver })}>
-      <Icon name="plus" />
+const QuestionDropzone = ({ canDrop, isOver, connectDropTarget }) => connectDropTarget(
+  <div className={classNames('dropzone', { canDrop, isOver })}>
+    <Icon name="plus" />
 
-      <style jsx>{`
-        .dropzone {
-          display: flex;
-          align-items: center;
-          justify-content: center;
+    <style jsx>
+      {`
+          .dropzone {
+            display: flex;
+            align-items: center;
+            justify-content: center;
 
-          background-color: #f2f2f2;
-          border: 1px solid lightgrey;
-          color: grey;
-          font-size: 1.5rem;
-          min-height: 5rem;
-          height: 100%;
-          width: 100%;
-        }
+            background-color: #f2f2f2;
+            border: 1px solid lightgrey;
+            color: grey;
+            font-size: 1.5rem;
+            min-height: 5rem;
+            height: 100%;
+            width: 100%;
+          }
 
-        .dropzone.canDrop {
-          background-color: lightgrey;
-          border-color: grey;
-          color: grey;
-        }
+          .dropzone.canDrop {
+            background-color: lightgrey;
+            border-color: grey;
+            color: grey;
+          }
 
-        .dropzone.isOver {
-          border-color: blue;
-        }
-      `}</style>
-    </div>,
-  )
+          .dropzone.isOver {
+            border-color: blue;
+          }
+        `}
+    </style>
+  </div>,
+)
 
 // define the target for DnD
 const target = {

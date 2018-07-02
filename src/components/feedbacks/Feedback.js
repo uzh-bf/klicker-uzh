@@ -28,7 +28,9 @@ const Feedback = ({
   onDelete,
 }) => (
   <div className="feedback">
-    <div className="content">{content}</div>
+    <div className="content">
+      {content}
+    </div>
     {showDelete && (
       <div className="delete">
         <Button basic fluid icon="trash" onClick={onDelete} />
@@ -36,46 +38,52 @@ const Feedback = ({
     )}
 
     {showVotes && (
-      <Button className="votes" disabled={alreadyVoted} onClick={updateVotes && updateVotes()}>
+      <Button
+        className="votes"
+        disabled={alreadyVoted}
+        onClick={updateVotes && updateVotes()}
+      >
         <Icon name={alreadyVoted ? 'thumbs up' : 'thumbs outline up'} />
         {votes}
       </Button>
     )}
 
-    <style jsx>{`
-      @import 'src/theme';
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-      .feedback {
-        display: flex;
-
-        background: $color-primary-10p;
-        border: 1px solid $color-primary;
-
-        .content,
-        .delete {
-          padding: 0.7rem;
-        }
-
-        .content {
-          flex: 1;
-        }
-
-        .delete {
-          flex: 0 0 1rem;
-          align-self: center;
-        }
-
-        .votes {
-          flex: 0 0 5rem;
-
+        .feedback {
           display: flex;
-          align-items: center;
-          justify-content: center;
 
-          border-left: 1px solid grey;
+          background: $color-primary-10p;
+          border: 1px solid $color-primary;
+
+          .content,
+          .delete {
+            padding: 0.7rem;
+          }
+
+          .content {
+            flex: 1;
+          }
+
+          .delete {
+            flex: 0 0 1rem;
+            align-self: center;
+          }
+
+          .votes {
+            flex: 0 0 5rem;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            border-left: 1px solid grey;
+          }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

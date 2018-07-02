@@ -7,13 +7,17 @@ import HTML5Backend from 'react-dnd-html5-backend'
 
 import { intlMock } from '../../../.storybook/utils'
 
-import { Session, SessionTimeline, QuestionDropzone, SessionTimelineInput } from '.'
+import {
+  Session, SessionTimeline, QuestionDropzone, SessionTimelineInput,
+} from '.'
 // import { SessionListPres } from './SessionList'
 import fixtures from '../../../.storybook/fixtures'
 
 storiesOf('sessions', module)
   .addDecorator(getStory => (
-    <DragDropContextProvider backend={HTML5Backend}>{getStory()}</DragDropContextProvider>
+    <DragDropContextProvider backend={HTML5Backend}>
+      {getStory()}
+    </DragDropContextProvider>
   ))
   .add('Session', () => <Session {...fixtures.session} />)
   .add('SessionTimeline', () => (

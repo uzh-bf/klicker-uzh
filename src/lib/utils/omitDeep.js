@@ -19,7 +19,7 @@ function omitDeep(obj, key) {
 function omitDeepArrayWalk(arr, key) {
   return arr.map((val) => {
     if (Array.isArray(val)) return omitDeepArrayWalk(val, key)
-    else if (typeof val === 'object' && val !== null) return omitDeep(val, key)
+    if (typeof val === 'object' && val !== null) return omitDeep(val, key)
     return val
   })
 }

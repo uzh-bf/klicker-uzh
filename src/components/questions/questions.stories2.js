@@ -8,4 +8,6 @@ import ActionBar from './ActionBar'
 storiesOf('questions', module)
   .add('ActionBar', () => <ActionBar />)
   .add('ActionBar (creationMode)', () => <ActionBar creationMode />)
-  .add('ActionBar (creationMode, 10 items)', () => <ActionBar creationMode itemsChecked={10} />)
+  .add('ActionBar (creationMode, 10 items)', () => (
+    <ActionBar creationMode itemsChecked={10} />
+  ))

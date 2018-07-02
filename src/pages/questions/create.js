@@ -7,7 +7,11 @@ import { convertToRaw } from 'draft-js'
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionCreationForm } from '../../components/forms'
 import { pageWithIntl, withDnD, withLogging } from '../../lib'
-import { QuestionListQuery, TagListQuery, CreateQuestionMutation } from '../../graphql'
+import {
+  QuestionListQuery,
+  TagListQuery,
+  CreateQuestionMutation,
+} from '../../graphql'
 
 const messages = defineMessages({
   pageTitle: {
@@ -45,15 +49,21 @@ const CreateQuestion = ({ intl }) => (
               onDiscard={() => Router.push('/questions')}
               // handle submitting a new question
               onSubmit={async ({
- content, options, tags, title, type,
-}) => {
+                content, options, tags, title, type,
+              }) => {
                 // create the question
                 await createQuestion({
                   // reload the list of questions and tags after creation
                   // TODO: replace with optimistic updates
-                  refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
+                  refetchQueries: [
+                    { query: QuestionListQuery },
+                    { query: TagListQuery },
+                  ],
                   variables: {
-                    content: content.getCurrentContent() |> convertToRaw |> JSON.stringify,
+                    content:
+                      content.getCurrentContent()
+                      |> convertToRaw
+                      |> JSON.stringify,
                     options,
                     tags,
                     title,

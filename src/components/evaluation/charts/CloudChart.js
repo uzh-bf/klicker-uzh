@@ -28,15 +28,17 @@ const CloudChart = ({ data }) => (
       width={800}
     />
 
-    <style jsx>{`
-      .cloudChart {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        width: 100%;
-      }
-    `}</style>
+    <style jsx>
+      {`
+        .cloudChart {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
+          width: 100%;
+        }
+      `}
+    </style>
   </div>
 )
 

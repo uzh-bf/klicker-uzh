@@ -5,8 +5,8 @@ import { compose, withState, withHandlers } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
 
 import { CommonLayout } from '.'
-import { Navbar } from '../../components/common/navbar'
-import { Sidebar } from '../../components/common/sidebar'
+import { Navbar } from '../common/navbar'
+import { Sidebar } from '../common/sidebar'
 
 const propTypes = {
   actionArea: PropTypes.element,
@@ -16,9 +16,9 @@ const propTypes = {
   handleSidebarToggle: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   isSidebarVisible: PropTypes.bool.isRequired,
-  navbar: PropTypes.shape(Navbar.propTypes),
+  navbar: PropTypes.object,
   pageTitle: PropTypes.string,
-  sidebar: PropTypes.shape(Sidebar.propTypes).isRequired,
+  sidebar: PropTypes.object.isRequired,
 }
 
 const defaultProps = {
@@ -43,23 +43,43 @@ const TeacherLayout = ({
   const sidebarItems = [
     {
       href: '/questions',
-      label: <FormattedMessage defaultMessage="Question Pool" id="questionPool.title" />,
+      label: (
+        <FormattedMessage
+          defaultMessage="Question Pool"
+          id="questionPool.title"
+        />
+      ),
       name: 'questionPool',
     },
     {
       href: '/sessions',
-      label: <FormattedMessage defaultMessage="Session List" id="sessionList.title" />,
+      label: (
+        <FormattedMessage
+          defaultMessage="Session List"
+          id="sessionList.title"
+        />
+      ),
       name: 'sessionList',
     },
     {
       href: '/sessions/running',
-      label: <FormattedMessage defaultMessage="Running Session" id="runningSession.title" />,
+      label: (
+        <FormattedMessage
+          defaultMessage="Running Session"
+          id="runningSession.title"
+        />
+      ),
       name: 'runningSession',
     },
     {
       href: '/questions/create',
       icon: 'plus',
-      label: <FormattedMessage defaultMessage="Create Question" id="createQuestion.title" />,
+      label: (
+        <FormattedMessage
+          defaultMessage="Create Question"
+          id="createQuestion.title"
+        />
+      ),
       name: 'createQuestion',
     },
   ]
@@ -92,34 +112,38 @@ const TeacherLayout = ({
           </Sidebar>
         </div>
 
-        <div className="actionArea">{actionArea}</div>
+        <div className="actionArea">
+          {actionArea}
+        </div>
 
-        <style jsx>{`
-          .teacherLayout {
-            display: flex;
-            flex-direction: column;
-            height: ${fixedHeight ? '100vh' : 'initial'};
-            min-height: ${fixedHeight ? 'initial' : '100vh'};
-
-            .navbar {
-              flex: 0 0 auto;
-            }
-
-            .content {
-              background-color: white;
-
-              flex: 1;
-
+        <style jsx>
+          {`
+            .teacherLayout {
               display: flex;
+              flex-direction: column;
+              height: ${fixedHeight ? '100vh' : 'initial'};
+              min-height: ${fixedHeight ? 'initial' : '100vh'};
 
-              overflow: hidden;
-            }
+              .navbar {
+                flex: 0 0 auto;
+              }
 
-            .actionArea {
-              flex: 0 0 auto;
+              .content {
+                background-color: white;
+
+                flex: 1;
+
+                display: flex;
+
+                overflow: hidden;
+              }
+
+              .actionArea {
+                flex: 0 0 auto;
+              }
             }
-          }
-        `}</style>
+          `}
+        </style>
       </div>
     </CommonLayout>
   )

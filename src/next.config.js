@@ -13,10 +13,14 @@ module.exports = (phase) => {
     // setup custom webpack configuration
     webpack: (webpackConfig, { isServer }) => {
       // add the webpack context replacement plugin to remove moment locales
-      webpackConfig.plugins.push(new webpack.ContextReplacementPlugin(/moment[/\\]locale$/, /en/))
+      webpackConfig.plugins.push(
+        new webpack.ContextReplacementPlugin(/moment[/\\]locale$/, /en/),
+      )
 
       // ignore test files when bundling
-      webpackConfig.plugins.push(new webpack.IgnorePlugin(/src\/pages.*\/test.*/))
+      webpackConfig.plugins.push(
+        new webpack.IgnorePlugin(/src\/pages.*\/test.*/),
+      )
 
       // push graphql loaders into the webpack config
       webpackConfig.module.rules.push({
@@ -62,9 +66,7 @@ module.exports = (phase) => {
 
   // development only configuration
   if (phase === DEVELOPMENT_SERVER) {
-    config = {
-      ...config,
-    }
+    // do something in dev only?
   }
 
   // build only configuration

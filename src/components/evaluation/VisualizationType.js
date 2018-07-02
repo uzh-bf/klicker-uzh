@@ -40,7 +40,10 @@ const options = [
 ]
 
 const VisualizationType = ({
-  activeVisualization, intl, onChangeType, questionType,
+  activeVisualization,
+  intl,
+  onChangeType,
+  questionType,
 }) => (
   <div className="visualizationType">
     <Dropdown

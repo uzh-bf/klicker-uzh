@@ -2,7 +2,15 @@
 
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Button, Icon, Menu, Popup, List, Modal, Embed } from 'semantic-ui-react'
+import {
+  Button,
+  Icon,
+  Menu,
+  Popup,
+  List,
+  Modal,
+  Embed,
+} from 'semantic-ui-react'
 import { defineMessages, intlShape, FormattedMessage } from 'react-intl'
 import { CHANGELOG } from '../../../constants'
 
@@ -29,9 +37,18 @@ const defaultProps = {
 const SessionArea = ({ intl, sessionId }) => (
   <React.Fragment>
     <Menu.Item button>
-      <Button icon as="a" disabled={!sessionId} href="/sessions/running" labelPosition="left">
+      <Button
+        icon
+        as="a"
+        disabled={!sessionId}
+        href="/sessions/running"
+        labelPosition="left"
+      >
         <Icon name="play" />
-        <FormattedMessage defaultMessage="Running Session" id="sessionArea.toRunningSession" />
+        <FormattedMessage
+          defaultMessage="Running Session"
+          id="sessionArea.toRunningSession"
+        />
       </Button>
     </Menu.Item>
 
@@ -44,27 +61,54 @@ const SessionArea = ({ intl, sessionId }) => (
       hideOnScroll={false}
       on="click"
       position="bottom right"
-      trigger={<Menu.Item content={intl.formatMessage(messages.whatsNew)} icon="info" />}
+      trigger={(
+        <Menu.Item
+          content={intl.formatMessage(messages.whatsNew)}
+          icon="info"
+        />
+)}
     >
       <Popup.Content>
         <div className="popupChanges popupContent">
-          <h3>New features (major)</h3>
+          <h3>
+New features (major)
+          </h3>
           <List bulleted>
             {CHANGELOG.new.map(({ text, items }, index) => (
               <List.Item key={index}>
-                {items ? <h4>{text}</h4> : text}
-                {items && <List.List>{items.map(item => <List.Item>{item}</List.Item>)}</List.List>}
+                {items ? (
+                  <h4>
+                    {text}
+                  </h4>
+                ) : text}
+                {items && (
+                  <List.List>
+                    {items.map(item => (
+                      <List.Item>
+                        {item}
+                      </List.Item>
+                    ))}
+                  </List.List>
+                )}
               </List.Item>
             ))}
           </List>
 
-          <h3>Planned features (major)</h3>
+          <h3>
+Planned features (major)
+          </h3>
           <p>
             <strong>
-              A public roadmap is available on{' '}
-              <a href="https://trello.com/b/xw0D1k6l" rel="noopener noreferrer" target="_blank">
+              A public roadmap is available on
+              {' '}
+              <a
+                href="https://trello.com/b/xw0D1k6l"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
                 https://trello.com/b/xw0D1k6l
-              </a>.
+              </a>
+              .
             </strong>
           </p>
         </div>
@@ -80,11 +124,15 @@ const SessionArea = ({ intl, sessionId }) => (
       hideOnScroll={false}
       on="click"
       position="bottom right"
-      trigger={<Menu.Item content={intl.formatMessage(messages.support)} icon="help" />}
+      trigger={
+        <Menu.Item content={intl.formatMessage(messages.support)} icon="help" />
+      }
     >
       <Popup.Content>
         <div className="popupHelp popupContent">
-          <h3>Support</h3>
+          <h3>
+Support
+          </h3>
           <a href="mailto:klicker.support@uzh.ch">
             <Button icon labelPosition="left">
               <Icon name="mail" />
@@ -105,14 +153,16 @@ const SessionArea = ({ intl, sessionId }) => (
 
           <Modal
             closeIcon
-            trigger={
+            trigger={(
               <Button icon labelPosition="left">
                 <Icon name="video" />
                 Introductory Video
               </Button>
-            }
+)}
           >
-            <Modal.Header>Introductory Video</Modal.Header>
+            <Modal.Header>
+Introductory Video
+            </Modal.Header>
             <Modal.Content>
               <Embed id="8nS-fvi86l0" source="youtube" />
             </Modal.Content>
@@ -121,33 +171,35 @@ const SessionArea = ({ intl, sessionId }) => (
       </Popup.Content>
     </Popup>
 
-    <style jsx>{`
-      h3 {
-        font-size: 1.2rem;
-      }
-
-      h4 {
-        font-size: 1rem;
-        margin: 0;
-      }
-
-      .popupContent {
-        padding: 0;
-
-        :global(.button) {
-          width: 100%;
-          margin-bottom: 0.5rem;
+    <style jsx>
+      {`
+        h3 {
+          font-size: 1.2rem;
         }
-      }
 
-      .popupHelp {
-        width: 20rem;
-      }
+        h4 {
+          font-size: 1rem;
+          margin: 0;
+        }
 
-      .popupChanges {
-        width: 35rem;
-      }
-    `}</style>
+        .popupContent {
+          padding: 0;
+
+          :global(.button) {
+            width: 100%;
+            margin-bottom: 0.5rem;
+          }
+        }
+
+        .popupHelp {
+          width: 20rem;
+        }
+
+        .popupChanges {
+          width: 35rem;
+        }
+      `}
+    </style>
   </React.Fragment>
 )
 

@@ -14,14 +14,16 @@ import {
 import { FormattedMessage } from 'react-intl'
 
 const propTypes = {
-  data: LineChart.propTypes.data.isRequired,
+  data: PropTypes.array.isRequired,
   title: PropTypes.string.isRequired,
   ylabel: PropTypes.string.isRequired,
 }
 
 const ConfusionSection = ({ data, title, ylabel }) => (
   <div className="confusionSection">
-    <h3>{title}</h3>
+    <h3>
+      {title}
+    </h3>
 
     <div className="chart">
       {(() => {
@@ -64,7 +66,12 @@ const ConfusionSection = ({ data, title, ylabel }) => (
               </YAxis>
               <ReferenceLine stroke="black" y={0} />
               <Line dataKey="value" stroke="lightgrey" type="monotone" />
-              <Line dataKey="valueRunning" name="running average" stroke="green" type="monotone" />
+              <Line
+                dataKey="valueRunning"
+                name="running average"
+                stroke="green"
+                type="monotone"
+              />
               <Legend />
             </LineChart>
           </ResponsiveContainer>
@@ -72,20 +79,22 @@ const ConfusionSection = ({ data, title, ylabel }) => (
       })()}
     </div>
 
-    <style jsx>{`
-      .confusionSection {
-        display: flex;
-        flex-direction: column;
+    <style jsx>
+      {`
+        .confusionSection {
+          display: flex;
+          flex-direction: column;
 
-        height: 15rem;
+          height: 15rem;
 
-        .chart {
-          flex: 1;
+          .chart {
+            flex: 1;
 
-          height: 10rem;
+            height: 10rem;
+          }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

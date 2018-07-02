@@ -28,7 +28,10 @@ const ResetPassword = ({ intl, router }) => (
   <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
     <div className="resetPassword">
       <h1>
-        <FormattedMessage defaultMessage="Reset your password" id="user.resetPassword.title" />
+        <FormattedMessage
+          defaultMessage="Reset your password"
+          id="user.resetPassword.title"
+        />
       </h1>
 
       <Mutation mutation={ChangePasswordMutation}>
@@ -42,7 +45,9 @@ const ResetPassword = ({ intl, router }) => (
                   defaultMessage="Your password was successfully changed. You can now {login}."
                   id="user.resetPassword.success"
                   values={{
-                    login: <Link href="/user/login">login</Link>,
+                    login: <Link href="/user/login">
+login
+                    </Link>,
                   }}
                 />
               </Message>
@@ -63,28 +68,34 @@ const ResetPassword = ({ intl, router }) => (
                   })
                 }}
               />
-              {error && <Message error>{error.message}</Message>}
+              {error && (
+              <Message error>
+                {error.message}
+              </Message>
+              )}
             </React.Fragment>
           )
         }}
       </Mutation>
 
-      <style jsx>{`
-        @import 'src/theme';
+      <style jsx>
+        {`
+          @import 'src/theme';
 
-        .resetPassword {
-          padding: 1rem;
+          .resetPassword {
+            padding: 1rem;
 
-          h1 {
-            margin-top: 0;
+            h1 {
+              margin-top: 0;
+            }
+
+            @include desktop-tablet-only {
+              margin: 0 15%;
+              width: 500px;
+            }
           }
-
-          @include desktop-tablet-only {
-            margin: 0 15%;
-            width: 500px;
-          }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   </StaticLayout>
 )

@@ -22,7 +22,9 @@ import {
 
 storiesOf('questions', module)
   .addDecorator(getStory => (
-    <DragDropContextProvider backend={HTML5Backend}>{getStory()}</DragDropContextProvider>
+    <DragDropContextProvider backend={HTML5Backend}>
+      {getStory()}
+    </DragDropContextProvider>
   ))
   .add('Question (SC, 1 version)', () => <Question {...fixtures.question} />)
   .add('Question (MC, >1 versions)', () => <Question {...fixtures.question} type="MC" />)

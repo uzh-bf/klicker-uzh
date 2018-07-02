@@ -13,7 +13,12 @@ import { withRouter } from 'next/router'
 import { graphql } from 'react-apollo'
 import _round from 'lodash/round'
 
-import { CHART_DEFAULTS, QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
+import {
+  CHART_DEFAULTS,
+  QUESTION_GROUPS,
+  QUESTION_TYPES,
+  SESSION_STATUS,
+} from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
 import {
   calculateMax,
@@ -135,7 +140,10 @@ export default compose(
     }),
   }),
   // if the query is still loading, display nothing
-  branch(({ data }) => data.loading, renderNothing),
+  branch(
+    ({ data: { loading, session } }) => loading || !session,
+    renderNothing,
+  ),
   // override the session evaluation query with a polling query
   branch(
     ({ data: { session } }) => session.status === SESSION_STATUS.RUNNING,
@@ -171,13 +179,17 @@ export default compose(
           return {
             ...activeInstance,
             results: {
-              data: activeInstance.question.versions[activeInstance.version].options[
-                activeInstance.question.type
-              ].choices.map((choice, index) => ({
-                correct: choice.correct,
-                count: activeInstance.results ? activeInstance.results.CHOICES[index] : 0,
-                value: choice.name,
-              })),
+              data: activeInstance.question.versions[
+                activeInstance.version
+              ].options[activeInstance.question.type].choices.map(
+                (choice, index) => ({
+                  correct: choice.correct,
+                  count: activeInstance.results
+                    ? activeInstance.results.CHOICES[index]
+                    : 0,
+                  value: choice.name,
+                }),
+              ),
               totalResponses: activeInstance.responses.length,
             },
           }
@@ -226,7 +238,11 @@ export default compose(
   // if the query has finished loading but there are no active instances, show a simple message
   branch(
     ({ activeInstances }) => !(activeInstances && activeInstances.length > 0),
-    renderComponent(() => <div>No evaluation currently active.</div>),
+    renderComponent(() => (
+      <div>
+No evaluation currently active.
+      </div>
+    )),
   ),
   withStateHandlers(
     ({ activeInstances, sessionStatus }) => {
@@ -305,7 +321,10 @@ export default compose(
         data: activeInstance.results.data.map(({ correct, count, value }) => ({
           correct,
           count,
-          percentage: _round(100 * (count / activeInstance.results.totalResponses), 1),
+          percentage: _round(
+            100 * (count / activeInstance.results.totalResponses),
+            1,
+          ),
           value,
         })),
         totalResponses: activeInstance.results.totalResponses,

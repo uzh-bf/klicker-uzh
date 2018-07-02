@@ -72,27 +72,29 @@ const SearchArea = ({
       </React.Fragment>
     )}
 
-    <style jsx>{`
-      .searchArea {
-        @import 'src/theme';
+    <style jsx>
+      {`
+        .searchArea {
+          @import 'src/theme';
 
-        display: flex;
-        justify-content: flex-start;
+          display: flex;
+          justify-content: flex-start;
 
-        > :global(.input) {
-          flex: 1;
-          margin-right: 1rem;
+          > :global(.input) {
+            flex: 1;
+            margin-right: 1rem;
+          }
+
+          :global(.dropdown),
+          input {
+            background-color: $color-primary-input;
+            color: $color-primary-strong;
+            line-height: 1rem;
+            font-size: 1rem;
+          }
         }
-
-        :global(.dropdown),
-        input {
-          background-color: $color-primary-input;
-          color: $color-primary-strong;
-          line-height: 1rem;
-          font-size: 1rem;
-        }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

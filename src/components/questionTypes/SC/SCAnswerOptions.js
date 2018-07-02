@@ -27,52 +27,57 @@ const SCAnswerOptions = ({
 }) => (
   <div className="options">
     {options.map((option, index) => (
-      <div className={classNames('option', { active: value.includes(index) })} key={option.id}>
+      <div
+        className={classNames('option', { active: value.includes(index) })}
+        key={option.id}
+      >
         <Button fluid disabled={disabled} onClick={onChange(index)}>
           {option.name}
         </Button>
       </div>
     ))}
 
-    <style jsx>{`
-      @import 'src/theme';
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-      $button-border-width: 2px;
+        $button-border-width: 2px;
 
-      .options > .option {
-        &:not(:last-child) {
-          margin-bottom: 0.5rem !important;
-        }
+        .options > .option {
+          &:not(:last-child) {
+            margin-bottom: 0.5rem !important;
+          }
 
-        :global(button),
-        :global(button.disabled) {
-          border: $button-border-width solid lightgray !important;
-          background-color: lightgray !important;
-        }
-
-        &.active {
           :global(button),
           :global(button.disabled) {
-            border: $button-border-width solid rgb(0, 97, 0) !important;
-            background-color: rgb(198, 239, 206) !important;
-            color: rgb(0, 97, 0) !important;
+            border: $button-border-width solid lightgray !important;
+            background-color: lightgray !important;
+          }
 
-            animation: bounce 0.5s;
+          &.active {
+            :global(button),
+            :global(button.disabled) {
+              border: $button-border-width solid rgb(0, 97, 0) !important;
+              background-color: rgb(198, 239, 206) !important;
+              color: rgb(0, 97, 0) !important;
+
+              animation: bounce 0.5s;
+            }
           }
         }
-      }
 
-      // TODO: improve animation
-      @keyframes bounce {
-        0%,
-        100% {
-          transform: translateX(0);
+        // TODO: improve animation
+        @keyframes bounce {
+          0%,
+          100% {
+            transform: translateX(0);
+          }
+          50% {
+            transform: translateY(-2px);
+          }
         }
-        50% {
-          transform: translateY(-2px);
-        }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

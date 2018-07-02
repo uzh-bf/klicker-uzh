@@ -71,8 +71,8 @@ export default (ComposedComponent) => {
     }),
   )(ComposedComponent)
 
-  withSortingAndFiltering.displayName = `withSortingAndFiltering(${ComposedComponent.displayName ||
-    ComposedComponent.name})`
+  withSortingAndFiltering.displayName = `withSortingAndFiltering(${ComposedComponent.displayName
+    || ComposedComponent.name})`
 
   return withSortingAndFiltering
 }

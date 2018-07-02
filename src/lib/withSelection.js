@@ -31,8 +31,8 @@ export default (ComposedComponent) => {
     })),
   )(ComposedComponent)
 
-  withSelection.displayName = `withSelection(${ComposedComponent.displayName ||
-    ComposedComponent.name})`
+  withSelection.displayName = `withSelection(${ComposedComponent.displayName
+    || ComposedComponent.name})`
 
   return withSelection
 }
