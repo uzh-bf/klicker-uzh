@@ -2,6 +2,9 @@
 
 import { addDecorator, configure } from '@storybook/react'
 import { IntlProvider, addLocaleData } from 'react-intl'
+
+import '@storybook/addon-console'
+
 // import { DragDropContext } from 'react-dnd'
 // import HTML5Backend from 'react-dnd-html5-backend'
 
