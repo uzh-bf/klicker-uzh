@@ -1,63 +1,74 @@
 import React from 'react'
+import UUIDv4 from 'uuid/v4'
 import { withStateHandlers } from 'recompose'
 import { storiesOf } from '@storybook/react'
 import { DragDropContext } from 'react-beautiful-dnd'
+import { List, Map } from 'immutable'
+
+import { action } from '@storybook/addon-actions'
 
 import SessionCreation from '../components/forms/sessionCreation/SessionCreationForm'
-
-const reorder = (list, startIndex, endIndex) => {
-  const result = Array.from(list)
-  const [removed] = result.splice(startIndex, 1)
-  result.splice(endIndex, 0, removed)
-
-  return result
-}
-
-const move = (source, destination, droppableSource, droppableDestination) => {
-  const sourceClone = Array.from(source)
-  const destClone = Array.from(destination)
-  const [removed] = sourceClone.splice(droppableSource.index, 1)
-
-  destClone.splice(droppableDestination.index, 0, removed)
-
-  const result = {}
-  result[droppableSource.droppableId] = sourceClone
-  result[droppableDestination.droppableId] = destClone
-
-  return result
-}
+import { moveQuestion } from '../lib/utils/move'
 
 const withDnD = withStateHandlers(
   {
-    blocks: [
-      { id: 'a', questions: [{ id: 'a', content: 'bla' }, { id: 'b', content: 'blu' }] },
-      { id: 'b', questions: [{ id: 'c', content: 'bleb' }] },
-      { id: 'c', questions: [{ id: 'd', content: 'bbeee' }, { id: 'e', content: 'biiiii' }] },
-    ],
+    blocks: List([
+      { id: 'ba', questions: List([{ id: 'qa', title: 'bla', type: 'MC' }, { id: 'qb', title: 'blu', type: 'SC' }]) },
+      { id: 'bb', questions: List([{ id: 'qc', title: 'bleb', type: 'MC' }]) },
+      {
+        id: 'bc',
+        questions: List([
+          { id: 'qd', title: 'bbeee', type: 'FREE' },
+          { id: 'qe', title: 'biiiii', type: 'FREE_RANGE' },
+        ]),
+      },
+    ]),
+    blocksN: List([
+      { id: 'ba', questions: List(['qa', 'qb']) },
+      { id: 'bb', questions: List(['qc']) },
+      { id: 'bc', questions: List(['qd', 'qe']) },
+    ]),
     name: 'hello',
+    questionsN: Map({
+      qa: { id: 'qa', title: 'bla', type: 'MC' },
+      qb: { id: 'qb', title: 'blu', type: 'SC' },
+      qc: { id: 'qc', title: 'bleb', type: 'MC' },
+      qd: { id: 'qd', title: 'bbeee', type: 'FREE' },
+      qe: { id: 'qe', title: 'biiiii', type: 'FREE_RANGE' },
+    }),
   },
   {
     onDragEnd: ({ blocks }) => ({ source, destination }) => {
-      console.log(result)
+      action(`drag from ${source.droppableId}-${source.index} to ${destination.draggableId}-${destination.index}`)
 
-      if (!destination) {
+      if (!source || !destination) {
         return
       }
 
-      if (source.droppableId === destination.droppableId) {
-        const newBlocks = Array.from(blocks)
-      } else {
+      // if the item was dropped in a new block
+      if (destination.droppableId === 'new-block') {
+        // generate a new uuid for the new block
+        const blockId = UUIDv4()
+
+        // initialize a new empty block at the end
+        const extendedBlocks = blocks.push({ id: blockId, questions: List() })
+
+        // perform the move between the source and the new block
+        return {
+          blocks: moveQuestion(extendedBlocks, source.droppableId, source.index, blockId, 0, true),
+        }
       }
-      // if the move was within the same block
-      /* if (result.source === result.destination) {
-        const [removed] = result[result.findIndex(block => block.id === result.source].splice()
 
-      // otherwise
-      } else {
-        console.log('haa')
-      } */
-
-      return { blocks: result }
+      return {
+        blocks: moveQuestion(
+          blocks,
+          source.droppableId,
+          source.index,
+          destination.droppableId,
+          destination.index,
+          true,
+        ),
+      }
     },
   },
 )
