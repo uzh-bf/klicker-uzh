@@ -11,7 +11,7 @@ export default (blocks, srcId, srcIx, dstId, dstIx) => {
 
   // compute the new list of questions for the target block
   const dstQuestionsWithTarget = blocksWithoutSrc
-    .getIn([srcBlockIndex, 'questions'])
+    .getIn([dstBlockIndex, 'questions'])
     .insert(dstIx, targetQuestion)
 
   // update the target block
