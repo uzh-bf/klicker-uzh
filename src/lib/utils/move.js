@@ -1,30 +1,24 @@
-const reorder = (list, sourceIndex, destIndex) => {
-  const result = Array.from(list)
-  const [removed] = result.splice(sourceIndex, 1)
-  result.splice(destIndex, 0, removed)
-  return result
-}
+const getIndex = (blocks, droppableId) => blocks.findIndex(block => block.id === droppableId.split('-')[1])
 
-const move = (blocks, srcId, srcIx, dstId, dstIx) => {
+export default (blocks, srcId, srcIx, dstId, dstIx) => {
   // find indices of source and destination blocks
-  const srcBlockIndex = blocks.findIndex(block => block.id === srcId)
-  const dstBlockIndex = blocks.findIndex(block => block.id === dstId)
+  const srcBlockIndex = getIndex(blocks, srcId)
+  const dstBlockIndex = getIndex(blocks, dstId)
 
   // save and remove the question that is to be moved
   const targetQuestion = blocks.getIn([srcBlockIndex, 'questions', srcIx])
   const blocksWithoutSrc = blocks.deleteIn([srcBlockIndex, 'questions', srcIx])
 
-  // insert the target questions into the destination block
+  // compute the new list of questions for the target block
   const dstQuestionsWithTarget = blocksWithoutSrc
-    .getIn([dstBlockIndex, 'questions'])
+    .getIn([srcBlockIndex, 'questions'])
     .insert(dstIx, targetQuestion)
-  const blocksWithTarget = blocksWithoutSrc.setIn(
+
+  // update the target block
+  const result = blocksWithoutSrc.setIn(
     [dstBlockIndex, 'questions'],
     dstQuestionsWithTarget,
   )
 
-  // return the result
-  return blocksWithTarget
+  return result
 }
-
-export { reorder, move }

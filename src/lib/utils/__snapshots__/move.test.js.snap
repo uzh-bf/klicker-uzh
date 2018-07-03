@@ -6,20 +6,12 @@ Immutable.List [
     "id": "a",
     "questions": Immutable.List [
       Object {
-        "content": "bla",
-        "id": "a",
+        "content": "blaaaa",
+        "id": "h",
       },
       Object {
-        "content": "blu",
-        "id": "b",
-      },
-      Object {
-        "content": "blab",
-        "id": "c",
-      },
-      Object {
-        "content": "bli",
-        "id": "d",
+        "content": "blabb",
+        "id": "i",
       },
     ],
   },
@@ -46,122 +38,6 @@ Immutable.List [
       Object {
         "content": "blaaaa",
         "id": "h",
-      },
-      Object {
-        "content": "blabb",
-        "id": "i",
-      },
-    ],
-  },
-]
-`;
-
-exports[`move can move 2`] = `
-Immutable.List [
-  Object {
-    "id": "a",
-    "questions": Immutable.List [
-      Object {
-        "content": "bla",
-        "id": "a",
-      },
-      Object {
-        "content": "blu",
-        "id": "b",
-      },
-      Object {
-        "content": "blab",
-        "id": "c",
-      },
-      Object {
-        "content": "blabb",
-        "id": "i",
-      },
-      Object {
-        "content": "bli",
-        "id": "d",
-      },
-    ],
-  },
-  Object {
-    "id": "b",
-    "questions": Immutable.List [
-      Object {
-        "content": "bleb",
-        "id": "e",
-      },
-      Object {
-        "content": "blaa",
-        "id": "f",
-      },
-      Object {
-        "content": "blaaa",
-        "id": "g",
-      },
-    ],
-  },
-  Object {
-    "id": "c",
-    "questions": Immutable.List [
-      Object {
-        "content": "blaaaa",
-        "id": "h",
-      },
-    ],
-  },
-]
-`;
-
-exports[`move can move 3`] = `
-Immutable.List [
-  Object {
-    "id": "a",
-    "questions": Immutable.List [
-      Object {
-        "content": "bla",
-        "id": "a",
-      },
-      Object {
-        "content": "blu",
-        "id": "b",
-      },
-      Object {
-        "content": "blab",
-        "id": "c",
-      },
-      Object {
-        "content": "bli",
-        "id": "d",
-      },
-    ],
-  },
-  Object {
-    "id": "b",
-    "questions": Immutable.List [
-      Object {
-        "content": "bleb",
-        "id": "e",
-      },
-      Object {
-        "content": "blaa",
-        "id": "f",
-      },
-      Object {
-        "content": "blaaa",
-        "id": "g",
-      },
-    ],
-  },
-  Object {
-    "id": "c",
-    "questions": Immutable.List [
-      Object {
-        "content": "blaaaa",
-        "id": "h",
-      },
-      Object {
-        "content": "blabb",
-        "id": "i",
       },
     ],
   },
@@ -169,22 +45,27 @@ Immutable.List [
 `;
 
 exports[`move can reorder 1`] = `
-Array [
+Immutable.List [
   Object {
-    "content": "bla",
     "id": "a",
-  },
-  Object {
-    "content": "blee",
-    "id": "f",
-  },
-  Object {
-    "content": "blii",
-    "id": "g",
-  },
-  Object {
-    "content": "blu",
-    "id": "b",
+    "questions": Immutable.List [
+      Object {
+        "content": "bla",
+        "id": "a",
+      },
+      Object {
+        "content": "blee",
+        "id": "f",
+      },
+      Object {
+        "content": "blii",
+        "id": "g",
+      },
+      Object {
+        "content": "blu",
+        "id": "b",
+      },
+    ],
   },
 ]
 `;
