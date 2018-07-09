@@ -13876,15 +13876,15 @@ section-iterator@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/section-iterator/-/section-iterator-2.0.0.tgz#bf444d7afeeb94ad43c39ad2fb26151627ccba2a"
 
-semantic-ui-css@2.3.2:
-  version "2.3.2"
-  resolved "https://registry.yarnpkg.com/semantic-ui-css/-/semantic-ui-css-2.3.2.tgz#f84ffaf7559c17401db43e2b44b7b4caaab54836"
+semantic-ui-css@2.3.3:
+  version "2.3.3"
+  resolved "https://registry.yarnpkg.com/semantic-ui-css/-/semantic-ui-css-2.3.3.tgz#134794cde03344092f2728ff61bf9203cf172834"
   dependencies:
     jquery x.*
 
-semantic-ui-react@0.81.3:
-  version "0.81.3"
-  resolved "https://registry.yarnpkg.com/semantic-ui-react/-/semantic-ui-react-0.81.3.tgz#ad98917c44cda4b316ee841d67dc071e16e93e9c"
+semantic-ui-react@0.82.0:
+  version "0.82.0"
+  resolved "https://registry.yarnpkg.com/semantic-ui-react/-/semantic-ui-react-0.82.0.tgz#e7145308348520bf2baf0c63a6bfe6bbd830ccdf"
   dependencies:
     "@babel/runtime" "^7.0.0-beta.49"
     classnames "^2.2.5"
@@ -13893,9 +13893,9 @@ semantic-ui-react@0.81.3:
     prop-types "^15.6.1"
     shallowequal "^1.0.2"
 
-semantic-ui@2.3.2:
-  version "2.3.2"
-  resolved "https://registry.yarnpkg.com/semantic-ui/-/semantic-ui-2.3.2.tgz#50b8f800442cc5901faaf297a1aeab55f2ff41ee"
+semantic-ui@2.3.3:
+  version "2.3.3"
+  resolved "https://registry.yarnpkg.com/semantic-ui/-/semantic-ui-2.3.3.tgz#7bc5fcf8bd2453253d381a22088837392baff98f"
   dependencies:
     better-console "*"
     del "^3.0.0"
