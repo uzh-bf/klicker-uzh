@@ -47,12 +47,13 @@ const SessionCreationForm = ({
   handleNewBlock,
   handleExtendBlock,
 }) => (
-  <div className="ui form sessionCreation">
+  <form className="ui form sessionCreation" onSubmit={handleSubmit('save')}>
     <div className="sessionTimeline">
       {blocks.map((block, blockIndex) => (
         <div className="block" key={block.id}>
           <div className="header">
-            {`Block ${blockIndex + 1}`}
+            <div>{`Block ${blockIndex + 1}`}</div>
+            <div>{`(${block.questions.size})`}</div>
           </div>
           <Droppable droppableId={block.id}>
             {(provided, snapshot) => (
@@ -131,14 +132,14 @@ New Block
           />
         </label>
       </div>
-      <Button fluid icon labelPosition="left">
+      <Button fluid icon labelPosition="left" type="submit">
         <Icon name="save" />
         <FormattedMessage
           defaultMessage="Save & Close"
           id="form.createSession.button.save"
         />
       </Button>
-      <Button fluid icon primary labelPosition="left">
+      <Button fluid icon primary disabled={isSessionRunning} labelPosition="left" onClick={handleSubmit('start')}>
         <Icon name="play" />
         <FormattedMessage defaultMessage="Start" id="common.button.start" />
       </Button>
@@ -154,11 +155,14 @@ New Block
         .sessionCreation {
           border: 1px solid lightgrey;
           display: flex;
+          width: 100%;
 
           .sessionTimeline {
             display: flex;
             flex: 1;
+            flex-flow: row wrap;
             padding: 0.5rem;
+            overflow: auto;
 
             .block,
             .newBlock {
@@ -169,13 +173,18 @@ New Block
             }
 
             .header {
+              display: flex;
+              justify-content: space-between;
               font-weight: bold;
               text-align: center;
+              padding: 0 0.5rem;
             }
 
             .questions {
               flex: 1;
               padding: 0.25rem 0.5rem 1rem 0.5rem;
+              overflow: auto;
+              max-height: 20rem;
 
               .question:not(:first-child) {
                 margin-top: 3px;
@@ -189,7 +198,7 @@ New Block
           }
 
           .sessionConfig {
-            flex: 0 0 15rem;
+            flex: 0 0 17rem;
             padding: 1rem;
             border-left: 1px solid lightgrey;
 
@@ -204,14 +213,14 @@ New Block
               }
             }
 
-            :global(button:last-child) {
+            :global(button) {
               margin-top: 0.5rem;
             }
           }
         }
       `}
     </style>
-  </div>
+  </form>
 )
 
 SessionCreationForm.propTypes = propTypes
