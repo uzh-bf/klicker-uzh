@@ -30,8 +30,8 @@ function addToBlock(blocks, blockId, question, targetIndex = null) {
   // compute the new list of questions for the target block
   const dstQuestions = blocks.getIn([dstBlockIx, 'questions'])
   const dstQuestionsWithTarget = typeof targetIndex !== 'undefined'
-    ? dstQuestions.insert(targetIndex, question)
-    : dstQuestions.push(question)
+    ? dstQuestions.insert(targetIndex, { ...question, key: UUIDv4() })
+    : dstQuestions.push({ ...question, key: UUIDv4() })
 
   // update the target block
   return blocks.setIn([dstBlockIx, 'questions'], dstQuestionsWithTarget)
@@ -45,7 +45,7 @@ function addToBlock(blocks, blockId, question, targetIndex = null) {
 function appendNewBlock(blocks, question) {
   return blocks.push({
     id: UUIDv4(),
-    questions: List([question]),
+    questions: List([{ ...question, key: UUIDv4() }]),
   })
 }
 
