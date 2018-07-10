@@ -4,6 +4,7 @@ import { Droppable, Draggable } from 'react-beautiful-dnd'
 import { Button, Icon, Input } from 'semantic-ui-react'
 
 import QuestionSingle from '../../questions/QuestionSingle'
+import QuestionDropzone from '../../sessions/creation/QuestionDropzone'
 
 const propTypes = {
   blocks: PropTypes.array,
@@ -39,7 +40,6 @@ const SessionCreationForm = ({
   name,
   blocks,
   isSessionRunning,
-  handleChangeBlocks,
   handleChangeName,
   handleDiscard,
   handleSubmit,
@@ -58,7 +58,9 @@ const SessionCreationForm = ({
                 ref={provided.innerRef}
                 style={getListStyle(snapshot.isDraggingOver)}
               >
-                {block.questions.map(({ id, title, type }, index) => (
+                {block.questions.map(({
+                  id, title, type, version,
+                }, index) => (
                   <Draggable draggableId={id} index={index} key={id}>
                     {(innerProvided, innerSnapshot) => (
                       <div
@@ -71,16 +73,23 @@ const SessionCreationForm = ({
                           innerProvided.draggableProps.style,
                         )}
                       >
-                        <QuestionSingle noDetails title={title} type={type} />
+                        <QuestionSingle
+                          id={id}
+                          title={title}
+                          type={type}
+                          version={version}
+                        />
                       </div>
                     )}
                   </Draggable>
                 ))}
-
                 {provided.placeholder}
               </div>
             )}
           </Droppable>
+          <div className="blockDropzone">
+            <QuestionDropzone onDrop={() => console.log('dropped')} />
+          </div>
         </div>
       ))}
       <div className="newBlock">
@@ -98,14 +107,23 @@ New Block
             </div>
           )}
         </Droppable>
+        <div className="blockDropzone">
+          <QuestionDropzone onDrop={() => console.log('dropped')} />
+        </div>
       </div>
     </div>
     <div className="sessionConfig">
-      <Input value={name} onChange={handleChangeName} />
-      <Button basic fluid primary>
+      <Input placeholder="Name..." value={name} onChange={handleChangeName} />
+      <Button fluid icon labelPosition="left">
+        <Icon name="trash" />
+        Discard
+      </Button>
+      <Button fluid icon labelPosition="left">
+        <Icon name="save" />
         Save
       </Button>
-      <Button basic fluid primary>
+      <Button fluid icon primary labelPosition="left">
+        <Icon name="play" />
         Start
       </Button>
     </div>
@@ -118,43 +136,40 @@ New Block
           .sessionTimeline {
             display: flex;
             flex: 1;
+            padding: 0.5rem;
 
             .block,
             .newBlock {
+              border-right: 1px solid lightgrey;
               display: flex;
               flex-direction: column;
               width: 150px;
             }
 
             .header {
-              border-bottom: 1px solid lightgrey;
               font-weight: bold;
-              padding: 0.25rem;
               text-align: center;
             }
 
             .questions {
-              border-right: 1px solid lightgrey;
-              flex: 0 0 10rem;
-              padding: 0.5rem;
-            }
+              flex: 1;
+              padding: 0.25rem 0.5rem 1rem 0.5rem;
 
-            .questions {
               .question:not(:first-child) {
                 margin-top: 3px;
               }
             }
 
-            .dropzone {
-              background-color: lightgrey;
-              height: 3rem;
-              text-align: center;
+            .blockDropzone {
+              flex: 0 0 3rem;
+              margin: 0 0.5rem;
             }
           }
 
           .sessionConfig {
             flex: 0 0 15rem;
             padding: 1rem;
+            border-left: 1px solid lightgrey;
           }
         }
       `}
