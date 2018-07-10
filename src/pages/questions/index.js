@@ -31,7 +31,12 @@ import SessionCreationForm from '../../components/forms/sessionCreation/SessionC
 import { QuestionList, TagList, ActionBar } from '../../components/questions'
 import { TeacherLayout } from '../../components/layouts'
 import { QUESTION_SORTINGS } from '../../constants'
-import { moveQuestion, addToBlock, appendNewBlock } from '../../lib/utils/move'
+import {
+  removeQuestion,
+  moveQuestion,
+  addToBlock,
+  appendNewBlock,
+} from '../../lib/utils/move'
 
 const messages = defineMessages({
   pageTitle: {
@@ -56,6 +61,7 @@ const propTypes = {
   handleNewBlock: PropTypes.func.isRequired,
   handleQuickBlock: PropTypes.func.isRequired,
   handleQuickBlocks: PropTypes.func.isRequired,
+  handleRemoveQuestion: PropTypes.func.isRequired,
   handleReset: PropTypes.func.isRequired,
   handleSearch: PropTypes.func.isRequired,
   handleSelectItem: PropTypes.func.isRequired,
@@ -93,6 +99,7 @@ const Index = ({
   handleQuickBlock,
   handleQuickBlocks,
   handleReset,
+  handleRemoveQuestion,
   handleToggleArchive,
   handleChangeName,
   handleArchiveQuestions,
@@ -106,6 +113,7 @@ const Index = ({
           handleDiscard={handleCreationModeToggle}
           handleExtendBlock={handleExtendBlock}
           handleNewBlock={handleNewBlock}
+          handleRemoveQuestion={handleRemoveQuestion}
           handleSubmit={handleCreateSession}
           intl={intl}
           isSessionRunning={!!runningSessionId}
@@ -117,7 +125,7 @@ const Index = ({
         {`
           .creationForm {
             animation-name: slide-in;
-            animation-duration: 0.5s;
+            animation-duration: 0.75s;
           }
 
           @keyframes slide-in {
@@ -412,6 +420,18 @@ export default compose(
         }
       },
 
+      // handle removal of a question with its trash button
+      handleRemoveQuestion: ({ sessionBlocks }) => (
+        blockIndex,
+        questionIndex,
+      ) => ({
+        sessionBlocks: removeQuestion(
+          sessionBlocks,
+          blockIndex,
+          questionIndex,
+          true,
+        ),
+      }),
       // override the toggle archive function
       // need to reset the selection on toggling archive to not apply actions to hidden questions
       handleToggleArchive: (

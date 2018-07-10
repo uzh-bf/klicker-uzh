@@ -1,6 +1,5 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import UUIDv4 from 'uuid'
 import { Droppable, Draggable } from 'react-beautiful-dnd'
 import { Button, Icon, Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
@@ -12,6 +11,9 @@ const propTypes = {
   blocks: PropTypes.array,
   handleChangeName: PropTypes.func.isRequired,
   handleDiscard: PropTypes.func.isRequired,
+  handleExtendBlock: PropTypes.func.isRequired,
+  handleNewBlock: PropTypes.func.isRequired,
+  handleRemoveQuestion: PropTypes.func.isRequired,
   handleSubmit: PropTypes.func.isRequired,
   isSessionRunning: PropTypes.bool,
   name: PropTypes.string.isRequired,
@@ -46,6 +48,7 @@ const SessionCreationForm = ({
   handleSubmit,
   handleNewBlock,
   handleExtendBlock,
+  handleRemoveQuestion,
 }) => (
   <form className="ui form sessionCreation" onSubmit={handleSubmit('save')}>
     <div className="sessionTimeline">
@@ -87,6 +90,8 @@ const SessionCreationForm = ({
                             title={title}
                             type={type}
                             version={version}
+                            onDelete={() => handleRemoveQuestion(blockIndex, index)
+                            }
                           />
                         </div>
                       )}
