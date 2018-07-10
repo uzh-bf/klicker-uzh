@@ -48,7 +48,11 @@
       "groupName": "react"
     },
     {
-      "packagePatterns": ["^@storybook", "^storybook"],
+      "packagePatterns": [
+        "^@storybook",
+        "^storybook",
+        "react-storybook-addon-chapters"
+      ],
       "groupName": "storybook",
       "automerge": "minor"
     },
