@@ -1,7 +1,63 @@
+import UUIDv4 from 'uuid/v4'
+import { List } from 'immutable'
+
+/**
+ * Compute the index of a block in an immutable list given its id
+ * @param {*} blocks
+ * @param {*} droppableId
+ */
 function getIndex(blocks, droppableId) {
   return blocks.findIndex(block => block.id === droppableId)
 }
 
+/**
+ * Extend a block with a new question
+ * Either at a specific index or by appending to the end
+ * @param {*} blocks
+ * @param {*} blockId
+ * @param {*} question
+ * @param {*} targetIndex
+ */
+function extendBlock(blocks, blockId, question, targetIndex = null) {
+  let dstBlockIx = blockId
+
+  // if the blockId passed is not number (index)
+  // assume it can be calculated by searching for the id
+  if (typeof blockId !== 'number') {
+    dstBlockIx = getIndex(blocks, blockId)
+  }
+
+  // compute the new list of questions for the target block
+  const dstQuestions = blocks.getIn([dstBlockIx, 'questions'])
+  const dstQuestionsWithTarget = targetIndex
+    ? dstQuestions.insert(targetIndex, question)
+    : dstQuestions.push(question)
+
+  // update the target block
+  return blocks.setIn([dstBlockIx, 'questions'], dstQuestionsWithTarget)
+}
+
+/**
+ * Append an entirely new block for a new question
+ * @param {*} blocks
+ * @param {*} question
+ */
+function appendBlock(blocks, question) {
+  return blocks.push({
+    id: UUIDv4(),
+    questions: List([question]),
+  })
+}
+
+/**
+ * Move an existing question from one list to another list
+ * @param {*} blocks
+ * @param {*} srcBlockId
+ * @param {*} srcQuestionIx
+ * @param {*} dstBlockId
+ * @param {*} dstQuestionIx
+ * @param {*} removeEmpty
+ */
 function moveQuestion(
   blocks,
   srcBlockId,
@@ -39,16 +95,12 @@ function moveQuestion(
     }
   }
 
-  // compute the new list of questions for the target block
-  const dstQuestionsWithTarget = blocksWithoutSrc
-    .getIn([dstBlockIx, 'questions'])
-    .insert(dstQuestionIx, targetQuestion)
-
-  // update the target block
-  return blocksWithoutSrc.setIn(
-    [dstBlockIx, 'questions'],
-    dstQuestionsWithTarget,
+  return extendBlock(
+    blocksWithoutSrc,
+    dstBlockIx,
+    targetQuestion,
+    dstQuestionIx,
   )
 }
 
-export { moveQuestion }
+export { moveQuestion, extendBlock, appendBlock }
