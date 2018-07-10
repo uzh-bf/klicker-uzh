@@ -5,9 +5,8 @@ import { storiesOf } from '@storybook/react'
 import { DragDropContext } from 'react-beautiful-dnd'
 import { List, Map } from 'immutable'
 
-import { action } from '@storybook/addon-actions'
-
 import SessionCreation from '../components/forms/sessionCreation/SessionCreationForm'
+import Question from '../components/questions/Question'
 import {
   getIndex, moveQuestion, addToBlock, appendNewBlock,
 } from '../lib/utils/move'
@@ -32,8 +31,6 @@ const withDnD = withStateHandlers(
       if (!source || !destination) {
         return
       }
-
-      action(`drag from ${source.droppableId}-${source.index} to ${destination.draggableId}-${destination.index}`)
 
       // if the item was dropped in a new block
       if (destination.droppableId === 'new-block') {
@@ -68,9 +65,9 @@ const withDnD = withStateHandlers(
 const DnDWrapper = withDnD(({
   blocks, name, onDragEnd, onNewBlock, onExtendBlock,
 }) => (
-  <DragDropContext onDragEnd={onDragEnd}>
-    <SessionCreation blocks={blocks} name={name} />
-  </DragDropContext>
+    <DragDropContext onDragEnd={onDragEnd}>
+      <SessionCreation blocks={blocks} name={name} />
+    </DragDropContext>
 ))
 
 storiesOf('forms', module).add('SessionCreation', () => <DnDWrapper />)

@@ -1,14 +1,15 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import UUIDv4 from 'uuid'
 import { Droppable, Draggable } from 'react-beautiful-dnd'
 import { Button, Icon, Input } from 'semantic-ui-react'
+import { FormattedMessage } from 'react-intl'
 
 import QuestionSingle from '../../questions/QuestionSingle'
 import QuestionDropzone from '../../sessions/creation/QuestionDropzone'
 
 const propTypes = {
   blocks: PropTypes.array,
-  handleChangeBlocks: PropTypes.func.isRequired,
   handleChangeName: PropTypes.func.isRequired,
   handleDiscard: PropTypes.func.isRequired,
   handleSubmit: PropTypes.func.isRequired,
@@ -43,6 +44,8 @@ const SessionCreationForm = ({
   handleChangeName,
   handleDiscard,
   handleSubmit,
+  handleNewBlock,
+  handleExtendBlock,
 }) => (
   <div className="ui form sessionCreation">
     <div className="sessionTimeline">
@@ -58,37 +61,41 @@ const SessionCreationForm = ({
                 ref={provided.innerRef}
                 style={getListStyle(snapshot.isDraggingOver)}
               >
-                {block.questions.map(({
-                  id, title, type, version,
-                }, index) => (
-                  <Draggable draggableId={id} index={index} key={id}>
-                    {(innerProvided, innerSnapshot) => (
-                      <div
-                        className="question"
-                        ref={innerProvided.innerRef}
-                        {...innerProvided.draggableProps}
-                        {...innerProvided.dragHandleProps}
-                        style={getItemStyle(
-                          innerSnapshot.isDragging,
-                          innerProvided.draggableProps.style,
-                        )}
-                      >
-                        <QuestionSingle
-                          id={id}
-                          title={title}
-                          type={type}
-                          version={version}
-                        />
-                      </div>
-                    )}
-                  </Draggable>
-                ))}
+                {block.questions.map(
+                  ({
+                    id, key, title, type, version,
+                  }, index) => (
+                    <Draggable draggableId={key} index={index} key={key}>
+                      {(innerProvided, innerSnapshot) => (
+                        <div
+                          className="question"
+                          ref={innerProvided.innerRef}
+                          {...innerProvided.draggableProps}
+                          {...innerProvided.dragHandleProps}
+                          style={getItemStyle(
+                            innerSnapshot.isDragging,
+                            innerProvided.draggableProps.style,
+                          )}
+                        >
+                          <QuestionSingle
+                            id={id}
+                            title={title}
+                            type={type}
+                            version={version}
+                          />
+                        </div>
+                      )}
+                    </Draggable>
+                  ),
+                )}
                 {provided.placeholder}
               </div>
             )}
           </Droppable>
           <div className="blockDropzone">
-            <QuestionDropzone onDrop={() => console.log('dropped')} />
+            <QuestionDropzone
+              onDrop={question => handleExtendBlock(block.id, question)}
+            />
           </div>
         </div>
       ))}
@@ -108,24 +115,39 @@ New Block
           )}
         </Droppable>
         <div className="blockDropzone">
-          <QuestionDropzone onDrop={() => console.log('dropped')} />
+          <QuestionDropzone onDrop={handleNewBlock} />
         </div>
       </div>
     </div>
     <div className="sessionConfig">
-      <Input placeholder="Name..." value={name} onChange={handleChangeName} />
-      <Button fluid icon labelPosition="left">
-        <Icon name="trash" />
-        Discard
-      </Button>
+      <div className="sessionName">
+        <label>
+          Session Name
+          <Input
+            name="asd"
+            placeholder="Name..."
+            value={name}
+            onChange={handleChangeName}
+          />
+        </label>
+      </div>
       <Button fluid icon labelPosition="left">
         <Icon name="save" />
-        Save
+        <FormattedMessage
+          defaultMessage="Save & Close"
+          id="form.createSession.button.save"
+        />
       </Button>
       <Button fluid icon primary labelPosition="left">
         <Icon name="play" />
-        Start
+        <FormattedMessage defaultMessage="Start" id="common.button.start" />
       </Button>
+      {isSessionRunning && (
+        <FormattedMessage
+          defaultMessage="A session is already running"
+          id="form.createSession.string.alreadyRunning"
+        />
+      )}
     </div>
     <style jsx>
       {`
@@ -143,7 +165,7 @@ New Block
               border-right: 1px solid lightgrey;
               display: flex;
               flex-direction: column;
-              width: 150px;
+              width: 200px;
             }
 
             .header {
@@ -170,6 +192,21 @@ New Block
             flex: 0 0 15rem;
             padding: 1rem;
             border-left: 1px solid lightgrey;
+
+            display: flex;
+            flex-direction: column;
+
+            .sessionName {
+              flex: 1;
+
+              label {
+                font-weight: bold;
+              }
+            }
+
+            :global(button:last-child) {
+              margin-top: 0.5rem;
+            }
           }
         }
       `}
