@@ -29,7 +29,7 @@ function addToBlock(blocks, blockId, question, targetIndex = null) {
 
   // compute the new list of questions for the target block
   const dstQuestions = blocks.getIn([dstBlockIx, 'questions'])
-  const dstQuestionsWithTarget = targetIndex
+  const dstQuestionsWithTarget = typeof targetIndex !== 'undefined'
     ? dstQuestions.insert(targetIndex, question)
     : dstQuestions.push(question)
 
