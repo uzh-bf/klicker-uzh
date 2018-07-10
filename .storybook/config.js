@@ -8,12 +8,12 @@ import '@storybook/addon-console'
 // import { DragDropContext } from 'react-dnd'
 // import HTML5Backend from 'react-dnd-html5-backend'
 
-import enLocaleData from 'react-intl/locale-data/en'
-import deLocaleData from 'react-intl/locale-data/de'
+// import enLocaleData from 'react-intl/locale-data/en'
+// import deLocaleData from 'react-intl/locale-data/de'
 
 // load intl locale-data for DE and EN
-addLocaleData(enLocaleData)
-addLocaleData(deLocaleData)
+// addLocaleData(enLocaleData)
+// addLocaleData(deLocaleData)
 
 // add a react-intl provider such that components can render
 addDecorator(story => <IntlProvider locale="en">{story()}</IntlProvider>)
