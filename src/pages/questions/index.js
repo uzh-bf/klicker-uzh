@@ -1,5 +1,8 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import UUIDv4 from 'uuid'
+import { List } from 'immutable'
+import { DragDropContext } from 'react-beautiful-dnd'
 import { compose, withHandlers, withStateHandlers } from 'recompose'
 import { defineMessages, intlShape } from 'react-intl'
 import { graphql, Query } from 'react-apollo'
@@ -23,10 +26,17 @@ import {
   QuestionPoolQuery,
   ArchiveQuestionsMutation,
 } from '../../graphql'
-import { SessionCreationForm } from '../../components/forms'
+// import { SessionCreationForm } from '../../components/forms'
+import SessionCreationForm from '../../components/forms/sessionCreation/SessionCreationForm'
 import { QuestionList, TagList, ActionBar } from '../../components/questions'
 import { TeacherLayout } from '../../components/layouts'
 import { QUESTION_SORTINGS } from '../../constants'
+import {
+  removeQuestion,
+  moveQuestion,
+  addToBlock,
+  appendNewBlock,
+} from '../../lib/utils/move'
 
 const messages = defineMessages({
   pageTitle: {
@@ -43,12 +53,15 @@ const propTypes = {
   creationMode: PropTypes.bool.isRequired,
   filters: PropTypes.object.isRequired,
   handleArchiveQuestions: PropTypes.func.isRequired,
-  handleChangeBlocks: PropTypes.func.isRequired,
   handleChangeName: PropTypes.func.isRequired,
   handleCreateSession: PropTypes.func.isRequired,
   handleCreationModeToggle: PropTypes.func.isRequired,
+  handleExtendBlock: PropTypes.func.isRequired,
+  handleManageBlocks: PropTypes.func.isRequired,
+  handleNewBlock: PropTypes.func.isRequired,
   handleQuickBlock: PropTypes.func.isRequired,
   handleQuickBlocks: PropTypes.func.isRequired,
+  handleRemoveQuestion: PropTypes.func.isRequired,
   handleReset: PropTypes.func.isRequired,
   handleSearch: PropTypes.func.isRequired,
   handleSelectItem: PropTypes.func.isRequired,
@@ -75,6 +88,9 @@ const Index = ({
   sessionBlocks,
   handleSelectItem,
   handleCreateSession,
+  handleNewBlock,
+  handleManageBlocks,
+  handleExtendBlock,
   handleSearch,
   handleSortByChange,
   handleSortOrderToggle,
@@ -83,29 +99,33 @@ const Index = ({
   handleQuickBlock,
   handleQuickBlocks,
   handleReset,
+  handleRemoveQuestion,
   handleToggleArchive,
   handleChangeName,
-  handleChangeBlocks,
   handleArchiveQuestions,
 }) => {
   const creationForm = runningSessionId => (
     <div className="creationForm">
-      <SessionCreationForm
-        blocks={sessionBlocks}
-        handleChangeBlocks={handleChangeBlocks}
-        handleChangeName={handleChangeName}
-        handleDiscard={handleCreationModeToggle}
-        handleSubmit={handleCreateSession}
-        intl={intl}
-        isSessionRunning={!!runningSessionId}
-        name={sessionName}
-      />
+      <DragDropContext onDragEnd={handleManageBlocks}>
+        <SessionCreationForm
+          blocks={sessionBlocks}
+          handleChangeName={handleChangeName}
+          handleDiscard={handleCreationModeToggle}
+          handleExtendBlock={handleExtendBlock}
+          handleNewBlock={handleNewBlock}
+          handleRemoveQuestion={handleRemoveQuestion}
+          handleSubmit={handleCreateSession}
+          intl={intl}
+          isSessionRunning={!!runningSessionId}
+          name={sessionName}
+        />
+      </DragDropContext>
 
       <style jsx>
         {`
           .creationForm {
             animation-name: slide-in;
-            animation-duration: 0.5s;
+            animation-duration: 0.75s;
           }
 
           @keyframes slide-in {
@@ -274,12 +294,11 @@ export default compose(
   withStateHandlers(
     {
       creationMode: false,
-      sessionBlocks: [],
-      sessionName: moment().format('DD.MM.YYYY HH:mm'),
+      sessionBlocks: List([]),
+      sessionName: null,
     },
     {
       // handlers for session creation form fields
-      handleChangeBlocks: () => sessionBlocks => ({ sessionBlocks }),
       handleChangeName: () => e => ({ sessionName: e.target.value }),
 
       // handle toggling creation mode (display of session creation form)
@@ -288,13 +307,65 @@ export default compose(
         if (creationMode) {
           return {
             creationMode: false,
-            sessionBlocks: [],
+            sessionBlocks: List([]),
           }
         }
 
         // turn on creation mode
-        return { creationMode: true }
+        return {
+          creationMode: true,
+          sessionName: moment().format('DD.MM.YYYY HH:mm'),
+        }
       },
+
+      handleExtendBlock: ({ sessionBlocks }) => (blockId, question) => ({
+        sessionBlocks: addToBlock(sessionBlocks, blockId, question),
+      }),
+
+      handleManageBlocks: ({ sessionBlocks }) => ({ source, destination }) => {
+        if (!source || !destination) {
+          return null
+        }
+
+        // if the item was dropped in a new block
+        if (destination.droppableId === 'new-block') {
+          // generate a new uuid for the new block
+          const blockId = UUIDv4()
+
+          // initialize a new empty block at the end
+          const extendedBlocks = sessionBlocks.push({
+            id: blockId,
+            questions: List(),
+          })
+
+          // perform the move between the source and the new block
+          return {
+            sessionBlocks: moveQuestion(
+              extendedBlocks,
+              source.droppableId,
+              source.index,
+              blockId,
+              0,
+              true,
+            ),
+          }
+        }
+
+        return {
+          sessionBlocks: moveQuestion(
+            sessionBlocks,
+            source.droppableId,
+            source.index,
+            destination.droppableId,
+            destination.index,
+            true,
+          ),
+        }
+      },
+
+      handleNewBlock: ({ sessionBlocks }) => question => ({
+        sessionBlocks: appendNewBlock(sessionBlocks, question),
+      }),
 
       // build a single block from all the checked questions
       handleQuickBlock: (
@@ -305,22 +376,20 @@ export default compose(
         handleResetSelection()
 
         return {
-          sessionBlocks: [
-            ...sessionBlocks,
-            {
-              questions: selectedItems
-                .toIndexedSeq()
-                .toArray()
-                .map(({
-                  id, title, type, version,
-                }) => ({
-                  id,
-                  title,
-                  type,
-                  version,
-                })),
-            },
-          ],
+          sessionBlocks: sessionBlocks.push({
+            id: UUIDv4(),
+            questions: selectedItems
+              .toList()
+              .map(({
+                id, title, type, version,
+              }) => ({
+                id,
+                key: UUIDv4(),
+                title,
+                type,
+                version,
+              })),
+          }),
         }
       },
 
@@ -333,27 +402,36 @@ export default compose(
         handleResetSelection()
 
         return {
-          sessionBlocks: [
-            ...sessionBlocks,
-            ...selectedItems
-              .toIndexedSeq()
-              .toArray()
-              .map(({
-                id, title, type, version,
-              }) => ({
-                questions: [
-                  {
-                    id,
-                    title,
-                    type,
-                    version,
-                  },
-                ],
-              })),
-          ],
+          sessionBlocks: sessionBlocks.concat(
+            selectedItems.toList().map(({
+              id, title, type, version,
+            }) => ({
+              questions: List([
+                {
+                  id,
+                  key: UUIDv4(),
+                  title,
+                  type,
+                  version,
+                },
+              ]),
+            })),
+          ),
         }
       },
 
+      // handle removal of a question with its trash button
+      handleRemoveQuestion: ({ sessionBlocks }) => (
+        blockIndex,
+        questionIndex,
+      ) => ({
+        sessionBlocks: removeQuestion(
+          sessionBlocks,
+          blockIndex,
+          questionIndex,
+          true,
+        ),
+      }),
       // override the toggle archive function
       // need to reset the selection on toggling archive to not apply actions to hidden questions
       handleToggleArchive: (
