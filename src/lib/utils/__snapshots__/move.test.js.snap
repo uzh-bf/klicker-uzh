@@ -85,6 +85,7 @@ Immutable.List [
       Object {
         "content": "blabb",
         "id": "qi",
+        "key": "b49bb70b-f9dd-40d2-b62e-8b7a38104745",
       },
       Object {
         "content": "bli",
@@ -136,6 +137,11 @@ Immutable.List [
     "id": "ba",
     "questions": Immutable.List [
       Object {
+        "content": "blaaaa",
+        "id": "qh",
+        "key": "2ed6853f-fb17-4ec4-9749-b19ff781b8de",
+      },
+      Object {
         "content": "bla",
         "id": "qa",
       },
@@ -150,14 +156,11 @@ Immutable.List [
       Object {
         "content": "blabb",
         "id": "qi",
+        "key": "b49bb70b-f9dd-40d2-b62e-8b7a38104745",
       },
       Object {
         "content": "bli",
         "id": "qd",
-      },
-      Object {
-        "content": "blaaaa",
-        "id": "qh",
       },
     ],
   },
@@ -196,6 +199,16 @@ Immutable.List [
     "id": "ba",
     "questions": Immutable.List [
       Object {
+        "content": "blaa",
+        "id": "qf",
+        "key": "7aa64997-d0d3-48fb-a6f0-175aaf60cfb2",
+      },
+      Object {
+        "content": "blaaaa",
+        "id": "qh",
+        "key": "2ed6853f-fb17-4ec4-9749-b19ff781b8de",
+      },
+      Object {
         "content": "bla",
         "id": "qa",
       },
@@ -210,18 +223,11 @@ Immutable.List [
       Object {
         "content": "blabb",
         "id": "qi",
+        "key": "b49bb70b-f9dd-40d2-b62e-8b7a38104745",
       },
       Object {
         "content": "bli",
         "id": "qd",
-      },
-      Object {
-        "content": "blaaaa",
-        "id": "qh",
-      },
-      Object {
-        "content": "blaa",
-        "id": "qf",
       },
     ],
   },
@@ -256,6 +262,21 @@ Immutable.List [
     "id": "ba",
     "questions": Immutable.List [
       Object {
+        "content": "blub",
+        "id": "qj",
+        "key": "9ea9da00-0858-4975-af4c-ecccc178869e",
+      },
+      Object {
+        "content": "blaa",
+        "id": "qf",
+        "key": "7aa64997-d0d3-48fb-a6f0-175aaf60cfb2",
+      },
+      Object {
+        "content": "blaaaa",
+        "id": "qh",
+        "key": "2ed6853f-fb17-4ec4-9749-b19ff781b8de",
+      },
+      Object {
         "content": "bla",
         "id": "qa",
       },
@@ -270,22 +291,11 @@ Immutable.List [
       Object {
         "content": "blabb",
         "id": "qi",
+        "key": "b49bb70b-f9dd-40d2-b62e-8b7a38104745",
       },
       Object {
         "content": "bli",
         "id": "qd",
-      },
-      Object {
-        "content": "blaaaa",
-        "id": "qh",
-      },
-      Object {
-        "content": "blaa",
-        "id": "qf",
-      },
-      Object {
-        "content": "blub",
-        "id": "qj",
       },
     ],
   },
@@ -329,6 +339,7 @@ Immutable.List [
       Object {
         "content": "blu",
         "id": "qb",
+        "key": "df288f28-ddf6-467e-aac6-a41ae2ddbc67",
       },
     ],
   },

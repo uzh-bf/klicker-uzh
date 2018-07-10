@@ -50,8 +50,39 @@ function appendNewBlock(blocks, question) {
 }
 
 /**
+ * Remove a question from a block
+ * @param {ImmutableList} blocks
+ * @param {int} blockIndex
+ * @param {int} questionIndex
+ * @param {bool} removeEmpty
+ */
+function removeQuestion(
+  blocks,
+  blockIndex,
+  questionIndex,
+  removeEmpty = false,
+) {
+  // delete the question with the specified index from the specified block
+  const blocksWithoutQuestion = blocks.deleteIn([
+    blockIndex,
+    'questions',
+    questionIndex,
+  ])
+
+  // if the block from which the question was removed is now empty, remove the block
+  if (
+    removeEmpty
+    && blocksWithoutQuestion.getIn([blockIndex, 'questions']).size === 0
+  ) {
+    return blocksWithoutQuestion.delete(blockIndex)
+  }
+
+  return blocksWithoutQuestion
+}
+
+/**
  * Move an existing question from one list to another list
- * @param {*} blocks
+ * @param {ImmutableList} blocks
  * @param {*} srcBlockId
  * @param {*} srcQuestionIx
  * @param {*} dstBlockId
@@ -72,30 +103,23 @@ function moveQuestion(
 
   // save and remove the question that is to be moved
   const targetQuestion = blocks.getIn([srcBlockIx, 'questions', srcQuestionIx])
-  let blocksWithoutSrc = blocks.deleteIn([
+  const blocksWithoutSrc = removeQuestion(
+    blocks,
     srcBlockIx,
-    'questions',
     srcQuestionIx,
-  ])
+    removeEmpty && srcBlockId !== dstBlockId,
+  )
 
-  // if the source block is empty because ot the move, remove it entirely
-  // expect if source and destination are the same!
-  if (
-    removeEmpty
-    && srcBlockId !== dstBlockId
-    && blocksWithoutSrc.getIn([srcBlockIx, 'questions']).size === 0
-  ) {
-    blocksWithoutSrc = blocksWithoutSrc.delete(srcBlockIx)
-
-    // if the destination block comes after the source block
-    // the destination index needs to be updated after the removal of the source block
-    // as everything shifts by one block
-    if (dstBlockIx > srcBlockIx) {
-      dstBlockIx -= 1
-    }
+  // if the destination block comes after the source block
+  // the destination index needs to be updated after the removal of the source block
+  // as everything shifts by one block
+  if (blocks.size > blocksWithoutSrc.size && dstBlockIx > srcBlockIx) {
+    dstBlockIx -= 1
   }
 
   return addToBlock(blocksWithoutSrc, dstBlockIx, targetQuestion, dstQuestionIx)
 }
 
-export { moveQuestion, addToBlock, appendNewBlock }
+export {
+  moveQuestion, addToBlock, appendNewBlock, removeQuestion,
+}

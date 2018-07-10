@@ -1,6 +1,11 @@
 import { List } from 'immutable'
 
-import { moveQuestion, appendBlock, extendBlock } from './move'
+import {
+  moveQuestion,
+  appendNewBlock,
+  addToBlock,
+  removeQuestion,
+} from './move'
 
 describe('move', () => {
   const blocks = List([
@@ -60,7 +65,7 @@ describe('move', () => {
   it('can extend blocks with new questions', () => {
     expect(blocks.getIn([3, 'questions']).size).toEqual(1)
 
-    const extendedBlocks = extendBlock(blocks, 'bd', {
+    const extendedBlocks = addToBlock(blocks, 'bd', {
       content: 'blaNew',
       id: 'qk',
     })
@@ -71,11 +76,36 @@ describe('move', () => {
   it('can append blocks with new questions', () => {
     expect(blocks.size).toEqual(4)
 
-    const appendedBlocks = appendBlock(blocks, {
+    const appendedBlocks = appendNewBlock(blocks, {
       content: 'blaNew',
       id: 'ql',
     })
 
     expect(appendedBlocks.size).toEqual(5)
+  })
+
+  it('can remove questions from blocks', () => {
+    expect(blocks.size).toEqual(4)
+
+    const blocksWithoutQuestion = removeQuestion(blocks, 2, 0, false)
+    expect(blocksWithoutQuestion.size).toEqual(4)
+    expect(blocksWithoutQuestion.getIn([2, 'questions']).size).toEqual(1)
+
+    const blocksWithoutQuestion2 = removeQuestion(
+      blocksWithoutQuestion,
+      2,
+      0,
+      false,
+    )
+    expect(blocksWithoutQuestion2.size).toEqual(4)
+    expect(blocksWithoutQuestion2.getIn([2, 'questions']).size).toEqual(0)
+
+    const blocksWithoutQuestion3 = removeQuestion(
+      blocksWithoutQuestion2,
+      3,
+      0,
+      true,
+    )
+    expect(blocksWithoutQuestion3.size).toEqual(3)
   })
 })
