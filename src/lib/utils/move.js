@@ -16,9 +16,9 @@ function getIndex(blocks, droppableId) {
  * @param {*} blocks
  * @param {*} blockId
  * @param {*} question
- * @param {*} targetIndex
+ * @param {*} targetIndex Optional index that specifies the target location of the question
  */
-function extendBlock(blocks, blockId, question, targetIndex = null) {
+function addToBlock(blocks, blockId, question, targetIndex = null) {
   let dstBlockIx = blockId
 
   // if the blockId passed is not number (index)
@@ -42,7 +42,7 @@ function extendBlock(blocks, blockId, question, targetIndex = null) {
  * @param {*} blocks
  * @param {*} question
  */
-function appendBlock(blocks, question) {
+function appendNewBlock(blocks, question) {
   return blocks.push({
     id: UUIDv4(),
     questions: List([question]),
@@ -56,7 +56,7 @@ function appendBlock(blocks, question) {
  * @param {*} srcQuestionIx
  * @param {*} dstBlockId
  * @param {*} dstQuestionIx
- * @param {*} removeEmpty
+ * @param {*} removeEmpty Flag that specifies whether empty blocks should be pruned
  */
 function moveQuestion(
   blocks,
@@ -95,12 +95,7 @@ function moveQuestion(
     }
   }
 
-  return extendBlock(
-    blocksWithoutSrc,
-    dstBlockIx,
-    targetQuestion,
-    dstQuestionIx,
-  )
+  return addToBlock(blocksWithoutSrc, dstBlockIx, targetQuestion, dstQuestionIx)
 }
 
-export { moveQuestion, extendBlock, appendBlock }
+export { moveQuestion, addToBlock, appendNewBlock }
