@@ -8,7 +8,9 @@ import { List, Map } from 'immutable'
 import { action } from '@storybook/addon-actions'
 
 import SessionCreation from '../components/forms/sessionCreation/SessionCreationForm'
-import { moveQuestion } from '../lib/utils/move'
+import {
+  getIndex, moveQuestion, addToBlock, appendNewBlock,
+} from '../lib/utils/move'
 
 const withDnD = withStateHandlers(
   {
@@ -27,11 +29,11 @@ const withDnD = withStateHandlers(
   },
   {
     onDragEnd: ({ blocks }) => ({ source, destination }) => {
-      action(`drag from ${source.droppableId}-${source.index} to ${destination.draggableId}-${destination.index}`)
-
       if (!source || !destination) {
         return
       }
+
+      action(`drag from ${source.droppableId}-${source.index} to ${destination.draggableId}-${destination.index}`)
 
       // if the item was dropped in a new block
       if (destination.droppableId === 'new-block') {
@@ -58,10 +60,14 @@ const withDnD = withStateHandlers(
         ),
       }
     },
+    onNewBlock: ({ blocks }) => question => appendNewBlock(blocks, question),
+    onExtendBlock: ({ blocks }) => (blockId, question) => addToBlock(blocks, blockId, question),
   },
 )
 
-const DnDWrapper = withDnD(({ blocks, name, onDragEnd }) => (
+const DnDWrapper = withDnD(({
+  blocks, name, onDragEnd, onNewBlock, onExtendBlock,
+}) => (
   <DragDropContext onDragEnd={onDragEnd}>
     <SessionCreation blocks={blocks} name={name} />
   </DragDropContext>
