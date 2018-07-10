@@ -316,12 +316,8 @@ export default compose(
 
       handleManageBlocks: ({ sessionBlocks }) => ({ source, destination }) => {
         if (!source || !destination) {
-          return
+          return null
         }
-
-        console.log(
-          `source ${source.index} to destination ${destination.index}`,
-        )
 
         // if the item was dropped in a new block
         if (destination.droppableId === 'new-block') {
@@ -372,22 +368,20 @@ export default compose(
         handleResetSelection()
 
         return {
-          sessionBlocks: [
-            ...sessionBlocks,
-            {
-              questions: selectedItems
-                .toIndexedSeq()
-                .toArray()
-                .map(({
-                  id, title, type, version,
-                }) => ({
-                  id,
-                  title,
-                  type,
-                  version,
-                })),
-            },
-          ],
+          sessionBlocks: sessionBlocks.push({
+            id: UUIDv4(),
+            questions: selectedItems
+              .toList()
+              .map(({
+                id, title, type, version,
+              }) => ({
+                id,
+                key: UUIDv4(),
+                title,
+                type,
+                version,
+              })),
+          }),
         }
       },
 
@@ -400,24 +394,21 @@ export default compose(
         handleResetSelection()
 
         return {
-          sessionBlocks: [
-            ...sessionBlocks,
-            ...selectedItems
-              .toIndexedSeq()
-              .toArray()
-              .map(({
-                id, title, type, version,
-              }) => ({
-                questions: [
-                  {
-                    id,
-                    title,
-                    type,
-                    version,
-                  },
-                ],
-              })),
-          ],
+          sessionBlocks: sessionBlocks.concat(
+            selectedItems.toList().map(({
+              id, title, type, version,
+            }) => ({
+              questions: List([
+                {
+                  id,
+                  key: UUIDv4(),
+                  title,
+                  type,
+                  version,
+                },
+              ]),
+            })),
+          ),
         }
       },
 

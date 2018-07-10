@@ -52,8 +52,12 @@ const SessionCreationForm = ({
       {blocks.map((block, blockIndex) => (
         <div className="block" key={block.id}>
           <div className="header">
-            <div>{`Block ${blockIndex + 1}`}</div>
-            <div>{`(${block.questions.size})`}</div>
+            <div>
+              {`Block ${blockIndex + 1}`}
+            </div>
+            <div>
+              {`(${block.questions.size})`}
+            </div>
           </div>
           <Droppable droppableId={block.id}>
             {(provided, snapshot) => (
@@ -121,6 +125,16 @@ New Block
       </div>
     </div>
     <div className="sessionConfig">
+      <div className="discardSession">
+        {' '}
+        <button
+          className="ui icon button discardButton"
+          type="button"
+          onClick={handleDiscard}
+        >
+          <Icon name="close" />
+        </button>
+      </div>
       <div className="sessionName">
         <label>
           Session Name
@@ -139,7 +153,14 @@ New Block
           id="form.createSession.button.save"
         />
       </Button>
-      <Button fluid icon primary disabled={isSessionRunning} labelPosition="left" onClick={handleSubmit('start')}>
+      <Button
+        fluid
+        icon
+        primary
+        disabled={isSessionRunning}
+        labelPosition="left"
+        onClick={handleSubmit('start')}
+      >
         <Icon name="play" />
         <FormattedMessage defaultMessage="Start" id="common.button.start" />
       </Button>
@@ -152,6 +173,8 @@ New Block
     </div>
     <style jsx>
       {`
+        @import 'src/theme';
+
         .sessionCreation {
           border: 1px solid lightgrey;
           display: flex;
@@ -200,13 +223,27 @@ New Block
           .sessionConfig {
             flex: 0 0 17rem;
             padding: 1rem;
+            padding-top: 0;
             border-left: 1px solid lightgrey;
 
             display: flex;
             flex-direction: column;
 
+            .discardSession {
+              align-self: flex-end;
+              height: 2rem;
+              margin-top: -2rem;
+
+              button {
+                height: 2rem;
+                padding: 0.5rem 1rem;
+                text-align: center;
+              }
+            }
+
             .sessionName {
               flex: 1;
+              margin-top: 1rem;
 
               label {
                 font-weight: bold;
