@@ -23,19 +23,7 @@ const withDnD = withStateHandlers(
         ]),
       },
     ]),
-    blocksN: List([
-      { id: 'ba', questions: List(['qa', 'qb']) },
-      { id: 'bb', questions: List(['qc']) },
-      { id: 'bc', questions: List(['qd', 'qe']) },
-    ]),
     name: 'hello',
-    questionsN: Map({
-      qa: { id: 'qa', title: 'bla', type: 'MC' },
-      qb: { id: 'qb', title: 'blu', type: 'SC' },
-      qc: { id: 'qc', title: 'bleb', type: 'MC' },
-      qd: { id: 'qd', title: 'bbeee', type: 'FREE' },
-      qe: { id: 'qe', title: 'biiiii', type: 'FREE_RANGE' },
-    }),
   },
   {
     onDragEnd: ({ blocks }) => ({ source, destination }) => {
