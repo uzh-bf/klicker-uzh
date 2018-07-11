@@ -3,6 +3,14 @@ module.exports = {
     development: {
       presets: [
         [
+          '@babel/preset-env',
+          {
+            targets: {
+              browsers: ['> 0.25 %', 'not dead'],
+            },
+          },
+        ],
+        [
           'next/babel',
           {
             'styled-jsx': {
@@ -12,8 +20,8 @@ module.exports = {
         ],
       ],
       plugins: [
-        '@babel/plugin-syntax-do-expressions',
         ['@babel/plugin-proposal-pipeline-operator', { proposal: 'minimal' }],
+        '@babel/plugin-syntax-do-expressions',
         '@babel/plugin-proposal-optional-chaining',
         'inline-dotenv',
         'add-react-displayname',
@@ -22,6 +30,14 @@ module.exports = {
     production: {
       presets: [
         [
+          '@babel/preset-env',
+          {
+            targets: {
+              browsers: ['> 0.25 %', 'not dead'],
+            },
+          },
+        ],
+        [
           'next/babel',
           {
             'styled-jsx': {
@@ -31,15 +47,14 @@ module.exports = {
         ],
       ],
       plugins: [
+        ['@babel/plugin-proposal-pipeline-operator', { proposal: 'minimal' }],
         [
           'lodash',
           { id: ['lodash', 'recompose', 'semantic-ui-react', 'ramda'] },
         ],
         '@babel/plugin-syntax-do-expressions',
-        ['@babel/plugin-proposal-pipeline-operator', { proposal: 'minimal' }],
         '@babel/plugin-proposal-optional-chaining',
         'transform-inline-environment-variables',
-
         'add-react-displayname',
         [
           'react-intl',
@@ -67,8 +82,8 @@ module.exports = {
         ],
       ],
       plugins: [
-        '@babel/plugin-syntax-do-expressions',
         ['@babel/plugin-proposal-pipeline-operator', { proposal: 'minimal' }],
+        '@babel/plugin-syntax-do-expressions',
         '@babel/plugin-proposal-optional-chaining',
         'babel-plugin-inline-import-graphql-ast',
       ],
