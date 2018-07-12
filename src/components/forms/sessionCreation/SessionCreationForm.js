@@ -7,6 +7,7 @@ import { object, string } from 'yup'
 
 import QuestionSingle from '../../questions/QuestionSingle'
 import QuestionDropzone from '../../sessions/creation/QuestionDropzone'
+import InfoArea from './InfoArea'
 
 const propTypes = {
   blocks: PropTypes.array,
@@ -141,7 +142,9 @@ const SessionCreationForm = ({
             <QuestionDropzone onDrop={handleNewBlock} />
           </div>
         </div>
+        {blocks.size <= 1 && <InfoArea />}
       </div>
+
       <div className="sessionConfig">
         <div className="discardSession">
           <button
