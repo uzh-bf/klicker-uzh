@@ -142,11 +142,7 @@ export const TagListPres = ({
           }
 
           if (error) {
-            return (
-              <Message error>
-                {error.message}
-              </Message>
-            )
+            return <Message error>{error.message}</Message>
           }
 
           if (tags.length === 0) {
@@ -166,9 +162,7 @@ export const TagListPres = ({
               onClick={() => handleTagClick(name)}
             >
               <List.Icon name="tag" />
-              <List.Content>
-                {name}
-              </List.Content>
+              <List.Content>{name}</List.Content>
             </List.Item>
           ))
         }}

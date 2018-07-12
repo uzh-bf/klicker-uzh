@@ -14,46 +14,28 @@ const defaultProps = {
   limit: undefined,
 }
 
-const mapItems = items => items.map(item => (
-  <List.Item>
-    {item}
-  </List.Item>
-))
+const mapItems = items => items.map(item => <List.Item>{item}</List.Item>)
 
 const ListWithHeader = ({ children, items, limit }) => (
   <div className="listWithHeader">
-    {children && (
-    <span className="listHeader">
-      {children}
-    </span>
-    )}
+    {children && <span className="listHeader">{children}</span>}
 
     {items.length > limit ? (
       <React.Fragment>
-        <List>
-          {mapItems(items.slice(0, limit))}
-        </List>
+        <List>{mapItems(items.slice(0, limit))}</List>
         <Popup
           hideOnScroll
           on="click"
           position="bottom center"
-          trigger={(
-            <div className="more">
-...
-            </div>
-)}
+          trigger={<div className="more">...</div>}
         >
           <div className="remainingPopup">
-            <List>
-              {mapItems(items.slice(limit))}
-            </List>
+            <List>{mapItems(items.slice(limit))}</List>
           </div>
         </Popup>
       </React.Fragment>
     ) : (
-      <List>
-        {mapItems(items)}
-      </List>
+      <List>{mapItems(items)}</List>
     )}
 
     <style jsx>

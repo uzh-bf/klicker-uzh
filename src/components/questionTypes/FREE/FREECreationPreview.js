@@ -54,9 +54,7 @@ const FREECreationPreview = ({
                       defaultMessage="Min"
                       id="createQuestion.options.min"
                     />
-                    :
-                    {' '}
-                    {restrictions.min}
+                    : {restrictions.min}
                   </div>
                 )}
                 {isMaxDefined && (
@@ -65,9 +63,7 @@ const FREECreationPreview = ({
                       defaultMessage="Max"
                       id="createQuestion.options.max"
                     />
-                    :
-                    {' '}
-                    {restrictions.max}
+                    : {restrictions.max}
                   </div>
                 )}
                 <div className="line" />
@@ -101,9 +97,7 @@ const FREECreationPreview = ({
                     defaultMessage="Min"
                     id="createQuestion.options.min"
                   />
-                  :
-                  {' '}
-                  {restrictions.min}
+                  : {restrictions.min}
                 </div>
             )}
             {questionType === QUESTION_TYPES.FREE_RANGE
@@ -113,9 +107,7 @@ const FREECreationPreview = ({
                     defaultMessage="Max"
                     id="createQuestion.options.max"
                   />
-                  :
-                  {' '}
-                  {restrictions.max}
+                  : {restrictions.max}
                 </div>
             )}
           </div>

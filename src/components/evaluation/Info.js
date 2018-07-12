@@ -15,8 +15,7 @@ const Info = ({ totalResponses }) => (
     <FormattedMessage
       defaultMessage="Total participants:"
       id="evaluation.totalParticipants.label"
-    />
-    {' '}
+    />{' '}
     {totalResponses}
   </div>
 )

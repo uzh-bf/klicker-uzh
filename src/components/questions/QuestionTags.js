@@ -21,9 +21,7 @@ const QuestionTags = ({ intl, tags, type }) => (
         {tag.name}
       </div>
     ))}
-    <div className="type tag">
-      {generateTypesShort(intl)[type]}
-    </div>
+    <div className="type tag">{generateTypesShort(intl)[type]}</div>
 
     <style jsx>
       {`

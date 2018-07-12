@@ -3,9 +3,11 @@ import PropTypes from 'prop-types'
 import { Droppable, Draggable } from 'react-beautiful-dnd'
 import { Button, Icon, Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
+import { object, string } from 'yup'
 
 import QuestionSingle from '../../questions/QuestionSingle'
-import QuestionDropzone from '../../sessions/creation/QuestionDropzone'
+import QuestionDropzone from './QuestionDropzone'
+import InfoArea from './InfoArea'
 
 const propTypes = {
   blocks: PropTypes.array,
@@ -23,6 +25,12 @@ const defaultProps = {
   blocks: [],
   isSessionRunning: false,
 }
+
+const schema = object().shape({
+  name: string()
+    .min(1)
+    .required(),
+})
 
 const getItemStyle = (isDragging, draggableStyle) => ({
   // change background colour if dragging
@@ -49,135 +57,150 @@ const SessionCreationForm = ({
   handleNewBlock,
   handleExtendBlock,
   handleRemoveQuestion,
-}) => (
-  <form className="ui form sessionCreation" onSubmit={handleSubmit('save')}>
-    <div className="sessionTimeline">
-      {blocks.map((block, blockIndex) => (
-        <div className="block" key={block.id}>
-          <div className="header">
-            <div>
-              {`Block ${blockIndex + 1}`}
+}) => {
+  // synchronous validation
+  // synchronously validate the schema
+  const isValid = schema.isValidSync({
+    name,
+  })
+
+  return (
+    <form className="ui form sessionCreation" onSubmit={handleSubmit('save')}>
+      <div className="sessionTimeline">
+        {blocks.map((block, blockIndex) => (
+          <div className="block" key={block.id}>
+            <div className="header">
+              <div>{`Block ${blockIndex + 1}`}</div>
+              <div>{`(${block.questions.size})`}</div>
             </div>
-            <div>
-              {`(${block.questions.size})`}
+            <Droppable droppableId={block.id}>
+              {(provided, snapshot) => (
+                <div
+                  className="questions"
+                  ref={provided.innerRef}
+                  style={getListStyle(snapshot.isDraggingOver)}
+                >
+                  {block.questions.map(
+                    ({
+                      id, key, title, type, version,
+                    }, index) => (
+                      <Draggable draggableId={key} index={index} key={key}>
+                        {(innerProvided, innerSnapshot) => (
+                          <div
+                            className="question"
+                            ref={innerProvided.innerRef}
+                            {...innerProvided.draggableProps}
+                            {...innerProvided.dragHandleProps}
+                            style={getItemStyle(
+                              innerSnapshot.isDragging,
+                              innerProvided.draggableProps.style,
+                            )}
+                          >
+                            <QuestionSingle
+                              id={id}
+                              title={title}
+                              type={type}
+                              version={version}
+                              onDelete={() => handleRemoveQuestion(blockIndex, index)
+                              }
+                            />
+                          </div>
+                        )}
+                      </Draggable>
+                    ),
+                  )}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+            <div className="blockDropzone">
+              <QuestionDropzone
+                onDrop={question => handleExtendBlock(block.id, question)}
+              />
             </div>
           </div>
-          <Droppable droppableId={block.id}>
+        ))}
+        <div className="newBlock">
+          <div className="header">
+            <FormattedMessage
+              defaultMessage="New Block"
+              id="form.createSession.newBlock"
+            />
+          </div>
+          <Droppable droppableId="new-block">
             {(provided, snapshot) => (
               <div
                 className="questions"
                 ref={provided.innerRef}
                 style={getListStyle(snapshot.isDraggingOver)}
               >
-                {block.questions.map(
-                  ({
-                    id, key, title, type, version,
-                  }, index) => (
-                    <Draggable draggableId={key} index={index} key={key}>
-                      {(innerProvided, innerSnapshot) => (
-                        <div
-                          className="question"
-                          ref={innerProvided.innerRef}
-                          {...innerProvided.draggableProps}
-                          {...innerProvided.dragHandleProps}
-                          style={getItemStyle(
-                            innerSnapshot.isDragging,
-                            innerProvided.draggableProps.style,
-                          )}
-                        >
-                          <QuestionSingle
-                            id={id}
-                            title={title}
-                            type={type}
-                            version={version}
-                            onDelete={() => handleRemoveQuestion(blockIndex, index)
-                            }
-                          />
-                        </div>
-                      )}
-                    </Draggable>
-                  ),
-                )}
                 {provided.placeholder}
               </div>
             )}
           </Droppable>
           <div className="blockDropzone">
-            <QuestionDropzone
-              onDrop={question => handleExtendBlock(block.id, question)}
-            />
+            <QuestionDropzone onDrop={handleNewBlock} />
           </div>
         </div>
-      ))}
-      <div className="newBlock">
-        <div className="header">
-New Block
-        </div>
-        <Droppable droppableId="new-block">
-          {(provided, snapshot) => (
-            <div
-              className="questions"
-              ref={provided.innerRef}
-              style={getListStyle(snapshot.isDraggingOver)}
-            >
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-        <div className="blockDropzone">
-          <QuestionDropzone onDrop={handleNewBlock} />
-        </div>
+        {blocks.size <= 1 && <InfoArea />}
       </div>
-    </div>
-    <div className="sessionConfig">
-      <div className="discardSession">
-        {' '}
-        <button
-          className="ui icon button discardButton"
-          type="button"
-          onClick={handleDiscard}
+
+      <div className="sessionConfig">
+        <div className="discardSession">
+          <button
+            className="ui icon button discardButton"
+            type="button"
+            onClick={handleDiscard}
+          >
+            <Icon name="close" />
+          </button>
+        </div>
+        <div className="sessionName">
+          <label>
+            <FormattedMessage
+              defaultMessage="Session Name"
+              id="form.createSession.sessionName"
+            />
+            <Input
+              name="asd"
+              placeholder="Name..."
+              value={name}
+              onChange={handleChangeName}
+            />
+          </label>
+        </div>
+        <Button
+          fluid
+          icon
+          disabled={!isValid}
+          labelPosition="left"
+          type="submit"
         >
-          <Icon name="close" />
-        </button>
-      </div>
-      <div className="sessionName">
-        <label>
-          Session Name
-          <Input
-            name="asd"
-            placeholder="Name..."
-            value={name}
-            onChange={handleChangeName}
+          <Icon name="save" />
+          <FormattedMessage
+            defaultMessage="Save & Close"
+            id="form.createSession.button.save"
           />
-        </label>
+        </Button>
+        <Button
+          fluid
+          icon
+          primary
+          disabled={!isValid || isSessionRunning}
+          labelPosition="left"
+          onClick={handleSubmit('start')}
+        >
+          <Icon name="play" />
+          <FormattedMessage defaultMessage="Start" id="common.button.start" />
+        </Button>
+        {isSessionRunning && (
+          <FormattedMessage
+            defaultMessage="A session is already running"
+            id="form.createSession.string.alreadyRunning"
+          />
+        )}
       </div>
-      <Button fluid icon labelPosition="left" type="submit">
-        <Icon name="save" />
-        <FormattedMessage
-          defaultMessage="Save & Close"
-          id="form.createSession.button.save"
-        />
-      </Button>
-      <Button
-        fluid
-        icon
-        primary
-        disabled={isSessionRunning}
-        labelPosition="left"
-        onClick={handleSubmit('start')}
-      >
-        <Icon name="play" />
-        <FormattedMessage defaultMessage="Start" id="common.button.start" />
-      </Button>
-      {isSessionRunning && (
-        <FormattedMessage
-          defaultMessage="A session is already running"
-          id="form.createSession.string.alreadyRunning"
-        />
-      )}
-    </div>
-    <style jsx>
-      {`
+      <style jsx>{`
         @import 'src/theme';
 
         .sessionCreation {
@@ -260,10 +283,10 @@ New Block
             }
           }
         }
-      `}
-    </style>
-  </form>
-)
+      `}</style>
+    </form>
+  )
+}
 
 SessionCreationForm.propTypes = propTypes
 SessionCreationForm.defaultProps = defaultProps

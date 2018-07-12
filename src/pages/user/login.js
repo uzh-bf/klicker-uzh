@@ -33,21 +33,13 @@ const Login = ({ intl }) => (
         {(login, { loading, error }) => (
           <React.Fragment>
             <Message info>
-              <Message.Header>
-Public Beta
-              </Message.Header>
+              <Message.Header>Public Beta</Message.Header>
               <Message.Content>
                 To participate in the Klicker 2018 public beta with a legacy
-                account, please
-                {' '}
-                <Link href="/user/requestPassword">
-reset your password
-                </Link>
-                {' '}
+                account, please{' '}
+                <Link href="/user/requestPassword">reset your password</Link>{' '}
                 first. If you need a new account, you can
-                <Link href="/user/registration">
-sign up here
-                </Link>
+                <Link href="/user/registration">sign up here</Link>
                 .
               </Message.Content>
             </Message>

@@ -87,11 +87,7 @@ export const SessionListPres = ({
           }
 
           if (error) {
-            return (
-              <Message error>
-                {error.message}
-              </Message>
-            )
+            return <Message error>{error.message}</Message>
           }
 
           if (sessions.length === 0) {
@@ -163,8 +159,7 @@ export const SessionListPres = ({
                     <FormattedMessage
                       defaultMessage="Running / paused sessions"
                       id="sessionList.title.runningSession"
-                    />
-                    {' '}
+                    />{' '}
                     (
                     {runningSessions.length + pausedSessions.length}
                     )
@@ -192,8 +187,7 @@ export const SessionListPres = ({
                     <FormattedMessage
                       defaultMessage="Planned sessions"
                       id="sessionList.title.plannedSessions"
-                    />
-                    {' '}
+                    />{' '}
                     (
                     {remainingSessions.length}
                     )
@@ -212,8 +206,7 @@ export const SessionListPres = ({
                     <FormattedMessage
                       defaultMessage="Completed sessions"
                       id="sessionList.title.completedSessions"
-                    />
-                    {' '}
+                    />{' '}
                     (
                     {completedSessions.length}
                     )
