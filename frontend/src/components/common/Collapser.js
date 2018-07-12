@@ -15,9 +15,7 @@ const defaultProps = {
 
 const Collapser = ({ children, collapsed, handleCollapseToggle }) => (
   <div className="collapser">
-    <div className={classNames('content', { collapsed })}>
-      {children}
-    </div>
+    <div className={classNames('content', { collapsed })}>{children}</div>
     <div className="collapse">
       <Icon
         name={collapsed ? 'angle double down' : 'angle double up'}

@@ -23,9 +23,7 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
 
   return (
     <div className="questionDetails">
-      <div className="column description">
-        {truncatedDesc}
-      </div>
+      <div className="column description">{truncatedDesc}</div>
 
       <div className="column options" />
 

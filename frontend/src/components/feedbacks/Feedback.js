@@ -28,9 +28,7 @@ const Feedback = ({
   onDelete,
 }) => (
   <div className="feedback">
-    <div className="content">
-      {content}
-    </div>
+    <div className="content">{content}</div>
     {showDelete && (
       <div className="delete">
         <Button basic fluid icon="trash" onClick={onDelete} />

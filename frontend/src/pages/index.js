@@ -23,9 +23,7 @@ const Index = () => (
     <div className="klicker">
       <h1>
         Klicker
-        <span>
-UZH
-        </span>
+        <span>UZH</span>
       </h1>
       <p className="description">
         Welcome to the open source instant audience response system.
@@ -38,12 +36,8 @@ UZH
           rel="noopener noreferrer"
           target="_blank"
         >
-          <h2>
-Project
-          </h2>
-          <p>
-Learn more about Klicker.
-          </p>
+          <h2>Project</h2>
+          <p>Learn more about Klicker.</p>
         </a>
         <a
           className="box hoverable"
@@ -51,17 +45,11 @@ Learn more about Klicker.
           rel="noopener noreferrer"
           target="_blank"
         >
-          <h2>
-Lecturer
-          </h2>
-          <p>
-How to use Klicker as a lecturer!
-          </p>
+          <h2>Lecturer</h2>
+          <p>How to use Klicker as a lecturer!</p>
         </a>
         <div className="box">
-          <h2>
-Development
-          </h2>
+          <h2>Development</h2>
           <List divided relaxed>
             {/* <List.Item>
               <List.Icon name="github" size="large" verticalAlign="middle" />
@@ -94,9 +82,7 @@ Development
                 <List.Header as="a" href="mailto:klicker.support@uzh.ch">
                   klicker.support@uzh.ch
                 </List.Header>
-                <List.Description>
-Support
-                </List.Description>
+                <List.Description>Support</List.Description>
               </List.Content>
             </List.Item>
             <List.Item>
@@ -108,9 +94,7 @@ Support
                 >
                   klicker-roadmap
                 </List.Header>
-                <List.Description>
-Public Trello Board
-                </List.Description>
+                <List.Description>Public Trello Board</List.Description>
               </List.Content>
             </List.Item>
           </List>
@@ -121,9 +105,7 @@ Public Trello Board
         {links.map(link => (
           <List.Item>
             <Link href={link.href}>
-              <Button primary>
-                {link.label}
-              </Button>
+              <Button primary>{link.label}</Button>
             </Link>
           </List.Item>
         ))}

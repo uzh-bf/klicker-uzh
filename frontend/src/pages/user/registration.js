@@ -43,9 +43,7 @@ const Registration = ({ intl }) => (
                   id="user.registration.successNotification"
                   values={{
                     br: <br />,
-                    link: <Link href="/user/login">
-/user/login
-                    </Link>,
+                    link: <Link href="/user/login">/user/login</Link>,
                     newEmail,
                   }}
                 />
@@ -56,16 +54,10 @@ const Registration = ({ intl }) => (
           return (
             <React.Fragment>
               <Message info>
-                <Message.Header>
-Public Beta
-                </Message.Header>
+                <Message.Header>Public Beta</Message.Header>
                 <Message.Content>
                   Sign up for the Klicker 2018 public beta. Already have an
-                  account?
-                  {' '}
-                  <Link href="/user/login">
-Login here.
-                  </Link>
+                  account? <Link href="/user/login">Login here.</Link>
                 </Message.Content>
               </Message>
               <RegistrationForm

@@ -59,15 +59,11 @@ const Sidebar = ({
           </div>
           <div className="logo">
             Klicker
-            <span className="high">
-UZH
-            </span>
+            <span className="high">UZH</span>
           </div>
         </div>
       </SemanticSidebar>
-      <SemanticSidebar.Pusher>
-        {children}
-      </SemanticSidebar.Pusher>
+      <SemanticSidebar.Pusher>{children}</SemanticSidebar.Pusher>
     </SemanticSidebar.Pushable>
 
     <style jsx>

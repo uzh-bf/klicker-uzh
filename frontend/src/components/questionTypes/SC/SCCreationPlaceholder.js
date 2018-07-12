@@ -44,9 +44,7 @@ const SCCreationPlaceholder = ({
       <Icon name="save" />
     </button>
 
-    <style jsx>
-      {styles}
-    </style>
+    <style jsx>{styles}</style>
     <style jsx>
       {`
         .leftAction {

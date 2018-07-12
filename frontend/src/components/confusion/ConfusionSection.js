@@ -21,9 +21,7 @@ const propTypes = {
 
 const ConfusionSection = ({ data, title, ylabel }) => (
   <div className="confusionSection">
-    <h3>
-      {title}
-    </h3>
+    <h3>{title}</h3>
 
     <div className="chart">
       {(() => {

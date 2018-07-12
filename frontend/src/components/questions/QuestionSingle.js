@@ -22,9 +22,7 @@ const QuestionSingle = ({
 }) => (
   <div className="questionSingle">
     <div className="top">
-      <div className="type">
-        {generateTypesShort(intl)[type]}
-      </div>
+      <div className="type">{generateTypesShort(intl)[type]}</div>
       {onDelete && (
         <button
           className="ui basic icon button deleteButton"
@@ -36,11 +34,7 @@ const QuestionSingle = ({
       )}
     </div>
     <div className="title">
-      {title}
-      {' '}
-      <span>
-        {`(v${version + 1})`}
-      </span>
+      {title} <span>{`(v${version + 1})`}</span>
     </div>
 
     <style jsx>

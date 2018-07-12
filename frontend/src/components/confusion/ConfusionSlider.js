@@ -43,11 +43,7 @@ const ConfusionSlider = ({
         ])}
       </Head>
 
-      {title && (
-      <div className="title">
-        {title}
-      </div>
-      )}
+      {title && <div className="title">{title}</div>}
 
       <div className="slider">
         <Slider
