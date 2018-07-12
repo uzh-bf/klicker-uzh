@@ -3,11 +3,13 @@ import PropTypes from 'prop-types'
 import UUIDv4 from 'uuid'
 import { List } from 'immutable'
 import { DragDropContext } from 'react-beautiful-dnd'
-import { compose, withHandlers, withStateHandlers } from 'recompose'
+import {
+  compose, withHandlers, withStateHandlers, branch,
+} from 'recompose'
 import { defineMessages, intlShape } from 'react-intl'
 import { graphql, Query } from 'react-apollo'
 import _debounce from 'lodash/debounce'
-import Router from 'next/router'
+import Router, { withRouter } from 'next/router'
 import moment from 'moment'
 
 import {
@@ -25,6 +27,7 @@ import {
   RunningSessionQuery,
   QuestionPoolQuery,
   ArchiveQuestionsMutation,
+  SessionDetailsQuery,
 } from '../../graphql'
 // import { SessionCreationForm } from '../../components/forms'
 import SessionCreationForm from '../../components/forms/sessionCreation/SessionCreationForm'
@@ -121,23 +124,21 @@ const Index = ({
         />
       </DragDropContext>
 
-      <style jsx>
-        {`
-          .creationForm {
-            animation-name: slide-in;
-            animation-duration: 0.75s;
-          }
+      <style jsx>{`
+        .creationForm {
+          animation-name: slide-in;
+          animation-duration: 0.75s;
+        }
 
-          @keyframes slide-in {
-            0% {
-              transform: translateY(300px);
-            }
-            100% {
-              transform: translateY(0);
-            }
+        @keyframes slide-in {
+          0% {
+            transform: translateY(300px);
           }
-        `}
-      </style>
+          100% {
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   )
 
@@ -202,78 +203,76 @@ const Index = ({
             </div>
           </div>
 
-          <style jsx>
-            {`
-              @import 'src/theme';
+          <style jsx>{`
+            @import 'src/theme';
 
-              .questionPool {
-                display: flex;
-                flex-direction: column;
+            .questionPool {
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+
+              overflow-y: auto;
+
+              .tagList {
+                height: 100%;
+                min-width: 5rem;
+
+                flex: 1;
+                background: $color-primary-05p;
+                padding: 0.5rem;
+              }
+
+              .wrapper {
                 height: 100%;
 
+                .questionList {
+                  height: 100%;
+
+                  display: flex;
+                  flex-direction: column;
+
+                  margin: 0 auto;
+                  max-width: $max-width;
+
+                  .questionListContent {
+                    flex: 1;
+                    height: 100%;
+
+                    padding: 1rem;
+                  }
+                }
+              }
+
+              @include desktop-tablet-only {
+                flex-flow: row wrap;
                 overflow-y: auto;
 
                 .tagList {
-                  height: 100%;
-                  min-width: 5rem;
+                  overflow-y: auto;
+                  flex: 0 0 auto;
+                  padding: 2rem 1rem;
 
-                  flex: 1;
-                  background: $color-primary-05p;
-                  padding: 0.5rem;
+                  border-right: 1px solid $color-primary;
                 }
 
                 .wrapper {
-                  height: 100%;
+                  flex: 1;
+                  padding: 1rem;
 
                   .questionList {
-                    height: 100%;
-
-                    display: flex;
-                    flex-direction: column;
-
-                    margin: 0 auto;
-                    max-width: $max-width;
-
                     .questionListContent {
-                      flex: 1;
-                      height: 100%;
-
-                      padding: 1rem;
+                      overflow-y: auto;
+                      padding: 1rem 1rem 0 0;
                     }
                   }
-                }
-
-                @include desktop-tablet-only {
-                  flex-flow: row wrap;
-                  overflow-y: auto;
-
-                  .tagList {
-                    overflow-y: auto;
-                    flex: 0 0 auto;
-                    padding: 2rem 1rem;
-
-                    border-right: 1px solid $color-primary;
-                  }
-
-                  .wrapper {
-                    flex: 1;
-                    padding: 1rem;
-
-                    .questionList {
-                      .questionListContent {
-                        overflow-y: auto;
-                        padding: 1rem 1rem 0 0;
-                      }
-                    }
-                  }
-                }
-
-                @include desktop-only {
-                  padding: 0;
                 }
               }
-            `}
-          </style>
+
+              @include desktop-only {
+                padding: 0;
+              }
+            }
+          `}</style>
         </TeacherLayout>
       )}
     </Query>
@@ -286,16 +285,48 @@ export default compose(
   withLogging(),
   withDnD,
   pageWithIntl,
+  withRouter,
   graphql(StartSessionMutation, { name: 'startSession' }),
   graphql(CreateSessionMutation, { name: 'createSession' }),
   graphql(ArchiveQuestionsMutation, { name: 'archiveQuestions' }),
   withSortingAndFiltering,
   withSelection,
+  branch(
+    ({ router: { query } }) => !!query.editSessionId,
+    graphql(SessionDetailsQuery, {
+      name: 'editSessionDetails',
+      options: ({ router: { query } }) => ({
+        variables: { id: query.editSessionId },
+      }),
+    }),
+  ),
   withStateHandlers(
-    {
-      creationMode: false,
-      sessionBlocks: List([]),
-      sessionName: null,
+    ({ editSessionDetails: { session } }) => {
+      // if the session of the session details query is defined, we are in edit mode
+      const sessionEditMode = typeof session !== 'undefined'
+
+      // define a function that parses session block details into immutable client side state
+      // that will serve as initial state for the edit form
+      const parseInitialBlocks = () => List(
+        session.blocks.map(({ id, instances }) => ({
+          id,
+          key: id,
+          questions: List(
+            instances.map(({ question }) => ({
+              id: question.id,
+              title: question.title,
+              type: question.type,
+            })),
+          ),
+        })),
+      )
+
+      return {
+        creationMode: sessionEditMode,
+        sessionBlocks: sessionEditMode ? parseInitialBlocks() : List([]),
+        sessionId: sessionEditMode ? session.id : undefined,
+        sessionName: sessionEditMode ? session.name : null,
+      }
     },
     {
       // handlers for session creation form fields
