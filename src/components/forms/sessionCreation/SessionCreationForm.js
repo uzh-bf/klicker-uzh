@@ -6,7 +6,7 @@ import { FormattedMessage } from 'react-intl'
 import { object, string } from 'yup'
 
 import QuestionSingle from '../../questions/QuestionSingle'
-import QuestionDropzone from '../../sessions/creation/QuestionDropzone'
+import QuestionDropzone from './QuestionDropzone'
 import InfoArea from './InfoArea'
 
 const propTypes = {
