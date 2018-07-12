@@ -1,6 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import moment from 'moment'
+import Link from 'next/link'
 import { Button, Icon, Message } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
@@ -70,6 +71,12 @@ const Session = ({
           </div>
         ))}
         <div className="actionArea">
+          <Link href={{ pathname: '/questions', query: { editSessionId: id } }}>
+            <Button icon labelPosition="left">
+              <Icon name="edit" />
+              Edit Session
+            </Button>
+          </Link>
           <a
             href={`/sessions/evaluation/${id}`}
             rel="noopener noreferrer"
