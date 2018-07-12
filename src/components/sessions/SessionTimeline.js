@@ -102,14 +102,10 @@ const SessionTimeline = ({
       <div className="topRow">
         <div className="infos">
           <div className="startingTime">
-            <Icon name="time" />
-            {' '}
-            {startedAt}
+            <Icon name="time" /> {startedAt}
           </div>
           <div className="runningTime">
-            <Icon name="play circle" />
-            {' '}
-            {runtime}
+            <Icon name="play circle" /> {runtime}
           </div>
         </div>
 

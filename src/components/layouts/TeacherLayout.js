@@ -112,9 +112,7 @@ const TeacherLayout = ({
           </Sidebar>
         </div>
 
-        <div className="actionArea">
-          {actionArea}
-        </div>
+        <div className="actionArea">{actionArea}</div>
 
         <style jsx>
           {`

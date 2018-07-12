@@ -8,9 +8,7 @@ const propTypes = {
 
 const Messager = ({ message }) => (
   <div className="messager">
-    <Message>
-      {message}
-    </Message>
+    <Message>{message}</Message>
 
     <style jsx>
       {`

@@ -113,11 +113,7 @@ function Chart({
           )
         }
 
-        return (
-          <div>
-This chart type is not implemented yet.
-          </div>
-        )
+        return <div>This chart type is not implemented yet.</div>
       })()}
 
       <style jsx>

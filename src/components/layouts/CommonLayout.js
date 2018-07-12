@@ -30,9 +30,7 @@ const CommonLayout = ({
 }) => (
   <div className="commonLayout">
     <Head>
-      <title>
-        {pageTitle}
-      </title>
+      <title>{pageTitle}</title>
     </Head>
 
     {children}

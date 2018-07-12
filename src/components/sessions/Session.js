@@ -30,15 +30,12 @@ const Session = ({
 
   return (
     <div className="session">
-      <h2 className="title">
-        {name}
-      </h2>
+      <h2 className="title">{name}</h2>
       <div className="date">
         <FormattedMessage
           defaultMessage="Created on"
           id="sessionList.string.createdOn"
-        />
-        {' '}
+        />{' '}
         {moment(createdAt).format('DD.MM.YY HH:mm')}
       </div>
 

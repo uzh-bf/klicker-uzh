@@ -40,11 +40,7 @@ export const QuestionListPres = ({
         }
 
         if (error) {
-          return (
-            <Message error>
-              {error.message}
-            </Message>
-          )
+          return <Message error>{error.message}</Message>
         }
 
         if (questions.length === 0) {
@@ -94,9 +90,7 @@ export const QuestionListPres = ({
                   rel="noopener noreferrer"
                   target="_blank"
                 >
-                  {moment(createdAt).format('DD.MM.YYYY HH:mm')}
-                  {' '}
-(v
+                  {moment(createdAt).format('DD.MM.YYYY HH:mm')} (v
                   {version + 1}
                   )
                 </a>

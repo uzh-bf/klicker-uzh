@@ -146,8 +146,7 @@ function EvaluationLayout({
                       />
                       {title.length > 15
                         ? `${title.substring(0, 15)}...`
-                        : title}
-                      {' '}
+                        : title}{' '}
                       (
                       {count}
                       )
@@ -167,9 +166,7 @@ function EvaluationLayout({
         })()}
 
         <div className="questionDetails">
-          <p>
-            {description}
-          </p>
+          <p>{description}</p>
         </div>
 
         <div className="info">
@@ -195,9 +192,7 @@ function EvaluationLayout({
           />
         </div>
 
-        <div className="chart">
-          {children}
-        </div>
+        <div className="chart">{children}</div>
 
         {activeVisualization !== CHART_TYPES.TABLE && (
           <React.Fragment>

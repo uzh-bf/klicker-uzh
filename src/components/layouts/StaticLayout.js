@@ -15,17 +15,13 @@ const defaultProps = {
 const StaticLayout = ({ children, pageTitle }) => (
   <CommonLayout baseFontSize="16px" nextHeight="100%" pageTitle={pageTitle}>
     <div className="staticLayout">
-      <main className="content">
-        {children}
-      </main>
+      <main className="content">{children}</main>
 
       <footer>
         <hr />
         <p>
           &copy;
-          {new Date().getFullYear()}
-          {' '}
-IBF Teaching Center, Department of Banking
+          {new Date().getFullYear()} IBF Teaching Center, Department of Banking
           and Finance, University of Zurich. All rights reserved.
           <br />
           Products and Services displayed herein are trademarks or registered
