@@ -46,6 +46,8 @@
     "popup",
     "sidebar",
     "tab",
-    "transition"
+    "transition",
+    "segment",
+    "card"
   ]
 }
