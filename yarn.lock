@@ -5522,9 +5522,9 @@ elastic-apm-http-client@^5.2.1:
   dependencies:
     fast-safe-stringify "^2.0.4"
 
-elastic-apm-node@1.8.2:
-  version "1.8.2"
-  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.8.2.tgz#da94d5b9fd3a50aff0f295cf683da9ea7fb55f10"
+elastic-apm-node@1.8.3:
+  version "1.8.3"
+  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.8.3.tgz#012e5cae723ecd5e8d21d87a73368b28cc724a1c"
   dependencies:
     after-all-results "^2.0.0"
     async-value-promise "^1.1.1"
@@ -5540,7 +5540,7 @@ elastic-apm-node@1.8.2:
     original-url "^1.2.1"
     redact-secrets "^1.0.0"
     require-ancestors "^1.0.0"
-    require-in-the-middle "^3.0.0"
+    require-in-the-middle "^3.1.0"
     semver "^5.5.0"
     sql-summary "^1.0.0"
     stackman "^3.0.2"
@@ -10638,9 +10638,9 @@ node.extend@^2.0.0:
   dependencies:
     is "^3.2.1"
 
-nodemon@1.18.0:
-  version "1.18.0"
-  resolved "https://registry.yarnpkg.com/nodemon/-/nodemon-1.18.0.tgz#44b75d5f19065c47a262d4ab21990da3b6f8feae"
+nodemon@1.18.1:
+  version "1.18.1"
+  resolved "https://registry.yarnpkg.com/nodemon/-/nodemon-1.18.1.tgz#873d2f7799662c549f7ea557db6934d5cbf665d6"
   dependencies:
     chokidar "^2.0.2"
     debug "^3.1.0"
@@ -13043,9 +13043,9 @@ require-from-string@^2.0.1:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/require-from-string/-/require-from-string-2.0.1.tgz#c545233e9d7da6616e9d59adfb39fc9f588676ff"
 
-require-in-the-middle@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/require-in-the-middle/-/require-in-the-middle-3.0.0.tgz#cd6c2b955ee39a71f7b99f90074252e29d14decb"
+require-in-the-middle@^3.1.0:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/require-in-the-middle/-/require-in-the-middle-3.1.0.tgz#faf4b947c8d8d2588ae4f246487e2d7262add1a4"
   dependencies:
     module-details-from-path "^1.0.3"
     resolve "^1.5.0"
