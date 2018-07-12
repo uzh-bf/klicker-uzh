@@ -32,7 +32,10 @@ import {
   withLogging,
 } from '../../lib'
 import { Chart } from '../../components/evaluation'
-import { SessionEvaluationQuery } from '../../graphql'
+import {
+  SessionEvaluationQuery,
+  SessionEvaluationPublicQuery,
+} from '../../graphql'
 import { sessionStatusShape, statisticsShape } from '../../propTypes'
 
 const messages = defineMessages({
@@ -133,12 +136,19 @@ export default compose(
   withRouter,
   withLogging(),
   pageWithIntl,
-  graphql(SessionEvaluationQuery, {
-    // refetch the active instances query every 10s
-    options: ({ router }) => ({
-      variables: { sessionId: router.query.sessionId },
+  branch(
+    ({ router }) => router.query.public,
+    graphql(SessionEvaluationPublicQuery, {
+      options: ({ router }) => ({
+        variables: { sessionId: router.query.sessionId },
+      }),
     }),
-  }),
+    graphql(SessionEvaluationQuery, {
+      options: ({ router }) => ({
+        variables: { sessionId: router.query.sessionId },
+      }),
+    }),
+  ),
   // if the query is still loading, display nothing
   branch(
     ({ data: { loading, session } }) => loading || !session,
@@ -146,11 +156,11 @@ export default compose(
   ),
   // override the session evaluation query with a polling query
   branch(
-    ({ data: { session } }) => session.status === SESSION_STATUS.RUNNING,
+    ({ data: { session }, router }) => !router.query.public && session.status === SESSION_STATUS.RUNNING,
     graphql(SessionEvaluationQuery, {
       // refetch the active instances query every 10s
       options: ({ router }) => ({
-        pollInterval: 10000,
+        pollInterval: 7000,
         variables: { sessionId: router.query.sessionId },
       }),
     }),
