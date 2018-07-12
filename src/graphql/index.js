@@ -23,6 +23,7 @@ import QuestionDetailsQuery from './queries/QuestionDetailsQuery.graphql'
 import QuestionListQuery from './queries/QuestionListQuery.graphql'
 import RunningSessionQuery from './queries/RunningSessionQuery.graphql'
 import SessionEvaluationQuery from './queries/SessionEvaluationQuery.graphql'
+import SessionEvaluationPublicQuery from './queries/SessionEvaluationPublicQuery.graphql'
 import SessionListQuery from './queries/SessionListQuery.graphql'
 import QuestionPoolQuery from './queries/QuestionPoolQuery.graphql'
 import TagListQuery from './queries/TagListQuery.graphql'
@@ -55,6 +56,7 @@ const queries = [
   QuestionListQuery,
   RunningSessionQuery,
   SessionEvaluationQuery,
+  SessionEvaluationPublicQuery,
   SessionListQuery,
   QuestionPoolQuery,
   TagListQuery,
@@ -92,6 +94,7 @@ export {
   RequestPasswordMutation,
   RunningSessionQuery,
   SessionEvaluationQuery,
+  SessionEvaluationPublicQuery,
   SessionListQuery,
   QuestionPoolQuery,
   TagListQuery,

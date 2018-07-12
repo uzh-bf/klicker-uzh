@@ -233,6 +233,11 @@ app
         url: '/qr/:shortname',
       },
       {
+        mapParams: req => ({ public: true, sessionId: req.params.sessionId }),
+        renderPath: '/sessions/evaluation',
+        url: '/sessions/public/:sessionId',
+      },
+      {
         mapParams: req => ({ sessionId: req.params.sessionId }),
         renderPath: '/sessions/evaluation',
         url: '/sessions/evaluation/:sessionId',

@@ -4,7 +4,7 @@ import classNames from 'classnames'
 import QRCode from 'qrcode.react'
 import { defineMessages, intlShape, FormattedMessage } from 'react-intl'
 import {
-  Button, Icon, Popup, Message,
+  Button, Checkbox, Icon, Popup, Message,
 } from 'semantic-ui-react'
 import { QuestionBlock } from '../questions'
 
@@ -25,6 +25,10 @@ const messages = defineMessages({
     defaultMessage: 'Open first block',
     id: 'runningSession.button.start',
   },
+  togglePublicEvaluation: {
+    defaultMessage: 'Publish evaluation',
+    id: 'runningSession.button.publicEvaluationToggle',
+  },
 })
 
 const propTypes = {
@@ -33,7 +37,9 @@ const propTypes = {
   handleEndSession: PropTypes.func.isRequired,
   handleNextBlock: PropTypes.func.isRequired,
   handlePauseSession: PropTypes.func.isRequired,
+  handleTogglePublicEvaluation: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
+  isEvaluationPublic: PropTypes.bool,
   runtime: PropTypes.string,
   sessionId: PropTypes.string.isRequired,
   shortname: PropTypes.string.isRequired,
@@ -42,6 +48,7 @@ const propTypes = {
 
 const defaultProps = {
   blocks: [],
+  isEvaluationPublic: false,
   runtime: '00:00:00',
   startedAt: '00:00:00',
 }
@@ -82,9 +89,11 @@ const SessionTimeline = ({
   startedAt,
   shortname,
   activeStep,
+  isEvaluationPublic,
   handleNextBlock,
   handleEndSession,
   handlePauseSession,
+  handleTogglePublicEvaluation,
 }) => {
   const isFeedbackSession = blocks.length === 0
 
@@ -239,6 +248,14 @@ const SessionTimeline = ({
             />
           </Button>
         </div>
+
+        <Checkbox
+          toggle
+          defaultChecked={isEvaluationPublic}
+          label={intl.formatMessage(messages.togglePublicEvaluation)}
+          value={isEvaluationPublic}
+          onChange={handleTogglePublicEvaluation}
+        />
 
         {isFeedbackSession ? (
           <Button
