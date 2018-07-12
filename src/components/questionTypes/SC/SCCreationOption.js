@@ -43,13 +43,9 @@ const SCCreationOption = ({
       {correct ? <Icon name="checkmark" /> : <Icon name="remove" />}
     </button>
 
-    <div className="name">
-      {name}
-    </div>
+    <div className="name">{name}</div>
 
-    <style jsx>
-      {styles}
-    </style>
+    <style jsx>{styles}</style>
   </div>
 )
 

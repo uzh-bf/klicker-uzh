@@ -189,9 +189,7 @@ const QuestionEditForm = ({
                     id="editQuestion.type"
                   />
                 </label>
-                <div className="type">
-                  {generateTypesLabel(intl)[type]}
-                </div>
+                <div className="type">{generateTypesLabel(intl)[type]}</div>
               </Form.Field>
             </div>
 

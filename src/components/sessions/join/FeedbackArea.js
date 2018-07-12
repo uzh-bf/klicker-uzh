@@ -46,9 +46,7 @@ function FeedbackArea({
 }) {
   return (
     <div className={classNames('feedbackArea', { active })}>
-      <h1 className="header">
-Feedback-Channel
-      </h1>
+      <h1 className="header">Feedback-Channel</h1>
       {isConfusionBarometerActive && (
         <div className="confusion">
           <ConfusionSlider
@@ -88,9 +86,7 @@ Feedback-Channel
       )}
 
       <div className="feedbacks">
-        <h2 className="sectionTitle">
-Feedbacks
-        </h2>
+        <h2 className="sectionTitle">Feedbacks</h2>
         {isFeedbackChannelActive
           && feedbacks
           && feedbacks.map(({ id, content, votes }) => (

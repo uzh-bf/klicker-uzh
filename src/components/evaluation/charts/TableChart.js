@@ -40,11 +40,7 @@ Layout.propTypes = {
 }
 
 function ColumnWithSolution({ value }) {
-  return (
-    <span>
-      {value ? 'T' : 'F'}
-    </span>
-  )
+  return <span>{value ? 'T' : 'F'}</span>
 }
 ColumnWithSolution.propTypes = {
   value: PropTypes.bool.isRequired, // eslint-disable-line react/boolean-prop-naming

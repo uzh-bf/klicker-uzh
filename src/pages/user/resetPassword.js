@@ -45,9 +45,7 @@ const ResetPassword = ({ intl, router }) => (
                   defaultMessage="Your password was successfully changed. You can now {login}."
                   id="user.resetPassword.success"
                   values={{
-                    login: <Link href="/user/login">
-login
-                    </Link>,
+                    login: <Link href="/user/login">login</Link>,
                   }}
                 />
               </Message>
@@ -68,11 +66,7 @@ login
                   })
                 }}
               />
-              {error && (
-              <Message error>
-                {error.message}
-              </Message>
-              )}
+              {error && <Message error>{error.message}</Message>}
             </React.Fragment>
           )
         }}

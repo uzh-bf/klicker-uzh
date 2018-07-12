@@ -44,9 +44,7 @@ const FormWithLinks = ({ button, children, links }) => (
             {links.map(link => (
               <List.Item>
                 <Link href={link.href}>
-                  <a>
-                    {link.label}
-                  </a>
+                  <a>{link.label}</a>
                 </Link>
               </List.Item>
             ))}

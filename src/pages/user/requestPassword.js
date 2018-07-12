@@ -54,11 +54,7 @@ const RequestPassword = ({ intl }) => (
                   requestPassword({ variables: { email } })
                 }}
               />
-              {error && (
-              <Message error>
-                {error.message}
-              </Message>
-              )}
+              {error && <Message error>{error.message}</Message>}
             </React.Fragment>
           )
         }}

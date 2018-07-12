@@ -253,11 +253,7 @@ export default compose(
   // if the query has finished loading but there are no active instances, show a simple message
   branch(
     ({ activeInstances }) => !(activeInstances && activeInstances.length > 0),
-    renderComponent(() => (
-      <div>
-No evaluation currently active.
-      </div>
-    )),
+    renderComponent(() => <div>No evaluation currently active.</div>),
   ),
   withStateHandlers(
     ({ activeInstances, sessionStatus }) => {
