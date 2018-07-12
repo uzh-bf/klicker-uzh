@@ -16,6 +16,7 @@ const SCQuestionOptions = require('./questionTypes/SCQuestionOptions')
 
 const Question = `
   union QuestionOptions = SCQuestionOptions | FREEQuestionOptions
+  union QuestionOptions_Public = SCQuestionOptions_Public | FREEQuestionOptions_Public
 
   enum Question_Type {
     SC
@@ -27,6 +28,7 @@ const Question = `
   input QuestionOptionsInput {
     randomized: Boolean
     restrictions: FREEQuestionOptions_RestrictionsInput
+
     choices: [SCQuestionOptions_ChoiceInput!]
   }
   type Question_Options {
@@ -34,30 +36,25 @@ const Question = `
     MC: SCQuestionOptions
     FREE_RANGE: FREEQuestionOptions
   }
+  type Question_Options_Public {
+    SC: SCQuestionOptions_Public
+    MC: SCQuestionOptions_Public
+    FREE_RANGE: FREEQuestionOptions_Public
+  }
 
   input Question_SolutionInput {
-    SC: [Boolean!]
-    MC: [Boolean!]
     FREE: String
     FREE_RANGE: Int
+
+    SC: [Boolean!]
+    MC: [Boolean!]
   }
   type Question_Solution {
-    SC: [Boolean!]
-    MC: [Boolean!]
     FREE: String
     FREE_RANGE: Int
-  }
 
-  type Question_Public {
-    id: ID!
-    instanceId: ID!
-    title: String!
-    type: Question_Type!
-    content: String
-    description: String!
-
-    options: Question_Options
-    solution: Question_Solution
+    SC: [Boolean!]
+    MC: [Boolean!]
   }
 
   input QuestionInput {
@@ -75,6 +72,7 @@ const Question = `
     content: String
     options: QuestionOptionsInput
     solution: Question_SolutionInput
+
     tags: [ID!]
   }
   type Question {
@@ -92,6 +90,23 @@ const Question = `
     createdAt: String!
     updatedAt: String!
   }
+  type Question_Public {
+    id: ID!
+    instanceId: ID!
+    title: String!
+    type: Question_Type!
+    content: String
+    description: String!
+    options: Question_Options
+    solution: Question_Solution
+  }
+  type Question_PublicEvaluation {
+    id: ID!
+    title: String!
+    type: Question_Type!
+
+    versions: [Question_Version_Public!]!
+  }
 
   type Question_Version {
     id: ID!
@@ -105,5 +120,10 @@ const Question = `
 
     createdAt: String!
     updatedAt: String!
+  }
+  type Question_Version_Public {
+    id: ID!
+    description: String!
+    options: Question_Options_Public
   }
 `

@@ -18,7 +18,16 @@ const allSessionsQuery = async (parentValue, args, { auth, loaders }) => {
   return results
 }
 
-const sessionQuery = async (parentValue, { id }, { loaders }) => ensureLoaders(loaders).sessions.load(id)
+const sessionQuery = async (parentValue, { id }, { auth, loaders }) => {
+  // load the requested session
+  const session = await ensureLoaders(loaders).sessions.load(id)
+
+  if (typeof auth !== 'undefined' || session.settings.isEvaluationPublic) {
+    return session
+  }
+
+  return null
+}
 const sessionByPVQuery = (parentValue, args, { loaders }) => {
   if (!parentValue.runningSession) {
     return null

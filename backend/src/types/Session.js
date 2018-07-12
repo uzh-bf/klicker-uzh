@@ -52,14 +52,22 @@ const Session = `
     startedAt: String!
     finishedAt: String!
   }
+  type Session_PublicEvaluation {
+    id: ID!
+    status: Session_Status!
+
+    blocks: [Session_QuestionBlock_Public!]!
+  }
 
   input Session_SettingsInput {
     isConfusionBarometerActive: Boolean
+    isEvaluationPublic: Boolean
     isFeedbackChannelActive: Boolean
     isFeedbackChannelPublic: Boolean
   }
   type Session_Settings {
     isConfusionBarometerActive: Boolean!
+    isEvaluationPublic: Boolean!
     isFeedbackChannelActive: Boolean!
     isFeedbackChannelPublic: Boolean!
   }
@@ -77,6 +85,12 @@ const Session = `
     status: Session_QuestionBlockStatus!
 
     instances: [QuestionInstance!]!
+  }
+  type Session_QuestionBlock_Public {
+    id: ID!
+    status: Session_QuestionBlockStatus!
+
+    instances: [QuestionInstance_Public!]!
   }
 
   type Session_ConfusionTimestep {

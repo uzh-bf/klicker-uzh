@@ -18,6 +18,7 @@ const Session = new mongoose.Schema({
   },
   settings: {
     isConfusionBarometerActive: { type: Boolean, default: false },
+    isEvaluationPublic: { type: Boolean, default: false },
     isFeedbackChannelActive: { type: Boolean, default: false },
     isFeedbackChannelPublic: { type: Boolean, default: false },
     fingerprinting: { type: Boolean, default: true },

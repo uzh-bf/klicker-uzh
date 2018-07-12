@@ -31,4 +31,11 @@ const QuestionInstance = `
     createdAt: String!
     updatedAt: String!
   }
+  type QuestionInstance_Public {
+    id: ID!
+    version: Int!
+    isOpen: Boolean!
+    question: Question_PublicEvaluation!
+    results: QuestionInstance_Results
+  }
 `

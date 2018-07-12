@@ -17,12 +17,14 @@ const resultsByPVQuery = ({ results }) => {
   if (results && results.FREE) {
     return {
       FREE: _map(results.FREE, (result, key) => ({ ...result, key })),
+      totalParticipants: results.totalParticipants,
     }
   }
 
   if (results && results.CHOICES) {
     return {
       CHOICES: results.CHOICES,
+      totalParticipants: results.totalParticipants,
     }
   }
 

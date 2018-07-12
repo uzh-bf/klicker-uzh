@@ -350,6 +350,7 @@ const SessionEvaluationQuery = `
           results {
             ... on SCQuestionResults {
               CHOICES
+              totalParticipants
             }
             ... on FREEQuestionResults {
               FREE {
@@ -357,12 +358,67 @@ const SessionEvaluationQuery = `
                 key
                 value
               }
+              totalParticipants
             }
           }
-          responses {
+        }
+      }
+    }
+  }
+`
+const SessionPublicEvaluationQuery = `
+  query EvaluatePublicSession($sessionId: ID!) {
+    sessionPublic(id: $sessionId) {
+      id
+      status
+      blocks {
+        id
+        status
+        instances {
+          id
+          isOpen
+          version
+          question {
             id
-            value
-            createdAt
+            title
+            type
+            versions {
+              description
+              options {
+                FREE_RANGE {
+                  restrictions {
+                    min
+                    max
+                  }
+                }
+                SC {
+                  choices {
+                    name
+                  }
+                  randomized
+                }
+                MC {
+                  choices {
+                    name
+                  }
+                  randomized
+                }
+              }
+            }
+          }
+          results {
+            ... on SCQuestionResults {
+              CHOICES
+              totalParticipants
+            }
+            ... on FREEQuestionResults {
+              FREE {
+                count
+                key
+                value
+              }
+              totalParticipants
+            }
           }
         }
       }
@@ -394,7 +450,40 @@ const SessionEvaluationSerializer = {
   )}
           }
           results: ${JSON.stringify(results)}
-          responses: ${responses.map(response => response.value)}
+          responses: ${responses && responses.map(response => response.value)}
+        `,
+  )}
+      `,
+  )}
+    }
+  `,
+}
+const SessionPublicEvaluationSerializer = {
+  test: ({ sessionPublic }) => !!sessionPublic,
+  print: ({ sessionPublic: { status, blocks } }) => `
+    evaluateSession {
+      status: ${status}
+      blocks: ${blocks.map(
+    ({ status: status2, instances }) => `
+        status: ${status2}
+        instances: ${instances.map(
+    ({
+      isOpen, version, question, results, responses,
+    }) => `
+          isOpen: ${isOpen}
+          version: ${version}
+          question {
+            title: ${question.title}
+            type: ${question.type}
+            versions: ${question.versions.map(
+    ({ description, options }) => `
+              description: ${description}
+              options: ${JSON.stringify(options)}
+            `,
+  )}
+          }
+          results: ${JSON.stringify(results)}
+          responses: ${responses && responses.map(response => response.value)}
         `,
   )}
       `,
@@ -412,10 +501,12 @@ module.exports = {
   AccountSummaryQuery,
   JoinSessionQuery,
   SessionEvaluationQuery,
+  SessionPublicEvaluationQuery,
   serializers: [
     QuestionDetailsSerializer,
     RunningSessionSerializer,
     JoinSessionSerializer,
     SessionEvaluationSerializer,
+    SessionPublicEvaluationSerializer,
   ],
 }

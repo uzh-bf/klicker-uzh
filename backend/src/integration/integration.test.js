@@ -27,7 +27,11 @@ const sendQuery = (body, authCookie) => {
 }
 
 // ensure that there were no errors with the graphql request
-const ensureNoErrors = (response) => {
+const ensureNoErrors = (response, debug = false) => {
+  if (debug) {
+    console.log(response.body)
+  }
+  expect(response.body.data).toBeDefined()
   expect(response.body.errors).toBeUndefined()
   return response.body.data
 }
@@ -922,6 +926,46 @@ describe('Integration', () => {
 
         expect(data).toMatchSnapshot()
       })
+    })
+
+    it('allows publishing session evaluations', async () => {
+      // ensure that the session evaluation data is not leaked before publishing
+      const privateSessionData = ensureNoErrors(
+        await sendQuery({
+          query: queries.SessionPublicEvaluationQuery,
+          variables: {
+            sessionId,
+          },
+        }),
+      )
+
+      expect(privateSessionData.sessionPublic).toBeFalsy()
+
+      // set the session evaluation to be publicly available
+      await sendQuery(
+        {
+          query: mutations.UpdateSessionSettingsMutation,
+          variables: {
+            sessionId,
+            settings: {
+              isEvaluationPublic: true,
+            },
+          },
+        },
+        authCookie,
+      )
+
+      // ensure that the evaluation can be publicly accessed (but only in restricted format)
+      const publicSessionData = ensureNoErrors(
+        await sendQuery({
+          query: queries.SessionPublicEvaluationQuery,
+          variables: {
+            sessionId,
+          },
+        }),
+      )
+
+      expect(publicSessionData).toMatchSnapshot()
     })
 
     it('allows completing sessions', async () => {
