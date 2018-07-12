@@ -4,17 +4,6 @@ query RunningSession {
     runtime
     startedAt
     activeStep
-    confusionTS {
-      difficulty
-      speed
-      createdAt
-    }
-    feedbacks {
-      id
-      content
-      votes
-      createdAt
-    }
     blocks {
       id
       status
@@ -29,8 +18,20 @@ query RunningSession {
         }
       }
     }
+    confusionTS {
+      difficulty
+      speed
+      createdAt
+    }
+    feedbacks {
+      id
+      content
+      votes
+      createdAt
+    }
     settings {
       isConfusionBarometerActive
+      isEvaluationPublic
       isFeedbackChannelActive
       isFeedbackChannelPublic
     }

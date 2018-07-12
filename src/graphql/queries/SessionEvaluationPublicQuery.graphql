@@ -1,5 +1,5 @@
-query EvaluateSession($sessionId: ID!) {
-  session(id: $sessionId) {
+query EvaluateSessionPublic($sessionId: ID!) {
+  sessionPublic(id: $sessionId) {
     id
     status
     blocks {
@@ -24,14 +24,12 @@ query EvaluateSession($sessionId: ID!) {
               }
               SC {
                 choices {
-                  correct
                   name
                 }
                 randomized
               }
               MC {
                 choices {
-                  correct
                   name
                 }
                 randomized

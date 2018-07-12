@@ -11,6 +11,7 @@
     "@babel/plugin-proposal-pipeline-operator": "7.0.0-beta.51",
     "@babel/plugin-syntax-do-expressions": "7.0.0-beta.51",
     "@babel/plugin-transform-react-constant-elements": "7.0.0-beta.51",
+    "@babel/preset-env": "7.0.0-beta.51",
     "@babel/runtime": "7.0.0-beta.51",
     "@zeit/next-bundle-analyzer": "0.1.1",
     "@zeit/next-css": "0.2.0",
@@ -101,7 +102,6 @@
     "yup": "0.25.1"
   },
   "devDependencies": {
-    "@babel/preset-env": "7.0.0-beta.51",
     "@storybook/addon-actions": "3.4.8",
     "@storybook/addon-console": "1.0.4",
     "@storybook/addon-info": "3.4.8",
