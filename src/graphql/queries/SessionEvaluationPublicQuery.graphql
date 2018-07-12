@@ -40,6 +40,7 @@ query EvaluateSessionPublic($sessionId: ID!) {
         results {
           ... on SCQuestionResults {
             CHOICES
+            totalParticipants
           }
           ... on FREEQuestionResults {
             FREE {
@@ -47,6 +48,7 @@ query EvaluateSessionPublic($sessionId: ID!) {
               key
               value
             }
+            totalParticipants
           }
         }
       }
