@@ -46,7 +46,7 @@
     "validator": "10.4.0"
   },
   "devDependencies": {
-    "babel-eslint": "8.2.5",
+    "babel-eslint": "8.2.6",
     "eslint": "5.1.0",
     "eslint-config-airbnb-base": "13.0.0",
     "eslint-plugin-import": "2.13.0",
