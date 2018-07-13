@@ -6,6 +6,7 @@ import { Button, Icon, Message } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 import { QuestionBlock } from '../questions'
+import { SESSION_STATUS } from '../../constants'
 
 const propTypes = {
   blocks: PropTypes.array,
@@ -18,6 +19,7 @@ const propTypes = {
   createdAt: PropTypes.string.isRequired,
   id: PropTypes.string.isRequired,
   name: PropTypes.string.isRequired,
+  status: PropTypes.string.isRequired,
 }
 
 const defaultProps = {
@@ -25,7 +27,7 @@ const defaultProps = {
 }
 
 const Session = ({
-  button, createdAt, id, name, blocks,
+  button, createdAt, id, name, blocks, status,
 }) => {
   const isFeedbackSession = blocks.length === 0
 
@@ -71,22 +73,28 @@ const Session = ({
           </div>
         ))}
         <div className="actionArea">
-          <Link href={{ pathname: '/questions', query: { editSessionId: id } }}>
-            <Button icon labelPosition="left">
-              <Icon name="edit" />
-              Edit Session
-            </Button>
-          </Link>
-          <a
-            href={`/sessions/evaluation/${id}`}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <Button icon disabled={isFeedbackSession} labelPosition="left">
-              <Icon name="external" />
-              Evaluation
-            </Button>
-          </a>
+          {status === SESSION_STATUS.CREATED && (
+            <Link
+              href={{ pathname: '/questions', query: { editSessionId: id } }}
+            >
+              <Button icon labelPosition="left">
+                <Icon name="edit" />
+                Edit Session
+              </Button>
+            </Link>
+          )}
+          {status !== SESSION_STATUS.CREATED && (
+            <a
+              href={`/sessions/evaluation/${id}`}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <Button icon disabled={isFeedbackSession} labelPosition="left">
+                <Icon name="external" />
+                Evaluation
+              </Button>
+            </a>
+          )}
           {button
             && !button.hidden && (
               <Button
