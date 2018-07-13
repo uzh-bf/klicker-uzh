@@ -1,0 +1,18 @@
+mutation ModifySession($sessionId: ID!, $name: String!, $blocks: [Session_QuestionBlockInput!]!) {
+  modifySession(session: { id: $sessionId, name: $name, blocks: $blocks }) {
+    id
+    status
+    blocks {
+      id
+      instances {
+        id
+        version
+        question {
+          id
+          title
+          type
+        }
+      }
+    }
+  }
+}
