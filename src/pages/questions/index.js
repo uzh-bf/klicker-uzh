@@ -518,9 +518,12 @@ export default compose(
 
     // handle creating a new session
     handleCreateSession: ({
+      sessionId,
+      sessionEditMode,
       sessionName,
       sessionBlocks,
       createSession,
+      modifySession,
       startSession,
       handleCreationModeToggle,
     }) => type => async (e) => {
@@ -530,17 +533,26 @@ export default compose(
       try {
         // prepare blocks for consumption through the api
         const blocks = sessionBlocks.map(({ questions }) => ({
-          questions: questions.map(({ id, version }) => ({
+          questions: questions.map(({ id, version = 0 }) => ({
             question: id,
             version,
           })),
         }))
 
-        // create a new session
-        const result = await createSession({
-          refetchQueries: [{ query: SessionListQuery }],
-          variables: { blocks, name: sessionName },
-        })
+        let result
+        if (sessionEditMode) {
+          // modify an existing session
+          result = await modifySession({
+            refetchQueries: [{ query: SessionListQuery }],
+            variables: { blocks, id: sessionId, name: sessionName },
+          })
+        } else {
+          // create a new session
+          result = await createSession({
+            refetchQueries: [{ query: SessionListQuery }],
+            variables: { blocks, name: sessionName },
+          })
+        }
 
         // start the session immediately if the respective button was clicked
         if (type === 'start') {
