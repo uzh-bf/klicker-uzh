@@ -4,7 +4,12 @@ import UUIDv4 from 'uuid'
 import { List } from 'immutable'
 import { DragDropContext } from 'react-beautiful-dnd'
 import {
-  compose, withHandlers, withStateHandlers, branch,
+  compose,
+  withHandlers,
+  withStateHandlers,
+  branch,
+  renderNothing,
+  withProps,
 } from 'recompose'
 import { defineMessages, intlShape } from 'react-intl'
 import { graphql, Query } from 'react-apollo'
@@ -28,6 +33,7 @@ import {
   QuestionPoolQuery,
   ArchiveQuestionsMutation,
   SessionDetailsQuery,
+  ModifySessionMutation,
 } from '../../graphql'
 // import { SessionCreationForm } from '../../components/forms'
 import SessionCreationForm from '../../components/forms/sessionCreation/SessionCreationForm'
@@ -285,52 +291,63 @@ export default compose(
   withLogging(),
   withDnD,
   pageWithIntl,
-  withRouter,
+  withSortingAndFiltering,
+  withSelection,
   graphql(StartSessionMutation, { name: 'startSession' }),
   graphql(CreateSessionMutation, { name: 'createSession' }),
   graphql(ArchiveQuestionsMutation, { name: 'archiveQuestions' }),
-  withSortingAndFiltering,
-  withSelection,
+  graphql(ModifySessionMutation, { name: 'modifySession' }),
+  withRouter,
   branch(
+    // if we are in session modification mode, branch away from the main data flow
     ({ router: { query } }) => !!query.editSessionId,
-    graphql(SessionDetailsQuery, {
-      name: 'editSessionDetails',
-      options: ({ router: { query } }) => ({
-        variables: { id: query.editSessionId },
+    // compose the relevant HOCs into a single one
+    compose(
+      // fetch session details
+      graphql(SessionDetailsQuery, {
+        name: 'editSessionDetails',
+        options: ({ router: { query } }) => ({
+          variables: { id: query.editSessionId },
+        }),
       }),
-    }),
+      // stall loading of the page until the session details have been fetched
+      branch(
+        ({ editSessionDetails }) => typeof editSessionDetails.session === 'undefined',
+        renderNothing,
+      ),
+      // convert the fetched session details into usable initial state (name and blocks)
+      withProps(({ editSessionDetails: { session } }) => {
+        // define a function that parses session block details into immutable client side state
+        // that will serve as initial state for the edit form
+        const parseInitialBlocks = () => List(
+          session.blocks.map(({ id, instances }) => ({
+            id,
+            key: id,
+            questions: List(
+              instances.map(({ question }) => ({
+                id: question.id,
+                title: question.title,
+                type: question.type,
+              })),
+            ),
+          })),
+        )
+
+        return {
+          sessionBlocks: parseInitialBlocks(),
+          sessionEditMode: session.id,
+          sessionId: session.id,
+          sessionName: session.name,
+        }
+      }),
+    ),
   ),
   withStateHandlers(
-    ({ editSessionDetails }) => {
-      // extract the session from the query response
-      const session = editSessionDetails?.session
-
-      // if the session of the session details query is defined, we are in edit mode
-      const sessionEditMode = typeof session !== 'undefined'
-
-      // define a function that parses session block details into immutable client side state
-      // that will serve as initial state for the edit form
-      const parseInitialBlocks = () => List(
-        session.blocks.map(({ id, instances }) => ({
-          id,
-          key: id,
-          questions: List(
-            instances.map(({ question }) => ({
-              id: question.id,
-              title: question.title,
-              type: question.type,
-            })),
-          ),
-        })),
-      )
-
-      return {
-        creationMode: sessionEditMode,
-        sessionBlocks: sessionEditMode ? parseInitialBlocks() : List([]),
-        sessionId: sessionEditMode ? session.id : undefined,
-        sessionName: sessionEditMode ? session.name : null,
-      }
-    },
+    ({ sessionEditMode, sessionBlocks, sessionName }) => ({
+      creationMode: !!sessionEditMode,
+      sessionBlocks: sessionBlocks || List([]),
+      sessionName,
+    }),
     {
       // handlers for session creation form fields
       handleChangeName: () => e => ({ sessionName: e.target.value }),
@@ -440,6 +457,7 @@ export default compose(
             selectedItems.toList().map(({
               id, title, type, version,
             }) => ({
+              id: UUIDv4(),
               questions: List([
                 {
                   id,
