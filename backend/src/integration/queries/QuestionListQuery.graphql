@@ -1,0 +1,25 @@
+query QuestionList {
+  questions: allQuestions {
+    id
+    title
+    type
+    isArchived
+    instances {
+      id
+      version
+      createdAt
+      session
+    }
+    tags {
+      id
+      name
+    }
+    versions {
+      id
+      description
+      createdAt
+    }
+    createdAt
+    updatedAt
+  }
+}

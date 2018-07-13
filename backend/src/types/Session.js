@@ -32,6 +32,10 @@ const Session = `
     name: String!
     blocks: [Session_QuestionBlockInput!]!
   }
+  input SessionModifyInput {
+    name: String
+    blocks: [Session_QuestionBlockInput!]
+  }
   type Session {
     id: ID!
     name: String!

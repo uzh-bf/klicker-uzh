@@ -14,8 +14,8 @@ Array [
     },
     "locations": Array [
       Object {
-        "column": 5,
-        "line": 3,
+        "column": 3,
+        "line": 2,
       },
     ],
     "message": "INVALID_LOGIN",
@@ -283,44 +283,6 @@ exports[`Integration Question Modification modifies unrestricted FREE_RANGE ques
   
 `;
 
-exports[`Integration Session Creation works 1`] = `
-
-    createSession {
-      confusionTS: 
-      feedbacks: 
-      blocks: 
-        status: PLANNED
-        instances: 
-          title: Test SC #2
-          type: SC
-        ,
-          title: Test MC #2
-          type: MC
-        
-      ,
-        status: PLANNED
-        instances: 
-          title: Test FREE #2
-          type: FREE
-        
-      ,
-        status: PLANNED
-        instances: 
-          title: Test FREE_RANGE #2
-          type: FREE_RANGE
-        ,
-          title: Test partly restricted FREE_RANGE
-          type: FREE_RANGE
-        ,
-          title: Test unrestricted FREE_RANGE
-          type: FREE_RANGE
-        
-      
-      settings: {"isConfusionBarometerActive":false,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":false}
-    }
-  
-`;
-
 exports[`Integration Session Execution allows adding confusion timesteps 1`] = `
 Object {
   "addConfusionTS": "CONFUSION_ADDED",
@@ -402,7 +364,7 @@ exports[`Integration Session Execution allows evaluating sessions after completi
       ,
         status: EXECUTED
         instances: 
-          isOpen: true
+          isOpen: false
           version: 0
           question {
             title: Test FREE_RANGE #2
@@ -424,7 +386,7 @@ exports[`Integration Session Execution allows evaluating sessions after completi
           results: {"FREE":[{"count":1,"key":"a87ff679a2f3e71d9181a67b7542122c","value":"4"}],"totalParticipants":1}
           responses: undefined
         ,
-          isOpen: true
+          isOpen: false
           version: 0
           question {
             title: Test partly restricted FREE_RANGE
@@ -437,7 +399,7 @@ exports[`Integration Session Execution allows evaluating sessions after completi
           results: {"FREE":[{"count":1,"key":"d3eb9a9233e52948740d7eb8c3062d14","value":"99999"}],"totalParticipants":1}
           responses: undefined
         ,
-          isOpen: true
+          isOpen: false
           version: 0
           question {
             title: Test unrestricted FREE_RANGE
@@ -448,6 +410,41 @@ exports[`Integration Session Execution allows evaluating sessions after completi
             
           }
           results: {"FREE":[{"count":1,"key":"e4b1fc5758fb519823c9f2feb30b9a87","value":"99999.3784"}],"totalParticipants":1}
+          responses: undefined
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            ,
+              description: This is a simple modified MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"},{"correct":true,"name":"option5"}],"randomized":false}}
+            
+          }
+          results: null
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            ,
+              description: This is a simple modified SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"}],"randomized":false},"MC":null}
+            
+          }
+          results: null
           responses: undefined
         
       
@@ -516,7 +513,7 @@ exports[`Integration Session Execution allows publishing session evaluations 1`]
       ,
         status: EXECUTED
         instances: 
-          isOpen: true
+          isOpen: false
           version: 0
           question {
             title: Test FREE_RANGE #2
@@ -538,7 +535,7 @@ exports[`Integration Session Execution allows publishing session evaluations 1`]
           results: {"FREE":[{"count":1,"key":"a87ff679a2f3e71d9181a67b7542122c","value":"4"}],"totalParticipants":1}
           responses: undefined
         ,
-          isOpen: true
+          isOpen: false
           version: 0
           question {
             title: Test partly restricted FREE_RANGE
@@ -551,7 +548,7 @@ exports[`Integration Session Execution allows publishing session evaluations 1`]
           results: {"FREE":[{"count":1,"key":"d3eb9a9233e52948740d7eb8c3062d14","value":"99999"}],"totalParticipants":1}
           responses: undefined
         ,
-          isOpen: true
+          isOpen: false
           version: 0
           question {
             title: Test unrestricted FREE_RANGE
@@ -562,6 +559,41 @@ exports[`Integration Session Execution allows publishing session evaluations 1`]
             
           }
           results: {"FREE":[{"count":1,"key":"e4b1fc5758fb519823c9f2feb30b9a87","value":"99999.3784"}],"totalParticipants":1}
+          responses: undefined
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"name":"option1"},{"name":"option2"},{"name":"option3"}],"randomized":false}}
+            ,
+              description: This is a simple modified MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"name":"option3"},{"name":"option4"},{"name":"option5"}],"randomized":false}}
+            
+          }
+          results: null
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"name":"option1"},{"name":"option2"}],"randomized":false},"MC":null}
+            ,
+              description: This is a simple modified SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"name":"option3"},{"name":"option4"}],"randomized":false},"MC":null}
+            
+          }
+          results: null
           responses: undefined
         
       
@@ -581,6 +613,9 @@ exports[`Integration Session Execution allows running the full session flow (res
       ,
         status: PLANNED
         instances: false,false,false
+      ,
+        status: PLANNED
+        instances: false,false
       
     }
   
@@ -598,6 +633,9 @@ exports[`Integration Session Execution allows running the full session flow (res
       ,
         status: PLANNED
         instances: false,false,false
+      ,
+        status: PLANNED
+        instances: false,false
       
     }
   
@@ -615,6 +653,9 @@ exports[`Integration Session Execution allows running the full session flow (res
       ,
         status: ACTIVE
         instances: true,true,true
+      ,
+        status: PLANNED
+        instances: false,false
       
     }
   
@@ -632,6 +673,9 @@ exports[`Integration Session Execution allows running the full session flow (res
       ,
         status: PLANNED
         instances: false,false,false
+      ,
+        status: PLANNED
+        instances: false,false
       
     }
   
@@ -649,6 +693,9 @@ exports[`Integration Session Execution allows running the full session flow (res
       ,
         status: PLANNED
         instances: false,false,false
+      ,
+        status: PLANNED
+        instances: false,false
       
     }
   
@@ -665,7 +712,10 @@ exports[`Integration Session Execution allows running the full session flow (res
         instances: false
       ,
         status: EXECUTED
-        instances: true,true,true
+        instances: false,false,false
+      ,
+        status: PLANNED
+        instances: false,false
       
     }
   
@@ -755,6 +805,23 @@ exports[`Integration Session Execution allows running the full session flow (res
           question {
             title: Test unrestricted FREE_RANGE
             type: FREE_RANGE
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
           }
         
       
@@ -872,6 +939,41 @@ exports[`Integration Session Execution allows running the full session flow (res
           results: null
           responses: undefined
         
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            ,
+              description: This is a simple modified MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"},{"correct":true,"name":"option5"}],"randomized":false}}
+            
+          }
+          results: null
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            ,
+              description: This is a simple modified SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"}],"randomized":false},"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        
       
     }
   
@@ -953,6 +1055,23 @@ exports[`Integration Session Execution allows running the full session flow (res
           question {
             title: Test unrestricted FREE_RANGE
             type: FREE_RANGE
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
           }
         
       
@@ -1070,6 +1189,41 @@ exports[`Integration Session Execution allows running the full session flow (res
           results: null
           responses: undefined
         
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            ,
+              description: This is a simple modified MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"},{"correct":true,"name":"option5"}],"randomized":false}}
+            
+          }
+          results: null
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            ,
+              description: This is a simple modified SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"}],"randomized":false},"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        
       
     }
   
@@ -1151,6 +1305,23 @@ exports[`Integration Session Execution allows running the full session flow (res
           question {
             title: Test unrestricted FREE_RANGE
             type: FREE_RANGE
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
           }
         
       
@@ -1268,6 +1439,41 @@ exports[`Integration Session Execution allows running the full session flow (res
           results: {"FREE":[{"count":1,"key":"e4b1fc5758fb519823c9f2feb30b9a87","value":"99999.3784"}],"totalParticipants":1}
           responses: undefined
         
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            ,
+              description: This is a simple modified MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"},{"correct":true,"name":"option5"}],"randomized":false}}
+            
+          }
+          results: null
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            ,
+              description: This is a simple modified SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"}],"randomized":false},"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        
       
     }
   
@@ -1349,6 +1555,23 @@ exports[`Integration Session Execution allows running the full session flow (res
           question {
             title: Test unrestricted FREE_RANGE
             type: FREE_RANGE
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
           }
         
       
@@ -1461,6 +1684,41 @@ exports[`Integration Session Execution allows running the full session flow (res
             versions: 
               description: This is a simple unrestricted FREE_RANGE question.
               options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
+            
+          }
+          results: null
+          responses: undefined
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+            versions: 
+              description: This is a simple MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+            ,
+              description: This is a simple modified MC question.
+              options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"},{"correct":true,"name":"option5"}],"randomized":false}}
+            
+          }
+          results: null
+          responses: undefined
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+            versions: 
+              description: This is a simple SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+            ,
+              description: This is a simple modified SC question.
+              options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":true,"name":"option3"},{"correct":false,"name":"option4"}],"randomized":false},"MC":null}
             
           }
           results: null
@@ -1584,6 +1842,91 @@ exports[`Integration Session Execution allows updating session settings 1`] = `
 
     updateSessionSettings {
       settings: {"isConfusionBarometerActive":true,"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true}
+    }
+  
+`;
+
+exports[`Integration Session Management enables modifications on the created session 1`] = `
+
+    createSession / modifySession {
+      confusionTS: undefined
+      feedbacks: undefined
+      blocks: 
+        status: undefined
+        instances: 
+          title: Test SC #2
+          type: SC
+        ,
+          title: Test MC #2
+          type: MC
+        
+      ,
+        status: undefined
+        instances: 
+          title: Test FREE #2
+          type: FREE
+        
+      ,
+        status: undefined
+        instances: 
+          title: Test FREE_RANGE #2
+          type: FREE_RANGE
+        ,
+          title: Test partly restricted FREE_RANGE
+          type: FREE_RANGE
+        ,
+          title: Test unrestricted FREE_RANGE
+          type: FREE_RANGE
+        
+      ,
+        status: undefined
+        instances: 
+          title: Test MC #2
+          type: MC
+        ,
+          title: Test SC #2
+          type: SC
+        
+      
+      settings: undefined
+    }
+  
+`;
+
+exports[`Integration Session Management enables the creation of a new session 1`] = `
+
+    createSession / modifySession {
+      confusionTS: 
+      feedbacks: 
+      blocks: 
+        status: PLANNED
+        instances: 
+          title: Test SC #2
+          type: SC
+        ,
+          title: Test MC #2
+          type: MC
+        
+      ,
+        status: PLANNED
+        instances: 
+          title: Test FREE #2
+          type: FREE
+        
+      ,
+        status: PLANNED
+        instances: 
+          title: Test FREE_RANGE #2
+          type: FREE_RANGE
+        ,
+          title: Test partly restricted FREE_RANGE
+          type: FREE_RANGE
+        ,
+          title: Test unrestricted FREE_RANGE
+          type: FREE_RANGE
+        
+      
+      settings: {"isConfusionBarometerActive":false,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":false}
     }
   
 `;

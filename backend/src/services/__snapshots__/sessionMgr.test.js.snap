@@ -282,6 +282,40 @@ exports[`SessionMgrService endSession returns on an already completed session 1`
     }
 `;
 
+exports[`SessionMgrService modifySession allows modifying a session 1`] = `
+
+    SESSION
+
+    Name: modified hello world
+    Status: CREATED
+
+    ActiveBlock: -1
+    ActiveStep: 0
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 1
+    },{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 3
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: false
+    }
+`;
+
 exports[`SessionMgrService startSession allows starting a created session 1`] = `
 
     SESSION

@@ -22,6 +22,7 @@ expect.addSnapshotSerializer(questionInstanceSerializer)
 const prepareSession = prepareSessionFactory(SessionMgrService)
 
 describe('SessionMgrService', () => {
+  let sessionId
   let userId
   let questions
 
@@ -99,6 +100,34 @@ describe('SessionMgrService', () => {
       })
 
       expect(newSession).toMatchSnapshot()
+
+      sessionId = newSession.id
+    })
+  })
+
+  describe('modifySession', () => {
+    it('allows modifying a session', async () => {
+      const updatedSession = await SessionMgrService.modifySession({
+        id: sessionId,
+        name: 'modified hello world',
+        questionBlocks: [
+          {
+            questions: [
+              { question: questions[QUESTION_TYPES.FREE].id, version: 0 },
+            ],
+          },
+          {
+            questions: [
+              { question: questions[QUESTION_TYPES.MC].id, version: 0 },
+              { question: questions[QUESTION_TYPES.FREE_RANGE].id, version: 0 },
+              { question: questions[QUESTION_TYPES.SC].id, version: 0 },
+            ],
+          },
+        ],
+        userId,
+      })
+
+      expect(updatedSession).toMatchSnapshot()
     })
   })
 

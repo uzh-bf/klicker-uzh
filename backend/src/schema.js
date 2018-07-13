@@ -32,6 +32,7 @@ const {
   activateNextBlock,
   runtimeByPV,
   session,
+  modifySession,
 } = require('./resolvers/sessions')
 const { allTags, tags } = require('./resolvers/tags')
 const {
@@ -85,6 +86,7 @@ const typeDefs = [
     login(email: String!, password: String!): ID!
     logout: String!
     modifyQuestion(id: ID!, question: QuestionModifyInput!): Question!
+    modifySession(id: ID!, session: SessionModifyInput!): Session!
     pauseSession(id: ID!): Session!
     requestPassword(email: String!): String!
     startSession(id: ID!): Session!
@@ -128,6 +130,7 @@ const resolvers = {
     login,
     logout,
     modifyQuestion: requireAuth(modifyQuestion),
+    modifySession: requireAuth(modifySession),
     pauseSession: requireAuth(pauseSession),
     requestPassword,
     startSession: requireAuth(startSession),

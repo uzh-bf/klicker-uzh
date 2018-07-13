@@ -15,13 +15,17 @@ const {
   SESSION_STATUS,
   QUESTION_BLOCK_STATUS,
   SESSION_ACTIONS,
+  Errors,
 } = require('../constants')
 const { logDebug } = require('../lib/utils')
 
 const redisCache = getRedis()
 const redisControl = getRedis(2)
 
-// if redis is in use, unlink the cached /join/:shortname pages
+/**
+ * If redis is in use, unlink the cached /join/:shortname pages
+ * @param {*} shortname
+ */
 const cleanCache = (shortname) => {
   const key = `/join/${shortname}`
 
@@ -32,6 +36,11 @@ const cleanCache = (shortname) => {
   return redisCache.del([`${key}:de`, `${key}:en`])
 }
 
+/**
+ * Ensure that the specified session is actually running
+ * Then return the session as running
+ * @param {*} sessionId
+ */
 const getRunningSession = async (sessionId) => {
   const session = await SessionModel.findById(sessionId)
 
@@ -48,17 +57,17 @@ const getRunningSession = async (sessionId) => {
   return session
 }
 
-// create a new session
-const createSession = async ({ name, questionBlocks = [], userId }) => {
+/**
+ * Pass through all the question blocks in params
+ * Skip any blocks that are empty (erroneous blocks)
+ * Create question instances for all questions within
+ * @param {*} param0
+ */
+const mapBlocks = ({ sessionId, questionBlocks, userId }) => {
   // initialize a store for newly created instance models
   let instances = []
-
   const promises = []
 
-  // pass through all the question blocks in params
-  // skip any blocks that are empty (erroneous blocks)
-  // create question instances for all questions within
-  const sessionId = ObjectId()
   const blocks = questionBlocks
     .filter(block => block.questions.length > 0)
     .map(block => ({
@@ -82,9 +91,27 @@ const createSession = async ({ name, questionBlocks = [], userId }) => {
         instances = [...instances, instance]
 
         // return only the id of the new instance
-        return instance.id
+        return [instance.id]
       }),
     }))
+
+  return {
+    blocks,
+    instances,
+    promises,
+  }
+}
+/**
+ * Create a new session
+ * @param {*} param0
+ */
+const createSession = async ({ name, questionBlocks = [], userId }) => {
+  const sessionId = ObjectId()
+  const { blocks, instances, promises } = mapBlocks({
+    sessionId,
+    questionBlocks,
+    userId,
+  })
 
   // create a new session model
   // pass in the list of blocks created above
@@ -112,7 +139,89 @@ const createSession = async ({ name, questionBlocks = [], userId }) => {
   return newSession
 }
 
-// generic session action handler (start, pause, stop...)
+/**
+ * Modify a session
+ * @param {*} param0
+ */
+const modifySession = async ({
+  id, name, questionBlocks, userId,
+}) => {
+  // get the specified session from the database
+  const sessionWithInstances = await SessionModel.findOne({
+    _id: id,
+    user: userId,
+  }).populate('blocks.instances')
+  const session = await SessionModel.findOne({
+    _id: id,
+    user: userId,
+  })
+
+  // ensure the user is authorized to modify this session
+  if (!session) {
+    throw new ForbiddenError(Errors.UNAUTHORIZED)
+  }
+
+  // if the session is anything other than newly created
+  // it is not allowed to modify it anymore
+  // TODO: allow modifications on blocks that are planned
+  if (!session.status === SESSION_STATUS.CREATED) {
+    throw new ForbiddenError(Errors.SESSION_ALREADY_STARTED)
+  }
+
+  // if the name parameter is set, update the session name
+  if (name) {
+    session.name = name
+  }
+
+  // if the question blocks parameter is set, update the blocks
+  if (questionBlocks) {
+    // calculate the ids of the old question instances
+    const oldInstances = sessionWithInstances.blocks.reduce(
+      (acc, block) => [...acc, ...block.instances],
+      [],
+    )
+
+    // remove the question instance ids from the corresponding question entities
+    const questionCleanup = oldInstances.map(instance => QuestionModel.findByIdAndUpdate(instance.question, {
+      $pull: { instances: instance.id },
+    }))
+
+    // completely remove the instance entities
+    const instanceCleanup = QuestionInstanceModel.deleteMany({
+      id: { $in: oldInstances },
+    })
+
+    // map the blocks
+    const { blocks, instances, promises } = mapBlocks({
+      sessionId: id,
+      questionBlocks,
+      userId,
+    })
+
+    // replace the session blocks
+    session.blocks = blocks
+
+    // await all promises
+    await Promise.all([
+      ...promises,
+      instances.map(instance => instance.save()),
+      questionCleanup,
+      instanceCleanup,
+    ])
+  }
+
+  // save the updated session to the database
+  await session.save()
+
+  // return the updated session
+  return session
+}
+
+/**
+ * Generic session action handler (start, pause, stop...)
+ * @param {*} param0
+ * @param {*} actionType
+ */
 const sessionAction = async ({ sessionId, userId, shortname }, actionType) => {
   // get the current user instance
   const user = await UserModel.findById(userId)
@@ -211,16 +320,28 @@ const sessionAction = async ({ sessionId, userId, shortname }, actionType) => {
   return session
 }
 
-// start an existing session
+/**
+ * Start an existing session
+ * @param {*} param0
+ */
 const startSession = ({ id, userId, shortname }) => sessionAction({ sessionId: id, userId, shortname }, SESSION_ACTIONS.START)
 
-// pause a running session
+/**
+ * Pause a running session
+ * @param {*} param0
+ */
 const pauseSession = ({ id, userId, shortname }) => sessionAction({ sessionId: id, userId, shortname }, SESSION_ACTIONS.PAUSE)
 
-// end (complete) an existing session
+/**
+ * End (complete) an existing session
+ * @param {*} param0
+ */
 const endSession = ({ id, userId, shortname }) => sessionAction({ sessionId: id, userId, shortname }, SESSION_ACTIONS.STOP)
 
-// update session settings
+/**
+ * Update session settings
+ * @param {*} param0
+ */
 const updateSettings = async ({
   sessionId, userId, settings, shortname,
 }) => {
@@ -258,7 +379,10 @@ const updateSettings = async ({
   return session
 }
 
-// activate the next question block
+/**
+ * Activate the next question block of a running session
+ * @param {*} param0
+ */
 const activateNextBlock = async ({ userId, shortname }) => {
   const user = await UserModel.findById(userId).populate([
     'activeInstances',
@@ -373,6 +497,7 @@ const activateNextBlock = async ({ userId, shortname }) => {
 
 module.exports = {
   createSession,
+  modifySession,
   startSession,
   endSession,
   updateSettings,
