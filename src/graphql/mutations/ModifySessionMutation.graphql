@@ -1,5 +1,5 @@
-mutation ModifySession($sessionId: ID!, $name: String!, $blocks: [Session_QuestionBlockInput!]!) {
-  modifySession(session: { id: $sessionId, name: $name, blocks: $blocks }) {
+mutation ModifySession($id: ID!, $name: String!, $blocks: [Session_QuestionBlockInput!]!) {
+  modifySession(id: $id, session: { name: $name, blocks: $blocks }) {
     id
     status
     blocks {
