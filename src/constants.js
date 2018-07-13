@@ -96,6 +96,14 @@ export const SMALL_PIE_THRESHOLD = 0.05
 export const CHANGELOG = {
   new: [
     {
+      items: [
+        'Reworked session creation with possibility to reorder and remove questions within and in-between blocks',
+        'Possibility to edit sessions (i.e., name and questions/blocks) that have not yet been started',
+        'Optional publication of the session evaluation screen to the audience via a separate link (/sessions/public/:id)',
+      ],
+      text: '1.0.0-public.beta.34',
+    },
+    {
       items: ['Pausing sessions'],
       text: '1.0.0-public.beta.22',
     },
