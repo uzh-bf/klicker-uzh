@@ -3,11 +3,18 @@ import PropTypes from 'prop-types'
 import UUIDv4 from 'uuid'
 import { List } from 'immutable'
 import { DragDropContext } from 'react-beautiful-dnd'
-import { compose, withHandlers, withStateHandlers } from 'recompose'
+import {
+  compose,
+  withHandlers,
+  withStateHandlers,
+  branch,
+  renderNothing,
+  withProps,
+} from 'recompose'
 import { defineMessages, intlShape } from 'react-intl'
 import { graphql, Query } from 'react-apollo'
 import _debounce from 'lodash/debounce'
-import Router from 'next/router'
+import Router, { withRouter } from 'next/router'
 import moment from 'moment'
 
 import {
@@ -25,6 +32,8 @@ import {
   RunningSessionQuery,
   QuestionPoolQuery,
   ArchiveQuestionsMutation,
+  SessionDetailsQuery,
+  ModifySessionMutation,
 } from '../../graphql'
 // import { SessionCreationForm } from '../../components/forms'
 import SessionCreationForm from '../../components/forms/sessionCreation/SessionCreationForm'
@@ -121,23 +130,21 @@ const Index = ({
         />
       </DragDropContext>
 
-      <style jsx>
-        {`
-          .creationForm {
-            animation-name: slide-in;
-            animation-duration: 0.75s;
-          }
+      <style jsx>{`
+        .creationForm {
+          animation-name: slide-in;
+          animation-duration: 0.75s;
+        }
 
-          @keyframes slide-in {
-            0% {
-              transform: translateY(300px);
-            }
-            100% {
-              transform: translateY(0);
-            }
+        @keyframes slide-in {
+          0% {
+            transform: translateY(300px);
           }
-        `}
-      </style>
+          100% {
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   )
 
@@ -202,78 +209,76 @@ const Index = ({
             </div>
           </div>
 
-          <style jsx>
-            {`
-              @import 'src/theme';
+          <style jsx>{`
+            @import 'src/theme';
 
-              .questionPool {
-                display: flex;
-                flex-direction: column;
+            .questionPool {
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+
+              overflow-y: auto;
+
+              .tagList {
+                height: 100%;
+                min-width: 5rem;
+
+                flex: 1;
+                background: $color-primary-05p;
+                padding: 0.5rem;
+              }
+
+              .wrapper {
                 height: 100%;
 
+                .questionList {
+                  height: 100%;
+
+                  display: flex;
+                  flex-direction: column;
+
+                  margin: 0 auto;
+                  max-width: $max-width;
+
+                  .questionListContent {
+                    flex: 1;
+                    height: 100%;
+
+                    padding: 1rem;
+                  }
+                }
+              }
+
+              @include desktop-tablet-only {
+                flex-flow: row wrap;
                 overflow-y: auto;
 
                 .tagList {
-                  height: 100%;
-                  min-width: 5rem;
+                  overflow-y: auto;
+                  flex: 0 0 auto;
+                  padding: 2rem 1rem;
 
-                  flex: 1;
-                  background: $color-primary-05p;
-                  padding: 0.5rem;
+                  border-right: 1px solid $color-primary;
                 }
 
                 .wrapper {
-                  height: 100%;
+                  flex: 1;
+                  padding: 1rem;
 
                   .questionList {
-                    height: 100%;
-
-                    display: flex;
-                    flex-direction: column;
-
-                    margin: 0 auto;
-                    max-width: $max-width;
-
                     .questionListContent {
-                      flex: 1;
-                      height: 100%;
-
-                      padding: 1rem;
+                      overflow-y: auto;
+                      padding: 1rem 1rem 0 0;
                     }
                   }
-                }
-
-                @include desktop-tablet-only {
-                  flex-flow: row wrap;
-                  overflow-y: auto;
-
-                  .tagList {
-                    overflow-y: auto;
-                    flex: 0 0 auto;
-                    padding: 2rem 1rem;
-
-                    border-right: 1px solid $color-primary;
-                  }
-
-                  .wrapper {
-                    flex: 1;
-                    padding: 1rem;
-
-                    .questionList {
-                      .questionListContent {
-                        overflow-y: auto;
-                        padding: 1rem 1rem 0 0;
-                      }
-                    }
-                  }
-                }
-
-                @include desktop-only {
-                  padding: 0;
                 }
               }
-            `}
-          </style>
+
+              @include desktop-only {
+                padding: 0;
+              }
+            }
+          `}</style>
         </TeacherLayout>
       )}
     </Query>
@@ -286,17 +291,63 @@ export default compose(
   withLogging(),
   withDnD,
   pageWithIntl,
+  withSortingAndFiltering,
+  withSelection,
   graphql(StartSessionMutation, { name: 'startSession' }),
   graphql(CreateSessionMutation, { name: 'createSession' }),
   graphql(ArchiveQuestionsMutation, { name: 'archiveQuestions' }),
-  withSortingAndFiltering,
-  withSelection,
+  graphql(ModifySessionMutation, { name: 'modifySession' }),
+  withRouter,
+  branch(
+    // if we are in session modification mode, branch away from the main data flow
+    ({ router: { query } }) => !!query.editSessionId,
+    // compose the relevant HOCs into a single one
+    compose(
+      // fetch session details
+      graphql(SessionDetailsQuery, {
+        name: 'editSessionDetails',
+        options: ({ router: { query } }) => ({
+          variables: { id: query.editSessionId },
+        }),
+      }),
+      // stall loading of the page until the session details have been fetched
+      branch(
+        ({ editSessionDetails }) => typeof editSessionDetails.session === 'undefined',
+        renderNothing,
+      ),
+      // convert the fetched session details into usable initial state (name and blocks)
+      withProps(({ editSessionDetails: { session } }) => {
+        // define a function that parses session block details into immutable client side state
+        // that will serve as initial state for the edit form
+        const parseInitialBlocks = () => List(
+          session.blocks.map(({ id, instances }) => ({
+            id,
+            key: id,
+            questions: List(
+              instances.map(({ question }) => ({
+                id: question.id,
+                title: question.title,
+                type: question.type,
+              })),
+            ),
+          })),
+        )
+
+        return {
+          sessionBlocks: parseInitialBlocks(),
+          sessionEditMode: session.id,
+          sessionId: session.id,
+          sessionName: session.name,
+        }
+      }),
+    ),
+  ),
   withStateHandlers(
-    {
-      creationMode: false,
-      sessionBlocks: List([]),
-      sessionName: null,
-    },
+    ({ sessionEditMode, sessionBlocks, sessionName }) => ({
+      creationMode: !!sessionEditMode,
+      sessionBlocks: sessionBlocks || List([]),
+      sessionName,
+    }),
     {
       // handlers for session creation form fields
       handleChangeName: () => e => ({ sessionName: e.target.value }),
@@ -406,6 +457,7 @@ export default compose(
             selectedItems.toList().map(({
               id, title, type, version,
             }) => ({
+              id: UUIDv4(),
               questions: List([
                 {
                   id,
@@ -466,9 +518,12 @@ export default compose(
 
     // handle creating a new session
     handleCreateSession: ({
+      sessionId,
+      sessionEditMode,
       sessionName,
       sessionBlocks,
       createSession,
+      modifySession,
       startSession,
       handleCreationModeToggle,
     }) => type => async (e) => {
@@ -478,17 +533,26 @@ export default compose(
       try {
         // prepare blocks for consumption through the api
         const blocks = sessionBlocks.map(({ questions }) => ({
-          questions: questions.map(({ id, version }) => ({
+          questions: questions.map(({ id, version = 0 }) => ({
             question: id,
             version,
           })),
         }))
 
-        // create a new session
-        const result = await createSession({
-          refetchQueries: [{ query: SessionListQuery }],
-          variables: { blocks, name: sessionName },
-        })
+        let result
+        if (sessionEditMode) {
+          // modify an existing session
+          result = await modifySession({
+            refetchQueries: [{ query: SessionListQuery }],
+            variables: { blocks, id: sessionId, name: sessionName },
+          })
+        } else {
+          // create a new session
+          result = await createSession({
+            refetchQueries: [{ query: SessionListQuery }],
+            variables: { blocks, name: sessionName },
+          })
+        }
 
         // start the session immediately if the respective button was clicked
         if (type === 'start') {

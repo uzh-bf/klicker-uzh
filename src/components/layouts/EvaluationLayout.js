@@ -195,7 +195,7 @@ function EvaluationLayout({
         <div className="chart">{children}</div>
 
         {activeVisualization !== CHART_TYPES.TABLE && (
-          <React.Fragment>
+          <>
             {QUESTION_GROUPS.WITH_POSSIBILITIES.includes(type) && (
               <div className="optionDisplay">
                 <Possibilities
@@ -217,7 +217,7 @@ function EvaluationLayout({
                   />
                 </div>
             )}
-          </React.Fragment>
+          </>
         )}
 
         <style jsx>

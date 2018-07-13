@@ -25,7 +25,7 @@
            ]
         ],
         "plugins":[
-           "@babel/plugin-syntax-do-expressions",
+           "@babel/plugin-proposal-do-expressions",
            "@babel/plugin-proposal-pipeline-operator",
            "@babel/plugin-proposal-optional-chaining",
            "inline-dotenv",
@@ -68,7 +68,7 @@
                  ]
               }
            ],
-           "@babel/plugin-syntax-do-expressions",
+           "@babel/plugin-proposal-do-expressions",
            "@babel/plugin-proposal-pipeline-operator",
            "@babel/plugin-proposal-optional-chaining",
            "transform-inline-environment-variables",
@@ -101,7 +101,7 @@
            ]
         ],
         "plugins":[
-           "@babel/plugin-syntax-do-expressions",
+           "@babel/plugin-proposal-do-expressions",
            "@babel/plugin-proposal-pipeline-operator",
            "@babel/plugin-proposal-optional-chaining",
            "babel-plugin-inline-import-graphql-ast"

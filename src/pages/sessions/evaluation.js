@@ -199,19 +199,17 @@ export default compose(
               ].options[activeInstance.question.type].choices.map(
                 (choice, index) => ({
                   correct: choice.correct,
-                  count: activeInstance.results
-                    ? activeInstance.results.CHOICES[index]
-                    : 0,
+                  count: activeInstance.results?.CHOICES[index] || 0,
                   value: choice.name,
                 }),
               ),
-              totalResponses: activeInstance.results.totalParticipants,
+              totalResponses: activeInstance.results?.totalParticipants || 0,
             },
           }
         }
 
         if (QUESTION_GROUPS.FREE.includes(activeInstance.question.type)) {
-          let data = activeInstance.results ? activeInstance.results.FREE : []
+          let data = activeInstance.results?.FREE || []
 
           // values in FREE_RANGE questions need to be numerical
           if (activeInstance.question.type === QUESTION_TYPES.FREE_RANGE) {
@@ -225,7 +223,7 @@ export default compose(
             ...activeInstance,
             results: {
               data,
-              totalResponses: activeInstance.results.totalParticipants,
+              totalResponses: activeInstance.results?.totalParticipants || 0,
             },
           }
         }
@@ -244,7 +242,7 @@ export default compose(
           blockStatus,
           hasSolution: !!solution,
           title: question.title,
-          totalResponses: results.totalResponses,
+          totalResponses: results?.totalResponses || 0,
         }),
       ),
       sessionStatus: session.status,
@@ -329,16 +327,16 @@ export default compose(
 
       const resultsWithPercentages = {
         ...activeInstance.results,
-        data: activeInstance.results.data.map(({ correct, count, value }) => ({
+        data: activeInstance.results?.data.map(({ correct, count, value }) => ({
           correct,
           count,
           percentage: _round(
-            100 * (count / activeInstance.results.totalResponses),
+            100 * (count / activeInstance.results?.totalResponses),
             1,
           ),
           value,
         })),
-        totalResponses: activeInstance.results.totalResponses,
+        totalResponses: activeInstance.results?.totalResponses,
       }
 
       return {

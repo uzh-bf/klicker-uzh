@@ -19,7 +19,7 @@ export default (cfg = {}) =>
   function withLogging(Child) {
     // merge default and passed config
     const config = {
-      chatlio: true,
+      chatlio: false,
       googleAnalytics: true,
       logRocket: true,
       sentry: true,

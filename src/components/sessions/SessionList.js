@@ -152,7 +152,7 @@ export const SessionListPres = ({
           )
 
           return (
-            <React.Fragment>
+            <>
               {runningSessions.length + pausedSessions.length > 0 ? (
                 <div className="runningSessions">
                   <h2>
@@ -182,7 +182,7 @@ export const SessionListPres = ({
               )}
 
               {remainingSessions.length > 0 && (
-                <React.Fragment>
+                <>
                   <h2>
                     <FormattedMessage
                       defaultMessage="Planned sessions"
@@ -197,11 +197,11 @@ export const SessionListPres = ({
                       <Session {...session} />
                     </div>
                   ))}
-                </React.Fragment>
+                </>
               )}
 
               {completedSessions.length > 0 && (
-                <React.Fragment>
+                <>
                   <h2>
                     <FormattedMessage
                       defaultMessage="Completed sessions"
@@ -216,9 +216,9 @@ export const SessionListPres = ({
                       <Session {...session} />
                     </div>
                   ))}
-                </React.Fragment>
+                </>
               )}
-            </React.Fragment>
+            </>
           )
         }}
       </Query>

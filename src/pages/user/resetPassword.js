@@ -53,7 +53,7 @@ const ResetPassword = ({ intl, router }) => (
           }
 
           return (
-            <React.Fragment>
+            <>
               <PasswordResetForm
                 intl={intl}
                 loading={loading}
@@ -67,7 +67,7 @@ const ResetPassword = ({ intl, router }) => (
                 }}
               />
               {error && <Message error>{error.message}</Message>}
-            </React.Fragment>
+            </>
           )
         }}
       </Mutation>
