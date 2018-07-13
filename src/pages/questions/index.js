@@ -301,7 +301,10 @@ export default compose(
     }),
   ),
   withStateHandlers(
-    ({ editSessionDetails: { session } }) => {
+    ({ editSessionDetails }) => {
+      // extract the session from the query response
+      const session = editSessionDetails?.session
+
       // if the session of the session details query is defined, we are in edit mode
       const sessionEditMode = typeof session !== 'undefined'
 
