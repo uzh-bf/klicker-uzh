@@ -95,26 +95,28 @@ const FREEAnswerOptions = ({
 
       return (
         <div className="field">
-          {do {
-            if (options.restrictions.max !== null) {
-              <FormattedMessage
-                defaultMessage="Maximum value: {max}"
-                id="freeAnswer.maxValue"
-                values={{ max: options.restrictions.max }}
-              />
-            } else if (options.restrictions.min !== null) {
-              <FormattedMessage
-                defaultMessage="Minimum value: {min}"
-                id="freeAnswer.minValue"
-                values={{ min: options.restrictions.min }}
-              />
-            } else {
-              <FormattedMessage
-                defaultMessage="Unrestricted input (any number)"
-                id="freeAnswer.unrestricted"
-              />
-            }
-          }}
+          <div className="rangeInformation">
+            {do {
+              if (options.restrictions.max !== null) {
+                <FormattedMessage
+                  defaultMessage="Maximum value: {max}"
+                  id="freeAnswer.maxValue"
+                  values={{ max: options.restrictions.max }}
+                />
+              } else if (options.restrictions.min !== null) {
+                <FormattedMessage
+                  defaultMessage="Minimum value: {min}"
+                  id="freeAnswer.minValue"
+                  values={{ min: options.restrictions.min }}
+                />
+              } else {
+                <FormattedMessage
+                  defaultMessage="Unrestricted input (any number)"
+                  id="freeAnswer.unrestricted"
+                />
+              }
+            }}
+          </div>
 
           <textarea
             disabled={disabled}
@@ -168,6 +170,10 @@ const FREEAnswerOptions = ({
           .max {
             float: right;
           }
+        }
+
+        .rangeInformation {
+          margin-bottom: 1rem;
         }
 
         textarea {
