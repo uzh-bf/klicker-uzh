@@ -16,6 +16,7 @@ import StartSessionMutation from './mutations/StartSessionMutation.graphql'
 import UpdateSessionSettingsMutation from './mutations/UpdateSessionSettingsMutation.graphql'
 import ArchiveQuestionsMutation from './mutations/ArchiveQuestionsMutation.graphql'
 import PauseSessionMutation from './mutations/PauseSessionMutation.graphql'
+import ModifySessionMutation from './mutations/ModifySessionMutation.graphql'
 
 import AccountSummaryQuery from './queries/AccountSummaryQuery.graphql'
 import JoinSessionQuery from './queries/JoinSessionQuery.graphql'
@@ -27,6 +28,7 @@ import SessionEvaluationPublicQuery from './queries/SessionEvaluationPublicQuery
 import SessionListQuery from './queries/SessionListQuery.graphql'
 import QuestionPoolQuery from './queries/QuestionPoolQuery.graphql'
 import TagListQuery from './queries/TagListQuery.graphql'
+import SessionDetailsQuery from './queries/SessionDetailsQuery.graphql'
 
 import ConfusionAddedSubscription from './subscriptions/ConfusionAddedSubscription.graphql'
 import FeedbackAddedSubscription from './subscriptions/FeedbackAddedSubscription.graphql'
@@ -45,6 +47,7 @@ const queries = [
   LoginMutation,
   LogoutMutation,
   ModifyQuestionMutation,
+  ModifySessionMutation,
   RequestPasswordMutation,
   RegistrationMutation,
   StartSessionMutation,
@@ -62,6 +65,7 @@ const queries = [
   TagListQuery,
   ConfusionAddedSubscription,
   FeedbackAddedSubscription,
+  SessionDetailsQuery,
 ]
 
 // build a query map from the queries above
@@ -84,6 +88,7 @@ export {
   LoginMutation,
   LogoutMutation,
   ModifyQuestionMutation,
+  ModifySessionMutation,
   PauseSessionMutation,
   RegistrationMutation,
   StartSessionMutation,
@@ -101,5 +106,6 @@ export {
   QuestionListQuery,
   FeedbackAddedSubscription,
   ConfusionAddedSubscription,
+  SessionDetailsQuery,
   queryMap,
 }

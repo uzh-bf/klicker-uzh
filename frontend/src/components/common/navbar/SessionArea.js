@@ -35,11 +35,12 @@ const defaultProps = {
 }
 
 const SessionArea = ({ intl, sessionId }) => (
-  <React.Fragment>
+  <>
     <Menu.Item button>
       <Button
         icon
         as="a"
+        color={sessionId ? 'green' : undefined}
         disabled={!sessionId}
         href="/sessions/running"
         labelPosition="left"
@@ -183,7 +184,7 @@ const SessionArea = ({ intl, sessionId }) => (
         }
       `}
     </style>
-  </React.Fragment>
+  </>
 )
 
 SessionArea.propTypes = propTypes
