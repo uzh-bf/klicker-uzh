@@ -11,6 +11,12 @@
     "sort-keys": 1,
     "global-require": 0,
 
+    "no-unused-expressions": 0,
+    "babel/no-unused-expressions": 1,
+
+    "quotes": 0,
+    "babel/quotes": [1, "single"],
+
     "import/extensions": 0,
     "import/prefer-default-export": 0,
     "import/no-dynamic-require": 0,

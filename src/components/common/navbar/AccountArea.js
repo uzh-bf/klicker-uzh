@@ -13,7 +13,7 @@ const defaultProps = {
 }
 
 const AccountArea = ({ accountShort, onLogout }) => (
-  <React.Fragment>
+  <>
     <Dropdown item simple icon="user" text={`${accountShort} `}>
       <Dropdown.Menu>
         {/* <Dropdown.Item disabled>
@@ -24,7 +24,7 @@ const AccountArea = ({ accountShort, onLogout }) => (
         </Dropdown.Item>
       </Dropdown.Menu>
     </Dropdown>
-  </React.Fragment>
+  </>
 )
 
 AccountArea.propTypes = propTypes

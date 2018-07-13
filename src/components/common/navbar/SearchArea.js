@@ -53,7 +53,7 @@ const SearchArea = ({
     </Input>
 
     {withSorting && (
-      <React.Fragment>
+      <>
         <Button
           icon={`${_find(sortingTypes, { id: sortBy }).labelStart} ${
             sortOrder ? 'ascending' : 'descending'
@@ -69,7 +69,7 @@ const SearchArea = ({
           }))}
           onChange={(param, data) => handleSortByChange(data.value)}
         />
-      </React.Fragment>
+      </>
     )}
 
     <style jsx>

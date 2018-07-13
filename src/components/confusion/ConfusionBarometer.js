@@ -74,7 +74,7 @@ const ConfusionBarometer = ({
     {(() => {
       if (isActive) {
         return (
-          <React.Fragment>
+          <>
             <ConfusionSection
               data={confusionTS.map(
                 ({ timestamp, difficulty, difficultyRunning }) => ({
@@ -95,7 +95,7 @@ const ConfusionBarometer = ({
               title={intl.formatMessage(messages.speedTitle)}
               ylabel={intl.formatMessage(messages.speedRange)}
             />
-          </React.Fragment>
+          </>
         )
       }
 

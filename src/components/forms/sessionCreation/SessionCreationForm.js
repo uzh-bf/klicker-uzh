@@ -233,9 +233,9 @@ const SessionCreationForm = ({
 
             .questions {
               flex: 1;
-              padding: 0.25rem 0.5rem 1rem 0.5rem;
+              padding: 1rem 0.5rem 1rem 0.5rem;
               overflow: auto;
-              max-height: 20rem;
+              max-height: 23rem;
 
               .question:not(:first-child) {
                 margin-top: 3px;

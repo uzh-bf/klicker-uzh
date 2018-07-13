@@ -21,7 +21,7 @@ const ListWithHeader = ({ children, items, limit }) => (
     {children && <span className="listHeader">{children}</span>}
 
     {items.length > limit ? (
-      <React.Fragment>
+      <>
         <List>{mapItems(items.slice(0, limit))}</List>
         <Popup
           hideOnScroll
@@ -33,7 +33,7 @@ const ListWithHeader = ({ children, items, limit }) => (
             <List>{mapItems(items.slice(limit))}</List>
           </div>
         </Popup>
-      </React.Fragment>
+      </>
     ) : (
       <List>{mapItems(items)}</List>
     )}

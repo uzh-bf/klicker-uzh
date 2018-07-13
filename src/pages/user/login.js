@@ -31,7 +31,7 @@ const Login = ({ intl }) => (
 
       <Mutation mutation={LoginMutation}>
         {(login, { loading, error }) => (
-          <React.Fragment>
+          <>
             <Message info>
               <Message.Header>Public Beta</Message.Header>
               <Message.Content>
@@ -66,7 +66,7 @@ const Login = ({ intl }) => (
                 )
               </div>
             )}
-          </React.Fragment>
+          </>
         )}
       </Mutation>
 
