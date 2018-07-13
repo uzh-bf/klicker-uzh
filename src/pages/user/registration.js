@@ -52,7 +52,7 @@ const Registration = ({ intl }) => (
           }
 
           return (
-            <React.Fragment>
+            <>
               <Message info>
                 <Message.Header>Public Beta</Message.Header>
                 <Message.Content>
@@ -88,7 +88,7 @@ const Registration = ({ intl }) => (
                   )
                 </div>
               )}
-            </React.Fragment>
+            </>
           )
         }}
       </Mutation>

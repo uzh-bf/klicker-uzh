@@ -46,7 +46,7 @@ const RequestPassword = ({ intl }) => (
           }
 
           return (
-            <React.Fragment>
+            <>
               <PasswordRequestForm
                 intl={intl}
                 loading={loading}
@@ -55,7 +55,7 @@ const RequestPassword = ({ intl }) => (
                 }}
               />
               {error && <Message error>{error.message}</Message>}
-            </React.Fragment>
+            </>
           )
         }}
       </Mutation>
