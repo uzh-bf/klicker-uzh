@@ -24,7 +24,7 @@ const propTypes = {
 
 const defaultProps = {
   blocks: [],
-  interactionType: 'CREATION',
+  interactionType: 'CREATE',
   isSessionRunning: false,
 }
 

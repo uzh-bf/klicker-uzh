@@ -82,6 +82,8 @@ const propTypes = {
   numSelectedItems: PropTypes.number.isRequired,
   selectedItems: PropTypes.any.isRequired,
   sessionBlocks: PropTypes.any.isRequired,
+  sessionInteractionType: PropTypes.oneOf(['CREATE', 'COPY', 'MODIFY'])
+    .isRequired,
   sessionName: PropTypes.string.isRequired,
   sort: PropTypes.object.isRequired,
 }
@@ -95,6 +97,7 @@ const Index = ({
   selectedItems,
   sessionName,
   sessionBlocks,
+  sessionInteractionType,
   handleSelectItem,
   handleCreateSession,
   handleNewBlock,
@@ -124,6 +127,7 @@ const Index = ({
           handleNewBlock={handleNewBlock}
           handleRemoveQuestion={handleRemoveQuestion}
           handleSubmit={handleCreateSession}
+          interactionType={sessionInteractionType}
           intl={intl}
           isSessionRunning={!!runningSessionId}
           name={sessionName}
@@ -333,11 +337,22 @@ export default compose(
           })),
         )
 
+        const getInteractionType = () => {
+          if (session.id) {
+            if (query.copy) {
+              return 'COPY'
+            }
+            return 'MODIFY'
+          }
+          return 'CREATE'
+        }
+
         return {
           sessionBlocks: parseInitialBlocks(),
           sessionCopyMode: !!query.copy,
           sessionEditMode: session.id,
           sessionId: session.id,
+          sessionInteractionType: getInteractionType(),
           sessionName: query.copy ? `${session.name} Copy` : session.name,
         }
       }),
