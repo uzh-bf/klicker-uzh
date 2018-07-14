@@ -1,19 +1,11 @@
 /* eslint-disable */
 
 import React from 'react'
-import { registerObserver } from 'react-perf-devtool'
 import { initGA, logPageView, logException } from '.'
 
 let Raven
 let LogRocket
 let LogRocketReact
-if (process.env.SENTRY_DSN) {
-  Raven = require('raven-js')
-}
-if (process.env.LOGROCKET) {
-  LogRocket = require('logrocket')
-  LogRocketReact = require('logrocket-react')
-}
 
 export default (cfg = {}) =>
   function withLogging(Child) {
@@ -29,6 +21,14 @@ export default (cfg = {}) =>
     const isProd = process.env.NODE_ENV === 'production'
     const isDev = process.env.NODE_ENV === 'development'
 
+    if (isProd && process.env.SENTRY_DSN && !Raven) {
+      Raven = require('raven-js')
+    }
+    if (isProd && process.env.LOGROCKET && !LogRocket) {
+      LogRocket = require('logrocket')
+      LogRocketReact = require('logrocket-react')
+    }
+
     return class WrappedComponent extends React.Component {
       static getInitialProps(context) {
         if (Child.getInitialProps) {
@@ -43,7 +43,9 @@ export default (cfg = {}) =>
 
       componentDidMount() {
         if (typeof window !== 'undefined') {
-          if (isDev && !window.INIT_PERF) {
+          /* if (isDev && !window.INIT_PERF) {
+            const { registerObserver } = require('react-perf-devtool')
+
             // setup react-perf-devtool
             registerObserver()
 
@@ -53,7 +55,7 @@ export default (cfg = {}) =>
             // whyDidYouUpdate(React)
 
             window.INIT_PERF = true
-          }
+          } */
 
           // include google analytics
           if (isProd && process.env.G_ANALYTICS && !window.INIT_GA) {
@@ -97,7 +99,7 @@ export default (cfg = {}) =>
             window.INIT_RAVEN = true
           }
 
-          if (isProd && process.env.CHATLIO && config.chatlio) {
+          /* if (isProd && process.env.CHATLIO && config.chatlio) {
             window._chatlio = window._chatlio || []
             !(function() {
               const t = document.getElementById('chatlio-widget-embed')
@@ -137,7 +139,7 @@ export default (cfg = {}) =>
               n.setAttribute('data-widget-id', process.env.CHATLIO)
               c.parentNode.insertBefore(n, c)
             })()
-          }
+          } */
         }
       }
 
