@@ -302,6 +302,7 @@ const Running = ({ intl, shortname }) => (
 
           .sessionProgress {
             flex: 0 0 100%;
+            max-width: 100%;
           }
           .confusionBarometer {
             flex: 0 0 30%;
