@@ -79,28 +79,46 @@ const Session = ({
             >
               <Button icon labelPosition="left">
                 <Icon name="edit" />
-                Edit Session
+                Modify Session
               </Button>
             </Link>
           )}
+
+          <Link
+            href={{
+              pathname: '/questions',
+              query: { copy: true, editSessionId: id },
+            }}
+          >
+            <Button icon labelPosition="left">
+              <Icon name="copy" />
+              Copy & Modify
+            </Button>
+          </Link>
+
           {status !== SESSION_STATUS.CREATED && (
             <a
               href={`/sessions/evaluation/${id}`}
               rel="noopener noreferrer"
               target="_blank"
             >
-              <Button icon disabled={isFeedbackSession} labelPosition="left">
+              <Button
+                icon
+                primary
+                disabled={isFeedbackSession}
+                labelPosition="left"
+              >
                 <Icon name="external" />
                 Evaluation
               </Button>
             </a>
           )}
+
           {button
             && !button.hidden && (
               <Button
                 icon
                 primary
-                className="lastButton"
                 disabled={button.disabled}
                 labelPosition="left"
                 onClick={button.onClick}
@@ -141,11 +159,13 @@ const Session = ({
             display: flex;
             flex-direction: column;
 
-            :global(.button) {
+            :global(.button),
+            a :global(.button) {
               margin-right: 0 !important;
+              width: 100%;
             }
-
-            :global(.lastButton) {
+            :global(.button:not(:first-child)),
+            a:not(:first-child) :global(.button) {
               margin-top: 0.3rem !important;
             }
           }

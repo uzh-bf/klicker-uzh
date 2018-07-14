@@ -398,6 +398,8 @@ const SessionTimeline = ({
                 flex-direction: row;
 
                 padding: 0.5rem;
+
+                overflow-x: auto;
               }
 
               .blockWrap {
