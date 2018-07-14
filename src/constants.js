@@ -96,6 +96,10 @@ export const SMALL_PIE_THRESHOLD = 0.05
 export const CHANGELOG = {
   new: [
     {
+      items: ['Sessions can be copied and modified in a single interaction'],
+      text: '1.0.0-public.beta.35',
+    },
+    {
       items: [
         'Reworked session creation with possibility to reorder and remove questions within and in-between blocks',
         'Possibility to edit sessions (i.e., name and questions/blocks) that have not yet been started',
