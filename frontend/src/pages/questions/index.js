@@ -316,7 +316,7 @@ export default compose(
         renderNothing,
       ),
       // convert the fetched session details into usable initial state (name and blocks)
-      withProps(({ editSessionDetails: { session } }) => {
+      withProps(({ editSessionDetails: { session }, router: { query } }) => {
         // define a function that parses session block details into immutable client side state
         // that will serve as initial state for the edit form
         const parseInitialBlocks = () => List(
@@ -335,9 +335,10 @@ export default compose(
 
         return {
           sessionBlocks: parseInitialBlocks(),
+          sessionCopyMode: !!query.copy,
           sessionEditMode: session.id,
           sessionId: session.id,
-          sessionName: session.name,
+          sessionName: query.copy ? `${session.name} Copy` : session.name,
         }
       }),
     ),
@@ -519,6 +520,7 @@ export default compose(
     // handle creating a new session
     handleCreateSession: ({
       sessionId,
+      sessionCopyMode,
       sessionEditMode,
       sessionName,
       sessionBlocks,
@@ -540,7 +542,7 @@ export default compose(
         }))
 
         let result
-        if (sessionEditMode) {
+        if (sessionEditMode && !sessionCopyMode) {
           // modify an existing session
           result = await modifySession({
             refetchQueries: [{ query: SessionListQuery }],

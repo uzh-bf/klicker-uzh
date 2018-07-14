@@ -17,12 +17,14 @@ const propTypes = {
   handleNewBlock: PropTypes.func.isRequired,
   handleRemoveQuestion: PropTypes.func.isRequired,
   handleSubmit: PropTypes.func.isRequired,
+  interactionType: PropTypes.string,
   isSessionRunning: PropTypes.bool,
   name: PropTypes.string.isRequired,
 }
 
 const defaultProps = {
   blocks: [],
+  interactionType: 'CREATION',
   isSessionRunning: false,
 }
 
@@ -50,6 +52,7 @@ const getListStyle = isDraggingOver => ({
 const SessionCreationForm = ({
   name,
   blocks,
+  interactionType,
   isSessionRunning,
   handleChangeName,
   handleDiscard,
@@ -155,6 +158,28 @@ const SessionCreationForm = ({
             <Icon name="close" />
           </button>
         </div>
+
+        <h2 className="interactionType">
+          {do {
+            if (interactionType === 'MODIFY') {
+              <FormattedMessage
+                defaultMessage="Modify Session"
+                id="form.createSession.interactionModify"
+              />
+            } else if (interactionType === 'COPY') {
+              <FormattedMessage
+                defaultMessage="Copy Session"
+                id="form.createSession.interactionCopy"
+              />
+            } else {
+              <FormattedMessage
+                defaultMessage="Create Session"
+                id="form.createSession.interactionCreate"
+              />
+            }
+          }}
+        </h2>
+
         <div className="sessionName">
           <label>
             <FormattedMessage
@@ -269,9 +294,16 @@ const SessionCreationForm = ({
               }
             }
 
+            h2 {
+              border-bottom: 1px solid lightgrey;
+              font-size: 1rem;
+              margin: 0;
+              padding: 0.5rem 0 0.25rem 0;
+              margin-bottom: 0.5rem;
+            }
+
             .sessionName {
               flex: 1;
-              margin-top: 1rem;
 
               label {
                 font-weight: bold;
