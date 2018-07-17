@@ -33,7 +33,7 @@
     "babel-plugin-react-intl": "2.4.0",
     "babel-plugin-transform-inline-environment-variables": "0.4.3",
     "classnames": "2.2.6",
-    "compression": "1.7.2",
+    "compression": "1.7.3",
     "cookie-parser": "1.4.3",
     "cross-env": "5.2.0",
     "d3": "5.5.0",
