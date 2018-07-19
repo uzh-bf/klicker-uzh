@@ -129,7 +129,10 @@ const Join = ({
 
             .joinSession {
               display: flex;
-              height: 100%;
+              min-height: -moz-calc(100vh - 8rem);
+              min-height: -webkit-calc(100vh - 8rem);
+              min-height: calc(100vh - 8rem);
+              width: 100%;
 
               background-color: lightgray;
 
@@ -148,6 +151,7 @@ const Join = ({
 
               @include desktop-tablet-only {
                 padding: 1rem;
+                min-height: 100%;
 
                 .questionArea {
                   border: 1px solid $color-primary;
