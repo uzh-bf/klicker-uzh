@@ -74,7 +74,7 @@
     "prop-types": "15.6.2",
     "qrcode.react": "0.8.0",
     "ramda": "0.25.0",
-    "raven-js": "3.26.3",
+    "raven-js": "3.26.4",
     "react": "16.4.1",
     "react-apollo": "2.1.9",
     "react-autosuggest": "9.3.4",
