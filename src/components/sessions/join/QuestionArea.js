@@ -8,6 +8,7 @@ import {
   compose, withStateHandlers, withHandlers, withProps,
 } from 'recompose'
 
+import QuestionFiles from './QuestionFiles'
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
 import { ActionMenu, Collapser } from '../../common'
 import {
@@ -117,7 +118,15 @@ function QuestionArea({
         }
 
         const {
-          content, description, options, type,
+          content,
+          description,
+          options,
+          type,
+          files = [
+            'https://upload.wikimedia.org/wikipedia/commons/d/d3/OrangutanP1.jpg',
+            'https://upload.wikimedia.org/wikipedia/commons/d/d3/OrangutanP1.jpg',
+            'https://upload.wikimedia.org/wikipedia/commons/d/d3/OrangutanP1.jpg',
+          ],
         } = currentQuestion
 
         // if the content is set, parse it and convert into a content state
@@ -136,6 +145,7 @@ function QuestionArea({
                   content={contentState}
                   description={description}
                 />
+                <QuestionFiles files={files} />
               </Collapser>
             </div>
 
