@@ -4,18 +4,23 @@ import {
   Icon, Card, Image, Button,
 } from 'semantic-ui-react'
 
-export default ({ value, onChange }) => (
+export default ({ files, onChangeFiles }) => (
   <div className="fileDropzone">
     <div className="dropzone">
       <Dropzone
         accept="image/*"
+        className="reactDropzone"
         onDrop={(acc) => {
-          onChange(value.concat(acc))
+          onChangeFiles(files.concat(acc))
         }}
-      />
+      >
+        <Button fluid primary>
+          Upload
+        </Button>
+      </Dropzone>
     </div>
     <div className="previews">
-      {value.map((file, index) => (
+      {files.map((file, index) => (
         <div className="imagePreview">
           <Card>
             <Card.Meta>
@@ -28,7 +33,7 @@ export default ({ value, onChange }) => (
                 fluid
                 color="red"
                 onClick={() => {
-                  onChange(value.filter((val, ix) => ix !== index))
+                  onChangeFiles(files.filter((val, ix) => ix !== index))
                 }}
               >
                 <Icon name="trash" />
@@ -48,6 +53,16 @@ export default ({ value, onChange }) => (
 
         .dropzone {
           flex: 0 0 auto;
+        }
+
+        :global(.reactDropzone) {
+          position: relative;
+          width: 150px;
+          height: 100px;
+          border-width: 2px;
+          border-color: rgb(102, 102, 102);
+          padding: 0.5rem;
+          border-style: dashed;
         }
 
         .previews {

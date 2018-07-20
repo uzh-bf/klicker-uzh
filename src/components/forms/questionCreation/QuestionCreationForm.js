@@ -244,8 +244,8 @@ const QuestionCreationForm = ({
                   />
                 </h2>
                 <FileDropzone
-                  value={values.files}
-                  onChange={newFiles => setFieldValue('files', newFiles)}
+                  files={values.files}
+                  onChangeFiles={newFiles => setFieldValue('files', newFiles)}
                 />
               </div>
 
