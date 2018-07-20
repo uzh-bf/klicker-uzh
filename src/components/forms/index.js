@@ -3,7 +3,9 @@
 export { default as LoginForm } from './LoginForm'
 export { default as PasswordResetForm } from './PasswordResetForm'
 export { default as PasswordRequestForm } from './PasswordRequestForm'
-export { default as QuestionCreationForm } from './QuestionCreationForm'
+export {
+  default as QuestionCreationForm,
+} from './questionCreation/QuestionCreationForm'
 export { default as QuestionEditForm } from './QuestionEditForm'
 export { default as RegistrationForm } from './RegistrationForm'
 export {
