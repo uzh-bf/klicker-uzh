@@ -77,17 +77,14 @@ const CreateQuestion = ({ intl }) => (
                       }),
                     )
 
-                    console.log('entities', fileEntities)
-
                     // upload (put) the files to the corresponding presigned urls
-                    const uploads = await Promise.all(
+                    await Promise.all(
                       fileEntities.map(({ file, signedUrl }) => axios.put(signedUrl, file),
                       ),
                     )
-                    console.log('uploads', uploads)
 
                     // create the question
-                    /* await createQuestion({
+                    await createQuestion({
                       // reload the list of questions and tags after creation
                       // TODO: replace with optimistic updates
                       refetchQueries: [
@@ -99,14 +96,19 @@ const CreateQuestion = ({ intl }) => (
                           content.getCurrentContent()
                           |> convertToRaw
                           |> JSON.stringify,
+                        files: fileEntities.map(({ file, fileName }) => ({
+                          name: fileName,
+                          originalName: file.name,
+                          type: file.type,
+                        })),
                         options,
                         tags,
                         title,
                         type,
                       },
-                    }) */
+                    })
 
-                    // Router.push('/questions')
+                    Router.push('/questions')
                   }}
                 />
               )}
