@@ -35,6 +35,11 @@ query JoinSession($shortname: String!) {
           randomized
         }
       }
+      files {
+        id
+        name
+        type
+      }
     }
     feedbacks {
       id
