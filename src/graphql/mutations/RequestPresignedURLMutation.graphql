@@ -1,0 +1,3 @@
+mutation RequestPresignedURL($questionId: ID!, fileType: File_Type!) {
+  requestPresignedURL(questionId: $questionId, fileType: $fileType)
+}
