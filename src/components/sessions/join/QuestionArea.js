@@ -122,11 +122,7 @@ function QuestionArea({
           description,
           options,
           type,
-          files = [
-            'https://upload.wikimedia.org/wikipedia/commons/d/d3/OrangutanP1.jpg',
-            'https://upload.wikimedia.org/wikipedia/commons/d/d3/OrangutanP1.jpg',
-            'https://upload.wikimedia.org/wikipedia/commons/d/d3/OrangutanP1.jpg',
-          ],
+          files = [],
         } = currentQuestion
 
         // if the content is set, parse it and convert into a content state
@@ -145,7 +141,7 @@ function QuestionArea({
                   content={contentState}
                   description={description}
                 />
-                <QuestionFiles files={files} />
+                {files.length > 0 && <QuestionFiles files={files} />}
               </Collapser>
             </div>
 

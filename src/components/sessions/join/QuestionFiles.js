@@ -1,20 +1,33 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import { Card, Image, Modal } from 'semantic-ui-react'
 
-export default ({ files }) => (
+const propTypes = {
+  files: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+    }),
+  ),
+}
+const defaultProps = {
+  files: [],
+}
+const QuestionFiles = ({ files }) => (
   <div className="questionFiles">
-    {files.map((file) => {
+    {files.map(({ id, name }) => {
+      const fileSrc = `${process.env.S3_BASE_PATH}/${name}`
       const previewImage = (
         <Card>
-          <Image height="auto" src={file} width="100%" />
+          <Image height="auto" src={fileSrc} width="100%" />
         </Card>
       )
 
       return (
-        <div className="file">
+        <div className="file" key={id}>
           <Modal closeIcon trigger={previewImage}>
             <Modal.Content image>
-              <Image wrapped src={file} />
+              <Image wrapped src={fileSrc} />
             </Modal.Content>
           </Modal>
         </div>
@@ -24,8 +37,11 @@ export default ({ files }) => (
       .questionFiles {
         display: flex;
         flex-flow: row wrap;
+        margin-top: 0.3rem;
 
         .file {
+          margin-right: 0.2rem;
+          margin-top: 0.2rem;
           height: 50px;
           width: 50px;
         }
@@ -33,3 +49,8 @@ export default ({ files }) => (
     `}</style>
   </div>
 )
+
+QuestionFiles.propTypes = propTypes
+QuestionFiles.defaultProps = defaultProps
+
+export default QuestionFiles
