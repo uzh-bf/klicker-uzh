@@ -27,3 +27,4 @@ export {
 export { SESSION_STATUS, QUESTION_TYPES } from '../constants'
 export { indexToLetter, getLabelOut, getLabelIn } from './utils/charts'
 export { moveQuestion } from './utils/move'
+export { getPresignedURLs, uploadFilesToPresignedURLs } from './utils/files'
