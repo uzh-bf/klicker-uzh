@@ -1,3 +1,6 @@
-mutation RequestPresignedURL($questionId: ID!, fileType: File_Type!) {
-  requestPresignedURL(questionId: $questionId, fileType: $fileType)
+mutation RequestPresignedURL($fileType: String!) {
+  requestPresignedURL(fileType: $fileType) {
+    fileName
+    signedUrl
+  }
 }
