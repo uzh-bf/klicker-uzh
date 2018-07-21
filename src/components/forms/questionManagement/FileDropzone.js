@@ -1,27 +1,46 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import Dropzone from 'react-dropzone'
+import { FormattedMessage } from 'react-intl'
 import {
   Icon, Card, Image, Button,
 } from 'semantic-ui-react'
 
-export default ({ files, onChangeFiles }) => (
+const propTypes = {
+  disabled: PropTypes.bool,
+  files: PropTypes.arrayOf(PropTypes.shape({})),
+  onChangeFiles: PropTypes.func.isRequired,
+}
+const defaultProps = {
+  disabled: false,
+  files: [],
+}
+
+const FileDropzone = ({ disabled, files, onChangeFiles }) => (
   <div className="fileDropzone">
     <div className="dropzone">
       <Dropzone
         accept="image/*"
         className="reactDropzone"
+        disabled={disabled}
         onDrop={(acc) => {
-          onChangeFiles(files.concat(acc))
+          if (!disabled) {
+            onChangeFiles(files.concat(acc))
+          }
         }}
       >
-        <Button fluid primary>
-          Upload
+        <Button fluid primary disabled={disabled} type="button">
+          <FormattedMessage
+            defaultMessage="Upload"
+            id="fileDropzone.button.upload"
+          />
         </Button>
       </Dropzone>
     </div>
+
     <div className="previews">
       {files.map((file, index) => (
-        <div className="imagePreview">
+        <div className="imagePreview" key={file.id || index}>
           <Card>
             <Card.Meta>
               <span className="imageIndex">{`#${index + 1}`}</span>
@@ -32,12 +51,19 @@ export default ({ files, onChangeFiles }) => (
                 basic
                 fluid
                 color="red"
+                disabled={disabled}
+                type="button"
                 onClick={() => {
-                  onChangeFiles(files.filter((val, ix) => ix !== index))
+                  if (!disabled) {
+                    onChangeFiles(files.filter((val, ix) => ix !== index))
+                  }
                 }}
               >
                 <Icon name="trash" />
-                Delete
+                <FormattedMessage
+                  defaultMessage="Delete"
+                  id="fileDropzone.button.delete"
+                />
               </Button>
             </Card.Content>
           </Card>
@@ -89,3 +115,8 @@ export default ({ files, onChangeFiles }) => (
     `}</style>
   </div>
 )
+
+FileDropzone.propTypes = propTypes
+FileDropzone.defaultProps = defaultProps
+
+export default FileDropzone

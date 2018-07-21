@@ -10,11 +10,12 @@ import {
 } from 'semantic-ui-react'
 import { Formik } from 'formik'
 
-import { FormikInput } from '.'
-import { generateTypesLabel } from '../../lib'
-import { ContentInput, TagInput } from '../questions'
-import { FREECreationOptions, SCCreationOptions } from '../questionTypes'
-import { QUESTION_TYPES, QUESTION_GROUPS } from '../../constants'
+import FileDropzone from './FileDropzone'
+import { FormikInput } from '../components'
+import { generateTypesLabel } from '../../../lib'
+import { ContentInput, TagInput } from '../../questions'
+import { FREECreationOptions, SCCreationOptions } from '../../questionTypes'
+import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
 
 const messages = defineMessages({
   contentEmpty: {
@@ -282,6 +283,20 @@ const QuestionEditForm = ({
               />
             </div>
 
+            <div className="questionInput questionFiles">
+              <h3>
+                <FormattedMessage
+                  defaultMessage="Attached Files"
+                  id="createQuestion.filesLabel"
+                />
+              </h3>
+              <FileDropzone
+                disabled={!isNewVersion}
+                files={values.files}
+                onChangeFiles={newFiles => setFieldValue('files', newFiles)}
+              />
+            </div>
+
             <div className="questionInput questionOptions">
               <OptionsInput
                 disabled={!isNewVersion}
@@ -363,6 +378,7 @@ const QuestionEditForm = ({
                 'tags tags'
                 'version version'
                 'content content'
+                'files files'
                 'options options'
                 'actions actions';
 
@@ -401,6 +417,10 @@ const QuestionEditForm = ({
 
               .questionContent {
                 grid-area: content;
+              }
+
+              .questionFiles {
+                grid-area: files;
               }
 
               .questionOptions {
@@ -458,6 +478,7 @@ export default compose(
             : versions[initializeVersion].description // get the version description
               |> ContentState.createFromText // create a new draftjs content state from text
               |> EditorState.createWithContent, // create a new draftjs editor state
+          files: versions[initializeVersion].files,
           options: versions[initializeVersion].options[type] || {},
           tags: questionTags.map(tag => tag.name),
           title,

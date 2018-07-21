@@ -5,8 +5,10 @@ export { default as PasswordResetForm } from './PasswordResetForm'
 export { default as PasswordRequestForm } from './PasswordRequestForm'
 export {
   default as QuestionCreationForm,
-} from './questionCreation/QuestionCreationForm'
-export { default as QuestionEditForm } from './QuestionEditForm'
+} from './questionManagement/QuestionCreationForm'
+export {
+  default as QuestionEditForm,
+} from './questionManagement/QuestionEditForm'
 export { default as RegistrationForm } from './RegistrationForm'
 export {
   default as SessionCreationForm,
