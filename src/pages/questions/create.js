@@ -4,6 +4,8 @@ import { compose } from 'recompose'
 import { Query, Mutation } from 'react-apollo'
 import { defineMessages, intlShape } from 'react-intl'
 import { convertToRaw } from 'draft-js'
+import axios from 'axios'
+
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionCreationForm } from '../../components/forms'
 import { pageWithIntl, withDnD, withLogging } from '../../lib'
@@ -11,6 +13,7 @@ import {
   QuestionListQuery,
   TagListQuery,
   CreateQuestionMutation,
+  RequestPresignedURLMutation,
 } from '../../graphql'
 
 const messages = defineMessages({
@@ -41,39 +44,73 @@ const CreateQuestion = ({ intl }) => (
       {({ data }) => (
         <Mutation mutation={CreateQuestionMutation}>
           {(createQuestion, { loading }) => (
-            <QuestionCreationForm
-              intl={intl}
-              loading={loading}
-              tags={data.tags}
-              // handle discarding a new question
-              onDiscard={() => Router.push('/questions')}
-              // handle submitting a new question
-              onSubmit={async ({
-                content, options, tags, title, type,
-              }) => {
-                // create the question
-                await createQuestion({
-                  // reload the list of questions and tags after creation
-                  // TODO: replace with optimistic updates
-                  refetchQueries: [
-                    { query: QuestionListQuery },
-                    { query: TagListQuery },
-                  ],
-                  variables: {
-                    content:
-                      content.getCurrentContent()
-                      |> convertToRaw
-                      |> JSON.stringify,
+            <Mutation mutation={RequestPresignedURLMutation}>
+              {requestPresignedURL => (
+                <QuestionCreationForm
+                  intl={intl}
+                  loading={loading}
+                  tags={data.tags}
+                  // handle discarding a new question
+                  onDiscard={() => Router.push('/questions')}
+                  // handle submitting a new question
+                  onSubmit={async ({
+                    content,
                     options,
                     tags,
                     title,
                     type,
-                  },
-                })
+                    files,
+                  }) => {
+                    // request presigned urls and filenames for all files
+                    const fileEntities = await Promise.all(
+                      files.map(async (file) => {
+                        const result = await requestPresignedURL({
+                          variables: {
+                            fileType: file.type,
+                          },
+                        })
+                        const {
+                          fileName,
+                          signedUrl,
+                        } = result.data.requestPresignedURL
+                        return { file, fileName, signedUrl }
+                      }),
+                    )
 
-                Router.push('/questions')
-              }}
-            />
+                    console.log('entities', fileEntities)
+
+                    // upload (put) the files to the corresponding presigned urls
+                    const uploads = await Promise.all(
+                      fileEntities.map(({ file, signedUrl }) => axios.put(signedUrl, file),
+                      ),
+                    )
+                    console.log('uploads', uploads)
+
+                    // create the question
+                    /* await createQuestion({
+                      // reload the list of questions and tags after creation
+                      // TODO: replace with optimistic updates
+                      refetchQueries: [
+                        { query: QuestionListQuery },
+                        { query: TagListQuery },
+                      ],
+                      variables: {
+                        content:
+                          content.getCurrentContent()
+                          |> convertToRaw
+                          |> JSON.stringify,
+                        options,
+                        tags,
+                        title,
+                        type,
+                      },
+                    }) */
+
+                    // Router.push('/questions')
+                  }}
+                />
+              )}
+            </Mutation>
           )}
         </Mutation>
       )}
