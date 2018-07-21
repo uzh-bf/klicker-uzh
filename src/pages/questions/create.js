@@ -4,11 +4,16 @@ import { compose } from 'recompose'
 import { Query, Mutation } from 'react-apollo'
 import { defineMessages, intlShape } from 'react-intl'
 import { convertToRaw } from 'draft-js'
-import axios from 'axios'
 
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionCreationForm } from '../../components/forms'
-import { pageWithIntl, withDnD, withLogging } from '../../lib'
+import {
+  pageWithIntl,
+  withDnD,
+  withLogging,
+  getPresignedURLs,
+  uploadFilesToPresignedURLs,
+} from '../../lib'
 import {
   QuestionListQuery,
   TagListQuery,
@@ -62,26 +67,13 @@ const CreateQuestion = ({ intl }) => (
                     files,
                   }) => {
                     // request presigned urls and filenames for all files
-                    const fileEntities = await Promise.all(
-                      files.map(async (file) => {
-                        const result = await requestPresignedURL({
-                          variables: {
-                            fileType: file.type,
-                          },
-                        })
-                        const {
-                          fileName,
-                          signedUrl,
-                        } = result.data.requestPresignedURL
-                        return { file, fileName, signedUrl }
-                      }),
+                    const fileEntities = await getPresignedURLs(
+                      files,
+                      requestPresignedURL,
                     )
 
                     // upload (put) the files to the corresponding presigned urls
-                    await Promise.all(
-                      fileEntities.map(({ file, signedUrl }) => axios.put(signedUrl, file),
-                      ),
-                    )
+                    await uploadFilesToPresignedURLs(fileEntities)
 
                     // create the question
                     await createQuestion({
