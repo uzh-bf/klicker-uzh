@@ -47,9 +47,7 @@
   "editQuestion.error": "Could not modify question: {error}",
   "editQuestion.newVersion": "New Version",
   "editQuestion.pageTitle": "Edit Question",
-  "editQuestion.questionVersions.description":
-    "The contents of existing versions cannot be altered. Please create a new version instead.",
-  "editQuestion.questionVersions.title": "Question Versions",
+  "editQuestion.questionContents.title": "Question Contents",
   "editQuestion.sucess": "Successfully modified question.",
   "editQuestion.title": "Edit Question",
   "editQuestion.titleInput.label": "Question Title",

@@ -6,15 +6,16 @@ import _isNumber from 'lodash/isNumber'
 import { EditorState, ContentState, convertFromRaw } from 'draft-js'
 import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import {
-  Button, Form, Icon, Menu, Message,
+  Button, Form, Dropdown, Message,
 } from 'semantic-ui-react'
 import { Formik } from 'formik'
 
-import { FormikInput } from '.'
-import { generateTypesLabel } from '../../lib'
-import { ContentInput, TagInput } from '../questions'
-import { FREECreationOptions, SCCreationOptions } from '../questionTypes'
-import { QUESTION_TYPES, QUESTION_GROUPS } from '../../constants'
+import FileDropzone from './FileDropzone'
+import { FormikInput } from '../components'
+import { generateTypesLabel } from '../../../lib'
+import { ContentInput, TagInput } from '../../questions'
+import { FREECreationOptions, SCCreationOptions } from '../../questionTypes'
+import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
 
 const messages = defineMessages({
   contentEmpty: {
@@ -222,40 +223,40 @@ const QuestionEditForm = ({
             <div className="questionVersion">
               <h2>
                 <FormattedMessage
-                  defaultMessage="Question Versions"
-                  id="editQuestion.questionVersions.title"
+                  defaultMessage="Question Contents"
+                  id="editQuestion.questionContents.title"
                 />
               </h2>
 
-              <Message info>
-                <FormattedMessage
-                  defaultMessage="The contents of existing versions cannot be altered. Please create a new version instead."
-                  id="editQuestion.questionVersions.description"
-                />
-              </Message>
-
-              <Menu stackable tabular>
-                {versionOptions.map(({ id, text }, index) => (
-                  <Menu.Item
-                    active={activeVersion === index}
-                    key={id}
-                    onClick={() => onActiveVersionChange(index)}
+              <Dropdown
+                text={
+                  isNewVersion
+                    ? `v${versionOptions.length + 1} (draft)`
+                    : `v${activeVersion + 1}`
+                }
+                value={activeVersion}
+              >
+                <Dropdown.Menu>
+                  <Dropdown.Item
+                    active={isNewVersion}
+                    onClick={() => onActiveVersionChange(versionOptions.length)}
                   >
-                    {text}
-                  </Menu.Item>
-                ))}
+                    {`v${versionOptions.length + 1} (draft)`}
+                  </Dropdown.Item>
 
-                <Menu.Item
-                  active={isNewVersion}
-                  onClick={() => onActiveVersionChange(versionOptions.length)}
-                >
-                  <Icon name="plus" />
-                  <FormattedMessage
-                    defaultMessage="New Version"
-                    id="editQuestion.newVersion"
-                  />
-                </Menu.Item>
-              </Menu>
+                  {versionOptions
+                    .map(({ id, text }, index) => (
+                      <Dropdown.Item
+                        active={activeVersion === index}
+                        key={id}
+                        onClick={() => onActiveVersionChange(index)}
+                      >
+                        {text}
+                      </Dropdown.Item>
+                    ))
+                    .reverse()}
+                </Dropdown.Menu>
+              </Dropdown>
             </div>
 
             <div className="questionInput questionTags">
@@ -281,6 +282,22 @@ const QuestionEditForm = ({
                 }}
               />
             </div>
+
+            {process.env.S3_BASE_PATH && (
+              <div className="questionInput questionFiles">
+                <h3>
+                  <FormattedMessage
+                    defaultMessage="Attached Files (Beta)"
+                    id="createQuestion.filesLabel"
+                  />
+                </h3>
+                <FileDropzone
+                  disabled={!isNewVersion}
+                  files={values.files}
+                  onChangeFiles={newFiles => setFieldValue('files', newFiles)}
+                />
+              </div>
+            )}
 
             <div className="questionInput questionOptions">
               <OptionsInput
@@ -340,6 +357,19 @@ const QuestionEditForm = ({
             font-size: 1.2rem;
           }
 
+          .questionVersion {
+            display: flex;
+            align-items: center;
+
+            h2 {
+              margin: 0;
+            }
+
+            :global(.dropdown) {
+              margin-left: 0.5rem;
+            }
+          }
+
           .questionVersion > :global(.field),
           .actionArea {
             display: flex;
@@ -363,6 +393,7 @@ const QuestionEditForm = ({
                 'tags tags'
                 'version version'
                 'content content'
+                'files files'
                 'options options'
                 'actions actions';
 
@@ -401,6 +432,10 @@ const QuestionEditForm = ({
 
               .questionContent {
                 grid-area: content;
+              }
+
+              .questionFiles {
+                grid-area: files;
               }
 
               .questionOptions {
@@ -458,6 +493,7 @@ export default compose(
             : versions[initializeVersion].description // get the version description
               |> ContentState.createFromText // create a new draftjs content state from text
               |> EditorState.createWithContent, // create a new draftjs editor state
+          files: versions[initializeVersion].files || [],
           options: versions[initializeVersion].options[type] || {},
           tags: questionTags.map(tag => tag.name),
           title,
