@@ -94,6 +94,10 @@ export const SMALL_PIE_THRESHOLD = 0.05
 export const CHANGELOG = {
   new: [
     {
+      items: ['Questions can now have images attached (beta)'],
+      text: '1.0.0-public.beta.37',
+    },
+    {
       items: ['Sessions can be copied and modified in a single interaction'],
       text: '1.0.0-public.beta.35',
     },
