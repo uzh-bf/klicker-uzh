@@ -296,7 +296,6 @@ const QuestionEditForm = ({
                 onChangeFiles={newFiles => setFieldValue('files', newFiles)}
               />
             </div>
-
             <div className="questionInput questionOptions">
               <OptionsInput
                 disabled={!isNewVersion}
@@ -478,7 +477,7 @@ export default compose(
             : versions[initializeVersion].description // get the version description
               |> ContentState.createFromText // create a new draftjs content state from text
               |> EditorState.createWithContent, // create a new draftjs editor state
-          files: versions[initializeVersion].files,
+          files: versions[initializeVersion].files || [],
           options: versions[initializeVersion].options[type] || {},
           tags: questionTags.map(tag => tag.name),
           title,

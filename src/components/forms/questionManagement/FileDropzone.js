@@ -39,36 +39,43 @@ const FileDropzone = ({ disabled, files, onChangeFiles }) => (
     </div>
 
     <div className="previews">
-      {files.map((file, index) => (
-        <div className="imagePreview" key={file.id || index}>
-          <Card>
-            <Card.Meta>
-              <span className="imageIndex">{`#${index + 1}`}</span>
-            </Card.Meta>
-            <Image height="auto" src={file.preview} width="100%" />
-            <Card.Content extra>
-              <Button
-                basic
-                fluid
-                color="red"
-                disabled={disabled}
-                type="button"
-                onClick={() => {
-                  if (!disabled) {
-                    onChangeFiles(files.filter((val, ix) => ix !== index))
-                  }
-                }}
-              >
-                <Icon name="trash" />
-                <FormattedMessage
-                  defaultMessage="Delete"
-                  id="fileDropzone.button.delete"
-                />
-              </Button>
-            </Card.Content>
-          </Card>
-        </div>
-      ))}
+      {files.map((file, index) => {
+        const imageSrc = `${process.env.S3_BASE_PATH}/${file.name}`
+        return (
+          <div className="imagePreview" key={file.id || index}>
+            <Card>
+              <Card.Meta>
+                <span className="imageIndex">{`#${index + 1}`}</span>
+              </Card.Meta>
+              <Image
+                height="auto"
+                src={file.preview || imageSrc}
+                width="100%"
+              />
+              <Card.Content extra>
+                <Button
+                  basic
+                  fluid
+                  color="red"
+                  disabled={disabled}
+                  type="button"
+                  onClick={() => {
+                    if (!disabled) {
+                      onChangeFiles(files.filter((val, ix) => ix !== index))
+                    }
+                  }}
+                >
+                  <Icon name="trash" />
+                  <FormattedMessage
+                    defaultMessage="Delete"
+                    id="fileDropzone.button.delete"
+                  />
+                </Button>
+              </Card.Content>
+            </Card>
+          </div>
+        )
+      })}
     </div>
 
     <style jsx>{`
