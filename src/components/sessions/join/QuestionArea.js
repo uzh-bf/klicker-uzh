@@ -8,6 +8,7 @@ import {
   compose, withStateHandlers, withHandlers, withProps,
 } from 'recompose'
 
+import QuestionFiles from './QuestionFiles'
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
 import { ActionMenu, Collapser } from '../../common'
 import {
@@ -117,7 +118,11 @@ function QuestionArea({
         }
 
         const {
-          content, description, options, type,
+          content,
+          description,
+          options,
+          type,
+          files = [],
         } = currentQuestion
 
         // if the content is set, parse it and convert into a content state
@@ -136,6 +141,8 @@ function QuestionArea({
                   content={contentState}
                   description={description}
                 />
+                {process.env.S3_BASE_PATH
+                  && files.length > 0 && <QuestionFiles files={files} />}
               </Collapser>
             </div>
 

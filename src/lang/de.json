@@ -47,9 +47,7 @@
   "editQuestion.error": "Frage konnte nicht editiert werden: {error}",
   "editQuestion.newVersion": "Neue Version",
   "editQuestion.pageTitle": "Frage editieren",
-  "editQuestion.questionVersions.description":
-    "Der Inhalt von existierenden Versionen kann nicht angepasst werden. Bitte erstellen Sie dafür eine neue Version.",
-  "editQuestion.questionVersions.title": "Frageversionen",
+  "editQuestion.questionContents.title": "Frageinhalte",
   "editQuestion.sucess": "Frage erfolgreich editiert.",
   "editQuestion.title": "Frage editieren",
   "editQuestion.titleInput.label": "Fragetitel",

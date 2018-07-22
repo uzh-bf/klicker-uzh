@@ -35,6 +35,12 @@ query QuestionDetails($id: ID!) {
           }
         }
       }
+      files {
+        id
+        name
+        originalName
+        type
+      }
       solution {
         SC
         MC
