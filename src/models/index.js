@@ -1,5 +1,6 @@
 const ConfusionTimestep = require('./ConfusionTimestep')
 const Feedback = require('./Feedback')
+const { FileModel } = require('./File')
 const { QuestionModel } = require('./Question')
 const { QuestionBlock } = require('./QuestionBlock')
 const { QuestionOptions } = require('./QuestionOptions')
@@ -12,6 +13,7 @@ const UserModel = require('./User')
 module.exports = {
   ConfusionTimestep,
   Feedback,
+  FileModel,
   QuestionModel,
   QuestionBlock,
   QuestionInstanceModel,

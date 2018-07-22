@@ -2,7 +2,7 @@ const md5 = require('md5')
 const _isNumber = require('lodash/isNumber')
 const { ForbiddenError, UserInputError } = require('apollo-server-express')
 
-const { QuestionInstanceModel, UserModel } = require('../models')
+const { QuestionInstanceModel, UserModel, FileModel } = require('../models')
 const { QUESTION_GROUPS, QUESTION_TYPES } = require('../constants')
 const { getRedis } = require('../redis')
 const { getRunningSession } = require('./sessionMgr')
@@ -288,6 +288,9 @@ const joinSession = async ({ shortname }) => {
       const { id: instanceId, question } = instance
       const version = question.versions[instance.version]
 
+      // get the files that correspond to the current question version
+      const files = FileModel.find({ _id: { $in: version.files } })
+
       return {
         id: question.id,
         instanceId,
@@ -296,6 +299,7 @@ const joinSession = async ({ shortname }) => {
         content: version.content,
         description: version.description,
         options: version.options,
+        files,
       }
     }),
     feedbacks:

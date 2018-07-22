@@ -18,8 +18,12 @@ module.exports = new mongoose.Schema({
   // "text-only" version of the above content
   description: { type: String, required: true },
 
+  // question options and the corresponding solutions
   options: { type: QuestionOptions, required: true },
   solution: { type: QuestionSolution, required: false },
+
+  // the file urls that are associated with this question version
+  files: [{ type: ObjectId, ref: 'File' }],
 
   instances: [{ type: ObjectId, ref: 'QuestionInstance' }],
 

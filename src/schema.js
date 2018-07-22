@@ -1,4 +1,5 @@
 const { requireAuth } = require('./services/auth')
+const { requestPresignedURL } = require('./resolvers/files')
 const {
   allQuestions,
   createQuestion,
@@ -44,6 +45,7 @@ const {
   changePassword,
   requestPassword,
 } = require('./resolvers/users')
+const { files } = require('./resolvers/files')
 const { confusionAdded, feedbackAdded } = require('./resolvers/subscriptions')
 const { allTypes } = require('./types')
 
@@ -89,6 +91,7 @@ const typeDefs = [
     modifySession(id: ID!, session: SessionModifyInput!): Session!
     pauseSession(id: ID!): Session!
     requestPassword(email: String!): String!
+    requestPresignedURL(fileType: String!): File_PresignedURL!
     startSession(id: ID!): Session!
     updateSessionSettings(sessionId: ID!, settings: Session_SettingsInput!): Session!
   }
@@ -133,6 +136,7 @@ const resolvers = {
     modifySession: requireAuth(modifySession),
     pauseSession: requireAuth(pauseSession),
     requestPassword,
+    requestPresignedURL: requireAuth(requestPresignedURL),
     startSession: requireAuth(startSession),
     updateSessionSettings: requireAuth(updateSessionSettings),
     activateNextBlock: requireAuth(activateNextBlock),
@@ -197,6 +201,12 @@ const resolvers = {
       return null
     },
   },
+  Question_Version: {
+    files,
+  },
+  Question_Version_Public: {
+    files,
+  },
   Session: {
     user,
     runtime: runtimeByPV,
@@ -216,6 +226,7 @@ const resolvers = {
     runningSession: sessionByPV,
     sessions: sessionsByPV,
     tags,
+    files,
   },
 }
 
