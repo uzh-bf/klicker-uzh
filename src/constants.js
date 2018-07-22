@@ -1,5 +1,3 @@
-export const SEMANTIC_VERSION = '2.3.1'
-
 export const SESSION_STATUS = {
   COMPLETED: 'COMPLETED',
   CREATED: 'CREATED',

@@ -7,17 +7,18 @@ import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
 import { EditorState } from 'draft-js'
 
-import { ContentInput, TagInput } from '../questions'
+import FileDropzone from './FileDropzone'
+import { ContentInput, TagInput } from '../../questions'
 import {
   TypeChooser,
   SCCreationOptions,
   SCCreationPreview,
   FREECreationOptions,
   FREECreationPreview,
-} from '../questionTypes'
-import { QUESTION_TYPES } from '../../lib'
-import { QUESTION_GROUPS } from '../../constants'
-import { FormikInput } from '.'
+} from '../../questionTypes'
+import { QUESTION_TYPES } from '../../../lib'
+import { QUESTION_GROUPS } from '../../../constants'
+import { FormikInput } from '../components'
 
 const messages = defineMessages({
   contentEmpty: {
@@ -145,6 +146,7 @@ const QuestionCreationForm = ({
       <Formik
         initialValues={{
           content: EditorState.createEmpty(),
+          files: [],
           options: {
             choices: [],
             randomized: false,
@@ -234,6 +236,21 @@ const QuestionCreationForm = ({
                 />
               </div>
 
+              {process.env.S3_BASE_PATH && (
+                <div className="questionInput questionFiles">
+                  <h2>
+                    <FormattedMessage
+                      defaultMessage="Attached Files (Beta)"
+                      id="createQuestion.filesLabel"
+                    />
+                  </h2>
+                  <FileDropzone
+                    files={values.files}
+                    onChangeFiles={newFiles => setFieldValue('files', newFiles)}
+                  />
+                </div>
+              )}
+
               <div className="questionInput questionOptions">
                 <OptionsInput
                   intl={intl}
@@ -315,6 +332,7 @@ const QuestionCreationForm = ({
                   'title title title title preview preview'
                   'type type tags tags preview preview'
                   'content content content content content content'
+                  'files files files files files files'
                   'options options options options options options';
 
                 .questionInput,
@@ -341,6 +359,10 @@ const QuestionCreationForm = ({
 
                 .questionContent {
                   grid-area: content;
+                }
+
+                .questionFiles {
+                  grid-area: files;
                 }
 
                 .questionOptions {

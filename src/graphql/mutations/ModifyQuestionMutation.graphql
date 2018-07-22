@@ -5,16 +5,11 @@ mutation ModifyQuestion(
   $options: QuestionOptionsInput
   $solution: Question_SolutionInput
   $tags: [ID!]
+  $files: [FileInput!]
 ) {
   modifyQuestion(
     id: $id
-    question: {
-      title: $title
-      content: $content
-      options: $options
-      solution: $solution
-      tags: $tags
-    }
+    question: { title: $title, content: $content, options: $options, solution: $solution, tags: $tags, files: $files }
   ) {
     id
     title
@@ -54,6 +49,12 @@ mutation ModifyQuestion(
         MC
         FREE
         FREE_RANGE
+      }
+      files {
+        id
+        originalName
+        name
+        type
       }
       createdAt
     }
