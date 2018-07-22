@@ -52,6 +52,7 @@ mutation ModifyQuestion(
       }
       files {
         id
+        originalName
         name
         type
       }
