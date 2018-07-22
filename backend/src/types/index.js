@@ -1,3 +1,4 @@
+const File = require('./File')
 const Question = require('./Question')
 const QuestionInstance = require('./QuestionInstance')
 const Session = require('./Session')
@@ -10,6 +11,7 @@ const FREEQuestionResults = require('./questionTypes/FREEQuestionResults')
 
 module.exports = {
   allTypes: [
+    File,
     Question,
     QuestionInstance,
     SCQuestionOptions,
@@ -20,6 +22,7 @@ module.exports = {
     Tag,
     User,
   ],
+  File,
   Question,
   QuestionInstance,
   SCQuestionOptions,

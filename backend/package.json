@@ -7,6 +7,7 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "apollo-server-express": "2.0.0",
+    "aws-sdk": "2.268.1",
     "bcryptjs": "2.4.3",
     "bluebird": "3.5.1",
     "body-parser": "1.18.3",
@@ -44,6 +45,8 @@
     "request": "2.87.0",
     "request-promise": "4.2.2",
     "subscriptions-transport-ws": "0.9.12",
+    "uuid": "3.3.2",
+    "v8n": "1.0.2",
     "validator": "10.4.0"
   },
   "devDependencies": {

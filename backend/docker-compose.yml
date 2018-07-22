@@ -1,25 +1,39 @@
 version: '3'
 services:
-  api:
-    build: .
-    ports:
-      - "4000:3000"
-    environment:
-      APP_DOMAIN: "localhost"
-      APP_SECRET: "hello-world"
-      APP_FILTERING_FP:
-      APP_FILTERING_IP:
-      MONGO_URL: "klicker:klicker@ds125388.mlab.com:25388/klicker-migration"
-      REDIS_URL: ":klicker-dev@144.76.118.118:6379"
-      ORIGIN: "http://localhost:3000"
-      PORT: 3000
+  # api:
+    # build: .
+    # ports:
+      # - "4000:3000"
+    # environment:
+      # APP_DOMAIN: "localhost"
+      # APP_SECRET: "hello-world"
+      # APP_FILTERING_FP:
+      # APP_FILTERING_IP:
+      # MONGO_URL: "klicker:klicker@ds125388.mlab.com:25388/klicker-migration"
+      # REDIS_URL: ":klicker-dev@144.76.118.118:6379"
+      # ORIGIN: "http://localhost:3000"
+      # PORT: 3000
 
-  #redis:
-    #image: "redis:3-32bit"
-    #ports:
-      #- "6379:6379"
+  minio:
+    image: minio/minio
+    volumes:
+      - minio-data:/data
+    ports:
+      - "9000:9000"
+    environment:
+      MINIO_ACCESS_KEY: klicker
+      MINIO_SECRET_KEY: secret123
+    command: server /data
+
+  redis:
+    image: "redis:3-32bit"
+    ports:
+      - "6379:6379"
 
   #mongodb:
     #image: "mongo:3.2"
     #ports:
       #- "27017:27017"
+
+volumes:
+  minio-data:

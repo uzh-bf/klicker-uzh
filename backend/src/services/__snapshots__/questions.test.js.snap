@@ -59,7 +59,13 @@ Array [
         MC: undefined
         FREE_RANGE: undefined
       }
-      Solution: undefined
+      Solution: {
+        SC: [false,true,false]
+        MC: [false,true,false]
+        FREE: undefined
+        FREE_RANGE: undefined
+      }
+      
     ]
   ,
   
@@ -191,7 +197,13 @@ Array [
         MC: undefined
         FREE_RANGE: undefined
       }
-      Solution: undefined
+      Solution: {
+        SC: [false,true,false]
+        MC: [false,true,false]
+        FREE: undefined
+        FREE_RANGE: undefined
+      }
+      
     ]
   ,
   
@@ -516,7 +528,13 @@ exports[`QuestionService modifyQuestion allows creating a new question version 1
         MC: undefined
         FREE_RANGE: undefined
       }
-      Solution: undefined
+      Solution: {
+        SC: [false,true,false]
+        MC: [false,true,false]
+        FREE: undefined
+        FREE_RANGE: undefined
+      }
+      
     ]
   
 `;

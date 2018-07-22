@@ -4,6 +4,7 @@ const {
   SessionModel,
   QuestionModel,
   TagModel,
+  FileModel,
 } = require('../models')
 
 // create a mapping from a mongo result array to a dataloader array
@@ -35,12 +36,10 @@ const tagsLoader = createBasicLoader(TagModel)
 const questionsLoader = createBasicLoader(QuestionModel)
 const sessionsLoader = createBasicLoader(SessionModel)
 const questionInstancesLoader = createBasicLoader(QuestionInstanceModel)
-
-/* if (!auth) {
-  return null
-} */
+const filesLoader = createBasicLoader(FileModel)
 
 const createLoaders = auth => ({
+  files: filesLoader(auth),
   questions: questionsLoader(auth),
   questionInstances: questionInstancesLoader(auth),
   sessions: sessionsLoader(auth),
@@ -61,5 +60,6 @@ module.exports = {
   questionInstances: questionInstancesLoader,
   sessions: sessionsLoader,
   tags: tagsLoader,
+  files: filesLoader,
   ensureLoaders,
 }

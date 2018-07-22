@@ -31,6 +31,7 @@ const User = `
     questions: [Question!]!
     sessions: [Session!]!
     tags: [Tag!]!
+    files: [File!]!
 
     createdAt: String!
     updatedAt: String!
