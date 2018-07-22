@@ -58,14 +58,12 @@ const CreateQuestion = ({ intl }) => (
                   // handle discarding a new question
                   onDiscard={() => Router.push('/questions')}
                   // handle submitting a new question
-                  onSubmit={async ({
-                    content,
-                    options,
-                    tags,
-                    title,
-                    type,
-                    files,
-                  }) => {
+                  onSubmit={async (
+                    {
+                      content, options, tags, title, type, files,
+                    },
+                    { setSubmitting },
+                  ) => {
                     // request presigned urls and filenames for all files
                     const fileEntities = await getPresignedURLs(
                       files,
@@ -99,6 +97,8 @@ const CreateQuestion = ({ intl }) => (
                         type,
                       },
                     })
+
+                    setSubmitting(false)
 
                     Router.push('/questions')
                   }}

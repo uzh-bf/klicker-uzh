@@ -97,13 +97,16 @@ const EditQuestion = ({ intl, router }) => (
                       onDiscard={() => {
                         router.push('/questions')
                       }}
-                      onSubmit={isNewVersion => async ({
-                        title: newTitle,
-                        content,
-                        options,
-                        solution,
-                        tags: newTags,
-                      }) => {
+                      onSubmit={isNewVersion => async (
+                        {
+                          title: newTitle,
+                          content,
+                          options,
+                          solution,
+                          tags: newTags,
+                        },
+                        { setSubmitting },
+                      ) => {
                         await editQuestion({
                           // reload the question details and tags after update
                           // TODO: replace with optimistic updates
@@ -157,6 +160,8 @@ const EditQuestion = ({ intl, router }) => (
                             _isNil,
                           ),
                         })
+
+                        setSubmitting(false)
                       }}
                     />
                   )
