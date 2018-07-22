@@ -283,19 +283,22 @@ const QuestionEditForm = ({
               />
             </div>
 
-            <div className="questionInput questionFiles">
-              <h3>
-                <FormattedMessage
-                  defaultMessage="Attached Files"
-                  id="createQuestion.filesLabel"
+            {process.env.S3_BASE_PATH && (
+              <div className="questionInput questionFiles">
+                <h3>
+                  <FormattedMessage
+                    defaultMessage="Attached Files (Beta)"
+                    id="createQuestion.filesLabel"
+                  />
+                </h3>
+                <FileDropzone
+                  disabled={!isNewVersion}
+                  files={values.files}
+                  onChangeFiles={newFiles => setFieldValue('files', newFiles)}
                 />
-              </h3>
-              <FileDropzone
-                disabled={!isNewVersion}
-                files={values.files}
-                onChangeFiles={newFiles => setFieldValue('files', newFiles)}
-              />
-            </div>
+              </div>
+            )}
+
             <div className="questionInput questionOptions">
               <OptionsInput
                 disabled={!isNewVersion}

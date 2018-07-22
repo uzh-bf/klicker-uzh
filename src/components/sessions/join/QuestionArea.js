@@ -141,7 +141,8 @@ function QuestionArea({
                   content={contentState}
                   description={description}
                 />
-                {files.length > 0 && <QuestionFiles files={files} />}
+                {process.env.S3_BASE_PATH
+                  && files.length > 0 && <QuestionFiles files={files} />}
               </Collapser>
             </div>
 

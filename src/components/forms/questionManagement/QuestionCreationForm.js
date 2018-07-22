@@ -236,18 +236,20 @@ const QuestionCreationForm = ({
                 />
               </div>
 
-              <div className="questionInput questionFiles">
-                <h2>
-                  <FormattedMessage
-                    defaultMessage="Attached Files"
-                    id="createQuestion.filesLabel"
+              {process.env.S3_BASE_PATH && (
+                <div className="questionInput questionFiles">
+                  <h2>
+                    <FormattedMessage
+                      defaultMessage="Attached Files (Beta)"
+                      id="createQuestion.filesLabel"
+                    />
+                  </h2>
+                  <FileDropzone
+                    files={values.files}
+                    onChangeFiles={newFiles => setFieldValue('files', newFiles)}
                   />
-                </h2>
-                <FileDropzone
-                  files={values.files}
-                  onChangeFiles={newFiles => setFieldValue('files', newFiles)}
-                />
-              </div>
+                </div>
+              )}
 
               <div className="questionInput questionOptions">
                 <OptionsInput
