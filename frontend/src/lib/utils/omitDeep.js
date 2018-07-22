@@ -2,6 +2,10 @@
 
 // https://gist.github.com/Billy-/d94b65998501736bfe6521eadc1ab538
 
+function omitDeepArray(arr, key) {
+  return arr.map(obj => omitDeep(obj, key))
+}
+
 function omitDeep(obj, key) {
   const keys = Object.keys(obj)
   const newObj = {}
@@ -25,3 +29,4 @@ function omitDeepArrayWalk(arr, key) {
 }
 
 export default omitDeep
+export { omitDeepArray }

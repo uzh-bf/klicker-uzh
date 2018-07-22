@@ -4,13 +4,21 @@ import { compose } from 'recompose'
 import { Query, Mutation } from 'react-apollo'
 import { defineMessages, intlShape } from 'react-intl'
 import { convertToRaw } from 'draft-js'
+
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionCreationForm } from '../../components/forms'
-import { pageWithIntl, withDnD, withLogging } from '../../lib'
+import {
+  pageWithIntl,
+  withDnD,
+  withLogging,
+  getPresignedURLs,
+  uploadFilesToPresignedURLs,
+} from '../../lib'
 import {
   QuestionListQuery,
   TagListQuery,
   CreateQuestionMutation,
+  RequestPresignedURLMutation,
 } from '../../graphql'
 
 const messages = defineMessages({
@@ -41,39 +49,62 @@ const CreateQuestion = ({ intl }) => (
       {({ data }) => (
         <Mutation mutation={CreateQuestionMutation}>
           {(createQuestion, { loading }) => (
-            <QuestionCreationForm
-              intl={intl}
-              loading={loading}
-              tags={data.tags}
-              // handle discarding a new question
-              onDiscard={() => Router.push('/questions')}
-              // handle submitting a new question
-              onSubmit={async ({
-                content, options, tags, title, type,
-              }) => {
-                // create the question
-                await createQuestion({
-                  // reload the list of questions and tags after creation
-                  // TODO: replace with optimistic updates
-                  refetchQueries: [
-                    { query: QuestionListQuery },
-                    { query: TagListQuery },
-                  ],
-                  variables: {
-                    content:
-                      content.getCurrentContent()
-                      |> convertToRaw
-                      |> JSON.stringify,
-                    options,
-                    tags,
-                    title,
-                    type,
-                  },
-                })
+            <Mutation mutation={RequestPresignedURLMutation}>
+              {requestPresignedURL => (
+                <QuestionCreationForm
+                  intl={intl}
+                  loading={loading}
+                  tags={data.tags}
+                  // handle discarding a new question
+                  onDiscard={() => Router.push('/questions')}
+                  // handle submitting a new question
+                  onSubmit={async (
+                    {
+                      content, options, tags, title, type, files,
+                    },
+                    { setSubmitting },
+                  ) => {
+                    // request presigned urls and filenames for all files
+                    const fileEntities = await getPresignedURLs(
+                      files,
+                      requestPresignedURL,
+                    )
 
-                Router.push('/questions')
-              }}
-            />
+                    // upload (put) the files to the corresponding presigned urls
+                    await uploadFilesToPresignedURLs(fileEntities)
+
+                    // create the question
+                    await createQuestion({
+                      // reload the list of questions and tags after creation
+                      // TODO: replace with optimistic updates
+                      refetchQueries: [
+                        { query: QuestionListQuery },
+                        { query: TagListQuery },
+                      ],
+                      variables: {
+                        content:
+                          content.getCurrentContent()
+                          |> convertToRaw
+                          |> JSON.stringify,
+                        files: fileEntities.map(({ file, fileName }) => ({
+                          name: fileName,
+                          originalName: file.name,
+                          type: file.type,
+                        })),
+                        options,
+                        tags,
+                        title,
+                        type,
+                      },
+                    })
+
+                    setSubmitting(false)
+
+                    Router.push('/questions')
+                  }}
+                />
+              )}
+            </Mutation>
           )}
         </Mutation>
       )}

@@ -17,6 +17,7 @@ import UpdateSessionSettingsMutation from './mutations/UpdateSessionSettingsMuta
 import ArchiveQuestionsMutation from './mutations/ArchiveQuestionsMutation.graphql'
 import PauseSessionMutation from './mutations/PauseSessionMutation.graphql'
 import ModifySessionMutation from './mutations/ModifySessionMutation.graphql'
+import RequestPresignedURLMutation from './mutations/RequestPresignedURLMutation.graphql'
 
 import AccountSummaryQuery from './queries/AccountSummaryQuery.graphql'
 import JoinSessionQuery from './queries/JoinSessionQuery.graphql'
@@ -53,6 +54,7 @@ const queries = [
   StartSessionMutation,
   UpdateSessionSettingsMutation,
   PauseSessionMutation,
+  RequestPresignedURLMutation,
   AccountSummaryQuery,
   JoinSessionQuery,
   QuestionDetailsQuery,
@@ -93,6 +95,7 @@ export {
   RegistrationMutation,
   StartSessionMutation,
   UpdateSessionSettingsMutation,
+  RequestPresignedURLMutation,
   AccountSummaryQuery,
   JoinSessionQuery,
   QuestionDetailsQuery,
