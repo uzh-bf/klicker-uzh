@@ -15,7 +15,7 @@ services:
       # PORT: 3000
 
   minio:
-    image: minio/minio
+    image: minio/minio:latest@sha256:7ea6405694d6f9265287e961adaaebcde10c667ebbf9a8522af2a2c693b460d0
     volumes:
       - minio-data:/data
     ports:
@@ -26,7 +26,7 @@ services:
     command: server /data
 
   redis:
-    image: "redis:3-32bit"
+    image: "redis:3-32bit@sha256:59232cf728999da6923494add956ff7cd1604e285208f46a6e53b9fed8c27485"
     ports:
       - "6379:6379"
 
