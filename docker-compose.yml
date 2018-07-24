@@ -15,7 +15,7 @@ services:
       # PORT: 3000
 
   minio:
-    image: minio/minio:latest@sha256:7ea6405694d6f9265287e961adaaebcde10c667ebbf9a8522af2a2c693b460d0
+    image: minio/minio:latest@sha256:ed0c464a66ac1f56b77607320c74de4190cd6121b70ffbc1e387f2a4955dd334
     volumes:
       - minio-data:/data
     ports:
