@@ -7,7 +7,7 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "apollo-server-express": "2.0.0",
-    "aws-sdk": "2.279.1",
+    "aws-sdk": "2.280.1",
     "bcryptjs": "2.4.3",
     "bluebird": "3.5.1",
     "body-parser": "1.18.3",
