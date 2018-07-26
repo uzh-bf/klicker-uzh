@@ -10,7 +10,6 @@ import { onError } from 'apollo-link-error'
 import { ApolloLink, split } from 'apollo-link'
 import { WebSocketLink } from 'apollo-link-ws'
 import { SubscriptionClient } from 'subscriptions-transport-ws'
-// import { createPersistedQueryLink } from 'apollo-link-persisted-queries'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import { getMainDefinition } from 'apollo-utilities'
 
@@ -60,12 +59,6 @@ function create(initialState) {
   }
 
   const link = ApolloLink.from([
-    /* TODO: work with persisted queries
-      createPersistedQueryLink({
-      // we need to pass both disable and generateHash (or it will bug)
-      // disable: defaultDisable,
-      generateHash: ({ documentId }) => documentId,
-    }), */
     /* withClientState({
       cache,
       resolvers: {
@@ -85,11 +78,21 @@ function create(initialState) {
     httpLink,
   ])
 
+  // setup APQ if configured appropriately
+  let persistedQueryLink
+  if (process.env.APP_PERSIST_QUERIES) {
+    const {
+      createPersistedQueryLink,
+    } = require('apollo-link-persisted-queries')
+    persistedQueryLink = createPersistedQueryLink({
+      generateHash: ({ documentId }) => documentId,
+    })
+  }
+
   return new ApolloClient({
     cache,
     connectToDevTools: process.browser,
-    link,
-    // link: persistQueriesLink.concat(link),
+    link: persistedQueryLink ? persistedQueryLink.concat(link) : link,
     ssrMode: !process.browser, // Disables forceFetch on the server (so queries are only run once)
   })
 }
