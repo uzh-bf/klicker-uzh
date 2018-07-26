@@ -109,8 +109,8 @@ Login.propTypes = propTypes
 
 export default compose(
   withLogging({
-    chatlio: false,
     logRocket: false,
+    slaask: true,
   }),
   pageWithIntl,
 )(Login)

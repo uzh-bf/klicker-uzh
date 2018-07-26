@@ -13,6 +13,14 @@ query SessionList {
           title
           type
         }
+        results {
+          ... on SCQuestionResults {
+            totalParticipants
+          }
+          ... on FREEQuestionResults {
+            totalParticipants
+          }
+        }
       }
     }
     createdAt
