@@ -764,12 +764,6 @@ babel-messages@^6.23.0:
   dependencies:
     babel-runtime "^6.22.0"
 
-babel-plugin-external-helpers@^6.22.0:
-  version "6.22.0"
-  resolved "https://registry.yarnpkg.com/babel-plugin-external-helpers/-/babel-plugin-external-helpers-6.22.0.tgz#2285f48b02bd5dede85175caf8c62e86adccefa1"
-  dependencies:
-    babel-runtime "^6.22.0"
-
 babel-plugin-istanbul@^4.1.6:
   version "4.1.6"
   resolved "https://registry.yarnpkg.com/babel-plugin-istanbul/-/babel-plugin-istanbul-4.1.6.tgz#36c59b2192efce81c5b378321b74175add1c9a45"
@@ -6633,11 +6627,9 @@ uuid@^3.0.0, uuid@^3.1.0, uuid@^3.2.1:
   version "3.2.1"
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-3.2.1.tgz#12c528bb9d58d0b9265d9a2f6f0fe8be17ff1f14"
 
-v8n@1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/v8n/-/v8n-1.1.0.tgz#71c788a550020cdd9f78467c585c328ff5f387a0"
-  dependencies:
-    babel-plugin-external-helpers "^6.22.0"
+v8n@1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/v8n/-/v8n-1.1.1.tgz#342a69598a4094ecd92884f422ad5c55c12b67f5"
 
 validate-npm-package-license@^3.0.1:
   version "3.0.3"
