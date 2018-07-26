@@ -882,7 +882,7 @@ base@^0.11.1:
     mixin-deep "^1.2.0"
     pascalcase "^0.1.1"
 
-basic-auth@~2.0.0:
+basic-auth@^2.0.0, basic-auth@~2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/basic-auth/-/basic-auth-2.0.0.tgz#015db3f353e02e56377755f962742e8981e7bbba"
   dependencies:
@@ -1750,12 +1750,13 @@ elastic-apm-http-client@^5.2.1:
   dependencies:
     fast-safe-stringify "^2.0.4"
 
-elastic-apm-node@1.8.3:
-  version "1.8.3"
-  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.8.3.tgz#012e5cae723ecd5e8d21d87a73368b28cc724a1c"
+elastic-apm-node@1.9.0:
+  version "1.9.0"
+  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.9.0.tgz#f29f680fc04609100cd2ca33b8331b54dc9a5503"
   dependencies:
     after-all-results "^2.0.0"
     async-value-promise "^1.1.1"
+    basic-auth "^2.0.0"
     console-log-level "^1.4.0"
     cookie "^0.3.1"
     core-util-is "^1.0.2"
