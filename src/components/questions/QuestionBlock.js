@@ -9,7 +9,15 @@ const propTypes = {
   index: PropTypes.number,
   noDetails: PropTypes.bool,
   noVersions: PropTypes.bool,
-  questions: PropTypes.arrayOf(PropTypes.object).isRequired,
+  questions: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.number.isRequired,
+      title: PropTypes.string.isRequired,
+      totalParticipants: PropTypes.number,
+      type: PropTypes.string.isRequired,
+      version: PropTypes.number.isRequired,
+    }),
+  ).isRequired,
   status: PropTypes.string,
   timeLimit: PropTypes.number,
 }
@@ -68,6 +76,7 @@ const QuestionBlock = ({
           key={question.id}
           noDetails={noVersions}
           title={question.title}
+          totalParticipants={question.totalParticipants}
           type={question.type}
           version={question.version}
         />

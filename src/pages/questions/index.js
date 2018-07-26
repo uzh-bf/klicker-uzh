@@ -292,7 +292,9 @@ const Index = ({
 Index.propTypes = propTypes
 
 export default compose(
-  withLogging(),
+  withLogging({
+    slaask: true,
+  }),
   withDnD,
   pageWithIntl,
   withSortingAndFiltering,
@@ -302,6 +304,9 @@ export default compose(
   graphql(ArchiveQuestionsMutation, { name: 'archiveQuestions' }),
   graphql(ModifySessionMutation, { name: 'modifySession' }),
   withRouter,
+  withProps(({ router: { query } }) => ({
+    creationMode: !!query.creationMode,
+  })),
   branch(
     // if we are in session modification mode, branch away from the main data flow
     ({ router: { query } }) => !!query.editSessionId,
@@ -359,8 +364,10 @@ export default compose(
     ),
   ),
   withStateHandlers(
-    ({ sessionEditMode, sessionBlocks, sessionName }) => ({
-      creationMode: !!sessionEditMode,
+    ({
+      creationMode, sessionEditMode, sessionBlocks, sessionName,
+    }) => ({
+      creationMode: !!sessionEditMode || !!creationMode,
       sessionBlocks: sessionBlocks || List([]),
       sessionName,
     }),

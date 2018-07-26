@@ -322,7 +322,9 @@ const Running = ({ intl, shortname }) => (
 Running.propTypes = propTypes
 
 export default compose(
-  withLogging(),
+  withLogging({
+    slaask: true,
+  }),
   pageWithIntl,
   graphql(AccountSummaryQuery),
   withProps(({ data }) => ({

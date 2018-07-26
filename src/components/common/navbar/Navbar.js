@@ -84,6 +84,7 @@ export const NavbarPres = ({
           const accountId = data.user?.id
           const userEmail = data.user?.email
           const accountShort = data.user?.shortname
+          // const userHash = data.user?.hmac
           const runningSessionId = data.user?.runningSession?.id
 
           if (typeof window !== 'undefined') {
@@ -100,12 +101,19 @@ export const NavbarPres = ({
               }
             }
 
-            if (typeof window._chatlio !== 'undefined') {
+            if (typeof window._slaask !== 'undefined') {
               try {
-                window._chatlio.identify(accountId, {
+                window._slaask.identify({
                   email: userEmail,
-                  name: accountShort,
+                  id: accountId,
+                  shortname: accountShort,
+                  // user_hash: userHash,
                 })
+                window._slaask.init(process.env.SLAASK_WIDGET_KEY, accountId)
+                /* window._slaask.init(process.env.SLAASK_WIDGET_KEY, {
+                  user_hash: userHash,
+                  user_token: accountId,
+                }) */
               } catch (e) {
                 //
               }

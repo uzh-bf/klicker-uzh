@@ -8,17 +8,24 @@ const propTypes = {
   intl: intlShape.isRequired,
   onDelete: PropTypes.func,
   title: PropTypes.string.isRequired,
+  totalParticipants: PropTypes.number,
   type: PropTypes.string.isRequired,
   version: PropTypes.number,
 }
 
 const defaultProps = {
   onDelete: undefined,
+  totalParticipants: 0,
   version: 0,
 }
 
 const QuestionSingle = ({
-  type, intl, title, version, onDelete,
+  type,
+  intl,
+  title,
+  totalParticipants,
+  version,
+  onDelete,
 }) => (
   <div className="questionSingle">
     <div className="top">
@@ -31,6 +38,12 @@ const QuestionSingle = ({
         >
           <Icon name="trash" />
         </button>
+      )}
+      {totalParticipants > 0 && (
+        <div className="responseCount">
+          <Icon name="user outline" />
+          {totalParticipants}
+        </div>
       )}
     </div>
     <div className="title">
