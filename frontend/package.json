@@ -151,6 +151,7 @@
     "cypress:open": "cypress open",
     "dev": "cross-env NODE_ENV=development nodemon --delay 1000ms -w .env -w package.json -w yarn.lock -w server.js server.js",
     "dev:inspect": "cross-env NODE_ENV=development nodemon --delay 1000ms -w .env -w package.json -w yarn.lock -w server.js --inspect server.js",
+    "dev:ndb": "cross-env NODE_ENV=development ndb node server.js",
     "format": "prettier-eslint --singleQuote --no-semi --write server.js \"src/**/*.js\"",
     "format:ci": "prettier-eslint --singleQuote --no-semi --list-different server.js \"src/**/*.js\"",
     "lint": "eslint server.js \"src/**/*.js\"",
