@@ -16,6 +16,14 @@ query RunningSession {
           title
           type
         }
+        results {
+          ... on SCQuestionResults {
+            totalParticipants
+          }
+          ... on FREEQuestionResults {
+            totalParticipants
+          }
+        }
       }
     }
     confusionTS {

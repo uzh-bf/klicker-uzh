@@ -115,7 +115,9 @@ const CreateQuestion = ({ intl }) => (
 CreateQuestion.propTypes = propTypes
 
 export default compose(
-  withLogging(),
+  withLogging({
+    slaask: true,
+  }),
   withDnD,
   pageWithIntl,
 )(CreateQuestion)

@@ -245,13 +245,28 @@ const SessionTimeline = ({
           </Button>
         </div>
 
-        <Checkbox
-          toggle
-          defaultChecked={isEvaluationPublic}
-          label={intl.formatMessage(messages.togglePublicEvaluation)}
-          value={isEvaluationPublic}
-          onChange={handleTogglePublicEvaluation}
-        />
+        <div className="publicEvaluation">
+          <Checkbox
+            toggle
+            defaultChecked={isEvaluationPublic}
+            label={intl.formatMessage(messages.togglePublicEvaluation)}
+            value={isEvaluationPublic}
+            onChange={handleTogglePublicEvaluation}
+          />
+          {isEvaluationPublic && (
+            <a
+              href={`/sessions/public/${sessionId}`}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <Icon name="external" />
+              <FormattedMessage
+                defaultMessage="Public Evaluation (Results)"
+                id="runningSession.button.publicEvaluation"
+              />
+            </a>
+          )}
+        </div>
 
         {isFeedbackSession ? (
           <Button
@@ -375,11 +390,21 @@ const SessionTimeline = ({
               display: flex;
               flex-flow: row wrap;
               justify-content: space-between;
+              align-items: flex-start;
 
               margin-top: 0.5rem;
 
               > :global(button) {
                 margin-right: 0;
+              }
+
+              .publicEvaluation {
+                display: flex;
+                flex-flow: row wrap;
+
+                a {
+                  margin-left: 1rem;
+                }
               }
             }
 

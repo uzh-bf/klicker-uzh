@@ -130,6 +130,7 @@ Registration.propTypes = propTypes
 export default compose(
   withLogging({
     logRocket: false,
+    slaask: true,
   }),
   pageWithIntl,
 )(Registration)
