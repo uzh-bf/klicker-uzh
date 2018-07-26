@@ -87,7 +87,11 @@ const SessionCreationForm = ({
                     ({
                       id, key, title, type, version,
                     }, index) => (
-                      <Draggable draggableId={key} index={index} key={key}>
+                      <Draggable
+                        draggableId={`${key}-${index}`}
+                        index={index}
+                        key={key}
+                      >
                         {(innerProvided, innerSnapshot) => (
                           <div
                             className="question"
