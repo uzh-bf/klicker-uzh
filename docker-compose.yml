@@ -14,16 +14,16 @@ services:
       # ORIGIN: "http://localhost:3000"
       # PORT: 3000
 
-  minio:
-    image: minio/minio:latest@sha256:ed0c464a66ac1f56b77607320c74de4190cd6121b70ffbc1e387f2a4955dd334
-    volumes:
-      - minio-data:/data
-    ports:
-      - "9000:9000"
-    environment:
-      MINIO_ACCESS_KEY: klicker
-      MINIO_SECRET_KEY: secret123
-    command: server /data
+  # minio:
+  #   image: minio/minio:latest@sha256:ed0c464a66ac1f56b77607320c74de4190cd6121b70ffbc1e387f2a4955dd334
+  #   volumes:
+  #     - minio-data:/data
+  #   ports:
+  #     - "9000:9000"
+  #   environment:
+  #     MINIO_ACCESS_KEY: klicker
+  #     MINIO_SECRET_KEY: secret123
+  #   command: server /data
 
   redis:
     image: "redis:3-32bit@sha256:59232cf728999da6923494add956ff7cd1604e285208f46a6e53b9fed8c27485"
