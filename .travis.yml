@@ -136,6 +136,7 @@ jobs:
           --build-arg VERSION=$TRAVIS_TAG
           --build-arg CHATLIO=$PROD_CHATLIO
           --build-arg S3_BASE_PATH=$PROD_S3_BASE_PATH
+          --build-arg APP_PERSIST_QUERIES="true"
           -t $IMAGE_NAME:stable
           -t $IMAGE_NAME:$TRAVIS_TAG
         - travis_retry docker push $IMAGE_NAME:$TRAVIS_TAG
