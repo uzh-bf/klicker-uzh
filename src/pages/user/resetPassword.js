@@ -100,6 +100,7 @@ export default compose(
   withRouter,
   withLogging({
     logRocket: false,
+    slaask: true,
   }),
   pageWithIntl,
 )(ResetPassword)

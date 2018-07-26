@@ -221,7 +221,9 @@ EditQuestion.propTypes = propTypes
 
 export default compose(
   withRouter,
-  withLogging(),
+  withLogging({
+    slaask: true,
+  }),
   withDnD,
   pageWithIntl,
 )(EditQuestion)

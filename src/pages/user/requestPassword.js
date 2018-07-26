@@ -85,6 +85,8 @@ const RequestPassword = ({ intl }) => (
 RequestPassword.propTypes = propTypes
 
 export default compose(
-  withLogging(),
+  withLogging({
+    slaask: true,
+  }),
   pageWithIntl,
 )(RequestPassword)
