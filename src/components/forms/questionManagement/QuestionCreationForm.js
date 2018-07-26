@@ -240,7 +240,7 @@ const QuestionCreationForm = ({
                 <div className="questionInput questionFiles">
                   <h2>
                     <FormattedMessage
-                      defaultMessage="Attached Files (Beta)"
+                      defaultMessage="Attached Images (Beta)"
                       id="createQuestion.filesLabel"
                     />
                   </h2>
