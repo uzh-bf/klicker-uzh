@@ -60,9 +60,12 @@ const Session = ({
             <QuestionBlock
               noDetails
               questions={instances.map(
-                ({ id: instanceId, question, version }) => ({
+                ({
+                  id: instanceId, question, version, results,
+                }) => ({
                   id: instanceId,
                   title: question.title,
+                  totalParticipants: results?.totalParticipants || 0,
                   type: question.type,
                   version,
                 }),
