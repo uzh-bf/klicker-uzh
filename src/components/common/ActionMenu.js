@@ -57,7 +57,12 @@ function ActionMenu({
         />
       </div>
       <div className="actions">
-        <Button fluid primary disabled={isSubmitDisabled} onClick={onSubmit}>
+        <Button
+          fluid
+          disabled={isSubmitDisabled}
+          primary={!isSkipModeActive}
+          onClick={onSubmit}
+        >
           {isSkipModeActive ? (
             <FormattedMessage defaultMessage="Skip" id="common.button.skip" />
           ) : (
@@ -90,7 +95,6 @@ function ActionMenu({
           }
 
           .actions {
-            background-color: lightgrey;
             flex: 0 0 7rem;
 
             :global(button.primary.button) {

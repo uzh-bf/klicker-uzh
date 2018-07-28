@@ -161,10 +161,12 @@ function QuestionArea({
               </Collapser>
             </div>
 
-            <div className="files">
-              {process.env.S3_BASE_PATH
-                && files.length > 0 && <QuestionFiles files={files} />}
-            </div>
+            {process.env.S3_BASE_PATH
+              && files.length > 0 && (
+                <div className="files">
+                  <QuestionFiles files={files} />
+                </div>
+            )}
 
             <div className="options">
               {messages[type]}
@@ -300,8 +302,8 @@ export default compose(
     storageType: 'local',
   }),
   withProps(({ questions, storedResponses }) => ({
-    remainingQuestions: questions.reduce((indices, { instanceId }, index) => {
-      if (storedResponses && storedResponses.includes(instanceId)) {
+    remainingQuestions: questions.reduce((indices, { id }, index) => {
+      if (storedResponses && storedResponses.includes(id)) {
         return indices
       }
 
@@ -396,7 +398,7 @@ export default compose(
       handleSubmit,
       inputValue,
     }) => () => {
-      const { instanceId, type } = questions[activeQuestion]
+      const { id: instanceId, type } = questions[activeQuestion]
 
       // if the question has been answered, add a response
       if (typeof inputValue !== 'undefined') {
