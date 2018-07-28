@@ -132,6 +132,23 @@ function QuestionArea({
 
         return (
           <div>
+            <div className="actions">
+              <ActionMenu
+                activeIndex={questions.length - remainingQuestions.length}
+                isSkipModeActive={inputEmpty}
+                isSubmitDisabled={
+                  remainingQuestions.length === 0
+                  || (!inputEmpty && !inputValid)
+                }
+                numItems={questions.length}
+                /* items={_range(questions.length).map(index => ({
+                  done: !remainingQuestions.includes(index),
+                }))} */
+                setActiveIndex={handleActiveQuestionChange}
+                onSubmit={handleSubmit}
+              />
+            </div>
+
             <div className="collapser">
               <Collapser
                 collapsed={isCollapsed}
@@ -141,9 +158,12 @@ function QuestionArea({
                   content={contentState}
                   description={description}
                 />
-                {process.env.S3_BASE_PATH
-                  && files.length > 0 && <QuestionFiles files={files} />}
               </Collapser>
+            </div>
+
+            <div className="files">
+              {process.env.S3_BASE_PATH
+                && files.length > 0 && <QuestionFiles files={files} />}
             </div>
 
             <div className="options">
@@ -176,20 +196,6 @@ function QuestionArea({
                 return null
               })()}
             </div>
-
-            <ActionMenu
-              activeIndex={questions.length - remainingQuestions.length}
-              isSkipModeActive={inputEmpty}
-              isSubmitDisabled={
-                remainingQuestions.length === 0 || (!inputEmpty && !inputValid)
-              }
-              numItems={questions.length}
-              /* items={_range(questions.length).map(index => ({
-                done: !remainingQuestions.includes(index),
-              }))} */
-              setActiveIndex={handleActiveQuestionChange}
-              onSubmit={handleSubmit}
-            />
           </div>
         )
       })()}
@@ -230,19 +236,23 @@ function QuestionArea({
               padding: 1rem;
             }
 
+            .files,
             .collapser {
               flex: 0 0 auto;
-
               background-color: $color-primary-20p;
-              border-bottom: 1px solid $color-primary;
               padding: 0.5rem;
+              border-bottom: 1px solid $color-primary;
+            }
+
+            .collapser {
+              border-top: 1px solid $color-primary;
+            }
+
+            .files {
             }
 
             .options {
-              margin-top: 1rem;
               flex: 1 1 50%;
-
-              overflow-y: auto;
             }
 
             @include desktop-tablet-only {
@@ -257,9 +267,14 @@ function QuestionArea({
                 margin: 1rem;
               }
 
-              .collapser {
-                border: 1px solid $color-primary;
+              .collapser,
+              .files {
                 margin: 0 1rem;
+                border: 1px solid $color-primary;
+              }
+
+              .files {
+                border-top: 0;
               }
 
               .options {
