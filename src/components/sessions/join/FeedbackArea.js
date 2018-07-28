@@ -86,21 +86,6 @@ function FeedbackArea({
       )}
 
       <div className="feedbacks">
-        <h2 className="sectionTitle">Feedbacks</h2>
-        {isFeedbackChannelActive
-          && feedbacks
-          && feedbacks.map(({ id, content, votes }) => (
-            <div className="feedback" key={id}>
-              <Feedback
-                alreadyVoted={false}
-                content={content}
-                showDelete={false}
-                updateVotes={() => null}
-                votes={votes}
-              />
-            </div>
-          ))}
-
         {isFeedbackChannelActive && (
           <Form className="newFeedback">
             <Form.Field>
@@ -122,7 +107,6 @@ function FeedbackArea({
             <Button
               primary
               disabled={!feedbackInputValue}
-              floated="right"
               type="submit"
               onClick={handleNewFeedback}
             >
@@ -132,6 +116,28 @@ function FeedbackArea({
               />
             </Button>
           </Form>
+        )}
+        {isFeedbackChannelActive
+          && feedbacks && (
+            <div className="existingFeedbacks">
+              <h2>
+                <FormattedMessage
+                  defaultMessage="All feedbacks"
+                  id="joinSession.allFeedbacks"
+                />
+              </h2>
+              {feedbacks.map(({ id, content, votes }) => (
+                <div className="feedback" key={id}>
+                  <Feedback
+                    alreadyVoted={false}
+                    content={content}
+                    showDelete={false}
+                    updateVotes={() => null}
+                    votes={votes}
+                  />
+                </div>
+              ))}
+            </div>
         )}
       </div>
 
@@ -175,32 +181,39 @@ function FeedbackArea({
             }
 
             .feedbacks {
+              flex: 1;
               margin-top: 1rem;
 
-              overflow-y: auto;
-            }
+              h2 {
+                font-size: 1.1rem !important;
+                margin-bottom: 0.5rem;
+              }
 
-            .feedback:not(:last-child) {
-              margin-bottom: 0.3rem;
+              :global(form.newFeedback) {
+                margin-bottom: 0;
+
+                textarea {
+                  height: 6rem;
+                }
+
+                :global(.field) {
+                  margin-bottom: 0.5rem;
+                }
+              }
+
+              .existingFeedbacks {
+                margin-top: 1rem;
+
+                .feedback:not(:last-child) {
+                  margin-bottom: 0.3rem;
+                }
+              }
             }
 
             .sectionTitle {
               font-weight: bold;
               font-size: 1rem;
               margin-bottom: 0.5rem;
-            }
-
-            :global(form.newFeedback) {
-              position: absolute;
-              bottom: 1rem;
-              left: 1rem;
-              right: 1rem;
-
-              margin-bottom: 0;
-
-              textarea {
-                height: 7rem;
-              }
             }
 
             @include desktop-tablet-only {
