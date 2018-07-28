@@ -36,7 +36,7 @@ const messages = defineMessages({
 })
 
 const propTypes = {
-  activeQuestions: PropTypes.array,
+  activeInstances: PropTypes.array,
   feedbacks: PropTypes.arrayOf({
     content: PropTypes.string.isRequired,
     votes: PropTypes.number.isRequired,
@@ -55,12 +55,12 @@ const propTypes = {
 }
 
 const defaultProps = {
-  activeQuestions: [],
+  activeInstances: [],
   feedbacks: [],
 }
 
 const Join = ({
-  activeQuestions,
+  activeInstances,
   intl,
   feedbacks,
   shortname,
@@ -93,11 +93,11 @@ const Join = ({
       title={title}
     >
       <div className="joinSession">
-        {activeQuestions.length > 0 ? (
+        {activeInstances.length > 0 ? (
           <QuestionArea
             active={sidebarActiveItem === 'activeQuestion'}
             handleNewResponse={handleNewResponse}
-            questions={activeQuestions}
+            questions={activeInstances}
           />
         ) : (
           <div
@@ -181,7 +181,6 @@ Join.defaultProps = defaultProps
 export default compose(
   withRouter,
   withLogging({
-    chatlio: false,
     logRocket: false,
   }),
   /* withStorage({
