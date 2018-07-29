@@ -83,9 +83,7 @@ const Registration = ({ intl }) => (
               />
               {error && (
                 <div className="errorMessage">
-                  Registration failed (
-                  {error.message}
-                  )
+                  Registration failed ({error.message})
                 </div>
               )}
             </>

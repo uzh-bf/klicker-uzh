@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import { Icon } from 'semantic-ui-react'
+import { Button, Icon } from 'semantic-ui-react'
 
 const propTypes = {
   children: PropTypes.node.isRequired,
@@ -17,10 +17,9 @@ const Collapser = ({ children, collapsed, handleCollapseToggle }) => (
   <div className="collapser">
     <div className={classNames('content', { collapsed })}>{children}</div>
     <div className="collapse">
-      <Icon
-        name={collapsed ? 'angle double down' : 'angle double up'}
-        onClick={handleCollapseToggle}
-      />
+      <Button basic icon size="tiny" onClick={handleCollapseToggle}>
+        <Icon name={collapsed ? 'angle double down' : 'angle double up'} />
+      </Button>
     </div>
 
     <style jsx>

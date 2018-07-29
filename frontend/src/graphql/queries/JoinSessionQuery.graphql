@@ -6,9 +6,9 @@ query JoinSession($shortname: String!) {
       isFeedbackChannelPublic
       isConfusionBarometerActive
     }
-    activeQuestions {
+    activeInstances {
       id
-      instanceId
+      questionId
       title
       content
       description

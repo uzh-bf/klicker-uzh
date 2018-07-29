@@ -39,8 +39,7 @@ const Login = ({ intl }) => (
                 account, please{' '}
                 <Link href="/user/requestPassword">reset your password</Link>{' '}
                 first. If you need a new account, you can
-                <Link href="/user/registration">sign up here</Link>
-                .
+                <Link href="/user/registration">sign up here</Link>.
               </Message.Content>
             </Message>
             <LoginForm
@@ -61,9 +60,7 @@ const Login = ({ intl }) => (
             />
             {error && (
               <div className="errorMessage message">
-                Login failed (
-                {error.message}
-                )
+                Login failed ({error.message})
               </div>
             )}
           </>

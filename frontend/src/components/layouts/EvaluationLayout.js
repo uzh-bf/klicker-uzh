@@ -147,9 +147,7 @@ function EvaluationLayout({
                       {title.length > 15
                         ? `${title.substring(0, 15)}...`
                         : title}{' '}
-                      (
-                      {count}
-                      )
+                      ({count})
                     </Menu.Item>
                   ),
                 )}
