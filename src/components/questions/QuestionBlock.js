@@ -49,8 +49,7 @@ const QuestionBlock = ({
       && timeLimit && (
         <div className="timeLimit">
           <Icon name="clock" />
-          {timeLimit}
-          s
+          {timeLimit}s
         </div>
     )}
     {!noDetails && (

@@ -78,7 +78,9 @@ const SessionArea = ({ intl, sessionId }) => (
                 {items ? <h4>{text}</h4> : text}
                 {items && (
                   <List.List>
-                    {items.map(item => <List.Item>{item}</List.Item>)}
+                    {items.map(item => (
+                      <List.Item>{item}</List.Item>
+                    ))}
                   </List.List>
                 )}
               </List.Item>

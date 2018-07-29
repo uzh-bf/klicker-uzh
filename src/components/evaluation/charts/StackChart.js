@@ -85,7 +85,9 @@ const StackChart = ({ isSolutionShown, data }) => (
           stroke="white"
           style={{ fontSize: '3rem' }}
         />
-        {data.map(row => <Cell fill={row.fill} key={row.value} />)}
+        {data.map(row => (
+          <Cell fill={row.fill} key={row.value} />
+        ))}
       </Bar>
 
       <Bar
@@ -118,7 +120,9 @@ const StackChart = ({ isSolutionShown, data }) => (
             return label
           }}
         />
-        {data.map(row => <Cell fill="lightgrey" key={row.value} />)}
+        {data.map(row => (
+          <Cell fill="lightgrey" key={row.value} />
+        ))}
       </Bar>
     </BarChartComponent>
   </ResponsiveContainer>
