@@ -58,8 +58,7 @@ const FREEAnswerOptions = ({
                   id="createQuestion.options.min"
                 />
               </strong>
-              :
-              {options.restrictions.min}
+              :{options.restrictions.min}
             </span>
             <span className="max">
               <strong>
@@ -68,8 +67,7 @@ const FREEAnswerOptions = ({
                   id="createQuestion.options.max"
                 />
               </strong>
-              :
-              {options.restrictions.max}
+              :{options.restrictions.max}
             </span>
             <Slider
               disabled={disabled}
@@ -134,8 +132,7 @@ const FREEAnswerOptions = ({
                       id="createQuestion.options.min"
                     />
                   </strong>
-                  :
-                  {options.restrictions.min}
+                  :{options.restrictions.min}
                 </div>
               )}
 
@@ -147,8 +144,7 @@ const FREEAnswerOptions = ({
                       id="createQuestion.options.max"
                     />
                   </strong>
-                  :
-                  {options.restrictions.max}
+                  :{options.restrictions.max}
                 </div>
               )}
             </div>

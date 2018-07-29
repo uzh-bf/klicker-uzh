@@ -15,11 +15,12 @@ const defaultProps = {
 }
 const QuestionFiles = ({ files }) => (
   <div className="questionFiles">
-    {files.map(({ id, name }) => {
+    {files.map(({ id, name }, ix) => {
       const fileSrc = `${process.env.S3_BASE_PATH}/${name}`
       const previewImage = (
         <Card>
           <Image height="auto" src={fileSrc} width="100%" />
+          <Card.Content extra>#{ix + 1}</Card.Content>
         </Card>
       )
 
@@ -37,13 +38,15 @@ const QuestionFiles = ({ files }) => (
       .questionFiles {
         display: flex;
         flex-flow: row wrap;
-        margin-top: 0.3rem;
 
         .file {
-          margin-right: 0.2rem;
-          margin-top: 0.2rem;
-          height: 50px;
-          width: 50px;
+          margin-right: 0.3rem;
+          width: 60px;
+
+          :global(.extra) {
+            padding: 0 0.3rem;
+            text-align: center;
+          }
         }
       }
     `}</style>

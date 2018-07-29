@@ -160,9 +160,7 @@ export const SessionListPres = ({
                       defaultMessage="Running / paused sessions"
                       id="sessionList.title.runningSession"
                     />{' '}
-                    (
-                    {runningSessions.length + pausedSessions.length}
-                    )
+                    ({runningSessions.length + pausedSessions.length})
                   </h2>
                   <div className="sessions">
                     {[...runningSessions, ...pausedSessions].map(running => (
@@ -188,9 +186,7 @@ export const SessionListPres = ({
                       defaultMessage="Planned sessions"
                       id="sessionList.title.plannedSessions"
                     />{' '}
-                    (
-                    {remainingSessions.length}
-                    )
+                    ({remainingSessions.length})
                   </h2>
                   {remainingSessions.map(session => (
                     <div className="session" key={session.id}>
@@ -207,9 +203,7 @@ export const SessionListPres = ({
                       defaultMessage="Completed sessions"
                       id="sessionList.title.completedSessions"
                     />{' '}
-                    (
-                    {completedSessions.length}
-                    )
+                    ({completedSessions.length})
                   </h2>
                   {completedSessions.map(session => (
                     <div className="session" key={session.id}>

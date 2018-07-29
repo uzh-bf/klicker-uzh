@@ -61,10 +61,9 @@ const StudentLayout = ({
             icon="content"
             onClick={sidebar.handleToggleSidebarVisible}
           />
-          <h1>{title}</h1>
+          <h1 className="pageTitle">{title}</h1>
           <Button
             basic
-            disabled={sidebar.activeItem !== 'activeQuestion'}
             icon="refresh"
             onClick={() => window.location.reload()}
           />
@@ -100,11 +99,15 @@ const StudentLayout = ({
                 align-items: center;
 
                 border-bottom: 1px solid lightgrey;
-                padding: 0.5rem;
+                padding: 0.3rem;
+
+                :global(button) {
+                  margin: 0;
+                }
               }
 
-              .header > h1 {
-                font-size: 1.5rem;
+              .pageTitle {
+                font-size: 1.2rem !important;
                 margin: 0;
                 margin-left: 1rem;
               }

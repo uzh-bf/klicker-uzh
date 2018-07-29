@@ -48,7 +48,6 @@ export default compose(
     {
       handleChangeLocale: () => (locale) => {
         Cookies.set('locale', locale)
-        // TODO: could this be done more nicely?
         location.reload() // eslint-disable-line no-restricted-globals
         return { locale }
       },
