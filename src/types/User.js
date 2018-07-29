@@ -25,6 +25,7 @@ const User = `
     shortname: String!
     institution: String
     useCase: String
+    hmac: String!
 
     runningSession: Session
 

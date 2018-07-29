@@ -284,24 +284,25 @@ const joinSession = async ({ shortname }) => {
     id,
     settings,
     // map active instances to be in the correct format
-    activeQuestions: activeInstances.map((instance) => {
-      const { id: instanceId, question } = instance
-      const version = question.versions[instance.version]
+    activeInstances: activeInstances.map(
+      ({ id: instanceId, question, version: instanceVersion }) => {
+        const version = question.versions[instanceVersion]
 
-      // get the files that correspond to the current question version
-      const files = FileModel.find({ _id: { $in: version.files } })
+        // get the files that correspond to the current question version
+        const files = FileModel.find({ _id: { $in: version.files } })
 
-      return {
-        id: question.id,
-        instanceId,
-        title: question.title,
-        type: question.type,
-        content: version.content,
-        description: version.description,
-        options: version.options,
-        files,
-      }
-    }),
+        return {
+          questionId: question.id,
+          id: instanceId,
+          title: question.title,
+          type: question.type,
+          content: version.content,
+          description: version.description,
+          options: version.options,
+          files,
+        }
+      },
+    ),
     feedbacks:
       settings.isFeedbackChannelActive && settings.isFeedbackChannelPublic
         ? feedbacks

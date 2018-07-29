@@ -94,7 +94,7 @@ const Question = `
   }
   type Question_Public {
     id: ID!
-    instanceId: ID!
+    questionId: ID!
     title: String!
     type: Question_Type!
     content: String

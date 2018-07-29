@@ -691,8 +691,8 @@ describe('Integration', () => {
           }),
         )
 
-        instanceIds.SC = data.joinSession.activeQuestions[0].instanceId
-        instanceIds.MC = data.joinSession.activeQuestions[1].instanceId
+        instanceIds.SC = data.joinSession.activeInstances[0].id
+        instanceIds.MC = data.joinSession.activeInstances[1].id
 
         expect(data).toMatchSnapshot()
       })
@@ -814,7 +814,7 @@ describe('Integration', () => {
           }),
         )
 
-        instanceIds.FREE = data.joinSession.activeQuestions[0].instanceId
+        instanceIds.FREE = data.joinSession.activeInstances[0].id
 
         expect(data).toMatchSnapshot()
       })
@@ -891,9 +891,9 @@ describe('Integration', () => {
           }),
         )
 
-        instanceIds.FREE_RANGE = data.joinSession.activeQuestions[0].instanceId
-        instanceIds.FREE_RANGE_PART = data.joinSession.activeQuestions[1].instanceId
-        instanceIds.FREE_RANGE_OPEN = data.joinSession.activeQuestions[2].instanceId
+        instanceIds.FREE_RANGE = data.joinSession.activeInstances[0].id
+        instanceIds.FREE_RANGE_PART = data.joinSession.activeInstances[1].id
+        instanceIds.FREE_RANGE_OPEN = data.joinSession.activeInstances[2].id
 
         expect(data).toMatchSnapshot()
       })

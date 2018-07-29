@@ -24,7 +24,7 @@ const Session = `
 
     settings: Session_Settings!
 
-    activeQuestions: [Question_Public]!
+    activeInstances: [Question_Public]!
     feedbacks: [Session_Feedback!]
   }
 

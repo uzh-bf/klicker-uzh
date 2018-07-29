@@ -1,9 +1,17 @@
+const crypto = require('crypto')
+
 const AuthService = require('../services/auth')
 const { UserModel } = require('../models')
 
 /* ----- queries ----- */
 const authUserByIDQuery = (parentValue, args, { auth }) => UserModel.findById(auth.sub)
 const userByIDQuery = parentValue => UserModel.findById(parentValue.user)
+
+// Generate an HMAC for user identity verification
+const hmacQuery = (parentValue, args, { auth }) => crypto
+  .createHmac('sha256', process.env.APP_SECRET)
+  .update(auth.sub)
+  .digest('hex')
 
 /* ----- mutations ----- */
 const createUserMutation = (
@@ -25,6 +33,7 @@ module.exports = {
   // queries
   authUser: authUserByIDQuery,
   user: userByIDQuery,
+  hmac: hmacQuery,
 
   // mutations
   changePassword: changePasswordMutation,
