@@ -4,10 +4,31 @@
   "assignees": ["rschlaefli"],
   "labels": ["dependencies"],
   "reviewers": ["rschlaefli"],
-  "schedule": ["after 10am and before 4pm on monday and thursday"],
+  "schedule": ["after 7pm and before 8am"],
   "semanticCommits": false,
   "timezone": "Europe/Zurich",
   "packageRules": [
+    {
+      "packageNames": [
+        "jest",
+        "react-addons-test-utils",
+        "enzyme",
+        "cypress",
+        "babel-jest"
+      ],
+      "groupName": "test",
+      "automerge": "minor"
+    },
+    {
+      "packagePatterns": ["^apollo", "react-apollo"],
+      "groupName": "apollo",
+      "automerge": "minor"
+    },
+    {
+      "packagePatterns": ["^draftjs"],
+      "groupName": "draftjs",
+      "automerge": "minor"
+    },
     {
       "packagePatterns": ["^babel-eslint", "^eslint"],
       "groupName": "eslint",
@@ -23,31 +44,29 @@
       "automerge": "minor"
     },
     {
-      "packageNames": ["react", "react-dom"],
+      "packageNames": ["react", "react-dom", "react-test-renderer"],
       "groupName": "react"
     },
     {
-      "packagePatterns": ["^@storybook", "^storybook"],
+      "packagePatterns": [
+        "^@storybook",
+        "^storybook",
+        "react-storybook-addon-chapters"
+      ],
       "groupName": "storybook",
       "automerge": "minor"
     },
     {
-      "packageNames": ["jest", "react-addons-test-utils", "react-test-renderer", "enzyme"],
-      "groupName": "test",
-      "automerge": "minor"
-    },
-    {
-      "packagePatterns": ["^prosemirror"],
-      "groupName": "prosemirror",
-      "automerge": "minor"
-    },
-    {
-      "packagePatterns": ["^babel"],
+      "packagePatterns": ["^babel", "^@babel"],
       "groupName": "babel"
     },
     {
       "packagePatterns": ["^react-dnd"],
       "groupName": "react-dnd"
+    },
+    {
+      "packagePatterns": ["^semantic-ui"],
+      "groupName": "semantic-ui"
     }
   ]
 }

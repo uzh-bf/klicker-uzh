@@ -3,17 +3,7 @@ query RunningSession {
     id
     runtime
     startedAt
-    confusionTS {
-      difficulty
-      speed
-      createdAt
-    }
-    feedbacks {
-      id
-      content
-      votes
-      createdAt
-    }
+    activeStep
     blocks {
       id
       status
@@ -26,10 +16,30 @@ query RunningSession {
           title
           type
         }
+        results {
+          ... on SCQuestionResults {
+            totalParticipants
+          }
+          ... on FREEQuestionResults {
+            totalParticipants
+          }
+        }
       }
+    }
+    confusionTS {
+      difficulty
+      speed
+      createdAt
+    }
+    feedbacks {
+      id
+      content
+      votes
+      createdAt
     }
     settings {
       isConfusionBarometerActive
+      isEvaluationPublic
       isFeedbackChannelActive
       isFeedbackChannelPublic
     }

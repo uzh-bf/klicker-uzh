@@ -1,68 +1,122 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import isEmail from 'validator/lib/isEmail'
-import { Field, reduxForm } from 'redux-form'
-import { intlShape } from 'react-intl'
+import _isEmpty from 'lodash/isEmpty'
+import { defineMessages, intlShape } from 'react-intl'
+import { Formik } from 'formik'
+import { object, string, ref } from 'yup'
 
-import { FormWithLinks, SemanticInput } from '.'
+import { FormWithLinks, FormikInput } from '.'
 
-const validate = ({ email }) => {
-  const errors = {}
-
-  // the email address needs to be valid
-  if (!email || !isEmail(email)) {
-    errors.email = 'form.common.email.invalid'
-  }
-
-  return errors
-}
+const messages = defineMessages({
+  backToLogin: {
+    defaultMessage: 'Back to login',
+    id: 'form.passwordReset.backToLogin',
+  },
+  passwordInvalid: {
+    defaultMessage: 'Please provide a valid password (8+ characters).',
+    id: 'form.password.invalid',
+  },
+  passwordLabel: {
+    defaultMessage: 'Password',
+    id: 'form.password.label',
+  },
+  passwordRepeatInvalid: {
+    defaultMessage: 'Please ensure that passwords match.',
+    id: 'form.passwordRepeat.invalid',
+  },
+  passwordRepeatLabel: {
+    defaultMessage: 'Repeat password',
+    id: 'form.passwordRepeat.label',
+  },
+  submit: {
+    defaultMessage: 'Submit',
+    id: 'form.common.button.submit',
+  },
+})
 
 const propTypes = {
-  handleSubmit: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  invalid: PropTypes.bool.isRequired,
+  loading: PropTypes.bool.isRequired,
+  onSubmit: PropTypes.func.isRequired,
 }
 
-const PasswordResetForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
-  const button = {
-    invalid,
-    label: intl.formatMessage({
-      defaultMessage: 'Submit',
-      id: 'form.common.button.submit',
-    }),
-    onSubmit,
-  }
+const PasswordResetForm = ({ intl, loading, onSubmit }) => {
   const links = [
     {
       href: '/user/login',
-      label: intl.formatMessage({
-        defaultMessage: 'Back to login',
-        id: 'form.passwordReset.backToLogin',
-      }),
+      label: intl.formatMessage(messages.backToLogin),
     },
   ]
 
   return (
-    <FormWithLinks button={button} links={links}>
-      <Field
-        required
-        component={SemanticInput}
-        icon="mail"
-        intl={intl}
-        label={intl.formatMessage({
-          defaultMessage: 'Email',
-          id: 'form.email.label',
-        })}
-        name="email"
-        type="email"
-      />
-    </FormWithLinks>
+    <Formik
+      initialValues={{
+        password: '',
+        passwordRepeat: '',
+      }}
+      render={({
+        values,
+        errors,
+        touched,
+        handleChange,
+        handleBlur,
+        handleSubmit,
+        isSubmitting,
+      }) => (
+        <FormWithLinks
+          button={{
+            disabled: !_isEmpty(errors) || _isEmpty(touched),
+            label: intl.formatMessage(messages.submit),
+            loading: loading && isSubmitting,
+            onSubmit: handleSubmit,
+          }}
+          links={links}
+        >
+          <FormikInput
+            autoFocus
+            required
+            error={errors.password}
+            errorMessage={intl.formatMessage(messages.passwordInvalid)}
+            handleBlur={handleBlur}
+            handleChange={handleChange}
+            icon="privacy"
+            intl={intl}
+            label={intl.formatMessage(messages.passwordLabel)}
+            name="password"
+            touched={touched.password}
+            type="password"
+            value={values.password}
+          />
+          <FormikInput
+            required
+            error={errors.passwordRepeat}
+            errorMessage={intl.formatMessage(messages.passwordRepeatInvalid)}
+            handleBlur={handleBlur}
+            handleChange={handleChange}
+            icon="privacy"
+            intl={intl}
+            label={intl.formatMessage(messages.passwordRepeatLabel)}
+            name="passwordRepeat"
+            touched={touched.passwordRepeat}
+            type="password"
+            value={values.passwordRepeat}
+          />
+        </FormWithLinks>
+      )}
+      validationSchema={object().shape({
+        password: string()
+          .min(8)
+          .required(),
+        passwordRepeat: string()
+          .min(8)
+          .oneOf([ref('password'), null])
+          .required(),
+      })}
+      onSubmit={onSubmit}
+    />
   )
 }
 
 PasswordResetForm.propTypes = propTypes
 
-export default reduxForm({
-  form: 'passwordReset',
-  validate,
-})(PasswordResetForm)
+export default PasswordResetForm

@@ -2,60 +2,90 @@
 
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Helmet } from 'react-helmet'
+import Head from 'next/head'
 
-import { SEMANTIC_VERSION } from '../../constants'
-import { createLinks } from '../../lib'
+import '../../lib/semantic/dist/semantic.css'
 
 const propTypes = {
   baseFontSize: PropTypes.string,
   children: PropTypes.element.isRequired,
+  nextHeight: PropTypes.string,
+  nextMinHeight: PropTypes.string,
   pageTitle: PropTypes.string,
 }
 
 const defaultProps = {
   baseFontSize: '14px',
+  nextHeight: 'auto',
+  nextMinHeight: 0,
   pageTitle: 'CommonLayout',
 }
 
-const links = [
-  'https://fonts.googleapis.com/css?family=Open Sans',
-  `https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/${SEMANTIC_VERSION}/semantic.min.css`,
-]
-
-const CommonLayout = ({ baseFontSize, children, pageTitle }) => (
+const CommonLayout = ({
+  baseFontSize,
+  children,
+  nextHeight,
+  nextMinHeight,
+  pageTitle,
+}) => (
   <div className="commonLayout">
-    <Helmet defer={false}>
-      {createLinks(links)}
+    <Head>
       <title>{pageTitle}</title>
-    </Helmet>
+    </Head>
 
     {children}
 
-    <style jsx global>{`
-      *:not(i) {
-        font-family: 'Open Sans', sans-serif !important;
-      }
+    <style jsx global>
+      {`
+        @import 'src/theme';
 
-      html {
-        font-size: ${baseFontSize} !important;
-      }
+        html {
+          font-size: ${baseFontSize} !important;
+        }
 
-      body {
-        font-size: 1rem !important;
-      }
+        body {
+          font-size: 1rem !important;
+        }
 
-      input,
-      textarea,
-      .noBorder {
-        border-radius: 0 !important;
-      }
+        h1 {
+          font-size: $font-size-h1 !important;
+        }
 
-      .noBorder {
-        border: 0 !important;
-        box-shadow: none !important;
-      }
-    `}</style>
+        h2 {
+          font-size: $font-size-h2 !important;
+        }
+
+        h3 {
+          font-size: $font-size-h3 !important;
+        }
+
+        #__next {
+          height: ${nextHeight};
+          min-height: ${nextMinHeight};
+        }
+
+        .noBorder {
+          border-radius: 0 !important;
+          border: 0 !important;
+          box-shadow: none !important;
+        }
+
+        /* FIXME: workarounds for modal placement */
+        .ui.dimmer {
+          display: flex !important;
+        }
+        .ui.modal {
+          margin-top: 0;
+        }
+      `}
+    </style>
+    <style jsx>
+      {`
+        .commonLayout {
+          height: 100%;
+        }
+      `}
+    </style>
   </div>
 )
 

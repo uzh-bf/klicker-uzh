@@ -6,78 +6,140 @@ import { Icon } from 'semantic-ui-react'
 import QuestionSingle from './QuestionSingle'
 
 const propTypes = {
-  questions: PropTypes.arrayOf(PropTypes.shape(QuestionSingle.propTypes)).isRequired,
-  // showSolutions: PropTypes.bool,
+  index: PropTypes.number,
+  noDetails: PropTypes.bool,
+  noVersions: PropTypes.bool,
+  questions: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.number.isRequired,
+      title: PropTypes.string.isRequired,
+      totalParticipants: PropTypes.number,
+      type: PropTypes.string.isRequired,
+      version: PropTypes.number.isRequired,
+    }),
+  ).isRequired,
   status: PropTypes.string,
   timeLimit: PropTypes.number,
 }
 
 const defaultProps = {
-  // showSolutions: false,
+  index: undefined,
+  noDetails: false,
+  noVersions: false,
   status: 'PLANNED',
-  timeLimit: 0,
+  timeLimit: undefined,
 }
 
-const QuestionBlock = ({ status, questions, timeLimit }) => (
-  <div className={classNames('questionBlock', { active: status === 'ACTIVE' })}>
-    <div className="timeLimit">
-      <Icon name="clock" />
-      {timeLimit}s
-    </div>
-    <div className="sessionStatus">{status}</div>
-    <div className="questions">
-      {questions.map(({
- id, title, type, version,
+const QuestionBlock = ({
+  index,
+  status,
+  questions,
+  timeLimit,
+  noDetails,
+  noVersions,
 }) => (
-  <QuestionSingle id={id} key={id} title={title} type={type} version={version} />
+  <div className={classNames('questionBlock', { active: status === 'ACTIVE' })}>
+    {index >= 0 && (
+      <div className="index">
+        Block
+        {index}
+      </div>
+    )}
+    {!noDetails
+      && timeLimit && (
+        <div className="timeLimit">
+          <Icon name="clock" />
+          {timeLimit}s
+        </div>
+    )}
+    {!noDetails && (
+      <div className="sessionStatus">
+        {(() => {
+          if (status === 'EXECUTED') {
+            return <Icon name="checkmark" />
+          }
+
+          if (status === 'ACTIVE') {
+            return <Icon name="comments" />
+          }
+
+          return null
+        })()}
+      </div>
+    )}
+    <div className="questions">
+      {questions.map(question => (
+        // HACK: prettier failure with destructuring for question
+        <QuestionSingle
+          id={question.id}
+          key={question.id}
+          noDetails={noVersions}
+          title={question.title}
+          totalParticipants={question.totalParticipants}
+          type={question.type}
+          version={question.version}
+        />
       ))}
     </div>
-    <style jsx>{`
-      @import 'src/theme';
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-      .questionBlock {
-        display: flex;
+        .questionBlock {
+          display: flex;
 
-        background-color: #eaeaea;
-        border: 2px solid #c5c5c5;
-        flex-flow: row wrap;
-        padding: 0.2rem;
+          background-color: #eaeaea;
+          border: 2px solid #c5c5c5;
+          flex-flow: row wrap;
+          padding: 0.4rem;
 
-        &.active {
-          border: 2px solid rgb(0, 97, 0);
-          background-color: rgb(198, 293, 206);
-        }
+          &.active {
+            border: 2px solid rgb(0, 97, 0);
+            background-color: rgb(198, 293, 206);
+          }
 
-        .timeLimit,
-        .showSolution,
-        .sessionStatus {
-          flex: 1 1 33%;
-          margin-bottom: 0.2rem;
-        }
+          .index {
+            color: $color-primary-strong;
+            font-weight: bold;
+          }
 
-        .showSolution {
-          text-align: center;
-        }
+          .index,
+          .timeLimit,
+          .showSolution,
+          .sessionStatus {
+            flex: 1 1 33%;
+            margin-bottom: 0.2rem;
+          }
 
-        .sessionStatus {
-          text-align: right;
-        }
+          .showSolution {
+            text-align: center;
+          }
 
-        .questions {
-          flex: 0 0 100%;
-          height: 100%;
-          background-color: white;
+          .sessionStatus {
+            font-size: 1.1rem;
+            text-align: right;
 
-          > :global(*) {
-            border: 1px solid grey;
+            > :global(icon) {
+              margin: 0;
+            }
+          }
 
-            &:not(:first-child) {
-              margin-top: 0.2rem;
+          .questions {
+            flex: 0 0 100%;
+            height: 100%;
+            background-color: white;
+
+            > :global(*) {
+              border: 1px solid grey;
+
+              &:not(:first-child) {
+                margin-top: 0.2rem;
+              }
             }
           }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

@@ -1,40 +1,76 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 
+import { List, Popup } from 'semantic-ui-react'
+
 const propTypes = {
   children: PropTypes.node.isRequired,
   items: PropTypes.arrayOf(PropTypes.string.isRequired),
+  limit: PropTypes.number,
 }
 
 const defaultProps = {
   items: [],
+  limit: undefined,
 }
 
-const ListWithHeader = ({ children, items }) => (
-  <div>
-    <h3 className="listHeader">{children}</h3>
-    <ul className="list">
-      {items.map(item => (
-        <li className="listItem" key={item}>
-          {item}
-        </li>
-      ))}
-    </ul>
+const mapItems = items => items.map(item => <List.Item>{item}</List.Item>)
 
-    <style jsx>{`
-      .list {
-        margin: 0;
-        margin-top: 1rem;
-        padding: 0;
-      }
-      .listHeader {
-        font-size: 1rem;
-        margin: 0;
-      }
-      .listItem {
-        list-style: none;
-      }
-    `}</style>
+const ListWithHeader = ({ children, items, limit }) => (
+  <div className="listWithHeader">
+    {children && <span className="listHeader">{children}</span>}
+
+    {items.length > limit ? (
+      <>
+        <List>{mapItems(items.slice(0, limit))}</List>
+        <Popup
+          hideOnScroll
+          on="click"
+          position="bottom center"
+          trigger={<div className="more">...</div>}
+        >
+          <div className="remainingPopup">
+            <List>{mapItems(items.slice(limit))}</List>
+          </div>
+        </Popup>
+      </>
+    ) : (
+      <List>{mapItems(items)}</List>
+    )}
+
+    <style jsx>
+      {`
+        @import 'src/theme';
+
+        .listWithHeader {
+          display: flex;
+          flex-direction: column;
+
+          .listHeader,
+          .more {
+            font-size: 1rem;
+            line-height: 1rem;
+          }
+
+          .listHeader {
+            border-bottom: 1px solid $color-primary;
+            padding: 0.4rem 0;
+          }
+
+          .more {
+            border-top: 1px solid $color-primary;
+            cursor: pointer;
+            padding: 0.2rem 0;
+            vertical-align: middle;
+          }
+
+          :global(.list) {
+            margin: 0;
+            padding: 0.5rem 0;
+          }
+        }
+      `}
+    </style>
   </div>
 )
 

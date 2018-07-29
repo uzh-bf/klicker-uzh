@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import Slider from 'react-rangeslider'
 import { FormattedMessage } from 'react-intl'
-import { Helmet } from 'react-helmet'
+import Head from 'next/head'
 import { Input } from 'semantic-ui-react'
 
 import { createLinks } from '../../../lib'
@@ -29,30 +29,45 @@ const defaultProps = {
 }
 
 const FREEAnswerOptions = ({
-  disabled, onChange, options, value, questionType,
+  disabled,
+  onChange,
+  options,
+  value,
+  questionType,
 }) => (
   <div className="ui form freeAnswerOptions">
-    <Helmet defer={false}>
-      {createLinks(['https://unpkg.com/react-rangeslider/umd/rangeslider.min.css'])}
-    </Helmet>
+    <Head>
+      {createLinks([
+        'https://unpkg.com/react-rangeslider/umd/rangeslider.min.css',
+      ])}
+    </Head>
 
     {(() => {
       if (
-        questionType === QUESTION_TYPES.FREE_RANGE &&
-        options.restrictions.min !== null &&
-        options.restrictions.max !== null
+        questionType === QUESTION_TYPES.FREE_RANGE
+        && typeof options.restrictions !== 'undefined'
+        && options.restrictions.min !== null
+        && options.restrictions.max !== null
       ) {
         return (
           <div className="field slider">
             <span className="min">
               <strong>
-                <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />
-              </strong>: {options.restrictions.min}
+                <FormattedMessage
+                  defaultMessage="Min"
+                  id="createQuestion.options.min"
+                />
+              </strong>
+              :{options.restrictions.min}
             </span>
             <span className="max">
               <strong>
-                <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />
-              </strong>: {options.restrictions.max}
+                <FormattedMessage
+                  defaultMessage="Max"
+                  id="createQuestion.options.max"
+                />
+              </strong>
+              :{options.restrictions.max}
             </span>
             <Slider
               disabled={disabled}
@@ -78,6 +93,29 @@ const FREEAnswerOptions = ({
 
       return (
         <div className="field">
+          <div className="rangeInformation">
+            {do {
+              if (options.restrictions.max !== null) {
+                <FormattedMessage
+                  defaultMessage="Maximum value: {max}"
+                  id="freeAnswer.maxValue"
+                  values={{ max: options.restrictions.max }}
+                />
+              } else if (options.restrictions.min !== null) {
+                <FormattedMessage
+                  defaultMessage="Minimum value: {min}"
+                  id="freeAnswer.minValue"
+                  values={{ min: options.restrictions.min }}
+                />
+              } else {
+                <FormattedMessage
+                  defaultMessage="Unrestricted input (any number)"
+                  id="freeAnswer.unrestricted"
+                />
+              }
+            }}
+          </div>
+
           <textarea
             disabled={disabled}
             id="responseInput"
@@ -86,25 +124,27 @@ const FREEAnswerOptions = ({
 
           {questionType === QUESTION_TYPES.FREE_RANGE && (
             <div>
-              {options.FREE_RANGE.restrictions.min !== null && (
+              {options.restrictions.min && (
                 <div>
                   <strong>
                     <FormattedMessage
                       defaultMessage="Min"
-                      id="teacher.createQuestion.options.min"
+                      id="createQuestion.options.min"
                     />
-                  </strong>: {options.restrictions.min}
+                  </strong>
+                  :{options.restrictions.min}
                 </div>
               )}
 
-              {options.FREE_RANGE.restrictions.max !== null && (
+              {options.restrictions.max && (
                 <div>
                   <strong>
                     <FormattedMessage
                       defaultMessage="Max"
-                      id="teacher.createQuestion.options.max"
+                      id="createQuestion.options.max"
                     />
-                  </strong>: {options.restrictions.max}
+                  </strong>
+                  :{options.restrictions.max}
                 </div>
               )}
             </div>
@@ -126,6 +166,10 @@ const FREEAnswerOptions = ({
           .max {
             float: right;
           }
+        }
+
+        .rangeInformation {
+          margin-bottom: 1rem;
         }
 
         textarea {

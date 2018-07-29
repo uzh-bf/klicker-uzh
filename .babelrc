@@ -1,67 +1,111 @@
 {
-  "env": {
-    "development": {
-      "presets": [
-        [
-          "next/babel",
-          {
-            "styled-jsx": {
-              "plugins": ["styled-jsx-plugin-sass"]
-            }
-          }
-        ]
-      ],
-      "plugins": [
-        "babel-plugin-inline-import-graphql-ast",
-        "inline-dotenv",
-        "add-react-displayname",
-        "react-intl"
-      ]
-    },
-    "production": {
-      "presets": [
-        [
-          "next/babel",
-          {
-            "styled-jsx": {
-              "plugins": ["styled-jsx-plugin-sass"]
-            }
-          }
-        ]
-      ],
-      "plugins": [
-        "babel-plugin-inline-import-graphql-ast",
-        "transform-inline-environment-variables",
-        ["lodash", { "id": ["lodash", "recompose", "semantic-ui-react", "ramda"] }],
-        "add-react-displayname",
-        [
-          "react-intl",
-          {
-            "messagesDir": "src/lang/.messages"
-          }
-        ]
-      ]
-    },
-    "test": {
-      "presets": [
-        [
-          "env",
-          {
-            "modules": "commonjs"
-          }
+  "env":{
+     "development":{
+        "presets":[
+           [
+              "@babel/preset-env",
+              {
+                 "targets":{
+                    "browsers":[
+                       "> 0.25%",
+                       "not dead"
+                    ]
+                 }
+              }
+           ],
+           [
+              "next/babel",
+              {
+                 "styled-jsx":{
+                    "plugins":[
+                       "styled-jsx-plugin-sass"
+                    ]
+                 }
+              }
+           ]
         ],
-        [
-          "next/babel",
-          {
-            "styled-jsx": {
-              "plugins": ["styled-jsx-plugin-sass"]
-            }
-          }
+        "plugins":[
+           "@babel/plugin-proposal-do-expressions",
+           "@babel/plugin-proposal-pipeline-operator",
+           "@babel/plugin-proposal-optional-chaining",
+           "inline-dotenv",
+           "add-react-displayname"
         ]
-      ],
-      "plugins": [
-        "babel-plugin-inline-import-graphql-ast"
-      ]
-    }
+     },
+     "production":{
+        "presets":[
+           [
+              "@babel/preset-env",
+              {
+                 "targets":{
+                    "browsers":[
+                       "> 0.25%",
+                       "not dead"
+                    ]
+                 }
+              }
+           ],
+           [
+              "next/babel",
+              {
+                 "styled-jsx":{
+                    "plugins":[
+                       "styled-jsx-plugin-sass"
+                    ]
+                 }
+              }
+           ]
+        ],
+        "plugins":[
+           [
+              "lodash",
+              {
+                 "id":[
+                    "lodash",
+                    "recompose",
+                    "semantic-ui-react",
+                    "ramda"
+                 ]
+              }
+           ],
+           "@babel/plugin-proposal-do-expressions",
+           "@babel/plugin-proposal-pipeline-operator",
+           "@babel/plugin-proposal-optional-chaining",
+           "transform-inline-environment-variables",
+           "add-react-displayname",
+           [
+              "react-intl",
+              {
+                 "messagesDir":"src/lang/.messages"
+              }
+           ]
+        ]
+     },
+     "test":{
+        "presets":[
+           [
+              "@babel/preset-env",
+              {
+                 "modules":"commonjs"
+              }
+           ],
+           [
+              "next/babel",
+              {
+                 "styled-jsx":{
+                    "plugins":[
+                       "styled-jsx-plugin-sass"
+                    ]
+                 }
+              }
+           ]
+        ],
+        "plugins":[
+           "@babel/plugin-proposal-do-expressions",
+           "@babel/plugin-proposal-pipeline-operator",
+           "@babel/plugin-proposal-optional-chaining",
+           "babel-plugin-inline-import-graphql-ast"
+        ]
+     }
   }
 }

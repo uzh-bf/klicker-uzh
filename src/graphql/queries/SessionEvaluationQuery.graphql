@@ -42,6 +42,7 @@ query EvaluateSession($sessionId: ID!) {
         results {
           ... on SCQuestionResults {
             CHOICES
+            totalParticipants
           }
           ... on FREEQuestionResults {
             FREE {
@@ -49,12 +50,8 @@ query EvaluateSession($sessionId: ID!) {
               key
               value
             }
+            totalParticipants
           }
-        }
-        responses {
-          id
-          value
-          createdAt
         }
       }
     }

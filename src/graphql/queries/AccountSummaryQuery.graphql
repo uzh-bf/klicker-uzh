@@ -1,10 +1,12 @@
 query AccountSummary {
   user {
     id
+    email
     shortname
     email
     runningSession {
       id
+      runtime
     }
   }
 }

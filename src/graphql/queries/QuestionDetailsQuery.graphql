@@ -13,6 +13,7 @@ query QuestionDetails($id: ID!) {
     }
     versions {
       id
+      content
       description
       options {
         SC {
@@ -33,6 +34,12 @@ query QuestionDetails($id: ID!) {
             max
           }
         }
+      }
+      files {
+        id
+        name
+        originalName
+        type
       }
       solution {
         SC

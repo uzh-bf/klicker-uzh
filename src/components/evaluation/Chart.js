@@ -3,39 +3,47 @@ import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
 
-import { BarChart, StackChart, PieChart, TableChart, CloudChart, HistogramChart } from '.'
+import {
+  BarChart,
+  StackChart,
+  PieChart,
+  TableChart,
+  CloudChart,
+  HistogramChart,
+} from '.'
 import { SESSION_STATUS } from '../../constants'
 import { statisticsShape } from '../../propTypes'
 
 // TODO
 const propTypes = {
   activeVisualization: PropTypes.string.isRequired,
+  data: PropTypes.arrayOf({
+    correct: PropTypes.bool,
+    count: PropTypes.number,
+    name: PropTypes.string,
+    percentage: PropTypes.number,
+  }),
   handleShowGraph: PropTypes.func.isRequired,
+  numBins: PropTypes.number.isRequired,
   questionType: PropTypes.string.isRequired,
   restrictions: PropTypes.shape({
     max: PropTypes.number,
     min: PropTypes.number,
   }),
-  results: PropTypes.shape({
-    choices: PropTypes.arrayOf({
-      correct: PropTypes.bool,
-      count: PropTypes.number,
-      name: PropTypes.string,
-    }),
-    totalResponses: PropTypes.number,
-  }),
   sessionStatus: PropTypes.string.isRequired,
   showGraph: PropTypes.bool,
   showSolution: PropTypes.bool,
   statistics: statisticsShape,
+  totalResponses: PropTypes.number,
 }
 
 const defaultProps = {
+  data: undefined,
   restrictions: undefined,
-  results: undefined,
   showGraph: false,
   showSolution: true,
   statistics: undefined,
+  totalResponses: undefined,
 }
 
 const chartTypes = {
@@ -49,14 +57,16 @@ const chartTypes = {
 
 function Chart({
   activeVisualization,
+  data,
   restrictions,
-  results,
   handleShowGraph,
+  numBins,
   questionType,
   sessionStatus,
   showGraph,
   showSolution,
   statistics,
+  totalResponses,
 }) {
   return (
     <div className="chart">
@@ -68,19 +78,19 @@ function Chart({
               <Button className="showGraphButton" onClick={handleShowGraph}>
                 <FormattedMessage
                   defaultMessage="Show Graph"
-                  id="teacher.evaluation.graph.showGraph"
+                  id="evaluation.graph.showGraph"
                 />
               </Button>
             </div>
           )
         }
 
-        if (results.totalResponses === 0) {
+        if (totalResponses === 0) {
           return (
             <div className="noChart">
               <FormattedMessage
                 defaultMessage="No Results Available"
-                id="teacher.evaluation.graph.noResults"
+                id="evaluation.graph.noResults"
               />
             </div>
           )
@@ -91,12 +101,14 @@ function Chart({
           return (
             <ChartComponent
               brush={sessionStatus !== SESSION_STATUS.RUNNING}
-              data={results.data}
+              data={data}
+              isColored={questionType !== 'FREE_RANGE'}
               isSolutionShown={showSolution}
+              numBins={numBins}
               questionType={questionType}
               restrictions={restrictions}
               statistics={statistics}
-              totalResponses={results.totalResponses}
+              totalResponses={totalResponses}
             />
           )
         }
@@ -104,20 +116,22 @@ function Chart({
         return <div>This chart type is not implemented yet.</div>
       })()}
 
-      <style jsx>{`
-        .chart {
-          height: 100%;
-          width: 100%;
-
-          .noChart {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-
+      <style jsx>
+        {`
+          .chart {
             height: 100%;
+            width: 100%;
+
+            .noChart {
+              display: flex;
+              justify-content: center;
+              align-items: center;
+
+              height: 100%;
+            }
           }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   )
 }

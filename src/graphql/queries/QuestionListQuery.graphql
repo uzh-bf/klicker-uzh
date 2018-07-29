@@ -3,10 +3,12 @@ query QuestionList {
     id
     title
     type
+    isArchived
     instances {
       id
       version
       createdAt
+      session
     }
     tags {
       id

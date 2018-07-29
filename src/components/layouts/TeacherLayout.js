@@ -1,14 +1,12 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import Router from 'next/router'
-import HTML5Backend from 'react-dnd-html5-backend'
 import { compose, withState, withHandlers } from 'recompose'
 import { FormattedMessage, intlShape } from 'react-intl'
-import { DragDropContext } from 'react-dnd'
 
 import { CommonLayout } from '.'
-import { Navbar } from '../../components/common/navbar'
-import { Sidebar } from '../../components/common/sidebar'
+import { Navbar } from '../common/navbar'
+import { Sidebar } from '../common/sidebar'
 
 const propTypes = {
   actionArea: PropTypes.element,
@@ -18,9 +16,9 @@ const propTypes = {
   handleSidebarToggle: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   isSidebarVisible: PropTypes.bool.isRequired,
-  navbar: PropTypes.shape(Navbar.propTypes),
+  navbar: PropTypes.object,
   pageTitle: PropTypes.string,
-  sidebar: PropTypes.shape(Sidebar.propTypes).isRequired,
+  sidebar: PropTypes.object.isRequired,
 }
 
 const defaultProps = {
@@ -45,25 +43,60 @@ const TeacherLayout = ({
   const sidebarItems = [
     {
       href: '/questions',
-      label: <FormattedMessage defaultMessage="Question Pool" id="teacher.questionPool.title" />,
+      label: (
+        <FormattedMessage
+          defaultMessage="Question Pool"
+          id="questionPool.title"
+        />
+      ),
       name: 'questionPool',
     },
     {
       href: '/sessions',
-      label: <FormattedMessage defaultMessage="Session List" id="teacher.sessionList.title" />,
+      label: (
+        <FormattedMessage
+          defaultMessage="Session List"
+          id="sessionList.title"
+        />
+      ),
       name: 'sessionList',
     },
     {
       href: '/sessions/running',
       label: (
-        <FormattedMessage defaultMessage="Running Session" id="teacher.runningSession.title" />
+        <FormattedMessage
+          defaultMessage="Running Session"
+          id="runningSession.title"
+        />
       ),
       name: 'runningSession',
+    },
+    {
+      className: 'createQuestion',
+      href: '/questions/create',
+      label: (
+        <FormattedMessage
+          defaultMessage="Create Question"
+          id="createQuestion.title"
+        />
+      ),
+      name: 'createQuestion',
+    },
+    {
+      className: 'createSession',
+      href: '/questions?creationMode=true',
+      label: (
+        <FormattedMessage
+          defaultMessage="Create Session"
+          id="createSession.title"
+        />
+      ),
+      name: 'createSession',
     },
   ]
 
   return (
-    <CommonLayout baseFontSize="14px" pageTitle={pageTitle}>
+    <CommonLayout baseFontSize="14px" nextHeight="100%" pageTitle={pageTitle}>
       <div className="teacherLayout">
         {navbar && (
           <div className="navbar">
@@ -72,7 +105,7 @@ const TeacherLayout = ({
               intl={intl}
               sidebarVisible={isSidebarVisible}
               title={intl.formatMessage({
-                id: `teacher.${sidebar.activeItem}.title`,
+                id: `${sidebar.activeItem}.title`,
               })}
               {...navbar}
             />
@@ -90,32 +123,36 @@ const TeacherLayout = ({
           </Sidebar>
         </div>
 
-        {actionArea && <div className="actionArea">{actionArea}</div>}
+        <div className="actionArea">{actionArea}</div>
 
-        <style jsx>{`
-          .teacherLayout {
-            display: flex;
-            flex-direction: column;
-            height: ${fixedHeight ? '100vh' : 'initial'};
-            min-height: ${fixedHeight ? 'initial' : '100vh'};
-
-            .navbar {
-              flex: 0 0 auto;
-            }
-
-            .content {
-              background-color: white;
-
-              flex: 1;
-
+        <style jsx>
+          {`
+            .teacherLayout {
               display: flex;
-            }
+              flex-direction: column;
+              height: ${fixedHeight ? '100vh' : 'initial'};
+              min-height: ${fixedHeight ? 'initial' : '100vh'};
 
-            .actionArea {
-              flex: 0 0 auto;
+              .navbar {
+                flex: 0 0 auto;
+              }
+
+              .content {
+                background-color: white;
+
+                flex: 1;
+
+                display: flex;
+
+                overflow: hidden;
+              }
+
+              .actionArea {
+                flex: 0 0 auto;
+              }
             }
-          }
-        `}</style>
+          `}
+        </style>
       </div>
     </CommonLayout>
   )
@@ -134,5 +171,4 @@ export default compose(
       setIsSidebarVisible(prevState => !prevState)
     },
   }),
-  DragDropContext(HTML5Backend),
 )(TeacherLayout)

@@ -1,0 +1,8 @@
+subscription FeedbackAdded($sessionId: ID!) {
+  feedbackAdded(sessionId: $sessionId) {
+    id
+    content
+    votes
+    createdAt
+  }
+}

@@ -2,7 +2,9 @@
 
 import React from 'react'
 import { storiesOf } from '@storybook/react'
-import { compose, mapProps, withHandlers, withState, withProps } from 'recompose'
+import {
+  compose, mapProps, withHandlers, withState, withProps,
+} from 'recompose'
 
 import { intlMock } from '../../../.storybook/utils'
 

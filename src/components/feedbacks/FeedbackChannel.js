@@ -1,12 +1,24 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Checkbox } from 'semantic-ui-react'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
+import { lifecycle } from 'recompose'
 
 import Feedback from './Feedback'
 
+const messages = defineMessages({
+  activated: {
+    defaultMessage: 'Activated',
+    id: 'common.string.activated',
+  },
+  publishQuestions: {
+    defaultMessage: 'Publish questions',
+    id: 'runningSession.feedbackChannel.publishQuestions',
+  },
+})
+
 const propTypes = {
-  feedbacks: PropTypes.arrayOf(Feedback.propTypes),
+  feedbacks: PropTypes.arrayOf(PropTypes.object),
   handleActiveToggle: PropTypes.func.isRequired,
   handleDeleteFeedback: PropTypes.func.isRequired,
   handlePublicToggle: PropTypes.func.isRequired,
@@ -41,10 +53,7 @@ const FeedbackChannel = ({
       <Checkbox
         toggle
         defaultChecked={isActive}
-        label={intl.formatMessage({
-          defaultMessage: 'Activated',
-          id: 'common.string.activated',
-        })}
+        label={intl.formatMessage(messages.activated)}
         value={isActive}
         onChange={handleActiveToggle}
       />
@@ -55,10 +64,7 @@ const FeedbackChannel = ({
         className="publishCheckbox"
         defaultChecked={isPublic}
         disabled={!isActive}
-        label={intl.formatMessage({
-          defaultMessage: 'Publish questions',
-          id: 'runningSession.feedbackChannel.string.publishQuestions',
-        })}
+        label={intl.formatMessage(messages.publishQuestions)}
         value={isPublic}
         onChange={handlePublicToggle}
       />
@@ -72,70 +78,76 @@ const FeedbackChannel = ({
               content={content}
               key={id}
               votes={votes}
-              onDelete={handleDeleteFeedback(id)}
+              onDelete={() => handleDeleteFeedback(id)}
             />
           </div>
         ))}
       </div>
     )}
 
-    <style jsx>{`
-      @import 'src/theme';
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-      .feedbackChannel {
-        display: flex;
-        flex-direction: column;
-      }
-
-      h2,
-      .toggle,
-      .feedbacks {
-        flex: 1;
-      }
-
-      h2 {
-        margin-bottom: 1rem;
-      }
-
-      .publicationToggle {
-        margin-top: 1rem;
-      }
-
-      .feedbacks {
-        margin-top: 1rem;
-      }
-
-      .feedback:not(:last-child) {
-        margin-bottom: 1rem;
-      }
-
-      @include desktop-tablet-only {
         .feedbackChannel {
-          flex-flow: row wrap;
+          display: flex;
+          flex-direction: column;
         }
 
         h2,
+        .toggle,
         .feedbacks {
-          flex: 0 0 100%;
+          flex: 1;
         }
 
-        .toggle {
-          flex: 0 0 auto;
+        h2 {
+          margin-bottom: 1rem;
         }
 
         .publicationToggle {
-          margin: 0 0 0 2rem;
+          margin-top: 1rem;
+        }
+
+        .feedbacks {
+          margin-top: 1rem;
         }
 
         .feedback:not(:last-child) {
-          margin-bottom: 0.5rem;
+          margin-bottom: 1rem;
         }
-      }
-    `}</style>
+
+        @include desktop-tablet-only {
+          .feedbackChannel {
+            flex-flow: row wrap;
+          }
+
+          h2,
+          .feedbacks {
+            flex: 0 0 100%;
+          }
+
+          .toggle {
+            flex: 0 0 auto;
+          }
+
+          .publicationToggle {
+            margin: 0 0 0 2rem;
+          }
+
+          .feedback:not(:last-child) {
+            margin-bottom: 0.5rem;
+          }
+        }
+      `}
+    </style>
   </div>
 )
 
 FeedbackChannel.propTypes = propTypes
 FeedbackChannel.defaultProps = defaultProps
 
-export default FeedbackChannel
+export default lifecycle({
+  componentDidMount() {
+    this.props.subscribeToMore()
+  },
+})(FeedbackChannel)

@@ -25,7 +25,11 @@ const defaultProps = {
 }
 
 const Sidebar = ({
-  activeItem, children, items, visible, handleSidebarItemClick,
+  activeItem,
+  children,
+  items,
+  visible,
+  handleSidebarItemClick,
 }) => (
   <div className="sidebar">
     <SemanticSidebar.Pushable>
@@ -38,47 +42,82 @@ const Sidebar = ({
         visible={visible}
         width="wide"
       >
-        {items.map(item => (
+        {items.map(({
+          name, className, href, icon, label,
+        }) => (
           <SidebarItem
-            active={item.name === activeItem}
-            handleSidebarItemClick={handleSidebarItemClick(item.href)}
-            key={item.name}
-            name={item.name}
+            active={name === activeItem}
+            className={className}
+            handleSidebarItemClick={handleSidebarItemClick(href)}
+            icon={icon}
+            key={name}
+            name={name}
           >
-            {item.label}
+            {label}
           </SidebarItem>
         ))}
-        <div className="langSwitcher">
-          <LanguageSwitcher />
+        <div className="extras">
+          <div className="langSwitcher">
+            <LanguageSwitcher />
+          </div>
+          <div className="logo">
+            Klicker
+            <span className="high">UZH</span>
+          </div>
         </div>
       </SemanticSidebar>
       <SemanticSidebar.Pusher>{children}</SemanticSidebar.Pusher>
     </SemanticSidebar.Pushable>
 
-    <style jsx>{`
-      @import 'src/theme';
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-      .sidebar {
-        width: 100%;
+        .sidebar {
+          width: 100%;
 
-        :global(.pusher) {
-          height: 100%;
-        }
-
-        :global(.sidebarMenu) {
-          position: relative;
-          width: 75% !important;
-
-          .langSwitcher {
-            padding: 1rem;
+          :global(.pusher) {
+            height: 100%;
           }
 
-          @include desktop-tablet-only {
-            width: 15rem !important;
+          :global(.sidebarMenu) {
+            position: relative;
+            width: 75% !important;
+
+            display: flex !important;
+            flex-direction: column;
+
+            .extras {
+              display: flex;
+              flex-direction: column;
+
+              justify-content: space-between;
+            }
+
+            .langSwitcher {
+              padding: 1rem;
+            }
+
+            .logo {
+              color: $color-primary-strong;
+              padding: 2rem 1rem;
+              font-size: 2rem;
+              line-height: 2rem;
+
+              .high {
+                font-size: 1rem;
+                line-height: 1rem;
+                vertical-align: top;
+              }
+            }
+
+            @include desktop-tablet-only {
+              width: 15rem !important;
+            }
           }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

@@ -19,7 +19,7 @@ jobs:
         directories:
           - node_modules
       before_install:
-        - curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 1.3.2
+        - curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 1.7.0
         - export PATH="$HOME/.yarn/bin:$PATH"
       before_script:
         - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
@@ -35,6 +35,11 @@ jobs:
       script:
         - yarn run format:ci
 
+    - <<: *test-setup
+      script:
+        - yarn run build
+        - yarn run bundlesize
+
     # build all merges into master that are not tagged
     # trigger a new staging deployment
     - &build-setup
@@ -47,12 +52,14 @@ jobs:
       env:
         - IMAGE_NAME="uzhbf/klicker-react"
       before_script:
-        - docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+        - echo $DOCKER_PASSWORD | docker login --username $DOCKER_USER --password-stdin
       script:
         - docker pull $IMAGE_NAME:latest
         - >
           docker build .
           --build-arg API_URL=$STAGING_API_URL
+          --build-arg API_URL_WS=$STAGING_API_URL_WS
+          --build-arg S3_BASE_PATH=$STAGING_S3_BASE_PATH
           --cache-from $IMAGE_NAME:latest
           -t $IMAGE_NAME:latest
         - docker push $IMAGE_NAME:latest
@@ -66,6 +73,7 @@ jobs:
         - >
           docker build .
           --build-arg API_URL=$STAGING_API_URL
+          --build-arg API_URL_WS=$STAGING_API_URL_WS
           --build-arg VERSION=nightly-$TRAVIS_PULL_REQUEST
           --cache-from $IMAGE_NAME:nightly
           -t $IMAGE_NAME:nightly
@@ -95,11 +103,12 @@ jobs:
         - PASSWORD=$DOCKER_PASSWORD
         - IMAGE_NAME="uzhbf/klicker-react"
       before_script:
-        - docker login -u $USER -p $PASSWORD
+        - echo $PASSWORD | docker login --username $USER --password-stdin
       script:
         - >
           docker build .
           --build-arg API_URL=$PROD_API_URL
+          --build-arg API_URL_WS=$PROD_API_URL_WS
           --build-arg VERSION=$TRAVIS_TAG
           -t $IMAGE_NAME:stable
           -t $IMAGE_NAME:$TRAVIS_TAG
@@ -115,30 +124,26 @@ jobs:
         - REGISTRY="registry.appuio.ch"
         - IMAGE_NAME="registry.appuio.ch/uniz-klicker/klicker-react"
       before_script:
-        - docker login -u $USER -p $PASSWORD $REGISTRY
+        - echo $PASSWORD | docker login --username $USER --password-stdin $REGISTRY
       script:
         - >
           docker build .
           --build-arg API_URL=$PROD_API_URL
-          --build-arg HOTJAR=$PROD_HOTJAR
+          --build-arg API_URL_WS=$PROD_API_URL_WS
           --build-arg LOGROCKET=$PROD_LOGROCKET
-          --build-arg OPBEAT_APP_ID_REACT=$PROD_OPBEAT_APP_ID
-          --build-arg OPBEAT_ORG_ID_REACT=$PROD_OPBEAT_ORG_ID
           --build-arg SENTRY_DSN=$PROD_SENTRY
+          --build-arg G_ANALYTICS=$PROD_G_ANALYTICS
           --build-arg VERSION=$TRAVIS_TAG
+          --build-arg CHATLIO=$PROD_CHATLIO
+          --build-arg S3_BASE_PATH=$PROD_S3_BASE_PATH
+          --build-arg APP_PERSIST_QUERIES="true"
+          --build-arg SLAASK_WIDGET_KEY=$PROD_SLAASK_WIDGET_KEY
           -t $IMAGE_NAME:stable
           -t $IMAGE_NAME:$TRAVIS_TAG
-        - docker push $IMAGE_NAME:$TRAVIS_TAG
-        - docker push $IMAGE_NAME:stable
+        - travis_retry docker push $IMAGE_NAME:$TRAVIS_TAG
+        - travis_retry docker push $IMAGE_NAME:stable
         - >
-          curl $PROD_OPBEAT_URL_REACT
-          -H "Authorization: Bearer $PROD_OPBEAT_TOKEN_REACT"
-          -d rev=`git log -n 1 --pretty=format:%H`
-          -d branch=`git rev-parse --abbrev-ref HEAD`
-          -d status=completed
-        - >
-          curl $PROD_OPBEAT_URL_NEXT
-          -H "Authorization: Bearer $PROD_OPBEAT_TOKEN_NEXT"
-          -d rev=`git log -n 1 --pretty=format:%H`
-          -d branch=`git rev-parse --abbrev-ref HEAD`
-          -d status=completed
+          curl https://sentry.ibf-devops.ch/api/hooks/release/builtin/6/425e7762445dd9e50d303d861e8683d3e5737f21ce1588dd7e27f8037a96d75e/
+          -X POST
+          -H 'Content-Type: application/json'
+          -d '{"version": $TRAVIS_TAG}'

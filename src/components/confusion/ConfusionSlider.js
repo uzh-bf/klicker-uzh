@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import Slider from 'react-rangeslider'
-import { Helmet } from 'react-helmet'
+import Head from 'next/head'
 
 import { createLinks } from '../../lib'
 
@@ -37,9 +37,11 @@ const ConfusionSlider = ({
 
   return (
     <div className="confusionSlider">
-      <Helmet defer={false}>
-        {createLinks(['https://unpkg.com/react-rangeslider/umd/rangeslider.min.css'])}
-      </Helmet>
+      <Head>
+        {createLinks([
+          'https://unpkg.com/react-rangeslider/umd/rangeslider.min.css',
+        ])}
+      </Head>
 
       {title && <div className="title">{title}</div>}
 
@@ -56,41 +58,41 @@ const ConfusionSlider = ({
         />
       </div>
 
-      <style jsx>{`
-        @import 'src/theme';
+      <style jsx>
+        {`
+          @import 'src/theme';
 
-        .confusionSlider {
-          margin-bottom: 70px;
-
-          .title > :global(*):first-child {
-            font-size: 1rem;
-            margin: 0;
-          }
-
-          :global(.rangeslider__fill) {
-            background-color: $color-primary;
-          }
-
-          :global(.rangeslider__handle) {
-            padding: 1rem;
-
-            &:after {
-              display: none;
+          .confusionSlider {
+            .title > :global(*):first-child {
+              font-size: 1rem !important;
+              margin: 0;
             }
 
-            &:focus {
-              outline: none;
+            :global(.rangeslider__fill) {
+              background-color: $color-primary;
+            }
+
+            :global(.rangeslider__handle) {
+              padding: 1rem;
+
+              &:after {
+                display: none;
+              }
+
+              &:focus {
+                outline: none;
+              }
+            }
+
+            :global(.rangeslider__handle-label) {
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate3d(-50%, -50%, 0);
             }
           }
-
-          :global(.rangeslider__handle-label) {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate3d(-50%, -50%, 0);
-          }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   )
 }

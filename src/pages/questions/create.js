@@ -1,82 +1,123 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import Router from 'next/router'
-import { compose, withHandlers, withProps } from 'recompose'
-import { graphql } from 'react-apollo'
-import { intlShape } from 'react-intl'
+import { compose } from 'recompose'
+import { Query, Mutation } from 'react-apollo'
+import { defineMessages, intlShape } from 'react-intl'
+import { convertToRaw } from 'draft-js'
 
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionCreationForm } from '../../components/forms'
-import { pageWithIntl, withData } from '../../lib'
-import { QuestionListQuery, TagListQuery, CreateQuestionMutation } from '../../graphql'
+import {
+  pageWithIntl,
+  withDnD,
+  withLogging,
+  getPresignedURLs,
+  uploadFilesToPresignedURLs,
+} from '../../lib'
+import {
+  QuestionListQuery,
+  TagListQuery,
+  CreateQuestionMutation,
+  RequestPresignedURLMutation,
+} from '../../graphql'
+
+const messages = defineMessages({
+  pageTitle: {
+    defaultMessage: 'Create Question',
+    id: 'createQuestion.pageTitle',
+  },
+  title: {
+    defaultMessage: 'Create Question',
+    id: 'createQuestion.title',
+  },
+})
 
 const propTypes = {
-  handleDiscard: PropTypes.func.isRequired,
-  handleSave: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  tags: PropTypes.array.isRequired,
 }
 
-const CreateQuestion = ({
-  tags, intl, handleDiscard, handleSave,
-}) => (
+const CreateQuestion = ({ intl }) => (
   <TeacherLayout
     intl={intl}
     navbar={{
-      title: intl.formatMessage({
-        defaultMessage: 'Create Question',
-        id: 'teacher.createQuestion.title',
-      }),
+      title: intl.formatMessage(messages.title),
     }}
-    pageTitle={intl.formatMessage({
-      defaultMessage: 'Create Question',
-      id: 'teacher.createQuestion.pageTitle',
-    })}
+    pageTitle={intl.formatMessage(messages.pageTitle)}
     sidebar={{ activeItem: 'createQuestion' }}
   >
-    <QuestionCreationForm intl={intl} tags={tags} onDiscard={handleDiscard} onSubmit={handleSave} />
+    <Query query={TagListQuery}>
+      {({ data }) => (
+        <Mutation mutation={CreateQuestionMutation}>
+          {(createQuestion, { loading }) => (
+            <Mutation mutation={RequestPresignedURLMutation}>
+              {requestPresignedURL => (
+                <QuestionCreationForm
+                  intl={intl}
+                  loading={loading}
+                  tags={data.tags}
+                  // handle discarding a new question
+                  onDiscard={() => Router.push('/questions')}
+                  // handle submitting a new question
+                  onSubmit={async (
+                    {
+                      content, options, tags, title, type, files,
+                    },
+                    { setSubmitting },
+                  ) => {
+                    // request presigned urls and filenames for all files
+                    const fileEntities = await getPresignedURLs(
+                      files,
+                      requestPresignedURL,
+                    )
+
+                    // upload (put) the files to the corresponding presigned urls
+                    await uploadFilesToPresignedURLs(fileEntities)
+
+                    // create the question
+                    await createQuestion({
+                      // reload the list of questions and tags after creation
+                      // TODO: replace with optimistic updates
+                      refetchQueries: [
+                        { query: QuestionListQuery },
+                        { query: TagListQuery },
+                      ],
+                      variables: {
+                        content:
+                          content.getCurrentContent()
+                          |> convertToRaw
+                          |> JSON.stringify,
+                        files: fileEntities.map(({ file, fileName }) => ({
+                          name: fileName,
+                          originalName: file.name,
+                          type: file.type,
+                        })),
+                        options,
+                        tags,
+                        title,
+                        type,
+                      },
+                    })
+
+                    setSubmitting(false)
+
+                    Router.push('/questions')
+                  }}
+                />
+              )}
+            </Mutation>
+          )}
+        </Mutation>
+      )}
+    </Query>
   </TeacherLayout>
 )
 
 CreateQuestion.propTypes = propTypes
 
 export default compose(
-  withData,
-  pageWithIntl,
-  graphql(TagListQuery),
-  graphql(CreateQuestionMutation),
-  withHandlers({
-    // handle discarding a new question
-    handleDiscard: () => () => {
-      Router.push('/questions')
-    },
-
-    // handle saving a new question
-    handleSave: ({ mutate }) => async ({
-      content, options, tags, title, type,
-    }) => {
-      try {
-        await mutate({
-          // reload the list of questions and tags after creation
-          // TODO: replace with optimistic updates
-          refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
-          variables: {
-            description: content,
-            options,
-            tags,
-            title,
-            type,
-          },
-        })
-
-        // redirect to the question pool
-        Router.push('/questions')
-      } catch ({ message }) {
-        console.error(message)
-      }
-    },
+  withLogging({
+    slaask: true,
   }),
-  withProps(({ data }) => ({
-    tags: data.tags,
-  })),
+  withDnD,
+  pageWithIntl,
 )(CreateQuestion)

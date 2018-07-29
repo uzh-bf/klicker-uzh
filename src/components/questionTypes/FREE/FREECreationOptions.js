@@ -1,6 +1,5 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import _get from 'lodash/get'
 import ReactTooltip from 'react-tooltip'
 import { Form, Icon, Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
@@ -9,14 +8,12 @@ import { compose, withHandlers, mapProps } from 'recompose'
 import { QUESTION_TYPES } from '../../../constants'
 
 const propTypes = {
+  dirty: PropTypes.bool.isRequired,
   disabled: PropTypes.bool,
   handleMaxChange: PropTypes.func.isRequired,
   handleMinChange: PropTypes.func.isRequired,
+  invalid: PropTypes.bool.isRequired,
   max: PropTypes.number,
-  meta: PropTypes.shape({
-    dirty: PropTypes.bool,
-    invalid: PropTypes.bool,
-  }).isRequired,
   min: PropTypes.number,
   type: PropTypes.string.isRequired,
 }
@@ -34,34 +31,43 @@ const FREECreationOptions = ({
   type,
   handleMaxChange,
   handleMinChange,
-  meta: { dirty, invalid },
+  dirty,
+  invalid,
 }) => (
   <div className="FREECreationOptions">
-    <Form.Field required error={dirty && invalid}>
-      <label htmlFor="options">
-        <FormattedMessage
-          defaultMessage="Input Restrictions"
-          id="teacher.createQuestion.optionsFREE.label"
-        />
-        <a data-tip data-for="FREECreationHelp">
-          <Icon name="question circle" />
-        </a>
-      </label>
+    {type === QUESTION_TYPES.FREE_RANGE && (
+      <Form.Field required error={dirty && invalid}>
+        <label htmlFor="options">
+          <FormattedMessage
+            defaultMessage="Input Restrictions"
+            id="createQuestion.optionsFREE.label"
+          />
+          <a data-tip data-for="FREECreationHelp">
+            <Icon name="question circle" />
+          </a>
+        </label>
 
-      <ReactTooltip delayHide={250} delayShow={250} id="FREECreationHelp" place="right">
-        <FormattedMessage
-          defaultMessage="Choose the allowed format of incoming responses."
-          id="teacher.createQuestion.optionsFREE.tooltip"
-        />
-      </ReactTooltip>
+        <ReactTooltip
+          delayHide={250}
+          delayShow={250}
+          id="FREECreationHelp"
+          place="right"
+        >
+          <FormattedMessage
+            defaultMessage="Choose the allowed format of incoming responses."
+            id="createQuestion.optionsFREE.tooltip"
+          />
+        </ReactTooltip>
 
-      {type === QUESTION_TYPES.FREE && <div>Unrestricted input.</div>}
+        {/* type === QUESTION_TYPES.FREE && <div>Unrestricted input.</div> */}
 
-      {type === QUESTION_TYPES.FREE_RANGE && (
         <div className="range">
           <Form.Field>
             <label htmlFor="min">
-              <FormattedMessage defaultMessage="Min" id="teacher.createQuestion.options.min" />
+              <FormattedMessage
+                defaultMessage="Min"
+                id="createQuestion.options.min"
+              />
             </label>
             <Input
               disabled={disabled}
@@ -75,7 +81,10 @@ const FREECreationOptions = ({
 
           <Form.Field>
             <label htmlFor="max">
-              <FormattedMessage defaultMessage="Max" id="teacher.createQuestion.options.max" />
+              <FormattedMessage
+                defaultMessage="Max"
+                id="createQuestion.options.max"
+              />
             </label>
             <Input
               disabled={disabled}
@@ -87,47 +96,49 @@ const FREECreationOptions = ({
             />
           </Form.Field>
         </div>
-      )}
-    </Form.Field>
+      </Form.Field>
+    )}
 
-    <style jsx>{`
-      @import 'src/theme';
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-      .FREECreationOptions {
-        @include tooltip-icon;
+        .FREECreationOptions {
+          @include tooltip-icon;
 
-        .optionsChooser {
-          display: flex;
+          .optionsChooser {
+            display: flex;
 
-          > :global(*):not(:last-child) {
-            margin-right: 1rem;
-          }
-        }
-
-        .range {
-          display: flex;
-          flex-direction: column;
-
-          margin-top: 1rem;
-
-          :global(.field) > label {
-            font-size: 1rem;
+            > :global(*):not(:last-child) {
+              margin-right: 1rem;
+            }
           }
 
-          @include desktop-tablet-only {
-            flex-direction: row;
+          .range {
+            display: flex;
+            flex-direction: column;
 
-            :global(.field) {
-              width: 10rem;
+            margin-top: 1rem;
 
-              &:not(:last-child) {
-                margin-right: 1rem;
+            :global(.field) > label {
+              font-size: 1rem;
+            }
+
+            @include desktop-tablet-only {
+              flex-direction: row;
+
+              :global(.field) {
+                width: 10rem;
+
+                &:not(:last-child) {
+                  margin-right: 1rem;
+                }
               }
             }
           }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 
@@ -136,12 +147,13 @@ FREECreationOptions.defaultProps = defaultProps
 
 export default compose(
   mapProps(({
-    disabled, input: { onChange, value }, meta, type,
+    disabled, onChange, value, dirty, invalid, type,
   }) => ({
+    dirty,
     disabled,
-    max: _get(value, 'restrictions.max'),
-    meta,
-    min: _get(value, 'restrictions.min'),
+    invalid,
+    max: value?.restrictions?.max,
+    min: value?.restrictions?.min,
     onChange,
     type,
     value,

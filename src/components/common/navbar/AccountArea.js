@@ -5,18 +5,26 @@ import { FormattedMessage } from 'react-intl'
 import Link from 'next/link'
 
 const propTypes = {
-  accountShort: PropTypes.string.isRequired,
+  accountShort: PropTypes.string,
+  onLogout: PropTypes.func.isRequired,
 }
 
-const AccountArea = ({ accountShort }) => (
-  <Dropdown item simple text={accountShort.toUpperCase()}>
+const defaultProps = {
+  accountShort: '-',
+}
+
+const AccountArea = ({ accountShort, onLogout }) => (
+  <Dropdown item simple icon="user" text={`${accountShort} `}>
     <Dropdown.Menu>
       <Link href="/user/settings">
         <Dropdown.Item>
-          <FormattedMessage defaultMessage="Settings" id="common.string.settings" />
+          <FormattedMessage
+            defaultMessage="Settings"
+            id="common.string.settings"
+          />
         </Dropdown.Item>
       </Link>
-      <Dropdown.Item disabled>
+      <Dropdown.Item onClick={onLogout}>
         <FormattedMessage defaultMessage="Logout" id="common.string.logout" />
       </Dropdown.Item>
     </Dropdown.Menu>
@@ -24,5 +32,6 @@ const AccountArea = ({ accountShort }) => (
 )
 
 AccountArea.propTypes = propTypes
+AccountArea.defaultProps = defaultProps
 
 export default AccountArea

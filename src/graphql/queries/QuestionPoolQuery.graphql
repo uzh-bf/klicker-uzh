@@ -1,0 +1,5 @@
+query QuestionPool {
+  runningSession {
+    id
+  }
+}

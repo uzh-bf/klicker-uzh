@@ -1,90 +1,119 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import isEmail from 'validator/lib/isEmail'
-import isLength from 'validator/lib/isLength'
-import { Field, reduxForm } from 'redux-form'
-import { intlShape } from 'react-intl'
+import { defineMessages, intlShape } from 'react-intl'
+import { Formik } from 'formik'
+import { object, string } from 'yup'
+import _isEmpty from 'lodash/isEmpty'
 
-import { FormWithLinks, SemanticInput } from '.'
+import { FormWithLinks, FormikInput } from '.'
 
-const validate = ({ email, password }) => {
-  const errors = {}
-
-  // the email address needs to be valid
-  if (!email || !isEmail(email)) {
-    errors.email = 'form.email.invalid'
-  }
-
-  // password should at least have 7 characters (or more?)
-  if (!password || !isLength(password, { max: undefined, min: 1 })) {
-    errors.password = 'form.password.invalid'
-  }
-
-  return errors
-}
+const messages = defineMessages({
+  emailInvalid: {
+    defaultMessage: 'Please provide a valid email address.',
+    id: 'form.email.invalid',
+  },
+  emailLabel: {
+    defaultMessage: 'Email',
+    id: 'form.email.label',
+  },
+  forgotPassword: {
+    defaultMessage: 'Forgot password?',
+    id: 'form.forgotPassword.label',
+  },
+  passowrdInvalid: {
+    defaultMessage: 'Please provide a valid password (8+ characters).',
+    id: 'form.password.invalid',
+  },
+  passwordLabel: {
+    defaultMessage: 'Password',
+    id: 'form.password.label',
+  },
+  submitButton: {
+    defaultMessage: 'Submit',
+    id: 'form.common.button.submit',
+  },
+})
 
 const propTypes = {
-  handleSubmit: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
-  invalid: PropTypes.bool.isRequired,
+  loading: PropTypes.bool.isRequired,
+  onSubmit: PropTypes.func.isRequired,
 }
 
-const LoginForm = ({ intl, invalid, handleSubmit: onSubmit }) => {
-  const button = {
-    invalid,
-    label: intl.formatMessage({
-      defaultMessage: 'Submit',
-      id: 'form.common.button.submit',
-    }),
-    onSubmit,
-  }
+const LoginForm = ({ intl, loading, onSubmit }) => {
   const links = [
     {
-      href: '/user/resetPassword',
-      label: intl.formatMessage({
-        defaultMessage: 'Forgot password?',
-        id: 'form.forgotPassword.label',
-      }),
-    },
-    {
-      href: '/user/aaiLogin',
-      label: intl.formatMessage({ defaultMessage: 'Login with AAI', id: 'form.aaiLogin.label' }),
+      href: '/user/requestPassword',
+      label: intl.formatMessage(messages.forgotPassword),
     },
   ]
 
   return (
-    <FormWithLinks button={button} links={links}>
-      <Field
-        required
-        component={SemanticInput}
-        icon="mail"
-        intl={intl}
-        label={intl.formatMessage({
-          defaultMessage: 'Email',
-          id: 'form.email.label',
-        })}
-        name="email"
-        type="email"
-      />
-      <Field
-        required
-        component={SemanticInput}
-        icon="privacy"
-        intl={intl}
-        label={intl.formatMessage({
-          defaultMessage: 'Password',
-          id: 'form.password.label',
-        })}
-        name="password"
-        type="password"
-      />
-    </FormWithLinks>
+    <Formik
+      initialValues={{
+        email: '',
+        password: '',
+      }}
+      render={({
+        values,
+        errors,
+        touched,
+        handleChange,
+        handleBlur,
+        handleSubmit,
+        isSubmitting,
+      }) => (
+        <FormWithLinks
+          button={{
+            disabled: !_isEmpty(errors) || _isEmpty(touched),
+            label: intl.formatMessage(messages.submitButton),
+            loading: loading && isSubmitting,
+            onSubmit: handleSubmit,
+          }}
+          links={links}
+        >
+          <FormikInput
+            autoFocus
+            required
+            error={errors.email}
+            errorMessage={intl.formatMessage(messages.emailInvalid)}
+            handleBlur={handleBlur}
+            handleChange={handleChange}
+            icon="mail"
+            intl={intl}
+            label={intl.formatMessage(messages.emailLabel)}
+            name="email"
+            touched={touched.email}
+            type="email"
+            value={values.email}
+          />
+          <FormikInput
+            required
+            error={errors.password}
+            errorMessage={intl.formatMessage(messages.passowrdInvalid)}
+            handleBlur={handleBlur}
+            handleChange={handleChange}
+            icon="privacy"
+            intl={intl}
+            label={intl.formatMessage(messages.passwordLabel)}
+            name="password"
+            touched={touched.password}
+            type="password"
+            value={values.password}
+          />
+        </FormWithLinks>
+      )}
+      validationSchema={object().shape({
+        email: string()
+          .email()
+          .required(),
+        password: string().required(),
+      })}
+      onSubmit={onSubmit}
+    />
   )
 }
 
 LoginForm.propTypes = propTypes
 
-export default reduxForm({
-  form: 'login',
-  validate,
-})(LoginForm)
+export default LoginForm

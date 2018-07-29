@@ -1,7 +1,11 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
-import { arrayMove, SortableContainer, SortableElement } from 'react-sortable-hoc'
+import {
+  arrayMove,
+  SortableContainer,
+  SortableElement,
+} from 'react-sortable-hoc'
 import { FormattedMessage } from 'react-intl'
 import { compose, mapProps, withHandlers } from 'recompose'
 import { Form, Icon } from 'semantic-ui-react'
@@ -10,16 +14,14 @@ import SCCreationPlaceholder from './SCCreationPlaceholder'
 import SCCreationOption from './SCCreationOption'
 
 const propTypes = {
+  dirty: PropTypes.bool.isRequired,
   disabled: PropTypes.bool.isRequired,
   handleDeleteOption: PropTypes.func.isRequired,
   handleNewOption: PropTypes.func.isRequired,
   handleOptionToggleCorrect: PropTypes.func.isRequired,
   handleUpdateOrder: PropTypes.func.isRequired,
-  meta: PropTypes.shape({
-    dirty: PropTypes.bool,
-    invalid: PropTypes.bool,
-  }).isRequired,
-  value: PropTypes.arrayOf(PropTypes.shape(SCCreationOption.propTypes)).isRequired,
+  invalid: PropTypes.bool.isRequired,
+  value: PropTypes.arrayOf(PropTypes.object).isRequired,
 }
 
 // create the purely functional component
@@ -30,17 +32,20 @@ const SCCreationOptions = ({
   handleUpdateOrder,
   handleOptionToggleCorrect,
   value,
-  meta: { dirty, invalid },
+  dirty,
+  invalid,
 }) => {
   const Option = props => (
     <div className="option">
       <SCCreationOption disabled={disabled} {...props} />
-      <style jsx>{`
-        .option {
-          cursor: grab;
-          margin-bottom: 0.5rem;
-        }
-      `}</style>
+      <style jsx>
+        {`
+          .option {
+            cursor: grab;
+            margin-bottom: 0.5rem;
+          }
+        `}
+      </style>
     </div>
   )
 
@@ -73,17 +78,22 @@ const SCCreationOptions = ({
         <label htmlFor="options">
           <FormattedMessage
             defaultMessage="Available Choices"
-            id="teacher.createQuestion.optionsSC.label"
+            id="createQuestion.optionsSC.label"
           />
           <a data-tip data-for="SCCreationHelp">
             <Icon name="question circle" />
           </a>
         </label>
 
-        <ReactTooltip delayHide={250} delayShow={250} id="SCCreationHelp" place="right">
+        <ReactTooltip
+          delayHide={250}
+          delayShow={250}
+          id="SCCreationHelp"
+          place="right"
+        >
           <FormattedMessage
             defaultMessage="Add answering options the respondents can choose from."
-            id="teacher.createQuestion.optionsSC.tooltip"
+            id="createQuestion.optionsSC.tooltip"
           />
         </ReactTooltip>
 
@@ -97,12 +107,14 @@ const SCCreationOptions = ({
         {!disabled && <SCCreationPlaceholder handleSave={handleNewOption} />}
       </Form.Field>
 
-      <style jsx>{`
-        @import 'src/theme';
-        .SCCreationOptions {
-          @include tooltip-icon;
-        }
-      `}</style>
+      <style jsx>
+        {`
+          @import 'src/theme';
+          .SCCreationOptions {
+            @include tooltip-icon;
+          }
+        `}
+      </style>
     </div>
   )
 }
@@ -110,16 +122,18 @@ const SCCreationOptions = ({
 SCCreationOptions.propTypes = propTypes
 
 export default compose(
-  mapProps(({ input: { onChange, value }, meta, disabled }) => ({
+  mapProps(({
+    onChange, value, dirty, invalid, disabled,
+  }) => ({
+    dirty,
     disabled,
     // HACK: mapping as a workaround for the value.choices problem
-    meta,
+    invalid,
     onChange: choices => onChange({ ...value, choices }),
     value: value.choices,
   })),
   withHandlers({
-    handleDeleteOption: ({ onChange, value }) => index => () =>
-      onChange([...value.slice(0, index), ...value.slice(index + 1)]),
+    handleDeleteOption: ({ onChange, value }) => index => () => onChange([...value.slice(0, index), ...value.slice(index + 1)]),
 
     handleNewOption: ({ onChange, value }) => newOption => onChange([...value, newOption]),
 
@@ -132,7 +146,6 @@ export default compose(
       ])
     },
 
-    handleUpdateOrder: ({ onChange, value }) => ({ oldIndex, newIndex }) =>
-      onChange(arrayMove(value, oldIndex, newIndex)),
+    handleUpdateOrder: ({ onChange, value }) => ({ oldIndex, newIndex }) => onChange(arrayMove(value, oldIndex, newIndex)),
   }),
 )(SCCreationOptions)

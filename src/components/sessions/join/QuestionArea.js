@@ -3,11 +3,19 @@ import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import _without from 'lodash/without'
 import { FormattedMessage } from 'react-intl'
-import { compose, withStateHandlers, withHandlers, withProps } from 'recompose'
+import { convertFromRaw } from 'draft-js'
+import {
+  compose, withStateHandlers, withHandlers, withProps,
+} from 'recompose'
 
+import QuestionFiles from './QuestionFiles'
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
 import { ActionMenu, Collapser } from '../../common'
-import { SCAnswerOptions, FREEAnswerOptions } from '../../questionTypes'
+import {
+  QuestionDescription,
+  SCAnswerOptions,
+  FREEAnswerOptions,
+} from '../../questionTypes'
 import { withStorage } from '../../../lib'
 
 const propTypes = {
@@ -19,8 +27,11 @@ const propTypes = {
   handleSubmit: PropTypes.func.isRequired,
   inputEmpty: PropTypes.bool.isRequired,
   inputValid: PropTypes.bool.isRequired,
-  inputValue: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.object])
-    .isRequired,
+  inputValue: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.number,
+    PropTypes.object,
+  ]).isRequired,
   isCollapsed: PropTypes.bool.isRequired,
   questions: PropTypes.array,
   remainingQuestions: PropTypes.array,
@@ -55,7 +66,7 @@ function QuestionArea({
       <p>
         <FormattedMessage
           defaultMessage="Please choose a single option below:"
-          id="student.questionArea.info.SC"
+          id="joinSession.questionArea.info.SC"
         />
       </p>
     ),
@@ -63,7 +74,7 @@ function QuestionArea({
       <p>
         <FormattedMessage
           defaultMessage="Please choose one or multiple of the options below:"
-          id="student.questionArea.info.MC"
+          id="joinSession.questionArea.info.MC"
         />
       </p>
     ),
@@ -71,7 +82,7 @@ function QuestionArea({
       <p>
         <FormattedMessage
           defaultMessage="Please enter your response below:"
-          id="student.questionArea.info.FREE"
+          id="joinSession.questionArea.info.FREE"
         />
       </p>
     ),
@@ -80,7 +91,7 @@ function QuestionArea({
       <p>
         <FormattedMessage
           defaultMessage="Please choose a number from the given range below:"
-          id="student.questionArea.info.FREE_RANGE"
+          id="joinSession.questionArea.info.FREE_RANGE"
         />
       </p>
     ),
@@ -89,7 +100,10 @@ function QuestionArea({
   return (
     <div className={classNames('questionArea', { active })}>
       <h1 className="header">
-        <FormattedMessage defaultMessage="Question" id="student.questionArea.title" />
+        <FormattedMessage
+          defaultMessage="Question"
+          id="joinSession.questionArea.title"
+        />
       </h1>
       {(() => {
         if (remainingQuestions.length === 0) {
@@ -103,15 +117,56 @@ function QuestionArea({
           )
         }
 
-        const { description, options, type } = currentQuestion
+        const {
+          content,
+          description,
+          options,
+          type,
+          files = [],
+        } = currentQuestion
+
+        // if the content is set, parse it and convert into a content state
+        const contentState = content
+          ? content |> JSON.parse |> convertFromRaw
+          : null
 
         return (
           <div>
+            <div className="actions">
+              <ActionMenu
+                activeIndex={questions.length - remainingQuestions.length}
+                isSkipModeActive={inputEmpty}
+                isSubmitDisabled={
+                  remainingQuestions.length === 0
+                  || (!inputEmpty && !inputValid)
+                }
+                numItems={questions.length}
+                /* items={_range(questions.length).map(index => ({
+                  done: !remainingQuestions.includes(index),
+                }))} */
+                setActiveIndex={handleActiveQuestionChange}
+                onSubmit={handleSubmit}
+              />
+            </div>
+
             <div className="collapser">
-              <Collapser collapsed={isCollapsed} handleCollapseToggle={toggleIsCollapsed}>
-                {description}
+              <Collapser
+                collapsed={isCollapsed}
+                handleCollapseToggle={toggleIsCollapsed}
+              >
+                <QuestionDescription
+                  content={contentState}
+                  description={description}
+                />
               </Collapser>
             </div>
+
+            {process.env.S3_BASE_PATH
+              && files.length > 0 && (
+                <div className="files">
+                  <QuestionFiles files={files} />
+                </div>
+            )}
 
             <div className="options">
               {messages[type]}
@@ -143,93 +198,95 @@ function QuestionArea({
                 return null
               })()}
             </div>
-
-            <ActionMenu
-              activeIndex={questions.length - remainingQuestions.length}
-              isSkipModeActive={inputEmpty}
-              isSubmitDisabled={remainingQuestions.length === 0 || (!inputEmpty && !inputValid)}
-              numItems={questions.length}
-              /* items={_range(questions.length).map(index => ({
-                done: !remainingQuestions.includes(index),
-              }))} */
-              setActiveIndex={handleActiveQuestionChange}
-              onSubmit={handleSubmit}
-            />
           </div>
         )
       })()}
 
-      <style jsx>{`
-        @import 'src/theme';
+      <style jsx>
+        {`
+          @import 'src/theme';
 
-        .questionArea {
-          display: none;
-
-          flex: 1;
-
-          background-color: white;
-
-          > div {
-            display: flex;
-
-            flex-direction: column;
+          .questionArea {
+            display: none;
 
             flex: 1;
-          }
 
-          &.active {
-            display: flex;
-          }
+            background-color: white;
 
-          .header {
-            display: none;
-          }
+            > div {
+              display: flex;
 
-          .space {
-            margin: 1rem;
-          }
+              flex-direction: column;
 
-          .options,
-          .padded {
-            padding: 1rem;
-          }
+              flex: 1;
+            }
 
-          .collapser {
-            flex: 0 0 auto;
-
-            background-color: $color-primary-20p;
-            border-bottom: 1px solid -color-primary-50p;
-            padding: 0.5rem;
-          }
-
-          .options {
-            margin-top: 1rem;
-            flex: 1 1 50%;
-          }
-
-          @include desktop-tablet-only {
-            display: flex;
-            flex-direction: column;
-
-            border: 1px solid $color-primary;
-            margin-right: 0.25rem;
+            &.active {
+              display: flex;
+            }
 
             .header {
-              display: block;
+              display: none;
+            }
+
+            .space {
               margin: 1rem;
             }
 
+            .options,
+            .padded {
+              padding: 1rem;
+            }
+
+            .files,
             .collapser {
-              margin: 0 1rem;
+              flex: 0 0 auto;
+              background-color: $color-primary-20p;
+              padding: 0.5rem;
+              border-bottom: 1px solid $color-primary;
+            }
+
+            .collapser {
+              border-top: 1px solid $color-primary;
+            }
+
+            .files {
             }
 
             .options {
-              padding: 0;
-              margin: 1rem 1rem 0 1rem;
+              flex: 1 1 50%;
+            }
+
+            @include desktop-tablet-only {
+              display: flex;
+              flex-direction: column;
+
+              border: 1px solid $color-primary;
+              margin-right: 0.25rem;
+
+              .header {
+                display: block;
+                margin: 1rem;
+              }
+
+              .collapser,
+              .files {
+                margin: 0 1rem;
+                border: 1px solid $color-primary;
+              }
+
+              .files {
+                border-top: 0;
+              }
+
+              .options {
+                padding: 0;
+                margin: 1rem 1rem 0 1rem;
+              }
             }
           }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   )
 }
@@ -245,8 +302,8 @@ export default compose(
     storageType: 'local',
   }),
   withProps(({ questions, storedResponses }) => ({
-    remainingQuestions: questions.reduce((indices, { instanceId }, index) => {
-      if (storedResponses && storedResponses.includes(instanceId)) {
+    remainingQuestions: questions.reduce((indices, { id }, index) => {
+      if (storedResponses && storedResponses.includes(id)) {
         return indices
       }
 
@@ -264,8 +321,9 @@ export default compose(
     }),
     {
       handleActiveChoicesChange: ({ inputValue }) => (choice, type) => {
-        const validateChoices = newValue =>
-          (type === QUESTION_TYPES.SC ? newValue.length === 1 : newValue.length > 0)
+        const validateChoices = newValue => (type === QUESTION_TYPES.SC
+          ? newValue.length === 1
+          : newValue.length > 0)
 
         if (inputValue && type === QUESTION_TYPES.MC) {
           // if the choice is already active, remove it
@@ -302,7 +360,8 @@ export default compose(
         inputValue: undefined,
       }),
       handleFreeValueChange: () => inputValue => ({
-        inputEmpty: inputValue !== 0 && (!inputValue || inputValue.length === 0),
+        inputEmpty:
+          inputValue !== 0 && (!inputValue || inputValue.length === 0),
         inputValid: !!inputValue || inputValue === 0,
         inputValue,
       }),
@@ -319,16 +378,19 @@ export default compose(
           remainingQuestions: newRemaining,
         }
       },
-      toggleIsCollapsed: ({ isCollapsed }) => () => ({ isCollapsed: !isCollapsed }),
+      toggleIsCollapsed: ({ isCollapsed }) => () => ({
+        isCollapsed: !isCollapsed,
+      }),
     },
   ),
   withHandlers({
-    handleActiveChoicesChange: ({ handleActiveChoicesChange }) => type => choice => () =>
-      handleActiveChoicesChange(choice, type),
-    handleActiveQuestionChange: ({ handleActiveQuestionChange }) => index => () =>
-      handleActiveQuestionChange(index),
-    handleCompleteQuestion: ({ handleCompleteQuestion }) => index => () =>
-      handleCompleteQuestion(index),
+    handleActiveChoicesChange: ({
+      handleActiveChoicesChange,
+    }) => type => choice => () => handleActiveChoicesChange(choice, type),
+    handleActiveQuestionChange: ({
+      handleActiveQuestionChange,
+    }) => index => () => handleActiveQuestionChange(index),
+    handleCompleteQuestion: ({ handleCompleteQuestion }) => index => () => handleCompleteQuestion(index),
     handleSubmit: ({
       activeQuestion,
       questions,
@@ -336,7 +398,7 @@ export default compose(
       handleSubmit,
       inputValue,
     }) => () => {
-      const { instanceId, type } = questions[activeQuestion]
+      const { id: instanceId, type } = questions[activeQuestion]
 
       // if the question has been answered, add a response
       if (typeof inputValue !== 'undefined') {
@@ -351,7 +413,9 @@ export default compose(
       const prevResponses = JSON.parse(localStorage.getItem('storedResponses'))
       localStorage.setItem(
         'storedResponses',
-        JSON.stringify(prevResponses ? [...prevResponses, instanceId] : [instanceId]),
+        JSON.stringify(
+          prevResponses ? [...prevResponses, instanceId] : [instanceId],
+        ),
       )
 
       handleSubmit()

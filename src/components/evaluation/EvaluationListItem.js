@@ -1,60 +1,109 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-
+import classNames from 'classnames'
+import _isFinite from 'lodash/isFinite'
 import { Icon } from 'semantic-ui-react'
+import { QUESTION_GROUPS } from '../../constants'
 
 const propTypes = {
   children: PropTypes.element.isRequired,
   color: PropTypes.string,
+  correct: PropTypes.bool,
   marker: PropTypes.string,
+  percentage: PropTypes.number,
+  questionType: PropTypes.string.isRequired,
+  reverse: PropTypes.bool,
+  showGraph: PropTypes.bool,
 }
 
 const defaultProps = {
   color: undefined,
+  correct: false,
   marker: undefined,
+  percentage: undefined,
+  reverse: false,
+  showGraph: false,
 }
 
-const EvaluationListItem = ({ color, children, marker }) => (
-  <div className="evaluationListItem">
+const EvaluationListItem = ({
+  color,
+  correct,
+  children,
+  marker,
+  reverse,
+  percentage,
+  questionType,
+  showGraph,
+}) => (
+  <div className={classNames('evaluationListItem', { correct, reverse })}>
     {color && (
       <div className="colorSquare">
         <Icon name="square icon" />
       </div>
     )}
+
+    {marker && reverse && <div className="marker">{marker}</div>}
     <div className="content">{children}</div>
-    {marker && <div className="marker">{marker}</div>}
+    {QUESTION_GROUPS.WITH_PERCENTAGES.includes(questionType)
+      && showGraph
+      && _isFinite(percentage) && <div className="percentage">{percentage}%</div>}
+    {marker && !reverse && <div className="marker">{marker}</div>}
 
-    <style jsx>{`
-      .evaluationListItem {
-        display: flex;
-        flex-flow: row wrap;
-        align-items: center;
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-        padding: 0.1rem 0;
+        .evaluationListItem {
+          display: flex;
+          flex-flow: row wrap;
+          align-items: center;
 
-        border-bottom: 1px solid lightgrey;
+          padding: 0.1rem 0;
 
-        &:first-child {
-          border-top: 1px solid lightgrey;
+          border-bottom: 1px solid lightgrey;
+
+          &:first-child {
+            border-top: 1px solid lightgrey;
+          }
+
+          &.correct {
+            background-color: $color-correct;
+          }
+
+          .colorSquare :global(i) {
+            flex: 0 0 auto;
+
+            color: ${color};
+          }
+
+          .marker {
+            flex: 0 0 1.5rem;
+            text-align: center;
+
+            font-weight: bold;
+          }
+
+          .content {
+            flex: 1;
+          }
+
+          .percentage {
+            flex: 0 0 2rem;
+            font-size: 0.8rem;
+            text-align: right;
+          }
+
+          &.reverse {
+            justify-content: space-between;
+
+            .marker,
+            .content {
+              flex: 0 0 auto;
+            }
+          }
         }
-
-        .colorSquare :global(i) {
-          flex: 0 0 auto;
-
-          color: ${color};
-        }
-
-        .marker {
-          flex: 0 0 auto;
-
-          font-weight: bold;
-        }
-
-        .content {
-          flex: 1;
-        }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 

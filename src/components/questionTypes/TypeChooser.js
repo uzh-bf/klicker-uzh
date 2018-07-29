@@ -1,48 +1,53 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import { Icon } from 'semantic-ui-react'
 
 import { QUESTION_TYPES } from '../../constants'
 import { Button } from '../common'
 
+const messages = defineMessages({
+  freeLabel: {
+    defaultMessage: 'Free Text (FT)',
+    id: 'common.FREE.label',
+  },
+  freeRangeLabel: {
+    defaultMessage: 'Number Range (NR)',
+    id: 'common.FREE_RANGE.label',
+  },
+  mcLabel: {
+    defaultMessage: 'Multiple Choice (MC)',
+    id: 'common.MC.label',
+  },
+  scLabel: {
+    defaultMessage: 'Single Choice (SC)',
+    id: 'common.SC.label',
+  },
+})
+
 const propTypes = {
-  input: PropTypes.shape({
-    onChange: PropTypes.func.isRequired,
-    value: PropTypes.string.isRequired,
-  }).isRequired,
   intl: intlShape.isRequired,
+  onChange: PropTypes.func.isRequired,
+  value: PropTypes.string.isRequired,
 }
 
-const TypeChooser = ({ intl, input: { value, onChange } }) => {
+const TypeChooser = ({ intl, value, onChange }) => {
   const types = [
     {
-      name: intl.formatMessage({
-        defaultMessage: 'SC',
-        id: 'common.questionTypes.sc',
-      }),
+      name: intl.formatMessage(messages.scLabel),
       value: QUESTION_TYPES.SC,
     },
     {
-      name: intl.formatMessage({
-        defaultMessage: 'MC',
-        id: 'common.questionTypes.mc',
-      }),
+      name: intl.formatMessage(messages.mcLabel),
       value: QUESTION_TYPES.MC,
     },
     {
-      name: intl.formatMessage({
-        defaultMessage: 'FREE',
-        id: 'common.questionTypes.free',
-      }),
+      name: intl.formatMessage(messages.freeLabel),
       value: QUESTION_TYPES.FREE,
     },
     {
-      name: intl.formatMessage({
-        defaultMessage: 'FREE_RANGE',
-        id: 'common.questionTypes.freeRange',
-      }),
+      name: intl.formatMessage(messages.freeRangeLabel),
       value: QUESTION_TYPES.FREE_RANGE,
     },
   ]
@@ -54,17 +59,22 @@ const TypeChooser = ({ intl, input: { value, onChange } }) => {
       <label htmlFor="types">
         <FormattedMessage
           defaultMessage="Question Type"
-          id="teacher.createQuestion.questionType.label"
+          id="createQuestion.questionType.label"
         />
         <a data-tip data-for="TypeChooserHelp">
           <Icon name="question circle" />
         </a>
       </label>
 
-      <ReactTooltip delayHide={250} delayShow={250} id="TypeChooserHelp" place="right">
+      <ReactTooltip
+        delayHide={250}
+        delayShow={250}
+        id="TypeChooserHelp"
+        place="right"
+      >
         <FormattedMessage
           defaultMessage="Choose the type of question you would like to create."
-          id="teacher.createQuestion.questionType.tooltip"
+          id="createQuestion.questionType.tooltip"
         />
       </ReactTooltip>
 
@@ -81,22 +91,24 @@ const TypeChooser = ({ intl, input: { value, onChange } }) => {
         ))}
       </div>
 
-      <style jsx>{`
-        @import 'src/theme';
+      <style jsx>
+        {`
+          @import 'src/theme';
 
-        .typeChooser {
-          @include tooltip-icon;
+          .typeChooser {
+            @include tooltip-icon;
 
-          .types {
-            display: flex;
-            flex-direction: column;
+            .types {
+              display: flex;
+              flex-direction: column;
 
-            > :global(*):not(:last-child) {
-              margin-bottom: 0.5rem;
+              > :global(*):not(:last-child) {
+                margin-bottom: 0.5rem;
+              }
             }
           }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   )
 }

@@ -1,64 +1,103 @@
 import React from 'react'
 import Router from 'next/router'
-import PropTypes from 'prop-types'
 import Cookies from 'js-cookie'
-import { compose, withState, withHandlers } from 'recompose'
-import { FormattedMessage, intlShape } from 'react-intl'
-import { graphql } from 'react-apollo'
-
+import Link from 'next/link'
+import { compose } from 'recompose'
+import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
+import { Mutation } from 'react-apollo'
+import { Message } from 'semantic-ui-react'
 import { StaticLayout } from '../../components/layouts'
 import { LoginForm } from '../../components/forms'
 import { LoginMutation } from '../../graphql'
-import { pageWithIntl, withData } from '../../lib'
+import { pageWithIntl, withLogging } from '../../lib'
+
+const messages = defineMessages({
+  pageTitle: {
+    defaultMessage: 'Login',
+    id: 'user.login.pageTitle',
+  },
+})
 
 const propTypes = {
-  error: PropTypes.oneOfType(PropTypes.string, null).isRequired,
-  handleSubmit: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
 }
 
-const Login = ({ intl, error, handleSubmit }) => (
-  <StaticLayout
-    pageTitle={intl.formatMessage({
-      defaultMessage: 'Login',
-      id: 'user.login.pageTitle',
-    })}
-  >
+const Login = ({ intl }) => (
+  <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
     <div className="login">
       <h1>
         <FormattedMessage defaultMessage="Login" id="user.login.title" />
       </h1>
 
-      {/* TODO: improve message handling */}
-      {error && <div className="errorMessage message">Login failed: {error}</div>}
+      <Mutation mutation={LoginMutation}>
+        {(login, { loading, error }) => (
+          <>
+            <Message info>
+              <Message.Header>Public Beta</Message.Header>
+              <Message.Content>
+                To participate in the Klicker 2018 public beta with a legacy
+                account, please{' '}
+                <Link href="/user/requestPassword">reset your password</Link>{' '}
+                first. If you need a new account, you can
+                <Link href="/user/registration">sign up here</Link>.
+              </Message.Content>
+            </Message>
+            <LoginForm
+              intl={intl}
+              loading={loading}
+              onSubmit={async ({ email, password }) => {
+                // perform the login
+                const { data } = await login({ variables: { email, password } })
 
-      <LoginForm intl={intl} onSubmit={handleSubmit} />
+                // save the user id in a cookie
+                if (data.login) {
+                  Cookies.set('userId', data.login)
+                }
 
-      <style jsx>{`
-        @import 'src/theme';
+                // redirect to question pool
+                Router.push('/questions')
+              }}
+            />
+            {error && (
+              <div className="errorMessage message">
+                Login failed ({error.message})
+              </div>
+            )}
+          </>
+        )}
+      </Mutation>
 
-        .login {
-          padding: 1rem;
+      <style jsx>
+        {`
+          @import 'src/theme';
 
-          h1 {
-            margin-top: 0;
+          .login {
+            padding: 1rem;
+
+            h1 {
+              margin-top: 0;
+            }
+
+            .message {
+              font-weight: bold;
+            }
+            .errorMessage {
+              color: $color-error-font;
+            }
+            .successMessage {
+              color: $color-success;
+            }
+
+            .marginTop {
+              margin-top: 0.5rem;
+            }
+
+            @include desktop-tablet-only {
+              width: 500px;
+            }
           }
-
-          .message {
-            font-weight: bold;
-          }
-          .errorMessage {
-            color: $color-error-font;
-          }
-          .successMessage {
-            color: $color-success;
-          }
-
-          @include desktop-tablet-only {
-            width: 500px;
-          }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   </StaticLayout>
 )
@@ -66,27 +105,9 @@ const Login = ({ intl, error, handleSubmit }) => (
 Login.propTypes = propTypes
 
 export default compose(
-  withData,
-  pageWithIntl,
-  graphql(LoginMutation),
-  withState('error', 'setError', null),
-  withHandlers({
-    // handle form submission
-    handleSubmit: ({ mutate, setError }) => async ({ email, password }) => {
-      try {
-        const { data } = await mutate({ variables: { email, password } })
-
-        // save the user id in a cookie
-        if (data.login && data.login.id) {
-          Cookies.set('userId', data.login.id)
-        }
-
-        // redirect to question pool
-        Router.push('/questions')
-      } catch ({ message }) {
-        console.error(message)
-        setError(message)
-      }
-    },
+  withLogging({
+    logRocket: false,
+    slaask: true,
   }),
+  pageWithIntl,
 )(Login)

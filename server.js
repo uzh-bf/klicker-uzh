@@ -1,22 +1,16 @@
 require('dotenv').config()
 
-const dev = process.env.NODE_ENV !== 'production'
+const isProd = process.env.NODE_ENV === 'production'
+const isDev = process.env.NODE_ENV === 'development'
 
 // initialize elastic-apm if so configured
 let apm
 if (process.env.APM_SERVER_URL) {
-  /* apm = require('opbeat').start({
-    active: process.env.NODE_ENV === 'production',
-    appId: process.env.OPBEAT_APP_ID_NEXT,
-    organizationId: process.env.OPBEAT_ORG_ID_NEXT,
-    secretToken: process.env.OPBEAT_SECRET_TOKEN_NEXT,
-  }) */
-
   apm = require('elastic-apm-node').start({
-    active: !dev,
-    appName: process.env.APM_NAME,
+    active: !isDev,
     secretToken: process.env.APM_SECRET_TOKEN,
     serverUrl: process.env.APM_SERVER_URL,
+    serviceName: process.env.APM_NAME,
   })
 }
 
@@ -43,11 +37,13 @@ Intl.DateTimeFormat = IntlPolyfill.DateTimeFormat
 const APP_DIR = './src'
 
 // Bootstrap a new Next.js application
-const app = next({ dev, dir: APP_DIR })
+const app = next({ dev: isDev, dir: APP_DIR })
 const handle = app.getRequestHandler()
 
 // Get the supported languages by looking for translations in the `lang/` dir.
-const languages = glob.sync(`${APP_DIR}/lang/*.json`).map(f => basename(f, '.json'))
+const languages = glob
+  .sync(`${APP_DIR}/lang/*.json`)
+  .map(f => basename(f, '.json'))
 
 const getLocale = (req) => {
   // if a locale cookie was already set, use the locale saved within
@@ -60,7 +56,7 @@ const getLocale = (req) => {
   // if the accepts header is set, use its language
   const accept = accepts(req)
   return {
-    locale: accept.language(dev ? ['en'] : languages),
+    locale: accept.language(isDev ? ['en'] : languages),
     setCookie: true,
   }
 }
@@ -69,7 +65,7 @@ const getLocale = (req) => {
 // locale. This function will also cache the scripts by lang in memory.
 const localeDataCache = new Map()
 const getLocaleDataScript = (locale) => {
-  const lang = locale.split('-')[0]
+  const lang = typeof locale === 'string' ? locale.split('-')[0] : 'en'
   if (!localeDataCache.has(lang)) {
     const localeDataFile = require.resolve(`react-intl/locale-data/${lang}`)
     const localeDataScript = readFileSync(localeDataFile, 'utf8')
@@ -90,9 +86,15 @@ const connectCache = async () => {
     return cache
   }
 
-  if (process.env.REDIS_URL) {
+  if (process.env.REDIS_HOST) {
     const Redis = require('ioredis')
-    cache = new Redis(`redis://${process.env.REDIS_URL}`)
+    cache = new Redis({
+      db: 0,
+      family: 4,
+      host: process.env.REDIS_HOST,
+      password: process.env.REDIS_PASS,
+      port: process.env.REDIS_PORT || 6379,
+    })
     console.log('[redis] Connected to db 0')
   } else {
     const LRUCache = require('lru-cache')
@@ -111,7 +113,13 @@ const connectCache = async () => {
 const getCacheKey = req => `${req.url}:${req.locale}`
 
 // render a page to html and cache it in the appropriate place
-const renderAndCache = async (req, res, pagePath, queryParams, expiration = 60) => {
+const renderAndCache = async (
+  req,
+  res,
+  pagePath,
+  queryParams,
+  expiration = 60,
+) => {
   const key = getCacheKey(req)
 
   let cached
@@ -161,13 +169,32 @@ app
       server.enable('trust proxy')
     }
 
-    const middleware = [
-      // compress using gzip
-      compression(),
-      // secure the server with helmet
+    // secure the server with helmet
+    server.use(
       helmet({
-        hsts: false,
+        contentSecurityPolicy:
+          isProd && process.env.HELMET_CSP
+            ? {
+              directives: {
+                defaultSrc: ['\'self\''],
+                fontSrc: ['\'fonts.gstatic.com\'', '\'cdnjs.cloudflare.com\''],
+                reportUri: process.env.HELMET_CSP_REPORT_URI,
+                scriptSrc: ['\'cdn.polyfill.io\''],
+                styleSrc: [
+                  '\'maxcdn.bootstrapcdn.com\'',
+                  '\'fonts.googleapis.com\'',
+                  '\'cdnjs.cloudflare.com\'',
+                ],
+              },
+              reportOnly: true,
+            }
+            : false,
+        frameguard: !!process.env.HELMET_FRAMEGUARD,
+        hsts: !!process.env.HELMET_HSTS,
       }),
+    )
+
+    let middleware = [
       // enable cookie parsing for the locale cookie
       cookieParser(),
     ]
@@ -175,14 +202,12 @@ app
     // static file serving from public folder
     middleware.push(express.static(join(__dirname, 'public')))
 
-    // activate morgan logging in production
-    if (!dev) {
-      middleware.push(morgan('combined'))
-    }
+    if (isProd) {
+      // compress using gzip (only in production)
+      middleware = [compression(), ...middleware]
 
-    // add the opbeat middleware
-    if (apm) {
-      middleware.push(apm.middleware.express())
+      // activate morgan logging in production
+      middleware.push(morgan('combined'))
     }
 
     server.use(...middleware)
@@ -190,7 +215,6 @@ app
     // prepare page configuration
     const pages = [
       {
-        cached: 60 * 60 * 24,
         url: '/',
       },
       {
@@ -203,6 +227,17 @@ app
         url: '/questions/create',
       },
       {
+        cached: 600,
+        mapParams: req => ({ shortname: req.params.shortname }),
+        renderPath: '/qr',
+        url: '/qr/:shortname',
+      },
+      {
+        mapParams: req => ({ public: true, sessionId: req.params.sessionId }),
+        renderPath: '/sessions/evaluation',
+        url: '/sessions/public/:sessionId',
+      },
+      {
         mapParams: req => ({ sessionId: req.params.sessionId }),
         renderPath: '/sessions/evaluation',
         url: '/sessions/evaluation/:sessionId',
@@ -213,7 +248,7 @@ app
         url: '/questions/:questionId',
       },
       {
-        cached: 60,
+        cached: 30,
         mapParams: req => ({ shortname: req.params.shortname }),
         renderPath: '/join',
         url: '/join/:shortname',
@@ -226,10 +261,11 @@ app
     }) => {
       server.get(url, (req, res) => {
         // setup locale and get messages for the specific route
-        const { locale, setCookie } = getLocale(req)
+        const { locale, setCookie } = getLocale(req) || { locale: 'en' }
+
         req.locale = locale
         req.localeDataScript = getLocaleDataScript(locale)
-        req.messages = dev ? {} : getMessages(locale)
+        req.messages = isDev ? {} : getMessages(locale)
 
         // set a locale cookie with the specified language
         if (setCookie) {
@@ -246,7 +282,12 @@ app
             cached,
           )
         } else {
-          app.render(req, res, renderPath || url, mapParams ? mapParams(req) : undefined)
+          app.render(
+            req,
+            res,
+            renderPath || url,
+            mapParams ? mapParams(req) : undefined,
+          )
         }
       })
     })
@@ -256,16 +297,19 @@ app
       const { locale, setCookie } = getLocale(req)
       req.locale = locale
       req.localeDataScript = getLocaleDataScript(locale)
-      req.messages = dev ? {} : getMessages(locale)
+      req.messages = isDev ? {} : getMessages(locale)
 
       // set a locale cookie with the specified language
       if (setCookie) {
         res.cookie('locale', locale)
       }
 
-      // set the opbeat transaction name
+      // set the APM transaction name
       if (apm) {
-        if (req.originalUrl.length > 6 && req.originalUrl.substring(0, 6) !== '/_next') {
+        if (
+          req.originalUrl.length > 6
+          && req.originalUrl.substring(0, 6) !== '/_next'
+        ) {
           apm.setTransactionName(`${req.method} ${req.originalUrl}`)
         }
 

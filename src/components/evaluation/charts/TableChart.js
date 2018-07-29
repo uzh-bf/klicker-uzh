@@ -1,15 +1,22 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import Griddle, { plugins, RowDefinition, ColumnDefinition } from 'griddle-react'
+import Griddle, {
+  plugins,
+  RowDefinition,
+  ColumnDefinition,
+} from 'griddle-react'
+import { QUESTION_GROUPS } from '../../../constants'
 
 const propTypes = {
   data: PropTypes.arrayOf(
     PropTypes.shape({
       count: PropTypes.number.isRequired,
+      percentage: PropTypes.number.isRequired,
       value: PropTypes.string.isRequired,
     }),
   ),
   isSolutionShown: PropTypes.bool,
+  questionType: PropTypes.string.isRequired,
 }
 
 const defaultProps = {
@@ -36,11 +43,11 @@ function ColumnWithSolution({ value }) {
   return <span>{value ? 'T' : 'F'}</span>
 }
 ColumnWithSolution.propTypes = {
-  value: PropTypes.bool.isRequired,
+  value: PropTypes.bool.isRequired, // eslint-disable-line react/boolean-prop-naming
 }
 
 // virtual scrolling: use plugins.PositionPlugin({ tableHeight: 500 })?
-function TableChart({ data, isSolutionShown }) {
+function TableChart({ data, isSolutionShown, questionType }) {
   return (
     <div className="tableChart">
       <Griddle
@@ -58,7 +65,19 @@ function TableChart({ data, isSolutionShown }) {
             title="Count"
             width="3rem"
           />
+
           <ColumnDefinition id="value" title="Value" />
+
+          {QUESTION_GROUPS.WITH_PERCENTAGES.includes(questionType) && (
+            <ColumnDefinition
+              cssClassName="griddle-cell percentageColumn"
+              headerCssClassName="griddle-table-heading-cell percentageColumn"
+              id="percentage"
+              title="%"
+              width="2rem"
+            />
+          )}
+
           <ColumnDefinition
             cssClassName="griddle-cell solutionColumn"
             customComponent={ColumnWithSolution}
@@ -70,45 +89,47 @@ function TableChart({ data, isSolutionShown }) {
         </RowDefinition>
       </Griddle>
 
-      <style jsx>{`
-        .tableChart {
-          width: 100%;
-
-          :global(.griddle-table) {
+      <style jsx>
+        {`
+          .tableChart {
             width: 100%;
-          }
 
-          :global(.griddle-table-heading) {
-            background-color: lightgrey;
-          }
+            :global(.griddle-table) {
+              width: 100%;
+            }
 
-          :global(.griddle-table-heading-cell, .griddle-cell) {
-            font-size: 1.25rem;
-            padding: 0.5rem;
-            text-align: left;
-          }
+            :global(.griddle-table-heading) {
+              background-color: lightgrey;
+            }
 
-          :global(.countColumn, .solutionColumn) {
-            text-align: center;
-          }
+            :global(.griddle-table-heading-cell, .griddle-cell) {
+              font-size: 1.25rem;
+              padding: 0.5rem;
+              text-align: left;
+            }
 
-          :global(.solutionColumn) {
-            display: ${isSolutionShown ? 'table-cell' : 'none'};
-          }
+            :global(.countColumn, .solutionColumn, .percentageColumn) {
+              text-align: center;
+            }
 
-          :global(.griddle-row:nth-child(2)) {
-            background-color: #efefef;
-          }
+            :global(.solutionColumn) {
+              display: ${isSolutionShown ? 'table-cell' : 'none'};
+            }
 
-          :global(.griddle-pagination) {
-            margin-top: 5px;
+            :global(.griddle-row:nth-child(2n)) {
+              background-color: #efefef;
+            }
 
-            :global(.griddle-page-select) {
-              margin-left: 5px;
+            :global(.griddle-pagination) {
+              margin-top: 5px;
+
+              :global(.griddle-page-select) {
+                margin-left: 5px;
+              }
             }
           }
-        }
-      `}</style>
+        `}
+      </style>
     </div>
   )
 }

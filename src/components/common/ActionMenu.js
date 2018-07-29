@@ -49,14 +49,27 @@ function ActionMenu({
         </Menu.Item>
           </Menu> */}
       <div className="progress">
-        <Progress autoSuccess progress="ratio" total={numItems} value={activeIndex} />
+        <Progress
+          autoSuccess
+          progress="ratio"
+          total={numItems}
+          value={activeIndex}
+        />
       </div>
       <div className="actions">
-        <Button fluid primary disabled={isSubmitDisabled} onClick={onSubmit}>
+        <Button
+          fluid
+          disabled={isSubmitDisabled}
+          primary={!isSkipModeActive}
+          onClick={onSubmit}
+        >
           {isSkipModeActive ? (
             <FormattedMessage defaultMessage="Skip" id="common.button.skip" />
           ) : (
-            <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+            <FormattedMessage
+              defaultMessage="Submit"
+              id="common.button.submit"
+            />
           )}
         </Button>
       </div>
@@ -70,11 +83,11 @@ function ActionMenu({
           display: flex;
           flex-direction: row;
 
-          padding: 0.5rem 1rem;
+          padding: 0.3rem;
 
           .progress {
             flex: 1;
-            margin-right: 1rem;
+            margin-right: 0.5rem;
 
             :global(.ui.progress) {
               margin: 0;
@@ -83,18 +96,14 @@ function ActionMenu({
 
           .actions {
             flex: 0 0 7rem;
+
+            :global(button.primary.button) {
+              margin: 0;
+            }
           }
 
-          /* :global(.item.active) {
-            background-color: $color-primary-50p;
-
-            &:hover {
-              background-color: $color-primary-50p;
-            }
-          } */
-
-          :global(.item.submitButton button.button) {
-            margin: 0;
+          @include desktop-tablet-only {
+            padding: 0.5rem 1rem;
           }
         }
       `}</style>

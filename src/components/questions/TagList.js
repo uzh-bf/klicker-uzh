@@ -1,74 +1,208 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { graphql } from 'react-apollo'
-import { List } from 'semantic-ui-react'
-import { compose, withProps, branch, renderComponent } from 'recompose'
+import {
+  Button, Icon, List, Loader, Message,
+} from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
+import { Query } from 'react-apollo'
 
-import { LoadingDiv } from '../common'
+import { QUESTION_TYPES } from '../../lib'
 import { TagListQuery } from '../../graphql'
 
 const propTypes = {
+  activeTags: PropTypes.array.isRequired,
+  activeType: PropTypes.string.isRequired,
+  handleReset: PropTypes.func.isRequired,
   handleTagClick: PropTypes.func.isRequired,
-  tags: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-    }),
-  ),
+  handleToggleArchive: PropTypes.func.isRequired,
+  isArchiveActive: PropTypes.bool,
 }
 
 const defaultProps = {
-  tags: [],
+  isArchiveActive: false,
 }
 
-export const TagListPres = ({ tags, handleTagClick }) => (
+export const TagListPres = ({
+  activeTags,
+  isArchiveActive,
+  activeType,
+  handleTagClick,
+  handleReset,
+  handleToggleArchive,
+}) => (
   <div className="tagList">
-    {tags.length === 0 ? (
-      <FormattedMessage defaultMessage="No tags available." id="tagList.string.noTags" />
-    ) : (
-      []
-    )}
+    <Button basic fluid onClick={() => handleReset()}>
+      <Icon name="remove circle" />
+      <FormattedMessage
+        defaultMessage="Reset filters"
+        id="tagList.button.reset"
+      />
+    </Button>
     <List selection size="large">
-      {tags.map(({ isActive, id, name }) => (
-        <List.Item
-          active={isActive}
-          className="listItem"
-          key={id}
-          onClick={() => handleTagClick(name)}
-        >
-          <List.Icon name={isActive ? 'folder' : 'folder outline'} />
-          <List.Content>{name}</List.Content>
-        </List.Item>
-      ))}
+      <List.Header className="listHeader archive">
+        <FormattedMessage
+          defaultMessage="Archive"
+          id="tagList.header.archive"
+        />
+      </List.Header>
+      <List.Item
+        active={isArchiveActive}
+        className="listItem archiveItem"
+        onClick={() => handleToggleArchive()}
+      >
+        <List.Icon name="archive" />
+        <List.Content>
+          <FormattedMessage
+            defaultMessage="Show archived"
+            id="tagList.string.archive"
+          />
+        </List.Content>
+      </List.Item>
+      <List.Header className="listHeader types">
+        <FormattedMessage defaultMessage="Types" id="tagList.header.types" />
+      </List.Header>
+      <List.Item
+        active={activeType === QUESTION_TYPES.SC}
+        className="listItem"
+        key="SC"
+        onClick={() => handleTagClick('SC', true)}
+      >
+        <List.Icon
+          name={activeType === QUESTION_TYPES.SC ? 'folder' : 'folder outline'}
+        />
+        <List.Content>
+          <FormattedMessage
+            defaultMessage="Single Choice (SC)"
+            id="common.SC.label"
+          />
+        </List.Content>
+      </List.Item>
+      <List.Item
+        active={activeType === QUESTION_TYPES.MC}
+        className="listItem"
+        key="MC"
+        onClick={() => handleTagClick('MC', true)}
+      >
+        <List.Icon
+          name={activeType === QUESTION_TYPES.MC ? 'folder' : 'folder outline'}
+        />
+        <List.Content>
+          <FormattedMessage
+            defaultMessage="Multiple Choice (MC)"
+            id="common.MC.label"
+          />
+        </List.Content>
+      </List.Item>
+      <List.Item
+        active={activeType === QUESTION_TYPES.FREE}
+        className="listItem"
+        key="FREE"
+        onClick={() => handleTagClick('FREE', true)}
+      >
+        <List.Icon
+          name={
+            activeType === QUESTION_TYPES.FREE ? 'folder' : 'folder outline'
+          }
+        />
+        <List.Content>
+          <FormattedMessage
+            defaultMessage="Free Text (FT)"
+            id="common.FREE.label"
+          />
+        </List.Content>
+      </List.Item>
+      <List.Item
+        active={activeType === QUESTION_TYPES.FREE_RANGE}
+        className="listItem"
+        key="FREE_RANGE"
+        onClick={() => handleTagClick('FREE_RANGE', true)}
+      >
+        <List.Icon
+          name={
+            activeType === QUESTION_TYPES.FREE_RANGE
+              ? 'folder'
+              : 'folder outline'
+          }
+        />
+        <List.Content>
+          <FormattedMessage
+            defaultMessage="Number Range (NR)"
+            id="common.FREE_RANGE.label"
+          />
+        </List.Content>
+      </List.Item>
+      <List.Header className="listHeader tags">
+        <FormattedMessage defaultMessage="Tags" id="tagList.header.tags" />
+      </List.Header>
+
+      <Query query={TagListQuery}>
+        {({ data: { tags }, error, loading }) => {
+          if (loading) {
+            return <Loader active />
+          }
+
+          if (error) {
+            return <Message error>{error.message}</Message>
+          }
+
+          if (tags.length === 0) {
+            return (
+              <FormattedMessage
+                defaultMessage="No tags available."
+                id="tagList.string.noTags"
+              />
+            )
+          }
+
+          return tags.map(({ id, name }) => (
+            <List.Item
+              active={activeTags.includes(name)}
+              className="listItem"
+              key={id}
+              onClick={() => handleTagClick(name)}
+            >
+              <List.Icon name="tag" />
+              <List.Content>{name}</List.Content>
+            </List.Item>
+          ))
+        }}
+      </Query>
     </List>
 
-    <style jsx>{`
-      .tagList {
-        :global(.listItem.item) {
-          border-radius: 0;
-          padding-left: 1rem;
-          padding-right: 1rem;
+    <style jsx>
+      {`
+        @import 'src/theme';
 
-          &:hover :global(.content),
-          &:hover :global(i) {
-            color: #2185d0;
+        .tagList {
+          font-size: 0.9rem;
+          min-width: 12rem;
+
+          :global(.listHeader) {
+            color: grey;
+            font-size: 1rem;
+            font-weight: bold;
+            padding: 0 1rem;
+          }
+          :global(.listHeader.tags),
+          :global(.listHeader.types) {
+            margin-top: 1rem;
+          }
+          :global(.listItem.item) {
+            border-radius: 0;
+            padding: 0.3rem 1rem;
+
+            &:hover :global(.content),
+            &:hover :global(i) {
+              color: #2185d0;
+            }
           }
         }
-      }
-    `}</style>
+      `}
+    </style>
   </div>
 )
 
 TagListPres.propTypes = propTypes
 TagListPres.defaultProps = defaultProps
 
-export default compose(
-  graphql(TagListQuery),
-  branch(({ data }) => data.loading, renderComponent(LoadingDiv)),
-  branch(({ data }) => data.error, renderComponent(({ data }) => <div>{data.error}</div>)),
-  withProps(({ activeTags, data: { loading, tags } }) => ({
-    loading,
-    tags: tags && tags.map(tag => ({ ...tag, isActive: activeTags.includes(tag.name) })),
-  })),
-)(TagListPres)
+export default TagListPres

@@ -3,7 +3,5 @@ mutation AddResponse(
   $instanceId: ID!
   $response: QuestionInstance_ResponseInput!
 ) {
-  addResponse(fp: $fp, instanceId: $instanceId, response: $response) {
-    id
-  }
+  addResponse(fp: $fp, instanceId: $instanceId, response: $response)
 }
