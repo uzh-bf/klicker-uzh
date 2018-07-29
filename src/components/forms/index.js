@@ -13,6 +13,7 @@ export { default as RegistrationForm } from './RegistrationForm'
 export {
   default as SessionCreationForm,
 } from './sessionCreation/SessionCreationForm'
+export { default as AccountDataForm } from './userSettings/AccountDataForm'
 
 export { default as FormWithLinks } from './components/FormWithLinks'
 export { default as FormikInput } from './components/FormikInput'
