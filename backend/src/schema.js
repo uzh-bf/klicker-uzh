@@ -44,6 +44,7 @@ const {
   authUser,
   changePassword,
   requestPassword,
+  hmac,
 } = require('./resolvers/users')
 const { files } = require('./resolvers/files')
 const { confusionAdded, feedbackAdded } = require('./resolvers/subscriptions')
@@ -227,6 +228,7 @@ const resolvers = {
     sessions: sessionsByPV,
     tags,
     files,
+    hmac,
   },
 }
 

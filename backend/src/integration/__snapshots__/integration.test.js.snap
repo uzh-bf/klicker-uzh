@@ -1741,7 +1741,7 @@ exports[`Integration Session Execution allows running the full session flow (res
 
     joinSession {
       settings: {"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true,"isConfusionBarometerActive":true}
-      activeQuestions: 
+      activeInstances: 
         title: Test SC #2
         content: {"blocks":[{"data":{},"text":"This is a simple SC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple SC question.
@@ -1772,7 +1772,7 @@ exports[`Integration Session Execution allows running the full session flow (res
 
     joinSession {
       settings: {"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true,"isConfusionBarometerActive":true}
-      activeQuestions: 
+      activeInstances: 
         title: Test FREE #2
         content: {"blocks":[{"data":{},"text":"This is a simple FREE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple FREE question.
@@ -1797,7 +1797,7 @@ exports[`Integration Session Execution allows running the full session flow (res
 
     joinSession {
       settings: {"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true,"isConfusionBarometerActive":true}
-      activeQuestions: 
+      activeInstances: 
         title: Test FREE_RANGE #2
         content: {"blocks":[{"data":{},"text":"This is a simple FREE_RANGE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
         description: This is a simple FREE_RANGE question.
