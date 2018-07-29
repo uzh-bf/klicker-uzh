@@ -72,8 +72,8 @@ const TeacherLayout = ({
       name: 'runningSession',
     },
     {
+      className: 'createQuestion',
       href: '/questions/create',
-      icon: 'plus',
       label: (
         <FormattedMessage
           defaultMessage="Create Question"
@@ -81,6 +81,17 @@ const TeacherLayout = ({
         />
       ),
       name: 'createQuestion',
+    },
+    {
+      className: 'createSession',
+      href: '/questions?creationMode=true',
+      label: (
+        <FormattedMessage
+          defaultMessage="Create Session"
+          id="createSession.title"
+        />
+      ),
+      name: 'createSession',
     },
   ]
 
@@ -112,9 +123,7 @@ const TeacherLayout = ({
           </Sidebar>
         </div>
 
-        <div className="actionArea">
-          {actionArea}
-        </div>
+        <div className="actionArea">{actionArea}</div>
 
         <style jsx>
           {`

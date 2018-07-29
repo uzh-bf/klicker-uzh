@@ -32,7 +32,10 @@ import {
   withLogging,
 } from '../../lib'
 import { Chart } from '../../components/evaluation'
-import { SessionEvaluationQuery } from '../../graphql'
+import {
+  SessionEvaluationQuery,
+  SessionEvaluationPublicQuery,
+} from '../../graphql'
 import { sessionStatusShape, statisticsShape } from '../../propTypes'
 
 const messages = defineMessages({
@@ -133,31 +136,43 @@ export default compose(
   withRouter,
   withLogging(),
   pageWithIntl,
-  graphql(SessionEvaluationQuery, {
-    // refetch the active instances query every 10s
-    options: ({ router }) => ({
-      variables: { sessionId: router.query.sessionId },
-    }),
-  }),
-  // if the query is still loading, display nothing
   branch(
-    ({ data: { loading, session } }) => loading || !session,
-    renderNothing,
-  ),
-  // override the session evaluation query with a polling query
-  branch(
-    ({ data: { session } }) => session.status === SESSION_STATUS.RUNNING,
-    graphql(SessionEvaluationQuery, {
-      // refetch the active instances query every 10s
+    ({ router }) => router.query.public,
+    graphql(SessionEvaluationPublicQuery, {
       options: ({ router }) => ({
-        pollInterval: 10000,
+        variables: { sessionId: router.query.sessionId },
+      }),
+    }),
+    graphql(SessionEvaluationQuery, {
+      options: ({ router }) => ({
         variables: { sessionId: router.query.sessionId },
       }),
     }),
   ),
-  withProps(({ data: { session } }) => {
-    const { blocks } = session
-
+  // if the query is still loading, display nothing
+  branch(
+    ({ data: { loading, session, sessionPublic }, router: { query } }) => loading
+      || (!query.public && !session)
+      || (query.public && !sessionPublic),
+    renderNothing,
+  ),
+  // override the session evaluation query with a polling query
+  // only if the session is not being publicly accessed
+  branch(
+    ({ data: { session }, router }) => !router.query.public && session.status === SESSION_STATUS.RUNNING,
+    graphql(SessionEvaluationQuery, {
+      // refetch the active instances query every 10s
+      options: ({ router }) => ({
+        pollInterval: 7000,
+        variables: { sessionId: router.query.sessionId },
+      }),
+    }),
+  ),
+  // if the session is publicly accessed, override the session with its public counterpart
+  withProps(({ data: { session, sessionPublic }, router: { query } }) => ({
+    session: query.public ? sessionPublic : session,
+  })),
+  withProps(({ session, session: { blocks } }) => {
     // reduce question blocks to the active instances
     const activeInstances = blocks
       // filter out future blocks as we don't want to display them too early
@@ -184,19 +199,17 @@ export default compose(
               ].options[activeInstance.question.type].choices.map(
                 (choice, index) => ({
                   correct: choice.correct,
-                  count: activeInstance.results
-                    ? activeInstance.results.CHOICES[index]
-                    : 0,
+                  count: activeInstance.results?.CHOICES[index] || 0,
                   value: choice.name,
                 }),
               ),
-              totalResponses: activeInstance.responses.length,
+              totalResponses: activeInstance.results?.totalParticipants || 0,
             },
           }
         }
 
         if (QUESTION_GROUPS.FREE.includes(activeInstance.question.type)) {
-          let data = activeInstance.results ? activeInstance.results.FREE : []
+          let data = activeInstance.results?.FREE || []
 
           // values in FREE_RANGE questions need to be numerical
           if (activeInstance.question.type === QUESTION_TYPES.FREE_RANGE) {
@@ -210,7 +223,7 @@ export default compose(
             ...activeInstance,
             results: {
               data,
-              totalResponses: activeInstance.responses.length,
+              totalResponses: activeInstance.results?.totalParticipants || 0,
             },
           }
         }
@@ -223,13 +236,13 @@ export default compose(
       // generate an instance summary for easy display of "tabs"
       instanceSummary: activeInstances.map(
         ({
-          blockStatus, blockNumber, solution, question, responses,
+          blockStatus, blockNumber, solution, question, results,
         }) => ({
           blockNumber,
           blockStatus,
           hasSolution: !!solution,
           title: question.title,
-          totalResponses: responses.length,
+          totalResponses: results?.totalResponses || 0,
         }),
       ),
       sessionStatus: session.status,
@@ -238,11 +251,7 @@ export default compose(
   // if the query has finished loading but there are no active instances, show a simple message
   branch(
     ({ activeInstances }) => !(activeInstances && activeInstances.length > 0),
-    renderComponent(() => (
-      <div>
-No evaluation currently active.
-      </div>
-    )),
+    renderComponent(() => <div>No evaluation currently active.</div>),
   ),
   withStateHandlers(
     ({ activeInstances, sessionStatus }) => {
@@ -318,16 +327,16 @@ No evaluation currently active.
 
       const resultsWithPercentages = {
         ...activeInstance.results,
-        data: activeInstance.results.data.map(({ correct, count, value }) => ({
+        data: activeInstance.results?.data.map(({ correct, count, value }) => ({
           correct,
           count,
           percentage: _round(
-            100 * (count / activeInstance.results.totalResponses),
+            100 * (count / activeInstance.results?.totalResponses),
             1,
           ),
           value,
         })),
-        totalResponses: activeInstance.results.totalResponses,
+        totalResponses: activeInstance.results?.totalResponses,
       }
 
       return {

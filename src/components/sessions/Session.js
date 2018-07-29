@@ -1,10 +1,12 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import moment from 'moment'
+import Link from 'next/link'
 import { Button, Icon, Message } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 import { QuestionBlock } from '../questions'
+import { SESSION_STATUS } from '../../constants'
 
 const propTypes = {
   blocks: PropTypes.array,
@@ -17,6 +19,7 @@ const propTypes = {
   createdAt: PropTypes.string.isRequired,
   id: PropTypes.string.isRequired,
   name: PropTypes.string.isRequired,
+  status: PropTypes.string.isRequired,
 }
 
 const defaultProps = {
@@ -24,21 +27,18 @@ const defaultProps = {
 }
 
 const Session = ({
-  button, createdAt, id, name, blocks,
+  button, createdAt, id, name, blocks, status,
 }) => {
   const isFeedbackSession = blocks.length === 0
 
   return (
     <div className="session">
-      <h2 className="title">
-        {name}
-      </h2>
+      <h2 className="title">{name}</h2>
       <div className="date">
         <FormattedMessage
           defaultMessage="Created on"
           id="sessionList.string.createdOn"
-        />
-        {' '}
+        />{' '}
         {moment(createdAt).format('DD.MM.YY HH:mm')}
       </div>
 
@@ -60,9 +60,12 @@ const Session = ({
             <QuestionBlock
               noDetails
               questions={instances.map(
-                ({ id: instanceId, question, version }) => ({
+                ({
+                  id: instanceId, question, version, results,
+                }) => ({
                   id: instanceId,
                   title: question.title,
+                  totalParticipants: results?.totalParticipants || 0,
                   type: question.type,
                   version,
                 }),
@@ -73,22 +76,52 @@ const Session = ({
           </div>
         ))}
         <div className="actionArea">
-          <a
-            href={`/sessions/evaluation/${id}`}
-            rel="noopener noreferrer"
-            target="_blank"
+          {status === SESSION_STATUS.CREATED && (
+            <Link
+              href={{ pathname: '/questions', query: { editSessionId: id } }}
+            >
+              <Button icon labelPosition="left">
+                <Icon name="edit" />
+                Modify Session
+              </Button>
+            </Link>
+          )}
+
+          <Link
+            href={{
+              pathname: '/questions',
+              query: { copy: true, editSessionId: id },
+            }}
           >
-            <Button icon disabled={isFeedbackSession} labelPosition="left">
-              <Icon name="external" />
-              Evaluation
+            <Button icon labelPosition="left">
+              <Icon name="copy" />
+              Copy & Modify
             </Button>
-          </a>
+          </Link>
+
+          {status !== SESSION_STATUS.CREATED && (
+            <a
+              href={`/sessions/evaluation/${id}`}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <Button
+                icon
+                primary
+                disabled={isFeedbackSession}
+                labelPosition="left"
+              >
+                <Icon name="external" />
+                Evaluation
+              </Button>
+            </a>
+          )}
+
           {button
             && !button.hidden && (
               <Button
                 icon
                 primary
-                className="lastButton"
                 disabled={button.disabled}
                 labelPosition="left"
                 onClick={button.onClick}
@@ -129,11 +162,13 @@ const Session = ({
             display: flex;
             flex-direction: column;
 
-            :global(.button) {
+            :global(.button),
+            a :global(.button) {
               margin-right: 0 !important;
+              width: 100%;
             }
-
-            :global(.lastButton) {
+            :global(.button:not(:first-child)),
+            a:not(:first-child) :global(.button) {
               margin-top: 0.3rem !important;
             }
           }

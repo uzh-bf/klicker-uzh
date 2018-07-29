@@ -45,9 +45,7 @@ const ResetPassword = ({ intl, router }) => (
                   defaultMessage="Your password was successfully changed. You can now {login}."
                   id="user.resetPassword.success"
                   values={{
-                    login: <Link href="/user/login">
-login
-                    </Link>,
+                    login: <Link href="/user/login">login</Link>,
                   }}
                 />
               </Message>
@@ -55,7 +53,7 @@ login
           }
 
           return (
-            <React.Fragment>
+            <>
               <PasswordResetForm
                 intl={intl}
                 loading={loading}
@@ -68,12 +66,8 @@ login
                   })
                 }}
               />
-              {error && (
-              <Message error>
-                {error.message}
-              </Message>
-              )}
-            </React.Fragment>
+              {error && <Message error>{error.message}</Message>}
+            </>
           )
         }}
       </Mutation>
@@ -106,6 +100,7 @@ export default compose(
   withRouter,
   withLogging({
     logRocket: false,
+    slaask: true,
   }),
   pageWithIntl,
 )(ResetPassword)

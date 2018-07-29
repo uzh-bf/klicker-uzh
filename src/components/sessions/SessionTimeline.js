@@ -4,7 +4,7 @@ import classNames from 'classnames'
 import QRCode from 'qrcode.react'
 import { defineMessages, intlShape, FormattedMessage } from 'react-intl'
 import {
-  Button, Icon, Popup, Message,
+  Button, Checkbox, Icon, Popup, Message,
 } from 'semantic-ui-react'
 import { QuestionBlock } from '../questions'
 
@@ -25,6 +25,10 @@ const messages = defineMessages({
     defaultMessage: 'Open first block',
     id: 'runningSession.button.start',
   },
+  togglePublicEvaluation: {
+    defaultMessage: 'Publish evaluation',
+    id: 'runningSession.button.publicEvaluationToggle',
+  },
 })
 
 const propTypes = {
@@ -33,7 +37,9 @@ const propTypes = {
   handleEndSession: PropTypes.func.isRequired,
   handleNextBlock: PropTypes.func.isRequired,
   handlePauseSession: PropTypes.func.isRequired,
+  handleTogglePublicEvaluation: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
+  isEvaluationPublic: PropTypes.bool,
   runtime: PropTypes.string,
   sessionId: PropTypes.string.isRequired,
   shortname: PropTypes.string.isRequired,
@@ -42,6 +48,7 @@ const propTypes = {
 
 const defaultProps = {
   blocks: [],
+  isEvaluationPublic: false,
   runtime: '00:00:00',
   startedAt: '00:00:00',
 }
@@ -82,9 +89,11 @@ const SessionTimeline = ({
   startedAt,
   shortname,
   activeStep,
+  isEvaluationPublic,
   handleNextBlock,
   handleEndSession,
   handlePauseSession,
+  handleTogglePublicEvaluation,
 }) => {
   const isFeedbackSession = blocks.length === 0
 
@@ -93,14 +102,10 @@ const SessionTimeline = ({
       <div className="topRow">
         <div className="infos">
           <div className="startingTime">
-            <Icon name="time" />
-            {' '}
-            {startedAt}
+            <Icon name="time" /> {startedAt}
           </div>
           <div className="runningTime">
-            <Icon name="play circle" />
-            {' '}
-            {runtime}
+            <Icon name="play circle" /> {runtime}
           </div>
         </div>
 
@@ -240,6 +245,29 @@ const SessionTimeline = ({
           </Button>
         </div>
 
+        <div className="publicEvaluation">
+          <Checkbox
+            toggle
+            defaultChecked={isEvaluationPublic}
+            label={intl.formatMessage(messages.togglePublicEvaluation)}
+            value={isEvaluationPublic}
+            onChange={handleTogglePublicEvaluation}
+          />
+          {isEvaluationPublic && (
+            <a
+              href={`/sessions/public/${sessionId}`}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <Icon name="external" />
+              <FormattedMessage
+                defaultMessage="Public Evaluation (Results)"
+                id="runningSession.button.publicEvaluation"
+              />
+            </a>
+          )}
+        </div>
+
         {isFeedbackSession ? (
           <Button
             // show the session finish button for feedback sessions
@@ -362,11 +390,21 @@ const SessionTimeline = ({
               display: flex;
               flex-flow: row wrap;
               justify-content: space-between;
+              align-items: flex-start;
 
               margin-top: 0.5rem;
 
               > :global(button) {
                 margin-right: 0;
+              }
+
+              .publicEvaluation {
+                display: flex;
+                flex-flow: row wrap;
+
+                a {
+                  margin-left: 1rem;
+                }
               }
             }
 
@@ -385,6 +423,8 @@ const SessionTimeline = ({
                 flex-direction: row;
 
                 padding: 0.5rem;
+
+                overflow-x: auto;
               }
 
               .blockWrap {

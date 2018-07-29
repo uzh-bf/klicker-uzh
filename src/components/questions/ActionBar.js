@@ -55,7 +55,7 @@ function ActionBar({
 
       <div className="creationButtons">
         {creationMode ? (
-          <React.Fragment>
+          <>
             <Button
               icon
               disabled={itemsChecked === 0}
@@ -83,9 +83,9 @@ function ActionBar({
                 values={{ num: +itemsChecked }}
               />
             </Button>
-          </React.Fragment>
+          </>
         ) : (
-          <React.Fragment>
+          <>
             <Button
               icon
               disabled={itemsChecked === 0}
@@ -107,7 +107,7 @@ function ActionBar({
                 />
               )}
             </Button>
-          </React.Fragment>
+          </>
         )}
       </div>
 

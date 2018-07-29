@@ -87,11 +87,7 @@ export const SessionListPres = ({
           }
 
           if (error) {
-            return (
-              <Message error>
-                {error.message}
-              </Message>
-            )
+            return <Message error>{error.message}</Message>
           }
 
           if (sessions.length === 0) {
@@ -156,15 +152,14 @@ export const SessionListPres = ({
           )
 
           return (
-            <React.Fragment>
+            <>
               {runningSessions.length + pausedSessions.length > 0 ? (
                 <div className="runningSessions">
                   <h2>
                     <FormattedMessage
                       defaultMessage="Running / paused sessions"
                       id="sessionList.title.runningSession"
-                    />
-                    {' '}
+                    />{' '}
                     (
                     {runningSessions.length + pausedSessions.length}
                     )
@@ -187,13 +182,12 @@ export const SessionListPres = ({
               )}
 
               {remainingSessions.length > 0 && (
-                <React.Fragment>
+                <>
                   <h2>
                     <FormattedMessage
                       defaultMessage="Planned sessions"
                       id="sessionList.title.plannedSessions"
-                    />
-                    {' '}
+                    />{' '}
                     (
                     {remainingSessions.length}
                     )
@@ -203,17 +197,16 @@ export const SessionListPres = ({
                       <Session {...session} />
                     </div>
                   ))}
-                </React.Fragment>
+                </>
               )}
 
               {completedSessions.length > 0 && (
-                <React.Fragment>
+                <>
                   <h2>
                     <FormattedMessage
                       defaultMessage="Completed sessions"
                       id="sessionList.title.completedSessions"
-                    />
-                    {' '}
+                    />{' '}
                     (
                     {completedSessions.length}
                     )
@@ -223,9 +216,9 @@ export const SessionListPres = ({
                       <Session {...session} />
                     </div>
                   ))}
-                </React.Fragment>
+                </>
               )}
-            </React.Fragment>
+            </>
           )
         }}
       </Query>

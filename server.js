@@ -176,14 +176,14 @@ app
           isProd && process.env.HELMET_CSP
             ? {
               directives: {
-                defaultSrc: ["'self'"],
-                fontSrc: ["'fonts.gstatic.com'", "'cdnjs.cloudflare.com'"],
+                defaultSrc: ['\'self\''],
+                fontSrc: ['\'fonts.gstatic.com\'', '\'cdnjs.cloudflare.com\''],
                 reportUri: process.env.HELMET_CSP_REPORT_URI,
-                scriptSrc: ["'cdn.polyfill.io'"],
+                scriptSrc: ['\'cdn.polyfill.io\''],
                 styleSrc: [
-                  "'maxcdn.bootstrapcdn.com'",
-                  "'fonts.googleapis.com'",
-                  "'cdnjs.cloudflare.com'",
+                  '\'maxcdn.bootstrapcdn.com\'',
+                  '\'fonts.googleapis.com\'',
+                  '\'cdnjs.cloudflare.com\'',
                 ],
               },
               reportOnly: true,
@@ -231,6 +231,11 @@ app
         mapParams: req => ({ shortname: req.params.shortname }),
         renderPath: '/qr',
         url: '/qr/:shortname',
+      },
+      {
+        mapParams: req => ({ public: true, sessionId: req.params.sessionId }),
+        renderPath: '/sessions/evaluation',
+        url: '/sessions/public/:sessionId',
       },
       {
         mapParams: req => ({ sessionId: req.params.sessionId }),

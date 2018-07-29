@@ -76,8 +76,7 @@ const Question = ({
             id="questionPool.question.titleArchive"
           />
         </Label>
-        )}
-        {' '}
+        )}{' '}
         {title}
       </h2>
 

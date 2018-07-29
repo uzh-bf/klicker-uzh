@@ -123,51 +123,53 @@ const Join = ({
           />
         )}
 
-        <style jsx>
-          {`
-            @import 'src/theme';
+        <style jsx>{`
+          @import 'src/theme';
 
-            .joinSession {
-              display: flex;
-              height: 100%;
+          .joinSession {
+            display: flex;
+            min-height: -moz-calc(100vh - 8rem);
+            min-height: -webkit-calc(100vh - 8rem);
+            min-height: calc(100vh - 8rem);
+            width: 100%;
 
-              background-color: lightgray;
+            background-color: lightgray;
 
-              > * {
-                flex: 0 0 50%;
+            > * {
+              flex: 0 0 50%;
+            }
+
+            .questionArea,
+            .feedbackArea {
+              padding: 1rem;
+
+              &.inactive {
+                display: none;
+              }
+            }
+
+            @include desktop-tablet-only {
+              padding: 1rem;
+              min-height: 100%;
+
+              .questionArea {
+                border: 1px solid $color-primary;
+                background-color: white;
+                margin-right: 0.25rem;
               }
 
-              .questionArea,
               .feedbackArea {
-                padding: 1rem;
+                border: 1px solid $color-primary;
+                background-color: white;
+                margin-left: 0.25rem;
 
                 &.inactive {
-                  display: none;
-                }
-              }
-
-              @include desktop-tablet-only {
-                padding: 1rem;
-
-                .questionArea {
-                  border: 1px solid $color-primary;
-                  background-color: white;
-                  margin-right: 0.25rem;
-                }
-
-                .feedbackArea {
-                  border: 1px solid $color-primary;
-                  background-color: white;
-                  margin-left: 0.25rem;
-
-                  &.inactive {
-                    display: block;
-                  }
+                  display: block;
                 }
               }
             }
-          `}
-        </style>
+          }
+        `}</style>
       </div>
     </StudentLayout>
   )

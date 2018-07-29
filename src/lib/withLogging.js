@@ -1,25 +1,17 @@
 /* eslint-disable */
 
 import React from 'react'
-import { registerObserver } from 'react-perf-devtool'
 import { initGA, logPageView, logException } from '.'
 
 let Raven
 let LogRocket
 let LogRocketReact
-if (process.env.SENTRY_DSN) {
-  Raven = require('raven-js')
-}
-if (process.env.LOGROCKET) {
-  LogRocket = require('logrocket')
-  LogRocketReact = require('logrocket-react')
-}
 
 export default (cfg = {}) =>
   function withLogging(Child) {
     // merge default and passed config
     const config = {
-      chatlio: true,
+      slaask: false,
       googleAnalytics: true,
       logRocket: true,
       sentry: true,
@@ -28,6 +20,14 @@ export default (cfg = {}) =>
 
     const isProd = process.env.NODE_ENV === 'production'
     const isDev = process.env.NODE_ENV === 'development'
+
+    if (isProd && process.env.SENTRY_DSN && !Raven) {
+      Raven = require('raven-js')
+    }
+    if (isProd && process.env.LOGROCKET && !LogRocket) {
+      LogRocket = require('logrocket')
+      LogRocketReact = require('logrocket-react')
+    }
 
     return class WrappedComponent extends React.Component {
       static getInitialProps(context) {
@@ -43,7 +43,9 @@ export default (cfg = {}) =>
 
       componentDidMount() {
         if (typeof window !== 'undefined') {
-          if (isDev && !window.INIT_PERF) {
+          /* if (isDev && !window.INIT_PERF) {
+            const { registerObserver } = require('react-perf-devtool')
+
             // setup react-perf-devtool
             registerObserver()
 
@@ -53,7 +55,7 @@ export default (cfg = {}) =>
             // whyDidYouUpdate(React)
 
             window.INIT_PERF = true
-          }
+          } */
 
           // include google analytics
           if (isProd && process.env.G_ANALYTICS && !window.INIT_GA) {
@@ -97,45 +99,22 @@ export default (cfg = {}) =>
             window.INIT_RAVEN = true
           }
 
-          if (isProd && process.env.CHATLIO && config.chatlio) {
-            window._chatlio = window._chatlio || []
+          // embed slaask if enabled
+          if (process.env.SLAASK_WIDGET_KEY && config.slaask) {
             !(function() {
-              const t = document.getElementById('chatlio-widget-embed')
-              if (t && window.ChatlioReact && _chatlio.init) {
-                return void _chatlio.init(t, ChatlioReact)
-              }
-              for (
-                let e = function(t) {
-                    return function() {
-                      _chatlio.push([t].concat(arguments))
-                    }
-                  },
-                  i = [
-                    'configure',
-                    'identify',
-                    'track',
-                    'show',
-                    'hide',
-                    'isShown',
-                    'isOnline',
-                    'page',
-                    'open',
-                    'showOrHide',
-                  ],
-                  a = 0;
-                a < i.length;
-                a++
-              ) {
-                _chatlio[i[a]] || (_chatlio[i[a]] = e(i[a]))
-              }
-              let n = document.createElement('script'),
-                c = document.getElementsByTagName('script')[0]
-              ;(n.id = 'chatlio-widget-embed'),
-                (n.src = 'https://w.chatlio.com/w.chatlio-widget.js'),
-                (n.async = !0),
-                n.setAttribute('data-embed-version', '2.3')
-              n.setAttribute('data-widget-id', process.env.CHATLIO)
-              c.parentNode.insertBefore(n, c)
+              var x = document.createElement('script')
+              ;(x.src = 'https://cdn.slaask.com/chat.js'),
+                (x.type = 'text/javascript'),
+                (x.async = 'true'),
+                (x.onload = x.onreadystatechange = function() {
+                  var x = this.readyState
+                  if (!x || 'complete' == x || 'loaded' == x)
+                    try {
+                      _slaask.init(process.env.SLAASK_WIDGET_KEY)
+                    } catch (x) {}
+                })
+              var t = document.getElementsByTagName('script')[0]
+              t.parentNode.insertBefore(x, t)
             })()
           }
         }

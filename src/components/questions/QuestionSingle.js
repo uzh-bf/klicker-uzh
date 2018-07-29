@@ -8,23 +8,28 @@ const propTypes = {
   intl: intlShape.isRequired,
   onDelete: PropTypes.func,
   title: PropTypes.string.isRequired,
+  totalParticipants: PropTypes.number,
   type: PropTypes.string.isRequired,
   version: PropTypes.number,
 }
 
 const defaultProps = {
   onDelete: undefined,
+  totalParticipants: 0,
   version: 0,
 }
 
 const QuestionSingle = ({
-  type, intl, title, version, onDelete,
+  type,
+  intl,
+  title,
+  totalParticipants,
+  version,
+  onDelete,
 }) => (
   <div className="questionSingle">
     <div className="top">
-      <div className="type">
-        {generateTypesShort(intl)[type]}
-      </div>
+      <div className="type">{generateTypesShort(intl)[type]}</div>
       {onDelete && (
         <button
           className="ui basic icon button deleteButton"
@@ -34,13 +39,15 @@ const QuestionSingle = ({
           <Icon name="trash" />
         </button>
       )}
+      {totalParticipants > 0 && (
+        <div className="responseCount">
+          <Icon name="user outline" />
+          {totalParticipants}
+        </div>
+      )}
     </div>
     <div className="title">
-      {title}
-      {' '}
-      <span>
-        {`(v${version + 1})`}
-      </span>
+      {title} <span>{`(v${version + 1})`}</span>
     </div>
 
     <style jsx>

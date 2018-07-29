@@ -42,15 +42,18 @@ const Sidebar = ({
         visible={visible}
         width="wide"
       >
-        {items.map(item => (
+        {items.map(({
+          name, className, href, icon, label,
+        }) => (
           <SidebarItem
-            active={item.name === activeItem}
-            handleSidebarItemClick={handleSidebarItemClick(item.href)}
-            icon={item.icon}
-            key={item.name}
-            name={item.name}
+            active={name === activeItem}
+            className={className}
+            handleSidebarItemClick={handleSidebarItemClick(href)}
+            icon={icon}
+            key={name}
+            name={name}
           >
-            {item.label}
+            {label}
           </SidebarItem>
         ))}
         <div className="extras">
@@ -59,15 +62,11 @@ const Sidebar = ({
           </div>
           <div className="logo">
             Klicker
-            <span className="high">
-UZH
-            </span>
+            <span className="high">UZH</span>
           </div>
         </div>
       </SemanticSidebar>
-      <SemanticSidebar.Pusher>
-        {children}
-      </SemanticSidebar.Pusher>
+      <SemanticSidebar.Pusher>{children}</SemanticSidebar.Pusher>
     </SemanticSidebar.Pushable>
 
     <style jsx>

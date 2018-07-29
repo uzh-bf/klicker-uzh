@@ -45,6 +45,7 @@ const FREEAnswerOptions = ({
     {(() => {
       if (
         questionType === QUESTION_TYPES.FREE_RANGE
+        && typeof options.restrictions !== 'undefined'
         && options.restrictions.min !== null
         && options.restrictions.max !== null
       ) {
@@ -94,6 +95,29 @@ const FREEAnswerOptions = ({
 
       return (
         <div className="field">
+          <div className="rangeInformation">
+            {do {
+              if (options.restrictions.max !== null) {
+                <FormattedMessage
+                  defaultMessage="Maximum value: {max}"
+                  id="freeAnswer.maxValue"
+                  values={{ max: options.restrictions.max }}
+                />
+              } else if (options.restrictions.min !== null) {
+                <FormattedMessage
+                  defaultMessage="Minimum value: {min}"
+                  id="freeAnswer.minValue"
+                  values={{ min: options.restrictions.min }}
+                />
+              } else {
+                <FormattedMessage
+                  defaultMessage="Unrestricted input (any number)"
+                  id="freeAnswer.unrestricted"
+                />
+              }
+            }}
+          </div>
+
           <textarea
             disabled={disabled}
             id="responseInput"
@@ -102,7 +126,7 @@ const FREEAnswerOptions = ({
 
           {questionType === QUESTION_TYPES.FREE_RANGE && (
             <div>
-              {options.FREE_RANGE.restrictions.min !== null && (
+              {options.restrictions.min && (
                 <div>
                   <strong>
                     <FormattedMessage
@@ -115,7 +139,7 @@ const FREEAnswerOptions = ({
                 </div>
               )}
 
-              {options.FREE_RANGE.restrictions.max !== null && (
+              {options.restrictions.max && (
                 <div>
                   <strong>
                     <FormattedMessage
@@ -133,53 +157,55 @@ const FREEAnswerOptions = ({
       )
     })()}
 
-    <style jsx>
-      {`
-        @import 'src/theme';
+    <style jsx>{`
+      @import 'src/theme';
 
-        .freeAnswerOptions {
-          .slider {
-            .min,
-            .max {
-              font-size: 1rem;
-            }
-
-            .max {
-              float: right;
-            }
+      .freeAnswerOptions {
+        .slider {
+          .min,
+          .max {
+            font-size: 1rem;
           }
 
-          textarea {
-            height: 100%;
-            min-height: 10rem;
-            width: 100%;
-          }
-
-          :global(.rangeslider__fill) {
-            background-color: $color-primary;
-          }
-
-          :global(.rangeslider__handle) {
-            padding: 1rem;
-
-            &:after {
-              display: none;
-            }
-
-            &:focus {
-              outline: none;
-            }
-          }
-
-          :global(.rangeslider__handle-label) {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate3d(-50%, -50%, 0);
+          .max {
+            float: right;
           }
         }
-      `}
-    </style>
+
+        .rangeInformation {
+          margin-bottom: 1rem;
+        }
+
+        textarea {
+          height: 100%;
+          min-height: 10rem;
+          width: 100%;
+        }
+
+        :global(.rangeslider__fill) {
+          background-color: $color-primary;
+        }
+
+        :global(.rangeslider__handle) {
+          padding: 1rem;
+
+          &:after {
+            display: none;
+          }
+
+          &:focus {
+            outline: none;
+          }
+        }
+
+        :global(.rangeslider__handle-label) {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate3d(-50%, -50%, 0);
+        }
+      }
+    `}</style>
   </div>
 )
 

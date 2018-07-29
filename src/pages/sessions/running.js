@@ -89,51 +89,68 @@ const Running = ({ intl, shortname }) => (
         return (
           <div className="runningSession">
             <div className="sessionProgress">
-              <Mutation mutation={EndSessionMutation}>
-                {endSession => (
-                  <Mutation mutation={PauseSessionMutation}>
-                    {pauseSession => (
-                      <Mutation mutation={ActivateNextBlockMutation}>
-                        {activateNextBlock => (
-                          <SessionTimeline
-                            activeStep={activeStep}
-                            blocks={blocks}
-                            handleEndSession={async () => {
-                              // run the mutation
-                              await endSession({
-                                refetchQueries: [
-                                  { query: SessionListQuery },
-                                  { query: RunningSessionQuery },
-                                  { query: AccountSummaryQuery },
-                                ],
-                                variables: { id },
-                              })
+              <Mutation mutation={UpdateSessionSettingsMutation}>
+                {updateSettings => (
+                  <Mutation mutation={EndSessionMutation}>
+                    {endSession => (
+                      <Mutation mutation={PauseSessionMutation}>
+                        {pauseSession => (
+                          <Mutation mutation={ActivateNextBlockMutation}>
+                            {activateNextBlock => (
+                              <SessionTimeline
+                                activeStep={activeStep}
+                                blocks={blocks}
+                                handleEndSession={async () => {
+                                  // run the mutation
+                                  await endSession({
+                                    refetchQueries: [
+                                      { query: SessionListQuery },
+                                      { query: RunningSessionQuery },
+                                      { query: AccountSummaryQuery },
+                                    ],
+                                    variables: { id },
+                                  })
 
-                              // redirect to the question pool
-                              // TODO: redirect to a session summary or overview page
-                              Router.push('/questions')
-                            }}
-                            handleNextBlock={() => {
-                              activateNextBlock({
-                                refetchQueries: [
-                                  { query: RunningSessionQuery },
-                                ],
-                              })
-                            }}
-                            handlePauseSession={async () => {
-                              await pauseSession({
-                                refetchQueries: [{ query: SessionListQuery }],
-                                variables: { id },
-                              })
+                                  // redirect to the question pool
+                                  // TODO: redirect to a session summary or overview page
+                                  Router.push('/questions')
+                                }}
+                                handleNextBlock={() => {
+                                  activateNextBlock({
+                                    refetchQueries: [
+                                      { query: RunningSessionQuery },
+                                    ],
+                                  })
+                                }}
+                                handlePauseSession={async () => {
+                                  await pauseSession({
+                                    refetchQueries: [
+                                      { query: SessionListQuery },
+                                    ],
+                                    variables: { id },
+                                  })
 
-                              Router.push('/sessions')
-                            }}
-                            intl={intl}
-                            runtime={runtime}
-                            sessionId={id}
-                            shortname={shortname}
-                            startedAt={moment(startedAt).format('HH:mm:ss')}
-                          />
+                                  Router.push('/sessions')
+                                }}
+                                handleTogglePublicEvaluation={() => {
+                                  updateSettings({
+                                    variables: {
+                                      sessionId: id,
+                                      settings: {
+                                        isEvaluationPublic: !settings.isEvaluationPublic,
+                                      },
+                                    },
+                                  })
+                                }}
+                                intl={intl}
+                                isEvaluationPublic={settings.isEvaluationPublic}
+                                runtime={runtime}
+                                sessionId={id}
+                                shortname={shortname}
+                                startedAt={moment(startedAt).format('HH:mm:ss')}
+                              />
+                            )}
+                          </Mutation>
                         )}
                       </Mutation>
                     )}
@@ -285,6 +302,7 @@ const Running = ({ intl, shortname }) => (
 
           .sessionProgress {
             flex: 0 0 100%;
+            max-width: 100%;
           }
           .confusionBarometer {
             flex: 0 0 30%;
@@ -304,7 +322,9 @@ const Running = ({ intl, shortname }) => (
 Running.propTypes = propTypes
 
 export default compose(
-  withLogging(),
+  withLogging({
+    slaask: true,
+  }),
   pageWithIntl,
   graphql(AccountSummaryQuery),
   withProps(({ data }) => ({

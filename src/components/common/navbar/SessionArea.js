@@ -35,11 +35,12 @@ const defaultProps = {
 }
 
 const SessionArea = ({ intl, sessionId }) => (
-  <React.Fragment>
+  <>
     <Menu.Item button>
       <Button
         icon
         as="a"
+        color={sessionId ? 'green' : undefined}
         disabled={!sessionId}
         href="/sessions/running"
         labelPosition="left"
@@ -70,37 +71,24 @@ const SessionArea = ({ intl, sessionId }) => (
     >
       <Popup.Content>
         <div className="popupChanges popupContent">
-          <h3>
-New features (major)
-          </h3>
+          <h3>New features (major)</h3>
           <List bulleted>
             {CHANGELOG.new.map(({ text, items }, index) => (
               <List.Item key={index}>
-                {items ? (
-                  <h4>
-                    {text}
-                  </h4>
-                ) : text}
+                {items ? <h4>{text}</h4> : text}
                 {items && (
                   <List.List>
-                    {items.map(item => (
-                      <List.Item>
-                        {item}
-                      </List.Item>
-                    ))}
+                    {items.map(item => <List.Item>{item}</List.Item>)}
                   </List.List>
                 )}
               </List.Item>
             ))}
           </List>
 
-          <h3>
-Planned features (major)
-          </h3>
+          <h3>Planned features (major)</h3>
           <p>
             <strong>
-              A public roadmap is available on
-              {' '}
+              A public roadmap is available on{' '}
               <a
                 href="https://trello.com/b/xw0D1k6l"
                 rel="noopener noreferrer"
@@ -130,9 +118,7 @@ Planned features (major)
     >
       <Popup.Content>
         <div className="popupHelp popupContent">
-          <h3>
-Support
-          </h3>
+          <h3>Support</h3>
           <a href="mailto:klicker.support@uzh.ch">
             <Button icon labelPosition="left">
               <Icon name="mail" />
@@ -160,9 +146,7 @@ Support
               </Button>
 )}
           >
-            <Modal.Header>
-Introductory Video
-            </Modal.Header>
+            <Modal.Header>Introductory Video</Modal.Header>
             <Modal.Content>
               <Embed id="8nS-fvi86l0" source="youtube" />
             </Modal.Content>
@@ -200,7 +184,7 @@ Introductory Video
         }
       `}
     </style>
-  </React.Fragment>
+  </>
 )
 
 SessionArea.propTypes = propTypes

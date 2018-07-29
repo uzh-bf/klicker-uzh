@@ -11,6 +11,12 @@
     "sort-keys": 1,
     "global-require": 0,
 
+    "no-unused-expressions": 0,
+    "babel/no-unused-expressions": 1,
+
+    "quotes": 0,
+    "babel/quotes": [1, "single"],
+
     "import/extensions": 0,
     "import/prefer-default-export": 0,
     "import/no-dynamic-require": 0,
@@ -25,6 +31,7 @@
     "react/jsx-curly-brace-presence": 0,
     "react/jsx-closing-tag-location": 0,
     "react/no-unused-prop-types": 1,
+    "react/jsx-one-expression-per-line": 0,
 
     "jsx-a11y/anchor-is-valid": 0,
     "jsx-a11y/label-has-for": 0,

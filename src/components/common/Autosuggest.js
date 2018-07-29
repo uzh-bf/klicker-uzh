@@ -31,11 +31,7 @@ const autocompleteRenderInput = (tags, currentValue) => ({
   const sortedSuggestions = _sortBy(suggestions, ['name'])
 
   const getSuggestionValue = ({ name }) => name
-  const renderSuggestion = ({ name }) => (
-    <span>
-      {name}
-    </span>
-  )
+  const renderSuggestion = ({ name }) => <span>{name}</span>
 
   return (
     <Autosuggest

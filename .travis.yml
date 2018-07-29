@@ -59,6 +59,7 @@ jobs:
           docker build .
           --build-arg API_URL=$STAGING_API_URL
           --build-arg API_URL_WS=$STAGING_API_URL_WS
+          --build-arg S3_BASE_PATH=$STAGING_S3_BASE_PATH
           --cache-from $IMAGE_NAME:latest
           -t $IMAGE_NAME:latest
         - docker push $IMAGE_NAME:latest
@@ -134,6 +135,9 @@ jobs:
           --build-arg G_ANALYTICS=$PROD_G_ANALYTICS
           --build-arg VERSION=$TRAVIS_TAG
           --build-arg CHATLIO=$PROD_CHATLIO
+          --build-arg S3_BASE_PATH=$PROD_S3_BASE_PATH
+          --build-arg APP_PERSIST_QUERIES="true"
+          --build-arg SLAASK_WIDGET_KEY=$PROD_SLAASK_WIDGET_KEY
           -t $IMAGE_NAME:stable
           -t $IMAGE_NAME:$TRAVIS_TAG
         - travis_retry docker push $IMAGE_NAME:$TRAVIS_TAG

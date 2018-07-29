@@ -46,7 +46,7 @@ const RequestPassword = ({ intl }) => (
           }
 
           return (
-            <React.Fragment>
+            <>
               <PasswordRequestForm
                 intl={intl}
                 loading={loading}
@@ -54,12 +54,8 @@ const RequestPassword = ({ intl }) => (
                   requestPassword({ variables: { email } })
                 }}
               />
-              {error && (
-              <Message error>
-                {error.message}
-              </Message>
-              )}
-            </React.Fragment>
+              {error && <Message error>{error.message}</Message>}
+            </>
           )
         }}
       </Mutation>
@@ -89,6 +85,8 @@ const RequestPassword = ({ intl }) => (
 RequestPassword.propTypes = propTypes
 
 export default compose(
-  withLogging(),
+  withLogging({
+    slaask: true,
+  }),
   pageWithIntl,
 )(RequestPassword)

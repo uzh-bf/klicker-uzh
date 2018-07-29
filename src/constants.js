@@ -1,5 +1,3 @@
-export const SEMANTIC_VERSION = '2.3.1'
-
 export const SESSION_STATUS = {
   COMPLETED: 'COMPLETED',
   CREATED: 'CREATED',
@@ -95,6 +93,22 @@ export const SMALL_PIE_THRESHOLD = 0.05
 
 export const CHANGELOG = {
   new: [
+    {
+      items: ['Questions can now have images attached (beta)'],
+      text: '1.0.0-public.beta.37',
+    },
+    {
+      items: ['Sessions can be copied and modified in a single interaction'],
+      text: '1.0.0-public.beta.35',
+    },
+    {
+      items: [
+        'Reworked session creation with possibility to reorder and remove questions within and in-between blocks',
+        'Possibility to edit sessions (i.e., name and questions/blocks) that have not yet been started',
+        'Optional publication of the session evaluation screen to the audience via a separate link (/sessions/public/:id)',
+      ],
+      text: '1.0.0-public.beta.34',
+    },
     {
       items: ['Pausing sessions'],
       text: '1.0.0-public.beta.22',
