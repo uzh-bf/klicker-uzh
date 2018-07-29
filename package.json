@@ -57,6 +57,7 @@
     "griddle-react": "1.13.1",
     "gulp": "3.9.1",
     "helmet": "3.13.0",
+    "hoist-non-react-statics": "3.0.1",
     "immutable": "4.0.0-rc.9",
     "intl": "1.2.5",
     "ioredis": "3.2.2",
