@@ -64,7 +64,7 @@ const ConfusionSlider = ({
 
           .confusionSlider {
             .title > :global(*):first-child {
-              font-size: 1rem;
+              font-size: 1rem !important;
               margin: 0;
             }
 

@@ -91,8 +91,7 @@ export const QuestionListPres = ({
                   target="_blank"
                 >
                   {moment(createdAt).format('DD.MM.YYYY HH:mm')} (v
-                  {version + 1}
-                  )
+                  {version + 1})
                 </a>
               ),
             )}

@@ -46,12 +46,7 @@ const EvaluationListItem = ({
     <div className="content">{children}</div>
     {QUESTION_GROUPS.WITH_PERCENTAGES.includes(questionType)
       && showGraph
-      && _isFinite(percentage) && (
-        <div className="percentage">
-          {percentage}
-          %
-        </div>
-    )}
+      && _isFinite(percentage) && <div className="percentage">{percentage}%</div>}
     {marker && !reverse && <div className="marker">{marker}</div>}
 
     <style jsx>
