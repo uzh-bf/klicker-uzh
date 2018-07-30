@@ -71,6 +71,20 @@ const SessionArea = ({ intl, sessionId }) => (
     >
       <Popup.Content>
         <div className="popupChanges popupContent">
+          <h3>Planned features (major)</h3>
+          <p>
+            <strong>
+              A public roadmap is available on{' '}
+              <a
+                href="https://trello.com/b/xw0D1k6l"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                https://trello.com/b/xw0D1k6l
+              </a>
+              .
+            </strong>
+          </p>
           <h3>New features (major)</h3>
           <List bulleted>
             {CHANGELOG.new.map(({ text, items }, index) => (
@@ -86,21 +100,6 @@ const SessionArea = ({ intl, sessionId }) => (
               </List.Item>
             ))}
           </List>
-
-          <h3>Planned features (major)</h3>
-          <p>
-            <strong>
-              A public roadmap is available on{' '}
-              <a
-                href="https://trello.com/b/xw0D1k6l"
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                https://trello.com/b/xw0D1k6l
-              </a>
-              .
-            </strong>
-          </p>
         </div>
       </Popup.Content>
     </Popup>
@@ -182,6 +181,8 @@ const SessionArea = ({ intl, sessionId }) => (
         }
 
         .popupChanges {
+          overflow: auto;
+          max-height: 40rem;
           width: 35rem;
         }
       `}
