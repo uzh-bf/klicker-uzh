@@ -2644,17 +2644,17 @@ babel-plugin-check-es2015-constants@^6.22.0:
   dependencies:
     babel-runtime "^6.22.0"
 
+babel-plugin-import-graphql@2.4.4:
+  version "2.4.4"
+  resolved "https://registry.yarnpkg.com/babel-plugin-import-graphql/-/babel-plugin-import-graphql-2.4.4.tgz#f35ee5c1516b3e5f214d85a758f07aabd33935b5"
+  dependencies:
+    graphql-tag "^2.9.2"
+
 babel-plugin-inline-dotenv@1.1.2:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/babel-plugin-inline-dotenv/-/babel-plugin-inline-dotenv-1.1.2.tgz#d9b43f48b1471506bdc5fe571a067472f16aedf6"
   dependencies:
     dotenv "^4.0.0"
-
-babel-plugin-inline-import-graphql-ast@2.4.1:
-  version "2.4.1"
-  resolved "https://registry.yarnpkg.com/babel-plugin-inline-import-graphql-ast/-/babel-plugin-inline-import-graphql-ast-2.4.1.tgz#8ac66dbf815263331516791e9d14089938ec39be"
-  dependencies:
-    graphql-tag "^2.9.2"
 
 babel-plugin-istanbul@^4.1.6:
   version "4.1.6"
