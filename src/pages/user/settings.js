@@ -9,23 +9,23 @@ import UserSettingsForm from '../../components/forms/userSettings/UserSettingsFo
 const messages = defineMessages({
   pageTitle: {
     defaultMessage: 'User Settings',
-    id: 'userSettings.pageTitle'
+    id: 'userSettings.pageTitle',
   },
   title: {
     defaultMessage: 'User Settings',
-    id: 'userSettings.title'
-  }
+    id: 'userSettings.title',
+  },
 })
 
 const propTypes = {
-  intl: intlShape.isRequired
+  intl: intlShape.isRequired,
 }
 
 const Settings = ({ intl }) => (
   <TeacherLayout
     intl={intl}
     navbar={{
-      title: intl.formatMessage(messages.title)
+      title: intl.formatMessage(messages.title),
     }}
     pageTitle={intl.formatMessage(messages.pageTitle)}
     sidebar={{ activeItem: 'sessionList' }}
@@ -38,7 +38,7 @@ Settings.propTypes = propTypes
 
 export default compose(
   withLogging({
-    slaask: true
+    slaask: true,
   }),
-  pageWithIntl
+  pageWithIntl,
 )(Settings)

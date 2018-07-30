@@ -1,38 +1,15 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import _isEmpty from 'lodash/isEmpty'
-import { defineMessages, intlShape } from 'react-intl'
+import { intlShape } from 'react-intl'
 import { Formik } from 'formik'
-import { object, string, ref } from 'yup'
+import { object } from 'yup'
 
 import { FormWithLinks, FormikInput } from '.'
+import validationSchema from './common/validationSchema'
+import messages from './common/messages'
 
-const messages = defineMessages({
-  backToLogin: {
-    defaultMessage: 'Back to login',
-    id: 'form.passwordReset.backToLogin',
-  },
-  passwordInvalid: {
-    defaultMessage: 'Please provide a valid password (8+ characters).',
-    id: 'form.password.invalid',
-  },
-  passwordLabel: {
-    defaultMessage: 'Password',
-    id: 'form.password.label',
-  },
-  passwordRepeatInvalid: {
-    defaultMessage: 'Please ensure that passwords match.',
-    id: 'form.passwordRepeat.invalid',
-  },
-  passwordRepeatLabel: {
-    defaultMessage: 'Repeat password',
-    id: 'form.passwordRepeat.label',
-  },
-  submit: {
-    defaultMessage: 'Submit',
-    id: 'form.common.button.submit',
-  },
-})
+const { password, passwordRepeat } = validationSchema
 
 const propTypes = {
   intl: intlShape.isRequired,
@@ -103,15 +80,12 @@ const PasswordResetForm = ({ intl, loading, onSubmit }) => {
           />
         </FormWithLinks>
       )}
-      validationSchema={object().shape({
-        password: string()
-          .min(8)
-          .required(),
-        passwordRepeat: string()
-          .min(8)
-          .oneOf([ref('password'), null])
-          .required(),
-      })}
+      validationSchema={object()
+        .shape({
+          password: password.required(),
+          passwordRepeat: passwordRepeat.required(),
+        })
+        .required()}
       onSubmit={onSubmit}
     />
   )

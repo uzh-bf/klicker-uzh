@@ -3,11 +3,15 @@ import PropTypes from 'prop-types'
 import { Droppable, Draggable } from 'react-beautiful-dnd'
 import { Button, Icon, Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import { object, string } from 'yup'
+import { object } from 'yup'
 
 import QuestionSingle from '../../questions/QuestionSingle'
 import QuestionDropzone from './QuestionDropzone'
 import InfoArea from './InfoArea'
+
+import validationSchema from '../common/validationSchema'
+
+const { sessionName } = validationSchema
 
 const propTypes = {
   blocks: PropTypes.array,
@@ -27,12 +31,6 @@ const defaultProps = {
   interactionType: 'CREATE',
   isSessionRunning: false,
 }
-
-const schema = object().shape({
-  name: string()
-    .min(1)
-    .required(),
-})
 
 const getItemStyle = (isDragging, draggableStyle) => ({
   // change background colour if dragging
@@ -63,9 +61,13 @@ const SessionCreationForm = ({
 }) => {
   // synchronous validation
   // synchronously validate the schema
-  const isValid = schema.isValidSync({
-    name,
-  })
+  const isValid = object()
+    .shape({
+      name: sessionName.required(),
+    })
+    .isValidSync({
+      name,
+    })
 
   return (
     <form className="ui form sessionCreation" onSubmit={handleSubmit('save')}>

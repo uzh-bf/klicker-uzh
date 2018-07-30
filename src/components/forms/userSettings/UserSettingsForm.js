@@ -8,12 +8,20 @@ import AccountDataForm from './AccountDataForm'
 const messages = defineMessages({
   accountDataItem: {
     defaultMessage: 'Account Data',
-    id: 'form.userSettings.accountDataItem'
-  }
+    id: 'form.userSettings.accountDataItem',
+  },
+  changePasswordItem: {
+    defaultMessage: 'Change Password',
+    id: 'form.userSettings.changePasswordItem',
+  },
+  deleteAccountItem: {
+    defaultMessage: 'Delete Account',
+    id: 'form.userSettings.deleteAccountItem',
+  },
 })
 
 const propTypes = {
-  intl: intlShape.isRequired
+  intl: intlShape.isRequired,
 }
 
 const UserSettingsForm = ({ intl }) => {
@@ -24,9 +32,16 @@ const UserSettingsForm = ({ intl }) => {
         <Tab.Pane>
           <AccountDataForm intl={intl} />
         </Tab.Pane>
-      )
+      ),
     },
-    { menuItem: 'TODO', render: () => <Tab.Pane>Tab 2 Content</Tab.Pane> }
+    {
+      menuItem: intl.formatMessage(messages.changePasswordItem),
+      render: () => <Tab.Pane>Tab 2 Content</Tab.Pane>,
+    },
+    {
+      menuItem: intl.formatMessage(messages.deleteAccountItem),
+      render: () => <Tab.Pane>Tab 2 Content</Tab.Pane>,
+    },
   ]
 
   return (

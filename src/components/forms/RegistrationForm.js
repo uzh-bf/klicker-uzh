@@ -1,70 +1,25 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
+import { FormattedMessage, intlShape } from 'react-intl'
 import { Button, Form } from 'semantic-ui-react'
+import { object } from 'yup'
 
 import { Formik } from 'formik'
-import { object, string, ref } from 'yup'
 import _isEmpty from 'lodash/isEmpty'
 
 import { FormikInput } from '.'
+import validationSchema from './common/validationSchema'
+import messages from './common/messages'
 
-const messages = defineMessages({
-  emailInvalid: {
-    defaultMessage: 'Please provide a valid email address.',
-    id: 'form.email.invalid',
-  },
-  emailLabel: {
-    defaultMessage: 'Email',
-    id: 'form.email.label',
-  },
-  institutionInvalid: {
-    defaultMessage: 'Please provide a valid institution.',
-    id: 'form.institution.invalid',
-  },
-  institutionLabel: {
-    defaultMessage: 'Institution',
-    id: 'form.institution.label',
-  },
-  passwordInvalid: {
-    defaultMessage: 'Please provide a valid password (8+ characters).',
-    id: 'form.password.invalid',
-  },
-  passwordLabel: {
-    defaultMessage: 'Password',
-    id: 'form.password.label',
-  },
-  passwordRepeatInvalid: {
-    defaultMessage: 'Please ensure that passwords match.',
-    id: 'form.passwordRepeat.invalid',
-  },
-  passwordRepeatLabel: {
-    defaultMessage: 'Repeat password',
-    id: 'form.passwordRepeat.label',
-  },
-  shortnameInvalid: {
-    defaultMessage: 'Please provide a valid account ID (3-8 characters).',
-    id: 'form.shortname.invalid',
-  },
-  shortnameLabel: {
-    defaultMessage: 'Account ID / Join Link',
-    id: 'form.shortname.label',
-  },
-  shortnameTooltip: {
-    defaultMessage:
-      'A unique identifier for your account. Must be between 3 and 8 characters long (only alphanumeric and hyphen).',
-    id: 'form.shortname.tooltip',
-  },
-  useCaseLabel: {
-    defaultMessage: 'Use case description',
-    id: 'form.useCase.label',
-  },
-  useCaseTooltip: {
-    defaultMessage:
-      'Short description of your planned use case for the Klicker UZH.',
-    id: 'form.useCase.tooltip',
-  },
-})
+const {
+  email,
+  shortname,
+  institution,
+  password,
+  passwordRepeat,
+  useCase,
+} = validationSchema
+
 const propTypes = {
   intl: intlShape.isRequired,
   loading: PropTypes.bool.isRequired,
@@ -197,27 +152,16 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
           </div>
         </Form>
       )}
-      validationSchema={object().shape({
-        email: string()
-          .email()
-          .lowercase()
-          .required(),
-        institution: string().required(),
-        password: string()
-          .min(8)
-          .required(),
-        passwordRepeat: string()
-          .min(8)
-          .oneOf([ref('password'), null])
-          .required(),
-        shortname: string()
-          .min(3)
-          .max(8)
-          .matches(/^[A-Za-z0-9]+$/)
-          .lowercase()
-          .required(),
-        useCase: string(),
-      })}
+      validationSchema={object()
+        .shape({
+          email: email.required(),
+          institution: institution.required(),
+          password: password.required(),
+          passwordRepeat: passwordRepeat.required(),
+          shortname: shortname.required(),
+          useCase,
+        })
+        .required()}
       onSubmit={onSubmit}
     />
 

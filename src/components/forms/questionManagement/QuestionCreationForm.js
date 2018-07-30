@@ -14,7 +14,7 @@ import {
   SCCreationOptions,
   SCCreationPreview,
   FREECreationOptions,
-  FREECreationPreview
+  FREECreationPreview,
 } from '../../questionTypes'
 import { QUESTION_TYPES } from '../../../lib'
 import { QUESTION_GROUPS } from '../../../constants'
@@ -23,40 +23,42 @@ import { FormikInput } from '../components'
 const messages = defineMessages({
   contentEmpty: {
     defaultMessage: 'Please add a question.',
-    id: 'form.createQuestion.content.empty'
+    id: 'form.createQuestion.content.empty',
   },
   minMaxRangeInvalid: {
     defaultMessage: 'Please specify a range from min to max.',
-    id: 'form.createQuestion.options.minMaxRange.invalid'
+    id: 'form.createQuestion.options.minMaxRange.invalid',
   },
   optionsEmpty: {
     defaultMessage: 'Please add at least one answer option.',
-    id: 'form.createQuestion.options.empty'
+    id: 'form.createQuestion.options.empty',
   },
   optionsInvalid: {
     defaultMessage: 'Invalid options',
-    id: 'form.createQuestion.options.invalid'
+    id: 'form.createQuestion.options.invalid',
   },
   tagsEmpty: {
     defaultMessage: 'Please add at least one tag.',
-    id: 'form.createQuestion.tags.empty'
+    id: 'form.createQuestion.tags.empty',
   },
   titleEmpty: {
     defaultMessage: 'Please add a title.',
-    id: 'form.createQuestion.title.empty'
+    id: 'form.createQuestion.title.empty',
   },
   titleInput: {
     defaultMessage: 'Question Title',
-    id: 'createQuestion.titleInput.label'
+    id: 'createQuestion.titleInput.label',
   },
   typeEmpty: {
     defaultMessage: 'Please choose a question type.',
-    id: 'form.createQuestion.type.empty'
-  }
+    id: 'form.createQuestion.type.empty',
+  },
 })
 
 // form validation
-const validate = ({ content, options, tags, title, type }) => {
+const validate = ({
+  content, options, tags, title, type,
+}) => {
   const errors = {}
 
   if (!title || _isEmpty(title)) {
@@ -76,8 +78,8 @@ const validate = ({ content, options, tags, title, type }) => {
   }
 
   if (
-    QUESTION_GROUPS.CHOICES.includes(type) &&
-    (!options || options.choices.length === 0)
+    QUESTION_GROUPS.CHOICES.includes(type)
+    && (!options || options.choices.length === 0)
   ) {
     errors.options = messages.optionsEmpty
   }
@@ -88,9 +90,9 @@ const validate = ({ content, options, tags, title, type }) => {
       const isMaxNum = _isNumber(options.restrictions.max)
 
       if (
-        isMinNum &&
-        isMaxNum &&
-        options.restrictions.min >= options.restrictions.max
+        isMinNum
+        && isMaxNum
+        && options.restrictions.min >= options.restrictions.max
       ) {
         errors.options = messages.minMaxRangeInvalid
       }
@@ -108,33 +110,35 @@ const propTypes = {
   onSubmit: PropTypes.func.isRequired,
   tags: PropTypes.arrayOf(
     PropTypes.shape({
-      name: PropTypes.string.isRequired
-    })
-  )
+      name: PropTypes.string.isRequired,
+    }),
+  ),
 }
 
 const defaultProps = {
-  tags: []
+  tags: [],
 }
 
-const QuestionCreationForm = ({ intl, tags, onSubmit, onDiscard }) => {
+const QuestionCreationForm = ({
+  intl, tags, onSubmit, onDiscard,
+}) => {
   const typeComponents = {
     [QUESTION_TYPES.SC]: {
       input: SCCreationOptions,
-      preview: SCCreationPreview
+      preview: SCCreationPreview,
     },
     [QUESTION_TYPES.MC]: {
       input: SCCreationOptions,
-      preview: SCCreationPreview
+      preview: SCCreationPreview,
     },
     [QUESTION_TYPES.FREE]: {
       input: FREECreationOptions,
-      preview: FREECreationPreview
+      preview: FREECreationPreview,
     },
     [QUESTION_TYPES.FREE_RANGE]: {
       input: FREECreationOptions,
-      preview: FREECreationPreview
-    }
+      preview: FREECreationPreview,
+    },
   }
 
   return (
@@ -148,12 +152,12 @@ const QuestionCreationForm = ({ intl, tags, onSubmit, onDiscard }) => {
             randomized: false,
             restrictions: {
               max: null,
-              min: null
-            }
+              min: null,
+            },
           },
           tags: null,
           title: '',
-          type: QUESTION_TYPES.SC
+          type: QUESTION_TYPES.SC,
         }}
         validate={validate}
         /* validationSchema={Yup.object().shape({
@@ -172,7 +176,7 @@ const QuestionCreationForm = ({ intl, tags, onSubmit, onDiscard }) => {
           handleBlur,
           handleSubmit,
           isSubmitting,
-          setFieldValue
+          setFieldValue,
         }) => {
           const Preview = typeComponents[values.type].preview
           const OptionsInput = typeComponents[values.type].input
@@ -195,12 +199,12 @@ const QuestionCreationForm = ({ intl, tags, onSubmit, onDiscard }) => {
                   intl={intl}
                   label={intl.formatMessage(messages.titleInput)}
                   name="title"
-                  tooltip={
+                  tooltip={(
                     <FormattedMessage
                       defaultMessage="Enter a short summarizing title for the question. This is only visible to you!"
                       id="createQuestion.titleInput.tooltip"
                     />
-                  }
+)}
                   touched={touched.title}
                   type="text"
                   value={values.title}

@@ -1,30 +1,15 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { defineMessages, intlShape } from 'react-intl'
-import { object, string } from 'yup'
+import { intlShape } from 'react-intl'
+import { object } from 'yup'
 import _isEmpty from 'lodash/isEmpty'
 import { Formik } from 'formik'
 
 import { FormWithLinks, FormikInput } from '.'
+import validationSchema from './common/validationSchema'
+import messages from './common/messages'
 
-const messages = defineMessages({
-  backToLogin: {
-    defaultMessage: 'Back to login',
-    id: 'form.passwordReset.backToLogin',
-  },
-  emailInvalid: {
-    defaultMessage: 'Please provide a valid email address.',
-    id: 'form.email.invalid',
-  },
-  emailLabel: {
-    defaultMessage: 'Email',
-    id: 'form.email.label',
-  },
-  submit: {
-    defaultMessage: 'Submit',
-    id: 'form.common.button.submit',
-  },
-})
+const { email } = validationSchema
 
 const propTypes = {
   intl: intlShape.isRequired,
@@ -80,11 +65,11 @@ const PasswordRequestForm = ({ intl, loading, onSubmit }) => {
           />
         </FormWithLinks>
       )}
-      validationSchema={object().shape({
-        email: string()
-          .email()
-          .required(),
-      })}
+      validationSchema={object()
+        .shape({
+          email: email.required(),
+        })
+        .required()}
       onSubmit={onSubmit}
     />
   )
