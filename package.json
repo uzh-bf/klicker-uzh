@@ -122,6 +122,7 @@
     "enzyme": "3.3.0",
     "eslint": "5.2.0",
     "eslint-config-airbnb": "17.0.0",
+    "eslint-config-prettier": "2.9.0",
     "eslint-plugin-babel": "5.1.0",
     "eslint-plugin-import": "2.13.0",
     "eslint-plugin-jsx-a11y": "6.1.1",
@@ -154,8 +155,8 @@
     "dev": "cross-env NODE_ENV=development nodemon --delay 1000ms -w .env -w package.json -w yarn.lock -w server.js server.js",
     "dev:inspect": "cross-env NODE_ENV=development nodemon --delay 1000ms -w .env -w package.json -w yarn.lock -w server.js --inspect server.js",
     "dev:ndb": "cross-env NODE_ENV=development ndb node server.js",
-    "format": "prettier-eslint --singleQuote --no-semi --write server.js \"src/**/*.js\"",
-    "format:ci": "prettier-eslint --singleQuote --no-semi --list-different server.js \"src/**/*.js\"",
+    "format": "prettier --singleQuote --no-semi --write server.js \"src/**/*.js\"",
+    "format:ci": "prettier --singleQuote --no-semi --list-different server.js \"src/**/*.js\"",
     "lint": "eslint server.js \"src/**/*.js\"",
     "start": "cross-env NODE_ENV=production node server.js",
     "start:inspect": "cross-env NODE_ENV=production node --inspect server.js",
@@ -176,12 +177,12 @@
   },
   "lint-staged": {
     "*.js": [
-      "prettier-eslint --single-quote --no-semi --write",
+      "prettier --single-quote --no-semi --write",
       "eslint",
       "git add"
     ],
     "*.json": [
-      "prettier-eslint --single-quote --no-semi --write",
+      "prettier --single-quote --no-semi --write",
       "git add"
     ]
   },
