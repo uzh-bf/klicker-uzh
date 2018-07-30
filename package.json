@@ -61,7 +61,7 @@
     "immutable": "4.0.0-rc.9",
     "intl": "1.2.5",
     "ioredis": "3.2.2",
-    "isomorphic-unfetch": "2.1.0",
+    "isomorphic-unfetch": "2.1.1",
     "js-cookie": "2.2.0",
     "js-search": "1.4.2",
     "localforage": "1.7.2",
