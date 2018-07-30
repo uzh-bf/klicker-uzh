@@ -154,8 +154,8 @@
     "dev": "cross-env NODE_ENV=development nodemon --delay 1000ms -w .env -w package.json -w yarn.lock -w server.js server.js",
     "dev:inspect": "cross-env NODE_ENV=development nodemon --delay 1000ms -w .env -w package.json -w yarn.lock -w server.js --inspect server.js",
     "dev:ndb": "cross-env NODE_ENV=development ndb node server.js",
-    "format": "prettier --write \"src/**/*.js\" server.js",
-    "format:ci": "prettier --list-different \"src/**/*.js\" server.js",
+    "format": "prettier --write \"src/**/*.js\" \"src/**/*.graphql\" \"src/**/*.json\" server.js",
+    "format:ci": "prettier --list-different \"src/**/*.js\" \"src/**/*.graphql\" \"src/**/*.json\" server.js",
     "lint": "eslint \"src/**/*.js\" server.js",
     "start": "cross-env NODE_ENV=production node server.js",
     "start:inspect": "cross-env NODE_ENV=production node --inspect server.js",
@@ -181,6 +181,10 @@
       "git add"
     ],
     "*.json": [
+      "prettier --write",
+      "git add"
+    ],
+    "*.graphql": [
       "prettier --write",
       "git add"
     ]
