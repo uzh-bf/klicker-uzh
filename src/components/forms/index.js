@@ -3,6 +3,7 @@
 export { default as LoginForm } from './LoginForm'
 export { default as PasswordResetForm } from './PasswordResetForm'
 export { default as PasswordRequestForm } from './PasswordRequestForm'
+export { default as PasswordSettingsForm } from './PasswordSettingsForm'
 export {
   default as QuestionCreationForm,
 } from './questionManagement/QuestionCreationForm'
@@ -16,3 +17,4 @@ export {
 
 export { default as FormWithLinks } from './components/FormWithLinks'
 export { default as FormikInput } from './components/FormikInput'
+export { default as SettingsForm } from './components/SettingsForm'

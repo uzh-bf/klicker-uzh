@@ -3,6 +3,7 @@ query AccountSummary {
     id
     email
     shortname
+    email
     runningSession {
       id
       runtime
