@@ -1,41 +1,29 @@
 import { List } from 'immutable'
 
-import {
-  moveQuestion,
-  appendNewBlock,
-  addToBlock,
-  removeQuestion,
-} from './move'
+import { moveQuestion, appendNewBlock, addToBlock, removeQuestion } from './move'
 
 describe('move', () => {
   const blocks = List([
     {
       id: 'ba',
       questions: List([
-        { id: 'qa', content: 'bla' },
-        { id: 'qb', content: 'blu' },
-        { id: 'qc', content: 'blab' },
-        { id: 'qd', content: 'bli' },
+        { content: 'bla', id: 'qa' },
+        { content: 'blu', id: 'qb' },
+        { content: 'blab', id: 'qc' },
+        { content: 'bli', id: 'qd' },
       ]),
     },
     {
       id: 'bb',
-      questions: List([
-        { id: 'qe', content: 'bleb' },
-        { id: 'qf', content: 'blaa' },
-        { id: 'qg', content: 'blaaa' },
-      ]),
+      questions: List([{ content: 'bleb', id: 'qe' }, { content: 'blaa', id: 'qf' }, { content: 'blaaa', id: 'qg' }]),
     },
     {
       id: 'bc',
-      questions: List([
-        { id: 'qh', content: 'blaaaa' },
-        { id: 'qi', content: 'blabb' },
-      ]),
+      questions: List([{ content: 'blaaaa', id: 'qh' }, { content: 'blabb', id: 'qi' }]),
     },
     {
       id: 'bd',
-      questions: List([{ id: 'qj', content: 'blub' }]),
+      questions: List([{ content: 'blub', id: 'qj' }]),
     },
   ])
 
@@ -82,21 +70,11 @@ describe('move', () => {
     expect(blocksWithoutQuestion.size).toEqual(4)
     expect(blocksWithoutQuestion.getIn([2, 'questions']).size).toEqual(1)
 
-    const blocksWithoutQuestion2 = removeQuestion(
-      blocksWithoutQuestion,
-      2,
-      0,
-      false,
-    )
+    const blocksWithoutQuestion2 = removeQuestion(blocksWithoutQuestion, 2, 0, false)
     expect(blocksWithoutQuestion2.size).toEqual(4)
     expect(blocksWithoutQuestion2.getIn([2, 'questions']).size).toEqual(0)
 
-    const blocksWithoutQuestion3 = removeQuestion(
-      blocksWithoutQuestion2,
-      3,
-      0,
-      true,
-    )
+    const blocksWithoutQuestion3 = removeQuestion(blocksWithoutQuestion2, 3, 0, true)
     expect(blocksWithoutQuestion3.size).toEqual(3)
   })
 })

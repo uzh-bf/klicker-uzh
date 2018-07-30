@@ -19,10 +19,7 @@ const AccountArea = ({ accountShort, onLogout }) => (
       <Link href="/user/settings">
         <Dropdown.Item>
           <Icon name="settings" />
-          <FormattedMessage
-            defaultMessage="Settings"
-            id="common.string.settings"
-          />
+          <FormattedMessage defaultMessage="Settings" id="common.string.settings" />
         </Dropdown.Item>
       </Link>
       <Dropdown.Item onClick={onLogout}>

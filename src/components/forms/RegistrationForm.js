@@ -11,14 +11,7 @@ import { FormikInput } from '.'
 import validationSchema from './common/validationSchema'
 import messages from './common/messages'
 
-const {
-  email,
-  shortname,
-  institution,
-  password,
-  passwordRepeat,
-  useCase,
-} = validationSchema
+const { email, shortname, institution, password, passwordRepeat, useCase } = validationSchema
 
 const propTypes = {
   intl: intlShape.isRequired,
@@ -37,15 +30,7 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
         shortname: '',
         useCase: '',
       }}
-      render={({
-        values,
-        errors,
-        touched,
-        handleChange,
-        handleBlur,
-        handleSubmit,
-        isSubmitting,
-      }) => (
+      render={({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting }) => (
         <Form error onSubmit={handleSubmit}>
           <FormikInput
             autoFocus
@@ -144,10 +129,7 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
               loading={loading && isSubmitting}
               type="submit"
             >
-              <FormattedMessage
-                defaultMessage="Submit"
-                id="common.button.submit"
-              />
+              <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
             </Button>
           </div>
         </Form>

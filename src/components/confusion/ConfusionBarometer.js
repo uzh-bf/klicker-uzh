@@ -37,7 +37,7 @@ const propTypes = {
       createdAt: PropTypes.string.isRequired,
       difficulty: PropTypes.number.isRequired,
       speed: PropTypes.number.isRequired,
-    }),
+    })
   ),
   handleActiveToggle: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
@@ -49,18 +49,10 @@ const defaultProps = {
   isActive: false,
 }
 
-const ConfusionBarometer = ({
-  confusionTS,
-  intl,
-  isActive,
-  handleActiveToggle,
-}) => (
+const ConfusionBarometer = ({ confusionTS, intl, isActive, handleActiveToggle }) => (
   <div className="confusionBarometer">
     <h2>
-      <FormattedMessage
-        defaultMessage="Confusion-Barometer"
-        id="runningSession.confusion.title"
-      />
+      <FormattedMessage defaultMessage="Confusion-Barometer" id="runningSession.confusion.title" />
     </h2>
 
     <Checkbox
@@ -76,13 +68,11 @@ const ConfusionBarometer = ({
         return (
           <>
             <ConfusionSection
-              data={confusionTS.map(
-                ({ timestamp, difficulty, difficultyRunning }) => ({
-                  timestamp,
-                  value: difficulty,
-                  valueRunning: difficultyRunning,
-                }),
-              )}
+              data={confusionTS.map(({ timestamp, difficulty, difficultyRunning }) => ({
+                timestamp,
+                value: difficulty,
+                valueRunning: difficultyRunning,
+              }))}
               title={intl.formatMessage(messages.difficultyTitle)}
               ylabel={intl.formatMessage(messages.difficultyRange)}
             />
@@ -172,5 +162,5 @@ export default compose(
         },
       ]
     }, []),
-  })),
+  }))
 )(ConfusionBarometer)

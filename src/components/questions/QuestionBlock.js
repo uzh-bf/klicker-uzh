@@ -16,7 +16,7 @@ const propTypes = {
       totalParticipants: PropTypes.number,
       type: PropTypes.string.isRequired,
       version: PropTypes.number.isRequired,
-    }),
+    })
   ).isRequired,
   status: PropTypes.string,
   timeLimit: PropTypes.number,
@@ -30,14 +30,7 @@ const defaultProps = {
   timeLimit: undefined,
 }
 
-const QuestionBlock = ({
-  index,
-  status,
-  questions,
-  timeLimit,
-  noDetails,
-  noVersions,
-}) => (
+const QuestionBlock = ({ index, status, questions, timeLimit, noDetails, noVersions }) => (
   <div className={classNames('questionBlock', { active: status === 'ACTIVE' })}>
     {index >= 0 && (
       <div className="index">
@@ -45,13 +38,13 @@ const QuestionBlock = ({
         {index}
       </div>
     )}
-    {!noDetails
-      && timeLimit && (
+    {!noDetails &&
+      timeLimit && (
         <div className="timeLimit">
           <Icon name="clock" />
           {timeLimit}s
         </div>
-    )}
+      )}
     {!noDetails && (
       <div className="sessionStatus">
         {(() => {

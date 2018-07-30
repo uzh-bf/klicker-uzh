@@ -3,9 +3,7 @@ import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import QRCode from 'qrcode.react'
 import { defineMessages, intlShape, FormattedMessage } from 'react-intl'
-import {
-  Button, Checkbox, Icon, Popup, Message,
-} from 'semantic-ui-react'
+import { Button, Checkbox, Icon, Popup, Message } from 'semantic-ui-react'
 import { QuestionBlock } from '../questions'
 
 const messages = defineMessages({
@@ -115,67 +113,38 @@ const SessionTimeline = ({
             hideOnScroll
             on="click"
             position="bottom right"
-            trigger={(
+            trigger={
               <div className="qrTrigger">
                 <Button icon size="small">
                   <Icon name="qrcode" />
                 </Button>
               </div>
-)}
+            }
           >
             <Popup.Content>
               <div className="popupContent">
                 <div className="qr">
-                  <QRCode
-                    value={`https://beta.klicker.uzh.ch/join/${shortname}`}
-                  />
+                  <QRCode value={`https://beta.klicker.uzh.ch/join/${shortname}`} />
                 </div>
 
-                <a
-                  href={`/qr/${shortname}`}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
+                <a href={`/qr/${shortname}`} rel="noopener noreferrer" target="_blank">
                   <Button fluid primary>
-                    <FormattedMessage
-                      defaultMessage="Present QR"
-                      id="sessionArea.qrPresentation"
-                    />
+                    <FormattedMessage defaultMessage="Present QR" id="sessionArea.qrPresentation" />
                   </Button>
                 </a>
               </div>
             </Popup.Content>
           </Popup>
-          <a
-            href={`/join/${shortname}`}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
+          <a href={`/join/${shortname}`} rel="noopener noreferrer" target="_blank">
             <Button icon labelPosition="left" size="small">
               <Icon name="external" />
-              <FormattedMessage
-                defaultMessage="Student View"
-                id="sessionArea.toJoinSession"
-                values={{ shortname }}
-              />
+              <FormattedMessage defaultMessage="Student View" id="sessionArea.toJoinSession" values={{ shortname }} />
             </Button>
           </a>
-          <a
-            href={`/sessions/evaluation/${sessionId}`}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <Button
-              icon
-              disabled={isFeedbackSession}
-              labelPosition="left"
-              size="small"
-            >
+          <a href={`/sessions/evaluation/${sessionId}`} rel="noopener noreferrer" target="_blank">
+            <Button icon disabled={isFeedbackSession} labelPosition="left" size="small">
               <Icon name="external" />
-              <FormattedMessage
-                defaultMessage="Evaluation (Results)"
-                id="runningSession.button.evaluation"
-              />
+              <FormattedMessage defaultMessage="Evaluation (Results)" id="runningSession.button.evaluation" />
             </Button>
           </a>
         </div>
@@ -187,9 +156,7 @@ const SessionTimeline = ({
             <div className={classNames('waiting', { first: index === 0 })}>
               <Icon
                 color={index === activeStep / 2 && 'green'}
-                name={
-                  index === 0 ? 'video play outline' : 'pause circle outline'
-                }
+                name={index === 0 ? 'video play outline' : 'pause circle outline'}
                 size="big"
               />
             </div>
@@ -209,11 +176,7 @@ const SessionTimeline = ({
             </div>
             {index === blocks.length - 1 && (
               <div className="waiting last">
-                <Icon
-                  color={activeStep === blocks.length * 2 && 'red'}
-                  name="stop circle outline"
-                  size="big"
-                />
+                <Icon color={activeStep === blocks.length * 2 && 'red'} name="stop circle outline" size="big" />
               </div>
             )}
           </div>
@@ -231,17 +194,9 @@ const SessionTimeline = ({
       </div>
       <div className="buttons">
         <div className="left">
-          <Button
-            icon
-            labelPosition="left"
-            size="small"
-            onClick={handlePauseSession}
-          >
+          <Button icon labelPosition="left" size="small" onClick={handlePauseSession}>
             <Icon name="pause" />
-            <FormattedMessage
-              defaultMessage="Pause Session"
-              id="sessionArea.button.pauseSession"
-            />
+            <FormattedMessage defaultMessage="Pause Session" id="sessionArea.button.pauseSession" />
           </Button>
         </div>
 
@@ -254,11 +209,7 @@ const SessionTimeline = ({
             onChange={handleTogglePublicEvaluation}
           />
           {isEvaluationPublic && (
-            <a
-              href={`/sessions/public/${sessionId}`}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
+            <a href={`/sessions/public/${sessionId}`} rel="noopener noreferrer" target="_blank">
               <Icon name="external" />
               <FormattedMessage
                 defaultMessage="Public Evaluation (Results)"
@@ -284,11 +235,7 @@ const SessionTimeline = ({
             content={getMessage(intl, activeStep, blocks.length * 2).label}
             icon={getMessage(intl, activeStep, blocks.length * 2).icon}
             labelPosition="left"
-            onClick={
-              activeStep >= blocks.length * 2
-                ? handleEndSession
-                : handleNextBlock
-            }
+            onClick={activeStep >= blocks.length * 2 ? handleEndSession : handleNextBlock}
           />
         )}
       </div>

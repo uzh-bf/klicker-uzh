@@ -21,19 +21,12 @@ import {
 // import { QuestionListPres } from './QuestionList'
 
 storiesOf('questions', module)
-  .addDecorator(getStory => (
-    <DragDropContextProvider backend={HTML5Backend}>
-      {getStory()}
-    </DragDropContextProvider>
-  ))
+  .addDecorator(getStory => <DragDropContextProvider backend={HTML5Backend}>{getStory()}</DragDropContextProvider>)
   .add('Question (SC, 1 version)', () => <Question {...fixtures.question} />)
   .add('Question (MC, >1 versions)', () => <Question {...fixtures.question} type="MC" />)
   .add('Question (MC, no tags)', () => <Question {...fixtures.question} tags={[]} type="MC" />)
   .add('QuestionDetails', () => (
-    <QuestionDetails
-      description="hello world blabla"
-      lastUsed={['20.12.2017', '19.12.2017', '10.10.2017']}
-    />
+    <QuestionDetails description="hello world blabla" lastUsed={['20.12.2017', '19.12.2017', '10.10.2017']} />
   ))
   /* .add('QuestionList', () => (
     <QuestionListPres
@@ -52,16 +45,9 @@ storiesOf('questions', module)
       onQuestionDropped={() => null}
     />
   )) */
-  .add('QuestionBlock', () => (
-    <QuestionBlock {...fixtures.questionBlock} showSolutions={false} timeLimit={60} />
-  ))
+  .add('QuestionBlock', () => <QuestionBlock {...fixtures.questionBlock} showSolutions={false} timeLimit={60} />)
   .add('QuestionBlock (empty)', () => (
-    <QuestionBlock
-      {...fixtures.questionBlock}
-      questions={[]}
-      showSolutions={false}
-      timeLimit={60}
-    />
+    <QuestionBlock {...fixtures.questionBlock} questions={[]} showSolutions={false} timeLimit={60} />
   ))
   .add('QuestionSingle', () => <QuestionSingle {...fixtures.question} />)
   .add('QuestionTags', () => <QuestionTags tags={fixtures.question.tags} type="SC" />)

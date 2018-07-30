@@ -28,10 +28,7 @@ const ResetPassword = ({ intl, router }) => (
   <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
     <div className="resetPassword">
       <h1>
-        <FormattedMessage
-          defaultMessage="Reset your password"
-          id="user.resetPassword.title"
-        />
+        <FormattedMessage defaultMessage="Reset your password" id="user.resetPassword.title" />
       </h1>
 
       <Mutation mutation={ChangePasswordMutation}>
@@ -102,5 +99,5 @@ export default compose(
     logRocket: false,
     slaask: true,
   }),
-  pageWithIntl,
+  pageWithIntl
 )(ResetPassword)

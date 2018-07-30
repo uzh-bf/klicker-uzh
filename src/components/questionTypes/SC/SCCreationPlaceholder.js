@@ -30,11 +30,7 @@ const SCCreationPlaceholder = ({
       {inputMode ? <Icon name="trash" /> : <Icon name="plus" />}
     </button>
 
-    <button
-      className={classNames('toggle', { correct })}
-      type="button"
-      onClick={handleCorrectToggle}
-    >
+    <button className={classNames('toggle', { correct })} type="button" onClick={handleCorrectToggle}>
       {correct ? <Icon name="checkmark" /> : <Icon name="remove" />}
     </button>
 
@@ -102,18 +98,11 @@ export default compose(
 
     handleNameChange: ({ setName }) => e => setName(e.target.value),
 
-    handleSave: ({
-      correct,
-      name,
-      handleSave,
-      setCorrect,
-      setInputMode,
-      setName,
-    }) => () => {
+    handleSave: ({ correct, name, handleSave, setCorrect, setInputMode, setName }) => () => {
       setCorrect(false)
       setInputMode(false)
       setName('')
       handleSave({ correct, name })
     },
-  }),
+  })
 )(SCCreationPlaceholder)

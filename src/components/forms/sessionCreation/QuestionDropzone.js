@@ -15,12 +15,13 @@ const defaultProps = {
   isOver: false,
 }
 
-const QuestionDropzone = ({ canDrop, isOver, connectDropTarget }) => connectDropTarget(
-  <div className={classNames('dropzone', { canDrop, isOver })}>
-    <Icon name="plus" />
+const QuestionDropzone = ({ canDrop, isOver, connectDropTarget }) =>
+  connectDropTarget(
+    <div className={classNames('dropzone', { canDrop, isOver })}>
+      <Icon name="plus" />
 
-    <style jsx>
-      {`
+      <style jsx>
+        {`
           .dropzone {
             display: flex;
             align-items: center;
@@ -44,9 +45,9 @@ const QuestionDropzone = ({ canDrop, isOver, connectDropTarget }) => connectDrop
             border-color: blue;
           }
         `}
-    </style>
-  </div>,
-)
+      </style>
+    </div>
+  )
 
 // define the target for DnD
 const target = {

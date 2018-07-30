@@ -1,24 +1,12 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { defineMessages, intlShape } from 'react-intl'
-import {
-  compose,
-  withProps,
-  withStateHandlers,
-  branch,
-  renderComponent,
-  renderNothing,
-} from 'recompose'
+import { compose, withProps, withStateHandlers, branch, renderComponent, renderNothing } from 'recompose'
 import { withRouter } from 'next/router'
 import { graphql } from 'react-apollo'
 import _round from 'lodash/round'
 
-import {
-  CHART_DEFAULTS,
-  QUESTION_GROUPS,
-  QUESTION_TYPES,
-  SESSION_STATUS,
-} from '../../constants'
+import { CHART_DEFAULTS, QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
 import {
   calculateMax,
@@ -32,10 +20,7 @@ import {
   withLogging,
 } from '../../lib'
 import { Chart } from '../../components/evaluation'
-import {
-  SessionEvaluationQuery,
-  SessionEvaluationPublicQuery,
-} from '../../graphql'
+import { SessionEvaluationQuery, SessionEvaluationPublicQuery } from '../../graphql'
 import { sessionStatusShape, statisticsShape } from '../../propTypes'
 
 const messages = defineMessages({
@@ -147,14 +132,13 @@ export default compose(
       options: ({ router }) => ({
         variables: { sessionId: router.query.sessionId },
       }),
-    }),
+    })
   ),
   // if the query is still loading, display nothing
   branch(
-    ({ data: { loading, session, sessionPublic }, router: { query } }) => loading
-      || (!query.public && !session)
-      || (query.public && !sessionPublic),
-    renderNothing,
+    ({ data: { loading, session, sessionPublic }, router: { query } }) =>
+      loading || (!query.public && !session) || (query.public && !sessionPublic),
+    renderNothing
   ),
   // override the session evaluation query with a polling query
   // only if the session is not being publicly accessed
@@ -166,7 +150,7 @@ export default compose(
         pollInterval: 7000,
         variables: { sessionId: router.query.sessionId },
       }),
-    }),
+    })
   ),
   // if the session is publicly accessed, override the session with its public counterpart
   withProps(({ data: { session, sessionPublic }, router: { query } }) => ({
@@ -188,21 +172,19 @@ export default compose(
         // reduce array of arrays [[], [], []] to [...]
         return [...allInstances, ...instancesWithBlockStatus]
       }, [])
-      .map((activeInstance) => {
+      .map(activeInstance => {
         // map the array of all instances with the custom mapper
         if (QUESTION_GROUPS.CHOICES.includes(activeInstance.question.type)) {
           return {
             ...activeInstance,
             results: {
-              data: activeInstance.question.versions[
-                activeInstance.version
-              ].options[activeInstance.question.type].choices.map(
-                (choice, index) => ({
-                  correct: choice.correct,
-                  count: activeInstance.results?.CHOICES[index] || 0,
-                  value: choice.name,
-                }),
-              ),
+              data: activeInstance.question.versions[activeInstance.version].options[
+                activeInstance.question.type
+              ].choices.map((choice, index) => ({
+                correct: choice.correct,
+                count: activeInstance.results?.CHOICES[index] || 0,
+                value: choice.name,
+              })),
               totalResponses: activeInstance.results?.totalParticipants || 0,
             },
           }
@@ -234,30 +216,24 @@ export default compose(
     return {
       activeInstances,
       // generate an instance summary for easy display of "tabs"
-      instanceSummary: activeInstances.map(
-        ({
-          blockStatus, blockNumber, solution, question, results,
-        }) => ({
-          blockNumber,
-          blockStatus,
-          hasSolution: !!solution,
-          title: question.title,
-          totalResponses: results?.totalResponses || 0,
-        }),
-      ),
+      instanceSummary: activeInstances.map(({ blockStatus, blockNumber, solution, question, results }) => ({
+        blockNumber,
+        blockStatus,
+        hasSolution: !!solution,
+        title: question.title,
+        totalResponses: results?.totalResponses || 0,
+      })),
       sessionStatus: session.status,
     }
   }),
   // if the query has finished loading but there are no active instances, show a simple message
   branch(
     ({ activeInstances }) => !(activeInstances && activeInstances.length > 0),
-    renderComponent(() => <div>No evaluation currently active.</div>),
+    renderComponent(() => <div>No evaluation currently active.</div>)
   ),
   withStateHandlers(
     ({ activeInstances, sessionStatus }) => {
-      const firstActiveIndex = activeInstances.findIndex(
-        instance => instance.blockStatus === 'ACTIVE',
-      )
+      const firstActiveIndex = activeInstances.findIndex(instance => instance.blockStatus === 'ACTIVE')
       return {
         activeInstanceIndex: firstActiveIndex >= 0 ? firstActiveIndex : 0,
         activeVisualizations: CHART_DEFAULTS,
@@ -276,10 +252,7 @@ export default compose(
       handleChangeBins: () => bins => ({ bins }),
 
       // handle change of vis. type
-      handleChangeVisualizationType: ({ activeVisualizations }) => (
-        questionType,
-        visualizationType,
-      ) => ({
+      handleChangeVisualizationType: ({ activeVisualizations }) => (questionType, visualizationType) => ({
         activeVisualizations: {
           ...activeVisualizations,
           [questionType]: visualizationType,
@@ -294,58 +267,47 @@ export default compose(
       handleToggleShowSolution: ({ showSolution }) => () => ({
         showSolution: !showSolution,
       }),
-    },
+    }
   ),
-  withProps(
-    ({
-      activeInstances,
-      activeInstanceIndex,
-      bins,
-      handleChangeBins,
-      handleChangeActiveInstance,
-    }) => {
-      const activeInstance = activeInstances[activeInstanceIndex]
-      const { question, results } = activeInstance
+  withProps(({ activeInstances, activeInstanceIndex, bins, handleChangeBins, handleChangeActiveInstance }) => {
+    const activeInstance = activeInstances[activeInstanceIndex]
+    const { question, results } = activeInstance
 
-      if (question.type === QUESTION_TYPES.FREE_RANGE) {
-        return {
-          activeInstance,
-          handleChangeActiveInstance,
-          statistics: {
-            bins,
-            max: calculateMax(results),
-            mean: calculateMean(results),
-            median: calculateMedian(results),
-            min: calculateMin(results),
-            onChangeBins: e => handleChangeBins(+e.target.value),
-            q1: calculateFirstQuartile(results),
-            q3: calculateThirdQuartile(results),
-            sd: calculateStandardDeviation(results),
-          },
-        }
-      }
-
-      const resultsWithPercentages = {
-        ...activeInstance.results,
-        data: activeInstance.results?.data.map(({ correct, count, value }) => ({
-          correct,
-          count,
-          percentage: _round(
-            100 * (count / activeInstance.results?.totalResponses),
-            1,
-          ),
-          value,
-        })),
-        totalResponses: activeInstance.results?.totalResponses,
-      }
-
+    if (question.type === QUESTION_TYPES.FREE_RANGE) {
       return {
-        activeInstance: {
-          ...activeInstance,
-          results: resultsWithPercentages,
-        },
+        activeInstance,
         handleChangeActiveInstance,
+        statistics: {
+          bins,
+          max: calculateMax(results),
+          mean: calculateMean(results),
+          median: calculateMedian(results),
+          min: calculateMin(results),
+          onChangeBins: e => handleChangeBins(+e.target.value),
+          q1: calculateFirstQuartile(results),
+          q3: calculateThirdQuartile(results),
+          sd: calculateStandardDeviation(results),
+        },
       }
-    },
-  ),
+    }
+
+    const resultsWithPercentages = {
+      ...activeInstance.results,
+      data: activeInstance.results?.data.map(({ correct, count, value }) => ({
+        correct,
+        count,
+        percentage: _round(100 * (count / activeInstance.results?.totalResponses), 1),
+        value,
+      })),
+      totalResponses: activeInstance.results?.totalResponses,
+    }
+
+    return {
+      activeInstance: {
+        ...activeInstance,
+        results: resultsWithPercentages,
+      },
+      handleChangeActiveInstance,
+    }
+  })
 )(Evaluation)

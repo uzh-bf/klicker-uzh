@@ -1,5 +1,4 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import { defineMessages, intlShape } from 'react-intl'
 import { Tab } from 'semantic-ui-react'
 
@@ -46,11 +45,7 @@ const UserSettingsForm = ({ intl }) => {
 
   return (
     <div className="userSettingsForm">
-      <Tab
-        menu={{ fluid: true, tabular: true, vertical: true }}
-        menuPosition="right"
-        panes={panes}
-      />
+      <Tab menu={{ fluid: true, tabular: true, vertical: true }} menuPosition="right" panes={panes} />
 
       <style jsx>{`
         @import 'src/theme';

@@ -1,5 +1,4 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import { Query } from 'react-apollo'
 import { intlShape } from 'react-intl'
 import { Formik } from 'formik'
@@ -11,9 +10,7 @@ import { FormikInput } from '..'
 import validationSchema from '../common/validationSchema'
 import messages from '../common/messages'
 
-const {
-  email, institution, useCase, shortname,
-} = validationSchema
+const { email, institution, useCase, shortname } = validationSchema
 
 const propTypes = {
   intl: intlShape.isRequired,
@@ -31,22 +28,7 @@ const AccountDataForm = ({ intl }) => (
             shortname: data.user?.shortname,
             useCase: data.user?.useCase,
           }}
-          onSubmit={values => console.log({
-            email: values.email || data.user.email,
-            institution: values.institution || data.user.institution,
-            shortname: values.shortname || data.user.shortname,
-            useCase: values.useCase || data.user.useCase,
-          })
-          }
-          render={({
-            values,
-            errors,
-            touched,
-            handleChange,
-            handleBlur,
-            handleSubmit,
-            isSubmitting,
-          }) => (
+          render={({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting }) => (
             <Form loading={loading} onSubmit={handleSubmit}>
               <FormikInput
                 error={errors.email}
@@ -99,13 +81,7 @@ const AccountDataForm = ({ intl }) => (
                 type="text"
                 value={values.useCase}
               />
-              <Button
-                primary
-                disabled={isSubmitting}
-                floated="right"
-                loading={isSubmitting}
-                type="submit"
-              >
+              <Button primary disabled={isSubmitting} floated="right" loading={isSubmitting} type="submit">
                 Save Changes
               </Button>
             </Form>
@@ -118,6 +94,14 @@ const AccountDataForm = ({ intl }) => (
               useCase,
             })
             .required()}
+          onSubmit={values =>
+            console.log({
+              email: values.email || data.user.email,
+              institution: values.institution || data.user.institution,
+              shortname: values.shortname || data.user.shortname,
+              useCase: values.useCase || data.user.useCase,
+            })
+          }
         />
       )}
     </Query>

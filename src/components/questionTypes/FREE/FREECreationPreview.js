@@ -24,11 +24,7 @@ const defaultProps = {
   },
 }
 
-const FREECreationPreview = ({
-  questionType,
-  options: { restrictions },
-  description,
-}) => {
+const FREECreationPreview = ({ questionType, options: { restrictions }, description }) => {
   const isMinDefined = restrictions && typeof restrictions.min !== 'undefined'
   const isMaxDefined = restrictions && typeof restrictions.min !== 'undefined'
 
@@ -40,30 +36,18 @@ const FREECreationPreview = ({
       {(() => {
         // if the type is FREE_RANGE and both restrictions are specified
         // display a slider and selection
-        if (
-          questionType === QUESTION_TYPES.FREE_RANGE
-          && isMinDefined
-          && isMaxDefined
-        ) {
+        if (questionType === QUESTION_TYPES.FREE_RANGE && isMinDefined && isMaxDefined) {
           return (
             <div>
               <div className="diagram">
                 {isMinDefined && (
                   <div className="min">
-                    <FormattedMessage
-                      defaultMessage="Min"
-                      id="createQuestion.options.min"
-                    />
-                    : {restrictions.min}
+                    <FormattedMessage defaultMessage="Min" id="createQuestion.options.min" />: {restrictions.min}
                   </div>
                 )}
                 {isMaxDefined && (
                   <div className="max">
-                    <FormattedMessage
-                      defaultMessage="Max"
-                      id="createQuestion.options.max"
-                    />
-                    : {restrictions.max}
+                    <FormattedMessage defaultMessage="Max" id="createQuestion.options.max" />: {restrictions.max}
                   </div>
                 )}
                 <div className="line" />
@@ -72,14 +56,9 @@ const FREECreationPreview = ({
               <div className="selection">
                 {/* TODO how to align title horizontally centered? */}
                 <b className="title">
-                  <FormattedMessage
-                    defaultMessage="Selection"
-                    id="createQuestion.selection"
-                  />
+                  <FormattedMessage defaultMessage="Selection" id="createQuestion.selection" />
                 </b>
-                <div className="box">
-                  {(+restrictions.min + +restrictions.max) / 2}
-                </div>
+                <div className="box">{(+restrictions.min + +restrictions.max) / 2}</div>
               </div>
             </div>
           )
@@ -90,26 +69,18 @@ const FREECreationPreview = ({
             <div className="freeText">
               <div className="box" />
             </div>
-            {questionType === QUESTION_TYPES.FREE_RANGE
-              && isMinDefined && (
+            {questionType === QUESTION_TYPES.FREE_RANGE &&
+              isMinDefined && (
                 <div>
-                  <FormattedMessage
-                    defaultMessage="Min"
-                    id="createQuestion.options.min"
-                  />
-                  : {restrictions.min}
+                  <FormattedMessage defaultMessage="Min" id="createQuestion.options.min" />: {restrictions.min}
                 </div>
-            )}
-            {questionType === QUESTION_TYPES.FREE_RANGE
-              && isMaxDefined && (
+              )}
+            {questionType === QUESTION_TYPES.FREE_RANGE &&
+              isMaxDefined && (
                 <div>
-                  <FormattedMessage
-                    defaultMessage="Max"
-                    id="createQuestion.options.max"
-                  />
-                  : {restrictions.max}
+                  <FormattedMessage defaultMessage="Max" id="createQuestion.options.max" />: {restrictions.max}
                 </div>
-            )}
+              )}
           </div>
         )
       })()}

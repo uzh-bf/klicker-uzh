@@ -23,12 +23,7 @@ const ListWithHeader = ({ children, items, limit }) => (
     {items.length > limit ? (
       <>
         <List>{mapItems(items.slice(0, limit))}</List>
-        <Popup
-          hideOnScroll
-          on="click"
-          position="bottom center"
-          trigger={<div className="more">...</div>}
-        >
+        <Popup hideOnScroll on="click" position="bottom center" trigger={<div className="more">...</div>}>
           <div className="remainingPopup">
             <List>{mapItems(items.slice(limit))}</List>
           </div>

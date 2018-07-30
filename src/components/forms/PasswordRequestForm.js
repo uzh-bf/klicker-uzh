@@ -30,15 +30,7 @@ const PasswordRequestForm = ({ intl, loading, onSubmit }) => {
       initialValues={{
         email: '',
       }}
-      render={({
-        values,
-        errors,
-        touched,
-        handleChange,
-        handleBlur,
-        handleSubmit,
-        isSubmitting,
-      }) => (
+      render={({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting }) => (
         <FormWithLinks
           button={{
             disabled: !_isEmpty(errors),

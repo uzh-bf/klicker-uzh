@@ -21,11 +21,10 @@ const StaticLayout = ({ children, pageTitle }) => (
         <hr />
         <p>
           &copy;
-          {new Date().getFullYear()} IBF Teaching Center, Department of Banking
-          and Finance, University of Zurich. All rights reserved.
+          {new Date().getFullYear()} IBF Teaching Center, Department of Banking and Finance, University of Zurich. All
+          rights reserved.
           <br />
-          Products and Services displayed herein are trademarks or registered
-          trademarks of their respective owners.
+          Products and Services displayed herein are trademarks or registered trademarks of their respective owners.
         </p>
       </footer>
 
@@ -51,12 +50,7 @@ const StaticLayout = ({ children, pageTitle }) => (
                 padding: 0;
                 border: 0;
                 height: 1px;
-                background-image: linear-gradient(
-                  to right,
-                  transparent,
-                  rgba(0, 0, 0, 0.5),
-                  transparent
-                );
+                background-image: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.5), transparent);
               }
 
               p {

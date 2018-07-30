@@ -2,15 +2,7 @@
 
 import React from 'react'
 import PropTypes from 'prop-types'
-import {
-  Button,
-  Icon,
-  Menu,
-  Popup,
-  List,
-  Modal,
-  Embed,
-} from 'semantic-ui-react'
+import { Button, Icon, Menu, Popup, List, Modal, Embed } from 'semantic-ui-react'
 import { defineMessages, intlShape, FormattedMessage } from 'react-intl'
 import { CHANGELOG } from '../../../constants'
 
@@ -46,10 +38,7 @@ const SessionArea = ({ intl, sessionId }) => (
         labelPosition="left"
       >
         <Icon name="play" />
-        <FormattedMessage
-          defaultMessage="Running Session"
-          id="sessionArea.toRunningSession"
-        />
+        <FormattedMessage defaultMessage="Running Session" id="sessionArea.toRunningSession" />
       </Button>
     </Menu.Item>
 
@@ -62,12 +51,7 @@ const SessionArea = ({ intl, sessionId }) => (
       hideOnScroll={false}
       on="click"
       position="bottom right"
-      trigger={(
-        <Menu.Item
-          content={intl.formatMessage(messages.whatsNew)}
-          icon="info"
-        />
-)}
+      trigger={<Menu.Item content={intl.formatMessage(messages.whatsNew)} icon="info" />}
     >
       <Popup.Content>
         <div className="popupChanges popupContent">
@@ -75,11 +59,7 @@ const SessionArea = ({ intl, sessionId }) => (
           <p>
             <strong>
               A public roadmap is available on{' '}
-              <a
-                href="https://trello.com/b/xw0D1k6l"
-                rel="noopener noreferrer"
-                target="_blank"
-              >
+              <a href="https://trello.com/b/xw0D1k6l" rel="noopener noreferrer" target="_blank">
                 https://trello.com/b/xw0D1k6l
               </a>
               .
@@ -113,9 +93,7 @@ const SessionArea = ({ intl, sessionId }) => (
       hideOnScroll={false}
       on="click"
       position="bottom right"
-      trigger={
-        <Menu.Item content={intl.formatMessage(messages.support)} icon="help" />
-      }
+      trigger={<Menu.Item content={intl.formatMessage(messages.support)} icon="help" />}
     >
       <Popup.Content>
         <div className="popupHelp popupContent">
@@ -127,11 +105,7 @@ const SessionArea = ({ intl, sessionId }) => (
             </Button>
           </a>
 
-          <a
-            href="https://uzh-bf.github.io/klicker-docs/"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
+          <a href="https://uzh-bf.github.io/klicker-docs/" rel="noopener noreferrer" target="_blank">
             <Button icon labelPosition="left">
               <Icon name="external" />
               Documentation
@@ -140,12 +114,12 @@ const SessionArea = ({ intl, sessionId }) => (
 
           <Modal
             closeIcon
-            trigger={(
+            trigger={
               <Button icon labelPosition="left">
                 <Icon name="video" />
                 Introductory Video
               </Button>
-)}
+            }
           >
             <Modal.Header>Introductory Video</Modal.Header>
             <Modal.Content>

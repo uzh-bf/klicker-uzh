@@ -40,5 +40,5 @@ export default compose(
   withLogging({
     slaask: true,
   }),
-  pageWithIntl,
+  pageWithIntl
 )(Settings)

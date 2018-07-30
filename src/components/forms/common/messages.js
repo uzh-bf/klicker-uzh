@@ -63,8 +63,7 @@ export default defineMessages({
     id: 'form.useCase.label',
   },
   useCaseTooltip: {
-    defaultMessage:
-      'Short description of your planned use case for the Klicker UZH.',
+    defaultMessage: 'Short description of your planned use case for the Klicker UZH.',
     id: 'form.useCase.tooltip',
   },
 })

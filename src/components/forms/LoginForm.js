@@ -31,15 +31,7 @@ const LoginForm = ({ intl, loading, onSubmit }) => {
         email: '',
         password: '',
       }}
-      render={({
-        values,
-        errors,
-        touched,
-        handleChange,
-        handleBlur,
-        handleSubmit,
-        isSubmitting,
-      }) => (
+      render={({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting }) => (
         <FormWithLinks
           button={{
             disabled: !_isEmpty(errors) || _isEmpty(touched),

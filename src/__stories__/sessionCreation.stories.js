@@ -7,9 +7,7 @@ import { List, Map } from 'immutable'
 
 import SessionCreation from '../components/forms/sessionCreation/SessionCreationForm'
 import Question from '../components/questions/Question'
-import {
-  getIndex, moveQuestion, addToBlock, appendNewBlock,
-} from '../lib/utils/move'
+import { getIndex, moveQuestion, addToBlock, appendNewBlock } from '../lib/utils/move'
 
 const withDnD = withStateHandlers(
   {
@@ -53,21 +51,19 @@ const withDnD = withStateHandlers(
           source.index,
           destination.droppableId,
           destination.index,
-          true,
+          true
         ),
       }
     },
     onNewBlock: ({ blocks }) => question => appendNewBlock(blocks, question),
     onExtendBlock: ({ blocks }) => (blockId, question) => addToBlock(blocks, blockId, question),
-  },
+  }
 )
 
-const DnDWrapper = withDnD(({
-  blocks, name, onDragEnd, onNewBlock, onExtendBlock,
-}) => (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <SessionCreation blocks={blocks} name={name} />
-    </DragDropContext>
+const DnDWrapper = withDnD(({ blocks, name, onDragEnd, onNewBlock, onExtendBlock }) => (
+  <DragDropContext onDragEnd={onDragEnd}>
+    <SessionCreation blocks={blocks} name={name} />
+  </DragDropContext>
 ))
 
 storiesOf('forms', module).add('SessionCreation', () => <DnDWrapper />)

@@ -5,23 +5,11 @@ import PropTypes from 'prop-types'
 import React from 'react'
 import { graphql } from 'react-apollo'
 import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
-import {
-  branch,
-  compose,
-  renderComponent,
-  withHandlers,
-  withProps,
-  withStateHandlers,
-} from 'recompose'
+import { branch, compose, renderComponent, withHandlers, withProps, withStateHandlers } from 'recompose'
 import { StudentLayout } from '../components/layouts'
 import FeedbackArea from '../components/sessions/join/FeedbackArea'
 import QuestionArea from '../components/sessions/join/QuestionArea'
-import {
-  AddConfusionTSMutation,
-  AddFeedbackMutation,
-  AddResponseMutation,
-  JoinSessionQuery,
-} from '../graphql'
+import { AddConfusionTSMutation, AddFeedbackMutation, AddResponseMutation, JoinSessionQuery } from '../graphql'
 import { pageWithIntl, withFingerprint, withLogging } from '../lib'
 
 const messages = defineMessages({
@@ -74,15 +62,14 @@ const Join = ({
   handleNewFeedback,
   handleNewResponse,
 }) => {
-  const title = sidebarActiveItem === 'activeQuestion'
-    ? intl.formatMessage(messages.activeQuestionTitle)
-    : intl.formatMessage(messages.feedbackChannelTitle)
+  const title =
+    sidebarActiveItem === 'activeQuestion'
+      ? intl.formatMessage(messages.activeQuestionTitle)
+      : intl.formatMessage(messages.feedbackChannelTitle)
 
   return (
     <StudentLayout
-      isInteractionEnabled={
-        isConfusionBarometerActive || isFeedbackChannelActive
-      }
+      isInteractionEnabled={isConfusionBarometerActive || isFeedbackChannelActive}
       pageTitle={`Join ${shortname}`}
       sidebar={{
         activeItem: sidebarActiveItem,
@@ -105,10 +92,7 @@ const Join = ({
               inactive: sidebarActiveItem !== 'activeQuestion',
             })}
           >
-            <FormattedMessage
-              defaultMessage="No evaluation active."
-              id="joinSession.noEvaluationActive"
-            />
+            <FormattedMessage defaultMessage="No evaluation active." id="joinSession.noEvaluationActive" />
           </div>
         )}
 
@@ -205,7 +189,7 @@ export default compose(
       handleToggleSidebarVisible: ({ sidebarVisible }) => () => ({
         sidebarVisible: !sidebarVisible,
       }),
-    },
+    }
   ),
   graphql(JoinSessionQuery, {
     options: ({ router }) => ({
@@ -217,12 +201,9 @@ export default compose(
     ({ data }) => data.errors || !data.joinSession,
     renderComponent(() => (
       <div>
-        <FormattedMessage
-          defaultMessage="No session active."
-          id="joinSession.noSessionActive"
-        />
+        <FormattedMessage defaultMessage="No session active." id="joinSession.noSessionActive" />
       </div>
-    )),
+    ))
   ),
   graphql(AddConfusionTSMutation, { name: 'newConfusionTS' }),
   graphql(AddFeedbackMutation, { name: 'newFeedback' }),
@@ -235,11 +216,7 @@ export default compose(
   })),
   withHandlers({
     // handle creation of a new confusion timestep
-    handleNewConfusionTS: ({
-      fp,
-      data: { joinSession },
-      newConfusionTS,
-    }) => async ({ difficulty, speed }) => {
+    handleNewConfusionTS: ({ fp, data: { joinSession }, newConfusionTS }) => async ({ difficulty, speed }) => {
       try {
         newConfusionTS({
           variables: {
@@ -255,12 +232,7 @@ export default compose(
     },
 
     // handle creation of a new feedback
-    handleNewFeedback: ({
-      data: { joinSession },
-      fp,
-      newFeedback,
-      router,
-    }) => async ({ content }) => {
+    handleNewFeedback: ({ data: { joinSession }, fp, newFeedback, router }) => async ({ content }) => {
       try {
         if (joinSession.settings.isFeedbackChannelPublic) {
           newFeedback({
@@ -308,10 +280,7 @@ export default compose(
     },
 
     // handle creation of a new response
-    handleNewResponse: ({ fp, newResponse }) => async ({
-      instanceId,
-      response,
-    }) => {
+    handleNewResponse: ({ fp, newResponse }) => async ({ instanceId, response }) => {
       try {
         newResponse({
           variables: { fp: await fp, instanceId, response },
@@ -321,11 +290,9 @@ export default compose(
       }
     },
 
-    handleSidebarActiveItemChange: ({
-      handleSidebarActiveItemChange,
-    }) => newItem => () => {
+    handleSidebarActiveItemChange: ({ handleSidebarActiveItemChange }) => newItem => () => {
       // sessionStorage.setItem('sidebarActiveItem', newItem)
       handleSidebarActiveItemChange(newItem)
     },
-  }),
+  })
 )(Join)

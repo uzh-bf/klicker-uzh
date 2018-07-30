@@ -17,20 +17,8 @@ const defaultProps = {
   icon: undefined,
 }
 
-const SidebarItem = ({
-  active,
-  children,
-  className,
-  icon,
-  name,
-  handleSidebarItemClick,
-}) => (
-  <Menu.Item
-    active={active}
-    className={className}
-    name={name}
-    onClick={handleSidebarItemClick}
-  >
+const SidebarItem = ({ active, children, className, icon, name, handleSidebarItemClick }) => (
+  <Menu.Item active={active} className={className} name={name} onClick={handleSidebarItemClick}>
     {icon && <Icon name={icon} />}
     {children}
   </Menu.Item>

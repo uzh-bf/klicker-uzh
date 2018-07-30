@@ -22,7 +22,7 @@ const propTypes = {
       content: PropTypes.string,
       id: PropTypes.string,
       labelStart: PropTypes.string,
-    }),
+    })
   ).isRequired,
   sortOrder: PropTypes.bool.isRequired,
   withSorting: PropTypes.bool,
@@ -55,9 +55,7 @@ const SearchArea = ({
     {withSorting && (
       <>
         <Button
-          icon={`${_find(sortingTypes, { id: sortBy }).labelStart} ${
-            sortOrder ? 'ascending' : 'descending'
-          }`}
+          icon={`${_find(sortingTypes, { id: sortBy }).labelStart} ${sortOrder ? 'ascending' : 'descending'}`}
           size="small"
           onClick={handleSortOrderToggle}
         />

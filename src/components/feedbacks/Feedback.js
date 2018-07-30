@@ -18,15 +18,7 @@ const defaultProps = {
   showVotes: false,
 }
 
-const Feedback = ({
-  alreadyVoted,
-  content,
-  showDelete,
-  showVotes,
-  updateVotes,
-  votes,
-  onDelete,
-}) => (
+const Feedback = ({ alreadyVoted, content, showDelete, showVotes, updateVotes, votes, onDelete }) => (
   <div className="feedback">
     <div className="content">{content}</div>
     {showDelete && (
@@ -36,11 +28,7 @@ const Feedback = ({
     )}
 
     {showVotes && (
-      <Button
-        className="votes"
-        disabled={alreadyVoted}
-        onClick={updateVotes && updateVotes()}
-      >
+      <Button className="votes" disabled={alreadyVoted} onClick={updateVotes && updateVotes()}>
         <Icon name={alreadyVoted ? 'thumbs up' : 'thumbs outline up'} />
         {votes}
       </Button>

@@ -1,10 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import Griddle, {
-  plugins,
-  RowDefinition,
-  ColumnDefinition,
-} from 'griddle-react'
+import Griddle, { plugins, RowDefinition, ColumnDefinition } from 'griddle-react'
 import { QUESTION_GROUPS } from '../../../constants'
 
 const propTypes = {
@@ -13,7 +9,7 @@ const propTypes = {
       count: PropTypes.number.isRequired,
       percentage: PropTypes.number.isRequired,
       value: PropTypes.string.isRequired,
-    }),
+    })
   ),
   isSolutionShown: PropTypes.bool,
   questionType: PropTypes.string.isRequired,
@@ -59,12 +55,7 @@ function TableChart({ data, isSolutionShown, questionType }) {
         // sortProperties={[{ id: 'count', sortAscending: false }]}
       >
         <RowDefinition>
-          <ColumnDefinition
-            cssClassName="griddle-cell countColumn"
-            id="count"
-            title="Count"
-            width="3rem"
-          />
+          <ColumnDefinition cssClassName="griddle-cell countColumn" id="count" title="Count" width="3rem" />
 
           <ColumnDefinition id="value" title="Value" />
 

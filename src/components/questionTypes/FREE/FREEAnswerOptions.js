@@ -28,44 +28,28 @@ const defaultProps = {
   value: undefined,
 }
 
-const FREEAnswerOptions = ({
-  disabled,
-  onChange,
-  options,
-  value,
-  questionType,
-}) => (
+const FREEAnswerOptions = ({ disabled, onChange, options, value, questionType }) => (
   <div className="ui form freeAnswerOptions">
-    <Head>
-      {createLinks([
-        'https://unpkg.com/react-rangeslider/umd/rangeslider.min.css',
-      ])}
-    </Head>
+    <Head>{createLinks(['https://unpkg.com/react-rangeslider/umd/rangeslider.min.css'])}</Head>
 
     {(() => {
       if (
-        questionType === QUESTION_TYPES.FREE_RANGE
-        && typeof options.restrictions !== 'undefined'
-        && options.restrictions.min !== null
-        && options.restrictions.max !== null
+        questionType === QUESTION_TYPES.FREE_RANGE &&
+        typeof options.restrictions !== 'undefined' &&
+        options.restrictions.min !== null &&
+        options.restrictions.max !== null
       ) {
         return (
           <div className="field slider">
             <span className="min">
               <strong>
-                <FormattedMessage
-                  defaultMessage="Min"
-                  id="createQuestion.options.min"
-                />
+                <FormattedMessage defaultMessage="Min" id="createQuestion.options.min" />
               </strong>
               :{options.restrictions.min}
             </span>
             <span className="max">
               <strong>
-                <FormattedMessage
-                  defaultMessage="Max"
-                  id="createQuestion.options.max"
-                />
+                <FormattedMessage defaultMessage="Max" id="createQuestion.options.max" />
               </strong>
               :{options.restrictions.max}
             </span>
@@ -96,41 +80,31 @@ const FREEAnswerOptions = ({
           <div className="rangeInformation">
             {do {
               if (options.restrictions.max !== null) {
-                <FormattedMessage
+                ;<FormattedMessage
                   defaultMessage="Maximum value: {max}"
                   id="freeAnswer.maxValue"
                   values={{ max: options.restrictions.max }}
                 />
               } else if (options.restrictions.min !== null) {
-                <FormattedMessage
+                ;<FormattedMessage
                   defaultMessage="Minimum value: {min}"
                   id="freeAnswer.minValue"
                   values={{ min: options.restrictions.min }}
                 />
               } else {
-                <FormattedMessage
-                  defaultMessage="Unrestricted input (any number)"
-                  id="freeAnswer.unrestricted"
-                />
+                ;<FormattedMessage defaultMessage="Unrestricted input (any number)" id="freeAnswer.unrestricted" />
               }
             }}
           </div>
 
-          <textarea
-            disabled={disabled}
-            id="responseInput"
-            onChange={e => onChange(e.target.value)}
-          />
+          <textarea disabled={disabled} id="responseInput" onChange={e => onChange(e.target.value)} />
 
           {questionType === QUESTION_TYPES.FREE_RANGE && (
             <div>
               {options.restrictions.min && (
                 <div>
                   <strong>
-                    <FormattedMessage
-                      defaultMessage="Min"
-                      id="createQuestion.options.min"
-                    />
+                    <FormattedMessage defaultMessage="Min" id="createQuestion.options.min" />
                   </strong>
                   :{options.restrictions.min}
                 </div>
@@ -139,10 +113,7 @@ const FREEAnswerOptions = ({
               {options.restrictions.max && (
                 <div>
                   <strong>
-                    <FormattedMessage
-                      defaultMessage="Max"
-                      id="createQuestion.options.max"
-                    />
+                    <FormattedMessage defaultMessage="Max" id="createQuestion.options.max" />
                   </strong>
                   :{options.restrictions.max}
                 </div>

@@ -23,12 +23,7 @@ const SCCreationPreview = ({ description, options }) => (
       <QuestionDescription content={description} />
     </div>
     <div className="options">
-      <SCAnswerOptions
-        disabled
-        activeOption={-1}
-        options={options.choices}
-        onOptionClick={f => () => f}
-      />
+      <SCAnswerOptions disabled activeOption={-1} options={options.choices} onOptionClick={f => () => f} />
     </div>
     <div className="button">
       <FormattedMessage defaultMessage="Submit" id="common.button.submit" />

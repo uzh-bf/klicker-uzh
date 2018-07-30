@@ -25,16 +25,7 @@ const defaultProps = {
   showGraph: false,
 }
 
-const EvaluationListItem = ({
-  color,
-  correct,
-  children,
-  marker,
-  reverse,
-  percentage,
-  questionType,
-  showGraph,
-}) => (
+const EvaluationListItem = ({ color, correct, children, marker, reverse, percentage, questionType, showGraph }) => (
   <div className={classNames('evaluationListItem', { correct, reverse })}>
     {color && (
       <div className="colorSquare">
@@ -44,9 +35,9 @@ const EvaluationListItem = ({
 
     {marker && reverse && <div className="marker">{marker}</div>}
     <div className="content">{children}</div>
-    {QUESTION_GROUPS.WITH_PERCENTAGES.includes(questionType)
-      && showGraph
-      && _isFinite(percentage) && <div className="percentage">{percentage}%</div>}
+    {QUESTION_GROUPS.WITH_PERCENTAGES.includes(questionType) &&
+      showGraph &&
+      _isFinite(percentage) && <div className="percentage">{percentage}%</div>}
     {marker && !reverse && <div className="marker">{marker}</div>}
 
     <style jsx>

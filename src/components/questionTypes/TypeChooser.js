@@ -57,21 +57,13 @@ const TypeChooser = ({ intl, value, onChange }) => {
   return (
     <div className="required field typeChooser">
       <label htmlFor="types">
-        <FormattedMessage
-          defaultMessage="Question Type"
-          id="createQuestion.questionType.label"
-        />
+        <FormattedMessage defaultMessage="Question Type" id="createQuestion.questionType.label" />
         <a data-tip data-for="TypeChooserHelp">
           <Icon name="question circle" />
         </a>
       </label>
 
-      <ReactTooltip
-        delayHide={250}
-        delayShow={250}
-        id="TypeChooserHelp"
-        place="right"
-      >
+      <ReactTooltip delayHide={250} delayShow={250} id="TypeChooserHelp" place="right">
         <FormattedMessage
           defaultMessage="Choose the type of question you would like to create."
           id="createQuestion.questionType.tooltip"
@@ -80,12 +72,7 @@ const TypeChooser = ({ intl, value, onChange }) => {
 
       <div className="types">
         {types.map(({ name, value: typeValue }) => (
-          <Button
-            active={typeValue === value}
-            key={typeValue}
-            type="button"
-            onClick={handleClick(typeValue)}
-          >
+          <Button active={typeValue === value} key={typeValue} type="button" onClick={handleClick(typeValue)}>
             {name}
           </Button>
         ))}
