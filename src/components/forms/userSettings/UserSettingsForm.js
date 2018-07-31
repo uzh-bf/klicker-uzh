@@ -50,7 +50,12 @@ const UserSettingsForm = ({ intl }) => {
 
   return (
     <div className="userSettingsForm">
-      <Tab menu={{ fluid: true, tabular: true, vertical: true }} menuPosition="right" panes={panes} />
+      <Tab
+        grid={{ paneWidth: 12, stackable: true, tabWidth: 4 }}
+        menu={{ fluid: true, tabular: true, vertical: true }}
+        menuPosition="right"
+        panes={panes}
+      />
 
       <style jsx>{`
         @import 'src/theme';
