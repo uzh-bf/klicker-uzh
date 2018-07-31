@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import { defineMessages, intlShape } from 'react-intl'
 import { Tab } from 'semantic-ui-react'
 
@@ -21,6 +22,7 @@ const messages = defineMessages({
 
 const propTypes = {
   intl: intlShape.isRequired,
+  onModifyUser: PropTypes.func.isRequired,
 }
 
 const UserSettingsForm = ({ intl }) => {

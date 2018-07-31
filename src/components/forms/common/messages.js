@@ -13,6 +13,10 @@ export default defineMessages({
     defaultMessage: 'Email',
     id: 'form.email.label',
   },
+  emailNotAvailable: {
+    defaultMessage: 'An account for this email address already exists. Please provide another address.',
+    id: 'form.email.notAvailable',
+  },
   forgotPassword: {
     defaultMessage: 'Forgot password?',
     id: 'form.forgotPassword.label',
@@ -48,6 +52,10 @@ export default defineMessages({
   shortnameLabel: {
     defaultMessage: 'Account ID / Join Link',
     id: 'form.shortname.label',
+  },
+  shortnameNotAvailable: {
+    defaultMessage: 'This Account ID has already been taken. Please choose another one.',
+    id: 'form.shortname.notAvailable',
   },
   shortnameTooltip: {
     defaultMessage:
