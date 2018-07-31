@@ -34,34 +34,19 @@ function ActionBar({
       <div className="actionButtons">
         <Link href="/questions/create">
           <Button primary>
-            <FormattedMessage
-              defaultMessage="Create Question"
-              id="questionPool.button.createQuestion"
-            />
+            <FormattedMessage defaultMessage="Create Question" id="questionPool.button.createQuestion" />
           </Button>
         </Link>
 
-        <Button
-          primary
-          disabled={!!creationMode}
-          onClick={handleCreationModeToggle}
-        >
-          <FormattedMessage
-            defaultMessage="Create Session"
-            id="questionPool.button.createSession"
-          />
+        <Button primary disabled={!!creationMode} onClick={handleCreationModeToggle}>
+          <FormattedMessage defaultMessage="Create Session" id="questionPool.button.createSession" />
         </Button>
       </div>
 
       <div className="creationButtons">
         {creationMode ? (
           <>
-            <Button
-              icon
-              disabled={itemsChecked === 0}
-              labelPosition="left"
-              onClick={() => handleQuickBlocks()}
-            >
+            <Button icon disabled={itemsChecked === 0} labelPosition="left" onClick={() => handleQuickBlocks()}>
               <Icon name="lightning" />
               <FormattedMessage
                 defaultMessage="Split questions into {num} blocks"
@@ -70,12 +55,7 @@ function ActionBar({
               />
             </Button>
 
-            <Button
-              icon
-              disabled={itemsChecked === 0}
-              labelPosition="left"
-              onClick={() => handleQuickBlock()}
-            >
+            <Button icon disabled={itemsChecked === 0} labelPosition="left" onClick={() => handleQuickBlock()}>
               <Icon name="lightning" />
               <FormattedMessage
                 defaultMessage="Group questions into one block ({num}->1)"
@@ -86,12 +66,7 @@ function ActionBar({
           </>
         ) : (
           <>
-            <Button
-              icon
-              disabled={itemsChecked === 0}
-              labelPosition="left"
-              onClick={() => handleArchiveQuestions()}
-            >
+            <Button icon disabled={itemsChecked === 0} labelPosition="left" onClick={() => handleArchiveQuestions()}>
               <Icon name="archive" />
               {isArchiveActive ? (
                 <FormattedMessage

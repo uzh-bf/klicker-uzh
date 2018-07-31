@@ -55,14 +55,11 @@ function FeedbackArea({
             labels={{ max: 'fast', mid: 'optimal', min: 'slow' }}
             max={5}
             min={-5}
-            title={(
+            title={
               <h2 className="sectionTitle">
-                <FormattedMessage
-                  defaultMessage="Speed"
-                  id="common.string.speed"
-                />
+                <FormattedMessage defaultMessage="Speed" id="common.string.speed" />
               </h2>
-)}
+            }
             value={confusionSpeed}
           />
 
@@ -72,14 +69,11 @@ function FeedbackArea({
             labels={{ max: 'hard', mid: 'optimal', min: 'easy' }}
             max={5}
             min={-5}
-            title={(
+            title={
               <h2 className="sectionTitle">
-                <FormattedMessage
-                  defaultMessage="Difficulty"
-                  id="common.string.difficulty"
-                />
+                <FormattedMessage defaultMessage="Difficulty" id="common.string.difficulty" />
               </h2>
-)}
+            }
             value={confusionDifficulty}
           />
         </div>
@@ -91,40 +85,22 @@ function FeedbackArea({
             <Form.Field>
               <label htmlFor="feedbackInput">
                 <h2 className="sectionTitle">
-                  <FormattedMessage
-                    defaultMessage="New open feedback"
-                    id="joinSession.newFeedbackInput.label"
-                  />
+                  <FormattedMessage defaultMessage="New open feedback" id="joinSession.newFeedbackInput.label" />
                 </h2>
-                <textarea
-                  name="feedbackInput"
-                  value={feedbackInputValue}
-                  onChange={handleFeedbackInputValueChange}
-                />
+                <textarea name="feedbackInput" value={feedbackInputValue} onChange={handleFeedbackInputValueChange} />
               </label>
             </Form.Field>
 
-            <Button
-              primary
-              disabled={!feedbackInputValue}
-              type="submit"
-              onClick={handleNewFeedback}
-            >
-              <FormattedMessage
-                defaultMessage="Submit"
-                id="common.button.submit"
-              />
+            <Button primary disabled={!feedbackInputValue} type="submit" onClick={handleNewFeedback}>
+              <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
             </Button>
           </Form>
         )}
-        {isFeedbackChannelActive
-          && feedbacks && (
+        {isFeedbackChannelActive &&
+          feedbacks && (
             <div className="existingFeedbacks">
               <h2>
-                <FormattedMessage
-                  defaultMessage="All feedbacks"
-                  id="joinSession.allFeedbacks"
-                />
+                <FormattedMessage defaultMessage="All feedbacks" id="joinSession.allFeedbacks" />
               </h2>
               {feedbacks.map(({ id, content, votes }) => (
                 <div className="feedback" key={id}>
@@ -138,7 +114,7 @@ function FeedbackArea({
                 </div>
               ))}
             </div>
-        )}
+          )}
       </div>
 
       <style jsx>
@@ -262,14 +238,10 @@ export default compose(
       handleFeedbackInputValueChange: () => e => ({
         feedbackInputValue: e.target.value,
       }),
-    },
+    }
   ),
   withHandlers({
-    handleNewConfusionTS: ({
-      confusionDifficulty,
-      confusionSpeed,
-      handleNewConfusionTS,
-    }) => () => {
+    handleNewConfusionTS: ({ confusionDifficulty, confusionSpeed, handleNewConfusionTS }) => () => {
       // send the new confusion entry to the server
       handleNewConfusionTS({
         difficulty: confusionDifficulty,
@@ -282,16 +254,12 @@ export default compose(
         JSON.stringify({
           difficulty: confusionDifficulty,
           speed: confusionSpeed,
-        }),
+        })
       )
     },
-    handleNewFeedback: ({
-      feedbackInputValue,
-      handleNewFeedback,
-      handleFeedbackInputReset,
-    }) => () => {
+    handleNewFeedback: ({ feedbackInputValue, handleNewFeedback, handleFeedbackInputReset }) => () => {
       handleFeedbackInputReset()
       handleNewFeedback({ content: feedbackInputValue })
     },
-  }),
+  })
 )(FeedbackArea)

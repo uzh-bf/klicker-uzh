@@ -2,9 +2,7 @@
 
 import React from 'react'
 import { storiesOf } from '@storybook/react'
-import {
-  compose, mapProps, withHandlers, withState, withProps,
-} from 'recompose'
+import { compose, mapProps, withHandlers, withState, withProps } from 'recompose'
 
 import { intlMock } from '../../../.storybook/utils'
 
@@ -30,7 +28,7 @@ const SCAnswerOptionsWithState = compose(
   withState('activeOption', 'setActiveOption', 1),
   withHandlers({
     onChange: ({ setActiveOption }) => index => () => setActiveOption(index),
-  }),
+  })
 )(SCAnswerOptions)
 
 const SCCreationOptionsWithState = compose(
@@ -41,7 +39,7 @@ const SCCreationOptionsWithState = compose(
   mapProps(({ onChange, options: value }) => ({ input: { onChange, value } })),
   withProps({
     meta: {},
-  }),
+  })
 )(SCCreationOptions)
 
 const FREECreationOptionsWithState = compose(
@@ -58,13 +56,13 @@ const FREECreationOptionsWithState = compose(
   mapProps(({ onChange, value }) => ({ input: { onChange, value } })),
   withProps({
     meta: {},
-  }),
+  })
 )(FREECreationOptions)
 
 storiesOf('questionTypes/components', module).add('TypeChooser [NoTest]', () => (
   <TypeChooser
     input={{
-      onChange: (a) => {
+      onChange: a => {
         console.log(a)
       },
       value: 'SC',
@@ -77,9 +75,7 @@ storiesOf('questionTypes/SC', module)
   .add('SC Answering Options', () => <SCAnswerOptionsWithState options={options} />)
   .add('SC Creation Options [NoTest]', () => <SCCreationOptionsWithState intl={intlMock} />)
   .add('SC Creation Option (correct)', () => <SCCreationOption correct name="That's true!" />)
-  .add('SC Creation Option (incorrect)', () => (
-    <SCCreationOption correct={false} name="So wrong!" />
-  ))
+  .add('SC Creation Option (incorrect)', () => <SCCreationOption correct={false} name="So wrong!" />)
   .add('SC Creation Placeholder', () => <SCCreationPlaceholder />)
   .add('SC Creation Preview', () => (
     <SCCreationPreview description="abcd" options={{ choices: options }} title="Hello question" />
@@ -99,15 +95,13 @@ storiesOf('questionTypes/FREE', module)
     <FREEAnswerOptions
       options={{ restrictions: { max: 87, min: 900 } }}
       value={555}
-      onChange={(a) => {
+      onChange={a => {
         console.log(a)
       }}
     />
   ))
   .add('FREE Creation Options [NoTest]', () => <FREECreationOptionsWithState />)
-  .add('FREE Creation Preview (unrestricted)', () => (
-    <FREECreationPreview description="World!" title="Hello" />
-  ))
+  .add('FREE Creation Preview (unrestricted)', () => <FREECreationPreview description="World!" title="Hello" />)
   .add('FREE Creation Preview (Lower bound restriction)', () => (
     <FREECreationPreview
       description="World!"

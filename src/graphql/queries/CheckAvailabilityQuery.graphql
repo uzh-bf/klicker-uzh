@@ -1,0 +1,6 @@
+query CheckAvailability($email: String, $shortname: String) {
+  checkAvailability(email: $email, shortname: $shortname) {
+    email
+    shortname
+  }
+}

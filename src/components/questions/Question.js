@@ -49,68 +49,59 @@ const Question = ({
   isArchived,
   connectDragSource,
   handleSetActiveVersion,
-}) => connectDragSource(
-  <div
-    className={classNames('question', {
-      creationMode,
-      draggable: creationMode,
-      isArchived,
-      isDragging,
-    })}
-  >
-    <div className={classNames('checker', { active: !draggable })}>
-      <Checkbox
-        checked={checked}
-        id={`check-${id}`}
-        type="checkbox"
-        onClick={() => onCheck({ version: activeVersion })}
-      />
-    </div>
+}) =>
+  connectDragSource(
+    <div
+      className={classNames('question', {
+        creationMode,
+        draggable: creationMode,
+        isArchived,
+        isDragging,
+      })}
+    >
+      <div className={classNames('checker', { active: !draggable })}>
+        <Checkbox
+          checked={checked}
+          id={`check-${id}`}
+          type="checkbox"
+          onClick={() => onCheck({ version: activeVersion })}
+        />
+      </div>
 
-    <div className="wrapper">
-      <h2 className="title">
-        {isArchived && (
-        <Label color="red" size="tiny">
-          <FormattedMessage
-            defaultMessage="ARCHIVED"
-            id="questionPool.question.titleArchive"
+      <div className="wrapper">
+        <h2 className="title">
+          {isArchived && (
+            <Label color="red" size="tiny">
+              <FormattedMessage defaultMessage="ARCHIVED" id="questionPool.question.titleArchive" />
+            </Label>
+          )}{' '}
+          {title}
+        </h2>
+
+        <div className="versionChooser">
+          <Dropdown
+            disabled={versions.length === 1}
+            options={versions.map((version, index) => ({
+              key: index,
+              text: `v${index + 1} - ${moment(version.createdAt).format('DD.MM.YYYY HH:mm')}`,
+              value: index,
+            }))}
+            value={activeVersion}
+            onChange={(param, data) => handleSetActiveVersion(data.value)}
           />
-        </Label>
-        )}{' '}
-        {title}
-      </h2>
+        </div>
 
-      <div className="versionChooser">
-        <Dropdown
-          disabled={versions.length === 1}
-          options={versions.map((version, index) => ({
-            key: index,
-            text: `v${index + 1} - ${moment(version.createdAt).format(
-              'DD.MM.YYYY HH:mm',
-            )}`,
-            value: index,
-          }))}
-          value={activeVersion}
-          onChange={(param, data) => handleSetActiveVersion(data.value)}
-        />
+        <div className="tags">
+          <QuestionTags tags={tags} type={type} />
+        </div>
+
+        <div className="details">
+          <QuestionDetails description={description} lastUsed={lastUsed} questionId={id} questionType={type} />
+        </div>
       </div>
 
-      <div className="tags">
-        <QuestionTags tags={tags} type={type} />
-      </div>
-
-      <div className="details">
-        <QuestionDetails
-          description={description}
-          lastUsed={lastUsed}
-          questionId={id}
-          questionType={type}
-        />
-      </div>
-    </div>
-
-    <style jsx>
-      {`
+      <style jsx>
+        {`
           @import 'src/theme';
 
           .question {
@@ -125,8 +116,7 @@ const Question = ({
               cursor: grab;
 
               &:hover {
-                box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.2),
-                  0 6px 20px 0 rgba(0, 0, 0, 0.1);
+                box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.1);
               }
             }
 
@@ -195,9 +185,9 @@ const Question = ({
             }
           }
         `}
-    </style>
-  </div>,
-)
+      </style>
+    </div>
+  )
 
 Question.propTypes = propTypes
 Question.defaultProps = defaultProps
@@ -205,9 +195,7 @@ Question.defaultProps = defaultProps
 // define the source for DnD
 const source = {
   // only props defined here are "transported" to the dropzone
-  beginDrag({
-    activeVersion, id, title, type,
-  }) {
+  beginDrag({ activeVersion, id, title, type }) {
     return {
       id,
       title,
@@ -238,13 +226,9 @@ const collect = (connect, monitor) => ({
 const withDnD = DragSource('question', source, collect)
 
 export default compose(
-  withState(
-    'activeVersion',
-    'handleSetActiveVersion',
-    ({ versions }) => versions.length - 1,
-  ),
+  withState('activeVersion', 'handleSetActiveVersion', ({ versions }) => versions.length - 1),
   withProps(({ activeVersion, versions }) => ({
     description: versions[activeVersion].description,
   })),
-  withDnD,
+  withDnD
 )(Question)

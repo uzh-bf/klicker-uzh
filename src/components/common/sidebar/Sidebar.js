@@ -13,7 +13,7 @@ const propTypes = {
       href: PropTypes.string.isRequired,
       label: PropTypes.element.isRequired,
       name: PropTypes.string.isRequired,
-    }),
+    })
   ),
   visible: PropTypes.bool,
 }
@@ -24,13 +24,7 @@ const defaultProps = {
   visible: false,
 }
 
-const Sidebar = ({
-  activeItem,
-  children,
-  items,
-  visible,
-  handleSidebarItemClick,
-}) => (
+const Sidebar = ({ activeItem, children, items, visible, handleSidebarItemClick }) => (
   <div className="sidebar">
     <SemanticSidebar.Pushable>
       <SemanticSidebar
@@ -42,9 +36,7 @@ const Sidebar = ({
         visible={visible}
         width="wide"
       >
-        {items.map(({
-          name, className, href, icon, label,
-        }) => (
+        {items.map(({ name, className, href, icon, label }) => (
           <SidebarItem
             active={name === activeItem}
             className={className}

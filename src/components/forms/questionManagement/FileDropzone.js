@@ -2,9 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import Dropzone from 'react-dropzone'
 import { FormattedMessage } from 'react-intl'
-import {
-  Icon, Card, Image, Button,
-} from 'semantic-ui-react'
+import { Icon, Card, Image, Button } from 'semantic-ui-react'
 
 const propTypes = {
   disabled: PropTypes.bool,
@@ -23,17 +21,14 @@ const FileDropzone = ({ disabled, files, onChangeFiles }) => (
         accept="image/*"
         className="reactDropzone"
         disabled={disabled}
-        onDrop={(acc) => {
+        onDrop={acc => {
           if (!disabled) {
             onChangeFiles(files.concat(acc))
           }
         }}
       >
         <Button fluid primary disabled={disabled} type="button">
-          <FormattedMessage
-            defaultMessage="Upload"
-            id="fileDropzone.button.upload"
-          />
+          <FormattedMessage defaultMessage="Upload" id="fileDropzone.button.upload" />
         </Button>
       </Dropzone>
     </div>
@@ -47,11 +42,7 @@ const FileDropzone = ({ disabled, files, onChangeFiles }) => (
               <Card.Meta>
                 <span className="imageIndex">{`#${index + 1}`}</span>
               </Card.Meta>
-              <Image
-                height="auto"
-                src={file.preview || imageSrc}
-                width="100%"
-              />
+              <Image height="auto" src={file.preview || imageSrc} width="100%" />
               <Card.Content extra>
                 <Button
                   basic
@@ -66,10 +57,7 @@ const FileDropzone = ({ disabled, files, onChangeFiles }) => (
                   }}
                 >
                   <Icon name="trash" />
-                  <FormattedMessage
-                    defaultMessage="Delete"
-                    id="fileDropzone.button.delete"
-                  />
+                  <FormattedMessage defaultMessage="Delete" id="fileDropzone.button.delete" />
                 </Button>
               </Card.Content>
             </Card>

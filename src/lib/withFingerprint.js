@@ -1,6 +1,6 @@
 import React from 'react'
 
-export default (ComposedComponent) => {
+export default ComposedComponent => {
   let fingerprint
   if (process.env.APP_FINGERPRINTING && typeof window !== 'undefined') {
     fingerprint = new Promise((resolve, reject) => {
@@ -13,7 +13,7 @@ export default (ComposedComponent) => {
       // otherwise generate a new fingerprint and store it in a cookie
       try {
         const Fingerprint2 = require('fingerprintjs2')
-        new Fingerprint2().get((result) => {
+        new Fingerprint2().get(result => {
           sessionStorage.setItem('fp', result)
           resolve(result)
         })
@@ -23,12 +23,9 @@ export default (ComposedComponent) => {
     })
   }
 
-  const WithFingerpint = props => (
-    <ComposedComponent {...props} fp={fingerprint} />
-  )
+  const WithFingerpint = props => <ComposedComponent {...props} fp={fingerprint} />
 
-  WithFingerpint.displayName = `WithFingerprint(${ComposedComponent.displayName
-    || ComposedComponent.name})`
+  WithFingerpint.displayName = `WithFingerprint(${ComposedComponent.displayName || ComposedComponent.name})`
 
   return WithFingerpint
 }

@@ -24,35 +24,18 @@ const defaultProps = {
   min: undefined,
 }
 
-const FREECreationOptions = ({
-  disabled,
-  max,
-  min,
-  type,
-  handleMaxChange,
-  handleMinChange,
-  dirty,
-  invalid,
-}) => (
+const FREECreationOptions = ({ disabled, max, min, type, handleMaxChange, handleMinChange, dirty, invalid }) => (
   <div className="FREECreationOptions">
     {type === QUESTION_TYPES.FREE_RANGE && (
       <Form.Field required error={dirty && invalid}>
         <label htmlFor="options">
-          <FormattedMessage
-            defaultMessage="Input Restrictions"
-            id="createQuestion.optionsFREE.label"
-          />
+          <FormattedMessage defaultMessage="Input Restrictions" id="createQuestion.optionsFREE.label" />
           <a data-tip data-for="FREECreationHelp">
             <Icon name="question circle" />
           </a>
         </label>
 
-        <ReactTooltip
-          delayHide={250}
-          delayShow={250}
-          id="FREECreationHelp"
-          place="right"
-        >
+        <ReactTooltip delayHide={250} delayShow={250} id="FREECreationHelp" place="right">
           <FormattedMessage
             defaultMessage="Choose the allowed format of incoming responses."
             id="createQuestion.optionsFREE.tooltip"
@@ -64,10 +47,7 @@ const FREECreationOptions = ({
         <div className="range">
           <Form.Field>
             <label htmlFor="min">
-              <FormattedMessage
-                defaultMessage="Min"
-                id="createQuestion.options.min"
-              />
+              <FormattedMessage defaultMessage="Min" id="createQuestion.options.min" />
             </label>
             <Input
               disabled={disabled}
@@ -81,10 +61,7 @@ const FREECreationOptions = ({
 
           <Form.Field>
             <label htmlFor="max">
-              <FormattedMessage
-                defaultMessage="Max"
-                id="createQuestion.options.max"
-              />
+              <FormattedMessage defaultMessage="Max" id="createQuestion.options.max" />
             </label>
             <Input
               disabled={disabled}
@@ -146,9 +123,7 @@ FREECreationOptions.propTypes = propTypes
 FREECreationOptions.defaultProps = defaultProps
 
 export default compose(
-  mapProps(({
-    disabled, onChange, value, dirty, invalid, type,
-  }) => ({
+  mapProps(({ disabled, onChange, value, dirty, invalid, type }) => ({
     dirty,
     disabled,
     invalid,
@@ -160,7 +135,7 @@ export default compose(
   })),
   withHandlers({
     // handle a change in the maximum allowed numerical value
-    handleMaxChange: ({ onChange, value }) => (e) => {
+    handleMaxChange: ({ onChange, value }) => e => {
       const max = e.target.value === '' ? null : +e.target.value
       onChange({
         ...value,
@@ -169,12 +144,12 @@ export default compose(
     },
 
     // handle a change in the minimum allowed numerical value
-    handleMinChange: ({ onChange, value }) => (e) => {
+    handleMinChange: ({ onChange, value }) => e => {
       const min = e.target.value === '' ? null : +e.target.value
       onChange({
         ...value,
         restrictions: { ...value.restrictions, min },
       })
     },
-  }),
+  })
 )(FREECreationOptions)

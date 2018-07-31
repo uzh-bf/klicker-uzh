@@ -1,8 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import {
-  Button, Icon, List, Loader, Message,
-} from 'semantic-ui-react'
+import { Button, Icon, List, Loader, Message } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import { Query } from 'react-apollo'
 
@@ -33,29 +31,16 @@ export const TagListPres = ({
   <div className="tagList">
     <Button basic fluid onClick={() => handleReset()}>
       <Icon name="remove circle" />
-      <FormattedMessage
-        defaultMessage="Reset filters"
-        id="tagList.button.reset"
-      />
+      <FormattedMessage defaultMessage="Reset filters" id="tagList.button.reset" />
     </Button>
     <List selection size="large">
       <List.Header className="listHeader archive">
-        <FormattedMessage
-          defaultMessage="Archive"
-          id="tagList.header.archive"
-        />
+        <FormattedMessage defaultMessage="Archive" id="tagList.header.archive" />
       </List.Header>
-      <List.Item
-        active={isArchiveActive}
-        className="listItem archiveItem"
-        onClick={() => handleToggleArchive()}
-      >
+      <List.Item active={isArchiveActive} className="listItem archiveItem" onClick={() => handleToggleArchive()}>
         <List.Icon name="archive" />
         <List.Content>
-          <FormattedMessage
-            defaultMessage="Show archived"
-            id="tagList.string.archive"
-          />
+          <FormattedMessage defaultMessage="Show archived" id="tagList.string.archive" />
         </List.Content>
       </List.Item>
       <List.Header className="listHeader types">
@@ -67,14 +52,9 @@ export const TagListPres = ({
         key="SC"
         onClick={() => handleTagClick('SC', true)}
       >
-        <List.Icon
-          name={activeType === QUESTION_TYPES.SC ? 'folder' : 'folder outline'}
-        />
+        <List.Icon name={activeType === QUESTION_TYPES.SC ? 'folder' : 'folder outline'} />
         <List.Content>
-          <FormattedMessage
-            defaultMessage="Single Choice (SC)"
-            id="common.SC.label"
-          />
+          <FormattedMessage defaultMessage="Single Choice (SC)" id="common.SC.label" />
         </List.Content>
       </List.Item>
       <List.Item
@@ -83,14 +63,9 @@ export const TagListPres = ({
         key="MC"
         onClick={() => handleTagClick('MC', true)}
       >
-        <List.Icon
-          name={activeType === QUESTION_TYPES.MC ? 'folder' : 'folder outline'}
-        />
+        <List.Icon name={activeType === QUESTION_TYPES.MC ? 'folder' : 'folder outline'} />
         <List.Content>
-          <FormattedMessage
-            defaultMessage="Multiple Choice (MC)"
-            id="common.MC.label"
-          />
+          <FormattedMessage defaultMessage="Multiple Choice (MC)" id="common.MC.label" />
         </List.Content>
       </List.Item>
       <List.Item
@@ -99,16 +74,9 @@ export const TagListPres = ({
         key="FREE"
         onClick={() => handleTagClick('FREE', true)}
       >
-        <List.Icon
-          name={
-            activeType === QUESTION_TYPES.FREE ? 'folder' : 'folder outline'
-          }
-        />
+        <List.Icon name={activeType === QUESTION_TYPES.FREE ? 'folder' : 'folder outline'} />
         <List.Content>
-          <FormattedMessage
-            defaultMessage="Free Text (FT)"
-            id="common.FREE.label"
-          />
+          <FormattedMessage defaultMessage="Free Text (FT)" id="common.FREE.label" />
         </List.Content>
       </List.Item>
       <List.Item
@@ -117,18 +85,9 @@ export const TagListPres = ({
         key="FREE_RANGE"
         onClick={() => handleTagClick('FREE_RANGE', true)}
       >
-        <List.Icon
-          name={
-            activeType === QUESTION_TYPES.FREE_RANGE
-              ? 'folder'
-              : 'folder outline'
-          }
-        />
+        <List.Icon name={activeType === QUESTION_TYPES.FREE_RANGE ? 'folder' : 'folder outline'} />
         <List.Content>
-          <FormattedMessage
-            defaultMessage="Number Range (NR)"
-            id="common.FREE_RANGE.label"
-          />
+          <FormattedMessage defaultMessage="Number Range (NR)" id="common.FREE_RANGE.label" />
         </List.Content>
       </List.Item>
       <List.Header className="listHeader tags">
@@ -146,12 +105,7 @@ export const TagListPres = ({
           }
 
           if (tags.length === 0) {
-            return (
-              <FormattedMessage
-                defaultMessage="No tags available."
-                id="tagList.string.noTags"
-              />
-            )
+            return <FormattedMessage defaultMessage="No tags available." id="tagList.string.noTags" />
           }
 
           return tags.map(({ id, name }) => (

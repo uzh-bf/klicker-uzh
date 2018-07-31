@@ -14,7 +14,7 @@ const propTypes = {
     PropTypes.shape({
       href: PropTypes.string.isRequired,
       label: PropTypes.string.isRequired,
-    }),
+    })
   ),
 }
 

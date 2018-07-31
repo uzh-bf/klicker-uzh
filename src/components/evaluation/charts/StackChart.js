@@ -18,7 +18,7 @@ const propTypes = {
     PropTypes.shape({
       count: PropTypes.number.isRequired,
       value: PropTypes.string.isRequired,
-    }),
+    })
   ),
   isSolutionShown: PropTypes.bool,
 }
@@ -58,7 +58,7 @@ const StackChart = ({ isSolutionShown, data }) => (
       <YAxis
         domain={[
           0,
-          (dataMax) => {
+          dataMax => {
             const rounded = Math.ceil(dataMax * 1.1)
 
             if (rounded % 2 === 0) {
@@ -78,13 +78,7 @@ const StackChart = ({ isSolutionShown, data }) => (
         maxBarSize="5rem"
         stackId="a"
       >
-        <LabelList
-          dataKey="count"
-          fill="white"
-          position="inside"
-          stroke="white"
-          style={{ fontSize: '3rem' }}
-        />
+        <LabelList dataKey="count" fill="white" position="inside" stroke="white" style={{ fontSize: '3rem' }} />
         {data.map(row => (
           <Cell fill={row.fill} key={row.value} />
         ))}
@@ -97,13 +91,7 @@ const StackChart = ({ isSolutionShown, data }) => (
         maxBarSize="5rem"
         stackId="a"
       >
-        <LabelList
-          dataKey="residual"
-          fill="grey"
-          position="inside"
-          stroke="grey"
-          style={{ fontSize: '3rem' }}
-        />
+        <LabelList dataKey="residual" fill="grey" position="inside" stroke="grey" style={{ fontSize: '3rem' }} />
         <LabelList
           fill="black"
           offset={30}

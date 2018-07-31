@@ -24,10 +24,7 @@ const RequestPassword = ({ intl }) => (
   <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
     <div className="resetPassword">
       <h1>
-        <FormattedMessage
-          defaultMessage="Reset your password"
-          id="user.requestPassword.title"
-        />
+        <FormattedMessage defaultMessage="Reset your password" id="user.requestPassword.title" />
       </h1>
 
       <Mutation mutation={RequestPasswordMutation}>
@@ -88,5 +85,5 @@ export default compose(
   withLogging({
     slaask: true,
   }),
-  pageWithIntl,
+  pageWithIntl
 )(RequestPassword)

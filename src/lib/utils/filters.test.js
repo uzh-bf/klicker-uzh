@@ -51,9 +51,7 @@ describe.skip('filterQuestions', () => {
   })
 
   it('filters by title (nonexistent)', () => {
-    expect(
-      filterQuestions(questions, { title: 'nonexistent' }),
-    ).toMatchSnapshot()
+    expect(filterQuestions(questions, { title: 'nonexistent' })).toMatchSnapshot()
   })
 
   it('filters by tags (Tag 1)', () => {
@@ -69,17 +67,13 @@ describe.skip('filterQuestions', () => {
   })
 
   it('filters by tags (nonexistent)', () => {
-    expect(
-      filterQuestions(questions, { tags: ['nonexistent'] }),
-    ).toMatchSnapshot()
+    expect(filterQuestions(questions, { tags: ['nonexistent'] })).toMatchSnapshot()
   })
 
   it('filters by type (SC)', () => {
     expect(filterQuestions(questions, { type: 'SC' })).toMatchSnapshot()
   })
   it('filters by type (nonexistent)', () => {
-    expect(
-      filterQuestions(questions, { type: 'nonexistent' }),
-    ).toMatchSnapshot()
+    expect(filterQuestions(questions, { type: 'nonexistent' })).toMatchSnapshot()
   })
 })

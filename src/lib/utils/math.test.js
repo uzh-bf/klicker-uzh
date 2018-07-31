@@ -1,10 +1,5 @@
 import _round from 'lodash/round'
-import {
-  calculateMax,
-  calculateMin,
-  calculateMean,
-  calculateMedian,
-} from './math'
+import { calculateMax, calculateMin, calculateMean, calculateMedian } from './math'
 
 describe('math', () => {
   const results = {

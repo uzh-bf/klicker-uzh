@@ -12,14 +12,14 @@ const BarometerWithState = compose(
   withState('isActive', 'setIsActive', false),
   withHandlers({
     handleActiveToggle: ({ setIsActive }) => () => setIsActive(isActive => !isActive),
-  }),
+  })
 )(ConfusionBarometer)
 
 const SliderWithState = compose(
   withState('value', 'setValue', 10),
   withHandlers({
     handleChange: ({ setValue }) => newValue => setValue(() => newValue),
-  }),
+  })
 )(ConfusionSlider)
 
 const data = [
@@ -33,26 +33,12 @@ const data = [
 
 storiesOf('confusion', module)
   .add('ConfusionSlider', () => (
-    <SliderWithState
-      labels={{ max: 'High', mid: 'Okay', min: 'Low' }}
-      max={10}
-      min={-10}
-      title={(
-        <h2>
-Speed
-        </h2>
-)}
-    />
+    <SliderWithState labels={{ max: 'High', mid: 'Okay', min: 'Low' }} max={10} min={-10} title={<h2>Speed</h2>} />
   ))
   .add('ConfusionBarometer', () => <BarometerWithState confusionTS={data} intl={intlMock} />)
   // HACK: disable test as recharts breaks => https://github.com/recharts/recharts/issues/765
   .add('ConfusionBarometer (isActive) [NoTest]', () => (
-    <ConfusionBarometer
-      isActive
-      confusionTS={data}
-      handleActiveToggle={() => null}
-      intl={intlMock}
-    />
+    <ConfusionBarometer isActive confusionTS={data} handleActiveToggle={() => null} intl={intlMock} />
   ))
   .add('ConfusionSection [NoTest]', () => <ConfusionSection />)
 

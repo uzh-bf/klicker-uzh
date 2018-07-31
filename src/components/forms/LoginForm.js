@@ -1,38 +1,15 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { defineMessages, intlShape } from 'react-intl'
+import { intlShape } from 'react-intl'
 import { Formik } from 'formik'
-import { object, string } from 'yup'
+import { object } from 'yup'
 import _isEmpty from 'lodash/isEmpty'
 
 import { FormWithLinks, FormikInput } from '.'
+import validationSchema from './common/validationSchema'
+import messages from './common/messages'
 
-const messages = defineMessages({
-  emailInvalid: {
-    defaultMessage: 'Please provide a valid email address.',
-    id: 'form.email.invalid',
-  },
-  emailLabel: {
-    defaultMessage: 'Email',
-    id: 'form.email.label',
-  },
-  forgotPassword: {
-    defaultMessage: 'Forgot password?',
-    id: 'form.forgotPassword.label',
-  },
-  passowrdInvalid: {
-    defaultMessage: 'Please provide a valid password (8+ characters).',
-    id: 'form.password.invalid',
-  },
-  passwordLabel: {
-    defaultMessage: 'Password',
-    id: 'form.password.label',
-  },
-  submitButton: {
-    defaultMessage: 'Submit',
-    id: 'form.common.button.submit',
-  },
-})
+const { email, password } = validationSchema
 
 const propTypes = {
   intl: intlShape.isRequired,
@@ -54,19 +31,11 @@ const LoginForm = ({ intl, loading, onSubmit }) => {
         email: '',
         password: '',
       }}
-      render={({
-        values,
-        errors,
-        touched,
-        handleChange,
-        handleBlur,
-        handleSubmit,
-        isSubmitting,
-      }) => (
+      render={({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting }) => (
         <FormWithLinks
           button={{
             disabled: !_isEmpty(errors) || _isEmpty(touched),
-            label: intl.formatMessage(messages.submitButton),
+            label: intl.formatMessage(messages.submit),
             loading: loading && isSubmitting,
             onSubmit: handleSubmit,
           }}
@@ -90,7 +59,7 @@ const LoginForm = ({ intl, loading, onSubmit }) => {
           <FormikInput
             required
             error={errors.password}
-            errorMessage={intl.formatMessage(messages.passowrdInvalid)}
+            errorMessage={intl.formatMessage(messages.passwordInvalid)}
             handleBlur={handleBlur}
             handleChange={handleChange}
             icon="privacy"
@@ -103,12 +72,12 @@ const LoginForm = ({ intl, loading, onSubmit }) => {
           />
         </FormWithLinks>
       )}
-      validationSchema={object().shape({
-        email: string()
-          .email()
-          .required(),
-        password: string().required(),
-      })}
+      validationSchema={object()
+        .shape({
+          email: email.required(),
+          password: password.required(),
+        })
+        .required()}
       onSubmit={onSubmit}
     />
   )

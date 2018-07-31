@@ -36,12 +36,9 @@ function create(initialState) {
   // on the client, differentiate between websockets and http requests
   if (!ssrMode) {
     // instantiate a basic subscription client
-    const wsClient = new SubscriptionClient(
-      process.env.API_URL_WS || 'ws://localhost:4000/graphql',
-      {
-        reconnect: true,
-      },
-    )
+    const wsClient = new SubscriptionClient(process.env.API_URL_WS || 'ws://localhost:4000/graphql', {
+      reconnect: true,
+    })
 
     // create a websocket link from the client
     const wsLink = new WebSocketLink(wsClient)
@@ -54,7 +51,7 @@ function create(initialState) {
         return kind === 'OperationDefinition' && operation === 'subscription'
       },
       wsLink,
-      httpLink,
+      httpLink
     )
   }
 
@@ -68,9 +65,8 @@ function create(initialState) {
     onError(({ graphQLErrors, networkError }) => {
       if (graphQLErrors) {
         // TODO: log errors to sentry?
-        graphQLErrors.map(({ message, locations, path }) => console.log(
-          `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`,
-        ),
+        graphQLErrors.map(({ message, locations, path }) =>
+          console.log(`[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`)
         )
       }
       if (networkError) console.log(`[Network error]: ${networkError}`)
@@ -81,9 +77,7 @@ function create(initialState) {
   // setup APQ if configured appropriately
   let persistedQueryLink
   if (process.env.APP_PERSIST_QUERIES) {
-    const {
-      createPersistedQueryLink,
-    } = require('apollo-link-persisted-queries')
+    const { createPersistedQueryLink } = require('apollo-link-persisted-queries')
     persistedQueryLink = createPersistedQueryLink({
       generateHash: ({ documentId }) => documentId,
     })

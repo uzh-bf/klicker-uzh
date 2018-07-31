@@ -39,12 +39,7 @@ const options = [
   { text: 'Histogram', value: 'HISTOGRAM', withinType: ['FREE_RANGE'] },
 ]
 
-const VisualizationType = ({
-  activeVisualization,
-  intl,
-  onChangeType,
-  questionType,
-}) => (
+const VisualizationType = ({ activeVisualization, intl, onChangeType, questionType }) => (
   <div className="visualizationType">
     <Dropdown
       selection

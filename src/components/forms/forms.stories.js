@@ -19,11 +19,7 @@ import {
 } from '.'
 
 storiesOf('forms/components', module)
-  .addDecorator(getStory => (
-    <DragDropContextProvider backend={HTML5Backend}>
-      {getStory()}
-    </DragDropContextProvider>
-  ))
+  .addDecorator(getStory => <DragDropContextProvider backend={HTML5Backend}>{getStory()}</DragDropContextProvider>)
   .add('LoginForm', () => <LoginForm intl={intlMock} />)
   .add('PasswordRequestForm', () => <PasswordRequestForm intl={intlMock} />)
   .add('RegistrationForm [NoTest]', () => <RegistrationForm intl={intlMock} />)
@@ -52,24 +48,18 @@ storiesOf('forms/components', module)
       versions={[1, 2, 3, 4, 5]}
     />
   ))
-  .add('SessionCreationForm [NoTest]', () => (
-    <SessionCreationForm handleSubmit={() => null} intl={intlMock} />
-  ))
+  .add('SessionCreationForm [NoTest]', () => <SessionCreationForm handleSubmit={() => null} intl={intlMock} />)
 storiesOf('forms/helpers', module).add('FormWithLinks', () => (
   <FormWithLinks
     button={{
       invalid: false,
       label: 'button',
-      onSubmit: (e) => {
+      onSubmit: e => {
         e.preventDefault()
         action('submit')
       },
     }}
-    links={[
-      { href: 'href1', label: 'link1' },
-      { href: 'href2', label: 'link2' },
-      { href: 'href3', label: 'link3' },
-    ]}
+    links={[{ href: 'href1', label: 'link1' }, { href: 'href2', label: 'link2' }, { href: 'href3', label: 'link3' }]}
   >
     form fields
   </FormWithLinks>

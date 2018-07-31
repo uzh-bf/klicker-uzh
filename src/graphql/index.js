@@ -18,6 +18,7 @@ import ArchiveQuestionsMutation from './mutations/ArchiveQuestionsMutation.graph
 import PauseSessionMutation from './mutations/PauseSessionMutation.graphql'
 import ModifySessionMutation from './mutations/ModifySessionMutation.graphql'
 import RequestPresignedURLMutation from './mutations/RequestPresignedURLMutation.graphql'
+import ModifyUserMutation from './mutations/ModifyUserMutation.graphql'
 
 import AccountSummaryQuery from './queries/AccountSummaryQuery.graphql'
 import JoinSessionQuery from './queries/JoinSessionQuery.graphql'
@@ -30,11 +31,12 @@ import SessionListQuery from './queries/SessionListQuery.graphql'
 import QuestionPoolQuery from './queries/QuestionPoolQuery.graphql'
 import TagListQuery from './queries/TagListQuery.graphql'
 import SessionDetailsQuery from './queries/SessionDetailsQuery.graphql'
+import CheckAvailabilityQuery from './queries/CheckAvailabilityQuery.graphql'
 
 import ConfusionAddedSubscription from './subscriptions/ConfusionAddedSubscription.graphql'
 import FeedbackAddedSubscription from './subscriptions/FeedbackAddedSubscription.graphql'
 
-const queries = [
+/* const queries = [
   ActivateNextBlockMutation,
   AddConfusionTSMutation,
   AddFeedbackMutation,
@@ -55,6 +57,7 @@ const queries = [
   UpdateSessionSettingsMutation,
   PauseSessionMutation,
   RequestPresignedURLMutation,
+  ModifyUserMutation,
   AccountSummaryQuery,
   JoinSessionQuery,
   QuestionDetailsQuery,
@@ -72,9 +75,9 @@ const queries = [
 
 // build a query map from the queries above
 const queryMap = {}
-queries.forEach((query) => {
+queries.forEach(query => {
   queryMap[query.documentId] = query
-})
+}) */
 
 export {
   ActivateNextBlockMutation,
@@ -96,6 +99,7 @@ export {
   StartSessionMutation,
   UpdateSessionSettingsMutation,
   RequestPresignedURLMutation,
+  ModifyUserMutation,
   AccountSummaryQuery,
   JoinSessionQuery,
   QuestionDetailsQuery,
@@ -110,5 +114,6 @@ export {
   FeedbackAddedSubscription,
   ConfusionAddedSubscription,
   SessionDetailsQuery,
-  queryMap,
+  CheckAvailabilityQuery,
+  // queryMap,
 }

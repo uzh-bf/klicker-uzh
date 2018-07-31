@@ -25,9 +25,7 @@ const LoadingDiv = () => (
   </div>
 )
 
-const LoadingTeacherLayout = ({
-  intl, pageId, title, children,
-}) => {
+const LoadingTeacherLayout = ({ intl, pageId, title, children }) => {
   const navbarConfig = {
     title: intl.formatMessage({
       defaultMessage: title,

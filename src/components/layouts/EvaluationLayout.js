@@ -2,17 +2,10 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { defineMessages, intlShape } from 'react-intl'
-import {
-  Checkbox, Dropdown, Menu, Icon,
-} from 'semantic-ui-react'
+import { Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
 
 import { CommonLayout } from '.'
-import {
-  Info,
-  Possibilities,
-  Statistics,
-  VisualizationType,
-} from '../evaluation'
+import { Info, Possibilities, Statistics, VisualizationType } from '../evaluation'
 import { QUESTION_GROUPS, CHART_TYPES, QUESTION_TYPES } from '../../constants'
 
 const messages = defineMessages({
@@ -29,7 +22,7 @@ const propTypes = {
     PropTypes.shape({
       correct: PropTypes.bool,
       name: PropTypes.string.isRequired,
-    }),
+    })
   ).isRequired,
   data: PropTypes.arrayOf().isRequired,
   description: PropTypes.string,
@@ -85,9 +78,7 @@ function EvaluationLayout({
     <CommonLayout baseFontSize="22px" nextHeight="100%" pageTitle={pageTitle}>
       <div
         className={classNames('evaluationLayout', {
-          fullScreen: [CHART_TYPES.CLOUD_CHART, CHART_TYPES.TABLE].includes(
-            activeVisualization,
-          ),
+          fullScreen: [CHART_TYPES.CLOUD_CHART, CHART_TYPES.TABLE].includes(activeVisualization),
         })}
       >
         {(() => {
@@ -96,14 +87,12 @@ function EvaluationLayout({
           }
 
           if (instanceSummary.length > 8) {
-            const dropdownOptions = instanceSummary.map(
-              ({ blockStatus, title, totalResponses: count }, index) => ({
-                icon: blockStatus === 'ACTIVE' ? 'comments' : 'checkmark',
-                key: index,
-                text: `${title} (${count})`,
-                value: index,
-              }),
-            )
+            const dropdownOptions = instanceSummary.map(({ blockStatus, title, totalResponses: count }, index) => ({
+              icon: blockStatus === 'ACTIVE' ? 'comments' : 'checkmark',
+              key: index,
+              text: `${title} (${count})`,
+              value: index,
+            }))
 
             return (
               <div className="instanceDropdown">
@@ -129,28 +118,19 @@ function EvaluationLayout({
                   onClick={() => onChangeActiveInstance(activeInstance - 1)}
                 />
 
-                {instanceSummary.map(
-                  ({ blockStatus, title, totalResponses: count }, index) => (
-                    <Menu.Item
-                      fitted
-                      active={index === activeInstance}
-                      className={classNames('hoverable', {
-                        executed: blockStatus === 'EXECUTED',
-                      })}
-                      onClick={() => onChangeActiveInstance(index)}
-                    >
-                      <Icon
-                        name={
-                          blockStatus === 'ACTIVE' ? 'comments' : 'checkmark'
-                        }
-                      />
-                      {title.length > 15
-                        ? `${title.substring(0, 15)}...`
-                        : title}{' '}
-                      ({count})
-                    </Menu.Item>
-                  ),
-                )}
+                {instanceSummary.map(({ blockStatus, title, totalResponses: count }, index) => (
+                  <Menu.Item
+                    fitted
+                    active={index === activeInstance}
+                    className={classNames('hoverable', {
+                      executed: blockStatus === 'EXECUTED',
+                    })}
+                    onClick={() => onChangeActiveInstance(index)}
+                  >
+                    <Icon name={blockStatus === 'ACTIVE' ? 'comments' : 'checkmark'} />
+                    {title.length > 15 ? `${title.substring(0, 15)}...` : title} ({count})
+                  </Menu.Item>
+                ))}
 
                 <Menu.Item
                   className="hoverable"
@@ -171,16 +151,16 @@ function EvaluationLayout({
           <Info totalResponses={totalResponses} />
           {/* don't show 'show solution' check box for free and free range questions
           and word cloud charts */
-          type !== QUESTION_TYPES.FREE
-            && type !== QUESTION_TYPES.FREE_RANGE
-            && activeVisualization !== CHART_TYPES.CLOUD_CHART && (
+          type !== QUESTION_TYPES.FREE &&
+            type !== QUESTION_TYPES.FREE_RANGE &&
+            activeVisualization !== CHART_TYPES.CLOUD_CHART && (
               <Checkbox
                 toggle
                 defaultChecked={showSolution}
                 label={intl.formatMessage(messages.showSolutionLabel)}
                 onChange={onToggleShowSolution}
               />
-          )}
+            )}
 
           <VisualizationType
             activeVisualization={activeVisualization}
@@ -206,15 +186,12 @@ function EvaluationLayout({
               </div>
             )}
 
-            {QUESTION_GROUPS.WITH_STATISTICS.includes(type)
-              && statistics && (
+            {QUESTION_GROUPS.WITH_STATISTICS.includes(type) &&
+              statistics && (
                 <div className="statistics">
-                  <Statistics
-                    {...statistics}
-                    withBins={activeVisualization === 'HISTOGRAM'}
-                  />
+                  <Statistics {...statistics} withBins={activeVisualization === 'HISTOGRAM'} />
                 </div>
-            )}
+              )}
           </>
         )}
 

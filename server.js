@@ -41,11 +41,9 @@ const app = next({ dev: isDev, dir: APP_DIR })
 const handle = app.getRequestHandler()
 
 // Get the supported languages by looking for translations in the `lang/` dir.
-const languages = glob
-  .sync(`${APP_DIR}/lang/*.json`)
-  .map(f => basename(f, '.json'))
+const languages = glob.sync(`${APP_DIR}/lang/*.json`).map(f => basename(f, '.json'))
 
-const getLocale = (req) => {
+const getLocale = req => {
   // if a locale cookie was already set, use the locale saved within
   if (req.cookies.locale && languages.includes(req.cookies.locale)) {
     return {
@@ -64,7 +62,7 @@ const getLocale = (req) => {
 // We need to expose React Intl's locale data on the request for the user's
 // locale. This function will also cache the scripts by lang in memory.
 const localeDataCache = new Map()
-const getLocaleDataScript = (locale) => {
+const getLocaleDataScript = locale => {
   const lang = typeof locale === 'string' ? locale.split('-')[0] : 'en'
   if (!localeDataCache.has(lang)) {
     const localeDataFile = require.resolve(`react-intl/locale-data/${lang}`)
@@ -113,13 +111,7 @@ const connectCache = async () => {
 const getCacheKey = req => `${req.url}:${req.locale}`
 
 // render a page to html and cache it in the appropriate place
-const renderAndCache = async (
-  req,
-  res,
-  pagePath,
-  queryParams,
-  expiration = 60,
-) => {
+const renderAndCache = async (req, res, pagePath, queryParams, expiration = 60) => {
   const key = getCacheKey(req)
 
   let cached
@@ -175,23 +167,19 @@ app
         contentSecurityPolicy:
           isProd && process.env.HELMET_CSP
             ? {
-              directives: {
-                defaultSrc: ['\'self\''],
-                fontSrc: ['\'fonts.gstatic.com\'', '\'cdnjs.cloudflare.com\''],
-                reportUri: process.env.HELMET_CSP_REPORT_URI,
-                scriptSrc: ['\'cdn.polyfill.io\''],
-                styleSrc: [
-                  '\'maxcdn.bootstrapcdn.com\'',
-                  '\'fonts.googleapis.com\'',
-                  '\'cdnjs.cloudflare.com\'',
-                ],
-              },
-              reportOnly: true,
-            }
+                directives: {
+                  defaultSrc: ['self'],
+                  fontSrc: ['fonts.gstatic.com', 'cdnjs.cloudflare.com'],
+                  reportUri: process.env.HELMET_CSP_REPORT_URI,
+                  scriptSrc: ['cdn.polyfill.io'],
+                  styleSrc: ['maxcdn.bootstrapcdn.com', 'fonts.googleapis.com', 'cdnjs.cloudflare.com'],
+                },
+                reportOnly: true,
+              }
             : false,
         frameguard: !!process.env.HELMET_FRAMEGUARD,
         hsts: !!process.env.HELMET_HSTS,
-      }),
+      })
     )
 
     let middleware = [
@@ -256,9 +244,7 @@ app
     ]
 
     // create routes for all specified static and dynamic pages
-    pages.forEach(({
-      url, mapParams, renderPath, cached = false,
-    }) => {
+    pages.forEach(({ url, mapParams, renderPath, cached = false }) => {
       server.get(url, (req, res) => {
         // setup locale and get messages for the specific route
         const { locale, setCookie } = getLocale(req) || { locale: 'en' }
@@ -274,20 +260,9 @@ app
 
         // if the route contents should be cached
         if (cached) {
-          renderAndCache(
-            req,
-            res,
-            renderPath || url,
-            mapParams ? mapParams(req) : undefined,
-            cached,
-          )
+          renderAndCache(req, res, renderPath || url, mapParams ? mapParams(req) : undefined, cached)
         } else {
-          app.render(
-            req,
-            res,
-            renderPath || url,
-            mapParams ? mapParams(req) : undefined,
-          )
+          app.render(req, res, renderPath || url, mapParams ? mapParams(req) : undefined)
         }
       })
     })
@@ -306,10 +281,7 @@ app
 
       // set the APM transaction name
       if (apm) {
-        if (
-          req.originalUrl.length > 6
-          && req.originalUrl.substring(0, 6) !== '/_next'
-        ) {
+        if (req.originalUrl.length > 6 && req.originalUrl.substring(0, 6) !== '/_next') {
           apm.setTransactionName(`${req.method} ${req.originalUrl}`)
         }
 
@@ -322,7 +294,7 @@ app
       return handle(req, res)
     })
 
-    server.listen(3000, (err) => {
+    server.listen(3000, err => {
       if (err) throw err
 
       // send a ready message to PM2
@@ -333,7 +305,7 @@ app
       console.log('[klicker-react] Ready on http://localhost:3000')
     })
   })
-  .catch((err) => {
+  .catch(err => {
     console.error(err.stack)
     process.exit(1)
   })
