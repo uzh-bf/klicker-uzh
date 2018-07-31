@@ -21,15 +21,7 @@ const defaultProps = {
   value: undefined,
 }
 
-const ConfusionSlider = ({
-  title,
-  value,
-  handleChange,
-  handleChangeComplete,
-  min,
-  max,
-  labels,
-}) => {
+const ConfusionSlider = ({ title, value, handleChange, handleChangeComplete, min, max, labels }) => {
   const labelsSlider = {}
   labelsSlider[min] = labels.min
   labelsSlider[(max + min) / 2] = labels.mid
@@ -37,11 +29,7 @@ const ConfusionSlider = ({
 
   return (
     <div className="confusionSlider">
-      <Head>
-        {createLinks([
-          'https://unpkg.com/react-rangeslider/umd/rangeslider.min.css',
-        ])}
-      </Head>
+      <Head>{createLinks(['https://unpkg.com/react-rangeslider/umd/rangeslider.min.css'])}</Head>
 
       {title && <div className="title">{title}</div>}
 

@@ -15,13 +15,10 @@ const FeedbackChannelWithState = compose(
   withHandlers({
     handleActiveToggle: ({ setIsActive }) => () => setIsActive(isActive => !isActive),
     handlePublicToggle: ({ setIsPublic }) => () => setIsPublic(isPublic => !isPublic),
-  }),
+  })
 )(FeedbackChannel)
 
-const data = [
-  { content: 'hello alex!', id: 'abcd', votes: 100 },
-  { content: 'bla bleh', id: 'defg', votes: 40 },
-]
+const data = [{ content: 'hello alex!', id: 'abcd', votes: 100 }, { content: 'bla bleh', id: 'defg', votes: 40 }]
 
 storiesOf('feedbacks', module)
   .add('FeedbackChannel', () => <FeedbackChannelWithState feedbacks={data} intl={intlMock} />)

@@ -5,7 +5,7 @@ const withCSS = require('@zeit/next-css')
 const withSourceMaps = require('@zeit/next-source-maps')
 const { DEVELOPMENT_SERVER, PHASE_PRODUCTION_BUILD } = require('next/constants')
 
-module.exports = (phase) => {
+module.exports = phase => {
   let config = {
     // custom runtime configuration
     publicRuntimeConfig: {},
@@ -13,14 +13,10 @@ module.exports = (phase) => {
     // setup custom webpack configuration
     webpack: (webpackConfig, { isServer }) => {
       // add the webpack context replacement plugin to remove moment locales
-      webpackConfig.plugins.push(
-        new webpack.ContextReplacementPlugin(/moment[/\\]locale$/, /en/),
-      )
+      webpackConfig.plugins.push(new webpack.ContextReplacementPlugin(/moment[/\\]locale$/, /en/))
 
       // ignore test files when bundling
-      webpackConfig.plugins.push(
-        new webpack.IgnorePlugin(/src\/pages.*\/test.*/),
-      )
+      webpackConfig.plugins.push(new webpack.IgnorePlugin(/src\/pages.*\/test.*/))
 
       // push graphql loaders into the webpack config
       webpackConfig.module.rules.push({

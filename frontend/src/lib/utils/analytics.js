@@ -1,6 +1,6 @@
 import ReactGA from 'react-ga'
 
-export const initGA = (id) => {
+export const initGA = id => {
   ReactGA.initialize(id)
 }
 

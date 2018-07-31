@@ -31,24 +31,10 @@ const defaultProps = {
   withBins: false,
 }
 
-const Statistics = ({
-  bins,
-  max,
-  mean,
-  median,
-  min,
-  q1,
-  q3,
-  sd,
-  onChangeBins,
-  withBins,
-}) => (
+const Statistics = ({ bins, max, mean, median, min, q1, q3, sd, onChangeBins, withBins }) => (
   <div className="statistics">
     <h2>
-      <FormattedMessage
-        defaultMessage="Statistics"
-        id="evaluation.statistics.title"
-      />
+      <FormattedMessage defaultMessage="Statistics" id="evaluation.statistics.title" />
     </h2>
 
     <div>

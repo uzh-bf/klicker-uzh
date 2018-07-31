@@ -20,32 +20,16 @@ const defaultProps = {
   showSolution: false,
 }
 
-const Possibilities = ({
-  data,
-  questionOptions,
-  questionType,
-  showGraph,
-  showSolution,
-}) => (
+const Possibilities = ({ data, questionOptions, questionType, showGraph, showSolution }) => (
   <div className="possibilities">
     <h2>
       {(() => {
         if (QUESTION_GROUPS.CHOICES.includes(questionType)) {
-          return (
-            <FormattedMessage
-              defaultMessage="Choices"
-              id="evaluation.possibilities.choices"
-            />
-          )
+          return <FormattedMessage defaultMessage="Choices" id="evaluation.possibilities.choices" />
         }
 
         if (questionType === QUESTION_TYPES.FREE_RANGE) {
-          return (
-            <FormattedMessage
-              defaultMessage="Restrictions"
-              id="evaluation.possibilities.restrictions"
-            />
-          )
+          return <FormattedMessage defaultMessage="Restrictions" id="evaluation.possibilities.restrictions" />
         }
 
         return null
@@ -85,7 +69,7 @@ const Possibilities = ({
                 comp.push(
                   <EvaluationListItem reverse marker="MIN">
                     {restrictions.min}
-                  </EvaluationListItem>,
+                  </EvaluationListItem>
                 )
               }
 
@@ -93,7 +77,7 @@ const Possibilities = ({
                 comp.push(
                   <EvaluationListItem reverse marker="MAX">
                     {restrictions.max}
-                  </EvaluationListItem>,
+                  </EvaluationListItem>
                 )
               }
 
@@ -103,10 +87,7 @@ const Possibilities = ({
 
               return (
                 <div>
-                  <FormattedMessage
-                    defaultMessage="No restrictions."
-                    id="evaluation.possibilities.noRestrictions"
-                  />
+                  <FormattedMessage defaultMessage="No restrictions." id="evaluation.possibilities.noRestrictions" />
                 </div>
               )
             })()}

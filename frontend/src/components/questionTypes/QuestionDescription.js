@@ -17,9 +17,7 @@ const QuestionDescription = ({ content, description }) => {
   })
 
   // return the content div with "unsafe" HTML
-  return (
-    <div className="description" dangerouslySetInnerHTML={createMarkup()} />
-  )
+  return <div className="description" dangerouslySetInnerHTML={createMarkup()} />
 }
 
 QuestionDescription.propTypes = propTypes

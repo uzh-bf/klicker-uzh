@@ -4,7 +4,7 @@ import _maxBy from 'lodash/maxBy'
 import _minBy from 'lodash/minBy'
 
 // sort values
-export const sortValues = (values) => {
+export const sortValues = values => {
   // create array out of the values and their counts
   const array = values.data.reduce((acc, { count, value }) => {
     const elements = Array(count).fill(parseFloat(value))
@@ -16,23 +16,23 @@ export const sortValues = (values) => {
 }
 
 // calculate the min using lodas
-export const calculateMin = (values) => {
+export const calculateMin = values => {
   const minItem = _minBy(values.data, i => +i.value)
   return minItem && +minItem.value
 }
 
 // calculate the max using lodash
-export const calculateMax = (values) => {
+export const calculateMax = values => {
   const maxItem = _maxBy(values.data, i => +i.value)
   return maxItem && +maxItem.value
 }
 
 // calculate the mean using reduce
-export const calculateMean = values => values.data.reduce((sum, { count, value }) => sum + count * value, 0)
-  / values.totalResponses
+export const calculateMean = values =>
+  values.data.reduce((sum, { count, value }) => sum + count * value, 0) / values.totalResponses
 
 // calculate the median using reduce
-export const calculateMedian = (values) => {
+export const calculateMedian = values => {
   const sortedValues = sortValues(values)
   const { length } = sortedValues
   const half = Math.floor(length / 2)
@@ -73,12 +73,10 @@ export const calculateThirdQuartile = values => calculatePercentile(values, 75)
 // calculate the standard deviation using map and reduce
 // oiginal source:
 // https://derickbailey.com/2014/09/21/calculating-standard-deviation-with-array-map-and-array-reduce-in-javascript/
-export const calculateStandardDeviation = (values) => {
+export const calculateStandardDeviation = values => {
   // get the mean and squared differences of all values to the mean
   const mean = calculateMean(values)
-  const sqrdDiffs = values.data.map(
-    ({ count, value }) => count * (value - mean) ** 2,
-  )
+  const sqrdDiffs = values.data.map(({ count, value }) => count * (value - mean) ** 2)
 
   // get the sum of all squared differences
   const sqrdDiffsSum = sqrdDiffs.reduce((sum, value) => sum + value, 0)

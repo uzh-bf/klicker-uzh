@@ -14,7 +14,7 @@ const propTypes = {
   tags: PropTypes.arrayOf(
     PropTypes.shape({
       name: PropTypes.string.isRequired,
-    }),
+    })
   ),
   touched: PropTypes.bool.isRequired,
   value: PropTypes.array,
@@ -27,16 +27,11 @@ const defaultProps = {
   value: [],
 }
 
-const TagInput = ({
-  tags, value, onChange, error, touched, disabled,
-}) => (
+const TagInput = ({ tags, value, onChange, error, touched, disabled }) => (
   <div className="tagInput">
     <Form.Field required error={touched && error}>
       <label htmlFor="tags">
-        <FormattedMessage
-          defaultMessage="Tags"
-          id="createQuestion.tagInput.label"
-        />
+        <FormattedMessage defaultMessage="Tags" id="createQuestion.tagInput.label" />
         <a data-tip data-for="tagHelp">
           <Icon name="question circle" />
         </a>

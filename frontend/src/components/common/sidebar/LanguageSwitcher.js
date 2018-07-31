@@ -46,11 +46,11 @@ export default compose(
       locale: Cookies.get('locale') || 'en',
     },
     {
-      handleChangeLocale: () => (locale) => {
+      handleChangeLocale: () => locale => {
         Cookies.set('locale', locale)
         location.reload() // eslint-disable-line no-restricted-globals
         return { locale }
       },
-    },
-  ),
+    }
+  )
 )(LanguageSwitcher)

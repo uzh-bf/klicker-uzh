@@ -8,7 +8,7 @@ const propTypes = {
     PropTypes.shape({
       count: PropTypes.number.isRequired,
       value: PropTypes.string.isRequired,
-    }),
+    })
   ),
 }
 const defaultProps = {

@@ -7,12 +7,7 @@ import _debounce from 'lodash/debounce'
 import Router from 'next/router'
 
 import { pageWithIntl, withLogging, withSortingAndFiltering } from '../../lib'
-import {
-  AccountSummaryQuery,
-  RunningSessionQuery,
-  StartSessionMutation,
-  SessionListQuery,
-} from '../../graphql'
+import { AccountSummaryQuery, RunningSessionQuery, StartSessionMutation, SessionListQuery } from '../../graphql'
 import { TeacherLayout } from '../../components/layouts'
 import { SessionList } from '../../components/sessions'
 
@@ -36,14 +31,7 @@ const propTypes = {
   intl: intlShape.isRequired,
 }
 
-const Index = ({
-  intl,
-  handleCopySession,
-  handleSearch,
-  handleSort,
-  handleStartSession,
-  filters,
-}) => (
+const Index = ({ intl, handleCopySession, handleSearch, handleSort, handleStartSession, filters }) => (
   <TeacherLayout
     intl={intl}
     navbar={{
@@ -110,11 +98,7 @@ export default compose(
     handleStartSession: ({ mutate }) => id => async () => {
       try {
         await mutate({
-          refetchQueries: [
-            { query: SessionListQuery },
-            { query: RunningSessionQuery },
-            { query: AccountSummaryQuery },
-          ],
+          refetchQueries: [{ query: SessionListQuery }, { query: RunningSessionQuery }, { query: AccountSummaryQuery }],
           variables: { id },
         })
 
@@ -123,5 +107,5 @@ export default compose(
         console.error(message)
       }
     },
-  }),
+  })
 )(Index)

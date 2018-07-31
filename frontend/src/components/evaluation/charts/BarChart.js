@@ -21,7 +21,7 @@ const propTypes = {
     PropTypes.shape({
       count: PropTypes.number.isRequired,
       value: PropTypes.string.isRequired,
-    }),
+    })
   ),
   isColored: PropTypes.bool,
   isSolutionShown: PropTypes.bool,
@@ -56,7 +56,7 @@ const BarChart = ({ isSolutionShown, data, isColored }) => (
       <YAxis
         domain={[
           0,
-          (dataMax) => {
+          dataMax => {
             const rounded = Math.ceil(dataMax * 1.1)
 
             if (rounded % 2 === 0) {
@@ -84,13 +84,7 @@ const BarChart = ({ isSolutionShown, data, isColored }) => (
           strokeWidth={1}
           style={{ fontSize: '2rem' }}
         />
-        <LabelList
-          dataKey="labelIn"
-          fill="white"
-          position="inside"
-          stroke="white"
-          style={{ fontSize: '2.5rem' }}
-        />
+        <LabelList dataKey="labelIn" fill="white" position="inside" stroke="white" style={{ fontSize: '2.5rem' }} />
         {data.map(row => (
           <Cell
             fill={
@@ -120,22 +114,10 @@ export default withProps(({ data, questionType, totalResponses }) => ({
       count,
       fill: CHART_COLORS[index % 12],
       label: questionType === 'FREE_RANGE' ? +value : indexToLetter(index),
-      labelIn: getLabelIn(
-        CHART_TYPES.BAR_CHART,
-        questionType,
-        count,
-        totalResponses,
-        index,
-      ),
-      labelOut: getLabelOut(
-        CHART_TYPES.BAR_CHART,
-        questionType,
-        count,
-        totalResponses,
-        index,
-      ),
+      labelIn: getLabelIn(CHART_TYPES.BAR_CHART, questionType, count, totalResponses, index),
+      labelOut: getLabelOut(CHART_TYPES.BAR_CHART, questionType, count, totalResponses, index),
       value,
     })),
-    o => o.label,
+    o => o.label
   ),
 }))(BarChart)

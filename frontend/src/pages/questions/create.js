@@ -7,19 +7,8 @@ import { convertToRaw } from 'draft-js'
 
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionCreationForm } from '../../components/forms'
-import {
-  pageWithIntl,
-  withDnD,
-  withLogging,
-  getPresignedURLs,
-  uploadFilesToPresignedURLs,
-} from '../../lib'
-import {
-  QuestionListQuery,
-  TagListQuery,
-  CreateQuestionMutation,
-  RequestPresignedURLMutation,
-} from '../../graphql'
+import { pageWithIntl, withDnD, withLogging, getPresignedURLs, uploadFilesToPresignedURLs } from '../../lib'
+import { QuestionListQuery, TagListQuery, CreateQuestionMutation, RequestPresignedURLMutation } from '../../graphql'
 
 const messages = defineMessages({
   pageTitle: {
@@ -58,17 +47,9 @@ const CreateQuestion = ({ intl }) => (
                   // handle discarding a new question
                   onDiscard={() => Router.push('/questions')}
                   // handle submitting a new question
-                  onSubmit={async (
-                    {
-                      content, options, tags, title, type, files,
-                    },
-                    { setSubmitting },
-                  ) => {
+                  onSubmit={async ({ content, options, tags, title, type, files }, { setSubmitting }) => {
                     // request presigned urls and filenames for all files
-                    const fileEntities = await getPresignedURLs(
-                      files,
-                      requestPresignedURL,
-                    )
+                    const fileEntities = await getPresignedURLs(files, requestPresignedURL)
 
                     // upload (put) the files to the corresponding presigned urls
                     await uploadFilesToPresignedURLs(fileEntities)
@@ -77,15 +58,9 @@ const CreateQuestion = ({ intl }) => (
                     await createQuestion({
                       // reload the list of questions and tags after creation
                       // TODO: replace with optimistic updates
-                      refetchQueries: [
-                        { query: QuestionListQuery },
-                        { query: TagListQuery },
-                      ],
+                      refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
                       variables: {
-                        content:
-                          content.getCurrentContent()
-                          |> convertToRaw
-                          |> JSON.stringify,
+                        content: content.getCurrentContent() |> convertToRaw |> JSON.stringify,
                         files: fileEntities.map(({ file, fileName }) => ({
                           name: fileName,
                           originalName: file.name,
@@ -119,5 +94,5 @@ export default compose(
     slaask: true,
   }),
   withDnD,
-  pageWithIntl,
+  pageWithIntl
 )(CreateQuestion)

@@ -60,31 +60,16 @@ const Running = ({ intl, shortname }) => (
     sidebar={{ activeItem: 'runningSession' }}
   >
     <Query query={RunningSessionQuery}>
-      {({
-        data, loading, error, subscribeToMore,
-      }) => {
+      {({ data, loading, error, subscribeToMore }) => {
         if (loading || !data || !data.runningSession) {
-          return (
-            <Messager message={intl.formatMessage(messages.noRunningSession)} />
-          )
+          return <Messager message={intl.formatMessage(messages.noRunningSession)} />
         }
 
         if (error) {
-          return (
-            <Messager message={intl.formatMessage(messages.errorLoading)} />
-          )
+          return <Messager message={intl.formatMessage(messages.errorLoading)} />
         }
 
-        const {
-          id,
-          activeStep,
-          blocks,
-          settings,
-          runtime,
-          startedAt,
-          confusionTS,
-          feedbacks,
-        } = data.runningSession
+        const { id, activeStep, blocks, settings, runtime, startedAt, confusionTS, feedbacks } = data.runningSession
 
         return (
           <div className="runningSession">
@@ -117,16 +102,12 @@ const Running = ({ intl, shortname }) => (
                                 }}
                                 handleNextBlock={() => {
                                   activateNextBlock({
-                                    refetchQueries: [
-                                      { query: RunningSessionQuery },
-                                    ],
+                                    refetchQueries: [{ query: RunningSessionQuery }],
                                   })
                                 }}
                                 handlePauseSession={async () => {
                                   await pauseSession({
-                                    refetchQueries: [
-                                      { query: SessionListQuery },
-                                    ],
+                                    refetchQueries: [{ query: SessionListQuery }],
                                     variables: { id },
                                   })
 
@@ -186,10 +167,7 @@ const Running = ({ intl, shortname }) => (
                             ...prev,
                             runningSession: {
                               ...prev.runningSession,
-                              confusionTS: [
-                                ...prev.runningSession.confusionTS,
-                                subscriptionData.data.confusionAdded,
-                              ],
+                              confusionTS: [...prev.runningSession.confusionTS, subscriptionData.data.confusionAdded],
                             },
                           }
                         },
@@ -219,7 +197,7 @@ const Running = ({ intl, shortname }) => (
                             },
                           })
                         }}
-                        handleDeleteFeedback={(feedbackId) => {
+                        handleDeleteFeedback={feedbackId => {
                           deleteFeedback({
                             variables: { feedbackId, sessionId: id },
                           })
@@ -247,10 +225,7 @@ const Running = ({ intl, shortname }) => (
                                 ...prev,
                                 runningSession: {
                                   ...prev.runningSession,
-                                  feedbacks: [
-                                    ...prev.runningSession.feedbacks,
-                                    subscriptionData.data.feedbackAdded,
-                                  ],
+                                  feedbacks: [...prev.runningSession.feedbacks, subscriptionData.data.feedbackAdded],
                                 },
                               }
                             },
@@ -329,5 +304,5 @@ export default compose(
   graphql(AccountSummaryQuery),
   withProps(({ data }) => ({
     shortname: data.user && data.user.shortname,
-  })),
+  }))
 )(Running)

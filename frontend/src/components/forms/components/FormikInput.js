@@ -88,13 +88,7 @@ const FormikInput = ({
         </label>
       )}
 
-      <Input
-        name={name}
-        value={value}
-        {...inputProps}
-        onBlur={handleBlur}
-        onChange={handleChange}
-      />
+      <Input name={name} value={value} {...inputProps} onBlur={handleBlur} onChange={handleChange} />
 
       {tooltip && (
         <ReactTooltip delayHide={250} delayShow={250} id={name} place="right">
@@ -102,13 +96,13 @@ const FormikInput = ({
         </ReactTooltip>
       )}
 
-      {showError
-        && errorMessage && (
+      {showError &&
+        errorMessage && (
           <div className="errorMessage">
             <Icon name="hand pointer" />
             {errorMessage}
           </div>
-      )}
+        )}
 
       <style jsx>
         {`

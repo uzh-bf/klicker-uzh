@@ -26,19 +26,14 @@ const defaultProps = {
   blocks: [],
 }
 
-const Session = ({
-  button, createdAt, id, name, blocks, status,
-}) => {
+const Session = ({ button, createdAt, id, name, blocks, status }) => {
   const isFeedbackSession = blocks.length === 0
 
   return (
     <div className="session">
       <h2 className="title">{name}</h2>
       <div className="date">
-        <FormattedMessage
-          defaultMessage="Created on"
-          id="sessionList.string.createdOn"
-        />{' '}
+        <FormattedMessage defaultMessage="Created on" id="sessionList.string.createdOn" />{' '}
         {moment(createdAt).format('DD.MM.YY HH:mm')}
       </div>
 
@@ -53,23 +48,17 @@ const Session = ({
             </Message>
           </div>
         )}
-        {blocks.map(({
-          id: blockId, instances, showSolutions, timeLimit,
-        }) => (
+        {blocks.map(({ id: blockId, instances, showSolutions, timeLimit }) => (
           <div className="block" key={blockId}>
             <QuestionBlock
               noDetails
-              questions={instances.map(
-                ({
-                  id: instanceId, question, version, results,
-                }) => ({
-                  id: instanceId,
-                  title: question.title,
-                  totalParticipants: results?.totalParticipants || 0,
-                  type: question.type,
-                  version,
-                }),
-              )}
+              questions={instances.map(({ id: instanceId, question, version, results }) => ({
+                id: instanceId,
+                title: question.title,
+                totalParticipants: results?.totalParticipants || 0,
+                type: question.type,
+                version,
+              }))}
               showSolutions={showSolutions}
               timeLimit={timeLimit}
             />
@@ -77,9 +66,7 @@ const Session = ({
         ))}
         <div className="actionArea">
           {status === SESSION_STATUS.CREATED && (
-            <Link
-              href={{ pathname: '/questions', query: { editSessionId: id } }}
-            >
+            <Link href={{ pathname: '/questions', query: { editSessionId: id } }}>
               <Button icon labelPosition="left">
                 <Icon name="edit" />
                 Modify Session
@@ -100,36 +87,21 @@ const Session = ({
           </Link>
 
           {status !== SESSION_STATUS.CREATED && (
-            <a
-              href={`/sessions/evaluation/${id}`}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              <Button
-                icon
-                primary
-                disabled={isFeedbackSession}
-                labelPosition="left"
-              >
+            <a href={`/sessions/evaluation/${id}`} rel="noopener noreferrer" target="_blank">
+              <Button icon primary disabled={isFeedbackSession} labelPosition="left">
                 <Icon name="external" />
                 Evaluation
               </Button>
             </a>
           )}
 
-          {button
-            && !button.hidden && (
-              <Button
-                icon
-                primary
-                disabled={button.disabled}
-                labelPosition="left"
-                onClick={button.onClick}
-              >
+          {button &&
+            !button.hidden && (
+              <Button icon primary disabled={button.disabled} labelPosition="left" onClick={button.onClick}>
                 <Icon name={button.icon} />
                 {button.message}
               </Button>
-          )}
+            )}
         </div>
       </div>
 

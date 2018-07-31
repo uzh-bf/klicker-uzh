@@ -44,10 +44,7 @@ const FeedbackChannel = ({
 }) => (
   <div className="feedbackChannel">
     <h2>
-      <FormattedMessage
-        defaultMessage="Feedback-Channel"
-        id="runningSession.feedbackChannel.string.title"
-      />
+      <FormattedMessage defaultMessage="Feedback-Channel" id="runningSession.feedbackChannel.string.title" />
     </h2>
     <div className="toggle">
       <Checkbox
@@ -74,12 +71,7 @@ const FeedbackChannel = ({
       <div className="feedbacks">
         {feedbacks.map(({ id, content, votes }) => (
           <div className="feedback">
-            <Feedback
-              content={content}
-              key={id}
-              votes={votes}
-              onDelete={() => handleDeleteFeedback(id)}
-            />
+            <Feedback content={content} key={id} votes={votes} onDelete={() => handleDeleteFeedback(id)} />
           </div>
         ))}
       </div>

@@ -40,15 +40,9 @@ storiesOf('evaluation/components', module)
       <EvaluationListItem color="red" marker="MIN">
         hello world
       </EvaluationListItem>
-      <EvaluationListItem color="blue">
-hello world 2
-      </EvaluationListItem>
-      <EvaluationListItem marker="MAX">
-hello world 3
-      </EvaluationListItem>
-      <EvaluationListItem>
-hello world 4
-      </EvaluationListItem>
+      <EvaluationListItem color="blue">hello world 2</EvaluationListItem>
+      <EvaluationListItem marker="MAX">hello world 3</EvaluationListItem>
+      <EvaluationListItem>hello world 4</EvaluationListItem>
     </div>
   ))
   .add('Info', () => <Info />)

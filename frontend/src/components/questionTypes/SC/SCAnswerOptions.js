@@ -10,7 +10,7 @@ const propTypes = {
     PropTypes.shape({
       id: PropTypes.string.isRequired,
       name: PropTypes.string.isRequired,
-    }),
+    })
   ),
   value: PropTypes.arrayOf(PropTypes.number),
 }
@@ -22,15 +22,10 @@ const defaultProps = {
   value: [],
 }
 
-const SCAnswerOptions = ({
-  value, disabled, options, onChange,
-}) => (
+const SCAnswerOptions = ({ value, disabled, options, onChange }) => (
   <div className="options">
     {options.map((option, index) => (
-      <div
-        className={classNames('option', { active: value.includes(index) })}
-        key={option.id}
-      >
+      <div className={classNames('option', { active: value.includes(index) })} key={option.id}>
         <Button fluid disabled={disabled} onClick={onChange(index)}>
           {option.name}
         </Button>

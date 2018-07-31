@@ -7,7 +7,7 @@ const propTypes = {
     PropTypes.shape({
       id: PropTypes.string.isRequired,
       name: PropTypes.string.isRequired,
-    }),
+    })
   ),
 }
 const defaultProps = {

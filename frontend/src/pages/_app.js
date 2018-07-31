@@ -11,7 +11,7 @@ import { withApolloClient } from '../lib'
 // locale data was added to the page by `pages/_document.js`. This only happens
 // once, on initial page load in the browser.
 if (typeof window !== 'undefined' && window.ReactIntlLocaleData) {
-  Object.keys(window.ReactIntlLocaleData).forEach((lang) => {
+  Object.keys(window.ReactIntlLocaleData).forEach(lang => {
     addLocaleData(window.ReactIntlLocaleData[lang])
   })
 }
@@ -33,9 +33,7 @@ class Klicker extends App {
   }
 
   render() {
-    const {
-      Component, pageProps, apolloClient, locale, messages,
-    } = this.props
+    const { Component, pageProps, apolloClient, locale, messages } = this.props
     const now = Date.now()
 
     return (

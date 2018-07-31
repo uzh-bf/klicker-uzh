@@ -19,23 +19,12 @@ const defaultProps = {
   version: 0,
 }
 
-const QuestionSingle = ({
-  type,
-  intl,
-  title,
-  totalParticipants,
-  version,
-  onDelete,
-}) => (
+const QuestionSingle = ({ type, intl, title, totalParticipants, version, onDelete }) => (
   <div className="questionSingle">
     <div className="top">
       <div className="type">{generateTypesShort(intl)[type]}</div>
       {onDelete && (
-        <button
-          className="ui basic icon button deleteButton"
-          type="button"
-          onClick={onDelete}
-        >
+        <button className="ui basic icon button deleteButton" type="button" onClick={onDelete}>
           <Icon name="trash" />
         </button>
       )}

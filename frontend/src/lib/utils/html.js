@@ -6,7 +6,7 @@ function toSanitizedHTML(contentState) {
     // extract the current draftjs content state
     return (
       contentState
-      |> stateToHTML // convert the content state to HTML
+      |> stateToHTML  // convert the content state to HTML
       |> sanitizeHTML // sanitize the resulting HTML
     )
   } catch (e) {

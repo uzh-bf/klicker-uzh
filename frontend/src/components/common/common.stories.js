@@ -7,53 +7,36 @@ import { compose, withHandlers, withState } from 'recompose'
 
 import { intlMock } from '../../../.storybook/utils'
 
-import {
-  ActionMenu, Button, ListWithHeader, Collapser,
-} from '.'
+import { ActionMenu, Button, ListWithHeader, Collapser } from '.'
 import { AccountArea, SearchArea, SessionArea } from './navbar'
 import { Sidebar, SidebarItem, LanguageSwitcher } from './sidebar'
 
-const sidebarItems = [
-  { href: 'i1', label: 'Item 1', name: 'item1' },
-  { href: 'i2', label: 'Item 2', name: 'item2' },
-]
+const sidebarItems = [{ href: 'i1', label: 'Item 1', name: 'item1' }, { href: 'i2', label: 'Item 2', name: 'item2' }]
 
 // create a stateful wrapper for the component
 const CollapserWithState = compose(
   withState('collapsed', 'setCollapsed', true),
   withHandlers({
     handleCollapseToggle: ({ setCollapsed }) => () => setCollapsed(collapsed => !collapsed),
-  }),
+  })
 )(Collapser)
 
 // specify some example content
 const collapserContent = (
   <div>
     <p>
-      hello this is a very short question that is getting longer and longer as we speak. it is in
-      fact very very long. the end is even hidden at the beginning.
+      hello this is a very short question that is getting longer and longer as we speak. it is in fact very very long.
+      the end is even hidden at the beginning.
     </p>
 
-    <p>
-wow, is this a long question. i could never have imagined seeing such a question.
-    </p>
+    <p>wow, is this a long question. i could never have imagined seeing such a question.</p>
   </div>
 )
 
 storiesOf('common/components', module)
-  .add('ActionMenu', () => (
-    <ActionMenu items={[{ done: false }, { done: true }]} setActiveIndex={f => f} />
-  ))
-  .add('Button', () => (
-    <Button>
-Hello World!
-    </Button>
-  ))
-  .add('Button (active)', () => (
-    <Button active>
-Hello World!
-    </Button>
-  ))
+  .add('ActionMenu', () => <ActionMenu items={[{ done: false }, { done: true }]} setActiveIndex={f => f} />)
+  .add('Button', () => <Button>Hello World!</Button>)
+  .add('Button (active)', () => <Button active>Hello World!</Button>)
   .add('Collapser', () => (
     <CollapserWithState>
       {collapserContent}
@@ -66,11 +49,7 @@ Hello World!
       {collapserContent}
     </Collapser>
   ))
-  .add('ListWithHeader', () => (
-    <ListWithHeader items={['abcd', 'cdef']}>
-hello world
-    </ListWithHeader>
-  ))
+  .add('ListWithHeader', () => <ListWithHeader items={['abcd', 'cdef']}>hello world</ListWithHeader>)
 
 storiesOf('common/navbar', module)
   /* .add('Navbar', () => (
@@ -86,28 +65,17 @@ storiesOf('common/navbar', module)
     />
   )) */
   .add('AccountArea', () => <AccountArea accountShort="AW" />)
-  .add('SearchArea', () => (
-    <SearchArea handleSearch={query => action(`search ${query}`)} intl={intlMock} />
-  ))
+  .add('SearchArea', () => <SearchArea handleSearch={query => action(`search ${query}`)} intl={intlMock} />)
   .add('SessionArea', () => <SessionArea intl={intlMock} sessionId="a7s7d" />)
 
 storiesOf('common/sidebar', module)
   .add('Sidebar (visible)', () => (
-    <Sidebar
-      visible
-      activeItem="item1"
-      handleSidebarItemClick={item => action(`click ${item}`)}
-      items={sidebarItems}
-    >
+    <Sidebar visible activeItem="item1" handleSidebarItemClick={item => action(`click ${item}`)} items={sidebarItems}>
       PAGE CONTENT
     </Sidebar>
   ))
   .add('Sidebar (invisible)', () => (
-    <Sidebar
-      activeItem="item1"
-      handleSidebarItemClick={item => action(`click ${item}`)}
-      items={sidebarItems}
-    >
+    <Sidebar activeItem="item1" handleSidebarItemClick={item => action(`click ${item}`)} items={sidebarItems}>
       PAGE CONTENT
     </Sidebar>
   ))
