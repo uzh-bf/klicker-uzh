@@ -14,39 +14,19 @@ import { buildIndex, filterSessions } from '../../lib'
 const statusCases = {
   [SESSION_STATUS.COMPLETED]: {
     icon: 'copy',
-    message: (
-      <FormattedMessage
-        defaultMessage="Copy"
-        id="session.button.completed.content"
-      />
-    ),
+    message: <FormattedMessage defaultMessage="Copy" id="session.button.completed.content" />,
   },
   [SESSION_STATUS.CREATED]: {
     icon: 'play',
-    message: (
-      <FormattedMessage
-        defaultMessage="Start"
-        id="session.button.created.content"
-      />
-    ),
+    message: <FormattedMessage defaultMessage="Start" id="session.button.created.content" />,
   },
   [SESSION_STATUS.RUNNING]: {
     icon: 'play',
-    message: (
-      <FormattedMessage
-        defaultMessage="Running"
-        id="session.button.running.content"
-      />
-    ),
+    message: <FormattedMessage defaultMessage="Running" id="session.button.running.content" />,
   },
   [SESSION_STATUS.PAUSED]: {
     icon: 'pause',
-    message: (
-      <FormattedMessage
-        defaultMessage="Continue"
-        id="session.button.paused.content"
-      />
-    ),
+    message: <FormattedMessage defaultMessage="Continue" id="session.button.paused.content" />,
   },
 }
 
@@ -56,11 +36,7 @@ const propTypes = {
   handleStartSession: PropTypes.func.isRequired,
 }
 
-export const SessionListPres = ({
-  filters,
-  handleCopySession,
-  handleStartSession,
-}) => {
+export const SessionListPres = ({ filters, handleCopySession, handleStartSession }) => {
   // calculate what action to take on button click based on session status
   const handleSessionAction = (sessionId, status) => {
     if (status === SESSION_STATUS.CREATED || status === SESSION_STATUS.PAUSED) {
@@ -93,10 +69,7 @@ export const SessionListPres = ({
           if (sessions.length === 0) {
             return (
               <div className="session">
-                <FormattedMessage
-                  defaultMessage="No session was found."
-                  id="sessionList.string.noSessions"
-                />
+                <FormattedMessage defaultMessage="No session was found." id="sessionList.string.noSessions" />
               </div>
             )
           }
@@ -113,28 +86,19 @@ export const SessionListPres = ({
             }))
 
           // extract paused sessions
-          const pausedSessions = sessions
-            .filter(session => session.status === SESSION_STATUS.PAUSED)
-            .map(session => ({
-              ...session,
-              button: {
-                ...statusCases[SESSION_STATUS.PAUSED],
-                disabled: runningSessions.length > 0,
-                onClick: handleSessionAction(session.id, session.status),
-              },
-            }))
+          const pausedSessions = sessions.filter(session => session.status === SESSION_STATUS.PAUSED).map(session => ({
+            ...session,
+            button: {
+              ...statusCases[SESSION_STATUS.PAUSED],
+              disabled: runningSessions.length > 0,
+              onClick: handleSessionAction(session.id, session.status),
+            },
+          }))
 
           // create a session index
-          const sessionIndex = buildIndex('sessions', sessions, [
-            'name',
-            'createdAt',
-          ])
+          const sessionIndex = buildIndex('sessions', sessions, ['name', 'createdAt'])
 
-          const processedSessions = filterSessions(
-            sessions,
-            filters,
-            sessionIndex,
-          ).map(session => ({
+          const processedSessions = filterSessions(sessions, filters, sessionIndex).map(session => ({
             ...session,
             button: {
               ...statusCases[session.status],
@@ -144,12 +108,8 @@ export const SessionListPres = ({
             },
           }))
 
-          const remainingSessions = processedSessions.filter(
-            session => session.status === SESSION_STATUS.CREATED,
-          )
-          const completedSessions = processedSessions.filter(
-            session => session.status === SESSION_STATUS.COMPLETED,
-          )
+          const remainingSessions = processedSessions.filter(session => session.status === SESSION_STATUS.CREATED)
+          const completedSessions = processedSessions.filter(session => session.status === SESSION_STATUS.COMPLETED)
 
           return (
             <>
@@ -182,11 +142,8 @@ export const SessionListPres = ({
               {remainingSessions.length > 0 && (
                 <>
                   <h2>
-                    <FormattedMessage
-                      defaultMessage="Planned sessions"
-                      id="sessionList.title.plannedSessions"
-                    />{' '}
-                    ({remainingSessions.length})
+                    <FormattedMessage defaultMessage="Planned sessions" id="sessionList.title.plannedSessions" /> (
+                    {remainingSessions.length})
                   </h2>
                   {remainingSessions.map(session => (
                     <div className="session" key={session.id}>
@@ -199,11 +156,8 @@ export const SessionListPres = ({
               {completedSessions.length > 0 && (
                 <>
                   <h2>
-                    <FormattedMessage
-                      defaultMessage="Completed sessions"
-                      id="sessionList.title.completedSessions"
-                    />{' '}
-                    ({completedSessions.length})
+                    <FormattedMessage defaultMessage="Completed sessions" id="sessionList.title.completedSessions" /> (
+                    {completedSessions.length})
                   </h2>
                   {completedSessions.map(session => (
                     <div className="session" key={session.id}>

@@ -46,20 +46,13 @@ export const QuestionListPres = ({
         if (questions.length === 0) {
           return (
             <Message info>
-              <FormattedMessage
-                defaultMessage="No questions available."
-                id="questionList.string.noQuestions"
-              />
+              <FormattedMessage defaultMessage="No questions available." id="questionList.string.noQuestions" />
             </Message>
           )
         }
 
         // build an index from the received questions
-        const index = buildIndex('questions', questions, [
-          'title',
-          'createdAt',
-          ['versions', 0, 'description'],
-        ])
+        const index = buildIndex('questions', questions, ['title', 'createdAt', ['versions', 0, 'description']])
 
         // process questions according to filters and sort settings
         const processedQuestions = processItems(questions, filters, sort, index)
@@ -83,18 +76,12 @@ export const QuestionListPres = ({
             id={question.id}
             isArchived={isArchiveActive}
             key={question.id}
-            lastUsed={question.instances.map(
-              ({ createdAt, session, version }) => (
-                <a
-                  href={`/sessions/evaluation/${session}`}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  {moment(createdAt).format('DD.MM.YYYY HH:mm')} (v
-                  {version + 1})
-                </a>
-              ),
-            )}
+            lastUsed={question.instances.map(({ createdAt, session, version }) => (
+              <a href={`/sessions/evaluation/${session}`} rel="noopener noreferrer" target="_blank">
+                {moment(createdAt).format('DD.MM.YYYY HH:mm')} (v
+                {version + 1})
+              </a>
+            ))}
             tags={question.tags}
             title={question.title}
             type={question.type}

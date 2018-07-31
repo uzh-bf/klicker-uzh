@@ -15,7 +15,7 @@ const initialState = {
   },
 }
 
-export default (ComposedComponent) => {
+export default ComposedComponent => {
   const withSortingAndFiltering = compose(
     withStateHandlers(initialState, {
       // reset filters
@@ -68,11 +68,11 @@ export default (ComposedComponent) => {
       handleToggleArchive: ({ filters }) => () => ({
         filters: { ...filters, archive: !filters.archive },
       }),
-    }),
+    })
   )(ComposedComponent)
 
-  withSortingAndFiltering.displayName = `withSortingAndFiltering(${ComposedComponent.displayName
-    || ComposedComponent.name})`
+  withSortingAndFiltering.displayName = `withSortingAndFiltering(${ComposedComponent.displayName ||
+    ComposedComponent.name})`
 
   return withSortingAndFiltering
 }

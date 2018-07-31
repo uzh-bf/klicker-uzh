@@ -1,11 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
-import {
-  arrayMove,
-  SortableContainer,
-  SortableElement,
-} from 'react-sortable-hoc'
+import { arrayMove, SortableContainer, SortableElement } from 'react-sortable-hoc'
 import { FormattedMessage } from 'react-intl'
 import { compose, mapProps, withHandlers } from 'recompose'
 import { Form, Icon } from 'semantic-ui-react'
@@ -76,21 +72,13 @@ const SCCreationOptions = ({
     <div className="SCCreationOptions">
       <Form.Field required error={dirty && invalid}>
         <label htmlFor="options">
-          <FormattedMessage
-            defaultMessage="Available Choices"
-            id="createQuestion.optionsSC.label"
-          />
+          <FormattedMessage defaultMessage="Available Choices" id="createQuestion.optionsSC.label" />
           <a data-tip data-for="SCCreationHelp">
             <Icon name="question circle" />
           </a>
         </label>
 
-        <ReactTooltip
-          delayHide={250}
-          delayShow={250}
-          id="SCCreationHelp"
-          place="right"
-        >
+        <ReactTooltip delayHide={250} delayShow={250} id="SCCreationHelp" place="right">
           <FormattedMessage
             defaultMessage="Add answering options the respondents can choose from."
             id="createQuestion.optionsSC.tooltip"
@@ -122,9 +110,7 @@ const SCCreationOptions = ({
 SCCreationOptions.propTypes = propTypes
 
 export default compose(
-  mapProps(({
-    onChange, value, dirty, invalid, disabled,
-  }) => ({
+  mapProps(({ onChange, value, dirty, invalid, disabled }) => ({
     dirty,
     disabled,
     // HACK: mapping as a workaround for the value.choices problem
@@ -133,19 +119,17 @@ export default compose(
     value: value.choices,
   })),
   withHandlers({
-    handleDeleteOption: ({ onChange, value }) => index => () => onChange([...value.slice(0, index), ...value.slice(index + 1)]),
+    handleDeleteOption: ({ onChange, value }) => index => () =>
+      onChange([...value.slice(0, index), ...value.slice(index + 1)]),
 
     handleNewOption: ({ onChange, value }) => newOption => onChange([...value, newOption]),
 
     handleOptionToggleCorrect: ({ onChange, value }) => index => () => {
       const option = value[index]
-      onChange([
-        ...value.slice(0, index),
-        { ...option, correct: !option.correct },
-        ...value.slice(index + 1),
-      ])
+      onChange([...value.slice(0, index), { ...option, correct: !option.correct }, ...value.slice(index + 1)])
     },
 
-    handleUpdateOrder: ({ onChange, value }) => ({ oldIndex, newIndex }) => onChange(arrayMove(value, oldIndex, newIndex)),
-  }),
+    handleUpdateOrder: ({ onChange, value }) => ({ oldIndex, newIndex }) =>
+      onChange(arrayMove(value, oldIndex, newIndex)),
+  })
 )(SCCreationOptions)

@@ -3,27 +3,14 @@ import PropTypes from 'prop-types'
 import UUIDv4 from 'uuid'
 import { List } from 'immutable'
 import { DragDropContext } from 'react-beautiful-dnd'
-import {
-  compose,
-  withHandlers,
-  withStateHandlers,
-  branch,
-  renderNothing,
-  withProps,
-} from 'recompose'
+import { compose, withHandlers, withStateHandlers, branch, renderNothing, withProps } from 'recompose'
 import { defineMessages, intlShape } from 'react-intl'
 import { graphql, Query } from 'react-apollo'
 import _debounce from 'lodash/debounce'
 import Router, { withRouter } from 'next/router'
 import moment from 'moment'
 
-import {
-  pageWithIntl,
-  withDnD,
-  withSortingAndFiltering,
-  withLogging,
-  withSelection,
-} from '../../lib'
+import { pageWithIntl, withDnD, withSortingAndFiltering, withLogging, withSelection } from '../../lib'
 import {
   CreateSessionMutation,
   StartSessionMutation,
@@ -40,12 +27,7 @@ import SessionCreationForm from '../../components/forms/sessionCreation/SessionC
 import { QuestionList, TagList, ActionBar } from '../../components/questions'
 import { TeacherLayout } from '../../components/layouts'
 import { QUESTION_SORTINGS } from '../../constants'
-import {
-  removeQuestion,
-  moveQuestion,
-  addToBlock,
-  appendNewBlock,
-} from '../../lib/utils/move'
+import { removeQuestion, moveQuestion, addToBlock, appendNewBlock } from '../../lib/utils/move'
 
 const messages = defineMessages({
   pageTitle: {
@@ -82,8 +64,7 @@ const propTypes = {
   numSelectedItems: PropTypes.number.isRequired,
   selectedItems: PropTypes.any.isRequired,
   sessionBlocks: PropTypes.any.isRequired,
-  sessionInteractionType: PropTypes.oneOf(['CREATE', 'COPY', 'MODIFY'])
-    .isRequired,
+  sessionInteractionType: PropTypes.oneOf(['CREATE', 'COPY', 'MODIFY']).isRequired,
   sessionName: PropTypes.string.isRequired,
   sort: PropTypes.object.isRequired,
 }
@@ -157,9 +138,7 @@ const Index = ({
       {({ data }) => (
         <TeacherLayout
           fixedHeight
-          actionArea={
-            creationMode ? creationForm(data.runningSession?.id) : null
-          }
+          actionArea={creationMode ? creationForm(data.runningSession?.id) : null}
           intl={intl}
           navbar={{
             search: {
@@ -320,27 +299,25 @@ export default compose(
         }),
       }),
       // stall loading of the page until the session details have been fetched
-      branch(
-        ({ editSessionDetails }) => typeof editSessionDetails.session === 'undefined',
-        renderNothing,
-      ),
+      branch(({ editSessionDetails }) => typeof editSessionDetails.session === 'undefined', renderNothing),
       // convert the fetched session details into usable initial state (name and blocks)
       withProps(({ editSessionDetails: { session }, router: { query } }) => {
         // define a function that parses session block details into immutable client side state
         // that will serve as initial state for the edit form
-        const parseInitialBlocks = () => List(
-          session.blocks.map(({ id, instances }) => ({
-            id,
-            key: id,
-            questions: List(
-              instances.map(({ question }) => ({
-                id: question.id,
-                title: question.title,
-                type: question.type,
-              })),
-            ),
-          })),
-        )
+        const parseInitialBlocks = () =>
+          List(
+            session.blocks.map(({ id, instances }) => ({
+              id,
+              key: id,
+              questions: List(
+                instances.map(({ question }) => ({
+                  id: question.id,
+                  title: question.title,
+                  type: question.type,
+                }))
+              ),
+            }))
+          )
 
         const getInteractionType = () => {
           if (session.id) {
@@ -360,13 +337,11 @@ export default compose(
           sessionInteractionType: getInteractionType(),
           sessionName: query.copy ? `${session.name} Copy` : session.name,
         }
-      }),
-    ),
+      })
+    )
   ),
   withStateHandlers(
-    ({
-      creationMode, sessionEditMode, sessionBlocks, sessionName,
-    }) => ({
+    ({ creationMode, sessionEditMode, sessionBlocks, sessionName }) => ({
       creationMode: !!sessionEditMode || !!creationMode,
       sessionBlocks: sessionBlocks || List([]),
       sessionName,
@@ -414,14 +389,7 @@ export default compose(
 
           // perform the move between the source and the new block
           return {
-            sessionBlocks: moveQuestion(
-              extendedBlocks,
-              source.droppableId,
-              source.index,
-              blockId,
-              0,
-              true,
-            ),
+            sessionBlocks: moveQuestion(extendedBlocks, source.droppableId, source.index, blockId, 0, true),
           }
         }
 
@@ -432,7 +400,7 @@ export default compose(
             source.index,
             destination.droppableId,
             destination.index,
-            true,
+            true
           ),
         }
       },
@@ -442,44 +410,32 @@ export default compose(
       }),
 
       // build a single block from all the checked questions
-      handleQuickBlock: (
-        { sessionBlocks },
-        { handleResetSelection, selectedItems },
-      ) => () => {
+      handleQuickBlock: ({ sessionBlocks }, { handleResetSelection, selectedItems }) => () => {
         // reset the checked questions
         handleResetSelection()
 
         return {
           sessionBlocks: sessionBlocks.push({
             id: UUIDv4(),
-            questions: selectedItems
-              .toList()
-              .map(({
-                id, title, type, version,
-              }) => ({
-                id,
-                key: UUIDv4(),
-                title,
-                type,
-                version,
-              })),
+            questions: selectedItems.toList().map(({ id, title, type, version }) => ({
+              id,
+              key: UUIDv4(),
+              title,
+              type,
+              version,
+            })),
           }),
         }
       },
 
       // build a separate block for each checked question
-      handleQuickBlocks: (
-        { sessionBlocks },
-        { handleResetSelection, selectedItems },
-      ) => () => {
+      handleQuickBlocks: ({ sessionBlocks }, { handleResetSelection, selectedItems }) => () => {
         // reset the checked questions
         handleResetSelection()
 
         return {
           sessionBlocks: sessionBlocks.concat(
-            selectedItems.toList().map(({
-              id, title, type, version,
-            }) => ({
+            selectedItems.toList().map(({ id, title, type, version }) => ({
               id: UUIDv4(),
               questions: List([
                 {
@@ -490,41 +446,26 @@ export default compose(
                   version,
                 },
               ]),
-            })),
+            }))
           ),
         }
       },
 
       // handle removal of a question with its trash button
-      handleRemoveQuestion: ({ sessionBlocks }) => (
-        blockIndex,
-        questionIndex,
-      ) => ({
-        sessionBlocks: removeQuestion(
-          sessionBlocks,
-          blockIndex,
-          questionIndex,
-          true,
-        ),
+      handleRemoveQuestion: ({ sessionBlocks }) => (blockIndex, questionIndex) => ({
+        sessionBlocks: removeQuestion(sessionBlocks, blockIndex, questionIndex, true),
       }),
       // override the toggle archive function
       // need to reset the selection on toggling archive to not apply actions to hidden questions
-      handleToggleArchive: (
-        _,
-        { handleResetSelection, handleToggleArchive },
-      ) => () => {
+      handleToggleArchive: (_, { handleResetSelection, handleToggleArchive }) => () => {
         handleResetSelection()
         handleToggleArchive()
       },
-    },
+    }
   ),
   withHandlers({
     // handle archiving a question
-    handleArchiveQuestions: ({
-      archiveQuestions,
-      handleResetSelection,
-      selectedItems,
-    }) => async () => {
+    handleArchiveQuestions: ({ archiveQuestions, handleResetSelection, selectedItems }) => async () => {
       try {
         // archive the questions
         await archiveQuestions({
@@ -550,7 +491,7 @@ export default compose(
       modifySession,
       startSession,
       handleCreationModeToggle,
-    }) => type => async (e) => {
+    }) => type => async e => {
       // prevent a page reload on submit
       e.preventDefault()
 
@@ -598,5 +539,5 @@ export default compose(
         console.error(message)
       }
     },
-  }),
+  })
 )(Index)

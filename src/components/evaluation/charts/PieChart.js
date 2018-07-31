@@ -1,12 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import {
-  Cell,
-  Pie,
-  PieChart as PieChartComponent,
-  ResponsiveContainer,
-  LabelList,
-} from 'recharts'
+import { Cell, Pie, PieChart as PieChartComponent, ResponsiveContainer, LabelList } from 'recharts'
 import { withProps } from 'recompose'
 
 import { CHART_COLORS, CHART_TYPES } from '../../../constants'
@@ -17,7 +11,7 @@ const propTypes = {
     PropTypes.shape({
       count: PropTypes.number.isRequired,
       value: PropTypes.string.isRequired,
-    }),
+    })
   ),
   isSolutionShown: PropTypes.bool,
 }
@@ -64,11 +58,7 @@ const PieChart = ({ isSolutionShown, data }) => (
           style={{ fontSize: '3rem' }}
         />
         {data.map(row => (
-          <Cell
-            fill={isSolutionShown && row.correct ? '#00FF00' : row.fill}
-            key={row.value}
-            strokeWidth={5}
-          />
+          <Cell fill={isSolutionShown && row.correct ? '#00FF00' : row.fill} key={row.value} strokeWidth={5} />
         ))}
       </Pie>
     </PieChartComponent>
@@ -86,20 +76,8 @@ export default withProps(({ data, questionType, totalResponses }) => ({
       correct,
       count,
       fill: CHART_COLORS[index % 12],
-      labelIn: getLabelIn(
-        CHART_TYPES.PIE_CHART,
-        questionType,
-        count,
-        totalResponses,
-        index,
-      ),
-      labelOut: getLabelOut(
-        CHART_TYPES.PIE_CHART,
-        questionType,
-        count,
-        totalResponses,
-        index,
-      ),
+      labelIn: getLabelIn(CHART_TYPES.PIE_CHART, questionType, count, totalResponses, index),
+      labelOut: getLabelOut(CHART_TYPES.PIE_CHART, questionType, count, totalResponses, index),
       value,
     }))
     .filter(({ count }) => count > 0),

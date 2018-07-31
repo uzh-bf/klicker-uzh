@@ -49,27 +49,14 @@ function ActionMenu({
         </Menu.Item>
           </Menu> */}
       <div className="progress">
-        <Progress
-          autoSuccess
-          progress="ratio"
-          total={numItems}
-          value={activeIndex}
-        />
+        <Progress autoSuccess progress="ratio" total={numItems} value={activeIndex} />
       </div>
       <div className="actions">
-        <Button
-          fluid
-          disabled={isSubmitDisabled}
-          primary={!isSkipModeActive}
-          onClick={onSubmit}
-        >
+        <Button fluid disabled={isSubmitDisabled} primary={!isSkipModeActive} onClick={onSubmit}>
           {isSkipModeActive ? (
             <FormattedMessage defaultMessage="Skip" id="common.button.skip" />
           ) : (
-            <FormattedMessage
-              defaultMessage="Submit"
-              id="common.button.submit"
-            />
+            <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
           )}
         </Button>
       </div>

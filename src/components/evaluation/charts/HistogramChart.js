@@ -27,7 +27,7 @@ const propTypes = {
     PropTypes.shape({
       count: PropTypes.number.isRequired,
       value: PropTypes.string.isRequired,
-    }),
+    })
   ),
   solution: PropTypes.number,
   statistics: statisticsShape,
@@ -40,9 +40,7 @@ const defaultProps = {
   statistics: undefined,
 }
 
-const HistogramChart = ({
-  brush, data, solution, statistics,
-}) => (
+const HistogramChart = ({ brush, data, solution, statistics }) => (
   <ResponsiveContainer>
     <BarChart
       data={data}
@@ -57,7 +55,7 @@ const HistogramChart = ({
       <YAxis
         domain={[
           0,
-          (dataMax) => {
+          dataMax => {
             const rounded = Math.ceil(dataMax * 1.1)
 
             if (rounded % 2 === 0) {
@@ -119,9 +117,7 @@ const HistogramChart = ({
         />,
       ]}
 
-      {solution && (
-        <ReferenceLine isFront stroke="green" x={Math.round(solution)} />
-      )}
+      {solution && <ReferenceLine isFront stroke="green" x={Math.round(solution)} />}
 
       {brush && <Brush dataKey="value" height={30} stroke="#8884d8" />}
     </BarChart>
@@ -134,19 +130,11 @@ HistogramChart.defaultProps = defaultProps
 export default compose(
   withProps(({ data, numBins, restrictions }) => {
     // calculate the borders of the histogram
-    const min = _isNumber(restrictions.min)
-      ? restrictions.min
-      : +_minBy(data, o => +o.value).value
-    const max = _isNumber(restrictions.max)
-      ? restrictions.max
-      : +_maxBy(data, o => +o.value).value
+    const min = _isNumber(restrictions.min) ? restrictions.min : +_minBy(data, o => +o.value).value
+    const max = _isNumber(restrictions.max) ? restrictions.max : +_maxBy(data, o => +o.value).value
 
     // calculate the number of bins according to freedman diaconis
-    const defaultThreshold = thresholdFreedmanDiaconis(
-      data.map(o => +o.value),
-      min,
-      max,
-    )
+    const defaultThreshold = thresholdFreedmanDiaconis(data.map(o => +o.value), min, max)
 
     // setup the D3 histogram generator
     // use either the passed number of bins or the default threshold
@@ -165,5 +153,5 @@ export default compose(
         value: `${bin.x0}-${bin.x1}`,
       })),
     }
-  }),
+  })
 )(HistogramChart)

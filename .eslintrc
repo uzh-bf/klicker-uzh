@@ -1,10 +1,8 @@
 {
   "parser": "babel-eslint",
-  "extends": ["airbnb"],
+  "extends": ["airbnb", "plugin:prettier/recommended", "prettier/react"],
   "plugins": ["babel", "react", "jsx-a11y", "import"],
   "rules": {
-    "semi": 0,
-    "max-len": 0,
     "no-console": 0,
     "function-paren-newline": 0,
     "no-mixed-operators": 0,

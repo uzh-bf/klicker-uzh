@@ -6,15 +6,9 @@ function getComponentDisplayName(Component) {
   return Component.displayName || Component.name || 'Unknown'
 }
 
-export default ({
-  propName,
-  propDefault,
-  storageType = 'session',
-  json = false,
-}) => ComposedComponent => class WithStorage extends React.Component {
-    static displayName = `WithStorage(${getComponentDisplayName(
-      ComposedComponent,
-    )})`
+export default ({ propName, propDefault, storageType = 'session', json = false }) => ComposedComponent =>
+  class WithStorage extends React.Component {
+    static displayName = `WithStorage(${getComponentDisplayName(ComposedComponent)})`
 
     constructor(props) {
       super(props)
@@ -38,7 +32,7 @@ export default ({
             data = JSON.parse(data)
           }
 
-          this.setState((prevState) => {
+          this.setState(prevState => {
             if (prevState[propName] === data) {
               return undefined
             }
@@ -56,4 +50,4 @@ export default ({
     render() {
       return <ComposedComponent {...this.props} {...this.state} />
     }
-}
+  }

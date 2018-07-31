@@ -20,30 +20,24 @@
   "common.string.speed": "Geschwindigkeit",
   "createQuestion.content": "Frageinhalt",
   "createQuestion.contentInput.label": "Frage",
-  "createQuestion.contentInput.tooltip":
-    "Geben Sie die Frage ein, die Sie den Teilnehmenden stellen möchten.",
+  "createQuestion.contentInput.tooltip": "Geben Sie die Frage ein, die Sie den Teilnehmenden stellen möchten.",
   "createQuestion.options": "Frageoptionen",
   "createQuestion.options.max": "Max",
   "createQuestion.options.min": "Min",
   "createQuestion.optionsFREE.label": "Einschränkungen",
-  "createQuestion.optionsFREE.tooltip":
-    "Wählen Sie das erlaubte Format für eingehende Freitextantworten.",
+  "createQuestion.optionsFREE.tooltip": "Wählen Sie das erlaubte Format für eingehende Freitextantworten.",
   "createQuestion.optionsSC.label": "Verfügbare Auswahlmöglichkeiten",
-  "createQuestion.optionsSC.tooltip":
-    "Fügen Sie Auswahlmöglichkeiten hinzu, aus denen die Teilnehmenden wählen können.",
+  "createQuestion.optionsSC.tooltip": "Fügen Sie Auswahlmöglichkeiten hinzu, aus denen die Teilnehmenden wählen können.",
   "createQuestion.pageTitle": "Frage erstellen",
   "createQuestion.previewLabel": "Teilnehmer-Vorschau",
   "createQuestion.questionType.label": "Fragetyp",
-  "createQuestion.questionType.tooltip":
-    "Definieren Sie den Typ der Frage, die Sie erstellen möchten.",
+  "createQuestion.questionType.tooltip": "Definieren Sie den Typ der Frage, die Sie erstellen möchten.",
   "createQuestion.selection": "Auswahl",
   "createQuestion.tagInput.label": "Tags",
-  "createQuestion.tagInput.tooltip":
-    "Fügen Sie Tags zu Ihrer Frage hinzu, um die Organisation und Wiederverwendbarkeit zu verbessern (änhlich zu bisherigen Ordnern).",
+  "createQuestion.tagInput.tooltip": "Fügen Sie Tags zu Ihrer Frage hinzu, um die Organisation und Wiederverwendbarkeit zu verbessern (änhlich zu bisherigen Ordnern).",
   "createQuestion.title": "Frage erstellen",
   "createQuestion.titleInput.label": "Fragetitel",
-  "createQuestion.titleInput.tooltip":
-    "Geben Sie einen kurzen, zusammenfassenden Titel für die Frage ein. Dieser dient lediglich zur besseren Übersicht.",
+  "createQuestion.titleInput.tooltip": "Geben Sie einen kurzen, zusammenfassenden Titel für die Frage ein. Dieser dient lediglich zur besseren Übersicht.",
   "editQuestion.error": "Frage konnte nicht editiert werden: {error}",
   "editQuestion.newVersion": "Neue Version",
   "editQuestion.pageTitle": "Frage editieren",
@@ -52,8 +46,7 @@
   "editQuestion.title": "Frage editieren",
   "editQuestion.titleInput.label": "Fragetitel",
   "editQuestion.type": "Fragetyp",
-  "evaluation.bins.description":
-    "Geben Sie eine Zahl ein, um das Freedman-Diaconis Thresholding zu überschreiben. Die Anzahl der Bins im Histogramm basiert auf diesem Wert.",
+  "evaluation.bins.description": "Geben Sie eine Zahl ein, um das Freedman-Diaconis Thresholding zu überschreiben. Die Anzahl der Bins im Histogramm basiert auf diesem Wert.",
   "evaluation.graph.noResults": "Keine Resultate verfügbar.",
   "evaluation.graph.showGraph": "Diagramm anzeigen",
   "evaluation.pageTitle": "Auswertung",
@@ -66,23 +59,18 @@
   "evaluation.visualization.title": "Diagramm",
   "form.common.button.submit": "Absenden",
   "form.createQuestion.content.empty": "Bitte den Frageinhalt definieren.",
-  "form.createQuestion.options.empty":
-    "Bitte mindestens eine Auswahlmöglichkeit angeben.",
+  "form.createQuestion.options.empty": "Bitte mindestens eine Auswahlmöglichkeit angeben.",
   "form.createQuestion.options.invalid": "Ungültige Frageoptionen",
-  "form.createQuestion.options.minMaxRange.invalid":
-    "Bitte einen gültigen Zahlenbereich angeben.",
+  "form.createQuestion.options.minMaxRange.invalid": "Bitte einen gültigen Zahlenbereich angeben.",
   "form.createQuestion.tags.empty": "Bitte mindestens einen Tag hinzufügen.",
   "form.createQuestion.title.empty": "Bitte einen Fragetitel definieren.",
   "form.createQuestion.type.empty": "Bitte den Fragetyp auswählen.",
   "form.createSession.button.save": "Speichern & Schliessen",
-  "form.createSession.string.alreadyRunning":
-    "Es ist bereits eine Session aktiv.",
+  "form.createSession.string.alreadyRunning": "Es ist bereits eine Session aktiv.",
   "form.editQuestion.content.empty": "Bitte den Frageinhalt definieren.",
-  "form.editQuestion.options.empty":
-    "Bitte mindestens eine Auswahlmöglichkeit angeben.",
+  "form.editQuestion.options.empty": "Bitte mindestens eine Auswahlmöglichkeit angeben.",
   "form.editQuestion.options.invalid": "Ungültige Frageoptionen",
-  "form.editQuestion.options.minMaxRange.invalid":
-    "Bitte einen gültigen Zahlenbereich angeben.",
+  "form.editQuestion.options.minMaxRange.invalid": "Bitte einen gültigen Zahlenbereich angeben.",
   "form.editQuestion.tags.empty": "Bitte mindestens einen Tag hinzufügen.",
   "form.editQuestion.title.empty": "Bitte einen Fragetitel definieren.",
   "form.email.invalid": "Bitte eine gültige Email-Adresse angeben.",
@@ -92,28 +80,21 @@
   "form.institution.label": "Institution",
   "form.password.invalid": "Bitte ein gültiges Passwort angeben (8+ Zeichen).",
   "form.password.label": "Passwort",
-  "form.passwordRepeat.invalid":
-    "Bitte sicherstellen, dass Passwörter übereinstimmen.",
+  "form.passwordRepeat.invalid": "Bitte sicherstellen, dass Passwörter übereinstimmen.",
   "form.passwordRepeat.label": "Passwort wiederholen",
   "form.passwordReset.backToLogin": "Zurück zum Login",
-  "form.shortname.invalid":
-    "Bitte ein gültiges Accountkürzel angeben (3-8 Zeichen).",
+  "form.shortname.invalid": "Bitte ein gültiges Accountkürzel angeben (3-8 Zeichen).",
   "form.shortname.label": "Account ID / Join Link",
-  "form.shortname.tooltip":
-    "Ein eindeutiger Bezeichner für Ihren Account. Muss zwischen 3 und 8 Zeichen lang sein (nur alphanumerisch und -).",
+  "form.shortname.tooltip": "Ein eindeutiger Bezeichner für Ihren Account. Muss zwischen 3 und 8 Zeichen lang sein (nur alphanumerisch und -).",
   "form.useCase.label": "Anwendungsfall",
-  "form.useCase.tooltip":
-    "Short description of your planned use case for the Klicker UZH.",
+  "form.useCase.tooltip": "Short description of your planned use case for the Klicker UZH.",
   "joinSession.newFeedbackInput.label": "Neues offenes Feedback",
   "joinSession.noEvaluationActive": "Keine Auswertung aktiv.",
   "joinSession.noSessionActive": "Keine Session aktiv.",
-  "joinSession.questionArea.alreadyAnswered":
-    "Sie haben bereits alle aktiven Fragen beantwortet.",
+  "joinSession.questionArea.alreadyAnswered": "Sie haben bereits alle aktiven Fragen beantwortet.",
   "joinSession.questionArea.info.FREE": "Bitte eine Antwort eingeben:",
-  "joinSession.questionArea.info.FREE_RANGE":
-    "Bitte eine Antwort aus dem vorgegebenen Bereich auswählen:",
-  "joinSession.questionArea.info.MC":
-    "Bitte eine oder mehrere Optionen auswählen:",
+  "joinSession.questionArea.info.FREE_RANGE": "Bitte eine Antwort aus dem vorgegebenen Bereich auswählen:",
+  "joinSession.questionArea.info.MC": "Bitte eine oder mehrere Optionen auswählen:",
   "joinSession.questionArea.info.SC": "Bitte eine einzige Option auswählen:",
   "joinSession.questionArea.title": "Frage",
   "joinSessionactiveQuestion.title": "Aktive Frage",
@@ -123,15 +104,13 @@
   "questionDetails.button.edit": "Editieren",
   "questionDetails.button.view": "Ansehen",
   "questionDetails.usageHistory": "Verwendet am",
-  "questionList.string.noMatchingQuestions":
-    "Keine Fragen, die mit den Kriterien übereinstimmen.",
+  "questionList.string.noMatchingQuestions": "Keine Fragen, die mit den Kriterien übereinstimmen.",
   "questionList.string.noQuestions": "Sie haben noch keine Fragen erstellt.",
   "questionPool.button.archiveQuestions": "Fragen archivieren ({num})",
   "questionPool.button.createQuestion": "Frage erstellen",
   "questionPool.button.createSession": "Session erstellen",
   "questionPool.button.quickCreateSeparate": "Fragen in {num} Blöcke aufteilen",
-  "questionPool.button.quickCreateSingle":
-    "Fragen in einem Block zusammenfassen ({num}->1)",
+  "questionPool.button.quickCreateSingle": "Fragen in einem Block zusammenfassen ({num}->1)",
   "questionPool.button.unarchiveQuestions": "Fragen wiederherstellen ({num})",
   "questionPool.pageTitle": "Fragepool",
   "questionPool.question.titleArchive": "ARCHIVIERT",
@@ -149,11 +128,9 @@
   "runningSession.confusion.title": "Confusion-Barometer",
   "runningSession.confusionSection.noData": "Noch keine Daten verfügbar.",
   "runningSession.errorLoading": "Fehler beim Laden der aktuellen Session...",
-  "runningSession.feedbackChannel.publishQuestions":
-    "Feedbacks veröffentlichen",
+  "runningSession.feedbackChannel.publishQuestions": "Feedbacks veröffentlichen",
   "runningSession.feedbackChannel.string.title": "Feedback-Channel",
-  "runningSession.message.feedbackSession":
-    "Diese Session ist eine Feedback-Session ohne Fragen.",
+  "runningSession.message.feedbackSession": "Diese Session ist eine Feedback-Session ohne Fragen.",
   "runningSession.noRunningSession": "Momentan läuft keine Session...",
   "runningSession.pageTitle": "Laufende Session",
   "runningSession.title": "Laufende Session",
@@ -167,11 +144,9 @@
   "sessionArea.toJoinSession": "Publikumsansicht",
   "sessionArea.toRunningSession": "Zur laufenden Session",
   "sessionArea.whatsNew": "Updates",
-  "sessionCreation.emptyDropzoneInfo":
-    "Benutzen Sie Drag & Drop und ziehen Sie eine Frage in die graue Ablagezone.",
+  "sessionCreation.emptyDropzoneInfo": "Benutzen Sie Drag & Drop und ziehen Sie eine Frage in die graue Ablagezone.",
   "sessionCreation.newBlock": "Neuer Frageblock",
-  "sessionCreation.newBlock.tooltip":
-    "Gruppieren Sie Fragen in einem Frageblock, um sie gleichzeitig zu aktivieren und auszuwerten.",
+  "sessionCreation.newBlock.tooltip": "Gruppieren Sie Fragen in einem Frageblock, um sie gleichzeitig zu aktivieren und auszuwerten.",
   "sessionCreation.title": "Session erstellen",
   "sessionList.pageTitle": "Sessionübersicht",
   "sessionList.string.createdOn": "Erstellt am",
@@ -190,14 +165,11 @@
   "user.login.pageTitle": "Login",
   "user.login.title": "Login",
   "user.registration.pageTitle": "Registration",
-  "user.registration.successNotification":
-    "Erfolgreich registriert als {newEmail}.{br} Bitte unter {link} einloggen.",
+  "user.registration.successNotification": "Erfolgreich registriert als {newEmail}.{br} Bitte unter {link} einloggen.",
   "user.registration.title": "Registration",
-  "user.requestPassword.success":
-    "Eine Email mit Instruktionen zum Zurücksetzen des Passworts wurde an die angegebene Adresse versendet.",
+  "user.requestPassword.success": "Eine Email mit Instruktionen zum Zurücksetzen des Passworts wurde an die angegebene Adresse versendet.",
   "user.requestPassword.title": "Passwort zurücksetzen",
   "user.resetPassword.pageTitle": "Passwort zurücksetzen",
-  "user.resetPassword.success":
-    "Passwortänderung war erfolgreich. Sie können sich jetzt unter {login} einloggen.",
+  "user.resetPassword.success": "Passwortänderung war erfolgreich. Sie können sich jetzt unter {login} einloggen.",
   "user.resetPassword.title": "Passwort zurücksetzen"
 }

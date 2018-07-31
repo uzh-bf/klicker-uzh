@@ -104,7 +104,7 @@
            "@babel/plugin-proposal-do-expressions",
            "@babel/plugin-proposal-pipeline-operator",
            "@babel/plugin-proposal-optional-chaining",
-           "babel-plugin-inline-import-graphql-ast"
+           "import-graphql"
         ]
      }
   }

@@ -27,7 +27,7 @@ const propTypes = {
         content: PropTypes.string,
         id: PropTypes.string,
         labelStart: PropTypes.string,
-      }),
+      })
     ).isRequired,
     sortOrder: PropTypes.bool.isRequired,
   }),
@@ -40,23 +40,11 @@ const defaultProps = {
   sidebarVisible: false,
 }
 
-export const NavbarPres = ({
-  intl,
-  search,
-  sidebarVisible,
-  title,
-  handleSidebarToggle,
-}) => (
+export const NavbarPres = ({ intl, search, sidebarVisible, title, handleSidebarToggle }) => (
   <div className="navbar">
     <div className="sideArea">
       <Menu borderless className="noBorder">
-        <Menu.Item
-          icon
-          active={sidebarVisible}
-          className="sidebar"
-          name="sidebar"
-          onClick={handleSidebarToggle}
-        >
+        <Menu.Item icon active={sidebarVisible} className="sidebar" name="sidebar" onClick={handleSidebarToggle}>
           <Icon name="sidebar" />
         </Menu.Item>
         <h1>{title}</h1>
@@ -134,9 +122,7 @@ export const NavbarPres = ({
           return (
             <Menu borderless className="loginArea noBorder">
               <Menu.Menu position="right">
-                {accountShort && (
-                  <SessionArea intl={intl} sessionId={runningSessionId} />
-                )}
+                {accountShort && <SessionArea intl={intl} sessionId={runningSessionId} />}
 
                 <Mutation mutation={LogoutMutation}>
                   {logout => (

@@ -29,9 +29,10 @@ function addToBlock(blocks, blockId, question, targetIndex = null) {
 
   // compute the new list of questions for the target block
   const dstQuestions = blocks.getIn([dstBlockIx, 'questions'])
-  const dstQuestionsWithTarget = typeof targetIndex !== 'undefined'
-    ? dstQuestions.insert(targetIndex, { ...question, key: UUIDv4() })
-    : dstQuestions.push({ ...question, key: UUIDv4() })
+  const dstQuestionsWithTarget =
+    typeof targetIndex !== 'undefined'
+      ? dstQuestions.insert(targetIndex, { ...question, key: UUIDv4() })
+      : dstQuestions.push({ ...question, key: UUIDv4() })
 
   // update the target block
   return blocks.setIn([dstBlockIx, 'questions'], dstQuestionsWithTarget)
@@ -56,24 +57,12 @@ function appendNewBlock(blocks, question) {
  * @param {int} questionIndex
  * @param {bool} removeEmpty
  */
-function removeQuestion(
-  blocks,
-  blockIndex,
-  questionIndex,
-  removeEmpty = false,
-) {
+function removeQuestion(blocks, blockIndex, questionIndex, removeEmpty = false) {
   // delete the question with the specified index from the specified block
-  const blocksWithoutQuestion = blocks.deleteIn([
-    blockIndex,
-    'questions',
-    questionIndex,
-  ])
+  const blocksWithoutQuestion = blocks.deleteIn([blockIndex, 'questions', questionIndex])
 
   // if the block from which the question was removed is now empty, remove the block
-  if (
-    removeEmpty
-    && blocksWithoutQuestion.getIn([blockIndex, 'questions']).size === 0
-  ) {
+  if (removeEmpty && blocksWithoutQuestion.getIn([blockIndex, 'questions']).size === 0) {
     return blocksWithoutQuestion.delete(blockIndex)
   }
 
@@ -89,26 +78,14 @@ function removeQuestion(
  * @param {*} dstQuestionIx
  * @param {*} removeEmpty Flag that specifies whether empty blocks should be pruned
  */
-function moveQuestion(
-  blocks,
-  srcBlockId,
-  srcQuestionIx,
-  dstBlockId,
-  dstQuestionIx,
-  removeEmpty = false,
-) {
+function moveQuestion(blocks, srcBlockId, srcQuestionIx, dstBlockId, dstQuestionIx, removeEmpty = false) {
   // compute the index for both source and destination block
   const srcBlockIx = getIndex(blocks, srcBlockId)
   let dstBlockIx = getIndex(blocks, dstBlockId)
 
   // save and remove the question that is to be moved
   const targetQuestion = blocks.getIn([srcBlockIx, 'questions', srcQuestionIx])
-  const blocksWithoutSrc = removeQuestion(
-    blocks,
-    srcBlockIx,
-    srcQuestionIx,
-    removeEmpty && srcBlockId !== dstBlockId,
-  )
+  const blocksWithoutSrc = removeQuestion(blocks, srcBlockIx, srcQuestionIx, removeEmpty && srcBlockId !== dstBlockId)
 
   // if the destination block comes after the source block
   // the destination index needs to be updated after the removal of the source block
@@ -120,6 +97,4 @@ function moveQuestion(
   return addToBlock(blocksWithoutSrc, dstBlockIx, targetQuestion, dstQuestionIx)
 }
 
-export {
-  moveQuestion, addToBlock, appendNewBlock, removeQuestion,
-}
+export { moveQuestion, addToBlock, appendNewBlock, removeQuestion }

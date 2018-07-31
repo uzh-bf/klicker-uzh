@@ -56,9 +56,7 @@ const messages = defineMessages({
 })
 
 // form validation
-const validate = ({
-  content, options, tags, title, type,
-}) => {
+const validate = ({ content, options, tags, title, type }) => {
   const errors = {}
 
   if (!title || _isEmpty(title)) {
@@ -77,10 +75,7 @@ const validate = ({
     errors.type = messages.typeEmpty
   }
 
-  if (
-    QUESTION_GROUPS.CHOICES.includes(type)
-    && (!options || options.choices.length === 0)
-  ) {
+  if (QUESTION_GROUPS.CHOICES.includes(type) && (!options || options.choices.length === 0)) {
     errors.options = messages.optionsEmpty
   }
 
@@ -89,11 +84,7 @@ const validate = ({
       const isMinNum = _isNumber(options.restrictions.min)
       const isMaxNum = _isNumber(options.restrictions.max)
 
-      if (
-        isMinNum
-        && isMaxNum
-        && options.restrictions.min >= options.restrictions.max
-      ) {
+      if (isMinNum && isMaxNum && options.restrictions.min >= options.restrictions.max) {
         errors.options = messages.minMaxRangeInvalid
       }
     } else {
@@ -111,7 +102,7 @@ const propTypes = {
   tags: PropTypes.arrayOf(
     PropTypes.shape({
       name: PropTypes.string.isRequired,
-    }),
+    })
   ),
 }
 
@@ -119,9 +110,7 @@ const defaultProps = {
   tags: [],
 }
 
-const QuestionCreationForm = ({
-  intl, tags, onSubmit, onDiscard,
-}) => {
+const QuestionCreationForm = ({ intl, tags, onSubmit, onDiscard }) => {
   const typeComponents = {
     [QUESTION_TYPES.SC]: {
       input: SCCreationOptions,
@@ -168,16 +157,7 @@ const QuestionCreationForm = ({
         })} */
         onSubmit={onSubmit}
       >
-        {({
-          values,
-          errors,
-          touched,
-          handleChange,
-          handleBlur,
-          handleSubmit,
-          isSubmitting,
-          setFieldValue,
-        }) => {
+        {({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting, setFieldValue }) => {
           const Preview = typeComponents[values.type].preview
           const OptionsInput = typeComponents[values.type].input
 
@@ -199,12 +179,12 @@ const QuestionCreationForm = ({
                   intl={intl}
                   label={intl.formatMessage(messages.titleInput)}
                   name="title"
-                  tooltip={(
+                  tooltip={
                     <FormattedMessage
                       defaultMessage="Enter a short summarizing title for the question. This is only visible to you!"
                       id="createQuestion.titleInput.tooltip"
                     />
-)}
+                  }
                   touched={touched.title}
                   type="text"
                   value={values.title}
@@ -212,19 +192,11 @@ const QuestionCreationForm = ({
               </div>
 
               <div className="questionInput questionType">
-                <TypeChooser
-                  intl={intl}
-                  value={values.type}
-                  onChange={newType => setFieldValue('type', newType)}
-                />
+                <TypeChooser intl={intl} value={values.type} onChange={newType => setFieldValue('type', newType)} />
               </div>
 
               <div className="questionInput questionTags">
-                <TagInput
-                  tags={tags}
-                  value={values.tags}
-                  onChange={newTags => setFieldValue('tags', newTags)}
-                />
+                <TagInput tags={tags} value={values.tags} onChange={newTags => setFieldValue('tags', newTags)} />
               </div>
 
               <div className="questionInput questionContent">
@@ -239,15 +211,9 @@ const QuestionCreationForm = ({
               {process.env.S3_BASE_PATH && (
                 <div className="questionInput questionFiles">
                   <h2>
-                    <FormattedMessage
-                      defaultMessage="Attached Images (Beta)"
-                      id="createQuestion.filesLabel"
-                    />
+                    <FormattedMessage defaultMessage="Attached Images (Beta)" id="createQuestion.filesLabel" />
                   </h2>
-                  <FileDropzone
-                    files={values.files}
-                    onChangeFiles={newFiles => setFieldValue('files', newFiles)}
-                  />
+                  <FileDropzone files={values.files} onChangeFiles={newFiles => setFieldValue('files', newFiles)} />
                 </div>
               )}
 
@@ -262,10 +228,7 @@ const QuestionCreationForm = ({
 
               <div className="questionPreview">
                 <h2>
-                  <FormattedMessage
-                    defaultMessage="Audience Preview"
-                    id="createQuestion.previewLabel"
-                  />
+                  <FormattedMessage defaultMessage="Audience Preview" id="createQuestion.previewLabel" />
                 </h2>
                 <Preview
                   description={values.content.getCurrentContent()}
@@ -276,10 +239,7 @@ const QuestionCreationForm = ({
               </div>
 
               <Button className="discard" type="reset" onClick={onDiscard}>
-                <FormattedMessage
-                  defaultMessage="Discard"
-                  id="common.button.discard"
-                />
+                <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
               </Button>
               <Button
                 primary
@@ -288,96 +248,91 @@ const QuestionCreationForm = ({
                 loading={isSubmitting}
                 type="submit"
               >
-                <FormattedMessage
-                  defaultMessage="Save"
-                  id="common.button.save"
-                />
+                <FormattedMessage defaultMessage="Save" id="common.button.save" />
               </Button>
             </Form>
           )
         }}
       </Formik>
 
-      <style jsx>
-        {`
-          @import 'src/theme';
+      <style jsx>{`
+        @import 'src/theme';
 
-          .questionCreationForm > :global(form) {
-            display: flex;
-            flex-direction: column;
+        .questionCreationForm > :global(form) {
+          display: flex;
+          flex-direction: column;
 
-            padding: 1rem;
+          padding: 1rem;
 
-            .questionInput,
-            .questionPreview {
-              margin-bottom: 1rem;
-            }
+          .questionInput,
+          .questionPreview {
+            margin-bottom: 1rem;
+          }
 
-            .questionInput :global(.field > label),
-            .questionPreview > h2 {
-              font-size: 1.2rem;
-              margin: 0;
-              margin-bottom: 0.5rem;
-            }
+          .questionInput :global(.field > label),
+          .questionPreview > h2 {
+            font-size: 1.2rem;
+            margin: 0;
+            margin-bottom: 0.5rem;
+          }
 
-            @supports (grid-gap: 1rem) {
-              @include desktop-tablet-only {
-                display: grid;
-                align-content: start;
+          @supports (grid-gap: 1rem) {
+            @include desktop-tablet-only {
+              display: grid;
+              align-content: start;
 
-                grid-gap: 1rem;
-                grid-template-columns: repeat(6, 1fr);
-                grid-template-rows: 5rem auto auto auto;
-                grid-template-areas:
-                  'title title title title preview preview'
-                  'type type tags tags preview preview'
-                  'content content content content content content'
-                  'files files files files files files'
-                  'options options options options options options';
+              grid-gap: 1rem;
+              grid-template-columns: repeat(6, 1fr);
+              grid-template-rows: 5rem auto auto auto;
+              grid-template-areas:
+                'title title title title preview preview'
+                'type type tags tags preview preview'
+                'content content content content content content'
+                'files files files files files files'
+                'options options options options options options';
 
-                .questionInput,
-                .questionPreview {
-                  margin: 0;
-                }
-
-                .questionTitle {
-                  grid-area: title;
-                }
-
-                .questionType {
-                  grid-area: type;
-                }
-
-                .questionTags {
-                  grid-area: tags;
-                }
-
-                .questionPreview {
-                  grid-area: preview;
-                  align-self: stretch;
-                }
-
-                .questionContent {
-                  grid-area: content;
-                }
-
-                .questionFiles {
-                  grid-area: files;
-                }
-
-                .questionOptions {
-                  grid-area: options;
-                }
+              .questionInput,
+              .questionPreview {
+                margin: 0;
               }
 
-              @include desktop-only {
-                margin: 0 20%;
-                padding: 1rem 0;
+              .questionTitle {
+                grid-area: title;
               }
+
+              .questionType {
+                grid-area: type;
+              }
+
+              .questionTags {
+                grid-area: tags;
+              }
+
+              .questionPreview {
+                grid-area: preview;
+                align-self: stretch;
+              }
+
+              .questionContent {
+                grid-area: content;
+              }
+
+              .questionFiles {
+                grid-area: files;
+              }
+
+              .questionOptions {
+                grid-area: options;
+              }
+            }
+
+            @include desktop-only {
+              margin: 0 20%;
+              padding: 1rem 0;
             }
           }
-        `}
-      </style>
+        }
+      `}</style>
     </div>
   )
 }

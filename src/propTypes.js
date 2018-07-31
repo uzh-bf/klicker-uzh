@@ -7,8 +7,4 @@ export const statisticsShape = PropTypes.shape({
   min: PropTypes.number.isRequired,
 })
 
-export const sessionStatusShape = PropTypes.oneOf([
-  'CREATED',
-  'RUNNING',
-  'COMPLETED',
-])
+export const sessionStatusShape = PropTypes.oneOf(['CREATED', 'RUNNING', 'COMPLETED'])

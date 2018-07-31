@@ -66,12 +66,7 @@ export default (cfg = {}) =>
           }
 
           // embed logrocket if enabled
-          if (
-            isProd &&
-            process.env.LOGROCKET &&
-            config.logRocket &&
-            !window.INIT_LR
-          ) {
+          if (isProd && process.env.LOGROCKET && config.logRocket && !window.INIT_LR) {
             LogRocket.init(process.env.LOGROCKET)
             LogRocketReact(LogRocket)
 
@@ -92,7 +87,7 @@ export default (cfg = {}) =>
                   extra: {
                     sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef
                   },
-                }),
+                })
               )
             }
 
