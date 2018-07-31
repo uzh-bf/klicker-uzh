@@ -5,8 +5,8 @@ import { Formik } from 'formik'
 import { object } from 'yup'
 import { Form, Button } from 'semantic-ui-react'
 
-import { ChangePasswordMutation } from '../../../graphql'
 import { FormikInput } from '..'
+import { ChangePasswordMutation } from '../../../graphql'
 import validationSchema from '../common/validationSchema'
 import messages from '../common/messages'
 
@@ -94,12 +94,6 @@ const PasswordUpdateForm = ({ intl }) => (
         />
       )}
     </Mutation>
-
-    <style jsx>{`
-      @import 'src/theme';
-      .passwordUpdateForm {
-      }
-    `}</style>
   </div>
 )
 

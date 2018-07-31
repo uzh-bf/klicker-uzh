@@ -146,12 +146,6 @@ const AccountDataForm = ({ intl }) => (
         </Query>
       )}
     </Mutation>
-
-    <style jsx>{`
-      @import 'src/theme';
-      .accountDataForm {
-      }
-    `}</style>
   </div>
 )
 
