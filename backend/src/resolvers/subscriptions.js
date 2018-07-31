@@ -22,18 +22,12 @@ const compareSessionId = (payload, variables) => payload.sessionId === variables
 const FEEDBACK_ADDED = 'feedbackAdded'
 const feedbackAddedSubscription = {
   // resolve: {},
-  subscribe: withFilter(
-    () => pubsub.asyncIterator(FEEDBACK_ADDED),
-    compareSessionId,
-  ),
+  subscribe: withFilter(() => pubsub.asyncIterator(FEEDBACK_ADDED), compareSessionId),
 }
 
 const CONFUSION_ADDED = 'confusionAdded'
 const confusionAddedSubscription = {
-  subscribe: withFilter(
-    () => pubsub.asyncIterator(CONFUSION_ADDED),
-    compareSessionId,
-  ),
+  subscribe: withFilter(() => pubsub.asyncIterator(CONFUSION_ADDED), compareSessionId),
 }
 
 module.exports = {

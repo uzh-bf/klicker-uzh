@@ -39,11 +39,9 @@ const { createLoaders } = require('./lib/loaders')
 // require important environment variables to be present
 // otherwise exit the application
 const appSettings = ['APP_DOMAIN', 'PORT', 'APP_SECRET', 'MONGO_URL', 'ORIGIN']
-appSettings.forEach((envVar) => {
+appSettings.forEach(envVar => {
   if (!process.env[envVar]) {
-    exceptTest(() => console.warn(
-      `> Error: Please pass ${envVar} as an environment variable.`,
-    ))
+    exceptTest(() => console.warn(`> Error: Please pass ${envVar} as an environment variable.`))
     process.exit(1)
   }
 })
@@ -58,15 +56,13 @@ const mongoConfig = {
 }
 if (process.env.MONGO_USER && process.env.MONGO_PASSWORD) {
   mongoose.connect(
-    `mongodb://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${
-      process.env.MONGO_URL
-    }`,
-    mongoConfig,
+    `mongodb://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@${process.env.MONGO_URL}`,
+    mongoConfig
   )
 } else {
   mongoose.connect(
     `mongodb://${process.env.MONGO_URL}`,
-    mongoConfig,
+    mongoConfig
   )
 }
 
@@ -79,7 +75,7 @@ mongoose.connection
   .once('open', () => {
     exceptTest(() => console.log('> Connection to MongoDB established.'))
   })
-  .on('error', (error) => {
+  .on('error', error => {
     exceptTest(() => console.warn('> Warning: ', error))
   })
 
@@ -128,12 +124,7 @@ if (isProd) {
   if (process.env.SENTRY_DSN) {
     // if a sentry dsn is set, configure raven
     Raven.config(process.env.SENTRY_DSN).install()
-    middleware = [
-      Raven.requestHandler(),
-      compression(),
-      ...middleware,
-      Raven.errorHandler(),
-    ]
+    middleware = [Raven.requestHandler(), compression(), ...middleware, Raven.errorHandler()]
   } else {
     middleware = [compression(), ...middleware]
   }
@@ -162,20 +153,20 @@ if (isProd) {
       delayAfter: 200, // start delaying responses after 100 requests
       delayMs: 50, // delay responses by 250ms * (numResponses - delayAfter)
       keyGenerator: req => `${req.auth ? req.auth.sub : req.ip}`,
-      onLimitReached: req => exceptTest(() => {
-        const error = `> Rate-Limited a Request from ${req.ip} ${req.auth
-          .sub || 'anon'}!`
+      onLimitReached: req =>
+        exceptTest(() => {
+          const error = `> Rate-Limited a Request from ${req.ip} ${req.auth.sub || 'anon'}!`
 
-        console.error(error)
+          console.error(error)
 
-        if (apm) {
-          apm.captureError(error)
-        }
+          if (apm) {
+            apm.captureError(error)
+          }
 
-        if (Raven) {
-          Raven.captureException(error)
-        }
-      }),
+          if (Raven) {
+            Raven.captureException(error)
+          }
+        }),
     }
 
     // if redis is available, use it to centrally store rate limiting dataconst
@@ -186,8 +177,8 @@ if (isProd) {
       limiter = new RateLimit({
         ...limiterSettings,
         store:
-          redis
-          && new RedisStore({
+          redis &&
+          new RedisStore({
             client: redis,
             expiry: 5 * 60,
             prefix: 'rl-api:',

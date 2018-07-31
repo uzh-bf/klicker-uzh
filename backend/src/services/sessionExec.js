@@ -6,11 +6,7 @@ const { QuestionInstanceModel, UserModel, FileModel } = require('../models')
 const { QUESTION_GROUPS, QUESTION_TYPES } = require('../constants')
 const { getRedis } = require('../redis')
 const { getRunningSession } = require('./sessionMgr')
-const {
-  pubsub,
-  CONFUSION_ADDED,
-  FEEDBACK_ADDED,
-} = require('../resolvers/subscriptions')
+const { pubsub, CONFUSION_ADDED, FEEDBACK_ADDED } = require('../resolvers/subscriptions')
 
 // initialize redis if available
 const redis = getRedis(2)
@@ -33,9 +29,7 @@ const addFeedback = async ({ sessionId, content }) => {
   // extract the saved feedback and convert it to a plain object
   // then readd the mongo _id field under the id key and publish the result
   // this is needed as redis swallows the _id field and the client could break!
-  const savedFeedback = session.feedbacks[
-    session.feedbacks.length - 1
-  ].toObject()
+  const savedFeedback = session.feedbacks[session.feedbacks.length - 1].toObject()
   pubsub.publish(FEEDBACK_ADDED, {
     [FEEDBACK_ADDED]: { ...savedFeedback, id: savedFeedback._id },
     sessionId,
@@ -54,9 +48,7 @@ const deleteFeedback = async ({ sessionId, feedbackId, userId }) => {
     throw new ForbiddenError('UNAUTHORIZED')
   }
 
-  session.feedbacks = session.feedbacks.filter(
-    feedback => feedback.id !== feedbackId,
-  )
+  session.feedbacks = session.feedbacks.filter(feedback => feedback.id !== feedbackId)
 
   // save the updated session
   await session.save()
@@ -83,9 +75,7 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
   // extract the saved confusion timestep and convert it to a plain object
   // then readd the mongo _id field under the id key and publish the result
   // this is needed as redis swallows the _id field and the client could break!
-  const savedConfusion = session.confusionTS[
-    session.confusionTS.length - 1
-  ].toObject()
+  const savedConfusion = session.confusionTS[session.confusionTS.length - 1].toObject()
   pubsub.publish(CONFUSION_ADDED, {
     [CONFUSION_ADDED]: { ...savedConfusion, id: savedConfusion._id },
     sessionId,
@@ -96,9 +86,7 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
 }
 
 // add a response to an active question instance
-const addResponse = async ({
-  ip, fp, instanceId, response,
-}) => {
+const addResponse = async ({ ip, fp, instanceId, response }) => {
   // response object to save
   const saveResponse = {
     createdAt: Date.now(),
@@ -196,15 +184,13 @@ const addResponse = async ({
     // if it is the very first response, initialize results
     if (!instance.results) {
       instance.results = {
-        CHOICES: new Array(
-          currentVersion.options[questionType].choices.length,
-        ).fill(+0),
+        CHOICES: new Array(currentVersion.options[questionType].choices.length).fill(+0),
         totalParticipants: 0,
       }
     }
 
     // for each choice given, update the results
-    response.choices.forEach((responseIndex) => {
+    response.choices.forEach(responseIndex => {
       instance.results.CHOICES[responseIndex] += 1
     })
     instance.results.totalParticipants += 1
@@ -276,37 +262,30 @@ const joinSession = async ({ shortname }) => {
     },
   ])
 
-  const {
-    id, activeInstances, settings, feedbacks,
-  } = user.runningSession
+  const { id, activeInstances, settings, feedbacks } = user.runningSession
 
   return {
     id,
     settings,
     // map active instances to be in the correct format
-    activeInstances: activeInstances.map(
-      ({ id: instanceId, question, version: instanceVersion }) => {
-        const version = question.versions[instanceVersion]
+    activeInstances: activeInstances.map(({ id: instanceId, question, version: instanceVersion }) => {
+      const version = question.versions[instanceVersion]
 
-        // get the files that correspond to the current question version
-        const files = FileModel.find({ _id: { $in: version.files } })
+      // get the files that correspond to the current question version
+      const files = FileModel.find({ _id: { $in: version.files } })
 
-        return {
-          questionId: question.id,
-          id: instanceId,
-          title: question.title,
-          type: question.type,
-          content: version.content,
-          description: version.description,
-          options: version.options,
-          files,
-        }
-      },
-    ),
-    feedbacks:
-      settings.isFeedbackChannelActive && settings.isFeedbackChannelPublic
-        ? feedbacks
-        : null,
+      return {
+        questionId: question.id,
+        id: instanceId,
+        title: question.title,
+        type: question.type,
+        content: version.content,
+        description: version.description,
+        options: version.options,
+        files,
+      }
+    }),
+    feedbacks: settings.isFeedbackChannelActive && settings.isFeedbackChannelPublic ? feedbacks : null,
   }
 }
 

@@ -22,13 +22,11 @@ const redis = getRedis()
 const httpServer = createServer(app)
 apollo.installSubscriptionHandlers(httpServer)
 
-httpServer.listen(process.env.PORT, (err) => {
+httpServer.listen(process.env.PORT, err => {
   if (err) throw err
 
   console.log(
-    `[klicker-api] GraphQL ready on http://${process.env.APP_DOMAIN}:${
-      process.env.PORT
-    }${process.env.APP_PATH}!`,
+    `[klicker-api] GraphQL ready on http://${process.env.APP_DOMAIN}:${process.env.PORT}${process.env.APP_PATH}!`
   )
 })
 

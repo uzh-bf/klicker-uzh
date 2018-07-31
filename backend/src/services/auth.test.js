@@ -7,16 +7,7 @@ const { UserInputError } = require('apollo-server-express')
 
 mongoose.Promise = require('bluebird')
 
-const {
-  isAuthenticated,
-  isValidJWT,
-  signup,
-  login,
-  logout,
-  requireAuth,
-  getToken,
-  changePassword,
-} = require('./auth')
+const { isAuthenticated, isValidJWT, signup, login, logout, requireAuth, getToken, changePassword } = require('./auth')
 const { UserModel } = require('../models')
 const { initializeDb } = require('../lib/test/setup')
 const { Errors } = require('../constants')
@@ -31,7 +22,7 @@ describe('AuthService', () => {
       shortname: 'auth',
     })
   })
-  afterAll((done) => {
+  afterAll(done => {
     mongoose.disconnect(done)
   })
 
@@ -58,15 +49,9 @@ describe('AuthService', () => {
 
       const wrappedFunction = requireAuth(() => 'something')
 
-      expect(() => wrappedFunction(null, null, { auth: auth1 })).toThrow(
-        'INVALID_LOGIN',
-      )
-      expect(() => wrappedFunction(null, null, { auth: auth2 })).toThrow(
-        'INVALID_LOGIN',
-      )
-      expect(() => wrappedFunction(null, null, { auth: auth3 })).toThrow(
-        'INVALID_LOGIN',
-      )
+      expect(() => wrappedFunction(null, null, { auth: auth1 })).toThrow('INVALID_LOGIN')
+      expect(() => wrappedFunction(null, null, { auth: auth2 })).toThrow('INVALID_LOGIN')
+      expect(() => wrappedFunction(null, null, { auth: auth3 })).toThrow('INVALID_LOGIN')
       expect(wrappedFunction(null, null, { auth: auth4 })).toEqual('something')
     })
   })
@@ -102,7 +87,7 @@ describe('AuthService', () => {
           cookies: {
             jwt: 'invalid-token',
           },
-        }),
+        })
       ).toBeNull()
 
       // valid JWT handling
@@ -112,7 +97,7 @@ describe('AuthService', () => {
           cookies: {
             jwt: validJWT,
           },
-        }),
+        })
       ).toEqual(validJWT)
     })
 
@@ -124,7 +109,7 @@ describe('AuthService', () => {
           headers: {
             authorization: 'Bearer invalid-token',
           },
-        }),
+        })
       ).toBeNull()
 
       // valid JWT handling
@@ -134,7 +119,7 @@ describe('AuthService', () => {
           headers: {
             authorization: `Bearer ${validJWT}`,
           },
-        }),
+        })
       ).toEqual(validJWT)
     })
   })
@@ -144,54 +129,37 @@ describe('AuthService', () => {
       email                | password       | expected
       ${'invalidEmail'}    | ${'validPass'} | ${new UserInputError(Errors.INVALID_EMAIL)}
       ${'valid@bf.uzh.ch'} | ${'ps'}        | ${new UserInputError(Errors.INVALID_PASSWORD)}
-    `(
-  'fails with invalid email or password',
-  ({ email, password, expected }) => {
-    expect(
-      signup(email, password, 'validsrt', 'Institution', 'Testing...'),
-    ).rejects.toThrowError(expected)
-  },
-)
+    `('fails with invalid email or password', ({ email, password, expected }) => {
+      expect(signup(email, password, 'validsrt', 'Institution', 'Testing...')).rejects.toThrowError(expected)
+    })
     it.each`
       shortname
       ${'toolongshort'}
       ${'sh'}
       ${'srt-inv'}
     `('fails with invalid shortname', ({ shortname }) => {
-  expect(signup(shortname, 'Institution', 'Testing...')).rejects.toThrow()
-})
+      expect(signup(shortname, 'Institution', 'Testing...')).rejects.toThrow()
+    })
 
     it.each`
       email                  | expected
       ${'Abc.Abc@BF.uzh.CH'} | ${'abc.abc@bf.uzh.ch'}
       ${'abc.abc@gmail.com'} | ${'abcabc@gmail.com'}
     `('normalizes emails', async ({ email, expected }) => {
-  await UserModel.findOneAndRemove({ email: expected })
+      await UserModel.findOneAndRemove({ email: expected })
 
-  const newUser = await signup(
-    email,
-    'somePassword',
-    'normaliz',
-    'IBF Test',
-    'Testing...',
-  )
-  expect(newUser.email).toEqual(expected)
+      const newUser = await signup(email, 'somePassword', 'normaliz', 'IBF Test', 'Testing...')
+      expect(newUser.email).toEqual(expected)
 
-  await UserModel.findOneAndRemove({ email: expected })
-})
+      await UserModel.findOneAndRemove({ email: expected })
+    })
 
     it('works with valid user data', async () => {
       // remove a user with the given test email if he already exists
       await UserModel.findOneAndRemove({ email: 'testsignup@bf.uzh.ch' })
 
       // try creating a new user with valid data
-      const newUser = await signup(
-        'testsignup@bf.uzh.ch',
-        'somePassword',
-        'signup',
-        'IBF Testitution',
-        'Work stuff..',
-      )
+      const newUser = await signup('testsignup@bf.uzh.ch', 'somePassword', 'signup', 'IBF Testitution', 'Work stuff..')
 
       // expect the new user to contain correct data
       expect(newUser).toEqual(
@@ -202,7 +170,7 @@ describe('AuthService', () => {
           useCase: 'Work stuff..',
           isAAI: false,
           isActive: false,
-        }),
+        })
       )
 
       // expect the password to not be the same (as it is hashed)
@@ -225,9 +193,7 @@ describe('AuthService', () => {
     })
 
     it('fails with invalid email', () => {
-      expect(login(res, 'thisisinvalid', 'abcd')).rejects.toEqual(
-        new UserInputError(Errors.INVALID_EMAIL),
-      )
+      expect(login(res, 'thisisinvalid', 'abcd')).rejects.toEqual(new UserInputError(Errors.INVALID_EMAIL))
 
       // expect that cookies should not have been touched
       expect(cookieStore).toBeUndefined()
@@ -235,9 +201,7 @@ describe('AuthService', () => {
 
     it('fails with wrong email/password combination', () => {
       // expect the login to fail and the promise to reject
-      expect(login(res, 'blaa@bluub.com', 'abcd')).rejects.toEqual(
-        new Error('INVALID_LOGIN'),
-      )
+      expect(login(res, 'blaa@bluub.com', 'abcd')).rejects.toEqual(new Error('INVALID_LOGIN'))
 
       // expect that cookies should not have been touched
       expect(cookieStore).toBeUndefined()
@@ -265,18 +229,14 @@ describe('AuthService', () => {
         expect.objectContaining({
           email: 'testauth@bf.uzh.ch',
           shortname: 'auth',
-        }),
+        })
       )
 
       // expect the old login to fail and the promise to reject
-      expect(login(res, 'testauth@bf.uzh.ch', 'somePassword')).rejects.toEqual(
-        new Error('INVALID_LOGIN'),
-      )
+      expect(login(res, 'testauth@bf.uzh.ch', 'somePassword')).rejects.toEqual(new Error('INVALID_LOGIN'))
 
       // expect the new login to work
-      expect(
-        login(res, 'testauth@bf.uzh.ch', 'someOtherPassword'),
-      ).resolves.toBeTruthy()
+      expect(login(res, 'testauth@bf.uzh.ch', 'someOtherPassword')).resolves.toBeTruthy()
     })
 
     it('allows logging the user out', async () => {

@@ -16,13 +16,17 @@ const allQuestionsQuery = async (parentValue, args, { auth, loaders }) => {
 }
 
 const questionQuery = async (parentValue, { id }, { loaders }) => ensureLoaders(loaders).questions.load(id)
-const questionByPVQuery = (parentValue, args, { loaders }) => ensureLoaders(loaders).questions.load(parentValue.question)
-const questionsByPVQuery = (parentValue, args, { loaders }) => ensureLoaders(loaders).questions.loadMany(parentValue.questions)
+const questionByPVQuery = (parentValue, args, { loaders }) =>
+  ensureLoaders(loaders).questions.load(parentValue.question)
+const questionsByPVQuery = (parentValue, args, { loaders }) =>
+  ensureLoaders(loaders).questions.loadMany(parentValue.questions)
 
 /* ----- mutations ----- */
-const createQuestionMutation = (parentValue, { question }, { auth }) => QuestionService.createQuestion({ ...question, userId: auth.sub })
+const createQuestionMutation = (parentValue, { question }, { auth }) =>
+  QuestionService.createQuestion({ ...question, userId: auth.sub })
 
-const modifyQuestionMutation = (parentValue, { id, question }, { auth }) => QuestionService.modifyQuestion(id, auth.sub, question)
+const modifyQuestionMutation = (parentValue, { id, question }, { auth }) =>
+  QuestionService.modifyQuestion(id, auth.sub, question)
 
 const archiveQuestionsMutation = (parentValue, { ids }, { auth }) => QuestionService.archiveQuestions(ids, auth.sub)
 

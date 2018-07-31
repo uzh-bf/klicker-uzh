@@ -10,13 +10,21 @@ const Session = require('./Session')
 const Tag = require('./Tag')
 
 const User = `
-  input UserInput {
+  input User_Create {
     email: String
     password: String
     shortname: String
     institution: String
     useCase: String
   }
+
+  input User_Modify {
+    email: String
+    shortname: String
+    institution: String
+    useCase: String
+  }
+
   type User {
     id: ID!
     email: String!
@@ -36,5 +44,10 @@ const User = `
 
     createdAt: String!
     updatedAt: String!
+  }
+
+  type User_Availability {
+    email: Boolean
+    shortname: Boolean
   }
 `

@@ -5,10 +5,7 @@ const mongoose = require('mongoose')
 const SessionMgrService = require('./sessionMgr')
 const { QuestionInstanceModel } = require('../models')
 const { initializeDb, prepareSessionFactory } = require('../lib/test/setup')
-const {
-  sessionSerializer,
-  questionInstanceSerializer,
-} = require('../lib/test/serializers')
+const { sessionSerializer, questionInstanceSerializer } = require('../lib/test/serializers')
 
 const { SESSION_STATUS, QUESTION_TYPES } = require('../constants')
 
@@ -27,7 +24,7 @@ describe('SessionMgrService', () => {
   let questions
 
   beforeAll(async () => {
-    ({ userId, questions } = await initializeDb({
+    ;({ userId, questions } = await initializeDb({
       mongoose,
       email: 'testsessionmgr@bf.uzh.ch',
       shortname: 'sesMgr',
@@ -35,7 +32,7 @@ describe('SessionMgrService', () => {
       withQuestions: true,
     }))
   })
-  afterAll((done) => {
+  afterAll(done => {
     mongoose.disconnect(done)
     userId = undefined
   })
@@ -112,9 +109,7 @@ describe('SessionMgrService', () => {
         name: 'modified hello world',
         questionBlocks: [
           {
-            questions: [
-              { question: questions[QUESTION_TYPES.FREE].id, version: 0 },
-            ],
+            questions: [{ question: questions[QUESTION_TYPES.FREE].id, version: 0 }],
           },
           {
             questions: [
@@ -158,7 +153,7 @@ describe('SessionMgrService', () => {
         SessionMgrService.startSession({
           id: preparedSession.id,
           userId,
-        }),
+        })
       ).rejects.toEqual(new Error('SESSION_ALREADY_COMPLETED'))
     })
   })
@@ -175,7 +170,7 @@ describe('SessionMgrService', () => {
         SessionMgrService.pauseSession({
           id: preparedSession.id,
           userId,
-        }),
+        })
       ).rejects.toEqual(new Error('SESSION_NOT_RUNNING'))
     })
 
@@ -219,7 +214,7 @@ describe('SessionMgrService', () => {
         SessionMgrService.endSession({
           id: preparedSession.id,
           userId,
-        }),
+        })
       ).rejects.toEqual(new Error('SESSION_NOT_STARTED'))
     })
 
@@ -316,11 +311,7 @@ describe('SessionMgrService', () => {
           isFeedbackChannelPublic: false,
         },
       })
-      const {
-        isConfusionBarometerActive,
-        isFeedbackChannelActive,
-        isFeedbackChannelPublic,
-      } = session.settings
+      const { isConfusionBarometerActive, isFeedbackChannelActive, isFeedbackChannelPublic } = session.settings
       expect(isConfusionBarometerActive).toBeFalsy()
       expect(isFeedbackChannelActive).toBeFalsy()
       expect(isFeedbackChannelPublic).toBeFalsy()
@@ -374,9 +365,7 @@ describe('SessionMgrService', () => {
       expect(session.activeBlock).toEqual(0)
       expect(session.activeStep).toEqual(1)
       // expect the session to have some active instances
-      expect(session.activeInstances.map(v => v.toString())).toEqual(
-        session.blocks[0].instances.map(v => v.toString()),
-      )
+      expect(session.activeInstances.map(v => v.toString())).toEqual(session.blocks[0].instances.map(v => v.toString()))
       // expect matching snapshots
       expect(session).toMatchSnapshot()
       expect(instances).toMatchSnapshot()

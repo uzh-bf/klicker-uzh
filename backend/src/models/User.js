@@ -52,7 +52,7 @@ const User = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now() },
 })
 
-User.pre('save', (next) => {
+User.pre('save', next => {
   // ensure the email is properly normalized
   if (this.email) {
     this.email = normalizeEmail(this.email)

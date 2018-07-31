@@ -6,22 +6,20 @@ module.exports = {
     joinSession {
       settings: ${JSON.stringify(settings)}
       activeInstances: ${activeInstances.map(
-    ({
-      title, content, description, type, options,
-    }) => `
+        ({ title, content, description, type, options }) => `
         title: ${title}
         content: ${draftContentSerializer(content)}
         description: ${description}
         type: ${type}
         options: ${JSON.stringify(options)}
-      `,
-  )}
+      `
+      )}
       feedbacks: ${feedbacks.map(
-    ({ content, votes }) => `
+        ({ content, votes }) => `
         content: ${content}
         votes: ${votes}
-      `,
-  )}
+      `
+      )}
     }
   `,
 }
