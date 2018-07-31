@@ -51,7 +51,7 @@ const UserSettingsForm = ({ intl }) => {
   return (
     <div className="userSettingsForm">
       <Tab
-        grid={{ paneWidth: 12, stackable: true, tabWidth: 4 }}
+        grid={{ paneWidth: 12, reversed: 'mobile', stackable: true, tabWidth: 4 }}
         menu={{ fluid: true, tabular: true, vertical: true }}
         menuPosition="right"
         panes={panes}
