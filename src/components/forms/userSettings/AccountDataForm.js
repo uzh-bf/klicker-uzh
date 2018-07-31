@@ -44,13 +44,15 @@ const AccountDataForm = ({ intl }) => (
               }) => (
                 <Form loading={loading} onSubmit={handleSubmit}>
                   <FormikInput
+                    autoFocus
+                    required
                     error={errors.email}
                     errorMessage={intl.formatMessage(
                       errors.email === 'NOT_AVAILABLE' ? messages.emailNotAvailable : messages.emailInvalid
                     )}
                     handleBlur={handleBlur}
                     handleChange={handleChange}
-                    icon="email"
+                    icon="mail"
                     intl={intl}
                     label={intl.formatMessage(messages.emailLabel)}
                     name="email"
@@ -59,26 +61,31 @@ const AccountDataForm = ({ intl }) => (
                     value={values.email}
                   />
                   <FormikInput
+                    required
                     error={errors.shortname}
                     errorMessage={intl.formatMessage(
                       errors.shortname === 'NOT_AVAILABLE' ? messages.shortnameNotAvailable : messages.shortnameInvalid
                     )}
                     handleBlur={handleBlur}
                     handleChange={handleChange}
-                    icon="email"
+                    icon="hashtag"
+                    inlineLabel="beta.klicker.uzh.ch/join/"
                     intl={intl}
                     label={intl.formatMessage(messages.shortnameLabel)}
                     name="shortname"
+                    placeholder="xyz123"
+                    tooltip={intl.formatMessage(messages.shortnameTooltip)}
                     touched={touched.shortname}
                     type="text"
                     value={values.shortname}
                   />
                   <FormikInput
+                    required
                     error={errors.institution}
                     errorMessage={intl.formatMessage(messages.institutionInvalid)}
                     handleBlur={handleBlur}
                     handleChange={handleChange}
-                    icon="email"
+                    icon="university"
                     intl={intl}
                     label={intl.formatMessage(messages.institutionLabel)}
                     name="institution"
@@ -90,10 +97,11 @@ const AccountDataForm = ({ intl }) => (
                     error={errors.useCase}
                     handleBlur={handleBlur}
                     handleChange={handleChange}
-                    icon="email"
+                    icon="info"
                     intl={intl}
                     label={intl.formatMessage(messages.useCaseLabel)}
                     name="useCase"
+                    tooltip={intl.formatMessage(messages.useCaseTooltip)}
                     touched={touched.useCase}
                     type="text"
                     value={values.useCase}

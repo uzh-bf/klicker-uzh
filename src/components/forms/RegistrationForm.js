@@ -112,7 +112,7 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
             error={errors.useCase}
             handleBlur={handleBlur}
             handleChange={handleChange}
-            icon="university"
+            icon="info"
             intl={intl}
             label={intl.formatMessage(messages.useCaseLabel)}
             name="useCase"
