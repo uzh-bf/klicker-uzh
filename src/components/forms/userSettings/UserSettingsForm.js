@@ -1,9 +1,9 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import { defineMessages, intlShape } from 'react-intl'
 import { Tab } from 'semantic-ui-react'
 
 import AccountDataForm from './AccountDataForm'
+import PasswordUpdateForm from './PasswordUpdateForm'
 
 const messages = defineMessages({
   accountDataItem: {
@@ -22,7 +22,6 @@ const messages = defineMessages({
 
 const propTypes = {
   intl: intlShape.isRequired,
-  onModifyUser: PropTypes.func.isRequired,
 }
 
 const UserSettingsForm = ({ intl }) => {
@@ -37,11 +36,15 @@ const UserSettingsForm = ({ intl }) => {
     },
     {
       menuItem: intl.formatMessage(messages.changePasswordItem),
-      render: () => <Tab.Pane>Tab 2 Content</Tab.Pane>,
+      render: () => (
+        <Tab.Pane>
+          <PasswordUpdateForm intl={intl} />
+        </Tab.Pane>
+      ),
     },
     {
       menuItem: intl.formatMessage(messages.deleteAccountItem),
-      render: () => <Tab.Pane>Tab 2 Content</Tab.Pane>,
+      render: () => <Tab.Pane>Account deletion will be enabled after release.</Tab.Pane>,
     },
   ]
 

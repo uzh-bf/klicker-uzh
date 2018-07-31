@@ -1,6 +1,6 @@
 import React from 'react'
 import { Query, Mutation } from 'react-apollo'
-import { intlShape } from 'react-intl'
+import { intlShape, FormattedMessage } from 'react-intl'
 import { Formik } from 'formik'
 import { object } from 'yup'
 import { Form, Button } from 'semantic-ui-react'
@@ -31,7 +31,17 @@ const AccountDataForm = ({ intl }) => (
                 shortname: data.user?.shortname,
                 useCase: data.user?.useCase,
               }}
-              render={({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting }) => (
+              render={({
+                values,
+                errors,
+                touched,
+                handleChange,
+                handleBlur,
+                handleSubmit,
+                isSubmitting,
+                isValid,
+                dirty,
+              }) => (
                 <Form loading={loading} onSubmit={handleSubmit}>
                   <FormikInput
                     error={errors.email}
@@ -88,8 +98,14 @@ const AccountDataForm = ({ intl }) => (
                     type="text"
                     value={values.useCase}
                   />
-                  <Button primary disabled={isSubmitting} floated="right" loading={isSubmitting} type="submit">
-                    Save Changes
+                  <Button
+                    primary
+                    disabled={isSubmitting || !isValid || !dirty}
+                    floated="right"
+                    loading={isSubmitting}
+                    type="submit"
+                  >
+                    <FormattedMessage defaultMessage="Save Changes" id="form.button.saveChanges" />
                   </Button>
                 </Form>
               )}
