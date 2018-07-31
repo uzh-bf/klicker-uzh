@@ -1,15 +1,24 @@
-const {
-  QuestionModel,
-  QuestionInstanceModel,
-  SessionModel,
-  TagModel,
-  UserModel,
-} = require('../../models')
+const { QuestionModel, QuestionInstanceModel, SessionModel, TagModel, UserModel, FileModel } = require('../../models')
 const AuthService = require('../../services/auth')
 const QuestionService = require('../../services/questions')
 const { createContentState } = require('../../lib/draft')
 
 const { QUESTION_TYPES } = require('../../constants')
+
+/**
+ * Cleanup all data belonging to a user
+ * @param {*} user The id of the user
+ */
+const cleanupUser = async user => {
+  await Promise.all([
+    QuestionInstanceModel.remove({ user }),
+    SessionModel.remove({ user }),
+    QuestionModel.remove({ user }),
+    TagModel.remove({ user }),
+    FileModel.remove({ user }),
+    UserModel.findByIdAndRemove(user),
+  ])
+}
 
 const setupTestEnv = async ({ email, password, shortname }) => {
   // find the id of the user to reset
@@ -17,13 +26,7 @@ const setupTestEnv = async ({ email, password, shortname }) => {
 
   // if the user already exists, delete everything associated
   if (user) {
-    await Promise.all([
-      QuestionInstanceModel.remove({ user: user.id }),
-      SessionModel.remove({ user: user.id }),
-      QuestionModel.remove({ user: user.id }),
-      TagModel.remove({ user: user.id }),
-      UserModel.findByIdAndRemove(user.id),
-    ])
+    await cleanupUser(user.id)
   }
 
   // sign up a fresh user
@@ -34,7 +37,7 @@ const setupTestEnv = async ({ email, password, shortname }) => {
 const prepareSessionFactory = SessionMgrService => async (
   userId,
   questions = [{ question: '59b1481857f3c34af09a4736', version: 0 }],
-  started = false,
+  started = false
 ) => {
   if (started) {
     const session = await SessionMgrService.createSession({
@@ -55,20 +58,14 @@ const prepareSessionFactory = SessionMgrService => async (
   })
 }
 
-const initializeDb = async ({
-  mongoose,
-  email,
-  shortname,
-  withLogin = false,
-  withQuestions = false,
-}) => {
+const initializeDb = async ({ mongoose, email, shortname, withLogin = false, withQuestions = false }) => {
   await mongoose.connect(
     `mongodb://${process.env.MONGO_URL}`,
     {
       keepAlive: true,
       promiseLibrary: global.Promise,
       reconnectTries: 10,
-    },
+    }
   )
 
   await setupTestEnv({ email, password: 'somePassword', shortname })
@@ -167,6 +164,7 @@ const initializeDb = async ({
 }
 
 module.exports = {
+  cleanupUser,
   setupTestEnv,
   prepareSessionFactory,
   initializeDb,

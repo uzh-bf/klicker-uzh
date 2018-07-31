@@ -3,15 +3,18 @@ const { ensureLoaders } = require('../lib/loaders')
 const SessionExecService = require('../services/sessionExec')
 
 /* ----- queries ----- */
-const questionInstanceByIDQuery = (parentValue, { id }, { loaders }) => ensureLoaders(loaders).questionInstances.load(id)
+const questionInstanceByIDQuery = (parentValue, { id }, { loaders }) =>
+  ensureLoaders(loaders).questionInstances.load(id)
 
-const questionInstancesByPVQuery = (parentValue, args, { loaders }) => ensureLoaders(loaders).questionInstances.loadMany(parentValue.instances)
+const questionInstancesByPVQuery = (parentValue, args, { loaders }) =>
+  ensureLoaders(loaders).questionInstances.loadMany(parentValue.instances)
 
-const responsesByPVQuery = parentValue => parentValue.responses.map(({ id, value, createdAt }) => ({
-  id,
-  ...value,
-  createdAt,
-}))
+const responsesByPVQuery = parentValue =>
+  parentValue.responses.map(({ id, value, createdAt }) => ({
+    id,
+    ...value,
+    createdAt,
+  }))
 
 const resultsByPVQuery = ({ results }) => {
   if (results && results.FREE) {
@@ -32,11 +35,7 @@ const resultsByPVQuery = ({ results }) => {
 }
 
 /* ----- mutations ----- */
-const addResponseMutation = async (
-  parentValue,
-  { fp, instanceId, response },
-  { ip },
-) => {
+const addResponseMutation = async (parentValue, { fp, instanceId, response }, { ip }) => {
   await SessionExecService.addResponse({
     fp,
     ip,

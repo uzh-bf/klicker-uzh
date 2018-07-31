@@ -1,10 +1,6 @@
 module.exports = {
   test: ({ createUser }) => !!createUser,
-  print: ({
-    createUser: {
-      email, shortname, institution, useCase,
-    },
-  }) => `
+  print: ({ createUser: { email, shortname, institution, useCase } }) => `
     createUser {
       email: ${email}
       shortname: ${shortname}

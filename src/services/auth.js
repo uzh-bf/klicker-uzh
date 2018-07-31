@@ -30,7 +30,7 @@ const generateJwtSettings = user => ({
 })
 
 // check whether an authentication object is valid
-const isAuthenticated = (auth) => {
+const isAuthenticated = auth => {
   if (auth && auth.sub) {
     return true
   }
@@ -67,13 +67,9 @@ const isValidJWT = (jwt, secret) => {
 }
 
 // extract JWT from header or cookie
-const getToken = (req) => {
+const getToken = req => {
   // try to parse an authorization cookie
-  if (
-    req.cookies
-    && req.cookies.jwt
-    && isValidJWT(req.cookies.jwt, process.env.APP_SECRET)
-  ) {
+  if (req.cookies && req.cookies.jwt && isValidJWT(req.cookies.jwt, process.env.APP_SECRET)) {
     return req.cookies.jwt
   }
 
@@ -100,14 +96,7 @@ const getToken = (req) => {
 // signup a new user
 // make this an async function such that it returns a promise
 // we can later use this promise as a return value for resolvers or similar
-const signup = async (
-  email,
-  password,
-  shortname,
-  institution,
-  useCase,
-  { isAAI, isActive } = {},
-) => {
+const signup = async (email, password, shortname, institution, useCase, { isAAI, isActive } = {}) => {
   // TODO: activation of new accounts (send an email)
 
   if (!isEmail(email)) {
@@ -139,8 +128,7 @@ const signup = async (
   if (newUser) {
     // send a slack notification (if configured)
     sendSlackNotification(
-      `[auth] New user has registered: ${normalizedEmail}, ${shortname}, ${institution}, ${useCase
-        || '-'}`,
+      `[auth] New user has registered: ${normalizedEmail}, ${shortname}, ${institution}, ${useCase || '-'}`
     )
 
     // return the data of the newly created user
@@ -194,7 +182,7 @@ const login = async (res, email, password) => {
     { email },
     {
       $currentDate: { lastLoginAt: true, updatedAt: true },
-    },
+    }
   )
 
   // resolve with data about the user
@@ -202,7 +190,7 @@ const login = async (res, email, password) => {
 }
 
 // log the user out (remove the cookie and redirect)
-const logout = async (res) => {
+const logout = async res => {
   if (res && res.cookie) {
     res.cookie('jwt', null, {
       ...AUTH_COOKIE_SETTINGS,
@@ -267,10 +255,7 @@ const requestPassword = async (res, email) => {
   })
 
   // load the template source and compile it
-  const source = fs.readFileSync(
-    path.join(__dirname, 'emails', 'passwordReset.hbs'),
-    'utf8',
-  )
+  const source = fs.readFileSync(path.join(__dirname, 'emails', 'passwordReset.hbs'), 'utf8')
   const template = handlebars.compile(source)
 
   // send mail with defined transport object
@@ -288,9 +273,7 @@ const requestPassword = async (res, email) => {
       })
 
       // notify slack that a password has been requested
-      sendSlackNotification(
-        `[auth] Password has been requested for: ${user.email}`,
-      )
+      sendSlackNotification(`[auth] Password has been requested for: ${user.email}`)
     } catch (e) {
       return 'PASSWORD_RESET_FAILED'
     }

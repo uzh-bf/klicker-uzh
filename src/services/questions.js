@@ -3,9 +3,7 @@ const _isNumber = require('lodash/isNumber')
 const { ContentState, convertToRaw } = require('draft-js')
 const { UserInputError } = require('apollo-server-express')
 
-const {
-  QuestionModel, TagModel, UserModel, FileModel,
-} = require('../models')
+const { QuestionModel, TagModel, UserModel, FileModel } = require('../models')
 const { QUESTION_GROUPS, QUESTION_TYPES } = require('../constants')
 const { convertToPlainText } = require('../lib/draft')
 
@@ -49,12 +47,13 @@ const processFiles = (files = [], userId) => {
 
   // create models for entirely new files
   const createdFiles = files.filter(file => !file.id).map(
-    ({ name, originalName, type }) => new FileModel({
-      name,
-      originalName,
-      type,
-      user: userId,
-    }),
+    ({ name, originalName, type }) =>
+      new FileModel({
+        name,
+        originalName,
+        type,
+        user: userId,
+      })
   )
 
   return {
@@ -68,16 +67,7 @@ const processFiles = (files = [], userId) => {
  * Create a new question
  * @param {*} param0
  */
-const createQuestion = async ({
-  title,
-  type,
-  content,
-  options,
-  solution,
-  files,
-  tags,
-  userId,
-}) => {
+const createQuestion = async ({ title, type, content, options, solution, files, tags, userId }) => {
   // if no tags have been assigned, throw
   if (!tags || tags.length === 0) {
     throw new UserInputError('NO_TAGS_SPECIFIED')
@@ -110,11 +100,9 @@ const createQuestion = async ({
       const isMinNum = !options.restrictions.min || _isNumber(options.restrictions.min)
       const isMaxNum = !options.restrictions.max || _isNumber(options.restrictions.max)
       if (
-        !isMinNum
-        || !isMaxNum
-        || (options.restrictions.min
-          && options.restrictions.max
-          && options.restrictions.max <= options.restrictions.min)
+        !isMinNum ||
+        !isMaxNum ||
+        (options.restrictions.min && options.restrictions.max && options.restrictions.max <= options.restrictions.min)
       ) {
         throw new UserInputError('INVALID_RESTRICTIONS')
       }
@@ -124,11 +112,7 @@ const createQuestion = async ({
   const user = await UserModel.findById(userId).populate(['tags'])
 
   // process tags
-  const { allTagIds, allTags, createdTagIds } = processTags(
-    user.tags,
-    tags,
-    userId,
-  )
+  const { allTagIds, allTags, createdTagIds } = processTags(user.tags, tags, userId)
 
   // process files
   const { createdFiles, createdFileIds } = processFiles(files, userId)
@@ -154,7 +138,7 @@ const createQuestion = async ({
     ],
   })
 
-  const allTagsUpdate = allTags.map((tag) => {
+  const allTagsUpdate = allTags.map(tag => {
     tag.questions.push(newQuestion.id)
     return tag.save()
   })
@@ -168,24 +152,13 @@ const createQuestion = async ({
   user.updatedAt = Date.now()
 
   // wait until the question and user both have been saved
-  await Promise.all([
-    newQuestion.save(),
-    user.save(),
-    Promise.all(allTagsUpdate),
-    Promise.all(allFilesSave),
-  ])
+  await Promise.all([newQuestion.save(), user.save(), Promise.all(allTagsUpdate), Promise.all(allFilesSave)])
 
   // return the new questions data
   return newQuestion
 }
 
-const modifyQuestion = async (
-  questionId,
-  userId,
-  {
-    title, tags, content, options, solution, files,
-  },
-) => {
+const modifyQuestion = async (questionId, userId, { title, tags, content, options, solution, files }) => {
   const promises = []
 
   // check if both content and options are set for a new version
@@ -208,9 +181,9 @@ const modifyQuestion = async (
   }
 
   if (
-    QUESTION_GROUPS.CHOICES.includes(question.type)
-    && solution
-    && options.choices.length !== solution[question.type].length
+    QUESTION_GROUPS.CHOICES.includes(question.type) &&
+    solution &&
+    options.choices.length !== solution[question.type].length
   ) {
     throw new UserInputError('INVALID_SOLUTION')
   }
@@ -229,7 +202,7 @@ const modifyQuestion = async (
     const { allTags, allTagIds } = processTags(user.tags, tags, userId)
 
     // update all tags to contain the question
-    const allTagsUpdate = allTags.map((tag) => {
+    const allTagsUpdate = allTags.map(tag => {
       // if the tag doesn't already contain the question, add it
       if (!tag.questions.includes(questionId)) {
         tag.questions.push(questionId)
@@ -238,10 +211,8 @@ const modifyQuestion = async (
       return tag.save()
     })
 
-    const oldTags = question.tags.filter(
-      prevTag => !allTagIds.includes(prevTag.id),
-    )
-    const oldTagsUpdate = oldTags.map((tag) => {
+    const oldTags = question.tags.filter(prevTag => !allTagIds.includes(prevTag.id))
+    const oldTagsUpdate = oldTags.map(tag => {
       // remove the current question from any old tag
       tag.questions = tag.questions.filter(({ id }) => id !== question.id) // eslint-disable-line
 
@@ -284,10 +255,7 @@ const modifyQuestion = async (
     const lastVersion = question.versions[question.versions.length - 1]
 
     // process files
-    const { createdFiles, createdFileIds, existingFileIds } = processFiles(
-      files,
-      userId,
-    )
+    const { createdFiles, createdFileIds, existingFileIds } = processFiles(files, userId)
 
     // replace the files of the user
     if (files) {
@@ -298,17 +266,15 @@ const modifyQuestion = async (
     // push a new version into the question model
     question.versions.push({
       content: content || lastVersion.content,
-      description: content
-        ? convertToPlainText(content)
-        : lastVersion.description,
+      description: content ? convertToPlainText(content) : lastVersion.description,
       options: options
         ? QUESTION_GROUPS.WITH_OPTIONS.includes(question.type) && {
-          // HACK: manually ensure randomized is default set to false
-          // TODO: mongoose should do this..?
-          [question.type]: QUESTION_GROUPS.CHOICES.includes(question.type)
-            ? { randomized: false, ...options }
-            : options,
-        }
+            // HACK: manually ensure randomized is default set to false
+            // TODO: mongoose should do this..?
+            [question.type]: QUESTION_GROUPS.CHOICES.includes(question.type)
+              ? { randomized: false, ...options }
+              : options,
+          }
         : lastVersion.options,
       files: files ? existingFileIds.concat(createdFileIds) : lastVersion.files,
       solution: solution || lastVersion.solution,
@@ -336,7 +302,7 @@ const archiveQuestions = async (questionIds, userId) => {
 
   // set the questions to be archived if it does not yet have the attribute
   // otherwise invert the previously set value
-  const promises = questions.map((question) => {
+  const promises = questions.map(question => {
     // eslint-disable-next-line no-param-reassign
     question.isArchived = !question.isArchived
     return question.save()

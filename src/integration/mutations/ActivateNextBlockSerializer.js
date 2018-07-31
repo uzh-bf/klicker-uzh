@@ -3,11 +3,11 @@ module.exports = {
   print: ({ activateNextBlock: { blocks } }) => `
     activateNextBlock {
       blocks: ${blocks.map(
-    ({ status, instances }) => `
+        ({ status, instances }) => `
         status: ${status}
         instances: ${instances.map(instance => instance.isOpen)}
-      `,
-  )}
+      `
+      )}
     }
   `,
 }

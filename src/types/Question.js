@@ -1,13 +1,7 @@
 /* eslint-disable no-use-before-define */
 
 // HACK: export before require such that circular dependencies can be handled
-module.exports = () => [
-  Question,
-  QuestionInstance,
-  Tag,
-  FREEQuestionOptions,
-  SCQuestionOptions,
-]
+module.exports = () => [Question, QuestionInstance, Tag, FREEQuestionOptions, SCQuestionOptions]
 
 const Tag = require('./Tag')
 const QuestionInstance = require('./QuestionInstance')
