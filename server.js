@@ -251,13 +251,20 @@ app
         contentSecurityPolicy: isProd &&
           process.env.HELMET_CSP && {
             directives: {
-              defaultSrc: ['self'],
-              fontSrc: ['fonts.gstatic.com', 'cdnjs.cloudflare.com'],
+              defaultSrc: ["'self'"], // eslint-disable-line babel/quotes
+              fontSrc: ['fonts.gstatic.com'],
+              imgSrc: ['https://klicker-files.s3.eu-central-1.amazonaws.com', 'cdn.slaask.com'],
               reportUri: process.env.HELMET_CSP_REPORT_URI,
-              scriptSrc: ['cdn.polyfill.io'],
-              styleSrc: ['maxcdn.bootstrapcdn.com', 'fonts.googleapis.com', 'cdnjs.cloudflare.com'],
+              scriptSrc: ['cdn.polyfill.io', 'cdn.logrocket.io', 'cdn.slaask.com', 'js.pusher.com', 'cdn.embedly.com'],
+              styleSrc: ['maxcdn.bootstrapcdn.com', 'fonts.googleapis.com', 'cdnjs.cloudflare.com', 'cdn.slaask.com'],
             },
-            reportOnly: true,
+            reportOnly: !process.env.HELMET_CSP_ENFORCE,
+          },
+        expectCt: isProd &&
+          process.env.HELMET_CT_REPORT_URI && {
+            enforce: process.env.HELMET_CT_ENFORCE,
+            maxAge: process.env.HELMET_CT_MAXAGE || 0,
+            reportUri: process.env.HELMET_CT_REPORT_URI,
           },
         frameguard: isProd && !!process.env.HELMET_FRAMEGUARD,
         hsts: isProd &&
