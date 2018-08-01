@@ -1,11 +1,16 @@
 /* eslint-disable no-underscore-dangle */
-
+import React from 'react'
+import Router from 'next/router'
 import App, { Container } from 'next/app'
 import { ApolloProvider } from 'react-apollo'
 import { IntlProvider, addLocaleData } from 'react-intl'
-import React from 'react'
 
 import { withApolloClient } from '../lib'
+
+const isProd = process.env.NODE_ENV === 'production'
+
+const Raven = process.env.SENTRY_DSN && require('raven-js')
+const LogRocket = process.env.LOGROCKET && require('logrocket')
 
 // Register React Intl's locale data for the user's locale in the browser. This
 // locale data was added to the page by `pages/_document.js`. This only happens
@@ -17,6 +22,8 @@ if (typeof window !== 'undefined' && window.ReactIntlLocaleData) {
 }
 
 class Klicker extends App {
+  state = { error: null }
+
   static async getInitialProps({ Component, ctx }) {
     let pageProps = {}
 
@@ -32,6 +39,54 @@ class Klicker extends App {
     return { locale, messages, pageProps }
   }
 
+  componentDidMount() {
+    if (isProd) {
+      if (process.env.G_ANALYTICS) {
+        const { initGA, logPageView } = require('../lib')
+        initGA(process.env.G_ANALYTICS)
+
+        // log the initial page load as a page view
+        logPageView()
+
+        // log subsequent route changes as page views
+        Router.router.events.on('routeChangeComplete', logPageView)
+      }
+
+      if (Raven) {
+        Raven.config(process.env.SENTRY_DSN, {
+          environment: process.env.NODE_ENV,
+          release: process.env.VERSION,
+        }).install()
+
+        if (LogRocket) {
+          Raven.setDataCallback(data =>
+            Object.assign({}, data, {
+              extra: {
+                sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef
+              },
+            })
+          )
+        }
+      }
+    }
+  }
+
+  componentDidCatch(error, errorInfo) {
+    this.setState({ error })
+
+    if (isProd) {
+      if (Raven) {
+        Raven.captureException(error, { extra: errorInfo })
+        Raven.showReportDialog()
+      }
+
+      if (process.env.G_ANALYTICS) {
+        const { logException } = require('../lib')
+        logException(error)
+      }
+    }
+  }
+
   render() {
     const { Component, pageProps, apolloClient, locale, messages } = this.props
     const now = Date.now()
@@ -40,7 +95,7 @@ class Klicker extends App {
       <Container>
         <IntlProvider initialNow={now} locale={locale} messages={messages}>
           <ApolloProvider client={apolloClient}>
-            <Component {...pageProps} />
+            <Component {...pageProps} error={this.state.error} />
           </ApolloProvider>
         </IntlProvider>
       </Container>
