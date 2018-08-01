@@ -32,7 +32,7 @@ const pages = [
     url: '/questions/:questionId',
   },
   {
-    cached: 20,
+    cached: 30,
     mapParams: req => ({ shortname: req.params.shortname }),
     renderPath: '/join',
     url: '/join/:shortname',
@@ -65,11 +65,7 @@ function setupTransactionAPM(req) {
 }
 
 const IntlPolyfill = require('intl')
-
-const { basename, join } = require('path')
-const { readFileSync } = require('fs')
 const glob = require('glob')
-
 const accepts = require('accepts')
 const cookieParser = require('cookie-parser')
 const express = require('express')
@@ -77,6 +73,8 @@ const next = require('next')
 const compression = require('compression')
 const helmet = require('helmet')
 const morgan = require('morgan')
+const { basename, join } = require('path')
+const { readFileSync } = require('fs')
 
 // Polyfill Node with `Intl` that has data for all locales.
 // See: https://formatjs.io/guides/runtime-environments/#server
@@ -92,22 +90,6 @@ const handle = app.getRequestHandler()
 
 // Get the supported languages by looking for translations in the `lang/` dir.
 const languages = glob.sync(`${APP_DIR}/lang/*.json`).map(f => basename(f, '.json'))
-
-function getLocale(req) {
-  // if a locale cookie was already set, use the locale saved within
-  if (req.cookies.locale && languages.includes(req.cookies.locale)) {
-    return {
-      locale: req.cookies.locale,
-    }
-  }
-
-  // if the accepts header is set, use its language
-  const accept = accepts(req)
-  return {
-    locale: accept.language(isDev ? ['en'] : languages),
-    setCookie: true,
-  }
-}
 
 // We need to expose React Intl's locale data on the request for the user's
 // locale. This function will also cache the scripts by lang in memory.
@@ -127,6 +109,22 @@ function getLocaleDataScript(locale) {
 // each message description in the source code will be used.
 function getMessages(locale) {
   return require(`${APP_DIR}/lang/${locale}.json`)
+}
+
+function getLocale(req) {
+  // if a locale cookie was already set, use the locale saved within
+  if (req.cookies.locale && languages.includes(req.cookies.locale)) {
+    return {
+      locale: req.cookies.locale,
+    }
+  }
+
+  // if the accepts header is set, use its language
+  const accept = accepts(req)
+  return {
+    locale: accept.language(isDev ? ['en'] : languages),
+    setCookie: true,
+  }
 }
 
 function setupLocale(req, res) {
