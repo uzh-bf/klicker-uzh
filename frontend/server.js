@@ -1,3 +1,5 @@
+/* eslint-disable babel/quotes */
+
 require('dotenv').config()
 
 const isProd = process.env.NODE_ENV === 'production'
@@ -249,12 +251,26 @@ app
         contentSecurityPolicy: isProd &&
           process.env.HELMET_CSP_REPORT_URI && {
             directives: {
-              defaultSrc: ["'self'"], // eslint-disable-line babel/quotes
-              fontSrc: ['fonts.gstatic.com'],
-              imgSrc: ['https://klicker-files.s3.eu-central-1.amazonaws.com', 'cdn.slaask.com'],
+              defaultSrc: ["'self'"],
+              fontSrc: ["'self'", 'fonts.gstatic.com'],
+              imgSrc: ["'self'", 'https://klicker-files.s3.eu-central-1.amazonaws.com', 'cdn.slaask.com'],
               reportUri: process.env.HELMET_CSP_REPORT_URI,
-              scriptSrc: ['cdn.polyfill.io', 'cdn.logrocket.io', 'cdn.slaask.com', 'js.pusher.com', 'cdn.embedly.com'],
-              styleSrc: ['maxcdn.bootstrapcdn.com', 'fonts.googleapis.com', 'cdnjs.cloudflare.com', 'cdn.slaask.com'],
+              scriptSrc: [
+                "'unsafe-inline'",
+                'cdn.polyfill.io',
+                'cdn.logrocket.io',
+                'cdn.slaask.com',
+                'js.pusher.com',
+                'cdn.embedly.com',
+              ],
+              styleSrc: [
+                "'self'",
+                "'unsafe-inline'",
+                'maxcdn.bootstrapcdn.com',
+                'fonts.googleapis.com',
+                'cdnjs.cloudflare.com',
+                'cdn.slaask.com',
+              ],
             },
             reportOnly: !process.env.HELMET_CSP_ENFORCE,
           },
