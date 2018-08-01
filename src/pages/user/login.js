@@ -1,8 +1,9 @@
 import React from 'react'
-import Router from 'next/router'
+import PropTypes from 'prop-types'
+import Router, { withRouter } from 'next/router'
 import Cookies from 'js-cookie'
 import Link from 'next/link'
-import { compose } from 'recompose'
+import { compose, lifecycle } from 'recompose'
 import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import { Mutation } from 'react-apollo'
 import { Message } from 'semantic-ui-react'
@@ -20,9 +21,10 @@ const messages = defineMessages({
 
 const propTypes = {
   intl: intlShape.isRequired,
+  router: PropTypes.object.isRequired,
 }
 
-const Login = ({ intl }) => (
+const Login = ({ intl, router }) => (
   <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
     <div className="login">
       <h1>
@@ -49,13 +51,14 @@ const Login = ({ intl }) => (
 
                 // save the user id in a cookie
                 if (data.login) {
-                  Cookies.set('userId', data.login)
+                  Cookies.set('userId', data.login, { secure: true })
                 }
 
                 // redirect to question pool
-                Router.push('/questions')
+                router.push('/questions')
               }}
             />
+            {router.query?.expired && <div className="errorMessage message">Login expired. Please login again.</div>}
             {error && <div className="errorMessage message">Login failed ({error.message})</div>}
           </>
         )}
@@ -99,9 +102,15 @@ const Login = ({ intl }) => (
 Login.propTypes = propTypes
 
 export default compose(
+  lifecycle({
+    componentDidMount() {
+      Router.prefetch('/questions')
+    },
+  }),
   withLogging({
     logRocket: false,
     slaask: true,
   }),
-  pageWithIntl
+  pageWithIntl,
+  withRouter
 )(Login)
