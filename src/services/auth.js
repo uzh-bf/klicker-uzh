@@ -41,11 +41,6 @@ const isAuthenticated = auth => {
 // wraps a graphql resolver
 const requireAuth = wrapped => (parentValue, args, context) => {
   if (!isAuthenticated(context.auth)) {
-    // redirect the user to the login page
-    if (process.env.NODE_ENV !== 'test') {
-      context.res.redirect('/user/login')
-    }
-
     throw new AuthenticationError('INVALID_LOGIN')
   }
   return wrapped(parentValue, args, context)
