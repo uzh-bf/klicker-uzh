@@ -209,6 +209,12 @@ async function renderAndCache(req, res, pagePath, queryParams, expiration = 60) 
     res.setHeader('x-cache', 'MISS')
     res.send(html)
 
+    // if there was something wrong with the request
+    // skip saving the page into cache
+    if (res.statusCode !== 200) {
+      return
+    }
+
     // add the html string to the cache
     // if redis is used, let the cache expire
     if (hasRedis) {
