@@ -1,9 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { withRouter } from 'next/router'
+import Router, { withRouter } from 'next/router'
 import Cookies from 'js-cookie'
 import Link from 'next/link'
-import { compose } from 'recompose'
+import { compose, lifecycle } from 'recompose'
 import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import { Mutation } from 'react-apollo'
 import { Message } from 'semantic-ui-react'
@@ -102,6 +102,11 @@ const Login = ({ intl, router }) => (
 Login.propTypes = propTypes
 
 export default compose(
+  lifecycle({
+    componentDidMount() {
+      Router.prefetch('/questions')
+    },
+  }),
   withLogging({
     logRocket: false,
     slaask: true,

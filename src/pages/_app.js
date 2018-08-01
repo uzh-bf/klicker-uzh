@@ -87,6 +87,9 @@ class Klicker extends App {
         logException(error)
       }
     }
+
+    // needed for correct error handling in development
+    super.componentDidCatch(error, errorInfo)
   }
 
   render() {
