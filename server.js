@@ -348,18 +348,18 @@ app
     process.exit(1)
   })
 
-// perform cleanup for (forced) shutdown
-function handleShutdown() {
-  console.log('[klicker-react] Shutting down server...')
+const shutdown = async () => {
+  console.log('[klicker-react] Shutting down server')
 
   if (hasRedis) {
-    cache.disconnect()
+    await cache.disconnect()
     console.log('[redis] Disconnected')
   }
 
   console.log('[klicker-react] Shutdown complete')
   process.exit(0)
 }
-process.on('SIGINT', handleShutdown)
-process.on('exit', handleShutdown)
-process.once('SIGUSR2', handleShutdown)
+
+process.on('SIGINT', async () => shutdown())
+process.on('exit', async () => shutdown())
+process.once('SIGUSR2', async () => shutdown())
