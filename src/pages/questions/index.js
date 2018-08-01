@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import UUIDv4 from 'uuid'
 import { List } from 'immutable'
 import { DragDropContext } from 'react-beautiful-dnd'
-import { compose, withHandlers, withStateHandlers, branch, renderNothing, withProps } from 'recompose'
+import { compose, withHandlers, withStateHandlers, branch, renderNothing, withProps, lifecycle } from 'recompose'
 import { defineMessages, intlShape } from 'react-intl'
 import { graphql, Query } from 'react-apollo'
 import _debounce from 'lodash/debounce'
@@ -271,6 +271,13 @@ const Index = ({
 Index.propTypes = propTypes
 
 export default compose(
+  lifecycle({
+    componentDidMount() {
+      Router.prefetch('/questions/details')
+      Router.prefetch('/sessions/running')
+      Router.prefetch('/sessions')
+    },
+  }),
   withLogging({
     slaask: true,
   }),

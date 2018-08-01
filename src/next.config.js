@@ -40,7 +40,7 @@ module.exports = phase => {
             loader: 'url-loader',
             options: {
               fallback: 'file-loader',
-              limit: 8192,
+              limit: 100000,
               name: '[name]-[hash].[ext]',
               outputPath: `${isServer ? '../' : ''}static/images/`,
               publicPath: '/_next/static/images/',

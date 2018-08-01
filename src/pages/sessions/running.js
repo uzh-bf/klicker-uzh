@@ -1,10 +1,10 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import moment from 'moment'
-import { compose, withProps } from 'recompose'
+import Router from 'next/router'
+import { compose, withProps, lifecycle } from 'recompose'
 import { graphql, Query, Mutation } from 'react-apollo'
 import { defineMessages, intlShape } from 'react-intl'
-import Router from 'next/router'
 
 import { pageWithIntl, withLogging } from '../../lib'
 
@@ -297,6 +297,13 @@ const Running = ({ intl, shortname }) => (
 Running.propTypes = propTypes
 
 export default compose(
+  lifecycle({
+    componentDidMount() {
+      Router.prefetch('/sessions/evaluation')
+      Router.prefetch('/join')
+      Router.prefetch('/qr')
+    },
+  }),
   withLogging({
     slaask: true,
   }),
