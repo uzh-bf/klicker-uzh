@@ -44,7 +44,7 @@ const AccountDataForm = ({ intl }) => (
               }) => (
                 <Form loading={loading} onSubmit={handleSubmit}>
                   <FormikInput
-                    autoFocus
+                    disabled
                     required
                     error={errors.email}
                     errorMessage={intl.formatMessage(
