@@ -138,7 +138,7 @@ function setupLocale(req, res) {
 
   // set a locale cookie with the specified language
   if (setCookie) {
-    res.cookie('locale', locale)
+    res.cookie('locale', locale, { secure: true })
   }
 }
 
