@@ -1,5 +1,6 @@
 import React from 'react'
-import Router from 'next/router'
+import PropTypes from 'prop-types'
+import { withRouter } from 'next/router'
 import Cookies from 'js-cookie'
 import Link from 'next/link'
 import { compose } from 'recompose'
@@ -20,9 +21,10 @@ const messages = defineMessages({
 
 const propTypes = {
   intl: intlShape.isRequired,
+  router: PropTypes.object.isRequired,
 }
 
-const Login = ({ intl }) => (
+const Login = ({ intl, router }) => (
   <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
     <div className="login">
       <h1>
@@ -53,9 +55,10 @@ const Login = ({ intl }) => (
                 }
 
                 // redirect to question pool
-                Router.push('/questions')
+                router.push('/questions')
               }}
             />
+            {router.query?.expired && <div className="errorMessage message">Login expired. Please login again.</div>}
             {error && <div className="errorMessage message">Login failed ({error.message})</div>}
           </>
         )}
@@ -103,5 +106,6 @@ export default compose(
     logRocket: false,
     slaask: true,
   }),
-  pageWithIntl
+  pageWithIntl,
+  withRouter
 )(Login)
