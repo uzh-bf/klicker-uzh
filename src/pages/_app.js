@@ -27,14 +27,14 @@ class Klicker extends App {
   static async getInitialProps({ Component, ctx }) {
     let pageProps = {}
 
-    if (Component.getInitialProps) {
-      pageProps = await Component.getInitialProps(ctx)
-    }
-
     // Get the `locale` and `messages` from the request object on the server.
     // In the browser, use the same values that the server serialized.
     const { req } = ctx
     const { locale, messages } = req || window.__NEXT_DATA__.props
+
+    if (Component.getInitialProps) {
+      pageProps = await Component.getInitialProps(ctx)
+    }
 
     return { locale, messages, pageProps }
   }
@@ -67,6 +67,8 @@ class Klicker extends App {
             })
           )
         }
+
+        window.INIT_RAVEN = true
       }
     }
   }
