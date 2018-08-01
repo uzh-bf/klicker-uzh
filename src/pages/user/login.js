@@ -51,7 +51,7 @@ const Login = ({ intl, router }) => (
 
                 // save the user id in a cookie
                 if (data.login) {
-                  Cookies.set('userId', data.login)
+                  Cookies.set('userId', data.login, { secure: true })
                 }
 
                 // redirect to question pool

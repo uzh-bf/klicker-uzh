@@ -247,7 +247,7 @@ app
     server.use(
       helmet({
         contentSecurityPolicy: isProd &&
-          process.env.HELMET_CSP && {
+          process.env.HELMET_CSP_REPORT_URI && {
             directives: {
               defaultSrc: ["'self'"], // eslint-disable-line babel/quotes
               fontSrc: ['fonts.gstatic.com'],
@@ -271,6 +271,7 @@ app
             // maxAge: 31536000,
             // preload: true,
           },
+        referrerPolicy: isProd && !!process.env.HELMET_REFERRER_POLICY && process.env.HELMET_REFERRER_POLICY,
       })
     )
 
