@@ -2,6 +2,42 @@ require('dotenv').config()
 
 const isProd = process.env.NODE_ENV === 'production'
 const isDev = process.env.NODE_ENV === 'development'
+const hasRedis = !!process.env.REDIS_HOST
+
+// prepare page configuration
+const pages = [
+  { url: '/' },
+  { url: '/user/login' },
+  { url: '/user/registration' },
+  { url: '/questions/create' },
+  {
+    cached: 600,
+    mapParams: req => ({ shortname: req.params.shortname }),
+    renderPath: '/qr',
+    url: '/qr/:shortname',
+  },
+  {
+    mapParams: req => ({ public: true, sessionId: req.params.sessionId }),
+    renderPath: '/sessions/evaluation',
+    url: '/sessions/public/:sessionId',
+  },
+  {
+    mapParams: req => ({ sessionId: req.params.sessionId }),
+    renderPath: '/sessions/evaluation',
+    url: '/sessions/evaluation/:sessionId',
+  },
+  {
+    mapParams: req => ({ questionId: req.params.questionId }),
+    renderPath: '/questions/details',
+    url: '/questions/:questionId',
+  },
+  {
+    cached: 20,
+    mapParams: req => ({ shortname: req.params.shortname }),
+    renderPath: '/join',
+    url: '/join/:shortname',
+  },
+]
 
 // initialize elastic-apm if so configured
 let apm
@@ -12,6 +48,20 @@ if (process.env.APM_SERVER_URL) {
     serverUrl: process.env.APM_SERVER_URL,
     serviceName: process.env.APM_NAME,
   })
+}
+
+function setupTransactionAPM(req) {
+  // set the APM transaction name
+  if (apm) {
+    if (req.originalUrl.length > 6 && req.originalUrl.substring(0, 6) !== '/_next') {
+      apm.setTransactionName(`${req.method} ${req.originalUrl}`)
+    }
+
+    // set the user context if a cookie was set
+    if (req.cookies.userId) {
+      apm.setUserContext({ id: req.cookies.userId })
+    }
+  }
 }
 
 const IntlPolyfill = require('intl')
@@ -43,7 +93,7 @@ const handle = app.getRequestHandler()
 // Get the supported languages by looking for translations in the `lang/` dir.
 const languages = glob.sync(`${APP_DIR}/lang/*.json`).map(f => basename(f, '.json'))
 
-const getLocale = req => {
+function getLocale(req) {
   // if a locale cookie was already set, use the locale saved within
   if (req.cookies.locale && languages.includes(req.cookies.locale)) {
     return {
@@ -62,7 +112,7 @@ const getLocale = req => {
 // We need to expose React Intl's locale data on the request for the user's
 // locale. This function will also cache the scripts by lang in memory.
 const localeDataCache = new Map()
-const getLocaleDataScript = locale => {
+function getLocaleDataScript(locale) {
   const lang = typeof locale === 'string' ? locale.split('-')[0] : 'en'
   if (!localeDataCache.has(lang)) {
     const localeDataFile = require.resolve(`react-intl/locale-data/${lang}`)
@@ -75,16 +125,31 @@ const getLocaleDataScript = locale => {
 // We need to load and expose the translations on the request for the user's
 // locale. These will only be used in production, in dev the `defaultMessage` in
 // each message description in the source code will be used.
-const getMessages = locale => require(`${APP_DIR}/lang/${locale}.json`)
+function getMessages(locale) {
+  return require(`${APP_DIR}/lang/${locale}.json`)
+}
+
+function setupLocale(req, res) {
+  const { locale = 'en', setCookie } = getLocale(req)
+
+  req.locale = locale
+  req.localeDataScript = getLocaleDataScript(locale)
+  req.messages = isDev ? {} : getMessages(locale)
+
+  // set a locale cookie with the specified language
+  if (setCookie) {
+    res.cookie('locale', locale)
+  }
+}
 
 // prepare cache to be connected to
 let cache
-const connectCache = async () => {
+async function connectCache() {
   if (cache) {
     return cache
   }
 
-  if (process.env.REDIS_HOST) {
+  if (hasRedis) {
     const Redis = require('ioredis')
     cache = new Redis({
       db: 0,
@@ -93,7 +158,7 @@ const connectCache = async () => {
       password: process.env.REDIS_PASS,
       port: process.env.REDIS_PORT || 6379,
     })
-    console.log('[redis] Connected to db 0')
+    console.log('[redis] Connected to redis (db0) for SSR caching')
   } else {
     const LRUCache = require('lru-cache')
     cache = new LRUCache({
@@ -102,20 +167,23 @@ const connectCache = async () => {
       // but how would we clean up i.e. /join/someuser when the running session updates?
       maxAge: 1000 * 10, // pages are cached for 10 seconds
     })
+    console.log('[lru-cache] Setup LRU-cache for SSR caching')
   }
 
   return cache
 }
 
 // construct a unique cache key from the request params
-const getCacheKey = req => `${req.url}:${req.locale}`
+function getCacheKey(req) {
+  return `${req.url}:${req.locale}`
+}
 
 // render a page to html and cache it in the appropriate place
-const renderAndCache = async (req, res, pagePath, queryParams, expiration = 60) => {
+async function renderAndCache(req, res, pagePath, queryParams, expiration = 60) {
   const key = getCacheKey(req)
 
   let cached
-  if (process.env.REDIS_URL) {
+  if (hasRedis) {
     cached = await cache.get(key)
   } else {
     cached = cache.get(key)
@@ -126,6 +194,7 @@ const renderAndCache = async (req, res, pagePath, queryParams, expiration = 60) 
   if (cached) {
     console.log(`[klicker-react] cache hit: ${key}`)
 
+    res.setHeader('x-cache', 'HIT')
     res.send(cached)
     return
   }
@@ -133,12 +202,16 @@ const renderAndCache = async (req, res, pagePath, queryParams, expiration = 60) 
   // otherwise server-render the page and cache/return it
   console.log(`[klicker-react] cache miss: ${key}`)
   try {
+    // render the requested page to a html string
     const html = await app.renderToHTML(req, res, pagePath, queryParams)
 
+    // return the response
+    res.setHeader('x-cache', 'MISS')
     res.send(html)
 
-    // let the cache expire if redis is used
-    if (process.env.REDIS_URL) {
+    // add the html string to the cache
+    // if redis is used, let the cache expire
+    if (hasRedis) {
       cache.set(key, html, 'EX', expiration)
     } else {
       cache.set(key, html)
@@ -151,34 +224,42 @@ const renderAndCache = async (req, res, pagePath, queryParams, expiration = 60) 
 app
   .prepare()
   .then(() => {
+    console.log('[klicker-react] Starting up...')
+
+    // setup an express instance
     const server = express()
 
+    // connect to the SSR cache
     connectCache()
 
     // if the server is behind a proxy, set the APP_PROXY env to true
     // this will make express trust the X-* proxy headers and set corresponding req.ip
     if (process.env.APP_PROXY) {
       server.enable('trust proxy')
+      console.log('[klicker-react] Enabling trust proxy mode for IP pass-through')
     }
 
     // secure the server with helmet
     server.use(
       helmet({
-        contentSecurityPolicy:
-          isProd && process.env.HELMET_CSP
-            ? {
-                directives: {
-                  defaultSrc: ['self'],
-                  fontSrc: ['fonts.gstatic.com', 'cdnjs.cloudflare.com'],
-                  reportUri: process.env.HELMET_CSP_REPORT_URI,
-                  scriptSrc: ['cdn.polyfill.io'],
-                  styleSrc: ['maxcdn.bootstrapcdn.com', 'fonts.googleapis.com', 'cdnjs.cloudflare.com'],
-                },
-                reportOnly: true,
-              }
-            : false,
-        frameguard: !!process.env.HELMET_FRAMEGUARD,
-        hsts: !!process.env.HELMET_HSTS,
+        contentSecurityPolicy: isProd &&
+          process.env.HELMET_CSP && {
+            directives: {
+              defaultSrc: ['self'],
+              fontSrc: ['fonts.gstatic.com', 'cdnjs.cloudflare.com'],
+              reportUri: process.env.HELMET_CSP_REPORT_URI,
+              scriptSrc: ['cdn.polyfill.io'],
+              styleSrc: ['maxcdn.bootstrapcdn.com', 'fonts.googleapis.com', 'cdnjs.cloudflare.com'],
+            },
+            reportOnly: true,
+          },
+        frameguard: isProd && !!process.env.HELMET_FRAMEGUARD,
+        hsts: isProd &&
+          process.env.HELMET_HSTS && {
+            includeSubdomains: false,
+            // maxAge: 31536000,
+            // preload: true,
+          },
       })
     )
 
@@ -198,65 +279,17 @@ app
       middleware.push(morgan('combined'))
     }
 
+    // attach all prepared middlewares to the express instance
     server.use(...middleware)
-
-    // prepare page configuration
-    const pages = [
-      {
-        url: '/',
-      },
-      {
-        url: '/user/login',
-      },
-      {
-        url: '/user/registration',
-      },
-      {
-        url: '/questions/create',
-      },
-      {
-        cached: 600,
-        mapParams: req => ({ shortname: req.params.shortname }),
-        renderPath: '/qr',
-        url: '/qr/:shortname',
-      },
-      {
-        mapParams: req => ({ public: true, sessionId: req.params.sessionId }),
-        renderPath: '/sessions/evaluation',
-        url: '/sessions/public/:sessionId',
-      },
-      {
-        mapParams: req => ({ sessionId: req.params.sessionId }),
-        renderPath: '/sessions/evaluation',
-        url: '/sessions/evaluation/:sessionId',
-      },
-      {
-        mapParams: req => ({ questionId: req.params.questionId }),
-        renderPath: '/questions/details',
-        url: '/questions/:questionId',
-      },
-      {
-        cached: 30,
-        mapParams: req => ({ shortname: req.params.shortname }),
-        renderPath: '/join',
-        url: '/join/:shortname',
-      },
-    ]
 
     // create routes for all specified static and dynamic pages
     pages.forEach(({ url, mapParams, renderPath, cached = false }) => {
       server.get(url, (req, res) => {
         // setup locale and get messages for the specific route
-        const { locale, setCookie } = getLocale(req) || { locale: 'en' }
+        setupLocale(req, res)
 
-        req.locale = locale
-        req.localeDataScript = getLocaleDataScript(locale)
-        req.messages = isDev ? {} : getMessages(locale)
-
-        // set a locale cookie with the specified language
-        if (setCookie) {
-          res.cookie('locale', locale)
-        }
+        // inject transaction information for APM
+        setupTransactionAPM(req)
 
         // if the route contents should be cached
         if (cached) {
@@ -269,39 +302,16 @@ app
 
     server.get('*', (req, res) => {
       // setup locale and get messages for the specific route
-      const { locale, setCookie } = getLocale(req)
-      req.locale = locale
-      req.localeDataScript = getLocaleDataScript(locale)
-      req.messages = isDev ? {} : getMessages(locale)
+      setupLocale(req, res)
 
-      // set a locale cookie with the specified language
-      if (setCookie) {
-        res.cookie('locale', locale)
-      }
-
-      // set the APM transaction name
-      if (apm) {
-        if (req.originalUrl.length > 6 && req.originalUrl.substring(0, 6) !== '/_next') {
-          apm.setTransactionName(`${req.method} ${req.originalUrl}`)
-        }
-
-        // set the user context if a cookie was set
-        if (req.cookies.userId) {
-          apm.setUserContext({ id: req.cookies.userId })
-        }
-      }
+      // inject transaction information for APM
+      setupTransactionAPM(req)
 
       return handle(req, res)
     })
 
     server.listen(3000, err => {
       if (err) throw err
-
-      // send a ready message to PM2
-      if (process.send) {
-        process.send('ready')
-      }
-
       console.log('[klicker-react] Ready on http://localhost:3000')
     })
   })
@@ -310,35 +320,18 @@ app
     process.exit(1)
   })
 
-process.on('SIGINT', () => {
-  console.log('[klicker-react] Shutting down server')
+// perform cleanup for (forced) shutdown
+function handleShutdown() {
+  console.log('[klicker-react] Shutting down server...')
 
-  if (process.env.REDIS_URL) {
+  if (hasRedis) {
     cache.disconnect()
+    console.log('[redis] Disconnected')
   }
 
   console.log('[klicker-react] Shutdown complete')
   process.exit(0)
-})
-
-process.on('exit', () => {
-  console.log('[klicker-react] Shutting down server')
-
-  if (process.env.REDIS_URL) {
-    cache.disconnect()
-  }
-
-  console.log('[klicker-react] Shutdown complete')
-  process.exit(0)
-})
-
-process.once('SIGUSR2', () => {
-  console.log('[klicker-react] Shutting down server')
-
-  if (process.env.REDIS_URL) {
-    cache.disconnect()
-  }
-
-  console.log('[klicker-react] Shutdown complete')
-  process.exit(0)
-})
+}
+process.on('SIGINT', handleShutdown)
+process.on('exit', handleShutdown)
+process.once('SIGUSR2', handleShutdown)
