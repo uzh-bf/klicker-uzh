@@ -39,14 +39,6 @@ const shutdown = async () => {
   process.exit(0)
 }
 
-process.on('SIGINT', async () => {
-  await shutdown()
-})
-
-process.on('exit', async () => {
-  await shutdown()
-})
-
-process.once('SIGUSR2', async () => {
-  await shutdown()
-})
+process.on('SIGINT', async () => shutdown())
+process.on('exit', async () => shutdown())
+process.once('SIGUSR2', async () => shutdown())

@@ -133,7 +133,17 @@ if (isProd) {
   middleware.push((req, res, next) => {
     // set the APM transaction name
     if (apm) {
-      apm.setTransactionName(`${req.body.operationName}`)
+      // if the transaction is a single operation
+      if (req.body.operationName) {
+        apm.setTransactionName(req.body.operationName)
+      } else {
+        // if the transaction is a batch of operations
+        const operationsConcat = req.body
+          .map(o => o.operationName)
+          .sort()
+          .join('/')
+        apm.setTransactionName(operationsConcat)
+      }
 
       // if the request is authenticated, set the user context
       if (req.auth) {
