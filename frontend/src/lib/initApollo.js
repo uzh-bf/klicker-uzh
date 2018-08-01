@@ -12,12 +12,12 @@ import { WebSocketLink } from 'apollo-link-ws'
 import { SubscriptionClient } from 'subscriptions-transport-ws'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import { getMainDefinition } from 'apollo-utilities'
+import Router from 'next/router'
 
-const ssrMode = !process.browser
 let apolloClient = null
 
 // Polyfill fetch() on the server (used by apollo-client)
-if (ssrMode) {
+if (!process.browser) {
   global.fetch = fetch
 }
 
@@ -34,7 +34,7 @@ function create(initialState) {
   })
 
   // on the client, differentiate between websockets and http requests
-  if (!ssrMode) {
+  if (process.browser) {
     // instantiate a basic subscription client
     const wsClient = new SubscriptionClient(process.env.API_URL_WS || 'ws://localhost:4000/graphql', {
       reconnect: true,
@@ -65,11 +65,18 @@ function create(initialState) {
     onError(({ graphQLErrors, networkError }) => {
       if (graphQLErrors) {
         // TODO: log errors to sentry?
-        graphQLErrors.map(({ message, locations, path }) =>
+        graphQLErrors.forEach(({ message, path, locations, extensions }) => {
           console.log(`[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`)
-        )
+
+          if (process.browser && extensions.code === 'UNAUTHENTICATED') {
+            Router.push('/user/login?expired=true')
+          }
+        })
       }
-      if (networkError) console.log(`[Network error]: ${networkError}`)
+
+      if (networkError) {
+        console.log(`[Network error]: ${networkError}`)
+      }
     }),
     httpLink,
   ])
