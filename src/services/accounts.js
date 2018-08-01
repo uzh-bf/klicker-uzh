@@ -57,7 +57,8 @@ const updateAccountData = async ({ userId, email, shortname, institution, useCas
         throw new UserInputError(Errors.EMAIL_NOT_AVAILABLE)
       }
 
-      user.email = email
+      // TODO enable after migration
+      // user.email = email
     }
 
     if (shortname) {
