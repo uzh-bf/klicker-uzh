@@ -143,7 +143,7 @@ jobs:
         - travis_retry docker push $IMAGE_NAME:$TRAVIS_TAG
         - travis_retry docker push $IMAGE_NAME:stable
         - >
-          curl https://sentry.ibf-devops.ch/api/hooks/release/builtin/6/425e7762445dd9e50d303d861e8683d3e5737f21ce1588dd7e27f8037a96d75e/
+          curl $SENTRY_WEBHOOK
           -X POST
           -H 'Content-Type: application/json'
           -d '{"version": $TRAVIS_TAG}'
