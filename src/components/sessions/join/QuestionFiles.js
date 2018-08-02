@@ -26,7 +26,7 @@ const QuestionFiles = ({ files }) => (
 
       return (
         <div className="file" key={id}>
-          <Modal closeIcon trigger={previewImage}>
+          <Modal closeIcon dimmer={false} trigger={previewImage}>
             <Modal.Content image>
               <Image wrapped src={fileSrc} />
             </Modal.Content>
