@@ -1,6 +1,20 @@
 /* eslint-disable babel/quotes */
 
-require('dotenv').config()
+const IntlPolyfill = require('intl')
+const glob = require('glob')
+const accepts = require('accepts')
+const cookieParser = require('cookie-parser')
+const express = require('express')
+const next = require('next')
+const compression = require('compression')
+const helmet = require('helmet')
+const morgan = require('morgan')
+const { basename, join } = require('path')
+const { readFileSync } = require('fs')
+
+const config = require('./config')
+
+// require('dotenv').config()
 
 const isProd = process.env.NODE_ENV === 'production'
 const isDev = process.env.NODE_ENV === 'development'
@@ -65,18 +79,6 @@ function setupTransactionAPM(req) {
     }
   }
 }
-
-const IntlPolyfill = require('intl')
-const glob = require('glob')
-const accepts = require('accepts')
-const cookieParser = require('cookie-parser')
-const express = require('express')
-const next = require('next')
-const compression = require('compression')
-const helmet = require('helmet')
-const morgan = require('morgan')
-const { basename, join } = require('path')
-const { readFileSync } = require('fs')
 
 // Polyfill Node with `Intl` that has data for all locales.
 // See: https://formatjs.io/guides/runtime-environments/#server
@@ -231,6 +233,10 @@ app
   .prepare()
   .then(() => {
     console.log('[klicker-react] Starting up...')
+
+    config.validate({ allowed: 'strict' })
+
+    console.log(config.getProperties())
 
     // setup an express instance
     const server = express()
