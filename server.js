@@ -299,7 +299,9 @@ app
     middleware.push(express.static(join(__dirname, cfg.get('app.staticPath'))))
 
     // add morgan logger
-    middleware.push(morgan(isProd ? 'combined' : 'dev'))
+    if (process.env.NODE_ENV !== 'test') {
+      middleware.push(morgan(isProd ? 'combined' : 'dev'))
+    }
 
     if (isProd && cfg.get('gzip')) {
       // compress using gzip (only in production)
