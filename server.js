@@ -246,17 +246,17 @@ app
     }
 
     // secure the server with helmet
-    server.use(
-      helmet({
-        contentSecurityPolicy: isProd &&
-          process.env.HELMET_CSP_REPORT_URI && {
+    if (isProd) {
+      server.use(
+        helmet({
+          contentSecurityPolicy: process.env.HELMET_CSP_REPORT_URI && {
             // TODO get rid of unsafe-inline by applying nonces to scripts and styles
             // generating nonces is currently not correctly supported by nextjs
             directives: {
               connectSrc: ["'self'", process.env.API_URL, process.env.API_URL_WS, 'google-analytics.com'],
               defaultSrc: ["'self'"],
               fontSrc: ["'self'", 'fonts.gstatic.com'],
-              frameAncestors: process.env.HELMET_FRAMEGUARD && "'none'",
+              frameAncestors: process.env.HELMET_FRAMEGUARD && ["'none'"],
               imgSrc: ["'self'", process.env.HELMET_CSP_S3_ROOT, 'cdn.slaask.com', 'google-analytics.com'],
               reportUri: process.env.HELMET_CSP_REPORT_URI,
               scriptSrc: [
@@ -281,22 +281,21 @@ app
             },
             reportOnly: !process.env.HELMET_CSP_ENFORCE,
           },
-        expectCt: isProd &&
-          process.env.HELMET_CT_REPORT_URI && {
+          expectCt: process.env.HELMET_CT_REPORT_URI && {
             enforce: process.env.HELMET_CT_ENFORCE,
             maxAge: process.env.HELMET_CT_MAXAGE || 0,
             reportUri: process.env.HELMET_CT_REPORT_URI,
           },
-        frameguard: isProd && !!process.env.HELMET_FRAMEGUARD,
-        hsts: isProd &&
-          process.env.HELMET_HSTS && {
+          frameguard: !!process.env.HELMET_FRAMEGUARD,
+          hsts: process.env.HELMET_HSTS && {
             includeSubdomains: false,
             // maxAge: 31536000,
             // preload: true,
           },
-        referrerPolicy: isProd && !!process.env.HELMET_REFERRER_POLICY && process.env.HELMET_REFERRER_POLICY,
-      })
-    )
+          referrerPolicy: !!process.env.HELMET_REFERRER_POLICY && process.env.HELMET_REFERRER_POLICY,
+        })
+      )
+    }
 
     let middleware = [
       // enable cookie parsing for the locale cookie
