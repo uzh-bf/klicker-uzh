@@ -253,6 +253,7 @@ app
             directives: {
               defaultSrc: ["'self'"],
               fontSrc: ["'self'", 'fonts.gstatic.com'],
+              frameAncestors: isProd && process.env.HELMET_FRAMEGUARD && "'none'",
               imgSrc: ["'self'", 'https://klicker-files.s3.eu-central-1.amazonaws.com', 'cdn.slaask.com'],
               reportUri: process.env.HELMET_CSP_REPORT_URI,
               scriptSrc: [
