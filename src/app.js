@@ -80,6 +80,9 @@ mongoose.connection
     exceptTest(() => console.warn('> Warning: ', error))
   })
 
+// initialize a connection to redis
+const redis = getRedis(1)
+
 // initialize an express server
 const app = express()
 
@@ -185,7 +188,6 @@ if (isProd) {
     }
 
     // if redis is available, use it to centrally store rate limiting dataconst
-    const redis = getRedis(1)
     let limiter
     if (redis) {
       const RedisStore = require('rate-limit-redis')
@@ -268,6 +270,21 @@ apollo.applyMiddleware({
   app,
   cors: false,
   bodyParserConfig: false,
+  onHealthCheck: async () => {
+    // check connection to mongo
+    if (!mongoose.connection.readyState) {
+      console.log('[klicker-react] MongoDB connection failure...')
+      throw new Error('MONGODB_CONNECTION_ERROR')
+    }
+
+    // check connection to redis
+    if (redis && redis.status !== 'ready') {
+      console.log('[klicker-react] Redis connection failure...')
+      throw new Error('REDIS_CONNECTION_ERROR')
+    }
+
+    // TODO any other checks that should be performed?
+  },
 })
 
 module.exports = { app, apollo }
