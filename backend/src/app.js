@@ -228,23 +228,25 @@ const apollo = new ApolloServer({
     }
   },
   formatError: e => {
-    if (e.path || e.name !== 'GraphQLError') {
-      Raven.captureException(e, {
-        tags: { graphql: 'exec_error' },
-        extra: {
-          source: e.source && e.source.body,
-          positions: e.positions,
-          path: e.path,
-        },
-      })
-    } else {
-      Raven.captureMessage(`GraphQLWrongQuery: ${e.message}`, {
-        tags: { graphql: 'wrong_query' },
-        extra: {
-          source: e.source && e.source.body,
-          positions: e.positions,
-        },
-      })
+    if (isProd && Raven) {
+      if (e.path || e.name !== 'GraphQLError') {
+        Raven.captureException(e, {
+          tags: { graphql: 'exec_error' },
+          extra: {
+            source: e.source && e.source.body,
+            positions: e.positions,
+            path: e.path,
+          },
+        })
+      } else {
+        Raven.captureMessage(`GraphQLWrongQuery: ${e.message}`, {
+          tags: { graphql: 'wrong_query' },
+          extra: {
+            source: e.source && e.source.body,
+            positions: e.positions,
+          },
+        })
+      }
     }
 
     return {
