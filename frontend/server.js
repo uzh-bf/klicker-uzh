@@ -257,6 +257,7 @@ app
               imgSrc: ["'self'", 'https://klicker-files.s3.eu-central-1.amazonaws.com', 'cdn.slaask.com'],
               reportUri: process.env.HELMET_CSP_REPORT_URI,
               scriptSrc: [
+                "'self'",
                 "'unsafe-inline'",
                 'cdn.polyfill.io',
                 'cdn.logrocket.io',
