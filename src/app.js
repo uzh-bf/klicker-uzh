@@ -2,7 +2,6 @@
 require('dotenv').config()
 
 const isProd = process.env.NODE_ENV === 'production'
-const isDev = process.env.NODE_ENV === 'development'
 
 // initialize APM if so configured
 let apm
@@ -18,6 +17,7 @@ if (process.env.SENTRY_DSN) {
 // base packages
 const mongoose = require('mongoose')
 const express = require('express')
+const PrettyError = require('pretty-error')
 const { ApolloServer } = require('apollo-server-express')
 mongoose.Promise = require('bluebird')
 
@@ -209,6 +209,9 @@ if (isProd) {
 // inject the middleware into express
 app.use(middleware)
 
+// instantiate pretty error
+const pe = new PrettyError()
+
 // setup a new apollo server instance
 const apollo = new ApolloServer({
   typeDefs,
@@ -228,13 +231,15 @@ const apollo = new ApolloServer({
     }
   },
   formatError: e => {
+    console.log(pe.render(e))
+
     if (isProd && Raven) {
       if (e.path || e.name !== 'GraphQLError') {
         Raven.captureException(e, {
           tags: { graphql: 'exec_error' },
           extra: {
             source: e.source && e.source.body,
-            positions: e.positions,
+            positions: e.locations,
             path: e.path,
           },
         })
@@ -243,16 +248,18 @@ const apollo = new ApolloServer({
           tags: { graphql: 'wrong_query' },
           extra: {
             source: e.source && e.source.body,
-            positions: e.positions,
+            positions: e.locations,
+            path: e.path,
           },
         })
       }
     }
 
-    return {
+    return e
+    /* return {
       message: e.message,
-      stack: isDev ? e.stack.split('\n') : null,
-    }
+      stack: isDev ? e.stack && e.stack.split('\n') : null,
+    } */
   },
 })
 
