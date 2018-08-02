@@ -136,7 +136,7 @@ if (isProd) {
       // if the transaction is a single operation
       if (req.body.operationName) {
         apm.setTransactionName(req.body.operationName)
-      } else {
+      } else if (Array.isArray(req.body)) {
         // if the transaction is a batch of operations
         const operationsConcat = req.body
           .map(o => o.operationName)
