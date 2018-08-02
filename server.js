@@ -253,7 +253,7 @@ app
             // TODO get rid of unsafe-inline by applying nonces to scripts and styles
             // currently not supported by nextjs
             directives: {
-              connectSrc: ["'self'", process.env.HELMET_CSP_API_ROOT, 'google-analytics.com'],
+              connectSrc: ["'self'", process.env.API_URL, process.env.API_URL_WS, 'google-analytics.com'],
               defaultSrc: ["'self'"],
               fontSrc: ["'self'", 'fonts.gstatic.com'],
               frameAncestors: isProd && process.env.HELMET_FRAMEGUARD && "'none'",
