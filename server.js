@@ -12,13 +12,16 @@ const morgan = require('morgan')
 const { basename, join } = require('path')
 const { readFileSync } = require('fs')
 
-const config = require('./config')
+// import the configuration
+const cfg = require('./klicker.conf.js')
 
-// require('dotenv').config()
+// validate the configuration
+// fail early if anything is invalid
+cfg.validate({ allowed: 'strict' })
 
 const isProd = process.env.NODE_ENV === 'production'
 const isDev = process.env.NODE_ENV === 'development'
-const hasRedis = !!process.env.REDIS_HOST
+const hasRedis = cfg.get('cache.redis.enabled')
 
 // prepare page configuration
 const pages = [
@@ -27,7 +30,7 @@ const pages = [
   { url: '/user/registration' },
   { url: '/questions/create' },
   {
-    cached: 600,
+    cached: cfg.get('cache.pages.qr'),
     mapParams: req => ({ shortname: req.params.shortname }),
     renderPath: '/qr',
     url: '/qr/:shortname',
@@ -48,7 +51,7 @@ const pages = [
     url: '/questions/:questionId',
   },
   {
-    cached: 30,
+    cached: cfg.get('cache.pages.join'),
     mapParams: req => ({ shortname: req.params.shortname }),
     renderPath: '/join',
     url: '/join/:shortname',
@@ -57,12 +60,13 @@ const pages = [
 
 // initialize elastic-apm if so configured
 let apm
-if (process.env.APM_SERVER_URL) {
+if (cfg.get('services.apm.enabled')) {
+  const { monitorDev, secretToken, serverUrl, serviceName } = cfg.get('services.apm')
   apm = require('elastic-apm-node').start({
-    active: !isDev,
-    secretToken: process.env.APM_SECRET_TOKEN,
-    serverUrl: process.env.APM_SERVER_URL,
-    serviceName: process.env.APM_NAME,
+    active: monitorDev || !isDev,
+    secretToken,
+    serverUrl,
+    serviceName,
   })
 }
 
@@ -153,13 +157,9 @@ async function connectCache() {
 
   if (hasRedis) {
     const Redis = require('ioredis')
-    cache = new Redis({
-      db: 0,
-      family: 4,
-      host: process.env.REDIS_HOST,
-      password: process.env.REDIS_PASS,
-      port: process.env.REDIS_PORT || 6379,
-    })
+    const { db, host, password, port } = cfg.get('cache.redis')
+    cache = new Redis({ db, family: 4, host, password, port })
+
     console.log('[redis] Connected to redis (db0) for SSR caching')
   } else {
     const LRUCache = require('lru-cache')
@@ -234,10 +234,6 @@ app
   .then(() => {
     console.log('[klicker-react] Starting up...')
 
-    config.validate({ allowed: 'strict' })
-
-    console.log(config.getProperties())
-
     // setup an express instance
     const server = express()
 
@@ -246,59 +242,50 @@ app
 
     // if the server is behind a proxy, set the APP_PROXY env to true
     // this will make express trust the X-* proxy headers and set corresponding req.ip
-    if (process.env.APP_PROXY) {
+    if (cfg.get('app.trustProxy')) {
       server.enable('trust proxy')
       console.log('[klicker-react] Enabling trust proxy mode for IP pass-through')
     }
 
     // secure the server with helmet
     if (isProd) {
+      const s3 = cfg.get('s3')
+      const { csp, expectCt, frameguard, hsts, referrerPolicy } = cfg.get('security')
+      const { googleAnalytics, slaask, logrocket } = cfg.get('services')
+
+      const optionalGoogleAnalytics = googleAnalytics.enabled ? ['www.google-analytics.com'] : []
+      const optionalSlaask = slaask.enabled ? ['cdn.slaask.com', 'js.pusher.com', 'cdn.embedly.com'] : []
+      const optionalLogrocket = logrocket.enabled ? ['cdn.logrocket.io'] : []
+
       server.use(
         helmet({
-          contentSecurityPolicy: process.env.HELMET_CSP_REPORT_URI && {
+          contentSecurityPolicy: csp.enabled && {
             // TODO get rid of unsafe-inline by applying nonces to scripts and styles
             // generating nonces is currently not correctly supported by nextjs
             directives: {
-              connectSrc: ["'self'", process.env.API_URL, process.env.API_URL_WS, 'google-analytics.com'],
-              defaultSrc: ["'self'"],
-              fontSrc: ["'self'", 'fonts.gstatic.com'],
-              frameAncestors: process.env.HELMET_FRAMEGUARD && ["'none'"],
-              imgSrc: ["'self'", process.env.HELMET_CSP_S3_ROOT, 'cdn.slaask.com', 'google-analytics.com'],
-              reportUri: process.env.HELMET_CSP_REPORT_URI,
-              scriptSrc: [
-                "'self'",
-                "'unsafe-inline'",
-                'cdn.polyfill.io',
-                'cdn.logrocket.io',
-                'cdn.slaask.com',
-                'js.pusher.com',
-                'cdn.embedly.com',
-                'google-analytics.com',
-              ],
-              styleSrc: [
-                "'self'",
-                "'unsafe-inline'",
-                'maxcdn.bootstrapcdn.com',
-                'fonts.googleapis.com',
-                'cdnjs.cloudflare.com',
-                'cdn.slaask.com',
-                'google-analytics.com',
-              ],
+              connectSrc: [...csp.connectSrc, ...optionalGoogleAnalytics],
+              defaultSrc: csp.defaultSrc,
+              fontSrc: csp.fontSrc,
+              frameAncestors: frameguard.enabled && frameguard.ancestors,
+              imgSrc: [...csp.imgSrc, s3.rootUrl, ...optionalSlaask, ...optionalGoogleAnalytics],
+              reportUri: csp.reportUri,
+              scriptSrc: [...csp.scriptSrc, ...optionalLogrocket, ...optionalSlaask, ...optionalGoogleAnalytics],
+              styleSrc: [...csp.styleSrc, ...optionalSlaask, ...optionalGoogleAnalytics],
             },
-            reportOnly: !process.env.HELMET_CSP_ENFORCE,
+            reportOnly: !csp.enforce,
           },
-          expectCt: process.env.HELMET_CT_REPORT_URI && {
-            enforce: process.env.HELMET_CT_ENFORCE,
-            maxAge: process.env.HELMET_CT_MAXAGE || 0,
-            reportUri: process.env.HELMET_CT_REPORT_URI,
+          expectCt: expectCt.enabled && {
+            enforce: expectCt.enforce,
+            maxAge: expectCt.maxAge,
+            reportUri: expectCt.reportUri,
           },
-          frameguard: !!process.env.HELMET_FRAMEGUARD,
-          hsts: process.env.HELMET_HSTS && {
-            includeSubdomains: false,
-            // maxAge: 31536000,
-            // preload: true,
+          frameguard: frameguard.enabled,
+          hsts: hsts.enabled && {
+            includeSubdomains: hsts.includeSubdomains,
+            maxAge: hsts.maxAge,
+            preload: hsts.preload,
           },
-          referrerPolicy: !!process.env.HELMET_REFERRER_POLICY && process.env.HELMET_REFERRER_POLICY,
+          referrerPolicy,
         })
       )
     }
@@ -309,14 +296,14 @@ app
     ]
 
     // static file serving from public folder
-    middleware.push(express.static(join(__dirname, 'public')))
+    middleware.push(express.static(join(__dirname, cfg.get('app.staticPath'))))
 
-    if (isProd) {
+    // add morgan logger
+    middleware.push(morgan(isProd ? 'combined' : 'dev'))
+
+    if (isProd && cfg.get('gzip')) {
       // compress using gzip (only in production)
       middleware = [compression(), ...middleware]
-
-      // activate morgan logging in production
-      middleware.push(morgan('combined'))
     }
 
     // attach all prepared middlewares to the express instance
@@ -328,8 +315,10 @@ app
         // setup locale and get messages for the specific route
         setupLocale(req, res)
 
-        // inject transaction information for APM
-        setupTransactionAPM(req)
+        if (apm) {
+          // inject transaction information for APM
+          setupTransactionAPM(req)
+        }
 
         // if the route contents should be cached
         if (cached) {
@@ -344,8 +333,10 @@ app
       // setup locale and get messages for the specific route
       setupLocale(req, res)
 
-      // inject transaction information for APM
-      setupTransactionAPM(req)
+      if (apm) {
+        // inject transaction information for APM
+        setupTransactionAPM(req)
+      }
 
       return handle(req, res)
     })
