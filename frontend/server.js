@@ -251,12 +251,12 @@ app
         contentSecurityPolicy: isProd &&
           process.env.HELMET_CSP_REPORT_URI && {
             // TODO get rid of unsafe-inline by applying nonces to scripts and styles
-            // currently not supported by nextjs
+            // generating nonces is currently not correctly supported by nextjs
             directives: {
               connectSrc: ["'self'", process.env.API_URL, process.env.API_URL_WS, 'google-analytics.com'],
               defaultSrc: ["'self'"],
               fontSrc: ["'self'", 'fonts.gstatic.com'],
-              frameAncestors: isProd && process.env.HELMET_FRAMEGUARD && "'none'",
+              frameAncestors: process.env.HELMET_FRAMEGUARD && "'none'",
               imgSrc: ["'self'", process.env.HELMET_CSP_S3_ROOT, 'cdn.slaask.com', 'google-analytics.com'],
               reportUri: process.env.HELMET_CSP_REPORT_URI,
               scriptSrc: [
