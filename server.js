@@ -250,11 +250,14 @@ app
       helmet({
         contentSecurityPolicy: isProd &&
           process.env.HELMET_CSP_REPORT_URI && {
+            // TODO get rid of unsafe-inline by applying nonces to scripts and styles
+            // currently not supported by nextjs
             directives: {
+              connectSrc: ["'self'", process.env.HELMET_CSP_API_ROOT, 'google-analytics.com'],
               defaultSrc: ["'self'"],
               fontSrc: ["'self'", 'fonts.gstatic.com'],
               frameAncestors: isProd && process.env.HELMET_FRAMEGUARD && "'none'",
-              imgSrc: ["'self'", 'https://klicker-files.s3.eu-central-1.amazonaws.com', 'cdn.slaask.com'],
+              imgSrc: ["'self'", process.env.HELMET_CSP_S3_ROOT, 'cdn.slaask.com', 'google-analytics.com'],
               reportUri: process.env.HELMET_CSP_REPORT_URI,
               scriptSrc: [
                 "'self'",
@@ -264,6 +267,7 @@ app
                 'cdn.slaask.com',
                 'js.pusher.com',
                 'cdn.embedly.com',
+                'google-analytics.com',
               ],
               styleSrc: [
                 "'self'",
@@ -272,6 +276,7 @@ app
                 'fonts.googleapis.com',
                 'cdnjs.cloudflare.com',
                 'cdn.slaask.com',
+                'google-analytics.com',
               ],
             },
             reportOnly: !process.env.HELMET_CSP_ENFORCE,
