@@ -1158,8 +1158,8 @@ describe('Integration', () => {
       )
 
       // expect the response to contain "INVALID_LOGIN"
-      expect(response2.body.errors).toMatchSnapshot()
-      // expect(response2.body.archiveQuestions.errors[0]).toEqual('INVALID_LOGIN')
+      // expect(response2.body.errors).toMatchSnapshot()
+      expect(response2.body.errors[0].message).toEqual('INVALID_LOGIN')
     })
   })
 })

@@ -2,6 +2,7 @@
 require('dotenv').config()
 
 const isProd = process.env.NODE_ENV === 'production'
+const isDev = process.env.NODE_ENV === 'development'
 
 // initialize APM if so configured
 let apm
@@ -116,14 +117,18 @@ let middleware = [
   }),
 ]
 
+// add the morgan logging middleware
+if (process.env.NODE_ENV !== 'test') {
+  middleware.push(morgan(isProd ? 'combined' : 'dev'))
+}
+
 // add production middlewares
 if (isProd) {
-  // add the morgan logging middleware in production
-  middleware.push(morgan('combined'))
-
   if (process.env.SENTRY_DSN) {
     // if a sentry dsn is set, configure raven
-    Raven.config(process.env.SENTRY_DSN).install()
+    Raven.config(process.env.SENTRY_DSN, {
+      environment: process.env.NODE_ENV,
+    }).install()
     middleware = [Raven.requestHandler(), compression(), ...middleware, Raven.errorHandler()]
   } else {
     middleware = [compression(), ...middleware]
@@ -186,13 +191,11 @@ if (isProd) {
       const RedisStore = require('rate-limit-redis')
       limiter = new RateLimit({
         ...limiterSettings,
-        store:
-          redis &&
-          new RedisStore({
-            client: redis,
-            expiry: 5 * 60,
-            prefix: 'rl-api:',
-          }),
+        store: new RedisStore({
+          client: redis,
+          expiry: 5 * 60,
+          prefix: 'rl-api:',
+        }),
       })
     } else {
       // if redis is not available, setup basic rate limiting with in-memory store
@@ -222,6 +225,31 @@ const apollo = new ApolloServer({
       ip: req.ip,
       loaders: createLoaders(req.auth),
       res,
+    }
+  },
+  formatError: e => {
+    if (e.path || e.name !== 'GraphQLError') {
+      Raven.captureException(e, {
+        tags: { graphql: 'exec_error' },
+        extra: {
+          source: e.source && e.source.body,
+          positions: e.positions,
+          path: e.path,
+        },
+      })
+    } else {
+      Raven.captureMessage(`GraphQLWrongQuery: ${e.message}`, {
+        tags: { graphql: 'wrong_query' },
+        extra: {
+          source: e.source && e.source.body,
+          positions: e.positions,
+        },
+      })
+    }
+
+    return {
+      message: e.message,
+      stack: isDev ? e.stack.split('\n') : null,
     }
   },
 })
