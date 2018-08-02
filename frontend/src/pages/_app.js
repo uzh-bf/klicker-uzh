@@ -43,22 +43,27 @@ class Klicker extends App {
     if (isProd) {
       if (process.env.G_ANALYTICS) {
         const { initGA, logPageView } = require('../lib')
-        initGA(process.env.G_ANALYTICS)
+
+        if (!window.INIT_GA) {
+          initGA(process.env.G_ANALYTICS)
+
+          // log subsequent route changes as page views
+          Router.router.events.on('routeChangeComplete', logPageView)
+
+          window.INIT_GA = true
+        }
 
         // log the initial page load as a page view
         logPageView()
-
-        // log subsequent route changes as page views
-        Router.router.events.on('routeChangeComplete', logPageView)
       }
 
-      if (Raven) {
+      if (Raven && !window.INIT_RAVEN) {
         Raven.config(process.env.SENTRY_DSN, {
           environment: process.env.NODE_ENV,
           release: process.env.VERSION,
         }).install()
 
-        if (LogRocket) {
+        if (LogRocket && window.INIT_LR) {
           Raven.setDataCallback(data =>
             Object.assign({}, data, {
               extra: {
