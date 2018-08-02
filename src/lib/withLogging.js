@@ -2,6 +2,8 @@
 
 import React from 'react'
 
+const Raven = process.env.SENTRY_DSN && require('raven-js')
+
 const isProd = process.env.NODE_ENV === 'production'
 const isDev = process.env.NODE_ENV === 'development'
 
@@ -51,6 +53,16 @@ export default (cfg = {}) =>
             if (process.env.LOGROCKET && config.logRocket && !window.INIT_LR) {
               LogRocket.init(process.env.LOGROCKET)
               LogRocketReact(LogRocket)
+
+              if (Raven && window.INIT_RAVEN) {
+                Raven.setDataCallback(data =>
+                  Object.assign({}, data, {
+                    extra: {
+                      sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef
+                    },
+                  })
+                )
+              }
 
               window.INIT_LR = true
             }
