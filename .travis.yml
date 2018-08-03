@@ -130,7 +130,7 @@ jobs:
         - USER="serviceaccount"
         - PASSWORD=$OC_TOKEN
         - REGISTRY="registry.appuio.ch"
-        - IMAGE_NAME="registry.appuio.ch/uniz-klicker/klicker-react"
+        - IMAGE_NAME="registry.appuio.ch/uniz-klicker/klicker-react-prod"
       before_script:
         - echo $PASSWORD | docker login --username $USER --password-stdin $REGISTRY
       script:
