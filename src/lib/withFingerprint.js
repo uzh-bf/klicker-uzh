@@ -2,7 +2,7 @@ import React from 'react'
 
 export default ComposedComponent => {
   let fingerprint
-  if (process.env.APP_FINGERPRINTING && typeof window !== 'undefined') {
+  if (process.env.SECURITY_FINGERPRINTING && typeof window !== 'undefined') {
     fingerprint = new Promise((resolve, reject) => {
       // if an existing cookie already contains a fingerprint, reuse it
       const existing = sessionStorage.getItem('fp')

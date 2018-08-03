@@ -16,7 +16,7 @@ const defaultProps = {
 const QuestionFiles = ({ files }) => (
   <div className="questionFiles">
     {files.map(({ id, name }, ix) => {
-      const fileSrc = `${process.env.S3_BASE_PATH}/${name}`
+      const fileSrc = `${process.env.S3_ROOT_URL}/${name}`
       const previewImage = (
         <Card>
           <Image height="auto" src={fileSrc} width="100%" />

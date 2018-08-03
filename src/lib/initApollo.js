@@ -30,13 +30,13 @@ function create(initialState) {
   // initialize the basic http link for both SSR and client-side usage
   let httpLink = new BatchHttpLink({
     credentials: 'include', // Additional fetch() options like `credentials` or `headers`
-    uri: process.env.API_URL || 'http://localhost:4000/graphql',
+    uri: process.env.API_ENDPOINT || 'http://localhost:4000/graphql',
   })
 
   // on the client, differentiate between websockets and http requests
   if (process.browser) {
     // instantiate a basic subscription client
-    const wsClient = new SubscriptionClient(process.env.API_URL_WS || 'ws://localhost:4000/graphql', {
+    const wsClient = new SubscriptionClient(process.env.API_ENDPOINT_WS || 'ws://localhost:4000/graphql', {
       reconnect: true,
     })
 

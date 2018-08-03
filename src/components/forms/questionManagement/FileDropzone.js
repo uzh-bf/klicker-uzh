@@ -35,7 +35,7 @@ const FileDropzone = ({ disabled, files, onChangeFiles }) => (
 
     <div className="previews">
       {files.map((file, index) => {
-        const imageSrc = `${process.env.S3_BASE_PATH}/${file.name}`
+        const imageSrc = `${process.env.S3_ROOT_URL}/${file.name}`
         return (
           <div className="imagePreview" key={file.id || index}>
             <Card>
