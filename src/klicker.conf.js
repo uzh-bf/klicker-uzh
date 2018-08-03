@@ -11,12 +11,12 @@ module.exports = convict({
     gzip: {
       default: true,
       env: 'APP_GZIP',
-      format: Boolean,
+      format: 'Boolean',
     },
     https: {
       default: false,
       env: 'APP_HTTPS',
-      format: Boolean,
+      format: 'Boolean',
     },
     path: {
       default: undefined,
@@ -37,7 +37,7 @@ module.exports = convict({
     trustProxy: {
       default: false,
       env: 'APP_TRUST_PROXY',
-      format: Boolean,
+      format: 'Boolean',
     },
   },
   cache: {
@@ -45,7 +45,7 @@ module.exports = convict({
       enabled: {
         default: false,
         env: 'CACHE_REDIS_ENABLED',
-        format: Boolean,
+        format: 'Boolean',
       },
       host: {
         default: undefined,
@@ -96,7 +96,7 @@ module.exports = convict({
     secure: {
       default: false,
       env: 'EMAIL_SECURE',
-      format: Boolean,
+      format: 'Boolean',
     },
   },
   env: {
@@ -114,7 +114,7 @@ module.exports = convict({
     debug: {
       default: false,
       env: 'MONGO_DEBUG',
-      format: Boolean,
+      format: 'Boolean',
     },
     url: {
       default: undefined,
@@ -149,7 +149,7 @@ module.exports = convict({
     enabled: {
       default: false,
       env: 'S3_ENABLED',
-      format: Boolean,
+      format: 'Boolean',
     },
     endpoint: {
       default: undefined,
@@ -173,7 +173,7 @@ module.exports = convict({
       credentials: {
         default: true,
         env: 'SECURITY_CORS_CREDENTIALS',
-        format: Boolean,
+        format: 'Boolean',
       },
       origin: {
         default: 'http://localhost:3000',
@@ -185,12 +185,12 @@ module.exports = convict({
       enabled: {
         default: false,
         env: 'SECURITY_EXPECT_CT_ENABLED',
-        format: Boolean,
+        format: 'Boolean',
       },
       enforce: {
         default: false,
         env: 'SECURITY_EXPECT_CT_ENFORCE',
-        format: Boolean,
+        format: 'Boolean',
       },
       maxAge: {
         default: 0,
@@ -208,24 +208,24 @@ module.exports = convict({
         enabled: {
           default: true,
           env: 'SECURITY_FILTERING_BY_IP_ENABLED',
-          format: Boolean,
+          format: 'Boolean',
         },
         strict: {
           default: false,
           env: 'SECURITY_FILTERING_BY_IP_STRICT',
-          format: Boolean,
+          format: 'Boolean',
         },
       },
       byFP: {
         enabled: {
           default: true,
           env: 'SECURITY_FILTERING_BY_FP_ENABLED',
-          format: Boolean,
+          format: 'Boolean',
         },
         strict: {
           default: false,
           env: 'SECURITY_FILTERING_BY_FP_STRICT',
-          format: Boolean,
+          format: 'Boolean',
         },
       },
     },
@@ -238,19 +238,19 @@ module.exports = convict({
       enabled: {
         default: false,
         env: 'SECURITY_FRAMEGUARD_ENABLED',
-        format: Boolean,
+        format: 'Boolean',
       },
     },
     hsts: {
       enabled: {
         default: false,
         env: 'SECURITY_HSTS_ENABLED',
-        format: Boolean,
+        format: 'Boolean',
       },
       includeSubdomains: {
         default: false,
         env: 'SECURITY_HSTS_INCLUDE_SUBDOMAINS',
-        format: Boolean,
+        format: 'Boolean',
       },
       maxAge: {
         default: 0,
@@ -260,7 +260,7 @@ module.exports = convict({
       preload: {
         default: undefined,
         env: 'SECURITY_HSTS_PRELOAD',
-        format: Boolean,
+        format: 'Boolean',
       },
     },
     rateLimit: {
@@ -277,7 +277,7 @@ module.exports = convict({
       enabled: {
         default: true,
         env: 'SECURITY_RATE_LIMIT_ENABLED',
-        format: Boolean,
+        format: 'Boolean',
       },
       max: {
         default: 1000,
@@ -297,12 +297,12 @@ module.exports = convict({
       enabled: {
         default: false,
         env: 'SERVICES_APM_ENABLED',
-        format: Boolean,
+        format: 'Boolean',
       },
       monitorDev: {
         default: false,
         env: 'SERVICES_APM_DEV',
-        format: Boolean,
+        format: 'Boolean',
       },
       secretToken: {
         default: undefined,
@@ -331,14 +331,14 @@ module.exports = convict({
       enabled: {
         default: false,
         env: 'SERVICES_APOLLO_ENGINE_ENABLED',
-        format: Boolean,
+        format: 'Boolean',
       },
     },
     sentry: {
       enabled: {
         default: false,
         env: 'SERVICES_SENTRY_ENABLED',
-        format: Boolean,
+        format: 'Boolean',
       },
       dsn: {
         default: undefined,
@@ -351,7 +351,7 @@ module.exports = convict({
       enabled: {
         default: false,
         env: 'SERVICES_SLACK_ENABLED',
-        format: Boolean,
+        format: 'Boolean',
       },
       webhook: {
         default: undefined,
