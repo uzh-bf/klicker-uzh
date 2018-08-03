@@ -2,11 +2,14 @@ const md5 = require('md5')
 const _isNumber = require('lodash/isNumber')
 const { ForbiddenError, UserInputError } = require('apollo-server-express')
 
+const CFG = require('../klicker.conf.js')
 const { QuestionInstanceModel, UserModel, FileModel } = require('../models')
 const { QUESTION_GROUPS, QUESTION_TYPES } = require('../constants')
 const { getRedis } = require('../redis')
 const { getRunningSession } = require('./sessionMgr')
 const { pubsub, CONFUSION_ADDED, FEEDBACK_ADDED } = require('../resolvers/subscriptions')
+
+const FILTERING_CFG = CFG.get('security.filtering')
 
 // initialize redis if available
 const redis = getRedis(2)
@@ -96,7 +99,7 @@ const addResponse = async ({ ip, fp, instanceId, response }) => {
   // if redis is available, save the ip, fp and response under the key of the corresponding instance
   // also check if any matching response (ip or fp) is already in the database.
   // TODO: results should still be written to the database? but responses will not be saved seperately!
-  if (redis && (process.env.APP_FILTERING_IP || process.env.APP_FILTERING_FP)) {
+  if (redis && (FILTERING_CFG.byIP.enabled || FILTERING_CFG.byFP.enabled)) {
     // prepare a redis pipeline
     const pipeline = redis.pipeline()
 
@@ -109,12 +112,12 @@ const addResponse = async ({ ip, fp, instanceId, response }) => {
     }
 
     // if ip filtering is enabled, try adding the ip to redis
-    if (process.env.APP_FILTERING_IP) {
+    if (FILTERING_CFG.byIP.enabled) {
       pipeline.sadd(`${instanceId}:ip`, ip)
     }
 
     // if fingerprinting is enabled, try adding the fingerprint to redis
-    if (process.env.APP_FILTERING_FP) {
+    if (FILTERING_CFG.byFP.enabled) {
       pipeline.sadd(`${instanceId}:fp`, fp)
     }
 
@@ -122,11 +125,11 @@ const addResponse = async ({ ip, fp, instanceId, response }) => {
 
     // if ip filtering is enabled, parse the results
     let startIndex = 0
-    if (process.env.APP_FILTERING_IP) {
+    if (FILTERING_CFG.byIP.enabled) {
       const ipUnique = results[0][1]
 
       // if filtering is strict, drop on non unique
-      if (process.env.APP_FILTERING_IP_STRICT && !ipUnique) {
+      if (FILTERING_CFG.byIP.strict && !ipUnique) {
         dropResponse()
       }
 
@@ -138,11 +141,11 @@ const addResponse = async ({ ip, fp, instanceId, response }) => {
     }
 
     // if fp filtering is enabled, parse the results
-    if (process.env.APP_FILTERING_FP) {
+    if (FILTERING_CFG.byFP.enabled) {
       const fpUnique = results[startIndex][1]
 
       // if filtering is strict, drop on non unique
-      if (process.env.APP_FILTERING_FP_STRICT && !fpUnique) {
+      if (FILTERING_CFG.byFP.strict && !fpUnique) {
         dropResponse()
       }
 

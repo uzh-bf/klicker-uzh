@@ -1,8 +1,11 @@
 const crypto = require('crypto')
 
+const cfg = require('../klicker.conf.js')
 const AuthService = require('../services/auth')
 const AccountService = require('../services/accounts')
 const { UserModel } = require('../models')
+
+const APP_CFG = cfg.get('app')
 
 /* ----- queries ----- */
 const authUserByIDQuery = (parentValue, args, { auth }) => UserModel.findById(auth.sub)
@@ -13,7 +16,7 @@ const checkAvailabilityQuery = (parentValue, { email, shortname }) =>
 // Generate an HMAC for user identity verification
 const hmacQuery = (parentValue, args, { auth }) =>
   crypto
-    .createHmac('sha256', process.env.APP_SECRET)
+    .createHmac('sha256', APP_CFG.secret)
     .update(auth.sub)
     .digest('hex')
 
