@@ -9,8 +9,8 @@ import { withApolloClient } from '../lib'
 
 const isProd = process.env.NODE_ENV === 'production'
 
-const Raven = process.env.SENTRY_DSN && require('raven-js')
-const LogRocket = process.env.LOGROCKET && require('logrocket')
+const Raven = process.env.SERVICES_SENTRY_DSN && require('raven-js')
+const LogRocket = process.env.SERVICES_LOGROCKET_APP_ID && require('logrocket')
 
 // Register React Intl's locale data for the user's locale in the browser. This
 // locale data was added to the page by `pages/_document.js`. This only happens
@@ -41,11 +41,11 @@ class Klicker extends App {
 
   componentDidMount() {
     if (isProd) {
-      if (process.env.G_ANALYTICS) {
+      if (process.env.SERVICES_GOOGLE_ANALYTICS_TRACKING_ID) {
         const { initGA, logPageView } = require('../lib')
 
         if (!window.INIT_GA) {
-          initGA(process.env.G_ANALYTICS)
+          initGA(process.env.SERVICES_GOOGLE_ANALYTICS_TRACKING_ID)
 
           // log subsequent route changes as page views
           Router.router.events.on('routeChangeComplete', logPageView)
@@ -58,7 +58,7 @@ class Klicker extends App {
       }
 
       if (Raven && !window.INIT_RAVEN) {
-        Raven.config(process.env.SENTRY_DSN, {
+        Raven.config(process.env.SERVICES_SENTRY_DSN, {
           environment: process.env.NODE_ENV,
           release: process.env.VERSION,
         }).install()
@@ -87,7 +87,7 @@ class Klicker extends App {
         Raven.showReportDialog()
       }
 
-      if (process.env.G_ANALYTICS) {
+      if (process.env.SERVICES_GOOGLE_ANALYTICS_TRACKING_ID) {
         const { logException } = require('../lib')
         logException(error)
       }

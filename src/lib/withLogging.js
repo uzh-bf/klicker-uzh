@@ -2,7 +2,7 @@
 
 import React from 'react'
 
-const Raven = process.env.SENTRY_DSN && require('raven-js')
+const Raven = process.env.SERVICES_SENTRY_DSN && require('raven-js')
 
 const isProd = process.env.NODE_ENV === 'production'
 const isDev = process.env.NODE_ENV === 'development'
@@ -10,7 +10,7 @@ const isDev = process.env.NODE_ENV === 'development'
 let LogRocket
 let LogRocketReact
 
-if (isProd && process.env.LOGROCKET) {
+if (isProd && process.env.SERVICES_LOGROCKET_APP_ID) {
   LogRocket = require('logrocket')
   LogRocketReact = require('logrocket-react')
 }
@@ -50,8 +50,8 @@ export default (cfg = {}) =>
 
           if (isProd) {
             // embed logrocket if enabled
-            if (process.env.LOGROCKET && config.logRocket && !window.INIT_LR) {
-              LogRocket.init(process.env.LOGROCKET)
+            if (process.env.SERVICES_LOGROCKET_APP_ID && config.logRocket && !window.INIT_LR) {
+              LogRocket.init(process.env.SERVICES_LOGROCKET_APP_ID)
               LogRocketReact(LogRocket)
 
               if (Raven && window.INIT_RAVEN) {
@@ -68,7 +68,7 @@ export default (cfg = {}) =>
             }
 
             // embed slaask if enabled
-            if (process.env.SLAASK_WIDGET_KEY && config.slaask) {
+            if (process.env.SERVICES_SLAASK_WIDGET_KEY && config.slaask) {
               !(function() {
                 var x = document.createElement('script')
                 ;(x.src = 'https://cdn.slaask.com/chat.js'),
@@ -78,7 +78,7 @@ export default (cfg = {}) =>
                     var x = this.readyState
                     if (!x || 'complete' == x || 'loaded' == x)
                       try {
-                        _slaask.init(process.env.SLAASK_WIDGET_KEY)
+                        _slaask.init(process.env.SERVICES_SLAASK_WIDGET_KEY)
                       } catch (x) {}
                   })
                 var t = document.getElementsByTagName('script')[0]

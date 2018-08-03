@@ -20,6 +20,11 @@ module.exports = convict({
       env: 'APP_GZIP',
       format: Boolean,
     },
+    persistQueries: {
+      default: false,
+      env: 'APP_PERSIST_QUERIES',
+      format: Boolean,
+    },
     port: {
       default: 3000,
       env: 'APP_PORT',
@@ -167,6 +172,11 @@ module.exports = convict({
         format: 'url',
       },
     },
+    fingerprinting: {
+      default: true,
+      env: 'SECURITY_FINGERPRINTING',
+      format: Boolean,
+    },
     frameguard: {
       ancestors: {
         default: ["'none'"],
@@ -243,11 +253,35 @@ module.exports = convict({
         env: 'SERVICES_GOOGLE_ANALYTICS_ENABLED',
         format: Boolean,
       },
+      trackingId: {
+        default: undefined,
+        env: 'SERVICES_GOOGLE_ANALYTICS_TRACKING_ID',
+        format: String,
+        sensitive: true,
+      },
     },
     logrocket: {
+      appId: {
+        default: undefined,
+        env: 'SERVICES_LOGROCKET_APP_ID',
+        format: String,
+        sensitive: true,
+      },
       enabled: {
         default: false,
         env: 'SERVICES_LOGROCKET_ENABLED',
+        format: Boolean,
+      },
+    },
+    sentry: {
+      enabled: {
+        default: false,
+        env: 'SERVICES_SENTRY_ENABLED',
+        format: Boolean,
+      },
+      dsn: {
+        default: undefined,
+        env: 'SERVICES_SENTRY_DSN',
         format: Boolean,
       },
     },
@@ -256,6 +290,12 @@ module.exports = convict({
         default: false,
         env: 'SERVICES_SLAASK_ENABLED',
         format: Boolean,
+      },
+      widgetKey: {
+        default: undefined,
+        env: 'SERVICES_SLAASK_WIDGET_KEY',
+        format: String,
+        sensitive: true,
       },
     },
   },

@@ -208,7 +208,7 @@ const QuestionCreationForm = ({ intl, tags, onSubmit, onDiscard }) => {
                 />
               </div>
 
-              {process.env.S3_BASE_PATH && (
+              {process.env.S3_ROOT_URL && (
                 <div className="questionInput questionFiles">
                   <h2>
                     <FormattedMessage defaultMessage="Attached Images (Beta)" id="createQuestion.filesLabel" />

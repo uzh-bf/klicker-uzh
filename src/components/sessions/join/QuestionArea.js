@@ -125,7 +125,7 @@ function QuestionArea({
               </Collapser>
             </div>
 
-            {process.env.S3_BASE_PATH &&
+            {process.env.S3_ROOT_URL &&
               files.length > 0 && (
                 <div className="files">
                   <QuestionFiles files={files} />
