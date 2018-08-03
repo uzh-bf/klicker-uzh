@@ -13204,9 +13204,9 @@ sane@^2.0.0:
   optionalDependencies:
     fsevents "^1.1.1"
 
-sanitize-html@1.18.3:
-  version "1.18.3"
-  resolved "https://registry.yarnpkg.com/sanitize-html/-/sanitize-html-1.18.3.tgz#d190ecfcdf8c78bd2306c5f370c86b705191e00c"
+sanitize-html@1.18.4:
+  version "1.18.4"
+  resolved "https://registry.yarnpkg.com/sanitize-html/-/sanitize-html-1.18.4.tgz#ffdeea13b555dd5e872e9a68b79e5e716cd8c543"
   dependencies:
     chalk "^2.3.0"
     htmlparser2 "^3.9.0"
