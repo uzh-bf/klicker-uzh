@@ -15,6 +15,10 @@ const { readFileSync } = require('fs')
 // import the configuration
 const CFG = require('./src/klicker.conf.js')
 
+// log the configuration
+console.log('[klicker-react] Successfully loaded configuration')
+console.log(CFG.toString())
+
 // validate the configuration
 // fail early if anything is invalid
 CFG.validate({ allowed: 'strict' })
