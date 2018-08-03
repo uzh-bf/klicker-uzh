@@ -12,6 +12,7 @@ const CFG = require('../klicker.conf.js')
 const { UserModel } = require('../models')
 const { sendSlackNotification } = require('./notifications')
 const { Errors } = require('../constants')
+const { checkAvailability } = require('./accounts')
 
 const APP_CFG = CFG.get('app')
 const EMAIL_CFG = CFG.get('email')
@@ -107,6 +108,16 @@ const signup = async (email, password, shortname, institution, useCase, { isAAI,
 
   // normalize the email address
   const normalizedEmail = normalizeEmail(email)
+
+  // check for the availability of the normalized email and the chosen shortname
+  // throw an error if a matching account already exists
+  const availability = await checkAvailability({ email: normalizedEmail, shortname })
+  if (availability.email === false) {
+    throw new UserInputError(Errors.EMAIL_NOT_AVAILABLE)
+  }
+  if (availability.shortname === false) {
+    throw new UserInputError(Errors.SHORTNAME_NOT_AVAILABLE)
+  }
 
   // generate a salt with bcrypt using 10 rounds
   // hash and salt the password
