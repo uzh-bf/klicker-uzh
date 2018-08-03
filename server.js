@@ -13,7 +13,7 @@ const { basename, join } = require('path')
 const { readFileSync } = require('fs')
 
 // import the configuration
-const cfg = require('./klicker.conf.js')
+const cfg = require('./src/klicker.conf.js')
 
 // validate the configuration
 // fail early if anything is invalid
