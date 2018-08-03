@@ -8,18 +8,21 @@ const _get = require('lodash/get')
 const { isLength, isEmail, normalizeEmail } = require('validator')
 const { AuthenticationError, UserInputError } = require('apollo-server-express')
 
+const CFG = require('../klicker.conf.js')
 const { UserModel } = require('../models')
 const { sendSlackNotification } = require('./notifications')
 const { Errors } = require('../constants')
 
-const dev = process.env.NODE_ENV !== 'production'
+const APP_CFG = CFG.get('app')
+const EMAIL_CFG = CFG.get('email')
+const isDev = process.env.NODE_ENV !== 'production'
 
 const AUTH_COOKIE_SETTINGS = {
-  domain: process.env.APP_DOMAIN,
+  domain: APP_CFG.domain,
   httpOnly: true,
   maxAge: 86400000,
-  path: process.env.APP_PATH ? `${process.env.APP_PATH}/graphql` : '/graphql',
-  secure: !dev && process.env.APP_HTTPS,
+  path: APP_CFG.path ? `${APP_CFG.path}/graphql` : '/graphql',
+  secure: !isDev && APP_CFG.https,
 }
 
 const generateJwtSettings = user => ({
@@ -64,7 +67,7 @@ const isValidJWT = (jwt, secret) => {
 // extract JWT from header or cookie
 const getToken = req => {
   // try to parse an authorization cookie
-  if (req.cookies && req.cookies.jwt && isValidJWT(req.cookies.jwt, process.env.APP_SECRET)) {
+  if (req.cookies && req.cookies.jwt && isValidJWT(req.cookies.jwt, APP_CFG.secret)) {
     return req.cookies.jwt
   }
 
@@ -72,7 +75,7 @@ const getToken = req => {
   if (req.headers.authorization) {
     const split = req.headers.authorization.split(' ')
 
-    if (split[0] === 'Bearer' && isValidJWT(split[1], process.env.APP_SECRET)) {
+    if (split[0] === 'Bearer' && isValidJWT(split[1], APP_CFG.secret)) {
       return split[1]
     }
   }
@@ -80,7 +83,7 @@ const getToken = req => {
   // if no token was found, but would be needed
   // additionally look for a token in the GraphQL variables (for normal and batch requests)
   const inlineJWT = _get(req, 'body.variables.jwt') || _get(req, 'body[0].variables.jwt')
-  if (inlineJWT && isValidJWT(inlineJWT, process.env.APP_SECRET)) {
+  if (inlineJWT && isValidJWT(inlineJWT, APP_CFG.secret)) {
     return inlineJWT
   }
 
@@ -157,7 +160,7 @@ const login = async (res, email, password) => {
   // generate a JWT for future authentication
   // expiresIn: one day equals 86400 seconds
   // TODO: add more necessary properties for the JWT
-  const jwt = JWT.sign(generateJwtSettings(user), process.env.APP_SECRET, {
+  const jwt = JWT.sign(generateJwtSettings(user), APP_CFG.secret, {
     expiresIn: '1d',
   })
 
@@ -234,19 +237,17 @@ const requestPassword = async (res, email) => {
   }
 
   // generate a temporary JWT for password reset
-  const jwt = JWT.sign(generateJwtSettings(user), process.env.APP_SECRET, {
+  const jwt = JWT.sign(generateJwtSettings(user), APP_CFG.secret, {
     expiresIn: '1d',
   })
 
   // create reusable transporter object using the default SMTP transport
+  const { host, port, secure, user: emailUser, password: pass } = EMAIL_CFG
   const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: process.env.EMAIL_PORT || 587,
-    secure: process.env.EMAIL_SECURE || false, // true for 465, false for other ports
-    auth: {
-      user: process.env.EMAIL_USER, // generated ethereal user
-      pass: process.env.EMAIL_PASS, // generated ethereal password
-    },
+    host,
+    port,
+    secure,
+    auth: { user: emailUser, pass },
   })
 
   // load the template source and compile it
@@ -258,7 +259,7 @@ const requestPassword = async (res, email) => {
     try {
       await transporter.sendMail({
         // bcc: 'roland.schlaefli@bf.uzh.ch',
-        from: process.env.EMAIL_FROM,
+        from: EMAIL_CFG.from,
         to: user.email,
         subject: 'Klicker UZH - Password Reset',
         html: template({

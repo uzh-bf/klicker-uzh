@@ -2,7 +2,6 @@ const { QuestionModel, QuestionInstanceModel, SessionModel, TagModel, UserModel,
 const AuthService = require('../../services/auth')
 const QuestionService = require('../../services/questions')
 const { createContentState } = require('../../lib/draft')
-
 const { QUESTION_TYPES } = require('../../constants')
 
 /**

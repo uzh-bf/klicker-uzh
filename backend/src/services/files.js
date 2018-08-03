@@ -2,13 +2,17 @@ const AWS = require('aws-sdk')
 const UUID = require('uuid/v4')
 const { UserInputError, ForbiddenError } = require('apollo-server-express')
 
+const cfg = require('../klicker.conf.js')
+
+const S3_CFG = cfg.get('s3')
+
 let S3
-if (process.env.S3_ACCESS_KEY && process.env.S3_SECRET_KEY) {
+if (S3_CFG.enabled) {
   S3 = new AWS.S3({
-    accessKeyId: process.env.S3_ACCESS_KEY,
-    endpoint: process.env.S3_ENDPOINT ? new AWS.Endpoint(process.env.S3_ENDPOINT) : undefined,
-    region: process.env.S3_REGION,
-    secretAccessKey: process.env.S3_SECRET_KEY,
+    accessKeyId: S3_CFG.accessKey,
+    endpoint: S3_CFG.endpoint ? new AWS.Endpoint(S3_CFG.endpoint) : undefined,
+    region: S3_CFG.region,
+    secretAccessKey: S3_CFG.secretKey,
     s3ForcePathStyle: true,
     signatureVersion: 'v4',
   })
@@ -45,7 +49,7 @@ const requestPresignedURL = async ({ fileType, userId }) => {
 
   // generate a presigned url with the specified file type and generated name
   const signedUrl = await S3.getSignedUrl('putObject', {
-    Bucket: process.env.S3_BUCKET,
+    Bucket: S3_CFG.bucket,
     ContentType: `${fileType}`,
     Key: fileName,
   })
