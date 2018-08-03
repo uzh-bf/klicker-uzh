@@ -117,7 +117,7 @@ jobs:
         - USER="serviceaccount"
         - PASSWORD=$OC_TOKEN
         - REGISTRY="registry.appuio.ch"
-        - IMAGE_NAME="registry.appuio.ch/uniz-klicker/klicker-api"
+        - IMAGE_NAME="registry.appuio.ch/uniz-klicker/klicker-api-prod"
       before_script:
         - echo $PASSWORD | docker login --username $USER --password-stdin $REGISTRY
       script:
