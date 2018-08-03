@@ -13,15 +13,21 @@ const { basename, join } = require('path')
 const { readFileSync } = require('fs')
 
 // import the configuration
-const cfg = require('./src/klicker.conf.js')
+const CFG = require('./src/klicker.conf.js')
 
 // validate the configuration
 // fail early if anything is invalid
-cfg.validate({ allowed: 'strict' })
+CFG.validate({ allowed: 'strict' })
+
+const APP_CFG = CFG.get('app')
+const CACHE_CFG = CFG.get('cache')
+const S3_CFG = CFG.get('s3')
+const SECURITY_CFG = CFG.get('security')
+const SERVICES_CFG = CFG.get('services')
 
 const isProd = process.env.NODE_ENV === 'production'
 const isDev = process.env.NODE_ENV === 'development'
-const hasRedis = cfg.get('cache.redis.enabled')
+const hasRedis = CACHE_CFG.redis.enabled
 
 // prepare page configuration
 const pages = [
@@ -30,7 +36,7 @@ const pages = [
   { url: '/user/registration' },
   { url: '/questions/create' },
   {
-    cached: cfg.get('cache.pages.qr'),
+    cached: CACHE_CFG.pages.qr,
     mapParams: req => ({ shortname: req.params.shortname }),
     renderPath: '/qr',
     url: '/qr/:shortname',
@@ -51,7 +57,7 @@ const pages = [
     url: '/questions/:questionId',
   },
   {
-    cached: cfg.get('cache.pages.join'),
+    cached: CACHE_CFG.pages.join,
     mapParams: req => ({ shortname: req.params.shortname }),
     renderPath: '/join',
     url: '/join/:shortname',
@@ -60,8 +66,8 @@ const pages = [
 
 // initialize elastic-apm if so configured
 let apm
-if (cfg.get('services.apm.enabled')) {
-  const { monitorDev, secretToken, serverUrl, serviceName } = cfg.get('services.apm')
+if (SERVICES_CFG.apm.enabled) {
+  const { monitorDev, secretToken, serverUrl, serviceName } = SERVICES_CFG.apm
   apm = require('elastic-apm-node').start({
     active: monitorDev || !isDev,
     secretToken,
@@ -157,7 +163,7 @@ async function connectCache() {
 
   if (hasRedis) {
     const Redis = require('ioredis')
-    const { db, host, password, port } = cfg.get('cache.redis')
+    const { db, host, password, port } = CACHE_CFG.redis
     cache = new Redis({ db, family: 4, host, password, port })
 
     console.log('[redis] Connected to redis (db0) for SSR caching')
@@ -242,16 +248,15 @@ app
 
     // if the server is behind a proxy, set the APP_PROXY env to true
     // this will make express trust the X-* proxy headers and set corresponding req.ip
-    if (cfg.get('app.trustProxy')) {
+    if (APP_CFG.trustProxy) {
       server.enable('trust proxy')
       console.log('[klicker-react] Enabling trust proxy mode for IP pass-through')
     }
 
     // secure the server with helmet
     if (isProd) {
-      const s3 = cfg.get('s3')
-      const { csp, expectCt, frameguard, hsts, referrerPolicy } = cfg.get('security')
-      const { googleAnalytics, slaask, logrocket } = cfg.get('services')
+      const { csp, expectCt, frameguard, hsts, referrerPolicy } = SECURITY_CFG
+      const { googleAnalytics, slaask, logrocket } = SERVICES_CFG
 
       const optionalGoogleAnalytics = googleAnalytics.enabled ? ['www.google-analytics.com'] : []
       const optionalSlaask = slaask.enabled ? ['cdn.slaask.com', 'js.pusher.com', 'cdn.embedly.com'] : []
@@ -267,7 +272,7 @@ app
               defaultSrc: csp.defaultSrc,
               fontSrc: csp.fontSrc,
               frameAncestors: frameguard.enabled && frameguard.ancestors,
-              imgSrc: [...csp.imgSrc, s3.rootUrl, ...optionalSlaask, ...optionalGoogleAnalytics],
+              imgSrc: [...csp.imgSrc, S3_CFG.rootUrl, ...optionalSlaask, ...optionalGoogleAnalytics],
               reportUri: csp.reportUri,
               scriptSrc: [...csp.scriptSrc, ...optionalLogrocket, ...optionalSlaask, ...optionalGoogleAnalytics],
               styleSrc: [...csp.styleSrc, ...optionalSlaask, ...optionalGoogleAnalytics],
@@ -296,14 +301,14 @@ app
     ]
 
     // static file serving from public folder
-    middleware.push(express.static(join(__dirname, cfg.get('app.staticPath'))))
+    middleware.push(express.static(join(__dirname, APP_CFG.staticPath)))
 
     // add morgan logger
     if (process.env.NODE_ENV !== 'test') {
       middleware.push(morgan(isProd ? 'combined' : 'dev'))
     }
 
-    if (isProd && cfg.get('gzip')) {
+    if (isProd && APP_CFG.gzip) {
       // compress using gzip (only in production)
       middleware = [compression(), ...middleware]
     }
