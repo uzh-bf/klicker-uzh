@@ -232,7 +232,7 @@ module.exports = convict({
         format: 'url',
       },
       serviceName: {
-        default: undefined,
+        default: 'klicker-react',
         env: 'SERVICES_APM_SERVICE_NAME',
         format: String,
       },
