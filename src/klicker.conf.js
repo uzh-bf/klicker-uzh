@@ -18,12 +18,12 @@ module.exports = convict({
     gzip: {
       default: true,
       env: 'APP_GZIP',
-      format: 'Boolean',
+      format: Boolean,
     },
     persistQueries: {
       default: false,
       env: 'APP_PERSIST_QUERIES',
-      format: 'Boolean',
+      format: Boolean,
     },
     port: {
       default: 3000,
@@ -38,7 +38,7 @@ module.exports = convict({
     trustProxy: {
       default: false,
       env: 'APP_TRUST_PROXY',
-      format: 'Boolean',
+      format: Boolean,
     },
   },
   cache: {
@@ -63,7 +63,7 @@ module.exports = convict({
       enabled: {
         default: false,
         env: 'CACHE_REDIS_ENABLED',
-        format: 'Boolean',
+        format: Boolean,
       },
       host: {
         default: undefined,
@@ -111,12 +111,12 @@ module.exports = convict({
       enabled: {
         default: false,
         env: 'SECURITY_CSP_ENABLED',
-        format: 'Boolean',
+        format: Boolean,
       },
       enforce: {
         default: false,
         env: 'SECURITY_CSP_ENFORCE',
-        format: 'Boolean',
+        format: Boolean,
       },
       fontSrc: {
         default: ["'self'", 'fonts.gstatic.com'],
@@ -154,12 +154,12 @@ module.exports = convict({
       enabled: {
         default: true,
         env: 'SECURITY_EXPECT_CT_ENABLED',
-        format: 'Boolean',
+        format: Boolean,
       },
       enforce: {
         default: false,
         env: 'SECURITY_EXPECT_CT_ENFORCE',
-        format: 'Boolean',
+        format: Boolean,
       },
       maxAge: {
         default: 0,
@@ -175,7 +175,7 @@ module.exports = convict({
     fingerprinting: {
       default: true,
       env: 'SECURITY_FINGERPRINTING',
-      format: 'Boolean',
+      format: Boolean,
     },
     frameguard: {
       ancestors: {
@@ -186,19 +186,19 @@ module.exports = convict({
       enabled: {
         default: false,
         env: 'SECURITY_FRAMEGUARD_ENABLED',
-        format: 'Boolean',
+        format: Boolean,
       },
     },
     hsts: {
       enabled: {
         default: false,
         env: 'SECURITY_HSTS_ENABLED',
-        format: 'Boolean',
+        format: Boolean,
       },
       includeSubdomains: {
         default: false,
         env: 'SECURITY_HSTS_INCLUDE_SUBDOMAINS',
-        format: 'Boolean',
+        format: Boolean,
       },
       maxAge: {
         default: 0,
@@ -208,7 +208,7 @@ module.exports = convict({
       preload: {
         default: undefined,
         env: 'SECURITY_HSTS_PRELOAD',
-        format: 'Boolean',
+        format: Boolean,
       },
     },
     referrerPolicy: {
@@ -223,12 +223,12 @@ module.exports = convict({
       enabled: {
         default: false,
         env: 'SERVICES_APM_ENABLED',
-        format: 'Boolean',
+        format: Boolean,
       },
       monitorDev: {
         default: false,
         env: 'SERVICES_APM_DEV',
-        format: 'Boolean',
+        format: Boolean,
       },
       secretToken: {
         default: undefined,
@@ -251,7 +251,7 @@ module.exports = convict({
       enabled: {
         default: false,
         env: 'SERVICES_GOOGLE_ANALYTICS_ENABLED',
-        format: 'Boolean',
+        format: Boolean,
       },
       trackingId: {
         default: undefined,
@@ -270,26 +270,26 @@ module.exports = convict({
       enabled: {
         default: false,
         env: 'SERVICES_LOGROCKET_ENABLED',
-        format: 'Boolean',
+        format: Boolean,
       },
     },
     sentry: {
       enabled: {
         default: false,
         env: 'SERVICES_SENTRY_ENABLED',
-        format: 'Boolean',
+        format: Boolean,
       },
       dsn: {
         default: undefined,
         env: 'SERVICES_SENTRY_DSN',
-        format: 'Boolean',
+        format: Boolean,
       },
     },
     slaask: {
       enabled: {
         default: false,
         env: 'SERVICES_SLAASK_ENABLED',
-        format: 'Boolean',
+        format: Boolean,
       },
       widgetKey: {
         default: undefined,
