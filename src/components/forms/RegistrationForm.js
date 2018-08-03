@@ -36,7 +36,9 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
             autoFocus
             required
             error={errors.email}
-            errorMessage={intl.formatMessage(messages.emailInvalid)}
+            errorMessage={intl.formatMessage(
+              errors.email === 'NOT_AVAILABLE' ? messages.emailNotAvailable : messages.emailInvalid
+            )}
             handleBlur={handleBlur}
             handleChange={handleChange}
             icon="mail"
@@ -50,7 +52,9 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
           <FormikInput
             required
             error={errors.shortname}
-            errorMessage={intl.formatMessage(messages.shortnameInvalid)}
+            errorMessage={intl.formatMessage(
+              errors.shortname === 'NOT_AVAILABLE' ? messages.shortnameNotAvailable : messages.shortnameInvalid
+            )}
             handleBlur={handleBlur}
             handleChange={handleChange}
             icon="hashtag"
