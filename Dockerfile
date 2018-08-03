@@ -34,7 +34,7 @@ LABEL name="klicker-api"
 LABEL version=$VERSION
 
 # expose the main application port
-EXPOSE 3000
+EXPOSE 4000
 
 # setup a HEALTHCHECK
 HEALTHCHECK --interval=5m --timeout=3s \
