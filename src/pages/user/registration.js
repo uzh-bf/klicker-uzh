@@ -5,6 +5,7 @@ import { Mutation } from 'react-apollo'
 import { Message } from 'semantic-ui-react'
 import Link from 'next/link'
 
+import { Errors } from '../../constants'
 import { StaticLayout } from '../../components/layouts'
 import { RegistrationForm } from '../../components/forms'
 import { RegistrationMutation } from '../../graphql'
@@ -60,16 +61,30 @@ const Registration = ({ intl }) => (
               <RegistrationForm
                 intl={intl}
                 loading={loading}
-                onSubmit={({ email, password, shortname, institution, useCase }) => {
-                  register({
-                    variables: {
-                      email,
-                      institution,
-                      password,
-                      shortname,
-                      useCase,
-                    },
-                  })
+                onSubmit={async (
+                  { email, password, shortname, institution, useCase },
+                  { setSubmitting, setFieldError }
+                ) => {
+                  try {
+                    await register({
+                      variables: {
+                        email,
+                        institution,
+                        password,
+                        shortname,
+                        useCase,
+                      },
+                    })
+                  } catch ({ message }) {
+                    if (message === Errors.SHORTNAME_NOT_AVAILABLE) {
+                      setFieldError('shortname', 'NOT_AVAILABLE')
+                    }
+                    if (message === Errors.EMAIL_NOT_AVAILABLE) {
+                      setFieldError('email', 'NOT_AVAILABLE')
+                    }
+
+                    setSubmitting(false)
+                  }
                 }}
               />
               {error && <div className="errorMessage">Registration failed ({error.message})</div>}
