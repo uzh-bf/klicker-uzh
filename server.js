@@ -1,10 +1,37 @@
 /* eslint-disable babel/quotes */
 
-require('dotenv').config()
+const IntlPolyfill = require('intl')
+const glob = require('glob')
+const accepts = require('accepts')
+const cookieParser = require('cookie-parser')
+const express = require('express')
+const next = require('next')
+const compression = require('compression')
+const helmet = require('helmet')
+const morgan = require('morgan')
+const { basename, join } = require('path')
+const { readFileSync } = require('fs')
+
+// import the configuration
+const CFG = require('./src/klicker.conf.js')
+
+// log the configuration
+console.log('[klicker-react] Successfully loaded configuration')
+console.log(CFG.toString())
+
+// validate the configuration
+// fail early if anything is invalid
+CFG.validate({ allowed: 'strict' })
+
+const APP_CFG = CFG.get('app')
+const CACHE_CFG = CFG.get('cache')
+const S3_CFG = CFG.get('s3')
+const SECURITY_CFG = CFG.get('security')
+const SERVICES_CFG = CFG.get('services')
 
 const isProd = process.env.NODE_ENV === 'production'
 const isDev = process.env.NODE_ENV === 'development'
-const hasRedis = !!process.env.REDIS_HOST
+const hasRedis = CACHE_CFG.redis.enabled
 
 // prepare page configuration
 const pages = [
@@ -13,7 +40,7 @@ const pages = [
   { url: '/user/registration' },
   { url: '/questions/create' },
   {
-    cached: 600,
+    cached: CACHE_CFG.pages.qr,
     mapParams: req => ({ shortname: req.params.shortname }),
     renderPath: '/qr',
     url: '/qr/:shortname',
@@ -34,7 +61,7 @@ const pages = [
     url: '/questions/:questionId',
   },
   {
-    cached: 30,
+    cached: CACHE_CFG.pages.join,
     mapParams: req => ({ shortname: req.params.shortname }),
     renderPath: '/join',
     url: '/join/:shortname',
@@ -43,12 +70,13 @@ const pages = [
 
 // initialize elastic-apm if so configured
 let apm
-if (process.env.APM_SERVER_URL) {
+if (SERVICES_CFG.apm.enabled) {
+  const { monitorDev, secretToken, serverUrl, serviceName } = SERVICES_CFG.apm
   apm = require('elastic-apm-node').start({
-    active: !isDev,
-    secretToken: process.env.APM_SECRET_TOKEN,
-    serverUrl: process.env.APM_SERVER_URL,
-    serviceName: process.env.APM_NAME,
+    active: monitorDev || !isDev,
+    secretToken,
+    serverUrl,
+    serviceName,
   })
 }
 
@@ -65,18 +93,6 @@ function setupTransactionAPM(req) {
     }
   }
 }
-
-const IntlPolyfill = require('intl')
-const glob = require('glob')
-const accepts = require('accepts')
-const cookieParser = require('cookie-parser')
-const express = require('express')
-const next = require('next')
-const compression = require('compression')
-const helmet = require('helmet')
-const morgan = require('morgan')
-const { basename, join } = require('path')
-const { readFileSync } = require('fs')
 
 // Polyfill Node with `Intl` that has data for all locales.
 // See: https://formatjs.io/guides/runtime-environments/#server
@@ -151,13 +167,9 @@ async function connectCache() {
 
   if (hasRedis) {
     const Redis = require('ioredis')
-    cache = new Redis({
-      db: 0,
-      family: 4,
-      host: process.env.REDIS_HOST,
-      password: process.env.REDIS_PASS,
-      port: process.env.REDIS_PORT || 6379,
-    })
+    const { db, host, password, port } = CACHE_CFG.redis
+    cache = new Redis({ db, family: 4, host, password, port })
+
     console.log('[redis] Connected to redis (db0) for SSR caching')
   } else {
     const LRUCache = require('lru-cache')
@@ -240,59 +252,49 @@ app
 
     // if the server is behind a proxy, set the APP_PROXY env to true
     // this will make express trust the X-* proxy headers and set corresponding req.ip
-    if (process.env.APP_PROXY) {
+    if (APP_CFG.trustProxy) {
       server.enable('trust proxy')
       console.log('[klicker-react] Enabling trust proxy mode for IP pass-through')
     }
 
     // secure the server with helmet
     if (isProd) {
+      const { csp, expectCt, frameguard, hsts, referrerPolicy } = SECURITY_CFG
+      const { googleAnalytics, slaask, logrocket } = SERVICES_CFG
+
+      const optionalGoogleAnalytics = googleAnalytics.enabled ? ['www.google-analytics.com'] : []
+      const optionalSlaask = slaask.enabled ? ['cdn.slaask.com', 'js.pusher.com', 'cdn.embedly.com'] : []
+      const optionalLogrocket = logrocket.enabled ? ['cdn.logrocket.io'] : []
+
       server.use(
         helmet({
-          contentSecurityPolicy: process.env.HELMET_CSP_REPORT_URI && {
+          contentSecurityPolicy: csp.enabled && {
             // TODO get rid of unsafe-inline by applying nonces to scripts and styles
             // generating nonces is currently not correctly supported by nextjs
             directives: {
-              connectSrc: ["'self'", process.env.API_URL, process.env.API_URL_WS, 'google-analytics.com'],
-              defaultSrc: ["'self'"],
-              fontSrc: ["'self'", 'fonts.gstatic.com'],
-              frameAncestors: process.env.HELMET_FRAMEGUARD && ["'none'"],
-              imgSrc: ["'self'", process.env.HELMET_CSP_S3_ROOT, 'cdn.slaask.com', 'google-analytics.com'],
-              reportUri: process.env.HELMET_CSP_REPORT_URI,
-              scriptSrc: [
-                "'self'",
-                "'unsafe-inline'",
-                'cdn.polyfill.io',
-                'cdn.logrocket.io',
-                'cdn.slaask.com',
-                'js.pusher.com',
-                'cdn.embedly.com',
-                'google-analytics.com',
-              ],
-              styleSrc: [
-                "'self'",
-                "'unsafe-inline'",
-                'maxcdn.bootstrapcdn.com',
-                'fonts.googleapis.com',
-                'cdnjs.cloudflare.com',
-                'cdn.slaask.com',
-                'google-analytics.com',
-              ],
+              connectSrc: [...csp.connectSrc, ...optionalGoogleAnalytics],
+              defaultSrc: csp.defaultSrc,
+              fontSrc: csp.fontSrc,
+              frameAncestors: frameguard.enabled && frameguard.ancestors,
+              imgSrc: [...csp.imgSrc, S3_CFG.rootUrl, ...optionalSlaask, ...optionalGoogleAnalytics],
+              reportUri: csp.reportUri,
+              scriptSrc: [...csp.scriptSrc, ...optionalLogrocket, ...optionalSlaask, ...optionalGoogleAnalytics],
+              styleSrc: [...csp.styleSrc, ...optionalSlaask, ...optionalGoogleAnalytics],
             },
-            reportOnly: !process.env.HELMET_CSP_ENFORCE,
+            reportOnly: !csp.enforce,
           },
-          expectCt: process.env.HELMET_CT_REPORT_URI && {
-            enforce: process.env.HELMET_CT_ENFORCE,
-            maxAge: process.env.HELMET_CT_MAXAGE || 0,
-            reportUri: process.env.HELMET_CT_REPORT_URI,
+          expectCt: expectCt.enabled && {
+            enforce: expectCt.enforce,
+            maxAge: expectCt.maxAge,
+            reportUri: expectCt.reportUri,
           },
-          frameguard: !!process.env.HELMET_FRAMEGUARD,
-          hsts: process.env.HELMET_HSTS && {
-            includeSubdomains: false,
-            // maxAge: 31536000,
-            // preload: true,
+          frameguard: frameguard.enabled,
+          hsts: hsts.enabled && {
+            includeSubdomains: hsts.includeSubdomains,
+            maxAge: hsts.maxAge,
+            preload: hsts.preload,
           },
-          referrerPolicy: !!process.env.HELMET_REFERRER_POLICY && process.env.HELMET_REFERRER_POLICY,
+          referrerPolicy,
         })
       )
     }
@@ -303,14 +305,16 @@ app
     ]
 
     // static file serving from public folder
-    middleware.push(express.static(join(__dirname, 'public')))
+    middleware.push(express.static(join(__dirname, APP_CFG.staticPath)))
 
-    if (isProd) {
+    // add morgan logger
+    if (process.env.NODE_ENV !== 'test') {
+      middleware.push(morgan(isProd ? 'combined' : 'dev'))
+    }
+
+    if (isProd && APP_CFG.gzip) {
       // compress using gzip (only in production)
       middleware = [compression(), ...middleware]
-
-      // activate morgan logging in production
-      middleware.push(morgan('combined'))
     }
 
     // attach all prepared middlewares to the express instance
@@ -322,8 +326,10 @@ app
         // setup locale and get messages for the specific route
         setupLocale(req, res)
 
-        // inject transaction information for APM
-        setupTransactionAPM(req)
+        if (apm) {
+          // inject transaction information for APM
+          setupTransactionAPM(req)
+        }
 
         // if the route contents should be cached
         if (cached) {
@@ -338,8 +344,10 @@ app
       // setup locale and get messages for the specific route
       setupLocale(req, res)
 
-      // inject transaction information for APM
-      setupTransactionAPM(req)
+      if (apm) {
+        // inject transaction information for APM
+        setupTransactionAPM(req)
+      }
 
       return handle(req, res)
     })
