@@ -97,7 +97,7 @@ export const NavbarPres = ({ intl, search, sidebarVisible, title, handleSidebarT
                   shortname: accountShort,
                   // user_hash: userHash,
                 })
-                window._slaask.init(process.env.SLAASK_WIDGET_KEY, accountId)
+                window._slaask.init(process.env.SERVICES_SLAASK_WIDGET_KEY, accountId)
                 /* window._slaask.init(process.env.SLAASK_WIDGET_KEY, {
                   user_hash: userHash,
                   user_token: accountId,

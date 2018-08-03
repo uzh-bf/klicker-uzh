@@ -252,7 +252,7 @@ const QuestionEditForm = ({
               />
             </div>
 
-            {process.env.S3_BASE_PATH && (
+            {process.env.S3_ROOT_URL && (
               <div className="questionInput questionFiles">
                 <h3>
                   <FormattedMessage defaultMessage="Attached Files (Beta)" id="createQuestion.filesLabel" />
