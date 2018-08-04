@@ -113,8 +113,8 @@ jobs:
       script:
         - >
           docker build .
-          --build-arg API_ENDPOINT=$PROD_API_URL
-          --build-arg API_ENDPOINT_WS=$PROD_API_URL_WS
+          --build-arg API_ENDPOINT=$PROD_API_ENDPOINT
+          --build-arg API_ENDPOINT_WS=$PROD_API_ENDPOINT_WS
           --build-arg APP_PERSIST_QUERIES=$PROD_APP_PERSIST_QUERIES
           --build-arg S3_ROOT_URL=$PROD_S3_ROOT_URL
           --build-arg VERSION=$TRAVIS_TAG
@@ -136,7 +136,7 @@ jobs:
       script:
         - >
           docker build .
-          --build-arg API_ENDPOINT=$PROD_ENDPOINT_URL
+          --build-arg API_ENDPOINT=$PROD_API_ENDPOINT
           --build-arg API_ENDPOINT_WS=$PROD_API_ENDPOINT_WS
           --build-arg APP_PERSIST_QUERIES=$PROD_APP_PERSIST_QUERIES
           --build-arg S3_ROOT_URL=$PROD_S3_ROOT_URL
