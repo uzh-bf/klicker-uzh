@@ -121,7 +121,7 @@
     "bundlesize": "0.17.0",
     "cypress": "3.0.2",
     "enzyme": "3.3.0",
-    "eslint": "5.2.0",
+    "eslint": "5.3.0",
     "eslint-config-airbnb": "17.0.0",
     "eslint-config-prettier": "2.9.0",
     "eslint-plugin-babel": "5.1.0",
