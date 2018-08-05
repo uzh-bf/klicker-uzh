@@ -21,6 +21,9 @@ import RequestPresignedURLMutation from './mutations/RequestPresignedURLMutation
 import ModifyUserMutation from './mutations/ModifyUserMutation.graphql'
 import DeleteQuestionsMutation from './mutations/DeleteQuestionsMutation.graphql'
 import DeleteSessionsMutation from './mutations/DeleteSessionsMutation.graphql'
+import ActivateAccountMutation from './mutations/ActivateAccountMutation.graphql'
+import RequestAccountDeletionMutation from './mutations/RequestAccountDeletionMutation.graphql'
+import ResolveAccountDeletionMutation from './mutations/ResolveAccountDeletionMutation.graphql'
 
 import AccountSummaryQuery from './queries/AccountSummaryQuery.graphql'
 import JoinSessionQuery from './queries/JoinSessionQuery.graphql'
@@ -104,6 +107,9 @@ export {
   UpdateSessionSettingsMutation,
   RequestPresignedURLMutation,
   ModifyUserMutation,
+  ActivateAccountMutation,
+  RequestAccountDeletionMutation,
+  ResolveAccountDeletionMutation,
   AccountSummaryQuery,
   JoinSessionQuery,
   QuestionDetailsQuery,
