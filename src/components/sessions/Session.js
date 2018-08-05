@@ -143,6 +143,10 @@ const Session = ({
                             onConfirm={async () => {
                               try {
                                 await deleteSessions({
+                                  optimisticResponse: {
+                                    __typename: 'Mutation',
+                                    deleteQuestions: 'DELETION_SUCCESSFUL',
+                                  },
                                   update: (cache, { data }) => {
                                     if (data.deleteSessions !== 'DELETION_SUCCESSFUL') {
                                       return
