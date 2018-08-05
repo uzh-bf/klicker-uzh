@@ -576,20 +576,38 @@ export default compose(
         return
       }
 
-      handleSetDeletionConfirmation(false)
-
       if (confirm) {
         try {
+          const questionIds = selectedItems.keys()
           await deleteQuestions({
-            refetchQueries: [{ query: QuestionListQuery }],
-            variables: { ids: [...selectedItems.keys()] },
+            optimisticResponse: {
+              __typename: 'Mutation',
+              deleteQuestions: 'DELETION_SUCCESSFUL',
+            },
+            update: (cache, { data }) => {
+              if (data.deleteQuestions !== 'DELETION_SUCCESSFUL') {
+                return
+              }
+
+              const questions = cache.readQuery({ query: QuestionListQuery })
+              cache.writeQuery({
+                data: {
+                  questions: questions.filter(question => !questionIds.includes(question.id)),
+                },
+                query: QuestionListQuery,
+              })
+            },
+            variables: { ids: questionIds },
           })
+
           handleResetSelection()
         } catch ({ message }) {
           // TODO: if anything fails, display the error
           console.error(message)
         }
       }
+
+      handleSetDeletionConfirmation(false)
     },
   })
 )(Index)
