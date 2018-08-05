@@ -21,6 +21,8 @@ import {
   ArchiveQuestionsMutation,
   SessionDetailsQuery,
   ModifySessionMutation,
+  DeleteQuestionsMutation,
+  QuestionListQuery,
 } from '../../graphql'
 // import { SessionCreationForm } from '../../components/forms'
 import SessionCreationForm from '../../components/forms/sessionCreation/SessionCreationForm'
@@ -42,11 +44,13 @@ const messages = defineMessages({
 
 const propTypes = {
   creationMode: PropTypes.bool.isRequired,
+  deletionConfirmation: PropTypes.bool.isRequired,
   filters: PropTypes.object.isRequired,
   handleArchiveQuestions: PropTypes.func.isRequired,
   handleChangeName: PropTypes.func.isRequired,
   handleCreateSession: PropTypes.func.isRequired,
   handleCreationModeToggle: PropTypes.func.isRequired,
+  handleDeleteQuestions: PropTypes.bool.isRequired,
   handleExtendBlock: PropTypes.func.isRequired,
   handleManageBlocks: PropTypes.func.isRequired,
   handleNewBlock: PropTypes.func.isRequired,
@@ -72,6 +76,7 @@ const propTypes = {
 const Index = ({
   numSelectedItems,
   creationMode,
+  deletionConfirmation,
   intl,
   filters,
   sort,
@@ -81,6 +86,7 @@ const Index = ({
   sessionInteractionType,
   handleSelectItem,
   handleCreateSession,
+  handleDeleteQuestions,
   handleNewBlock,
   handleManageBlocks,
   handleExtendBlock,
@@ -170,10 +176,13 @@ const Index = ({
               <div className="questionList">
                 <ActionBar
                   creationMode={creationMode}
+                  deletionConfirmation={deletionConfirmation}
                   handleArchiveQuestions={handleArchiveQuestions}
                   handleCreationModeToggle={handleCreationModeToggle}
+                  handleDeleteQuestions={handleDeleteQuestions}
                   handleQuickBlock={handleQuickBlock}
                   handleQuickBlocks={handleQuickBlocks}
+                  intl={intl}
                   isArchiveActive={filters.archive}
                   itemsChecked={numSelectedItems}
                 />
@@ -289,6 +298,7 @@ export default compose(
   graphql(CreateSessionMutation, { name: 'createSession' }),
   graphql(ArchiveQuestionsMutation, { name: 'archiveQuestions' }),
   graphql(ModifySessionMutation, { name: 'modifySession' }),
+  graphql(DeleteQuestionsMutation, { name: 'deleteQuestions' }),
   withRouter,
   withProps(({ router: { query } }) => ({
     creationMode: !!query.creationMode,
@@ -350,6 +360,7 @@ export default compose(
   withStateHandlers(
     ({ creationMode, sessionEditMode, sessionBlocks, sessionName }) => ({
       creationMode: !!sessionEditMode || !!creationMode,
+      deletionConfirmation: false,
       sessionBlocks: sessionBlocks || List([]),
       sessionName,
     }),
@@ -462,6 +473,11 @@ export default compose(
       handleRemoveQuestion: ({ sessionBlocks }) => (blockIndex, questionIndex) => ({
         sessionBlocks: removeQuestion(sessionBlocks, blockIndex, questionIndex, true),
       }),
+
+      handleSetDeletionConfirmation: () => deletionConfirmation => ({
+        deletionConfirmation,
+      }),
+
       // override the toggle archive function
       // need to reset the selection on toggling archive to not apply actions to hidden questions
       handleToggleArchive: (_, { handleResetSelection, handleToggleArchive }) => () => {
@@ -476,7 +492,7 @@ export default compose(
       try {
         // archive the questions
         await archiveQuestions({
-          refetchQueries: [{ query: QuestionPoolQuery }],
+          refetchQueries: [{ query: QuestionListQuery }],
           variables: { ids: [...selectedItems.keys()] },
         })
 
@@ -544,6 +560,35 @@ export default compose(
       } catch ({ message }) {
         // TODO: if anything fails, display the error in the form
         console.error(message)
+      }
+    },
+
+    // handle deleting questions
+    handleDeleteQuestions: ({
+      deleteQuestions,
+      deletionConfirmation,
+      handleResetSelection,
+      handleSetDeletionConfirmation,
+      selectedItems,
+    }) => async confirm => {
+      if (!deletionConfirmation) {
+        handleSetDeletionConfirmation(true)
+        return
+      }
+
+      handleSetDeletionConfirmation(false)
+
+      if (confirm) {
+        try {
+          await deleteQuestions({
+            refetchQueries: [{ query: QuestionListQuery }],
+            variables: { ids: [...selectedItems.keys()] },
+          })
+          handleResetSelection()
+        } catch ({ message }) {
+          // TODO: if anything fails, display the error
+          console.error(message)
+        }
       }
     },
   })

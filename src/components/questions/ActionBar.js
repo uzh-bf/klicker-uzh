@@ -1,15 +1,34 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import Link from 'next/link'
-import { FormattedMessage } from 'react-intl'
-import { Button, Icon } from 'semantic-ui-react'
+import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
+import { Button, Confirm, Icon } from 'semantic-ui-react'
+
+const messages = defineMessages({
+  deletionConfirmationCancel: {
+    defaultMessage: 'Cancel',
+    id: 'questionPool.button.deletionConfirmationCancel',
+  },
+  deletionConfirmationConfirm: {
+    defaultMessage: 'Delete {num} question(s)!',
+    id: 'questionPool.button.deletionConfirmationConfirm',
+  },
+  deletionConfirmationContent: {
+    defaultMessage:
+      'Are you sure you want to delete the {num} selected questions? Consider moving them to the archive if you could have use for them in the future.',
+    id: 'questionPool.string.deletionConfirmationContent',
+  },
+})
 
 const propTypes = {
   creationMode: PropTypes.bool,
+  deletionConfirmation: PropTypes.bool.isRequired,
   handleArchiveQuestions: PropTypes.func.isRequired,
   handleCreationModeToggle: PropTypes.func.isRequired,
+  handleDeleteQuestions: PropTypes.bool.isRequired,
   handleQuickBlock: PropTypes.func.isRequired,
   handleQuickBlocks: PropTypes.func.isRequired,
+  intl: intlShape.isRequired,
   isArchiveActive: PropTypes.bool,
   itemsChecked: PropTypes.number,
 }
@@ -21,13 +40,16 @@ const defaultProps = {
 }
 
 function ActionBar({
+  intl,
   isArchiveActive,
   creationMode,
-  handleCreationModeToggle,
+  deletionConfirmation,
   itemsChecked,
+  handleArchiveQuestions,
+  handleCreationModeToggle,
+  handleDeleteQuestions,
   handleQuickBlock,
   handleQuickBlocks,
-  handleArchiveQuestions,
 }) {
   return (
     <div className="actionBar">
@@ -82,6 +104,28 @@ function ActionBar({
                 />
               )}
             </Button>
+            <Button
+              icon
+              color="red"
+              disabled={itemsChecked === 0}
+              labelPosition="left"
+              onClick={() => handleDeleteQuestions(false)}
+            >
+              <Icon name="trash" />
+              <FormattedMessage
+                defaultMessage="Delete questions ({num})"
+                id="questionPool.button.deleteQuestions"
+                values={{ num: +itemsChecked }}
+              />
+            </Button>
+            <Confirm
+              cancelButton={intl.formatMessage(messages.deletionConfirmationCancel)}
+              confirmButton={intl.formatMessage(messages.deletionConfirmationConfirm, { num: +itemsChecked })}
+              content={intl.formatMessage(messages.deletionConfirmationContent, { num: +itemsChecked })}
+              open={deletionConfirmation}
+              onCancel={() => handleDeleteQuestions(false)}
+              onConfirm={() => handleDeleteQuestions(true)}
+            />
           </>
         )}
       </div>
