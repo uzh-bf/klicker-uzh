@@ -145,7 +145,7 @@ const Session = ({
                                 await deleteSessions({
                                   optimisticResponse: {
                                     __typename: 'Mutation',
-                                    deleteQuestions: 'DELETION_SUCCESSFUL',
+                                    deleteSessions: 'DELETION_SUCCESSFUL',
                                   },
                                   update: (cache, { data }) => {
                                     if (data.deleteSessions !== 'DELETION_SUCCESSFUL') {
@@ -159,6 +159,8 @@ const Session = ({
                                       },
                                       query: SessionListQuery,
                                     })
+
+                                    handleSetDeletionConfirmation(false)
                                   },
                                   variables: {
                                     ids: [id],
