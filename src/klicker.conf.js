@@ -15,6 +15,11 @@ module.exports = convict({
     },
   },
   app: {
+    baseUrl: {
+      default: 'http://localhost:3000',
+      env: 'APP_BASE_URL',
+      format: 'url',
+    },
     gzip: {
       default: true,
       env: 'APP_GZIP',

@@ -14,7 +14,7 @@ const propTypes = {
 const QR = ({ shortname }) => (
   <StaticLayout pageTitle="QR">
     <div className="qr">
-      <QRCode size={512} value={`https://beta.klicker.uzh.ch/join/${shortname}`} />
+      <QRCode size={512} value={`${process.env.APP_BASE_URL}/join/${shortname}`} />
     </div>
 
     <style jsx>
