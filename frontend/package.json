@@ -96,7 +96,7 @@
     "react-tagsinput": "3.19.0",
     "react-tooltip": "3.6.1",
     "recharts": "1.1.0",
-    "recompose": "0.28.1",
+    "recompose": "0.28.2",
     "sanitize-html": "1.18.4",
     "semantic-ui-react": "0.82.1",
     "styled-jsx-plugin-sass": "0.2.4",
