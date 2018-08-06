@@ -2,11 +2,29 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import moment from 'moment'
 import Link from 'next/link'
-import { Button, Icon, Message } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
+import { withState } from 'recompose'
+import { Mutation } from 'react-apollo'
+import { Confirm, Button, Icon, Message, Dropdown } from 'semantic-ui-react'
+import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 
+import { SessionListQuery, DeleteSessionsMutation } from '../../graphql'
 import { QuestionBlock } from '../questions'
 import { SESSION_STATUS } from '../../constants'
+
+const messages = defineMessages({
+  deletionConfirmationCancel: {
+    defaultMessage: 'Cancel',
+    id: 'session.deletionConfirmation.cancel',
+  },
+  deletionConfirmationConfirm: {
+    defaultMessage: 'Delete session!',
+    id: 'session.deletionConfirmation.confirm',
+  },
+  deletionConfirmationContent: {
+    defaultMessage: 'Are you sure you want to delete "{name}"? All results will be lost!',
+    id: 'session.deletionConfirmation.content',
+  },
+})
 
 const propTypes = {
   blocks: PropTypes.array,
@@ -17,7 +35,10 @@ const propTypes = {
     onClick: PropTypes.func.isRequired,
   }).isRequired,
   createdAt: PropTypes.string.isRequired,
+  deletionConfirmation: PropTypes.bool.isRequired,
+  handleSetDeletionConfirmation: PropTypes.func.isRequired,
   id: PropTypes.string.isRequired,
+  intl: intlShape.isRequired,
   name: PropTypes.string.isRequired,
   status: PropTypes.string.isRequired,
 }
@@ -26,7 +47,17 @@ const defaultProps = {
   blocks: [],
 }
 
-const Session = ({ button, createdAt, id, name, blocks, status }) => {
+const Session = ({
+  intl,
+  button,
+  createdAt,
+  deletionConfirmation,
+  id,
+  name,
+  blocks,
+  status,
+  handleSetDeletionConfirmation,
+}) => {
   const isFeedbackSession = blocks.length === 0
 
   return (
@@ -65,32 +96,97 @@ const Session = ({ button, createdAt, id, name, blocks, status }) => {
           </div>
         ))}
         <div className="actionArea">
-          {status === SESSION_STATUS.CREATED && (
-            <Link href={{ pathname: '/questions', query: { editSessionId: id } }}>
-              <Button icon labelPosition="left">
-                <Icon name="edit" />
-                Modify Session
-              </Button>
-            </Link>
-          )}
+          <div className="settings">
+            <Dropdown button labeled className="icon" icon="wrench" text="Options">
+              <Dropdown.Menu>
+                {status === SESSION_STATUS.CREATED && (
+                  <Link href={{ pathname: '/questions', query: { editSessionId: id } }}>
+                    <Dropdown.Item>
+                      <Icon name="edit" />
+                      <FormattedMessage defaultMessage="Modify Session" id="session.button.modify" />
+                    </Dropdown.Item>
+                  </Link>
+                )}
 
-          <Link
-            href={{
-              pathname: '/questions',
-              query: { copy: true, editSessionId: id },
-            }}
-          >
-            <Button icon labelPosition="left">
-              <Icon name="copy" />
-              Copy & Modify
-            </Button>
-          </Link>
+                <Link
+                  href={{
+                    pathname: '/questions',
+                    query: { copy: true, editSessionId: id },
+                  }}
+                >
+                  <Dropdown.Item>
+                    <Icon name="copy" />
+                    <FormattedMessage defaultMessage="Copy & Modify" id="session.button.copyAndModify" />
+                  </Dropdown.Item>
+                </Link>
+
+                {status !== SESSION_STATUS.RUNNING && (
+                  <>
+                    <Dropdown.Divider />
+                    <Mutation mutation={DeleteSessionsMutation}>
+                      {deleteSessions => (
+                        <>
+                          <Dropdown.Item
+                            onClick={async () => {
+                              handleSetDeletionConfirmation(true)
+                            }}
+                          >
+                            <Icon name="trash" />
+                            <FormattedMessage defaultMessage="Delete Session" id="session.button.delete" />
+                          </Dropdown.Item>
+                          <Confirm
+                            cancelButton={intl.formatMessage(messages.deletionConfirmationCancel)}
+                            confirmButton={intl.formatMessage(messages.deletionConfirmationConfirm)}
+                            content={intl.formatMessage(messages.deletionConfirmationContent, { name })}
+                            open={deletionConfirmation}
+                            onCancel={() => handleSetDeletionConfirmation(false)}
+                            onConfirm={async () => {
+                              try {
+                                await deleteSessions({
+                                  optimisticResponse: {
+                                    __typename: 'Mutation',
+                                    deleteSessions: 'DELETION_SUCCESSFUL',
+                                  },
+                                  update: (cache, { data }) => {
+                                    if (data.deleteSessions !== 'DELETION_SUCCESSFUL') {
+                                      return
+                                    }
+
+                                    const { sessions } = cache.readQuery({ query: SessionListQuery })
+                                    cache.writeQuery({
+                                      data: {
+                                        sessions: sessions.filter(session => session.id !== id),
+                                      },
+                                      query: SessionListQuery,
+                                    })
+
+                                    handleSetDeletionConfirmation(false)
+                                  },
+                                  variables: {
+                                    ids: [id],
+                                  },
+                                })
+                              } catch (e) {
+                                console.error(e)
+                              }
+
+                              handleSetDeletionConfirmation(false)
+                            }}
+                          />
+                        </>
+                      )}
+                    </Mutation>
+                  </>
+                )}
+              </Dropdown.Menu>
+            </Dropdown>
+          </div>
 
           {status !== SESSION_STATUS.CREATED && (
             <a href={`/sessions/evaluation/${id}`} rel="noopener noreferrer" target="_blank">
               <Button icon primary disabled={isFeedbackSession} labelPosition="left">
                 <Icon name="external" />
-                Evaluation
+                <FormattedMessage defaultMessage="Evaluation" id="session.button.evaluation" />
               </Button>
             </a>
           )}
@@ -184,4 +280,4 @@ const Session = ({ button, createdAt, id, name, blocks, status }) => {
 Session.propTypes = propTypes
 Session.defaultProps = defaultProps
 
-export default Session
+export default withState('deletionConfirmation', 'handleSetDeletionConfirmation', false)(Session)

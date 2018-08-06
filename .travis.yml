@@ -57,6 +57,7 @@ jobs:
         - docker pull $IMAGE_NAME:latest
         - >
           docker build .
+          --build-arg APP_BASE_URL=$STAGING_APP_BASE_URL
           --build-arg API_ENDPOINT=$STAGING_ENDPOINT_URL
           --build-arg API_ENDPOINT_WS=$STAGING_API_ENDPOINT_WS
           --build-arg APP_PERSIST_QUERIES=$STAGING_APP_PERSIST_QUERIES
@@ -75,6 +76,7 @@ jobs:
         - docker pull $IMAGE_NAME:nightly
         - >
           docker build .
+          --build-arg APP_BASE_URL=$STAGING_APP_BASE_URL
           --build-arg API_ENDPOINT=$STAGING_ENDPOINT_URL
           --build-arg API_ENDPOINT_WS=$STAGING_API_ENDPOINT_WS
           --build-arg APP_PERSIST_QUERIES=$STAGING_APP_PERSIST_QUERIES
@@ -113,6 +115,7 @@ jobs:
       script:
         - >
           docker build .
+          --build-arg APP_BASE_URL=$PROD_APP_BASE_URL
           --build-arg API_ENDPOINT=$PROD_API_ENDPOINT
           --build-arg API_ENDPOINT_WS=$PROD_API_ENDPOINT_WS
           --build-arg APP_PERSIST_QUERIES=$PROD_APP_PERSIST_QUERIES
@@ -136,6 +139,7 @@ jobs:
       script:
         - >
           docker build .
+          --build-arg APP_BASE_URL=$PROD_APP_BASE_URL
           --build-arg API_ENDPOINT=$PROD_API_ENDPOINT
           --build-arg API_ENDPOINT_WS=$PROD_API_ENDPOINT_WS
           --build-arg APP_PERSIST_QUERIES=$PROD_APP_PERSIST_QUERIES

@@ -58,7 +58,7 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
             handleBlur={handleBlur}
             handleChange={handleChange}
             icon="hashtag"
-            inlineLabel="beta.klicker.uzh.ch/join/"
+            inlineLabel={`${process.env.APP_BASE_URL}/join/`}
             intl={intl}
             label={intl.formatMessage(messages.shortnameLabel)}
             name="shortname"

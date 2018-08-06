@@ -1,9 +1,11 @@
 import React from 'react'
-import { defineMessages, intlShape } from 'react-intl'
-import { Tab } from 'semantic-ui-react'
+import { FormattedMessage, defineMessages, intlShape } from 'react-intl'
+import { Message, Button, Tab } from 'semantic-ui-react'
+import { Mutation } from 'react-apollo'
 
 import AccountDataForm from './AccountDataForm'
 import PasswordUpdateForm from './PasswordUpdateForm'
+import { RequestAccountDeletionMutation } from '../../../graphql'
 
 const messages = defineMessages({
   accountDataItem: {
@@ -44,7 +46,48 @@ const UserSettingsForm = ({ intl }) => {
     },
     {
       menuItem: intl.formatMessage(messages.deleteAccountItem),
-      render: () => <Tab.Pane>Account deletion will be enabled after release.</Tab.Pane>,
+      render: () => (
+        <Tab.Pane>
+          <Mutation mutation={RequestAccountDeletionMutation}>
+            {(requestAccountDeletion, { loading, data }) => {
+              const success = !loading && data?.requestAccountDeletion === 'ACCOUNT_DELETION_EMAIL_SENT'
+
+              return (
+                <>
+                  <Message warning>
+                    <FormattedMessage
+                      defaultMessage="All your data will be removed from the Klicker servers. We will not be able to recover any of your data, should you find that you would still have needed it."
+                      id="form.userSettings.string.accountDeletionWarning"
+                    />
+                  </Message>
+                  <Message info>
+                    <FormattedMessage
+                      defaultMessage="To request deletion of your Klicker account, please click the button below. You will be sent an email that will allow you to confirm your account deletion."
+                      id="form.userSettings.string.accountDeletionInfo"
+                    />
+                  </Message>
+
+                  {success ? (
+                    <Message success>
+                      <FormattedMessage
+                        defaultMessage="We have sent you an email regarding your account deletion request. Please check your inbox in a few minutes."
+                        id="form.userSettings.button.successfulRequest"
+                      />
+                    </Message>
+                  ) : (
+                    <Button color="red" disabled={success} loading={loading} onClick={() => requestAccountDeletion()}>
+                      <FormattedMessage
+                        defaultMessage="Yes, I want to delete my account!"
+                        id="form.userSettings.button.requestAccountDeletion"
+                      />
+                    </Button>
+                  )}
+                </>
+              )
+            }}
+          </Mutation>
+        </Tab.Pane>
+      ),
     },
   ]
 

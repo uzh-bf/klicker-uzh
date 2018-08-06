@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { defineMessages, intlShape } from 'react-intl'
-import { Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
+import { Button, Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
 
 import { CommonLayout } from '.'
 import { Info, Possibilities, Statistics, VisualizationType } from '../evaluation'
@@ -86,7 +86,7 @@ function EvaluationLayout({
             return null
           }
 
-          if (instanceSummary.length > 8) {
+          if (instanceSummary.length > 7) {
             const dropdownOptions = instanceSummary.map(({ blockStatus, title, totalResponses: count }, index) => ({
               icon: blockStatus === 'ACTIVE' ? 'comments' : 'checkmark',
               key: index,
@@ -96,12 +96,26 @@ function EvaluationLayout({
 
             return (
               <div className="instanceDropdown">
+                <Button
+                  basic
+                  className="hoverable"
+                  disabled={activeInstance === 0}
+                  icon="arrow left"
+                  onClick={() => onChangeActiveInstance(activeInstance - 1)}
+                />
+                <Button
+                  basic
+                  className="hoverable"
+                  disabled={activeInstance + 1 === instanceSummary.length}
+                  icon="arrow right"
+                  onClick={() => onChangeActiveInstance(activeInstance + 1)}
+                />
                 <Dropdown
                   search
                   selection
-                  defaultValue={activeInstance}
                   options={dropdownOptions}
                   placeholder="Select Question"
+                  value={activeInstance}
                   onChange={(param, { value }) => onChangeActiveInstance(value)}
                 />
               </div>
@@ -118,6 +132,13 @@ function EvaluationLayout({
                   onClick={() => onChangeActiveInstance(activeInstance - 1)}
                 />
 
+                <Menu.Item
+                  className="hoverable"
+                  disabled={activeInstance + 1 === instanceSummary.length}
+                  icon="arrow right"
+                  onClick={() => onChangeActiveInstance(activeInstance + 1)}
+                />
+
                 {instanceSummary.map(({ blockStatus, title, totalResponses: count }, index) => (
                   <Menu.Item
                     fitted
@@ -131,13 +152,6 @@ function EvaluationLayout({
                     {title.length > 15 ? `${title.substring(0, 15)}...` : title} ({count})
                   </Menu.Item>
                 ))}
-
-                <Menu.Item
-                  className="hoverable"
-                  disabled={activeInstance + 1 === instanceSummary.length}
-                  icon="arrow right"
-                  onClick={() => onChangeActiveInstance(activeInstance + 1)}
-                />
               </Menu>
             </div>
           )
