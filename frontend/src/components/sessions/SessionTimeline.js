@@ -124,7 +124,7 @@ const SessionTimeline = ({
             <Popup.Content>
               <div className="popupContent">
                 <div className="qr">
-                  <QRCode value={`https://beta.klicker.uzh.ch/join/${shortname}`} />
+                  <QRCode value={`${process.env.APP_BASE_URL}/join/${shortname}`} />
                 </div>
 
                 <a href={`/qr/${shortname}`} rel="noopener noreferrer" target="_blank">

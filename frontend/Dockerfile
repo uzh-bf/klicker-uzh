@@ -26,6 +26,7 @@ COPY --chown=1000:0 . $KLICKER_DIR/
 # pre-build the application
 # define available build arguments
 # these are then bundled into the js
+ARG APP_BASE_URL
 ARG API_ENDPOINT
 ARG API_ENDPOINT_WS
 ARG APP_PERSIST_QUERIES

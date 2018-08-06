@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import Router from 'next/router'
 import { Loader, Message } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
+import { FormattedMessage, intlShape } from 'react-intl'
 import { Query } from 'react-apollo'
 
 import Session from './Session'
@@ -34,9 +34,10 @@ const propTypes = {
   filters: PropTypes.object.isRequired,
   handleCopySession: PropTypes.func.isRequired,
   handleStartSession: PropTypes.func.isRequired,
+  intl: intlShape.isRequired,
 }
 
-export const SessionListPres = ({ filters, handleCopySession, handleStartSession }) => {
+export const SessionListPres = ({ intl, filters, handleCopySession, handleStartSession }) => {
   // calculate what action to take on button click based on session status
   const handleSessionAction = (sessionId, status) => {
     if (status === SESSION_STATUS.CREATED || status === SESSION_STATUS.PAUSED) {
@@ -125,7 +126,7 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
                   <div className="sessions">
                     {[...runningSessions, ...pausedSessions].map(running => (
                       <div className="runningSession">
-                        <Session {...running} />
+                        <Session intl={intl} {...running} />
                       </div>
                     ))}
                   </div>
@@ -147,7 +148,7 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
                   </h2>
                   {remainingSessions.map(session => (
                     <div className="session" key={session.id}>
-                      <Session {...session} />
+                      <Session intl={intl} {...session} />
                     </div>
                   ))}
                 </>
@@ -161,7 +162,7 @@ export const SessionListPres = ({ filters, handleCopySession, handleStartSession
                   </h2>
                   {completedSessions.map(session => (
                     <div className="session" key={session.id}>
-                      <Session {...session} />
+                      <Session intl={intl} {...session} />
                     </div>
                   ))}
                 </>

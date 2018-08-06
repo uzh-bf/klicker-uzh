@@ -65,6 +65,7 @@ const SearchArea = ({
             text: content,
             value: id,
           }))}
+          value={sortBy}
           onChange={(param, data) => handleSortByChange(data.value)}
         />
       </>
