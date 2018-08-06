@@ -578,7 +578,7 @@ export default compose(
 
       if (confirm) {
         try {
-          const questionIds = selectedItems.keys()
+          const questionIds = Array.from(selectedItems.keys())
           await deleteQuestions({
             optimisticResponse: {
               __typename: 'Mutation',
@@ -589,13 +589,15 @@ export default compose(
                 return
               }
 
-              const questions = cache.readQuery({ query: QuestionListQuery })
+              const { questions } = cache.readQuery({ query: QuestionListQuery })
               cache.writeQuery({
                 data: {
                   questions: questions.filter(question => !questionIds.includes(question.id)),
                 },
                 query: QuestionListQuery,
               })
+
+              handleSetDeletionConfirmation(false)
             },
             variables: { ids: questionIds },
           })
