@@ -10,7 +10,7 @@ const initialState = {
     type: null,
   },
   sort: {
-    asc: true,
+    asc: false,
     by: QUESTION_SORTINGS[0].id,
   },
 }
