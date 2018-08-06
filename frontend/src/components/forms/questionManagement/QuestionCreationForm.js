@@ -181,7 +181,7 @@ const QuestionCreationForm = ({ intl, tags, onSubmit, onDiscard }) => {
                   name="title"
                   tooltip={
                     <FormattedMessage
-                      defaultMessage="Enter a short summarizing title for the question. This is only visible to you!"
+                      defaultMessage="Enter a short summarizing title for the question."
                       id="createQuestion.titleInput.tooltip"
                     />
                   }
