@@ -3,6 +3,7 @@ require('dotenv').config()
 const mongoose = require('mongoose')
 
 const QuestionService = require('./questions')
+const { QuestionModel } = require('../models')
 const { initializeDb } = require('../lib/test/setup')
 const { questionSerializer } = require('../lib/test/serializers')
 const { createContentState } = require('../lib/draft')
@@ -208,19 +209,36 @@ describe('QuestionService', () => {
 
   describe('archiveQuestion', () => {
     it('allows archiving a question', async () => {
-      const archivedQuestions = await QuestionService.archiveQuestions(
-        [questions.SC.id, questions.MC.id, questions.FREE.id],
-        questions.SC.user
-      )
+      const archivedQuestions = await QuestionService.archiveQuestions({
+        ids: [questions.SC.id, questions.MC.id, questions.FREE.id],
+        userId: questions.SC.user,
+      })
       expect(archivedQuestions).toMatchSnapshot()
     })
 
     it('allows unarchiving a question', async () => {
-      const unarchivedQuestions = await QuestionService.archiveQuestions(
-        [questions.SC.id, questions.MC.id],
-        questions.SC.user
-      )
+      const unarchivedQuestions = await QuestionService.archiveQuestions({
+        ids: [questions.SC.id, questions.MC.id],
+        userId: questions.SC.user,
+      })
       expect(unarchivedQuestions).toMatchSnapshot()
+    })
+  })
+
+  describe('deleteQuestions', () => {
+    it('performs soft-deletion on useds question', async () => {
+      // perform the deletion
+      const result = await QuestionService.deleteQuestions({
+        ids: [questions.SC.id],
+        userId,
+      })
+      expect(result).toEqual('DELETION_SUCCESSFUL')
+
+      const question = await QuestionModel.findById(questions.SC.id)
+      expect(question.isDeleted).toEqual(true)
+    })
+    it.skip('performs hard-deletion on an unused question', async () => {
+      // TODO: implementation
     })
   })
 })

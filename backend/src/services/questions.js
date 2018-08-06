@@ -149,7 +149,6 @@ const createQuestion = async ({ title, type, content, options, solution, files, 
   user.questions.push(newQuestion.id)
   user.tags = user.tags.concat(createdTagIds)
   user.files = user.files.concat(createdFileIds)
-  user.updatedAt = Date.now()
 
   // wait until the question and user both have been saved
   await Promise.all([newQuestion.save(), user.save(), Promise.all(allTagsUpdate), Promise.all(allFilesSave)])
@@ -158,6 +157,12 @@ const createQuestion = async ({ title, type, content, options, solution, files, 
   return newQuestion
 }
 
+/**
+ *
+ * @param {*} questionId
+ * @param {*} userId
+ * @param {*} param2
+ */
 const modifyQuestion = async (questionId, userId, { title, tags, content, options, solution, files }) => {
   const promises = []
 
@@ -293,10 +298,15 @@ const modifyQuestion = async (questionId, userId, { title, tags, content, option
   return question
 }
 
-const archiveQuestions = async (questionIds, userId) => {
+/**
+ *
+ * @param {*} questionIds
+ * @param {*} userId
+ */
+const archiveQuestions = async ({ ids, userId }) => {
   // get the question instance from the DB
   const questions = await QuestionModel.find({
-    _id: { $in: questionIds },
+    _id: { $in: ids },
     user: userId,
   })
 
@@ -311,9 +321,35 @@ const archiveQuestions = async (questionIds, userId) => {
   // await the question update promises
   return Promise.all(promises)
 }
+/**
+ * Delete a question from the database
+ * @param {*} param0
+ */
+const deleteQuestions = async ({ ids, userId }) => {
+  // perform soft deletion on all the specified questions
+  await QuestionModel.updateMany(
+    {
+      _id: { $in: ids },
+      user: userId,
+    },
+    {
+      isDeleted: true,
+    }
+  )
+
+  // if the question has not been used anywhere, perform hard deletion
+  /* if (question.instances.length === 0) {
+    // TODO: implement hard deletion
+    // need to account for tags that are no longer needed etc.
+    return 'DELETION_SUCCESSFUL'
+  } */
+
+  return 'DELETION_SUCCESSFUL'
+}
 
 module.exports = {
   createQuestion,
   modifyQuestion,
   archiveQuestions,
+  deleteQuestions,
 }

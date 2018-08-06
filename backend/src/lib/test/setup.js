@@ -1,5 +1,5 @@
 const { QuestionModel, QuestionInstanceModel, SessionModel, TagModel, UserModel, FileModel } = require('../../models')
-const AuthService = require('../../services/auth')
+const AccountService = require('../../services/accounts')
 const QuestionService = require('../../services/questions')
 const { createContentState } = require('../../lib/draft')
 const { QUESTION_TYPES } = require('../../constants')
@@ -8,28 +8,40 @@ const { QUESTION_TYPES } = require('../../constants')
  * Cleanup all data belonging to a user
  * @param {*} user The id of the user
  */
-const cleanupUser = async user => {
-  await Promise.all([
-    QuestionInstanceModel.remove({ user }),
-    SessionModel.remove({ user }),
-    QuestionModel.remove({ user }),
-    TagModel.remove({ user }),
-    FileModel.remove({ user }),
-    UserModel.findByIdAndRemove(user),
-  ])
+const cleanupUser = async ({ email, userId }) => {
+  if (userId) {
+    await Promise.all([
+      QuestionInstanceModel.remove({ user: userId }),
+      SessionModel.remove({ user: userId }),
+      QuestionModel.remove({ user: userId }),
+      TagModel.remove({ user: userId }),
+      FileModel.remove({ user: userId }),
+      UserModel.findByIdAndRemove(userId),
+    ])
+  } else {
+    const user = await UserModel.findOne({ email })
+    await Promise.all([
+      QuestionInstanceModel.remove({ user: user.id }),
+      SessionModel.remove({ user: user.id }),
+      QuestionModel.remove({ user: user.id }),
+      TagModel.remove({ user: user.id }),
+      FileModel.remove({ user: user.id }),
+      UserModel.findByIdAndRemove(user.id),
+    ])
+  }
 }
 
-const setupTestEnv = async ({ email, password, shortname }) => {
+const setupTestEnv = async ({ email, password, shortname, isActive = true }) => {
   // find the id of the user to reset
   const user = await UserModel.findOne({ email })
 
   // if the user already exists, delete everything associated
   if (user) {
-    await cleanupUser(user.id)
+    await cleanupUser({ userId: user.id })
   }
 
   // sign up a fresh user
-  return AuthService.signup(email, password, shortname, 'IBF Test', 'Testing')
+  return AccountService.signup(email, password, shortname, 'IBF Test', 'Testing', { isActive })
 }
 
 // prepare a new session instance
@@ -57,7 +69,14 @@ const prepareSessionFactory = SessionMgrService => async (
   })
 }
 
-const initializeDb = async ({ mongoose, email, shortname, withLogin = false, withQuestions = false }) => {
+const initializeDb = async ({
+  mongoose,
+  email,
+  shortname,
+  withLogin = false,
+  withQuestions = false,
+  isActive = true,
+}) => {
   await mongoose.connect(
     `mongodb://${process.env.MONGO_URL}`,
     {
@@ -67,12 +86,10 @@ const initializeDb = async ({ mongoose, email, shortname, withLogin = false, wit
     }
   )
 
-  await setupTestEnv({ email, password: 'somePassword', shortname })
+  const createdUser = await setupTestEnv({ email, password: 'somePassword', shortname, isActive })
 
   if (withLogin) {
-    const result = {
-      userId: await AuthService.login(null, email, 'somePassword'),
-    }
+    const result = { userId: await AccountService.login(null, email, 'somePassword') }
 
     if (withQuestions) {
       result.questions = {
@@ -159,7 +176,7 @@ const initializeDb = async ({ mongoose, email, shortname, withLogin = false, wit
     return result
   }
 
-  return null
+  return { userId: createdUser.id, email, shortname }
 }
 
 module.exports = {

@@ -42,7 +42,7 @@ if (SERVICES_CFG.sentry.enabled) {
   Raven = require('raven')
 }
 
-const AuthService = require('./services/auth')
+const AccountService = require('./services/accounts')
 const { resolvers, typeDefs } = require('./schema')
 const { getRedis } = require('./redis')
 const { exceptTest } = require('./lib/utils')
@@ -75,10 +75,10 @@ if (MONGO_CFG.debug) {
 
 mongoose.connection
   .once('open', () => {
-    exceptTest(() => console.log('> Connection to MongoDB established.'))
+    console.log('[mongo] Connection to MongoDB established.')
   })
   .on('error', error => {
-    exceptTest(() => console.warn('> Warning: ', error))
+    throw new Error(`[mongo] Could not connect to MongoDB: ${error}`)
   })
 
 // initialize a connection to redis
@@ -115,7 +115,7 @@ let middleware = [
     credentialsRequired: false,
     requestProperty: 'auth',
     secret: APP_CFG.secret,
-    getToken: AuthService.getToken,
+    getToken: AccountService.getToken,
   }),
 ]
 

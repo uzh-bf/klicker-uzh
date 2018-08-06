@@ -21,7 +21,8 @@ if (S3_CFG.enabled) {
 
 /**
  * Request a presigned URL from the S3 backend
- * @param {*} param0
+ * @param {String} fileType The mime type of the file to upload
+ * @param {ID} userId The user id of the user owning the file
  */
 const requestPresignedURL = async ({ fileType, userId }) => {
   // ensure that S3 is available in the environment

@@ -1,4 +1,4 @@
-const { requireAuth } = require('./services/auth')
+const { requireAuth } = require('./services/accounts')
 const { requestPresignedURL } = require('./resolvers/files')
 const {
   allQuestions,
@@ -8,6 +8,7 @@ const {
   question,
   modifyQuestion,
   archiveQuestions,
+  deleteQuestions,
 } = require('./resolvers/questions')
 const { questionInstancesByPV, addResponse, responsesByPV, resultsByPV } = require('./resolvers/questionInstances')
 const {
@@ -29,6 +30,7 @@ const {
   runtimeByPV,
   session,
   modifySession,
+  deleteSessions,
 } = require('./resolvers/sessions')
 const { allTags, tags } = require('./resolvers/tags')
 const {
@@ -42,6 +44,9 @@ const {
   requestPassword,
   hmac,
   checkAvailability,
+  requestAccountDeletion,
+  resolveAccountDeletion,
+  activateAccount,
 } = require('./resolvers/users')
 const { files } = require('./resolvers/files')
 const { confusionAdded, feedbackAdded } = require('./resolvers/subscriptions')
@@ -73,6 +78,7 @@ const typeDefs = [
   }
 
   type Mutation {
+    activateAccount(activationToken: String!): String!
     activateNextBlock: Session!
     addConfusionTS(fp: ID, sessionId: ID!, difficulty: Int!, speed: Int!): String!
     addFeedback(fp: ID, sessionId: ID!, content: String!): String!
@@ -83,6 +89,8 @@ const typeDefs = [
     createSession(session: SessionInput!): Session!
     createUser(email: String!, password: String!, shortname: String!, institution: String!, useCase: String): User!
     deleteFeedback(sessionId: ID!, feedbackId: ID!): Session!
+    deleteQuestions(ids: [ID!]!): String!
+    deleteSessions(ids: [ID!]!): String!
     endSession(id: ID!): Session!
     login(email: String!, password: String!): ID!
     logout: String!
@@ -90,6 +98,8 @@ const typeDefs = [
     modifySession(id: ID!, session: SessionModifyInput!): Session!
     modifyUser(user: User_Modify!): User!
     pauseSession(id: ID!): Session!
+    requestAccountDeletion: String!
+    resolveAccountDeletion(deletionToken: String!): String!
     requestPassword(email: String!): String!
     requestPresignedURL(fileType: String!): File_PresignedURL!
     startSession(id: ID!): Session!
@@ -121,6 +131,7 @@ const resolvers = {
     user: requireAuth(authUser),
   },
   Mutation: {
+    activateAccount,
     archiveQuestions: requireAuth(archiveQuestions),
     addFeedback,
     deleteFeedback: requireAuth(deleteFeedback),
@@ -130,6 +141,8 @@ const resolvers = {
     createQuestion: requireAuth(createQuestion),
     createSession: requireAuth(createSession),
     createUser,
+    deleteQuestions: requireAuth(deleteQuestions),
+    deleteSessions: requireAuth(deleteSessions),
     endSession: requireAuth(endSession),
     login,
     logout,
@@ -137,6 +150,8 @@ const resolvers = {
     modifySession: requireAuth(modifySession),
     modifyUser: requireAuth(modifyUser),
     pauseSession: requireAuth(pauseSession),
+    requestAccountDeletion: requireAuth(requestAccountDeletion),
+    resolveAccountDeletion: requireAuth(resolveAccountDeletion),
     requestPassword,
     requestPresignedURL: requireAuth(requestPresignedURL),
     startSession: requireAuth(startSession),

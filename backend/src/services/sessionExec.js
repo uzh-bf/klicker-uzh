@@ -14,7 +14,10 @@ const FILTERING_CFG = CFG.get('security.filtering')
 // initialize redis if available
 const redis = getRedis(2)
 
-// add a new feedback to a session
+/**
+ * Add a new feedback to a session
+ * @param {*} param0
+ */
 const addFeedback = async ({ sessionId, content }) => {
   const session = await getRunningSession(sessionId)
 
@@ -42,7 +45,10 @@ const addFeedback = async ({ sessionId, content }) => {
   return session
 }
 
-// delete a feedback from a session
+/**
+ * Delete a feedback from a session
+ * @param {*} param0
+ */
 const deleteFeedback = async ({ sessionId, feedbackId, userId }) => {
   const session = await getRunningSession(sessionId)
 
@@ -60,7 +66,10 @@ const deleteFeedback = async ({ sessionId, feedbackId, userId }) => {
   return session
 }
 
-// add a new confusion timestep to the session
+/**
+ * Add a new confusion timestep to the session
+ * @param {*} param0
+ */
 const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
   const session = await getRunningSession(sessionId)
 
@@ -88,11 +97,13 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
   return session
 }
 
-// add a response to an active question instance
+/**
+ * Add a response to an active question instance
+ * @param {*} param0
+ */
 const addResponse = async ({ ip, fp, instanceId, response }) => {
   // response object to save
   const saveResponse = {
-    createdAt: Date.now(),
     value: response,
   }
 
@@ -250,6 +261,10 @@ const addResponse = async ({ ip, fp, instanceId, response }) => {
   return instance
 }
 
+/**
+ * Prepare data needed for participating in a session
+ * @param {*} param0
+ */
 const joinSession = async ({ shortname }) => {
   // TODO: add test
   // find the user with the given shortname
