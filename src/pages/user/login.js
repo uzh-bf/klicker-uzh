@@ -35,12 +35,8 @@ const Login = ({ intl, router }) => (
         {(login, { loading, error }) => (
           <>
             <Message info>
-              <Message.Header>Public Beta</Message.Header>
-              <Message.Content>
-                To participate in the Klicker 2018 public beta with a legacy account, please{' '}
-                <Link href="/user/requestPassword">reset your password</Link> first. If you need a new account, you can
-                <Link href="/user/registration">sign up here</Link>.
-              </Message.Content>
+              To login with a legacy account, please <Link href="/user/requestPassword">reset your password</Link>{' '}
+              first. If you need a new account, you can <Link href="/user/registration">sign up here</Link>.
             </Message>
             <LoginForm
               intl={intl}
@@ -58,7 +54,8 @@ const Login = ({ intl, router }) => (
                 router.push('/questions')
               }}
             />
-            {router.query?.expired && <div className="errorMessage message">Login expired. Please login again.</div>}
+            {!error &&
+              router.query?.expired && <div className="errorMessage message">Login expired. Please login again.</div>}
             {error && <div className="errorMessage message">Login failed ({error.message})</div>}
           </>
         )}
