@@ -90,7 +90,7 @@ export const QuestionListPres = ({
                     {moment(createdAt).format('DD.MM.YYYY HH:mm')}
                   </a>
                 )
-              })
+              }, new Map())
               .values()}
             tags={question.tags}
             title={question.title}
