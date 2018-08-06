@@ -30,6 +30,12 @@ services:
     ports:
       - "6379:6379"
 
+  mailhog:
+    image: mailhog/mailhog:v1.0.0
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
   #mongodb:
     #image: "mongo:3.2"
     #ports:

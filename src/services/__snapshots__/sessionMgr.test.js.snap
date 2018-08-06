@@ -224,6 +224,35 @@ exports[`SessionMgrService createSession skips over question blocks without ques
     }
 `;
 
+exports[`SessionMgrService deleteSession fully deletes a session and all question instances 1`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: CREATED
+
+    ActiveBlock: -1
+    ActiveStep: 0
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 1
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: false
+    }
+`;
+
 exports[`SessionMgrService endSession allows ending a running session 1`] = `
 
     SESSION

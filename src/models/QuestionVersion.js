@@ -11,22 +11,22 @@ const QuestionSolution = new mongoose.Schema({
   FREE_RANGE: { type: Number },
 })
 
-module.exports = new mongoose.Schema({
-  // content for draft.js editor state (added 01.05.18)
-  content: { type: String },
+module.exports = new mongoose.Schema(
+  {
+    // content for draft.js editor state (added 01.05.18)
+    content: { type: String },
 
-  // "text-only" version of the above content
-  description: { type: String, required: true },
+    // "text-only" version of the above content
+    description: { type: String, required: true },
 
-  // question options and the corresponding solutions
-  options: { type: QuestionOptions, required: true },
-  solution: { type: QuestionSolution, required: false },
+    // question options and the corresponding solutions
+    options: { type: QuestionOptions, required: true },
+    solution: { type: QuestionSolution, required: false },
 
-  // the file urls that are associated with this question version
-  files: [{ type: ObjectId, ref: 'File' }],
+    // the file urls that are associated with this question version
+    files: [{ type: ObjectId, ref: 'File' }],
 
-  instances: [{ type: ObjectId, ref: 'QuestionInstance' }],
-
-  createdAt: { type: Date, default: Date.now() },
-  updatedAt: { type: Date, default: Date.now() },
-})
+    instances: [{ type: ObjectId, ref: 'QuestionInstance' }],
+  },
+  { timestamps: true }
+)

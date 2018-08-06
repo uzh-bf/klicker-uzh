@@ -410,7 +410,7 @@
                             <div style="font-size:12px;line-height:14px;font-family:'Lato', Tahoma, Verdana, Segoe, sans-serif;color:#000000;text-align:left;">
                               <p style="margin: 0;font-size: 14px;line-height: 17px;text-align: center">
                                 <strong>
-                                  <span style="font-size: 18px; line-height: 21px;">A password reset has been requested for your account!</span>
+                                  <span style="font-size: 18px; line-height: 21px;">You have requested to delete your Klicker UZH account!</span>
                                   <span style="font-size: 18px; line-height: 21px;">
                                     <br>
                                   </span>
@@ -427,7 +427,9 @@
                           <!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right: 10px; padding-left: 10px; padding-top: 10px; padding-bottom: 20px;"><![endif]-->
                           <div style="line-height:120%;color:#71777D;font-family:'Lato', Tahoma, Verdana, Segoe, sans-serif; padding-right: 10px; padding-left: 10px; padding-top: 10px; padding-bottom: 20px;">
                             <div style="font-size:12px;line-height:14px;font-family:Lato, Tahoma, Verdana, Segoe, sans-serif;color:#71777D;text-align:left;">
-                              <p style="margin: 0;font-size: 14px;line-height: 17px;text-align: center">If you have requested to reset your password for the Klicker UZH, please follow the link below:
+                              <p style="margin: 0;font-size: 14px;line-height: 17px;text-align: center">If you have requested to delete your account on the Klicker UZH, please follow the link below.
+                                The link will be valid for 24 hours, after which you will need to request another deletion
+                                token.
                                 <br>
                               </p>
                             </div>
@@ -439,8 +441,8 @@
 
                         <div align="center" class="button-container center " style="padding-right: 10px; padding-left: 10px; padding-top:10px; padding-bottom:10px;">
                           <!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-spacing: 0; border-collapse: collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;"><tr><td style="padding-right: 10px; padding-left: 10px; padding-top:10px; padding-bottom:10px;" align="center"><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{baseUrl}}/user/resetPassword" style="height:31pt; v-text-anchor:middle; width:137pt;" arcsize="10%" strokecolor="#3AAEE0" fillcolor="#3AAEE0"><w:anchorlock/><v:textbox inset="0,0,0,0"><center style="color:#ffffff; font-family:'Lato', Tahoma, Verdana, Segoe, sans-serif; font-size:16px;"><![endif]-->
-                          <a href="{{baseUrl}}/user/resetPassword?resetToken={{jwt}}" target="_blank" style="display: block;text-decoration: none;-webkit-text-size-adjust: none;text-align: center;color: #ffffff; background-color: #3AAEE0; border-radius: 4px; -webkit-border-radius: 4px; -moz-border-radius: 4px; max-width: 183px; width: 143px;width: auto; border-top: 0px solid transparent; border-right: 0px solid transparent; border-bottom: 0px solid transparent; border-left: 0px solid transparent; padding-top: 5px; padding-right: 20px; padding-bottom: 5px; padding-left: 20px; font-family: 'Lato', Tahoma, Verdana, Segoe, sans-serif;mso-border-alt: none">
-                            <span style="font-size:16px;line-height:32px;">Set a new password</span>
+                          <a href="{{baseUrl}}/user/deleteAccount?deletionToken={{jwt}}" target="_blank" style="display: block;text-decoration: none;-webkit-text-size-adjust: none;text-align: center;color: #ffffff; background-color: #3AAEE0; border-radius: 4px; -webkit-border-radius: 4px; -moz-border-radius: 4px; max-width: 183px; width: 143px;width: auto; border-top: 0px solid transparent; border-right: 0px solid transparent; border-bottom: 0px solid transparent; border-left: 0px solid transparent; padding-top: 5px; padding-right: 20px; padding-bottom: 5px; padding-left: 20px; font-family: 'Lato', Tahoma, Verdana, Segoe, sans-serif;mso-border-alt: none">
+                            <span style="font-size:16px;line-height:32px;">Delete account</span>
                           </a>
                           <!--[if mso]></center></v:textbox></v:roundrect></td></tr></table><![endif]-->
                         </div>

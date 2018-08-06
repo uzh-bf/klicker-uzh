@@ -5,7 +5,10 @@ const { QuestionModel } = require('../models')
 /* ----- queries ----- */
 const allQuestionsQuery = async (parentValue, args, { auth, loaders }) => {
   // get all the questions for the given user
-  const results = await QuestionModel.find({ user: auth.sub }).sort({
+  const results = await QuestionModel.find({
+    isDeleted: false,
+    user: auth.sub,
+  }).sort({
     createdAt: -1,
   })
 
@@ -28,7 +31,11 @@ const createQuestionMutation = (parentValue, { question }, { auth }) =>
 const modifyQuestionMutation = (parentValue, { id, question }, { auth }) =>
   QuestionService.modifyQuestion(id, auth.sub, question)
 
-const archiveQuestionsMutation = (parentValue, { ids }, { auth }) => QuestionService.archiveQuestions(ids, auth.sub)
+const archiveQuestionsMutation = (parentValue, { ids }, { auth }) =>
+  QuestionService.archiveQuestions({ ids, userId: auth.sub })
+
+const deleteQuestionsMutation = (parentValue, { ids }, { auth }) =>
+  QuestionService.deleteQuestions({ ids, userId: auth.sub })
 
 module.exports = {
   // queries
@@ -41,4 +48,5 @@ module.exports = {
   createQuestion: createQuestionMutation,
   modifyQuestion: modifyQuestionMutation,
   archiveQuestions: archiveQuestionsMutation,
+  deleteQuestions: deleteQuestionsMutation,
 }

@@ -1,17 +1,23 @@
 const request = require('supertest')
 const mongoose = require('mongoose')
+const JWT = require('jsonwebtoken')
 
 const Queries = require('./queries/index')
 const Mutations = require('./mutations/index')
+const AccountService = require('../services/accounts')
+const { UserModel } = require('../models')
 const { app } = require('../app')
 const { initializeDb } = require('../lib/test/setup')
 const { createContentState } = require('../lib/draft')
-const { QUESTION_TYPES } = require('../constants')
+const { Errors, QUESTION_TYPES } = require('../constants')
 
 process.env.NODE_ENV = 'test'
 
 const serializers = [...Queries.serializers, ...Mutations.serializers]
 serializers.forEach(serializer => expect.addSnapshotSerializer(serializer))
+
+const initialPassword = 'somePassword'
+const passwordAfterChange = 'someOtherPassword'
 
 const sendQuery = (body, authCookie) => {
   if (authCookie) {
@@ -39,14 +45,17 @@ const ensureNoErrors = (response, debug = false) => {
 describe('Integration', () => {
   let authCookie
   let sessionId
+  let initialUserId
+  let initialShortname
   const questions = {}
 
   beforeAll(async () => {
-    await initializeDb({
+    ;({ userId: initialUserId, shortname: initialShortname } = await initializeDb({
       mongoose,
       email: 'testintegration@bf.uzh.ch',
       shortname: 'integr',
-    })
+      isActive: false,
+    }))
   })
 
   afterAll(async () => {
@@ -55,23 +64,54 @@ describe('Integration', () => {
     authCookie = null
   })
 
-  describe('Login', () => {
-    it('works with valid credentials', async () => {
-      // send a login request
-      const response = await sendQuery({
+  const login = async password => {
+    // send a login request
+    const response = await sendQuery({
+      query: Mutations.LoginMutation,
+      variables: {
+        email: 'testintegration@bf.uzh.ch',
+        password,
+      },
+    })
+
+    const data = ensureNoErrors(response)
+    expect(data).toBeTruthy()
+
+    // save the authorization cookie
+    authCookie = response.header['set-cookie']
+    expect(authCookie.length).toEqual(1)
+  }
+
+  describe('Account Activation', () => {
+    it('prevents login to an inactive account', async () => {
+      const { body } = await sendQuery({
         query: Mutations.LoginMutation,
-        variables: {
-          email: 'testintegration@bf.uzh.ch',
-          password: 'somePassword',
-        },
+        variables: { email: 'testintegration@bf.uzh.ch', password: initialPassword },
       })
 
-      const data = ensureNoErrors(response)
-      expect(data).toBeTruthy()
+      expect(body.errors[0].message).toEqual(Errors.ACCOUNT_NOT_ACTIVATED)
+    })
 
-      // save the authorization cookie
-      authCookie = response.header['set-cookie']
-      expect(authCookie.length).toEqual(1)
+    it('allows activation of an account with a valid activation token', async () => {
+      const activationToken = AccountService.generateScopedToken(
+        { id: initialUserId, shortname: initialShortname },
+        'activate'
+      )
+
+      const { activateAccount } = ensureNoErrors(
+        await sendQuery({
+          query: Mutations.ActivateAccountMutation,
+          variables: { activationToken },
+        })
+      )
+
+      expect(activateAccount).toEqual('ACCOUNT_ACTIVATED')
+    })
+  })
+
+  describe('Login', () => {
+    it('works with valid credentials', async () => {
+      await login(initialPassword)
     })
   })
 
@@ -81,7 +121,7 @@ describe('Integration', () => {
         await sendQuery(
           {
             query: Mutations.ChangePasswordMutation,
-            variables: { newPassword: 'someOtherPassword' },
+            variables: { newPassword: passwordAfterChange },
           },
           authCookie
         )
@@ -1130,6 +1170,40 @@ describe('Integration', () => {
     })
   })
 
+  describe('Entity Deletion', () => {
+    it('allows deletion of sessions', async () => {
+      const { deleteSessions } = ensureNoErrors(
+        await sendQuery(
+          {
+            query: Mutations.DeleteSessionsMutation,
+            variables: {
+              ids: [sessionId],
+            },
+          },
+          authCookie
+        )
+      )
+
+      expect(deleteSessions).toEqual('DELETION_SUCCESSFUL')
+    })
+
+    it('allows deletion of questions', async () => {
+      const { deleteQuestions } = ensureNoErrors(
+        await sendQuery(
+          {
+            query: Mutations.DeleteQuestionsMutation,
+            variables: {
+              ids: [questions.FREE_RANGE, questions.MC],
+            },
+          },
+          authCookie
+        )
+      )
+
+      expect(deleteQuestions).toEqual('DELETION_SUCCESSFUL')
+    })
+  })
+
   describe('Logout', () => {
     it('works', async () => {
       const response = await sendQuery(
@@ -1160,6 +1234,45 @@ describe('Integration', () => {
       // expect the response to contain "INVALID_LOGIN"
       // expect(response2.body.errors).toMatchSnapshot()
       expect(response2.body.errors[0].message).toEqual('INVALID_LOGIN')
+    })
+  })
+
+  describe('Account Deletion', () => {
+    beforeAll(async () => {
+      await login(passwordAfterChange)
+    })
+
+    it('can request a deletion token email', async () => {
+      const { requestAccountDeletion } = ensureNoErrors(
+        await sendQuery({ query: Mutations.RequestAccountDeletionMutation }, authCookie)
+      )
+      expect(requestAccountDeletion).toEqual('ACCOUNT_DELETION_EMAIL_SENT')
+    })
+
+    it('can perform a full account deletion', async () => {
+      // extract the jwt from the authCookie
+      const jwt = authCookie[0].split(';')[0].split('=')[1]
+
+      // decode the authentication cookie
+      const { sub, shortname } = JWT.decode(jwt)
+
+      // precompute a valid deletion token
+      const deletionToken = AccountService.generateScopedToken({ id: sub, shortname }, 'delete')
+
+      // perform account deletion
+      const { resolveAccountDeletion } = ensureNoErrors(
+        await sendQuery(
+          {
+            query: Mutations.ResolveAccountDeletionMutation,
+            variables: { deletionToken },
+          },
+          authCookie
+        )
+      )
+      expect(resolveAccountDeletion).toEqual('ACCOUNT_DELETED')
+
+      // verify that the user has been deleted
+      expect(await UserModel.count({ id: sub })).toEqual(0)
     })
   })
 })

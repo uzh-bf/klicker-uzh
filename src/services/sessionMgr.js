@@ -104,7 +104,7 @@ const createSession = async ({ name, questionBlocks = [], userId }) => {
   // create a new session model
   // pass in the list of blocks created above
   const newSession = new SessionModel({
-    id: sessionId,
+    _id: sessionId,
     name,
     blocks,
     user: userId,
@@ -119,7 +119,6 @@ const createSession = async ({ name, questionBlocks = [], userId }) => {
       { _id: userId },
       {
         $push: { sessions: newSession.id },
-        $currentDate: { updatedAt: true },
       }
     ),
   ])
@@ -173,7 +172,7 @@ const modifySession = async ({ id, name, questionBlocks, userId }) => {
 
     // completely remove the instance entities
     const instanceCleanup = QuestionInstanceModel.deleteMany({
-      id: { $in: oldInstances },
+      _id: { $in: oldInstances },
     })
 
     // map the blocks
@@ -202,7 +201,7 @@ const modifySession = async ({ id, name, questionBlocks, userId }) => {
  * @param {*} param0
  * @param {*} actionType
  */
-const sessionAction = async ({ sessionId, userId, shortname }, actionType) => {
+const sessionAction = async ({ sessionId, userId }, actionType) => {
   // get the current user instance
   const user = await UserModel.findById(userId)
   const session = await SessionModel.findById(sessionId)
@@ -281,19 +280,18 @@ const sessionAction = async ({ sessionId, userId, shortname }, actionType) => {
   // update the runningSession of the user depending on the action taken
   const updatedUser = UserModel.findByIdAndUpdate(userId, {
     runningSession: actionType === SESSION_ACTIONS.START ? session.id : null,
-    $currentDate: { updatedAt: true },
   })
 
   const promises = [session.save(), updatedUser]
 
   // if redis is in use, cleanup the page cache
   if (redisCache) {
-    promises.push(cleanCache(shortname))
+    promises.push(cleanCache(user.shortname))
   }
 
   await Promise.all(promises)
 
-  sendSlackNotification(`[sessions] ${actionType} session at /join/${shortname}`)
+  sendSlackNotification(`[sessions] ${actionType} session at /join/${user.shortname}`)
 
   return session
 }
@@ -455,6 +453,43 @@ const activateNextBlock = async ({ userId, shortname }) => {
   return user.runningSession
 }
 
+/**
+ * Delete a session
+ * @param {*} param0
+ */
+const deleteSessions = async ({ userId, ids }) => {
+  // get the session from the database
+  const sessions = await SessionModel.find({ _id: { $in: ids }, user: userId }).populate('blocks.instances')
+
+  await Promise.all(
+    sessions.map(session => {
+      // compute the list of question instances used in this session
+      const instances = session.blocks.reduce((acc, block) => [...acc, ...block.instances], [])
+      const instanceIds = instances.map(instance => instance.id)
+
+      // delete the session and all related question instances
+      // remove the session from the user model
+      return Promise.all([
+        SessionModel.deleteOne({ _id: session.id, user: userId }),
+        QuestionInstanceModel.deleteMany({
+          _id: { $in: instanceIds },
+          user: userId,
+        }),
+        Promise.all(
+          instances.map(instance =>
+            QuestionModel.findByIdAndUpdate(instance.question, {
+              $pull: { instances: instance.id },
+            })
+          )
+        ),
+        UserModel.findByIdAndUpdate(userId, { $pullAll: { sessions: [session.id] } }),
+      ])
+    })
+  )
+
+  return 'DELETION_SUCCESSFUL'
+}
+
 module.exports = {
   createSession,
   modifySession,
@@ -464,4 +499,5 @@ module.exports = {
   activateNextBlock,
   getRunningSession,
   pauseSession,
+  deleteSessions,
 }
