@@ -95,6 +95,10 @@ export const SMALL_PIE_THRESHOLD = 0.05
 export const CHANGELOG = {
   new: [
     {
+      items: [' Possibility to delete questions, sessions, and user accounts', ' Many, many other optimizations...'],
+      text: '1.0.0-rc.3',
+    },
+    {
       items: [
         'Possibility to change user data / password in the new account settings area',
         'Many overall usability improvements',
