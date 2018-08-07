@@ -3,6 +3,11 @@ const convict = require('convict')
 
 module.exports = convict({
   app: {
+    baseUrl: {
+      default: 'localhost:3000',
+      env: 'APP_BASE_URL',
+      format: 'url',
+    },
     domain: {
       default: 'localhost',
       env: 'APP_DOMAIN',
@@ -33,6 +38,11 @@ module.exports = convict({
       env: 'APP_SECRET',
       format: String,
       sensitive: true,
+    },
+    secure: {
+      default: false,
+      env: 'APP_SECURE',
+      format: 'Boolean',
     },
     trustProxy: {
       default: false,
