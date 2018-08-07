@@ -54,7 +54,7 @@ function compileEmailTemplate(templateName, templateParams) {
   const source = fs.readFileSync(path.join(__dirname, 'emails', `${templateName}.hbs`), 'utf8')
   const template = handlebars.compile(source)
   return template({
-    baseUrl: `${APP_CFG.secure ? 'https' : 'http'}://${APP_CFG.domain}`,
+    baseUrl: `${APP_CFG.secure ? 'https' : 'http'}://${APP_CFG.baseUrl}`,
     ...templateParams,
   })
 }
