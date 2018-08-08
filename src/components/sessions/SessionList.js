@@ -58,7 +58,7 @@ export const SessionListPres = ({ intl, filters, handleCopySession, handleStartS
   return (
     <div className="sessionList">
       <Query query={SessionListQuery}>
-        {({ data: { sessions }, error, loading }) => {
+        {({ data, error, loading }) => {
           if (loading) {
             return <Loader active />
           }
@@ -66,6 +66,8 @@ export const SessionListPres = ({ intl, filters, handleCopySession, handleStartS
           if (error) {
             return <Message error>{error.message}</Message>
           }
+
+          const { sessions } = data
 
           if (sessions.length === 0) {
             return (
