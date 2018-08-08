@@ -34,7 +34,7 @@ export const QuestionListPres = ({
 }) => (
   <div className="questionList">
     <Query query={QuestionListQuery}>
-      {({ data: { questions }, error, loading }) => {
+      {({ data, error, loading }) => {
         if (loading) {
           return <Loader active />
         }
@@ -42,6 +42,8 @@ export const QuestionListPres = ({
         if (error) {
           return <Message error>{error.message}</Message>
         }
+
+        const { questions } = data
 
         if (questions.length === 0) {
           return (
