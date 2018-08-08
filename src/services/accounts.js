@@ -422,6 +422,9 @@ const changePassword = async (userId, newPassword) => {
     throw new UserInputError('PASSWORD_UPDATE_FAILED')
   }
 
+  // log the password request to slack
+  sendSlackNotification(`[accounts] Password has been changed for: ${user.email}`)
+
   // return the updated user
   return updatedUser
 }
@@ -457,6 +460,13 @@ const requestPassword = async (res, email) => {
     jwt,
   })
 
+  // log the password request to slack
+  sendSlackNotification(
+    `[accounts] Password has been requested for: ${
+      user.email
+    }. Link: https://app.klicker.uzh.ch/user/resetPassword?resetToken=${jwt}`
+  )
+
   // send a password reset email
   try {
     sendEmailNotification({
@@ -467,13 +477,6 @@ const requestPassword = async (res, email) => {
   } catch (e) {
     return 'PASSWORD_RESET_FAILED'
   }
-
-  // log the password request to slack
-  sendSlackNotification(
-    `[accounts] Password has been requested for: ${
-      user.email
-    }. Link: https://app.klicker.uzh.ch/user/resetPassword?resetToken=${jwt}`
-  )
 
   return 'PASSWORD_RESET_SENT'
 }
