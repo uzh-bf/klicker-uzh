@@ -52,7 +52,17 @@ const Registration = ({ intl }) => (
           return (
             <>
               <Message info>
-                Already have an account? <Link href="/user/login">Login here.</Link>
+                <FormattedMessage
+                  defaultMessage="Already have an account? {loginLink}"
+                  id="user.registration.loginInfo"
+                  values={{
+                    loginLink: (
+                      <Link href="/user/login">
+                        <FormattedMessage defaultMessage="Login here." id="user.registration.loginInfoLink" />
+                      </Link>
+                    ),
+                  }}
+                />
               </Message>
               <RegistrationForm
                 intl={intl}

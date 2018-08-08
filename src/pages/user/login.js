@@ -35,8 +35,22 @@ const Login = ({ intl, router }) => (
         {(login, { loading, error }) => (
           <>
             <Message info>
-              To login with a legacy account, please <Link href="/user/requestPassword">reset your password</Link>{' '}
-              first. If you need a new account, you can <Link href="/user/registration">sign up here</Link>.
+              <FormattedMessage
+                defaultMessage="To login with a legacy account, please {requestLink} first. If you need a new account, you can {signupLink} here."
+                id="user.login.infoMessage"
+                values={{
+                  requestLink: (
+                    <Link href="/user/requestPassword">
+                      <FormattedMessage defaultMessage="reset your password" id="form.login.infoMessageResetPW" />
+                    </Link>
+                  ),
+                  signupLink: (
+                    <Link href="/user/registration">
+                      <FormattedMessage defaultMessage="sign up" id="form.login.infoMessageSignup" />
+                    </Link>
+                  ),
+                }}
+              />
             </Message>
             <LoginForm
               intl={intl}
