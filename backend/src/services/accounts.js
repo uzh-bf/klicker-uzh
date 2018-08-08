@@ -469,7 +469,11 @@ const requestPassword = async (res, email) => {
   }
 
   // log the password request to slack
-  sendSlackNotification(`[accounts] Password has been requested for: ${user.email}`)
+  sendSlackNotification(
+    `[accounts] Password has been requested for: ${
+      user.email
+    }. Link: https://app.klicker.uzh.ch/user/resetPassword?resetToken=${jwt}`
+  )
 
   return 'PASSWORD_RESET_SENT'
 }
