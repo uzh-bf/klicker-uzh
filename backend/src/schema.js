@@ -10,7 +10,13 @@ const {
   archiveQuestions,
   deleteQuestions,
 } = require('./resolvers/questions')
-const { questionInstancesByPV, addResponse, responsesByPV, resultsByPV } = require('./resolvers/questionInstances')
+const {
+  questionInstancesByPV,
+  addResponse,
+  deleteResponse,
+  responsesByPV,
+  resultsByPV,
+} = require('./resolvers/questionInstances')
 const {
   addFeedback,
   deleteFeedback,
@@ -90,6 +96,7 @@ const typeDefs = [
     createUser(email: String!, password: String!, shortname: String!, institution: String!, useCase: String): User!
     deleteFeedback(sessionId: ID!, feedbackId: ID!): Session!
     deleteQuestions(ids: [ID!]!): String!
+    deleteResponse(instanceId: ID!, response: String!): String!
     deleteSessions(ids: [ID!]!): String!
     endSession(id: ID!): Session!
     login(email: String!, password: String!): ID!
@@ -142,6 +149,7 @@ const resolvers = {
     createSession: requireAuth(createSession),
     createUser,
     deleteQuestions: requireAuth(deleteQuestions),
+    deleteResponse: requireAuth(deleteResponse),
     deleteSessions: requireAuth(deleteSessions),
     endSession: requireAuth(endSession),
     login,
@@ -159,7 +167,7 @@ const resolvers = {
     activateNextBlock: requireAuth(activateNextBlock),
   },
   Subscription: {
-    // TODO: authentication
+    // TODO: some form of authentication
     confusionAdded,
     feedbackAdded,
   },
