@@ -95,8 +95,18 @@ export const SMALL_PIE_THRESHOLD = 0.05
 export const CHANGELOG = {
   new: [
     {
+      items: [
+        'Add functionality for deletion of responses from the evaluation screen',
+        'Improve answering of number range questions, fix errors in validation',
+        'Improve distinction of archive and question pool',
+        'Improve functionality and layout of tabular evaluation screen',
+        'Miscellaneous improvements and optimizations',
+      ],
+      text: '1.0.0-rc.8 (09.08.2018)',
+    },
+    {
       items: [' Possibility to delete questions, sessions, and user accounts', ' Many, many other optimizations...'],
-      text: '1.0.0-rc.3',
+      text: '1.0.0-rc.3 (07.08.2018)',
     },
     {
       items: [
