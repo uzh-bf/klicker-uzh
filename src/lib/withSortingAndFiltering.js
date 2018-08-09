@@ -65,8 +65,8 @@ export default ComposedComponent => {
         }
       },
 
-      handleToggleArchive: ({ filters }) => () => ({
-        filters: { ...filters, archive: !filters.archive },
+      handleToggleArchive: ({ filters }) => newValue => ({
+        filters: { ...filters, archive: typeof newValue !== 'undefined' ? newValue : !filters.archive },
       }),
     })
   )(ComposedComponent)
