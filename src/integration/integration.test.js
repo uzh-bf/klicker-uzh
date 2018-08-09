@@ -1028,6 +1028,36 @@ describe('Integration', () => {
             },
           })
         )
+        ensureNoErrors(
+          await sendQuery({
+            query: Mutations.AddResponseMutation,
+            variables: {
+              fp: 'myfp1',
+              instanceId: instanceIds.FREE_RANGE_OPEN,
+              response: { value: 50000 },
+            },
+          })
+        )
+        ensureNoErrors(
+          await sendQuery({
+            query: Mutations.AddResponseMutation,
+            variables: {
+              fp: 'myfp1',
+              instanceId: instanceIds.FREE_RANGE_OPEN,
+              response: { value: 50000 },
+            },
+          })
+        )
+        ensureNoErrors(
+          await sendQuery({
+            query: Mutations.AddResponseMutation,
+            variables: {
+              fp: 'myfp1',
+              instanceId: instanceIds.FREE_RANGE_OPEN,
+              response: { value: 20000 },
+            },
+          })
+        )
       })
 
       it('LECTURER: can evaluate the third question block', async () => {
@@ -1040,6 +1070,33 @@ describe('Integration', () => {
           )
         )
         expect(runningSession).toMatchSnapshot()
+
+        const evaluateSession = ensureNoErrors(
+          await sendQuery(
+            {
+              query: Queries.SessionEvaluationQuery,
+              variables: { sessionId },
+            },
+            authCookie
+          )
+        )
+        expect(evaluateSession).toMatchSnapshot()
+      })
+
+      it('LECTURER: can remove responses from questions', async () => {
+        const { deleteResponse } = ensureNoErrors(
+          await sendQuery(
+            {
+              query: Mutations.DeleteResponseMutation,
+              variables: {
+                instanceId: instanceIds.FREE_RANGE_OPEN,
+                response: 20000,
+              },
+            },
+            authCookie
+          )
+        )
+        expect(deleteResponse).toEqual('RESPONSE_DELETED')
 
         const evaluateSession = ensureNoErrors(
           await sendQuery(

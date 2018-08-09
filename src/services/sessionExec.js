@@ -277,6 +277,43 @@ const addResponse = async ({ ip, fp, instanceId, response }) => {
 }
 
 /**
+ * Remove a response from an active question instance
+ * @param {*} param0
+ */
+const deleteResponse = async ({ userId, instanceId, response }) => {
+  // find the specified question instance
+  // only find instances that are open
+  const instance = await QuestionInstanceModel.findOne({
+    _id: instanceId,
+    user: userId,
+  }).populate('question')
+
+  // if the instance does not exist, throw
+  if (!instance || !instance.results) {
+    throw new ForbiddenError('INVALID_INSTANCE')
+  }
+
+  const questionType = instance.question.type
+
+  // ensure that this operation is only executed on free response questions
+  if (!QUESTION_GROUPS.FREE.includes(questionType)) {
+    throw new ForbiddenError('OPERATION_INCOMPATIBLE')
+  }
+
+  // hash the response value to get a unique identifier
+  const resultKey = md5(response)
+
+  // remove the responses with the corresponding result key
+  if (instance.results.FREE[resultKey]) {
+    delete instance.results.FREE[resultKey]
+    instance.results.totalParticipants -= 1
+  }
+  instance.markModified('results.FREE')
+
+  await instance.save()
+}
+
+/**
  * Prepare data needed for participating in a session
  * @param {*} param0
  */
@@ -325,6 +362,7 @@ const joinSession = async ({ shortname }) => {
 module.exports = {
   getRunningSession,
   addResponse,
+  deleteResponse,
   addConfusionTS,
   addFeedback,
   deleteFeedback,

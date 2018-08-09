@@ -46,6 +46,16 @@ const addResponseMutation = async (parentValue, { fp, instanceId, response }, { 
   return 'RESPONSE_ADDED'
 }
 
+const deleteResponseMutation = async (parentValue, { instanceId, response }, { auth }) => {
+  await SessionExecService.deleteResponse({
+    userId: auth.sub,
+    instanceId,
+    response,
+  })
+
+  return 'RESPONSE_DELETED'
+}
+
 module.exports = {
   // queries
   questionInstance: questionInstanceByIDQuery,
@@ -55,4 +65,5 @@ module.exports = {
 
   // mutations
   addResponse: addResponseMutation,
+  deleteResponse: deleteResponseMutation,
 }
