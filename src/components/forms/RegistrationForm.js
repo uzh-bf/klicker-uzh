@@ -1,8 +1,8 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { FormattedMessage, intlShape } from 'react-intl'
-import { Button, Form } from 'semantic-ui-react'
-import { object } from 'yup'
+import { Button, Checkbox, Form } from 'semantic-ui-react'
+import { object, boolean } from 'yup'
 
 import { Formik } from 'formik'
 import _isEmpty from 'lodash/isEmpty'
@@ -23,6 +23,7 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
   <div className="registrationForm">
     <Formik
       initialValues={{
+        acceptTOS: false,
         email: '',
         institution: '',
         password: '',
@@ -30,7 +31,7 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
         shortname: '',
         useCase: '',
       }}
-      render={({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting }) => (
+      render={({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting, setFieldValue }) => (
         <Form error onSubmit={handleSubmit}>
           <FormikInput
             autoFocus
@@ -126,6 +127,34 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
             value={values.useCase}
           />
           <div className="submit">
+            <Form.Field>
+              <label>ToS &amp; Privacy Policy</label>
+              <Checkbox
+                checked={values.acceptTOS}
+                label={
+                  <label>
+                    <FormattedMessage
+                      defaultMessage="I accept the site {terms} and {privacy} by registering."
+                      id="user.registration.tos"
+                      values={{
+                        privacy: (
+                          <a href="http://www.klicker.uzh.ch/privacy" rel="noopener noreferrer" target="_blank">
+                            Privacy Policy
+                          </a>
+                        ),
+                        terms: (
+                          <a href="http://www.klicker.uzh.ch/tos" rel="noopener noreferrer" target="_blank">
+                            Terms of Service
+                          </a>
+                        ),
+                      }}
+                    />
+                  </label>
+                }
+                name="acceptTOS"
+                onChange={() => setFieldValue('acceptTOS', !values.acceptTOS)}
+              />
+            </Form.Field>
             <Button
               primary
               disabled={!_isEmpty(errors) || _isEmpty(touched)}
@@ -140,6 +169,9 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
       )}
       validationSchema={object()
         .shape({
+          acceptTOS: boolean()
+            .oneOf([true])
+            .required(),
           email: email.required(),
           institution: institution.required(),
           password: password.required(),
