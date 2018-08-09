@@ -41,12 +41,16 @@ const Login = ({ intl, router }) => (
                 values={{
                   requestLink: (
                     <Link href="/user/requestPassword">
-                      <FormattedMessage defaultMessage="reset your password" id="form.login.infoMessageResetPW" />
+                      <a>
+                        <FormattedMessage defaultMessage="reset your password" id="form.login.infoMessageResetPW" />
+                      </a>
                     </Link>
                   ),
                   signupLink: (
                     <Link href="/user/registration">
-                      <FormattedMessage defaultMessage="sign up" id="form.login.infoMessageSignup" />
+                      <a>
+                        <FormattedMessage defaultMessage="sign up" id="form.login.infoMessageSignup" />
+                      </a>
                     </Link>
                   ),
                 }}
