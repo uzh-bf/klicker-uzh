@@ -343,6 +343,14 @@ describe('SessionExecService', () => {
         SessionExecService.addResponse({
           instanceId: session.activeInstances[activeInstance],
           response: {
+            value: 'asd',
+          },
+        })
+      ).rejects.toEqual(new Error('INVALID_RESPONSE'))
+      expect(
+        SessionExecService.addResponse({
+          instanceId: session.activeInstances[activeInstance],
+          response: {
             xyz: 'asd',
           },
         })
