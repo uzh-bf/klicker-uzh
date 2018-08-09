@@ -100,6 +100,7 @@ function Evaluation({
         activeVisualization={activeVisualizations[type]}
         data={results.data}
         handleShowGraph={handleShowGraph}
+        instanceId={activeInstance.id}
         intl={intl}
         numBins={bins}
         questionType={type}

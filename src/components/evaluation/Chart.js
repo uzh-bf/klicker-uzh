@@ -17,6 +17,7 @@ const propTypes = {
     percentage: PropTypes.number,
   }),
   handleShowGraph: PropTypes.func.isRequired,
+  instanceId: PropTypes.string.isRequired,
   numBins: PropTypes.number.isRequired,
   questionType: PropTypes.string.isRequired,
   restrictions: PropTypes.shape({
@@ -51,6 +52,7 @@ const chartTypes = {
 function Chart({
   activeVisualization,
   data,
+  instanceId,
   restrictions,
   handleShowGraph,
   numBins,
@@ -89,6 +91,7 @@ function Chart({
             <ChartComponent
               brush={sessionStatus !== SESSION_STATUS.RUNNING}
               data={data}
+              instanceId={instanceId}
               isColored={questionType !== 'FREE_RANGE'}
               isSolutionShown={showSolution}
               numBins={numBins}
