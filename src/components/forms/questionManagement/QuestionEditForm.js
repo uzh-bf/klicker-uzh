@@ -54,8 +54,7 @@ const validate = ({ title, content, options, tags, type }) => {
     errors.title = messages.titleEmpty
   }
 
-  // TODO: validation for draftjs content
-  if (!content || _isEmpty(content)) {
+  if (!content.getCurrentContent().hasText()) {
     errors.content = messages.contentEmpty
   }
 
