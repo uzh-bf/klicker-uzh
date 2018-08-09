@@ -58,7 +58,9 @@ const Registration = ({ intl }) => (
                   values={{
                     loginLink: (
                       <Link href="/user/login">
-                        <FormattedMessage defaultMessage="Login here." id="user.registration.loginInfoLink" />
+                        <a>
+                          <FormattedMessage defaultMessage="Login here." id="user.registration.loginInfoLink" />
+                        </a>
                       </Link>
                     ),
                   }}
