@@ -80,6 +80,7 @@ export const QuestionListPres = ({
             key={question.id}
             lastUsed={Array.from(
               question.instances
+                .filter(instance => !!instance)
                 .reduce((prevMap, { createdAt, session }) => {
                   // if there is already a link to the session, skip the duplicate
                   if (prevMap.has(session)) {
