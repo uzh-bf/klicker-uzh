@@ -92,7 +92,7 @@ const Join = ({
               inactive: sidebarActiveItem !== 'activeQuestion',
             })}
           >
-            <FormattedMessage defaultMessage="No evaluation active." id="joinSession.noEvaluationActive" />
+            <FormattedMessage defaultMessage="No question active." id="joinSession.noQuestionActive" />
           </div>
         )}
 

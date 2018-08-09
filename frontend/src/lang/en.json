@@ -111,7 +111,7 @@
   "freeAnswer.unrestricted": "Unrestricted input (any number)",
   "joinSession.allFeedbacks": "All feedbacks",
   "joinSession.newFeedbackInput.label": "New open feedback",
-  "joinSession.noEvaluationActive": "No evaluation active.",
+  "joinSession.noQuestionActive": "No question active.",
   "joinSession.noSessionActive": "No session active.",
   "joinSession.questionArea.alreadyAnswered": "You have already answered all active questions.",
   "joinSession.questionArea.info.FREE": "Please enter your response below:",

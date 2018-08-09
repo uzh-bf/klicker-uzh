@@ -25,7 +25,7 @@ const propTypes = {
 const defaultProps = {
   disabled: false,
   options: [],
-  value: undefined,
+  value: '',
 }
 
 const FREEAnswerOptions = ({ disabled, onChange, options, value, questionType }) => (
@@ -77,49 +77,43 @@ const FREEAnswerOptions = ({ disabled, onChange, options, value, questionType })
 
       return (
         <div className="field">
-          <div className="rangeInformation">
-            {do {
-              if (options.restrictions.max !== null) {
-                ;<FormattedMessage
-                  defaultMessage="Maximum value: {max}"
-                  id="freeAnswer.maxValue"
-                  values={{ max: options.restrictions.max }}
-                />
-              } else if (options.restrictions.min !== null) {
-                ;<FormattedMessage
-                  defaultMessage="Minimum value: {min}"
-                  id="freeAnswer.minValue"
-                  values={{ min: options.restrictions.min }}
-                />
-              } else {
-                ;<FormattedMessage defaultMessage="Unrestricted input (any number)" id="freeAnswer.unrestricted" />
-              }
-            }}
-          </div>
-
-          <textarea disabled={disabled} id="responseInput" onChange={e => onChange(e.target.value)} />
-
           {questionType === QUESTION_TYPES.FREE_RANGE && (
-            <div>
-              {options.restrictions.min && (
-                <div>
-                  <strong>
-                    <FormattedMessage defaultMessage="Min" id="createQuestion.options.min" />
-                  </strong>
-                  :{options.restrictions.min}
-                </div>
-              )}
+            <div className="rangeInformation">
+              {(() => {
+                if (typeof options.restrictions?.max !== 'undefined' && options.restrictions.max !== null) {
+                  return (
+                    <FormattedMessage
+                      defaultMessage="Maximum value: {max}"
+                      id="freeAnswer.maxValue"
+                      values={{ max: options.restrictions.max }}
+                    />
+                  )
+                }
 
-              {options.restrictions.max && (
-                <div>
-                  <strong>
-                    <FormattedMessage defaultMessage="Max" id="createQuestion.options.max" />
-                  </strong>
-                  :{options.restrictions.max}
-                </div>
-              )}
+                if (typeof options.restrictions?.min !== 'undefined' && options.restrictions.min !== null) {
+                  return (
+                    <FormattedMessage
+                      defaultMessage="Minimum value: {min}"
+                      id="freeAnswer.minValue"
+                      values={{ min: options.restrictions.min }}
+                    />
+                  )
+                }
+
+                return (
+                  <FormattedMessage defaultMessage="Unrestricted input (any number)" id="freeAnswer.unrestricted" />
+                )
+              })()}
             </div>
           )}
+
+          <textarea
+            defaultValue=""
+            disabled={disabled}
+            id="responseInput"
+            value={value}
+            onChange={e => onChange(e.target.value)}
+          />
         </div>
       )
     })()}

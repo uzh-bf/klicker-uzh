@@ -148,8 +148,8 @@ const ContentInput = ({ value, onChange, error, touched, disabled }) => {
             :global(.public-DraftEditor-content) {
               border: 1px solid lightgrey;
               border-radius: 4px;
-              height: 20rem;
-              padding: 1rem;
+              min-height: 10rem;
+              padding: 0.5rem;
               margin-bottom: 0.5rem;
 
               &:focus {

@@ -63,7 +63,7 @@ const validate = ({ content, options, tags, title, type }) => {
     errors.title = messages.titleEmpty
   }
 
-  if (!content || _isEmpty(content)) {
+  if (!content.getCurrentContent().hasText()) {
     errors.content = messages.contentEmpty
   }
 
@@ -77,9 +77,7 @@ const validate = ({ content, options, tags, title, type }) => {
 
   if (QUESTION_GROUPS.CHOICES.includes(type) && (!options || options.choices.length === 0)) {
     errors.options = messages.optionsEmpty
-  }
-
-  if (type === QUESTION_TYPES.FREE_RANGE) {
+  } else if (type === QUESTION_TYPES.FREE_RANGE) {
     if (options && options.restrictions) {
       const isMinNum = _isNumber(options.restrictions.min)
       const isMaxNum = _isNumber(options.restrictions.max)
