@@ -18,6 +18,7 @@ const propTypes = {
   }),
   handleShowGraph: PropTypes.func.isRequired,
   instanceId: PropTypes.string.isRequired,
+  isPublic: PropTypes.bool.isRequired,
   numBins: PropTypes.number.isRequired,
   questionType: PropTypes.string.isRequired,
   restrictions: PropTypes.shape({
@@ -53,6 +54,7 @@ function Chart({
   activeVisualization,
   data,
   instanceId,
+  isPublic,
   restrictions,
   handleShowGraph,
   numBins,
@@ -93,6 +95,7 @@ function Chart({
               data={data}
               instanceId={instanceId}
               isColored={questionType !== 'FREE_RANGE'}
+              isPublic={isPublic}
               isSolutionShown={showSolution}
               numBins={numBins}
               questionType={questionType}

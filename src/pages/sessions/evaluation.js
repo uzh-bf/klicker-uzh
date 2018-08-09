@@ -41,6 +41,7 @@ const propTypes = {
   handleToggleShowSolution: PropTypes.func.isRequired,
   instanceSummary: PropTypes.arrayOf(PropTypes.object),
   intl: intlShape.isRequired,
+  isPublic: PropTypes.bool.isRequired,
   sessionStatus: sessionStatusShape.isRequired,
   showGraph: PropTypes.bool.isRequired,
   showSolution: PropTypes.bool.isRequired,
@@ -60,6 +61,7 @@ function Evaluation({
   bins,
   instanceSummary,
   intl,
+  isPublic,
   handleChangeActiveInstance,
   sessionStatus,
   showGraph,
@@ -102,6 +104,7 @@ function Evaluation({
         handleShowGraph={handleShowGraph}
         instanceId={activeInstance.id}
         intl={intl}
+        isPublic={isPublic}
         numBins={bins}
         questionType={type}
         restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
@@ -122,8 +125,11 @@ export default compose(
   withRouter,
   withLogging(),
   pageWithIntl,
+  withProps(({ router }) => ({
+    isPublic: !!router.query.public,
+  })),
   branch(
-    ({ router }) => router.query.public,
+    ({ isPublic }) => isPublic,
     graphql(SessionEvaluationPublicQuery, {
       options: ({ router }) => ({
         variables: { sessionId: router.query.sessionId },
@@ -137,14 +143,14 @@ export default compose(
   ),
   // if the query is still loading, display nothing
   branch(
-    ({ data: { loading, session, sessionPublic }, router: { query } }) =>
-      loading || (!query.public && !session) || (query.public && !sessionPublic),
+    ({ data: { loading, session, sessionPublic }, isPublic }) =>
+      loading || (!isPublic && !session) || (isPublic && !sessionPublic),
     renderNothing
   ),
   // override the session evaluation query with a polling query
   // only if the session is not being publicly accessed
   branch(
-    ({ data: { session }, router }) => !router.query.public && session.status === SESSION_STATUS.RUNNING,
+    ({ data: { session }, isPublic }) => !isPublic && session.status === SESSION_STATUS.RUNNING,
     graphql(SessionEvaluationQuery, {
       // refetch the active instances query every 10s
       options: ({ router }) => ({
@@ -154,8 +160,8 @@ export default compose(
     })
   ),
   // if the session is publicly accessed, override the session with its public counterpart
-  withProps(({ data: { session, sessionPublic }, router: { query } }) => ({
-    session: query.public ? sessionPublic : session,
+  withProps(({ data: { session, sessionPublic }, isPublic }) => ({
+    session: isPublic ? sessionPublic : session,
   })),
   withProps(({ session, session: { blocks } }) => {
     // reduce question blocks to the active instances

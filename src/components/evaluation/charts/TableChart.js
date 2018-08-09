@@ -4,7 +4,7 @@ import { Mutation } from 'react-apollo'
 import { Button, Table } from 'semantic-ui-react'
 
 import { QUESTION_GROUPS } from '../../../constants'
-import { DeleteResponseMutation } from '../../../graphql'
+import { SessionEvaluationQuery, DeleteResponseMutation } from '../../../graphql'
 
 const propTypes = {
   data: PropTypes.arrayOf(
@@ -15,16 +15,18 @@ const propTypes = {
     })
   ),
   instanceId: PropTypes.string.isRequired,
+  isPublic: PropTypes.bool,
   isSolutionShown: PropTypes.bool,
   questionType: PropTypes.string.isRequired,
 }
 
 const defaultProps = {
   data: [],
+  isPublic: true,
   isSolutionShown: false,
 }
 
-function TableChart({ instanceId, data, isSolutionShown, questionType }) {
+function TableChart({ instanceId, data, isSolutionShown, questionType, isPublic }) {
   return (
     <div className="tableChart">
       <Mutation mutation={DeleteResponseMutation}>
@@ -40,7 +42,8 @@ function TableChart({ instanceId, data, isSolutionShown, questionType }) {
 
               {isSolutionShown && <Table.HeaderCell collapsing>T/F</Table.HeaderCell>}
 
-              {QUESTION_GROUPS.FREE.includes(questionType) && <Table.HeaderCell collapsing>Actions</Table.HeaderCell>}
+              {!isPublic &&
+                QUESTION_GROUPS.FREE.includes(questionType) && <Table.HeaderCell collapsing>Actions</Table.HeaderCell>}
             </Table.Header>
             <Table.Body>
               {data.map(({ correct, count, percentage, value }) => (
@@ -52,24 +55,39 @@ function TableChart({ instanceId, data, isSolutionShown, questionType }) {
 
                   {isSolutionShown && typeof correct !== 'undefined' && <Table.Cell>{correct ? 'T' : 'F'}</Table.Cell>}
 
-                  <Table.Cell>
-                    <Button
-                      icon="trash"
-                      onClick={async () => {
-                        await deleteResponse({
-                          optimisticResponse: {
-                            __typename: 'Mutation',
-                            deleteResponse: 'RESPONSE_DELETED',
-                          },
-                          update: () => {},
-                          variables: {
-                            instanceId,
-                            response: value,
-                          },
-                        })
-                      }}
-                    />
-                  </Table.Cell>
+                  {!isPublic && (
+                    <Table.Cell>
+                      <Button
+                        icon="trash"
+                        onClick={async () => {
+                          await deleteResponse({
+                            optimisticResponse: {
+                              __typename: 'Mutation',
+                              deleteResponse: 'RESPONSE_DELETED',
+                            },
+                            update: (cache, { data: responseData }) => {
+                              if (responseData.deleteResponse !== 'RESPONSE_DELETED') {
+                                return
+                              }
+
+                              const { session } = cache.readQuery({ query: SessionEvaluationQuery })
+                              console.log(session)
+                              /* cache.writeQuery({
+                              data: {
+                                sessions: sessions.filter(session => session.id !== id),
+                              },
+                              query: SessionListQuery,
+                            }) */
+                            },
+                            variables: {
+                              instanceId,
+                              response: value,
+                            },
+                          })
+                        }}
+                      />
+                    </Table.Cell>
+                  )}
                 </Table.Row>
               ))}
             </Table.Body>
@@ -80,6 +98,10 @@ function TableChart({ instanceId, data, isSolutionShown, questionType }) {
       <style jsx>{`
         .tableChart {
           width: 100%;
+
+          :global(tbody) {
+            overflow-y: auto;
+          }
         }
       `}</style>
     </div>
