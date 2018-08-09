@@ -25,7 +25,7 @@ const propTypes = {
 const defaultProps = {
   disabled: false,
   options: [],
-  value: undefined,
+  value: '',
 }
 
 const FREEAnswerOptions = ({ disabled, onChange, options, value, questionType }) => (
@@ -107,7 +107,13 @@ const FREEAnswerOptions = ({ disabled, onChange, options, value, questionType })
             </div>
           )}
 
-          <textarea disabled={disabled} id="responseInput" onChange={e => onChange(e.target.value)} />
+          <textarea
+            defaultValue=""
+            disabled={disabled}
+            id="responseInput"
+            value={value}
+            onChange={e => onChange(e.target.value)}
+          />
         </div>
       )
     })()}
