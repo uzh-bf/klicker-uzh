@@ -56,7 +56,6 @@
     "graphql": "0.13.2",
     "graphql-persisted-document-loader": "1.0.1",
     "graphql-tag": "2.9.2",
-    "griddle-react": "1.13.1",
     "gulp": "3.9.1",
     "helmet": "3.13.0",
     "hoist-non-react-statics": "3.0.1",
