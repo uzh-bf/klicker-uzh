@@ -2,6 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import _without from 'lodash/without'
+import v8n from 'v8n'
 import { FormattedMessage } from 'react-intl'
 import { convertFromRaw } from 'draft-js'
 import { compose, withStateHandlers, withHandlers, withProps } from 'recompose'
@@ -154,7 +155,7 @@ function QuestionArea({
                       options={options[type]}
                       questionType={type}
                       value={inputValue}
-                      onChange={handleFreeValueChange}
+                      onChange={handleFreeValueChange(type, options[type])}
                     />
                   )
                 }
@@ -321,11 +322,29 @@ export default compose(
         inputValid: false,
         inputValue: undefined,
       }),
-      handleFreeValueChange: () => inputValue => ({
-        inputEmpty: inputValue !== 0 && (!inputValue || inputValue.length === 0),
-        inputValid: !!inputValue || inputValue === 0,
-        inputValue,
-      }),
+      handleFreeValueChange: () => (inputValue, options, type) => {
+        let validator = v8n()
+
+        if (type === QUESTION_TYPES.FREE_RANGE) {
+          validator = validator.number(false)
+
+          if (options.restrictions?.max) {
+            validator = validator.lessThanOrEqual(options.restrictions.max)
+          }
+
+          if (options.restrictions?.min) {
+            validator = validator.greaterThanOrEqual(options.restrictions.min)
+          }
+        } else {
+          validator = validator.string()
+        }
+
+        return {
+          inputEmpty: inputValue !== 0 && (!inputValue || inputValue.length === 0),
+          inputValid: validator.test(inputValue) || validator.test(+inputValue),
+          inputValue,
+        }
+      },
       handleSubmit: ({ activeQuestion, remainingQuestions }) => () => {
         // calculate the new indices of remaining questions
         const newRemaining = _without(remainingQuestions, activeQuestion)
@@ -349,6 +368,8 @@ export default compose(
       handleActiveChoicesChange(choice, type),
     handleActiveQuestionChange: ({ handleActiveQuestionChange }) => index => () => handleActiveQuestionChange(index),
     handleCompleteQuestion: ({ handleCompleteQuestion }) => index => () => handleCompleteQuestion(index),
+    handleFreeValueChange: ({ handleFreeValueChange }) => (type, options) => inputValue =>
+      handleFreeValueChange(inputValue, options, type),
     handleSubmit: ({ activeQuestion, questions, handleNewResponse, handleSubmit, inputValue }) => () => {
       const { id: instanceId, type } = questions[activeQuestion]
 

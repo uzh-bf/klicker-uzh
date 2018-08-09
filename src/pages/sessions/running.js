@@ -107,7 +107,11 @@ const Running = ({ intl, shortname }) => (
                                 }}
                                 handlePauseSession={async () => {
                                   await pauseSession({
-                                    refetchQueries: [{ query: SessionListQuery }],
+                                    refetchQueries: [
+                                      { query: SessionListQuery },
+                                      { query: RunningSessionQuery },
+                                      { query: AccountSummaryQuery },
+                                    ],
                                     variables: { id },
                                   })
 
