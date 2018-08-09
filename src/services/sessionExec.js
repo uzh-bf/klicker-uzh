@@ -1,5 +1,5 @@
 const md5 = require('md5')
-const _isNumber = require('lodash/isNumber')
+const v8n = require('v8n')
 const { ForbiddenError, UserInputError } = require('apollo-server-express')
 
 const CFG = require('../klicker.conf.js')
@@ -215,13 +215,28 @@ const addResponse = async ({ ip, fp, instanceId, response }) => {
     }
 
     if (questionType === QUESTION_TYPES.FREE_RANGE) {
-      if (!_isNumber(response.value * 1)) {
+      // create a new base validator
+      // disallow NaN by passing false
+      const baseValidator = v8n().number(false)
+
+      try {
+        baseValidator.check(+response.value)
+      } catch (e) {
         throw new UserInputError('INVALID_RESPONSE')
       }
 
-      // validate that the response lies within the specified range if given
+      let rangeValidator = baseValidator
       const { min, max } = currentVersion.options.FREE_RANGE.restrictions
-      if ((min && response.value < min) || (max && response.value > max)) {
+      if (min) {
+        rangeValidator = rangeValidator.greaterThanOrEqual(min)
+      }
+      if (max) {
+        rangeValidator = rangeValidator.lessThanOrEqual(max)
+      }
+
+      try {
+        rangeValidator.check(+response.value)
+      } catch (e) {
         throw new UserInputError('RESPONSE_OUT_OF_RANGE')
       }
     }
