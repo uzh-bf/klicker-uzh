@@ -41,6 +41,8 @@ const propTypes = {
   handleToggleShowSolution: PropTypes.func.isRequired,
   instanceSummary: PropTypes.arrayOf(PropTypes.object),
   intl: intlShape.isRequired,
+  isPublic: PropTypes.bool.isRequired,
+  sessionId: PropTypes.string.isRequired,
   sessionStatus: sessionStatusShape.isRequired,
   showGraph: PropTypes.bool.isRequired,
   showSolution: PropTypes.bool.isRequired,
@@ -60,7 +62,9 @@ function Evaluation({
   bins,
   instanceSummary,
   intl,
+  isPublic,
   handleChangeActiveInstance,
+  sessionId,
   sessionStatus,
   showGraph,
   showSolution,
@@ -100,10 +104,13 @@ function Evaluation({
         activeVisualization={activeVisualizations[type]}
         data={results.data}
         handleShowGraph={handleShowGraph}
+        instanceId={activeInstance.id}
         intl={intl}
+        isPublic={isPublic}
         numBins={bins}
         questionType={type}
         restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
+        sessionId={sessionId}
         sessionStatus={sessionStatus}
         showGraph={showGraph}
         showSolution={showSolution}
@@ -121,40 +128,44 @@ export default compose(
   withRouter,
   withLogging(),
   pageWithIntl,
+  withProps(({ router }) => ({
+    isPublic: !!router.query.public,
+    sessionId: router.query.sessionId,
+  })),
   branch(
-    ({ router }) => router.query.public,
+    ({ isPublic }) => isPublic,
     graphql(SessionEvaluationPublicQuery, {
-      options: ({ router }) => ({
-        variables: { sessionId: router.query.sessionId },
+      options: ({ sessionId }) => ({
+        variables: { sessionId },
       }),
     }),
     graphql(SessionEvaluationQuery, {
-      options: ({ router }) => ({
-        variables: { sessionId: router.query.sessionId },
+      options: ({ sessionId }) => ({
+        variables: { sessionId },
       }),
     })
   ),
   // if the query is still loading, display nothing
   branch(
-    ({ data: { loading, session, sessionPublic }, router: { query } }) =>
-      loading || (!query.public && !session) || (query.public && !sessionPublic),
+    ({ data: { loading, session, sessionPublic }, isPublic }) =>
+      loading || (!isPublic && !session) || (isPublic && !sessionPublic),
     renderNothing
   ),
   // override the session evaluation query with a polling query
   // only if the session is not being publicly accessed
   branch(
-    ({ data: { session }, router }) => !router.query.public && session.status === SESSION_STATUS.RUNNING,
+    ({ data: { session }, isPublic }) => !isPublic && session.status === SESSION_STATUS.RUNNING,
     graphql(SessionEvaluationQuery, {
       // refetch the active instances query every 10s
-      options: ({ router }) => ({
+      options: ({ sessionId }) => ({
         pollInterval: 7000,
-        variables: { sessionId: router.query.sessionId },
+        variables: { sessionId },
       }),
     })
   ),
   // if the session is publicly accessed, override the session with its public counterpart
-  withProps(({ data: { session, sessionPublic }, router: { query } }) => ({
-    session: query.public ? sessionPublic : session,
+  withProps(({ data: { session, sessionPublic }, isPublic }) => ({
+    session: isPublic ? sessionPublic : session,
   })),
   withProps(({ session, session: { blocks } }) => {
     // reduce question blocks to the active instances

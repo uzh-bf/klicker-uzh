@@ -1,126 +1,183 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import Griddle, { plugins, RowDefinition, ColumnDefinition } from 'griddle-react'
+import _sortBy from 'lodash/sortBy'
+import { Mutation } from 'react-apollo'
+import { Button, Table } from 'semantic-ui-react'
+import { compose, withStateHandlers, withProps } from 'recompose'
+
 import { QUESTION_GROUPS } from '../../../constants'
+import { SessionEvaluationQuery, DeleteResponseMutation } from '../../../graphql'
 
 const propTypes = {
   data: PropTypes.arrayOf(
     PropTypes.shape({
+      correct: PropTypes.bool.isRequired,
       count: PropTypes.number.isRequired,
       percentage: PropTypes.number.isRequired,
       value: PropTypes.string.isRequired,
     })
   ),
+  handleSort: PropTypes.func.isRequired,
+  instanceId: PropTypes.string.isRequired,
+  isPublic: PropTypes.bool,
   isSolutionShown: PropTypes.bool,
   questionType: PropTypes.string.isRequired,
+  sessionId: PropTypes.string.isRequired,
+  sortBy: PropTypes.string.isRequired,
+  sortDirection: PropTypes.string.isRequired,
 }
 
 const defaultProps = {
   data: [],
+  isPublic: true,
   isSolutionShown: false,
 }
 
-// define a custom layout
-// we don't need Filter and SettingsWrapper
-function Layout({ Table, Pagination }) {
-  return (
-    <div>
-      <Table />
-      <Pagination />
-    </div>
-  )
-}
-Layout.propTypes = {
-  Pagination: PropTypes.element.isRequired,
-  Table: PropTypes.element.isRequired,
-}
-
-function ColumnWithSolution({ value }) {
-  return <span>{value ? 'T' : 'F'}</span>
-}
-ColumnWithSolution.propTypes = {
-  value: PropTypes.bool.isRequired, // eslint-disable-line react/boolean-prop-naming
-}
-
-// virtual scrolling: use plugins.PositionPlugin({ tableHeight: 500 })?
-function TableChart({ data, isSolutionShown, questionType }) {
+function TableChart({
+  sortDirection,
+  sortBy,
+  sessionId,
+  instanceId,
+  data,
+  isSolutionShown,
+  questionType,
+  isPublic,
+  handleSort,
+}) {
   return (
     <div className="tableChart">
-      <Griddle
-        components={{
-          Layout,
-        }}
-        data={data}
-        plugins={[plugins.LocalPlugin]}
-        // sortProperties={[{ id: 'count', sortAscending: false }]}
-      >
-        <RowDefinition>
-          <ColumnDefinition cssClassName="griddle-cell countColumn" id="count" title="Count" width="3rem" />
+      <Mutation mutation={DeleteResponseMutation}>
+        {deleteResponse => (
+          <Table sortable striped>
+            <Table.Header>
+              <Table.HeaderCell
+                collapsing
+                sorted={sortBy === 'count' ? sortDirection : null}
+                onClick={handleSort('count')}
+              >
+                Count
+              </Table.HeaderCell>
+              <Table.HeaderCell sorted={sortBy === 'value' ? sortDirection : null} onClick={handleSort('value')}>
+                Value
+              </Table.HeaderCell>
 
-          <ColumnDefinition id="value" title="Value" />
+              {QUESTION_GROUPS.WITH_PERCENTAGES.includes(questionType) && (
+                <Table.HeaderCell
+                  collapsing
+                  sorted={sortBy === 'percentage' ? sortDirection : null}
+                  onClick={handleSort('percentage')}
+                >
+                  %
+                </Table.HeaderCell>
+              )}
 
-          {QUESTION_GROUPS.WITH_PERCENTAGES.includes(questionType) && (
-            <ColumnDefinition
-              cssClassName="griddle-cell percentageColumn"
-              headerCssClassName="griddle-table-heading-cell percentageColumn"
-              id="percentage"
-              title="%"
-              width="2rem"
-            />
-          )}
+              {isSolutionShown && (
+                <Table.HeaderCell
+                  collapsing
+                  sorted={sortBy === 'correct' ? sortDirection : null}
+                  onClick={handleSort('correct')}
+                >
+                  T/F
+                </Table.HeaderCell>
+              )}
 
-          <ColumnDefinition
-            cssClassName="griddle-cell solutionColumn"
-            customComponent={ColumnWithSolution}
-            headerCssClassName="griddle-table-heading-cell solutionColumn"
-            id="correct"
-            title="T/F"
-            width="1rem"
-          />
-        </RowDefinition>
-      </Griddle>
+              {!isPublic &&
+                QUESTION_GROUPS.FREE.includes(questionType) && <Table.HeaderCell collapsing>Actions</Table.HeaderCell>}
+            </Table.Header>
+            <Table.Body>
+              {data.map(({ correct, count, percentage, value }) => (
+                <Table.Row key={value}>
+                  <Table.Cell>{count}</Table.Cell>
+                  <Table.Cell>{value}</Table.Cell>
 
-      <style jsx>
-        {`
-          .tableChart {
-            width: 100%;
+                  {QUESTION_GROUPS.WITH_PERCENTAGES.includes(questionType) && <Table.Cell>{percentage}</Table.Cell>}
 
-            :global(.griddle-table) {
-              width: 100%;
-            }
+                  {isSolutionShown && (
+                    <Table.Cell>{typeof correct !== 'undefined' && (correct ? 'T' : 'F')}</Table.Cell>
+                  )}
 
-            :global(.griddle-table-heading) {
-              background-color: lightgrey;
-            }
+                  {!isPublic &&
+                    QUESTION_GROUPS.FREE.includes(questionType) && (
+                      <Table.Cell>
+                        <Button
+                          icon="trash"
+                          onClick={async () => {
+                            await deleteResponse({
+                              optimisticResponse: {
+                                __typename: 'Mutation',
+                                deleteResponse: 'RESPONSE_DELETED',
+                              },
+                              update: (cache, { data: responseData }) => {
+                                if (responseData.deleteResponse !== 'RESPONSE_DELETED') {
+                                  return
+                                }
 
-            :global(.griddle-table-heading-cell, .griddle-cell) {
-              font-size: 1.25rem;
-              padding: 0.5rem;
-              text-align: left;
-            }
+                                // read the session from cache
+                                const { session } = cache.readQuery({
+                                  query: SessionEvaluationQuery,
+                                  variables: { sessionId },
+                                })
 
-            :global(.countColumn, .solutionColumn, .percentageColumn) {
-              text-align: center;
-            }
+                                // perform cache updates
+                                cache.writeQuery({
+                                  data: {
+                                    session: {
+                                      ...session,
+                                      blocks: session.blocks.map(block => {
+                                        // find the index of the relevant instance
+                                        const instanceIndex = block.instances.findIndex(
+                                          instance => instance.id === instanceId
+                                        )
 
-            :global(.solutionColumn) {
-              display: ${isSolutionShown ? 'table-cell' : 'none'};
-            }
+                                        // if the instance was in this block
+                                        // perform result updates
+                                        if (instanceIndex >= 0) {
+                                          const updatedBlock = block
 
-            :global(.griddle-row:nth-child(2n)) {
-              background-color: #efefef;
-            }
+                                          // decrement the number of responses and remove the result
+                                          updatedBlock.instances[instanceIndex].results.FREE.totalResponses -= 1
+                                          updatedBlock.instances[instanceIndex].results.FREE = updatedBlock.instances[
+                                            instanceIndex
+                                          ].results.FREE.filter(response => `${response.value}` !== `${value}`)
 
-            :global(.griddle-pagination) {
-              margin-top: 5px;
+                                          return updatedBlock
+                                        }
 
-              :global(.griddle-page-select) {
-                margin-left: 5px;
-              }
-            }
+                                        return block
+                                      }),
+                                    },
+                                  },
+                                  query: SessionEvaluationQuery,
+                                  variables: {
+                                    sessionId,
+                                  },
+                                })
+                              },
+                              variables: {
+                                instanceId,
+                                response: value,
+                              },
+                            })
+                          }}
+                        />
+                      </Table.Cell>
+                    )}
+                </Table.Row>
+              ))}
+            </Table.Body>
+          </Table>
+        )}
+      </Mutation>
+
+      <style jsx>{`
+        .tableChart {
+          width: 100%;
+
+          :global(tbody) {
+            overflow-y: auto;
           }
-        `}
-      </style>
+        }
+      `}</style>
     </div>
   )
 }
@@ -128,4 +185,27 @@ function TableChart({ data, isSolutionShown, questionType }) {
 TableChart.propTypes = propTypes
 TableChart.defaultProps = defaultProps
 
-export default TableChart
+export default compose(
+  withProps(({ data }) => console.log(data)),
+  withStateHandlers(
+    {
+      sortBy: 'count',
+      sortDirection: 'descending',
+    },
+    {
+      handleSort: ({ sortBy, sortDirection }) => clickedColumn => {
+        // if the same column as previously active is clicked, reverse the sort direction
+        if (sortBy === clickedColumn) {
+          return { sortDirection: sortDirection === 'ascending' ? 'descending' : 'ascending' }
+        }
+
+        // otherwise update the property we sort by
+        return { sortBy: clickedColumn }
+      },
+    }
+  ),
+  withProps(({ data, sortBy, sortDirection, handleSort }) => ({
+    data: sortDirection === 'ascending' ? _sortBy(data, sortBy) : _sortBy(data, sortBy).reverse(),
+    handleSort: clickedColumn => () => handleSort(clickedColumn),
+  }))
+)(TableChart)
