@@ -1,7 +1,10 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import Griddle, { plugins, RowDefinition, ColumnDefinition } from 'griddle-react'
+import { Mutation } from 'react-apollo'
+import { Button, Table } from 'semantic-ui-react'
+
 import { QUESTION_GROUPS } from '../../../constants'
+import { DeleteResponseMutation } from '../../../graphql'
 
 const propTypes = {
   data: PropTypes.arrayOf(
@@ -11,6 +14,7 @@ const propTypes = {
       value: PropTypes.string.isRequired,
     })
   ),
+  instanceId: PropTypes.string.isRequired,
   isSolutionShown: PropTypes.bool,
   questionType: PropTypes.string.isRequired,
 }
@@ -20,107 +24,64 @@ const defaultProps = {
   isSolutionShown: false,
 }
 
-// define a custom layout
-// we don't need Filter and SettingsWrapper
-function Layout({ Table, Pagination }) {
-  return (
-    <div>
-      <Table />
-      <Pagination />
-    </div>
-  )
-}
-Layout.propTypes = {
-  Pagination: PropTypes.element.isRequired,
-  Table: PropTypes.element.isRequired,
-}
-
-function ColumnWithSolution({ value }) {
-  return <span>{value ? 'T' : 'F'}</span>
-}
-ColumnWithSolution.propTypes = {
-  value: PropTypes.bool.isRequired, // eslint-disable-line react/boolean-prop-naming
-}
-
-// virtual scrolling: use plugins.PositionPlugin({ tableHeight: 500 })?
-function TableChart({ data, isSolutionShown, questionType }) {
+function TableChart({ instanceId, data, isSolutionShown, questionType }) {
   return (
     <div className="tableChart">
-      <Griddle
-        components={{
-          Layout,
-        }}
-        data={data}
-        plugins={[plugins.LocalPlugin]}
-        // sortProperties={[{ id: 'count', sortAscending: false }]}
-      >
-        <RowDefinition>
-          <ColumnDefinition cssClassName="griddle-cell countColumn" id="count" title="Count" width="3rem" />
+      <Mutation mutation={DeleteResponseMutation}>
+        {deleteResponse => (
+          <Table striped>
+            <Table.Header>
+              <Table.HeaderCell collapsing>Count</Table.HeaderCell>
+              <Table.HeaderCell>Value</Table.HeaderCell>
 
-          <ColumnDefinition id="value" title="Value" />
+              {QUESTION_GROUPS.WITH_PERCENTAGES.includes(questionType) && (
+                <Table.HeaderCell collapsing>%</Table.HeaderCell>
+              )}
 
-          {QUESTION_GROUPS.WITH_PERCENTAGES.includes(questionType) && (
-            <ColumnDefinition
-              cssClassName="griddle-cell percentageColumn"
-              headerCssClassName="griddle-table-heading-cell percentageColumn"
-              id="percentage"
-              title="%"
-              width="2rem"
-            />
-          )}
+              {isSolutionShown && <Table.HeaderCell collapsing>T/F</Table.HeaderCell>}
 
-          <ColumnDefinition
-            cssClassName="griddle-cell solutionColumn"
-            customComponent={ColumnWithSolution}
-            headerCssClassName="griddle-table-heading-cell solutionColumn"
-            id="correct"
-            title="T/F"
-            width="1rem"
-          />
-        </RowDefinition>
-      </Griddle>
+              {QUESTION_GROUPS.FREE.includes(questionType) && <Table.HeaderCell collapsing>Actions</Table.HeaderCell>}
+            </Table.Header>
+            <Table.Body>
+              {data.map(({ correct, count, percentage, value }) => (
+                <Table.Row key={value}>
+                  <Table.Cell>{count}</Table.Cell>
+                  <Table.Cell>{value}</Table.Cell>
 
-      <style jsx>
-        {`
-          .tableChart {
-            width: 100%;
+                  {QUESTION_GROUPS.WITH_PERCENTAGES.includes(questionType) && <Table.Cell>{percentage}</Table.Cell>}
 
-            :global(.griddle-table) {
-              width: 100%;
-            }
+                  {isSolutionShown && typeof correct !== 'undefined' && <Table.Cell>{correct ? 'T' : 'F'}</Table.Cell>}
 
-            :global(.griddle-table-heading) {
-              background-color: lightgrey;
-            }
+                  <Table.Cell>
+                    <Button
+                      icon="trash"
+                      onClick={async () => {
+                        await deleteResponse({
+                          optimisticResponse: {
+                            __typename: 'Mutation',
+                            deleteResponse: 'RESPONSE_DELETED',
+                          },
+                          update: () => {},
+                          variables: {
+                            instanceId,
+                            response: value,
+                          },
+                        })
+                      }}
+                    />
+                  </Table.Cell>
+                </Table.Row>
+              ))}
+            </Table.Body>
+          </Table>
+        )}
+      </Mutation>
 
-            :global(.griddle-table-heading-cell, .griddle-cell) {
-              font-size: 1.25rem;
-              padding: 0.5rem;
-              text-align: left;
-            }
-
-            :global(.countColumn, .solutionColumn, .percentageColumn) {
-              text-align: center;
-            }
-
-            :global(.solutionColumn) {
-              display: ${isSolutionShown ? 'table-cell' : 'none'};
-            }
-
-            :global(.griddle-row:nth-child(2n)) {
-              background-color: #efefef;
-            }
-
-            :global(.griddle-pagination) {
-              margin-top: 5px;
-
-              :global(.griddle-page-select) {
-                margin-left: 5px;
-              }
-            }
-          }
-        `}
-      </style>
+      <style jsx>{`
+        .tableChart {
+          width: 100%;
+        }
+      `}</style>
     </div>
   )
 }
