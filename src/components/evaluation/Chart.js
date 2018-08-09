@@ -25,6 +25,7 @@ const propTypes = {
     max: PropTypes.number,
     min: PropTypes.number,
   }),
+  sessionId: PropTypes.string.isRequired,
   sessionStatus: PropTypes.string.isRequired,
   showGraph: PropTypes.bool,
   showSolution: PropTypes.bool,
@@ -59,6 +60,7 @@ function Chart({
   handleShowGraph,
   numBins,
   questionType,
+  sessionId,
   sessionStatus,
   showGraph,
   showSolution,
@@ -100,6 +102,7 @@ function Chart({
               numBins={numBins}
               questionType={questionType}
               restrictions={restrictions}
+              sessionId={sessionId}
               statistics={statistics}
               totalResponses={totalResponses}
             />

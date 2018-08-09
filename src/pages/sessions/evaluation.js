@@ -42,6 +42,7 @@ const propTypes = {
   instanceSummary: PropTypes.arrayOf(PropTypes.object),
   intl: intlShape.isRequired,
   isPublic: PropTypes.bool.isRequired,
+  sessionId: PropTypes.string.isRequired,
   sessionStatus: sessionStatusShape.isRequired,
   showGraph: PropTypes.bool.isRequired,
   showSolution: PropTypes.bool.isRequired,
@@ -63,6 +64,7 @@ function Evaluation({
   intl,
   isPublic,
   handleChangeActiveInstance,
+  sessionId,
   sessionStatus,
   showGraph,
   showSolution,
@@ -108,6 +110,7 @@ function Evaluation({
         numBins={bins}
         questionType={type}
         restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
+        sessionId={sessionId}
         sessionStatus={sessionStatus}
         showGraph={showGraph}
         showSolution={showSolution}
@@ -127,17 +130,18 @@ export default compose(
   pageWithIntl,
   withProps(({ router }) => ({
     isPublic: !!router.query.public,
+    sessionId: router.query.sessionId,
   })),
   branch(
     ({ isPublic }) => isPublic,
     graphql(SessionEvaluationPublicQuery, {
-      options: ({ router }) => ({
-        variables: { sessionId: router.query.sessionId },
+      options: ({ sessionId }) => ({
+        variables: { sessionId },
       }),
     }),
     graphql(SessionEvaluationQuery, {
-      options: ({ router }) => ({
-        variables: { sessionId: router.query.sessionId },
+      options: ({ sessionId }) => ({
+        variables: { sessionId },
       }),
     })
   ),
@@ -153,9 +157,9 @@ export default compose(
     ({ data: { session }, isPublic }) => !isPublic && session.status === SESSION_STATUS.RUNNING,
     graphql(SessionEvaluationQuery, {
       // refetch the active instances query every 10s
-      options: ({ router }) => ({
+      options: ({ sessionId }) => ({
         pollInterval: 7000,
-        variables: { sessionId: router.query.sessionId },
+        variables: { sessionId },
       }),
     })
   ),
