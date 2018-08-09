@@ -328,11 +328,11 @@ export default compose(
         if (type === QUESTION_TYPES.FREE_RANGE) {
           validator = validator.number(false)
 
-          if (options.restrictions.max) {
+          if (options.restrictions?.max) {
             validator = validator.lessThanOrEqual(options.restrictions.max)
           }
 
-          if (options.restrictions.min) {
+          if (options.restrictions?.min) {
             validator = validator.greaterThanOrEqual(options.restrictions.min)
           }
         } else {
