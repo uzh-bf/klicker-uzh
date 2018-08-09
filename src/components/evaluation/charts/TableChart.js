@@ -1,7 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import _sortBy from 'lodash/sortBy'
 import { Mutation } from 'react-apollo'
 import { Button, Table } from 'semantic-ui-react'
+import { compose, withStateHandlers, withProps } from 'recompose'
 
 import { QUESTION_GROUPS } from '../../../constants'
 import { SessionEvaluationQuery, DeleteResponseMutation } from '../../../graphql'
@@ -9,16 +11,20 @@ import { SessionEvaluationQuery, DeleteResponseMutation } from '../../../graphql
 const propTypes = {
   data: PropTypes.arrayOf(
     PropTypes.shape({
+      correct: PropTypes.bool.isRequired,
       count: PropTypes.number.isRequired,
       percentage: PropTypes.number.isRequired,
       value: PropTypes.string.isRequired,
     })
   ),
+  handleSort: PropTypes.func.isRequired,
   instanceId: PropTypes.string.isRequired,
   isPublic: PropTypes.bool,
   isSolutionShown: PropTypes.bool,
   questionType: PropTypes.string.isRequired,
   sessionId: PropTypes.string.isRequired,
+  sortBy: PropTypes.string.isRequired,
+  sortDirection: PropTypes.string.isRequired,
 }
 
 const defaultProps = {
@@ -27,21 +33,53 @@ const defaultProps = {
   isSolutionShown: false,
 }
 
-function TableChart({ sessionId, instanceId, data, isSolutionShown, questionType, isPublic }) {
+function TableChart({
+  sortDirection,
+  sortBy,
+  sessionId,
+  instanceId,
+  data,
+  isSolutionShown,
+  questionType,
+  isPublic,
+  handleSort,
+}) {
   return (
     <div className="tableChart">
       <Mutation mutation={DeleteResponseMutation}>
         {deleteResponse => (
-          <Table striped>
+          <Table sortable striped>
             <Table.Header>
-              <Table.HeaderCell collapsing>Count</Table.HeaderCell>
-              <Table.HeaderCell>Value</Table.HeaderCell>
+              <Table.HeaderCell
+                collapsing
+                sorted={sortBy === 'count' ? sortDirection : null}
+                onClick={handleSort('count')}
+              >
+                Count
+              </Table.HeaderCell>
+              <Table.HeaderCell sorted={sortBy === 'value' ? sortDirection : null} onClick={handleSort('value')}>
+                Value
+              </Table.HeaderCell>
 
               {QUESTION_GROUPS.WITH_PERCENTAGES.includes(questionType) && (
-                <Table.HeaderCell collapsing>%</Table.HeaderCell>
+                <Table.HeaderCell
+                  collapsing
+                  sorted={sortBy === 'percentage' ? sortDirection : null}
+                  onClick={handleSort('percentage')}
+                >
+                  %
+                </Table.HeaderCell>
               )}
 
-              {isSolutionShown && <Table.HeaderCell collapsing>T/F</Table.HeaderCell>}
+              {isSolutionShown && (
+                <Table.HeaderCell
+                  collapsing
+                  sorted={sortBy === 'correct' ? sortDirection : null}
+                  onClick={handleSort('correct')}
+                >
+                  T/F
+                </Table.HeaderCell>
+              )}
 
               {!isPublic &&
                 QUESTION_GROUPS.FREE.includes(questionType) && <Table.HeaderCell collapsing>Actions</Table.HeaderCell>}
@@ -54,7 +92,9 @@ function TableChart({ sessionId, instanceId, data, isSolutionShown, questionType
 
                   {QUESTION_GROUPS.WITH_PERCENTAGES.includes(questionType) && <Table.Cell>{percentage}</Table.Cell>}
 
-                  {isSolutionShown && typeof correct !== 'undefined' && <Table.Cell>{correct ? 'T' : 'F'}</Table.Cell>}
+                  {isSolutionShown && (
+                    <Table.Cell>{typeof correct !== 'undefined' && (correct ? 'T' : 'F')}</Table.Cell>
+                  )}
 
                   {!isPublic &&
                     QUESTION_GROUPS.FREE.includes(questionType) && (
@@ -145,4 +185,27 @@ function TableChart({ sessionId, instanceId, data, isSolutionShown, questionType
 TableChart.propTypes = propTypes
 TableChart.defaultProps = defaultProps
 
-export default TableChart
+export default compose(
+  withProps(({ data }) => console.log(data)),
+  withStateHandlers(
+    {
+      sortBy: 'count',
+      sortDirection: 'descending',
+    },
+    {
+      handleSort: ({ sortBy, sortDirection }) => clickedColumn => {
+        // if the same column as previously active is clicked, reverse the sort direction
+        if (sortBy === clickedColumn) {
+          return { sortDirection: sortDirection === 'ascending' ? 'descending' : 'ascending' }
+        }
+
+        // otherwise update the property we sort by
+        return { sortBy: clickedColumn }
+      },
+    }
+  ),
+  withProps(({ data, sortBy, sortDirection, handleSort }) => ({
+    data: sortDirection === 'ascending' ? _sortBy(data, sortBy) : _sortBy(data, sortBy).reverse(),
+    handleSort: clickedColumn => () => handleSort(clickedColumn),
+  }))
+)(TableChart)
