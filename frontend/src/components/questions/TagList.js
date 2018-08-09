@@ -34,19 +34,16 @@ export const TagListPres = ({
       <FormattedMessage defaultMessage="Reset filters" id="tagList.button.reset" />
     </Button>
     <List selection size="large">
-      <List.Header className="listHeader archive">
-        <FormattedMessage defaultMessage="Archive" id="tagList.header.archive" />
-      </List.Header>
       <List.Item active={isArchiveActive} className="listItem archiveItem" onClick={() => handleToggleArchive(true)}>
         <List.Icon name="archive" />
         <List.Content>
-          <FormattedMessage defaultMessage="Show Archive" id="tagList.string.showArchive" />
+          <FormattedMessage defaultMessage="Question Archive" id="tagList.string.showArchive" />
         </List.Content>
       </List.Item>
       <List.Item active={!isArchiveActive} className="listItem archiveItem" onClick={() => handleToggleArchive(false)}>
         <List.Icon name="list" />
         <List.Content>
-          <FormattedMessage defaultMessage="Show Pool" id="tagList.string.showPool" />
+          <FormattedMessage defaultMessage="Question Pool" id="tagList.string.showPool" />
         </List.Content>
       </List.Item>
       <List.Header className="listHeader types">
