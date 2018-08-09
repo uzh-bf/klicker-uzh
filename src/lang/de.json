@@ -218,6 +218,7 @@
   "user.registration.pageTitle": "Registration",
   "user.registration.successNotification": "Erfolgreich registriert als {newEmail}.{br} Bitte unter {link} einloggen.",
   "user.registration.title": "Registration",
+  "user.registration.tos": "Mit meiner Registrierung akzeptiere ich die {terms} und {privacy} der Seite.",
   "user.requestPassword.success": "Eine Email mit Instruktionen zum Zurücksetzen des Passworts wurde an die angegebene Adresse versendet.",
   "user.requestPassword.title": "Passwort zurücksetzen",
   "user.resetPassword.pageTitle": "Passwort zurücksetzen",
