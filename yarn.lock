@@ -2199,9 +2199,9 @@ express-jwt@5.3.1:
     jsonwebtoken "^8.1.0"
     lodash.set "^4.0.0"
 
-express-rate-limit@2.12.1:
-  version "2.12.1"
-  resolved "https://registry.yarnpkg.com/express-rate-limit/-/express-rate-limit-2.12.1.tgz#ee5943a30c8285db3add6fc943f206cdc9d6ac01"
+express-rate-limit@2.12.2:
+  version "2.12.2"
+  resolved "https://registry.yarnpkg.com/express-rate-limit/-/express-rate-limit-2.12.2.tgz#bb4a04e8dc246340610824dd987c648cdef04ce1"
   dependencies:
     defaults "^1.0.3"
 
