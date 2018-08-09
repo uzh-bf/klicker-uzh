@@ -134,7 +134,7 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
                 label={
                   <label>
                     <FormattedMessage
-                      defaultMessage="I accept the site {terms} and {privacy} by registering."
+                      defaultMessage="By registering, I accept the site {terms} and {privacy}."
                       id="user.registration.tos"
                       values={{
                         privacy: (

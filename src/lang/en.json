@@ -218,7 +218,7 @@
   "user.registration.pageTitle": "Registration",
   "user.registration.successNotification": "Successfully registered as {newEmail}.{br} Please login at {link}.",
   "user.registration.title": "Registration",
-  "user.registration.tos": "I accept the site {terms} and {privacy} by registering.",
+  "user.registration.tos": "By registering, I accept the site {terms} and {privacy}.",
   "user.requestPassword.success": "An email has been sent to the provided address. Please follow the instructions therein to regain access to your account.",
   "user.requestPassword.title": "Reset your password",
   "user.resetPassword.pageTitle": "Reset password",
