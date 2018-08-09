@@ -37,10 +37,16 @@ export const TagListPres = ({
       <List.Header className="listHeader archive">
         <FormattedMessage defaultMessage="Archive" id="tagList.header.archive" />
       </List.Header>
-      <List.Item active={isArchiveActive} className="listItem archiveItem" onClick={() => handleToggleArchive()}>
+      <List.Item active={isArchiveActive} className="listItem archiveItem" onClick={() => handleToggleArchive(true)}>
         <List.Icon name="archive" />
         <List.Content>
-          <FormattedMessage defaultMessage="Show archived" id="tagList.string.archive" />
+          <FormattedMessage defaultMessage="Show Archive" id="tagList.string.showArchive" />
+        </List.Content>
+      </List.Item>
+      <List.Item active={!isArchiveActive} className="listItem archiveItem" onClick={() => handleToggleArchive(false)}>
+        <List.Icon name="list" />
+        <List.Content>
+          <FormattedMessage defaultMessage="Show Pool" id="tagList.string.showPool" />
         </List.Content>
       </List.Item>
       <List.Header className="listHeader types">
@@ -123,36 +129,38 @@ export const TagListPres = ({
       </Query>
     </List>
 
-    <style jsx>
-      {`
-        @import 'src/theme';
+    <style jsx>{`
+      @import 'src/theme';
 
-        .tagList {
-          font-size: 0.9rem;
-          min-width: 12rem;
+      .tagList {
+        font-size: 0.9rem;
+        min-width: 12rem;
 
-          :global(.listHeader) {
-            color: grey;
-            font-size: 1rem;
-            font-weight: bold;
-            padding: 0 1rem;
+        :global(.listHeader) {
+          color: grey;
+          font-size: 1rem;
+          font-weight: bold;
+          padding: 0 1rem;
+        }
+        :global(.listHeader.tags),
+        :global(.listHeader.types) {
+          margin-top: 1rem;
+        }
+        :global(.listItem.item) {
+          border-radius: 0;
+          padding: 0.3rem 1rem;
+
+          :global(i) {
+            padding: 0;
           }
-          :global(.listHeader.tags),
-          :global(.listHeader.types) {
-            margin-top: 1rem;
-          }
-          :global(.listItem.item) {
-            border-radius: 0;
-            padding: 0.3rem 1rem;
 
-            &:hover :global(.content),
-            &:hover :global(i) {
-              color: #2185d0;
-            }
+          &:hover :global(.content),
+          &:hover :global(i) {
+            color: #2185d0;
           }
         }
-      `}
-    </style>
+      }
+    `}</style>
   </div>
 )
 
