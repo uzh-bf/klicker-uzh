@@ -1,18 +1,18 @@
 version: '3'
 services:
   # api:
-    # build: .
-    # ports:
-      # - "4000:3000"
-    # environment:
-      # APP_DOMAIN: "localhost"
-      # APP_SECRET: "hello-world"
-      # APP_FILTERING_FP:
-      # APP_FILTERING_IP:
-      # MONGO_URL: "klicker:klicker@ds125388.mlab.com:25388/klicker-migration"
-      # REDIS_URL: ":klicker-dev@144.76.118.118:6379"
-      # ORIGIN: "http://localhost:3000"
-      # PORT: 3000
+  # build: .
+  # ports:
+  # - "4000:3000"
+  # environment:
+  # APP_DOMAIN: "localhost"
+  # APP_SECRET: "hello-world"
+  # APP_FILTERING_FP:
+  # APP_FILTERING_IP:
+  # MONGO_URL: "klicker:klicker@ds125388.mlab.com:25388/klicker-migration"
+  # REDIS_URL: ":klicker-dev@144.76.118.118:6379"
+  # ORIGIN: "http://localhost:3000"
+  # PORT: 3000
 
   # minio:
   #   image: minio/minio:latest@sha256:ed0c464a66ac1f56b77607320c74de4190cd6121b70ffbc1e387f2a4955dd334
@@ -26,20 +26,22 @@ services:
   #   command: server /data
 
   redis:
-    image: "redis:3-32bit@sha256:59232cf728999da6923494add956ff7cd1604e285208f46a6e53b9fed8c27485"
+    image: 'redis:3-32bit@sha256:59232cf728999da6923494add956ff7cd1604e285208f46a6e53b9fed8c27485'
     ports:
-      - "6379:6379"
+      - '6379:6379'
 
-  mailhog:
-    image: mailhog/mailhog:v1.0.0
+  # mailhog:
+  # image: mailhog/mailhog:v1.0.0
+  # ports:
+  # - '1025:1025'
+  # - '8025:8025'
+
+  mongodb:
+    image: 'mongo:3.2'
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - '27017:27017'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: klicker
+      MONGO_INITDB_ROOT_PASSWORD: klicker
 
-  #mongodb:
-    #image: "mongo:3.2"
-    #ports:
-      #- "27017:27017"
-
-volumes:
-  minio-data:
+# volumes: minio-data
