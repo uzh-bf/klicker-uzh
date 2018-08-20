@@ -26,7 +26,7 @@ services:
   #   command: server /data
 
   redis:
-    image: 'redis:3-32bit@sha256:59232cf728999da6923494add956ff7cd1604e285208f46a6e53b9fed8c27485'
+    image: 'redis:3-32bit@sha256:93edc9db0f556427241131b726e5036f56f38a4ecbf4d75eedc3e43faeb1bd17'
     ports:
       - '6379:6379'
 
