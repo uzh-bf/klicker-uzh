@@ -86,7 +86,7 @@
     "react-dnd": "5.0.0",
     "react-dnd-html5-backend": "5.0.1",
     "react-dom": "16.4.2",
-    "react-dropzone": "4.3.0",
+    "react-dropzone": "5.0.1",
     "react-ga": "2.5.3",
     "react-intl": "2.4.0",
     "react-perf-devtool": "3.0.8",
