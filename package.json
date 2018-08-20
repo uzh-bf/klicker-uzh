@@ -6,7 +6,7 @@
   "author": "Roland Schläfli <roland.schlaefli@bf.uzh.ch>",
   "license": "AGPL-3.0",
   "dependencies": {
-    "apollo-server-express": "2.0.0",
+    "apollo-server-express": "2.0.3",
     "aws-sdk": "2.290.0",
     "bcryptjs": "2.4.3",
     "bluebird": "3.5.1",
