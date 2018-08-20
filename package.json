@@ -100,7 +100,7 @@
     "semantic-ui-react": "0.82.2",
     "styled-jsx-plugin-sass": "0.2.4",
     "subscriptions-transport-ws": "0.9.14",
-    "url-loader": "1.0.1",
+    "url-loader": "1.1.1",
     "uuid": "3.3.2",
     "v8n": "1.2.1",
     "webpack": "3.12.0",
