@@ -44,7 +44,7 @@
     "raven": "2.6.3",
     "react": "16.4.2",
     "react-dom": "16.4.2",
-    "request": "2.87.0",
+    "request": "2.88.0",
     "request-promise": "4.2.2",
     "subscriptions-transport-ws": "0.9.14",
     "uuid": "3.3.2",
