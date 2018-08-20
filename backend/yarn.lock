@@ -1771,9 +1771,9 @@ elastic-apm-http-client@^5.2.1:
   dependencies:
     fast-safe-stringify "^2.0.4"
 
-elastic-apm-node@1.10.2:
-  version "1.10.2"
-  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.10.2.tgz#c92c578d0b8d796c2820cd89e6ed2f13c55c4b4a"
+elastic-apm-node@1.11.0:
+  version "1.11.0"
+  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.11.0.tgz#0bf96c5808aa298f3f3a471d2c57c0c21e878157"
   dependencies:
     after-all-results "^2.0.0"
     async-value-promise "^1.1.1"
@@ -1792,6 +1792,7 @@ elastic-apm-node@1.10.2:
     require-ancestors "^1.0.0"
     require-in-the-middle "^3.1.0"
     semver "^5.5.0"
+    set-cookie-serde "^1.0.0"
     sql-summary "^1.0.1"
     stackman "^3.0.2"
     unicode-byte-truncate "^1.0.0"
@@ -5789,6 +5790,10 @@ serve-static@1.13.2:
 set-blocking@^2.0.0, set-blocking@~2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/set-blocking/-/set-blocking-2.0.0.tgz#045f9782d011ae9a6803ddd382b24392b3d890f7"
+
+set-cookie-serde@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/set-cookie-serde/-/set-cookie-serde-1.0.0.tgz#bcf9c260ed2212ac4005a53eacbaaa37c07ac452"
 
 set-getter@^0.1.0:
   version "0.1.0"
