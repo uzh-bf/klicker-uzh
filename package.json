@@ -20,7 +20,7 @@
     "dataloader": "1.4.0",
     "dotenv": "6.0.0",
     "draft-js": "0.10.5",
-    "elastic-apm-node": "1.10.2",
+    "elastic-apm-node": "1.11.0",
     "express": "4.16.3",
     "express-jwt": "5.3.1",
     "express-rate-limit": "2.12.2",
