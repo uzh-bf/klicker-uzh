@@ -6592,9 +6592,9 @@ uuid@^3.0.0, uuid@^3.1.0, uuid@^3.2.1:
   version "3.2.1"
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-3.2.1.tgz#12c528bb9d58d0b9265d9a2f6f0fe8be17ff1f14"
 
-v8n@1.2.1:
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/v8n/-/v8n-1.2.1.tgz#c43c8e43f68a2a347ef2c20772521fa0d1aa4066"
+v8n@1.2.2:
+  version "1.2.2"
+  resolved "https://registry.yarnpkg.com/v8n/-/v8n-1.2.2.tgz#9fe01e972c810bc4577a262b6465f4c4e61b2852"
 
 validate-npm-package-license@^3.0.1:
   version "3.0.3"
