@@ -8,17 +8,6 @@ branches:
 
 jobs:
   include:
-    # ensure correct formatting with prettier
-    - <<: *test-setup
-      script:
-        - yarn run format:ci
-
-    # calculate the bundle size
-    - <<: *test-setup
-      script:
-        - yarn run build
-        - yarn run bundlesize
-
     # run jest with test coverage for codeclimate
     - &test-setup
       stage: test
@@ -40,6 +29,17 @@ jobs:
         - yarn test:ci
       after_script:
         - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
+
+    # ensure correct formatting with prettier
+    - <<: *test-setup
+      script:
+        - yarn run format:ci
+
+    # calculate the bundle size
+    - <<: *test-setup
+      script:
+        - yarn run build
+        - yarn run bundlesize
 
     # build all commits to master
     # push a new latest tag to Docker Hub
