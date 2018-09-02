@@ -51,10 +51,10 @@ const Session = `
     confusionTS: [Session_ConfusionTimestep!]!
     feedbacks: [Session_Feedback!]!
 
-    createdAt: String!
-    updatedAt: String!
-    startedAt: String!
-    finishedAt: String!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    startedAt: DateTime!
+    finishedAt: DateTime!
   }
   type Session_PublicEvaluation {
     id: ID!
@@ -102,7 +102,7 @@ const Session = `
     difficulty: Int!
     speed: Int!
 
-    createdAt: String!
+    createdAt: DateTime!
   }
 
   type Session_Feedback {
@@ -110,6 +110,6 @@ const Session = `
     content: String!
     votes: Int!
 
-    createdAt: String!
+    createdAt: DateTime!
   }
 `

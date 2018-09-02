@@ -1,3 +1,5 @@
+const { GraphQLDate, GraphQLTime, GraphQLDateTime } = require('graphql-iso-date')
+
 const { requireAuth } = require('./services/accounts')
 const { requestPresignedURL } = require('./resolvers/files')
 const {
@@ -28,7 +30,6 @@ const {
   joinSession,
   runningSession,
   sessionByPV,
-  sessionIdByPV,
   sessionsByPV,
   startSession,
   updateSessionSettings,
@@ -63,6 +64,10 @@ const { allTypes } = require('./types')
 // remaining types / input types go into types/
 const typeDefs = [
   `
+  scalar Date
+  scalar Time
+  scalar DateTime
+
   schema {
     query: Query
     mutation: Mutation
@@ -124,6 +129,9 @@ const typeDefs = [
 // define graphql resolvers for schema above
 // everything imported from their respective modules in resolvers/
 const resolvers = {
+  Date: GraphQLDate,
+  Time: GraphQLTime,
+  DateTime: GraphQLDateTime,
   // map queries and mutations
   Query: {
     allQuestions: requireAuth(allQuestions),
@@ -205,9 +213,9 @@ const resolvers = {
   },
   QuestionInstance: {
     question: questionByPV,
-    session: sessionIdByPV,
     responses: responsesByPV,
     results: resultsByPV,
+    session: pv => String(pv.session), // HACK: fix broken ID coercion of graphql 14.0.0
   },
   QuestionInstance_Public: {
     question: questionByPV,

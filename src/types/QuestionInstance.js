@@ -14,7 +14,7 @@ const QuestionInstance = `
     id: ID!
     choices: [Int!]
     value: String
-    createdAt: String!
+    createdAt: DateTime!
   }
 
   type QuestionInstance {
@@ -28,8 +28,8 @@ const QuestionInstance = `
     responses: [QuestionInstance_Response!]!
     results: QuestionInstance_Results
 
-    createdAt: String!
-    updatedAt: String!
+    createdAt: DateTime!
+    updatedAt: DateTime!
   }
   type QuestionInstance_Public {
     id: ID!

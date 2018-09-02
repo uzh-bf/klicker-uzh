@@ -4,8 +4,6 @@ const { ForbiddenError, UserInputError } = require('apollo-server-express')
 const mongoose = require('mongoose')
 const JWT = require('jsonwebtoken')
 
-mongoose.Promise = require('bluebird')
-
 const AccountService = require('./accounts')
 const { initializeDb } = require('../lib/test/setup')
 const { Errors } = require('../constants')
@@ -14,6 +12,8 @@ const { UserModel } = require('../models')
 const { ObjectId } = mongoose.Types
 
 const appSecret = process.env.APP_SECRET
+
+mongoose.Promise = Promise
 
 describe('AccountService', () => {
   describe('AccountManagement', () => {

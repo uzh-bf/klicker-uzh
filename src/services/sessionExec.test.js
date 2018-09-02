@@ -10,7 +10,7 @@ const { sessionSerializer, questionInstanceSerializer } = require('../lib/test/s
 
 const { QUESTION_TYPES } = require('../constants')
 
-mongoose.Promise = require('bluebird')
+mongoose.Promise = Promise
 
 // define how jest should serialize objects into snapshots
 // we need to strip ids and dates as they are always changing

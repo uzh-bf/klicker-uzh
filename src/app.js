@@ -7,7 +7,6 @@ const mongoose = require('mongoose')
 const express = require('express')
 const PrettyError = require('pretty-error')
 const { ApolloServer } = require('apollo-server-express')
-mongoose.Promise = require('bluebird')
 
 // express middlewares
 const bodyParser = require('body-parser')
@@ -72,6 +71,8 @@ if (MONGO_CFG.debug) {
   // activate mongoose debug mode (log all queries)
   mongoose.set('debug', true)
 }
+
+mongoose.Promise = Promise
 
 mongoose.connection
   .once('open', () => {

@@ -42,8 +42,8 @@ const User = `
     tags: [Tag!]!
     files: [File!]!
 
-    createdAt: String!
-    updatedAt: String!
+    createdAt: DateTime!
+    updatedAt: DateTime!
   }
 
   type User_Availability {

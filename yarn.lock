@@ -2579,6 +2579,10 @@ graphql-extensions@0.1.2:
   dependencies:
     apollo-server-env "2.0.2"
 
+graphql-iso-date@3.5.0:
+  version "3.5.0"
+  resolved "https://registry.yarnpkg.com/graphql-iso-date/-/graphql-iso-date-3.5.0.tgz#55a1be0efa8d28c1453afd2eb5ce1d052189a513"
+
 graphql-redis-subscriptions@1.5.0:
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/graphql-redis-subscriptions/-/graphql-redis-subscriptions-1.5.0.tgz#53c9be28ee69f61ffbfe808f8f82f7e718254acf"
