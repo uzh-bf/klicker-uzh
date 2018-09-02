@@ -18,6 +18,7 @@ services:
       - 3000:3000
     volumes:
       - './.env:/app/.env:ro'
+      - './.babelrc:/app/.babelrc:ro'
       - './server.js:/app/server.js:ro'
       - './public:/app/public:ro'
       - './src:/app/src'
