@@ -1,18 +1,28 @@
-version: "3"
+version: '3'
+
 services:
-  react:
-    build:
-      context: .
-      args:
-        API_URL: "http://localhost:4000/graphql"
-        FINGERPRINTING: "true"
-        VERSION: "docker-compose"
+  react-dev:
+    build: .
     environment:
-      API_URL: "http://localhost:4000/graphql"
-      APP_FINGERPRINTING: "true"
-      APM_NAME:
-      HELMET_CSP:
-      REDIS_URL: ":klicker-dev@144.76.118.118:6379"
-      STATIC_PATH: "/"
+      API_ENDPOINT: http://localhost:4000/graphql
+      API_ENDPOINT_WS: ws://localhost:4000/graphql
+      APP_BASE_URL: http://localhost:3000
+      CACHE_REDIS_ENABLED: 'true'
+      CACHE_REDIS_HOST: redis
+      ? FEAT_FORMULAS
+      S3_ROOT_URL: https://klicker-files.s3.eu-central-1.amazonaws.com/klicker-dev
+      SECURITY_FINGERPRINTING: 'true'
     ports:
-      - "3000:3000"
+      - 3000:3000
+    volumes:
+      - './.env:/app/.env:ro'
+      - './server.js:/app/server.js:ro'
+      - './public:/app/public:ro'
+      - './src:/app/src'
+    networks:
+      - klicker-dev
+
+networks:
+  klicker-dev:
+    external:
+      name: klicker-api_klicker-dev
