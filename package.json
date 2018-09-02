@@ -6,7 +6,7 @@
   "author": "Roland Schläfli <roland.schlaefli@bf.uzh.ch>",
   "license": "AGPL-3.0",
   "dependencies": {
-    "apollo-server-express": "2.0.3",
+    "apollo-server-express": "2.0.4",
     "aws-sdk": "2.307.0",
     "bcryptjs": "2.4.3",
     "bluebird": "3.5.1",
@@ -68,8 +68,8 @@
   "scripts": {
     "precommit": "lint-staged",
     "prepush": "yarn run test --onlyChanged",
-    "dev": "cross-env NODE_ENV=development nodemon --delay 1000ms -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock src/server.js",
-    "dev:inspect": "cross-env NODE_ENV=development nodemon 1000ms -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock --inspect src/server.js",
+    "dev": "cross-env NODE_ENV=development nodemon -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock src/server.js",
+    "dev:inspect": "cross-env NODE_ENV=development nodemon -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock --inspect src/server.js",
     "dev:ndb": "cross-env NODE_ENV=development ndb node src/server.js",
     "format": "prettier --write \"src/**/*.js\" \"src/**/*.graphql\" \"src/**/*.json\"",
     "format:ci": "prettier --list-different \"src/**/*.js\" \"src/**/*.graphql\" \"src/**/*.json\"",

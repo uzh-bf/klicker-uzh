@@ -45,7 +45,7 @@ httpServer.listen(APP_CFG.port, err => {
   console.log(`[klicker-api] GraphQL ready on http://${APP_CFG.domain}:${APP_CFG.port}/${APP_CFG.path || ''}!`)
 })
 
-const shutdown = async () => {
+const shutdown = signal => async () => {
   console.log('[klicker-api] Shutting down server')
 
   await mongoose.disconnect()
@@ -57,9 +57,8 @@ const shutdown = async () => {
   }
 
   console.log('[klicker-api] Shutdown complete')
-  process.exit(0)
+  process.kill(process.pid, signal)
 }
 
-process.on('SIGINT', async () => shutdown())
-process.on('exit', async () => shutdown())
-process.once('SIGUSR2', async () => shutdown())
+const shutdownSignals = ['SIGINT', 'SIGUSR2', 'SIGTERM']
+shutdownSignals.forEach(signal => process.once(signal, shutdown(signal)))

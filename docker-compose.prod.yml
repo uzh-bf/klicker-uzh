@@ -1,10 +1,8 @@
 version: '3'
 
 services:
-  api-dev:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
+  api-prod:
+    build: .
     environment:
       APP_DOMAIN: localhost
       APP_SECRET: hello-world
@@ -15,16 +13,15 @@ services:
       - 4000:4000
     volumes:
       - './.env:/app/.env:ro'
-      - './src:/app/src:ro'
     networks:
-      - klicker-dev
+      - klicker-prod
 
   redis:
     image: redis:3-32bit@sha256:93edc9db0f556427241131b726e5036f56f38a4ecbf4d75eedc3e43faeb1bd17
     ports:
       - 6379:6379
     networks:
-      - klicker-dev
+      - klicker-prod
 
   mongodb:
     image: mongo:3.2
@@ -34,20 +31,8 @@ services:
     ports:
       - 27017:27017
     networks:
-      - klicker-dev
+      - klicker-prod
 
 networks:
-  klicker-dev:
+  klicker-prod:
     driver: bridge
-
-# minio:
-#   image: minio/minio:latest@sha256:ed0c464a66ac1f56b77607320c74de4190cd6121b70ffbc1e387f2a4955dd334
-#   volumes:
-#     - minio-data:/data
-#   ports:
-#     - "9000:9000"
-#   environment:
-#     MINIO_ACCESS_KEY: klicker
-#     MINIO_SECRET_KEY: secret123
-#   command: server /data
-# volumes: minio-data

@@ -13,7 +13,7 @@ jobs:
       stage: test
       language: node_js
       node_js:
-        - "8"
+        - '8'
       cache:
         yarn: true
         directories:
@@ -23,7 +23,6 @@ jobs:
         - export PATH="$HOME/.yarn/bin:$PATH"
       script:
         - yarn run format:ci
-
 
     # run jest with test coverage for codeclimate
     # tests need an active instance of mongodb
@@ -41,8 +40,9 @@ jobs:
       after_script:
         - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
 
-    # build all merges into master that are not tagged
-    # trigger a new staging deployment
+    # build all commits to master
+    # push a new latest tag to Docker Hub
+    # => template for further docker build jobs
     - &build-setup
       stage: build
       if: (type = push) AND (branch = master)
@@ -55,16 +55,16 @@ jobs:
       before_script:
         - echo $DOCKER_PASSWORD | docker login --username $DOCKER_USER --password-stdin
       script:
-        - docker pull $IMAGE_NAME:latest
+        - travis_retry docker pull $IMAGE_NAME:latest
         - >
           docker build .
           --build-arg API_URL=$STAGING_API_URL
           --cache-from $IMAGE_NAME:latest
           -t $IMAGE_NAME:latest
-        - docker push $IMAGE_NAME:latest
+        - travis_retry docker push $IMAGE_NAME:latest
 
     # build all pull requests
-    # TODO: review app deployment
+    # push a nightly tag to Docker Hub
     - <<: *build-setup
       if: type = pull_request
       script:
@@ -79,40 +79,36 @@ jobs:
         - docker push $IMAGE_NAME:nightly-$TRAVIS_PULL_REQUEST
 
     # build unstable tags (e.g. v1.0.0-beta.1)
-    # TODO: activate this after 1.0.0
-    # - <<: *build-setup
-      # if: (type = push) AND (tag =~ /^v[0-9].[0-9].[0-9]-/)
-      # script:
-        # - docker pull $IMAGE_NAME:latest
-        # - docker build --build-arg API_URL=$STAGING_API_URL --cache-from $IMAGE_NAME:latest -t $IMAGE_NAME:$TRAVIS_TAG .
-        # - docker push $IMAGE_NAME:$TRAVIS_TAG
+    # push the tag to Docker Hub
+    - <<: *build-setup
+      if: (type = push) AND (tag =~ /^v[0-9].[0-9].[0-9]-/)
+      script:
+        - travis_retry docker pull $IMAGE_NAME:latest
+        - >
+          docker build .
+          --build-arg VERSION=$TRAVIS_TAG
+          --cache-from $IMAGE_NAME:latest
+          -t $IMAGE_NAME:$TRAVIS_TAG
+        - travis_retry docker push $IMAGE_NAME:$TRAVIS_TAG
 
     # build stable tags (e.g. v1.0.0)
-    # push into APPUiO registry and to Docker Hub
-    # => will trigger a deployment on APPUiO
-    # TODO: merge the following two jobs once matrix expansion works with stages
+    # push a new stable tag to Docker Hub
     - <<: *build-setup
-      # TODO: activate this after 1.0.0
-      # if: (type = push) AND (tag =~ /^v[0-9].[0-9].[0-9]$/)
-      if: (type = push) AND (tag =~ /^v[1-9].[0-9].[0-9]/)
-      env:
-        - USER=$DOCKER_USER
-        - PASSWORD=$DOCKER_PASSWORD
-        - IMAGE_NAME="uzhbf/klicker-api"
-      before_script:
-        - echo $PASSWORD | docker login --username $USER --password-stdin
+      if: (type = push) AND (tag =~ /^v[0-9].[0-9].[0-9]$/)
       script:
         - >
           docker build .
           --build-arg VERSION=$TRAVIS_TAG
           -t $IMAGE_NAME:stable
           -t $IMAGE_NAME:$TRAVIS_TAG
-        - docker push $IMAGE_NAME:$TRAVIS_TAG
-        - docker push $IMAGE_NAME:stable
+        - travis_retry docker push $IMAGE_NAME:$TRAVIS_TAG
+        - travis_retry docker push $IMAGE_NAME:stable
+
+    # build stable tags (e.g. v1.0.0)
+    # push a new stable tag to APPUiO
+    # => this will trigger a new deployment to production
     - <<: *build-setup
-      # TODO: activate this after 1.0.0
-      # if: (type = push) AND (tag =~ /^v[0-9].[0-9].[0-9]$/)
-      if: (type = push) AND (tag =~ /^v[1-9].[0-9].[0-9]/)
+      if: (type = push) AND (tag =~ /^v[0-9].[0-9].[0-9]$/)
       env:
         - USER="serviceaccount"
         - PASSWORD=$OC_TOKEN
