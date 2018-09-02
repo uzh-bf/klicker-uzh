@@ -16,11 +16,10 @@ USER 1000
 COPY --chown=1000:0 package.json yarn.lock $KLICKER_DIR/
 WORKDIR $KLICKER_DIR
 
-# update permissions for klicker dir
 # install yarn packages for the specified environment
 RUN set -x && yarn install --frozen-lockfile
 
-# inject application sources and entrypoint
+# inject application sources
 COPY --chown=1000:0 . $KLICKER_DIR/
 
 # pre-build the application
