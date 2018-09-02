@@ -81,7 +81,7 @@
     "react": "16.4.2",
     "react-apollo": "2.1.11",
     "react-autosuggest": "9.3.4",
-    "react-beautiful-dnd": "9.0.1",
+    "react-beautiful-dnd": "9.0.2",
     "react-d3-cloud": "0.6.0",
     "react-dnd": "5.0.0",
     "react-dnd-html5-backend": "5.0.1",
