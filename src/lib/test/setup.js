@@ -78,7 +78,7 @@ const initializeDb = async ({
   isActive = true,
 }) => {
   await mongoose.connect(
-    `mongodb://${process.env.MONGO_URL}`,
+    `mongodb://${process.env.MONGO_URL_TEST}`,
     {
       keepAlive: true,
       promiseLibrary: global.Promise,
