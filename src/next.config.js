@@ -53,17 +53,23 @@ module.exports = phase => {
     },
   }
 
+  // development only configuration
+  if (phase === DEVELOPMENT_SERVER) {
+    // activate polling to make watching work inside Docker on Windows
+    config.webpackDevMiddleware = middlewareConfig => ({
+      ...middlewareConfig,
+      watchOptions: {
+        poll: 1000,
+      },
+    })
+  }
+
   // enable next-css plugin
   // allows importing css files
   config = withCSS(config)
 
   // enable sourcemaps
   config = withSourceMaps(config)
-
-  // development only configuration
-  if (phase === DEVELOPMENT_SERVER) {
-    // do something in dev only?
-  }
 
   // build only configuration
   if (phase === PHASE_PRODUCTION_BUILD) {
