@@ -6673,9 +6673,9 @@ form-data@~2.3.1:
     combined-stream "1.0.6"
     mime-types "^2.1.12"
 
-formik@1.0.3:
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/formik/-/formik-1.0.3.tgz#73972b8c91d0ee22cb30f00766cdb0019d40177e"
+formik@1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/formik/-/formik-1.1.1.tgz#078e6b7ff09d040ad63a30058e1ce8f1c0ad59cb"
   dependencies:
     create-react-context "^0.2.2"
     deepmerge "^2.1.1"
