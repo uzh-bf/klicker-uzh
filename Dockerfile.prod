@@ -19,7 +19,7 @@ WORKDIR $KLICKER_DIR
 # install yarn packages for the specified environment
 RUN set -x && yarn install --frozen-lockfile
 
-# inject application sources and entrypoint
+# inject application sources
 COPY --chown=1000:0 . $KLICKER_DIR/
 
 # pre-build the application

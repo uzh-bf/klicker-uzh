@@ -19,9 +19,6 @@ WORKDIR $APP_DIR
 # install yarn packages for the specified environment
 RUN set -x && yarn install --frozen-lockfile
 
-# inject application sources and entrypoint
-COPY --chown=1000:0 . $APP_DIR/
-
 # run the application in development mode
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["yarn", "dev"]
