@@ -49,7 +49,7 @@
     "subscriptions-transport-ws": "0.9.14",
     "uuid": "3.3.2",
     "v8n": "1.2.2",
-    "validator": "10.6.0"
+    "validator": "10.7.1"
   },
   "devDependencies": {
     "babel-eslint": "9.0.0",
