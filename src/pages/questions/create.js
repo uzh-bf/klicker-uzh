@@ -60,7 +60,7 @@ const CreateQuestion = ({ intl }) => (
                       // TODO: replace with optimistic updates
                       refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
                       variables: {
-                        content: content.getCurrentContent() |> convertToRaw |> JSON.stringify,
+                        content: JSON.stringify(convertToRaw(content.getCurrentContent())),
                         files: fileEntities.map(({ file, fileName }) => ({
                           name: fileName,
                           originalName: file.name,

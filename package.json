@@ -9,7 +9,6 @@
     "@babel/core": "7.0.0",
     "@babel/plugin-proposal-do-expressions": "7.0.0",
     "@babel/plugin-proposal-optional-chaining": "7.0.0",
-    "@babel/plugin-proposal-pipeline-operator": "7.0.0",
     "@babel/plugin-transform-react-constant-elements": "7.0.0",
     "@babel/preset-env": "7.0.0",
     "@babel/runtime": "7.0.0",
