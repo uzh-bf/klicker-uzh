@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import moment from 'moment'
+import dayjs from 'dayjs'
 import { Loader, Message } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import { Query } from 'react-apollo'
@@ -91,7 +91,7 @@ export const QuestionListPres = ({
                   return prevMap.set(
                     session,
                     <a href={`/sessions/evaluation/${session}`} rel="noopener noreferrer" target="_blank">
-                      {moment(createdAt).format('DD.MM.YYYY HH:mm')}
+                      {dayjs(createdAt).format('DD.MM.YYYY HH:mm')}
                     </a>
                   )
                 }, new Map())

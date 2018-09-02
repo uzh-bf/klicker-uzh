@@ -5,18 +5,18 @@ services:
     build:
       context: .
       args:
-        API_URL: 'http://localhost:4000/graphql'
+        API_URL: http://localhost:4000/graphql
         APP_FINGERPRINTING: 'true'
-        VERSION: 'docker-compose'
+        VERSION: docker-compose
     environment:
-      API_URL: 'http://localhost:4000/graphql'
+      API_URL: http://localhost:4000/graphql
       APP_FINGERPRINTING: 'true'
-      REDIS_URL: ':klicker-dev@144.76.118.118:6379'
-      STATIC_PATH: '/'
+      CACHE_REDIS_HOST: redis
+      STATIC_PATH: /
     volumes:
       - './.env:/app/.env:ro'
     ports:
-      - '3000:3000'
+      - 3000:3000
     networks:
       - klicker-prod
 
