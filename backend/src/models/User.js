@@ -28,7 +28,7 @@ const User = new mongoose.Schema(
       unique: true,
       validate: {
         message: Errors.INVALID_SHORTNAME,
-        validator: isAlphanumeric,
+        validator: value => isAlphanumeric(value),
       },
     },
     institution: {
