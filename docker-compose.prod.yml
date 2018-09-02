@@ -4,7 +4,6 @@ services:
   react-prod:
     build:
       context: .
-      dockerfile: Dockerfile.prod
       args:
         API_URL: 'http://localhost:4000/graphql'
         APP_FINGERPRINTING: 'true'
@@ -14,6 +13,8 @@ services:
       APP_FINGERPRINTING: 'true'
       REDIS_URL: ':klicker-dev@144.76.118.118:6379'
       STATIC_PATH: '/'
+    volumes:
+      - './.env:/app/.env:ro'
     ports:
       - '3000:3000'
     networks:
