@@ -6,7 +6,7 @@ ENV APP_DIR="/app"
 ENV NODE_ENV="development"
 
 # install tini
-RUN set -x && apk add --no-cache tini
+RUN set -x && apk add --no-cache tini make gcc g++ python
 
 # switch to the node user (uid 1000)
 # non-root as provided by the base image
@@ -21,7 +21,7 @@ RUN set -x && yarn install --frozen-lockfile
 
 # run the application in development mode
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["yarn", "dev"]
+CMD ["yarn", "dev", "-L"]
 
 # expose the main application port
 EXPOSE 3000
