@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import moment from 'moment'
+import dayjs from 'dayjs'
 import Link from 'next/link'
 import { withState } from 'recompose'
 import { Mutation } from 'react-apollo'
@@ -65,7 +65,7 @@ const Session = ({
       <h2 className="title">{name}</h2>
       <div className="date">
         <FormattedMessage defaultMessage="Created on" id="sessionList.string.createdOn" />{' '}
-        {moment(createdAt).format('DD.MM.YY HH:mm')}
+        {dayjs(createdAt).format('DD.MM.YY HH:mm')}
       </div>
 
       <div className="details">
