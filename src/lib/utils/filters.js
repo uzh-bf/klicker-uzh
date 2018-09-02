@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 
 import _every from 'lodash/every'
-import moment from 'moment'
+import dayjs from 'dayjs'
 // import Fuse from 'fuse.js'
 import * as JsSearch from 'js-search'
 
@@ -102,7 +102,7 @@ function sortQuestions(questions, sort) {
   }
 
   if (sort.by === 'CREATED') {
-    return questions.sort((a, b) => factor * (moment(a.createdAt) - moment(b.createdAt)))
+    return questions.sort((a, b) => factor * (dayjs(a.createdAt) - dayjs(b.createdAt)))
   }
 
   if (sort.by === 'USED') {
@@ -119,7 +119,7 @@ function sortQuestions(questions, sort) {
       // this allows us to sort by "last usage"
       return (
         factor *
-        (moment(a.instances[a.instances.length - 1].createdAt) - moment(b.instances[b.instances.length - 1].createdAt))
+        (dayjs(a.instances[a.instances.length - 1].createdAt) - dayjs(b.instances[b.instances.length - 1].createdAt))
       )
     })
   }
