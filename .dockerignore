@@ -1,12 +1,13 @@
 *
 
-!public
+!public/
 !src/
-!.babelrc
-!.env
-!entrypoint.sh
+
 !LICENSE.md
+
 !package.json
-!server.js
 !yarn.lock
-!process.json
+
+!.babelrc
+
+!server.js
