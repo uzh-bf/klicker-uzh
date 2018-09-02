@@ -374,5 +374,5 @@ const shutdown = signal => async () => {
   process.kill(process.pid, signal)
 }
 
-const shutdownSignals = ['SIGINT', 'SIGUSR2', 'SIGTERM']
+const shutdownSignals = ['SIGINT', 'SIGUSR2', 'SIGTERM', 'exit']
 shutdownSignals.forEach(signal => process.once(signal, shutdown(signal)))
