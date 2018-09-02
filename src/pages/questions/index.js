@@ -8,7 +8,7 @@ import { defineMessages, intlShape } from 'react-intl'
 import { graphql, Query } from 'react-apollo'
 import _debounce from 'lodash/debounce'
 import Router, { withRouter } from 'next/router'
-import moment from 'moment'
+import dayjs from 'dayjs'
 
 import { pageWithIntl, withDnD, withSortingAndFiltering, withLogging, withSelection } from '../../lib'
 import {
@@ -381,7 +381,7 @@ export default compose(
         // turn on creation mode
         return {
           creationMode: true,
-          sessionName: moment().format('DD.MM.YYYY HH:mm'),
+          sessionName: dayjs().format('DD.MM.YYYY HH:mm'),
         }
       },
 
