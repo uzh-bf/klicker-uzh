@@ -4,7 +4,7 @@ import { Checkbox } from 'semantic-ui-react'
 import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import { compose, withProps, lifecycle } from 'recompose'
 import _sumBy from 'lodash/sumBy'
-import moment from 'moment'
+import dayjs from 'dayjs'
 
 import ConfusionSection from './ConfusionSection'
 
@@ -158,7 +158,7 @@ export default compose(
           difficultyRunning,
           speed,
           speedRunning,
-          timestamp: moment(createdAt).format('H:mm:ss'),
+          timestamp: dayjs(createdAt).format('H:mm:ss'),
         },
       ]
     }, []),

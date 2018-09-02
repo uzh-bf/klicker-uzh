@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import moment from 'moment'
+import dayjs from 'dayjs'
 import Router from 'next/router'
 import { compose, withProps, lifecycle } from 'recompose'
 import { graphql, Query, Mutation } from 'react-apollo'
@@ -132,7 +132,7 @@ const Running = ({ intl, shortname }) => (
                                 runtime={runtime}
                                 sessionId={id}
                                 shortname={shortname}
-                                startedAt={moment(startedAt).format('HH:mm:ss')}
+                                startedAt={dayjs(startedAt).format('HH:mm:ss')}
                               />
                             )}
                           </Mutation>
