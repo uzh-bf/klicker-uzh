@@ -73,7 +73,7 @@
     "morgan": "1.9.0",
     "next": "6.1.1",
     "nodemon": "1.18.4",
-    "node-sass": "4.9.3",
+    "node-sass": "4.9.2",
     "prop-types": "15.6.2",
     "qrcode.react": "0.8.0",
     "ramda": "0.25.0",
