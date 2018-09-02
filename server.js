@@ -362,7 +362,7 @@ app
     process.exit(1)
   })
 
-const shutdown = async () => {
+const shutdown = signal => async () => {
   console.log('[klicker-react] Shutting down server')
 
   if (hasRedis) {
@@ -371,9 +371,8 @@ const shutdown = async () => {
   }
 
   console.log('[klicker-react] Shutdown complete')
-  process.exit(0)
+  process.kill(process.pid, signal)
 }
 
-process.on('SIGINT', async () => shutdown())
-process.on('exit', async () => shutdown())
-process.once('SIGUSR2', async () => shutdown())
+const shutdownSignals = ['SIGINT', 'SIGUSR2', 'SIGTERM', 'exit']
+shutdownSignals.forEach(signal => process.once(signal, shutdown(signal)))

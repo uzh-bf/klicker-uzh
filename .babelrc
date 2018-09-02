@@ -3,19 +3,16 @@
      "development":{
         "presets":[
            [
-              "@babel/preset-env",
+              "next/babel",
               {
-                 "targets":{
+                "preset-env": {
+                  "targets":{
                     "browsers":[
                        "> 0.25%",
                        "not dead"
                     ]
                  }
-              }
-           ],
-           [
-              "next/babel",
-              {
+                },
                  "styled-jsx":{
                     "plugins":[
                        "styled-jsx-plugin-sass"
@@ -48,7 +45,15 @@
            [
               "next/babel",
               {
-                 "styled-jsx":{
+                "preset-env": {
+                  "targets":{
+                    "browsers":[
+                       "> 0.25%",
+                       "not dead"
+                    ]
+                  }
+                },
+                "styled-jsx":{
                     "plugins":[
                        "styled-jsx-plugin-sass"
                     ]
@@ -84,14 +89,11 @@
      "test":{
         "presets":[
            [
-              "@babel/preset-env",
-              {
-                 "modules":"commonjs"
-              }
-           ],
-           [
               "next/babel",
               {
+                "preset-env": {
+                  "modules": "commonjs"
+                },
                  "styled-jsx":{
                     "plugins":[
                        "styled-jsx-plugin-sass"
