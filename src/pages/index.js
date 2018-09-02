@@ -84,12 +84,12 @@ const Index = () => (
               </List.Content>
             </List.Item>
             <List.Item>
-              <List.Icon name="trello" size="large" verticalAlign="middle" />
+              <List.Icon name="github" size="large" verticalAlign="middle" />
               <List.Content>
-                <List.Header as="a" href="https://trello.com/b/xw0D1k6l/klicker-roadmap">
+                <List.Header as="a" href="https://github.com/uzh-bf/klicker-uzh/projects/1">
                   klicker-roadmap
                 </List.Header>
-                <List.Description>Public Trello Board</List.Description>
+                <List.Description>Public Github Roadmap</List.Description>
               </List.Content>
             </List.Item>
           </List>
