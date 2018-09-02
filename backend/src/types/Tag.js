@@ -18,7 +18,7 @@ const Tag = `
 
     questions: [Question!]!
 
-    createdAt: String!
-    updatedAt: String!
+    createdAt: DateTime!
+    updatedAt: DateTime!
   }
 `

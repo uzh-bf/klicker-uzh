@@ -37,7 +37,6 @@ const sessionByPVQuery = (parentValue, args, { loaders }) => {
 }
 const sessionsByPVQuery = (parentValue, args, { loaders }) =>
   ensureLoaders(loaders).sessions.loadMany(parentValue.sessions)
-const sessionIdByPVQuery = parentValue => parentValue.session
 
 const runningSessionQuery = async (parentValue, args, { auth }) => {
   const user = await UserModel.findById(auth.sub).populate('runningSession')
@@ -143,7 +142,6 @@ module.exports = {
   runningSession: runningSessionQuery,
   session: sessionQuery,
   sessionByPV: sessionByPVQuery,
-  sessionIdByPV: sessionIdByPVQuery,
   sessionsByPV: sessionsByPVQuery,
   runtimeByPV: runtimeByPVQuery,
 

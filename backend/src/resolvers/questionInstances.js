@@ -6,8 +6,10 @@ const SessionExecService = require('../services/sessionExec')
 const questionInstanceByIDQuery = (parentValue, { id }, { loaders }) =>
   ensureLoaders(loaders).questionInstances.load(id)
 
-const questionInstancesByPVQuery = (parentValue, args, { loaders }) =>
-  ensureLoaders(loaders).questionInstances.loadMany(parentValue.instances)
+const questionInstancesByPVQuery = async (parentValue, args, { loaders }) => {
+  const instances = await ensureLoaders(loaders).questionInstances.loadMany(parentValue.instances)
+  return instances.filter(instance => !!instance)
+}
 
 const responsesByPVQuery = parentValue =>
   parentValue.responses.map(({ id, value, createdAt }) => ({

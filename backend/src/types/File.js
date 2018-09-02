@@ -25,8 +25,8 @@ const File = `
     question: Question!
     user: User!
 
-    createdAt: String!
-    updatedAt: String!
+    createdAt: DateTime!
+    updatedAt: DateTime!
   }
   type File_Public {
     id: ID!

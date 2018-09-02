@@ -1,5 +1,5 @@
 # extend the node alpine base
-FROM node:8-alpine@sha256:cf4ea9156ef964eaf0c4df65da3f4fed7358dbe31149ca105c7684a5858195d8
+FROM node:10-alpine
 
 # root application directory
 ENV APP_DIR /app
@@ -17,7 +17,8 @@ COPY --chown=1000:0 package.json yarn.lock $APP_DIR/
 WORKDIR $APP_DIR
 
 # install yarn packages for the specified environment
-RUN set -x && yarn install --frozen-lockfile
+# HACK: disable ignore-engines workaround
+RUN set -x && yarn install --ignore-engines --frozen-lockfile
 
 # inject application sources and entrypoint
 COPY --chown=1000:0 . $APP_DIR/

@@ -8,7 +8,7 @@ const { initializeDb } = require('../lib/test/setup')
 const { questionSerializer } = require('../lib/test/serializers')
 const { createContentState } = require('../lib/draft')
 
-mongoose.Promise = require('bluebird')
+mongoose.Promise = Promise
 
 // define how jest should serialize objects into snapshots
 // we need to strip ids and dates as they are always changing

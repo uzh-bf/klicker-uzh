@@ -83,8 +83,8 @@ const Question = `
     tags: [Tag!]!
     versions: [Question_Version!]!
 
-    createdAt: String!
-    updatedAt: String!
+    createdAt: DateTime!
+    updatedAt: DateTime!
   }
   type Question_Public {
     id: ID!
@@ -116,8 +116,8 @@ const Question = `
     instances: [QuestionInstance!]!
     files: [File!]!
 
-    createdAt: String!
-    updatedAt: String!
+    createdAt: DateTime!
+    updatedAt: DateTime!
   }
   type Question_Version_Public {
     id: ID!

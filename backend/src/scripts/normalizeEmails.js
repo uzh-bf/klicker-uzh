@@ -10,7 +10,7 @@ const mongoose = require('mongoose')
 const { isEmail, normalizeEmail } = require('validator')
 const { UserModel } = require('../models')
 
-mongoose.Promise = require('bluebird')
+mongoose.Promise = Promise
 
 mongoose.connect(
   `mongodb://${process.env.MONGO_URL}`,
