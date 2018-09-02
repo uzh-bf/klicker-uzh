@@ -998,7 +998,7 @@ describe('Integration', () => {
             variables: {
               fp: 'myfp1',
               instanceId: instanceIds.FREE_RANGE,
-              response: { value: 4 },
+              response: { value: '4' },
             },
           })
         )
@@ -1011,7 +1011,7 @@ describe('Integration', () => {
             variables: {
               fp: 'myfp1',
               instanceId: instanceIds.FREE_RANGE_PART,
-              response: { value: 99999 },
+              response: { value: '99999' },
             },
           })
         )
@@ -1024,7 +1024,7 @@ describe('Integration', () => {
             variables: {
               fp: 'myfp1',
               instanceId: instanceIds.FREE_RANGE_OPEN,
-              response: { value: 99999.3784 },
+              response: { value: '99999.3784' },
             },
           })
         )
@@ -1034,7 +1034,7 @@ describe('Integration', () => {
             variables: {
               fp: 'myfp1',
               instanceId: instanceIds.FREE_RANGE_OPEN,
-              response: { value: 50000 },
+              response: { value: '50000' },
             },
           })
         )
@@ -1044,7 +1044,7 @@ describe('Integration', () => {
             variables: {
               fp: 'myfp1',
               instanceId: instanceIds.FREE_RANGE_OPEN,
-              response: { value: 50000 },
+              response: { value: '50000' },
             },
           })
         )
@@ -1054,7 +1054,7 @@ describe('Integration', () => {
             variables: {
               fp: 'myfp1',
               instanceId: instanceIds.FREE_RANGE_OPEN,
-              response: { value: 20000 },
+              response: { value: '20000' },
             },
           })
         )
@@ -1090,7 +1090,7 @@ describe('Integration', () => {
               query: Mutations.DeleteResponseMutation,
               variables: {
                 instanceId: instanceIds.FREE_RANGE_OPEN,
-                response: 20000,
+                response: '20000',
               },
             },
             authCookie
