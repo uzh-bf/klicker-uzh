@@ -327,10 +327,11 @@ export default compose(
               id,
               key: id,
               questions: List(
-                instances.map(({ question }) => ({
+                instances.map(({ question, version }) => ({
                   id: question.id,
                   title: question.title,
                   type: question.type,
+                  version,
                 }))
               ),
             }))
