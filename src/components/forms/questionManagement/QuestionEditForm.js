@@ -434,13 +434,8 @@ export default compose(
     return {
       initialValues: {
         content: versions[initializeVersion].content
-          ? versions[initializeVersion].content
-            |> JSON.parse
-            |> convertFromRaw  // create a new draftjs content state from text
-            |> EditorState.createWithContent
-          : versions[initializeVersion].description  // get the version description
-            |> ContentState.createFromText  // create a new draftjs content state from text
-            |> EditorState.createWithContent, // create a new draftjs editor state
+          ? EditorState.createWithContent(convertFromRaw(JSON.parse(versions[initializeVersion].content)))
+          : EditorState.createWithContent(ContentState.createFromText(versions[initializeVersion].description)),
         files: versions[initializeVersion].files || [],
         options: versions[initializeVersion].options[type] || {},
         tags: questionTags.map(tag => tag.name),

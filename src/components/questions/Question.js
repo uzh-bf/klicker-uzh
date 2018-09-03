@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import moment from 'moment'
+import dayjs from 'dayjs'
 import { FormattedMessage } from 'react-intl'
 import { compose, withState, withProps } from 'recompose'
 import { DragSource } from 'react-dnd'
@@ -83,7 +83,7 @@ const Question = ({
             disabled={versions.length === 1}
             options={versions.map((version, index) => ({
               key: index,
-              text: `v${index + 1} - ${moment(version.createdAt).format('DD.MM.YYYY HH:mm')}`,
+              text: `v${index + 1} - ${dayjs(version.createdAt).format('DD.MM.YYYY HH:mm')}`,
               value: index,
             }))}
             value={activeVersion}
