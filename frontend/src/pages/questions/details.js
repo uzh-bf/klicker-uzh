@@ -149,7 +149,7 @@ const EditQuestion = ({ intl, router }) => (
                               variables: _omitBy(
                                 isNewVersion
                                   ? {
-                                      content: content.getCurrentContent() |> convertToRaw |> JSON.stringify,
+                                      content: JSON.stringify(convertToRaw(content.getCurrentContent())),
                                       files: omitDeepArray(allFiles, '__typename'),
                                       id,
                                       // HACK: omitDeep for typename removal
