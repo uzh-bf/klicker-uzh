@@ -102,7 +102,7 @@ function QuestionArea({
         const { content, description, options, type, files = [] } = currentQuestion
 
         // if the content is set, parse it and convert into a content state
-        const contentState = content ? content |> JSON.parse |> convertFromRaw : null
+        const contentState = content ? convertFromRaw(JSON.parse(content)) : null
 
         return (
           <div>

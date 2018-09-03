@@ -5,14 +5,14 @@
            [
               "next/babel",
               {
-                "preset-env": {
-                  "targets":{
-                    "browsers":[
-                       "> 0.25%",
-                       "not dead"
-                    ]
-                 }
-                },
+                 "preset-env":{
+                    "targets":{
+                       "browsers":[
+                          "> 0.25%",
+                          "not dead"
+                       ]
+                    }
+                 },
                  "styled-jsx":{
                     "plugins":[
                        "styled-jsx-plugin-sass"
@@ -23,7 +23,6 @@
         ],
         "plugins":[
            "@babel/plugin-proposal-do-expressions",
-           "@babel/plugin-proposal-pipeline-operator",
            "@babel/plugin-proposal-optional-chaining",
            "inline-dotenv",
            "add-react-displayname"
@@ -32,28 +31,17 @@
      "production":{
         "presets":[
            [
-              "@babel/preset-env",
-              {
-                 "targets":{
-                    "browsers":[
-                       "> 0.25%",
-                       "not dead"
-                    ]
-                 }
-              }
-           ],
-           [
               "next/babel",
               {
-                "preset-env": {
-                  "targets":{
-                    "browsers":[
-                       "> 0.25%",
-                       "not dead"
-                    ]
-                  }
-                },
-                "styled-jsx":{
+                 "preset-env":{
+                    "targets":{
+                       "browsers":[
+                          "> 0.25%",
+                          "not dead"
+                       ]
+                    }
+                 },
+                 "styled-jsx":{
                     "plugins":[
                        "styled-jsx-plugin-sass"
                     ]
@@ -74,7 +62,6 @@
               }
            ],
            "@babel/plugin-proposal-do-expressions",
-           "@babel/plugin-proposal-pipeline-operator",
            "@babel/plugin-proposal-optional-chaining",
            "transform-inline-environment-variables",
            "add-react-displayname",
@@ -89,11 +76,17 @@
      "test":{
         "presets":[
            [
+              "@babel/preset-env",
+              {
+                 "modules":"commonjs"
+              }
+           ],
+           [
               "next/babel",
               {
-                "preset-env": {
-                  "modules": "commonjs"
-                },
+                 "preset-env":{
+                    "modules":"commonjs"
+                 },
                  "styled-jsx":{
                     "plugins":[
                        "styled-jsx-plugin-sass"
@@ -104,7 +97,6 @@
         ],
         "plugins":[
            "@babel/plugin-proposal-do-expressions",
-           "@babel/plugin-proposal-pipeline-operator",
            "@babel/plugin-proposal-optional-chaining",
            "import-graphql"
         ]
