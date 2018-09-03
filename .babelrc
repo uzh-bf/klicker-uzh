@@ -31,17 +31,6 @@
      "production":{
         "presets":[
            [
-              "@babel/preset-env",
-              {
-                 "targets":{
-                    "browsers":[
-                       "> 0.25%",
-                       "not dead"
-                    ]
-                 }
-              }
-           ],
-           [
               "next/babel",
               {
                 "preset-env": {
@@ -86,6 +75,12 @@
      },
      "test":{
         "presets":[
+          [
+            "@babel/preset-env",
+            {
+               "modules": "commonjs"
+            }
+],
            [
               "next/babel",
               {
