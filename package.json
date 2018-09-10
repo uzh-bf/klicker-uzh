@@ -117,7 +117,7 @@
     "@storybook/addons": "3.4.10",
     "@storybook/react": "3.4.10",
     "babel-eslint": "9.0.0",
-    "babel-jest": "23.4.2",
+    "babel-jest": "23.6.0",
     "bundlesize": "0.17.0",
     "cypress": "3.1.0",
     "enzyme": "3.5.0",
