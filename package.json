@@ -96,7 +96,7 @@
     "react-tooltip": "3.8.4",
     "recharts": "1.2.0",
     "recompose": "0.30.0",
-    "sanitize-html": "1.18.5",
+    "sanitize-html": "1.19.0",
     "semantic-ui-react": "0.82.5",
     "styled-jsx-plugin-sass": "0.2.4",
     "subscriptions-transport-ws": "0.9.14",
