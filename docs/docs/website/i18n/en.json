@@ -4,24 +4,54 @@
     "next": "Next",
     "previous": "Previous",
     "tagline": "An open source instant audience response system",
-    "audience_view": "Audience View",
-    "evaluation": "Evaluation",
-    "faq": "Frequently Asked Questions",
-    "introduction": "Introduction",
-    "question_archive": "Archive Questions",
-    "question_create": "Create a Question",
-    "question_edit": "Edit a Question",
-    "question_pool": "Question Pool",
-    "session_create": "Create a Session",
-    "session_list": "Session List",
-    "session_running": "Running Session",
-    "workflow": "The Klicker-Workflow",
-    "Docs": "Docs",
-    "FAQ": "FAQ",
-    "Get Started": "Get Started",
-    "Questions": "Questions",
-    "Sessions": "Sessions",
-    "Evaluation": "Evaluation"
+    "docs": {
+      "audience_view": {
+        "title": "Audience View"
+      },
+      "evaluation": {
+        "title": "Evaluation"
+      },
+      "faq": {
+        "title": "Frequently Asked Questions"
+      },
+      "introduction": {
+        "title": "Introduction"
+      },
+      "question_archive": {
+        "title": "Archive Questions"
+      },
+      "question_create": {
+        "title": "Create a Question"
+      },
+      "question_edit": {
+        "title": "Edit a Question"
+      },
+      "question_pool": {
+        "title": "Question Pool"
+      },
+      "session_create": {
+        "title": "Create a Session"
+      },
+      "session_list": {
+        "title": "Session List"
+      },
+      "session_running": {
+        "title": "Running Session"
+      },
+      "workflow": {
+        "title": "The Klicker-Workflow"
+      }
+    },
+    "links": {
+      "Docs": "Docs",
+      "FAQ": "FAQ"
+    },
+    "categories": {
+      "Get Started": "Get Started",
+      "Questions": "Questions",
+      "Sessions": "Sessions",
+      "Evaluation": "Evaluation"
+    }
   },
   "pages-strings": {
     "Help Translate|recruit community translators for your project": "Help Translate",
