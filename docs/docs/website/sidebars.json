@@ -1,0 +1,23 @@
+{
+  "docs": {
+    "Get Started": [
+      "introduction",
+      "workflow"
+    ],
+    "Questions": [
+      "question_create",
+      "question_edit",
+      "question_archive",
+      "question_pool"
+    ],
+    "Sessions": [
+      "session_create",
+      "session_list"
+    ],
+    "Evaluation": [
+      "session_running",
+      "audience_view",
+      "evaluation"
+    ]
+  }
+}
