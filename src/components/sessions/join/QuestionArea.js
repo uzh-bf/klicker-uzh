@@ -378,7 +378,7 @@ export default compose(
         if (inputValue.length > 0 && QUESTION_GROUPS.CHOICES.includes(type)) {
           handleNewResponse({ instanceId, response: { choices: inputValue } })
         } else if (QUESTION_GROUPS.FREE.includes(type)) {
-          handleNewResponse({ instanceId, response: { value: inputValue } })
+          handleNewResponse({ instanceId, response: { value: String(inputValue) } })
         }
       }
 
