@@ -216,7 +216,7 @@ export default compose(
   })),
   withHandlers({
     // handle creation of a new confusion timestep
-    handleNewConfusionTS: ({ fp, data: { joinSession }, newConfusionTS }) => async ({ difficulty, speed }) => {
+    handleNewConfusionTS: ({ fp, data: { joinSession }, newConfusionTS }) => async ({ difficulty = 0, speed = 0 }) => {
       try {
         newConfusionTS({
           variables: {
