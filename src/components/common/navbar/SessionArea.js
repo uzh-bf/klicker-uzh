@@ -59,8 +59,8 @@ const SessionArea = ({ intl, sessionId }) => (
           <p>
             <strong>
               A public roadmap is available on{' '}
-              <a href="https://trello.com/b/xw0D1k6l" rel="noopener noreferrer" target="_blank">
-                https://trello.com/b/xw0D1k6l
+              <a href="https://github.com/uzh-bf/klicker-uzh/projects/1" rel="noopener noreferrer" target="_blank">
+                GitHub
               </a>
               .
             </strong>
@@ -99,14 +99,14 @@ const SessionArea = ({ intl, sessionId }) => (
         <div className="popupHelp popupContent">
           <h3>Support</h3>
           <a href="mailto:klicker.support@uzh.ch">
-            <Button icon labelPosition="left">
+            <Button fluid icon labelPosition="left">
               <Icon name="mail" />
               klicker.support@uzh.ch
             </Button>
           </a>
 
           <a href="https://uzh-bf.github.io/klicker-docs/" rel="noopener noreferrer" target="_blank">
-            <Button icon labelPosition="left">
+            <Button fluid icon labelPosition="left">
               <Icon name="external" />
               Documentation
             </Button>
@@ -115,7 +115,7 @@ const SessionArea = ({ intl, sessionId }) => (
           <Modal
             closeIcon
             trigger={
-              <Button icon labelPosition="left">
+              <Button fluid icon labelPosition="left">
                 <Icon name="video" />
                 Introductory Video
               </Button>
@@ -123,7 +123,7 @@ const SessionArea = ({ intl, sessionId }) => (
           >
             <Modal.Header>Introductory Video</Modal.Header>
             <Modal.Content>
-              <Embed id="8nS-fvi86l0" source="youtube" />
+              <Embed id="Dpx7BWKeqlo" source="youtube" />
             </Modal.Content>
           </Modal>
         </div>
