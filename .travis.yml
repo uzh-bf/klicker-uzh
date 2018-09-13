@@ -100,11 +100,10 @@ jobs:
         - >
           docker build .
           --build-arg APP_BASE_URL=$STAGING_APP_BASE_URL
-          --build-arg API_ENDPOINT=$STAGING_ENDPOINT_URL
+          --build-arg API_ENDPOINT=$STAGING_API_ENDPOINT
           --build-arg API_ENDPOINT_WS=$STAGING_API_ENDPOINT_WS
           --build-arg APP_PERSIST_QUERIES=$STAGING_APP_PERSIST_QUERIES
           --build-arg S3_ROOT_URL=$STAGING_S3_ROOT_URL
-          --build-arg SERVICES_SENTRY_DSN=$STAGING_SERVICES_SENTRY_DSN
           --build-arg VERSION=$TRAVIS_TAG
           --cache-from $IMAGE_NAME:latest
           -t $IMAGE_NAME:$TRAVIS_TAG

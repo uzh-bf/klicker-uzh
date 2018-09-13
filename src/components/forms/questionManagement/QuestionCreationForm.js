@@ -1,10 +1,11 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
-import { Button, Form } from 'semantic-ui-react'
+import { Button, Form, Message, List } from 'semantic-ui-react'
 import { Formik } from 'formik'
 import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
+import _some from 'lodash/some'
 import { EditorState } from 'draft-js'
 
 import FileDropzone from './FileDropzone'
@@ -22,27 +23,31 @@ import { FormikInput } from '../components'
 
 const messages = defineMessages({
   contentEmpty: {
-    defaultMessage: 'Please add a question.',
+    defaultMessage: 'Please add a question',
     id: 'form.createQuestion.content.empty',
   },
   minMaxRangeInvalid: {
-    defaultMessage: 'Please specify a range from min to max.',
+    defaultMessage: 'Please specify a range from min to max',
     id: 'form.createQuestion.options.minMaxRange.invalid',
   },
   optionsEmpty: {
-    defaultMessage: 'Please add at least one answer option.',
+    defaultMessage: 'Please add at least one answer option',
     id: 'form.createQuestion.options.empty',
   },
   optionsInvalid: {
     defaultMessage: 'Invalid options',
     id: 'form.createQuestion.options.invalid',
   },
+  optionsInvalidSC: {
+    defaultMessage: 'SC questions may only contain a single correct option',
+    id: 'form.createQuestion.options.invalidSC',
+  },
   tagsEmpty: {
-    defaultMessage: 'Please add at least one tag.',
+    defaultMessage: 'Please add at least one tag',
     id: 'form.createQuestion.tags.empty',
   },
   titleEmpty: {
-    defaultMessage: 'Please add a title.',
+    defaultMessage: 'Please add a title',
     id: 'form.createQuestion.title.empty',
   },
   titleInput: {
@@ -50,7 +55,7 @@ const messages = defineMessages({
     id: 'createQuestion.titleInput.label',
   },
   typeEmpty: {
-    defaultMessage: 'Please choose a question type.',
+    defaultMessage: 'Please choose a question type',
     id: 'form.createQuestion.type.empty',
   },
 })
@@ -75,8 +80,14 @@ const validate = ({ content, options, tags, title, type }) => {
     errors.type = messages.typeEmpty
   }
 
-  if (QUESTION_GROUPS.CHOICES.includes(type) && (!options || options.choices.length === 0)) {
-    errors.options = messages.optionsEmpty
+  if (QUESTION_GROUPS.CHOICES.includes(type)) {
+    if (!options || options.choices.length === 0) {
+      errors.options = messages.optionsEmpty
+    }
+
+    if (type === QUESTION_TYPES.SC && options.choices.filter(choice => !!choice.correct).length > 1) {
+      errors.options = messages.optionsInvalidSC
+    }
   } else if (type === QUESTION_TYPES.FREE_RANGE) {
     if (options && options.restrictions) {
       const isMinNum = _isNumber(options.restrictions.min)
@@ -89,6 +100,8 @@ const validate = ({ content, options, tags, title, type }) => {
       errors.options = messages.optionsInvalid
     }
   }
+
+  console.log(errors)
 
   return errors
 }
@@ -160,7 +173,7 @@ const QuestionCreationForm = ({ intl, tags, onSubmit, onDiscard }) => {
           const OptionsInput = typeComponents[values.type].input
 
           return (
-            <Form onSubmit={handleSubmit}>
+            <Form error={!_isEmpty(errors)} onSubmit={handleSubmit}>
               <div className="questionInput questionTitle">
                 <FormikInput
                   autoFocus
@@ -236,18 +249,36 @@ const QuestionCreationForm = ({ intl, tags, onSubmit, onDiscard }) => {
                 />
               </div>
 
-              <Button className="discard" type="reset" onClick={onDiscard}>
-                <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
-              </Button>
-              <Button
-                primary
-                className="save"
-                disabled={!_isEmpty(errors) || _isEmpty(touched)}
-                loading={isSubmitting}
-                type="submit"
-              >
-                <FormattedMessage defaultMessage="Save" id="common.button.save" />
-              </Button>
+              <div className="questionActions">
+                <Button className="discard" type="reset" onClick={onDiscard}>
+                  {_some(touched) ? (
+                    <FormattedMessage defaultMessage="Discard Changes" id="common.button.discard" />
+                  ) : (
+                    <FormattedMessage defaultMessage="Return to Question Pool" id="createQuestion.button.backToPool" />
+                  )}
+                </Button>
+
+                <Button
+                  primary
+                  className="save"
+                  disabled={!_isEmpty(errors) || _isEmpty(touched)}
+                  loading={isSubmitting}
+                  type="submit"
+                >
+                  <FormattedMessage defaultMessage="Save" id="common.button.save" />
+                </Button>
+              </div>
+
+              {_some(errors) && (
+                <Message error>
+                  <List>
+                    {errors.title && <List.Item>{intl.formatMessage(errors.title)}</List.Item>}
+                    {errors.tags && <List.Item>{intl.formatMessage(errors.tags)}</List.Item>}
+                    {errors.content && <List.Item>{intl.formatMessage(errors.content)}</List.Item>}
+                    {errors.options && <List.Item>{intl.formatMessage(errors.options)}</List.Item>}
+                  </List>
+                </Message>
+              )}
             </Form>
           )
         }}
@@ -268,10 +299,15 @@ const QuestionCreationForm = ({ intl, tags, onSubmit, onDiscard }) => {
           }
 
           .questionInput :global(.field > label),
-          .questionPreview > h2 {
-            font-size: 1.2rem;
-            margin: 0;
-            margin-bottom: 0.5rem;
+          .questionPreview > h2,
+          .questionFiles > h2 {
+            font-size: 1.2rem !important;
+            margin: 0 !important;
+            margin-bottom: 0.5rem !important;
+          }
+
+          .questionActions {
+            margin-top: 1rem;
           }
 
           @supports (grid-gap: 1rem) {
@@ -280,14 +316,15 @@ const QuestionCreationForm = ({ intl, tags, onSubmit, onDiscard }) => {
               align-content: start;
 
               grid-gap: 1rem;
-              grid-template-columns: repeat(6, 1fr);
+              grid-template-columns: repeat(3, 1fr);
               grid-template-rows: 5rem auto auto auto;
               grid-template-areas:
-                'title title title title preview preview'
-                'type type tags tags preview preview'
-                'content content content content content content'
-                'files files files files files files'
-                'options options options options options options';
+                'title title preview'
+                'type tags preview'
+                'content content content'
+                'files files files'
+                'options options options'
+                'actions actions actions';
 
               .questionInput,
               .questionPreview {
@@ -321,6 +358,16 @@ const QuestionCreationForm = ({ intl, tags, onSubmit, onDiscard }) => {
 
               .questionOptions {
                 grid-area: options;
+              }
+
+              .questionActions {
+                grid-area: actions;
+                display: flex;
+                justify-content: space-between;
+
+                :global(button) {
+                  margin-right: 0;
+                }
               }
             }
 
