@@ -6,7 +6,7 @@
   "author": "Roland Schläfli <roland.schlaefli@bf.uzh.ch>",
   "license": "AGPL-3.0",
   "dependencies": {
-    "apollo-server-express": "2.0.4",
+    "apollo-server-express": "2.0.6",
     "aws-sdk": "2.314.0",
     "bcryptjs": "2.4.3",
     "body-parser": "1.18.3",
@@ -23,7 +23,7 @@
     "express": "4.16.3",
     "express-jwt": "5.3.1",
     "express-rate-limit": "2.14.2",
-    "graphql": "14.0.0",
+    "graphql": "14.0.2",
     "graphql-iso-date": "3.5.0",
     "graphql-redis-subscriptions": "1.5.0",
     "graphql-subscriptions": "0.5.8",
