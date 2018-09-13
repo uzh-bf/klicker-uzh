@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2
+
+- Downgrade react to fix logrocket incompatibility
+
 ## 1.0.1
 
 - Add default zero values for difficulty and speed when submitting confusion
