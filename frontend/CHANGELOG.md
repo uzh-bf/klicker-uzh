@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.3
+
+- Fix: Errors with rounding decimals in the HistogramChart component
+- Fix: Ensure that responses to delete are sent as strings
+- Upgrade depencencies
+
 ## 1.0.2
 
 - Update the Klicker introductory video
