@@ -285,7 +285,7 @@ module.exports = convict({
         format: 'nat',
       },
       enabled: {
-        default: true,
+        default: false,
         env: 'SECURITY_RATE_LIMIT_ENABLED',
         format: 'Boolean',
       },
