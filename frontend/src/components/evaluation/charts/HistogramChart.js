@@ -1,10 +1,10 @@
 /* eslint-disable no-mixed-operators,no-plusplus,no-loop-func */
 import React from 'react'
 import PropTypes from 'prop-types'
-import _isNumber from 'lodash/isNumber'
 import _minBy from 'lodash/minBy'
 import _maxBy from 'lodash/maxBy'
 import _sumBy from 'lodash/sumBy'
+import _round from 'lodash/round'
 import { histogram, thresholdFreedmanDiaconis } from 'd3'
 import { compose, withProps } from 'recompose'
 import {
@@ -128,10 +128,10 @@ HistogramChart.propTypes = propTypes
 HistogramChart.defaultProps = defaultProps
 
 export default compose(
-  withProps(({ data, numBins, restrictions }) => {
+  withProps(({ data, numBins }) => {
     // calculate the borders of the histogram
-    const min = _isNumber(restrictions.min) ? restrictions.min : +_minBy(data, o => +o.value).value
-    const max = _isNumber(restrictions.max) ? restrictions.max : +_maxBy(data, o => +o.value).value
+    const min = +_minBy(data, o => +o.value).value
+    const max = +_maxBy(data, o => +o.value).value
 
     // calculate the number of bins according to freedman diaconis
     const defaultThreshold = thresholdFreedmanDiaconis(data.map(o => +o.value), min, max)
@@ -140,7 +140,7 @@ export default compose(
     // use either the passed number of bins or the default threshold
     const histGen = histogram()
       .domain([min, max])
-      .value(o => Math.round(+o.value))
+      .value(o => _round(+o.value, 2))
       .thresholds(numBins || defaultThreshold)
 
     // bin the data using D3
@@ -150,7 +150,7 @@ export default compose(
     return {
       data: bins.map(bin => ({
         count: _sumBy(bin, 'count'),
-        value: `${bin.x0}-${bin.x1}`,
+        value: `${_round(bin.x0, 2)}/${_round(bin.x1, 2)}`,
       })),
     }
   })
