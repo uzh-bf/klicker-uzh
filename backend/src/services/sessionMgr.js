@@ -360,9 +360,9 @@ const updateSettings = async ({ sessionId, userId, settings, shortname }) => {
  * Activate the next question block of a running session
  * @param {*} param0
  */
-const activateNextBlock = async ({ userId, shortname }) => {
+const activateNextBlock = async ({ userId }) => {
   const user = await UserModel.findById(userId).populate(['activeInstances', 'runningSession'])
-  const { runningSession } = user
+  const { shortname, runningSession } = user
 
   if (!runningSession) {
     throw new ForbiddenError('NO_RUNNING_SESSION')
@@ -442,13 +442,12 @@ const activateNextBlock = async ({ userId, shortname }) => {
   }
 
   promises.concat([runningSession.save(), user.save()])
+  await Promise.all(promises)
 
   // if redis is in use, cleanup the page cache
   if (redisCache) {
-    promises.push(cleanCache(shortname))
+    await cleanCache(shortname)
   }
-
-  await Promise.all(promises)
 
   return user.runningSession
 }
