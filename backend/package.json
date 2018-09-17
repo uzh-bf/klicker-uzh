@@ -26,7 +26,7 @@
     "graphql": "14.0.2",
     "graphql-iso-date": "3.6.1",
     "graphql-redis-subscriptions": "1.5.0",
-    "graphql-subscriptions": "0.5.8",
+    "graphql-subscriptions": "1.0.0",
     "graphql-tools": "3.1.1",
     "handlebars": "4.0.12",
     "helmet": "3.13.0",
