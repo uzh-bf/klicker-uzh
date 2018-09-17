@@ -155,7 +155,7 @@ function TableChart({
                               },
                               variables: {
                                 instanceId,
-                                response: value,
+                                response: String(value),
                               },
                             })
                           }}
