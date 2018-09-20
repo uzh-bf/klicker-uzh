@@ -30,10 +30,10 @@ export default class IntlDocument extends Document {
           <meta content="text/html; charset=utf-8" httpEquiv="Content-type" />
           <meta content="width=device-width, initial-scale=1" name="viewport" />
           <meta content="IE=Edge" httpEquiv="X-UA-Compatible" />
+          <script src={polyfill} />
         </Head>
         <body>
           <Main />
-          <script src={polyfill} />
           <script
             dangerouslySetInnerHTML={{
               __html: this.props.localeDataScript,
