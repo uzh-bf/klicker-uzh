@@ -85,24 +85,6 @@ const Index = ({ shortname, updateShortname, redirectToJoin }) => (
             </List.Item>    */}
 
             <List.Item>
-              <List.Icon name="github" size="large" verticalAlign="middle" />
-              <List.Content>
-                <List.Header as="a" href="https://github.com/uzh-bf/klicker-react">
-                  uzh-bf/klicker-react
-                </List.Header>
-                <List.Description>Frontend</List.Description>
-              </List.Content>
-            </List.Item>
-            <List.Item>
-              <List.Icon name="github" size="large" verticalAlign="middle" />
-              <List.Content>
-                <List.Header as="a" href="https://github.com/uzh-bf/klicker-api">
-                  uzh-bf/klicker-api
-                </List.Header>
-                <List.Description>Backend (API)</List.Description>
-              </List.Content>
-            </List.Item>
-            <List.Item>
               <List.Icon name="mail" size="large" verticalAlign="middle" />
               <List.Content>
                 <List.Header as="a" href="mailto:klicker.support@uzh.ch">
@@ -118,6 +100,24 @@ const Index = ({ shortname, updateShortname, redirectToJoin }) => (
                   klicker-roadmap
                 </List.Header>
                 <List.Description>Public Github Roadmap</List.Description>
+              </List.Content>
+            </List.Item>
+            <List.Item>
+              <List.Icon name="github" size="large" verticalAlign="middle" />
+              <List.Content>
+                <List.Header as="a" href="https://github.com/uzh-bf/klicker-react">
+                  uzh-bf/klicker-react
+                </List.Header>
+                <List.Description>Frontend</List.Description>
+              </List.Content>
+            </List.Item>
+            <List.Item>
+              <List.Icon name="github" size="large" verticalAlign="middle" />
+              <List.Content>
+                <List.Header as="a" href="https://github.com/uzh-bf/klicker-api">
+                  uzh-bf/klicker-api
+                </List.Header>
+                <List.Description>Backend (API)</List.Description>
               </List.Content>
             </List.Item>
           </List>
@@ -175,7 +175,6 @@ const Index = ({ shortname, updateShortname, redirectToJoin }) => (
 
             :global(.input) {
               flex: 1;
-              margin-right: 1rem;
             }
 
             :global(button) {
@@ -228,6 +227,10 @@ const Index = ({ shortname, updateShortname, redirectToJoin }) => (
 
               p {
                 flex: 0 0 100%;
+              }
+
+              :global(input) {
+                margin-right: 1rem;
               }
 
               :global(button) {
