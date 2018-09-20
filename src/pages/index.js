@@ -20,8 +20,8 @@ const links = [
 ]
 
 const propTypes = {
-  shortname: PropTypes.string,
   redirectToJoin: PropTypes.func.isRequired,
+  shortname: PropTypes.string,
   updateShortname: PropTypes.func.isRequired,
 }
 
