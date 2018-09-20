@@ -2,6 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
+import { SizeMe } from 'react-sizeme'
 
 import { BarChart, StackChart, PieChart, TableChart, CloudChart, HistogramChart } from '.'
 import { SESSION_STATUS } from '../../constants'
@@ -92,20 +93,25 @@ function Chart({
         const ChartComponent = chartTypes[activeVisualization]
         if (ChartComponent) {
           return (
-            <ChartComponent
-              brush={sessionStatus !== SESSION_STATUS.RUNNING}
-              data={data}
-              instanceId={instanceId}
-              isColored={questionType !== 'FREE_RANGE'}
-              isPublic={isPublic}
-              isSolutionShown={showSolution}
-              numBins={numBins}
-              questionType={questionType}
-              restrictions={restrictions}
-              sessionId={sessionId}
-              statistics={statistics}
-              totalResponses={totalResponses}
-            />
+            <SizeMe refreshRate={250}>
+              {({ size }) => (
+                <ChartComponent
+                  brush={sessionStatus !== SESSION_STATUS.RUNNING}
+                  data={data}
+                  instanceId={instanceId}
+                  isColored={questionType !== 'FREE_RANGE'}
+                  isPublic={isPublic}
+                  isSolutionShown={showSolution}
+                  numBins={numBins}
+                  questionType={questionType}
+                  restrictions={restrictions}
+                  sessionId={sessionId}
+                  size={size}
+                  statistics={statistics}
+                  totalResponses={totalResponses}
+                />
+              )}
+            </SizeMe>
           )
         }
 

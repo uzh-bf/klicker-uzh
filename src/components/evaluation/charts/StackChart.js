@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   YAxis,
 } from 'recharts'
-import { withProps } from 'recompose'
+import { compose, shouldUpdate, withProps } from 'recompose'
 
 import { CHART_COLORS } from '../../../constants'
 
@@ -119,15 +119,18 @@ const StackChart = ({ isSolutionShown, data }) => (
 StackChart.propTypes = propTypes
 StackChart.defaultProps = defaultProps
 
-export default withProps(({ data, totalResponses }) => ({
-  // filter out choices without any responses (weird labeling)
-  // map data to contain percentages and char labels
-  data: data.map(({ correct, count, value }, index) => ({
-    correct,
-    count: count || null, // if count is 0, return null
-    fill: CHART_COLORS[index % 12],
-    index,
-    residual: totalResponses - count || null, // if residual is 0, return null
-    value,
-  })),
-}))(StackChart)
+export default compose(
+  shouldUpdate((props, nextProps) => props.data.length !== nextProps.data.length),
+  withProps(({ data, totalResponses }) => ({
+    // filter out choices without any responses (weird labeling)
+    // map data to contain percentages and char labels
+    data: data.map(({ correct, count, value }, index) => ({
+      correct,
+      count: count || null, // if count is 0, return null
+      fill: CHART_COLORS[index % 12],
+      index,
+      residual: totalResponses - count || null, // if residual is 0, return null
+      value,
+    })),
+  }))
+)(StackChart)

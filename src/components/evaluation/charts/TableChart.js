@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import _sortBy from 'lodash/sortBy'
 import { Mutation } from 'react-apollo'
 import { Button, Table } from 'semantic-ui-react'
-import { compose, withStateHandlers, withProps } from 'recompose'
+import { compose, shouldUpdate, withStateHandlers, withProps } from 'recompose'
 
 import { QUESTION_GROUPS } from '../../../constants'
 import { SessionEvaluationQuery, DeleteResponseMutation } from '../../../graphql'
@@ -186,7 +186,7 @@ TableChart.propTypes = propTypes
 TableChart.defaultProps = defaultProps
 
 export default compose(
-  withProps(({ data }) => console.log(data)),
+  shouldUpdate((props, nextProps) => props.data.length !== nextProps.data.length),
   withStateHandlers(
     {
       sortBy: 'count',
