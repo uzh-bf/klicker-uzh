@@ -1,7 +1,9 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import Link from 'next/link'
-import { compose } from 'recompose'
-import { Button, List } from 'semantic-ui-react'
+import Router from 'next/router'
+import { compose, withStateHandlers } from 'recompose'
+import { Button, List, Input } from 'semantic-ui-react'
 
 import { StaticLayout } from '../components/layouts'
 import { withLogging } from '../lib'
@@ -17,7 +19,17 @@ const links = [
   },
 ]
 
-const Index = () => (
+const propTypes = {
+  shortname: PropTypes.string,
+  redirectToJoin: PropTypes.func.isRequired,
+  updateShortname: PropTypes.func.isRequired,
+}
+
+const defaultProps = {
+  shortname: '',
+}
+
+const Index = ({ shortname, updateShortname, redirectToJoin }) => (
   // TODO: internationalization
   <StaticLayout pageTitle="Klicker">
     <div className="klicker">
@@ -25,7 +37,22 @@ const Index = () => (
         Klicker
         <span>UZH</span>
       </h1>
+
       <p className="description">Welcome to the open source instant audience response system.</p>
+
+      <div className="participation">
+        <p>Want to participate in a poll?</p>
+        <Input
+          fluid
+          label="app.klicker.uzh.ch/join/"
+          placeholder="account id"
+          value={shortname}
+          onChange={e => updateShortname(e.target.value)}
+        />
+        <Button primary disabled={!shortname || shortname === ''} onClick={redirectToJoin}>
+          Participate
+        </Button>
+      </div>
 
       <div className="boxes">
         <a
@@ -50,6 +77,14 @@ const Index = () => (
           <h2>Development</h2>
           <List divided relaxed>
             {/* <List.Item>
+              <List.Icon name="slack" size="large" verticalAlign="middle" />
+              <List.Content>
+                <List.Header as="a">Slack-Channel</List.Header>
+                <List.Description>Support & Discussions</List.Description>
+              </List.Content>
+            </List.Item>    */}
+
+            <List.Item>
               <List.Icon name="github" size="large" verticalAlign="middle" />
               <List.Content>
                 <List.Header as="a" href="https://github.com/uzh-bf/klicker-react">
@@ -67,13 +102,6 @@ const Index = () => (
                 <List.Description>Backend (API)</List.Description>
               </List.Content>
             </List.Item>
-            <List.Item>
-              <List.Icon name="slack" size="large" verticalAlign="middle" />
-              <List.Content>
-                <List.Header as="a">Slack-Channel</List.Header>
-                <List.Description>Support & Discussions</List.Description>
-              </List.Content>
-            </List.Item> */}
             <List.Item>
               <List.Icon name="mail" size="large" verticalAlign="middle" />
               <List.Content>
@@ -130,6 +158,33 @@ const Index = () => (
             font-style: italic;
             text-align: center;
           }
+
+          .participation {
+            display: flex;
+            flex-direction: column;
+
+            border: 1px solid $color-primary;
+            background-color: $color-primary-10p;
+            padding: 1rem;
+            width: 100%;
+            margin-bottom: 1rem;
+
+            p {
+              margin-bottom: 0.5rem;
+            }
+
+            :global(.input) {
+              flex: 1;
+              margin-right: 1rem;
+            }
+
+            :global(button) {
+              flex: 0 0 auto;
+              margin-top: 0.5rem;
+              margin-right: 0;
+            }
+          }
+
           .boxes {
             display: flex;
             flex-direction: column;
@@ -166,6 +221,19 @@ const Index = () => (
             h1 {
               margin-top: 0;
             }
+            .participation {
+              flex-flow: row wrap;
+              align-items: center;
+              justify-content: space-between;
+
+              p {
+                flex: 0 0 100%;
+              }
+
+              :global(button) {
+                margin-top: 0;
+              }
+            }
             .boxes {
               flex-direction: row;
               .box {
@@ -188,4 +256,22 @@ const Index = () => (
   </StaticLayout>
 )
 
-export default compose(withLogging())(Index)
+Index.propTypes = propTypes
+Index.defaultProps = defaultProps
+
+export default compose(
+  withLogging({
+    logrocket: false,
+  }),
+  withStateHandlers(
+    {
+      shortname: null,
+    },
+    {
+      redirectToJoin: ({ shortname }) => () => {
+        Router.replace(`/join/${shortname}`)
+      },
+      updateShortname: () => shortname => ({ shortname }),
+    }
+  )
+)(Index)
