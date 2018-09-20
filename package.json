@@ -192,7 +192,13 @@
   },
   "bundlesize": [
     {
-      "path": "./src/.next/static/commons/main-*.js"
+      "path": "./src/.next/static/chunks/commons.*.js"
+    },
+    {
+      "path": "./src/.next/static/css/commons.*.css"
+    },
+    {
+      "path": "./src/.next/static/runtime/main-*.js"
     }
   ]
 }
