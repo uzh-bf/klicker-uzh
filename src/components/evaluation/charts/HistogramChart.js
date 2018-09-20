@@ -128,7 +128,9 @@ HistogramChart.propTypes = propTypes
 HistogramChart.defaultProps = defaultProps
 
 export default compose(
-  shouldUpdate((props, nextProps) => props.data.length !== nextProps.data.length),
+  shouldUpdate(
+    (props, nextProps) => props.numBins !== nextProps.numBins || props.data.length !== nextProps.data.length
+  ),
   withProps(({ data, numBins }) => {
     // calculate the borders of the histogram
     const min = +_minBy(data, o => +o.value).value
