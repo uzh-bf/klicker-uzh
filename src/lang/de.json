@@ -218,7 +218,7 @@
   "user.registration.loginInfo": "Haben Sie bereits einen Account? {loginLink}",
   "user.registration.loginInfoLink": "Loggen Sie sich hier ein.",
   "user.registration.pageTitle": "Registration",
-  "user.registration.successNotification": "Erfolgreich registriert als {newEmail}.{br} Bitte unter {link} einloggen.",
+  "user.registration.successNotification": "Erfolgreich registriert als {newEmail}.{br} Bitte bestätigen Sie Ihren neuen Account mit der Email, die Sie gerade erhalten haben sollten. Sie können sich danach unter {link} einloggen.",
   "user.registration.title": "Registration",
   "user.registration.tos": "Mit meiner Registrierung akzeptiere ich die {terms} und {privacy} der Seite.",
   "user.requestPassword.success": "Eine Email mit Instruktionen zum Zurücksetzen des Passworts wurde an die angegebene Adresse versendet.",

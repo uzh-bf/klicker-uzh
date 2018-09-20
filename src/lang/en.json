@@ -218,7 +218,7 @@
   "user.registration.loginInfo": "Already have an account? {loginLink}",
   "user.registration.loginInfoLink": "Login here.",
   "user.registration.pageTitle": "Registration",
-  "user.registration.successNotification": "Successfully registered as {newEmail}.{br} Please login at {link}.",
+  "user.registration.successNotification": "Successfully registered as {newEmail}.{br} Please activate your new account using the link in the email we just sent you. You can then login at {link}.",
   "user.registration.title": "Registration",
   "user.registration.tos": "By registering, I accept the site {terms} and {privacy}.",
   "user.requestPassword.success": "An email has been sent to the provided address. Please follow the instructions therein to regain access to your account.",
