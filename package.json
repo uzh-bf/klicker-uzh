@@ -99,7 +99,7 @@
     "sanitize-html": "1.19.0",
     "semantic-ui-react": "0.82.5",
     "styled-jsx-plugin-sass": "0.2.4",
-    "subscriptions-transport-ws": "0.9.14",
+    "subscriptions-transport-ws": "0.9.15",
     "url-loader": "1.1.1",
     "uuid": "3.3.2",
     "v8n": "1.2.2",
