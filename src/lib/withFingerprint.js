@@ -14,10 +14,22 @@ export default ComposedComponent => {
       // otherwise generate a new fingerprint and store it in a cookie
       try {
         const Fingerprint2 = require('fingerprintjs2')
-        new Fingerprint2().get(result => {
-          Cookies.set('fp', result)
-          resolve(result)
-        })
+
+        if (window.requestIdleCallback) {
+          requestIdleCallback(() => {
+            new Fingerprint2().get(result => {
+              Cookies.set('fp', result)
+              resolve(result)
+            })
+          })
+        } else {
+          setTimeout(() => {
+            new Fingerprint2().get(result => {
+              Cookies.set('fp', result)
+              resolve(result)
+            })
+          }, 500)
+        }
       } catch (err) {
         reject(err)
       }
