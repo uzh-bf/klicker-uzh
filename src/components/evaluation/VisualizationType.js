@@ -3,6 +3,8 @@ import PropTypes from 'prop-types'
 import { Dropdown } from 'semantic-ui-react'
 import { defineMessages, intlShape } from 'react-intl'
 
+import { CHART_TYPES } from '../../constants'
+
 const messages = defineMessages({
   title: {
     defaultMessage: 'Visualization',
@@ -19,24 +21,24 @@ const propTypes = {
 }
 
 const options = [
-  { text: 'Pie Chart', value: 'PIE_CHART', withinType: ['SC'] },
+  { text: 'Pie Chart', value: CHART_TYPES.PIE_CHART, withinType: ['SC'] },
   {
     text: 'Bar Chart',
-    value: 'BAR_CHART',
+    value: CHART_TYPES.BAR_CHART,
     withinType: ['SC', 'MC', 'FREE_RANGE'],
   },
-  { text: 'Stacked Chart', value: 'STACK_CHART', withinType: ['MC'] },
+  { text: 'Stacked Chart', value: CHART_TYPES.STACK_CHART, withinType: ['MC'] },
   {
     text: 'Word Cloud',
-    value: 'WORD_CLOUD',
+    value: CHART_TYPES.CLOUD_CHART,
     withinType: ['FREE', 'FREE_RANGE'],
   },
   {
     text: 'Table',
-    value: 'TABLE',
+    value: CHART_TYPES.TABLE,
     withinType: ['SC', 'MC', 'FREE', 'FREE_RANGE'],
   },
-  { text: 'Histogram', value: 'HISTOGRAM', withinType: ['FREE_RANGE'] },
+  { text: 'Histogram', value: CHART_TYPES.HISTOGRAM, withinType: ['FREE_RANGE'] },
 ]
 
 const VisualizationType = ({ activeVisualization, intl, onChangeType, questionType }) => (

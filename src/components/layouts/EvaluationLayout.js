@@ -201,7 +201,7 @@ function EvaluationLayout({
             {QUESTION_GROUPS.WITH_STATISTICS.includes(type) &&
               statistics && (
                 <div className="statistics">
-                  <Statistics {...statistics} withBins={activeVisualization === 'HISTOGRAM'} />
+                  <Statistics {...statistics} withBins={activeVisualization === CHART_TYPES.HISTOGRAM} />
                 </div>
               )}
           </>

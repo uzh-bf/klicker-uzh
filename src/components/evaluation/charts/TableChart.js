@@ -172,10 +172,6 @@ function TableChart({
       <style jsx>{`
         .tableChart {
           width: 100%;
-
-          :global(tbody) {
-            overflow-y: auto;
-          }
         }
       `}</style>
     </div>

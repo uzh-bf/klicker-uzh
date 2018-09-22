@@ -45,11 +45,11 @@ const defaultProps = {
 
 const chartTypes = {
   BAR_CHART: BarChart,
+  CLOUD_CHART: CloudChart,
   HISTOGRAM: HistogramChart,
   PIE_CHART: PieChart,
   STACK_CHART: StackChart,
   TABLE: TableChart,
-  WORD_CLOUD: CloudChart,
 }
 
 function Chart({
