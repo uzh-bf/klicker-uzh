@@ -143,8 +143,6 @@
     "why-did-you-update": "0.1.1"
   },
   "scripts": {
-    "precommit": "lint-staged",
-    "prepush": "jest --onlyChanged",
     "analyze": "cross-env BUNDLE_ANALYZE=both NODE_ENV=production next build src",
     "build": "next build src",
     "build:lang": "next build src && node ./src/lib/defaultLang",
@@ -200,5 +198,11 @@
     {
       "path": "./src/.next/static/runtime/main-*.js"
     }
-  ]
+  ],
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "pre-push": "jest --onlyChanged"
+    }
+  }
 }
