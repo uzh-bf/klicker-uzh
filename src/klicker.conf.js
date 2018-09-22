@@ -256,6 +256,11 @@ module.exports = convict({
         env: 'SERVICES_APM_SERVICE_NAME',
         format: String,
       },
+      withRum: {
+        default: false,
+        env: 'SERVICES_APM_WITH_RUM',
+        format: Boolean,
+      },
     },
     googleAnalytics: {
       enabled: {
