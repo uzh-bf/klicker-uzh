@@ -34,6 +34,7 @@ const propTypes = {
   handleNewResponse: PropTypes.func.isRequired,
   handleSidebarActiveItemChange: PropTypes.func.isRequired,
   handleToggleSidebarVisible: PropTypes.func.isRequired,
+  id: PropTypes.string.isRequired,
   intl: intlShape.isRequired,
   isConfusionBarometerActive: PropTypes.bool.isRequired,
   isFeedbackChannelActive: PropTypes.bool.isRequired,
@@ -49,6 +50,7 @@ const defaultProps = {
 
 const Join = ({
   activeInstances,
+  id,
   intl,
   feedbacks,
   shortname,
@@ -85,6 +87,8 @@ const Join = ({
             active={sidebarActiveItem === 'activeQuestion'}
             handleNewResponse={handleNewResponse}
             questions={activeInstances}
+            sessionId={id}
+            shortname={shortname}
           />
         ) : (
           <div
@@ -104,6 +108,8 @@ const Join = ({
             handleNewFeedback={handleNewFeedback}
             isConfusionBarometerActive={isConfusionBarometerActive}
             isFeedbackChannelActive={isFeedbackChannelActive}
+            sessionId={id}
+            shortname={shortname}
           />
         )}
 
@@ -167,11 +173,6 @@ export default compose(
   withLogging({
     logRocket: false,
   }),
-  /* withStorage({
-    propDefault: 'activeQuestion',
-    propName: 'sidebarActiveItem',
-    storageType: 'session',
-  }), */
   pageWithIntl,
   withFingerprint,
   withStateHandlers(
@@ -282,11 +283,30 @@ export default compose(
     // handle creation of a new response
     handleNewResponse: ({ fp, newResponse }) => async ({ instanceId, response }) => {
       try {
-        newResponse({
-          variables: { fp: await fp, instanceId, response },
-        })
+        const fingerprint = await fp
+
+        if (fingerprint) {
+          newResponse({
+            variables: { fp, instanceId, response },
+          })
+        } else {
+          const Fingerprint2 = require('fingerprintjs2')
+          new Fingerprint2().get(result => {
+            newResponse({
+              variables: { fp: result, instanceId, response },
+            })
+          })
+        }
       } catch ({ message }) {
         console.error(message)
+
+        try {
+          newResponse({
+            variables: { instanceId, response },
+          })
+        } catch (e) {
+          console.error(e)
+        }
       }
     },
 
