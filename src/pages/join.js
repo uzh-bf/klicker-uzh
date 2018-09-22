@@ -10,7 +10,7 @@ import { StudentLayout } from '../components/layouts'
 import FeedbackArea from '../components/sessions/join/FeedbackArea'
 import QuestionArea from '../components/sessions/join/QuestionArea'
 import { AddConfusionTSMutation, AddFeedbackMutation, AddResponseMutation, JoinSessionQuery } from '../graphql'
-import { pageWithIntl, withFingerprint, withLogging } from '../lib'
+import { pageWithIntl, withFingerprint, withLogging, ensureFingerprint } from '../lib'
 
 const messages = defineMessages({
   activeQuestionTitle: {
@@ -219,10 +219,12 @@ export default compose(
     // handle creation of a new confusion timestep
     handleNewConfusionTS: ({ fp, data: { joinSession }, newConfusionTS }) => async ({ difficulty = 0, speed = 0 }) => {
       try {
+        const fingerprint = await ensureFingerprint(fp)
+
         newConfusionTS({
           variables: {
             difficulty,
-            fp: await fp,
+            fp: fingerprint,
             sessionId: joinSession.id,
             speed,
           },
@@ -235,6 +237,8 @@ export default compose(
     // handle creation of a new feedback
     handleNewFeedback: ({ data: { joinSession }, fp, newFeedback, router }) => async ({ content }) => {
       try {
+        const fingerprint = await ensureFingerprint(fp)
+
         if (joinSession.settings.isFeedbackChannelPublic) {
           newFeedback({
             // optimistically add the feedback to the array already
@@ -270,10 +274,10 @@ export default compose(
                 data,
               })
             },
-            variables: { content, fp: await fp, sessionId: joinSession.id },
+            variables: { content, fp: fingerprint, sessionId: joinSession.id },
           })
         } else {
-          newFeedback({ variables: { content, fp, sessionId: joinSession.id } })
+          newFeedback({ variables: { content, fp: fingerprint, sessionId: joinSession.id } })
         }
       } catch ({ message }) {
         console.error(message)
@@ -283,20 +287,11 @@ export default compose(
     // handle creation of a new response
     handleNewResponse: ({ fp, newResponse }) => async ({ instanceId, response }) => {
       try {
-        const fingerprint = await fp
+        const fingerprint = await ensureFingerprint(fp)
 
-        if (fingerprint) {
-          newResponse({
-            variables: { fp, instanceId, response },
-          })
-        } else {
-          const Fingerprint2 = require('fingerprintjs2')
-          new Fingerprint2().get(result => {
-            newResponse({
-              variables: { fp: result, instanceId, response },
-            })
-          })
-        }
+        newResponse({
+          variables: { fp: fingerprint, instanceId, response },
+        })
       } catch ({ message }) {
         console.error(message)
 

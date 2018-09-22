@@ -1,6 +1,21 @@
 import React from 'react'
 import Cookies from 'js-cookie'
 
+export const ensureFingerprint = async fp => {
+  let fingerprint = await fp
+
+  if (!fingerprint) {
+    const Fingerprint2 = require('fingerprintjs2')
+    fingerprint = await new Promise(resolve => {
+      new Fingerprint2().get(result => {
+        resolve(result)
+      })
+    })
+  }
+
+  return fingerprint
+}
+
 export default ComposedComponent => {
   let fingerprint
   if (process.env.SECURITY_FINGERPRINTING && typeof window !== 'undefined') {
