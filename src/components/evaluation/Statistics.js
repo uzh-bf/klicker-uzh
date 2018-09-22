@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import _round from 'lodash/round'
 import { FormattedMessage } from 'react-intl'
-import { Input, Message } from 'semantic-ui-react'
+import { Input, Popup, Icon } from 'semantic-ui-react'
 import _isNumber from 'lodash/isNumber'
 
 import { EvaluationListItem } from '.'
@@ -63,22 +63,16 @@ const Statistics = ({ bins, max, mean, median, min, q1, q3, sd, onChangeBins, wi
 
     {withBins && (
       <div className="bins">
-        <Input
-          fluid
-          label="Threshold"
-          labelPosition="left"
-          name="bins"
-          type="number"
-          value={bins}
-          onChange={onChangeBins}
-        />
+        <Input fluid label="Bins" labelPosition="left" name="bins" type="number" value={bins} onChange={onChangeBins} />
 
-        <Message info>
-          <FormattedMessage
-            defaultMessage="Type a number to override Freedman-Diaconis thresholding. The threshold defines the number of bins displayed in the histogram."
-            id="evaluation.bins.description"
-          />
-        </Message>
+        <Popup wide position="bottom right" trigger={<Icon name="info circle" />}>
+          <Popup.Content>
+            <FormattedMessage
+              defaultMessage="Type a number to override Freedman-Diaconis thresholding. The threshold defines the number of bins displayed in the histogram."
+              id="evaluation.bins.description"
+            />
+          </Popup.Content>
+        </Popup>
       </div>
     )}
 

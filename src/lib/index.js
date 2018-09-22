@@ -15,15 +15,7 @@ export { initGA, logException, logPageView } from './utils/analytics'
 export { createLinks } from './utils/css'
 export { filterSessions, processItems, buildIndex } from './utils/filters'
 export { generateTypesLabel, generateTypesShort } from './utils/lang'
-export {
-  calculateMax,
-  calculateMin,
-  calculateMean,
-  calculateMedian,
-  calculateFirstQuartile,
-  calculateThirdQuartile,
-  calculateStandardDeviation,
-} from './utils/math'
+export { toValueArray } from './utils/math'
 export { SESSION_STATUS, QUESTION_TYPES } from '../constants'
 export { indexToLetter, getLabelOut, getLabelIn } from './utils/charts'
 export { moveQuestion } from './utils/move'
