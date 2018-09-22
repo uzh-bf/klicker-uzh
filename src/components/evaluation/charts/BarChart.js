@@ -106,7 +106,12 @@ BarChart.propTypes = propTypes
 BarChart.defaultProps = defaultProps
 
 export default compose(
-  shouldUpdate((props, nextProps) => props.data.length !== nextProps.data.length),
+  shouldUpdate(
+    (props, nextProps) =>
+      props.isColored !== nextProps.isColored ||
+      props.isSolutionShown !== nextProps.isSolutionShown ||
+      props.data.length !== nextProps.data.length
+  ),
   withProps(({ data, questionType, totalResponses }) => ({
     // filter out choices without any responses (weird labeling)
     // map data to contain percentages and char labels
