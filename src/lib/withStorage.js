@@ -22,10 +22,14 @@ export default ({ propName, propDefault, storageType = 'session', json = false }
 
       try {
         if (typeof window !== 'undefined') {
-          if (storageType === 'session') {
+          if (storageType === 'session' && sessionStorage) {
             data = sessionStorage.getItem(propName)
-          } else if (storageType === 'local') {
+          } else if (storageType === 'local' && localStorage) {
             data = localStorage.getItem(propName)
+          }
+
+          if (!data) {
+            throw new Error('NO_STORAGE_AVAILABLE')
           }
 
           if (json) {
