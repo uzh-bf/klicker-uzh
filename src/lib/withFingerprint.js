@@ -1,11 +1,12 @@
 import React from 'react'
+import Cookies from 'js-cookie'
 
 export default ComposedComponent => {
   let fingerprint
   if (process.env.SECURITY_FINGERPRINTING && typeof window !== 'undefined') {
     fingerprint = new Promise((resolve, reject) => {
       // if an existing cookie already contains a fingerprint, reuse it
-      const existing = sessionStorage.getItem('fp')
+      const existing = Cookies.get('fp')
       if (existing) {
         resolve(existing)
       }
@@ -14,7 +15,7 @@ export default ComposedComponent => {
       try {
         const Fingerprint2 = require('fingerprintjs2')
         new Fingerprint2().get(result => {
-          sessionStorage.setItem('fp', result)
+          Cookies.set('fp', result)
           resolve(result)
         })
       } catch (err) {
