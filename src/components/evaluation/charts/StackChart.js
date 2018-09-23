@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   YAxis,
 } from 'recharts'
-import { compose, shouldUpdate, withProps } from 'recompose'
+import { compose, withProps } from 'recompose'
 
 import { CHART_COLORS } from '../../../constants'
 
@@ -120,10 +120,6 @@ StackChart.propTypes = propTypes
 StackChart.defaultProps = defaultProps
 
 export default compose(
-  shouldUpdate(
-    (props, nextProps) =>
-      props.isSolutionShown !== nextProps.isSolutionShown || props.data.length !== nextProps.data.length
-  ),
   withProps(({ data, totalResponses }) => ({
     // filter out choices without any responses (weird labeling)
     // map data to contain percentages and char labels
