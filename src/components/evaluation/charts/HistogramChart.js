@@ -6,7 +6,7 @@ import _maxBy from 'lodash/maxBy'
 import _sumBy from 'lodash/sumBy'
 import _round from 'lodash/round'
 import { histogram, thresholdFreedmanDiaconis } from 'd3'
-import { compose, shouldUpdate, withProps } from 'recompose'
+import { compose, withProps } from 'recompose'
 import {
   Bar,
   BarChart,
@@ -128,9 +128,6 @@ HistogramChart.propTypes = propTypes
 HistogramChart.defaultProps = defaultProps
 
 export default compose(
-  shouldUpdate(
-    (props, nextProps) => props.numBins !== nextProps.numBins || props.data.length !== nextProps.data.length
-  ),
   withProps(({ data, numBins }) => {
     // calculate the borders of the histogram
     const min = +_minBy(data, o => +o.value).value

@@ -11,7 +11,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { compose, shouldUpdate, withProps } from 'recompose'
+import { compose, withProps } from 'recompose'
 
 import { CHART_COLORS, CHART_TYPES } from '../../../constants'
 import { indexToLetter, getLabelIn, getLabelOut } from '../../../lib'
@@ -106,12 +106,6 @@ BarChart.propTypes = propTypes
 BarChart.defaultProps = defaultProps
 
 export default compose(
-  shouldUpdate(
-    (props, nextProps) =>
-      props.isColored !== nextProps.isColored ||
-      props.isSolutionShown !== nextProps.isSolutionShown ||
-      props.data.length !== nextProps.data.length
-  ),
   withProps(({ data, questionType, totalResponses }) => ({
     // filter out choices without any responses (weird labeling)
     // map data to contain percentages and char labels
