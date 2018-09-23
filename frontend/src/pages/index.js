@@ -57,7 +57,7 @@ const Index = ({ shortname, updateShortname, redirectToJoin }) => (
       <div className="boxes">
         <a
           className="box hoverable"
-          href="https://uzh-bf.github.io/klicker-docs/"
+          href="https://uzh-bf.github.io/klicker-uzh/"
           rel="noopener noreferrer"
           target="_blank"
         >
@@ -66,7 +66,7 @@ const Index = ({ shortname, updateShortname, redirectToJoin }) => (
         </a>
         <a
           className="box hoverable"
-          href="https://uzh-bf.github.io/klicker-docs/"
+          href="https://uzh-bf.github.io/klicker-uzh/"
           rel="noopener noreferrer"
           target="_blank"
         >
