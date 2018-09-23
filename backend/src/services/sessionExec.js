@@ -300,12 +300,18 @@ const deleteResponse = async ({ userId, instanceId, response }) => {
       instance.results.totalParticipants -= result.count
     }
     instance.markModified('results.FREE')
+    instance.markModified('results.totalParticipants')
 
     return instance.save()
   }
 
+  // extract the count of responses for the key to delete
+  const count = await responseCache.hget(`instance:${instanceId}:results`, resultKey)
+
   // if the instance is open, the result needs to be removed from redis
-  return responseCache.hdel(`instance:${instanceId}:results`, resultKey)
+  return responseCache
+    .hdel(`instance:${instanceId}:results`, resultKey)
+    .hincrby(`instance:${instanceId}:results`, 'participants', -count)
 }
 
 /**
