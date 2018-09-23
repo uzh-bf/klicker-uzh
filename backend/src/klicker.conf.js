@@ -274,23 +274,13 @@ module.exports = convict({
       },
     },
     rateLimit: {
-      delayAfter: {
-        default: 200,
-        env: 'SECURITY_RATE_LIMIT_DELAY_AFTER',
-        format: 'nat',
-      },
-      delayMs: {
-        default: 50,
-        env: 'SECURITY_RATE_LIMIT_DELAY_MS',
-        format: 'nat',
-      },
       enabled: {
         default: false,
         env: 'SECURITY_RATE_LIMIT_ENABLED',
         format: 'Boolean',
       },
       max: {
-        default: 1000,
+        default: 2500,
         env: 'SECURITY_RATE_LIMIT_MAX',
         format: 'nat',
       },
