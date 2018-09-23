@@ -278,20 +278,21 @@ export default compose(
     if (question.type === QUESTION_TYPES.FREE_RANGE) {
       // convert the result data into an array with primitive numbers
       const valueArray = toValueArray(results.data)
+      const hasResults = valueArray.length > 0
 
       return {
         activeInstance,
         handleChangeActiveInstance,
         statistics: {
           bins,
-          max: max(valueArray),
-          mean: mean(valueArray),
-          median: median(valueArray),
-          min: min(valueArray),
+          max: hasResults && max(valueArray),
+          mean: hasResults && mean(valueArray),
+          median: hasResults && median(valueArray),
+          min: hasResults && min(valueArray),
           onChangeBins: e => handleChangeBins(+e.target.value),
-          q1: quantileSeq(valueArray, 0.25),
-          q3: quantileSeq(valueArray, 0.75),
-          sd: std(valueArray),
+          q1: hasResults && quantileSeq(valueArray, 0.25),
+          q3: hasResults && quantileSeq(valueArray, 0.75),
+          sd: hasResults && std(valueArray),
         },
       }
     }
