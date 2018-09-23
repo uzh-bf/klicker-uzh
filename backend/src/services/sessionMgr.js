@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const { ForbiddenError } = require('apollo-server-express')
 const _mapValues = require('lodash/mapValues')
+const _forOwn = require('lodash/forOwn')
 
 const { ObjectId } = mongoose.Types
 
@@ -150,7 +151,7 @@ const freeToResults = (redisResults, responseHashes) => {
  * Initialize the redis response cache as needed for session execution
  * @param {*} param0
  */
-const initializeResponseCache = async ({ id, question, version }) => {
+const initializeResponseCache = async ({ id, question, version, results }) => {
   const transaction = responseCache.multi()
 
   // extract relevant information from the question entity
@@ -158,7 +159,7 @@ const initializeResponseCache = async ({ id, question, version }) => {
 
   // set the instance status, opening the instance for responses
   transaction.hmset(`instance:${id}:info`, 'status', 'OPEN', 'type', question.type)
-  transaction.hset(`instance:${id}:results`, 'participants', 0)
+  transaction.hset(`instance:${id}:results`, 'participants', results ? results.totalParticipants : 0)
 
   // include the min/max restrictions in the cache for FREE_RANGE questions
   if (question.type === QUESTION_TYPES.FREE_RANGE && questionVersion.options.FREE_RANGE.restrictions) {
@@ -179,7 +180,12 @@ const initializeResponseCache = async ({ id, question, version }) => {
 
     // initialize all response counts to 0
     options.choices.forEach((_, index) => {
-      transaction.hset(`instance:${id}:results`, index, 0)
+      transaction.hset(`instance:${id}:results`, index, results ? results.CHOICES[index] : 0)
+    })
+  } else if (results && QUESTION_GROUPS.FREE.includes(question.type)) {
+    _forOwn(results.FREE, ({ count, value }, key) => {
+      transaction.hset(`instance:${id}:results`, key, count)
+      transaction.hset(`instance:${id}:responseHashes`, key, value)
     })
   }
 
@@ -362,6 +368,17 @@ const sessionAction = async ({ sessionId, userId }, actionType) => {
         throw new ForbiddenError('SESSION_ALREADY_COMPLETED')
       }
 
+      // if the session is paused, reinitialize the redis cache with persisted results
+      if (session.status === SESSION_STATUS.PAUSED && session.activeInstances.length > 0) {
+        const promises = session.activeInstances.map(async instanceId => {
+          const instance = await QuestionInstanceModel.findById(instanceId).populate('question')
+
+          await initializeResponseCache(instance)
+        })
+
+        await Promise.all(promises)
+      }
+
       // update the session status to RUNNING
       // this will also continue the session when it has been paused
       session.status = SESSION_STATUS.RUNNING
@@ -385,6 +402,20 @@ const sessionAction = async ({ sessionId, userId }, actionType) => {
 
       // set the session status to be paused
       session.status = SESSION_STATUS.PAUSED
+
+      // if the session has active instances, persist the results
+      if (session.activeInstances.length > 0) {
+        const promises = session.activeInstances.map(async instanceId => {
+          const instance = await QuestionInstanceModel.findById(instanceId).populate('question')
+
+          // persist the results of the paused instances
+          instance.results = await computeInstanceResults(instance)
+
+          return instance.save()
+        })
+
+        await Promise.all(promises)
+      }
 
       break
 
