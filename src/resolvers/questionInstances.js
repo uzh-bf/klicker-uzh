@@ -3,7 +3,8 @@ const { ensureLoaders } = require('../lib/loaders')
 const SessionExecService = require('../services/sessionExec')
 const SessionMgrService = require('../services/sessionMgr')
 const { getRedis } = require('../redis')
-const { QUESTION_GROUPS } = require('../constants')
+const { QUESTION_GROUPS, SESSION_STATUS } = require('../constants')
+const { SessionModel } = require('../models')
 
 const responseCache = getRedis(3)
 
@@ -22,7 +23,36 @@ const responsesByPVQuery = parentValue =>
     createdAt,
   }))
 
-const resultsByPVQuery = async ({ id, isOpen, results }) => {
+const resultsByPVQuery = async ({ session, id, isOpen, results }) => {
+  if (isOpen) {
+    const sessionEntity = await SessionModel.findById(session)
+
+    if (sessionEntity.status === SESSION_STATUS.RUNNING) {
+      // extract responses from the redis cache (just-in-time)
+      const result = await responseCache
+        .pipeline()
+        .hgetall(`instance:${id}:info`)
+        .hgetall(`instance:${id}:results`)
+        .hgetall(`instance:${id}:responseHashes`)
+        .exec()
+      const { type } = result[0][1]
+      const redisResults = result[1][1]
+      const responseHashes = result[2][1]
+
+      if (QUESTION_GROUPS.CHOICES.includes(type)) {
+        return SessionMgrService.choicesToResults(redisResults)
+      }
+
+      if (QUESTION_GROUPS.FREE.includes(type)) {
+        const { FREE, totalParticipants } = SessionMgrService.freeToResults(redisResults, responseHashes)
+        return {
+          FREE: _map(FREE, (val, key) => ({ ...val, key })),
+          totalParticipants,
+        }
+      }
+    }
+  }
+
   if (results && results.FREE) {
     return {
       FREE: _map(results.FREE, (result, key) => ({ ...result, key })),
@@ -32,32 +62,6 @@ const resultsByPVQuery = async ({ id, isOpen, results }) => {
 
   if (results && results.CHOICES) {
     return results
-  }
-
-  // if the results are still empty and the instance is open, fetch results from redis
-  if (isOpen) {
-    // extract responses from the redis cache (just-in-time)
-    const result = await responseCache
-      .pipeline()
-      .hgetall(`instance:${id}:info`)
-      .hgetall(`instance:${id}:results`)
-      .hgetall(`instance:${id}:responseHashes`)
-      .exec()
-    const { type } = result[0][1]
-    const redisResults = result[1][1]
-    const responseHashes = result[2][1]
-
-    if (QUESTION_GROUPS.CHOICES.includes(type)) {
-      return SessionMgrService.choicesToResults(redisResults)
-    }
-
-    if (QUESTION_GROUPS.FREE.includes(type)) {
-      const { FREE, totalParticipants } = SessionMgrService.freeToResults(redisResults, responseHashes)
-      return {
-        FREE: _map(FREE, (val, key) => ({ ...val, key })),
-        totalParticipants,
-      }
-    }
   }
 
   return null
