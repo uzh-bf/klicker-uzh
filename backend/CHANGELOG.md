@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0
+
+- Breaking: Ensure that a redis cache is available before allowing to add responses (no longer optional)
+- Integrate with in-memory redis storage for running instances
+  - Hydrate redis storage with results hashes upon activation of a block
+  - Increment response counts in redis on incoming responses (transaction-based)
+  - Evaluate based on redis and/or mongo depending on the status of the session and question block
+  - Persist results to mongo when a question block is closed
+- Fix: Response deletion broken due to invalid resolving of promises
+
 ## 1.0.2
 
 - Fix: Redis page cache not purged correctly after activating the next block
