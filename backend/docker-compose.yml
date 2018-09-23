@@ -1,23 +1,23 @@
 version: '3'
 
 services:
-  api-dev:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    environment:
-      APP_DOMAIN: localhost
-      APP_SECRET: hello-world
-      CACHE_REDIS_ENABLED: 'true'
-      CACHE_REDIS_HOST: redis
-      MONGO_URL: klicker:klicker@mongodb:27017/klicker?authSource=admin
-    ports:
-      - 4000:4000
-    volumes:
-      - './.env:/app/.env:ro'
-      - './src:/app/src:ro'
-    networks:
-      - klicker-dev
+  # api-dev:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.dev
+  #   environment:
+  #     APP_DOMAIN: localhost
+  #     APP_SECRET: hello-world
+  #     CACHE_REDIS_ENABLED: 'true'
+  #     CACHE_REDIS_HOST: redis
+  #     MONGO_URL: klicker:klicker@mongodb:27017/klicker?authSource=admin
+  #   ports:
+  #     - 4000:4000
+  #   volumes:
+  #     - './.env:/app/.env:ro'
+  #     - './src:/app/src:ro'
+  #   networks:
+  #     - klicker-dev
 
   redis:
     image: redis:3-32bit@sha256:52d18d96f114b37c37affedda61d6c4fcb5669b80a146c2ee94785e136bb6311

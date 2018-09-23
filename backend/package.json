@@ -6,8 +6,8 @@
   "author": "Roland Schläfli <roland.schlaefli@bf.uzh.ch>",
   "license": "AGPL-3.0",
   "dependencies": {
-    "apollo-server-express": "2.0.7",
-    "aws-sdk": "2.317.0",
+    "apollo-server-express": "2.1.0",
+    "aws-sdk": "2.320.0",
     "bcryptjs": "2.4.3",
     "body-parser": "1.18.3",
     "caller": "1.0.1",
@@ -27,7 +27,7 @@
     "graphql-iso-date": "3.6.1",
     "graphql-redis-subscriptions": "1.5.0",
     "graphql-subscriptions": "1.0.0",
-    "graphql-tools": "3.1.1",
+    "graphql-tools": "4.0.0",
     "handlebars": "4.0.12",
     "helmet": "3.13.0",
     "ioredis": "4.0.0",
@@ -36,7 +36,7 @@
     "md5": "2.2.1",
     "moment": "2.22.2",
     "mongodb": "3.1.6",
-    "mongoose": "5.2.15",
+    "mongoose": "5.2.17",
     "morgan": "1.9.1",
     "nodemailer": "4.6.8",
     "pretty-error": "2.1.1",
@@ -55,19 +55,17 @@
     "babel-eslint": "9.0.0",
     "eslint": "5.6.0",
     "eslint-config-airbnb-base": "13.1.0",
-    "eslint-config-prettier": "3.0.1",
+    "eslint-config-prettier": "3.1.0",
     "eslint-plugin-import": "2.14.0",
     "eslint-plugin-prettier": "2.6.2",
-    "husky": "0.14.3",
+    "husky": "1.0.0-rc.15",
     "jest": "23.6.0",
-    "lint-staged": "7.2.2",
+    "lint-staged": "7.3.0",
     "nodemon": "1.18.4",
-    "prettier": "1.14.2",
+    "prettier": "1.14.3",
     "supertest": "3.3.0"
   },
   "scripts": {
-    "precommit": "lint-staged",
-    "prepush": "yarn run test --onlyChanged",
     "dev": "cross-env NODE_ENV=development nodemon -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock src/server.js",
     "dev:inspect": "cross-env NODE_ENV=development nodemon -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock --inspect src/server.js",
     "dev:ndb": "cross-env NODE_ENV=development ndb node src/server.js",
@@ -101,5 +99,11 @@
       "prettier --write",
       "git add"
     ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "pre-push": "yarn run test --onlyChanged"
+    }
   }
 }

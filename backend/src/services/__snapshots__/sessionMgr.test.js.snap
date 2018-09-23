@@ -122,14 +122,29 @@ Array [
   
     QUESTION_INSTANCE
 
-    isOpen: true
+    isOpen: false
     version: 0
 
     responses: []
 
-    results: undefined
+    results: {
+      CHOICES: [0,0,0]
+      FREE: undefined
+    }
   ,
 ]
+`;
+
+exports[`SessionMgrService choicesToResults correctly aggregates SC/MC question results 1`] = `
+Object {
+  "CHOICES": Array [
+    1,
+    4,
+    1,
+    3,
+  ],
+  "totalParticipants": "9",
+}
 `;
 
 exports[`SessionMgrService createSession allows creating a valid session 1`] = `
@@ -309,6 +324,26 @@ exports[`SessionMgrService endSession returns on an already completed session 1`
       FeedbacksActive: false
       FeedbacksPublic: false
     }
+`;
+
+exports[`SessionMgrService freeToResults correctly aggregates FREE/FREE_RANGE question results 1`] = `
+Object {
+  "FREE": Object {
+    "asdasd": Object {
+      "count": 0,
+      "value": "hello world",
+    },
+    "asdd": Object {
+      "count": 3,
+      "value": "hehehe",
+    },
+    "asddddd": Object {
+      "count": 1,
+      "value": "blabla",
+    },
+  },
+  "totalParticipants": 4,
+}
 `;
 
 exports[`SessionMgrService modifySession allows modifying a session 1`] = `

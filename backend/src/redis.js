@@ -7,7 +7,7 @@ const CACHE_CFG = CFG.get('cache')
 
 const newRedis = (db = 0) => {
   // otherwise initialize a new redis client for the respective url and database
-  if (CACHE_CFG.redis.enabled && process.env.NODE_ENV !== 'test') {
+  if (CACHE_CFG.redis.enabled) {
     try {
       const { host, password, port } = CACHE_CFG.redis
       const newClient = new Redis({ db, family: 4, host, password, port })

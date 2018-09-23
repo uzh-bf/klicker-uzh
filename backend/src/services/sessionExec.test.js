@@ -1,7 +1,6 @@
 require('dotenv').config()
 
 const mongoose = require('mongoose')
-const md5 = require('md5')
 
 const SessionMgrService = require('./sessionMgr')
 const SessionExecService = require('./sessionExec')
@@ -219,7 +218,7 @@ describe('SessionExecService', () => {
           choices: [0],
         },
       })
-      expect(instanceWithResponse.toObject().results.CHOICES).toEqual([1, 0, 0])
+      expect(instanceWithResponse).toEqual([[null, 1], [null, 1], [null, 1]])
 
       const instanceWithResponses = await SessionExecService.addResponse({
         instanceId: session.activeInstances[activeInstance],
@@ -227,8 +226,7 @@ describe('SessionExecService', () => {
           choices: [1],
         },
       })
-      expect(instanceWithResponses.toObject().results.CHOICES).toEqual([1, 1, 0])
-      expect(instanceWithResponses).toMatchSnapshot()
+      expect(instanceWithResponses).toEqual([[null, 1], [null, 2], [null, 2]])
 
       const instanceWithResponses2 = await SessionExecService.addResponse({
         instanceId: session.activeInstances[activeInstance],
@@ -236,8 +234,7 @@ describe('SessionExecService', () => {
           choices: [1],
         },
       })
-      expect(instanceWithResponses2.toObject().results.CHOICES).toEqual([1, 2, 0])
-      expect(instanceWithResponses2).toMatchSnapshot()
+      expect(instanceWithResponses2).toEqual([[null, 2], [null, 3], [null, 3]])
 
       const tooManyChoices = SessionExecService.addResponse({
         instanceId: session.activeInstances[activeInstance],
@@ -263,7 +260,7 @@ describe('SessionExecService', () => {
           choices: [0],
         },
       })
-      expect(instanceWithResponse.toObject().results.CHOICES).toEqual([1, 0, 0])
+      expect(instanceWithResponse).toEqual([[null, 1], [null, 1], [null, 1]])
 
       const instanceWithResponses = await SessionExecService.addResponse({
         instanceId: session.activeInstances[activeInstance],
@@ -271,8 +268,7 @@ describe('SessionExecService', () => {
           choices: [0, 1, 2],
         },
       })
-      expect(instanceWithResponses.toObject().results.CHOICES).toEqual([2, 1, 1])
-      expect(instanceWithResponses).toMatchSnapshot()
+      expect(instanceWithResponses).toEqual([[null, 2], [null, 1], [null, 1], [null, 2], [null, 2]])
     })
 
     it('allows adding responses to a FREE question', async () => {
@@ -300,34 +296,24 @@ describe('SessionExecService', () => {
           value: 'SCHWEIZ',
         },
       })
-      expect(instanceWithResponse.results.FREE).toMatchSnapshot()
+      expect(instanceWithResponse).toEqual([[null, 1], [null, 1], [null, 1], [null, 1]])
 
       // add more responses
-      await SessionExecService.addResponse({
-        instanceId: session.activeInstances[activeInstance],
-        response: {
-          value: 'schwiiz...',
-        },
-      })
       const instanceWithResponses = await SessionExecService.addResponse({
         instanceId: session.activeInstances[activeInstance],
         response: {
-          value: 'SCHWEIZ',
-        },
-      })
-      const md1 = md5('SCHWEIZ')
-      const md2 = md5('schwiiz...')
-      expect(instanceWithResponses.results.FREE).toEqual({
-        [md1]: {
-          count: 2,
-          value: 'SCHWEIZ',
-        },
-        [md2]: {
-          count: 1,
           value: 'schwiiz...',
         },
       })
-      expect(instanceWithResponses).toMatchSnapshot()
+      expect(instanceWithResponses).toEqual([[null, 1], [null, 1], [null, 2], [null, 2]])
+
+      const instanceWithResponses2 = await SessionExecService.addResponse({
+        instanceId: session.activeInstances[activeInstance],
+        response: {
+          value: 'SCHWEIZ',
+        },
+      })
+      expect(instanceWithResponses2).toEqual([[null, 2], [null, 0], [null, 3], [null, 3]])
     })
 
     it('allows adding responses to a FREE_RANGE question', async () => {
@@ -356,7 +342,7 @@ describe('SessionExecService', () => {
         })
       ).rejects.toEqual(new Error('INVALID_RESPONSE'))
 
-      // try adding a valua that is out-of-range
+      // try adding a value that is out-of-range
       expect(
         SessionExecService.addResponse({
           instanceId: session.activeInstances[activeInstance],
@@ -373,32 +359,24 @@ describe('SessionExecService', () => {
           value: 10,
         },
       })
-      expect(instanceWithResponse.results.FREE).toMatchSnapshot()
+      expect(instanceWithResponse).toEqual([[null, 1], [null, 1], [null, 1], [null, 1]])
 
       // add more responses
-      await SessionExecService.addResponse({
-        instanceId: session.activeInstances[activeInstance],
-        response: {
-          value: 14,
-        },
-      })
       const instanceWithResponses = await SessionExecService.addResponse({
         instanceId: session.activeInstances[activeInstance],
         response: {
-          value: 10,
-        },
-      })
-      expect(instanceWithResponses.results.FREE).toMatchSnapshot({
-        '25daad3d9e60b45043a70c4ab7d3b1c6': {
-          count: 2,
-          value: 10,
-        },
-        '09960d18c947355e0b797d2c266e0825': {
-          count: 1,
           value: 14,
         },
       })
-      expect(instanceWithResponses).toMatchSnapshot()
+      expect(instanceWithResponses).toEqual([[null, 1], [null, 1], [null, 2], [null, 2]])
+
+      const instanceWithResponses2 = await SessionExecService.addResponse({
+        instanceId: session.activeInstances[activeInstance],
+        response: {
+          value: 10,
+        },
+      })
+      expect(instanceWithResponses2).toEqual([[null, 2], [null, 0], [null, 3], [null, 3]])
     })
   })
 })
