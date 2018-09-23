@@ -389,7 +389,7 @@ exports[`Integration Session Execution allows evaluating sessions after completi
               options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
             
           }
-          results: {"FREE":[{"count":1,"key":"e4b1fc5758fb519823c9f2feb30b9a87","value":"99999.3784"},{"count":2,"key":"1017bfd4673955ffee4641ad3d481b1c","value":"50000"}],"totalParticipants":4}
+          results: {"FREE":[{"count":1,"key":"e4b1fc5758fb519823c9f2feb30b9a87","value":"99999.3784"},{"count":2,"key":"1017bfd4673955ffee4641ad3d481b1c","value":"50000"}],"totalParticipants":3}
           responses: undefined
         
       ,
@@ -538,7 +538,7 @@ exports[`Integration Session Execution allows publishing session evaluations 1`]
               options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
             
           }
-          results: {"FREE":[{"count":1,"key":"e4b1fc5758fb519823c9f2feb30b9a87","value":"99999.3784"},{"count":2,"key":"1017bfd4673955ffee4641ad3d481b1c","value":"50000"}],"totalParticipants":4}
+          results: {"FREE":[{"count":1,"key":"e4b1fc5758fb519823c9f2feb30b9a87","value":"99999.3784"},{"count":2,"key":"1017bfd4673955ffee4641ad3d481b1c","value":"50000"}],"totalParticipants":3}
           responses: undefined
         
       ,
@@ -1823,7 +1823,7 @@ exports[`Integration Session Execution allows running the full session flow (res
               options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
             
           }
-          results: {"FREE":[{"count":1,"key":"e4b1fc5758fb519823c9f2feb30b9a87","value":"99999.3784"},{"count":2,"key":"1017bfd4673955ffee4641ad3d481b1c","value":"50000"}],"totalParticipants":4}
+          results: {"FREE":[{"count":1,"key":"e4b1fc5758fb519823c9f2feb30b9a87","value":"99999.3784"},{"count":2,"key":"1017bfd4673955ffee4641ad3d481b1c","value":"50000"}],"totalParticipants":3}
           responses: undefined
         
       ,
