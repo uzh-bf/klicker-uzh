@@ -1,7 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import WordCloud from 'react-d3-cloud'
-import { shouldUpdate } from 'recompose'
 
 const propTypes = {
   data: PropTypes.arrayOf(
@@ -48,6 +47,4 @@ const CloudChart = ({ data, size }) => (
 CloudChart.propTypes = propTypes
 CloudChart.defaultProps = defaultProps
 
-export default shouldUpdate(
-  (props, nextProps) => props.size.width !== nextProps.size.width || props.data.length !== nextProps.data.length
-)(CloudChart)
+export default CloudChart

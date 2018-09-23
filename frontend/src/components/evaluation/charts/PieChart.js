@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Cell, Pie, PieChart as PieChartComponent, ResponsiveContainer, LabelList } from 'recharts'
-import { compose, shouldUpdate, withProps } from 'recompose'
+import { compose, withProps } from 'recompose'
 
 import { CHART_COLORS, CHART_TYPES } from '../../../constants'
 import { getLabelIn, getLabelOut } from '../../../lib'
@@ -69,10 +69,6 @@ PieChart.propTypes = propTypes
 PieChart.defaultProps = defaultProps
 
 export default compose(
-  shouldUpdate(
-    (props, nextProps) =>
-      props.isSolutionShown !== nextProps.isSolutionShown || props.data.length !== nextProps.data.length
-  ),
   withProps(({ data, questionType, totalResponses }) => ({
     // filter out choices without any responses (weird labeling)
     // map data to contain percentages and char labels
