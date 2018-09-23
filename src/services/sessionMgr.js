@@ -1,16 +1,24 @@
 const mongoose = require('mongoose')
 const { ForbiddenError } = require('apollo-server-express')
+const _mapValues = require('lodash/mapValues')
 
 const { ObjectId } = mongoose.Types
 
 const { sendSlackNotification } = require('./notifications')
 const { QuestionInstanceModel, SessionModel, UserModel, QuestionModel } = require('../models')
 const { getRedis } = require('../redis')
-const { SESSION_STATUS, QUESTION_BLOCK_STATUS, SESSION_ACTIONS, Errors } = require('../constants')
+const {
+  QUESTION_TYPES,
+  QUESTION_GROUPS,
+  SESSION_STATUS,
+  QUESTION_BLOCK_STATUS,
+  SESSION_ACTIONS,
+  Errors,
+} = require('../constants')
 const { logDebug } = require('../lib/utils')
 
 const redisCache = getRedis()
-const redisControl = getRedis(2)
+const responseCache = getRedis(3)
 
 /**
  * If redis is in use, unlink the cached /join/:shortname pages
@@ -89,6 +97,131 @@ const mapBlocks = ({ sessionId, questionBlocks, userId }) => {
     promises,
   }
 }
+
+/**
+ * Parse the results hash object as extracted from redis into digestable results
+ * @param {*} redisResults
+ */
+const choicesToResults = redisResults => {
+  if (!redisResults) {
+    return {
+      CHOICES: [],
+      totalParticipants: 0,
+    }
+  }
+
+  // calculate the number of choices available
+  const numChoices = Object.keys(redisResults).length - 1
+
+  // hydrate the instance results
+  return {
+    CHOICES: new Array(numChoices).fill(0).map((_, i) => +redisResults[i]),
+    totalParticipants: redisResults.participants,
+  }
+}
+
+/**
+ * Prase the results hash object as extracted from redis into digestable results
+ * @param {*} redisResults
+ * @param {*} responseHashes
+ */
+const freeToResults = (redisResults, responseHashes) => {
+  if (!redisResults) {
+    return {
+      FREE: [],
+      totalParticipants: 0,
+    }
+  }
+
+  const results = redisResults
+
+  // extract the total number of participants
+  const totalParticipants = results.participants
+  delete results.participants
+
+  // hydrate the instance results
+  return {
+    FREE: _mapValues(results, (val, key) => ({ count: +val, value: responseHashes[key] })),
+    totalParticipants,
+  }
+}
+
+/**
+ * Initialize the redis response cache as needed for session execution
+ * @param {*} param0
+ */
+const initializeResponseCache = async ({ id, question, version }) => {
+  const transaction = responseCache.multi()
+
+  // extract relevant information from the question entity
+  const questionVersion = question.versions[version]
+
+  // set the instance status, opening the instance for responses
+  transaction.hmset(`instance:${id}:info`, 'status', 'OPEN', 'type', question.type)
+  transaction.hset(`instance:${id}:results`, 'participants', 0)
+
+  // include the min/max restrictions in the cache for FREE_RANGE questions
+  if (question.type === QUESTION_TYPES.FREE_RANGE && questionVersion.options.FREE_RANGE.restrictions) {
+    transaction.hmset(
+      `instance:${id}:info`,
+      'min',
+      questionVersion.options.FREE_RANGE.restrictions.min,
+      'max',
+      questionVersion.options.FREE_RANGE.restrictions.max
+    )
+  }
+
+  // initialize results hash for SC and MC questions
+  // FREE and FREE_RANGE will be initialized at runtime
+  if (QUESTION_GROUPS.CHOICES.includes(question.type)) {
+    // extract the options of the question
+    const options = questionVersion.options.SC || questionVersion.options.MC
+
+    // initialize all response counts to 0
+    options.choices.forEach((_, index) => {
+      transaction.hset(`instance:${id}:results`, index, 0)
+    })
+  }
+
+  return transaction.exec()
+}
+
+/**
+ * Compute the question instance results based on the redis response cache
+ * @param {*} param0
+ */
+const computeInstanceResults = async ({ id, question }) => {
+  // setup a transaction for result extraction from redis
+  const redisResults = (await responseCache
+    .multi()
+    .hgetall(`instance:${id}:results`)
+    .del(
+      `instance:${id}:info`,
+      `instance:${id}:results`,
+      `instance:${id}:responses`,
+      `instance:${id}:ip`,
+      `instance:${id}:fp`
+    )
+    .exec())[0][1]
+
+  if (QUESTION_GROUPS.CHOICES.includes(question.type)) {
+    return choicesToResults(redisResults)
+  }
+
+  if (QUESTION_GROUPS.FREE.includes(question.type)) {
+    // extract the response hashes from redis
+    const responseHashes = (await responseCache
+      .multi()
+      .hgetall(`instance:${id}:responseHashes`)
+      .del(`instance:${id}:responseHashes`)
+      .exec())[0][1]
+
+    return freeToResults(redisResults, responseHashes)
+  }
+
+  return null
+}
+
 /**
  * Create a new session
  * @param {*} param0
@@ -379,69 +512,71 @@ const activateNextBlock = async ({ userId }) => {
   const prevBlockIndex = runningSession.activeBlock
   const nextBlockIndex = runningSession.activeBlock + 1
 
-  if (nextBlockIndex < runningSession.blocks.length) {
-    if (runningSession.activeInstances.length === 0) {
-      // if there are no active instances, activate the next block
-      runningSession.activeStep += 1
+  if (runningSession.activeInstances.length === 0) {
+    // if there are no active instances, activate the next block
+    runningSession.activeStep += 1
 
-      // increase the index of the currently active block
-      runningSession.activeBlock += 1
+    // increase the index of the currently active block
+    runningSession.activeBlock += 1
 
-      // find the next block for the running session
-      const nextBlock = runningSession.blocks[nextBlockIndex]
+    // find the next block for the running session
+    const nextBlock = runningSession.blocks[nextBlockIndex]
 
-      // update the instances in the new active block to be open
-      await QuestionInstanceModel.update({ _id: { $in: nextBlock.instances } }, { isOpen: true }, { multi: true })
+    // update the instances in the new active block to be open
+    const instancePromises = nextBlock.instances.map(async instanceId => {
+      const instance = await QuestionInstanceModel.findById(instanceId).populate('question')
 
-      // set the status of the instances in the next block to active
-      runningSession.blocks[nextBlockIndex].status = QUESTION_BLOCK_STATUS.ACTIVE
+      // set the instances to be open
+      instance.isOpen = true
 
-      // set the instances of the next block to be the users active instances
-      runningSession.activeInstances = nextBlock.instances
-    } else if (runningSession.activeBlock >= 0) {
-      // if there are active instances, close them
-      runningSession.activeStep += 1
-
-      // find the currently active block
-      const previousBlock = runningSession.blocks[prevBlockIndex]
-
-      // update the instances in the currently active block to be closed
-      await QuestionInstanceModel.update({ _id: { $in: previousBlock.instances } }, { isOpen: false }, { multi: true })
-
-      runningSession.activeInstances = []
-
-      // set the status of the previous block to executed
-      runningSession.blocks[prevBlockIndex].status = QUESTION_BLOCK_STATUS.EXECUTED
-
-      // if redis is available, cleanup the instance data from the previous block
-      if (redisControl) {
-        // calculate the keys to be unlinked
-        const keys = previousBlock.instances.reduce(
-          (prevKeys, instanceId) => [...prevKeys, `${instanceId}:fp`, `${instanceId}:ip`, `${instanceId}:responses`],
-          []
-        )
-
-        logDebug(() => console.log('[redis] Cleaning up participant data for instances:', keys))
-
-        // unlink the keys from the redis store
-        // const unlinkKeys = await redis.unlink(keys)
-        // TODO: use unlink with redis 4.x
-        await redisControl.del(keys)
-        // console.log(unlinkKeys)
-        // promises.push(unlinkKeys)
+      // if a response cache is available, hydrate it with the newly activated instances
+      if (responseCache) {
+        const initResponseCache = initializeResponseCache(instance)
+        promises.push(initResponseCache)
       }
-    }
-  } else {
-    // if the final block was reached above, reset the users active instances
+
+      return instance.save()
+    })
+
+    // push the update promises to the list of all promises
+    promises.push(Promise.all(instancePromises))
+
+    // set the status of the instances in the next block to active
+    runningSession.blocks[nextBlockIndex].status = QUESTION_BLOCK_STATUS.ACTIVE
+
+    // set the instances of the next block to be the users active instances
+    runningSession.activeInstances = nextBlock.instances
+  } else if (runningSession.activeBlock >= 0) {
+    // if there are active instances, close them
+    runningSession.activeStep += 1
+
+    // find the currently active block
+    const previousBlock = runningSession.blocks[prevBlockIndex]
+
+    // update the instances in the currently active block to be closed
+    const instancePromises = previousBlock.instances.map(async instanceId => {
+      const instance = await QuestionInstanceModel.findById(instanceId).populate('question')
+
+      // set the instances to be open
+      instance.isOpen = false
+
+      // compute the instance results based on redis cache contents
+      instance.results = await computeInstanceResults(instance)
+
+      return instance.save()
+    })
+
+    // push the update promises to the list of all promises
+    promises.push(Promise.all(instancePromises))
+
+    // reset the activeInstances of the current session
+    runningSession.activeInstances = []
 
     // set the status of the previous block to executed
     runningSession.blocks[prevBlockIndex].status = QUESTION_BLOCK_STATUS.EXECUTED
-
-    runningSession.activeInstances = []
-    runningSession.activeStep += 1
   }
 
-  promises.concat([runningSession.save(), user.save()])
+  promises.push([runningSession.save(), user.save()])
   await Promise.all(promises)
 
   // if redis is in use, cleanup the page cache
@@ -499,4 +634,6 @@ module.exports = {
   getRunningSession,
   pauseSession,
   deleteSessions,
+  choicesToResults,
+  freeToResults,
 }

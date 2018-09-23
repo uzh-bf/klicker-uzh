@@ -12,7 +12,8 @@ const { pubsub, CONFUSION_ADDED, FEEDBACK_ADDED } = require('../resolvers/subscr
 const FILTERING_CFG = CFG.get('security.filtering')
 
 // initialize redis if available
-const redis = getRedis(2)
+// const responseControl = getRedis(2)
+const responseCache = getRedis(3)
 
 /**
  * Add a new feedback to a session
@@ -102,15 +103,105 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
  * @param {*} param0
  */
 const addResponse = async ({ ip, fp, instanceId, response }) => {
-  // response object to save
-  const saveResponse = {
-    value: response,
+  // ensure that a response cache is available
+  if (!responseCache) {
+    throw new Error('REDIS_NOT_AVAILABLE')
   }
+
+  // extract important instance information from the corresponding redis hash
+  const { status, type, min, max } = await responseCache.hgetall(`instance:${instanceId}:info`)
+
+  // ensure that the instance targeted is actually running
+  // this approach allows us to not have to fetch the instance from the database at all
+  if (status !== 'OPEN') {
+    throw new ForbiddenError('INSTANCE_CLOSED')
+  }
+
+  // prepare a redis transaction pipeline to batch all actions into an atomic transaction
+  const transaction = responseCache.multi()
+
+  if (QUESTION_GROUPS.CHOICES.includes(type)) {
+    // if the response doesn't contain any valid choices, throw
+    if (!response.choices || !response.choices.length > 0) {
+      throw new UserInputError('INVALID_RESPONSE')
+    }
+
+    // if the response contains multiple choices for a SC question
+    if (type === QUESTION_TYPES.SC && response.choices.length > 1) {
+      throw new UserInputError('TOO_MANY_CHOICES')
+    }
+
+    // for each choice in the response, increment the corresponding hash key
+    response.choices.forEach(choiceIndex => {
+      transaction.hincrby(`instance:${instanceId}:results`, choiceIndex, 1)
+    })
+  } else if (QUESTION_GROUPS.FREE.includes(type)) {
+    // validate that a response value has been passed and that it is not extremely long
+    if (!response.value || response.value.length > 1000) {
+      throw new UserInputError('INVALID_RESPONSE')
+    }
+
+    // validate whether the numerical answer respects the defined ranges
+    if (type === QUESTION_TYPES.FREE_RANGE) {
+      // create a new base validator
+      // disallow NaN by passing false
+      const baseValidator = v8n().number(false)
+
+      try {
+        baseValidator.check(+response.value)
+      } catch (e) {
+        throw new UserInputError('INVALID_RESPONSE')
+      }
+
+      let rangeValidator = baseValidator
+      if (min) {
+        rangeValidator = rangeValidator.greaterThanOrEqual(min)
+      }
+      if (max) {
+        rangeValidator = rangeValidator.lessThanOrEqual(max)
+      }
+
+      try {
+        rangeValidator.check(+response.value)
+      } catch (e) {
+        throw new UserInputError('RESPONSE_OUT_OF_RANGE')
+      }
+    }
+
+    // hash the response value to get a unique identifier
+    const resultKey = md5(response.value)
+
+    // hash the open response value and add it to the redis hash
+    // or increment if the hashed value already exists in the cache
+    transaction.hincrby(`instance:${instanceId}:results`, resultKey, 1)
+
+    // cache the response value <-> hash mapping
+    transaction.hset(`instance:${instanceId}:responseHashes`, resultKey, response.value)
+  }
+
+  // if ip filtering is enabled, add the ip to the redis respondent set
+  if (FILTERING_CFG.byIP.enabled && ip) {
+    transaction.sadd(`instance:${instanceId}:ip`, ip)
+  }
+
+  // if fingerprinting is enabled, add the fingerprint to the redis respondent set
+  if (FILTERING_CFG.byFP.enabled && fp) {
+    transaction.sadd(`instance:${instanceId}:fp`, fp)
+  }
+
+  // add the response to the list of responses
+  transaction.rpush(`instance:${instanceId}:responses`, JSON.stringify({ ip, fp, response }))
+
+  // increment the number of participants by one
+  transaction.hincrby(`instance:${instanceId}:results`, 'participants', 1)
+
+  // as we are based on redis, leave early (no db access at all)
+  return transaction.exec()
 
   // if redis is available, save the ip, fp and response under the key of the corresponding instance
   // also check if any matching response (ip or fp) is already in the database.
   // TODO: results should still be written to the database? but responses will not be saved seperately!
-  if (redis && (FILTERING_CFG.byIP.enabled || FILTERING_CFG.byFP.enabled)) {
+  /* if (redis && (FILTERING_CFG.byIP.enabled || FILTERING_CFG.byFP.enabled)) {
     // prepare a redis pipeline
     const pipeline = redis.pipeline()
 
@@ -166,114 +257,7 @@ const addResponse = async ({ ip, fp, instanceId, response }) => {
 
     // add the response to the redis database
     redis.rpush(`${instanceId}:responses`, JSON.stringify(saveResponse))
-  }
-
-  // find the specified question instance
-  // only find instances that are open
-  const instance = await QuestionInstanceModel.findOne({
-    _id: instanceId,
-    isOpen: true,
-  }).populate('question')
-
-  // if the instance is closed, don't allow adding any responses
-  if (!instance) {
-    throw new ForbiddenError('INSTANCE_CLOSED')
-  }
-
-  const questionType = instance.question.type
-  const currentVersion = instance.question.versions[instance.version]
-
-  // result parsing for SC/MC questions
-  if (QUESTION_GROUPS.CHOICES.includes(questionType)) {
-    // if the response doesn't contain any valid choices, throw
-    if (!response.choices || !response.choices.length > 0) {
-      throw new UserInputError('INVALID_RESPONSE')
-    }
-
-    // if the response contains multiple choices for a SC question
-    if (questionType === QUESTION_TYPES.SC && response.choices.length > 1) {
-      throw new UserInputError('TOO_MANY_CHOICES')
-    }
-
-    // if it is the very first response, initialize results
-    if (!instance.results) {
-      instance.results = {
-        CHOICES: new Array(currentVersion.options[questionType].choices.length).fill(+0),
-        totalParticipants: 0,
-      }
-    }
-
-    // for each choice given, update the results
-    response.choices.forEach(responseIndex => {
-      instance.results.CHOICES[responseIndex] += 1
-    })
-    instance.results.totalParticipants += 1
-    instance.markModified('results.CHOICES')
-  } else if (QUESTION_GROUPS.FREE.includes(questionType)) {
-    if (!response.value || response.value.length > 1000) {
-      throw new UserInputError('INVALID_RESPONSE')
-    }
-
-    if (questionType === QUESTION_TYPES.FREE_RANGE) {
-      // create a new base validator
-      // disallow NaN by passing false
-      const baseValidator = v8n().number(false)
-
-      try {
-        baseValidator.check(+response.value)
-      } catch (e) {
-        throw new UserInputError('INVALID_RESPONSE')
-      }
-
-      let rangeValidator = baseValidator
-      const { min, max } = currentVersion.options.FREE_RANGE.restrictions
-      if (min) {
-        rangeValidator = rangeValidator.greaterThanOrEqual(min)
-      }
-      if (max) {
-        rangeValidator = rangeValidator.lessThanOrEqual(max)
-      }
-
-      try {
-        rangeValidator.check(+response.value)
-      } catch (e) {
-        throw new UserInputError('RESPONSE_OUT_OF_RANGE')
-      }
-    }
-
-    // if it is the very first response, initialize results
-    if (!instance.results) {
-      instance.results = {
-        FREE: {},
-        totalParticipants: 0,
-      }
-    }
-
-    // hash the response value to get a unique identifier
-    const resultKey = md5(response.value)
-
-    // if the respective response value was not given before, add it anew
-    if (!instance.results.FREE[resultKey]) {
-      instance.results.FREE[resultKey] = {
-        count: 1,
-        value: response.value,
-      }
-    } else {
-      // if the response value already occurred, simply increment count
-      instance.results.FREE[resultKey].count += 1
-    }
-    instance.results.totalParticipants += 1
-    instance.markModified('results.FREE')
-  }
-
-  // TODO: remove saving single responses in the database?
-  instance.responses.push(saveResponse)
-
-  // save the updated instance
-  await instance.save()
-
-  // return the updated instance
-  return instance
+  } */
 }
 
 /**
@@ -289,28 +273,39 @@ const deleteResponse = async ({ userId, instanceId, response }) => {
   }).populate('question')
 
   // if the instance does not exist, throw
-  if (!instance || !instance.results) {
+  if (!instance) {
     throw new ForbiddenError('INVALID_INSTANCE')
-  }
-
-  const questionType = instance.question.type
-
-  // ensure that this operation is only executed on free response questions
-  if (!QUESTION_GROUPS.FREE.includes(questionType)) {
-    throw new ForbiddenError('OPERATION_INCOMPATIBLE')
   }
 
   // hash the response value to get a unique identifier
   const resultKey = md5(response)
 
-  // remove the responses with the corresponding result key
-  if (instance.results.FREE[resultKey]) {
-    delete instance.results.FREE[resultKey]
-    instance.results.totalParticipants -= 1
-  }
-  instance.markModified('results.FREE')
+  // if the instance is not open, it must have been executed already
+  if (!instance.isOpen) {
+    if (!instance.results) {
+      throw new ForbiddenError('NO_RESULTS_AVAILABLE')
+    }
 
-  await instance.save()
+    const questionType = instance.question.type
+
+    // ensure that this operation is only executed on free response questions
+    if (!QUESTION_GROUPS.FREE.includes(questionType)) {
+      throw new ForbiddenError('OPERATION_INCOMPATIBLE')
+    }
+
+    // remove the responses with the corresponding result key
+    const result = instance.results.FREE[resultKey]
+    if (result) {
+      delete instance.results.FREE[resultKey]
+      instance.results.totalParticipants -= result.count
+    }
+    instance.markModified('results.FREE')
+
+    return instance.save()
+  }
+
+  // if the instance is open, the result needs to be removed from redis
+  return responseCache.hdel(`instance:${instanceId}:results`, resultKey)
 }
 
 /**

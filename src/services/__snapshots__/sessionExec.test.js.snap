@@ -163,55 +163,6 @@ exports[`SessionExecService addResponse allows adding responses to a FREE questi
     }
 `;
 
-exports[`SessionExecService addResponse allows adding responses to a FREE question 2`] = `
-Object {
-  "c7cd24ea4ea9d3eaab020517ed1babb7": Object {
-    "count": 1,
-    "value": "SCHWEIZ",
-  },
-}
-`;
-
-exports[`SessionExecService addResponse allows adding responses to a FREE question 3`] = `
-
-    QUESTION_INSTANCE
-
-    isOpen: true
-    version: 0
-
-    responses: [
-      ipUnique: undefined
-      fpUnique: undefined
-      value: {
-        choices: undefined
-        text: undefined
-        value: SCHWEIZ
-      }
-    ,
-      ipUnique: undefined
-      fpUnique: undefined
-      value: {
-        choices: undefined
-        text: undefined
-        value: schwiiz...
-      }
-    ,
-      ipUnique: undefined
-      fpUnique: undefined
-      value: {
-        choices: undefined
-        text: undefined
-        value: SCHWEIZ
-      }
-    ]
-
-    results: {
-      CHOICES: []
-      FREE: [object Object]
-    }
-  
-`;
-
 exports[`SessionExecService addResponse allows adding responses to a FREE_RANGE question 1`] = `
 
     SESSION
@@ -239,68 +190,6 @@ exports[`SessionExecService addResponse allows adding responses to a FREE_RANGE 
       FeedbacksActive: false
       FeedbacksPublic: false
     }
-`;
-
-exports[`SessionExecService addResponse allows adding responses to a FREE_RANGE question 2`] = `
-Object {
-  "25daad3d9e60b45043a70c4ab7d3b1c6": Object {
-    "count": 1,
-    "value": 10,
-  },
-}
-`;
-
-exports[`SessionExecService addResponse allows adding responses to a FREE_RANGE question 3`] = `
-Object {
-  "09960d18c947355e0b797d2c266e0825": Object {
-    "count": 1,
-    "value": 14,
-  },
-  "25daad3d9e60b45043a70c4ab7d3b1c6": Object {
-    "count": 2,
-    "value": 10,
-  },
-}
-`;
-
-exports[`SessionExecService addResponse allows adding responses to a FREE_RANGE question 4`] = `
-
-    QUESTION_INSTANCE
-
-    isOpen: true
-    version: 0
-
-    responses: [
-      ipUnique: undefined
-      fpUnique: undefined
-      value: {
-        choices: undefined
-        text: undefined
-        value: 10
-      }
-    ,
-      ipUnique: undefined
-      fpUnique: undefined
-      value: {
-        choices: undefined
-        text: undefined
-        value: 14
-      }
-    ,
-      ipUnique: undefined
-      fpUnique: undefined
-      value: {
-        choices: undefined
-        text: undefined
-        value: 10
-      }
-    ]
-
-    results: {
-      CHOICES: []
-      FREE: [object Object]
-    }
-  
 `;
 
 exports[`SessionExecService addResponse allows adding responses to a SC question 1`] = `
@@ -332,78 +221,6 @@ exports[`SessionExecService addResponse allows adding responses to a SC question
     }
 `;
 
-exports[`SessionExecService addResponse allows adding responses to a SC question 2`] = `
-
-    QUESTION_INSTANCE
-
-    isOpen: true
-    version: 0
-
-    responses: [
-      ipUnique: undefined
-      fpUnique: undefined
-      value: {
-        choices: 0
-        text: undefined
-        value: undefined
-      }
-    ,
-      ipUnique: undefined
-      fpUnique: undefined
-      value: {
-        choices: 1
-        text: undefined
-        value: undefined
-      }
-    ]
-
-    results: {
-      CHOICES: [1,1,0]
-      FREE: undefined
-    }
-  
-`;
-
-exports[`SessionExecService addResponse allows adding responses to a SC question 3`] = `
-
-    QUESTION_INSTANCE
-
-    isOpen: true
-    version: 0
-
-    responses: [
-      ipUnique: undefined
-      fpUnique: undefined
-      value: {
-        choices: 0
-        text: undefined
-        value: undefined
-      }
-    ,
-      ipUnique: undefined
-      fpUnique: undefined
-      value: {
-        choices: 1
-        text: undefined
-        value: undefined
-      }
-    ,
-      ipUnique: undefined
-      fpUnique: undefined
-      value: {
-        choices: 1
-        text: undefined
-        value: undefined
-      }
-    ]
-
-    results: {
-      CHOICES: [1,2,0]
-      FREE: undefined
-    }
-  
-`;
-
 exports[`SessionExecService addResponse allows adding responses to an MC question 1`] = `
 
     SESSION
@@ -431,36 +248,4 @@ exports[`SessionExecService addResponse allows adding responses to an MC questio
       FeedbacksActive: false
       FeedbacksPublic: false
     }
-`;
-
-exports[`SessionExecService addResponse allows adding responses to an MC question 2`] = `
-
-    QUESTION_INSTANCE
-
-    isOpen: true
-    version: 0
-
-    responses: [
-      ipUnique: undefined
-      fpUnique: undefined
-      value: {
-        choices: 0
-        text: undefined
-        value: undefined
-      }
-    ,
-      ipUnique: undefined
-      fpUnique: undefined
-      value: {
-        choices: 0,1,2
-        text: undefined
-        value: undefined
-      }
-    ]
-
-    results: {
-      CHOICES: [2,1,1]
-      FREE: undefined
-    }
-  
 `;
