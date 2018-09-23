@@ -310,8 +310,10 @@ const deleteResponse = async ({ userId, instanceId, response }) => {
 
   // if the instance is open, the result needs to be removed from redis
   return responseCache
+    .pipeline()
     .hdel(`instance:${instanceId}:results`, resultKey)
     .hincrby(`instance:${instanceId}:results`, 'participants', -count)
+    .exec()
 }
 
 /**
