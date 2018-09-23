@@ -5,20 +5,11 @@ import { compose, withProps, withStateHandlers, branch, renderComponent, renderN
 import { withRouter } from 'next/router'
 import { graphql } from 'react-apollo'
 import _round from 'lodash/round'
+import { max, min, mean, median, quantileSeq, std } from 'mathjs'
 
 import { CHART_DEFAULTS, QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
-import {
-  calculateMax,
-  calculateMin,
-  calculateMean,
-  calculateMedian,
-  calculateFirstQuartile,
-  calculateThirdQuartile,
-  calculateStandardDeviation,
-  pageWithIntl,
-  withLogging,
-} from '../../lib'
+import { toValueArray, pageWithIntl, withLogging } from '../../lib'
 import { Chart } from '../../components/evaluation'
 import { SessionEvaluationQuery, SessionEvaluationPublicQuery } from '../../graphql'
 import { sessionStatusShape, statisticsShape } from '../../propTypes'
@@ -285,19 +276,22 @@ export default compose(
     const { question, results } = activeInstance
 
     if (question.type === QUESTION_TYPES.FREE_RANGE) {
+      // convert the result data into an array with primitive numbers
+      const valueArray = toValueArray(results.data)
+
       return {
         activeInstance,
         handleChangeActiveInstance,
         statistics: {
           bins,
-          max: calculateMax(results),
-          mean: calculateMean(results),
-          median: calculateMedian(results),
-          min: calculateMin(results),
+          max: max(valueArray),
+          mean: mean(valueArray),
+          median: median(valueArray),
+          min: min(valueArray),
           onChangeBins: e => handleChangeBins(+e.target.value),
-          q1: calculateFirstQuartile(results),
-          q3: calculateThirdQuartile(results),
-          sd: calculateStandardDeviation(results),
+          q1: quantileSeq(valueArray, 0.25),
+          q3: quantileSeq(valueArray, 0.75),
+          sd: std(valueArray),
         },
       }
     }

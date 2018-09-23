@@ -3,6 +3,10 @@
 import Document, { Head, Main, NextScript } from 'next/document'
 import React from 'react'
 
+if (typeof global.Intl !== 'object') {
+  global.Intl = require('intl')
+}
+
 // The document (which is SSR-only) needs to be customized to expose the locale
 // data for the user's locale for React Intl to work in the browser.
 export default class IntlDocument extends Document {
@@ -30,11 +34,10 @@ export default class IntlDocument extends Document {
           <meta content="text/html; charset=utf-8" httpEquiv="Content-type" />
           <meta content="width=device-width, initial-scale=1" name="viewport" />
           <meta content="IE=Edge" httpEquiv="X-UA-Compatible" />
-          <link href="/_next/static/style.css" rel="stylesheet" />
+          <script src={polyfill} />
         </Head>
         <body>
           <Main />
-          <script src={polyfill} />
           <script
             dangerouslySetInnerHTML={{
               __html: this.props.localeDataScript,

@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import WordCloud from 'react-d3-cloud'
-import { compose, pure } from 'recompose'
+import { shouldUpdate } from 'recompose'
 
 const propTypes = {
   data: PropTypes.arrayOf(
@@ -10,6 +10,9 @@ const propTypes = {
       value: PropTypes.string.isRequired,
     })
   ),
+  size: PropTypes.shape({
+    width: PropTypes.number.isRequired,
+  }).isRequired,
 }
 const defaultProps = {
   data: [],
@@ -18,14 +21,14 @@ const defaultProps = {
 const fontSizeMapper = word => (1 + Math.log2(word.value)) * 40
 const rotate = word => word.value % 90
 
-const CloudChart = ({ data }) => (
+const CloudChart = ({ data, size }) => (
   <div className="cloudChart">
     <WordCloud
       data={data.map(({ value, count }) => ({ text: value, value: count }))}
       fontSizeMapper={fontSizeMapper}
       height={600}
       rotate={rotate}
-      width={800}
+      width={size.width || 600}
     />
 
     <style jsx>
@@ -45,4 +48,6 @@ const CloudChart = ({ data }) => (
 CloudChart.propTypes = propTypes
 CloudChart.defaultProps = defaultProps
 
-export default compose(pure)(CloudChart)
+export default shouldUpdate(
+  (props, nextProps) => props.size.width !== nextProps.size.width || props.data.length !== nextProps.data.length
+)(CloudChart)

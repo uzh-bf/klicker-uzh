@@ -51,6 +51,14 @@ const Registration = ({ intl }) => (
 
           return (
             <>
+              <Message warning>
+                <FormattedMessage
+                  defaultMessage="You dont need an account to respond to polls; just visit the given /join page of your
+                lecturer and respond anonymously. However, feel free to create an account if you would like to create
+                polls yourself."
+                  id="user.registration.studentAccountWarning"
+                />
+              </Message>
               <Message info>
                 <FormattedMessage
                   defaultMessage="Already have an account? {loginLink}"

@@ -11,25 +11,35 @@ const propTypes = {
   shortname: PropTypes.string.isRequired,
 }
 
-const QR = ({ shortname }) => (
-  <StaticLayout pageTitle="QR">
-    <div className="qr">
-      <QRCode size={512} value={`${process.env.APP_BASE_URL}/join/${shortname}`} />
-    </div>
+const QR = ({ shortname }) => {
+  const joinLink = `${process.env.APP_BASE_URL}/join/${shortname}`
 
-    <style jsx>
-      {`
+  return (
+    <StaticLayout pageTitle="QR">
+      <div className="link">{joinLink}</div>
+      <div className="qr">
+        <QRCode size={700} value={joinLink} />
+      </div>
+
+      <style jsx>{`
         @import 'src/theme';
+
+        .link {
+          line-height: 4rem;
+          font-size: 4rem;
+          font-weight: bold;
+          margin-bottom: 2rem;
+        }
 
         .qr {
           display: flex;
           align-items: center;
           justify-content: center;
         }
-      `}
-    </style>
-  </StaticLayout>
-)
+      `}</style>
+    </StaticLayout>
+  )
+}
 QR.propTypes = propTypes
 
 export default compose(

@@ -1,13 +1,13 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
+import dayjs from 'dayjs'
 import { FormattedMessage } from 'react-intl'
 import { compose, withStateHandlers, withHandlers } from 'recompose'
 import { Form, Button } from 'semantic-ui-react'
 
 import { ConfusionSlider } from '../../confusion'
 import { Feedback } from '../../feedbacks'
-import { withStorage } from '../../../lib'
 
 const propTypes = {
   active: PropTypes.bool.isRequired,
@@ -213,18 +213,25 @@ FeedbackArea.propTypes = propTypes
 FeedbackArea.defaultProps = defaultProps
 
 export default compose(
-  withStorage({
-    json: true,
-    propDefault: { difficulty: undefined, speed: undefined },
-    propName: 'confusion',
-    storageType: 'session',
-  }),
   withStateHandlers(
-    ({ confusion }) => ({
-      confusionDifficulty: confusion ? confusion.difficulty : undefined,
-      confusionSpeed: confusion ? confusion.speed : undefined,
-      feedbackInputValue: undefined,
-    }),
+    ({ shortname, sessionId }) => {
+      let confusion
+      if (typeof window !== 'undefined') {
+        try {
+          if (window.sessionStorage) {
+            confusion = JSON.parse(sessionStorage.getItem(`${shortname}-${sessionId}-confusion`))
+          }
+        } catch (e) {
+          console.error(e)
+        }
+      }
+
+      return {
+        confusionDifficulty: confusion ? confusion.difficulty : undefined,
+        confusionSpeed: confusion ? confusion.speed : undefined,
+        feedbackInputValue: undefined,
+      }
+    },
     {
       handleConfusionDifficultyChange: () => confusionDifficulty => ({
         confusionDifficulty,
@@ -241,7 +248,13 @@ export default compose(
     }
   ),
   withHandlers({
-    handleNewConfusionTS: ({ confusionDifficulty, confusionSpeed, handleNewConfusionTS }) => () => {
+    handleNewConfusionTS: ({
+      shortname,
+      sessionId,
+      confusionDifficulty,
+      confusionSpeed,
+      handleNewConfusionTS,
+    }) => () => {
       // send the new confusion entry to the server
       handleNewConfusionTS({
         difficulty: confusionDifficulty,
@@ -249,13 +262,20 @@ export default compose(
       })
 
       // update the confusion cookie
-      sessionStorage.setItem(
-        'confusion',
-        JSON.stringify({
-          difficulty: confusionDifficulty,
-          speed: confusionSpeed,
-        })
-      )
+      try {
+        if (window.sessionStorage) {
+          sessionStorage.setItem(
+            `${shortname}-${sessionId}-confusion`,
+            JSON.stringify({
+              difficulty: confusionDifficulty,
+              speed: confusionSpeed,
+              timestamp: dayjs().unix(),
+            })
+          )
+        }
+      } catch (e) {
+        console.error(e)
+      }
     },
     handleNewFeedback: ({ feedbackInputValue, handleNewFeedback, handleFeedbackInputReset }) => () => {
       handleFeedbackInputReset()
