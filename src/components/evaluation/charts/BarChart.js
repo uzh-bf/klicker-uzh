@@ -2,16 +2,16 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import _sortBy from 'lodash/sortBy'
 import {
+  ResponsiveContainer,
   Bar,
   BarChart as BarChartComponent,
   CartesianGrid,
   Cell,
   LabelList,
-  ResponsiveContainer,
   XAxis,
   YAxis,
 } from 'recharts'
-import { withProps } from 'recompose'
+import { compose, shouldUpdate, withProps } from 'recompose'
 
 import { CHART_COLORS, CHART_TYPES } from '../../../constants'
 import { indexToLetter, getLabelIn, getLabelOut } from '../../../lib'
@@ -105,19 +105,27 @@ const BarChart = ({ isSolutionShown, data, isColored }) => (
 BarChart.propTypes = propTypes
 BarChart.defaultProps = defaultProps
 
-export default withProps(({ data, questionType, totalResponses }) => ({
-  // filter out choices without any responses (weird labeling)
-  // map data to contain percentages and char labels
-  data: _sortBy(
-    data.map(({ correct, count, value }, index) => ({
-      correct,
-      count,
-      fill: CHART_COLORS[index % 12],
-      label: questionType === 'FREE_RANGE' ? +value : indexToLetter(index),
-      labelIn: getLabelIn(CHART_TYPES.BAR_CHART, questionType, count, totalResponses, index),
-      labelOut: getLabelOut(CHART_TYPES.BAR_CHART, questionType, count, totalResponses, index),
-      value,
-    })),
-    o => o.label
+export default compose(
+  shouldUpdate(
+    (props, nextProps) =>
+      props.isColored !== nextProps.isColored ||
+      props.isSolutionShown !== nextProps.isSolutionShown ||
+      props.data.length !== nextProps.data.length
   ),
-}))(BarChart)
+  withProps(({ data, questionType, totalResponses }) => ({
+    // filter out choices without any responses (weird labeling)
+    // map data to contain percentages and char labels
+    data: _sortBy(
+      data.map(({ correct, count, value }, index) => ({
+        correct,
+        count,
+        fill: CHART_COLORS[index % 12],
+        label: questionType === 'FREE_RANGE' ? +value : indexToLetter(index),
+        labelIn: getLabelIn(CHART_TYPES.BAR_CHART, questionType, count, totalResponses, index),
+        labelOut: getLabelOut(CHART_TYPES.BAR_CHART, questionType, count, totalResponses, index),
+        value,
+      })),
+      o => o.label
+    ),
+  }))
+)(BarChart)

@@ -10,6 +10,8 @@ const isDev = process.env.NODE_ENV === 'development'
 let LogRocket
 let LogRocketReact
 
+let APM
+
 if (isProd && process.env.SERVICES_LOGROCKET_APP_ID) {
   LogRocket = require('logrocket')
   LogRocketReact = require('logrocket-react')
@@ -49,6 +51,20 @@ export default (cfg = {}) =>
           } */
 
           if (isProd) {
+            // embed elastic apm if enabled
+            if (process.env.SERVICES_APM_WITH_RUM && !window.INIT_APM) {
+              const { init } = require('elastic-apm-js-base')
+
+              APM = init({
+                // Set required service name (allowed characters: a-z, A-Z, 0-9, -, _, and space)
+                serviceName: process.env.SERVICES_APM_SERVICE_NAME,
+
+                // Set custom APM Server URL (default: http://localhost:8200)
+                serverUrl: process.env.SERVICES_APM_SERVER_URL,
+              })
+
+              window.INIT_APM = true
+            }
             // embed logrocket if enabled
             if (process.env.SERVICES_LOGROCKET_APP_ID && config.logRocket && !window.INIT_LR) {
               LogRocket.init(process.env.SERVICES_LOGROCKET_APP_ID)

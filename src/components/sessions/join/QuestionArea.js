@@ -3,6 +3,8 @@ import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import _without from 'lodash/without'
 import v8n from 'v8n'
+import dayjs from 'dayjs'
+
 import { FormattedMessage } from 'react-intl'
 import { convertFromRaw } from 'draft-js'
 import { compose, withStateHandlers, withHandlers, withProps } from 'recompose'
@@ -11,7 +13,6 @@ import QuestionFiles from './QuestionFiles'
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
 import { ActionMenu, Collapser } from '../../common'
 import { QuestionDescription, SCAnswerOptions, FREEAnswerOptions } from '../../questionTypes'
-import { withStorage } from '../../../lib'
 
 const propTypes = {
   active: PropTypes.bool.isRequired,
@@ -260,21 +261,33 @@ QuestionArea.propTypes = propTypes
 QuestionArea.defaultProps = defaultProps
 
 export default compose(
-  withStorage({
-    json: true,
-    propDefault: [],
-    propName: 'storedResponses',
-    storageType: 'local',
-  }),
-  withProps(({ questions, storedResponses }) => ({
-    remainingQuestions: questions.reduce((indices, { id }, index) => {
-      if (storedResponses && storedResponses.includes(id)) {
-        return indices
-      }
+  withProps(({ questions, shortname, sessionId }) => {
+    if (typeof window !== 'undefined') {
+      try {
+        if (window.localStorage) {
+          const storedResponses = JSON.parse(localStorage.getItem(`${shortname}-${sessionId}-responses`)) || {
+            responses: [],
+          }
 
-      return [...indices, index]
-    }, []),
-  })),
+          return {
+            remainingQuestions: questions.reduce((indices, { id }, index) => {
+              if (storedResponses.responses.includes(id)) {
+                return indices
+              }
+
+              return [...indices, index]
+            }, []),
+          }
+        }
+      } catch (e) {
+        console.error(e)
+      }
+    }
+
+    return {
+      remainingQuestions: questions.map((val, ix) => ix),
+    }
+  }),
   withStateHandlers(
     ({ remainingQuestions }) => ({
       activeQuestion: remainingQuestions[0],
@@ -370,7 +383,15 @@ export default compose(
     handleCompleteQuestion: ({ handleCompleteQuestion }) => index => () => handleCompleteQuestion(index),
     handleFreeValueChange: ({ handleFreeValueChange }) => (type, options) => inputValue =>
       handleFreeValueChange(inputValue, options, type),
-    handleSubmit: ({ activeQuestion, questions, handleNewResponse, handleSubmit, inputValue }) => () => {
+    handleSubmit: ({
+      shortname,
+      sessionId,
+      activeQuestion,
+      questions,
+      handleNewResponse,
+      handleSubmit,
+      inputValue,
+    }) => async () => {
       const { id: instanceId, type } = questions[activeQuestion]
 
       // if the question has been answered, add a response
@@ -383,11 +404,23 @@ export default compose(
       }
 
       // update the stored responses
-      const prevResponses = JSON.parse(localStorage.getItem('storedResponses'))
-      localStorage.setItem(
-        'storedResponses',
-        JSON.stringify(prevResponses ? [...prevResponses, instanceId] : [instanceId])
-      )
+      if (typeof window !== 'undefined') {
+        try {
+          if (window.localStorage) {
+            const prevResponses = JSON.parse(localStorage.getItem(`${shortname}-${sessionId}-responses`))
+            localStorage.setItem(
+              `${shortname}-${sessionId}-responses`,
+              JSON.stringify(
+                prevResponses
+                  ? { responses: [...prevResponses.responses, instanceId], timestamp: dayjs().unix() }
+                  : { responses: [instanceId], timestamp: dayjs().unix() }
+              )
+            )
+          }
+        } catch (e) {
+          console.error(e)
+        }
+      }
 
       handleSubmit()
     },

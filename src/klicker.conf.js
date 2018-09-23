@@ -49,12 +49,17 @@ module.exports = convict({
   cache: {
     pages: {
       join: {
-        default: 20,
+        default: 30,
         env: 'CACHE_PAGES_JOIN',
         format: 'int',
       },
-      qr: {
+      landing: {
         default: 600,
+        env: 'CACHE_PAGES_LANDING',
+        format: 'int',
+      },
+      qr: {
+        default: 300,
         env: 'CACHE_PAGES_QR',
         format: 'int',
       },
@@ -250,6 +255,11 @@ module.exports = convict({
         default: 'klicker-react',
         env: 'SERVICES_APM_SERVICE_NAME',
         format: String,
+      },
+      withRum: {
+        default: false,
+        env: 'SERVICES_APM_WITH_RUM',
+        format: Boolean,
       },
     },
     googleAnalytics: {

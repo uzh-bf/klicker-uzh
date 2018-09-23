@@ -10,7 +10,7 @@ import { StudentLayout } from '../components/layouts'
 import FeedbackArea from '../components/sessions/join/FeedbackArea'
 import QuestionArea from '../components/sessions/join/QuestionArea'
 import { AddConfusionTSMutation, AddFeedbackMutation, AddResponseMutation, JoinSessionQuery } from '../graphql'
-import { pageWithIntl, withFingerprint, withLogging } from '../lib'
+import { pageWithIntl, withFingerprint, withLogging, ensureFingerprint } from '../lib'
 
 const messages = defineMessages({
   activeQuestionTitle: {
@@ -34,6 +34,7 @@ const propTypes = {
   handleNewResponse: PropTypes.func.isRequired,
   handleSidebarActiveItemChange: PropTypes.func.isRequired,
   handleToggleSidebarVisible: PropTypes.func.isRequired,
+  id: PropTypes.string.isRequired,
   intl: intlShape.isRequired,
   isConfusionBarometerActive: PropTypes.bool.isRequired,
   isFeedbackChannelActive: PropTypes.bool.isRequired,
@@ -49,6 +50,7 @@ const defaultProps = {
 
 const Join = ({
   activeInstances,
+  id,
   intl,
   feedbacks,
   shortname,
@@ -85,6 +87,8 @@ const Join = ({
             active={sidebarActiveItem === 'activeQuestion'}
             handleNewResponse={handleNewResponse}
             questions={activeInstances}
+            sessionId={id}
+            shortname={shortname}
           />
         ) : (
           <div
@@ -104,6 +108,8 @@ const Join = ({
             handleNewFeedback={handleNewFeedback}
             isConfusionBarometerActive={isConfusionBarometerActive}
             isFeedbackChannelActive={isFeedbackChannelActive}
+            sessionId={id}
+            shortname={shortname}
           />
         )}
 
@@ -167,11 +173,6 @@ export default compose(
   withLogging({
     logRocket: false,
   }),
-  /* withStorage({
-    propDefault: 'activeQuestion',
-    propName: 'sidebarActiveItem',
-    storageType: 'session',
-  }), */
   pageWithIntl,
   withFingerprint,
   withStateHandlers(
@@ -218,10 +219,12 @@ export default compose(
     // handle creation of a new confusion timestep
     handleNewConfusionTS: ({ fp, data: { joinSession }, newConfusionTS }) => async ({ difficulty = 0, speed = 0 }) => {
       try {
+        const fingerprint = await ensureFingerprint(fp)
+
         newConfusionTS({
           variables: {
             difficulty,
-            fp: await fp,
+            fp: fingerprint,
             sessionId: joinSession.id,
             speed,
           },
@@ -234,6 +237,8 @@ export default compose(
     // handle creation of a new feedback
     handleNewFeedback: ({ data: { joinSession }, fp, newFeedback, router }) => async ({ content }) => {
       try {
+        const fingerprint = await ensureFingerprint(fp)
+
         if (joinSession.settings.isFeedbackChannelPublic) {
           newFeedback({
             // optimistically add the feedback to the array already
@@ -269,10 +274,10 @@ export default compose(
                 data,
               })
             },
-            variables: { content, fp: await fp, sessionId: joinSession.id },
+            variables: { content, fp: fingerprint, sessionId: joinSession.id },
           })
         } else {
-          newFeedback({ variables: { content, fp, sessionId: joinSession.id } })
+          newFeedback({ variables: { content, fp: fingerprint, sessionId: joinSession.id } })
         }
       } catch ({ message }) {
         console.error(message)
@@ -282,11 +287,21 @@ export default compose(
     // handle creation of a new response
     handleNewResponse: ({ fp, newResponse }) => async ({ instanceId, response }) => {
       try {
+        const fingerprint = await ensureFingerprint(fp)
+
         newResponse({
-          variables: { fp: await fp, instanceId, response },
+          variables: { fp: fingerprint, instanceId, response },
         })
       } catch ({ message }) {
         console.error(message)
+
+        try {
+          newResponse({
+            variables: { instanceId, response },
+          })
+        } catch (e) {
+          console.error(e)
+        }
       }
     },
 
