@@ -44,7 +44,6 @@ if (SERVICES_CFG.sentry.enabled) {
 const AccountService = require('./services/accounts')
 const { resolvers, typeDefs } = require('./schema')
 const { getRedis } = require('./redis')
-const { exceptTest } = require('./lib/utils')
 const { createLoaders } = require('./lib/loaders')
 
 // connect to mongodb
@@ -83,7 +82,9 @@ mongoose.connection
   })
 
 // initialize a connection to redis
-const redis = getRedis(1)
+const pageCache = getRedis()
+const limitRedis = getRedis(1)
+const responseCache = getRedis(3)
 
 // initialize an express server
 const app = express()
@@ -164,40 +165,37 @@ if (isProd) {
 
   // add a rate limiting middleware
   if (SECURITY_CFG.rateLimit.enabled) {
-    const { windowMs, max, delayAfter, delayMs } = SECURITY_CFG.rateLimit
+    const { windowMs, max } = SECURITY_CFG.rateLimit
     // basic rate limiting configuration
     const limiterSettings = {
-      windowMs, // in a 5 minute window
-      max, // limit to 200 requests
-      delayAfter, // start delaying responses after 100 requests
-      delayMs, // delay responses by 250ms * (numResponses - delayAfter)
+      windowMs,
+      max,
       keyGenerator: req => `${req.auth ? req.auth.sub : req.ip}`,
-      onLimitReached: req =>
-        exceptTest(() => {
-          const error = `> Rate-Limited a Request from ${req.ip} ${req.auth.sub || 'anon'}!`
+      onLimitReached: req => {
+        const error = `> Rate-Limited a Request from ${req.ip} ${req.auth.sub || 'anon'}!`
 
-          console.error(error)
+        console.error(error)
 
-          if (apm) {
-            apm.captureError(error)
-          }
+        if (apm) {
+          apm.captureError(error)
+        }
 
-          if (Raven) {
-            Raven.captureException(error)
-          }
-        }),
+        if (Raven) {
+          Raven.captureException(error)
+        }
+      },
     }
 
     // if redis is available, use it to centrally store rate limiting dataconst
     let limiter
-    if (redis) {
+    if (limitRedis) {
       const RedisStore = require('rate-limit-redis')
       limiter = new RateLimit({
         ...limiterSettings,
         store: new RedisStore({
-          client: redis,
+          client: limitRedis,
           expiry: Math.round(windowMs / 1000),
-          prefix: 'rl-api:',
+          prefix: 'limiter:',
         }),
       })
     } else {
@@ -282,12 +280,14 @@ apollo.applyMiddleware({
     }
 
     // check connection to redis
-    if (redis && redis.status !== 'ready') {
+    if (
+      (limitRedis && limitRedis.status !== 'ready') ||
+      (pageCache && pageCache.status !== 'ready') ||
+      (responseCache && responseCache.status !== 'ready')
+    ) {
       console.log('[klicker-react] Redis connection failure...')
       throw new Error('REDIS_CONNECTION_ERROR')
     }
-
-    // TODO any other checks that should be performed?
   },
 })
 
