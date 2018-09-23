@@ -172,10 +172,6 @@ function TableChart({
       <style jsx>{`
         .tableChart {
           width: 100%;
-
-          :global(tbody) {
-            overflow-y: auto;
-          }
         }
       `}</style>
     </div>
@@ -186,7 +182,6 @@ TableChart.propTypes = propTypes
 TableChart.defaultProps = defaultProps
 
 export default compose(
-  withProps(({ data }) => console.log(data)),
   withStateHandlers(
     {
       sortBy: 'count',

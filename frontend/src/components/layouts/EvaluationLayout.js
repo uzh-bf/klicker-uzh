@@ -75,7 +75,7 @@ function EvaluationLayout({
   statistics,
 }) {
   return (
-    <CommonLayout baseFontSize="22px" nextHeight="100%" pageTitle={pageTitle}>
+    <CommonLayout baseFontSize={false} nextHeight="100%" pageTitle={pageTitle}>
       <div
         className={classNames('evaluationLayout', {
           fullScreen: [CHART_TYPES.CLOUD_CHART, CHART_TYPES.TABLE].includes(activeVisualization),
@@ -163,9 +163,7 @@ function EvaluationLayout({
 
         <div className="info">
           <Info totalResponses={totalResponses} />
-          {/* don't show 'show solution' check box for free and free range questions
-          and word cloud charts */
-          type !== QUESTION_TYPES.FREE &&
+          {type !== QUESTION_TYPES.FREE &&
             type !== QUESTION_TYPES.FREE_RANGE &&
             activeVisualization !== CHART_TYPES.CLOUD_CHART && (
               <Checkbox
@@ -186,28 +184,59 @@ function EvaluationLayout({
 
         <div className="chart">{children}</div>
 
-        {activeVisualization !== CHART_TYPES.TABLE && (
-          <>
-            {QUESTION_GROUPS.WITH_POSSIBILITIES.includes(type) && (
-              <div className="optionDisplay">
-                <Possibilities
-                  data={data}
-                  questionOptions={options}
-                  questionType={type}
-                  showGraph={showGraph}
-                  showSolution={showSolution}
-                />
-              </div>
-            )}
-
-            {QUESTION_GROUPS.WITH_STATISTICS.includes(type) &&
-              statistics && (
-                <div className="statistics">
-                  <Statistics {...statistics} withBins={activeVisualization === 'HISTOGRAM'} />
+        {activeVisualization !== CHART_TYPES.CLOUD_CHART &&
+          activeVisualization !== CHART_TYPES.TABLE && (
+            <>
+              {QUESTION_GROUPS.WITH_POSSIBILITIES.includes(type) && (
+                <div className="optionDisplay">
+                  <Possibilities
+                    data={data}
+                    questionOptions={options}
+                    questionType={type}
+                    showGraph={showGraph}
+                    showSolution={showSolution}
+                  />
                 </div>
               )}
-          </>
-        )}
+
+              {QUESTION_GROUPS.WITH_STATISTICS.includes(type) &&
+                statistics && (
+                  <div className="statistics">
+                    <Statistics {...statistics} withBins={activeVisualization === CHART_TYPES.HISTOGRAM} />
+                  </div>
+                )}
+            </>
+          )}
+
+        <style global jsx>{`
+          html {
+            font-size: 14px !important;
+          }
+
+          @media all and (min-width: 600px) {
+            html {
+              font-size: 16px !important;
+            }
+          }
+
+          @media all and (min-width: 800px) {
+            html {
+              font-size: 18px !important;
+            }
+          }
+
+          @media all and (min-width: 1000px) {
+            html {
+              font-size: 20px !important;
+            }
+          }
+
+          @media all and (min-width: 1200px) {
+            html {
+              font-size: 22px !important;
+            }
+          }
+        `}</style>
 
         <style jsx>
           {`
@@ -221,7 +250,7 @@ function EvaluationLayout({
                   max-height: 100vh;
                   max-width: 100vw;
 
-                  grid-template-columns: auto 17rem;
+                  grid-template-columns: auto 13rem;
                   grid-template-rows:
                     auto
                     auto

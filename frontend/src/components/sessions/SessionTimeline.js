@@ -115,16 +115,19 @@ const SessionTimeline = ({
             position="bottom right"
             trigger={
               <div className="qrTrigger">
-                <Button icon size="small">
+                <Button icon labelPosition="left" size="small">
                   <Icon name="qrcode" />
+                  QR Code
                 </Button>
               </div>
             }
           >
             <Popup.Content>
               <div className="popupContent">
+                <div className="link">{`${process.env.APP_BASE_URL}/join/${shortname}`}</div>
+
                 <div className="qr">
-                  <QRCode value={`${process.env.APP_BASE_URL}/join/${shortname}`} />
+                  <QRCode size={200} value={`${process.env.APP_BASE_URL}/join/${shortname}`} />
                 </div>
 
                 <a href={`/qr/${shortname}`} rel="noopener noreferrer" target="_blank">
@@ -275,7 +278,8 @@ const SessionTimeline = ({
               align-items: center;
 
               .qr {
-                margin-bottom: 0.5rem;
+                margin-bottom: 1rem;
+                text-align: center;
               }
             }
 
