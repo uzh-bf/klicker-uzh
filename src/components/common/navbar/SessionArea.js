@@ -105,7 +105,7 @@ const SessionArea = ({ intl, sessionId }) => (
             </Button>
           </a>
 
-          <a href="https://uzh-bf.github.io/klicker-docs/" rel="noopener noreferrer" target="_blank">
+          <a href="https://uzh-bf.github.io/klicker-uzh/" rel="noopener noreferrer" target="_blank">
             <Button fluid icon labelPosition="left">
               <Icon name="external" />
               Documentation
