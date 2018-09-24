@@ -8,10 +8,11 @@
 - Rework the fingerprint computation logic (add on-the-fly recomputation)
 - Rework all interactions with session/local storage with extended error handling
 - Add Elastic APM RUM as an additional performance logger
-- Rework all statistical calculations to make use of math-js
+- Evaluation: Rework all statistical calculations to make use of math-js
 - Evaluation: Introduce react-sizeme as a wrapper for chart components
 - Evaluation: Use shouldUpdate to improve rerendering of chart components
 - Evaluation: Add font-size variations depending on min-width of the evaluation screen
+- Evaluation: Improve responsiveness for evaluation on mobile devices
 - Fix: Cloud chart not displayed in the correct full screen view
 - Upgrade minor/patch dependencies
 
