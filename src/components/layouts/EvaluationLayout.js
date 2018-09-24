@@ -74,6 +74,13 @@ function EvaluationLayout({
   instanceSummary,
   statistics,
 }) {
+  const dropdownOptions = instanceSummary.map(({ blockStatus, title, totalResponses: count }, index) => ({
+    icon: blockStatus === 'ACTIVE' ? 'comments' : 'checkmark',
+    key: index,
+    text: `${title} (${count})`,
+    value: index,
+  }))
+
   return (
     <CommonLayout baseFontSize={false} nextHeight="100%" pageTitle={pageTitle}>
       <div
@@ -86,15 +93,8 @@ function EvaluationLayout({
             return null
           }
 
-          if (instanceSummary.length > 7) {
-            const dropdownOptions = instanceSummary.map(({ blockStatus, title, totalResponses: count }, index) => ({
-              icon: blockStatus === 'ACTIVE' ? 'comments' : 'checkmark',
-              key: index,
-              text: `${title} (${count})`,
-              value: index,
-            }))
-
-            return (
+          return (
+            <>
               <div className="instanceDropdown">
                 <Button
                   basic
@@ -119,41 +119,38 @@ function EvaluationLayout({
                   onChange={(param, { value }) => onChangeActiveInstance(value)}
                 />
               </div>
-            )
-          }
-
-          return (
-            <div className="instanceChooser">
-              <Menu fitted tabular>
-                <Menu.Item
-                  className="hoverable"
-                  disabled={activeInstance === 0}
-                  icon="arrow left"
-                  onClick={() => onChangeActiveInstance(activeInstance - 1)}
-                />
-
-                <Menu.Item
-                  className="hoverable"
-                  disabled={activeInstance + 1 === instanceSummary.length}
-                  icon="arrow right"
-                  onClick={() => onChangeActiveInstance(activeInstance + 1)}
-                />
-
-                {instanceSummary.map(({ blockStatus, title, totalResponses: count }, index) => (
+              <div className="instanceChooser">
+                <Menu fitted tabular>
                   <Menu.Item
-                    fitted
-                    active={index === activeInstance}
-                    className={classNames('hoverable', {
-                      executed: blockStatus === 'EXECUTED',
-                    })}
-                    onClick={() => onChangeActiveInstance(index)}
-                  >
-                    <Icon name={blockStatus === 'ACTIVE' ? 'comments' : 'checkmark'} />
-                    {title.length > 15 ? `${title.substring(0, 15)}...` : title} ({count})
-                  </Menu.Item>
-                ))}
-              </Menu>
-            </div>
+                    className="hoverable"
+                    disabled={activeInstance === 0}
+                    icon="arrow left"
+                    onClick={() => onChangeActiveInstance(activeInstance - 1)}
+                  />
+
+                  <Menu.Item
+                    className="hoverable"
+                    disabled={activeInstance + 1 === instanceSummary.length}
+                    icon="arrow right"
+                    onClick={() => onChangeActiveInstance(activeInstance + 1)}
+                  />
+
+                  {instanceSummary.map(({ blockStatus, title, totalResponses: count }, index) => (
+                    <Menu.Item
+                      fitted
+                      active={index === activeInstance}
+                      className={classNames('hoverable', {
+                        executed: blockStatus === 'EXECUTED',
+                      })}
+                      onClick={() => onChangeActiveInstance(index)}
+                    >
+                      <Icon name={blockStatus === 'ACTIVE' ? 'comments' : 'checkmark'} />
+                      {title.length > 15 ? `${title.substring(0, 15)}...` : title} ({count})
+                    </Menu.Item>
+                  ))}
+                </Menu>
+              </div>
+            </>
           )
         })()}
 
@@ -243,6 +240,76 @@ function EvaluationLayout({
             @import 'src/theme';
 
             .evaluationLayout {
+              display: flex;
+              flex-direction: column;
+              min-height: 100vh;
+
+              .instanceChooser {
+                flex: 0 0 auto;
+                order: 0;
+                display: ${instanceSummary.length < 7 ? 'flex' : 'none'};
+
+                @media all and (max-width: 600px) {
+                  display: none;
+                }
+              }
+
+              .instanceDropdown {
+                flex: 0 0 auto;
+                order: 0;
+                display: ${instanceSummary.length >= 7 ? 'flex' : 'none'};
+
+                @media all and (max-width: 600px) {
+                  display: flex;
+                }
+              }
+
+              .chart {
+                flex: 1 0 40vh;
+                order: 5;
+              }
+
+              .questionDetails {
+                flex: 0 0 auto;
+                order: 1;
+
+                background-color: $color-primary-background;
+                border-bottom: 1px solid $color-primary;
+                padding: 1rem;
+                text-align: left;
+              }
+
+              .info {
+                flex: 0 0 auto;
+                order: 4;
+
+                border-top: 1px solid lightgrey;
+                background-color: #f3f3f3;
+                padding: 0.5rem 1rem;
+              }
+
+              .chartType {
+                flex: 0 0 auto;
+                order: 4;
+
+                padding: 1rem;
+              }
+
+              .optionDisplay,
+              .statistics {
+                padding: 1rem 1rem 1rem 0.5rem;
+              }
+
+              .optionDisplay {
+                flex: 0 0 auto;
+                order: 2;
+              }
+
+              .statistics {
+                flex: 0 0 auto;
+                order: 3;
+              }
+
               @supports (grid-gap: 1rem) {
                 @include desktop-tablet-only {
                   display: grid;
@@ -318,11 +385,6 @@ function EvaluationLayout({
                     grid-area: questionDetails;
                     align-self: start;
 
-                    background-color: $color-primary-background;
-                    border-bottom: 1px solid $color-primary;
-                    padding: 1rem;
-                    text-align: left;
-
                     h1 {
                       font-size: 1.5rem;
                       line-height: 1.5rem;
@@ -347,15 +409,6 @@ function EvaluationLayout({
                     }
                   }
 
-                  .chartType {
-                    padding: 1rem;
-                  }
-
-                  .optionDisplay,
-                  .statistics {
-                    padding: 1rem 1rem 1rem 0.5rem;
-                  }
-
                   .info {
                     grid-area: info;
 
@@ -365,9 +418,6 @@ function EvaluationLayout({
                     flex-direction: row;
                     align-items: center;
                     justify-content: space-between;
-                    border-top: 1px solid lightgrey;
-                    background-color: #f3f3f3;
-                    padding: 0.5rem 1rem;
                   }
 
                   .optionDisplay {
