@@ -8,8 +8,10 @@
   - Increment response counts in redis on incoming responses (transaction-based)
   - Evaluate based on redis and/or mongo depending on the status of the session and question block
   - Persist results to mongo when a question block is closed
+  - Persist and rehydrate the cache when pausing and continuing a session
 - Upgrade express-rate-limit to 3.2.0, removing delaying options (only hard limit)
 - Fix: Response deletion broken due to invalid resolving of promises
+- Fix: Number of total responses not decremented upon deletion
 
 ## 1.0.2
 
