@@ -265,7 +265,7 @@ function EvaluationLayout({
               }
 
               .chart {
-                flex: 1 0 40vh;
+                flex: 1 0 50vh;
                 order: 5;
               }
 
