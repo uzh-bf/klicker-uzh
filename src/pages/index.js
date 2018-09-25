@@ -264,7 +264,7 @@ Index.defaultProps = defaultProps
 
 export default compose(
   withLogging({
-    logrocket: false,
+    logRocket: false,
   }),
   withStateHandlers(
     {
