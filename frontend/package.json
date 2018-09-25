@@ -137,7 +137,7 @@
     "prettier": "1.14.3",
     "react-dnd-test-backend": "5.0.1",
     "react-perf-devtool": "3.1.8",
-    "react-storybook-addon-chapters": "2.1.7",
+    "react-storybook-addon-chapters": "2.1.8",
     "react-test-renderer": "16.5.2",
     "semantic-ui": "2.3.3",
     "semantic-ui-css": "2.3.3",
