@@ -39,7 +39,7 @@
     "cookie-parser": "1.4.3",
     "cross-env": "5.2.0",
     "d3": "5.7.0",
-    "dayjs": "1.7.5",
+    "dayjs": "1.7.7",
     "dotenv": "6.0.0",
     "draft-js": "0.10.5",
     "draft-js-buttons": "2.0.1",
