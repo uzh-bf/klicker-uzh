@@ -317,7 +317,7 @@ function EvaluationLayout({
                   max-height: 100vh;
                   max-width: 100vw;
 
-                  grid-template-columns: auto 13rem;
+                  grid-template-columns: auto 14rem;
                   grid-template-rows:
                     auto
                     auto
