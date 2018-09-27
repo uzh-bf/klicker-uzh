@@ -236,6 +236,10 @@ export default compose(
 
     // handle creation of a new feedback
     handleNewFeedback: ({ data: { joinSession }, fp, newFeedback, router }) => async ({ content }) => {
+      if (!newFeedback) {
+        return
+      }
+
       try {
         const fingerprint = await ensureFingerprint(fp)
 
