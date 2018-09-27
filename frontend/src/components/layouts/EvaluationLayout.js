@@ -207,30 +207,30 @@ function EvaluationLayout({
 
         <style global jsx>{`
           html {
-            font-size: 14px !important;
+            font-size: 12px !important;
           }
 
           @media all and (min-width: 600px) {
             html {
-              font-size: 16px !important;
+              font-size: 14px !important;
             }
           }
 
           @media all and (min-width: 800px) {
             html {
-              font-size: 18px !important;
+              font-size: 16px !important;
             }
           }
 
           @media all and (min-width: 1000px) {
             html {
-              font-size: 20px !important;
+              font-size: 18px !important;
             }
           }
 
           @media all and (min-width: 1200px) {
             html {
-              font-size: 22px !important;
+              font-size: 20px !important;
             }
           }
         `}</style>
