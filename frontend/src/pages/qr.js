@@ -16,7 +16,7 @@ const QR = ({ shortname }) => {
 
   return (
     <StaticLayout pageTitle="QR">
-      <div className="link">{joinLink.replace(/^https?:\/\//,'')}</div>
+      <div className="link">{joinLink.replace(/^https?:\/\//, '')}</div>
       <div className="qr">
         <QRCode size={700} value={joinLink} />
       </div>
