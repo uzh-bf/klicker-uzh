@@ -335,7 +335,7 @@ const joinSession = async ({ shortname }) => {
     },
   ])
 
-  if (!user) {
+  if (!user || !user.runningSession) {
     return null
   }
 
