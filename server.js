@@ -2,7 +2,6 @@
 
 const IntlPolyfill = require('intl')
 const glob = require('glob')
-const accepts = require('accepts')
 const cookieParser = require('cookie-parser')
 const express = require('express')
 const next = require('next')
@@ -113,40 +112,45 @@ const languages = glob.sync(`${APP_DIR}/lang/*.json`).map(f => basename(f, '.jso
 // locale. This function will also cache the scripts by lang in memory.
 const localeDataCache = new Map()
 function getLocaleDataScript(locale) {
-  const lang = typeof locale === 'string' ? locale.split('-')[0] : 'en'
-  if (!localeDataCache.has(lang)) {
-    const localeDataFile = require.resolve(`react-intl/locale-data/${lang}`)
+  if (!localeDataCache.has(locale)) {
+    const localeDataFile = require.resolve(`react-intl/locale-data/${locale}`)
     const localeDataScript = readFileSync(localeDataFile, 'utf8')
-    localeDataCache.set(lang, localeDataScript)
+    localeDataCache.set(locale, localeDataScript)
   }
-  return localeDataCache.get(lang)
+  return localeDataCache.get(locale)
 }
 
 // We need to load and expose the translations on the request for the user's
 // locale. These will only be used in production, in dev the `defaultMessage` in
 // each message description in the source code will be used.
-function getMessages(locale = 'en') {
+function getMessages(locale) {
   return require(`${APP_DIR}/lang/${locale}.json`)
 }
 
 function getLocale(req) {
-  // if a locale cookie was already set, use the locale saved within
-  if (req.cookies.locale && languages.includes(req.cookies.locale)) {
-    return {
-      locale: req.cookies.locale,
+  try {
+    // if a locale cookie was already set, use the locale saved within
+    if (req.cookies.locale && languages.includes(req.cookies.locale)) {
+      return { locale: req.cookies.locale }
     }
-  }
 
-  // if the accepts header is set, use its language
-  const accept = accepts(req)
-  return {
-    locale: accept.language(isDev ? ['en'] : languages),
-    setCookie: true,
+    // if the accepts header is set, use its language
+    const acceptedLang = req.acceptsLanguages(isDev ? ['en'] : languages) || 'en'
+    return {
+      locale: acceptedLang.includes('-') ? acceptedLang.split('-')[0] : acceptedLang,
+      setCookie: true,
+    }
+  } catch (e) {
+    console.error(e)
+    return {
+      locale: 'en',
+      setCookie: true,
+    }
   }
 }
 
 function setupLocale(req, res) {
-  const { locale = 'en', setCookie } = getLocale(req)
+  const { locale, setCookie } = getLocale(req)
 
   req.locale = locale
   req.localeDataScript = getLocaleDataScript(locale)
