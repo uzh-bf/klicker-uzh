@@ -117,7 +117,7 @@
     "@storybook/addon-viewport": "4.0.0-alpha.22",
     "@storybook/addons": "4.0.0-alpha.22",
     "@storybook/react": "4.0.0-alpha.22",
-    "babel-eslint": "9.0.0",
+    "babel-eslint": "10.0.1",
     "babel-jest": "23.6.0",
     "bundlesize": "0.17.0",
     "cypress": "3.1.0",
