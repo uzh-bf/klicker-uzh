@@ -335,6 +335,10 @@ const joinSession = async ({ shortname }) => {
     },
   ])
 
+  if (!user) {
+    return null
+  }
+
   const { id, activeInstances, settings, feedbacks } = user.runningSession
 
   return {
