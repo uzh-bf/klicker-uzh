@@ -4,18 +4,18 @@
   "version": "1.0.0",
   "author": "Roland Schlaefli <rolandschlaefi@gmail.com>",
   "dependencies": {
-    "gatsby": "2.0.0-rc.21",
-    "gatsby-plugin-react-helmet": "3.0.0-rc.1",
-    "gatsby-plugin-styled-jsx": "3.0.1-rc.4",
-    "react": "16.5.0",
-    "react-dom": "16.5.0",
+    "gatsby": "2.0.12",
+    "gatsby-plugin-react-helmet": "3.0.0",
+    "gatsby-plugin-styled-jsx": "3.0.1",
+    "react": "16.5.2",
+    "react-dom": "16.5.2",
     "react-helmet": "5.2.0",
     "react-scroll": "1.7.10",
     "react-slick": "0.23.1",
     "semantic-ui-css": "2.3.3",
     "semantic-ui-react": "0.82.5",
     "slick-carousel": "1.8.1",
-    "styled-jsx": "3.0.2"
+    "styled-jsx": "3.1.0"
   },
   "license": "AGPL-3.0",
   "scripts": {
@@ -24,7 +24,7 @@
     "format": "prettier --write 'src/**/*.js'"
   },
   "devDependencies": {
-    "prettier": "1.14.2"
+    "prettier": "1.14.3"
   },
   "repository": {
     "type": "git",
