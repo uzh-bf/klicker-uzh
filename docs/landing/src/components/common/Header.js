@@ -45,16 +45,6 @@ export default class Header extends React.Component {
                 </a>
               </Menu.Item>
 
-              <Menu.Item>
-                <a
-                  href="http://www.klicker.uzh.ch/login"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Legacy
-                </a>
-              </Menu.Item>
-
               <Menu.Item
                 name="contact"
                 active={this.state.activeMenuItem === 'contact'}
