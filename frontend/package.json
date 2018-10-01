@@ -6,7 +6,7 @@
   "author": "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>",
   "license": "AGPL-3.0",
   "dependencies": {
-    "@babel/core": "7.1.0",
+    "@babel/core": "7.1.2",
     "@babel/plugin-proposal-do-expressions": "7.0.0",
     "@babel/plugin-proposal-optional-chaining": "7.0.0",
     "@babel/plugin-transform-react-constant-elements": "7.0.0",
