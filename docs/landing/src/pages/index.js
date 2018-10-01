@@ -133,8 +133,8 @@ export default () => (
                 </FeatureOverview.Item>
                 <FeatureOverview.Item title="Project Documentation">
                   The project documentation is available on{' '}
-                  <a href="https://uzh-bf.github.io/klicker-docs/">
-                    klicker-docs
+                  <a href="https://uzh-bf.github.io/klicker-uzh/">
+                    klicker-uzh
                   </a>{' '}
                   and is being updated regularly. A major upcoming addition
                   includes contents on the architecture of the application as
@@ -161,8 +161,8 @@ export default () => (
                     <List.Item>
                       <List.Icon name="github" />
                       <List.Content>
-                        <a href="https://github.com/uzh-bf/klicker-docs">
-                          klicker-docs - Documentation
+                        <a href="https://github.com/uzh-bf/klicker-uzh">
+                          klicker-uzh - Documentation and Roadmap
                         </a>
                       </List.Content>
                     </List.Item>
