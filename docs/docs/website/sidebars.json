@@ -1,23 +1,15 @@
 {
   "docs": {
-    "Get Started": [
-      "introduction",
-      "workflow"
-    ],
+    "Get Started": ["introduction", "navigation", "workflow"],
     "Questions": [
       "question_create",
       "question_edit",
       "question_archive",
-      "question_pool"
+      "question_pool",
+      "question_delete"
     ],
-    "Sessions": [
-      "session_create",
-      "session_list"
-    ],
-    "Evaluation": [
-      "session_running",
-      "audience_view",
-      "evaluation"
-    ]
+    "Sessions": ["session_create", "session_list"],
+    "Evaluation": ["session_running", "audience_view", "evaluation"],
+    "Settings": ["language", "settings", "delete_account"]
   }
 }

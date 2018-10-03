@@ -18,11 +18,8 @@ const siteConfig = {
   projectName: 'klicker-uzh',
   organizationName: 'uzh-bf',
   headerLinks: [
-    { doc: 'introduction', label: 'Docs' },
+    { doc: 'introduction', label: 'How-To' },
     { doc: 'faq', label: 'FAQ' },
-    /*{doc: 'doc4', label: 'API'},*/
-    /*{page: 'help', label: 'Help'},*/
-    /*{blog: true, label: 'Blog'},*/
   ],
   /* path to images for header/footer */
   headerIcon: 'img/klicker_uzh_logo.png',
