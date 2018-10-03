@@ -3,7 +3,7 @@ id: question_pool
 title: Question Pool
 ---
 
-The Question Pool shows all previously created questions. The following details and actions are shown for every question:
+The question pool shows all previously created questions. The following details and actions are shown for every question:
 
 1. **Title:** The title of the question.
 2. **Question:** The question for the audience.
