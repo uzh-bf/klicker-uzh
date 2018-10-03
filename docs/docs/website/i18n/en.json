@@ -8,6 +8,9 @@
       "audience_view": {
         "title": "Audience View"
       },
+      "delete_account": {
+        "title": "Deleting your account"
+      },
       "evaluation": {
         "title": "Evaluation"
       },
@@ -17,11 +20,20 @@
       "introduction": {
         "title": "Introduction"
       },
+      "language": {
+        "title": "Language Settings"
+      },
+      "navigation": {
+        "title": "Navigation"
+      },
       "question_archive": {
         "title": "Archive Questions"
       },
       "question_create": {
         "title": "Create a Question"
+      },
+      "question_delete": {
+        "title": "Delete Questions"
       },
       "question_edit": {
         "title": "Edit a Question"
@@ -38,19 +50,24 @@
       "session_running": {
         "title": "Running Session"
       },
+      "settings": {
+        "title": "User Settings"
+      },
       "workflow": {
         "title": "The Klicker-Workflow"
       }
     },
     "links": {
-      "Docs": "Docs",
-      "FAQ": "FAQ"
+      "How-To": "How-To",
+      "FAQ": "FAQ",
+      "Blog": "Blog"
     },
     "categories": {
       "Get Started": "Get Started",
       "Questions": "Questions",
       "Sessions": "Sessions",
-      "Evaluation": "Evaluation"
+      "Evaluation": "Evaluation",
+      "Settings": "Settings"
     }
   },
   "pages-strings": {

@@ -20,6 +20,7 @@ const siteConfig = {
   headerLinks: [
     { doc: 'introduction', label: 'How-To' },
     { doc: 'faq', label: 'FAQ' },
+    { blog: true, label: 'Blog' },
   ],
   /* path to images for header/footer */
   headerIcon: 'img/klicker_uzh_logo.png',
