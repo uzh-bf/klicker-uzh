@@ -14,9 +14,7 @@ The following steps need to be done to create a new session:
 2. Enter a new name for the session (only visible to the speaker and not to the audience).
 
 Choose a question and select the version you want to use by clicking on the indicated version. Then Drag & Drop the question from the question list
-3a. to create a new question block into the grey plus sign (+) or 3b. add a question to an existing question block.
-
-3c. You may also use the grey _Split questions into 2 blocks_ button or 3d. the grey _Group questions into one block_ by check marking the questions beforehand.
+3a. to create a new question block into the grey plus sign (+) or 3b. add a question to an existing question block. 3c. You may also use the grey _Split questions into 2 blocks_ button or 3d. the grey _Group questions into one block_ by check marking the questions beforehand.
 
 4. Click this button to discard this session draft.
 
