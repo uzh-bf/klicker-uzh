@@ -17,7 +17,7 @@ services:
       - klicker-prod
 
   redis:
-    image: redis:3-32bit@sha256:52d18d96f114b37c37affedda61d6c4fcb5669b80a146c2ee94785e136bb6311
+    image: redis:3-32bit@sha256:c77927fc077c58c9f1ab810c65fc915a9d05f16cc17febae610b95c471539abe
     ports:
       - 6379:6379
     networks:
