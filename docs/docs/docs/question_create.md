@@ -19,9 +19,9 @@ Before preparing a session, all questions need to be created. Every question has
 
 4. **Question:** The question to be answered by the audience.
 
-4.1. **Audience Preview:** A preview of how the audience sees the question.
+  4.1. **Audience Preview:** A preview of how the audience sees the question.
 
-4.2 **Add an Immage:** Images can be attached to the questions in a beta version.
+  4.2 **Add an Immage:** Images can be attached to the questions in a beta version.
 
 5. **Available Choices (SC / MC only):** The available answers the audience may choose from. Click the plus sign to add a new answer and type in the answer. Then click the red cross or green tick (5.1 or 5.2) to select whether the answer is correct or not and save the answer with the button on the right (5.3). If there is no correct answer just skip this step and save the answer. Delete answers with the button on the left (5.4). **Notice that the buttons need to be clicked, as keyboard interactions are not yet fully working.** In case of Number range Questions you need to choose your **Input Restrictions (Number Range only):** The range the answer needs to be in. Either provide a lower and upper limit, only one of the said limits or no limit at all.
 
