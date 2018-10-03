@@ -13,7 +13,7 @@ If you edit a question, a new version of the question is created automatically (
 
 3. **Tags:** Like the question title, the tags may be edited at any time. All versions of a question have the same tags.
 
-4. **Question:** To change the actual question (5) and the available choices (SC/MC) or input restrictions (NR) a new version is created (4.1). The question posed to the audience may be edited in a new version of the question. You may also add to or change images of the question (4.2). 
+4. **Question & Questions versions:** To change the actual question and the available choices (SC/MC) or input restrictions (NR) a new version is created (4.1). The question posed to the audience may be edited in a new version of the question. You may also add to or change images of the question (4.2). 
 
 5. **Available Choices (SC / MC only):** The available choices may be edited like creating a question, i.e. the text of existing choices cannot be altered but choices can be deleted, false/true can be changed, new choices can be added.
 
