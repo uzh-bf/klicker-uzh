@@ -103,7 +103,7 @@
     "subscriptions-transport-ws": "0.9.15",
     "url-loader": "1.1.1",
     "uuid": "3.3.2",
-    "v8n": "1.2.2",
+    "v8n": "1.2.3",
     "webpack": "4.20.2",
     "yup": "0.26.6"
   },
