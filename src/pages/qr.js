@@ -12,7 +12,9 @@ const propTypes = {
 }
 
 const QR = ({ shortname }) => {
-  const joinLink = `${process.env.APP_BASE_URL}/join/${shortname}`
+  const joinLink = process.env.APP_JOIN_URL
+    ? `${process.env.APP_JOIN_URL}/${shortname}`
+    : `${process.env.APP_BASE_URL}/join/${shortname}`
 
   return (
     <StaticLayout pageTitle="QR">
@@ -26,7 +28,7 @@ const QR = ({ shortname }) => {
 
         .link {
           line-height: 4rem;
-          font-size: 4rem;
+          font-size: ${process.env.APP_JOIN_URL ? '5rem' : '4rem'};
           font-weight: bold;
           margin-bottom: 2rem;
         }

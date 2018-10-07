@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
-import { Button, Form, Message, List } from 'semantic-ui-react'
+import { Button, Form, Message, List, Loader } from 'semantic-ui-react'
 import { Formik } from 'formik'
 import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
@@ -115,13 +115,14 @@ const propTypes = {
       name: PropTypes.string.isRequired,
     })
   ),
+  tagsLoading: PropTypes.bool.isRequired,
 }
 
 const defaultProps = {
   tags: [],
 }
 
-const QuestionCreationForm = ({ intl, tags, onSubmit, onDiscard }) => {
+const QuestionCreationForm = ({ intl, tags, tagsLoading, onSubmit, onDiscard }) => {
   const typeComponents = {
     [QUESTION_TYPES.SC]: {
       input: SCCreationOptions,
@@ -207,7 +208,11 @@ const QuestionCreationForm = ({ intl, tags, onSubmit, onDiscard }) => {
               </div>
 
               <div className="questionInput questionTags">
-                <TagInput tags={tags} value={values.tags} onChange={newTags => setFieldValue('tags', newTags)} />
+                {tagsLoading ? (
+                  <Loader active />
+                ) : (
+                  <TagInput tags={tags} value={values.tags} onChange={newTags => setFieldValue('tags', newTags)} />
+                )}
               </div>
 
               <div className="questionInput questionContent">

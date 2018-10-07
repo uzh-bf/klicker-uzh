@@ -124,7 +124,13 @@ const SessionTimeline = ({
           >
             <Popup.Content>
               <div className="popupContent">
-                <div className="link">{`${process.env.APP_BASE_URL}/join/${shortname}`}</div>
+                <div className="link">
+                  <strong>
+                    {process.env.APP_JOIN_URL
+                      ? `${process.env.APP_JOIN_URL}/${shortname}`
+                      : `${process.env.APP_BASE_URL}/join/${shortname}`}
+                  </strong>
+                </div>
 
                 <div className="qr">
                   <QRCode size={200} value={`${process.env.APP_BASE_URL}/join/${shortname}`} />
