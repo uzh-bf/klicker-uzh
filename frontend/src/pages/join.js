@@ -1,5 +1,5 @@
 import classNames from 'classnames'
-import _throttle from 'lodash/debounce'
+import _debounce from 'lodash/debounce'
 import { withRouter } from 'next/router'
 import PropTypes from 'prop-types'
 import React from 'react'
@@ -210,7 +210,7 @@ export default compose(
   graphql(AddFeedbackMutation, { name: 'newFeedback' }),
   graphql(AddResponseMutation, { name: 'newResponse' }),
   withProps(({ data: { joinSession }, router, newConfusionTS }) => ({
-    newConfusionTS: _throttle(newConfusionTS, 4000, { trailing: true }),
+    newConfusionTS: _debounce(newConfusionTS, 4000, { trailing: true }),
     ...joinSession,
     ...joinSession.settings,
     shortname: router.query.shortname,

@@ -1,38 +1,21 @@
 {
-  "automerge": "patch",
-  "extends": [":app"],
-  "assignees": ["rschlaefli"],
+  "extends": [
+    "config:js-app",
+    "schedule:earlyMondays",
+    "group:monorepos",
+    "group:allApollographql",
+    "group:test",
+    "group:linters"
+  ],
   "labels": ["dependencies"],
+  "assignees": ["rschlaefli"],
   "reviewers": ["rschlaefli"],
-  "schedule": ["after 7pm and before 8am"],
   "semanticCommits": false,
   "timezone": "Europe/Zurich",
   "packageRules": [
     {
-      "packageNames": [
-        "jest",
-        "react-addons-test-utils",
-        "enzyme",
-        "cypress",
-        "babel-jest"
-      ],
-      "groupName": "test",
-      "automerge": "minor"
-    },
-    {
-      "packagePatterns": ["^apollo", "react-apollo"],
-      "groupName": "apollo",
-      "automerge": "minor"
-    },
-    {
       "packagePatterns": ["^draftjs"],
-      "groupName": "draftjs",
-      "automerge": "minor"
-    },
-    {
-      "packagePatterns": ["^babel-eslint", "^eslint"],
-      "groupName": "eslint",
-      "automerge": "minor"
+      "groupName": "draftjs"
     },
     {
       "packagePatterns": ["^raven", "^logrocket"],
@@ -40,25 +23,7 @@
     },
     {
       "packagePatterns": ["^prettier"],
-      "groupName": "prettier",
-      "automerge": "minor"
-    },
-    {
-      "packageNames": ["react", "react-dom", "react-test-renderer"],
-      "groupName": "react"
-    },
-    {
-      "packagePatterns": [
-        "^@storybook",
-        "^storybook",
-        "react-storybook-addon-chapters"
-      ],
-      "groupName": "storybook",
-      "automerge": "minor"
-    },
-    {
-      "packagePatterns": ["^babel", "^@babel"],
-      "groupName": "babel"
+      "groupName": "prettier"
     },
     {
       "packagePatterns": ["^react-dnd"],

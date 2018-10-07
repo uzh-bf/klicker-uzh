@@ -35,7 +35,7 @@ const CreateQuestion = ({ intl }) => (
     sidebar={{ activeItem: 'createQuestion' }}
   >
     <Query query={TagListQuery}>
-      {({ data }) => (
+      {({ data, loading: tagsLoading }) => (
         <Mutation mutation={CreateQuestionMutation}>
           {(createQuestion, { loading }) => (
             <Mutation mutation={RequestPresignedURLMutation}>
@@ -44,6 +44,7 @@ const CreateQuestion = ({ intl }) => (
                   intl={intl}
                   loading={loading}
                   tags={data.tags}
+                  tagsLoading={tagsLoading}
                   // handle discarding a new question
                   onDiscard={() => Router.push('/questions')}
                   // handle submitting a new question

@@ -25,6 +25,11 @@ module.exports = convict({
       env: 'APP_GZIP',
       format: Boolean,
     },
+    joinUrl: {
+      default: undefined,
+      env: 'APP_JOIN_URL',
+      format: 'url',
+    },
     persistQueries: {
       default: false,
       env: 'APP_PERSIST_QUERIES',
