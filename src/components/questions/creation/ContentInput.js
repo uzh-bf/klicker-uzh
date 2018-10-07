@@ -1,3 +1,4 @@
+import dynamic from 'next/dynamic'
 import React from 'react'
 import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
@@ -29,32 +30,29 @@ const defaultProps = {
 }
 
 // instantiate the static toolbar plugin
-const toolbarPlugin = createToolbarPlugin({
-  structure: [
-    BoldButton,
-    ItalicButton,
-    UnderlineButton,
-    // CodeButton,
-    // Separator,
-    UnorderedListButton,
-    OrderedListButton,
-    // BlockquoteButton,
-    // CodeBlockButton,
-  ],
-})
+const toolbarPlugin = createToolbarPlugin()
 let plugins = [toolbarPlugin]
 const { Toolbar } = toolbarPlugin
 
 const ContentInput = ({ value, onChange, error, touched, disabled }) => {
   // ensure that we are in the browser as the plugin breaks SSR
-  if (process.browser && process.env.FEAT_FORMULAS) {
-    const createMathjaxPlugin = require('draft-js-mathjax-plugin').default
+  if (process.browser) {
+    if (process.env.FEAT_FORMULAS) {
+      const createMathjaxPlugin = require('draft-js-mathjax-plugin').default
 
-    // instantiate the mathjax plugin
-    // FIXME: mathjax plugin currently ignores readOnly flag
-    const mathjaxPlugin = createMathjaxPlugin()
+      // instantiate the mathjax plugin
+      // FIXME: mathjax plugin currently ignores readOnly flag
+      const mathjaxPlugin = createMathjaxPlugin()
 
-    plugins = [...plugins, mathjaxPlugin]
+      plugins = [...plugins, mathjaxPlugin]
+    }
+
+    if (process.env.FEAT_CODE_EDITOR) {
+      const Prism = dynamic(() => import('prismjs'), { ssr: false })
+      const createCodeEditorPlugin = dynamic(() => import('draft-js-code-editor-plugin'), { ssr: false })
+      const createPrismPlugin = dynamic(() => import('draft-js-prism-plugin'), { ssr: false })
+      plugins = [...plugins, createPrismPlugin({ prism: Prism }), createCodeEditorPlugin()]
+    }
   }
 
   return (
@@ -76,7 +74,18 @@ const ContentInput = ({ value, onChange, error, touched, disabled }) => {
 
         <Editor editorState={value} plugins={plugins} readOnly={disabled} onChange={onChange} />
 
-        <Toolbar />
+        <Toolbar>
+          {props => (
+            <>
+              <BoldButton {...props} />
+              <ItalicButton {...props} />
+              <UnderlineButton {...props} />
+              <UnorderedListButton {...props} />
+              <OrderedListButton {...props} />
+              {/* <CodeBlockButton {...props} /> */}
+            </>
+          )}
+        </Toolbar>
       </Form.Field>
 
       <style global jsx>
