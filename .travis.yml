@@ -130,6 +130,7 @@ jobs:
         - >
           docker build .
           --build-arg APP_BASE_URL=$PROD_APP_BASE_URL
+          --build-arg APP_JOIN_URL=$PROD_APP_JOIN_URL
           --build-arg API_ENDPOINT=$PROD_API_ENDPOINT
           --build-arg API_ENDPOINT_WS=$PROD_API_ENDPOINT_WS
           --build-arg APP_PERSIST_QUERIES=$PROD_APP_PERSIST_QUERIES
@@ -176,6 +177,7 @@ jobs:
         - >
           docker build .
           --build-arg APP_BASE_URL=$PROD_APP_BASE_URL
+          --build-arg APP_JOIN_URL=$PROD_APP_JOIN_URL
           --build-arg API_ENDPOINT=$PROD_API_ENDPOINT
           --build-arg API_ENDPOINT_WS=$PROD_API_ENDPOINT_WS
           --build-arg APP_PERSIST_QUERIES=$PROD_APP_PERSIST_QUERIES
