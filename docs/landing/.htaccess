@@ -8,7 +8,7 @@
 
    # redirect everything else to the new klicker
    # except needed assets and routes of the landing SPA
-   RewriteCond %{REQUEST_URI} !^/(favicon\.ico|chunk-map\.json|tos|privacy|static/|images/) [NC]
+   RewriteCond %{REQUEST_URI} !^/(favicon\.ico|chunk-map\.json|google85411051d4c13145\.html|tos|privacy|static/|images/) [NC]
    RewriteCond %{REQUEST_URI} !^/.+\.(js|css|js\.map|css\.map)$ [NC]
    RewriteRule ^.+$ https://app.klicker.uzh.ch/join%{REQUEST_URI} [L,R=301]
  </IfModule>
