@@ -8073,10 +8073,10 @@ fined@^1.0.1:
     object.pick "^1.2.0"
     parse-filepath "^1.0.1"
 
-fingerprintjs2@1.8.1:
-  version "1.8.1"
-  resolved "https://registry.yarnpkg.com/fingerprintjs2/-/fingerprintjs2-1.8.1.tgz#68fd7a134bf9b197674ce551d16a5175270bab11"
-  integrity sha512-RvYf+c+w6AM0n56KzyBE+jwJtkhMwQAX+jLYjfMRSh30o+H0r8Ix1R8acJkkkFcvS8VDlPAgUnrFOzauBXVmRw==
+fingerprintjs2@1.8.5:
+  version "1.8.5"
+  resolved "https://registry.yarnpkg.com/fingerprintjs2/-/fingerprintjs2-1.8.5.tgz#1fb38e092247bb7500c5d944070c2944a3d4b4ca"
+  integrity sha512-S1CdIBrbs67u7GxKWHmDencD+p8BbvBD8wiUER/fEvdqC69p+uFrwMzPgBZMBKJweHwyNQADrPrtxZ2QfhswHA==
 
 first-chunk-stream@^1.0.0:
   version "1.0.0"
