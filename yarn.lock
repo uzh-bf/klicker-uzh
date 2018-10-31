@@ -2481,10 +2481,10 @@ express-jwt@5.3.1:
     jsonwebtoken "^8.1.0"
     lodash.set "^4.0.0"
 
-express-rate-limit@3.2.0:
-  version "3.2.0"
-  resolved "https://registry.yarnpkg.com/express-rate-limit/-/express-rate-limit-3.2.0.tgz#92368aab15a6b17c68399d4d4b4289850f13c4fe"
-  integrity sha512-oJpdtmt+mJivUCS9TVnlDAh/otWno4AaKz2cZkhbfpBna4CXB/pQjyUfWv2G7/09T3HqOIvB/93kU+eSmbeeTw==
+express-rate-limit@3.2.1:
+  version "3.2.1"
+  resolved "https://registry.yarnpkg.com/express-rate-limit/-/express-rate-limit-3.2.1.tgz#939e64d7a2173c72c1c3229896e6911791de5972"
+  integrity sha512-tbt1jLmMnhODORAeb6JOZzXQNdjo+ewpRfI/DhCWeF3hnFC2F2eSco6ZONgDKy97+wUFjOL40Y9c9LGgk5/IyQ==
   dependencies:
     defaults "^1.0.3"
 
