@@ -34,7 +34,7 @@
     "graphql-subscriptions": "1.0.0",
     "graphql-tools": "4.0.0",
     "handlebars": "4.0.12",
-    "helmet": "3.13.0",
+    "helmet": "3.14.0",
     "ioredis": "4.2.0",
     "jsonwebtoken": "8.3.0",
     "lodash": "4.17.11",
