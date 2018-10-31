@@ -27,7 +27,7 @@ services:
       - klicker-dev
 
   mongodb:
-    image: mongo:3.2
+    image: mongo:3.4
     environment:
       MONGO_INITDB_ROOT_USERNAME: klicker
       MONGO_INITDB_ROOT_PASSWORD: klicker
