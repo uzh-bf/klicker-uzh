@@ -2050,10 +2050,10 @@ elastic-apm-http-client@^5.2.1:
   dependencies:
     fast-safe-stringify "^2.0.4"
 
-elastic-apm-node@1.12.0:
-  version "1.12.0"
-  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.12.0.tgz#280480bff4d6c14ca9b732672e6cb4305b60f119"
-  integrity sha512-R/uKymVDIo1wT2BkpR60EDm0qSUl+vJwlnU2AruGKpUfopjBCAHWA8NMXsqpcaTHs3dC5Ih9ol3yyirShk/08g==
+elastic-apm-node@1.13.0:
+  version "1.13.0"
+  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.13.0.tgz#f362aec1fde3d0c9f44e531dd1bd2ad846aad4c8"
+  integrity sha512-VEj0DlTsdKUcYtO17u+d76X6vneaw8i2r6QGUD3yGHEJAFYfSfaucrvBCwtJayt3Z0l3FOsP93ueO21AVH1Giw==
   dependencies:
     after-all-results "^2.0.0"
     async-value-promise "^1.1.1"
