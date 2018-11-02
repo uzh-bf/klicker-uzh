@@ -6,3 +6,7 @@
 
 ## License
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fuzh-bf%2Fklicker-react.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fuzh-bf%2Fklicker-react?ref=badge_large)
+
+## Testing
+Cross-browser testing with [BrowserStack](https://www.browserstack.com)
+![BrowserStack](https://github.com/uzh-bf/klicker-react/blob/master/public/Browserstack-logo%402x.pngx)
