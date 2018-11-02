@@ -9,4 +9,4 @@
 
 ## Testing
 Cross-browser testing with [BrowserStack](https://www.browserstack.com)
-![BrowserStack](https://github.com/uzh-bf/klicker-react/blob/master/public/Browserstack-logo%402x.pngx)
+![BrowserStack](https://github.com/uzh-bf/klicker-react/blob/master/public/Browserstack-logo%402x.png)
