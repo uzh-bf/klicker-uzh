@@ -13,7 +13,7 @@ jobs:
       stage: test
       language: node_js
       node_js:
-        - '10'
+        - "10"
       cache:
         yarn: true
         directories:
@@ -124,6 +124,34 @@ jobs:
         - PASSWORD=$OC_TOKEN
         - REGISTRY="registry.appuio.ch"
         - IMAGE_NAME="registry.appuio.ch/uniz-klicker/klicker-react-stage"
+      before_script:
+        - echo $PASSWORD | docker login --username $USER --password-stdin $REGISTRY
+      script:
+        - >
+          docker build .
+          --build-arg APP_BASE_URL=$PROD_APP_BASE_URL
+          --build-arg APP_JOIN_URL=$PROD_APP_JOIN_URL
+          --build-arg API_ENDPOINT=$PROD_API_ENDPOINT
+          --build-arg API_ENDPOINT_WS=$PROD_API_ENDPOINT_WS
+          --build-arg APP_PERSIST_QUERIES=$PROD_APP_PERSIST_QUERIES
+          --build-arg S3_ROOT_URL=$PROD_S3_ROOT_URL
+          --build-arg SERVICES_GOOGLE_ANALYTICS_TRACKING_ID=$PROD_SERVICES_GOOGLE_ANALYTICS_TRACKING_ID
+          --build-arg SERVICES_LOGROCKET_APP_ID=$PROD_SERVICES_LOGROCKET_APP_ID
+          --build-arg SERVICES_SENTRY_DSN=$PROD_SERVICES_SENTRY_DSN
+          --build-arg SERVICES_SLAASK_WIDGET_KEY=$PROD_SERVICES_SLAASK_WIDGET_KEY
+          --build-arg VERSION=$TRAVIS_TAG
+          -t $IMAGE_NAME:$TRAVIS_TAG
+        - travis_retry docker push $IMAGE_NAME:$TRAVIS_TAG
+
+    # build unstable tags (e.g. v1.0.0-beta.1)
+    # push a new unstable tag to SWITCHengines
+    - <<: *build-setup
+      if: (type = push) AND (branch = master)
+      env:
+        - USER="serviceaccount"
+        - PASSWORD=$OC_TOKEN_SWITCH
+        - REGISTRY="registry.zh.shift.cloud.switch.ch"
+        - IMAGE_NAME="registry.zh.shift.cloud.switch.ch/klicker/klicker-react-stage"
       before_script:
         - echo $PASSWORD | docker login --username $USER --password-stdin $REGISTRY
       script:
