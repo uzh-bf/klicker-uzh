@@ -7389,10 +7389,10 @@ elastic-apm-js-core@1.0.0:
     stack-generator "^1.0.7"
     uuid "^3.1.0"
 
-elastic-apm-node@1.13.0:
-  version "1.13.0"
-  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.13.0.tgz#f362aec1fde3d0c9f44e531dd1bd2ad846aad4c8"
-  integrity sha512-VEj0DlTsdKUcYtO17u+d76X6vneaw8i2r6QGUD3yGHEJAFYfSfaucrvBCwtJayt3Z0l3FOsP93ueO21AVH1Giw==
+elastic-apm-node@1.14.2:
+  version "1.14.2"
+  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-1.14.2.tgz#4d52ef5b56896fafa2e17cf665c49ba6791e4a94"
+  integrity sha512-hoz0thhaqVP2xaFHHSWSM00wFMSRWTwlpwX0rjk8TwauFL8KI/V/P3drOg+Bk99i+HDpQS8LFy2cVinzPzD4HQ==
   dependencies:
     after-all-results "^2.0.0"
     async-value-promise "^1.1.1"
