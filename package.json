@@ -15,11 +15,11 @@
     "node": ">=8"
   },
   "dependencies": {
-    "@babel/core": "7.1.2",
+    "@babel/core": "7.1.5",
     "@babel/plugin-proposal-do-expressions": "7.0.0",
     "@babel/plugin-proposal-optional-chaining": "7.0.0",
     "@babel/plugin-transform-react-constant-elements": "7.0.0",
-    "@babel/preset-env": "7.1.0",
+    "@babel/preset-env": "7.1.5",
     "@zeit/next-bundle-analyzer": "0.1.2",
     "@zeit/next-css": "1.0.1",
     "@zeit/next-source-maps": "0.0.3",
