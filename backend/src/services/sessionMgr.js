@@ -67,30 +67,32 @@ const mapBlocks = ({ sessionId, questionBlocks, userId }) => {
   let instances = []
   const promises = []
 
-  const blocks = questionBlocks.filter(block => block.questions.length > 0).map(block => ({
-    instances: block.questions.map(({ question, version }) => {
-      // create a new question instance model
-      const instance = new QuestionInstanceModel({
-        question,
-        session: sessionId,
-        user: userId,
-        version,
-      })
-
-      // update the question with the corresponding instances
-      promises.push(
-        QuestionModel.findByIdAndUpdate(question, {
-          $push: { instances: instance.id },
+  const blocks = questionBlocks
+    .filter(block => block.questions.length > 0)
+    .map(block => ({
+      instances: block.questions.map(({ question, version }) => {
+        // create a new question instance model
+        const instance = new QuestionInstanceModel({
+          question,
+          session: sessionId,
+          user: userId,
+          version,
         })
-      )
 
-      // append the new question instance to the store
-      instances = [...instances, instance]
+        // update the question with the corresponding instances
+        promises.push(
+          QuestionModel.findByIdAndUpdate(question, {
+            $push: { instances: instance.id },
+          })
+        )
 
-      // return only the id of the new instance
-      return [instance.id]
-    }),
-  }))
+        // append the new question instance to the store
+        instances = [...instances, instance]
+
+        // return only the id of the new instance
+        return [instance.id]
+      }),
+    }))
 
   return {
     blocks,

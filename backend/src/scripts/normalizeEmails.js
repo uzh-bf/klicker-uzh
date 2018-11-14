@@ -28,15 +28,17 @@ mongoose.connection
 
     // go through all users
     // update their email with a normalized version
-    users.filter(user => isEmail(user.email)).forEach(async user => {
-      const { id, email } = user
-      const normalizedEmail = normalizeEmail(email)
+    users
+      .filter(user => isEmail(user.email))
+      .forEach(async user => {
+        const { id, email } = user
+        const normalizedEmail = normalizeEmail(email)
 
-      if (email !== normalizedEmail) {
-        console.log(`${email} -> ${normalizedEmail}`)
-        await UserModel.update({ _id: id }, { $set: { email: normalizedEmail } })
-      }
-    })
+        if (email !== normalizedEmail) {
+          console.log(`${email} -> ${normalizedEmail}`)
+          await UserModel.update({ _id: id }, { $set: { email: normalizedEmail } })
+        }
+      })
   })
   .on('error', error => {
     console.warn('> Warning: ', error)
