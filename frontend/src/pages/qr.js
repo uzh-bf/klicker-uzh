@@ -20,7 +20,7 @@ const QR = ({ shortname }) => {
     <StaticLayout pageTitle="QR">
       <div className="link">{joinLink.replace(/^https?:\/\//, '')}</div>
       <div className="qr">
-        <QRCode size={700} value={joinLink} />
+        <QRCode size={700} value={`${process.env.APP_BASE_URL}/join/${shortname}`} />
       </div>
 
       <style jsx>{`
