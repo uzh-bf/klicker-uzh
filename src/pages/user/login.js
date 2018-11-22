@@ -72,8 +72,9 @@ const Login = ({ intl, router }) => (
                 router.push('/questions')
               }}
             />
-            {!error &&
-              router.query?.expired && <div className="errorMessage message">Login expired. Please login again.</div>}
+            {!error && router.query?.expired && (
+              <div className="errorMessage message">Login expired. Please login again.</div>
+            )}
             {error && <div className="errorMessage message">Login failed ({error.message})</div>}
           </>
         )}
