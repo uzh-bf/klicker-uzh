@@ -8749,10 +8749,10 @@ fined@^1.0.1:
     object.pick "^1.2.0"
     parse-filepath "^1.0.1"
 
-fingerprintjs2@1.8.5:
-  version "1.8.5"
-  resolved "https://registry.yarnpkg.com/fingerprintjs2/-/fingerprintjs2-1.8.5.tgz#1fb38e092247bb7500c5d944070c2944a3d4b4ca"
-  integrity sha512-S1CdIBrbs67u7GxKWHmDencD+p8BbvBD8wiUER/fEvdqC69p+uFrwMzPgBZMBKJweHwyNQADrPrtxZ2QfhswHA==
+fingerprintjs2@1.8.6:
+  version "1.8.6"
+  resolved "https://registry.yarnpkg.com/fingerprintjs2/-/fingerprintjs2-1.8.6.tgz#ac92bd3f9965b51f5bf1b2d2d6f4bcc44ac89aab"
+  integrity sha512-uarmLgW2QXzu1Ljw3PDcQLJ69w8uT42odab//KOZ+NZsAyAudq5ZvlImEXYd/5sJbtBa5TSQ5OKZX1rkpK/t5w==
 
 first-chunk-stream@^1.0.0:
   version "1.0.0"
