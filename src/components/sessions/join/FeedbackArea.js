@@ -96,25 +96,24 @@ function FeedbackArea({
             </Button>
           </Form>
         )}
-        {isFeedbackChannelActive &&
-          feedbacks && (
-            <div className="existingFeedbacks">
-              <h2>
-                <FormattedMessage defaultMessage="All feedbacks" id="joinSession.allFeedbacks" />
-              </h2>
-              {feedbacks.map(({ id, content, votes }) => (
-                <div className="feedback" key={id}>
-                  <Feedback
-                    alreadyVoted={false}
-                    content={content}
-                    showDelete={false}
-                    updateVotes={() => null}
-                    votes={votes}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
+        {isFeedbackChannelActive && feedbacks && (
+          <div className="existingFeedbacks">
+            <h2>
+              <FormattedMessage defaultMessage="All feedbacks" id="joinSession.allFeedbacks" />
+            </h2>
+            {feedbacks.map(({ id, content, votes }) => (
+              <div className="feedback" key={id}>
+                <Feedback
+                  alreadyVoted={false}
+                  content={content}
+                  showDelete={false}
+                  updateVotes={() => null}
+                  votes={votes}
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <style jsx>

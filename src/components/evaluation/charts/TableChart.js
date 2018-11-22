@@ -81,8 +81,9 @@ function TableChart({
                 </Table.HeaderCell>
               )}
 
-              {!isPublic &&
-                QUESTION_GROUPS.FREE.includes(questionType) && <Table.HeaderCell collapsing>Actions</Table.HeaderCell>}
+              {!isPublic && QUESTION_GROUPS.FREE.includes(questionType) && (
+                <Table.HeaderCell collapsing>Actions</Table.HeaderCell>
+              )}
             </Table.Header>
             <Table.Body>
               {data.map(({ correct, count, percentage, value }) => (
@@ -96,72 +97,71 @@ function TableChart({
                     <Table.Cell>{typeof correct !== 'undefined' && (correct ? 'T' : 'F')}</Table.Cell>
                   )}
 
-                  {!isPublic &&
-                    QUESTION_GROUPS.FREE.includes(questionType) && (
-                      <Table.Cell>
-                        <Button
-                          icon="trash"
-                          onClick={async () => {
-                            await deleteResponse({
-                              optimisticResponse: {
-                                __typename: 'Mutation',
-                                deleteResponse: 'RESPONSE_DELETED',
-                              },
-                              update: (cache, { data: responseData }) => {
-                                if (responseData.deleteResponse !== 'RESPONSE_DELETED') {
-                                  return
-                                }
+                  {!isPublic && QUESTION_GROUPS.FREE.includes(questionType) && (
+                    <Table.Cell>
+                      <Button
+                        icon="trash"
+                        onClick={async () => {
+                          await deleteResponse({
+                            optimisticResponse: {
+                              __typename: 'Mutation',
+                              deleteResponse: 'RESPONSE_DELETED',
+                            },
+                            update: (cache, { data: responseData }) => {
+                              if (responseData.deleteResponse !== 'RESPONSE_DELETED') {
+                                return
+                              }
 
-                                // read the session from cache
-                                const { session } = cache.readQuery({
-                                  query: SessionEvaluationQuery,
-                                  variables: { sessionId },
-                                })
+                              // read the session from cache
+                              const { session } = cache.readQuery({
+                                query: SessionEvaluationQuery,
+                                variables: { sessionId },
+                              })
 
-                                // perform cache updates
-                                cache.writeQuery({
-                                  data: {
-                                    session: {
-                                      ...session,
-                                      blocks: session.blocks.map(block => {
-                                        // find the index of the relevant instance
-                                        const instanceIndex = block.instances.findIndex(
-                                          instance => instance.id === instanceId
-                                        )
+                              // perform cache updates
+                              cache.writeQuery({
+                                data: {
+                                  session: {
+                                    ...session,
+                                    blocks: session.blocks.map(block => {
+                                      // find the index of the relevant instance
+                                      const instanceIndex = block.instances.findIndex(
+                                        instance => instance.id === instanceId
+                                      )
 
-                                        // if the instance was in this block
-                                        // perform result updates
-                                        if (instanceIndex >= 0) {
-                                          const updatedBlock = block
+                                      // if the instance was in this block
+                                      // perform result updates
+                                      if (instanceIndex >= 0) {
+                                        const updatedBlock = block
 
-                                          // decrement the number of responses and remove the result
-                                          updatedBlock.instances[instanceIndex].results.FREE.totalResponses -= 1
-                                          updatedBlock.instances[instanceIndex].results.FREE = updatedBlock.instances[
-                                            instanceIndex
-                                          ].results.FREE.filter(response => `${response.value}` !== `${value}`)
+                                        // decrement the number of responses and remove the result
+                                        updatedBlock.instances[instanceIndex].results.FREE.totalResponses -= 1
+                                        updatedBlock.instances[instanceIndex].results.FREE = updatedBlock.instances[
+                                          instanceIndex
+                                        ].results.FREE.filter(response => `${response.value}` !== `${value}`)
 
-                                          return updatedBlock
-                                        }
+                                        return updatedBlock
+                                      }
 
-                                        return block
-                                      }),
-                                    },
+                                      return block
+                                    }),
                                   },
-                                  query: SessionEvaluationQuery,
-                                  variables: {
-                                    sessionId,
-                                  },
-                                })
-                              },
-                              variables: {
-                                instanceId,
-                                response: String(value),
-                              },
-                            })
-                          }}
-                        />
-                      </Table.Cell>
-                    )}
+                                },
+                                query: SessionEvaluationQuery,
+                                variables: {
+                                  sessionId,
+                                },
+                              })
+                            },
+                            variables: {
+                              instanceId,
+                              response: String(value),
+                            },
+                          })
+                        }}
+                      />
+                    </Table.Cell>
+                  )}
                 </Table.Row>
               ))}
             </Table.Body>

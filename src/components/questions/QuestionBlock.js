@@ -38,13 +38,12 @@ const QuestionBlock = ({ index, status, questions, timeLimit, noDetails, noVersi
         {index}
       </div>
     )}
-    {!noDetails &&
-      timeLimit && (
-        <div className="timeLimit">
-          <Icon name="clock" />
-          {timeLimit}s
-        </div>
-      )}
+    {!noDetails && timeLimit && (
+      <div className="timeLimit">
+        <Icon name="clock" />
+        {timeLimit}s
+      </div>
+    )}
     {!noDetails && (
       <div className="sessionStatus">
         {(() => {
