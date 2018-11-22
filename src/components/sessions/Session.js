@@ -191,13 +191,12 @@ const Session = ({
             </a>
           )}
 
-          {button &&
-            !button.hidden && (
-              <Button icon primary disabled={button.disabled} labelPosition="left" onClick={button.onClick}>
-                <Icon name={button.icon} />
-                {button.message}
-              </Button>
-            )}
+          {button && !button.hidden && (
+            <Button icon primary disabled={button.disabled} labelPosition="left" onClick={button.onClick}>
+              <Icon name={button.icon} />
+              {button.message}
+            </Button>
+          )}
         </div>
       </div>
 
