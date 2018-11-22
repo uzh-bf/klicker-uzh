@@ -1,41 +1,22 @@
 {
   "automerge": "patch",
-  "extends": [":app"],
+  "extends": [
+    "config:js-app",
+    "schedule:earlyMondays",
+    "group:monorepos",
+    "group:allApollographql",
+    "group:test",
+    "group:linters"
+  ],
   "assignees": ["rschlaefli"],
   "labels": ["dependencies"],
   "reviewers": ["rschlaefli"],
-  "schedule": ["after 7pm and before 8am"],
   "semanticCommits": false,
   "timezone": "Europe/Zurich",
   "packageRules": [
     {
-      "packageNames": ["mongodb", "mongoose"],
-      "groupName": "database"
-    },
-    {
-      "packagePatterns": ["^babel-eslint", "^eslint"],
-      "groupName": "eslint",
-      "automerge": "minor"
-    },
-    {
-      "packageNames": [
-        "apollo-server-express",
-        "graphql",
-        "graphql-tools",
-        "graphql-subscriptions",
-        "subscriptions-transport-ws"
-      ],
-      "groupName": "graphql"
-    },
-    {
       "packagePatterns": ["^prettier"],
-      "groupName": "prettier",
-      "automerge": "minor"
-    },
-    {
-      "packageNames": ["jest"],
-      "groupName": "test",
-      "automerge": "minor"
+      "groupName": "prettier"
     }
   ]
 }
