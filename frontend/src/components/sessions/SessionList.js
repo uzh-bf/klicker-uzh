@@ -89,14 +89,16 @@ export const SessionListPres = ({ intl, filters, handleCopySession, handleStartS
             }))
 
           // extract paused sessions
-          const pausedSessions = sessions.filter(session => session.status === SESSION_STATUS.PAUSED).map(session => ({
-            ...session,
-            button: {
-              ...statusCases[SESSION_STATUS.PAUSED],
-              disabled: runningSessions.length > 0,
-              onClick: handleSessionAction(session.id, session.status),
-            },
-          }))
+          const pausedSessions = sessions
+            .filter(session => session.status === SESSION_STATUS.PAUSED)
+            .map(session => ({
+              ...session,
+              button: {
+                ...statusCases[SESSION_STATUS.PAUSED],
+                disabled: runningSessions.length > 0,
+                onClick: handleSessionAction(session.id, session.status),
+              },
+            }))
 
           // create a session index
           const sessionIndex = buildIndex('sessions', sessions, ['name', 'createdAt'])
