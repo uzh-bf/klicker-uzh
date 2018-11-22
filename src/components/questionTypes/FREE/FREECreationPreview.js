@@ -69,18 +69,16 @@ const FREECreationPreview = ({ questionType, options: { restrictions }, descript
             <div className="freeText">
               <div className="box" />
             </div>
-            {questionType === QUESTION_TYPES.FREE_RANGE &&
-              isMinDefined && (
-                <div>
-                  <FormattedMessage defaultMessage="Min" id="createQuestion.options.min" />: {restrictions.min}
-                </div>
-              )}
-            {questionType === QUESTION_TYPES.FREE_RANGE &&
-              isMaxDefined && (
-                <div>
-                  <FormattedMessage defaultMessage="Max" id="createQuestion.options.max" />: {restrictions.max}
-                </div>
-              )}
+            {questionType === QUESTION_TYPES.FREE_RANGE && isMinDefined && (
+              <div>
+                <FormattedMessage defaultMessage="Min" id="createQuestion.options.min" />: {restrictions.min}
+              </div>
+            )}
+            {questionType === QUESTION_TYPES.FREE_RANGE && isMaxDefined && (
+              <div>
+                <FormattedMessage defaultMessage="Max" id="createQuestion.options.max" />: {restrictions.max}
+              </div>
+            )}
           </div>
         )
       })()}
