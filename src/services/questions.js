@@ -46,15 +46,17 @@ const processFiles = (files = [], userId) => {
   const existingFileIds = files.filter(file => file.id).map(file => file.id)
 
   // create models for entirely new files
-  const createdFiles = files.filter(file => !file.id).map(
-    ({ name, originalName, type }) =>
-      new FileModel({
-        name,
-        originalName,
-        type,
-        user: userId,
-      })
-  )
+  const createdFiles = files
+    .filter(file => !file.id)
+    .map(
+      ({ name, originalName, type }) =>
+        new FileModel({
+          name,
+          originalName,
+          type,
+          user: userId,
+        })
+    )
 
   return {
     createdFiles,
