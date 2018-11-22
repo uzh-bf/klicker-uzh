@@ -127,12 +127,11 @@ function QuestionArea({
               </Collapser>
             </div>
 
-            {process.env.S3_ROOT_URL &&
-              files.length > 0 && (
-                <div className="files">
-                  <QuestionFiles files={files} />
-                </div>
-              )}
+            {process.env.S3_ROOT_URL && files.length > 0 && (
+              <div className="files">
+                <QuestionFiles files={files} />
+              </div>
+            )}
 
             <div className="options">
               {messages[type]}

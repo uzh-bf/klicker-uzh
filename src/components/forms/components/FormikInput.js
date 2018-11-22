@@ -96,13 +96,12 @@ const FormikInput = ({
         </ReactTooltip>
       )}
 
-      {showError &&
-        errorMessage && (
-          <div className="errorMessage">
-            <Icon name="hand pointer" />
-            {errorMessage}
-          </div>
-        )}
+      {showError && errorMessage && (
+        <div className="errorMessage">
+          <Icon name="hand pointer" />
+          {errorMessage}
+        </div>
+      )}
 
       <style jsx>
         {`
