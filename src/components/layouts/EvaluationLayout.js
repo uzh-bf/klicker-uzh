@@ -181,29 +181,27 @@ function EvaluationLayout({
 
         <div className="chart">{children}</div>
 
-        {activeVisualization !== CHART_TYPES.CLOUD_CHART &&
-          activeVisualization !== CHART_TYPES.TABLE && (
-            <>
-              {QUESTION_GROUPS.WITH_POSSIBILITIES.includes(type) && (
-                <div className="optionDisplay">
-                  <Possibilities
-                    data={data}
-                    questionOptions={options}
-                    questionType={type}
-                    showGraph={showGraph}
-                    showSolution={showSolution}
-                  />
-                </div>
-              )}
+        {activeVisualization !== CHART_TYPES.CLOUD_CHART && activeVisualization !== CHART_TYPES.TABLE && (
+          <>
+            {QUESTION_GROUPS.WITH_POSSIBILITIES.includes(type) && (
+              <div className="optionDisplay">
+                <Possibilities
+                  data={data}
+                  questionOptions={options}
+                  questionType={type}
+                  showGraph={showGraph}
+                  showSolution={showSolution}
+                />
+              </div>
+            )}
 
-              {QUESTION_GROUPS.WITH_STATISTICS.includes(type) &&
-                statistics && (
-                  <div className="statistics">
-                    <Statistics {...statistics} withBins={activeVisualization === CHART_TYPES.HISTOGRAM} />
-                  </div>
-                )}
-            </>
-          )}
+            {QUESTION_GROUPS.WITH_STATISTICS.includes(type) && statistics && (
+              <div className="statistics">
+                <Statistics {...statistics} withBins={activeVisualization === CHART_TYPES.HISTOGRAM} />
+              </div>
+            )}
+          </>
+        )}
 
         <style global jsx>{`
           html {
