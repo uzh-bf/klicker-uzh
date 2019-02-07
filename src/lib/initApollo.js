@@ -1,25 +1,23 @@
 /* eslint-disable import/no-extraneous-dependencies */
 // https://github.com/zeit/next.js/blob/canary/examples/with-apollo/lib/initApollo.js
 // websockets: https://github.com/zeit/next.js/issues/3261
-import fetch from 'isomorphic-unfetch'
+import 'isomorphic-unfetch'
+import getConfig from 'next/config'
+import Router from 'next/router'
 
 import { ApolloClient } from 'apollo-client'
 import { BatchHttpLink } from 'apollo-link-batch-http'
 import { onError } from 'apollo-link-error'
-// import { withClientState } from 'apollo-link-state'
 import { ApolloLink, split } from 'apollo-link'
 import { WebSocketLink } from 'apollo-link-ws'
 import { SubscriptionClient } from 'subscriptions-transport-ws'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import { getMainDefinition } from 'apollo-utilities'
-import Router from 'next/router'
+// import { withClientState } from 'apollo-link-state'
+
+const { publicRuntimeConfig, serverRuntimeConfig } = getConfig()
 
 let apolloClient = null
-
-// Polyfill fetch() on the server (used by apollo-client)
-if (!process.browser) {
-  global.fetch = fetch
-}
 
 function create(initialState) {
   const cache = new InMemoryCache({
@@ -30,13 +28,15 @@ function create(initialState) {
   // initialize the basic http link for both SSR and client-side usage
   let httpLink = new BatchHttpLink({
     credentials: 'include', // Additional fetch() options like `credentials` or `headers`
-    uri: process.env.API_ENDPOINT || 'http://localhost:4000/graphql',
+    uri: process.browser
+      ? publicRuntimeConfig.apiUrl
+      : serverRuntimeConfig.apiUrlSSR || publicRuntimeConfig.apiUrl || 'http://localhost:4000/graphql',
   })
 
   // on the client, differentiate between websockets and http requests
   if (process.browser) {
     // instantiate a basic subscription client
-    const wsClient = new SubscriptionClient(process.env.API_ENDPOINT_WS || 'ws://localhost:4000/graphql', {
+    const wsClient = new SubscriptionClient(publicRuntimeConfig.apiUrlWS || 'ws://localhost:4000/graphql', {
       reconnect: true,
     })
 
@@ -83,7 +83,7 @@ function create(initialState) {
 
   // setup APQ if configured appropriately
   let persistedQueryLink
-  if (process.env.APP_PERSIST_QUERIES) {
+  if (publicRuntimeConfig.persistQueries) {
     const { createPersistedQueryLink } = require('apollo-link-persisted-queries')
     persistedQueryLink = createPersistedQueryLink({
       generateHash: ({ documentId }) => documentId,

@@ -1,11 +1,12 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
-import { Button, Form, Message, List, Loader } from 'semantic-ui-react'
-import { Formik } from 'formik'
+import getConfig from 'next/config'
 import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
 import _some from 'lodash/some'
+import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
+import { Button, Form, Message, List, Loader } from 'semantic-ui-react'
+import { Formik } from 'formik'
 import { EditorState } from 'draft-js'
 
 import FileDropzone from './FileDropzone'
@@ -20,6 +21,8 @@ import {
 import { QUESTION_TYPES } from '../../../lib'
 import { QUESTION_GROUPS } from '../../../constants'
 import { FormikInput } from '../components'
+
+const { publicRuntimeConfig } = getConfig()
 
 const messages = defineMessages({
   contentEmpty: {
@@ -224,7 +227,7 @@ const QuestionCreationForm = ({ intl, tags, tagsLoading, onSubmit, onDiscard }) 
                 />
               </div>
 
-              {process.env.S3_ROOT_URL && (
+              {publicRuntimeConfig.s3root && (
                 <div className="questionInput questionFiles">
                   <h2>
                     <FormattedMessage defaultMessage="Attached Images (Beta)" id="createQuestion.filesLabel" />

@@ -1,15 +1,17 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import _isEmpty from 'lodash/isEmpty'
+import getConfig from 'next/config'
 import { FormattedMessage, intlShape } from 'react-intl'
 import { Button, Checkbox, Form } from 'semantic-ui-react'
 import { object, boolean } from 'yup'
-
 import { Formik } from 'formik'
-import _isEmpty from 'lodash/isEmpty'
 
 import { FormikInput } from '.'
 import validationSchema from './common/validationSchema'
 import messages from './common/messages'
+
+const { publicRuntimeConfig } = getConfig()
 
 const { email, shortname, institution, password, passwordRepeat, useCase } = validationSchema
 
@@ -59,7 +61,7 @@ const RegistrationForm = ({ intl, loading, onSubmit }) => (
             handleBlur={handleBlur}
             handleChange={handleChange}
             icon="hashtag"
-            inlineLabel={`${process.env.APP_BASE_URL}/join/`}
+            inlineLabel={`${publicRuntimeConfig.baseUrl}/join/`}
             intl={intl}
             label={intl.formatMessage(messages.shortnameLabel)}
             name="shortname"
