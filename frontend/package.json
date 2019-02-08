@@ -47,7 +47,7 @@
     "cross-env": "5.2.0",
     "d3": "5.7.0",
     "dayjs": "1.8.5",
-    "dotenv": "6.1.0",
+    "dotenv": "6.2.0",
     "draft-js": "0.10.5",
     "draft-js-buttons": "2.0.1",
     "draft-js-code-editor-plugin": "0.2.1",
