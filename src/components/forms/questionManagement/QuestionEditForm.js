@@ -1,8 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { compose, withProps } from 'recompose'
 import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
+import getConfig from 'next/config'
+import { compose, withProps } from 'recompose'
 import { EditorState, ContentState, convertFromRaw } from 'draft-js'
 import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import { Button, Form, Dropdown, Message } from 'semantic-ui-react'
@@ -14,6 +15,8 @@ import { generateTypesLabel } from '../../../lib'
 import { ContentInput, TagInput } from '../../questions'
 import { FREECreationOptions, SCCreationOptions } from '../../questionTypes'
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
+
+const { publicRuntimeConfig } = getConfig()
 
 const messages = defineMessages({
   contentEmpty: {
@@ -251,7 +254,7 @@ const QuestionEditForm = ({
               />
             </div>
 
-            {process.env.S3_ROOT_URL && (
+            {publicRuntimeConfig.s3root && (
               <div className="questionInput questionFiles">
                 <h3>
                   <FormattedMessage defaultMessage="Attached Files (Beta)" id="createQuestion.filesLabel" />

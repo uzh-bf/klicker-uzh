@@ -1,16 +1,19 @@
 /* eslint-disable no-underscore-dangle */
 import React from 'react'
 import Router from 'next/router'
+import getConfig from 'next/config'
 import App, { Container } from 'next/app'
 import { ApolloProvider } from 'react-apollo'
 import { IntlProvider, addLocaleData } from 'react-intl'
 
 import { withApolloClient } from '../lib'
 
+const { publicRuntimeConfig } = getConfig()
+
 const isProd = process.env.NODE_ENV === 'production'
 
-const Raven = process.env.SERVICES_SENTRY_DSN && require('raven-js')
-const LogRocket = process.env.SERVICES_LOGROCKET_APP_ID && require('logrocket')
+const Raven = publicRuntimeConfig.sentryDSN && require('raven-js')
+const LogRocket = publicRuntimeConfig.logrocketAppID && require('logrocket')
 
 // Register React Intl's locale data for the user's locale in the browser. This
 // locale data was added to the page by `pages/_document.js`. This only happens
@@ -41,11 +44,11 @@ class Klicker extends App {
 
   componentDidMount() {
     if (isProd) {
-      if (process.env.SERVICES_GOOGLE_ANALYTICS_TRACKING_ID) {
+      if (publicRuntimeConfig.analyticsTrackingID) {
         const { initGA, logPageView } = require('../lib')
 
         if (!window.INIT_GA) {
-          initGA(process.env.SERVICES_GOOGLE_ANALYTICS_TRACKING_ID)
+          initGA(publicRuntimeConfig.analyticsTrackingID)
 
           // log subsequent route changes as page views
           Router.router.events.on('routeChangeComplete', logPageView)
@@ -58,7 +61,7 @@ class Klicker extends App {
       }
 
       if (Raven && !window.INIT_RAVEN) {
-        Raven.config(process.env.SERVICES_SENTRY_DSN, {
+        Raven.config(publicRuntimeConfig.sentryDSN, {
           environment: process.env.NODE_ENV,
           release: process.env.VERSION,
         }).install()
@@ -87,7 +90,7 @@ class Klicker extends App {
         Raven.showReportDialog()
       }
 
-      if (process.env.SERVICES_GOOGLE_ANALYTICS_TRACKING_ID) {
+      if (publicRuntimeConfig.analyticsTrackingID) {
         const { logException } = require('../lib')
         logException(error)
       }

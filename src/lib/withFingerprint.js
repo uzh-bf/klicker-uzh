@@ -1,6 +1,8 @@
 import React from 'react'
 import Cookies from 'js-cookie'
+import getConfig from 'next/config'
 
+const { publicRuntimeConfig } = getConfig()
 export const ensureFingerprint = async fp => {
   let fingerprint = await fp
 
@@ -18,7 +20,7 @@ export const ensureFingerprint = async fp => {
 
 export default ComposedComponent => {
   let fingerprint
-  if (process.env.SECURITY_FINGERPRINTING && typeof window !== 'undefined') {
+  if (publicRuntimeConfig.withFingerprinting && typeof window !== 'undefined') {
     fingerprint = new Promise((resolve, reject) => {
       // if an existing cookie already contains a fingerprint, reuse it
       const existing = Cookies.get('fp')

@@ -5,11 +5,36 @@ const withCSS = require('@zeit/next-css')
 const withSourceMaps = require('@zeit/next-source-maps')
 const { DEVELOPMENT_SERVER, PHASE_PRODUCTION_BUILD } = require('next/constants')
 
+const CFG = require('./klicker.conf.js')
+
+const API_CFG = CFG.get('api')
+const APP_CFG = CFG.get('app')
+const S3_CFG = CFG.get('s3')
+const SECURITY_CFG = CFG.get('security')
+const SERVICES_CFG = CFG.get('services')
+
 module.exports = phase => {
   let config = {
     // custom runtime configuration
-    publicRuntimeConfig: {},
-    serverRuntimeConfig: {},
+    publicRuntimeConfig: {
+      analyticsTrackingID: SERVICES_CFG.googleAnalytics.trackingId,
+      apiUrl: API_CFG.endpoint,
+      apiUrlWS: API_CFG.endpointWS,
+      apmServerUrl: SERVICES_CFG.apm.serverUrl,
+      apmServiceName: SERVICES_CFG.apm.serviceName,
+      apmWithRum: SERVICES_CFG.apm.withRum,
+      baseUrl: APP_CFG.baseUrl,
+      joinUrl: APP_CFG.joinUrl,
+      logrocketAppID: SERVICES_CFG.logrocket.appId,
+      persistQueries: APP_CFG.persistQueries,
+      s3root: S3_CFG.rootUrl,
+      sentryDSN: SERVICES_CFG.sentry.dsn,
+      slaaskWidgetKey: SERVICES_CFG.slaask.widgetKey,
+      withFingerprinting: SECURITY_CFG.fingerprinting,
+    },
+    serverRuntimeConfig: {
+      apiUrlSSR: API_CFG.endpointSSR,
+    },
     // setup custom webpack configuration
     webpack: (webpackConfig, { isServer }) => {
       // ignore test files when bundling
