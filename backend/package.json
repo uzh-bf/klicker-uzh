@@ -45,7 +45,7 @@
     "morgan": "1.9.1",
     "nodemailer": "4.7.0",
     "pretty-error": "2.1.1",
-    "rate-limit-redis": "1.5.0",
+    "rate-limit-redis": "1.6.0",
     "raven": "2.6.4",
     "react": "16.6.3",
     "react-dom": "16.6.3",
