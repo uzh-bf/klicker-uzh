@@ -1902,10 +1902,10 @@ elastic-apm-http-client@^6.0.1:
     stream-chopper "^3.0.1"
     unicode-byte-truncate "^1.0.0"
 
-elastic-apm-node@2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-2.0.0.tgz#45470f59ce397f8efd6f0b9ce1837d2f1b8ac2bf"
-  integrity sha512-qXaxzvrpum9EBuMfbYPa8UyGOCOCCtu9eWASQij7TqUnt8WFYWUWXXiw6b0FXTOHiymSgmEjPlzjGwz+M0xF/g==
+elastic-apm-node@2.0.6:
+  version "2.0.6"
+  resolved "https://registry.yarnpkg.com/elastic-apm-node/-/elastic-apm-node-2.0.6.tgz#86c1a87accb5f5f5e40183b784063aa0fb7f53d2"
+  integrity sha512-olv+/B2jgALLZOcoiNHSK6wzlf9qHQFYIzFxuGyksOsTomyLr9EaZBbzPbt0WwJJ0veSBRcIaxqW91YdZ44xOg==
   dependencies:
     after-all-results "^2.0.0"
     async-value-promise "^1.1.1"
@@ -1919,6 +1919,7 @@ elastic-apm-node@2.0.0:
     http-headers "^3.0.2"
     is-native "^1.0.1"
     original-url "^1.2.2"
+    random-poly-fill "^1.0.1"
     read-pkg-up "^4.0.0"
     redact-secrets "^1.0.0"
     relative-microtime "^2.0.0"
@@ -5677,6 +5678,11 @@ querystring@0.2.0:
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/querystring/-/querystring-0.2.0.tgz#b209849203bb25df820da756e747005878521620"
   integrity sha1-sgmEkgO7Jd+CDadW50cAWHhSFiA=
+
+random-poly-fill@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/random-poly-fill/-/random-poly-fill-1.0.1.tgz#13634dc0255a31ecf85d4a182d92c40f9bbcf5ed"
+  integrity sha512-bMOL0hLfrNs52+EHtIPIXxn2PxYwXb0qjnKruTjXiM/sKfYqj506aB2plFwWW1HN+ri724bAVVGparh4AtlJKw==
 
 randomatic@^3.0.0:
   version "3.1.1"
