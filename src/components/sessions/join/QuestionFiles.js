@@ -1,7 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Card, Image, Modal } from 'semantic-ui-react'
+import getConfig from 'next/config'
 
+const { publicRuntimeConfig } = getConfig()
 const propTypes = {
   files: PropTypes.arrayOf(
     PropTypes.shape({
@@ -16,7 +18,7 @@ const defaultProps = {
 const QuestionFiles = ({ files }) => (
   <div className="questionFiles">
     {files.map(({ id, name }, ix) => {
-      const fileSrc = `${process.env.S3_ROOT_URL}/${name}`
+      const fileSrc = `${publicRuntimeConfig.s3root}/${name}`
       const previewImage = (
         <Card>
           <Image height="auto" src={fileSrc} width="100%" />

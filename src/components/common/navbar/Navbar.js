@@ -2,16 +2,19 @@
 
 import React from 'react'
 import PropTypes from 'prop-types'
+import getConfig from 'next/config'
+import Router from 'next/router'
 import { intlShape } from 'react-intl'
 import { Icon, Menu } from 'semantic-ui-react'
 import { Query, Mutation } from 'react-apollo'
-import Router from 'next/router'
 
 import { AccountSummaryQuery, LogoutMutation } from '../../../graphql'
 
 import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'
 import SessionArea from './SessionArea'
+
+const { publicRuntimeConfig } = getConfig()
 
 const propTypes = {
   // filters: PropTypes.object,
@@ -97,7 +100,7 @@ export const NavbarPres = ({ intl, search, sidebarVisible, title, handleSidebarT
                   shortname: accountShort,
                   // user_hash: userHash,
                 })
-                window._slaask.init(process.env.SERVICES_SLAASK_WIDGET_KEY, accountId)
+                window._slaask.init(publicRuntimeConfig.slaaskWidgetKey, accountId)
                 /* window._slaask.init(process.env.SLAASK_WIDGET_KEY, {
                   user_hash: userHash,
                   user_token: accountId,

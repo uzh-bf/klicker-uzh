@@ -1,8 +1,11 @@
 /* eslint-disable */
 
 import React from 'react'
+import getConfig from 'next/config'
 
-const Raven = process.env.SERVICES_SENTRY_DSN && require('raven-js')
+const { publicRuntimeConfig } = getConfig()
+
+const Raven = publicRuntimeConfig.sentryDSN && require('raven-js')
 
 const isProd = process.env.NODE_ENV === 'production'
 const isDev = process.env.NODE_ENV === 'development'
@@ -12,7 +15,7 @@ let LogRocketReact
 
 let APM
 
-if (isProd && process.env.SERVICES_LOGROCKET_APP_ID) {
+if (isProd && publicRuntimeConfig.logrocketAppID) {
   LogRocket = require('logrocket')
   LogRocketReact = require('logrocket-react')
 }
@@ -52,22 +55,22 @@ export default (cfg = {}) =>
 
           if (isProd) {
             // embed elastic apm if enabled
-            if (process.env.SERVICES_APM_WITH_RUM && !window.INIT_APM) {
+            if (publicRuntimeConfig.apmWithRum && !window.INIT_APM) {
               const { init } = require('elastic-apm-js-base')
 
               APM = init({
                 // Set required service name (allowed characters: a-z, A-Z, 0-9, -, _, and space)
-                serviceName: process.env.SERVICES_APM_SERVICE_NAME,
+                serviceName: publicRuntimeConfig.apmServiceName,
 
                 // Set custom APM Server URL (default: http://localhost:8200)
-                serverUrl: process.env.SERVICES_APM_SERVER_URL,
+                serverUrl: publicRuntimeConfig.apmServerUrl,
               })
 
               window.INIT_APM = true
             }
             // embed logrocket if enabled
-            if (process.env.SERVICES_LOGROCKET_APP_ID && config.logRocket && !window.INIT_LR) {
-              LogRocket.init(process.env.SERVICES_LOGROCKET_APP_ID)
+            if (publicRuntimeConfig.logrocketAppID && config.logRocket && !window.INIT_LR) {
+              LogRocket.init(publicRuntimeConfig.logrocketAppID)
               LogRocketReact(LogRocket)
 
               if (Raven && window.INIT_RAVEN) {
@@ -84,7 +87,7 @@ export default (cfg = {}) =>
             }
 
             // embed slaask if enabled
-            if (process.env.SERVICES_SLAASK_WIDGET_KEY && config.slaask) {
+            if (publicRuntimeConfig.slaaskWidgetKey && config.slaask) {
               !(function() {
                 var x = document.createElement('script')
                 ;(x.src = 'https://cdn.slaask.com/chat.js'),
@@ -94,7 +97,7 @@ export default (cfg = {}) =>
                     var x = this.readyState
                     if (!x || 'complete' == x || 'loaded' == x)
                       try {
-                        _slaask.init(process.env.SERVICES_SLAASK_WIDGET_KEY)
+                        _slaask.init(publicRuntimeConfig.slaaskWidgetKey)
                       } catch (x) {}
                   })
                 var t = document.getElementsByTagName('script')[0]
