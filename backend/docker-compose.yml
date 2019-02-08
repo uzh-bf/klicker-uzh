@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 services:
   # api-dev:
@@ -26,20 +26,19 @@ services:
     networks:
       - klicker-dev
 
-  mongodb:
-    image: mongo:3.4
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: klicker
-      MONGO_INITDB_ROOT_PASSWORD: klicker
-    ports:
-      - 27017:27017
-    networks:
-      - klicker-dev
+  # mongodb:
+  # image: mongo:3.4
+  # environment:
+  # MONGO_INITDB_ROOT_USERNAME: klicker
+  # MONGO_INITDB_ROOT_PASSWORD: klicker
+  # ports:
+  # - 27017:27017
+  # networks:
+  # - klicker-dev
 
 networks:
   klicker-dev:
     driver: bridge
-
 # minio:
 #   image: minio/minio:latest@sha256:ed0c464a66ac1f56b77607320c74de4190cd6121b70ffbc1e387f2a4955dd334
 #   volumes:

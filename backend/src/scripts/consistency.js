@@ -6,14 +6,11 @@ const { SessionModel, QuestionInstanceModel, UserModel } = require('../models')
 
 mongoose.Promise = Promise
 
-mongoose.connect(
-  `mongodb://klicker:klicker@localhost:27017/klicker?authSource=klicker`,
-  {
-    keepAlive: true,
-    reconnectTries: Number.MAX_VALUE,
-    reconnectInterval: 1000,
-  }
-)
+mongoose.connect(`mongodb://klicker:klicker@localhost:27017/klicker?authSource=klicker`, {
+  keepAlive: true,
+  reconnectTries: Number.MAX_VALUE,
+  reconnectInterval: 1000,
+})
 
 mongoose.connection
   .once('open', async () => {

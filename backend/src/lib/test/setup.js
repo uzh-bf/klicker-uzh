@@ -96,14 +96,11 @@ const initializeDb = async ({
   withQuestions = false,
   isActive = true,
 }) => {
-  await mongoose.connect(
-    `mongodb://${process.env.MONGO_URL_TEST}`,
-    {
-      keepAlive: true,
-      promiseLibrary: global.Promise,
-      reconnectTries: 10,
-    }
-  )
+  await mongoose.connect(`mongodb://${process.env.MONGO_URL_TEST}`, {
+    keepAlive: true,
+    promiseLibrary: global.Promise,
+    reconnectTries: 10,
+  })
 
   const createdUser = await setupTestEnv({ email, password: 'somePassword', shortname, isActive })
 
