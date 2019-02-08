@@ -26,15 +26,15 @@ services:
     networks:
       - klicker-dev
 
-  # mongodb:
-  # image: mongo:3.4
-  # environment:
-  # MONGO_INITDB_ROOT_USERNAME: klicker
-  # MONGO_INITDB_ROOT_PASSWORD: klicker
-  # ports:
-  # - 27017:27017
-  # networks:
-  # - klicker-dev
+  mongodb:
+    image: mongo:4.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: klicker
+      MONGO_INITDB_ROOT_PASSWORD: klicker
+    ports:
+      - 27017:27017
+    networks:
+      - klicker-dev
 
 networks:
   klicker-dev:
