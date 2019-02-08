@@ -6752,22 +6752,22 @@ elastic-apm-http-client@^6.0.1:
     stream-chopper "^3.0.1"
     unicode-byte-truncate "^1.0.0"
 
-elastic-apm-js-base@2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/elastic-apm-js-base/-/elastic-apm-js-base-2.0.0.tgz#9c8166bb3e5478c17f9805cf82d0d59e3c900076"
-  integrity sha512-jACXXFDkuGwBoTSwhlx+QrTL2VmP1EgS6TsgH9a8JCwrRchYz+ArlreoXBJCxyG8VJdy4G2vRD3DkKhSF7fUDA==
+elastic-apm-js-base@2.2.0:
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/elastic-apm-js-base/-/elastic-apm-js-base-2.2.0.tgz#043b558480b2c8da3102d091a2aa96b9c04adfde"
+  integrity sha512-HuztOfzayl6Yg89AH7Z5+A2aFvgtuq00ctyLVaUVTW2Z+gts8MdtKJwXxVCvihIoE1T1ynL0ExpkjrW8Lcz6mQ==
   dependencies:
-    elastic-apm-js-core "2.0.0"
-    es6-promise "4.2.4"
+    elastic-apm-js-core "^2.2.0"
+    es6-promise "^4.2.4"
 
-elastic-apm-js-core@2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/elastic-apm-js-core/-/elastic-apm-js-core-2.0.0.tgz#3cd18347efaf5e3f5a51a900c12b71c07be2acb1"
-  integrity sha512-VkDx/NfvwkMozBhss7cvdl+Z9VU1yMsnPpOvo1BQ+pXYR7PfHEksMBb5EzRnMYrw0frJWk7DUTPuoKh/1w8nPQ==
+elastic-apm-js-core@^2.2.0:
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/elastic-apm-js-core/-/elastic-apm-js-core-2.2.0.tgz#4316ec5d145952fdf2807062734313ac464cf9f5"
+  integrity sha512-662c9XydDCEQv1ft24b2an2nGpud8FKbDqneXz/2B+xeHrf2zTmnzDLNEQmz5mSKrDRQUmuJMOv67BNZAUg1Rw==
   dependencies:
     error-stack-parser "^1.3.5"
     stack-generator "^1.0.7"
-    url-parse "1.4.3"
+    url-parse "^1.4.3"
     uuid "^3.1.0"
 
 elastic-apm-node@2.0.0:
@@ -7034,10 +7034,10 @@ es6-map@^0.1.3:
     es6-symbol "~3.1.1"
     event-emitter "~0.3.5"
 
-es6-promise@4.2.4:
-  version "4.2.4"
-  resolved "https://registry.yarnpkg.com/es6-promise/-/es6-promise-4.2.4.tgz#dc4221c2b16518760bd8c39a52d8f356fc00ed29"
-  integrity sha512-/NdNZVJg+uZgtm9eS3O6lrOLYmQag2DjdEXuPaHlZ6RuVqgqaVZfgYCepEIKsLqwdQArOPtC3XzRLqGGfT8KQQ==
+es6-promise@^4.2.4:
+  version "4.2.5"
+  resolved "https://registry.yarnpkg.com/es6-promise/-/es6-promise-4.2.5.tgz#da6d0d5692efb461e082c14817fe2427d8f5d054"
+  integrity sha512-n6wvpdE43VFtJq+lUDYDBFUwV8TZbuGXLV4D6wKafg13ldznKsyEvatubnmUe31zcvelSzOHF+XbaT+Bl9ObDg==
 
 es6-set@~0.1.5:
   version "0.1.5"
@@ -17470,14 +17470,6 @@ url-parse-lax@^1.0.0:
   integrity sha1-evjzA2Rem9eaJy56FKxovAYJ2nM=
   dependencies:
     prepend-http "^1.0.1"
-
-url-parse@1.4.3:
-  version "1.4.3"
-  resolved "https://registry.yarnpkg.com/url-parse/-/url-parse-1.4.3.tgz#bfaee455c889023219d757e045fa6a684ec36c15"
-  integrity sha512-rh+KuAW36YKo0vClhQzLLveoj8FwPJNu65xLb7Mrt+eZht0IPT0IXgSv8gcMegZ6NvjJUALf6Mf25POlMwD1Fw==
-  dependencies:
-    querystringify "^2.0.0"
-    requires-port "^1.0.0"
 
 url-parse@^1.1.8, url-parse@^1.4.3:
   version "1.4.4"
