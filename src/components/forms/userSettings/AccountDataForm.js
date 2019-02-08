@@ -4,12 +4,15 @@ import { intlShape, FormattedMessage } from 'react-intl'
 import { Formik } from 'formik'
 import { object } from 'yup'
 import { Form, Button } from 'semantic-ui-react'
+import getConfig from 'next/config'
 
 import { AccountSummaryQuery, ModifyUserMutation } from '../../../graphql'
 import { FormikInput } from '..'
 import validationSchema from '../common/validationSchema'
 import messages from '../common/messages'
 import { Errors } from '../../../constants'
+
+const { publicRuntimeConfig } = getConfig()
 
 const { email, institution, useCase, shortname } = validationSchema
 
@@ -69,7 +72,7 @@ const AccountDataForm = ({ intl }) => (
                     handleBlur={handleBlur}
                     handleChange={handleChange}
                     icon="hashtag"
-                    inlineLabel={`${process.env.APP_BASE_URL}/join/`}
+                    inlineLabel={`${publicRuntimeConfig.baseUrl}/join/`}
                     intl={intl}
                     label={intl.formatMessage(messages.shortnameLabel)}
                     name="shortname"

@@ -1,4 +1,7 @@
+/* eslint-disable babel/quotes */
+
 require('dotenv').config()
+
 const convict = require('convict')
 
 module.exports = convict({
@@ -6,6 +9,11 @@ module.exports = convict({
     endpoint: {
       default: 'http://localhost:4000/graphql',
       env: 'API_ENDPOINT',
+      format: 'url',
+    },
+    endpointSSR: {
+      default: 'http://klicker-api:4000/graphql',
+      env: 'API_ENDPOINT_SSR',
       format: 'url',
     },
     endpointWS: {
@@ -294,14 +302,14 @@ module.exports = convict({
       },
     },
     sentry: {
-      enabled: {
-        default: false,
-        env: 'SERVICES_SENTRY_ENABLED',
-        format: Boolean,
-      },
       dsn: {
         default: undefined,
         env: 'SERVICES_SENTRY_DSN',
+        format: Boolean,
+      },
+      enabled: {
+        default: false,
+        env: 'SERVICES_SENTRY_ENABLED',
         format: Boolean,
       },
     },
