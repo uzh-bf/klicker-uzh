@@ -2,9 +2,12 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import QRCode from 'qrcode.react'
+import getConfig from 'next/config'
 import { defineMessages, intlShape, FormattedMessage } from 'react-intl'
 import { Button, Checkbox, Icon, Popup, Message } from 'semantic-ui-react'
 import { QuestionBlock } from '../questions'
+
+const { publicRuntimeConfig } = getConfig()
 
 const messages = defineMessages({
   buttonCloseBlock: {
@@ -126,14 +129,14 @@ const SessionTimeline = ({
               <div className="popupContent">
                 <div className="link">
                   <strong>
-                    {process.env.APP_JOIN_URL
-                      ? `${process.env.APP_JOIN_URL}/${shortname}`
-                      : `${process.env.APP_BASE_URL}/join/${shortname}`}
+                    {publicRuntimeConfig.joinUrl
+                      ? `${publicRuntimeConfig.joinUrl}/${shortname}`
+                      : `${publicRuntimeConfig.baseUrl}/join/${shortname}`}
                   </strong>
                 </div>
 
                 <div className="qr">
-                  <QRCode size={200} value={`${process.env.APP_BASE_URL}/join/${shortname}`} />
+                  <QRCode size={200} value={`${publicRuntimeConfig.baseUrl}/join/${shortname}`} />
                 </div>
 
                 <a href={`/qr/${shortname}`} rel="noopener noreferrer" target="_blank">

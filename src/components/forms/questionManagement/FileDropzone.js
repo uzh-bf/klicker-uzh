@@ -1,8 +1,11 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import Dropzone from 'react-dropzone'
+import getConfig from 'next/config'
 import { FormattedMessage } from 'react-intl'
 import { Icon, Card, Image, Button } from 'semantic-ui-react'
+
+const { publicRuntimeConfig } = getConfig()
 
 const propTypes = {
   disabled: PropTypes.bool,
@@ -35,7 +38,7 @@ const FileDropzone = ({ disabled, files, onChangeFiles }) => (
 
     <div className="previews">
       {files.map((file, index) => {
-        const imageSrc = `${process.env.S3_ROOT_URL}/${file.name}`
+        const imageSrc = `${publicRuntimeConfig.s3root}/${file.name}`
         return (
           <div className="imagePreview" key={file.id || index}>
             <Card>
