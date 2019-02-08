@@ -124,8 +124,8 @@ jobs:
       env:
         - USER="serviceaccount"
         - PASSWORD=$OC_TOKEN_SWITCH
-        - REGISTRY="registry.zh.shift.cloud.switch.ch"
-        - IMAGE_NAME="registry.zh.shift.cloud.switch.ch/klicker/klicker-api-stage"
+        - REGISTRY="registry.zh.shift.switchengines.ch"
+        - IMAGE_NAME="registry.zh.shift.switchengines.ch/klicker/klicker-api-stage"
       before_script:
         - echo $PASSWORD | docker login --username $USER --password-stdin $REGISTRY
       script:
