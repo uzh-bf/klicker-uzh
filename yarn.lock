@@ -1582,7 +1582,7 @@
   dependencies:
     any-observable "^0.3.0"
 
-"@semantic-ui-react/event-stack@^3.0.0":
+"@semantic-ui-react/event-stack@^3.0.1":
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/@semantic-ui-react/event-stack/-/event-stack-3.0.1.tgz#41d0b095ac94cc5e1607a4fed4d0f8860d0d2e60"
   integrity sha512-9YNRr0z9GEvk/yvIzAzv0sbYa/FPrtWTYibu+chJ0CEMQjYDjUdRSqtxXOvP0eM6kZjD1G/Oy1LhPiHG7DRHsg==
@@ -5769,10 +5769,10 @@ d3-zoom@1:
     d3-selection "1"
     d3-transition "1"
 
-d3@5.7.0:
-  version "5.7.0"
-  resolved "https://registry.yarnpkg.com/d3/-/d3-5.7.0.tgz#f189d338bdde62acf02f308918e0ec34dd7568f9"
-  integrity sha512-8KEIfx+dFm8PlbJN9PI0suazrZ41QcaAufsKE9PRcqYPWLngHIyWJZX96n6IQKePGgeSu0l7rtlueSSNq8Zc3g==
+d3@5.9.0:
+  version "5.9.0"
+  resolved "https://registry.yarnpkg.com/d3/-/d3-5.9.0.tgz#7c948d092cf34074de346f8c2eb8f0259d856d81"
+  integrity sha512-Pl0PO9fwh8WUJzBjEqsujrmSXWp8HzcPEuvFAYKeLAuvnvsQgN6VhwHK/IV6K+Osajl3xdQkxXukbw+ydnLdaQ==
   dependencies:
     d3-array "1"
     d3-axis "1"
@@ -6345,12 +6345,12 @@ draft-js-code@0.3.x:
     ends-with "^0.2.0"
     immutable "3.x"
 
-draft-js-export-html@1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/draft-js-export-html/-/draft-js-export-html-1.2.0.tgz#1cbe2b78e1fed74fc29c7cdcbfd7540468eca209"
-  integrity sha1-HL4reOH+10/CnHzcv9dUBGjsogk=
+draft-js-export-html@1.3.0:
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/draft-js-export-html/-/draft-js-export-html-1.3.0.tgz#1369d33ac8b7040edfd789c36f8604bf59818baf"
+  integrity sha512-+zoyLVMfJJjqhubUcPEEnbCvlHKU0KdDUYO4qZbb8VD3fiTiYRhYcVZSSbPIgZv6VNWyYji5jo7w0DArrdzU0w==
   dependencies:
-    draft-js-utils "^1.2.0"
+    draft-js-utils "^1.3.0"
 
 draft-js-mathjax-plugin@1.3.4:
   version "1.3.4"
@@ -6396,10 +6396,10 @@ draft-js-static-toolbar-plugin@3.0.0:
     prop-types "^15.5.8"
     union-class-names "^1.0.0"
 
-draft-js-utils@^1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/draft-js-utils/-/draft-js-utils-1.2.0.tgz#f5cb23eb167325ffed3d79882fdc317721d2fd12"
-  integrity sha1-9csj6xZzJf/tPXmIL9wxdyHS/RI=
+draft-js-utils@^1.3.0:
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/draft-js-utils/-/draft-js-utils-1.3.0.tgz#9102ca34450da3de2097a074c6cc9c92f72a312e"
+  integrity sha512-wZaY6HQ/jZTh0wshkPzXNrPu0qcE6PuZwIYJp/q8nFAc3elWma7EBtGLXDPkSwvAXEl596mD6GPfk3jnPDuA+w==
 
 draft-js@0.10.5, draft-js@0.x:
   version "0.10.5"
@@ -10597,10 +10597,10 @@ just-debounce@^1.0.0:
   resolved "https://registry.yarnpkg.com/just-debounce/-/just-debounce-1.0.0.tgz#87fccfaeffc0b68cd19d55f6722943f929ea35ea"
   integrity sha1-h/zPrv/AtozRnVX2cilD+SnqNeo=
 
-keyboard-key@^1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/keyboard-key/-/keyboard-key-1.0.2.tgz#212e14dde4c2059814336159bbc5acd0a348ca6b"
-  integrity sha512-05cjQmw4ss/YuY2utmVim0wywDyBZGUivo8siLPkWinwGWtKlO8/4RGbPUqNycwlD3u/3D15eNRjnNAyaTDs8g==
+keyboard-key@^1.0.4:
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/keyboard-key/-/keyboard-key-1.0.4.tgz#52d8fa07b7e17757072aa22a67fb4ae85e4c46b0"
+  integrity sha512-my04dE6BCwPpwoe4KYKfPxWiwgDYQOHrVmtzn1CfzmoEsGG/ef4oZGaXCzi1+iFhG7CN5JkOuxmei5OABY8/ag==
 
 keycode@^2.2.0:
   version "2.2.0"
@@ -13916,10 +13916,10 @@ react-inspector@^2.3.0:
     babel-runtime "^6.26.0"
     is-dom "^1.0.9"
 
-react-intl@2.7.2:
-  version "2.7.2"
-  resolved "https://registry.yarnpkg.com/react-intl/-/react-intl-2.7.2.tgz#efe97e3fc0e99b4e88a6e6150854d3d1852a4381"
-  integrity sha512-3dcNGLqEw2FKkX+1L2WYLgjP0MVJkvWuVd1uLcnwifIQe8JQvnd9Bss4hb4Gvg/YhBIRcs4LM6C2bAgyklucjw==
+react-intl@2.8.0:
+  version "2.8.0"
+  resolved "https://registry.yarnpkg.com/react-intl/-/react-intl-2.8.0.tgz#20b0c1f01d1292427768aa8ec9e51ab7e36503ba"
+  integrity sha512-1cSasNkHxZOXYYhms9Q1tSEWF8AWZQNq3nPLB/j8mYV0ZTSt2DhGQXHfKrKQMu4cgj9J1Crqg7xFPICTBgzqtQ==
   dependencies:
     hoist-non-react-statics "^2.5.5"
     intl-format-cache "^2.0.5"
@@ -15131,17 +15131,18 @@ semantic-ui-css@2.4.1:
   dependencies:
     jquery x.*
 
-semantic-ui-react@0.83.0:
-  version "0.83.0"
-  resolved "https://registry.yarnpkg.com/semantic-ui-react/-/semantic-ui-react-0.83.0.tgz#3437d77bfd3d1e44d61e78d5740c262b9e63f258"
-  integrity sha512-rPW4TZwbDJRJZeKxCpYuNiRnBwUpWeDkZ/yF3j5iLNS8hZ6yOjoFFmqGohqpqKD+jVyzlxz2NCmah54mwbNGOw==
+semantic-ui-react@0.85.0:
+  version "0.85.0"
+  resolved "https://registry.yarnpkg.com/semantic-ui-react/-/semantic-ui-react-0.85.0.tgz#64ff420e6432e61bc798baf27d368f73cf0cad28"
+  integrity sha512-rroRoux+MMmLaZCZfFX9xZfTo1cy+JiM55fVaaqbfPq0s0RupraBhamJhvTDz7idl3ionaXPW7knJyZAz4XMGg==
   dependencies:
     "@babel/runtime" "^7.1.2"
-    "@semantic-ui-react/event-stack" "^3.0.0"
+    "@semantic-ui-react/event-stack" "^3.0.1"
     classnames "^2.2.6"
-    keyboard-key "^1.0.2"
-    lodash "^4.17.10"
+    keyboard-key "^1.0.4"
+    lodash "^4.17.11"
     prop-types "^15.6.2"
+    react-is "^16.7.0"
     shallowequal "^1.1.0"
 
 semantic-ui@2.4.2:
@@ -17758,19 +17759,7 @@ yauzl@2.8.0:
     buffer-crc32 "~0.2.3"
     fd-slicer "~1.0.1"
 
-yup@0.26.6:
-  version "0.26.6"
-  resolved "https://registry.yarnpkg.com/yup/-/yup-0.26.6.tgz#07e216a1424861f17958fef1d4775c64ef985724"
-  integrity sha512-Lfj8pAtQ/cDu/wsCuXt2ArQ0uUO/9nfr+EwlD9oQrWIErtjURjdSXYTS1ycN7T/Ok+IUTy23Tdo6Wo0f/wMMBw==
-  dependencies:
-    "@babel/runtime" "7.0.0"
-    fn-name "~2.0.1"
-    lodash "^4.17.10"
-    property-expr "^1.5.0"
-    synchronous-promise "^2.0.5"
-    toposort "^2.0.2"
-
-yup@^0.26.10:
+yup@0.26.10, yup@^0.26.10:
   version "0.26.10"
   resolved "https://registry.yarnpkg.com/yup/-/yup-0.26.10.tgz#3545839663289038faf25facfc07e11fd67c0cb1"
   integrity sha512-keuNEbNSnsOTOuGCt3UJW69jDE3O4P+UHAakO7vSeFMnjaitcmlbij/a3oNb9g1Y1KvSKH/7O1R2PQ4m4TRylw==
