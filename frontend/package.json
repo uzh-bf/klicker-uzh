@@ -56,7 +56,7 @@
     "draft-js-plugins-editor": "2.1.1",
     "draft-js-prism-plugin": "0.1.3",
     "draft-js-static-toolbar-plugin": "3.0.0",
-    "elastic-apm-js-base": "2.0.0",
+    "elastic-apm-js-base": "2.2.0",
     "elastic-apm-node": "2.0.0",
     "express": "4.16.4",
     "file-loader": "2.0.0",
