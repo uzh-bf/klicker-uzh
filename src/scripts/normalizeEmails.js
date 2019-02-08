@@ -12,14 +12,11 @@ const { UserModel } = require('../models')
 
 mongoose.Promise = Promise
 
-mongoose.connect(
-  `mongodb://${process.env.MONGO_URL}`,
-  {
-    keepAlive: true,
-    reconnectTries: Number.MAX_VALUE,
-    reconnectInterval: 1000,
-  }
-)
+mongoose.connect(`mongodb://${process.env.MONGO_URL}`, {
+  keepAlive: true,
+  reconnectTries: Number.MAX_VALUE,
+  reconnectInterval: 1000,
+})
 
 mongoose.connection
   .once('open', async () => {

@@ -55,15 +55,9 @@ const mongoConfig = {
   reconnectInterval: 1000,
 }
 if (MONGO_CFG.user && MONGO_CFG.password) {
-  mongoose.connect(
-    `mongodb://${MONGO_CFG.user}:${MONGO_CFG.password}@${MONGO_CFG.url}`,
-    mongoConfig
-  )
+  mongoose.connect(`mongodb://${MONGO_CFG.user}:${MONGO_CFG.password}@${MONGO_CFG.url}`, mongoConfig)
 } else {
-  mongoose.connect(
-    `mongodb://${MONGO_CFG.url}`,
-    mongoConfig
-  )
+  mongoose.connect(`mongodb://${MONGO_CFG.url}`, mongoConfig)
 }
 
 if (MONGO_CFG.debug) {
