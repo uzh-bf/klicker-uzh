@@ -4,6 +4,7 @@ import classNames from 'classnames'
 import _without from 'lodash/without'
 import v8n from 'v8n'
 import dayjs from 'dayjs'
+import getConfig from 'next/config'
 
 import { FormattedMessage } from 'react-intl'
 import { convertFromRaw } from 'draft-js'
@@ -13,6 +14,8 @@ import QuestionFiles from './QuestionFiles'
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
 import { ActionMenu, Collapser } from '../../common'
 import { QuestionDescription, SCAnswerOptions, FREEAnswerOptions } from '../../questionTypes'
+
+const { publicRuntimeConfig } = getConfig()
 
 const propTypes = {
   active: PropTypes.bool.isRequired,
@@ -127,7 +130,7 @@ function QuestionArea({
               </Collapser>
             </div>
 
-            {process.env.S3_ROOT_URL && files.length > 0 && (
+            {publicRuntimeConfig.s3root && files.length > 0 && (
               <div className="files">
                 <QuestionFiles files={files} />
               </div>
