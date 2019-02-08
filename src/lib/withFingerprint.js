@@ -3,15 +3,27 @@ import Cookies from 'js-cookie'
 import getConfig from 'next/config'
 
 const { publicRuntimeConfig } = getConfig()
+
+const computeFp = (resolve, setCookie = true) => {
+  const Fingerprint2 = require('fingerprintjs2')
+  Fingerprint2.get({}, components => {
+    const values = components.map(component => component.value)
+    const murmur = Fingerprint2.x64hash128(values.join(''), 31)
+
+    if (setCookie) {
+      Cookies.set('fp', murmur)
+    }
+
+    resolve(murmur)
+  })
+}
+
 export const ensureFingerprint = async fp => {
   let fingerprint = await fp
 
   if (!fingerprint) {
-    const Fingerprint2 = require('fingerprintjs2')
     fingerprint = await new Promise(resolve => {
-      new Fingerprint2().get(result => {
-        resolve(result)
-      })
+      computeFp(resolve, false)
     })
   }
 
@@ -30,22 +42,10 @@ export default ComposedComponent => {
 
       // otherwise generate a new fingerprint and store it in a cookie
       try {
-        const Fingerprint2 = require('fingerprintjs2')
-
         if (window.requestIdleCallback) {
-          requestIdleCallback(() => {
-            new Fingerprint2().get(result => {
-              Cookies.set('fp', result)
-              resolve(result)
-            })
-          })
+          requestIdleCallback(() => computeFp(resolve))
         } else {
-          setTimeout(() => {
-            new Fingerprint2().get(result => {
-              Cookies.set('fp', result)
-              resolve(result)
-            })
-          }, 500)
+          setTimeout(() => computeFp(resolve), 500)
         }
       } catch (err) {
         reject(err)
