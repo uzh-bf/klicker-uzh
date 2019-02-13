@@ -305,7 +305,7 @@ module.exports = convict({
       dsn: {
         default: undefined,
         env: 'SERVICES_SENTRY_DSN',
-        format: Boolean,
+        format: String,
       },
       enabled: {
         default: false,
