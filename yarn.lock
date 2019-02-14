@@ -5717,10 +5717,10 @@ d3-zoom@1:
     d3-selection "1"
     d3-transition "1"
 
-d3@5.9.0:
-  version "5.9.0"
-  resolved "https://registry.yarnpkg.com/d3/-/d3-5.9.0.tgz#7c948d092cf34074de346f8c2eb8f0259d856d81"
-  integrity sha512-Pl0PO9fwh8WUJzBjEqsujrmSXWp8HzcPEuvFAYKeLAuvnvsQgN6VhwHK/IV6K+Osajl3xdQkxXukbw+ydnLdaQ==
+d3@5.9.1:
+  version "5.9.1"
+  resolved "https://registry.yarnpkg.com/d3/-/d3-5.9.1.tgz#fde73fa9af7281d2ff0d2a32aa8f306e93a6d1cd"
+  integrity sha512-JceuBn5VVWySPQc9EA0gfq0xQVgEQXGokHhe+359bmgGeUITLK2r2b9idMzquQne9DKxb7JDCE1gDRXe9OIF2Q==
   dependencies:
     d3-array "1"
     d3-axis "1"
