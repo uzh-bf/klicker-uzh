@@ -17,14 +17,14 @@ services:
       - klicker-prod
 
   redis:
-    image: redis:3-32bit@sha256:bb00f0d73b1c301189200215bf52a4c3c4e25892833aebed718e3465adc2a1f0
+    image: redis:3-32bit
     ports:
       - 6379:6379
     networks:
       - klicker-prod
 
   mongodb:
-    image: mongo:3.2
+    image: mongo:4.0
     environment:
       MONGO_INITDB_ROOT_USERNAME: klicker
       MONGO_INITDB_ROOT_PASSWORD: klicker
