@@ -1,4 +1,4 @@
 plugins:
   eslint:
     enabled: true
-    channel: 'eslint-4'
+    channel: 'eslint-5'
