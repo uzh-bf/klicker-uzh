@@ -59,12 +59,24 @@ jobs:
         - echo $DOCKER_PASSWORD | docker login --username $DOCKER_USER --password-stdin
       script:
         - travis_retry docker pull $IMAGE_NAME:latest
-        - >
-          docker build .
-          --build-arg API_URL=$STAGING_API_URL
-          --cache-from $IMAGE_NAME:latest
-          -t $IMAGE_NAME:latest
+        - docker build . --cache-from $IMAGE_NAME:latest -t $IMAGE_NAME:latest
         - travis_retry docker push $IMAGE_NAME:latest
+
+    # build all commits to master
+    # push a new canary tag to OpenShift
+    - <<: *build-setup
+      if: (type = push) AND (tag =~ /^v[0-9].[0-9].[0-9]-/)
+      env:
+        - USER="serviceaccount"
+        - PASSWORD=$OC_TOKEN_SWITCH
+        - REGISTRY="registry.zh.shift.switchengines.ch"
+        - IMAGE_NAME="registry.zh.shift.switchengines.ch/klicker/klicker-api-stage"
+      before_script:
+        - echo $PASSWORD | docker login --username $USER --password-stdin $REGISTRY
+      script:
+        - travis_retry docker pull $IMAGE_NAME:canary
+        - docker build . --cache-from $IMAGE_NAME:canary --build-arg VERSION=canary -t $IMAGE_NAME:canary
+        - travis_retry docker push $IMAGE_NAME:canary
 
     # build all pull requests
     # push a nightly tag to Docker Hub
@@ -74,8 +86,8 @@ jobs:
         - docker pull $IMAGE_NAME:nightly
         - >
           docker build .
-          --build-arg VERSION=nightly-$TRAVIS_PULL_REQUEST
           --cache-from $IMAGE_NAME:nightly
+          --build-arg VERSION=nightly-$TRAVIS_PULL_REQUEST
           -t $IMAGE_NAME:nightly
           -t $IMAGE_NAME:nightly-$TRAVIS_PULL_REQUEST
         - docker push $IMAGE_NAME:nightly
@@ -87,38 +99,11 @@ jobs:
       if: (type = push) AND (tag =~ /^v[0-9].[0-9].[0-9]-/)
       script:
         - travis_retry docker pull $IMAGE_NAME:latest
-        - >
-          docker build .
-          --build-arg VERSION=$TRAVIS_TAG
-          --cache-from $IMAGE_NAME:latest
-          -t $IMAGE_NAME:$TRAVIS_TAG
+        - docker build . --cache-from $IMAGE_NAME:latest --build-arg VERSION=$TRAVIS_TAG --cache-from $IMAGE_NAME:latest -t $IMAGE_NAME:$TRAVIS_TAG
         - travis_retry docker push $IMAGE_NAME:$TRAVIS_TAG
 
     # build unstable tags (e.g. v1.0.0-beta.1)
-    # push the tag to APPUiO
-    - <<: *build-setup
-      if: (type = push) AND (tag =~ /^v[0-9].[0-9].[0-9]-/)
-      env:
-        - USER="serviceaccount"
-        - PASSWORD=$OC_TOKEN
-        - REGISTRY="registry.appuio.ch"
-        - IMAGE_NAME="registry.appuio.ch/uniz-klicker/klicker-api-stage"
-      before_script:
-        - echo $PASSWORD | docker login --username $USER --password-stdin $REGISTRY
-      script:
-        - >
-          docker build .
-          --build-arg VERSION=$TRAVIS_TAG
-          -t $IMAGE_NAME:$TRAVIS_TAG
-        - travis_retry docker push $IMAGE_NAME:$TRAVIS_TAG
-        - >
-          curl $SENTRY_WEBHOOK
-          -X POST
-          -H 'Content-Type: application/json'
-          -d '{"version": $TRAVIS_TAG}'
-
-    # build unstable tags (e.g. v1.0.0-beta.1)
-    # push the tag to SWITCHengines
+    # push the tag to OpenShift
     - <<: *build-setup
       if: (type = push) AND (tag =~ /^v[0-9].[0-9].[0-9]-/)
       env:
@@ -129,10 +114,7 @@ jobs:
       before_script:
         - echo $PASSWORD | docker login --username $USER --password-stdin $REGISTRY
       script:
-        - >
-          docker build .
-          --build-arg VERSION=$TRAVIS_TAG
-          -t $IMAGE_NAME:$TRAVIS_TAG
+        - docker build . --build-arg VERSION=$TRAVIS_TAG -t $IMAGE_NAME:$TRAVIS_TAG
         - travis_retry docker push $IMAGE_NAME:$TRAVIS_TAG
 
     # build stable tags (e.g. v1.0.0)
@@ -140,32 +122,26 @@ jobs:
     - <<: *build-setup
       if: (type = push) AND (tag =~ /^v[0-9].[0-9].[0-9]$/)
       script:
-        - >
-          docker build .
-          --build-arg VERSION=$TRAVIS_TAG
-          -t $IMAGE_NAME:stable
-          -t $IMAGE_NAME:$TRAVIS_TAG
+        - travis_retry docker pull $IMAGE_NAME:stable
+        - docker build . --cache-from $IMAGE_NAME:stable --build-arg VERSION=$TRAVIS_TAG -t $IMAGE_NAME:stable -t $IMAGE_NAME:$TRAVIS_TAG
         - travis_retry docker push $IMAGE_NAME:$TRAVIS_TAG
         - travis_retry docker push $IMAGE_NAME:stable
 
     # build stable tags (e.g. v1.0.0)
-    # push a new stable tag to APPUiO
+    # push a new stable tag to OpenShift
     # => this will trigger a new deployment to production
     - <<: *build-setup
       if: (type = push) AND (tag =~ /^v[0-9].[0-9].[0-9]$/)
       env:
         - USER="serviceaccount"
-        - PASSWORD=$OC_TOKEN
-        - REGISTRY="registry.appuio.ch"
-        - IMAGE_NAME="registry.appuio.ch/uniz-klicker/klicker-api-prod"
+        - PASSWORD=$OC_TOKEN_SWITCH
+        - REGISTRY="registry.zh.shift.switchengines.ch"
+        - IMAGE_NAME="registry.zh.shift.switchengines.ch/klicker/klicker-api-prod"
       before_script:
         - echo $PASSWORD | docker login --username $USER --password-stdin $REGISTRY
       script:
-        - >
-          docker build .
-          --build-arg VERSION=$TRAVIS_TAG
-          -t $IMAGE_NAME:stable
-          -t $IMAGE_NAME:$TRAVIS_TAG
+        - travis_retry docker pull $IMAGE_NAME:stable
+        - docker build . --cache-from $IMAGE_NAME:stable --build-arg VERSION=$TRAVIS_TAG -t $IMAGE_NAME:stable -t $IMAGE_NAME:$TRAVIS_TAG
         - travis_retry docker push $IMAGE_NAME:$TRAVIS_TAG
         - travis_retry docker push $IMAGE_NAME:stable
         - >
