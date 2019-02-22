@@ -129,7 +129,7 @@ module.exports = convict({
     url: {
       default: undefined,
       env: 'MONGO_URL',
-      format: 'url',
+      format: String,
       sensitive: true,
     },
     user: {
