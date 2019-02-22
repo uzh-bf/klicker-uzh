@@ -65,7 +65,7 @@ jobs:
     # build all commits to master
     # push a new canary tag to OpenShift
     - <<: *build-setup
-      if: (type = push) AND (tag =~ /^v[0-9].[0-9].[0-9]-/)
+      if: (type = push) AND (branch = master)
       env:
         - USER="serviceaccount"
         - PASSWORD=$OC_TOKEN_SWITCH
@@ -74,8 +74,7 @@ jobs:
       before_script:
         - echo $PASSWORD | docker login --username $USER --password-stdin $REGISTRY
       script:
-        - travis_retry docker pull $IMAGE_NAME:canary
-        - docker build . --cache-from $IMAGE_NAME:canary --build-arg VERSION=canary -t $IMAGE_NAME:canary
+        - docker build . --build-arg VERSION=canary -t $IMAGE_NAME:canary
         - travis_retry docker push $IMAGE_NAME:canary
 
     # build all pull requests
@@ -83,15 +82,15 @@ jobs:
     - <<: *build-setup
       if: type = pull_request
       script:
-        - docker pull $IMAGE_NAME:nightly
+        - travis_retry docker pull $IMAGE_NAME:nightly
         - >
           docker build .
           --cache-from $IMAGE_NAME:nightly
           --build-arg VERSION=nightly-$TRAVIS_PULL_REQUEST
           -t $IMAGE_NAME:nightly
           -t $IMAGE_NAME:nightly-$TRAVIS_PULL_REQUEST
-        - docker push $IMAGE_NAME:nightly
-        - docker push $IMAGE_NAME:nightly-$TRAVIS_PULL_REQUEST
+        - travis_retry docker push $IMAGE_NAME:nightly
+        - travis_retry docker push $IMAGE_NAME:nightly-$TRAVIS_PULL_REQUEST
 
     # build unstable tags (e.g. v1.0.0-beta.1)
     # push the tag to Docker Hub
@@ -122,8 +121,8 @@ jobs:
     - <<: *build-setup
       if: (type = push) AND (tag =~ /^v[0-9].[0-9].[0-9]$/)
       script:
-        - travis_retry docker pull $IMAGE_NAME:stable
-        - docker build . --cache-from $IMAGE_NAME:stable --build-arg VERSION=$TRAVIS_TAG -t $IMAGE_NAME:stable -t $IMAGE_NAME:$TRAVIS_TAG
+        - travis_retry docker pull $IMAGE_NAME:latest
+        - docker build . --cache-from $IMAGE_NAME:latest --build-arg VERSION=$TRAVIS_TAG -t $IMAGE_NAME:stable -t $IMAGE_NAME:$TRAVIS_TAG
         - travis_retry docker push $IMAGE_NAME:$TRAVIS_TAG
         - travis_retry docker push $IMAGE_NAME:stable
 
@@ -140,7 +139,6 @@ jobs:
       before_script:
         - echo $PASSWORD | docker login --username $USER --password-stdin $REGISTRY
       script:
-        - travis_retry docker pull $IMAGE_NAME:stable
         - docker build . --cache-from $IMAGE_NAME:stable --build-arg VERSION=$TRAVIS_TAG -t $IMAGE_NAME:stable -t $IMAGE_NAME:$TRAVIS_TAG
         - travis_retry docker push $IMAGE_NAME:$TRAVIS_TAG
         - travis_retry docker push $IMAGE_NAME:stable
