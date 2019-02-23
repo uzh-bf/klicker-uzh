@@ -1,4 +1,4 @@
-import dynamic from 'next/dynamic'
+// import dynamic from 'next/dynamic'
 import React from 'react'
 import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
@@ -31,12 +31,12 @@ const defaultProps = {
 
 // instantiate the static toolbar plugin
 const toolbarPlugin = createToolbarPlugin()
-let plugins = [toolbarPlugin]
+const plugins = [toolbarPlugin]
 const { Toolbar } = toolbarPlugin
 
 const ContentInput = ({ value, onChange, error, touched, disabled }) => {
   // ensure that we are in the browser as the plugin breaks SSR
-  if (process.browser) {
+  /**  if (process.browser) {
     if (process.env.FEAT_FORMULAS) {
       const createMathjaxPlugin = require('draft-js-mathjax-plugin').default
 
@@ -53,7 +53,7 @@ const ContentInput = ({ value, onChange, error, touched, disabled }) => {
       const createPrismPlugin = dynamic(() => import('draft-js-prism-plugin'), { ssr: false })
       plugins = [...plugins, createPrismPlugin({ prism: Prism }), createCodeEditorPlugin()]
     }
-  }
+  } */
 
   return (
     <div className="contentInput">
