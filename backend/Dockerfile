@@ -13,12 +13,12 @@ RUN set -x && apk add --no-cache tini
 USER 1000
 
 # inject the application dependencies
-COPY --chown=1000:0 package.json yarn.lock $APP_DIR/
+COPY --chown=1000:0 package.json package-lock.json $APP_DIR/
 WORKDIR $APP_DIR
 
 # install yarn packages for the specified environment
 # HACK: disable ignore-engines workaround
-RUN set -x && yarn install --ignore-engines --frozen-lockfile
+RUN set -x && npm ci
 
 # inject application sources and entrypoint
 COPY --chown=1000:0 . $APP_DIR/
@@ -28,7 +28,7 @@ ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "src/server.js"]
 
 # add labels
-ARG VERSION="staging"
+ARG VERSION="canary"
 LABEL maintainer="Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
 LABEL name="klicker-api"
 LABEL version=$VERSION

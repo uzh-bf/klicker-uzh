@@ -1,13 +1,14 @@
 {
   "name": "klicker-api",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "main": "src/server.js",
   "homepage": "https://www.klicker.uzh.ch",
   "repository": "https://github.com/uzh-bf/klicker-api.git",
   "bugs": "https://github.com/uzh-bf/klicker-uzh",
   "author": "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>",
   "engines": {
-    "node": ">=8"
+    "node": ">=10",
+    "yarn": "YARN NO LONGER USED - use npm instead."
   },
   "license": "AGPL-3.0",
   "dependencies": {
@@ -71,8 +72,8 @@
     "supertest": "3.4.2"
   },
   "scripts": {
-    "dev": "cross-env NODE_ENV=development nodemon -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock src/server.js",
-    "dev:inspect": "cross-env NODE_ENV=development nodemon -w \"src/**/*.js\" -w .env -w package.json -w yarn.lock --inspect src/server.js",
+    "dev": "cross-env NODE_ENV=development nodemon -w \"src/**/*.js\" -w .env -w package.json src/server.js",
+    "dev:inspect": "cross-env NODE_ENV=development nodemon -w \"src/**/*.js\" -w .env -w package.json --inspect src/server.js",
     "dev:ndb": "cross-env NODE_ENV=development ndb node src/server.js",
     "format": "prettier --write \"src/**/*.js\" \"src/**/*.graphql\" \"src/**/*.json\"",
     "format:ci": "prettier --list-different \"src/**/*.js\" \"src/**/*.graphql\" \"src/**/*.json\"",
@@ -108,7 +109,7 @@
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged",
-      "pre-push": "yarn run test --onlyChanged"
+      "pre-push": "jest --onlyChanged"
     }
   }
 }
