@@ -115,7 +115,6 @@
     "url-loader": "1.1.2",
     "uuid": "3.3.2",
     "v8n": "1.2.3",
-    "webpack": "4.29.3",
     "yup": "0.26.10"
   },
   "devDependencies": {

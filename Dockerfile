@@ -13,42 +13,24 @@ RUN apk add --no-cache tini
 USER 1000
 
 # inject the application dependencies
-COPY --chown=1000:0 package.json yarn.lock $KLICKER_DIR/
+COPY --chown=1000:0 package.json package-lock.json $KLICKER_DIR/
 WORKDIR $KLICKER_DIR
 
 # install yarn packages for the specified environment
-# HACK: disable ignore-engines workaround
-RUN set -x && yarn install --ignore-engines --frozen-lockfile
+RUN set -x && npm ci
 
 # inject application sources
 COPY --chown=1000:0 . $KLICKER_DIR/
 
-# pre-build the application
-# define available build arguments
-# these are then bundled into the js
-# ARG APP_BASE_URL
-# ARG APP_JOIN_URL
-# ARG API_ENDPOINT
-# ARG API_ENDPOINT_WS
-# ARG APP_PERSIST_QUERIES
-# ARG S3_ROOT_URL
-ARG VERSION
-
-# optional build arguments
-# ARG SECURITY_FINGERPRINTING="true"
-# ARG SERVICES_GOOGLE_ANALYTICS_TRACKING_ID
-# ARG SERVICES_LOGROCKET_APP_ID
-# ARG SERVICES_SENTRY_DSN
-# ARG SERVICES_SLAASK_WIDGET_KEY
-
-RUN set -x \
-  && yarn run build
+# pre-build the nextjs sources
+RUN set -x && npm run build
 
 # run next in production mode
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "server.js"]
 
 # add labels
+ARG VERSION="canary"
 LABEL maintainer="Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
 LABEL name="klicker-api"
 LABEL version=$VERSION
