@@ -12,7 +12,8 @@
   ],
   "license": "AGPL-3.0",
   "engines": {
-    "node": ">=8"
+    "node": ">=8",
+    "yarn": "YARN NO LONGER USED - use npm instead."
   },
   "dependencies": {
     "@babel/core": "7.3.3",
