@@ -151,6 +151,7 @@
     "react-testing-library": "5.9.0",
     "semantic-ui": "2.4.2",
     "semantic-ui-css": "2.4.1",
+    "webpack": "^4.28.4",
     "webpack-bundle-analyzer": "3.0.4",
     "why-did-you-update": "1.0.6"
   },
