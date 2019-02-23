@@ -6,7 +6,7 @@
 !LICENSE.md
 
 !package.json
-!yarn.lock
+!package-lock.json
 
 !.babelrc
 

@@ -1,6 +1,6 @@
 {
   "name": "klicker-react",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "main": "server.js",
   "homepage": "https://www.klicker.uzh.ch",
   "repository": "https://github.com/uzh-bf/klicker-api.git",
@@ -12,7 +12,8 @@
   ],
   "license": "AGPL-3.0",
   "engines": {
-    "node": ">=8"
+    "node": ">=10",
+    "yarn": "YARN NO LONGER USED - use npm instead."
   },
   "dependencies": {
     "@babel/core": "7.3.3",
@@ -114,7 +115,6 @@
     "url-loader": "1.1.2",
     "uuid": "3.3.2",
     "v8n": "1.2.3",
-    "webpack": "4.29.3",
     "yup": "0.26.10"
   },
   "devDependencies": {
@@ -162,8 +162,8 @@
     "bundlesize": "bundlesize",
     "compile-queries": "persistgraphql src/graphql/ --add_typename",
     "cypress:open": "cypress open",
-    "dev": "cross-env NODE_ENV=development nodemon -w .env -w package.json -w yarn.lock -w server.js -w src/klicker.conf.js server.js",
-    "dev:inspect": "cross-env NODE_ENV=development nodemon -w .env -w package.json -w yarn.lock -w server.js -w src/klicker.conf.js --inspect server.js",
+    "dev": "cross-env NODE_ENV=development nodemon -w .env -w package.json -w server.js -w src/klicker.conf.js server.js",
+    "dev:inspect": "cross-env NODE_ENV=development nodemon -w .env -w package.json -w server.js -w src/klicker.conf.js --inspect server.js",
     "dev:ndb": "cross-env NODE_ENV=development ndb node server.js",
     "format": "prettier --write \"src/**/*.js\" \"src/**/*.graphql\" \"src/**/*.json\" server.js",
     "format:ci": "prettier --list-different \"src/**/*.js\" \"src/**/*.graphql\" \"src/**/*.json\" server.js",
