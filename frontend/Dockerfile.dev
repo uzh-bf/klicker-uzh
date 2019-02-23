@@ -9,13 +9,13 @@ ENV NODE_ENV="development"
 RUN set -x && apk add --no-cache tini
 
 # inject the application dependencies
-COPY --chown=1000:0 package.json yarn.lock $APP_DIR/
+COPY --chown=1000:0 package.json package-lock.json $APP_DIR/
 WORKDIR $APP_DIR
 
-# install yarn packages for the specified environment
+# install packages for the specified environment
 RUN set -x \
   && apk add --no-cache --virtual .build-deps alpine-sdk python \
-  && yarn install --ignore-engines --production --frozen-lockfile \
+  && npm ci \
   && apk del .build-deps
 
 # switch to the node user (uid 1000)
@@ -24,7 +24,7 @@ USER 1000
 
 # run the application in development mode
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["yarn", "dev", "-L"]
+CMD ["npm", "run", "dev", "-L"]
 
 # expose the main application port
 EXPOSE 3000
