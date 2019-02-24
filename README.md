@@ -1,6 +1,6 @@
 # klicker-react &middot; [![Build Status](https://travis-ci.org/uzh-bf/klicker-react.svg?branch=master)](https://travis-ci.org/uzh-bf/klicker-react) [![Maintainability](https://api.codeclimate.com/v1/badges/e6145f91794546ed622c/maintainability)](https://codeclimate.com/github/uzh-bf/klicker-react/maintainability) [![Test Coverage](https://api.codeclimate.com/v1/badges/e6145f91794546ed622c/test_coverage)](https://codeclimate.com/github/uzh-bf/klicker-react/test_coverage) [![codebeat badge](https://codebeat.co/badges/96559a8d-92aa-46c0-88ff-01c9035c0005)](https://codebeat.co/projects/github-com-uzh-bf-klicker-react-master)
 
-klicker-react is the frontend component of the [KlickerUZH](https://www.klicker.uzh.ch/) instant-class-response system.
+`klicker-react` is the frontend component of the [KlickerUZH](https://www.klicker.uzh.ch/) instant-class-response system.
 
 The following additional resources might be of interest to you:
 
@@ -27,19 +27,21 @@ To develop on the KlickerUZH, NodeJS 10.x LTS and Docker 18.0x or later are requ
 
 The `klicker-react` repository is composed of the following key parts:
 
-- src/ - main project sources
+- **src/** - main project sources
 
-  - src/pages/ - next.js pages (with implicit routes)
-  - src/components/ - react components for usage in pages
-  - src/graphql/ - GraphQL query and mutation definitions
-    - src/graphql/schema.graphql
-  - src/lib/ - reusable libraries and functions
-    - src/lib/semantic/ - customized Semantic UI library
-  - src/lang/ - translation files
+  - **src/pages/** - next.js pages (with implicit routes)
+  - **src/components/** - react components for usage in pages
+  - **src/graphql/** - graphql query and mutation definitions
+    - **src/graphql/schema.graphql** - graphql schema
+  - **src/lib/** - reusable libraries and functions
+    - **src/lib/semantic/** - customized semantic ui library
+  - **src/lang/** - translation files
+  - **src/klicker.conf.js** - the configuration schema and defaults
+  - **src/next.config.js** - the next.js configuration
 
-- server.js - next.js server; application entrypoint
-- Dockerfile
-- package.json
+- **server.js** - next.js server; application entrypoint
+- **Dockerfile**
+- **package.json**
 
 ## License
 
