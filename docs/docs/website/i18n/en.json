@@ -53,6 +53,9 @@
       "contributing/contributing_setup": {
         "title": "Development Setup"
       },
+      "contributing/testing": {
+        "title": "contributing/testing"
+      },
       "deployment/deployment_architecture": {
         "title": "Architecture Overview",
         "sidebar_label": "Architecture"
