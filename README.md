@@ -2,9 +2,15 @@
 
 `klicker-api` is the GraphQL API backend of the [KlickerUZH](https://www.klicker.uzh.ch/) instant-class-response system.
 
+The KlickerUZH consists of two main services (see [Architecture](https://uzh-bf.github.io/klicker-uzh/docs/deployment/deployment_architecture)):
+
+- [klicker-react](https://github.com/uzh-bf/klicker-react)
+- [klicker-api](https://github.com/uzh-bf/klicker-api)
+
 The following additional resources might be of interest to you:
 
-- [Documentation](<[Documentation](https://uzh-bf.github.io/klicker-uzh/docs/introduction/getting_started)>)
+- [Documentation](https://uzh-bf.github.io/klicker-uzh/docs/introduction/getting_started)
+- [Frequently Asked Questions (FAQ)](https://uzh-bf.github.io/klicker-uzh/docs/faq/faq)
 - [Spectrum Community](https://spectrum.chat/klickeruzh)
 
 ## Roadmap / Issues
