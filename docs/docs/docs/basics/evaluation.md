@@ -3,10 +3,12 @@ id: evaluation
 title: Evaluation
 ---
 
-The evaluation screen provides different charts for all questions asked within a session.
+The evaluation screen provides different charts for all questions asked within a session. Once you click on _Evaluation (Results)_ on your _Running Session_, this page will open in a new browser tab. It is recommended to keep both tabs active, as you will need both screens over the course of the entire session.
+
+![Evaluation](assets/evaluation_1.png)
 
 Depending on the question type the evaluation screen might look different. Additionally, some
-charts are not available for all question types. The following two screens show all features:
+charts are not available for all question types. The two screens show all features.
 
 1. **Navigation:** All questions within the active block are listed here. Click the question or use the arrows on the very left or right to navigate through the questions.
 2. **Question:** The question posed to the audience.
@@ -17,6 +19,6 @@ charts are not available for all question types. The following two screens show 
 7. **Statistics:** Statistics are only displayed for number range questions.
 8. / 9. **Chart:** The chart is only displayed after the "Show Graph" button is clicked. Providing this feature enables the speaker to wait until enough participants answered the question before showing the results.
 
-![Evaluation](assets/evaluation_1.png)
-
 ![Evaluation](assets/evaluation_2.png)
+
+This step concludes the basic tutorial which led you through all of the basic features that the KlickerUZH offers. If you would like to see how you can edit, archive, or delete questions, or how you can update certain user settings, please continue in the _Advanced Tutorial_ section.

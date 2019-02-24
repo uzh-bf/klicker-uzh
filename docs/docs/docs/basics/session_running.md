@@ -3,12 +3,16 @@ id: session_running
 title: Running Session
 ---
 
+Once you have started a session, you will be redirected to _Running Session_, which will server as your "Cockpit" over the course of the entire execution.
+
+![Running Session](assets/session_running.png)
+
 This screen is used during a speech or lecture to manage the questions and audience feedback and provides the following information and options:
 
 1. **Starting Time:** The time the session was started at.
 2. **Session Duration:** How long the session is already running.
-3. **QR Code:** Click here to display the QR-Code so that the audience can scan it (e.g., with an appropriate mobile app) and get forwarded to the web page for answering the questions and giving feedback.
-4. **Audience View:** Click here to see the [Audience View](audience_view.md). This also shows the URL to give to the audience for participation.
+3. **QR Code:** Click here to display the QR-Code so that the audience can scan it (e.g., with an appropriate mobile app) and get forwarded to the web page for answering the questions and giving feedback. This also shows the URL to give to the audience for participation.
+4. **Audience View:** Click here to see the [Audience View](audience_view.md).
 5. **Evaluation:** Click here to see the [Evaluation](evaluation.md) of the currently active question block.
 6. **Question blocks:** Already executed question blocks are labeled with a tick, the active one is labeled with speech bubbles and colored in green and upcoming question blocks do not have any label.
 7. **Navigation:** This button is used to navigate through the question blocks. It indicates the action taken when it is clicked. **One can never navigate backwards!**
@@ -16,4 +20,4 @@ This screen is used during a speech or lecture to manage the questions and audie
 9. **Feedback-Channel:** The Feedback-Channel allows the audience to ask questions and give text feedback to the speaker. This function can be activated or deactivated with the button. Furthermore, the speaker may decide whether the feedbacks should be visible to the audience or not.
 10. **Publish Evaluation:** If you want to share your evaluation results directly via a link you can check the _Publish evaluation_ button and follow the _Public Evaluation (Results)_ link.
 
-![Running Session](assets/session_running.png)
+To continue with the tutorial, activate your first question block by clicking on _Activate first block_. This will open the question to student responses, allowing you to see it on the [Audience View](audience_view.md). Additionally, activate the confusion barometer and feedback-channel by toggling the corresponding options. You can then reach the audience view by clicking on the corresponding button near the timeline.

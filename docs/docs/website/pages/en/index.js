@@ -74,13 +74,13 @@ class HomeSplash extends React.Component {
         <div className="inner">
           <ProjectTitle />
           <PromoSection>
+            <Button href={docUrl('introduction/getting_started', language)}>
+              Getting started
+            </Button>
+            <Button href={docUrl('faq/faq', language)}>FAQ</Button>
             <Button href={'https://app.klicker.uzh.ch'} target={'blank'}>
-              Klicker Application
+              Open Application
             </Button>
-            <Button href={docUrl('introduction.html', language)}>
-              How to use Klicker
-            </Button>
-            <Button href={docUrl('faq.html', language)}>FAQ</Button>
           </PromoSection>
         </div>
       </SplashContainer>
@@ -94,29 +94,26 @@ const Block = props => (
   </Container>
 )
 
-const NewFeatures = props => (
+const FeaturesHeader = props => (
   <div
     className="productShowcaseSection"
     style={{ textAlign: 'center', marginBottom: '20px' }}
   >
     <h2>New Features</h2>
-    <MarkdownBlock>
-      The new Klicker provides a lot of new features!
-    </MarkdownBlock>
   </div>
 )
 
-const Features1 = props => (
+const Features = props => (
   <div>
     <Container padding={['bottom', 'top']} background="light">
       <GridBlock
         contents={[
           {
             content:
-              'Preparing sessions for speeches or lectures in advance and grouping questions make the application of Klicker simpler and more structured.',
+              'A global question pool simplifies question management and enables modularity and reusability.',
             image: imgUrl('question_pool.png'),
             imageAlign: 'right',
-            title: 'Revised Question Management',
+            title: 'Question Management',
           },
         ]}
         layout="twoColumn"
@@ -127,10 +124,53 @@ const Features1 = props => (
         contents={[
           {
             content:
-              'New question types allow more accurate and versatile responses and enable additional evaluation techniques.',
-            image: imgUrl('question_types.png'),
+              'Preparing sessions for lectures in advance and grouping questions into blocks make polling simple and well-structured.',
+            image: imgUrl('question_pool.png'),
             imageAlign: 'left',
-            title: 'Additional Question Types',
+            title: 'Session Management',
+          },
+        ]}
+        layout="twoColumn"
+      />
+    </Container>
+
+    <Container padding={['bottom', 'top']} background="light">
+      <GridBlock
+        contents={[
+          {
+            content:
+              'Questions are placed on a timeline that leads through an entire session in a predictable way.',
+            image: imgUrl('running_session.gif'),
+            imageAlign: 'left',
+            title: 'Presentation Mode',
+          },
+        ]}
+        layout="twoColumn"
+      />
+    </Container>
+    <Container padding={['bottom', 'top']}>
+      <GridBlock
+        contents={[
+          {
+            content:
+              'With feedback about speed and difficulty speakers get the chance to respond to their audience. ',
+            image: imgUrl('feedback.png'),
+            imageAlign: 'right',
+            title: 'Instant Audience Feedback',
+          },
+        ]}
+        layout="twoColumn"
+      />
+    </Container>
+    <Container padding={['bottom', 'top']} background="light">
+      <GridBlock
+        contents={[
+          {
+            content:
+              'Different question types allow for accurate and versatile responses and enable additional evaluation techniques.',
+            image: imgUrl('question_types.png'),
+            imageAlign: 'right',
+            title: 'Question Types',
           },
         ]}
         layout="twoColumn"
@@ -139,12 +179,12 @@ const Features1 = props => (
   </div>
 )
 
-const ImprovedCharts = props => (
+const ChartsHeader = props => (
   <div
-    className="productShowcaseSection lightBackground"
+    className="productShowcaseSection"
     style={{ textAlign: 'center', marginBottom: '10px', paddingTop: '10px' }}
   >
-    <h2>Improved and Additional Charts</h2>
+    <h2>Evaluation and Charts</h2>
   </div>
 )
 
@@ -169,7 +209,7 @@ const Charts = props => (
           content: '',
           image: imgUrl('stacked_chart.png'),
           imageAlign: 'bottom',
-          title: 'Stacked Chart (Multiple Choice)',
+          title: 'Stacked Chart (MC)',
         },
       ]}
       layout="threeColumn"
@@ -197,39 +237,6 @@ const Charts = props => (
   </Container>
 )
 
-const Features2 = props => (
-  <div>
-    <Container padding={['bottom', 'top']}>
-      <GridBlock
-        contents={[
-          {
-            content:
-              'With feedback about speed and difficulty speakers get the chance to respond to their audience. ',
-            image: imgUrl('feedback.png'),
-            imageAlign: 'right',
-            title: 'Instant Audience Feedback',
-          },
-        ]}
-        layout="twoColumn"
-      />
-    </Container>
-    <Container padding={['bottom', 'top']} background="light">
-      <GridBlock
-        contents={[
-          {
-            content:
-              'The question blocks containing all the questions for the audience are placed on a timeline that leads through the speech.',
-            image: imgUrl('running_session.gif'),
-            imageAlign: 'left',
-            title: 'Advanced Presentation Mode',
-          },
-        ]}
-        layout="twoColumn"
-      />
-    </Container>
-  </div>
-)
-
 class Index extends React.Component {
   render() {
     let language = this.props.language || ''
@@ -239,11 +246,10 @@ class Index extends React.Component {
         <HomeSplash language={language} />
 
         <div className="mainContainer">
-          <NewFeatures />
-          <Features1 />
-          <ImprovedCharts />
+          <FeaturesHeader />
+          <Features />
+          <ChartsHeader />
           <Charts />
-          <Features2 />
         </div>
       </div>
     )

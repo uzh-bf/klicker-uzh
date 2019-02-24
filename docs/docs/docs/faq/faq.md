@@ -1,7 +1,11 @@
 ---
 id: faq
 title: Frequently Asked Questions
+sidebar_label: Overview
+hide_title: true
 ---
+
+# Frequently Asked Questions
 
 ## What are the biggest news and changes coming with the release of KlickerUZH 2018?
 

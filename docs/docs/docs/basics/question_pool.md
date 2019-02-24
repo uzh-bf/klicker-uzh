@@ -3,7 +3,11 @@ id: question_pool
 title: Question Pool
 ---
 
-The question pool shows all previously created questions. The following details and actions are shown for every question:
+The question pool is the first page you will encounter upon logging in to your Klicker account. It provides an overview of all previously created questions. The listing can be filtered and sorted by various parameters.
+
+![Question Pool](assets/question_pool.png)
+
+The following details and actions are shown for every question:
 
 1. **Title:** The title of the question.
 2. **Question:** The question for the audience.
@@ -22,4 +26,4 @@ The following areas and buttons provide filtering options for the question list 
 12. **Create Question**: Link to [create a new question](question_create.md).
 13. **Create Session**: Link to [create a new session](session_create.md).
 
-![Question Pool](assets/question_pool.png)
+To continue with the tutorial and create your first question, click on [Create Question](question_create.md).

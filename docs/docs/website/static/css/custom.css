@@ -36,7 +36,6 @@
 .mainContainer .wrapper .post h2,
 .mainContainer .wrapper .post h3 {
   font-weight: 500;
-
 }
 
 .mainContainer .wrapper .post h1 {
@@ -61,33 +60,33 @@ h2.projectTitle span {
   line-height: 1.5rem;
 }
 
-h2, h2.projectTitle {
+h2,
+h2.projectTitle {
   font-weight: 500;
 }
-
 
 .lightBackground {
   background-color: #7cb8e433;
 }
 
-img[alt="Student View Mobile"] {
+img[alt='Student View Mobile'] {
   max-width: 400px;
 }
 
 footer.nav-footer {
-  background-color: #bfbfbf;
+  background-color: lightgrey;
 }
 
-footer .copyright {
+footer.nav-footer .copyright {
   color: black;
 }
-  
+
 .button {
   background-color: #2185d0;
   color: #fff;
-  border-radius: .28571429rem;
+  border-radius: 0.28571429rem;
   font-weight: 700;
-  padding: .78571429em 1.5em .78571429em;
+  padding: 0.78571429em 1.5em 0.78571429em;
   border: none;
 }
 
@@ -106,4 +105,20 @@ footer .copyright {
   justify-content: space-between;
   min-height: 100%;
   height: auto;
+}
+
+.mainContainer {
+  padding-top: 0;
+}
+
+.container.paddingTop {
+  padding-top: 2.5rem;
+}
+
+.container.paddingBottom {
+  padding-bottom: 2.5rem;
+}
+
+.container .wrapper .imageAlignSide p {
+  margin-bottom: 1rem;
 }

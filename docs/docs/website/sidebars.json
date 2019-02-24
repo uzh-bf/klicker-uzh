@@ -1,15 +1,34 @@
 {
   "docs": {
-    "Get Started": ["introduction", "navigation", "workflow"],
-    "Questions": [
-      "question_create",
-      "question_edit",
-      "question_archive",
-      "question_pool",
-      "question_delete"
+    "Introduction": ["introduction/getting_started", "introduction/concepts"],
+    "Basic Tutorial": [
+      "basics/question_pool",
+      "basics/question_create",
+      "basics/session_create",
+      "basics/navigation",
+      "basics/session_list",
+      "basics/session_running",
+      "basics/audience_view",
+      "basics/evaluation"
     ],
-    "Sessions": ["session_create", "session_list"],
-    "Evaluation": ["session_running", "audience_view", "evaluation"],
-    "Settings": ["language", "settings", "delete_account"]
+    "Advanced Tutorial": [
+      "advanced/question_edit",
+      "advanced/question_archive",
+      "advanced/question_delete",
+      "advanced/language",
+      "advanced/settings",
+      "advanced/delete_account"
+    ],
+    "Deployment": [
+      "deployment/deployment_architecture",
+      "deployment/deployment_requirements",
+      "deployment/deployment_docker"
+    ],
+    "Contributing": [
+      "contributing/contributing_guidelines",
+      "contributing/contributing_setup"
+    ],
+    "FAQ": ["faq/faq"],
+    "Other": ["other/troubleshooting"]
   }
 }

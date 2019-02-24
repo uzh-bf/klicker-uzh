@@ -37,7 +37,7 @@ export default class Header extends React.Component {
 
               <Menu.Item name="faq">
                 <a
-                  href="https://uzh-bf.github.io/klicker-uzh/docs/faq.html"
+                  href="https://uzh-bf.github.io/klicker-uzh/docs/faq/faq"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
