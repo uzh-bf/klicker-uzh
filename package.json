@@ -24,6 +24,7 @@
     "@zeit/next-bundle-analyzer": "0.1.2",
     "@zeit/next-css": "1.0.1",
     "@zeit/next-source-maps": "0.0.3",
+    "acorn": "^6.1.0",
     "apollo-cache-inmemory": "1.4.3",
     "apollo-cache-persist": "0.1.1",
     "apollo-client": "2.4.13",
@@ -83,7 +84,7 @@
     "lru-cache": "5.1.1",
     "mathjs": "5.5.0",
     "morgan": "1.9.1",
-    "next": "8.0.3",
+    "next": "^8.0.3",
     "node-sass": "4.11.0",
     "nodemon": "1.18.10",
     "prismjs": "1.15.0",
@@ -115,7 +116,6 @@
     "url-loader": "1.1.2",
     "uuid": "3.3.2",
     "v8n": "1.2.3",
-    "webpack": "4.28.4",
     "yup": "0.26.10"
   },
   "devDependencies": {
