@@ -100,7 +100,7 @@
     "react-dnd": "7.0.2",
     "react-dnd-html5-backend": "7.0.2",
     "react-dom": "16.8.3",
-    "react-dropzone": "7.0.1",
+    "react-dropzone": "9.0.0",
     "react-ga": "2.5.7",
     "react-intl": "2.8.0",
     "react-rangeslider": "2.2.0",
