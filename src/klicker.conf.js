@@ -12,7 +12,7 @@ module.exports = convict({
       format: 'url',
     },
     endpointSSR: {
-      default: 'http://klicker-api:4000/graphql',
+      default: undefined,
       env: 'API_ENDPOINT_SSR',
       format: 'url',
     },
