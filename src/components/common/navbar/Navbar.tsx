@@ -15,6 +15,14 @@ import { AccountSummaryQuery, LogoutMutation } from '../../../graphql'
 
 const { publicRuntimeConfig } = getConfig()
 
+interface KlickerWindow extends Window {
+  INIT_LR?: string
+  INIT_RAVEN?: string
+  _slaask?: any
+}
+
+declare var window: KlickerWindow
+
 interface Props extends InjectedIntlProps {
   search?: {
     handleSearch: any
