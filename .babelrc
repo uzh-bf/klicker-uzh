@@ -24,7 +24,7 @@
         ],
         "plugins":[
            "@babel/plugin-proposal-do-expressions",
-           "@babel/plugin-proposal-optional-chaining",
+           // "@babel/plugin-proposal-optional-chaining",
            "inline-dotenv",
            "add-react-displayname"
         ]
@@ -64,7 +64,7 @@
               }
            ],
            "@babel/plugin-proposal-do-expressions",
-           "@babel/plugin-proposal-optional-chaining",
+           // "@babel/plugin-proposal-optional-chaining",
            "transform-inline-environment-variables",
            "add-react-displayname",
            [
@@ -100,7 +100,7 @@
         ],
         "plugins":[
            "@babel/plugin-proposal-do-expressions",
-           "@babel/plugin-proposal-optional-chaining",
+           // "@babel/plugin-proposal-optional-chaining",
            "import-graphql"
         ]
      }
