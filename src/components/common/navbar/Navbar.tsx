@@ -1,41 +1,45 @@
-/* eslint-disable no-undef, no-underscore-dangle */
+/* eslint-disable react/prop-types, no-undef, no-underscore-dangle */
 
-import React from 'react'
-import PropTypes from 'prop-types'
+import * as React from 'react'
 import getConfig from 'next/config'
 import Router from 'next/router'
-import { intlShape } from 'react-intl'
+import _get from 'lodash/get'
+import { InjectedIntlProps } from 'react-intl'
 import { Icon, Menu } from 'semantic-ui-react'
 import { Query, Mutation } from 'react-apollo'
-
-import { AccountSummaryQuery, LogoutMutation } from '../../../graphql'
 
 import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'
 import SessionArea from './SessionArea'
+import { AccountSummaryQuery, LogoutMutation } from '../../../graphql'
+
+interface KlickerWindow extends Window {
+  INIT_LR?: string
+  INIT_RAVEN?: string
+  _slaask?: any
+}
+
+declare const window: KlickerWindow
 
 const { publicRuntimeConfig } = getConfig()
 
-const propTypes = {
-  // filters: PropTypes.object,
-  handleSidebarToggle: PropTypes.func.isRequired,
-  intl: intlShape.isRequired,
-  search: PropTypes.shape({
-    handleSearch: PropTypes.func.isRequired,
-    handleSortByChange: PropTypes.func.isRequired,
-    handleSortOrderToggle: PropTypes.func.isRequired,
-    sortBy: PropTypes.string.isRequired,
-    sortingTypes: PropTypes.arrayOf(
-      PropTypes.shape({
-        content: PropTypes.string,
-        id: PropTypes.string,
-        labelStart: PropTypes.string,
-      })
-    ).isRequired,
-    sortOrder: PropTypes.bool.isRequired,
-  }),
-  sidebarVisible: PropTypes.bool,
-  title: PropTypes.string.isRequired,
+interface Props extends InjectedIntlProps {
+  search?: {
+    handleSearch: any
+    handleSortByChange: any
+    handleSortOrderToggle: any
+    sortBy: string
+    sortingTypes: {
+      content: string
+      id: string
+      labelStart: string
+    }[]
+    sortOrder: boolean
+    withSorting: boolean
+  }
+  handleSidebarToggle: () => void
+  sidebarVisible?: boolean
+  title: string
 }
 
 const defaultProps = {
@@ -43,7 +47,13 @@ const defaultProps = {
   sidebarVisible: false,
 }
 
-export const NavbarPres = ({ intl, search, sidebarVisible, title, handleSidebarToggle }) => (
+export const NavbarPres: React.FunctionComponent<Props> = ({
+  intl,
+  search,
+  sidebarVisible,
+  title,
+  handleSidebarToggle,
+}): React.ReactElement<any> => (
   <div className="navbar">
     <div className="sideArea">
       <Menu borderless className="noBorder">
@@ -72,11 +82,11 @@ export const NavbarPres = ({ intl, search, sidebarVisible, title, handleSidebarT
     <div className="accountArea">
       <Query query={AccountSummaryQuery}>
         {({ data }) => {
-          const accountId = data.user?.id
-          const userEmail = data.user?.email
-          const accountShort = data.user?.shortname
-          // const userHash = data.user?.hmac
-          const runningSessionId = data.user?.runningSession?.id
+          const accountId = _get(data, 'user.id')
+          const userEmail = _get(data, 'user.email')
+          const accountShort = _get(data, 'user.shortname')
+          // const userHash = _get(data, 'user.hmac')
+          const runningSessionId = _get(data, 'user.runningSession.id')
 
           if (typeof window !== 'undefined') {
             if (window.INIT_LR) {
@@ -148,110 +158,108 @@ export const NavbarPres = ({ intl, search, sidebarVisible, title, handleSidebarT
       </Query>
     </div>
 
-    <style jsx>
-      {`
-        @import 'src/theme';
-        $background-color: $color-primary-strong;
+    <style jsx>{`
+      @import 'src/theme';
 
-        .navbar {
-          color: $color-white;
+      $background-color: $color-primary-strong;
 
-          display: flex;
-          align-items: center;
-          flex-flow: row wrap;
-          justify-content: space-between;
+      .navbar {
+        color: $color-white;
 
-          padding: 0;
+        display: flex;
+        align-items: center;
+        flex-flow: row wrap;
+        justify-content: space-between;
 
-          background-color: $background-color;
+        padding: 0;
 
-          z-index: 100;
+        background-color: $background-color;
 
-          .sideArea {
-            flex: 1;
-            order: 0;
+        z-index: 100;
 
-            h1 {
-              margin: 0;
-              padding: 0 1rem 0 0.5rem;
-              display: flex;
-              align-items: center;
-              font-weight: bold;
-            }
+        .sideArea {
+          flex: 1;
+          order: 0;
 
-            :global(.sidebar),
-            :global(.menu) {
+          h1 {
+            margin: 0;
+            padding: 0 1rem 0 0.5rem;
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+          }
+
+          :global(.sidebar),
+          :global(.menu) {
+            color: $color-white;
+            border-radius: 0;
+            font-size: $font-size-h1;
+            background-color: $background-color;
+          }
+
+          :global(.sidebar.active) {
+            background-color: $color-primary-20p;
+          }
+        }
+
+        .searchArea {
+          flex: 0 0 100%;
+          order: 1;
+
+          padding: 1rem;
+          padding-top: 0.5rem;
+
+          @include desktop-only {
+            padding: 0.2rem 3rem;
+          }
+        }
+
+        .accountArea {
+          display: none;
+
+          :global(.menu) {
+            background-color: $background-color;
+            color: $color-white;
+
+            :global(.item) {
               color: $color-white;
-              border-radius: 0;
-              font-size: $font-size-h1;
-              background-color: $background-color;
-            }
-
-            :global(.sidebar.active) {
-              background-color: $color-primary-20p;
-            }
-          }
-
-          .searchArea {
-            flex: 0 0 100%;
-            order: 1;
-
-            padding: 1rem;
-            padding-top: 0.5rem;
-
-            @include desktop-only {
-              padding: 0.2rem 3rem;
-            }
-          }
-
-          .accountArea {
-            display: none;
-
-            :global(.menu) {
-              background-color: $background-color;
-              color: $color-white;
-
-              :global(.item) {
-                color: $color-white;
-                padding-top: 0;
-                padding-bottom: 0;
-              }
-            }
-          }
-
-          @include desktop-tablet-only {
-            flex-wrap: nowrap;
-
-            .sideArea {
-              flex: 0 0 auto;
-            }
-
-            .searchArea {
-              flex: 1 1 50%;
-              order: 1;
-
-              padding: 0.2rem 1rem;
-            }
-
-            .accountArea {
-              flex: 0 0 auto;
-              order: 2;
-
-              display: initial;
-
-              :global(.item) {
-                padding-left: 0.5rem;
-                padding-right: 0.5rem;
-              }
+              padding-top: 0;
+              padding-bottom: 0;
             }
           }
         }
-      `}
-    </style>
+
+        @include desktop-tablet-only {
+          flex-wrap: nowrap;
+
+          .sideArea {
+            flex: 0 0 auto;
+          }
+
+          .searchArea {
+            flex: 1 1 50%;
+            order: 1;
+
+            padding: 0.2rem 1rem;
+          }
+
+          .accountArea {
+            flex: 0 0 auto;
+            order: 2;
+
+            display: initial;
+
+            :global(.item) {
+              padding-left: 0.5rem;
+              padding-right: 0.5rem;
+            }
+          }
+        }
+      }
+    `}</style>
   </div>
 )
 
-NavbarPres.propTypes = propTypes
 NavbarPres.defaultProps = defaultProps
 
 export default NavbarPres

@@ -1,9 +1,8 @@
-/* eslint-disable react/no-array-index-key */
+/* eslint-disable react/prop-types, react/no-array-index-key */
 
-import React from 'react'
-import PropTypes from 'prop-types'
+import * as React from 'react'
 import { Button, Icon, Menu, Popup, List, Modal, Embed } from 'semantic-ui-react'
-import { defineMessages, intlShape, FormattedMessage } from 'react-intl'
+import { defineMessages, FormattedMessage, InjectedIntlProps } from 'react-intl'
 import { CHANGELOG } from '../../../constants'
 
 const messages = defineMessages({
@@ -17,16 +16,15 @@ const messages = defineMessages({
   },
 })
 
-const propTypes = {
-  intl: intlShape.isRequired,
-  sessionId: PropTypes.string,
+interface Props extends InjectedIntlProps {
+  sessionId?: string
 }
 
 const defaultProps = {
   sessionId: undefined,
 }
 
-const SessionArea = ({ intl, sessionId }) => (
+const SessionArea: React.FunctionComponent<Props> = ({ intl, sessionId }): React.ReactElement<any> => (
   <>
     <Menu.Item button>
       <Button
@@ -164,7 +162,6 @@ const SessionArea = ({ intl, sessionId }) => (
   </>
 )
 
-SessionArea.propTypes = propTypes
 SessionArea.defaultProps = defaultProps
 
 export default SessionArea
