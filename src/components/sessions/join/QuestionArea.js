@@ -2,6 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import _without from 'lodash/without'
+import _get from 'lodash/get'
 import v8n from 'v8n'
 import dayjs from 'dayjs'
 import getConfig from 'next/config'
@@ -343,11 +344,11 @@ export default compose(
         if (type === QUESTION_TYPES.FREE_RANGE) {
           validator = validator.number(false)
 
-          if (options.restrictions?.max) {
+          if (_get(options, 'restrictions.max')) {
             validator = validator.lessThanOrEqual(options.restrictions.max)
           }
 
-          if (options.restrictions?.min) {
+          if (_get(options, 'restrictions.min')) {
             validator = validator.greaterThanOrEqual(options.restrictions.min)
           }
         } else {

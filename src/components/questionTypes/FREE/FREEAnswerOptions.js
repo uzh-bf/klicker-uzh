@@ -1,8 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import Slider from 'react-rangeslider'
-import { FormattedMessage } from 'react-intl'
 import Head from 'next/head'
+import _get from 'lodash/get'
+import { FormattedMessage } from 'react-intl'
 import { Input } from 'semantic-ui-react'
 
 import { createLinks } from '../../../lib'
@@ -80,7 +81,7 @@ const FREEAnswerOptions = ({ disabled, onChange, options, value, questionType })
           {questionType === QUESTION_TYPES.FREE_RANGE && (
             <div className="rangeInformation">
               {(() => {
-                if (typeof options.restrictions?.max !== 'undefined' && options.restrictions.max !== null) {
+                if (typeof _get(options, 'restrictions.max') !== 'undefined' && options.restrictions.max !== null) {
                   return (
                     <FormattedMessage
                       defaultMessage="Maximum value: {max}"
@@ -90,7 +91,7 @@ const FREEAnswerOptions = ({ disabled, onChange, options, value, questionType })
                   )
                 }
 
-                if (typeof options.restrictions?.min !== 'undefined' && options.restrictions.min !== null) {
+                if (typeof _get(options, 'restrictions.min') !== 'undefined' && options.restrictions.min !== null) {
                   return (
                     <FormattedMessage
                       defaultMessage="Minimum value: {min}"
