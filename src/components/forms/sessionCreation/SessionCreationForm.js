@@ -137,15 +137,17 @@ const SessionCreationForm = ({
         </div>
 
         <h2 className="interactionType">
-          {do {
+          {(() => {
             if (interactionType === 'MODIFY') {
-              ;<FormattedMessage defaultMessage="Modify Session" id="form.createSession.interactionModify" />
-            } else if (interactionType === 'COPY') {
-              ;<FormattedMessage defaultMessage="Copy Session" id="form.createSession.interactionCopy" />
-            } else {
-              ;<FormattedMessage defaultMessage="Create Session" id="form.createSession.interactionCreate" />
+              return <FormattedMessage defaultMessage="Modify Session" id="form.createSession.interactionModify" />
             }
-          }}
+
+            if (interactionType === 'COPY') {
+              return <FormattedMessage defaultMessage="Copy Session" id="form.createSession.interactionCopy" />
+            }
+
+            return <FormattedMessage defaultMessage="Create Session" id="form.createSession.interactionCreate" />
+          })()}
         </h2>
 
         <div className="sessionName">
