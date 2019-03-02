@@ -3,6 +3,7 @@
 const webpack = require('webpack')
 const withCSS = require('@zeit/next-css')
 const withSourceMaps = require('@zeit/next-source-maps')
+const withTypescript = require('@zeit/next-typescript')
 const { DEVELOPMENT_SERVER, PHASE_PRODUCTION_BUILD } = require('next/constants')
 
 const CFG = require('./klicker.conf.js')
@@ -92,6 +93,9 @@ module.exports = phase => {
 
   // enable sourcemaps
   config = withSourceMaps(config)
+
+  // enable typescript support
+  config = withTypescript(config)
 
   // build only configuration
   if (phase === PHASE_PRODUCTION_BUILD) {

@@ -18,7 +18,8 @@
                        "styled-jsx-plugin-sass"
                     ]
                  }
-              }
+              },
+              "@zeit/next-typescript/babel"
            ]
         ],
         "plugins":[
@@ -46,7 +47,8 @@
                        "styled-jsx-plugin-sass"
                     ]
                  }
-              }
+              },
+              "@zeit/next-typescript/babel"
            ]
         ],
         "plugins":[
@@ -79,7 +81,8 @@
               "@babel/preset-env",
               {
                  "modules":"commonjs"
-              }
+              },
+              "@zeit/next-typescript/babel"
            ],
            [
               "next/babel",

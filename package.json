@@ -24,6 +24,7 @@
     "@zeit/next-bundle-analyzer": "0.1.2",
     "@zeit/next-css": "1.0.1",
     "@zeit/next-source-maps": "0.0.3",
+    "@zeit/next-typescript": "^1.1.1",
     "acorn": "6.1.0",
     "apollo-cache-inmemory": "1.4.3",
     "apollo-cache-persist": "0.1.1",
@@ -152,6 +153,7 @@
     "react-testing-library": "6.0.0",
     "semantic-ui": "2.4.2",
     "semantic-ui-css": "2.4.1",
+    "typescript": "^3.3.3333",
     "webpack-bundle-analyzer": "3.0.4",
     "why-did-you-update": "1.0.6"
   },
@@ -161,6 +163,7 @@
     "build:lang": "next build src && node ./src/lib/defaultLang",
     "build:semantic": "cd src/lib/semantic && gulp build-css build-assets",
     "bundlesize": "bundlesize",
+    "check-types": "tsc",
     "compile-queries": "persistgraphql src/graphql/ --add_typename",
     "cypress:open": "cypress open",
     "dev": "cross-env NODE_ENV=development nodemon -w .env -w package.json -w server.js -w src/klicker.conf.js server.js",
