@@ -1,8 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import Router, { withRouter } from 'next/router'
 import Cookies from 'js-cookie'
 import Link from 'next/link'
+import _get from 'lodash/get'
+import Router, { withRouter } from 'next/router'
 import { compose, lifecycle } from 'recompose'
 import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import { Mutation } from 'react-apollo'
@@ -72,7 +73,7 @@ const Login = ({ intl, router }) => (
                 router.push('/questions')
               }}
             />
-            {!error && router.query?.expired && (
+            {!error && _get(router, 'query.expired') && (
               <div className="errorMessage message">Login expired. Please login again.</div>
             )}
             {error && <div className="errorMessage message">Login failed ({error.message})</div>}

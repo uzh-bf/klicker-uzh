@@ -1,10 +1,6 @@
-/* eslint-disable no-use-before-define */
+/* eslint-disable @typescript-eslint/no-use-before-define, no-use-before-define */
 
 // https://gist.github.com/Billy-/d94b65998501736bfe6521eadc1ab538
-
-function omitDeepArray(arr, key) {
-  return arr.map(obj => omitDeep(obj, key))
-}
 
 function omitDeep(obj, key) {
   const keys = Object.keys(obj)
@@ -18,6 +14,10 @@ function omitDeep(obj, key) {
     }
   })
   return newObj
+}
+
+function omitDeepArray(arr, key) {
+  return arr.map(obj => omitDeep(obj, key))
 }
 
 function omitDeepArrayWalk(arr, key) {
