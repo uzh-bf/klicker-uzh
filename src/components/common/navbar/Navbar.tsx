@@ -17,9 +17,9 @@ const { publicRuntimeConfig } = getConfig()
 
 interface Props extends InjectedIntlProps {
   search?: {
-    handleSearch: Function
-    handleSortByChange: Function
-    handleSortOrderToggle: Function
+    handleSearch: any
+    handleSortByChange: any
+    handleSortOrderToggle: any
     sortBy: string
     sortingTypes: Array<{
       content: string
