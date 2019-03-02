@@ -1,4 +1,4 @@
-/* eslint-disable react/no-array-index-key */
+/* eslint-disable react/prop-types, react/no-array-index-key */
 
 import * as React from 'react'
 import { Button, Icon, Menu, Popup, List, Modal, Embed } from 'semantic-ui-react'
@@ -24,7 +24,7 @@ const defaultProps = {
   sessionId: undefined,
 }
 
-const SessionArea: React.SFC<Props> = ({ intl, sessionId }) => (
+const SessionArea: React.FunctionComponent<Props> = ({ intl, sessionId }): React.ReactElement<any> => (
   <>
     <Menu.Item button>
       <Button

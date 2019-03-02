@@ -1,3 +1,5 @@
+/* eslint-disable react/prop-types */
+
 import * as React from 'react'
 import { defineMessages, InjectedIntlProps } from 'react-intl'
 import { Button, Dropdown, Input } from 'semantic-ui-react'
@@ -15,11 +17,11 @@ interface Props extends InjectedIntlProps {
   handleSortByChange: any
   handleSortOrderToggle: any
   sortBy: string
-  sortingTypes: Array<{
+  sortingTypes: {
     content: string
     id: string
     labelStart: string
-  }>
+  }[]
   sortOrder: boolean
   withSorting?: boolean
 }
@@ -28,7 +30,7 @@ const defaultProps = {
   withSorting: false,
 }
 
-const SearchArea: React.SFC<Props> = ({
+const SearchArea: React.FunctionComponent<Props> = ({
   intl,
   handleSearch,
   handleSortByChange,
@@ -37,7 +39,7 @@ const SearchArea: React.SFC<Props> = ({
   sortingTypes,
   sortOrder,
   withSorting,
-}) => (
+}): React.ReactElement<any> => (
   <div className="searchArea">
     <Input
       fluid

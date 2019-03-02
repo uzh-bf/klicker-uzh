@@ -1,4 +1,4 @@
-/* eslint-disable no-undef, no-underscore-dangle */
+/* eslint-disable react/prop-types, no-undef, no-underscore-dangle */
 
 import * as React from 'react'
 import getConfig from 'next/config'
@@ -13,15 +13,15 @@ import SearchArea from './SearchArea'
 import SessionArea from './SessionArea'
 import { AccountSummaryQuery, LogoutMutation } from '../../../graphql'
 
-const { publicRuntimeConfig } = getConfig()
-
 interface KlickerWindow extends Window {
   INIT_LR?: string
   INIT_RAVEN?: string
   _slaask?: any
 }
 
-declare var window: KlickerWindow
+declare const window: KlickerWindow
+
+const { publicRuntimeConfig } = getConfig()
 
 interface Props extends InjectedIntlProps {
   search?: {
@@ -29,11 +29,11 @@ interface Props extends InjectedIntlProps {
     handleSortByChange: any
     handleSortOrderToggle: any
     sortBy: string
-    sortingTypes: Array<{
+    sortingTypes: {
       content: string
       id: string
       labelStart: string
-    }>
+    }[]
     sortOrder: boolean
     withSorting: boolean
   }
@@ -47,7 +47,13 @@ const defaultProps = {
   sidebarVisible: false,
 }
 
-const NavbarPres: React.SFC<Props> = ({ intl, search, sidebarVisible, title, handleSidebarToggle }) => (
+const NavbarPres: React.FunctionComponent<Props> = ({
+  intl,
+  search,
+  sidebarVisible,
+  title,
+  handleSidebarToggle,
+}): React.ReactElement<any> => (
   <div className="navbar">
     <div className="sideArea">
       <Menu borderless className="noBorder">

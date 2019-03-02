@@ -62,7 +62,7 @@ function filterQuestions(questions, filters, index) {
 
   // if either type or tags were selected, filter the results
   if (filters.type || filters.tags) {
-    results = results.filter(({ archived, type, tags }) => {
+    results = results.filter(({ type, tags }) => {
       // compare the type selected and the type of each question
       if (filters.type && type !== filters.type) {
         return false

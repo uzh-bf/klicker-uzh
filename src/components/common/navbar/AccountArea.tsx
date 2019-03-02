@@ -1,3 +1,5 @@
+/* eslint-disable react/prop-types */
+
 import * as React from 'react'
 import Link from 'next/link'
 import { Icon, Dropdown } from 'semantic-ui-react'
@@ -12,7 +14,7 @@ const defaultProps = {
   accountShort: '-',
 }
 
-const AccountArea: React.SFC<Props> = ({ accountShort, onLogout }) => (
+const AccountArea: React.FunctionComponent<Props> = ({ accountShort, onLogout }): React.ReactElement<any> => (
   <Dropdown item simple icon="user" text={`${accountShort} `}>
     <Dropdown.Menu>
       <Link href="/user/settings">
