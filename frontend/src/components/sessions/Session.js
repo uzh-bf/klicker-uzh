@@ -2,6 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import dayjs from 'dayjs'
 import Link from 'next/link'
+import _get from 'lodash/get'
 import { withState } from 'recompose'
 import { Mutation } from 'react-apollo'
 import { Confirm, Button, Icon, Message, Dropdown } from 'semantic-ui-react'
@@ -86,7 +87,7 @@ const Session = ({
               questions={instances.map(({ id: instanceId, question, version, results }) => ({
                 id: instanceId,
                 title: question.title,
-                totalParticipants: results?.totalParticipants || 0,
+                totalParticipants: _get(results, 'totalParticipants') || 0,
                 type: question.type,
                 version,
               }))}

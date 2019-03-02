@@ -1,10 +1,11 @@
 import React from 'react'
 import PropTypes from 'prop-types'
+import _round from 'lodash/round'
+import _get from 'lodash/get'
 import { defineMessages, intlShape } from 'react-intl'
 import { compose, withProps, withStateHandlers, branch, renderComponent, renderNothing } from 'recompose'
 import { withRouter } from 'next/router'
 import { graphql } from 'react-apollo'
-import _round from 'lodash/round'
 import { max, min, mean, median, quantileSeq, std } from 'mathjs'
 
 import { CHART_DEFAULTS, QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
@@ -184,16 +185,16 @@ export default compose(
                 activeInstance.question.type
               ].choices.map((choice, index) => ({
                 correct: choice.correct,
-                count: activeInstance.results?.CHOICES[index] || 0,
+                count: _get(activeInstance, `results.CHOICES[${index}]`) || 0,
                 value: choice.name,
               })),
-              totalResponses: activeInstance.results?.totalParticipants || 0,
+              totalResponses: _get(activeInstance, 'results.totalParticipants') || 0,
             },
           }
         }
 
         if (QUESTION_GROUPS.FREE.includes(activeInstance.question.type)) {
-          let data = activeInstance.results?.FREE || []
+          let data = _get(activeInstance, 'results.FREE') || []
 
           // values in FREE_RANGE questions need to be numerical
           if (activeInstance.question.type === QUESTION_TYPES.FREE_RANGE) {
@@ -207,7 +208,7 @@ export default compose(
             ...activeInstance,
             results: {
               data,
-              totalResponses: activeInstance.results?.totalParticipants || 0,
+              totalResponses: _get(activeInstance, 'results.totalParticipants') || 0,
             },
           }
         }
@@ -223,7 +224,7 @@ export default compose(
         blockStatus,
         hasSolution: !!solution,
         title: question.title,
-        totalResponses: results?.totalResponses || 0,
+        totalResponses: _get(results, 'totalResponses') || 0,
       })),
       sessionStatus: session.status,
     }
@@ -299,13 +300,15 @@ export default compose(
 
     const resultsWithPercentages = {
       ...activeInstance.results,
-      data: activeInstance.results?.data.map(({ correct, count, value }) => ({
-        correct,
-        count,
-        percentage: _round(100 * (count / activeInstance.results?.totalResponses), 1),
-        value,
-      })),
-      totalResponses: activeInstance.results?.totalResponses,
+      data:
+        _get(activeInstance, 'results.data') &&
+        activeInstance.results.data.map(({ correct, count, value }) => ({
+          correct,
+          count,
+          percentage: _round(100 * (count / _get(activeInstance, 'results.totalResponses')), 1),
+          value,
+        })),
+      totalResponses: _get(activeInstance, 'results.totalResponses'),
     }
 
     return {

@@ -1,4 +1,5 @@
 import React from 'react'
+import _get from 'lodash/get'
 import { FormattedMessage, defineMessages, intlShape } from 'react-intl'
 import { Message, Button, Tab } from 'semantic-ui-react'
 import { Mutation } from 'react-apollo'
@@ -50,7 +51,7 @@ const UserSettingsForm = ({ intl }) => {
         <Tab.Pane>
           <Mutation mutation={RequestAccountDeletionMutation}>
             {(requestAccountDeletion, { loading, data }) => {
-              const success = !loading && data?.requestAccountDeletion === 'ACCOUNT_DELETION_EMAIL_SENT'
+              const success = !loading && _get(data, 'requestAccountDeletion') === 'ACCOUNT_DELETION_EMAIL_SENT'
 
               return (
                 <>

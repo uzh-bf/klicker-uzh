@@ -1,19 +1,20 @@
-import React from 'react'
-import PropTypes from 'prop-types'
+/* eslint-disable react/prop-types */
+
+import * as React from 'react'
 import Link from 'next/link'
 import { Icon, Dropdown } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
-const propTypes = {
-  accountShort: PropTypes.string,
-  onLogout: PropTypes.func.isRequired,
+interface Props {
+  accountShort?: string
+  onLogout: any
 }
 
 const defaultProps = {
   accountShort: '-',
 }
 
-const AccountArea = ({ accountShort, onLogout }) => (
+const AccountArea: React.FunctionComponent<Props> = ({ accountShort, onLogout }): React.ReactElement<any> => (
   <Dropdown item simple icon="user" text={`${accountShort} `}>
     <Dropdown.Menu>
       <Link href="/user/settings">
@@ -30,7 +31,6 @@ const AccountArea = ({ accountShort, onLogout }) => (
   </Dropdown>
 )
 
-AccountArea.propTypes = propTypes
 AccountArea.defaultProps = defaultProps
 
 export default AccountArea

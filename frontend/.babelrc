@@ -2,6 +2,7 @@
   "env":{
      "development":{
         "presets":[
+          "@zeit/next-typescript/babel",
            [
               "next/babel",
               {
@@ -18,18 +19,20 @@
                        "styled-jsx-plugin-sass"
                     ]
                  }
-              }
+              },
+
            ]
         ],
         "plugins":[
-           "@babel/plugin-proposal-do-expressions",
-           "@babel/plugin-proposal-optional-chaining",
+           // "@babel/plugin-proposal-do-expressions",
+           // "@babel/plugin-proposal-optional-chaining",
            "inline-dotenv",
            "add-react-displayname"
         ]
      },
      "production":{
         "presets":[
+          "@zeit/next-typescript/babel",
            [
               "next/babel",
               {
@@ -46,7 +49,7 @@
                        "styled-jsx-plugin-sass"
                     ]
                  }
-              }
+              },
            ]
         ],
         "plugins":[
@@ -61,8 +64,8 @@
                  ]
               }
            ],
-           "@babel/plugin-proposal-do-expressions",
-           "@babel/plugin-proposal-optional-chaining",
+           // "@babel/plugin-proposal-do-expressions",
+           // "@babel/plugin-proposal-optional-chaining",
            "transform-inline-environment-variables",
            "add-react-displayname",
            [
@@ -75,11 +78,13 @@
      },
      "test":{
         "presets":[
+          "@zeit/next-typescript/babel",
            [
+
               "@babel/preset-env",
               {
                  "modules":"commonjs"
-              }
+              },
            ],
            [
               "next/babel",
@@ -96,8 +101,8 @@
            ]
         ],
         "plugins":[
-           "@babel/plugin-proposal-do-expressions",
-           "@babel/plugin-proposal-optional-chaining",
+           // "@babel/plugin-proposal-do-expressions",
+           // "@babel/plugin-proposal-optional-chaining",
            "import-graphql"
         ]
      }

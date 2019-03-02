@@ -1,6 +1,7 @@
-import React from 'react'
-import PropTypes from 'prop-types'
-import { defineMessages, intlShape } from 'react-intl'
+/* eslint-disable react/prop-types */
+
+import * as React from 'react'
+import { defineMessages, InjectedIntlProps } from 'react-intl'
 import { Button, Dropdown, Input } from 'semantic-ui-react'
 import _find from 'lodash/find'
 
@@ -11,28 +12,25 @@ const messages = defineMessages({
   },
 })
 
-const propTypes = {
-  handleSearch: PropTypes.func.isRequired,
-  handleSortByChange: PropTypes.func.isRequired,
-  handleSortOrderToggle: PropTypes.func.isRequired,
-  intl: intlShape.isRequired,
-  sortBy: PropTypes.string.isRequired,
-  sortingTypes: PropTypes.arrayOf(
-    PropTypes.shape({
-      content: PropTypes.string,
-      id: PropTypes.string,
-      labelStart: PropTypes.string,
-    })
-  ).isRequired,
-  sortOrder: PropTypes.bool.isRequired,
-  withSorting: PropTypes.bool,
+interface Props extends InjectedIntlProps {
+  handleSearch: any
+  handleSortByChange: any
+  handleSortOrderToggle: any
+  sortBy: string
+  sortingTypes: {
+    content: string
+    id: string
+    labelStart: string
+  }[]
+  sortOrder: boolean
+  withSorting?: boolean
 }
 
 const defaultProps = {
   withSorting: false,
 }
 
-const SearchArea = ({
+const SearchArea: React.FunctionComponent<Props> = ({
   intl,
   handleSearch,
   handleSortByChange,
@@ -41,7 +39,7 @@ const SearchArea = ({
   sortingTypes,
   sortOrder,
   withSorting,
-}) => (
+}): React.ReactElement<any> => (
   <div className="searchArea">
     <Input
       fluid
@@ -55,7 +53,9 @@ const SearchArea = ({
     {withSorting && (
       <>
         <Button
-          icon={`${_find(sortingTypes, { id: sortBy }).labelStart} ${sortOrder ? 'ascending' : 'descending'}`}
+          icon={`${(_find(sortingTypes, { id: sortBy }) || { labelStart: 'sort numeric' }).labelStart} ${
+            sortOrder ? 'ascending' : 'descending'
+          }`}
           size="small"
           onClick={handleSortOrderToggle}
         />
@@ -66,7 +66,7 @@ const SearchArea = ({
             value: id,
           }))}
           value={sortBy}
-          onChange={(param, data) => handleSortByChange(data.value)}
+          onChange={(_, data) => handleSortByChange(data.value)}
         />
       </>
     )}
@@ -97,7 +97,6 @@ const SearchArea = ({
   </div>
 )
 
-SearchArea.propTypes = propTypes
 SearchArea.defaultProps = defaultProps
 
 export default SearchArea

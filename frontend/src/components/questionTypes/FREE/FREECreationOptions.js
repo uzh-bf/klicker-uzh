@@ -1,6 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
+import _get from 'lodash/get'
 import { Form, Icon, Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import { compose, withHandlers, mapProps } from 'recompose'
@@ -127,8 +128,8 @@ export default compose(
     dirty,
     disabled,
     invalid,
-    max: value?.restrictions?.max,
-    min: value?.restrictions?.min,
+    max: _get(value, 'restrictions.max'),
+    min: _get(value, 'restrictions.min'),
     onChange,
     type,
     value,

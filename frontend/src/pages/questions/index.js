@@ -1,14 +1,15 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import UUIDv4 from 'uuid'
+import _get from 'lodash/get'
+import _debounce from 'lodash/debounce'
+import Router, { withRouter } from 'next/router'
+import dayjs from 'dayjs'
 import { List } from 'immutable'
 import { DragDropContext } from 'react-beautiful-dnd'
 import { compose, withHandlers, withStateHandlers, branch, renderNothing, withProps, lifecycle } from 'recompose'
 import { defineMessages, intlShape } from 'react-intl'
 import { graphql, Query } from 'react-apollo'
-import _debounce from 'lodash/debounce'
-import Router, { withRouter } from 'next/router'
-import dayjs from 'dayjs'
 
 import { pageWithIntl, withDnD, withSortingAndFiltering, withLogging, withSelection } from '../../lib'
 import {
@@ -144,7 +145,7 @@ const Index = ({
       {({ data }) => (
         <TeacherLayout
           fixedHeight
-          actionArea={creationMode ? creationForm(data.runningSession?.id) : null}
+          actionArea={creationMode ? creationForm(_get(data, 'runningSession.id')) : null}
           intl={intl}
           navbar={{
             search: {
