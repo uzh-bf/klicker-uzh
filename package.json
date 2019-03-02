@@ -118,6 +118,7 @@
     "semantic-ui-react": "0.85.0",
     "styled-jsx-plugin-sass": "1.0.0",
     "subscriptions-transport-ws": "0.9.15",
+    "typescript": "3.3.3333",
     "url-loader": "1.1.2",
     "uuid": "3.3.2",
     "v8n": "1.2.3",
@@ -160,7 +161,6 @@
     "react-testing-library": "6.0.0",
     "semantic-ui": "2.4.2",
     "semantic-ui-css": "2.4.1",
-    "typescript": "3.3.3333",
     "webpack-bundle-analyzer": "3.0.4",
     "why-did-you-update": "1.0.6"
   },

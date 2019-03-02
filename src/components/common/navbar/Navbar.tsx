@@ -47,7 +47,7 @@ const defaultProps = {
   sidebarVisible: false,
 }
 
-const NavbarPres: React.FunctionComponent<Props> = ({
+export const NavbarPres: React.FunctionComponent<Props> = ({
   intl,
   search,
   sidebarVisible,

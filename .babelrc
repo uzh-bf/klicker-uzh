@@ -2,6 +2,7 @@
   "env":{
      "development":{
         "presets":[
+          "@zeit/next-typescript/babel",
            [
               "next/babel",
               {
@@ -19,7 +20,7 @@
                     ]
                  }
               },
-              "@zeit/next-typescript/babel"
+
            ]
         ],
         "plugins":[
@@ -31,6 +32,7 @@
      },
      "production":{
         "presets":[
+          "@zeit/next-typescript/babel",
            [
               "next/babel",
               {
@@ -48,7 +50,6 @@
                     ]
                  }
               },
-              "@zeit/next-typescript/babel"
            ]
         ],
         "plugins":[
@@ -77,12 +78,13 @@
      },
      "test":{
         "presets":[
+          "@zeit/next-typescript/babel",
            [
+
               "@babel/preset-env",
               {
                  "modules":"commonjs"
               },
-              "@zeit/next-typescript/babel"
            ],
            [
               "next/babel",
