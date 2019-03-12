@@ -1,3 +1,9 @@
+---
+name: User story
+about: Define a user story
+
+---
+
 As a ‹role›, I'd like to ‹feature short description› [ , in order to ‹value it adds›. ]
 
 ## Acceptance criteria
