@@ -5,7 +5,7 @@ import { defineMessages, intlShape } from 'react-intl'
 import { Button, Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
 
 import { CommonLayout } from '.'
-import { Info, Possibilities, Statistics, VisualizationType } from '../evaluation'
+import { Info, Possibilities, Statistics, VisualizationType, CsvExport } from '../evaluation'
 import { QUESTION_GROUPS, CHART_TYPES, QUESTION_TYPES } from '../../constants'
 
 const messages = defineMessages({
@@ -170,7 +170,7 @@ function EvaluationLayout({
                 onChange={onToggleShowSolution}
               />
             )}
-
+          <CsvExport data={data} />
           <VisualizationType
             activeVisualization={activeVisualization}
             intl={intl}
