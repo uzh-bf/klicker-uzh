@@ -1,29 +1,43 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
 import { CSVLink } from 'react-csv'
 import { Button } from 'semantic-ui-react'
 
 const propTypes = {
-  data: PropTypes.any,
+  activeInstances: PropTypes.any,
 }
 
 const defaultProps = {
-  data: undefined,
+  activeInstances: undefined,
 }
 
-const csvData = [['a', 'b', 'c']]
+const CsvExport = ({ activeInstances }) => {
+  const [csvData, setCsvData] = useState()
 
-const CsvExport = () => (
-  <div className="csv-export">
-    <CSVLink data={csvData} filename={`csv-export.csv`}>
-      <Button
-        // show csv-download button at the end off a session
-        color="blue"
-        content="Download CSV"
-      />
-    </CSVLink>
-  </div>
-)
+  useEffect(() => {
+    console.log(activeInstances)
+    const result = []
+    activeInstances.forEach(e1 => {
+      const counts = ['']
+      const answers = [e1.question.versions[0].description]
+      e1.results.data.forEach(e2 => {
+        answers.push(e2.value)
+        counts.push(e2.count)
+      })
+      result.push(answers)
+      result.push(counts)
+    })
+    setCsvData(result)
+  }, [activeInstances])
+
+  return (
+    <div className="csv-export">
+      <CSVLink data={csvData || []} filename={`csv-export.csv`}>
+        <Button color="blue" content="Export CSV" />
+      </CSVLink>
+    </div>
+  )
+}
 
 CsvExport.propTypes = propTypes
 CsvExport.defaultProps = defaultProps

@@ -16,6 +16,7 @@ const messages = defineMessages({
 })
 const propTypes = {
   activeInstance: PropTypes.number,
+  activeInstances: PropTypes.any,
   activeVisualization: PropTypes.string.isRequired,
   children: PropTypes.element.isRequired,
   choices: PropTypes.arrayOf(
@@ -70,6 +71,7 @@ function EvaluationLayout({
   totalResponses,
   options,
   activeInstance,
+  activeInstances,
   onChangeActiveInstance,
   instanceSummary,
   statistics,
@@ -170,7 +172,7 @@ function EvaluationLayout({
                 onChange={onToggleShowSolution}
               />
             )}
-          <CsvExport data={data} />
+          <CsvExport activeInstances={activeInstances} />
           <VisualizationType
             activeVisualization={activeVisualization}
             intl={intl}

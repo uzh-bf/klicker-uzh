@@ -50,6 +50,7 @@ const defaultProps = {
 function Evaluation({
   activeInstanceIndex,
   activeInstance,
+  activeInstances,
   activeVisualizations,
   bins,
   instanceSummary,
@@ -71,6 +72,7 @@ function Evaluation({
   const { description, options } = question.versions[version]
 
   const layoutProps = {
+    activeInstances,
     activeInstance: activeInstanceIndex,
     activeVisualization: activeVisualizations[type],
     data,
@@ -283,6 +285,7 @@ export default compose(
 
       return {
         activeInstance,
+        activeInstances,
         handleChangeActiveInstance,
         statistics: {
           bins,
@@ -312,6 +315,7 @@ export default compose(
     }
 
     return {
+      activeInstances,
       activeInstance: {
         ...activeInstance,
         results: resultsWithPercentages,
