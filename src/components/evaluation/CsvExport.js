@@ -33,7 +33,7 @@ const CsvExport = ({ activeInstances }) => {
   return (
     <div className="csv-export">
       <CSVLink data={csvData || []} filename={`csv-export.csv`}>
-        <Button color="blue" content="Export CSV" />
+        <Button primary content="Export CSV" />
       </CSVLink>
     </div>
   )
