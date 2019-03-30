@@ -16,7 +16,7 @@ const messages = defineMessages({
 })
 const propTypes = {
   activeInstance: PropTypes.number,
-  activeInstances: PropTypes.any,
+  activeInstances: PropTypes.array,
   activeVisualization: PropTypes.string.isRequired,
   children: PropTypes.element.isRequired,
   choices: PropTypes.arrayOf(
