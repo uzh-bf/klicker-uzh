@@ -8,7 +8,7 @@ const propTypes = {
 }
 
 const defaultProps = {
-  activeInstances: undefined,
+  activeInstances: [],
 }
 
 const CsvExport = ({ activeInstances }) => {
