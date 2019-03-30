@@ -15,7 +15,6 @@ const CsvExport = ({ activeInstances }) => {
   const [csvData, setCsvData] = useState()
 
   useEffect(() => {
-    console.log(activeInstances)
     const result = []
     activeInstances.forEach(e1 => {
       const counts = ['']
