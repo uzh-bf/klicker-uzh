@@ -4,7 +4,7 @@ import { CSVLink } from 'react-csv'
 import { Button } from 'semantic-ui-react'
 
 const propTypes = {
-  activeInstances: PropTypes.any,
+  activeInstances: PropTypes.array,
 }
 
 const defaultProps = {
