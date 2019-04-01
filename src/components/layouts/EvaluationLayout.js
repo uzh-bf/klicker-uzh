@@ -5,7 +5,7 @@ import { defineMessages, intlShape } from 'react-intl'
 import { Button, Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
 
 import { CommonLayout } from '.'
-import { Info, Possibilities, Statistics, VisualizationType, CsvExport } from '../evaluation'
+import { Info, Possibilities, Statistics, VisualizationType, CsvExport, PdfExport } from '../evaluation'
 import { QUESTION_GROUPS, CHART_TYPES, QUESTION_TYPES } from '../../constants'
 
 const messages = defineMessages({
@@ -16,7 +16,7 @@ const messages = defineMessages({
 })
 const propTypes = {
   activeInstance: PropTypes.number,
-  activeInstances: PropTypes.array,
+  activeInstances: PropTypes.array.isRequired,
   activeVisualization: PropTypes.string.isRequired,
   children: PropTypes.element.isRequired,
   choices: PropTypes.arrayOf(
@@ -34,7 +34,7 @@ const propTypes = {
   onToggleShowSolution: PropTypes.func.isRequired,
   options: PropTypes.object.isRequired,
   pageTitle: PropTypes.string,
-  sessionId: PropTypes.string,
+  sessionId: PropTypes.string.isRequired,
   showGraph: PropTypes.bool,
   showSolution: PropTypes.bool,
   statistics: PropTypes.shape({
@@ -175,6 +175,7 @@ function EvaluationLayout({
               />
             )}
           <CsvExport activeInstances={activeInstances} sessionId={sessionId} />
+          <PdfExport />
           <VisualizationType
             activeVisualization={activeVisualization}
             intl={intl}
