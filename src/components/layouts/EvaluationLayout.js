@@ -5,7 +5,7 @@ import { defineMessages, intlShape } from 'react-intl'
 import { Button, Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
 
 import { CommonLayout } from '.'
-import { Info, Possibilities, Statistics, VisualizationType } from '../evaluation'
+import { Info, Possibilities, Statistics, VisualizationType, CsvExport } from '../evaluation'
 import { QUESTION_GROUPS, CHART_TYPES, QUESTION_TYPES } from '../../constants'
 
 const messages = defineMessages({
@@ -16,6 +16,7 @@ const messages = defineMessages({
 })
 const propTypes = {
   activeInstance: PropTypes.number,
+  activeInstances: PropTypes.array,
   activeVisualization: PropTypes.string.isRequired,
   children: PropTypes.element.isRequired,
   choices: PropTypes.arrayOf(
@@ -33,6 +34,7 @@ const propTypes = {
   onToggleShowSolution: PropTypes.func.isRequired,
   options: PropTypes.object.isRequired,
   pageTitle: PropTypes.string,
+  sessionId: PropTypes.string,
   showGraph: PropTypes.bool,
   showSolution: PropTypes.bool,
   statistics: PropTypes.shape({
@@ -70,9 +72,11 @@ function EvaluationLayout({
   totalResponses,
   options,
   activeInstance,
+  activeInstances,
   onChangeActiveInstance,
   instanceSummary,
   statistics,
+  sessionId,
 }) {
   const dropdownOptions = instanceSummary.map(({ blockStatus, title, totalResponses: count }, index) => ({
     icon: blockStatus === 'ACTIVE' ? 'comments' : 'checkmark',
@@ -170,7 +174,7 @@ function EvaluationLayout({
                 onChange={onToggleShowSolution}
               />
             )}
-
+          <CsvExport activeInstances={activeInstances} sessionId={sessionId} />
           <VisualizationType
             activeVisualization={activeVisualization}
             intl={intl}
