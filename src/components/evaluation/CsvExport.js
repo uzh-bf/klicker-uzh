@@ -5,15 +5,16 @@ import { Button } from 'semantic-ui-react'
 
 const propTypes = {
   activeInstances: PropTypes.array,
+  sessionId: PropTypes.string,
 }
 
 const defaultProps = {
   activeInstances: [],
 }
 
-const CsvExport = ({ activeInstances }) => {
+const CsvExport = ({ activeInstances, sessionId }) => {
   const [csvData, setCsvData] = useState()
-
+  console.log(sessionId)
   useEffect(() => {
     const result = []
     activeInstances.forEach(e1 => {
@@ -30,8 +31,8 @@ const CsvExport = ({ activeInstances }) => {
   }, [activeInstances])
 
   return (
-    <div className="csv-export">
-      <CSVLink data={csvData || []} filename={`csv-export.csv`}>
+    <div>
+      <CSVLink data={csvData || []} filename={`csv-export-${sessionId}.csv`}>
         <Button primary content="Export CSV" />
       </CSVLink>
     </div>

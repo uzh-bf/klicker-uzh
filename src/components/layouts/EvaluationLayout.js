@@ -34,6 +34,7 @@ const propTypes = {
   onToggleShowSolution: PropTypes.func.isRequired,
   options: PropTypes.object.isRequired,
   pageTitle: PropTypes.string,
+  sessionId: PropTypes.string,
   showGraph: PropTypes.bool,
   showSolution: PropTypes.bool,
   statistics: PropTypes.shape({
@@ -75,6 +76,7 @@ function EvaluationLayout({
   onChangeActiveInstance,
   instanceSummary,
   statistics,
+  sessionId,
 }) {
   const dropdownOptions = instanceSummary.map(({ blockStatus, title, totalResponses: count }, index) => ({
     icon: blockStatus === 'ACTIVE' ? 'comments' : 'checkmark',
@@ -172,7 +174,8 @@ function EvaluationLayout({
                 onChange={onToggleShowSolution}
               />
             )}
-          <CsvExport activeInstances={activeInstances} />
+          {console.log(sessionId)}
+          <CsvExport activeInstances={activeInstances} sessionId={sessionId} />
           <VisualizationType
             activeVisualization={activeVisualization}
             intl={intl}
