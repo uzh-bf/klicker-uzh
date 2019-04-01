@@ -174,7 +174,6 @@ function EvaluationLayout({
                 onChange={onToggleShowSolution}
               />
             )}
-          {console.log(sessionId)}
           <CsvExport activeInstances={activeInstances} sessionId={sessionId} />
           <VisualizationType
             activeVisualization={activeVisualization}

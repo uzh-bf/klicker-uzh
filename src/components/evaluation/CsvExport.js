@@ -14,7 +14,7 @@ const defaultProps = {
 
 const CsvExport = ({ activeInstances, sessionId }) => {
   const [csvData, setCsvData] = useState()
-  console.log(sessionId)
+
   useEffect(() => {
     const result = []
     activeInstances.forEach(e1 => {
