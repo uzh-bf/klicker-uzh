@@ -1,5 +1,5 @@
-query RunningSession {
-  runningSession {
+mutation ResetQuestionBlock($id: ID!, $instanceIds: [ID!]!) {
+  resetQuestionBlock(id: $id, instanceIds: $instanceIds) {
     id
     runtime
     startedAt

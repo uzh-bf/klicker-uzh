@@ -23,6 +23,7 @@ import {
   SessionListQuery,
   FeedbackAddedSubscription,
   ConfusionAddedSubscription,
+  ResetQuestionBlockMutation,
 } from '../../graphql'
 import { Messager } from '../../components/common'
 
@@ -69,7 +70,19 @@ const Running = ({ intl, shortname }) => (
           return <Messager message={intl.formatMessage(messages.errorLoading)} />
         }
 
-        const { id, activeStep, blocks, settings, runtime, startedAt, confusionTS, feedbacks } = data.runningSession
+        const {
+          id,
+          activeStep,
+          activeBlock,
+          blocks,
+          settings,
+          runtime,
+          startedAt,
+          confusionTS,
+          feedbacks,
+        } = data.runningSession
+
+        const activeInstanceIds = activeBlock >= 0 ? blocks[activeBlock].instances.map(instance => instance.id) : []
 
         return (
           <div className="runningSession">
@@ -80,60 +93,72 @@ const Running = ({ intl, shortname }) => (
                     {endSession => (
                       <Mutation mutation={PauseSessionMutation}>
                         {pauseSession => (
-                          <Mutation mutation={ActivateNextBlockMutation}>
-                            {activateNextBlock => (
-                              <SessionTimeline
-                                activeStep={activeStep}
-                                blocks={blocks}
-                                handleEndSession={async () => {
-                                  // run the mutation
-                                  await endSession({
-                                    refetchQueries: [
-                                      { query: SessionListQuery },
-                                      { query: RunningSessionQuery },
-                                      { query: AccountSummaryQuery },
-                                    ],
-                                    variables: { id },
-                                  })
+                          <Mutation mutation={ResetQuestionBlockMutation}>
+                            {resetQuestionBlock => (
+                              <Mutation mutation={ActivateNextBlockMutation}>
+                                {activateNextBlock => (
+                                  <SessionTimeline
+                                    activeBlock={activeBlock}
+                                    activeStep={activeStep}
+                                    blocks={blocks}
+                                    handleEndSession={async () => {
+                                      // run the mutation
+                                      await endSession({
+                                        refetchQueries: [
+                                          { query: SessionListQuery },
+                                          { query: RunningSessionQuery },
+                                          { query: AccountSummaryQuery },
+                                        ],
+                                        variables: { id },
+                                      })
 
-                                  // redirect to the question pool
-                                  // TODO: redirect to a session summary or overview page
-                                  Router.push('/questions')
-                                }}
-                                handleNextBlock={() => {
-                                  activateNextBlock({
-                                    refetchQueries: [{ query: RunningSessionQuery }],
-                                  })
-                                }}
-                                handlePauseSession={async () => {
-                                  await pauseSession({
-                                    refetchQueries: [
-                                      { query: SessionListQuery },
-                                      { query: RunningSessionQuery },
-                                      { query: AccountSummaryQuery },
-                                    ],
-                                    variables: { id },
-                                  })
+                                      // redirect to the question pool
+                                      // TODO: redirect to a session summary or overview page
+                                      Router.push('/questions')
+                                    }}
+                                    handleNextBlock={() => {
+                                      activateNextBlock({
+                                        refetchQueries: [{ query: RunningSessionQuery }],
+                                      })
+                                    }}
+                                    handlePauseSession={async () => {
+                                      await pauseSession({
+                                        refetchQueries: [
+                                          { query: SessionListQuery },
+                                          { query: RunningSessionQuery },
+                                          { query: AccountSummaryQuery },
+                                        ],
+                                        variables: { id },
+                                      })
 
-                                  Router.push('/sessions')
-                                }}
-                                handleTogglePublicEvaluation={() => {
-                                  updateSettings({
-                                    variables: {
-                                      sessionId: id,
-                                      settings: {
-                                        isEvaluationPublic: !settings.isEvaluationPublic,
-                                      },
-                                    },
-                                  })
-                                }}
-                                intl={intl}
-                                isEvaluationPublic={settings.isEvaluationPublic}
-                                runtime={runtime}
-                                sessionId={id}
-                                shortname={shortname}
-                                startedAt={dayjs(startedAt).format('HH:mm:ss')}
-                              />
+                                      Router.push('/sessions')
+                                    }}
+                                    handleResetQuestionBlock={async () => {
+                                      await resetQuestionBlock({
+                                        variables: { id, instanceIds: activeInstanceIds },
+                                      })
+
+                                      Router.push('/sessions')
+                                    }}
+                                    handleTogglePublicEvaluation={() => {
+                                      updateSettings({
+                                        variables: {
+                                          sessionId: id,
+                                          settings: {
+                                            isEvaluationPublic: !settings.isEvaluationPublic,
+                                          },
+                                        },
+                                      })
+                                    }}
+                                    intl={intl}
+                                    isEvaluationPublic={settings.isEvaluationPublic}
+                                    runtime={runtime}
+                                    sessionId={id}
+                                    shortname={shortname}
+                                    startedAt={dayjs(startedAt).format('HH:mm:ss')}
+                                  />
+                                )}
+                              </Mutation>
                             )}
                           </Mutation>
                         )}
