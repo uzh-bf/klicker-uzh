@@ -138,7 +138,7 @@ const Running = ({ intl, shortname }) => (
                                         variables: { id, instanceIds: activeInstanceIds },
                                       })
 
-                                      Router.push('/sessions')
+                                      Router.push('/sessions/running')
                                     }}
                                     handleTogglePublicEvaluation={() => {
                                       updateSettings({
