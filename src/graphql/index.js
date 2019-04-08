@@ -25,7 +25,6 @@ import ActivateAccountMutation from './mutations/ActivateAccountMutation.graphql
 import RequestAccountDeletionMutation from './mutations/RequestAccountDeletionMutation.graphql'
 import ResolveAccountDeletionMutation from './mutations/ResolveAccountDeletionMutation.graphql'
 import DeleteResponseMutation from './mutations/DeleteResponseMutation.graphql'
-import ResetQuestionBlockMutation from './mutations/ResetQuestionBlockMutation.graphql'
 
 import AccountSummaryQuery from './queries/AccountSummaryQuery.graphql'
 import JoinSessionQuery from './queries/JoinSessionQuery.graphql'
@@ -113,7 +112,6 @@ export {
   ActivateAccountMutation,
   RequestAccountDeletionMutation,
   ResolveAccountDeletionMutation,
-  ResetQuestionBlockMutation,
   AccountSummaryQuery,
   JoinSessionQuery,
   QuestionDetailsQuery,
