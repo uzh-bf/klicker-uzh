@@ -23,6 +23,7 @@ import {
   SessionListQuery,
   FeedbackAddedSubscription,
   ConfusionAddedSubscription,
+  UpdateSessionSubscription,
 } from '../../graphql'
 import { Messager } from '../../components/common'
 
@@ -144,6 +145,25 @@ const Running = ({ intl, shortname }) => (
                                 sessionId={id}
                                 shortname={shortname}
                                 startedAt={dayjs(startedAt).format('HH:mm:ss')}
+                                subscribeToMore={() => {
+                                  subscribeToMore({
+                                    document: UpdateSessionSubscription,
+                                    updateQuery: (prev, { subscriptionData }) => {
+                                      if (!subscriptionData.data) return prev
+                                      return {
+                                        ...prev,
+                                        runningSession: {
+                                          ...prev.runningSession,
+                                          feedbacks: [
+                                            ...prev.runningSession.feedbacks,
+                                            subscriptionData.data.feedbackAdded,
+                                          ],
+                                        },
+                                      }
+                                    },
+                                    variables: { sessionId: id },
+                                  })
+                                }}
                               />
                             )}
                           </Mutation>

@@ -41,6 +41,7 @@ import CheckAvailabilityQuery from './queries/CheckAvailabilityQuery.graphql'
 
 import ConfusionAddedSubscription from './subscriptions/ConfusionAddedSubscription.graphql'
 import FeedbackAddedSubscription from './subscriptions/FeedbackAddedSubscription.graphql'
+import UpdateSessionSubscription from './subscriptions/UpdateSessionSubscription.graphql'
 
 /* const queries = [
   ActivateNextBlockMutation,
@@ -127,5 +128,6 @@ export {
   ConfusionAddedSubscription,
   SessionDetailsQuery,
   CheckAvailabilityQuery,
+  UpdateSessionSubscription,
   // queryMap,
 }

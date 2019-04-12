@@ -1,0 +1,50 @@
+subscription UpdateSession($sessionId: ID!) {
+  updateSession(sessionId: $sessionId) {
+    id
+    settings {
+      isFeedbackChannelActive
+      isFeedbackChannelPublic
+      isConfusionBarometerActive
+    }
+    activeInstances {
+      id
+      questionId
+      title
+      content
+      description
+      type
+      options {
+        FREE_RANGE {
+          restrictions {
+            min
+            max
+          }
+        }
+        SC {
+          choices {
+            correct
+            name
+          }
+          randomized
+        }
+        MC {
+          choices {
+            correct
+            name
+          }
+          randomized
+        }
+      }
+      files {
+        id
+        name
+        type
+      }
+    }
+    feedbacks {
+      id
+      content
+      votes
+    }
+  }
+}
