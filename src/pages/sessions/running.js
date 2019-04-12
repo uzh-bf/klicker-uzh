@@ -17,6 +17,7 @@ import {
   RunningSessionQuery,
   EndSessionMutation,
   PauseSessionMutation,
+  CancelSessionMutation,
   UpdateSessionSettingsMutation,
   ActivateNextBlockMutation,
   DeleteFeedbackMutation,
@@ -95,68 +96,85 @@ const Running = ({ intl, shortname }) => (
                         {pauseSession => (
                           <Mutation mutation={ResetQuestionBlockMutation}>
                             {resetQuestionBlock => (
-                              <Mutation mutation={ActivateNextBlockMutation}>
-                                {activateNextBlock => (
-                                  <SessionTimeline
-                                    activeBlock={activeBlock}
-                                    activeStep={activeStep}
-                                    blocks={blocks}
-                                    handleEndSession={async () => {
-                                      // run the mutation
-                                      await endSession({
-                                        refetchQueries: [
-                                          { query: SessionListQuery },
-                                          { query: RunningSessionQuery },
-                                          { query: AccountSummaryQuery },
-                                        ],
-                                        variables: { id },
-                                      })
+                              <Mutation mutation={CancelSessionMutation}>
+                                {cancelSession => (
+                                  <Mutation mutation={ActivateNextBlockMutation}>
+                                    {activateNextBlock => (
+                                      <SessionTimeline
+                                        activeBlock={activeBlock}
+                                        activeStep={activeStep}
+                                        blocks={blocks}
+                                        handleCancelSession={async () => {
+                                          await cancelSession({
+                                            refetchQueries: [
+                                              { query: SessionListQuery },
+                                              { query: RunningSessionQuery },
+                                              { query: AccountSummaryQuery },
+                                            ],
+                                            variables: { id },
+                                          })
+                                          // redirect to the question pool
+                                          // TODO: redirect to a session summary or overview page
+                                          Router.push('/questions')
+                                        }}
+                                        handleEndSession={async () => {
+                                          // run the mutation
+                                          await endSession({
+                                            refetchQueries: [
+                                              { query: SessionListQuery },
+                                              { query: RunningSessionQuery },
+                                              { query: AccountSummaryQuery },
+                                            ],
+                                            variables: { id },
+                                          })
 
-                                      // redirect to the question pool
-                                      // TODO: redirect to a session summary or overview page
-                                      Router.push('/questions')
-                                    }}
-                                    handleNextBlock={() => {
-                                      activateNextBlock({
-                                        refetchQueries: [{ query: RunningSessionQuery }],
-                                      })
-                                    }}
-                                    handlePauseSession={async () => {
-                                      await pauseSession({
-                                        refetchQueries: [
-                                          { query: SessionListQuery },
-                                          { query: RunningSessionQuery },
-                                          { query: AccountSummaryQuery },
-                                        ],
-                                        variables: { id },
-                                      })
+                                          // redirect to the question pool
+                                          // TODO: redirect to a session summary or overview page
+                                          Router.push('/questions')
+                                        }}
+                                        handleNextBlock={() => {
+                                          activateNextBlock({
+                                            refetchQueries: [{ query: RunningSessionQuery }],
+                                          })
+                                        }}
+                                        handlePauseSession={async () => {
+                                          await pauseSession({
+                                            refetchQueries: [
+                                              { query: SessionListQuery },
+                                              { query: RunningSessionQuery },
+                                              { query: AccountSummaryQuery },
+                                            ],
+                                            variables: { id },
+                                          })
 
-                                      Router.push('/sessions')
-                                    }}
-                                    handleResetQuestionBlock={async () => {
-                                      await resetQuestionBlock({
-                                        variables: { id, instanceIds: activeInstanceIds },
-                                      })
+                                          Router.push('/sessions')
+                                        }}
+                                        handleResetQuestionBlock={async () => {
+                                          await resetQuestionBlock({
+                                            variables: { id, instanceIds: activeInstanceIds },
+                                          })
 
-                                      Router.push('/sessions/running')
-                                    }}
-                                    handleTogglePublicEvaluation={() => {
-                                      updateSettings({
-                                        variables: {
-                                          sessionId: id,
-                                          settings: {
-                                            isEvaluationPublic: !settings.isEvaluationPublic,
-                                          },
-                                        },
-                                      })
-                                    }}
-                                    intl={intl}
-                                    isEvaluationPublic={settings.isEvaluationPublic}
-                                    runtime={runtime}
-                                    sessionId={id}
-                                    shortname={shortname}
-                                    startedAt={dayjs(startedAt).format('HH:mm:ss')}
-                                  />
+                                          Router.push('/sessions/running')
+                                        }}
+                                        handleTogglePublicEvaluation={() => {
+                                          updateSettings({
+                                            variables: {
+                                              sessionId: id,
+                                              settings: {
+                                                isEvaluationPublic: !settings.isEvaluationPublic,
+                                              },
+                                            },
+                                          })
+                                        }}
+                                        intl={intl}
+                                        isEvaluationPublic={settings.isEvaluationPublic}
+                                        runtime={runtime}
+                                        sessionId={id}
+                                        shortname={shortname}
+                                        startedAt={dayjs(startedAt).format('HH:mm:ss')}
+                                      />
+                                    )}
+                                  </Mutation>
                                 )}
                               </Mutation>
                             )}
