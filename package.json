@@ -31,7 +31,7 @@
     "express-rate-limit": "3.4.0",
     "graphql": "14.1.1",
     "graphql-iso-date": "3.6.1",
-    "graphql-redis-subscriptions": "2.0.0",
+    "graphql-redis-subscriptions": "2.0.1",
     "graphql-subscriptions": "1.0.0",
     "graphql-tools": "4.0.4",
     "handlebars": "4.1.0",
