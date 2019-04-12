@@ -6,6 +6,7 @@ import getConfig from 'next/config'
 import { defineMessages, intlShape, FormattedMessage } from 'react-intl'
 import { Button, Checkbox, Icon, Popup, Message } from 'semantic-ui-react'
 import { QuestionBlock } from '../questions'
+import { CancelModal } from '.'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -35,6 +36,7 @@ const messages = defineMessages({
 const propTypes = {
   activeStep: PropTypes.number.isRequired,
   blocks: PropTypes.array,
+  handleCancelSession: PropTypes.func.isRequired,
   handleEndSession: PropTypes.func.isRequired,
   handleNextBlock: PropTypes.func.isRequired,
   handlePauseSession: PropTypes.func.isRequired,
@@ -94,6 +96,7 @@ const SessionTimeline = ({
   handleNextBlock,
   handleEndSession,
   handlePauseSession,
+  handleCancelSession,
   handleTogglePublicEvaluation,
 }) => {
   const isFeedbackSession = blocks.length === 0
@@ -210,6 +213,10 @@ const SessionTimeline = ({
             <Icon name="pause" />
             <FormattedMessage defaultMessage="Pause Session" id="sessionArea.button.pauseSession" />
           </Button>
+        </div>
+
+        <div className="left">
+          <CancelModal cancelSession={handleCancelSession} />
         </div>
 
         <div className="publicEvaluation">
