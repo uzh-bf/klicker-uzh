@@ -153,8 +153,6 @@ const Running = ({ intl, shortname }) => (
                                           await resetQuestionBlock({
                                             variables: { id, instanceIds: activeInstanceIds },
                                           })
-
-                                          Router.push('/sessions/running')
                                         }}
                                         handleTogglePublicEvaluation={() => {
                                           updateSettings({
