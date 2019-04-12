@@ -40,6 +40,7 @@ const propTypes = {
   handleEndSession: PropTypes.func.isRequired,
   handleNextBlock: PropTypes.func.isRequired,
   handlePauseSession: PropTypes.func.isRequired,
+  handleResetQuestionBlock: PropTypes.func.isRequired,
   handleTogglePublicEvaluation: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   isEvaluationPublic: PropTypes.bool,
@@ -98,6 +99,7 @@ const SessionTimeline = ({
   handlePauseSession,
   handleCancelSession,
   handleTogglePublicEvaluation,
+  handleResetQuestionBlock,
 }) => {
   const isFeedbackSession = blocks.length === 0
 
@@ -216,6 +218,10 @@ const SessionTimeline = ({
         </div>
 
         <div className="left">
+          <Button icon labelPosition="left" size="small" onClick={handleResetQuestionBlock}>
+            <Icon name="undo" />
+            <FormattedMessage defaultMessage="Reset Question Block" id="sessionArea.button.resetQuestionBlock" />
+          </Button>
           <CancelModal cancelSession={handleCancelSession} />
         </div>
 
