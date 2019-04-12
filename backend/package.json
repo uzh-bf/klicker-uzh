@@ -37,7 +37,7 @@
     "handlebars": "4.1.0",
     "helmet": "3.16.0",
     "ioredis": "4.6.2",
-    "jsonwebtoken": "8.5.0",
+    "jsonwebtoken": "8.5.1",
     "lodash": "4.17.11",
     "md5": "2.2.1",
     "moment": "2.24.0",
