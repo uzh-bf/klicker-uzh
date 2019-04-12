@@ -83,9 +83,9 @@ jobs:
       before_script:
         - echo $PASSWORD | docker login --username $USER --password-stdin $REGISTRY
       script:
-        - travis_retry docker pull $IMAGE_NAME:v1-2
-        - docker build . --cache-from $IMAGE_NAME:v1-2 --build-arg VERSION=v1-2 -t $IMAGE_NAME:v1-2
-        - travis_retry docker push $IMAGE_NAME:v1-2
+        - travis_retry docker pull $IMAGE_NAME:v1.2-canary
+        - docker build . --cache-from $IMAGE_NAME:v1.2-canary --build-arg VERSION=v1.2-canary -t $IMAGE_NAME:v1.2-canary
+        - travis_retry docker push $IMAGE_NAME:v1.2-canary
 
     # build all pull requests
     # push a nightly tag to Docker Hub
