@@ -60,6 +60,11 @@ const pages = [
     url: '/questions/:questionId',
   },
   {
+    mapParams: req => ({ questionId: req.params.questionId }),
+    renderPath: '/questions/duplicate',
+    url: '/questions/duplicate/:questionId',
+  },
+  {
     cached: CACHE_CFG.pages.join,
     mapParams: req => ({ shortname: req.params.shortname }),
     renderPath: '/join',
