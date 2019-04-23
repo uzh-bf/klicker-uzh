@@ -34,7 +34,7 @@
     "graphql-redis-subscriptions": "2.1.0",
     "graphql-subscriptions": "1.0.0",
     "graphql-tools": "4.0.4",
-    "handlebars": "4.1.1",
+    "handlebars": "4.1.2",
     "helmet": "3.16.0",
     "ioredis": "4.6.3",
     "jsonwebtoken": "8.5.1",
