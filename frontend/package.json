@@ -89,7 +89,7 @@
     "lru-cache": "5.1.1",
     "mathjs": "5.9.0",
     "morgan": "1.9.1",
-    "next": "8.0.4",
+    "next": "8.1.0",
     "node-sass": "4.11.0",
     "nodemon": "1.18.11",
     "prismjs": "1.15.0",
