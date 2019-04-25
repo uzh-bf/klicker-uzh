@@ -128,6 +128,7 @@
   "joinSessionsidebar.activeQuestion": "Aktive Frage",
   "joinSessionsidebar.feedbackChannel": "Feedback-Channel",
   "questionDetails.button.edit": "Editieren",
+  "questionDetails.button.duplicate": "Duplizieren",
   "questionDetails.button.view": "Ansehen",
   "questionDetails.usageHistory": "Verwendet in",
   "questionList.string.noMatchingQuestions": "Keine Fragen, die mit den Kriterien übereinstimmen.",

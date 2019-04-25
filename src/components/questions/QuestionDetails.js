@@ -45,6 +45,14 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
             <FormattedMessage defaultMessage="Edit" id="questionDetails.button.edit" />
           </Button>
         </Link>
+        <Link
+          as={`/questions/duplicate/${questionId}`}
+          href={{ pathname: '/questions/duplicate', query: { questionId } }}
+        >
+          <Button fluid>
+            <FormattedMessage defaultMessage="Duplicate" id="questionDetails.button.duplicate" />
+          </Button>
+        </Link>
       </div>
 
       <style jsx>{`
