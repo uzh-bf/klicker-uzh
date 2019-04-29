@@ -90,7 +90,7 @@
     "mathjs": "5.9.0",
     "morgan": "1.9.1",
     "next": "8.1.0",
-    "node-sass": "4.11.0",
+    "node-sass": "4.12.0",
     "nodemon": "1.18.11",
     "prismjs": "1.16.0",
     "prop-types": "15.7.2",
