@@ -42,7 +42,7 @@
     "md5": "2.2.1",
     "moment": "2.24.0",
     "mongodb": "3.2.3",
-    "mongoose": "5.5.4",
+    "mongoose": "5.5.5",
     "morgan": "1.9.1",
     "nodemailer": "6.1.1",
     "pretty-error": "2.1.1",
