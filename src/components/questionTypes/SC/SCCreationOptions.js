@@ -18,6 +18,7 @@ const propTypes = {
   handleUpdateOrder: PropTypes.func.isRequired,
   invalid: PropTypes.bool.isRequired,
   value: PropTypes.arrayOf(PropTypes.object).isRequired,
+  saveNewName: PropTypes.func.isRequired,
 }
 
 // create the purely functional component
@@ -27,6 +28,7 @@ const SCCreationOptions = ({
   handleDeleteOption,
   handleUpdateOrder,
   handleOptionToggleCorrect,
+  saveNewName,
   value,
   dirty,
   invalid,
@@ -49,14 +51,16 @@ const SCCreationOptions = ({
 
   const Options = ({ sortableOptions, handleCorrectToggle, handleDelete }) => (
     <div className="options">
-      {sortableOptions.map(({ correct, name }, index) => (
+      {sortableOptions.map(({ correct, name, editMode }, index) => (
         <SortableOption
           correct={correct}
+          editMode={editMode}
           handleCorrectToggle={handleCorrectToggle(index)}
           handleDelete={handleDelete(index)}
           index={index}
           key={`sortable-${name}`}
           name={name}
+          saveNewName={saveNewName(index)}
         />
       ))}
     </div>
@@ -88,6 +92,7 @@ const SCCreationOptions = ({
         <SortableOptions
           handleCorrectToggle={handleOptionToggleCorrect}
           handleDelete={handleDeleteOption}
+          saveNewName={saveNewName}
           sortableOptions={value || []}
           onSortEnd={handleUpdateOrder}
         />
@@ -110,7 +115,8 @@ const SCCreationOptions = ({
 SCCreationOptions.propTypes = propTypes
 
 export default compose(
-  mapProps(({ onChange, value, dirty, invalid, disabled }) => ({
+  mapProps(({ onChange, value, dirty, invalid, disabled, name }) => ({
+    name,
     dirty,
     disabled,
     // HACK: mapping as a workaround for the value.choices problem
@@ -131,5 +137,10 @@ export default compose(
 
     handleUpdateOrder: ({ onChange, value }) => ({ oldIndex, newIndex }) =>
       onChange(arrayMove(value, oldIndex, newIndex)),
+
+    saveNewName: ({ value }) => index => ({ newName }) => {
+      const option = value[index]
+      option.name = newName
+    },
   })
 )(SCCreationOptions)

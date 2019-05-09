@@ -2,6 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { Icon } from 'semantic-ui-react'
+import SCEditQuestionOption from './SCEditQuestionOption'
 
 import styles from './styles'
 
@@ -11,13 +12,25 @@ const propTypes = {
   handleCorrectToggle: PropTypes.func.isRequired,
   handleDelete: PropTypes.func.isRequired,
   name: PropTypes.string.isRequired,
+  toggleEditMode: PropTypes.func.isRequired,
+  saveNewName: PropTypes.func.isRequired,
+  discardNewName: PropTypes.func.isRequired,
 }
 
 const defaultProps = {
   disabled: false,
 }
 
-const SCCreationOption = ({ correct, disabled, name, handleCorrectToggle, handleDelete }) => (
+const SCCreationOption = ({
+  correct,
+  disabled,
+  name,
+  handleCorrectToggle,
+  handleDelete,
+  toggleEditMode,
+  saveNewName,
+  discardNewName,
+}) => (
   <div className={classNames('option', { correct })}>
     <button className="leftAction" disabled={disabled} type="button" onClick={handleDelete}>
       <Icon name="trash" />
@@ -32,7 +45,13 @@ const SCCreationOption = ({ correct, disabled, name, handleCorrectToggle, handle
       {correct ? <Icon name="checkmark" /> : <Icon name="remove" />}
     </button>
 
-    <div className="name">{name}</div>
+    <SCEditQuestionOption
+      discardNewName={discardNewName}
+      editMode={false}
+      name={name}
+      saveNewName={saveNewName}
+      toggleEditMode={toggleEditMode}
+    />
 
     <style jsx>{styles}</style>
   </div>

@@ -16,11 +16,24 @@ export default css`
 
   .option {
     display: flex;
-
     background-color: white;
     border: 1px solid grey;
     position: relative;
     overflow: hidden;
+  }
+
+  .optionEditCont {
+    display: flex;
+    inline-size: -webkit-fill-available;
+  }
+
+  .editOptBtnRight {
+    display: flex;
+  }
+
+  .optionEdit {
+    inline-size: -webkit-fill-available;
+    height: inherit;
   }
 
   .option.correct {
