@@ -3,13 +3,19 @@ import _debounce from 'lodash/debounce'
 import { withRouter } from 'next/router'
 import PropTypes from 'prop-types'
 import React from 'react'
-import { graphql } from 'react-apollo'
+import { graphql, Query } from 'react-apollo'
 import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
 import { branch, compose, renderComponent, withHandlers, withProps, withStateHandlers } from 'recompose'
 import { StudentLayout } from '../components/layouts'
 import FeedbackArea from '../components/sessions/join/FeedbackArea'
 import QuestionArea from '../components/sessions/join/QuestionArea'
-import { AddConfusionTSMutation, AddFeedbackMutation, AddResponseMutation, JoinSessionQuery } from '../graphql'
+import {
+  AddConfusionTSMutation,
+  AddFeedbackMutation,
+  AddResponseMutation,
+  JoinSessionQuery,
+  UpdateSessionSubscription,
+} from '../graphql'
 import { pageWithIntl, withFingerprint, withLogging, ensureFingerprint } from '../lib'
 
 const messages = defineMessages({
@@ -70,98 +76,120 @@ const Join = ({
       : intl.formatMessage(messages.feedbackChannelTitle)
 
   return (
-    <StudentLayout
-      isInteractionEnabled={isConfusionBarometerActive || isFeedbackChannelActive}
-      pageTitle={`Join ${shortname}`}
-      sidebar={{
-        activeItem: sidebarActiveItem,
-        handleSidebarActiveItemChange,
-        handleToggleSidebarVisible,
-        sidebarVisible,
-      }}
-      title={title}
-    >
-      <div className="joinSession">
-        {activeInstances.length > 0 ? (
-          <QuestionArea
-            active={sidebarActiveItem === 'activeQuestion'}
-            handleNewResponse={handleNewResponse}
-            questions={activeInstances}
-            sessionId={id}
-            shortname={shortname}
-          />
-        ) : (
-          <div
-            className={classNames('questionArea', {
-              inactive: sidebarActiveItem !== 'activeQuestion',
-            })}
-          >
-            <FormattedMessage defaultMessage="No question active." id="joinSession.noQuestionActive" />
-          </div>
-        )}
+    <Query query={JoinSessionQuery} variables={{ shortname }}>
+      {({ subscribeToMore }) => (
+        <StudentLayout
+          isInteractionEnabled={isConfusionBarometerActive || isFeedbackChannelActive}
+          pageTitle={`Join ${shortname}`}
+          sidebar={{
+            activeItem: sidebarActiveItem,
+            handleSidebarActiveItemChange,
+            handleToggleSidebarVisible,
+            sidebarVisible,
+          }}
+          subscribeToMore={() =>
+            subscribeToMore({
+              document: UpdateSessionSubscription,
+              updateQuery: (prev, { subscriptionData }) => {
+                if (!subscriptionData.data) return prev
+                const newFeedItem = subscriptionData.data.sessionUpdateAdded
+                return Object.assign({}, prev, {
+                  joinSession: {
+                    activeInstances: [newFeedItem.activeInstances, ...prev.joinSession.activeInstances],
+                    feedbacks: [newFeedItem.feedbacks, ...prev.joinSession.feedbacks],
+                    id: [newFeedItem.id, ...prev.joinSession.id],
+                    settings: [newFeedItem.settings, ...prev.joinSession.settings],
+                  },
+                })
+              },
+              variables: { sessionId: id },
+            })
+          }
+          title={title}
+        >
+          <div className="joinSession">
+            {activeInstances.length > 0 ? (
+              <QuestionArea
+                active={sidebarActiveItem === 'activeQuestion'}
+                handleNewResponse={handleNewResponse}
+                questions={activeInstances}
+                sessionId={id}
+                shortname={shortname}
+              />
+            ) : (
+              <div
+                className={classNames('questionArea', {
+                  inactive: sidebarActiveItem !== 'activeQuestion',
+                })}
+              >
+                <FormattedMessage defaultMessage="No question active." id="joinSession.noQuestionActive" />
+              </div>
+            )}
 
-        {(isConfusionBarometerActive || isFeedbackChannelActive) && (
-          <FeedbackArea
-            active={sidebarActiveItem === 'feedbackChannel'}
-            feedbacks={feedbacks}
-            handleNewConfusionTS={handleNewConfusionTS}
-            handleNewFeedback={handleNewFeedback}
-            isConfusionBarometerActive={isConfusionBarometerActive}
-            isFeedbackChannelActive={isFeedbackChannelActive}
-            sessionId={id}
-            shortname={shortname}
-          />
-        )}
+            {(isConfusionBarometerActive || isFeedbackChannelActive) && (
+              <FeedbackArea
+                active={sidebarActiveItem === 'feedbackChannel'}
+                feedbacks={feedbacks}
+                handleNewConfusionTS={handleNewConfusionTS}
+                handleNewFeedback={handleNewFeedback}
+                isConfusionBarometerActive={isConfusionBarometerActive}
+                isFeedbackChannelActive={isFeedbackChannelActive}
+                sessionId={id}
+                shortname={shortname}
+              />
+            )}
 
-        <style jsx>{`
-          @import 'src/theme';
+            <style jsx>{`
+              @import 'src/theme';
 
-          .joinSession {
-            display: flex;
-            min-height: -moz-calc(100vh - 8rem);
-            min-height: -webkit-calc(100vh - 8rem);
-            min-height: calc(100vh - 8rem);
-            width: 100%;
+              .joinSession {
+                display: flex;
+                min-height: -moz-calc(100vh - 8rem);
+                min-height: -webkit-calc(100vh - 8rem);
+                min-height: calc(100vh - 8rem);
+                width: 100%;
 
-            background-color: lightgray;
+                background-color: lightgray;
 
-            > * {
-              flex: 0 0 50%;
-            }
+                > * {
+                  flex: 0 0 50%;
+                }
 
-            .questionArea,
-            .feedbackArea {
-              padding: 1rem;
+                .questionArea,
+                .feedbackArea {
+                  padding: 1rem;
 
-              &.inactive {
-                display: none;
-              }
-            }
+                  &.inactive {
+                    display: none;
+                  }
+                }
 
-            @include desktop-tablet-only {
-              padding: 1rem;
-              min-height: 100%;
+                @include desktop-tablet-only {
+                  padding: 1rem;
+                  min-height: 100%;
 
-              .questionArea {
-                border: 1px solid $color-primary;
-                background-color: white;
-                margin-right: 0.25rem;
-              }
+                  .questionArea {
+                    border: 1px solid $color-primary;
+                    background-color: white;
+                    margin-right: 0.25rem;
+                  }
 
-              .feedbackArea {
-                border: 1px solid $color-primary;
-                background-color: white;
-                margin-left: 0.25rem;
+                  .feedbackArea {
+                    border: 1px solid $color-primary;
+                    background-color: white;
+                    margin-left: 0.25rem;
 
-                &.inactive {
-                  display: block;
+                    &.inactive {
+                      display: block;
+                    }
+                  }
                 }
               }
-            }
-          }
-        `}</style>
-      </div>
-    </StudentLayout>
+            `}</style>
+          </div>
+        </StudentLayout>
+      )}
+    </Query>
   )
 }
 
