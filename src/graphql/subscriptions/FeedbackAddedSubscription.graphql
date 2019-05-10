@@ -2,6 +2,7 @@ subscription FeedbackAdded($sessionId: ID!) {
   feedbackAdded(sessionId: $sessionId) {
     id
     content
+    tags
     votes
     createdAt
   }

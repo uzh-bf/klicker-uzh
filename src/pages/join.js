@@ -27,6 +27,7 @@ const propTypes = {
   activeInstances: PropTypes.array,
   feedbacks: PropTypes.arrayOf({
     content: PropTypes.string.isRequired,
+    tags: PropTypes.arrayOf(PropTypes.string),
     votes: PropTypes.number.isRequired,
   }),
   handleNewConfusionTS: PropTypes.func.isRequired,

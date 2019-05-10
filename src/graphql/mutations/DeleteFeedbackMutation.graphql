@@ -4,6 +4,7 @@ mutation DeleteFeedback($sessionId: ID!, $feedbackId: ID!) {
     feedbacks {
       id
       content
+      tags
       votes
     }
   }

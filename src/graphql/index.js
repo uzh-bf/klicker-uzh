@@ -13,6 +13,7 @@ import ModifyQuestionMutation from './mutations/ModifyQuestionMutation.graphql'
 import RequestPasswordMutation from './mutations/RequestPasswordMutation.graphql'
 import RegistrationMutation from './mutations/RegistrationMutation.graphql'
 import StartSessionMutation from './mutations/StartSessionMutation.graphql'
+import UpdateFeedbackMutation from './mutations/UpdateFeedbackMutation.graphql'
 import UpdateSessionSettingsMutation from './mutations/UpdateSessionSettingsMutation.graphql'
 import ArchiveQuestionsMutation from './mutations/ArchiveQuestionsMutation.graphql'
 import PauseSessionMutation from './mutations/PauseSessionMutation.graphql'
@@ -98,6 +99,7 @@ export {
   CreateQuestionMutation,
   CreateSessionMutation,
   DeleteFeedbackMutation,
+  UpdateFeedbackMutation,
   DeleteQuestionsMutation,
   DeleteResponseMutation,
   DeleteSessionsMutation,

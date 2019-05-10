@@ -17,10 +17,18 @@ const messages = defineMessages({
   },
 })
 
+const tagOptions = [
+  {
+    text: 'answered',
+    value: 'answered',
+  },
+]
+
 const propTypes = {
   feedbacks: PropTypes.arrayOf(PropTypes.object),
   handleActiveToggle: PropTypes.func.isRequired,
   handleDeleteFeedback: PropTypes.func.isRequired,
+  handleUpdateFeedback: PropTypes.func.isRequired,
   handlePublicToggle: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   isActive: PropTypes.bool,
@@ -39,6 +47,7 @@ const FeedbackChannel = ({
   isActive,
   isPublic,
   handleActiveToggle,
+  handleUpdateFeedback,
   handlePublicToggle,
   handleDeleteFeedback,
 }) => (
@@ -69,9 +78,17 @@ const FeedbackChannel = ({
 
     {isActive && (
       <div className="feedbacks">
-        {feedbacks.map(({ id, content, votes }) => (
+        {feedbacks.map(({ id, content, tags, votes }) => (
           <div className="feedback">
-            <Feedback content={content} key={id} votes={votes} onDelete={() => handleDeleteFeedback(id)} />
+            <Feedback
+              content={content}
+              key={id}
+              tagOptions={tagOptions}
+              value={tags}
+              votes={votes}
+              onChange={newTags => handleUpdateFeedback(newTags, id)}
+              onDelete={() => handleDeleteFeedback(id)}
+            />
           </div>
         ))}
       </div>

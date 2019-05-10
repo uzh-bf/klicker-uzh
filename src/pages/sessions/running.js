@@ -18,6 +18,7 @@ import {
   EndSessionMutation,
   PauseSessionMutation,
   CancelSessionMutation,
+  UpdateFeedbackMutation,
   UpdateSessionSettingsMutation,
   ActivateNextBlockMutation,
   DeleteFeedbackMutation,
@@ -229,55 +230,85 @@ const Running = ({ intl, shortname }) => (
                 {updateSettings => (
                   <Mutation mutation={DeleteFeedbackMutation}>
                     {deleteFeedback => (
-                      <FeedbackChannel
-                        feedbacks={feedbacks}
-                        handleActiveToggle={() => {
-                          updateSettings({
-                            refetchQueries: [{ query: RunningSessionQuery }],
-                            variables: {
-                              sessionId: id,
-                              settings: {
-                                isFeedbackChannelActive: !settings.isFeedbackChannelActive,
-                              },
-                            },
-                          })
-                        }}
-                        handleDeleteFeedback={feedbackId => {
-                          deleteFeedback({
-                            variables: { feedbackId, sessionId: id },
-                          })
-                        }}
-                        handlePublicToggle={() => {
-                          updateSettings({
-                            refetchQueries: [{ query: RunningSessionQuery }],
-                            variables: {
-                              sessionId: id,
-                              settings: {
-                                isFeedbackChannelPublic: !settings.isFeedbackChannelPublic,
-                              },
-                            },
-                          })
-                        }}
-                        intl={intl}
-                        isActive={settings.isFeedbackChannelActive}
-                        isPublic={settings.isFeedbackChannelPublic}
-                        subscribeToMore={() => {
-                          subscribeToMore({
-                            document: FeedbackAddedSubscription,
-                            updateQuery: (prev, { subscriptionData }) => {
-                              if (!subscriptionData.data) return prev
-                              return {
-                                ...prev,
-                                runningSession: {
-                                  ...prev.runningSession,
-                                  feedbacks: [...prev.runningSession.feedbacks, subscriptionData.data.feedbackAdded],
+                      <Mutation mutation={UpdateFeedbackMutation}>
+                        {updateFeedback => (
+                          <FeedbackChannel
+                            feedbacks={feedbacks}
+                            handleActiveToggle={() => {
+                              updateSettings({
+                                refetchQueries: [{ query: RunningSessionQuery }],
+                                variables: {
+                                  sessionId: id,
+                                  settings: {
+                                    isFeedbackChannelActive: !settings.isFeedbackChannelActive,
+                                  },
                                 },
-                              }
-                            },
-                            variables: { sessionId: id },
-                          })
-                        }}
-                      />
+                              })
+                            }}
+                            handleDeleteFeedback={feedbackId => {
+                              deleteFeedback({
+                                variables: { feedbackId, sessionId: id },
+                              })
+                            }}
+                            handlePublicToggle={() => {
+                              updateSettings({
+                                refetchQueries: [{ query: RunningSessionQuery }],
+                                variables: {
+                                  sessionId: id,
+                                  settings: {
+                                    isFeedbackChannelPublic: !settings.isFeedbackChannelPublic,
+                                  },
+                                },
+                              })
+                            }}
+                            handleUpdateFeedback={(newTags, feedbackId) => {
+                              updateFeedback({
+                                refetchQueries: [{ query: RunningSessionQuery }],
+                                variables: {
+                                  feedbackId,
+                                  sessionId: id,
+                                  tags: newTags,
+                                  settings: {
+                                    isFeedbackChannelActive: settings.isFeedbackChannelActive,
+                                  },
+                                },
+                              })
+                            }}
+                            intl={intl}
+                            isActive={settings.isFeedbackChannelActive}
+                            isPublic={settings.isFeedbackChannelPublic}
+                            subscribeToMore={() => {
+                              subscribeToMore({
+                                document: FeedbackAddedSubscription,
+                                updateQuery: (prev, { subscriptionData }) => {
+                                  if (!subscriptionData.data) return prev
+                                  const newFeedbacks = [
+                                    ...prev.runningSession.feedbacks,
+                                    subscriptionData.data.feedbackAdded,
+                                  ]
+                                  const sortedFeedbacks = newFeedbacks.sort((f1, f2) => {
+                                    if (f1.tags.length !== 0) {
+                                      return 1
+                                    }
+                                    if (f2.tags.length !== 0) {
+                                      return -1
+                                    }
+                                    return 0
+                                  })
+                                  return {
+                                    ...prev,
+                                    runningSession: {
+                                      ...prev.runningSession,
+                                      feedbacks: sortedFeedbacks,
+                                    },
+                                  }
+                                },
+                                variables: { sessionId: id },
+                              })
+                            }}
+                          />
+                        )}
+                      </Mutation>
                     )}
                   </Mutation>
                 )}

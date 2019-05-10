@@ -35,6 +35,7 @@ mutation ResetQuestionBlock($id: ID!, $instanceIds: [ID!]!) {
     feedbacks {
       id
       content
+      tags
       votes
       createdAt
     }

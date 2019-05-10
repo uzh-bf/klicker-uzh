@@ -1,0 +1,11 @@
+mutation UpdateFeedback($sessionId: ID!, $feedbackId: ID!, $tags: [String!]!) {
+  updateFeedback(sessionId: $sessionId, feedbackId: $feedbackId, tags: $tags) {
+    id
+    feedbacks {
+      id
+      content
+      tags
+      votes
+    }
+  }
+}

@@ -1,30 +1,61 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Button, Icon } from 'semantic-ui-react'
+import { Button, Icon, Dropdown } from 'semantic-ui-react'
 
 const propTypes = {
   alreadyVoted: PropTypes.bool.isRequired,
   content: PropTypes.string.isRequired,
+  onChange: PropTypes.func,
   onDelete: PropTypes.func,
   showDelete: PropTypes.bool,
   showVotes: PropTypes.bool,
+  tagOptions: PropTypes.arrayOf({
+    text: PropTypes.string.isRequired,
+    value: PropTypes.string.isRequired,
+  }).isRequired,
   updateVotes: PropTypes.func.isRequired,
   votes: PropTypes.number.isRequired,
+  value: PropTypes.arrayOf(PropTypes.string),
 }
 
 const defaultProps = {
+  onChange: f => f,
   onDelete: f => f,
   showDelete: true,
   showVotes: false,
+  value: [],
 }
 
-const Feedback = ({ alreadyVoted, content, showDelete, showVotes, updateVotes, votes, onDelete }) => (
+const Feedback = ({
+  alreadyVoted,
+  content,
+  showDelete,
+  showVotes,
+  tagOptions,
+  updateVotes,
+  value,
+  votes,
+  onChange,
+  onDelete,
+}) => (
   <div className="feedback">
     <div className="content">{content}</div>
     {showDelete && (
       <div className="delete">
         <Button basic fluid icon="trash" onClick={onDelete} />
       </div>
+    )}
+
+    {!showVotes && (
+      <Dropdown
+        multiple
+        search
+        selection
+        options={tagOptions}
+        renderLabel={label => ({ color: 'blue', content: `${label.text}`, icon: 'check' })}
+        value={value}
+        onChange={(_, { value: newVal }) => onChange(newVal)}
+      />
     )}
 
     {showVotes && (

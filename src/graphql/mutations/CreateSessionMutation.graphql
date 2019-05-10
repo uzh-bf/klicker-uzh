@@ -8,6 +8,7 @@ mutation CreateSession($name: String!, $blocks: [Session_QuestionBlockInput!]!) 
     feedbacks {
       id
       content
+      tags
       votes
     }
     blocks {

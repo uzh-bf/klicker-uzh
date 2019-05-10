@@ -35,6 +35,7 @@ query RunningSession {
     feedbacks {
       id
       content
+      tags
       votes
       createdAt
     }
