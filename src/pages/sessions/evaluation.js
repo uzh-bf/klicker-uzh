@@ -50,6 +50,7 @@ const defaultProps = {
 function Evaluation({
   activeInstanceIndex,
   activeInstance,
+  activeInstances,
   activeVisualizations,
   bins,
   instanceSummary,
@@ -71,6 +72,7 @@ function Evaluation({
   const { description, options } = question.versions[version]
 
   const layoutProps = {
+    activeInstances,
     activeInstance: activeInstanceIndex,
     activeVisualization: activeVisualizations[type],
     data,
@@ -82,6 +84,7 @@ function Evaluation({
     onToggleShowSolution: handleToggleShowSolution,
     options,
     pageTitle: intl.formatMessage(messages.pageTitle),
+    sessionId,
     showGraph,
     showSolution,
     statistics,
@@ -272,51 +275,57 @@ export default compose(
       }),
     }
   ),
-  withProps(({ activeInstances, activeInstanceIndex, bins, handleChangeBins, handleChangeActiveInstance }) => {
-    const activeInstance = activeInstances[activeInstanceIndex]
-    const { question, results } = activeInstance
+  withProps(
+    ({ activeInstances, activeInstanceIndex, bins, handleChangeBins, handleChangeActiveInstance, sessionId }) => {
+      const activeInstance = activeInstances[activeInstanceIndex]
+      const { question, results } = activeInstance
 
-    if (question.type === QUESTION_TYPES.FREE_RANGE) {
-      // convert the result data into an array with primitive numbers
-      const valueArray = toValueArray(results.data)
-      const hasResults = valueArray.length > 0
+      if (question.type === QUESTION_TYPES.FREE_RANGE) {
+        // convert the result data into an array with primitive numbers
+        const valueArray = toValueArray(results.data)
+        const hasResults = valueArray.length > 0
+
+        return {
+          sessionId,
+          activeInstance,
+          activeInstances,
+          handleChangeActiveInstance,
+          statistics: {
+            bins,
+            max: hasResults && max(valueArray),
+            mean: hasResults && mean(valueArray),
+            median: hasResults && median(valueArray),
+            min: hasResults && min(valueArray),
+            onChangeBins: e => handleChangeBins(+e.target.value),
+            q1: hasResults && quantileSeq(valueArray, 0.25),
+            q3: hasResults && quantileSeq(valueArray, 0.75),
+            sd: hasResults && std(valueArray),
+          },
+        }
+      }
+
+      const resultsWithPercentages = {
+        ...activeInstance.results,
+        data:
+          _get(activeInstance, 'results.data') &&
+          activeInstance.results.data.map(({ correct, count, value }) => ({
+            correct,
+            count,
+            percentage: _round(100 * (count / _get(activeInstance, 'results.totalResponses')), 1),
+            value,
+          })),
+        totalResponses: _get(activeInstance, 'results.totalResponses'),
+      }
 
       return {
-        activeInstance,
-        handleChangeActiveInstance,
-        statistics: {
-          bins,
-          max: hasResults && max(valueArray),
-          mean: hasResults && mean(valueArray),
-          median: hasResults && median(valueArray),
-          min: hasResults && min(valueArray),
-          onChangeBins: e => handleChangeBins(+e.target.value),
-          q1: hasResults && quantileSeq(valueArray, 0.25),
-          q3: hasResults && quantileSeq(valueArray, 0.75),
-          sd: hasResults && std(valueArray),
+        sessionId,
+        activeInstances,
+        activeInstance: {
+          ...activeInstance,
+          results: resultsWithPercentages,
         },
+        handleChangeActiveInstance,
       }
     }
-
-    const resultsWithPercentages = {
-      ...activeInstance.results,
-      data:
-        _get(activeInstance, 'results.data') &&
-        activeInstance.results.data.map(({ correct, count, value }) => ({
-          correct,
-          count,
-          percentage: _round(100 * (count / _get(activeInstance, 'results.totalResponses')), 1),
-          value,
-        })),
-      totalResponses: _get(activeInstance, 'results.totalResponses'),
-    }
-
-    return {
-      activeInstance: {
-        ...activeInstance,
-        results: resultsWithPercentages,
-      },
-      handleChangeActiveInstance,
-    }
-  })
+  )
 )(Evaluation)

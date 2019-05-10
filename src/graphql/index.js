@@ -16,6 +16,7 @@ import StartSessionMutation from './mutations/StartSessionMutation.graphql'
 import UpdateSessionSettingsMutation from './mutations/UpdateSessionSettingsMutation.graphql'
 import ArchiveQuestionsMutation from './mutations/ArchiveQuestionsMutation.graphql'
 import PauseSessionMutation from './mutations/PauseSessionMutation.graphql'
+import CancelSessionMutation from './mutations/CancelSessionMutation.graphql'
 import ModifySessionMutation from './mutations/ModifySessionMutation.graphql'
 import RequestPresignedURLMutation from './mutations/RequestPresignedURLMutation.graphql'
 import ModifyUserMutation from './mutations/ModifyUserMutation.graphql'
@@ -25,6 +26,7 @@ import ActivateAccountMutation from './mutations/ActivateAccountMutation.graphql
 import RequestAccountDeletionMutation from './mutations/RequestAccountDeletionMutation.graphql'
 import ResolveAccountDeletionMutation from './mutations/ResolveAccountDeletionMutation.graphql'
 import DeleteResponseMutation from './mutations/DeleteResponseMutation.graphql'
+import ResetQuestionBlockMutation from './mutations/ResetQuestionBlockMutation.graphql'
 
 import AccountSummaryQuery from './queries/AccountSummaryQuery.graphql'
 import JoinSessionQuery from './queries/JoinSessionQuery.graphql'
@@ -63,6 +65,7 @@ import UpdateSessionSubscription from './subscriptions/UpdateSessionSubscription
   StartSessionMutation,
   UpdateSessionSettingsMutation,
   PauseSessionMutation,
+  CancelSessionMutation,
   RequestPresignedURLMutation,
   ModifyUserMutation,
   AccountSummaryQuery,
@@ -105,6 +108,7 @@ export {
   ModifyQuestionMutation,
   ModifySessionMutation,
   PauseSessionMutation,
+  CancelSessionMutation,
   RegistrationMutation,
   StartSessionMutation,
   UpdateSessionSettingsMutation,
@@ -113,6 +117,7 @@ export {
   ActivateAccountMutation,
   RequestAccountDeletionMutation,
   ResolveAccountDeletionMutation,
+  ResetQuestionBlockMutation,
   AccountSummaryQuery,
   JoinSessionQuery,
   QuestionDetailsQuery,

@@ -1,0 +1,48 @@
+mutation ResetQuestionBlock($id: ID!, $instanceIds: [ID!]!) {
+  resetQuestionBlock(id: $id, instanceIds: $instanceIds) {
+    id
+    runtime
+    startedAt
+    activeStep
+    activeBlock
+    blocks {
+      id
+      status
+      instances {
+        id
+        isOpen
+        version
+        question {
+          id
+          title
+          type
+        }
+        results {
+          ... on SCQuestionResults {
+            totalParticipants
+          }
+          ... on FREEQuestionResults {
+            totalParticipants
+          }
+        }
+      }
+    }
+    confusionTS {
+      difficulty
+      speed
+      createdAt
+    }
+    feedbacks {
+      id
+      content
+      votes
+      createdAt
+    }
+    settings {
+      isConfusionBarometerActive
+      isEvaluationPublic
+      isFeedbackChannelActive
+      isFeedbackChannelPublic
+    }
+  }
+}

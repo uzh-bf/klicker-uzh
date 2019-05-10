@@ -6,6 +6,7 @@ import getConfig from 'next/config'
 import { defineMessages, intlShape, FormattedMessage } from 'react-intl'
 import { Button, Checkbox, Icon, Popup, Message } from 'semantic-ui-react'
 import { QuestionBlock } from '../questions'
+import { CancelModal } from '.'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -35,9 +36,11 @@ const messages = defineMessages({
 const propTypes = {
   activeStep: PropTypes.number.isRequired,
   blocks: PropTypes.array,
+  handleCancelSession: PropTypes.func.isRequired,
   handleEndSession: PropTypes.func.isRequired,
   handleNextBlock: PropTypes.func.isRequired,
   handlePauseSession: PropTypes.func.isRequired,
+  handleResetQuestionBlock: PropTypes.func.isRequired,
   handleTogglePublicEvaluation: PropTypes.func.isRequired,
   intl: intlShape.isRequired,
   isEvaluationPublic: PropTypes.bool,
@@ -94,7 +97,9 @@ const SessionTimeline = ({
   handleNextBlock,
   handleEndSession,
   handlePauseSession,
+  handleCancelSession,
   handleTogglePublicEvaluation,
+  handleResetQuestionBlock,
 }) => {
   const isFeedbackSession = blocks.length === 0
 
@@ -210,6 +215,14 @@ const SessionTimeline = ({
             <Icon name="pause" />
             <FormattedMessage defaultMessage="Pause Session" id="sessionArea.button.pauseSession" />
           </Button>
+        </div>
+
+        <div className="left">
+          <Button icon labelPosition="left" size="small" onClick={handleResetQuestionBlock}>
+            <Icon name="undo" />
+            <FormattedMessage defaultMessage="Reset Question Block" id="sessionArea.button.resetQuestionBlock" />
+          </Button>
+          <CancelModal cancelSession={handleCancelSession} />
         </div>
 
         <div className="publicEvaluation">
