@@ -1,6 +1,6 @@
 workflow "New workflow" {
   on = "push"
-  resolves = ["Validate formatting", "Lint sources"]
+  resolves = ["Validate formatting", "Lint sources", "Draft Release"]
 }
 
 action "Install dependencies" {
@@ -21,4 +21,9 @@ action "Lint sources" {
   needs = ["Install dependencies"]
   runs = "npm"
   args = "run lint"
+}
+
+action "Draft Release" {
+  uses = "toolmantim/release-drafter@v5.1.1"
+  secrets = ["GITHUB_TOKEN"]
 }
