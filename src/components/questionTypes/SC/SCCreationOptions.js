@@ -45,6 +45,7 @@ const SCCreationOptions = ({
           .option:hover {
             box-shadow: 0 0 0.2rem blue;
             -webkit-transition: all 0.1s;
+            transition: all 0.1s;
           }
         `}
       </style>
