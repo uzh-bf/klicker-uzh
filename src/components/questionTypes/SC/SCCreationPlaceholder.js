@@ -13,7 +13,11 @@ const propTypes = {
   handleSave: PropTypes.func.isRequired,
   inputMode: PropTypes.string.isRequired,
   name: PropTypes.string.isRequired,
+  handleKeyPress: PropTypes.func.isRequired,
 }
+
+// create ref to be assigned to the input field
+const focusField = React.createRef()
 
 // create the purely functional component
 const SCCreationPlaceholder = ({
@@ -24,6 +28,7 @@ const SCCreationPlaceholder = ({
   handleModeToggle,
   handleNameChange,
   handleSave,
+  handleKeyPress,
 }) => (
   <div className={classNames('option', { inputMode })}>
     <button className="leftAction" type="button" onClick={handleModeToggle}>
@@ -34,7 +39,7 @@ const SCCreationPlaceholder = ({
       {correct ? <Icon name="checkmark" /> : <Icon name="remove" />}
     </button>
 
-    <input type="text" value={name} onChange={handleNameChange} />
+    <input ref={focusField} type="text" value={name} onChange={handleNameChange} onKeyDown={handleKeyPress} />
 
     <button className="rightAction" type="button" onClick={handleSave}>
       <Icon name="save" />
@@ -94,7 +99,10 @@ export default compose(
   withHandlers({
     handleCorrectToggle: ({ setCorrect }) => () => setCorrect(correct => !correct),
 
-    handleModeToggle: ({ setInputMode }) => () => setInputMode(inputMode => !inputMode),
+    handleModeToggle: ({ setInputMode }) => () => {
+      setInputMode(inputMode => !inputMode)
+      focusField.current.focus()
+    },
 
     handleNameChange: ({ setName }) => e => setName(e.target.value),
 
@@ -103,6 +111,19 @@ export default compose(
       setInputMode(false)
       setName('')
       handleSave({ correct, name })
+    },
+  }),
+  withHandlers({
+    handleKeyPress: ({ correct, name, handleSave, setCorrect, setInputMode, setName }) => keypress => {
+      if (keypress.key === 'Enter') {
+        keypress.preventDefault()
+        handleSave(correct, name, handleSave, setCorrect, setInputMode, setName)
+        setInputMode(true)
+      } else if (keypress.key === 'Escape') {
+        setCorrect(false)
+        setInputMode(false)
+        setName('')
+      }
     },
   })
 )(SCCreationPlaceholder)

@@ -18,6 +18,7 @@ const propTypes = {
   handleUpdateOrder: PropTypes.func.isRequired,
   invalid: PropTypes.bool.isRequired,
   value: PropTypes.arrayOf(PropTypes.object).isRequired,
+  handleSaveNewName: PropTypes.func.isRequired,
 }
 
 // create the purely functional component
@@ -27,6 +28,7 @@ const SCCreationOptions = ({
   handleDeleteOption,
   handleUpdateOrder,
   handleOptionToggleCorrect,
+  handleSaveNewName,
   value,
   dirty,
   invalid,
@@ -40,6 +42,11 @@ const SCCreationOptions = ({
             cursor: grab;
             margin-bottom: 0.5rem;
           }
+          .option:hover {
+            box-shadow: 0 0 0.2rem blue;
+            -webkit-transition: all 0.1s;
+            transition: all 0.1s;
+          }
         `}
       </style>
     </div>
@@ -49,11 +56,13 @@ const SCCreationOptions = ({
 
   const Options = ({ sortableOptions, handleCorrectToggle, handleDelete }) => (
     <div className="options">
-      {sortableOptions.map(({ correct, name }, index) => (
+      {sortableOptions.map(({ correct, name, editMode }, index) => (
         <SortableOption
           correct={correct}
+          editMode={editMode}
           handleCorrectToggle={handleCorrectToggle(index)}
           handleDelete={handleDelete(index)}
+          handleSaveNewName={handleSaveNewName(index)}
           index={index}
           key={`sortable-${name}`}
           name={name}
@@ -88,11 +97,12 @@ const SCCreationOptions = ({
         <SortableOptions
           handleCorrectToggle={handleOptionToggleCorrect}
           handleDelete={handleDeleteOption}
+          handleSaveNewName={handleSaveNewName}
           sortableOptions={value || []}
           onSortEnd={handleUpdateOrder}
         />
 
-        {!disabled && <SCCreationPlaceholder handleSave={handleNewOption} />}
+        {!disabled && <SCCreationPlaceholder handleSave={handleNewOption} handleSaveNewName={handleSaveNewName} />}
       </Form.Field>
 
       <style jsx>
@@ -110,7 +120,8 @@ const SCCreationOptions = ({
 SCCreationOptions.propTypes = propTypes
 
 export default compose(
-  mapProps(({ onChange, value, dirty, invalid, disabled }) => ({
+  mapProps(({ onChange, value, dirty, invalid, disabled, name }) => ({
+    name,
     dirty,
     disabled,
     // HACK: mapping as a workaround for the value.choices problem
@@ -131,5 +142,10 @@ export default compose(
 
     handleUpdateOrder: ({ onChange, value }) => ({ oldIndex, newIndex }) =>
       onChange(arrayMove(value, oldIndex, newIndex)),
+
+    handleSaveNewName: ({ value }) => index => ({ newName }) => {
+      const option = value[index]
+      option.name = newName
+    },
   })
 )(SCCreationOptions)
