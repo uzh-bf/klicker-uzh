@@ -12,9 +12,9 @@ const propTypes = {
   handleCorrectToggle: PropTypes.func.isRequired,
   handleDelete: PropTypes.func.isRequired,
   name: PropTypes.string.isRequired,
-  toggleEditMode: PropTypes.func.isRequired,
-  saveNewName: PropTypes.func.isRequired,
-  discardNewName: PropTypes.func.isRequired,
+  handleToggleEditMode: PropTypes.func.isRequired,
+  handleSaveNewName: PropTypes.func.isRequired,
+  handleDiscardNewName: PropTypes.func.isRequired,
 }
 
 const defaultProps = {
@@ -27,9 +27,9 @@ const SCCreationOption = ({
   name,
   handleCorrectToggle,
   handleDelete,
-  toggleEditMode,
-  saveNewName,
-  discardNewName,
+  handleToggleEditMode,
+  handleSaveNewName,
+  handleDiscardNewName,
 }) => (
   <div className={classNames('option', { correct })}>
     <button className="leftAction" disabled={disabled} type="button" onClick={handleDelete}>
@@ -46,11 +46,11 @@ const SCCreationOption = ({
     </button>
 
     <SCEditQuestionOption
-      discardNewName={discardNewName}
       editMode={false}
+      handleDiscardNewName={handleDiscardNewName}
+      handleSaveNewName={handleSaveNewName}
+      handleToggleEditMode={handleToggleEditMode}
       name={name}
-      saveNewName={saveNewName}
-      toggleEditMode={toggleEditMode}
     />
 
     <style jsx>{styles}</style>

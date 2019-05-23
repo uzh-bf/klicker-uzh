@@ -8,26 +8,28 @@ import styles from './styles'
 const propTypes = {
   name: PropTypes.string.isRequired,
   editMode: PropTypes.bool.isRequired,
-  toggleEditMode: PropTypes.func.isRequired,
-  saveNewName: PropTypes.func.isRequired,
-  discardNewName: PropTypes.func.isRequired,
+  handleToggleEditMode: PropTypes.func.isRequired,
+  handleSaveNewName: PropTypes.func.isRequired,
+  handleDiscardNewName: PropTypes.func.isRequired,
   handleNameChange: PropTypes.func.isRequired,
   handleKeyPress: PropTypes.func.isRequired,
+  focusField: PropTypes.func.isRequired,
 }
 
 const SCEditQuestionOption = ({
   name,
   editMode,
-  toggleEditMode,
-  saveNewName,
-  discardNewName,
+  handleToggleEditMode,
+  handleSaveNewName,
+  handleDiscardNewName,
   handleNameChange,
   handleKeyPress,
+  focusField,
 }) => (
   <div className="optionEditCont">
     <div className="optionEdit">
       {editMode ? (
-        <input type="text" value={name} onChange={handleNameChange} onKeyDown={handleKeyPress} />
+        <input ref={focusField} type="text" value={name} onChange={handleNameChange} onKeyDown={handleKeyPress} />
       ) : (
         <div className="name">{name}</div>
       )}
@@ -35,17 +37,17 @@ const SCEditQuestionOption = ({
 
     <div className="editOptBtnRight">
       {editMode ? (
-        <button className={classNames('rightAction', { editMode })} type="button" onClick={saveNewName}>
+        <button className={classNames('rightAction', { editMode })} type="button" onClick={handleSaveNewName}>
           <Icon name="save" />
         </button>
       ) : null}
       {editMode ? (
-        <button className={classNames('rightAction', { editMode })} type="button" onClick={discardNewName}>
+        <button className={classNames('rightAction', { editMode })} type="button" onClick={handleDiscardNewName}>
           <Icon name="delete" />
         </button>
       ) : null}
       {!editMode ? (
-        <button className={classNames('rightAction', { editMode })} type="button" onClick={toggleEditMode}>
+        <button className={classNames('rightAction', { editMode })} type="button" onClick={handleToggleEditMode}>
           <Icon name="edit" />
         </button>
       ) : null}
@@ -57,39 +59,50 @@ const SCEditQuestionOption = ({
 SCEditQuestionOption.propTypes = propTypes
 
 export default compose(
-  withState('editMode', 'setEditMode', false),
-  withState('name', 'setName', props => {
-    return props.name
-  }),
+  withState('editMode', 'setEditMode', props => props.editMode),
+  withState('name', 'setName', props => props.name),
   withState('origName', 'setOrigName', props => {
     return props.name
   }),
 
   withHandlers({
+    // Workaround, since input element is rendered conditionally
+    focusField: () => e => {
+      if (e != null) {
+        e.focus()
+      }
+    },
     handleNameChange: ({ setName }) => e => setName(e.target.value),
-    toggleEditMode: ({ setEditMode }) => () => setEditMode(editMode => !editMode),
+    handleToggleEditMode: ({ setEditMode }) => () => {
+      setEditMode(editMode => !editMode)
+    },
 
-    saveNewName: ({ name, setEditMode, saveNewName, setOrigName }) => () => {
+    handleSaveNewName: ({ name, setEditMode, handleSaveNewName, setOrigName }) => () => {
       setEditMode(false)
       setOrigName(name)
       const newName = name
-      saveNewName({ newName })
+      handleSaveNewName({ newName })
     },
 
-    discardNewName: ({ setEditMode, origName, setName }) => () => {
+    handleDiscardNewName: ({ setEditMode, origName, setName }) => () => {
       setEditMode(false)
       setName(origName)
     },
-
-    handleKeyPress: ({ name, setEditMode, setName, setOrigName, origName, saveNewName }) => keypress => {
+  }),
+  withHandlers({
+    handleKeyPress: ({
+      name,
+      setEditMode,
+      setName,
+      setOrigName,
+      origName,
+      handleSaveNewName,
+      handleDiscardNewName,
+    }) => keypress => {
       if (keypress.key === 'Enter') {
-        setEditMode(false)
-        setOrigName(name)
-        const newName = name
-        saveNewName({ newName })
+        handleSaveNewName(name, setEditMode, handleSaveNewName, setOrigName)
       } else if (keypress.key === 'Escape') {
-        setEditMode(false)
-        setName(origName)
+        handleDiscardNewName(setEditMode, origName, setName)
       }
     },
   })

@@ -18,7 +18,7 @@ const propTypes = {
   handleUpdateOrder: PropTypes.func.isRequired,
   invalid: PropTypes.bool.isRequired,
   value: PropTypes.arrayOf(PropTypes.object).isRequired,
-  saveNewName: PropTypes.func.isRequired,
+  handleSaveNewName: PropTypes.func.isRequired,
 }
 
 // create the purely functional component
@@ -28,7 +28,7 @@ const SCCreationOptions = ({
   handleDeleteOption,
   handleUpdateOrder,
   handleOptionToggleCorrect,
-  saveNewName,
+  handleSaveNewName,
   value,
   dirty,
   invalid,
@@ -41,6 +41,10 @@ const SCCreationOptions = ({
           .option {
             cursor: grab;
             margin-bottom: 0.5rem;
+          }
+          .option:hover {
+            box-shadow: 0 0 0.2rem blue;
+            -webkit-transition: all 0.1s;
           }
         `}
       </style>
@@ -57,10 +61,10 @@ const SCCreationOptions = ({
           editMode={editMode}
           handleCorrectToggle={handleCorrectToggle(index)}
           handleDelete={handleDelete(index)}
+          handleSaveNewName={handleSaveNewName(index)}
           index={index}
           key={`sortable-${name}`}
           name={name}
-          saveNewName={saveNewName(index)}
         />
       ))}
     </div>
@@ -92,12 +96,12 @@ const SCCreationOptions = ({
         <SortableOptions
           handleCorrectToggle={handleOptionToggleCorrect}
           handleDelete={handleDeleteOption}
-          saveNewName={saveNewName}
+          handleSaveNewName={handleSaveNewName}
           sortableOptions={value || []}
           onSortEnd={handleUpdateOrder}
         />
 
-        {!disabled && <SCCreationPlaceholder handleSave={handleNewOption} />}
+        {!disabled && <SCCreationPlaceholder handleSave={handleNewOption} handleSaveNewName={handleSaveNewName} />}
       </Form.Field>
 
       <style jsx>
@@ -138,7 +142,7 @@ export default compose(
     handleUpdateOrder: ({ onChange, value }) => ({ oldIndex, newIndex }) =>
       onChange(arrayMove(value, oldIndex, newIndex)),
 
-    saveNewName: ({ value }) => index => ({ newName }) => {
+    handleSaveNewName: ({ value }) => index => ({ newName }) => {
       const option = value[index]
       option.name = newName
     },
