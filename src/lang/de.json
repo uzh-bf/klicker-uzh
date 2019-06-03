@@ -180,7 +180,7 @@
   "session.deletionConfirmation.content": "Sind Sie sicher, dass Sie \"{name}\" löschen wollen? Alle Resultate werden nicht mehr verfügbar sein!",
   "sessionArea.button.pauseSession": "Session pausieren",
   "sessionArea.button.cancelSession": "Session abbrechen",
-  "sessionArea.button.cancelSessionWarning": "Sind Sie sicher, dass Sie die aktuelle Session abbrechen wollen? Alle eingegebenen Antworten werden gelöscht.",
+  "sessionArea.button.cancelSessionWarning": "Sind Sie sicher, dass Sie die aktuelle Session abbrechen wollen? Der Sessions-Verlauf und alle eingegebenen Antworten werden gelöscht.",
   "sessionArea.qrPresentation": "QR präsentieren",
   "sessionArea.support": "Support",
   "sessionArea.toJoinSession": "Publikumsansicht",

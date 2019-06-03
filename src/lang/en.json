@@ -180,7 +180,7 @@
   "session.deletionConfirmation.content": "Are you sure you want to delete \"{name}\"? All results will be lost!",
   "sessionArea.button.pauseSession": "Pause Session",
   "sessionArea.button.cancelSession": "Cancel Session",
-  "sessionArea.button.cancelSessionWarning": "Are you sure you want to cancel the current session? All entered inputs will be lost.",
+  "sessionArea.button.cancelSessionWarning": "Are you sure you want to cancel the current session? Session progress and all submitted Answers will be lost.",
   "sessionArea.qrPresentation": "Present QR",
   "sessionArea.support": "Support",
   "sessionArea.toJoinSession": "Student View",
