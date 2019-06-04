@@ -1,5 +1,5 @@
 subscription UpdateSession($sessionId: ID!) {
-  sessionUpdateAdded(sessionId: $sessionId) {
+  sessionUpdated(sessionId: $sessionId) {
     id
     settings {
       isFeedbackChannelActive

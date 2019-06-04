@@ -14,7 +14,7 @@ import {
   AddFeedbackMutation,
   AddResponseMutation,
   JoinSessionQuery,
-  UpdateSessionSubscription,
+  UpdatedSessionSubscription,
 } from '../graphql'
 import { pageWithIntl, withFingerprint, withLogging, ensureFingerprint } from '../lib'
 
@@ -89,16 +89,15 @@ const Join = ({
           }}
           subscribeToMore={() =>
             subscribeToMore({
-              document: UpdateSessionSubscription,
+              document: UpdatedSessionSubscription,
               updateQuery: (prev, { subscriptionData }) => {
                 if (!subscriptionData.data) return prev
-                const newFeedItem = subscriptionData.data.sessionUpdateAdded
+                const newFeedItem = subscriptionData.data.sessionUpdated
                 return Object.assign({}, prev, {
                   joinSession: {
                     activeInstances: [newFeedItem.activeInstances, ...prev.joinSession.activeInstances],
                     feedbacks: [newFeedItem.feedbacks, ...prev.joinSession.feedbacks],
                     id: [newFeedItem.id, ...prev.joinSession.id],
-                    settings: [newFeedItem.settings, ...prev.joinSession.settings],
                   },
                 })
               },
