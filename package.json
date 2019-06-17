@@ -67,7 +67,7 @@
     "elastic-apm-node": "2.11.6",
     "express": "4.16.4",
     "file-loader": "3.0.1",
-    "fingerprintjs2": "2.0.6",
+    "fingerprintjs2": "2.1.0",
     "formik": "1.5.7",
     "glob": "7.1.4",
     "graphql": "14.3.1",
