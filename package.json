@@ -39,7 +39,7 @@
     "apollo-link-persisted-queries": "0.2.2",
     "apollo-link-state": "0.4.2",
     "apollo-link-ws": "1.0.17",
-    "axios": "0.18.0",
+    "axios": "0.19.0",
     "babel-core": "7.0.0-bridge.0",
     "babel-plugin-add-react-displayname": "0.0.5",
     "babel-plugin-import-graphql": "2.7.0",
