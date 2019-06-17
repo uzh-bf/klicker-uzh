@@ -65,7 +65,7 @@
     "draft-js-static-toolbar-plugin": "3.0.0",
     "elastic-apm-js-base": "3.0.0",
     "elastic-apm-node": "2.11.6",
-    "express": "4.16.4",
+    "express": "4.17.1",
     "file-loader": "3.0.1",
     "fingerprintjs2": "2.0.6",
     "formik": "1.5.7",
