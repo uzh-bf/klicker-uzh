@@ -222,7 +222,7 @@ const SessionTimeline = ({
             <Icon name="undo" />
             <FormattedMessage defaultMessage="Reset Question Block" id="sessionArea.button.resetQuestionBlock" />
           </Button>
-          <CancelModal cancelSession={handleCancelSession} />
+          <CancelModal handleCancelSession={handleCancelSession} />
         </div>
 
         <div className="publicEvaluation">
