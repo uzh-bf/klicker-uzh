@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React from 'react'
 import PropTypes from 'prop-types'
 import _round from 'lodash/round'
@@ -75,7 +76,6 @@ function PdfPrint({
   const { title, type } = question
   const { totalResponses, data } = results
   const { description, options } = question.versions[version]
-  const urls = []
 
   const pdfProps = {
     activeInstances,
@@ -130,7 +130,6 @@ function PdfPrint({
 
           const valueArray = toValueArray(results.data)
           const hasResults = valueArray.length > 0
-
           return (
             <div class="content-wrapper" style={{ height: '75%' }}>
               <Chart
