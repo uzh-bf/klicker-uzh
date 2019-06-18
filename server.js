@@ -51,6 +51,11 @@ const pages = [
   },
   {
     mapParams: req => ({ sessionId: req.params.sessionId }),
+    renderPath: '/sessions/pdfPrint',
+    url: '/sessions/pdf/:sessionId',
+  },
+  {
+    mapParams: req => ({ sessionId: req.params.sessionId }),
     renderPath: '/sessions/evaluation',
     url: '/sessions/evaluation/:sessionId',
   },

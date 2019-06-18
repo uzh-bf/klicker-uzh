@@ -59,6 +59,7 @@ const defaultProps = {
 
 function EvaluationLayout({
   activeVisualization,
+  activeVisualizations,
   data,
   intl,
   pageTitle,
@@ -77,6 +78,10 @@ function EvaluationLayout({
   instanceSummary,
   statistics,
   sessionId,
+  handleShowGraph,
+  isPublic,
+  bins,
+  sessionStatus,
 }) {
   const dropdownOptions = instanceSummary.map(({ blockStatus, title, totalResponses: count }, index) => ({
     icon: blockStatus === 'ACTIVE' ? 'comments' : 'checkmark',
@@ -175,7 +180,20 @@ function EvaluationLayout({
               />
             )}
           <CsvExport activeInstances={activeInstances} sessionId={sessionId} />
-          <PdfExport />
+          <PdfExport
+            activeInstances={activeInstances}
+            activeVisualizations={activeVisualizations}
+            handleShowGraph={handleShowGraph}
+            intl={intl}
+            isPublic={isPublic}
+            numBins={bins}
+            restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
+            sessionId={sessionId}
+            sessionStatus={sessionStatus}
+            showGraph={showGraph}
+            showSolution={showSolution}
+            statistics={statistics}
+          />
           <VisualizationType
             activeVisualization={activeVisualization}
             intl={intl}

@@ -1,22 +1,21 @@
 import React /* , { useState, useEffect } */ from 'react'
-// import PropTypes from 'prop-types'
-// import { Document, Page } from 'react-pdf'
+import PropTypes from 'prop-types'
 import { Button } from 'semantic-ui-react'
+import ReactDOM from 'react-dom'
+import { PDFDownloadLink } from '@react-pdf/renderer'
+import { printIntrospectionSchema } from 'graphql/utilities'
+import Chart from './Chart'
 
 const propTypes = {}
 
 const defaultProps = {}
 
-const PdfExport = () => {
-  /* const [csvData, setCsvData] = useState()
-
-  /*useEffect(() => {
-    
-  }, [activeInstances]) */
-
+const PdfExport = ({ sessionId }) => {
   return (
     <div>
-      <Button primary content="Export PDF" />
+      <a href={'/sessions/pdf/' + sessionId}>
+        <Button primary content="Export PDF" />
+      </a>
     </div>
   )
 }

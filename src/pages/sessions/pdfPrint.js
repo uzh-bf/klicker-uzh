@@ -9,15 +9,15 @@ import { graphql } from 'react-apollo'
 import { max, min, mean, median, quantileSeq, std } from 'mathjs'
 
 import { CHART_DEFAULTS, QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
-import EvaluationLayout from '../../components/layouts/EvaluationLayout'
 import { toValueArray, pageWithIntl, withLogging } from '../../lib'
-import { Chart } from '../../components/evaluation'
+import { Chart, Possibilities } from '../../components/evaluation'
 import { SessionEvaluationQuery, SessionEvaluationPublicQuery } from '../../graphql'
 import { sessionStatusShape, statisticsShape } from '../../propTypes'
+import { CommonLayout } from '../../components/layouts'
 
 const messages = defineMessages({
   pageTitle: {
-    defaultMessage: 'Evaluation',
+    defaultMessage: 'PdfPrint',
     id: 'evaluation.pageTitle',
   },
 })
@@ -47,7 +47,11 @@ const defaultProps = {
   statistics: undefined,
 }
 
-function Evaluation({
+const divStyle = {
+  heigth: '100%',
+}
+
+function PdfPrint({
   activeInstanceIndex,
   activeInstance,
   activeInstances,
@@ -66,12 +70,14 @@ function Evaluation({
   handleToggleShowSolution,
   handleChangeVisualizationType,
 }) {
+  activeInstance = activeInstances[activeInstanceIndex]
   const { results, question, version } = activeInstance
   const { title, type } = question
   const { totalResponses, data } = results
   const { description, options } = question.versions[version]
+  const urls = []
 
-  const layoutProps = {
+  const pdfProps = {
     activeInstances,
     activeInstance: activeInstanceIndex,
     activeVisualization: activeVisualizations[type],
@@ -99,30 +105,81 @@ function Evaluation({
   }
 
   return (
-    <EvaluationLayout {...layoutProps}>
-      <Chart
-        activeVisualization={activeVisualizations[type]}
-        data={results.data}
-        handleShowGraph={handleShowGraph}
-        instanceId={activeInstance.id}
-        intl={intl}
-        isPublic={isPublic}
-        numBins={bins}
-        questionType={type}
-        restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
-        sessionId={sessionId}
-        sessionStatus={sessionStatus}
-        showGraph={showGraph}
-        showSolution={showSolution}
-        statistics={statistics}
-        totalResponses={results.totalResponses}
-      />
-    </EvaluationLayout>
+    <React.Fragment>
+      <CommonLayout baseFontSize={false} nextHeight="100%">
+        {activeInstances.map(currentInstance => {
+          const { question, results } = currentInstance
+          if (question.type === QUESTION_TYPES.FREE_RANGE) {
+            // convert the result data into an array with primitive numbers
+            const valueArray = toValueArray(results.data)
+            const hasResults = valueArray.length > 0
+          }
+
+          const resultsWithPercentages = {
+            ...currentInstance.results,
+            data:
+              _get(currentInstance, 'results.data') &&
+              currentInstance.results.data.map(({ correct, count, value }) => ({
+                correct,
+                count,
+                percentage: _round(100 * (count / _get(currentInstance, 'results.totalResponses')), 1),
+                value,
+              })),
+            totalResponses: _get(currentInstance, 'results.totalResponses'),
+          }
+
+          const valueArray = toValueArray(results.data)
+          const hasResults = valueArray.length > 0
+
+          return (
+            <div class="content-wrapper" style={{ height: '75%' }}>
+              <Chart
+                activeVisualization={activeVisualizations[question.type]}
+                data={currentInstance.results.data}
+                handleShowGraph={handleShowGraph}
+                instanceId={currentInstance.id}
+                intl={intl}
+                isPublic={false}
+                numBins={bins}
+                questionType={question.type}
+                restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
+                sessionId={sessionId}
+                sessionStatus={sessionStatus}
+                showGraph={true}
+                showSolution={true}
+                statistics={{
+                  bins,
+                  max: hasResults && max(valueArray),
+                  mean: hasResults && mean(valueArray),
+                  median: hasResults && median(valueArray),
+                  min: hasResults && min(valueArray),
+                  onChangeBins: e => handleChangeBins(+e.target.value),
+                  q1: hasResults && quantileSeq(valueArray, 0.25),
+                  q3: hasResults && quantileSeq(valueArray, 0.75),
+                  sd: hasResults && std(valueArray),
+                }}
+                totalResponses={currentInstance.results.totalResponses}
+              />
+              <Possibilities
+                data={results.data}
+                questionOptions={options}
+                questionType={question.type}
+                showGraph={true}
+                showSolution={true}
+              />
+            </div>
+          )
+        })}
+      </CommonLayout>
+      {setTimeout(() => {
+        window.print()
+      }, 1000)}
+    </React.Fragment>
   )
 }
 
-Evaluation.propTypes = propTypes
-Evaluation.defaultProps = defaultProps
+PdfPrint.propTypes = propTypes
+PdfPrint.defaultProps = defaultProps
 
 export default compose(
   withRouter,
@@ -279,58 +336,5 @@ export default compose(
         showSolution: !showSolution,
       }),
     }
-  ),
-  withProps(
-    ({ activeInstances, activeInstanceIndex, bins, handleChangeBins, handleChangeActiveInstance, sessionId }) => {
-      const activeInstance = activeInstances[activeInstanceIndex]
-      const { question, results } = activeInstance
-
-      if (question.type === QUESTION_TYPES.FREE_RANGE) {
-        // convert the result data into an array with primitive numbers
-        const valueArray = toValueArray(results.data)
-        const hasResults = valueArray.length > 0
-
-        return {
-          sessionId,
-          activeInstance,
-          activeInstances,
-          handleChangeActiveInstance,
-          statistics: {
-            bins,
-            max: hasResults && max(valueArray),
-            mean: hasResults && mean(valueArray),
-            median: hasResults && median(valueArray),
-            min: hasResults && min(valueArray),
-            onChangeBins: e => handleChangeBins(+e.target.value),
-            q1: hasResults && quantileSeq(valueArray, 0.25),
-            q3: hasResults && quantileSeq(valueArray, 0.75),
-            sd: hasResults && std(valueArray),
-          },
-        }
-      }
-
-      const resultsWithPercentages = {
-        ...activeInstance.results,
-        data:
-          _get(activeInstance, 'results.data') &&
-          activeInstance.results.data.map(({ correct, count, value }) => ({
-            correct,
-            count,
-            percentage: _round(100 * (count / _get(activeInstance, 'results.totalResponses')), 1),
-            value,
-          })),
-        totalResponses: _get(activeInstance, 'results.totalResponses'),
-      }
-
-      return {
-        sessionId,
-        activeInstances,
-        activeInstance: {
-          ...activeInstance,
-          results: resultsWithPercentages,
-        },
-        handleChangeActiveInstance,
-      }
-    }
   )
-)(Evaluation)
+)(PdfPrint)
