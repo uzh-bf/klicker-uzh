@@ -54,7 +54,7 @@
     "request-promise": "4.2.4",
     "subscriptions-transport-ws": "0.9.16",
     "uuid": "3.3.2",
-    "v8n": "1.2.3",
+    "v8n": "1.3.2",
     "validator": "10.7.1"
   },
   "devDependencies": {
