@@ -81,7 +81,7 @@
     "ioredis": "4.10.0",
     "isomorphic-unfetch": "3.0.0",
     "js-cookie": "2.2.0",
-    "js-search": "1.4.2",
+    "js-search": "1.4.3",
     "localforage": "1.7.3",
     "lodash": "4.17.11",
     "logrocket": "0.6.21",
