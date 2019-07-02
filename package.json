@@ -138,7 +138,7 @@
     "@typescript-eslint/parser": "1.4.2",
     "babel-eslint": "10.0.2",
     "babel-jest": "24.1.0",
-    "bundlesize": "0.17.2",
+    "bundlesize": "0.18.0",
     "cypress": "3.3.2",
     "enzyme": "3.10.0",
     "eslint": "5.14.1",
