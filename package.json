@@ -70,7 +70,7 @@
     "fingerprintjs2": "2.1.0",
     "formik": "1.5.7",
     "glob": "7.1.4",
-    "graphql": "14.3.1",
+    "graphql": "14.4.1",
     "graphql-persisted-document-loader": "1.0.1",
     "graphql-tag": "2.10.1",
     "gulp": "3.9.1",
