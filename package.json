@@ -16,9 +16,9 @@
     "yarn": "YARN NO LONGER USED - use npm instead."
   },
   "dependencies": {
-    "@babel/core": "7.4.5",
-    "@babel/plugin-transform-react-constant-elements": "7.2.0",
-    "@babel/preset-env": "7.4.5",
+    "@babel/core": "7.5.0",
+    "@babel/plugin-transform-react-constant-elements": "7.5.0",
+    "@babel/preset-env": "7.5.0",
     "@types/lodash": "4.14.135",
     "@types/next": "8.0.5",
     "@types/react": "16.8.22",
