@@ -83,7 +83,7 @@
     "js-cookie": "2.2.0",
     "js-search": "1.4.3",
     "localforage": "1.7.3",
-    "lodash": "4.17.11",
+    "lodash": "4.17.13",
     "logrocket": "0.6.21",
     "logrocket-react": "3.0.0",
     "lru-cache": "5.1.1",
