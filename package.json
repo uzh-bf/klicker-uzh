@@ -8,7 +8,10 @@
   "author": "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>",
   "contributors": [
     "Alex Scheitlin <alex.scheitlin@bf.uzh.ch",
-    "Pascal Zehnder <pascal.zehnder@bf.uzh.ch"
+    "Pascal Zehnder <pascal.zehnder@bf.uzh.ch",
+    "wuergrob <32273110+wuergrob@users.noreply.github.com>",
+    "Jokkis80 <jokki@windowslive.com>",
+    "mnmldev <aleloewe@gmail.com>"
   ],
   "license": "AGPL-3.0",
   "engines": {
