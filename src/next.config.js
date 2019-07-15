@@ -3,7 +3,6 @@
 const webpack = require('webpack')
 const withCSS = require('@zeit/next-css')
 const withSourceMaps = require('@zeit/next-source-maps')
-const withTypescript = require('@zeit/next-typescript')
 const { DEVELOPMENT_SERVER, PHASE_PRODUCTION_BUILD } = require('next/constants')
 
 const CFG = require('./klicker.conf.js')
@@ -42,19 +41,6 @@ module.exports = phase => {
       webpackConfig.plugins.push(new webpack.IgnorePlugin(/src\/pages.*\/test.*/))
 
       // push graphql loaders into the webpack config
-      webpackConfig.module.rules.push({
-        test: /\.graphql$/,
-        use: [
-          {
-            loader: 'graphql-persisted-document-loader',
-            options: {
-              addTypename: true,
-            },
-          },
-          { loader: 'graphql-tag/loader' },
-        ],
-      })
-
       // push url-loader to enable loading fonts
       webpackConfig.module.rules.push({
         test: /\.(jpe?g|png|svg|gif|eot|ttf|woff|woff2)$/,
@@ -93,9 +79,6 @@ module.exports = phase => {
 
   // enable sourcemaps
   config = withSourceMaps(config)
-
-  // enable typescript support
-  config = withTypescript(config)
 
   // build only configuration
   if (phase === PHASE_PRODUCTION_BUILD) {
