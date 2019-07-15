@@ -5,7 +5,9 @@
   "homepage": "https://www.klicker.uzh.ch",
   "repository": "https://github.com/uzh-bf/klicker-api.git",
   "bugs": "https://github.com/uzh-bf/klicker-uzh",
-  "author": "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>",
+  "maintainers": [
+    "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
+  ],
   "contributors": [
     "Alex Scheitlin <alex.scheitlin@bf.uzh.ch",
     "Pascal Zehnder <pascal.zehnder@bf.uzh.ch"
