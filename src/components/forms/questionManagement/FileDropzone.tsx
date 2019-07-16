@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react'
+import React, { useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import getConfig from 'next/config'
 import { FormattedMessage } from 'react-intl'
@@ -21,12 +21,59 @@ function FileDropzone({ disabled, files, onChangeFiles }: Props): React.ReactEle
   // prepare a callback hook that handles added files
   const onDrop = useCallback(acceptedFiles => {
     if (!disabled) {
-      onChangeFiles(files.concat(acceptedFiles))
+      onChangeFiles(
+        files.concat(
+          acceptedFiles.map(file =>
+            Object.assign(file, {
+              preview: URL.createObjectURL(file),
+            })
+          )
+        )
+      )
     }
   }, [])
 
   // get properties of the dropzone hook
   const { getRootProps, getInputProps } = useDropzone({ accept: 'image/*', disabled, onDrop })
+
+  const previews = files.map((file, index) => {
+    const imageSrc = `${publicRuntimeConfig.s3root}/${file.name}`
+    return (
+      <div className="imagePreview" key={file.id || index}>
+        <Card>
+          <Card.Meta>
+            <span className="imageIndex">{`#${index + 1}`}</span>
+          </Card.Meta>
+          <Image height="auto" src={file.preview || imageSrc} width="100%" />
+          <Card.Content extra>
+            <Button
+              basic
+              fluid
+              color="red"
+              disabled={disabled}
+              type="button"
+              onClick={() => {
+                if (!disabled) {
+                  onChangeFiles(files.filter((val, ix) => ix !== index))
+                }
+              }}
+            >
+              <Icon name="trash" />
+              <FormattedMessage defaultMessage="Delete" id="fileDropzone.button.delete" />
+            </Button>
+          </Card.Content>
+        </Card>
+      </div>
+    )
+  })
+
+  useEffect(
+    () => () => {
+      // Make sure to revoke the data uris to avoid memory leaks
+      files.forEach(file => URL.revokeObjectURL(file.preview))
+    },
+    [files]
+  )
 
   return (
     <div className="fileDropzone">
@@ -37,38 +84,7 @@ function FileDropzone({ disabled, files, onChangeFiles }: Props): React.ReactEle
         </Button>
       </div>
 
-      <div className="previews">
-        {files.map((file, index) => {
-          const imageSrc = `${publicRuntimeConfig.s3root}/${file.name}`
-          return (
-            <div className="imagePreview" key={file.id || index}>
-              <Card>
-                <Card.Meta>
-                  <span className="imageIndex">{`#${index + 1}`}</span>
-                </Card.Meta>
-                <Image height="auto" src={file.preview || imageSrc} width="100%" />
-                <Card.Content extra>
-                  <Button
-                    basic
-                    fluid
-                    color="red"
-                    disabled={disabled}
-                    type="button"
-                    onClick={() => {
-                      if (!disabled) {
-                        onChangeFiles(files.filter((val, ix) => ix !== index))
-                      }
-                    }}
-                  >
-                    <Icon name="trash" />
-                    <FormattedMessage defaultMessage="Delete" id="fileDropzone.button.delete" />
-                  </Button>
-                </Card.Content>
-              </Card>
-            </div>
-          )
-        })}
-      </div>
+      <div className="previews">{previews}</div>
 
       <style jsx>{`
         @import 'src/theme';
