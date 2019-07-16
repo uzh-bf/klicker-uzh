@@ -36,8 +36,8 @@ describe('AccountService', () => {
     })
 
     afterAll(async done => {
-      mongoose.disconnect(done)
       userId = undefined
+      await mongoose.disconnect(done)
     })
 
     describe('checkAvailability', () => {

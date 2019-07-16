@@ -127,7 +127,7 @@ module.exports = convict({
       format: 'Boolean',
     },
     url: {
-      default: undefined,
+      default: 'localhost:27017',
       env: 'MONGO_URL',
       format: String,
       sensitive: true,

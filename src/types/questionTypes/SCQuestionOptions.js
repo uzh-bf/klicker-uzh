@@ -1,9 +1,4 @@
-/* eslint-disable no-use-before-define */
-
-// HACK: export before require such that circular dependencies can be handled
-module.exports = () => [SCQuestionOptions]
-
-const SCQuestionOptions = `
+module.exports = `
   type SCQuestionOptions {
     randomized: Boolean!
 

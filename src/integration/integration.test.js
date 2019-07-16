@@ -58,10 +58,9 @@ describe('Integration', () => {
     }))
   })
 
-  afterAll(async () => {
-    await mongoose.disconnect()
-    await app.close()
+  afterAll(async done => {
     authCookie = null
+    await mongoose.disconnect(done)
   })
 
   const login = async password => {
