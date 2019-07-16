@@ -1,9 +1,4 @@
-/* eslint-disable no-use-before-define */
-
-// HACK: export before require such that circular dependencies can be handled
-module.exports = () => [File]
-
-const File = `
+module.exports = `
   type File_PresignedURL {
     fileName: String!
     signedUrl: String!

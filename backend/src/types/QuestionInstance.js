@@ -1,9 +1,4 @@
-/* eslint-disable no-use-before-define */
-
-// HACK: export before require such that circular dependencies can be handled
-module.exports = () => [QuestionInstance]
-
-const QuestionInstance = `
+module.exports = `
   union QuestionInstance_Results = SCQuestionResults | FREEQuestionResults
 
   input QuestionInstance_ResponseInput {

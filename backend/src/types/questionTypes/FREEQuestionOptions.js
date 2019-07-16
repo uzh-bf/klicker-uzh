@@ -1,9 +1,4 @@
-/* eslint-disable no-use-before-define */
-
-// HACK: export before require such that circular dependencies can be handled
-module.exports = () => [FREEQuestionOptions]
-
-const FREEQuestionOptions = `
+module.exports = `
   type FREEQuestionOptions {
     restrictions: FREEQuestionOptions_Restrictions
   }

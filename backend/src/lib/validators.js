@@ -1,11 +1,10 @@
 const v8n = require('v8n')
-const isEmail = require('validator/lib/isEmail')
-const isAlphanumeric = require('validator/lib/isAlphanumeric')
+const validator = require('validator')
 
 v8n.extend({
   // add an email validator based on validator.js
-  alphanumeric: () => str => isAlphanumeric(str),
-  email: () => str => isEmail(str),
+  alphanumeric: () => str => validator.isAlphanumeric(str),
+  email: () => str => validator.isEmail(str),
 })
 
 module.exports = {

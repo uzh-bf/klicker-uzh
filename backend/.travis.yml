@@ -14,7 +14,7 @@ jobs:
       stage: test
       language: node_js
       node_js:
-        - "10"
+        - '10'
       cache: npm
       script:
         - npm run format:ci
@@ -31,7 +31,7 @@ jobs:
         - ./cc-test-reporter before-build
       script:
         - mv .env.travis .env
-        - npm run  test:ci
+        - npm run test:ci
       after_script:
         - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
 

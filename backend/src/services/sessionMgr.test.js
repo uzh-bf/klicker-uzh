@@ -34,9 +34,9 @@ describe('SessionMgrService', () => {
       withQuestions: true,
     }))
   })
-  afterAll(done => {
-    mongoose.disconnect(done)
+  afterAll(async done => {
     userId = undefined
+    await mongoose.disconnect(done)
   })
 
   describe('choicesToResults', () => {

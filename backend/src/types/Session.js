@@ -1,11 +1,4 @@
-/* eslint-disable no-use-before-define */
-
-// HACK: export before require such that circular dependencies can be handled
-module.exports = () => [Session, QuestionInstance]
-
-const QuestionInstance = require('./QuestionInstance')
-
-const Session = `
+module.exports = `
   enum Session_Status {
     CREATED
     RUNNING

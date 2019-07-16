@@ -53,6 +53,7 @@ const mongoConfig = {
   keepAlive: true,
   reconnectTries: Number.MAX_VALUE,
   reconnectInterval: 1000,
+  promiseLibrary: global.Promise,
 }
 if (MONGO_CFG.user && MONGO_CFG.password) {
   mongoose.connect(`mongodb://${MONGO_CFG.user}:${MONGO_CFG.password}@${MONGO_CFG.url}`, mongoConfig)
@@ -64,8 +65,6 @@ if (MONGO_CFG.debug) {
   // activate mongoose debug mode (log all queries)
   mongoose.set('debug', true)
 }
-
-mongoose.Promise = Promise
 
 mongoose.connection
   .once('open', () => {
