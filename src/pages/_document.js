@@ -24,17 +24,16 @@ export default class IntlDocument extends Document {
   }
 
   render() {
-    // Polyfill Intl API for older browsers
-    const polyfill = `https://cdn.polyfill.io/v2/polyfill.min.js
-      ?features=default-3.6,Intl,Intl.~locale.de,Intl.~locale.en,Array.prototype.includes,String.prototype.repeat,Symbol,Symbol.iterator`
-
     return (
       <html lang={this.props.locale}>
         <Head>
           <meta content="text/html; charset=utf-8" httpEquiv="Content-type" />
           <meta content="width=device-width, initial-scale=1" name="viewport" />
           <meta content="IE=Edge" httpEquiv="X-UA-Compatible" />
-          <script src={polyfill} />
+          <script
+            crossOrigin="anonymous"
+            src="https://polyfill.io/v3/polyfill.min.js?flags=gated&features=default%2CIntl%2CArray.prototype.includes%2CString.prototype.repeat%2CSymbol%2CSymbol.iterator"
+          />
         </Head>
         <body>
           <Main />

@@ -103,7 +103,7 @@ const EditQuestion = ({ intl, router }) => (
                           ) => {
                             // split files into newly added and existing entities
                             const existingFiles = files.filter(file => file.id)
-                            const newFiles = files.filter(file => file.preview)
+                            const newFiles = files.filter(file => !file.id)
 
                             // request presigned urls and filenames for newly added files
                             const fileEntities = await getPresignedURLs(newFiles, requestPresignedURL)
