@@ -128,6 +128,8 @@
     "yup": "0.27.0"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^1.4.0",
+    "@graphql-codegen/fragment-matcher": "^1.4.0",
     "@testing-library/react": "8.0.5",
     "bundlesize": "0.18.0",
     "enzyme": "3.10.0",
@@ -165,6 +167,7 @@
     "dev:ndb": "cross-env NODE_ENV=development ndb node server.js",
     "format": "prettier --write \"src/**/*.js\" \"src/**/*.graphql\" \"src/**/*.json\" server.js",
     "format:ci": "prettier --list-different \"src/**/*.js\" \"src/**/*.graphql\" \"src/**/*.json\" server.js",
+    "gql-gen": "gql-gen",
     "lint": "eslint src/ --ext .js --ext .ts --ext .tsx server.js",
     "start": "cross-env NODE_ENV=production node server.js",
     "start:inspect": "cross-env NODE_ENV=production node --inspect server.js",
