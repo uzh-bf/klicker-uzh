@@ -1,7 +1,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 // https://github.com/zeit/next.js/blob/canary/examples/with-apollo/lib/initApollo.js
 // websockets: https://github.com/zeit/next.js/issues/3261
-import 'isomorphic-unfetch'
+import fetch from 'isomorphic-unfetch'
 import getConfig from 'next/config'
 import Router from 'next/router'
 
@@ -20,6 +20,7 @@ const { publicRuntimeConfig, serverRuntimeConfig } = getConfig()
 let apolloClient = null
 
 function create(initialState) {
+  const isBrowser = typeof window !== 'undefined'
   const cache = new InMemoryCache({
     addTypename: true,
     dataIdFromObject: o => o.id,
@@ -28,13 +29,13 @@ function create(initialState) {
   // initialize the basic http link for both SSR and client-side usage
   let httpLink = new BatchHttpLink({
     credentials: 'include', // Additional fetch() options like `credentials` or `headers`
-    uri: process.browser
+    uri: isBrowser
       ? publicRuntimeConfig.apiUrl
       : serverRuntimeConfig.apiUrlSSR || publicRuntimeConfig.apiUrl || 'http://localhost:4000/graphql',
   })
 
   // on the client, differentiate between websockets and http requests
-  if (process.browser) {
+  if (isBrowser) {
     // instantiate a basic subscription client
     const wsClient = new SubscriptionClient(publicRuntimeConfig.apiUrlWS || 'ws://localhost:4000/graphql', {
       reconnect: true,
@@ -68,7 +69,7 @@ function create(initialState) {
         graphQLErrors.forEach(({ message, path, locations, extensions }) => {
           console.log(`[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`)
 
-          if (process.browser && extensions.code === 'UNAUTHENTICATED') {
+          if (isBrowser && extensions.code === 'UNAUTHENTICATED') {
             Router.push('/user/login?expired=true')
           }
         })
@@ -92,16 +93,17 @@ function create(initialState) {
 
   return new ApolloClient({
     cache,
-    connectToDevTools: process.browser,
+    connectToDevTools: isBrowser,
+    fetch: !isBrowser && fetch,
     link: persistedQueryLink ? persistedQueryLink.concat(link) : link,
-    ssrMode: !process.browser, // Disables forceFetch on the server (so queries are only run once)
+    ssrMode: !isBrowser, // Disables forceFetch on the server (so queries are only run once)
   })
 }
 
 export default function initApollo(initialState) {
   // Make sure to create a new client for every server-side request so that data
   // isn't shared between connections (which would be bad)
-  if (!process.browser) {
+  if (typeof window === 'undefined') {
     return create(initialState)
   }
 

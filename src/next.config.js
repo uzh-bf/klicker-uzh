@@ -41,6 +41,19 @@ module.exports = phase => {
       webpackConfig.plugins.push(new webpack.IgnorePlugin(/src\/pages.*\/test.*/))
 
       // push graphql loaders into the webpack config
+      webpackConfig.module.rules.push({
+        test: /\.graphql$/,
+        use: [
+          /* {
+            loader: 'graphql-persisted-document-loader',
+            options: {
+              addTypename: true,
+            },
+          }, */
+          { loader: 'graphql-tag/loader' },
+        ],
+      })
+
       // push url-loader to enable loading fonts
       webpackConfig.module.rules.push({
         test: /\.(jpe?g|png|svg|gif|eot|ttf|woff|woff2)$/,
