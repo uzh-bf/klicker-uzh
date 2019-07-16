@@ -8,6 +8,8 @@ import initApollo from './initApollo'
 
 export default App =>
   class Apollo extends React.Component {
+    static displayName = 'withApollo(App)'
+
     static async getInitialProps(ctx) {
       const { Component, router, res } = ctx
 
@@ -30,7 +32,7 @@ export default App =>
 
       // Run all GraphQL queries in the component tree
       // and extract the resulting data
-      if (!process.browser) {
+      if (typeof window === 'undefined') {
         try {
           // Run all GraphQL queries
           await getDataFromTree(<App {...appProps} Component={Component} apolloClient={apollo} router={router} />)
@@ -54,8 +56,6 @@ export default App =>
         apolloState,
       }
     }
-
-    static displayName = 'withApollo(App)'
 
     constructor(props) {
       super(props)
