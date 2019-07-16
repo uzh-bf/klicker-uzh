@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import { DropTarget } from 'react-dnd'
+import { DropTarget } from 'react-dnd-cjs'
 import { Icon } from 'semantic-ui-react'
 
 const propTypes = {
