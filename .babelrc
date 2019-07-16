@@ -2,7 +2,6 @@
   "env":{
      "development":{
         "presets":[
-          "@zeit/next-typescript/babel",
            [
               "next/babel",
               {
@@ -24,15 +23,12 @@
            ]
         ],
         "plugins":[
-           // "@babel/plugin-proposal-do-expressions",
-           // "@babel/plugin-proposal-optional-chaining",
            "inline-dotenv",
            "add-react-displayname"
         ]
      },
      "production":{
         "presets":[
-          "@zeit/next-typescript/babel",
            [
               "next/babel",
               {
@@ -64,8 +60,6 @@
                  ]
               }
            ],
-           // "@babel/plugin-proposal-do-expressions",
-           // "@babel/plugin-proposal-optional-chaining",
            "transform-inline-environment-variables",
            "add-react-displayname",
            [
@@ -78,7 +72,6 @@
      },
      "test":{
         "presets":[
-          "@zeit/next-typescript/babel",
            [
 
               "@babel/preset-env",
@@ -101,8 +94,6 @@
            ]
         ],
         "plugins":[
-           // "@babel/plugin-proposal-do-expressions",
-           // "@babel/plugin-proposal-optional-chaining",
            "import-graphql"
         ]
      }
