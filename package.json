@@ -41,7 +41,7 @@
     "helmet": "3.18.0",
     "ioredis": "4.11.2",
     "jsonwebtoken": "8.5.1",
-    "lodash": "4.17.14",
+    "lodash": "4.17.15",
     "md5": "2.2.1",
     "moment": "2.24.0",
     "mongodb": "3.2.7",
