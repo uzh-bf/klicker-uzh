@@ -1,27 +1,26 @@
 /* eslint-disable jsx-a11y/label-has-for */
 
 import React from 'react'
-import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
 import { Form, Icon, Input } from 'semantic-ui-react'
 
-const propTypes = {
-  disabled: PropTypes.bool,
-  error: PropTypes.string,
-  errorMessage: PropTypes.string,
-  handleBlur: PropTypes.func.isRequired,
-  handleChange: PropTypes.func.isRequired,
-  inlineLabel: PropTypes.string,
-  input: PropTypes.object.isRequired,
-  label: PropTypes.string,
-  name: PropTypes.string.isRequired,
-  placeholder: PropTypes.string,
-  renderInput: PropTypes.func,
-  required: PropTypes.bool,
-  tooltip: PropTypes.string,
-  touched: PropTypes.bool.isRequired,
-  value: PropTypes.oneOf([PropTypes.string, PropTypes.number]).isRequired,
-  width: PropTypes.number,
+interface Props {
+  disabled?: boolean
+  error?: string
+  errorMessage?: string
+  handleBlur: () => void
+  handleChange: () => void
+  inlineLabel?: string
+  input: any
+  label?: string
+  name: string
+  placeholder?: string
+  renderInput?: () => React.ReactElement
+  required?: boolean
+  tooltip?: string
+  touched: boolean
+  value: string | number
+  width?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16
 }
 
 const defaultProps = {
@@ -37,7 +36,7 @@ const defaultProps = {
   width: undefined,
 }
 
-const FormikInput = ({
+function FormikInput({
   // formik props
   value,
   error,
@@ -56,7 +55,7 @@ const FormikInput = ({
   errorMessage,
   // remaining props
   ...rest
-}) => {
+}: Props): React.ReactElement {
   // construct field props
   // define an erroneous field as a field that has been touched and is invalid
   const fieldProps = {
@@ -78,7 +77,7 @@ const FormikInput = ({
   return (
     <Form.Field {...fieldProps}>
       {label && (
-        <label forHtml={name}>
+        <label htmlFor={name}>
           {label}
           {tooltip && (
             <a data-tip data-for={name}>
@@ -125,7 +124,6 @@ const FormikInput = ({
   )
 }
 
-FormikInput.propTypes = propTypes
 FormikInput.defaultProps = defaultProps
 
 export default FormikInput
