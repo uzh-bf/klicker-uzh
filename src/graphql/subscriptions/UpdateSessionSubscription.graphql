@@ -8,6 +8,7 @@ subscription UpdateSession($sessionId: ID!) {
     }
     activeInstances {
       id
+      execution
       questionId
       title
       content

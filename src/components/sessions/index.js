@@ -1,5 +1,5 @@
 export { default as Session } from './Session'
-export { default as SessionList } from './SessionList'
+export { default as SessionList } from './SessionList.tsx'
 // eslint-disable-next-line import/no-cycle
 export { default as SessionTimeline } from './SessionTimeline.tsx'
 export { default as CancelModal } from './CancelModal.tsx'

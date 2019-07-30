@@ -1,5 +1,5 @@
-mutation ResetQuestionBlock($id: ID!, $instanceIds: [ID!]!) {
-  resetQuestionBlock(id: $id, instanceIds: $instanceIds) {
+mutation ResetQuestionBlock($sessionId: ID!, $blockId: ID!) {
+  resetQuestionBlock(sessionId: $sessionId, blockId: $blockId) {
     id
     runtime
     startedAt

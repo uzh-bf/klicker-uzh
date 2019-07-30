@@ -8,6 +8,7 @@ query JoinSession($shortname: String!) {
     }
     activeInstances {
       id
+      execution
       questionId
       title
       content

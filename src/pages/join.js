@@ -54,7 +54,7 @@ const defaultProps = {
   feedbacks: [],
 }
 
-const Join = ({
+function Join({
   activeInstances,
   id,
   intl,
@@ -69,7 +69,7 @@ const Join = ({
   handleNewConfusionTS,
   handleNewFeedback,
   handleNewResponse,
-}) => {
+}) {
   const title =
     sidebarActiveItem === 'activeQuestion'
       ? intl.formatMessage(messages.activeQuestionTitle)
@@ -92,14 +92,12 @@ const Join = ({
               document: UpdatedSessionSubscription,
               updateQuery: (prev, { subscriptionData }) => {
                 if (!subscriptionData.data) return prev
-                const newFeedItem = subscriptionData.data.sessionUpdated
-                return Object.assign({}, prev, {
+                return {
                   joinSession: {
-                    activeInstances: [newFeedItem.activeInstances, ...prev.joinSession.activeInstances],
-                    feedbacks: [newFeedItem.feedbacks, ...prev.joinSession.feedbacks],
-                    id: [newFeedItem.id, ...prev.joinSession.id],
+                    ...prev.joinSession,
+                    ...subscriptionData.data.sessionUpdated,
                   },
-                })
+                }
               },
               variables: { sessionId: id },
             })
