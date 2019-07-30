@@ -1,8 +1,7 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import Router from 'next/router'
 import { Loader, Message } from 'semantic-ui-react'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { FormattedMessage, IntlShape } from 'react-intl'
 import { Query } from 'react-apollo'
 
 import Session from './Session'
@@ -30,35 +29,40 @@ const statusCases = {
   },
 }
 
-const propTypes = {
-  filters: PropTypes.object.isRequired,
-  handleCopySession: PropTypes.func.isRequired,
-  handleStartSession: PropTypes.func.isRequired,
-  intl: intlShape.isRequired,
-}
-
-export const SessionListPres = ({ intl, filters, handleCopySession, handleStartSession }) => {
-  // calculate what action to take on button click based on session status
-  const handleSessionAction = (sessionId, status) => {
-    if (status === SESSION_STATUS.CREATED || status === SESSION_STATUS.PAUSED) {
-      return handleStartSession(sessionId)
-    }
-
-    if (status === SESSION_STATUS.RUNNING) {
-      return () => Router.push('/sessions/running')
-    }
-
-    if (status === SESSION_STATUS.COMPLETED) {
-      return handleCopySession(sessionId)
-    }
-
-    return () => null
+// calculate what action to take on button click based on session status
+function handleSessionAction(sessionId, status, handleStartSession, handleCopySession): Function {
+  if (status === SESSION_STATUS.CREATED || status === SESSION_STATUS.PAUSED) {
+    return handleStartSession(sessionId)
   }
 
+  if (status === SESSION_STATUS.RUNNING) {
+    return () => Router.push('/sessions/running')
+  }
+
+  if (status === SESSION_STATUS.COMPLETED) {
+    return handleCopySession(sessionId)
+  }
+
+  return () => null
+}
+
+interface Props {
+  filters: any
+  handleCopySession: () => void
+  handleStartSession: () => void
+  intl: IntlShape
+}
+
+export const SessionListPres = ({
+  intl,
+  filters,
+  handleCopySession,
+  handleStartSession,
+}: Props): React.ReactElement => {
   return (
     <div className="sessionList">
       <Query query={SessionListQuery}>
-        {({ data, error, loading }) => {
+        {({ data, error, loading }): React.ReactElement => {
           if (loading) {
             return <Loader active />
           }
@@ -96,7 +100,7 @@ export const SessionListPres = ({ intl, filters, handleCopySession, handleStartS
               button: {
                 ...statusCases[SESSION_STATUS.PAUSED],
                 disabled: runningSessions.length > 0,
-                onClick: handleSessionAction(session.id, session.status),
+                onClick: handleSessionAction(session.id, session.status, handleStartSession, handleCopySession),
               },
             }))
 
@@ -109,7 +113,7 @@ export const SessionListPres = ({ intl, filters, handleCopySession, handleStartS
               ...statusCases[session.status],
               disabled: session.status === SESSION_STATUS.COMPLETED,
               hidden: session.status === SESSION_STATUS.COMPLETED,
-              onClick: handleSessionAction(session.id, session.status),
+              onClick: handleSessionAction(session.id, session.status, handleStartSession, handleCopySession),
             },
           }))
 
@@ -203,7 +207,5 @@ export const SessionListPres = ({ intl, filters, handleCopySession, handleStartS
     </div>
   )
 }
-
-SessionListPres.propTypes = propTypes
 
 export default SessionListPres
