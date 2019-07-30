@@ -1,6 +1,6 @@
 import React from 'react'
 import classNames from 'classnames'
-import { Icon } from 'semantic-ui-react'
+import { Icon, Dropdown } from 'semantic-ui-react'
 
 import QuestionSingle from './QuestionSingle'
 
@@ -18,6 +18,7 @@ interface Props {
   questions: Question[]
   status?: string
   timeLimit?: number
+  handleResetQuestionBlock: () => void
 }
 
 const defaultProps = {
@@ -28,15 +29,57 @@ const defaultProps = {
   timeLimit: undefined,
 }
 
-function QuestionBlock({ index, status, questions, timeLimit, noDetails }: Props): React.ReactElement {
+function SessionStatusIcon({ status }: { status: string }): React.ReactElement {
+  if (status === 'EXECUTED') {
+    return <Icon name="checkmark" />
+  }
+
+  if (status === 'ACTIVE') {
+    return <Icon name="comments outline" />
+  }
+
+  return <Icon name="calendar outline" />
+}
+
+function BlockActionsDropdown({ onResetQuestionBlock }: { onResetQuestionBlock: () => void }): React.ReactElement {
+  return (
+    <Dropdown icon="settings">
+      <Dropdown.Menu>
+        <Dropdown.Item icon="redo" text="Reset block results" onClick={onResetQuestionBlock} />
+      </Dropdown.Menu>
+    </Dropdown>
+  )
+}
+
+function QuestionBlock({
+  handleResetQuestionBlock,
+  index,
+  status,
+  questions,
+  timeLimit,
+  noDetails,
+}: Props): React.ReactElement {
+  const questionElements = questions.map(
+    (question): React.ReactElement => (
+      <QuestionSingle
+        key={question.id}
+        title={question.title}
+        totalParticipants={question.totalParticipants}
+        type={question.type}
+        version={question.version}
+      />
+    )
+  )
+
   return (
     <div className={classNames('questionBlock', { active: status === 'ACTIVE' })}>
-      {index >= 0 && (
-        <div className="index">
-          Block
-          {index}
+      {!noDetails && (
+        <div className="sessionStatus">
+          <SessionStatusIcon status={status} />
         </div>
       )}
+
+      {index >= 0 && <div className="index">Block {index}</div>}
 
       {!noDetails && timeLimit && (
         <div className="timeLimit">
@@ -45,35 +88,12 @@ function QuestionBlock({ index, status, questions, timeLimit, noDetails }: Props
         </div>
       )}
 
-      {!noDetails && (
-        <div className="sessionStatus">
-          {((): React.ReactElement => {
-            if (status === 'EXECUTED') {
-              return <Icon name="checkmark" />
-            }
-
-            if (status === 'ACTIVE') {
-              return <Icon name="comments" />
-            }
-
-            return null
-          })()}
-        </div>
-      )}
-
-      <div className="questions">
-        {questions.map(
-          (question): React.ReactElement => (
-            <QuestionSingle
-              key={question.id}
-              title={question.title}
-              totalParticipants={question.totalParticipants}
-              type={question.type}
-              version={question.version}
-            />
-          )
-        )}
+      <div className="blockActions">
+        <BlockActionsDropdown onResetQuestionBlock={handleResetQuestionBlock} />
       </div>
+
+      <div className="questions">{questionElements}</div>
+
       <style jsx>{`
         @import 'src/theme';
 
@@ -90,30 +110,35 @@ function QuestionBlock({ index, status, questions, timeLimit, noDetails }: Props
             background-color: rgb(198, 293, 206);
           }
 
-          .index {
-            color: $color-primary-strong;
-            font-weight: bold;
-          }
-
-          .index,
-          .timeLimit,
-          .showSolution,
           .sessionStatus {
-            flex: 1 1 33%;
-            margin-bottom: 0.2rem;
-          }
-
-          .showSolution {
-            text-align: center;
-          }
-
-          .sessionStatus {
+            flex: 0 0 auto;
             font-size: 1.1rem;
-            text-align: right;
+            text-align: left;
 
             > :global(icon) {
               margin: 0;
             }
+          }
+
+          .index {
+            flex: 0 0 auto;
+            color: $color-primary-strong;
+            font-weight: bold;
+          }
+
+          .timeLimit,
+          .showSolution,
+          .blockActions {
+            flex: 1 1 auto;
+            margin-bottom: 0.2rem;
+          }
+
+          .blockActions {
+            text-align: right;
+          }
+
+          .showSolution {
+            text-align: center;
           }
 
           .questions {
