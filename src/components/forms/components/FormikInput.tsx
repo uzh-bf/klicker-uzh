@@ -2,7 +2,7 @@
 
 import React from 'react'
 import ReactTooltip from 'react-tooltip'
-import { Form, Icon, Input } from 'semantic-ui-react'
+import { Form, Icon, Input, SemanticWIDTHSNUMBER } from 'semantic-ui-react'
 
 interface Props {
   disabled?: boolean
@@ -20,7 +20,7 @@ interface Props {
   tooltip?: string
   touched: boolean
   value: string | number
-  width?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16
+  width?: SemanticWIDTHSNUMBER
 }
 
 const defaultProps = {
