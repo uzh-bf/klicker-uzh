@@ -39,7 +39,7 @@ interface Props {
   handleEndSession: () => void
   handleNextBlock: () => void
   handlePauseSession: () => void
-  handleResetQuestionBlock: () => void
+  handleResetQuestionBlock: (instanceIds: string[]) => void
   handleTogglePublicEvaluation: () => void
   intl: any
   isEvaluationPublic?: boolean
@@ -179,6 +179,7 @@ function SessionTimeline({
               </div>
               <div className="block" key={block.id}>
                 <QuestionBlock
+                  handleResetQuestionBlock={(): void => handleResetQuestionBlock(block.id)}
                   index={index + 1}
                   questions={block.instances.map(({ id, question, version }): any => ({
                     id,
@@ -217,13 +218,6 @@ function SessionTimeline({
           <Button icon labelPosition="left" size="small" onClick={handlePauseSession}>
             <Icon name="pause" />
             <FormattedMessage defaultMessage="Pause Session" id="sessionArea.button.pauseSession" />
-          </Button>
-        </div>
-
-        <div className="left">
-          <Button icon labelPosition="left" size="small" onClick={handleResetQuestionBlock}>
-            <Icon name="undo" />
-            <FormattedMessage defaultMessage="Reset Question Block" id="sessionArea.button.resetQuestionBlock" />
           </Button>
           <CancelModal handleCancelSession={handleCancelSession} />
         </div>
