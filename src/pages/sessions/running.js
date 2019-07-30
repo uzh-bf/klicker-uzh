@@ -81,8 +81,6 @@ const Running = ({ intl, shortname }) => (
           feedbacks,
         } = data.runningSession
 
-        const activeInstanceIds = activeBlock >= 0 ? blocks[activeBlock].instances.map(instance => instance.id) : []
-
         return (
           <div className="runningSession">
             <div className="sessionProgress">
@@ -147,10 +145,8 @@ const Running = ({ intl, shortname }) => (
 
                                           Router.push('/sessions')
                                         }}
-                                        handleResetQuestionBlock={async () => {
-                                          await resetQuestionBlock({
-                                            variables: { id, instanceIds: activeInstanceIds },
-                                          })
+                                        handleResetQuestionBlock={async blockId => {
+                                          await resetQuestionBlock({ variables: { sessionId: id, blockId } })
                                         }}
                                         handleTogglePublicEvaluation={() => {
                                           updateSettings({
