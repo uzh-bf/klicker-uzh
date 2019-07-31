@@ -1,5 +1,4 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
 import { arrayMove, SortableContainer, SortableElement } from 'react-sortable-hoc'
 import { FormattedMessage } from 'react-intl'
@@ -9,20 +8,19 @@ import { Form, Icon } from 'semantic-ui-react'
 import SCCreationPlaceholder from './SCCreationPlaceholder'
 import SCCreationOption from './SCCreationOption'
 
-const propTypes = {
-  dirty: PropTypes.bool.isRequired,
-  disabled: PropTypes.bool.isRequired,
-  handleDeleteOption: PropTypes.func.isRequired,
-  handleNewOption: PropTypes.func.isRequired,
-  handleOptionToggleCorrect: PropTypes.func.isRequired,
-  handleUpdateOrder: PropTypes.func.isRequired,
-  invalid: PropTypes.bool.isRequired,
-  value: PropTypes.arrayOf(PropTypes.object).isRequired,
-  handleSaveNewName: PropTypes.func.isRequired,
+interface Props {
+  dirty: boolean
+  disabled: boolean
+  handleDeleteOption: () => void
+  handleNewOption: () => void
+  handleOptionToggleCorrect: () => void
+  handleSaveNewName: () => void
+  handleUpdateOrder: () => void
+  invalid: boolean
+  value: any[]
 }
 
-// create the purely functional component
-const SCCreationOptions = ({
+function SCCreationOptions({
   disabled,
   handleNewOption,
   handleDeleteOption,
@@ -32,7 +30,7 @@ const SCCreationOptions = ({
   value,
   dirty,
   invalid,
-}) => {
+}: Props): React.ReactElement {
   const Option = props => (
     <div className="option">
       <SCCreationOption disabled={disabled} {...props} />
@@ -54,27 +52,25 @@ const SCCreationOptions = ({
 
   const SortableOption = disabled ? Option : SortableElement(Option)
 
-  const Options = ({ sortableOptions, handleCorrectToggle, handleDelete }) => (
+  const Options = ({ sortableOptions, handleCorrectToggle, handleDelete, handleSaveNewName }): React.ReactElement => (
     <div className="options">
-      {sortableOptions.map(({ correct, name, editMode }, index) => (
-        <SortableOption
-          correct={correct}
-          editMode={editMode}
-          handleCorrectToggle={handleCorrectToggle(index)}
-          handleDelete={handleDelete(index)}
-          handleSaveNewName={handleSaveNewName(index)}
-          index={index}
-          key={`sortable-${name}`}
-          name={name}
-        />
-      ))}
+      {sortableOptions.map(
+        ({ correct, name, editMode }, index): React.ReactElement => (
+          <SortableOption
+            correct={correct}
+            editMode={editMode}
+            handleCorrectToggle={handleCorrectToggle(index)}
+            handleDelete={handleDelete(index)}
+            handleSaveNewName={handleSaveNewName(index)}
+            index={index}
+            key={`sortable-${name}`}
+            name={name}
+          />
+        )
+      )}
     </div>
   )
-  Options.propTypes = {
-    handleCorrectToggle: PropTypes.func.isRequired,
-    handleDelete: PropTypes.func.isRequired,
-    sortableOptions: PropTypes.array.isRequired,
-  }
+
   const SortableOptions = disabled ? Options : SortableContainer(Options)
 
   return (
@@ -116,8 +112,6 @@ const SCCreationOptions = ({
     </div>
   )
 }
-
-SCCreationOptions.propTypes = propTypes
 
 export default compose(
   mapProps(({ onChange, value, dirty, invalid, disabled, name }) => ({

@@ -51,8 +51,6 @@ function TypeChooser({ intl, value, onChange }: Props): React.ReactElement {
     },
   ]
 
-  const handleClick = newValue => () => onChange(newValue)
-
   return (
     <div className="required field typeChooser">
       <label htmlFor="types">
@@ -71,7 +69,7 @@ function TypeChooser({ intl, value, onChange }: Props): React.ReactElement {
 
       <div className="types">
         {types.map(({ name, value: typeValue }) => (
-          <Button active={typeValue === value} key={typeValue} type="button" onClick={handleClick(typeValue)}>
+          <Button active={typeValue === value} key={typeValue} type="button" onClick={() => onChange(typeValue)}>
             {name}
           </Button>
         ))}
