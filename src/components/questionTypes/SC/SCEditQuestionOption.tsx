@@ -1,22 +1,21 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { compose, withHandlers, withState } from 'recompose'
 import { Icon } from 'semantic-ui-react'
 import styles from './styles'
 
-const propTypes = {
-  name: PropTypes.string.isRequired,
-  editMode: PropTypes.bool.isRequired,
-  handleToggleEditMode: PropTypes.func.isRequired,
-  handleSaveNewName: PropTypes.func.isRequired,
-  handleDiscardNewName: PropTypes.func.isRequired,
-  handleNameChange: PropTypes.func.isRequired,
-  handleKeyPress: PropTypes.func.isRequired,
-  focusField: PropTypes.func.isRequired,
+interface Props {
+  name: string
+  editMode: boolean
+  handleToggleEditMode: any
+  handleSaveNewName: any
+  handleDiscardNewName: any
+  handleNameChange: any
+  handleKeyPress: any
+  focusField: any
 }
 
-const SCEditQuestionOption = ({
+function SCEditQuestionOption({
   name,
   editMode,
   handleToggleEditMode,
@@ -25,38 +24,38 @@ const SCEditQuestionOption = ({
   handleNameChange,
   handleKeyPress,
   focusField,
-}) => (
-  <div className="optionEditCont">
-    <div className="optionEdit">
-      {editMode ? (
-        <input ref={focusField} type="text" value={name} onChange={handleNameChange} onKeyDown={handleKeyPress} />
-      ) : (
-        <div className="name">{name}</div>
-      )}
-    </div>
+}: Props): React.ReactElement {
+  return (
+    <div className="optionEditCont">
+      <div className="optionEdit">
+        {editMode ? (
+          <input ref={focusField} type="text" value={name} onChange={handleNameChange} onKeyDown={handleKeyPress} />
+        ) : (
+          <div className="name">{name}</div>
+        )}
+      </div>
 
-    <div className="editOptBtnRight">
-      {editMode ? (
-        <button className={classNames('rightAction', { editMode })} type="button" onClick={handleSaveNewName}>
-          <Icon name="save" />
-        </button>
-      ) : null}
-      {editMode ? (
-        <button className={classNames('rightAction', { editMode })} type="button" onClick={handleDiscardNewName}>
-          <Icon name="delete" />
-        </button>
-      ) : null}
-      {!editMode ? (
-        <button className={classNames('rightAction', { editMode })} type="button" onClick={handleToggleEditMode}>
-          <Icon name="edit" />
-        </button>
-      ) : null}
+      <div className="editOptBtnRight">
+        {editMode ? (
+          <button className={classNames('rightAction', { editMode })} type="button" onClick={handleSaveNewName}>
+            <Icon name="save" />
+          </button>
+        ) : null}
+        {editMode ? (
+          <button className={classNames('rightAction', { editMode })} type="button" onClick={handleDiscardNewName}>
+            <Icon name="delete" />
+          </button>
+        ) : null}
+        {!editMode ? (
+          <button className={classNames('rightAction', { editMode })} type="button" onClick={handleToggleEditMode}>
+            <Icon name="edit" />
+          </button>
+        ) : null}
+      </div>
+      <style jsx>{styles}</style>
     </div>
-    <style jsx>{styles}</style>
-  </div>
-)
-
-SCEditQuestionOption.propTypes = propTypes
+  )
+}
 
 export default compose(
   withState('editMode', 'setEditMode', props => props.editMode),
