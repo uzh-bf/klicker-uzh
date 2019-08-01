@@ -1,25 +1,22 @@
 /* eslint-disable react/no-danger */
 
 import React from 'react'
-import PropTypes from 'prop-types'
 
 import { toSanitizedHTML } from '../../lib'
 
-const propTypes = {
-  content: PropTypes.object.isRequired, // draftjs contentstate
-  description: PropTypes.string.isRequired,
+interface Props {
+  content: object | string
+  description?: string
 }
 
-const QuestionDescription = ({ content, description }) => {
+function QuestionDescription({ content, description }: Props): React.ReactElement {
   // create the markup for "unsafe" display
-  const createMarkup = () => ({
+  const createMarkup: Function = () => ({
     __html: toSanitizedHTML(content) || description || null,
   })
 
   // return the content div with "unsafe" HTML
   return <div className="description" dangerouslySetInnerHTML={createMarkup()} />
 }
-
-QuestionDescription.propTypes = propTypes
 
 export default QuestionDescription

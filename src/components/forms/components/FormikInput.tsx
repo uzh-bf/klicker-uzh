@@ -3,22 +3,25 @@
 import React from 'react'
 import ReactTooltip from 'react-tooltip'
 import { Form, Icon, Input, SemanticWIDTHSNUMBER } from 'semantic-ui-react'
+import { InjectedIntl } from 'react-intl'
 
 interface Props {
+  autoFocus?: boolean
   disabled?: boolean
   error?: string
   errorMessage?: string
   handleBlur: () => void
   handleChange: () => void
   inlineLabel?: string
-  input: any
+  intl?: InjectedIntl
   label?: string
   name: string
   placeholder?: string
   renderInput?: () => React.ReactElement
   required?: boolean
-  tooltip?: string
+  tooltip?: string | React.ReactElement
   touched: boolean
+  type?: string
   value: string | number
   width?: SemanticWIDTHSNUMBER
 }

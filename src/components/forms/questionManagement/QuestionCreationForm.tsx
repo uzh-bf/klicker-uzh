@@ -262,7 +262,6 @@ function QuestionCreationForm({ intl, tags, tagsLoading, onSubmit, onDiscard }: 
                   description={values.content.getCurrentContent()}
                   options={values.options}
                   questionType={values.type}
-                  title={values.title}
                 />
               </div>
 

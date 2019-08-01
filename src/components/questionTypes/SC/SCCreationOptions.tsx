@@ -11,11 +11,11 @@ import SCCreationOption from './SCCreationOption'
 interface Props {
   dirty: boolean
   disabled: boolean
-  handleDeleteOption: () => void
-  handleNewOption: () => void
-  handleOptionToggleCorrect: () => void
-  handleSaveNewName: () => void
-  handleUpdateOrder: () => void
+  handleDeleteOption: any
+  handleNewOption: any
+  handleOptionToggleCorrect: any
+  handleSaveNewName: any
+  handleUpdateOrder: any
   invalid: boolean
   value: any[]
 }
@@ -52,7 +52,12 @@ function SCCreationOptions({
 
   const SortableOption = disabled ? Option : SortableElement(Option)
 
-  const Options = ({ sortableOptions, handleCorrectToggle, handleDelete, handleSaveNewName }): React.ReactElement => (
+  const Options = ({
+    sortableOptions,
+    handleCorrectToggle,
+    handleDelete,
+    handleSaveNewName: saveNewName,
+  }): React.ReactElement => (
     <div className="options">
       {sortableOptions.map(
         ({ correct, name, editMode }, index): React.ReactElement => (
@@ -61,7 +66,7 @@ function SCCreationOptions({
             editMode={editMode}
             handleCorrectToggle={handleCorrectToggle(index)}
             handleDelete={handleDelete(index)}
-            handleSaveNewName={handleSaveNewName(index)}
+            handleSaveNewName={saveNewName(index)}
             index={index}
             key={`sortable-${name}`}
             name={name}

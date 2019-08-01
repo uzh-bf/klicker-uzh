@@ -1,13 +1,14 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 
 import { QuestionDescription } from '..'
 import SCAnswerOptions from './SCAnswerOptions'
 
-const propTypes = {
-  description: PropTypes.string,
-  options: PropTypes.array,
+interface Props {
+  description?: string
+  options?: {
+    choices: any[]
+  }
 }
 
 const defaultProps = {
@@ -17,20 +18,20 @@ const defaultProps = {
   },
 }
 
-const SCCreationPreview = ({ description, options }) => (
-  <div className="preview">
-    <div className="description">
-      <QuestionDescription content={description} />
-    </div>
-    <div className="options">
-      <SCAnswerOptions disabled activeOption={-1} options={options.choices} onOptionClick={f => () => f} />
-    </div>
-    <div className="button">
-      <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
-    </div>
+function SCCreationPreview({ description, options }: Props): React.ReactElement {
+  return (
+    <div className="preview">
+      <div className="description">
+        <QuestionDescription content={description} />
+      </div>
+      <div className="options">
+        <SCAnswerOptions disabled options={options.choices} />
+      </div>
+      <div className="button">
+        <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+      </div>
 
-    <style jsx>
-      {`
+      <style jsx>{`
         @import 'src/theme';
 
         .preview {
@@ -62,12 +63,11 @@ const SCCreationPreview = ({ description, options }) => (
           border: 1px solid lightgrey;
           padding: 0.5rem;
         }
-      `}
-    </style>
-  </div>
-)
+      `}</style>
+    </div>
+  )
+}
 
-SCCreationPreview.propTypes = propTypes
 SCCreationPreview.defaultProps = defaultProps
 
 export default SCCreationPreview
