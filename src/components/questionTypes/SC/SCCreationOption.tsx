@@ -26,9 +26,7 @@ function SCCreationOption({
   name,
   handleCorrectToggle,
   handleDelete,
-  handleToggleEditMode,
   handleSaveNewName,
-  handleDiscardNewName,
 }: Props): React.ReactElement {
   return (
     <div className={classNames('option', { correct })}>
@@ -45,13 +43,7 @@ function SCCreationOption({
         {correct ? <Icon name="checkmark" /> : <Icon name="remove" />}
       </button>
 
-      <SCEditQuestionOption
-        editMode={false}
-        handleDiscardNewName={handleDiscardNewName}
-        handleSaveNewName={handleSaveNewName}
-        handleToggleEditMode={handleToggleEditMode}
-        name={name}
-      />
+      <SCEditQuestionOption handleSaveNewName={handleSaveNewName} name={name} />
 
       <style jsx>{styles}</style>
     </div>

@@ -22,18 +22,19 @@ export default css`
     overflow: hidden;
   }
 
-  .optionEditCont {
+  .SCEditQuestionOption {
+    width: 100%;
     display: flex;
     inline-size: -webkit-fill-available;
   }
 
-  .editOptBtnRight {
-    display: flex;
-  }
+  .grabHandle {
+    flex: 0 0 auto;
+    padding: 0 0.5rem;
 
-  .optionEdit {
-    inline-size: -webkit-fill-available;
-    height: inherit;
+    :global(i.grab.icon) {
+      color: grey;
+    }
   }
 
   .option.correct {
