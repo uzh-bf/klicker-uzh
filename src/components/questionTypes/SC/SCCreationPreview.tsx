@@ -24,9 +24,11 @@ function SCCreationPreview({ description, options }: Props): React.ReactElement 
       <div className="description">
         <QuestionDescription content={description} />
       </div>
+
       <div className="options">
         <SCAnswerOptions disabled options={options.choices} />
       </div>
+
       <div className="button">
         <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
       </div>

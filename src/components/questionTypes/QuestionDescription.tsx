@@ -11,9 +11,7 @@ interface Props {
 
 function QuestionDescription({ content, description }: Props): React.ReactElement {
   // create the markup for "unsafe" display
-  const createMarkup: Function = () => ({
-    __html: toSanitizedHTML(content) || description || null,
-  })
+  const createMarkup: Function = () => ({ __html: toSanitizedHTML(content) || description || null })
 
   // return the content div with "unsafe" HTML
   return <div className="description" dangerouslySetInnerHTML={createMarkup()} />

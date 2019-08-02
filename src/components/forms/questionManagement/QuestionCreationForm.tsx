@@ -250,7 +250,10 @@ function QuestionCreationForm({ intl, tags, tagsLoading, onSubmit, onDiscard }: 
                   intl={intl}
                   type={values.type}
                   value={values.options}
-                  onChange={newOptions => setFieldValue('options', newOptions)}
+                  onChange={newOptions => {
+                    console.log(newOptions)
+                    setFieldValue('options', newOptions)
+                  }}
                 />
               </div>
 

@@ -1,7 +1,7 @@
 import React from 'react'
 import classNames from 'classnames'
-import { Icon } from 'semantic-ui-react'
-import SCEditQuestionOption from './SCEditQuestionOption'
+import { Icon, Input } from 'semantic-ui-react'
+import { Draggable } from 'react-beautiful-dnd'
 
 import styles from './styles'
 
@@ -10,10 +10,9 @@ interface Props {
   disabled?: boolean
   handleCorrectToggle: any
   handleDelete: any
-  name: string
-  handleToggleEditMode: any
   handleSaveNewName: any
-  handleDiscardNewName: any
+  index: number
+  name: string
 }
 
 const defaultProps = {
@@ -27,26 +26,40 @@ function SCCreationOption({
   handleCorrectToggle,
   handleDelete,
   handleSaveNewName,
+  index,
 }: Props): React.ReactElement {
   return (
-    <div className={classNames('option', { correct })}>
-      <button className="leftAction" disabled={disabled} type="button" onClick={handleDelete}>
-        <Icon name="trash" />
-      </button>
+    <Draggable draggableId={`option-${name}`} index={index}>
+      {(provided): React.ReactElement => (
+        <div
+          className={classNames('option', { correct })}
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+        >
+          <button className="leftAction" disabled={disabled} type="button" onClick={handleDelete}>
+            <Icon name="trash" />
+          </button>
 
-      <button
-        className={classNames('toggle', { correct })}
-        disabled={disabled}
-        type="button"
-        onClick={handleCorrectToggle}
-      >
-        {correct ? <Icon name="checkmark" /> : <Icon name="remove" />}
-      </button>
+          <button
+            className={classNames('toggle', { correct })}
+            disabled={disabled}
+            type="button"
+            onClick={handleCorrectToggle}
+          >
+            {correct ? <Icon name="checkmark" /> : <Icon name="remove" />}
+          </button>
 
-      <SCEditQuestionOption handleSaveNewName={handleSaveNewName} name={name} />
+          <Input type="text" value={name} onChange={e => handleSaveNewName({ newName: e.target.value })} />
 
-      <style jsx>{styles}</style>
-    </div>
+          <div className="grabHandle">
+            <Icon name="grab" />
+          </div>
+
+          <style jsx>{styles}</style>
+        </div>
+      )}
+    </Draggable>
   )
 }
 

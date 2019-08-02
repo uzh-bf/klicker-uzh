@@ -1,82 +1,36 @@
 import React from 'react'
 import ReactTooltip from 'react-tooltip'
-import { arrayMove, SortableContainer, SortableElement } from 'react-sortable-hoc'
+import { DragDropContext, Droppable } from 'react-beautiful-dnd'
 import { FormattedMessage } from 'react-intl'
-import { compose, mapProps, withHandlers } from 'recompose'
 import { Form, Icon } from 'semantic-ui-react'
 
 import SCCreationPlaceholder from './SCCreationPlaceholder'
 import SCCreationOption from './SCCreationOption'
+import { updateArrayElement, handleDragEnd, deleteArrayElement } from '../../../lib/utils/move'
 
 interface Props {
   dirty: boolean
   disabled: boolean
-  handleDeleteOption: any
-  handleNewOption: any
-  handleOptionToggleCorrect: any
-  handleSaveNewName: any
-  handleUpdateOrder: any
+  onChange: any
   invalid: boolean
-  value: any[]
+  value: {
+    choices: { correct: boolean; name: string }[]
+  }
 }
 
-function SCCreationOptions({
-  disabled,
-  handleNewOption,
-  handleDeleteOption,
-  handleUpdateOrder,
-  handleOptionToggleCorrect,
-  handleSaveNewName,
-  value,
-  dirty,
-  invalid,
-}: Props): React.ReactElement {
-  const Option = props => (
-    <div className="option">
-      <SCCreationOption disabled={disabled} {...props} />
-      <style jsx>
-        {`
-          .option {
-            cursor: grab;
-            margin-bottom: 0.5rem;
-          }
-          .option:hover {
-            box-shadow: 0 0 0.2rem blue;
-            -webkit-transition: all 0.1s;
-            transition: all 0.1s;
-          }
-        `}
-      </style>
-    </div>
-  )
+function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props): React.ReactElement {
+  const { choices } = value
 
-  const SortableOption = disabled ? Option : SortableElement(Option)
-
-  const Options = ({
-    sortableOptions,
-    handleCorrectToggle,
-    handleDelete,
-    handleSaveNewName: saveNewName,
-  }): React.ReactElement => (
-    <div className="options">
-      {sortableOptions.map(
-        ({ correct, name, editMode }, index): React.ReactElement => (
-          <SortableOption
-            correct={correct}
-            editMode={editMode}
-            handleCorrectToggle={handleCorrectToggle(index)}
-            handleDelete={handleDelete(index)}
-            handleSaveNewName={saveNewName(index)}
-            index={index}
-            key={`sortable-${name}`}
-            name={name}
-          />
-        )
-      )}
-    </div>
-  )
-
-  const SortableOptions = disabled ? Options : SortableContainer(Options)
+  const handleChange = newChoices => onChange({ ...value, choices: newChoices })
+  const onNewOption = newOption => handleChange([...choices, newOption])
+  const onToggleOptionCorrect = (index: number) => () => {
+    const option = choices[index]
+    handleChange(updateArrayElement(choices, index, { correct: !option.correct }))
+  }
+  const onSaveNewName = (index: number) => ({ newName }): void => {
+    handleChange(updateArrayElement(choices, index, { name: newName }))
+  }
+  const onDeleteOption = (index: number) => () => handleChange(deleteArrayElement(choices, index))
 
   return (
     <div className="SCCreationOptions">
@@ -95,56 +49,41 @@ function SCCreationOptions({
           />
         </ReactTooltip>
 
-        <SortableOptions
-          handleCorrectToggle={handleOptionToggleCorrect}
-          handleDelete={handleDeleteOption}
-          handleSaveNewName={handleSaveNewName}
-          sortableOptions={value || []}
-          onSortEnd={handleUpdateOrder}
-        />
+        <div className="options">
+          <DragDropContext onDragEnd={handleDragEnd(choices, handleChange)}>
+            <Droppable droppableId="creationOptions">
+              {(provided): React.ReactElement => (
+                <div ref={provided.innerRef} {...provided.droppableProps}>
+                  {choices.map(
+                    ({ correct, name }, index): React.ReactElement => (
+                      <SCCreationOption
+                        correct={correct}
+                        handleCorrectToggle={onToggleOptionCorrect(index)}
+                        handleDelete={onDeleteOption(index)}
+                        handleSaveNewName={onSaveNewName(index)}
+                        index={index}
+                        name={name}
+                      />
+                    )
+                  )}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
+        </div>
 
-        {!disabled && <SCCreationPlaceholder handleSave={handleNewOption} handleSaveNewName={handleSaveNewName} />}
+        {!disabled && <SCCreationPlaceholder handleSave={onNewOption} />}
       </Form.Field>
 
-      <style jsx>
-        {`
-          @import 'src/theme';
-          .SCCreationOptions {
-            @include tooltip-icon;
-          }
-        `}
-      </style>
+      <style jsx>{`
+        @import 'src/theme';
+        .SCCreationOptions {
+          @include tooltip-icon;
+        }
+      `}</style>
     </div>
   )
 }
 
-export default compose(
-  mapProps(({ onChange, value, dirty, invalid, disabled, name }) => ({
-    name,
-    dirty,
-    disabled,
-    // HACK: mapping as a workaround for the value.choices problem
-    invalid,
-    onChange: choices => onChange({ ...value, choices }),
-    value: value.choices,
-  })),
-  withHandlers({
-    handleDeleteOption: ({ onChange, value }) => index => () =>
-      onChange([...value.slice(0, index), ...value.slice(index + 1)]),
-
-    handleNewOption: ({ onChange, value }) => newOption => onChange([...value, newOption]),
-
-    handleOptionToggleCorrect: ({ onChange, value }) => index => () => {
-      const option = value[index]
-      onChange([...value.slice(0, index), { ...option, correct: !option.correct }, ...value.slice(index + 1)])
-    },
-
-    handleUpdateOrder: ({ onChange, value }) => ({ oldIndex, newIndex }) =>
-      onChange(arrayMove(value, oldIndex, newIndex)),
-
-    handleSaveNewName: ({ value }) => index => ({ newName }) => {
-      const option = value[index]
-      option.name = newName
-    },
-  })
-)(SCCreationOptions)
+export default SCCreationOptions

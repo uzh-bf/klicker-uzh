@@ -20,6 +20,15 @@ export default css`
     border: 1px solid grey;
     position: relative;
     overflow: hidden;
+
+    cursor: grab;
+    margin-bottom: 0.5rem;
+
+    &:hover {
+      box-shadow: 0 0 0.2rem blue;
+      -webkit-transition: all 0.1s;
+      transition: all 0.1s;
+    }
   }
 
   .SCEditQuestionOption {
