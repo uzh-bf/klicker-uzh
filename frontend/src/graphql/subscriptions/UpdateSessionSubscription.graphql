@@ -1,5 +1,5 @@
-query JoinSession($shortname: String!) {
-  joinSession(shortname: $shortname) {
+subscription UpdateSession($sessionId: ID!) {
+  sessionUpdated(sessionId: $sessionId) {
     id
     settings {
       isFeedbackChannelActive

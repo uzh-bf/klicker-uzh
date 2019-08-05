@@ -5,7 +5,7 @@ import { defineMessages, intlShape } from 'react-intl'
 import { Button, Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
 
 import { CommonLayout } from '.'
-import { Info, Possibilities, Statistics, VisualizationType } from '../evaluation'
+import { Info, Possibilities, Statistics, VisualizationType, CsvExport } from '../evaluation'
 import { QUESTION_GROUPS, CHART_TYPES, QUESTION_TYPES } from '../../constants'
 
 const messages = defineMessages({
@@ -16,6 +16,7 @@ const messages = defineMessages({
 })
 const propTypes = {
   activeInstance: PropTypes.number,
+  activeInstances: PropTypes.array.isRequired,
   activeVisualization: PropTypes.string.isRequired,
   children: PropTypes.element.isRequired,
   choices: PropTypes.arrayOf(
@@ -33,6 +34,7 @@ const propTypes = {
   onToggleShowSolution: PropTypes.func.isRequired,
   options: PropTypes.object.isRequired,
   pageTitle: PropTypes.string,
+  sessionId: PropTypes.string.isRequired,
   showGraph: PropTypes.bool,
   showSolution: PropTypes.bool,
   statistics: PropTypes.shape({
@@ -70,9 +72,11 @@ function EvaluationLayout({
   totalResponses,
   options,
   activeInstance,
+  activeInstances,
   onChangeActiveInstance,
   instanceSummary,
   statistics,
+  sessionId,
 }) {
   const dropdownOptions = instanceSummary.map(({ blockStatus, title, totalResponses: count }, index) => ({
     icon: blockStatus === 'ACTIVE' ? 'comments' : 'checkmark',
@@ -170,7 +174,12 @@ function EvaluationLayout({
                 onChange={onToggleShowSolution}
               />
             )}
-
+          <div className="exportButtons">
+            <CsvExport activeInstances={activeInstances} sessionId={sessionId} />
+            <a href={`/sessions/print/${sessionId}`}>
+              <Button content="Export PDF" icon="file" />
+            </a>
+          </div>
           <VisualizationType
             activeVisualization={activeVisualization}
             intl={intl}
@@ -241,6 +250,10 @@ function EvaluationLayout({
               display: flex;
               flex-direction: column;
               min-height: 100vh;
+
+              .exportButtons {
+                display: flex;
+              }
 
               .instanceChooser {
                 flex: 0 0 auto;

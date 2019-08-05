@@ -51,6 +51,11 @@ const pages = [
   },
   {
     mapParams: req => ({ sessionId: req.params.sessionId }),
+    renderPath: '/sessions/print',
+    url: '/sessions/print/:sessionId',
+  },
+  {
+    mapParams: req => ({ sessionId: req.params.sessionId }),
     renderPath: '/sessions/evaluation',
     url: '/sessions/evaluation/:sessionId',
   },
@@ -58,6 +63,11 @@ const pages = [
     mapParams: req => ({ questionId: req.params.questionId }),
     renderPath: '/questions/details',
     url: '/questions/:questionId',
+  },
+  {
+    mapParams: req => ({ questionId: req.params.questionId }),
+    renderPath: '/questions/duplicate',
+    url: '/questions/duplicate/:questionId',
   },
   {
     cached: CACHE_CFG.pages.join,

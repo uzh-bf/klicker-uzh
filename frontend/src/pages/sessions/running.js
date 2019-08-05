@@ -17,12 +17,14 @@ import {
   RunningSessionQuery,
   EndSessionMutation,
   PauseSessionMutation,
+  CancelSessionMutation,
   UpdateSessionSettingsMutation,
   ActivateNextBlockMutation,
   DeleteFeedbackMutation,
   SessionListQuery,
   FeedbackAddedSubscription,
   ConfusionAddedSubscription,
+  ResetQuestionBlockMutation,
 } from '../../graphql'
 import { Messager } from '../../components/common'
 
@@ -53,9 +55,7 @@ const propTypes = {
 const Running = ({ intl, shortname }) => (
   <TeacherLayout
     intl={intl}
-    navbar={{
-      title: intl.formatMessage(messages.title),
-    }}
+    navbar={{ title: intl.formatMessage(messages.title) }}
     pageTitle={intl.formatMessage(messages.pageTitle)}
     sidebar={{ activeItem: 'runningSession' }}
   >
@@ -69,7 +69,17 @@ const Running = ({ intl, shortname }) => (
           return <Messager message={intl.formatMessage(messages.errorLoading)} />
         }
 
-        const { id, activeStep, blocks, settings, runtime, startedAt, confusionTS, feedbacks } = data.runningSession
+        const {
+          id,
+          activeStep,
+          activeBlock,
+          blocks,
+          settings,
+          runtime,
+          startedAt,
+          confusionTS,
+          feedbacks,
+        } = data.runningSession
 
         return (
           <div className="runningSession">
@@ -80,60 +90,85 @@ const Running = ({ intl, shortname }) => (
                     {endSession => (
                       <Mutation mutation={PauseSessionMutation}>
                         {pauseSession => (
-                          <Mutation mutation={ActivateNextBlockMutation}>
-                            {activateNextBlock => (
-                              <SessionTimeline
-                                activeStep={activeStep}
-                                blocks={blocks}
-                                handleEndSession={async () => {
-                                  // run the mutation
-                                  await endSession({
-                                    refetchQueries: [
-                                      { query: SessionListQuery },
-                                      { query: RunningSessionQuery },
-                                      { query: AccountSummaryQuery },
-                                    ],
-                                    variables: { id },
-                                  })
+                          <Mutation mutation={ResetQuestionBlockMutation}>
+                            {resetQuestionBlock => (
+                              <Mutation mutation={CancelSessionMutation}>
+                                {cancelSession => (
+                                  <Mutation mutation={ActivateNextBlockMutation}>
+                                    {activateNextBlock => (
+                                      <SessionTimeline
+                                        activeBlock={activeBlock}
+                                        activeStep={activeStep}
+                                        blocks={blocks}
+                                        handleCancelSession={async () => {
+                                          await cancelSession({
+                                            refetchQueries: [
+                                              { query: SessionListQuery },
+                                              { query: RunningSessionQuery },
+                                              { query: AccountSummaryQuery },
+                                            ],
+                                            variables: { id },
+                                          })
+                                          // redirect to the question pool
+                                          // TODO: redirect to a session summary or overview page
+                                          Router.push('/questions')
+                                        }}
+                                        handleEndSession={async () => {
+                                          // run the mutation
+                                          await endSession({
+                                            refetchQueries: [
+                                              { query: SessionListQuery },
+                                              { query: RunningSessionQuery },
+                                              { query: AccountSummaryQuery },
+                                            ],
+                                            variables: { id },
+                                          })
 
-                                  // redirect to the question pool
-                                  // TODO: redirect to a session summary or overview page
-                                  Router.push('/questions')
-                                }}
-                                handleNextBlock={() => {
-                                  activateNextBlock({
-                                    refetchQueries: [{ query: RunningSessionQuery }],
-                                  })
-                                }}
-                                handlePauseSession={async () => {
-                                  await pauseSession({
-                                    refetchQueries: [
-                                      { query: SessionListQuery },
-                                      { query: RunningSessionQuery },
-                                      { query: AccountSummaryQuery },
-                                    ],
-                                    variables: { id },
-                                  })
+                                          // redirect to the question pool
+                                          // TODO: redirect to a session summary or overview page
+                                          Router.push('/questions')
+                                        }}
+                                        handleNextBlock={() => {
+                                          activateNextBlock({
+                                            refetchQueries: [{ query: RunningSessionQuery }],
+                                          })
+                                        }}
+                                        handlePauseSession={async () => {
+                                          await pauseSession({
+                                            refetchQueries: [
+                                              { query: SessionListQuery },
+                                              { query: RunningSessionQuery },
+                                              { query: AccountSummaryQuery },
+                                            ],
+                                            variables: { id },
+                                          })
 
-                                  Router.push('/sessions')
-                                }}
-                                handleTogglePublicEvaluation={() => {
-                                  updateSettings({
-                                    variables: {
-                                      sessionId: id,
-                                      settings: {
-                                        isEvaluationPublic: !settings.isEvaluationPublic,
-                                      },
-                                    },
-                                  })
-                                }}
-                                intl={intl}
-                                isEvaluationPublic={settings.isEvaluationPublic}
-                                runtime={runtime}
-                                sessionId={id}
-                                shortname={shortname}
-                                startedAt={dayjs(startedAt).format('HH:mm:ss')}
-                              />
+                                          Router.push('/sessions')
+                                        }}
+                                        handleResetQuestionBlock={async blockId => {
+                                          await resetQuestionBlock({ variables: { sessionId: id, blockId } })
+                                        }}
+                                        handleTogglePublicEvaluation={() => {
+                                          updateSettings({
+                                            variables: {
+                                              sessionId: id,
+                                              settings: {
+                                                isEvaluationPublic: !settings.isEvaluationPublic,
+                                              },
+                                            },
+                                          })
+                                        }}
+                                        intl={intl}
+                                        isEvaluationPublic={settings.isEvaluationPublic}
+                                        runtime={runtime}
+                                        sessionId={id}
+                                        shortname={shortname}
+                                        startedAt={dayjs(startedAt).format('HH:mm:ss')}
+                                      />
+                                    )}
+                                  </Mutation>
+                                )}
+                              </Mutation>
                             )}
                           </Mutation>
                         )}
@@ -247,54 +282,52 @@ const Running = ({ intl, shortname }) => (
       }}
     </Query>
 
-    <style jsx>
-      {`
-        @import 'src/theme';
+    <style jsx>{`
+      @import 'src/theme';
 
+      .runningSession {
+        display: flex;
+        flex-direction: column;
+
+        padding: 1rem;
+      }
+
+      .sessionProgress,
+      .confusionBarometer,
+      .feedbackChannel {
+        flex: 1;
+
+        margin-bottom: 1rem;
+      }
+
+      @include desktop-tablet-only {
         .runningSession {
-          display: flex;
-          flex-direction: column;
+          flex-flow: row wrap;
 
-          padding: 1rem;
+          padding: 2rem;
         }
 
         .sessionProgress,
         .confusionBarometer,
         .feedbackChannel {
-          flex: 1;
-
-          margin-bottom: 1rem;
+          padding: 0.5rem;
         }
 
-        @include desktop-tablet-only {
-          .runningSession {
-            flex-flow: row wrap;
-
-            padding: 2rem;
-          }
-
-          .sessionProgress,
-          .confusionBarometer,
-          .feedbackChannel {
-            padding: 0.5rem;
-          }
-
-          .sessionProgress {
-            flex: 0 0 100%;
-            max-width: 100%;
-          }
-          .confusionBarometer {
-            flex: 0 0 30%;
-          }
+        .sessionProgress {
+          flex: 0 0 100%;
+          max-width: 100%;
         }
-
-        @include desktop-only {
-          .runningSession {
-            padding: 2rem 10%;
-          }
+        .confusionBarometer {
+          flex: 0 0 30%;
         }
-      `}
-    </style>
+      }
+
+      @include desktop-only {
+        .runningSession {
+          padding: 2rem 10%;
+        }
+      }
+    `}</style>
   </TeacherLayout>
 )
 

@@ -2,6 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
+import { compose, lifecycle } from 'recompose'
 
 import { CommonLayout } from '.'
 import { Sidebar } from '../common/sidebar'
@@ -107,4 +108,10 @@ const StudentLayout = ({ children, isInteractionEnabled, pageTitle, sidebar, tit
 StudentLayout.propTypes = propTypes
 StudentLayout.defaultProps = defaultProps
 
-export default StudentLayout
+export default compose(
+  lifecycle({
+    componentDidMount() {
+      this.props.subscribeToMore()
+    },
+  })
+)(StudentLayout)

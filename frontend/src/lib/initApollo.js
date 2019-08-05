@@ -11,9 +11,11 @@ import { onError } from 'apollo-link-error'
 import { ApolloLink, split } from 'apollo-link'
 import { WebSocketLink } from 'apollo-link-ws'
 import { SubscriptionClient } from 'subscriptions-transport-ws'
-import { InMemoryCache } from 'apollo-cache-inmemory'
+import { InMemoryCache, IntrospectionFragmentMatcher } from 'apollo-cache-inmemory'
 import { getMainDefinition } from 'apollo-utilities'
 // import { withClientState } from 'apollo-link-state'
+
+import introspectionQueryResultData from '../fragmentTypes.json'
 
 const { publicRuntimeConfig, serverRuntimeConfig } = getConfig()
 
@@ -21,9 +23,15 @@ let apolloClient = null
 
 function create(initialState) {
   const isBrowser = typeof window !== 'undefined'
+
+  const fragmentMatcher = new IntrospectionFragmentMatcher({
+    introspectionQueryResultData,
+  })
+
   const cache = new InMemoryCache({
     addTypename: true,
     dataIdFromObject: o => o.id,
+    fragmentMatcher,
   }).restore(initialState || {})
 
   // initialize the basic http link for both SSR and client-side usage

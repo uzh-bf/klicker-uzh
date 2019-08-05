@@ -1,0 +1,6 @@
+mutation CancelSession($id: ID!) {
+  cancelSession(id: $id) {
+    id
+    status
+  }
+}

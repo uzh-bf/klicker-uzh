@@ -273,8 +273,8 @@ export default compose(
           }
 
           return {
-            remainingQuestions: questions.reduce((indices, { id }, index) => {
-              if (storedResponses.responses.includes(id)) {
+            remainingQuestions: questions.reduce((indices, { id, execution }, index) => {
+              if (storedResponses.responses.includes(`${id}-${execution}`)) {
                 return indices
               }
 
@@ -395,7 +395,7 @@ export default compose(
       handleSubmit,
       inputValue,
     }) => async () => {
-      const { id: instanceId, type } = questions[activeQuestion]
+      const { id: instanceId, execution, type } = questions[activeQuestion]
 
       // if the question has been answered, add a response
       if (typeof inputValue !== 'undefined') {
@@ -415,8 +415,8 @@ export default compose(
               `${shortname}-${sessionId}-responses`,
               JSON.stringify(
                 prevResponses
-                  ? { responses: [...prevResponses.responses, instanceId], timestamp: dayjs().unix() }
-                  : { responses: [instanceId], timestamp: dayjs().unix() }
+                  ? { responses: [...prevResponses.responses, `${instanceId}-${execution}`], timestamp: dayjs().unix() }
+                  : { responses: [`${instanceId}-${execution}`], timestamp: dayjs().unix() }
               )
             )
           }

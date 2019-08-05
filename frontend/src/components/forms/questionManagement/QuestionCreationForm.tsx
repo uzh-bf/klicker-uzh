@@ -1,10 +1,9 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import getConfig from 'next/config'
 import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
 import _some from 'lodash/some'
-import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage, InjectedIntl } from 'react-intl'
 import { Button, Form, Message, List, Loader } from 'semantic-ui-react'
 import { Formik } from 'formik'
 import { EditorState } from 'draft-js'
@@ -64,8 +63,15 @@ const messages = defineMessages({
 })
 
 // form validation
-const validate = ({ content, options, tags, title, type }) => {
-  const errors = {}
+interface ValidationErrors {
+  title?: string
+  content?: string
+  tags?: string
+  type?: string
+  options?: string
+}
+function validate({ content, options, tags, title, type }: any): ValidationErrors {
+  const errors: any = {}
 
   if (!title || _isEmpty(title)) {
     errors.title = messages.titleEmpty
@@ -104,28 +110,44 @@ const validate = ({ content, options, tags, title, type }) => {
     }
   }
 
-  console.log(errors)
-
   return errors
 }
 
-const propTypes = {
-  intl: intlShape.isRequired,
-  onDiscard: PropTypes.func.isRequired,
-  onSubmit: PropTypes.func.isRequired,
-  tags: PropTypes.arrayOf(
-    PropTypes.shape({
-      name: PropTypes.string.isRequired,
-    })
-  ),
-  tagsLoading: PropTypes.bool.isRequired,
+interface Props {
+  initialValues?: {
+    content: any
+    files: any[]
+    options: {
+      choices: any[]
+      randomized: boolean
+      restrictions: {
+        max?: number
+        min?: number
+      }
+    }
+    tags?: any[]
+    title: string
+    type: any
+  }
+  intl: InjectedIntl
+  onDiscard: () => void
+  onSubmit: () => void
+  tags?: any[]
+  tagsLoading: boolean
 }
 
 const defaultProps = {
   tags: [],
 }
 
-const QuestionCreationForm = ({ intl, tags, tagsLoading, onSubmit, onDiscard }) => {
+function QuestionCreationForm({
+  initialValues,
+  intl,
+  tags,
+  tagsLoading,
+  onSubmit,
+  onDiscard,
+}: Props): React.ReactElement {
   const typeComponents = {
     [QUESTION_TYPES.SC]: {
       input: SCCreationOptions,
@@ -148,21 +170,23 @@ const QuestionCreationForm = ({ intl, tags, tagsLoading, onSubmit, onDiscard }) 
   return (
     <div className="questionCreationForm">
       <Formik
-        initialValues={{
-          content: EditorState.createEmpty(),
-          files: [],
-          options: {
-            choices: [],
-            randomized: false,
-            restrictions: {
-              max: null,
-              min: null,
+        initialValues={
+          initialValues || {
+            content: EditorState.createEmpty(),
+            files: [],
+            options: {
+              choices: [],
+              randomized: false,
+              restrictions: {
+                max: null,
+                min: null,
+              },
             },
-          },
-          tags: null,
-          title: '',
-          type: QUESTION_TYPES.SC,
-        }}
+            tags: null,
+            title: '',
+            type: QUESTION_TYPES.SC,
+          }
+        }
         validate={validate}
         /* validationSchema={Yup.object().shape({
           content: Yup.string().required(),
@@ -172,7 +196,16 @@ const QuestionCreationForm = ({ intl, tags, tagsLoading, onSubmit, onDiscard }) 
         })} */
         onSubmit={onSubmit}
       >
-        {({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting, setFieldValue }) => {
+        {({
+          values,
+          errors,
+          touched,
+          handleChange,
+          handleBlur,
+          handleSubmit,
+          isSubmitting,
+          setFieldValue,
+        }: any): React.ReactElement => {
           const Preview = typeComponents[values.type].preview
           const OptionsInput = typeComponents[values.type].input
 
@@ -253,7 +286,6 @@ const QuestionCreationForm = ({ intl, tags, tagsLoading, onSubmit, onDiscard }) 
                   description={values.content.getCurrentContent()}
                   options={values.options}
                   questionType={values.type}
-                  title={values.title}
                 />
               </div>
 
@@ -390,7 +422,6 @@ const QuestionCreationForm = ({ intl, tags, tagsLoading, onSubmit, onDiscard }) 
   )
 }
 
-QuestionCreationForm.propTypes = propTypes
 QuestionCreationForm.defaultProps = defaultProps
 
 export default QuestionCreationForm
