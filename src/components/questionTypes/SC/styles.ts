@@ -16,11 +16,34 @@ export default css`
 
   .option {
     display: flex;
-
     background-color: white;
     border: 1px solid grey;
     position: relative;
     overflow: hidden;
+
+    cursor: grab;
+    margin-bottom: 0.5rem;
+
+    &:hover {
+      box-shadow: 0 0 0.2rem blue;
+      -webkit-transition: all 0.1s;
+      transition: all 0.1s;
+    }
+  }
+
+  .SCEditQuestionOption {
+    width: 100%;
+    display: flex;
+    inline-size: -webkit-fill-available;
+  }
+
+  .grabHandle {
+    flex: 0 0 auto;
+    padding: 0 0.5rem;
+
+    :global(i.grab.icon) {
+      color: grey;
+    }
   }
 
   .option.correct {

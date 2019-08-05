@@ -1,20 +1,19 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 
 import { QuestionDescription } from '..'
 import { QUESTION_TYPES } from '../../../constants'
 
-const propTypes = {
-  description: PropTypes.string,
-  options: PropTypes.shape({
-    restrictions: PropTypes.shape({
-      max: PropTypes.number,
-      min: PropTypes.number,
-      type: PropTypes.string,
-    }),
-  }),
-  questionType: PropTypes.string.isRequired,
+interface Props {
+  description?: string
+  options?: {
+    restrictions?: {
+      max?: number
+      min?: number
+      type?: string
+    }
+  }
+  questionType: string
 }
 
 const defaultProps = {
@@ -24,7 +23,7 @@ const defaultProps = {
   },
 }
 
-const FREECreationPreview = ({ questionType, options: { restrictions }, description }) => {
+function FREECreationPreview({ questionType, options: { restrictions }, description }: Props): React.ReactElement {
   const isMinDefined = restrictions && typeof restrictions.min !== 'undefined'
   const isMaxDefined = restrictions && typeof restrictions.min !== 'undefined'
 
@@ -33,7 +32,7 @@ const FREECreationPreview = ({ questionType, options: { restrictions }, descript
       <div className="description">
         <QuestionDescription content={description} />
       </div>
-      {(() => {
+      {((): React.ReactElement => {
         // if the type is FREE_RANGE and both restrictions are specified
         // display a slider and selection
         if (questionType === QUESTION_TYPES.FREE_RANGE && isMinDefined && isMaxDefined) {
@@ -171,7 +170,6 @@ const FREECreationPreview = ({ questionType, options: { restrictions }, descript
   )
 }
 
-FREECreationPreview.propTypes = propTypes
 FREECreationPreview.defaultProps = defaultProps
 
 export default FREECreationPreview

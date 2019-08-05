@@ -1,11 +1,11 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import QRCode from 'qrcode.react'
 import getConfig from 'next/config'
-import { defineMessages, intlShape, FormattedMessage } from 'react-intl'
+import { defineMessages, FormattedMessage } from 'react-intl'
 import { Button, Checkbox, Icon, Popup, Message } from 'semantic-ui-react'
 import { QuestionBlock } from '../questions'
+import { CancelModal } from '.'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -32,19 +32,21 @@ const messages = defineMessages({
   },
 })
 
-const propTypes = {
-  activeStep: PropTypes.number.isRequired,
-  blocks: PropTypes.array,
-  handleEndSession: PropTypes.func.isRequired,
-  handleNextBlock: PropTypes.func.isRequired,
-  handlePauseSession: PropTypes.func.isRequired,
-  handleTogglePublicEvaluation: PropTypes.func.isRequired,
-  intl: intlShape.isRequired,
-  isEvaluationPublic: PropTypes.bool,
-  runtime: PropTypes.string,
-  sessionId: PropTypes.string.isRequired,
-  shortname: PropTypes.string.isRequired,
-  startedAt: PropTypes.string,
+interface Props {
+  activeStep: number
+  blocks?: any[]
+  handleCancelSession: () => void
+  handleEndSession: () => void
+  handleNextBlock: () => void
+  handlePauseSession: () => void
+  handleResetQuestionBlock: (instanceIds: string[]) => void
+  handleTogglePublicEvaluation: () => void
+  intl: any
+  isEvaluationPublic?: boolean
+  runtime?: string
+  sessionId: string
+  shortname: string
+  startedAt?: string
 }
 
 const defaultProps = {
@@ -54,7 +56,7 @@ const defaultProps = {
   startedAt: '00:00:00',
 }
 
-const getMessage = (intl, num, max) => {
+function getMessage(intl, num: number, max: number): any {
   if (num === 0) {
     return {
       icon: 'play',
@@ -82,7 +84,7 @@ const getMessage = (intl, num, max) => {
   }
 }
 
-const SessionTimeline = ({
+function SessionTimeline({
   sessionId,
   blocks,
   intl,
@@ -94,8 +96,10 @@ const SessionTimeline = ({
   handleNextBlock,
   handleEndSession,
   handlePauseSession,
+  handleCancelSession,
   handleTogglePublicEvaluation,
-}) => {
+  handleResetQuestionBlock,
+}: Props): React.ReactElement {
   const isFeedbackSession = blocks.length === 0
 
   return (
@@ -163,36 +167,41 @@ const SessionTimeline = ({
       </div>
 
       <div className="blocks">
-        {blocks.map((block, index) => (
-          <div className="blockWrap">
-            <div className={classNames('waiting', { first: index === 0 })}>
-              <Icon
-                color={index === activeStep / 2 && 'green'}
-                name={index === 0 ? 'video play outline' : 'pause circle outline'}
-                size="big"
-              />
-            </div>
-            <div className="block" key={block.id}>
-              <QuestionBlock
-                noVersions
-                showSolutions
-                index={index + 1}
-                questions={block.instances.map(({ id, question, version }) => ({
-                  id,
-                  title: question.title,
-                  type: question.type,
-                  version,
-                }))}
-                status={block.status}
-              />
-            </div>
-            {index === blocks.length - 1 && (
-              <div className="waiting last">
-                <Icon color={activeStep === blocks.length * 2 && 'red'} name="stop circle outline" size="big" />
+        {blocks.map(
+          (block, index): React.ReactElement => (
+            <div className="blockWrap">
+              <div className={classNames('waiting', { first: index === 0 })}>
+                <Icon
+                  color={index === activeStep / 2 ? 'green' : undefined}
+                  name={index === 0 ? 'video play' : 'pause circle outline'}
+                  size="big"
+                />
               </div>
-            )}
-          </div>
-        ))}
+              <div className="block" key={block.id}>
+                <QuestionBlock
+                  handleResetQuestionBlock={(): void => handleResetQuestionBlock(block.id)}
+                  index={index + 1}
+                  questions={block.instances.map(({ id, question, version }): any => ({
+                    id,
+                    title: question.title,
+                    type: question.type,
+                    version,
+                  }))}
+                  status={block.status}
+                />
+              </div>
+              {index === blocks.length - 1 && (
+                <div className="waiting last">
+                  <Icon
+                    color={activeStep === blocks.length * 2 ? 'red' : undefined}
+                    name="stop circle outline"
+                    size="big"
+                  />
+                </div>
+              )}
+            </div>
+          )
+        )}
         {isFeedbackSession && (
           <div className="blockWrap">
             <Message info>
@@ -210,14 +219,15 @@ const SessionTimeline = ({
             <Icon name="pause" />
             <FormattedMessage defaultMessage="Pause Session" id="sessionArea.button.pauseSession" />
           </Button>
+          <CancelModal handleCancelSession={handleCancelSession} />
         </div>
 
         <div className="publicEvaluation">
           <Checkbox
             toggle
+            checked={isEvaluationPublic}
             defaultChecked={isEvaluationPublic}
             label={intl.formatMessage(messages.togglePublicEvaluation)}
-            value={isEvaluationPublic}
             onChange={handleTogglePublicEvaluation}
           />
           {isEvaluationPublic && (
@@ -428,7 +438,6 @@ const SessionTimeline = ({
   )
 }
 
-SessionTimeline.propTypes = propTypes
 SessionTimeline.defaultProps = defaultProps
 
 export default SessionTimeline

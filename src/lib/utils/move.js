@@ -1,6 +1,41 @@
 import UUIDv4 from 'uuid/v4'
 import { List } from 'immutable'
 
+function updateArrayElement(array, index, newValue) {
+  const oldValue = array[index]
+
+  if (typeof oldValue === 'object') {
+    return [...array.slice(0, index), { ...oldValue, ...newValue }, ...array.slice(index + 1)]
+  }
+
+  return [...array.slice(0, index), newValue, ...array.slice(index + 1)]
+}
+
+function deleteArrayElement(array, index) {
+  return [...array.slice(0, index), ...array.slice(index + 1)]
+}
+
+function reorder(list, startIndex, endIndex) {
+  const result = Array.from(list)
+  const [removed] = result.splice(startIndex, 1)
+  result.splice(endIndex, 0, removed)
+  return result
+}
+
+function handleDragEnd(array, onChange) {
+  return result => {
+    if (!result.destination) {
+      return
+    }
+
+    if (result.destination.index === result.source.index) {
+      return
+    }
+
+    onChange(reorder(array, result.source.index, result.destination.index))
+  }
+}
+
 /**
  * Compute the index of a block in an immutable list given its id
  * @param {*} blocks
@@ -97,4 +132,13 @@ function moveQuestion(blocks, srcBlockId, srcQuestionIx, dstBlockId, dstQuestion
   return addToBlock(blocksWithoutSrc, dstBlockIx, targetQuestion, dstQuestionIx)
 }
 
-export { moveQuestion, addToBlock, appendNewBlock, removeQuestion }
+export {
+  updateArrayElement,
+  handleDragEnd,
+  deleteArrayElement,
+  reorder,
+  moveQuestion,
+  addToBlock,
+  appendNewBlock,
+  removeQuestion,
+}
