@@ -1,18 +1,15 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { Button } from 'semantic-ui-react'
 
-const propTypes = {
-  disabled: PropTypes.bool,
-  onChange: PropTypes.func,
-  options: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-    })
-  ),
-  value: PropTypes.arrayOf(PropTypes.number),
+interface Props {
+  disabled?: boolean
+  onChange: any
+  options?: {
+    id: string
+    name: string
+  }[]
+  value?: number[]
 }
 
 const defaultProps = {
@@ -22,18 +19,20 @@ const defaultProps = {
   value: [],
 }
 
-const SCAnswerOptions = ({ value, disabled, options, onChange }) => (
-  <div className="options">
-    {options.map((option, index) => (
-      <div className={classNames('option', { active: value.includes(index) })} key={option.id}>
-        <Button fluid disabled={disabled} onClick={onChange(index)}>
-          {option.name}
-        </Button>
-      </div>
-    ))}
+function SCAnswerOptions({ value, disabled, options, onChange }: Props): React.ReactElement {
+  return (
+    <div className="options">
+      {options.map(
+        (option, index): React.ReactElement => (
+          <div className={classNames('option', { active: value.includes(index) })} key={option.id}>
+            <Button fluid disabled={disabled} onClick={onChange(index)}>
+              {option.name}
+            </Button>
+          </div>
+        )
+      )}
 
-    <style jsx>
-      {`
+      <style jsx>{`
         @import 'src/theme';
 
         $button-border-width: 2px;
@@ -71,12 +70,11 @@ const SCAnswerOptions = ({ value, disabled, options, onChange }) => (
             transform: translateY(-2px);
           }
         }
-      `}
-    </style>
-  </div>
-)
+      `}</style>
+    </div>
+  )
+}
 
-SCAnswerOptions.propTypes = propTypes
 SCAnswerOptions.defaultProps = defaultProps
 
 export default SCAnswerOptions

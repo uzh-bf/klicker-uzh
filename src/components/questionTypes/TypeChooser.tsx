@@ -1,7 +1,6 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import ReactTooltip from 'react-tooltip'
-import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage, InjectedIntl } from 'react-intl'
 import { Icon } from 'semantic-ui-react'
 
 import { QUESTION_TYPES } from '../../constants'
@@ -26,13 +25,13 @@ const messages = defineMessages({
   },
 })
 
-const propTypes = {
-  intl: intlShape.isRequired,
-  onChange: PropTypes.func.isRequired,
-  value: PropTypes.string.isRequired,
+interface Props {
+  intl: InjectedIntl
+  onChange: (value: string) => void
+  value: string
 }
 
-const TypeChooser = ({ intl, value, onChange }) => {
+function TypeChooser({ intl, value, onChange }: Props): React.ReactElement {
   const types = [
     {
       name: intl.formatMessage(messages.scLabel),
@@ -52,8 +51,6 @@ const TypeChooser = ({ intl, value, onChange }) => {
     },
   ]
 
-  const handleClick = newValue => () => onChange(newValue)
-
   return (
     <div className="required field typeChooser">
       <label htmlFor="types">
@@ -72,7 +69,7 @@ const TypeChooser = ({ intl, value, onChange }) => {
 
       <div className="types">
         {types.map(({ name, value: typeValue }) => (
-          <Button active={typeValue === value} key={typeValue} type="button" onClick={handleClick(typeValue)}>
+          <Button active={typeValue === value} key={typeValue} type="button" onClick={() => onChange(typeValue)}>
             {name}
           </Button>
         ))}
@@ -99,7 +96,5 @@ const TypeChooser = ({ intl, value, onChange }) => {
     </div>
   )
 }
-
-TypeChooser.propTypes = propTypes
 
 export default TypeChooser

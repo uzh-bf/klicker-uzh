@@ -98,7 +98,7 @@ export const TagListPres = ({
       </List.Header>
 
       <Query query={TagListQuery}>
-        {({ data: { tags }, error, loading }) => {
+        {({ data, error, loading }) => {
           if (loading) {
             return <Loader active />
           }
@@ -106,6 +106,8 @@ export const TagListPres = ({
           if (error) {
             return <Message error>{error.message}</Message>
           }
+
+          const { tags } = data
 
           if (tags.length === 0) {
             return <FormattedMessage defaultMessage="No tags available." id="tagList.string.noTags" />
