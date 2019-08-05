@@ -739,7 +739,7 @@ describe('Integration', () => {
     describe('allows running the full session flow (responding and evaluation)', () => {
       const instanceIds = {}
 
-      it('LECTURER: can join the session initially', async () => {
+      it('LECTURER: can join the session initially (initial)', async () => {
         const runningSession = ensureNoErrors(
           await sendQuery(
             {
@@ -760,6 +760,78 @@ describe('Integration', () => {
           )
         )
         expect(evaluateSession).toMatchSnapshot()
+      })
+
+      it('LECTURER: can activate the first question block (initial)', async () => {
+        const data = ensureNoErrors(
+          await sendQuery(
+            {
+              query: Mutations.ActivateNextBlockMutation,
+            },
+            authCookie
+          )
+        )
+
+        expect(data).toMatchSnapshot()
+      })
+
+      it('PARTICIPANT: can join the session initially (initial)', async () => {
+        const data = ensureNoErrors(
+          await sendQuery({
+            query: Queries.JoinSessionQuery,
+            variables: { shortname: 'integr' },
+          })
+        )
+
+        instanceIds.SC = data.joinSession.activeInstances[0].id
+        instanceIds.MC = data.joinSession.activeInstances[1].id
+
+        expect(data).toMatchSnapshot()
+      })
+
+      it('PARTICIPANT: can respond to the SC question in the first block (initial)', async () => {
+        ensureNoErrors(
+          await sendQuery({
+            query: Mutations.AddResponseMutation,
+            variables: {
+              fp: 'myfp1',
+              instanceId: instanceIds.SC,
+              response: {
+                choices: [0],
+              },
+            },
+          })
+        )
+      })
+
+      it('LECTURER: can cancel the running session', async () => {
+        const data = ensureNoErrors(
+          await sendQuery(
+            {
+              query: Mutations.CancelSessionMutation,
+              variables: {
+                id: sessionId,
+              },
+            },
+            authCookie
+          )
+        )
+
+        expect(data).toMatchSnapshot()
+      })
+
+      it('LECTURER: can restart the cancelled session', async () => {
+        const data = ensureNoErrors(
+          await sendQuery(
+            {
+              query: Mutations.StartSessionMutation,
+              variables: { id: sessionId },
+            },
+            authCookie
+          )
+        )
+
+        expect(data).toMatchSnapshot()
       })
 
       it('LECTURER: can activate the first question block', async () => {

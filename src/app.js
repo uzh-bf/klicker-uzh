@@ -66,6 +66,10 @@ if (MONGO_CFG.debug) {
   mongoose.set('debug', true)
 }
 
+// Make Mongoose use `findOneAndUpdate()`. Note that this option is `true`
+// by default, you need to set it to false.
+mongoose.set('useFindAndModify', false)
+
 mongoose.connection
   .once('open', () => {
     console.log('[mongo] Connection to MongoDB established.')

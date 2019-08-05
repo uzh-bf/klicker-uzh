@@ -8,7 +8,10 @@
   "maintainers": [
     "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"
   ],
-  "contributors": [],
+  "contributors": [
+    "wuergrob <32273110+wuergrob@users.noreply.github.com>",
+    "Jokkis80 <jokki@windowslive.com>"
+  ],
   "engines": {
     "node": ">=10",
     "yarn": "YARN NO LONGER USED - use npm instead."
@@ -39,7 +42,7 @@
     "graphql-tools": "4.0.5",
     "handlebars": "4.1.2",
     "helmet": "3.20.0",
-    "ioredis": "4.11.2",
+    "ioredis": "4.14.0",
     "jsonwebtoken": "8.5.1",
     "lodash": "4.17.15",
     "md5": "2.2.1",
@@ -95,6 +98,11 @@
   },
   "lint-staged": {
     "*.js": [
+      "prettier --write",
+      "eslint",
+      "git add"
+    ],
+    "*.ts": [
       "prettier --write",
       "eslint",
       "git add"

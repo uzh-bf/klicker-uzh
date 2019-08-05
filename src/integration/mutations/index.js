@@ -10,6 +10,7 @@ const CreateSessionMutation = loadAsString('./CreateSessionMutation.graphql')
 const ModifySessionMutation = loadAsString('./ModifySessionMutation.graphql')
 const StartSessionMutation = loadAsString('./StartSessionMutation.graphql')
 const PauseSessionMutation = loadAsString('./PauseSessionMutation.graphql')
+const CancelSessionMutation = loadAsString('./CancelSessionMutation.graphql')
 const EndSessionMutation = loadAsString('./EndSessionMutation.graphql')
 const AddFeedbackMutation = loadAsString('./AddFeedbackMutation.graphql')
 const DeleteFeedbackMutation = loadAsString('./DeleteFeedbackMutation.graphql')
@@ -63,6 +64,7 @@ module.exports = {
   ResolveAccountDeletionMutation,
   ActivateAccountMutation,
   DeleteResponseMutation,
+  CancelSessionMutation,
   serializers: [
     RegistrationSerializer,
     ActivateNextBlockSerializer,

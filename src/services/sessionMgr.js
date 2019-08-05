@@ -8,6 +8,7 @@ const { ObjectId } = mongoose.Types
 const { sendSlackNotification } = require('./notifications')
 const { QuestionInstanceModel, SessionModel, UserModel, QuestionModel } = require('../models')
 const { getRedis } = require('../redis')
+const { pubsub, SESSION_UPDATED } = require('../resolvers/subscriptions')
 const {
   QUESTION_TYPES,
   QUESTION_GROUPS,
@@ -20,6 +21,45 @@ const { logDebug } = require('../lib/utils')
 
 const redisCache = getRedis()
 const responseCache = getRedis(3)
+
+async function publishSessionUpdate({ sessionId, activeBlock }) {
+  const result = await SessionModel.findById(sessionId).populate({
+    path: `blocks.${activeBlock}.instances`,
+    populate: {
+      path: 'question',
+    },
+  })
+  const resultObj = result.toObject()
+
+  if (resultObj.activeBlock === null || resultObj.activeBlock !== activeBlock) {
+    throw new Error('INVALID_ACTIVE_BLOCK')
+  }
+
+  const activeBlockData = resultObj.blocks[activeBlock]
+  if (activeBlockData && activeBlockData.instances !== null) {
+    resultObj.activeInstances = activeBlockData.instances.map(instance => {
+      const { question } = instance
+      const versionInfo = question.versions[instance.version]
+      return {
+        id: instance._id,
+        execution: activeBlockData.execution,
+        questionId: question._id,
+        title: question.title,
+        type: question.type,
+        content: versionInfo.content,
+        description: versionInfo.description,
+        options: versionInfo.options,
+        files: versionInfo.files,
+      }
+    })
+  }
+
+  // Publish Subscription Data to Subscribers
+  await pubsub.publish(SESSION_UPDATED, {
+    [SESSION_UPDATED]: { ...resultObj, id: sessionId },
+    sessionId,
+  })
+}
 
 /**
  * If redis is in use, unlink the cached /join/:shortname pages
@@ -372,18 +412,21 @@ const sessionAction = async ({ sessionId, userId }, actionType) => {
 
       // if the session is paused, reinitialize the redis cache with persisted results
       if (session.status === SESSION_STATUS.PAUSED && session.activeInstances.length > 0) {
-        const promises = session.activeInstances.map(async instanceId => {
-          const instance = await QuestionInstanceModel.findById(instanceId).populate('question')
-
-          await initializeResponseCache(instance)
-        })
-
-        await Promise.all(promises)
+        await Promise.all(
+          session.activeInstances.map(async instanceId => {
+            const instance = await QuestionInstanceModel.findById(instanceId).populate('question')
+            await initializeResponseCache(instance)
+          })
+        )
       }
 
       // update the session status to RUNNING
       // this will also continue the session when it has been paused
       session.status = SESSION_STATUS.RUNNING
+
+      // increase the execution counter
+      // invalidates user input in case a session is cancelled and repeated
+      session.executions += 1
 
       // if the session has not been paused, initialize the startedAt date
       if (session.status !== SESSION_STATUS.PAUSED) {
@@ -407,16 +450,16 @@ const sessionAction = async ({ sessionId, userId }, actionType) => {
 
       // if the session has active instances, persist the results
       if (session.activeInstances.length > 0) {
-        const promises = session.activeInstances.map(async instanceId => {
-          const instance = await QuestionInstanceModel.findById(instanceId).populate('question')
+        await Promise.all(
+          session.activeInstances.map(async instanceId => {
+            const instance = await QuestionInstanceModel.findById(instanceId).populate('question')
 
-          // persist the results of the paused instances
-          instance.results = await computeInstanceResults(instance)
+            // persist the results of the paused instances
+            instance.results = await computeInstanceResults(instance)
 
-          return instance.save()
-        })
-
-        await Promise.all(promises)
+            return instance.save()
+          })
+        )
       }
 
       break
@@ -439,6 +482,34 @@ const sessionAction = async ({ sessionId, userId }, actionType) => {
 
       break
 
+    case SESSION_ACTIONS.RESET:
+    case SESSION_ACTIONS.CANCEL:
+      // if the session is not yet running, throw an error
+      if (session.status === SESSION_STATUS.CREATED) {
+        throw new ForbiddenError('SESSION_NOT_STARTED')
+      }
+
+      // if the session was already completed, return it
+      // if (session.status === SESSION_STATUS.COMPLETED) {
+      // return session
+      // }
+
+      // Reset any session progress, in order to revert the session to its "CREATED" state.
+      if (session.blocks.length > 0) {
+        session.activeBlock = -1
+        session.activeStep = 0
+        session.activeInstances = []
+        for (let i = 0; i < session.blocks.length; i += 1) {
+          session.blocks[i].status = QUESTION_BLOCK_STATUS.PLANNED
+          session.blocks[i].execution = 1
+
+          // TODO: reset any results that are already present (reset instances)
+        }
+      }
+      // update the session status to CREATED
+      session.status = SESSION_STATUS.CREATED
+      break
+
     default:
       throw new ForbiddenError('INVALID_SESSION_ACTION')
   }
@@ -457,7 +528,7 @@ const sessionAction = async ({ sessionId, userId }, actionType) => {
 
   await Promise.all(promises)
 
-  sendSlackNotification(`[sessions] ${actionType} session at /join/${user.shortname}`)
+  sendSlackNotification('sessions', `${actionType} session at /join/${user.shortname}`)
 
   return session
 }
@@ -475,6 +546,13 @@ const startSession = ({ id, userId, shortname }) =>
  */
 const pauseSession = ({ id, userId, shortname }) =>
   sessionAction({ sessionId: id, userId, shortname }, SESSION_ACTIONS.PAUSE)
+
+/**
+ * Cancel a running session, reverting it to the "CREATED" state.
+ * @param {*} param0
+ */
+const cancelSession = ({ id, userId, shortname }) =>
+  sessionAction({ sessionId: id, userId, shortname }, SESSION_ACTIONS.CANCEL)
 
 /**
  * End (complete) an existing session
@@ -518,6 +596,8 @@ const updateSettings = async ({ sessionId, userId, settings, shortname }) => {
   // save the updated session
   await session.save()
 
+  await publishSessionUpdate({ sessionId: session.id, activeBlock: session.activeBlock })
+
   // return the updated session
   return session
 }
@@ -528,6 +608,7 @@ const updateSettings = async ({ sessionId, userId, settings, shortname }) => {
  */
 const activateNextBlock = async ({ userId }) => {
   const user = await UserModel.findById(userId).populate(['activeInstances', 'runningSession'])
+
   const { shortname, runningSession } = user
 
   if (!runningSession) {
@@ -617,6 +698,8 @@ const activateNextBlock = async ({ userId }) => {
     await cleanCache(shortname)
   }
 
+  await publishSessionUpdate({ sessionId: runningSession.id, activeBlock: runningSession.activeBlock })
+
   return user.runningSession
 }
 
@@ -666,7 +749,10 @@ module.exports = {
   activateNextBlock,
   getRunningSession,
   pauseSession,
+  cancelSession,
   deleteSessions,
   choicesToResults,
   freeToResults,
+  cleanCache,
+  publishSessionUpdate,
 }

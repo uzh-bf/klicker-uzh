@@ -69,6 +69,22 @@ jobs:
         - docker build . --build-arg VERSION=canary -t $IMAGE_NAME:canary
         - travis_retry docker push $IMAGE_NAME:canary
 
+    # build all commits to v1.2
+    # push a new canary tag to OpenShift
+    - <<: *build-setup
+      if: (type = push) AND (branch = v1.2)
+      env:
+        - USER="serviceaccount"
+        - PASSWORD=$OC_TOKEN_SWITCH
+        - REGISTRY="registry.zh.shift.switchengines.ch"
+        - IMAGE_NAME="registry.zh.shift.switchengines.ch/klicker/klicker-api-stage"
+      before_script:
+        - echo $PASSWORD | docker login --username $USER --password-stdin $REGISTRY
+      script:
+        - travis_retry docker pull $IMAGE_NAME:v1.2-canary
+        - docker build . --cache-from $IMAGE_NAME:v1.2-canary --build-arg VERSION=v1.2-canary -t $IMAGE_NAME:v1.2-canary
+        - travis_retry docker push $IMAGE_NAME:v1.2-canary
+
     # build all pull requests
     # push a nightly tag to Docker Hub
     - <<: *build-setup

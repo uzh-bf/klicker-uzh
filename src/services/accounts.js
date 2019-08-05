@@ -282,7 +282,8 @@ const signup = async (email, password, shortname, institution, useCase, { isAAI,
   if (newUser) {
     // send a slack notification (if configured)
     sendSlackNotification(
-      `[accounts] New user has registered: ${normalizedEmail}, ${shortname}, ${institution}, ${useCase || '-'}`
+      'accounts',
+      `New user has registered: ${normalizedEmail}, ${shortname}, ${institution}, ${useCase || '-'}`
     )
 
     // generate a token scoped for user account activation
@@ -302,7 +303,7 @@ const signup = async (email, password, shortname, institution, useCase, { isAAI,
         to: normalizedEmail,
       })
     } catch (e) {
-      sendSlackNotification(`[accounts] Activation email could not be sent to ${normalizedEmail}`)
+      sendSlackNotification('accounts', `Activation email could not be sent to ${normalizedEmail}`)
     }
 
     // return the data of the newly created user
@@ -349,7 +350,7 @@ const login = async (res, email, password) => {
   })
 
   const invalidLogin = () => {
-    sendSlackNotification(`[accounts] Login failed for ${email}`)
+    sendSlackNotification('accounts', `Login failed for ${email}`)
     throw new AuthenticationError(Errors.INVALID_LOGIN)
   }
 
@@ -423,7 +424,7 @@ const changePassword = async (userId, newPassword) => {
   }
 
   // log the password request to slack
-  sendSlackNotification(`[accounts] Password has been changed for: ${user.email}`)
+  sendSlackNotification('accounts', `Password has been changed for: ${user.email}`)
 
   // return the updated user
   return updatedUser
@@ -462,7 +463,8 @@ const requestPassword = async (res, email) => {
 
   // log the password request to slack
   sendSlackNotification(
-    `[accounts] Password has been requested for: ${user.email}. Link: https://app.klicker.uzh.ch/user/resetPassword?resetToken=${jwt}`
+    'accounts',
+    `Password has been requested for: ${user.email}. Link: https://app.klicker.uzh.ch/user/resetPassword?resetToken=${jwt}`
   )
 
   // send a password reset email
@@ -511,7 +513,7 @@ const requestAccountDeletion = async userId => {
   }
 
   // log the account deletion request to slack
-  sendSlackNotification(`[accounts] Account deletion has been requested for: ${user.email}`)
+  sendSlackNotification('accounts', `Account deletion has been requested for: ${user.email}`)
 
   return jwt
 }
@@ -527,7 +529,7 @@ const performAccountDeletion = async userId => {
     throw new UserInputError(Errors.INVALID_USER)
   }
 
-  sendSlackNotification(`[accounts] Account deletion will be performed for: ${user.email}`)
+  sendSlackNotification('accounts', `Account deletion will be performed for: ${user.email}`)
 
   // perform the actual deletion
   await Promise.all([
@@ -539,7 +541,7 @@ const performAccountDeletion = async userId => {
     UserModel.findByIdAndRemove(userId),
   ])
 
-  sendSlackNotification(`[accounts] Account deletion has been performed for: ${user.email}`)
+  sendSlackNotification('accounts', `Account deletion has been performed for: ${user.email}`)
 }
 
 /**

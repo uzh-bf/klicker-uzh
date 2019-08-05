@@ -14,7 +14,7 @@ const SLACK_CFG = CFG.get('services.slack')
  * Send a slack notification (if enabled)
  * @param {String} text The contents to be sent to slack
  */
-async function sendSlackNotification(text) {
+async function sendSlackNotification(scope, text) {
   console.log(text)
 
   // check if slack integration is appropriately configured
@@ -23,7 +23,7 @@ async function sendSlackNotification(text) {
       method: 'POST',
       uri: SLACK_CFG.webhook,
       body: {
-        text,
+        text: `[${scope}] ${text}`,
       },
       json: true,
     })
