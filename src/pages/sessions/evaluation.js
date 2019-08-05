@@ -32,12 +32,22 @@ const propTypes = {
   showSolution: PropTypes.bool.isRequired,
 }
 
+// interface Props {
+//   activeInstances?: any[]
+//   instanceSummary?: any[]
+//   intl: InjectedIntl
+//   isPublic: boolean
+//   sessionId: string
+//   sessionStatus: 'CREATED' | 'RUNNING' | 'COMPLETED'
+//   showSolution: boolean
+// }
+
 const defaultProps = {
   activeInstances: [],
   instanceSummary: [],
 }
 
-function extractInstancesFromSession(session) {
+export function extractInstancesFromSession(session) {
   // reduce question blocks to the active instances
   const activeInstances = session.blocks
     // filter out future blocks as we don't want to display them too early
