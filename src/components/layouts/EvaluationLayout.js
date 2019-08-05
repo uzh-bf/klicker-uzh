@@ -174,10 +174,12 @@ function EvaluationLayout({
                 onChange={onToggleShowSolution}
               />
             )}
-          <CsvExport activeInstances={activeInstances} sessionId={sessionId} />
-          <a href={`/sessions/print/${sessionId}`}>
-            <Button primary content="Export PDF" />
-          </a>
+          <div className="exportButtons">
+            <CsvExport activeInstances={activeInstances} sessionId={sessionId} />
+            <a href={`/sessions/print/${sessionId}`}>
+              <Button content="Export PDF" icon="file" />
+            </a>
+          </div>
           <VisualizationType
             activeVisualization={activeVisualization}
             intl={intl}
@@ -248,6 +250,10 @@ function EvaluationLayout({
               display: flex;
               flex-direction: column;
               min-height: 100vh;
+
+              .exportButtons {
+                display: flex;
+              }
 
               .instanceChooser {
                 flex: 0 0 auto;

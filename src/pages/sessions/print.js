@@ -8,6 +8,7 @@ import { compose, withProps, withStateHandlers, branch, renderComponent, renderN
 import { withRouter } from 'next/router'
 import { graphql } from 'react-apollo'
 import { max, min, mean, median, quantileSeq, std } from 'mathjs'
+import { Button, Checkbox } from 'semantic-ui-react'
 
 import { CHART_DEFAULTS, QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 import { toValueArray, pageWithIntl, withLogging } from '../../lib'
@@ -47,16 +48,16 @@ const divStyle = {
 }
 
 function Print({ activeInstances, instanceSummary, intl, isPublic, sessionId, sessionStatus }) {
-  useEffect(() => {
-    setTimeout(() => {
-      window.print()
-    }, 1000)
-  })
-
   const [activeVisualizations, setActiveVisualizations] = useState(CHART_DEFAULTS)
+  const [showSolution, setShowSolution] = useState(false)
 
   return (
     <CommonLayout baseFontSize={20}>
+      <div className="noPrint">
+        <Button primary content="Print" icon="print" onClick={() => window.print()} />
+        <Checkbox toggle label="Show Solution" value={showSolution} onChange={() => setShowSolution(prev => !prev)} />
+      </div>
+
       {activeInstances.map(activeInstance => {
         if (activeInstance.question.type === QUESTION_TYPES.FREE_RANGE) {
           // convert the result data into an array with primitive numbers
@@ -64,7 +65,7 @@ function Print({ activeInstances, instanceSummary, intl, isPublic, sessionId, se
           const hasResults = valueArray.length > 0
 
           activeInstance.statistics = {
-            bins,
+            bins: null,
             max: hasResults && max(valueArray),
             mean: hasResults && mean(valueArray),
             median: hasResults && median(valueArray),
@@ -110,7 +111,7 @@ function Print({ activeInstances, instanceSummary, intl, isPublic, sessionId, se
                   sessionId={sessionId}
                   sessionStatus={sessionStatus}
                   showGraph={true}
-                  showSolution={false}
+                  showSolution={showSolution}
                   statistics={statistics}
                   totalResponses={results.totalResponses}
                 />
@@ -121,13 +122,13 @@ function Print({ activeInstances, instanceSummary, intl, isPublic, sessionId, se
                   questionOptions={options}
                   questionType={question.type}
                   showGraph={true}
-                  showSolution={true}
+                  showSolution={showSolution}
                 />
                 <div className="totalResponses">
-                  <FormattedMessage id="evaluation.totalParticipants.label" defaultMessage="Total participants:" />
+                  <FormattedMessage id="evaluation.totalParticipants.label" defaultMessage="Total participants:" />{' '}
                   {results.totalResponses}
                 </div>
-                <div className="visualizationType">
+                <div className="visualizationType noPrint">
                   <VisualizationType
                     activeVisualization={activeVisualization}
                     intl={intl}
@@ -188,9 +189,13 @@ function Print({ activeInstances, instanceSummary, intl, isPublic, sessionId, se
           padding-left: 0;
         }
 
-        .visualizationType {
+        .noPrint {
           @media print {
             display: none;
+          }
+
+          :global(button) {
+            margin: 1rem;
           }
         }
       `}</style>
