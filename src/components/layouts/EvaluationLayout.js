@@ -16,7 +16,7 @@ const messages = defineMessages({
 })
 const propTypes = {
   activeInstance: PropTypes.number,
-  activeInstances: PropTypes.array,
+  activeInstances: PropTypes.array.isRequired,
   activeVisualization: PropTypes.string.isRequired,
   children: PropTypes.element.isRequired,
   choices: PropTypes.arrayOf(
@@ -34,7 +34,7 @@ const propTypes = {
   onToggleShowSolution: PropTypes.func.isRequired,
   options: PropTypes.object.isRequired,
   pageTitle: PropTypes.string,
-  sessionId: PropTypes.string,
+  sessionId: PropTypes.string.isRequired,
   showGraph: PropTypes.bool,
   showSolution: PropTypes.bool,
   statistics: PropTypes.shape({
@@ -175,6 +175,9 @@ function EvaluationLayout({
               />
             )}
           <CsvExport activeInstances={activeInstances} sessionId={sessionId} />
+          <a href={`/sessions/print/${sessionId}`}>
+            <Button primary content="Export PDF" />
+          </a>
           <VisualizationType
             activeVisualization={activeVisualization}
             intl={intl}
