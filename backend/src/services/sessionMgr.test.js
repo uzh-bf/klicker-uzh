@@ -251,6 +251,64 @@ describe('SessionMgrService', () => {
     })
   })
 
+  describe('cancelSession', () => {
+    let preparedSession
+
+    beforeAll(async () => {
+      preparedSession = await prepareSession(userId)
+    })
+
+    it('prevents cancelling a created session', async () => {
+      expect(
+        SessionMgrService.cancelSession({
+          id: preparedSession.id,
+          userId,
+        })
+      ).rejects.toEqual(new Error('SESSION_NOT_STARTED'))
+    })
+
+    it('allows cancelling a running session and restarting it', async () => {
+      const runningSession = await SessionMgrService.startSession({
+        id: preparedSession.id,
+        userId,
+      })
+      expect(runningSession.status).toEqual(SESSION_STATUS.RUNNING)
+
+      const pausedSession = await SessionMgrService.cancelSession({
+        id: preparedSession.id,
+        userId,
+      })
+      expect(pausedSession.status).toEqual(SESSION_STATUS.CREATED)
+
+      const continuedSession = await SessionMgrService.startSession({
+        id: preparedSession.id,
+        userId,
+      })
+      expect(continuedSession.status).toEqual(SESSION_STATUS.RUNNING)
+    })
+
+    it('deletes session progress upon cancellation', async () => {
+      const cancelledSession = await SessionMgrService.cancelSession({
+        id: preparedSession.id,
+        userId,
+      })
+      expect(cancelledSession.status).toEqual(SESSION_STATUS.CREATED)
+      expect(cancelledSession.activeStep).toEqual(0)
+      expect(cancelledSession.activeBlock).toEqual(-1)
+      expect(cancelledSession.activeInstances.length).toEqual(0)
+      for (let i = 0; i < cancelledSession.blocks.length; i += 1) {
+        expect(cancelledSession.blocks[i].status).toEqual('PLANNED')
+      }
+    })
+
+    afterAll(async () => {
+      await SessionMgrService.endSession({
+        id: preparedSession.id,
+        userId,
+      })
+    })
+  })
+
   describe('endSession', () => {
     let preparedSession
 

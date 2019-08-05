@@ -3,10 +3,10 @@ const v8n = require('v8n')
 const { ForbiddenError, UserInputError } = require('apollo-server-express')
 
 const CFG = require('../klicker.conf.js')
-const { QuestionInstanceModel, UserModel, FileModel } = require('../models')
+const { QuestionInstanceModel, UserModel, FileModel, SessionModel } = require('../models')
 const { QUESTION_GROUPS, QUESTION_TYPES } = require('../constants')
 const { getRedis } = require('../redis')
-const { getRunningSession } = require('./sessionMgr')
+const { getRunningSession, cleanCache, publishSessionUpdate } = require('./sessionMgr')
 const { pubsub, CONFUSION_ADDED, FEEDBACK_ADDED } = require('../resolvers/subscriptions')
 
 const FILTERING_CFG = CFG.get('security.filtering')
@@ -321,37 +321,35 @@ const deleteResponse = async ({ userId, instanceId, response }) => {
  * @param {*} param0
  */
 const joinSession = async ({ shortname }) => {
-  // TODO: add test
   // find the user with the given shortname
-  const user = await UserModel.findOne({ shortname }).populate([
-    {
-      path: 'runningSession',
-      populate: {
-        path: 'activeInstances',
-        populate: {
-          path: 'question',
-        },
-      },
-    },
-  ])
-
+  const user = await UserModel.findOne({ shortname }).populate('runningSession')
   if (!user || !user.runningSession) {
     return null
   }
 
-  const { id, activeInstances, settings, feedbacks } = user.runningSession
+  // populate the running session with active instance and question details
+  const runningSession = await SessionModel.findById(user.runningSession.id).populate({
+    path: `blocks.${user.runningSession.activeBlock}.instances`,
+    populate: {
+      path: 'question',
+    },
+  })
+
+  const { id, activeBlock, blocks, settings, feedbacks } = runningSession
+  const currentBlock = blocks[activeBlock] || { instances: [] }
 
   return {
     id,
     settings,
     // map active instances to be in the correct format
-    activeInstances: activeInstances.map(({ id: instanceId, question, version: instanceVersion }) => {
+    activeInstances: currentBlock.instances.map(({ id: instanceId, question, version: instanceVersion }) => {
       const version = question.versions[instanceVersion]
 
       // get the files that correspond to the current question version
       const files = FileModel.find({ _id: { $in: version.files } })
 
       return {
+        execution: currentBlock.execution,
         questionId: question.id,
         id: instanceId,
         title: question.title,
@@ -366,6 +364,72 @@ const joinSession = async ({ shortname }) => {
   }
 }
 
+/**
+ * Resets question instances
+ */
+async function resetQuestionInstances({ instanceIds }) {
+  // TODO: handle instances that have been completed (have been persisted to db)
+
+  return Promise.all(
+    instanceIds.map(async instanceId => {
+      const type = await responseCache.hget(`instance:${instanceId}:info`, 'type')
+      const responseResults = await responseCache.hgetall(`instance:${instanceId}:responseHashes`)
+
+      if (type === QUESTION_TYPES.SC || type === QUESTION_TYPES.MC) {
+        Object.keys(responseResults).forEach(key => {
+          responseCache.hset(`instance:${instanceId}:results`, `${key}`, 0)
+        })
+      }
+
+      if (type === QUESTION_TYPES.FREE || type === QUESTION_TYPES.FREE_RANGE) {
+        const responseHashes = await responseCache.hgetall(`instance:${instanceId}:responseHashes`)
+
+        Object.keys(responseHashes).forEach(key => {
+          responseCache.hdel(`instance:${instanceId}:responseHashes`, `${key}`)
+        })
+
+        Object.keys(responseResults).forEach(key => {
+          responseCache.hdel(`instance:${instanceId}:results`, `${key}`)
+        })
+      }
+
+      await responseCache.hset(`instance:${instanceId}:results`, 'participants', 0)
+    })
+  )
+}
+
+/**
+ * Resets a question block in a running session
+ */
+
+async function resetQuestionBlock({ sessionId, blockId }) {
+  // get the session passed and ensure it is running
+  const session = await getRunningSession(sessionId)
+  const user = await UserModel.findById(session.user)
+
+  // find the block requested by id and extract all instance ids
+  const blockIndex = session.blocks.findIndex(block => block.id === blockId)
+  const instanceIds = session.blocks[blockIndex].instances
+
+  // reset the question instances found
+  await resetQuestionInstances({ instanceIds })
+
+  // increment the execution counter of the block
+  await SessionModel.findByIdAndUpdate(session.id, {
+    $inc: {
+      [`blocks.${blockIndex}.execution`]: 1,
+    },
+  })
+
+  // clean the redis cache to deliver updated execution to participants
+  await cleanCache(user.shortname)
+
+  await publishSessionUpdate({ sessionId: session.id, activeBlock: session.activeBlock })
+
+  // return the updated session
+  return session
+}
+
 module.exports = {
   getRunningSession,
   addResponse,
@@ -374,4 +438,5 @@ module.exports = {
   addFeedback,
   deleteFeedback,
   joinSession,
+  resetQuestionBlock,
 }

@@ -15,6 +15,7 @@ module.exports = `
   type Session_Public {
     id: ID!
 
+    execution: Int
     settings: Session_Settings!
 
     activeInstances: [Question_Public]!
@@ -34,6 +35,7 @@ module.exports = `
     name: String!
     activeBlock: Int!
     activeStep: Int!
+    execution: Int
     runtime: String
 
     status: Session_Status!
@@ -62,6 +64,7 @@ module.exports = `
     isFeedbackChannelActive: Boolean
     isFeedbackChannelPublic: Boolean
   }
+
   type Session_Settings {
     isConfusionBarometerActive: Boolean!
     isEvaluationPublic: Boolean!

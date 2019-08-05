@@ -277,7 +277,7 @@ Object {
 
 exports[`Integration Session Execution allows completing sessions 1`] = `
 
-    startSession / pauseSession / endSession {
+    startSession / pauseSession / endSession / cancelSession {
       status: COMPLETED
     }
     
@@ -581,6 +581,26 @@ exports[`Integration Session Execution allows publishing session evaluations 1`]
   
 `;
 
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can activate the first question block (initial) 1`] = `
+
+    activateNextBlock {
+      blocks: 
+        status: ACTIVE
+        instances: true,true
+      ,
+        status: PLANNED
+        instances: false
+      ,
+        status: PLANNED
+        instances: false,false,false
+      ,
+        status: PLANNED
+        instances: false,false
+      
+    }
+  
+`;
+
 exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can activate the first question block 1`] = `
 
     activateNextBlock {
@@ -639,6 +659,14 @@ exports[`Integration Session Execution allows running the full session flow (res
       
     }
   
+`;
+
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can cancel the running session 1`] = `
+
+    startSession / pauseSession / endSession / cancelSession {
+      status: CREATED
+    }
+    
 `;
 
 exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can close the first question block 1`] = `
@@ -703,7 +731,7 @@ exports[`Integration Session Execution allows running the full session flow (res
 
 exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can continue the session 1`] = `
 
-    startSession / pauseSession / endSession {
+    startSession / pauseSession / endSession / cancelSession {
       status: RUNNING
     }
     
@@ -1459,7 +1487,7 @@ exports[`Integration Session Execution allows running the full session flow (res
   
 `;
 
-exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can join the session initially 1`] = `
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can join the session initially (initial) 1`] = `
 
     runningSession {
       activeStep: 0
@@ -1560,7 +1588,7 @@ exports[`Integration Session Execution allows running the full session flow (res
   
 `;
 
-exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can join the session initially 2`] = `
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can join the session initially (initial) 2`] = `
 
     evaluateSession {
       status: RUNNING
@@ -1711,7 +1739,7 @@ exports[`Integration Session Execution allows running the full session flow (res
 
 exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can pause the session 1`] = `
 
-    startSession / pauseSession / endSession {
+    startSession / pauseSession / endSession / cancelSession {
       status: PAUSED
     }
     
@@ -1866,6 +1894,45 @@ exports[`Integration Session Execution allows running the full session flow (res
   
 `;
 
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can restart the cancelled session 1`] = `
+
+    startSession / pauseSession / endSession / cancelSession {
+      status: RUNNING
+    }
+    
+`;
+
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) PARTICIPANT: can join the session initially (initial) 1`] = `
+
+    joinSession {
+      settings: {"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true,"isConfusionBarometerActive":true}
+      activeInstances: 
+        title: Test SC #2
+        content: {"blocks":[{"data":{},"text":"This is a simple SC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple SC question.
+        type: SC
+        options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+      ,
+        title: Test MC #2
+        content: {"blocks":[{"data":{},"text":"This is a simple MC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple MC question.
+        type: MC
+        options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+      
+      feedbacks: 
+        content: my test feedback
+        votes: 0
+      ,
+        content: good lecture
+        votes: 0
+      ,
+        content: my test feedback
+        votes: 0
+      
+    }
+  
+`;
+
 exports[`Integration Session Execution allows running the full session flow (responding and evaluation) PARTICIPANT: can join the session initially 1`] = `
 
     joinSession {
@@ -1961,7 +2028,7 @@ exports[`Integration Session Execution allows running the full session flow (res
 
 exports[`Integration Session Execution allows starting sessions 1`] = `
 
-    startSession / pauseSession / endSession {
+    startSession / pauseSession / endSession / cancelSession {
       status: RUNNING
     }
     

@@ -28,6 +28,8 @@ const SESSION_ACTIONS = {
   START: 'START',
   PAUSE: 'PAUSE',
   STOP: 'STOP',
+  CANCEL: 'CANCEL',
+  RESET: 'RESET',
 }
 
 const Errors = {

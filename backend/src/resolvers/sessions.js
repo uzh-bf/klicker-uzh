@@ -93,6 +93,19 @@ const pauseSessionMutation = (parentValue, { id }, { auth }) =>
     userId: auth.sub,
   })
 
+const cancelSessionMutation = (parentValue, { id }, { auth }) =>
+  SessionMgrService.cancelSession({
+    id,
+    userId: auth.sub,
+  })
+
+const resetQuestionBlockMutation = (parentValue, { sessionId, blockId }, { auth }) =>
+  SessionExecService.resetQuestionBlock({
+    sessionId,
+    blockId,
+    userId: auth.sub,
+  })
+
 const endSessionMutation = (parentValue, { id }, { auth }) =>
   SessionMgrService.endSession({
     id,
@@ -151,6 +164,7 @@ module.exports = {
   endSession: endSessionMutation,
   activateNextBlock: activateNextBlockMutation,
   pauseSession: pauseSessionMutation,
+  cancelSession: cancelSessionMutation,
   startSession: startSessionMutation,
   addFeedback: addFeedbackMutation,
   deleteFeedback: deleteFeedbackMutation,
@@ -158,4 +172,5 @@ module.exports = {
   updateSessionSettings: updateSessionSettingsMutation,
   joinSession: joinSessionQuery,
   deleteSessions: deleteSessionsMutation,
+  resetQuestionBlock: resetQuestionBlockMutation,
 }

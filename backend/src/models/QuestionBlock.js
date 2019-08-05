@@ -8,6 +8,7 @@ const { QUESTION_BLOCK_STATUS } = require('../constants')
 module.exports = {
   QuestionBlock: new mongoose.Schema(
     {
+      execution: { type: Number, default: 1 },
       status: {
         type: String,
         enum: _values(QUESTION_BLOCK_STATUS),

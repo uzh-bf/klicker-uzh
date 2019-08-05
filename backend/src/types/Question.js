@@ -78,6 +78,7 @@ module.exports = `
   }
   type Question_Public {
     id: ID!
+    execution: Int
     questionId: ID!
     title: String!
     type: Question_Type!

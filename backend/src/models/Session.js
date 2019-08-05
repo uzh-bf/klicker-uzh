@@ -36,6 +36,7 @@ const Session = new mongoose.Schema(
     confusionTS: [ConfusionTimestep],
     feedbacks: [Feedback],
 
+    execution: { type: Number, default: 0 },
     activeBlock: { type: Number, default: -1 },
     activeStep: { type: Number, default: 0 },
     activeInstances: [{ type: ObjectId, ref: 'QuestionInstance' }],
