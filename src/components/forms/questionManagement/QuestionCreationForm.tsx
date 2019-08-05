@@ -114,6 +114,21 @@ function validate({ content, options, tags, title, type }: any): ValidationError
 }
 
 interface Props {
+  initialValues?: {
+    content: any
+    files: any[]
+    options: {
+      choices: any[]
+      randomized: boolean
+      restrictions: {
+        max?: number
+        min?: number
+      }
+    }
+    tags?: any[]
+    title: string
+    type: any
+  }
   intl: InjectedIntl
   onDiscard: () => void
   onSubmit: () => void
@@ -125,7 +140,14 @@ const defaultProps = {
   tags: [],
 }
 
-function QuestionCreationForm({ intl, tags, tagsLoading, onSubmit, onDiscard }: Props): React.ReactElement {
+function QuestionCreationForm({
+  initialValues,
+  intl,
+  tags,
+  tagsLoading,
+  onSubmit,
+  onDiscard,
+}: Props): React.ReactElement {
   const typeComponents = {
     [QUESTION_TYPES.SC]: {
       input: SCCreationOptions,
@@ -148,21 +170,23 @@ function QuestionCreationForm({ intl, tags, tagsLoading, onSubmit, onDiscard }: 
   return (
     <div className="questionCreationForm">
       <Formik
-        initialValues={{
-          content: EditorState.createEmpty(),
-          files: [],
-          options: {
-            choices: [],
-            randomized: false,
-            restrictions: {
-              max: null,
-              min: null,
+        initialValues={
+          initialValues || {
+            content: EditorState.createEmpty(),
+            files: [],
+            options: {
+              choices: [],
+              randomized: false,
+              restrictions: {
+                max: null,
+                min: null,
+              },
             },
-          },
-          tags: null,
-          title: '',
-          type: QUESTION_TYPES.SC,
-        }}
+            tags: null,
+            title: '',
+            type: QUESTION_TYPES.SC,
+          }
+        }
         validate={validate}
         /* validationSchema={Yup.object().shape({
           content: Yup.string().required(),
@@ -250,10 +274,7 @@ function QuestionCreationForm({ intl, tags, tagsLoading, onSubmit, onDiscard }: 
                   intl={intl}
                   type={values.type}
                   value={values.options}
-                  onChange={newOptions => {
-                    console.log(newOptions)
-                    setFieldValue('options', newOptions)
-                  }}
+                  onChange={newOptions => setFieldValue('options', newOptions)}
                 />
               </div>
 

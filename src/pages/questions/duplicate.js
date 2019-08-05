@@ -1,8 +1,8 @@
 import React from 'react'
-import { compose, withState } from 'recompose'
+import { compose } from 'recompose'
 import { Query, Mutation } from 'react-apollo'
 import { defineMessages, intlShape } from 'react-intl'
-import { convertToRaw } from 'draft-js'
+import { ContentState, convertFromRaw, convertToRaw, EditorState } from 'draft-js'
 import { PropTypes } from 'prop-types'
 import Router, { withRouter } from 'next/router'
 import _pick from 'lodash/pick'
@@ -10,7 +10,7 @@ import _omitBy from 'lodash/omitBy'
 import _isNil from 'lodash/isNil'
 
 import { TeacherLayout } from '../../components/layouts'
-import { QuestionDuplicationForm } from '../../components/forms'
+import { QuestionCreationForm } from '../../components/forms'
 import {
   pageWithIntl,
   withDnD,
@@ -27,6 +27,7 @@ import {
   RequestPresignedURLMutation,
   QuestionDetailsQuery,
 } from '../../graphql'
+import { QUESTION_TYPES } from '../../constants'
 
 const messages = defineMessages({
   pageTitle: {
@@ -66,17 +67,64 @@ const DuplicateQuestion = ({ intl, router }) => (
               'type',
               'versions',
             ])
-            const DuplicationForm = withState(versions.length)(QuestionDuplicationForm)
+
+            const duplicateTitle = '(Duplicate)'
+
+            // When duplicating, duplicate newest version of the question
+            const initializeVersion = versions.length - 1
+
+            // Depending on original question type, populate newly created question instance
+            // with missing fields.
+            const prepForm = versions
+            switch (type) {
+              case QUESTION_TYPES.FREE:
+                prepForm[initializeVersion].options = []
+                prepForm[initializeVersion].options[type] = {
+                  choices: [],
+                  randomized: false,
+                  restrictions: {
+                    max: null,
+                    min: null,
+                  },
+                }
+                break
+              case QUESTION_TYPES.FREE_RANGE:
+                prepForm[initializeVersion].options[type].choices = []
+                prepForm[initializeVersion].options[type].randomized = false
+                break
+              case QUESTION_TYPES.MC:
+                prepForm[initializeVersion].options[type].randomized = false
+                break
+              case QUESTION_TYPES.SC:
+                prepForm[initializeVersion].options[type].randomized = false
+                break
+              default:
+                break
+            }
+
+            const initialValues = {
+              content: prepForm[initializeVersion].content
+                ? EditorState.createWithContent(convertFromRaw(JSON.parse(prepForm[initializeVersion].content)))
+                : EditorState.createWithContent(ContentState.createFromText(prepForm[initializeVersion].description)),
+              files: prepForm[initializeVersion].files || [],
+              options: prepForm[initializeVersion].options[type] || {},
+              tags: tags.map(tag => tag.name),
+              title: title + duplicateTitle,
+              type,
+              versions: prepForm,
+            }
+
+            // const DuplicationForm = withState(versions.length)(QuestionCreationForm)
             return (
               <Mutation mutation={CreateQuestionMutation}>
                 {(createQuestion, { loading }) => (
                   <Mutation mutation={RequestPresignedURLMutation}>
                     {requestPresignedURL => (
-                      <DuplicationForm
-                        allTags={tagList.tags}
+                      <QuestionCreationForm
+                        initialValues={initialValues}
                         intl={intl}
                         loading={loading}
-                        questionTags={tags}
+                        tags={tagList.tags}
                         title={title}
                         type={type}
                         versions={versions}
