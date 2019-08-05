@@ -88,9 +88,11 @@ function QuestionBlock({
         </div>
       )}
 
-      <div className="blockActions">
-        <BlockActionsDropdown onResetQuestionBlock={handleResetQuestionBlock} />
-      </div>
+      {!noDetails && (
+        <div className="blockActions">
+          <BlockActionsDropdown onResetQuestionBlock={handleResetQuestionBlock} />
+        </div>
+      )}
 
       <div className="questions">{questionElements}</div>
 
