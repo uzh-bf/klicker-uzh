@@ -1,20 +1,18 @@
 import React from 'react'
-import PropTypes from 'prop-types'
-import { compose, withProps } from 'recompose'
-import QRCode from 'qrcode.react'
-import { withRouter } from 'next/router'
 import getConfig from 'next/config'
+import QRCode from 'qrcode.react'
+import { compose } from 'recompose'
+import { useRouter } from 'next/router'
 
 import { StaticLayout } from '../components/layouts'
 import { withLogging } from '../lib'
 
 const { publicRuntimeConfig } = getConfig()
 
-const propTypes = {
-  shortname: PropTypes.string.isRequired,
-}
+function QR(): React.ReactElement {
+  const router = useRouter()
+  const { shortname } = router.query
 
-const QR = ({ shortname }) => {
   const joinLink = publicRuntimeConfig.joinUrl
     ? `${publicRuntimeConfig.joinUrl}/${shortname}`
     : `${publicRuntimeConfig.baseUrl}/join/${shortname}`
@@ -45,12 +43,5 @@ const QR = ({ shortname }) => {
     </StaticLayout>
   )
 }
-QR.propTypes = propTypes
 
-export default compose(
-  withRouter,
-  withLogging(),
-  withProps(({ router }) => ({
-    shortname: router.query.shortname,
-  }))
-)(QR)
+export default compose(withLogging())(QR)

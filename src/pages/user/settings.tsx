@@ -25,7 +25,7 @@ function Settings(): React.ReactElement {
       pageTitle={intl.formatMessage(messages.pageTitle)}
       sidebar={{ activeItem: 'sessionList' }}
     >
-      <UserSettingsForm intl={intl} />
+      <UserSettingsForm />
     </TeacherLayout>
   )
 }

@@ -1,6 +1,6 @@
 import React from 'react'
 import _get from 'lodash/get'
-import { FormattedMessage, defineMessages } from 'react-intl'
+import { FormattedMessage, defineMessages, useIntl } from 'react-intl'
 import { Message, Button, Tab } from 'semantic-ui-react'
 import { Mutation } from 'react-apollo'
 
@@ -23,9 +23,9 @@ const messages = defineMessages({
   },
 })
 
-const propTypes = {}
+const UserSettingsForm = () => {
+  const intl = useIntl()
 
-const UserSettingsForm = ({ intl }) => {
   const panes = [
     {
       menuItem: intl.formatMessage(messages.accountDataItem),
@@ -59,6 +59,7 @@ const UserSettingsForm = ({ intl }) => {
                       id="form.userSettings.string.accountDeletionWarning"
                     />
                   </Message>
+
                   <Message info>
                     <FormattedMessage
                       defaultMessage="To request deletion of your Klicker account, please click the button below. You will be sent an email that will allow you to confirm your account deletion."
@@ -114,7 +115,5 @@ const UserSettingsForm = ({ intl }) => {
     </div>
   )
 }
-
-UserSettingsForm.propTypes = propTypes
 
 export default UserSettingsForm
