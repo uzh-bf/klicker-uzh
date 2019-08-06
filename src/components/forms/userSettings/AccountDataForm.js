@@ -2,7 +2,7 @@ import React from 'react'
 import getConfig from 'next/config'
 import _get from 'lodash/get'
 import { Query, Mutation } from 'react-apollo'
-import { intlShape, FormattedMessage } from 'react-intl'
+import { FormattedMessage } from 'react-intl'
 import { Formik } from 'formik'
 import { object } from 'yup'
 import { Form, Button } from 'semantic-ui-react'
@@ -17,9 +17,7 @@ const { publicRuntimeConfig } = getConfig()
 
 const { email, institution, useCase, shortname } = validationSchema
 
-const propTypes = {
-  intl: intlShape.isRequired,
-}
+const propTypes = {}
 
 const AccountDataForm = ({ intl }) => (
   <div className="accountDataForm">

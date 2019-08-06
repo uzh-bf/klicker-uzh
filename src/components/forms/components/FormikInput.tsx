@@ -3,7 +3,7 @@
 import React from 'react'
 import ReactTooltip from 'react-tooltip'
 import { Form, Icon, Input } from 'semantic-ui-react'
-import { InjectedIntl } from 'react-intl'
+import { IntlShape } from 'react-intl'
 
 interface Props {
   autoFocus?: boolean
@@ -13,7 +13,7 @@ interface Props {
   handleBlur: () => void
   handleChange: () => void
   inlineLabel?: string
-  intl?: InjectedIntl
+  intl?: IntlShape
   label?: string
   name: string
   placeholder?: string

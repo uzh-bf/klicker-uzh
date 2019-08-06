@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import Router from 'next/router'
 import { compose, withState, withHandlers } from 'recompose'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { FormattedMessage } from 'react-intl'
 
 import { CommonLayout } from '.'
 import { Navbar } from '../common/navbar'
@@ -14,7 +14,6 @@ const propTypes = {
   fixedHeight: PropTypes.bool,
   handleSidebarItemClick: PropTypes.func.isRequired,
   handleSidebarToggle: PropTypes.func.isRequired,
-  intl: intlShape.isRequired,
   isSidebarVisible: PropTypes.bool.isRequired,
   navbar: PropTypes.object,
   pageTitle: PropTypes.string,

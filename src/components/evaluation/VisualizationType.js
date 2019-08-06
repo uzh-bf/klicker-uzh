@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Dropdown } from 'semantic-ui-react'
-import { defineMessages, intlShape } from 'react-intl'
+import { defineMessages } from 'react-intl'
 
 import { CHART_TYPES } from '../../constants'
 
@@ -12,10 +12,8 @@ const messages = defineMessages({
   },
 })
 
-// TODO
 const propTypes = {
   activeVisualization: PropTypes.string.isRequired,
-  intl: intlShape.isRequired,
   onChangeType: PropTypes.func.isRequired,
   questionType: PropTypes.string.isRequired,
 }

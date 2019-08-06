@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactTooltip from 'react-tooltip'
-import { defineMessages, FormattedMessage, InjectedIntl } from 'react-intl'
+import { defineMessages, FormattedMessage, IntlShape } from 'react-intl'
 import { Icon } from 'semantic-ui-react'
 
 import { QUESTION_TYPES } from '../../constants'
@@ -26,7 +26,7 @@ const messages = defineMessages({
 })
 
 interface Props {
-  intl: InjectedIntl
+  intl: IntlShape
   onChange: (value: string) => void
   value: string
 }

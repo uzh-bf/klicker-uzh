@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import Link from 'next/link'
-import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage } from 'react-intl'
 import { Button, Confirm, Icon } from 'semantic-ui-react'
 
 const messages = defineMessages({
@@ -28,7 +28,6 @@ const propTypes = {
   handleDeleteQuestions: PropTypes.bool.isRequired,
   handleQuickBlock: PropTypes.func.isRequired,
   handleQuickBlocks: PropTypes.func.isRequired,
-  intl: intlShape.isRequired,
   isArchiveActive: PropTypes.bool,
   itemsChecked: PropTypes.number,
 }

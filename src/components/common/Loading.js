@@ -1,6 +1,5 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { intlShape } from 'react-intl'
 import { Loader } from 'semantic-ui-react'
 
 import TeacherLayout from '../layouts/TeacherLayout'
@@ -49,7 +48,6 @@ const LoadingTeacherLayout = ({ intl, pageId, title, children }) => {
 }
 LoadingTeacherLayout.propTypes = {
   children: PropTypes.element.isRequired,
-  intl: intlShape.isRequired,
   pageId: PropTypes.string.isRequired,
   title: PropTypes.string.isRequired,
 }

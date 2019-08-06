@@ -1,6 +1,6 @@
 import React from 'react'
 import _get from 'lodash/get'
-import { FormattedMessage, defineMessages, intlShape } from 'react-intl'
+import { FormattedMessage, defineMessages } from 'react-intl'
 import { Message, Button, Tab } from 'semantic-ui-react'
 import { Mutation } from 'react-apollo'
 
@@ -23,9 +23,7 @@ const messages = defineMessages({
   },
 })
 
-const propTypes = {
-  intl: intlShape.isRequired,
-}
+const propTypes = {}
 
 const UserSettingsForm = ({ intl }) => {
   const panes = [

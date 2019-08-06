@@ -6,7 +6,7 @@ import _get from 'lodash/get'
 import { withState } from 'recompose'
 import { Mutation } from 'react-apollo'
 import { Confirm, Button, Icon, Message, Dropdown } from 'semantic-ui-react'
-import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage } from 'react-intl'
 
 import { SessionListQuery, DeleteSessionsMutation } from '../../graphql'
 import { QuestionBlock } from '../questions'
@@ -39,7 +39,6 @@ const propTypes = {
   deletionConfirmation: PropTypes.bool.isRequired,
   handleSetDeletionConfirmation: PropTypes.func.isRequired,
   id: PropTypes.string.isRequired,
-  intl: intlShape.isRequired,
   name: PropTypes.string.isRequired,
   status: PropTypes.string.isRequired,
 }

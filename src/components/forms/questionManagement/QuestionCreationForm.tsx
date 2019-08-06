@@ -3,7 +3,7 @@ import getConfig from 'next/config'
 import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
 import _some from 'lodash/some'
-import { defineMessages, FormattedMessage, InjectedIntl } from 'react-intl'
+import { defineMessages, FormattedMessage, IntlShape } from 'react-intl'
 import { Button, Form, Message, List, Loader } from 'semantic-ui-react'
 import { Formik } from 'formik'
 import { EditorState } from 'draft-js'
@@ -129,7 +129,7 @@ interface Props {
     title: string
     type: any
   }
-  intl: InjectedIntl
+  intl: IntlShape
   onDiscard: () => void
   onSubmit: () => void
   tags?: any[]

@@ -1,7 +1,7 @@
 /* eslint-disable react/prop-types */
 
 import * as React from 'react'
-import { defineMessages, InjectedIntlProps } from 'react-intl'
+import { defineMessages, IntlShape } from 'react-intl'
 import { Button, Dropdown, Input } from 'semantic-ui-react'
 import _find from 'lodash/find'
 
@@ -12,7 +12,8 @@ const messages = defineMessages({
   },
 })
 
-interface Props extends InjectedIntlProps {
+interface Props {
+  intl: IntlShape
   handleSearch: any
   handleSortByChange: any
   handleSortOrderToggle: any

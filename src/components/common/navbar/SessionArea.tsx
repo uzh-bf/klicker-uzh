@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { Button, Icon, Menu, Popup, List, Modal, Embed } from 'semantic-ui-react'
-import { defineMessages, FormattedMessage, InjectedIntlProps } from 'react-intl'
+import { defineMessages, FormattedMessage, IntlShape } from 'react-intl'
 import { CHANGELOG } from '../../../constants'
 
 const messages = defineMessages({
@@ -16,7 +16,8 @@ const messages = defineMessages({
   },
 })
 
-interface Props extends InjectedIntlProps {
+interface Props {
+  intl: IntlShape
   sessionId?: string
 }
 

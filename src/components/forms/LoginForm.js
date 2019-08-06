@@ -1,6 +1,5 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import { intlShape } from 'react-intl'
 import { Formik } from 'formik'
 import { object } from 'yup'
 import _isEmpty from 'lodash/isEmpty'
@@ -12,7 +11,6 @@ import messages from './common/messages'
 const { email, password } = validationSchema
 
 const propTypes = {
-  intl: intlShape.isRequired,
   loading: PropTypes.bool.isRequired,
   onSubmit: PropTypes.func.isRequired,
 }

@@ -4,8 +4,7 @@ import Router from 'next/router'
 import getConfig from 'next/config'
 import App, { Container } from 'next/app'
 import { ApolloProvider } from 'react-apollo'
-import { IntlProvider, addLocaleData } from 'react-intl'
-
+import { IntlProvider } from 'react-intl'
 import { withApolloClient } from '../lib'
 
 const { publicRuntimeConfig } = getConfig()
@@ -19,8 +18,10 @@ const LogRocket = publicRuntimeConfig.logrocketAppID && require('logrocket')
 // locale data was added to the page by `pages/_document.js`. This only happens
 // once, on initial page load in the browser.
 if (typeof window !== 'undefined' && window.ReactIntlLocaleData) {
+  import('@formatjs/intl-relativetimeformat/polyfill')
+
   Object.keys(window.ReactIntlLocaleData).forEach(lang => {
-    addLocaleData(window.ReactIntlLocaleData[lang])
+    import(`@formatjs/intl-relativetimeformat/dist/locale-data/${lang}`)
   })
 }
 

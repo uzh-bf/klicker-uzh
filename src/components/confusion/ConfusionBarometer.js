@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Checkbox } from 'semantic-ui-react'
-import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage } from 'react-intl'
 import { compose, withProps, lifecycle } from 'recompose'
 import _sumBy from 'lodash/sumBy'
 import dayjs from 'dayjs'
@@ -40,7 +40,6 @@ const propTypes = {
     })
   ),
   handleActiveToggle: PropTypes.func.isRequired,
-  intl: intlShape.isRequired,
   isActive: PropTypes.bool,
 }
 

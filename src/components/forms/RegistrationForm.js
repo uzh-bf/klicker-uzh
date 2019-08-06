@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import _isEmpty from 'lodash/isEmpty'
 import getConfig from 'next/config'
-import { FormattedMessage, intlShape } from 'react-intl'
+import { FormattedMessage } from 'react-intl'
 import { Button, Checkbox, Form } from 'semantic-ui-react'
 import { object, boolean } from 'yup'
 import { Formik } from 'formik'
@@ -16,7 +16,6 @@ const { publicRuntimeConfig } = getConfig()
 const { email, shortname, institution, password, passwordRepeat, useCase } = validationSchema
 
 const propTypes = {
-  intl: intlShape.isRequired,
   loading: PropTypes.bool.isRequired,
   onSubmit: PropTypes.func.isRequired,
 }

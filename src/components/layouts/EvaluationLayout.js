@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import { defineMessages, intlShape } from 'react-intl'
+import { defineMessages } from 'react-intl'
 import { Button, Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
 
 import { CommonLayout } from '.'
@@ -28,7 +28,6 @@ const propTypes = {
   data: PropTypes.arrayOf().isRequired,
   description: PropTypes.string,
   instanceSummary: PropTypes.arrayOf(PropTypes.object),
-  intl: intlShape.isRequired,
   onChangeActiveInstance: PropTypes.func.isRequired,
   onChangeVisualizationType: PropTypes.func.isRequired,
   onToggleShowSolution: PropTypes.func.isRequired,

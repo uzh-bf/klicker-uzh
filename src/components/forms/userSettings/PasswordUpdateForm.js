@@ -1,6 +1,6 @@
 import React from 'react'
 import { Mutation } from 'react-apollo'
-import { intlShape, FormattedMessage } from 'react-intl'
+import { FormattedMessage } from 'react-intl'
 import { Formik } from 'formik'
 import { object } from 'yup'
 import { Form, Button } from 'semantic-ui-react'
@@ -12,9 +12,7 @@ import messages from '../common/messages'
 
 const { password, passwordRepeat } = validationSchema
 
-const propTypes = {
-  intl: intlShape.isRequired,
-}
+const propTypes = {}
 
 const PasswordUpdateForm = ({ intl }) => (
   <div className="passwordUpdateForm">

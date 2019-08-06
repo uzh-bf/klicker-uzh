@@ -35,7 +35,7 @@ const propTypes = {
 // interface Props {
 //   activeInstances?: any[]
 //   instanceSummary?: any[]
-//   intl: InjectedIntl
+//   intl: IntlShape
 //   isPublic: boolean
 //   sessionId: string
 //   sessionStatus: 'CREATED' | 'RUNNING' | 'COMPLETED'

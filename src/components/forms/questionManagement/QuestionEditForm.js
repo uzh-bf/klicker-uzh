@@ -5,7 +5,7 @@ import _isNumber from 'lodash/isNumber'
 import getConfig from 'next/config'
 import { compose, withProps } from 'recompose'
 import { EditorState, ContentState, convertFromRaw } from 'draft-js'
-import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage } from 'react-intl'
 import { Button, Form, Dropdown, Message } from 'semantic-ui-react'
 import { Formik } from 'formik'
 
@@ -89,7 +89,6 @@ const propTypes = {
   activeVersion: PropTypes.number.isRequired,
   editSuccess: PropTypes.object.isRequired,
   initialValues: PropTypes.object.isRequired,
-  intl: intlShape.isRequired,
   isNewVersion: PropTypes.bool.isRequired,
   loading: PropTypes.bool.isRequired,
   onActiveVersionChange: PropTypes.func.isRequired,

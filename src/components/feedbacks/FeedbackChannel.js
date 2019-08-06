@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Checkbox } from 'semantic-ui-react'
-import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage } from 'react-intl'
 import { lifecycle } from 'recompose'
 
 import Feedback from './Feedback'
@@ -22,7 +22,6 @@ const propTypes = {
   handleActiveToggle: PropTypes.func.isRequired,
   handleDeleteFeedback: PropTypes.func.isRequired,
   handlePublicToggle: PropTypes.func.isRequired,
-  intl: intlShape.isRequired,
   isActive: PropTypes.bool,
   isPublic: PropTypes.bool,
 }
