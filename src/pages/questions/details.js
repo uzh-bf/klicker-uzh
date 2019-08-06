@@ -2,7 +2,7 @@ import React from 'react'
 import { compose, withState } from 'recompose'
 import { withRouter } from 'next/router'
 import { convertToRaw } from 'draft-js'
-import { defineMessages, intlShape } from 'react-intl'
+import { defineMessages } from 'react-intl'
 import { Query, Mutation } from 'react-apollo'
 import { PropTypes } from 'prop-types'
 import _pick from 'lodash/pick'
@@ -40,7 +40,6 @@ const messages = defineMessages({
 })
 
 const propTypes = {
-  intl: intlShape.isRequired,
   router: PropTypes.object.isRequired,
 }
 

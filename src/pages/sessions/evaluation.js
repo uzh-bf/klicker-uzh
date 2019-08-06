@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import PropTypes from 'prop-types'
 import _round from 'lodash/round'
 import _get from 'lodash/get'
-import { defineMessages, intlShape } from 'react-intl'
+import { defineMessages } from 'react-intl'
 import { compose, withProps, branch, renderNothing } from 'recompose'
 import { withRouter } from 'next/router'
 import { graphql } from 'react-apollo'
@@ -25,7 +25,6 @@ const messages = defineMessages({
 const propTypes = {
   activeInstances: PropTypes.arrayOf(PropTypes.object),
   instanceSummary: PropTypes.arrayOf(PropTypes.object),
-  intl: intlShape.isRequired,
   isPublic: PropTypes.bool.isRequired,
   sessionId: PropTypes.string.isRequired,
   sessionStatus: sessionStatusShape.isRequired,

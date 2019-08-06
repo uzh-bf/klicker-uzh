@@ -1,7 +1,7 @@
 import React from 'react'
 import { compose } from 'recompose'
 import { Query, Mutation } from 'react-apollo'
-import { defineMessages, intlShape } from 'react-intl'
+import { defineMessages } from 'react-intl'
 import { ContentState, convertFromRaw, convertToRaw, EditorState } from 'draft-js'
 import { PropTypes } from 'prop-types'
 import Router, { withRouter } from 'next/router'
@@ -41,7 +41,6 @@ const messages = defineMessages({
 })
 
 const propTypes = {
-  intl: intlShape.isRequired,
   router: PropTypes.object.isRequired,
 }
 

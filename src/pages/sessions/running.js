@@ -4,7 +4,7 @@ import dayjs from 'dayjs'
 import Router from 'next/router'
 import { compose, withProps, lifecycle } from 'recompose'
 import { graphql, Query, Mutation } from 'react-apollo'
-import { defineMessages, intlShape } from 'react-intl'
+import { defineMessages } from 'react-intl'
 
 import { pageWithIntl, withLogging } from '../../lib'
 
@@ -48,7 +48,6 @@ const messages = defineMessages({
 })
 
 const propTypes = {
-  intl: intlShape.isRequired,
   shortname: PropTypes.string.isRequired,
 }
 

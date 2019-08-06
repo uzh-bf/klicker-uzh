@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { compose, withHandlers } from 'recompose'
-import { defineMessages, intlShape } from 'react-intl'
+import { defineMessages } from 'react-intl'
 import { graphql } from 'react-apollo'
 import _debounce from 'lodash/debounce'
 import Router from 'next/router'
@@ -28,7 +28,6 @@ const propTypes = {
   handleSearch: PropTypes.func.isRequired,
   handleSort: PropTypes.func.isRequired,
   handleStartSession: PropTypes.func.isRequired,
-  intl: intlShape.isRequired,
 }
 
 const Index = ({ intl, handleCopySession, handleSearch, handleSort, handleStartSession, filters }) => (

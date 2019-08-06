@@ -2,7 +2,7 @@ import React from 'react'
 import Router from 'next/router'
 import { compose } from 'recompose'
 import { Query, Mutation } from 'react-apollo'
-import { defineMessages, intlShape } from 'react-intl'
+import { defineMessages } from 'react-intl'
 import { convertToRaw } from 'draft-js'
 
 import { TeacherLayout } from '../../components/layouts'
@@ -21,9 +21,7 @@ const messages = defineMessages({
   },
 })
 
-const propTypes = {
-  intl: intlShape.isRequired,
-}
+const propTypes = {}
 
 const CreateQuestion = ({ intl }) => (
   <TeacherLayout

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react'
 import PropTypes from 'prop-types'
 import _round from 'lodash/round'
 import _get from 'lodash/get'
-import { intlShape, FormattedMessage } from 'react-intl'
+import { FormattedMessage } from 'react-intl'
 import { compose, withProps, withStateHandlers, branch, renderComponent, renderNothing } from 'recompose'
 import { withRouter } from 'next/router'
 import { graphql } from 'react-apollo'
@@ -28,7 +28,6 @@ const propTypes = {
   handleShowGraph: PropTypes.func.isRequired,
   handleToggleShowSolution: PropTypes.func.isRequired,
   instanceSummary: PropTypes.arrayOf(PropTypes.object),
-  intl: intlShape.isRequired,
   isPublic: PropTypes.bool.isRequired,
   sessionId: PropTypes.string.isRequired,
   sessionStatus: sessionStatusShape.isRequired,

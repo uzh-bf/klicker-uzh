@@ -8,7 +8,7 @@ import dayjs from 'dayjs'
 import { List } from 'immutable'
 import { DragDropContext } from 'react-beautiful-dnd'
 import { compose, withHandlers, withStateHandlers, branch, renderNothing, withProps, lifecycle } from 'recompose'
-import { defineMessages, intlShape } from 'react-intl'
+import { defineMessages } from 'react-intl'
 import { graphql, Query } from 'react-apollo'
 
 import { pageWithIntl, withDnD, withSortingAndFiltering, withLogging, withSelection } from '../../lib'
@@ -65,7 +65,6 @@ const propTypes = {
   handleSortOrderToggle: PropTypes.func.isRequired,
   handleTagClick: PropTypes.func.isRequired,
   handleToggleArchive: PropTypes.func.isRequired,
-  intl: intlShape.isRequired,
   numSelectedItems: PropTypes.number.isRequired,
   selectedItems: PropTypes.any.isRequired,
   sessionBlocks: PropTypes.any.isRequired,

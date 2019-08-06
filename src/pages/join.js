@@ -4,7 +4,7 @@ import { withRouter } from 'next/router'
 import PropTypes from 'prop-types'
 import React from 'react'
 import { graphql, Query } from 'react-apollo'
-import { defineMessages, FormattedMessage, intlShape } from 'react-intl'
+import { defineMessages, FormattedMessage } from 'react-intl'
 import { branch, compose, renderComponent, withHandlers, withProps, withStateHandlers } from 'recompose'
 import { StudentLayout } from '../components/layouts'
 import FeedbackArea from '../components/sessions/join/FeedbackArea'
@@ -41,7 +41,6 @@ const propTypes = {
   handleSidebarActiveItemChange: PropTypes.func.isRequired,
   handleToggleSidebarVisible: PropTypes.func.isRequired,
   id: PropTypes.string.isRequired,
-  intl: intlShape.isRequired,
   isConfusionBarometerActive: PropTypes.bool.isRequired,
   isFeedbackChannelActive: PropTypes.bool.isRequired,
   shortname: PropTypes.string.isRequired,
