@@ -1,7 +1,6 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import { defineMessages } from 'react-intl'
+import { defineMessages, useIntl } from 'react-intl'
 import { Button, Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
 
 import { CommonLayout } from '.'
@@ -14,35 +13,31 @@ const messages = defineMessages({
     id: 'evaluation.showSolution.label',
   },
 })
-const propTypes = {
-  activeInstance: PropTypes.number,
-  activeInstances: PropTypes.array.isRequired,
-  activeVisualization: PropTypes.string.isRequired,
-  children: PropTypes.element.isRequired,
-  choices: PropTypes.arrayOf(
-    PropTypes.shape({
-      correct: PropTypes.bool,
-      name: PropTypes.string.isRequired,
-    })
-  ).isRequired,
-  data: PropTypes.arrayOf().isRequired,
-  description: PropTypes.string,
-  instanceSummary: PropTypes.arrayOf(PropTypes.object),
-  onChangeActiveInstance: PropTypes.func.isRequired,
-  onChangeVisualizationType: PropTypes.func.isRequired,
-  onToggleShowSolution: PropTypes.func.isRequired,
-  options: PropTypes.object.isRequired,
-  pageTitle: PropTypes.string,
-  sessionId: PropTypes.string.isRequired,
-  showGraph: PropTypes.bool,
-  showSolution: PropTypes.bool,
-  statistics: PropTypes.shape({
-    mean: PropTypes.number.isRequired,
-    median: PropTypes.number.isRequired,
-  }),
-  title: PropTypes.string.isRequired,
-  totalResponses: PropTypes.number,
-  type: PropTypes.string.isRequired,
+
+interface Props {
+  activeInstance?: number
+  activeInstances: any[]
+  activeVisualization: string
+  children: React.ReactElement
+  choices: {
+    correct?: boolean
+    name: string
+  }[]
+  data: any[]
+  description?: string
+  instanceSummary?: any[]
+  onChangeActiveInstance: (index: number) => void
+  onChangeVisualizationType: (value: string) => void
+  onToggleShowSolution: () => void
+  options: any
+  pageTitle?: string
+  sessionId: string
+  showGraph?: boolean
+  showSolution?: boolean
+  statistics?: { mean: number; median: number }
+  title: string
+  totalResponses?: number
+  type: string
 }
 
 const defaultProps = {
@@ -59,7 +54,6 @@ const defaultProps = {
 function EvaluationLayout({
   activeVisualization,
   data,
-  intl,
   pageTitle,
   showGraph,
   showSolution,
@@ -76,8 +70,15 @@ function EvaluationLayout({
   instanceSummary,
   statistics,
   sessionId,
-}) {
-  const dropdownOptions = instanceSummary.map(({ blockStatus, title, totalResponses: count }, index) => ({
+}: Props): React.ReactElement {
+  const intl = useIntl()
+
+  const dropdownOptions = instanceSummary.map(({ blockStatus, title, totalResponses: count }, index): {
+    icon: string
+    key: number
+    text: string
+    value: number
+  } => ({
     icon: blockStatus === 'ACTIVE' ? 'comments' : 'checkmark',
     key: index,
     text: `${title} (${count})`,
@@ -85,13 +86,13 @@ function EvaluationLayout({
   }))
 
   return (
-    <CommonLayout baseFontSize={false} nextHeight="100%" pageTitle={pageTitle}>
+    <CommonLayout baseFontSize={undefined} nextHeight="100%" pageTitle={pageTitle}>
       <div
         className={classNames('evaluationLayout', {
           fullScreen: [CHART_TYPES.CLOUD_CHART, CHART_TYPES.TABLE].includes(activeVisualization),
         })}
       >
-        {(() => {
+        {((): React.ReactElement => {
           if (instanceSummary.length <= 0) {
             return null
           }
@@ -104,14 +105,14 @@ function EvaluationLayout({
                   className="hoverable"
                   disabled={activeInstance === 0}
                   icon="arrow left"
-                  onClick={() => onChangeActiveInstance(activeInstance - 1)}
+                  onClick={(): void => onChangeActiveInstance(activeInstance - 1)}
                 />
                 <Button
                   basic
                   className="hoverable"
                   disabled={activeInstance + 1 === instanceSummary.length}
                   icon="arrow right"
-                  onClick={() => onChangeActiveInstance(activeInstance + 1)}
+                  onClick={(): void => onChangeActiveInstance(activeInstance + 1)}
                 />
                 <Dropdown
                   search
@@ -119,7 +120,7 @@ function EvaluationLayout({
                   options={dropdownOptions}
                   placeholder="Select Question"
                   value={activeInstance}
-                  onChange={(param, { value }) => onChangeActiveInstance(value)}
+                  onChange={(_, { value }: { value: number }): void => onChangeActiveInstance(value)}
                 />
               </div>
               <div className="instanceChooser">
@@ -128,29 +129,31 @@ function EvaluationLayout({
                     className="hoverable"
                     disabled={activeInstance === 0}
                     icon="arrow left"
-                    onClick={() => onChangeActiveInstance(activeInstance - 1)}
+                    onClick={(): void => onChangeActiveInstance(activeInstance - 1)}
                   />
 
                   <Menu.Item
                     className="hoverable"
                     disabled={activeInstance + 1 === instanceSummary.length}
                     icon="arrow right"
-                    onClick={() => onChangeActiveInstance(activeInstance + 1)}
+                    onClick={(): void => onChangeActiveInstance(activeInstance + 1)}
                   />
 
-                  {instanceSummary.map(({ blockStatus, title, totalResponses: count }, index) => (
-                    <Menu.Item
-                      fitted
-                      active={index === activeInstance}
-                      className={classNames('hoverable', {
-                        executed: blockStatus === 'EXECUTED',
-                      })}
-                      onClick={() => onChangeActiveInstance(index)}
-                    >
-                      <Icon name={blockStatus === 'ACTIVE' ? 'comments' : 'checkmark'} />
-                      {title.length > 15 ? `${title.substring(0, 15)}...` : title} ({count})
-                    </Menu.Item>
-                  ))}
+                  {instanceSummary.map(
+                    ({ blockStatus, title, totalResponses: count }, index): React.ReactElement => (
+                      <Menu.Item
+                        fitted
+                        active={index === activeInstance}
+                        className={classNames('hoverable', {
+                          executed: blockStatus === 'EXECUTED',
+                        })}
+                        onClick={(): void => onChangeActiveInstance(index)}
+                      >
+                        <Icon name={blockStatus === 'ACTIVE' ? 'comments' : 'checkmark'} />
+                        {title.length > 15 ? `${title.substring(0, 15)}...` : title} ({count})
+                      </Menu.Item>
+                    )
+                  )}
                 </Menu>
               </div>
             </>
@@ -181,7 +184,6 @@ function EvaluationLayout({
           </div>
           <VisualizationType
             activeVisualization={activeVisualization}
-            intl={intl}
             questionType={type}
             onChangeType={onChangeVisualizationType}
           />
@@ -453,7 +455,6 @@ function EvaluationLayout({
   )
 }
 
-EvaluationLayout.propTypes = propTypes
 EvaluationLayout.defaultProps = defaultProps
 
 export default EvaluationLayout

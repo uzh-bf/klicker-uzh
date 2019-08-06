@@ -1,18 +1,17 @@
-import React from 'react'
-import PropTypes from 'prop-types'
+import React, { useEffect } from 'react'
 import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
-import { compose, lifecycle } from 'recompose'
 
 import { CommonLayout } from '.'
 import { Sidebar } from '../common/sidebar'
 
-const propTypes = {
-  children: PropTypes.node.isRequired,
-  isInteractionEnabled: PropTypes.bool,
-  pageTitle: PropTypes.string,
-  sidebar: PropTypes.object.isRequired,
-  title: PropTypes.string.isRequired,
+interface Props {
+  children: React.ReactNode
+  isInteractionEnabled?: boolean
+  pageTitle?: string
+  sidebar: any
+  subscribeToMore: () => void
+  title: string
 }
 
 const defaultProps = {
@@ -20,7 +19,18 @@ const defaultProps = {
   pageTitle: 'StudentLayout',
 }
 
-const StudentLayout = ({ children, isInteractionEnabled, pageTitle, sidebar, title }) => {
+function StudentLayout({
+  children,
+  isInteractionEnabled,
+  pageTitle,
+  sidebar,
+  title,
+  subscribeToMore,
+}: Props): React.ReactElement {
+  useEffect((): void => {
+    subscribeToMore()
+  })
+
   const activeQuestionItem = {
     href: 'activeQuestion',
     label: <FormattedMessage defaultMessage="Active Question" id="joinSessionsidebar.activeQuestion" />,
@@ -40,7 +50,7 @@ const StudentLayout = ({ children, isInteractionEnabled, pageTitle, sidebar, tit
         <div className="header">
           <Button basic active={sidebar.sidebarVisible} icon="content" onClick={sidebar.handleToggleSidebarVisible} />
           <h1 className="pageTitle">{title}</h1>
-          <Button basic icon="refresh" onClick={() => window.location.reload()} />
+          <Button basic icon="refresh" onClick={(): void => window.location.reload()} />
         </div>
 
         <div className="content">
@@ -105,13 +115,6 @@ const StudentLayout = ({ children, isInteractionEnabled, pageTitle, sidebar, tit
   )
 }
 
-StudentLayout.propTypes = propTypes
 StudentLayout.defaultProps = defaultProps
 
-export default compose(
-  lifecycle({
-    componentDidMount() {
-      this.props.subscribeToMore()
-    },
-  })
-)(StudentLayout)
+export default StudentLayout

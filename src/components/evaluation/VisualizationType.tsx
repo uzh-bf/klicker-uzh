@@ -1,7 +1,6 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import { Dropdown } from 'semantic-ui-react'
-import { defineMessages } from 'react-intl'
+import { defineMessages, useIntl } from 'react-intl'
 
 import { CHART_TYPES } from '../../constants'
 
@@ -12,10 +11,10 @@ const messages = defineMessages({
   },
 })
 
-const propTypes = {
-  activeVisualization: PropTypes.string.isRequired,
-  onChangeType: PropTypes.func.isRequired,
-  questionType: PropTypes.string.isRequired,
+interface Props {
+  activeVisualization: string
+  onChangeType: (questionType: string, value: string) => void
+  questionType: string
 }
 
 const options = [
@@ -39,19 +38,20 @@ const options = [
   { text: 'Histogram', value: CHART_TYPES.HISTOGRAM, withinType: ['FREE_RANGE'] },
 ]
 
-const VisualizationType = ({ activeVisualization, intl, onChangeType, questionType }) => (
-  <div className="visualizationType">
-    <Dropdown
-      selection
-      upward
-      options={options.filter(o => o.withinType.includes(questionType))}
-      placeholder={intl.formatMessage(messages.title)}
-      value={activeVisualization}
-      onChange={(param, { value }) => onChangeType(questionType, value)}
-    />
-  </div>
-)
-
-VisualizationType.propTypes = propTypes
+function VisualizationType({ activeVisualization, onChangeType, questionType }: Props): React.ReactElement {
+  const intl = useIntl()
+  return (
+    <div className="visualizationType">
+      <Dropdown
+        selection
+        upward
+        options={options.filter((o): boolean => o.withinType.includes(questionType))}
+        placeholder={intl.formatMessage(messages.title)}
+        value={activeVisualization}
+        onChange={(_, { value }: { value: string }): void => onChangeType(questionType, value)}
+      />
+    </div>
+  )
+}
 
 export default VisualizationType

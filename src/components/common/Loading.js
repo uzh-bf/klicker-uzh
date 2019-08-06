@@ -1,6 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { Loader } from 'semantic-ui-react'
+import { useIntl } from 'react-intl'
 
 import TeacherLayout from '../layouts/TeacherLayout'
 
@@ -24,7 +25,8 @@ const LoadingDiv = () => (
   </div>
 )
 
-const LoadingTeacherLayout = ({ intl, pageId, title, children }) => {
+const LoadingTeacherLayout = ({ pageId, title, children }) => {
+  const intl = useIntl()
   const navbarConfig = {
     title: intl.formatMessage({
       defaultMessage: title,

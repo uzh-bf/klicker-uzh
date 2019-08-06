@@ -6,7 +6,6 @@ import Router from 'next/router'
 import _get from 'lodash/get'
 import { Icon, Menu } from 'semantic-ui-react'
 import { Query, Mutation } from 'react-apollo'
-import { IntlShape } from 'react-intl'
 
 import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'
@@ -24,7 +23,6 @@ declare const window: KlickerWindow
 const { publicRuntimeConfig } = getConfig()
 
 interface Props {
-  intl: IntlShape
   search?: {
     handleSearch: any
     handleSortByChange: any
@@ -48,7 +46,7 @@ const defaultProps = {
   sidebarVisible: false,
 }
 
-function Navbar({ intl, search, sidebarVisible, title, handleSidebarToggle }: Props): React.ReactElement {
+function Navbar({ search, sidebarVisible, title, handleSidebarToggle }: Props): React.ReactElement {
   return (
     <div className="navbar">
       <div className="sideArea">
@@ -66,7 +64,6 @@ function Navbar({ intl, search, sidebarVisible, title, handleSidebarToggle }: Pr
             handleSearch={search.handleSearch}
             handleSortByChange={search.handleSortByChange}
             handleSortOrderToggle={search.handleSortOrderToggle}
-            intl={intl}
             sortBy={search.sortBy}
             sortOrder={search.sortOrder}
             sortingTypes={search.sortingTypes}
@@ -131,7 +128,7 @@ function Navbar({ intl, search, sidebarVisible, title, handleSidebarToggle }: Pr
             return (
               <Menu borderless className="loginArea noBorder">
                 <Menu.Menu position="right">
-                  {accountShort && <SessionArea intl={intl} sessionId={runningSessionId} />}
+                  {accountShort && <SessionArea sessionId={runningSessionId} />}
 
                   <Mutation mutation={LogoutMutation}>
                     {(logout): React.ReactElement => (

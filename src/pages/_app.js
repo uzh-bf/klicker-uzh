@@ -18,6 +18,7 @@ const LogRocket = publicRuntimeConfig.logrocketAppID && require('logrocket')
 // locale data was added to the page by `pages/_document.js`. This only happens
 // once, on initial page load in the browser.
 if (typeof window !== 'undefined' && window.ReactIntlLocaleData) {
+  import('intl-pluralrules')
   import('@formatjs/intl-relativetimeformat/polyfill')
 
   Object.keys(window.ReactIntlLocaleData).forEach(lang => {
