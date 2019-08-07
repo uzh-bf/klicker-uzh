@@ -7,6 +7,7 @@ export { default as QuestionCreationForm } from './questionManagement/QuestionCr
 export { default as QuestionEditForm } from './questionManagement/QuestionEditForm'
 export { default as RegistrationForm } from './RegistrationForm'
 export { default as SessionCreationForm } from './sessionCreation/SessionCreationForm'
+export { default as SessionEditForm } from './sessionCreation/SessionEditForm'
 export { default as AccountDataForm } from './userSettings/AccountDataForm'
 
 export { default as FormWithLinks } from './components/FormWithLinks'

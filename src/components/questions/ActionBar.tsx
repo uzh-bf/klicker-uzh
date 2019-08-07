@@ -1,7 +1,6 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import Link from 'next/link'
-import { defineMessages, FormattedMessage } from 'react-intl'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Confirm, Icon } from 'semantic-ui-react'
 
 const messages = defineMessages({
@@ -20,16 +19,16 @@ const messages = defineMessages({
   },
 })
 
-const propTypes = {
-  creationMode: PropTypes.bool,
-  deletionConfirmation: PropTypes.bool.isRequired,
-  handleArchiveQuestions: PropTypes.func.isRequired,
-  handleCreationModeToggle: PropTypes.func.isRequired,
-  handleDeleteQuestions: PropTypes.bool.isRequired,
-  handleQuickBlock: PropTypes.func.isRequired,
-  handleQuickBlocks: PropTypes.func.isRequired,
-  isArchiveActive: PropTypes.bool,
-  itemsChecked: PropTypes.number,
+interface Props {
+  creationMode?: boolean
+  deletionConfirmation: boolean
+  handleArchiveQuestions: any
+  handleCreationModeToggle: any
+  handleDeleteQuestions: any
+  handleQuickBlock: any
+  handleQuickBlocks: any
+  isArchiveActive?: boolean
+  itemsChecked?: number
 }
 
 const defaultProps = {
@@ -39,7 +38,6 @@ const defaultProps = {
 }
 
 function ActionBar({
-  intl,
   isArchiveActive,
   creationMode,
   deletionConfirmation,
@@ -49,7 +47,8 @@ function ActionBar({
   handleDeleteQuestions,
   handleQuickBlock,
   handleQuickBlocks,
-}) {
+}: Props): React.ReactElement {
+  const intl = useIntl()
   return (
     <div className="actionBar">
       <div className="actionButtons">
@@ -198,7 +197,6 @@ function ActionBar({
   )
 }
 
-ActionBar.propTypes = propTypes
 ActionBar.defaultProps = defaultProps
 
 export default ActionBar
