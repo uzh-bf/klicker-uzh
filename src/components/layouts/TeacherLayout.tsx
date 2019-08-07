@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import Router from 'next/router'
+import { useRouter } from 'next/router'
 import { FormattedMessage, useIntl } from 'react-intl'
 
 import { CommonLayout } from '.'
@@ -24,7 +24,11 @@ const defaultProps = {
 
 function TeacherLayout({ actionArea, children, fixedHeight, navbar, pageTitle, sidebar }: Props): React.ReactElement {
   const intl = useIntl()
+  const router = useRouter()
+
   const [isSidebarVisible, setIsSidebarVisible] = useState(false)
+
+  const handleSidebarItemClick = (href: string): any => (): Promise<boolean> => router.push(href)
 
   const sidebarItems = [
     {
@@ -72,7 +76,7 @@ function TeacherLayout({ actionArea, children, fixedHeight, navbar, pageTitle, s
 
         <div className="content">
           <Sidebar
-            handleSidebarItemClick={(href): Promise<boolean> => Router.push(href)}
+            handleSidebarItemClick={handleSidebarItemClick}
             items={sidebarItems}
             visible={isSidebarVisible}
             {...sidebar}

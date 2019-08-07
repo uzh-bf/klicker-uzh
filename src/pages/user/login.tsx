@@ -36,7 +36,7 @@ function Login(): React.ReactElement {
         </h1>
 
         <Mutation mutation={LoginMutation}>
-          {(login, { loading, error }): React.ReactNode => (
+          {(login, { loading, error }): any => (
             <>
               <Message info>
                 <FormattedMessage

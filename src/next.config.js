@@ -71,6 +71,13 @@ module.exports = phase => {
         ],
       })
 
+      webpackConfig.module.rules.push({
+        test: /\.mjs$/,
+        type: 'javascript/auto',
+      })
+
+      webpackConfig.resolve.extensions = ['.ts', '.tsx', '.mjs', '.js']
+
       return webpackConfig
     },
   }

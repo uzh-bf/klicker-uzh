@@ -32,7 +32,7 @@ function DeleteAccount(): React.ReactElement {
         </h1>
 
         <Mutation mutation={ResolveAccountDeletionMutation}>
-          {(deleteAccount, { data, error, loading }): React.ReactNode => {
+          {(deleteAccount, { data, error, loading }): any => {
             const success = data && !error
 
             if (success) {

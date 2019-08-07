@@ -164,7 +164,7 @@ function setupLocale(req, res) {
   const { locale, setCookie } = getLocale(req)
 
   req.locale = locale
-  req.localeDataScript = getLocaleDataScript(locale)
+  // req.localeDataScript = getLocaleDataScript(locale)
   req.messages = isDev ? {} : getMessages(locale)
 
   // set a locale cookie with the specified language

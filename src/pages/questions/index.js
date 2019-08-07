@@ -8,7 +8,7 @@ import dayjs from 'dayjs'
 import { List } from 'immutable'
 import { DragDropContext } from 'react-beautiful-dnd'
 import { compose, withHandlers, withStateHandlers, branch, renderNothing, withProps, lifecycle } from 'recompose'
-import { defineMessages } from 'react-intl'
+import { defineMessages, useIntl } from 'react-intl'
 import { graphql, Query } from 'react-apollo'
 
 import { pageWithIntl, withDnD, withSortingAndFiltering, withLogging, withSelection } from '../../lib'
@@ -77,7 +77,6 @@ const Index = ({
   numSelectedItems,
   creationMode,
   deletionConfirmation,
-  intl,
   filters,
   sort,
   selectedItems,
@@ -103,6 +102,8 @@ const Index = ({
   handleChangeName,
   handleArchiveQuestions,
 }) => {
+  const intl = useIntl()
+
   const creationForm = runningSessionId => (
     <div className="creationForm">
       <DragDropContext onDragEnd={handleManageBlocks}>
