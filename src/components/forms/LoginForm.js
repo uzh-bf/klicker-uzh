@@ -2,7 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { Formik } from 'formik'
 import { object } from 'yup'
-import _isEmpty from 'lodash/isEmpty'
+import _isEmpty from 'lodash-es/isEmpty'
 
 import { FormWithLinks, FormikInput } from '.'
 import validationSchema from './common/validationSchema'

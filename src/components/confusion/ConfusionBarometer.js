@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { Checkbox } from 'semantic-ui-react'
 import { defineMessages, FormattedMessage } from 'react-intl'
 import { compose, withProps, lifecycle } from 'recompose'
-import _sumBy from 'lodash/sumBy'
+import _sumBy from 'lodash-es/sumBy'
 import dayjs from 'dayjs'
 
 import ConfusionSection from './ConfusionSection'

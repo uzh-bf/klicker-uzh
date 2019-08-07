@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import _isEmpty from 'lodash/isEmpty'
+import _isEmpty from 'lodash-es/isEmpty'
 import { Formik } from 'formik'
 import { object } from 'yup'
 

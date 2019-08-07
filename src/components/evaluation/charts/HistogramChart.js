@@ -1,10 +1,10 @@
 /* eslint-disable no-mixed-operators,no-plusplus,no-loop-func */
 import React from 'react'
 import PropTypes from 'prop-types'
-import _minBy from 'lodash/minBy'
-import _maxBy from 'lodash/maxBy'
-import _sumBy from 'lodash/sumBy'
-import _round from 'lodash/round'
+import _minBy from 'lodash-es/minBy'
+import _maxBy from 'lodash-es/maxBy'
+import _sumBy from 'lodash-es/sumBy'
+import _round from 'lodash-es/round'
 import { histogram, thresholdFreedmanDiaconis } from 'd3'
 import { compose, withProps } from 'recompose'
 import {

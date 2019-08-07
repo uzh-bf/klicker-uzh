@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { defineMessages, useIntl } from 'react-intl'
 import { Button, Dropdown, Input } from 'semantic-ui-react'
-import _find from 'lodash/find'
+import _find from 'lodash-es/find'
 
 const messages = defineMessages({
   searchPlaceholder: {

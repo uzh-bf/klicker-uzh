@@ -1,5 +1,5 @@
 import React from 'react'
-import _get from 'lodash/get'
+import _get from 'lodash-es/get'
 import { FormattedMessage, defineMessages, useIntl } from 'react-intl'
 import { Message, Button, Tab } from 'semantic-ui-react'
 import { Mutation } from 'react-apollo'

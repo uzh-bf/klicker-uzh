@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import Cookies from 'js-cookie'
 import Link from 'next/link'
-import _get from 'lodash/get'
+import _get from 'lodash-es/get'
 import { useRouter } from 'next/router'
 import { compose } from 'recompose'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
