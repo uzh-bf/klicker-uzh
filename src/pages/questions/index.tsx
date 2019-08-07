@@ -9,8 +9,9 @@ import { compose } from 'recompose'
 import { defineMessages, useIntl } from 'react-intl'
 import { useQuery, useMutation } from 'react-apollo'
 
-import { withDnD, withSortingAndFiltering, withLogging } from '../../lib'
+import { withDnD, withLogging } from '../../lib'
 import useSelection from '../../lib/useSelection'
+import useSortingAndFiltering from '../../lib/useSortingAndFiltering'
 import {
   CreateSessionMutation,
   StartSessionMutation,
@@ -39,27 +40,7 @@ const messages = defineMessages({
   },
 })
 
-interface Props {
-  filters: any
-  handleReset: any
-  handleSearch: any
-  handleSortByChange: any
-  handleSortOrderToggle: any
-  handleTagClick: any
-  handleToggleArchive: any
-  sort: any
-}
-
-function Index({
-  filters,
-  sort,
-  handleSearch,
-  handleSortByChange,
-  handleSortOrderToggle,
-  handleTagClick,
-  handleReset,
-  handleToggleArchive,
-}: Props): React.ReactElement {
+function Index(): React.ReactElement {
   const intl = useIntl()
   const router = useRouter()
 
@@ -78,6 +59,16 @@ function Index({
   const { data } = useQuery(QuestionPoolQuery)
 
   const [selectedItems, handleSelectItem, handleResetSelection] = useSelection()
+  const {
+    filters,
+    sort,
+    handleSearch,
+    handleSortByChange,
+    handleSortOrderToggle,
+    handleTagClick,
+    handleReset,
+    handleToggleArchive,
+  } = useSortingAndFiltering()
 
   useEffect((): void => {
     router.prefetch('/questions/details')
@@ -421,6 +412,5 @@ export default compose(
   withLogging({
     slaask: true,
   }),
-  withDnD,
-  withSortingAndFiltering
+  withDnD
 )(Index)

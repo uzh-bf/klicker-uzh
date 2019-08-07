@@ -1,8 +1,8 @@
 import React from 'react'
 import Router from 'next/router'
 import { Loader, Message } from 'semantic-ui-react'
-import { FormattedMessage, IntlShape } from 'react-intl'
-import { Query } from 'react-apollo'
+import { FormattedMessage, IntlShape, useIntl } from 'react-intl'
+import { useQuery } from 'react-apollo'
 
 import Session from './Session'
 import { SessionListQuery } from '../../graphql'
@@ -48,164 +48,155 @@ function handleSessionAction(sessionId, status, handleStartSession, handleCopySe
 
 interface Props {
   filters: any
-  handleCopySession: () => void
-  handleStartSession: () => void
-  intl: IntlShape
+  handleCopySession: any
+  handleStartSession: any
 }
 
-export const SessionListPres = ({
-  intl,
-  filters,
-  handleCopySession,
-  handleStartSession,
-}: Props): React.ReactElement => {
+function SessionList({ filters, handleCopySession, handleStartSession }: Props): React.ReactElement {
+  const intl = useIntl()
+
+  const { data, loading, error } = useQuery(SessionListQuery)
+
   return (
     <div className="sessionList">
-      <Query query={SessionListQuery}>
-        {({ data, error, loading }): React.ReactElement => {
-          if (loading) {
-            return <Loader active />
-          }
+      {((): React.ReactElement => {
+        if (loading) {
+          return <Loader active />
+        }
 
-          if (error) {
-            return <Message error>{error.message}</Message>
-          }
+        if (error) {
+          return <Message error>{error.message}</Message>
+        }
 
-          const { sessions } = data
+        const { sessions } = data
 
-          if (sessions.length === 0) {
-            return (
-              <div className="session">
-                <FormattedMessage defaultMessage="No session was found." id="sessionList.string.noSessions" />
-              </div>
-            )
-          }
+        if (sessions.length === 0) {
+          return (
+            <div className="session">
+              <FormattedMessage defaultMessage="No session was found." id="sessionList.string.noSessions" />
+            </div>
+          )
+        }
 
-          // extract the running session from all sessions
-          const runningSessions = sessions
-            .filter(session => session.status === SESSION_STATUS.RUNNING)
-            .map(session => ({
-              ...session,
-              button: {
-                ...statusCases[SESSION_STATUS.RUNNING],
-                onClick: () => Router.push('/sessions/running'),
-              },
-            }))
-
-          // extract paused sessions
-          const pausedSessions = sessions
-            .filter(session => session.status === SESSION_STATUS.PAUSED)
-            .map(session => ({
-              ...session,
-              button: {
-                ...statusCases[SESSION_STATUS.PAUSED],
-                disabled: runningSessions.length > 0,
-                onClick: handleSessionAction(session.id, session.status, handleStartSession, handleCopySession),
-              },
-            }))
-
-          // create a session index
-          const sessionIndex = buildIndex('sessions', sessions, ['name', 'createdAt'])
-
-          const processedSessions = filterSessions(sessions, filters, sessionIndex).map(session => ({
+        // extract the running session from all sessions
+        const runningSessions = sessions
+          .filter(session => session.status === SESSION_STATUS.RUNNING)
+          .map(session => ({
             ...session,
             button: {
-              ...statusCases[session.status],
-              disabled: session.status === SESSION_STATUS.COMPLETED,
-              hidden: session.status === SESSION_STATUS.COMPLETED,
+              ...statusCases[SESSION_STATUS.RUNNING],
+              onClick: () => Router.push('/sessions/running'),
+            },
+          }))
+
+        // extract paused sessions
+        const pausedSessions = sessions
+          .filter(session => session.status === SESSION_STATUS.PAUSED)
+          .map(session => ({
+            ...session,
+            button: {
+              ...statusCases[SESSION_STATUS.PAUSED],
+              disabled: runningSessions.length > 0,
               onClick: handleSessionAction(session.id, session.status, handleStartSession, handleCopySession),
             },
           }))
 
-          const remainingSessions = processedSessions.filter(session => session.status === SESSION_STATUS.CREATED)
-          const completedSessions = processedSessions.filter(session => session.status === SESSION_STATUS.COMPLETED)
+        // create a session index
+        const sessionIndex = buildIndex('sessions', sessions, ['name', 'createdAt'])
 
-          return (
-            <>
-              {runningSessions.length + pausedSessions.length > 0 ? (
-                <div className="runningSessions">
-                  <h2>
-                    <FormattedMessage
-                      defaultMessage="Running / paused sessions"
-                      id="sessionList.title.runningSession"
-                    />{' '}
-                    ({runningSessions.length + pausedSessions.length})
-                  </h2>
-                  <div className="sessions">
-                    {[...runningSessions, ...pausedSessions].map(running => (
-                      <div className="runningSession">
-                        <Session intl={intl} {...running} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
+        const processedSessions = filterSessions(sessions, filters, sessionIndex).map(session => ({
+          ...session,
+          button: {
+            ...statusCases[session.status],
+            disabled: session.status === SESSION_STATUS.COMPLETED,
+            hidden: session.status === SESSION_STATUS.COMPLETED,
+            onClick: handleSessionAction(session.id, session.status, handleStartSession, handleCopySession),
+          },
+        }))
+
+        const remainingSessions = processedSessions.filter(session => session.status === SESSION_STATUS.CREATED)
+        const completedSessions = processedSessions.filter(session => session.status === SESSION_STATUS.COMPLETED)
+
+        return (
+          <>
+            {runningSessions.length + pausedSessions.length > 0 ? (
+              <div className="runningSessions">
+                <h2>
+                  <FormattedMessage defaultMessage="Running / paused sessions" id="sessionList.title.runningSession" />{' '}
+                  ({runningSessions.length + pausedSessions.length})
+                </h2>
                 <div className="sessions">
-                  <FormattedMessage
-                    defaultMessage="No session is currently running."
-                    id="sessionList.string.noSessionRunning"
-                  />
+                  {[...runningSessions, ...pausedSessions].map(running => (
+                    <div className="runningSession">
+                      <Session intl={intl} {...running} />
+                    </div>
+                  ))}
                 </div>
-              )}
+              </div>
+            ) : (
+              <div className="sessions">
+                <FormattedMessage
+                  defaultMessage="No session is currently running."
+                  id="sessionList.string.noSessionRunning"
+                />
+              </div>
+            )}
 
-              {remainingSessions.length > 0 && (
-                <>
-                  <h2>
-                    <FormattedMessage defaultMessage="Planned sessions" id="sessionList.title.plannedSessions" /> (
-                    {remainingSessions.length})
-                  </h2>
-                  {remainingSessions.map(session => (
-                    <div className="session" key={session.id}>
-                      <Session intl={intl} {...session} />
-                    </div>
-                  ))}
-                </>
-              )}
+            {remainingSessions.length > 0 && (
+              <>
+                <h2>
+                  <FormattedMessage defaultMessage="Planned sessions" id="sessionList.title.plannedSessions" /> (
+                  {remainingSessions.length})
+                </h2>
+                {remainingSessions.map(session => (
+                  <div className="session" key={session.id}>
+                    <Session intl={intl} {...session} />
+                  </div>
+                ))}
+              </>
+            )}
 
-              {completedSessions.length > 0 && (
-                <>
-                  <h2>
-                    <FormattedMessage defaultMessage="Completed sessions" id="sessionList.title.completedSessions" /> (
-                    {completedSessions.length})
-                  </h2>
-                  {completedSessions.map(session => (
-                    <div className="session" key={session.id}>
-                      <Session intl={intl} {...session} />
-                    </div>
-                  ))}
-                </>
-              )}
-            </>
-          )
-        }}
-      </Query>
+            {completedSessions.length > 0 && (
+              <>
+                <h2>
+                  <FormattedMessage defaultMessage="Completed sessions" id="sessionList.title.completedSessions" /> (
+                  {completedSessions.length})
+                </h2>
+                {completedSessions.map(session => (
+                  <div className="session" key={session.id}>
+                    <Session intl={intl} {...session} />
+                  </div>
+                ))}
+              </>
+            )}
+          </>
+        )
+      })()}
 
-      <style jsx>
-        {`
-          @import 'src/theme';
+      <style jsx>{`
+        @import 'src/theme';
 
-          .session,
-          .sessions {
-            margin-bottom: 1rem;
-            padding: 0.5rem;
-            border: 1px solid lightgrey;
+        .session,
+        .sessions {
+          margin-bottom: 1rem;
+          padding: 0.5rem;
+          border: 1px solid lightgrey;
+          background-color: #f9f9f9;
+        }
+
+        .runningSessions {
+          & > .sessions {
             background-color: #f9f9f9;
+            border: 1px solid $color-primary;
           }
 
-          .runningSessions {
-            & > .sessions {
-              background-color: #f9f9f9;
-              border: 1px solid $color-primary;
-            }
-
-            .runningSession:not(:last-child) {
-              margin-bottom: 0.5rem;
-            }
+          .runningSession:not(:last-child) {
+            margin-bottom: 0.5rem;
           }
-        `}
-      </style>
+        }
+      `}</style>
     </div>
   )
 }
 
-export default SessionListPres
+export default SessionList
