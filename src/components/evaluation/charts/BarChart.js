@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import _sortBy from 'lodash-es/sortBy'
+import _sortBy from 'lodash/sortBy'
 import {
   ResponsiveContainer,
   Bar,

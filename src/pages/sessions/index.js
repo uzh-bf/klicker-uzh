@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { compose, withHandlers } from 'recompose'
 import { defineMessages } from 'react-intl'
 import { graphql } from 'react-apollo'
-import _debounce from 'lodash-es/debounce'
+import _debounce from 'lodash/debounce'
 import Router from 'next/router'
 
 import { pageWithIntl, withLogging, withSortingAndFiltering } from '../../lib'

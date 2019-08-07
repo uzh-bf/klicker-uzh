@@ -1,7 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import classNames from 'classnames'
-import _isFinite from 'lodash-es/isFinite'
+import _isFinite from 'lodash/isFinite'
 import { Icon, Popup } from 'semantic-ui-react'
 import { QUESTION_GROUPS } from '../../constants'
 

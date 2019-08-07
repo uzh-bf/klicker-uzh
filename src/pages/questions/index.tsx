@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import UUIDv4 from 'uuid'
-import _get from 'lodash-es/get'
-import _debounce from 'lodash-es/debounce'
+import _get from 'lodash/get'
+import _debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
 import dayjs from 'dayjs'
 import { List } from 'immutable'
@@ -9,7 +9,8 @@ import { compose } from 'recompose'
 import { defineMessages, useIntl } from 'react-intl'
 import { useQuery, useMutation } from 'react-apollo'
 
-import { withDnD, withSortingAndFiltering, withLogging, withSelection } from '../../lib'
+import { withDnD, withSortingAndFiltering, withLogging } from '../../lib'
+import useSelection from '../../lib/useSelection'
 import {
   CreateSessionMutation,
   StartSessionMutation,
@@ -42,30 +43,22 @@ interface Props {
   filters: any
   handleReset: any
   handleSearch: any
-  handleSelectItem: any
   handleSortByChange: any
   handleSortOrderToggle: any
   handleTagClick: any
   handleToggleArchive: any
-  handleResetSelection: any
-  numSelectedItems: number
-  selectedItems: any
   sort: any
 }
 
 function Index({
-  numSelectedItems,
   filters,
   sort,
-  selectedItems,
-  handleSelectItem,
   handleSearch,
   handleSortByChange,
   handleSortOrderToggle,
   handleTagClick,
   handleReset,
   handleToggleArchive,
-  handleResetSelection,
 }: Props): React.ReactElement {
   const intl = useIntl()
   const router = useRouter()
@@ -83,6 +76,8 @@ function Index({
   const [modifySession] = useMutation(ModifySessionMutation)
   const [deleteQuestions] = useMutation(DeleteQuestionsMutation)
   const { data } = useQuery(QuestionPoolQuery)
+
+  const [selectedItems, handleSelectItem, handleResetSelection] = useSelection()
 
   useEffect((): void => {
     router.prefetch('/questions/details')
@@ -117,7 +112,7 @@ function Index({
       // archive the questions
       await archiveQuestions({
         refetchQueries: [{ query: QuestionListQuery }],
-        variables: { ids: selectedItems.keys() },
+        variables: { ids: selectedItems.ids },
       })
 
       handleResetSelection()
@@ -135,7 +130,7 @@ function Index({
     setSessionBlocks(
       sessionBlocks.push({
         id: UUIDv4(),
-        questions: selectedItems.toList().map(({ id, title, type, version }): any => ({
+        questions: selectedItems.items.map(({ id, title, type, version }): any => ({
           id,
           key: UUIDv4(),
           title,
@@ -153,7 +148,7 @@ function Index({
 
     setSessionBlocks(
       sessionBlocks.concat(
-        selectedItems.toList().map(({ id, title, type, version }): any => ({
+        selectedItems.items.map(({ id, title, type, version }): any => ({
           id: UUIDv4(),
           questions: List([
             {
@@ -224,7 +219,7 @@ function Index({
 
     if (confirm) {
       try {
-        const questionIds = Array.from(selectedItems.keys())
+        const questionIds = Array.from(selectedItems.ids)
         await deleteQuestions({
           optimisticResponse: {
             __typename: 'Mutation',
@@ -331,7 +326,7 @@ function Index({
               handleQuickBlock={onQuickBlock}
               handleQuickBlocks={onQuickBlocks}
               isArchiveActive={filters.archive}
-              itemsChecked={numSelectedItems}
+              itemsChecked={selectedItems.ids.length}
             />
 
             <div className="questionListContent">
@@ -427,6 +422,5 @@ export default compose(
     slaask: true,
   }),
   withDnD,
-  withSortingAndFiltering,
-  withSelection
+  withSortingAndFiltering
 )(Index)

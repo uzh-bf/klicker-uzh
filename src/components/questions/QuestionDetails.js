@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import _truncate from 'lodash-es/truncate'
+import _truncate from 'lodash/truncate'
 import Link from 'next/link'
 
 import { Button, Icon } from 'semantic-ui-react'

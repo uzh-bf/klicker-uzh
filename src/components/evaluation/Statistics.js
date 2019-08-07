@@ -1,9 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import _round from 'lodash-es/round'
+import _round from 'lodash/round'
 import { FormattedMessage } from 'react-intl'
 import { Input, Popup, Icon } from 'semantic-ui-react'
-import _isNumber from 'lodash-es/isNumber'
+import _isNumber from 'lodash/isNumber'
 
 import { EvaluationListItem } from '.'
 

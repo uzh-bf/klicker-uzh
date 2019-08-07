@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactTooltip from 'react-tooltip'
-import _get from 'lodash-es/get'
+import _get from 'lodash/get'
 import { Form, Icon, Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import { compose, withHandlers, mapProps } from 'recompose'

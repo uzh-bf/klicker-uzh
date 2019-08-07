@@ -1,5 +1,5 @@
 import classNames from 'classnames'
-import _debounce from 'lodash-es/debounce'
+import _debounce from 'lodash/debounce'
 import { withRouter } from 'next/router'
 import PropTypes from 'prop-types'
 import React from 'react'

@@ -1,6 +1,6 @@
 import React from 'react'
 import PropTypes from 'prop-types'
-import _isEmpty from 'lodash-es-es/isEmpty'
+import _isEmpty from 'lodash/isEmpty'
 import getConfig from 'next/config'
 import { FormattedMessage } from 'react-intl'
 import { Button, Checkbox, Form } from 'semantic-ui-react'

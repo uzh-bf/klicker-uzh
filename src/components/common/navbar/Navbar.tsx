@@ -3,7 +3,7 @@
 import * as React from 'react'
 import getConfig from 'next/config'
 import Router from 'next/router'
-import _get from 'lodash-es/get'
+import _get from 'lodash/get'
 import { Icon, Menu } from 'semantic-ui-react'
 import { Query, Mutation } from 'react-apollo'
 
