@@ -1,9 +1,8 @@
 /* eslint-disable react/prop-types, react/no-array-index-key */
 
 import * as React from 'react'
-import { Button, Icon, Menu, Popup, List, Modal, Embed } from 'semantic-ui-react'
+import { Button, Icon, Menu, Popup, Modal, Embed } from 'semantic-ui-react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { CHANGELOG } from '../../../constants'
 
 const messages = defineMessages({
   support: {
@@ -51,48 +50,6 @@ function SessionArea({ sessionId }: Props): React.ReactElement {
         hideOnScroll={false}
         on="click"
         position="bottom right"
-        trigger={<Menu.Item content={intl.formatMessage(messages.whatsNew)} icon="info" />}
-      >
-        <Popup.Content>
-          <div className="popupChanges popupContent">
-            <h3>Planned features (major)</h3>
-            <p>
-              <strong>
-                A public roadmap is available on{' '}
-                <a href="https://github.com/uzh-bf/klicker-uzh/projects/1" rel="noopener noreferrer" target="_blank">
-                  GitHub
-                </a>
-                .
-              </strong>
-            </p>
-            <h3>New features (major)</h3>
-            <List bulleted>
-              {CHANGELOG.new.map(({ text, items }, index) => (
-                <List.Item key={index}>
-                  {items ? <h4>{text}</h4> : text}
-                  {items && (
-                    <List.List>
-                      {items.map(item => (
-                        <List.Item>{item}</List.Item>
-                      ))}
-                    </List.List>
-                  )}
-                </List.Item>
-              ))}
-            </List>
-          </div>
-        </Popup.Content>
-      </Popup>
-
-      <Popup
-        basic
-        hoverable
-        closeOnDocumentClick={false}
-        closeOnPortalMouseLeave={false}
-        closeOnTriggerMouseLeave={false}
-        hideOnScroll={false}
-        on="click"
-        position="bottom right"
         trigger={<Menu.Item content={intl.formatMessage(messages.support)} icon="help" />}
       >
         <Popup.Content>
@@ -130,37 +87,35 @@ function SessionArea({ sessionId }: Props): React.ReactElement {
         </Popup.Content>
       </Popup>
 
-      <style jsx>
-        {`
-          h3 {
-            font-size: 1.2rem;
-          }
+      <style jsx>{`
+        h3 {
+          font-size: 1.2rem;
+        }
 
-          h4 {
-            font-size: 1rem;
-            margin: 0;
-          }
+        h4 {
+          font-size: 1rem;
+          margin: 0;
+        }
 
-          .popupContent {
-            padding: 0;
+        .popupContent {
+          padding: 0;
 
-            :global(.button) {
-              width: 100%;
-              margin-bottom: 0.5rem;
-            }
+          :global(.button) {
+            width: 100%;
+            margin-bottom: 0.5rem;
           }
+        }
 
-          .popupHelp {
-            width: 20rem;
-          }
+        .popupHelp {
+          width: 20rem;
+        }
 
-          .popupChanges {
-            overflow: auto;
-            max-height: 40rem;
-            width: 35rem;
-          }
-        `}
-      </style>
+        .popupChanges {
+          overflow: auto;
+          max-height: 40rem;
+          width: 35rem;
+        }
+      `}</style>
     </>
   )
 }
