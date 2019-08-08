@@ -3,7 +3,6 @@
 export { default as initApollo } from './initApollo'
 export { default as pageWithIntl } from './pageWithIntl'
 export { default as withApolloClient } from './withApolloClient'
-export { default as withFingerprint, ensureFingerprint } from './withFingerprint'
 export { default as withStorage } from './withStorage'
 export { default as omitDeep, omitDeepArray } from './utils/omitDeep'
 export { default as withDnD } from './withDnD'

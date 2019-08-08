@@ -14,7 +14,6 @@ import {
   JoinSessionQuery,
   UpdatedSessionSubscription,
 } from '../graphql'
-import { withFingerprint, ensureFingerprint } from '../lib'
 import useLogging from '../lib/useLogging'
 import useFingerprint from '../lib/useFingerprint'
 
@@ -36,7 +35,7 @@ function Join(): React.ReactElement {
   const router = useRouter()
 
   const [sidebarVisible, setSidebarVisible] = useState(false)
-  const [sidebarActiveItem, setSidebarActiveItem] = useState('activeQuestions')
+  const [sidebarActiveItem, setSidebarActiveItem] = useState('activeQuestion')
 
   const [newConfusionTS] = useMutation(AddConfusionTSMutation)
   const [newFeedback] = useMutation(AddFeedbackMutation)
@@ -45,7 +44,7 @@ function Join(): React.ReactElement {
     variables: { shortname: router.query.shortname },
   })
 
-  const fp = useFingerprint()
+  const fingerprint = useFingerprint()
 
   if (loading || error || !data.joinSession) {
     return (
@@ -69,8 +68,6 @@ function Join(): React.ReactElement {
   const onNewConfusionTS = _debounce(
     async ({ difficulty = 0, speed = 0 }) => {
       try {
-        const fingerprint = await ensureFingerprint(fp)
-
         newConfusionTS({
           variables: {
             difficulty,
@@ -94,8 +91,6 @@ function Join(): React.ReactElement {
     }
 
     try {
-      const fingerprint = await ensureFingerprint(fp)
-
       if (settings.isFeedbackChannelPublic) {
         newFeedback({
           // optimistically add the feedback to the array already
@@ -144,8 +139,6 @@ function Join(): React.ReactElement {
   // handle creation of a new response
   const onNewResponse = async ({ instanceId, response }) => {
     try {
-      const fingerprint = await ensureFingerprint(fp)
-
       newResponse({
         variables: { fp: fingerprint, instanceId, response },
       })
@@ -182,12 +175,7 @@ function Join(): React.ReactElement {
           document: UpdatedSessionSubscription,
           updateQuery: (prev, { subscriptionData }) => {
             if (!subscriptionData.data) return prev
-            return {
-              joinSession: {
-                ...prev.joinSession,
-                ...subscriptionData.data.sessionUpdated,
-              },
-            }
+            return { joinSession: subscriptionData.data.sessionUpdated }
           },
           variables: { sessionId },
         })
@@ -225,57 +213,57 @@ function Join(): React.ReactElement {
             shortname={shortname}
           />
         )}
+      </div>
 
-        <style jsx>{`
-          @import 'src/theme';
+      <style jsx>{`
+        @import 'src/theme';
 
-          .joinSession {
-            display: flex;
-            min-height: -moz-calc(100vh - 8rem);
-            min-height: -webkit-calc(100vh - 8rem);
-            min-height: calc(100vh - 8rem);
-            width: 100%;
+        .joinSession {
+          display: flex;
+          min-height: -moz-calc(100vh - 8rem);
+          min-height: -webkit-calc(100vh - 8rem);
+          min-height: calc(100vh - 8rem);
+          width: 100%;
 
-            background-color: lightgray;
+          background-color: lightgray;
 
-            > * {
-              flex: 0 0 50%;
+          > * {
+            flex: 0 0 50%;
+          }
+
+          .questionArea,
+          .feedbackArea {
+            padding: 1rem;
+
+            &.inactive {
+              display: none;
+            }
+          }
+
+          @include desktop-tablet-only {
+            padding: 1rem;
+            min-height: 100%;
+
+            .questionArea {
+              border: 1px solid $color-primary;
+              background-color: white;
+              margin-right: 0.25rem;
             }
 
-            .questionArea,
             .feedbackArea {
-              padding: 1rem;
+              border: 1px solid $color-primary;
+              background-color: white;
+              margin-left: 0.25rem;
 
               &.inactive {
-                display: none;
-              }
-            }
-
-            @include desktop-tablet-only {
-              padding: 1rem;
-              min-height: 100%;
-
-              .questionArea {
-                border: 1px solid $color-primary;
-                background-color: white;
-                margin-right: 0.25rem;
-              }
-
-              .feedbackArea {
-                border: 1px solid $color-primary;
-                background-color: white;
-                margin-left: 0.25rem;
-
-                &.inactive {
-                  display: block;
-                }
+                display: block;
               }
             }
           }
-        `}</style>
-      </div>
+        }
+      `}</style>
     </StudentLayout>
   )
 }
 
-export default withFingerprint(Join)
+export default Join
