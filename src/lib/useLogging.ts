@@ -17,10 +17,10 @@ if (isProd && publicRuntimeConfig.logrocketAppID) {
 
 declare global {
   interface Window {
-    INIT_APM: boolean
-    INIT_LR: boolean
-    INIT_RAVEN: boolean
-    _slaask: any
+    INIT_APM?: boolean
+    INIT_LR?: boolean
+    INIT_RAVEN?: boolean
+    _slaask?: any
   }
 }
 

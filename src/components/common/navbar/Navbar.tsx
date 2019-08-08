@@ -13,8 +13,8 @@ import SessionArea from './SessionArea'
 import { AccountSummaryQuery, LogoutMutation } from '../../../graphql'
 
 interface KlickerWindow extends Window {
-  INIT_LR?: string
-  INIT_RAVEN?: string
+  INIT_LR?: boolean
+  INIT_RAVEN?: boolean
   _slaask?: any
 }
 

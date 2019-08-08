@@ -109,17 +109,13 @@ function DuplicateQuestion() {
               // const DuplicationForm = withState(versions.length)(QuestionCreationForm)
               return (
                 <Mutation mutation={CreateQuestionMutation}>
-                  {(createQuestion, { loading }) => (
+                  {createQuestion => (
                     <Mutation mutation={RequestPresignedURLMutation}>
                       {requestPresignedURL => (
                         <QuestionCreationForm
                           initialValues={initialValues}
-                          intl={intl}
-                          loading={loading}
                           tags={tagList.tags}
-                          title={title}
-                          type={type}
-                          versions={versions}
+                          tagsLoading={tagsLoading}
                           // handle discarding a new question
                           onDiscard={() => router.push('/questions')}
                           // handle submitting a new question
