@@ -1,6 +1,6 @@
 import UUIDv4 from 'uuid/v4'
 
-function updateArrayElement(array, index, newValue) {
+export function updateArrayElement(array, index, newValue): any[] {
   const oldValue = array[index]
 
   if (typeof oldValue === 'object') {
@@ -10,18 +10,18 @@ function updateArrayElement(array, index, newValue) {
   return [...array.slice(0, index), newValue, ...array.slice(index + 1)]
 }
 
-function deleteArrayElement(array, index) {
+export function deleteArrayElement(array, index): any[] {
   return [...array.slice(0, index), ...array.slice(index + 1)]
 }
 
-function reorder(list, startIndex, endIndex) {
+export function reorder(list, startIndex, endIndex): any[] {
   const result = Array.from(list)
   const [removed] = result.splice(startIndex, 1)
   result.splice(endIndex, 0, removed)
   return result
 }
 
-function handleDragEnd(array, onChange) {
+export function handleDragEnd(array, onChange): void {
   return result => {
     if (!result.destination) {
       return
@@ -40,7 +40,7 @@ function handleDragEnd(array, onChange) {
  * @param {*} blocks
  * @param {*} droppableId
  */
-function getIndex(blocks, droppableId) {
+export function getIndex(blocks, droppableId): number {
   return blocks.findIndex(block => block.id === droppableId)
 }
 
@@ -52,7 +52,7 @@ function getIndex(blocks, droppableId) {
  * @param {*} question
  * @param {*} targetIndex Optional index that specifies the target location of the question
  */
-function addToBlock(blocks, blockId, question, targetIndex = null) {
+export function addToBlock(blocks, blockId, question, targetIndex = null): any[] {
   let dstBlockIx = blockId
 
   // if the blockId passed is not number (index)
@@ -77,7 +77,7 @@ function addToBlock(blocks, blockId, question, targetIndex = null) {
  * @param {*} blocks
  * @param {*} question
  */
-function appendNewBlock(blocks, question) {
+export function appendNewBlock(blocks, question): any[] {
   return blocks.push({
     id: UUIDv4(),
     questions: [{ ...question, key: UUIDv4() }],
@@ -91,7 +91,7 @@ function appendNewBlock(blocks, question) {
  * @param {int} questionIndex
  * @param {bool} removeEmpty
  */
-function removeQuestion(blocks, blockIndex, questionIndex, removeEmpty = false) {
+export function removeQuestion(blocks, blockIndex, questionIndex, removeEmpty = false): any[] {
   // delete the question with the specified index from the specified block
   const blocksWithoutQuestion = blocks.deleteIn([blockIndex, 'questions', questionIndex])
 
@@ -112,7 +112,7 @@ function removeQuestion(blocks, blockIndex, questionIndex, removeEmpty = false) 
  * @param {*} dstQuestionIx
  * @param {*} removeEmpty Flag that specifies whether empty blocks should be pruned
  */
-function moveQuestion(blocks, srcBlockId, srcQuestionIx, dstBlockId, dstQuestionIx, removeEmpty = false) {
+export function moveQuestion(blocks, srcBlockId, srcQuestionIx, dstBlockId, dstQuestionIx, removeEmpty = false): any[] {
   // compute the index for both source and destination block
   const srcBlockIx = getIndex(blocks, srcBlockId)
   let dstBlockIx = getIndex(blocks, dstBlockId)
@@ -129,15 +129,4 @@ function moveQuestion(blocks, srcBlockId, srcQuestionIx, dstBlockId, dstQuestion
   }
 
   return addToBlock(blocksWithoutSrc, dstBlockIx, targetQuestion, dstQuestionIx)
-}
-
-export {
-  updateArrayElement,
-  handleDragEnd,
-  deleteArrayElement,
-  reorder,
-  moveQuestion,
-  addToBlock,
-  appendNewBlock,
-  removeQuestion,
 }

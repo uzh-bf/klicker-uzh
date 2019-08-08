@@ -1,6 +1,6 @@
-import { defineMessages } from 'react-intl'
+import { defineMessages, IntlShape } from 'react-intl'
 
-export const generateTypesLabel = intl => {
+export function generateTypesLabel(intl: IntlShape): any {
   const messages = defineMessages({
     freeLabel: {
       defaultMessage: 'Free Text (FT)',
@@ -28,7 +28,7 @@ export const generateTypesLabel = intl => {
   }
 }
 
-export const generateTypesShort = intl => {
+export function generateTypesShort(intl: IntlShape): any {
   const messages = defineMessages({
     freeRangeShort: {
       defaultMessage: 'NR',

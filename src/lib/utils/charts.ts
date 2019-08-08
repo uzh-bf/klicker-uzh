@@ -8,7 +8,7 @@ import {
 } from '../../constants'
 
 // convert an integer index into letters
-export function indexToLetter(index) {
+export function indexToLetter(index: number): string {
   // calculate how many times the letter should be repeated
   // eg. 0 => A (times= 1), 24 => AA (times = 2),
   const n = Math.floor(index / 26) + 1
@@ -20,7 +20,7 @@ export function indexToLetter(index) {
 }
 
 // determine whether the label (A,B, ...) is displayed within the bar or not
-export function getLabelIn(chartType, questionType, count, totalResponses, index) {
+export function getLabelIn(chartType: string, questionType?: string, count: number, totalResponses: number, index: number): number | string {
   if (chartType === CHART_TYPES.BAR_CHART) {
     if (count / totalResponses > SMALL_BAR_THRESHOLD) {
       return count
@@ -37,7 +37,7 @@ export function getLabelIn(chartType, questionType, count, totalResponses, index
 }
 
 // determine whether the label (A,B, ...) is displayed outside the bar or not
-export function getLabelOut(chartType, questionType, count, totalResponses, index) {
+export function getLabelOut(chartType: string, questionType?: string, count: number, totalResponses: number, index: number): number | string {
   if (chartType === CHART_TYPES.BAR_CHART) {
     if (count / totalResponses <= SMALL_BAR_THRESHOLD) {
       return count

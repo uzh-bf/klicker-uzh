@@ -23,7 +23,7 @@ const indices = {}
   },
 } */
 
-function buildIndex(name, items, searchIndices) {
+export function buildIndex(name, items, searchIndices): any[] {
   // if an index already exists, return it
   if (indices[name]) {
     return indices[name]
@@ -50,7 +50,7 @@ function buildIndex(name, items, searchIndices) {
   return search
 }
 
-function filterQuestions(questions, filters, index) {
+export function filterQuestions(questions, filters, index): any[] {
   let results = questions.filter(
     ({ isArchived }) => (typeof isArchived === 'undefined' && !filters.archive) || isArchived === filters.archive
   )
@@ -80,7 +80,7 @@ function filterQuestions(questions, filters, index) {
   return results
 }
 
-function filterSessions(sessions, filters, index) {
+export function filterSessions(sessions, filters, index): any[] {
   let results = sessions
 
   if (filters.title) {
@@ -90,7 +90,7 @@ function filterSessions(sessions, filters, index) {
   return results
 }
 
-function sortQuestions(questions, sort) {
+export function sortQuestions(questions, sort): any[] {
   const factor = sort.asc ? 1 : -1
 
   if (sort.by === 'TITLE') {
@@ -127,7 +127,7 @@ function sortQuestions(questions, sort) {
   return questions
 }
 
-function processItems(items, filters, sort, index) {
+export function processItems(items, filters, sort, index): any[] {
   let processed = items
 
   if (filters) {
@@ -140,5 +140,3 @@ function processItems(items, filters, sort, index) {
 
   return processed
 }
-
-export { filterSessions, processItems, buildIndex }

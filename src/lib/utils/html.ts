@@ -1,7 +1,7 @@
 import sanitizeHTML from 'sanitize-html'
 import { stateToHTML } from 'draft-js-export-html'
 
-function toSanitizedHTML(contentState) {
+export function toSanitizedHTML(contentState): string {
   try {
     // extract the current draftjs content state
     return sanitizeHTML(stateToHTML(contentState))
@@ -11,5 +11,3 @@ function toSanitizedHTML(contentState) {
 
   return null
 }
-
-export { toSanitizedHTML }

@@ -1,21 +1,21 @@
 import ReactGA from 'react-ga'
 
-export const initGA = id => {
+export function initGA(id: string): void {
   ReactGA.initialize(id)
 }
 
-export const logPageView = () => {
+export function logPageView(): void {
   ReactGA.set({ page: window.location.pathname })
   ReactGA.pageview(window.location.pathname)
 }
 
-export const logEvent = (category = '', action = '') => {
+export function logEvent(category: string = '', action: string = ''): void {
   if (category && action) {
     ReactGA.event({ action, category })
   }
 }
 
-export const logException = (description = '', fatal = false) => {
+export function logException(description: string = '', fatal: boolean = false): void {
   if (description) {
     ReactGA.exception({ description, fatal })
   }

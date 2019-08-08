@@ -9,7 +9,7 @@ if (typeof global.Intl !== 'object') {
 
 // The document (which is SSR-only) needs to be customized to expose the locale
 // data for the user's locale for React Intl to work in the browser.
-export default class IntlDocument extends Document {
+class IntlDocument extends Document {
   static async getInitialProps(context) {
     const props = await super.getInitialProps(context)
     const {
@@ -49,3 +49,5 @@ export default class IntlDocument extends Document {
     )
   }
 }
+
+export default IntlDocument

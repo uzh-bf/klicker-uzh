@@ -2,8 +2,7 @@
 
 import React from 'react'
 
-function createLinks(links = []) {
+export function createLinks(links: string[] = []): React.ReactElement[] {
   return links.map(link => <link href={link} key={link} rel="stylesheet" />)
 }
 
-export { createLinks }
