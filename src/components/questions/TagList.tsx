@@ -1,5 +1,4 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import { Button, Icon, List, Loader, Message } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import { useQuery } from 'react-apollo'

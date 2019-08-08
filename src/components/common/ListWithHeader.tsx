@@ -1,12 +1,10 @@
 import React from 'react'
-import PropTypes from 'prop-types'
-
 import { List, Popup } from 'semantic-ui-react'
 
-const propTypes = {
-  children: PropTypes.node.isRequired,
-  items: PropTypes.arrayOf(PropTypes.string.isRequired),
-  limit: PropTypes.number,
+interface Props {
+  children: React.ReactNode
+  items: string[]
+  limit?: number
 }
 
 const defaultProps = {
@@ -16,25 +14,25 @@ const defaultProps = {
 
 const mapItems = items => items.map(item => <List.Item>{item}</List.Item>)
 
-const ListWithHeader = ({ children, items, limit }) => (
-  <div className="listWithHeader">
-    {children && <span className="listHeader">{children}</span>}
+function ListWithHeader({ children, items, limit }: Props): React.ReactElement {
+  return (
+    <div className="listWithHeader">
+      {children && <span className="listHeader">{children}</span>}
 
-    {items.length > limit ? (
-      <>
-        <List>{mapItems(items.slice(0, limit))}</List>
-        <Popup hideOnScroll on="click" position="bottom center" trigger={<div className="more">...</div>}>
-          <div className="remainingPopup">
-            <List>{mapItems(items.slice(limit))}</List>
-          </div>
-        </Popup>
-      </>
-    ) : (
-      <List>{mapItems(items)}</List>
-    )}
+      {items.length > limit ? (
+        <>
+          <List>{mapItems(items.slice(0, limit))}</List>
+          <Popup hideOnScroll on="click" position="bottom center" trigger={<div className="more">...</div>}>
+            <div className="remainingPopup">
+              <List>{mapItems(items.slice(limit))}</List>
+            </div>
+          </Popup>
+        </>
+      ) : (
+        <List>{mapItems(items)}</List>
+      )}
 
-    <style jsx>
-      {`
+      <style jsx>{`
         @import 'src/theme';
 
         .listWithHeader {
@@ -64,12 +62,11 @@ const ListWithHeader = ({ children, items, limit }) => (
             padding: 0.5rem 0;
           }
         }
-      `}
-    </style>
-  </div>
-)
+      `}</style>
+    </div>
+  )
+}
 
-ListWithHeader.propTypes = propTypes
 ListWithHeader.defaultProps = defaultProps
 
 export default ListWithHeader

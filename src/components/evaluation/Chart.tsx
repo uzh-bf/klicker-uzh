@@ -1,37 +1,40 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
 import { SizeMe } from 'react-sizeme'
 
 import { BarChart, StackChart, PieChart, TableChart, CloudChart, HistogramChart } from '.'
 import { SESSION_STATUS } from '../../constants'
-import { statisticsShape } from '../../propTypes'
 
 // TODO
-const propTypes = {
-  activeVisualization: PropTypes.string.isRequired,
-  data: PropTypes.arrayOf({
-    correct: PropTypes.bool,
-    count: PropTypes.number,
-    name: PropTypes.string,
-    percentage: PropTypes.number,
-  }),
-  handleShowGraph: PropTypes.func.isRequired,
-  instanceId: PropTypes.string.isRequired,
-  isPublic: PropTypes.bool.isRequired,
-  numBins: PropTypes.number.isRequired,
-  questionType: PropTypes.string.isRequired,
-  restrictions: PropTypes.shape({
-    max: PropTypes.number,
-    min: PropTypes.number,
-  }),
-  sessionId: PropTypes.string.isRequired,
-  sessionStatus: PropTypes.string.isRequired,
-  showGraph: PropTypes.bool,
-  showSolution: PropTypes.bool,
-  statistics: statisticsShape,
-  totalResponses: PropTypes.number,
+interface Props {
+  activeVisualization: string
+  data?: {
+    correct?: boolean
+    count: number
+    name: string
+    percentage: number
+  }[]
+  handleShowGraph: any
+  instanceId: string
+  isPublic: boolean
+  numBins: number
+  questionType: string
+  restrictions?: {
+    max: number
+    min: number
+  }
+  sessionId: string
+  sessionStatus: string
+  showGraph?: boolean
+  showSolution?: boolean
+  statistics?: {
+    max: number
+    mean: number
+    median: number
+    min: number
+  }
+  totalResponses?: number
 }
 
 const defaultProps = {
@@ -67,7 +70,7 @@ function Chart({
   showSolution,
   statistics,
   totalResponses,
-}) {
+}: Props): React.ReactElement {
   return (
     <div className="chart">
       {(() => {
@@ -118,27 +121,24 @@ function Chart({
         return <div>This chart type is not implemented yet.</div>
       })()}
 
-      <style jsx>
-        {`
-          .chart {
+      <style jsx>{`
+        .chart {
+          height: 100%;
+          width: 100%;
+
+          .noChart {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
             height: 100%;
-            width: 100%;
-
-            .noChart {
-              display: flex;
-              justify-content: center;
-              align-items: center;
-
-              height: 100%;
-            }
           }
-        `}
-      </style>
+        }
+      `}</style>
     </div>
   )
 }
 
-Chart.propTypes = propTypes
 Chart.defaultProps = defaultProps
 
 export default Chart

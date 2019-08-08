@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import PropTypes from 'prop-types'
 import _sortBy from 'lodash/sortBy'
 import { useMutation } from 'react-apollo'
 import { Button, Table } from 'semantic-ui-react'

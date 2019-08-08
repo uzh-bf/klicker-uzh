@@ -1,5 +1,4 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import _without from 'lodash/without'
 import _get from 'lodash/get'
@@ -18,20 +17,20 @@ import { QuestionDescription, SCAnswerOptions, FREEAnswerOptions } from '../../q
 
 const { publicRuntimeConfig } = getConfig()
 
-const propTypes = {
-  active: PropTypes.bool.isRequired,
-  activeQuestion: PropTypes.number,
-  handleActiveChoicesChange: PropTypes.func.isRequired,
-  handleActiveQuestionChange: PropTypes.func.isRequired,
-  handleFreeValueChange: PropTypes.func.isRequired,
-  handleSubmit: PropTypes.func.isRequired,
-  inputEmpty: PropTypes.bool.isRequired,
-  inputValid: PropTypes.bool.isRequired,
-  inputValue: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.object]).isRequired,
-  isCollapsed: PropTypes.bool.isRequired,
-  questions: PropTypes.array,
-  remainingQuestions: PropTypes.array,
-  toggleIsCollapsed: PropTypes.func.isRequired,
+interface Props {
+  active: boolean
+  activeQuestion?: number
+  handleActiveChoicesChange: any
+  handleActiveQuestionChange: any
+  handleFreeValueChange: any
+  handleSubmit: any
+  inputEmpty: boolean
+  inputValid: boolean
+  inputValue: string | number | any
+  isCollapsed: boolean
+  questions: any[]
+  remainingQuestions: any[]
+  toggleIsCollapsed: any
 }
 
 const defaultProps = {
@@ -54,7 +53,7 @@ function QuestionArea({
   handleActiveChoicesChange,
   handleFreeValueChange,
   handleSubmit,
-}) {
+}: Props): React.ReactElement {
   const currentQuestion = questions[activeQuestion]
 
   const messages = {
@@ -171,96 +170,93 @@ function QuestionArea({
         )
       })()}
 
-      <style jsx>
-        {`
-          @import 'src/theme';
+      <style jsx>{`
+        @import 'src/theme';
 
-          .questionArea {
-            display: none;
+        .questionArea {
+          display: none;
+
+          flex: 1;
+
+          background-color: white;
+
+          > div {
+            display: flex;
+
+            flex-direction: column;
 
             flex: 1;
+          }
 
-            background-color: white;
+          &.active {
+            display: flex;
+          }
 
-            > div {
-              display: flex;
+          .header {
+            display: none;
+          }
 
-              flex-direction: column;
+          .space {
+            margin: 1rem;
+          }
 
-              flex: 1;
-            }
+          .options,
+          .padded {
+            padding: 1rem;
+          }
 
-            &.active {
-              display: flex;
-            }
+          .files,
+          .collapser {
+            flex: 0 0 auto;
+            background-color: $color-primary-20p;
+            padding: 0.5rem;
+            border-bottom: 1px solid $color-primary;
+          }
+
+          .collapser {
+            border-top: 1px solid $color-primary;
+          }
+
+          .files {
+          }
+
+          .options {
+            flex: 1 1 50%;
+          }
+
+          @include desktop-tablet-only {
+            display: flex;
+            flex-direction: column;
+
+            border: 1px solid $color-primary;
+            margin-right: 0.25rem;
 
             .header {
-              display: none;
-            }
-
-            .space {
+              display: block;
               margin: 1rem;
             }
 
-            .options,
-            .padded {
-              padding: 1rem;
-            }
-
-            .files,
-            .collapser {
-              flex: 0 0 auto;
-              background-color: $color-primary-20p;
-              padding: 0.5rem;
-              border-bottom: 1px solid $color-primary;
-            }
-
-            .collapser {
-              border-top: 1px solid $color-primary;
+            .collapser,
+            .files {
+              margin: 0 1rem;
+              border: 1px solid $color-primary;
             }
 
             .files {
+              border-top: 0;
             }
 
             .options {
-              flex: 1 1 50%;
-            }
-
-            @include desktop-tablet-only {
-              display: flex;
-              flex-direction: column;
-
-              border: 1px solid $color-primary;
-              margin-right: 0.25rem;
-
-              .header {
-                display: block;
-                margin: 1rem;
-              }
-
-              .collapser,
-              .files {
-                margin: 0 1rem;
-                border: 1px solid $color-primary;
-              }
-
-              .files {
-                border-top: 0;
-              }
-
-              .options {
-                padding: 0;
-                margin: 1rem 1rem 0 1rem;
-              }
+              padding: 0;
+              margin: 1rem 1rem 0 1rem;
             }
           }
-        `}
-      </style>
+        }
+      `}</style>
     </div>
   )
 }
 
-QuestionArea.propTypes = propTypes
 QuestionArea.defaultProps = defaultProps
 
 export default compose(

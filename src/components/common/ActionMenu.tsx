@@ -1,16 +1,13 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import { Button, Progress } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
-const propTypes = {
-  activeIndex: PropTypes.number.isRequired,
-  isSkipModeActive: PropTypes.bool,
-  isSubmitDisabled: PropTypes.bool,
-  numItems: PropTypes.number.isRequired,
-  // items: PropTypes.array.isRequired,
-  onSubmit: PropTypes.func.isRequired,
-  // setActiveIndex: PropTypes.func.isRequired,
+interface Props {
+  activeIndex: number
+  isSkipModeActive?: boolean
+  isSubmitDisabled?: boolean
+  numItems: number
+  onSubmit: any
 }
 
 const defaultProps = {
@@ -26,7 +23,7 @@ function ActionMenu({
   // items,
   // setActiveIndex,
   onSubmit,
-}) {
+}: Props): React.ReactElement {
   return (
     <div className="actionMenu">
       {/* <Menu borderless className="noBorder">
@@ -98,7 +95,6 @@ function ActionMenu({
   )
 }
 
-ActionMenu.propTypes = propTypes
 ActionMenu.defaultProps = defaultProps
 
 export default ActionMenu

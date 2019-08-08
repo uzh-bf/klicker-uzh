@@ -98,7 +98,6 @@
     "node-sass": "4.12.0",
     "nodemon": "1.19.1",
     "prismjs": "1.17.1",
-    "prop-types": "15.7.2",
     "qrcode.react": "0.9.3",
     "ramda": "0.26.1",
     "raven-js": "3.27.2",
