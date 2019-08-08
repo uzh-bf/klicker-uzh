@@ -5,7 +5,7 @@ import getConfig from 'next/config'
 import { useRouter } from 'next/router'
 import _get from 'lodash/get'
 import { Icon, Menu } from 'semantic-ui-react'
-import { Query, Mutation } from 'react-apollo'
+import { useQuery, useMutation } from 'react-apollo'
 
 import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'
@@ -49,6 +49,9 @@ const defaultProps = {
 function Navbar({ search, sidebarVisible, title, handleSidebarToggle }: Props): React.ReactElement {
   const router = useRouter()
 
+  const [logout] = useMutation(LogoutMutation)
+  const { data } = useQuery(AccountSummaryQuery)
+
   return (
     <div className="navbar">
       <div className="sideArea">
@@ -75,82 +78,76 @@ function Navbar({ search, sidebarVisible, title, handleSidebarToggle }: Props): 
       )}
 
       <div className="accountArea">
-        <Query query={AccountSummaryQuery}>
-          {({ data }): React.ReactElement => {
-            const accountId = _get(data, 'user.id')
-            const userEmail = _get(data, 'user.email')
-            const accountShort = _get(data, 'user.shortname')
-            // const userHash = _get(data, 'user.hmac')
-            const runningSessionId = _get(data, 'user.runningSession.id')
+        {(() => {
+          const accountId = _get(data, 'user.id')
+          const userEmail = _get(data, 'user.email')
+          const accountShort = _get(data, 'user.shortname')
+          // const userHash = _get(data, 'user.hmac')
+          const runningSessionId = _get(data, 'user.runningSession.id')
 
-            if (typeof window !== 'undefined') {
-              if (window.INIT_LR) {
-                try {
-                  const LogRocket = require('logrocket')
+          if (typeof window !== 'undefined') {
+            if (window.INIT_LR) {
+              try {
+                const LogRocket = require('logrocket')
 
-                  LogRocket.identify(accountId, {
-                    email: userEmail,
-                    name: accountShort,
-                  })
-                } catch (e) {
-                  //
-                }
-              }
-
-              if (typeof window._slaask !== 'undefined') {
-                try {
-                  window._slaask.identify({
-                    email: userEmail,
-                    id: accountId,
-                    shortname: accountShort,
-                    // user_hash: userHash,
-                  })
-                  window._slaask.init(publicRuntimeConfig.slaaskWidgetKey, accountId)
-                  /* window._slaask.init(process.env.SLAASK_WIDGET_KEY, {
-                  user_hash: userHash,
-                  user_token: accountId,
-                }) */
-                } catch (e) {
-                  //
-                }
-              }
-
-              if (window.INIT_RAVEN) {
-                try {
-                  const Raven = require('raven-js')
-                  Raven.identify(accountId, {
-                    name: accountShort,
-                  })
-                } catch (e) {
-                  //
-                }
+                LogRocket.identify(accountId, {
+                  email: userEmail,
+                  name: accountShort,
+                })
+              } catch (e) {
+                //
               }
             }
 
-            return (
-              <Menu borderless className="loginArea noBorder">
-                <Menu.Menu position="right">
-                  {accountShort && <SessionArea sessionId={runningSessionId} />}
+            if (typeof window._slaask !== 'undefined') {
+              try {
+                window._slaask.identify({
+                  email: userEmail,
+                  id: accountId,
+                  shortname: accountShort,
+                  // user_hash: userHash,
+                })
+                window._slaask.init(publicRuntimeConfig.slaaskWidgetKey, accountId)
+                /* window._slaask.init(process.env.SLAASK_WIDGET_KEY, {
+      user_hash: userHash,
+      user_token: accountId,
+    }) */
+              } catch (e) {
+                //
+              }
+            }
 
-                  <Mutation mutation={LogoutMutation}>
-                    {(logout): React.ReactElement => (
-                      <AccountArea
-                        accountShort={accountShort}
-                        onLogout={async (): Promise<void> => {
-                          // logout
-                          await logout()
+            if (window.INIT_RAVEN) {
+              try {
+                const Raven = require('raven-js')
+                Raven.identify(accountId, {
+                  name: accountShort,
+                })
+              } catch (e) {
+                //
+              }
+            }
+          }
 
-                          // redirect to the landing page
-                          router.push('/')
-                        }}
-                      />
-                    )}
-                  </Mutation>
-                </Menu.Menu>
-              </Menu>
-            )
-          }}
-        </Query>
+          return (
+            <Menu borderless className="loginArea noBorder">
+              <Menu.Menu position="right">
+                {accountShort && <SessionArea sessionId={runningSessionId} />}
+
+                <AccountArea
+                  accountShort={accountShort}
+                  onLogout={async (): Promise<void> => {
+                    // logout
+                    await logout()
+
+                    // redirect to the landing page
+                    router.push('/')
+                  }}
+                />
+              </Menu.Menu>
+            </Menu>
+          )
+        })()}
       </div>
 
       <style jsx>{`

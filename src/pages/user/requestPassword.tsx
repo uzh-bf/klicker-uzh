@@ -1,6 +1,6 @@
 import React from 'react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Mutation } from 'react-apollo'
+import { useMutation } from 'react-apollo'
 import { Message } from 'semantic-ui-react'
 
 import { StaticLayout } from '../../components/layouts'
@@ -22,6 +22,8 @@ function RequestPassword(): React.ReactElement {
 
   const intl = useIntl()
 
+  const [requestPassword, { data, loading, error }] = useMutation(RequestPasswordMutation)
+
   return (
     <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
       <div className="resetPassword">
@@ -29,34 +31,31 @@ function RequestPassword(): React.ReactElement {
           <FormattedMessage defaultMessage="Reset your password" id="user.requestPassword.title" />
         </h1>
 
-        <Mutation mutation={RequestPasswordMutation}>
-          {(requestPassword, { data, error, loading }): React.ReactElement => {
-            const success = data && !error
+        {(() => {
+          const success = data && !error
 
-            if (success) {
-              return (
-                <Message success>
-                  <FormattedMessage
-                    defaultMessage="An email has been sent to the provided address. Please follow the instructions therein to regain access to your account."
-                    id="user.requestPassword.success"
-                  />
-                </Message>
-              )
-            }
-
+          if (success) {
             return (
-              <>
-                <PasswordRequestForm
-                  intl={intl}
-                  loading={loading}
-                  onSubmit={({ email }): Promise<void> => requestPassword({ variables: { email } })}
+              <Message success>
+                <FormattedMessage
+                  defaultMessage="An email has been sent to the provided address. Please follow the instructions therein to regain access to your account."
+                  id="user.requestPassword.success"
                 />
-
-                {error && <Message error>{error.message}</Message>}
-              </>
+              </Message>
             )
-          }}
-        </Mutation>
+          }
+
+          return (
+            <>
+              <PasswordRequestForm
+                loading={loading}
+                onSubmit={({ email }): Promise<void> => requestPassword({ variables: { email } })}
+              />
+
+              {error && <Message error>{error.message}</Message>}
+            </>
+          )
+        })()}
 
         <style jsx>{`
           @import 'src/theme';

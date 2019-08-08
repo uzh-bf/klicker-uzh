@@ -3,14 +3,16 @@
 import React from 'react'
 import ReactTooltip from 'react-tooltip'
 import { Form, Icon, Input } from 'semantic-ui-react'
+import { FormikErrors, FormikTouched } from 'formik'
 
 interface Props {
   autoFocus?: boolean
   disabled?: boolean
-  error?: string
+  error?: string | FormikErrors<any>
   errorMessage?: string
-  handleBlur: () => void
-  handleChange: () => void
+  handleBlur: any
+  handleChange: any
+  icon?: string
   inlineLabel?: string
   label?: string
   name: string
@@ -18,7 +20,7 @@ interface Props {
   renderInput?: () => React.ReactElement
   required?: boolean
   tooltip?: string | React.ReactElement
-  touched: boolean
+  touched: boolean | FormikTouched<any>
   type?: string
   value: string | number
   width?: any // SemanticWIDTHSNUMBER

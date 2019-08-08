@@ -5,6 +5,8 @@ import { Button, Form, List } from 'semantic-ui-react'
 
 const propTypes = {
   button: PropTypes.shape({
+    disabled: PropTypes.bool,
+    loading: PropTypes.bool,
     invalid: PropTypes.bool.isRequired,
     label: PropTypes.string.isRequired,
     onSubmit: PropTypes.func.isRequired,

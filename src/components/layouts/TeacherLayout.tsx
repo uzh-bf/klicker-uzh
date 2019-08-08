@@ -8,7 +8,7 @@ import { Sidebar } from '../common/sidebar'
 
 interface Props {
   actionArea?: React.ReactElement
-  children: React.ReactNode
+  children: React.ReactNode | Function
   fixedHeight?: boolean
   navbar?: any
   pageTitle?: string
@@ -81,7 +81,7 @@ function TeacherLayout({ actionArea, children, fixedHeight, navbar, pageTitle, s
             visible={isSidebarVisible}
             {...sidebar}
           >
-            {children}
+            {typeof children === 'function' ? children() : children}
           </Sidebar>
         </div>
 

@@ -4,7 +4,7 @@ import Link from 'next/link'
 import _get from 'lodash/get'
 import { useRouter } from 'next/router'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Mutation } from 'react-apollo'
+import { useMutation } from 'react-apollo'
 import { Message } from 'semantic-ui-react'
 
 import { StaticLayout } from '../../components/layouts'
@@ -33,6 +33,8 @@ function Login(): React.ReactElement {
     router.prefetch('/sessions')
   }, [])
 
+  const [login, { loading, error }] = useMutation(LoginMutation)
+
   return (
     <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
       <div className="login">
@@ -40,57 +42,52 @@ function Login(): React.ReactElement {
           <FormattedMessage defaultMessage="Login" id="user.login.title" />
         </h1>
 
-        <Mutation mutation={LoginMutation}>
-          {(login, { loading, error }): any => (
-            <>
-              <Message info>
-                <FormattedMessage
-                  defaultMessage="To login with a legacy account, please {requestLink} first. If you need a new account, you can {signupLink} here."
-                  id="user.login.infoMessage"
-                  values={{
-                    requestLink: (
-                      <Link href="/user/requestPassword">
-                        <a>
-                          <FormattedMessage defaultMessage="reset your password" id="form.login.infoMessageResetPW" />
-                        </a>
-                      </Link>
-                    ),
-                    signupLink: (
-                      <Link href="/user/registration">
-                        <a>
-                          <FormattedMessage defaultMessage="sign up" id="form.login.infoMessageSignup" />
-                        </a>
-                      </Link>
-                    ),
-                  }}
-                />
-              </Message>
+        <>
+          <Message info>
+            <FormattedMessage
+              defaultMessage="To login with a legacy account, please {requestLink} first. If you need a new account, you can {signupLink} here."
+              id="user.login.infoMessage"
+              values={{
+                requestLink: (
+                  <Link href="/user/requestPassword">
+                    <a>
+                      <FormattedMessage defaultMessage="reset your password" id="form.login.infoMessageResetPW" />
+                    </a>
+                  </Link>
+                ),
+                signupLink: (
+                  <Link href="/user/registration">
+                    <a>
+                      <FormattedMessage defaultMessage="sign up" id="form.login.infoMessageSignup" />
+                    </a>
+                  </Link>
+                ),
+              }}
+            />
+          </Message>
 
-              <LoginForm
-                intl={intl}
-                loading={loading}
-                onSubmit={async ({ email, password }): Promise<void> => {
-                  // perform the login
-                  const { data } = await login({ variables: { email, password } })
+          <LoginForm
+            loading={loading}
+            onSubmit={async ({ email, password }): Promise<void> => {
+              // perform the login
+              const loginResult: any = await login({ variables: { email, password } })
 
-                  // save the user id in a cookie
-                  if (data.login) {
-                    Cookies.set('userId', data.login, { secure: true })
-                  }
+              // save the user id in a cookie
+              if (loginResult.data.login) {
+                Cookies.set('userId', loginResult.data.login, { secure: true })
+              }
 
-                  // redirect to question pool
-                  router.push('/questions')
-                }}
-              />
+              // redirect to question pool
+              router.push('/questions')
+            }}
+          />
 
-              {!error && _get(router, 'query.expired') && (
-                <div className="errorMessage message">Login expired. Please login again.</div>
-              )}
-
-              {error && <div className="errorMessage message">Login failed ({error.message})</div>}
-            </>
+          {!error && _get(router, 'query.expired') && (
+            <div className="errorMessage message">Login expired. Please login again.</div>
           )}
-        </Mutation>
+
+          {error && <div className="errorMessage message">Login failed ({error.message})</div>}
+        </>
 
         <style jsx>{`
           @import 'src/theme';

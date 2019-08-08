@@ -3,7 +3,7 @@ import { compose, withState } from 'recompose'
 import { useRouter } from 'next/router'
 import { convertToRaw } from 'draft-js'
 import { defineMessages, useIntl } from 'react-intl'
-import { Query, Mutation } from 'react-apollo'
+import { useQuery, useMutation } from 'react-apollo'
 import _pick from 'lodash/pick'
 import _omitBy from 'lodash/omitBy'
 import _isNil from 'lodash/isNil'
@@ -37,6 +37,13 @@ function EditQuestion(): React.ReactElement {
   const intl = useIntl()
   const router = useRouter()
 
+  const { data: tagList, loading: tagsLoading } = useQuery(TagListQuery)
+  const { data: questionDetails, loading: questionLoading } = useQuery(QuestionDetailsQuery, {
+    variables: { id: router.query.id },
+  })
+  const [editQuestion, { loading, data, error }] = useMutation(ModifyQuestionMutation)
+  const [requestPresignedURL] = useMutation(RequestPresignedURLMutation)
+
   return (
     <TeacherLayout
       navbar={{
@@ -45,135 +52,117 @@ function EditQuestion(): React.ReactElement {
       pageTitle={intl.formatMessage(messages.pageTitle)}
       sidebar={{ activeItem: 'editQuestion' }}
     >
-      <Query query={TagListQuery}>
-        {({ data: tagList, loading: tagsLoading }) => (
-          <Query query={QuestionDetailsQuery} variables={{ id: router.query.questionId }}>
-            {({ data: questionDetails, loading: questionLoading }) => {
-              // if the tags or the question is still loading, return null
-              if (tagsLoading || questionLoading || !tagList.tags || !questionDetails.question) {
-                return null
-              }
+      {() => {
+        // if the tags or the question is still loading, return null
+        if (tagsLoading || questionLoading || !tagList.tags || !questionDetails.question) {
+          return null
+        }
 
-              // if everything was loaded successfully, render the edit form
-              return (
-                <Mutation mutation={ModifyQuestionMutation}>
-                  {(editQuestion, { loading, data, error }) => {
-                    const { id, tags, title, type, versions } = _pick(questionDetails.question, [
-                      'id',
-                      'tags',
-                      'title',
-                      'type',
-                      'versions',
-                    ])
+        // if everything was loaded successfully, render the edit form
+        const { id, tags, title, type, versions } = _pick(questionDetails.question, [
+          'id',
+          'tags',
+          'title',
+          'type',
+          'versions',
+        ])
 
-                    // enhance the form with state for the active version
-                    const EditForm = withState('activeVersion', 'onActiveVersionChange', versions.length)(
-                      QuestionEditForm
-                    )
+        // enhance the form with state for the active version
+        const EditForm = withState('activeVersion', 'onActiveVersionChange', versions.length)(QuestionEditForm)
 
-                    return (
-                      <Mutation mutation={RequestPresignedURLMutation}>
-                        {requestPresignedURL => (
-                          <EditForm
-                            allTags={tagList.tags}
-                            editSuccess={{
-                              message: (error && error.message) || null,
-                              success: (data && !error) || null,
-                            }}
-                            intl={intl}
-                            loading={loading}
-                            questionTags={tags}
-                            title={title}
-                            type={type}
-                            versions={versions}
-                            onDiscard={() => {
-                              router.push('/questions')
-                            }}
-                            onSubmit={isNewVersion => async (
-                              { title: newTitle, content, options, solution, tags: newTags, files },
-                              { setSubmitting }
-                            ) => {
-                              // split files into newly added and existing entities
-                              const existingFiles = files.filter(file => file.id)
-                              const newFiles = files.filter(file => !file.id)
-
-                              // request presigned urls and filenames for newly added files
-                              const fileEntities = await getPresignedURLs(newFiles, requestPresignedURL)
-
-                              // upload (put) the new files to the corresponding presigned urls
-                              await uploadFilesToPresignedURLs(fileEntities)
-
-                              // combine existing files and newly uploaded files into a single array
-                              const allFiles = existingFiles.concat(
-                                fileEntities.map(({ id: fileId, file, fileName }) => ({
-                                  id: fileId,
-                                  name: fileName,
-                                  originalName: file.name,
-                                  type: file.type,
-                                }))
-                              )
-
-                              // modify the question
-                              await editQuestion({
-                                // reload the question details and tags after update
-                                // TODO: replace with optimistic updates
-                                refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
-                                // update the cache after the mutation has completed
-                                update: (store, { data: { modifyQuestion } }) => {
-                                  const query = {
-                                    query: QuestionDetailsQuery,
-                                    variables: { id: router.query.questionId },
-                                  }
-
-                                  // get the data from the store
-                                  const cache = store.readQuery(query)
-
-                                  cache.question.title = modifyQuestion.title
-                                  cache.question.versions = modifyQuestion.versions
-                                  cache.question.tags = modifyQuestion.tags
-
-                                  // write the updated data to the store
-                                  store.writeQuery({
-                                    ...query,
-                                    data: cache,
-                                  })
-                                },
-                                variables: _omitBy(
-                                  isNewVersion
-                                    ? {
-                                        content: JSON.stringify(convertToRaw(content.getCurrentContent())),
-                                        files: omitDeepArray(allFiles, '__typename'),
-                                        id,
-                                        // HACK: omitDeep for typename removal
-                                        // TODO: check https://github.com/apollographql/apollo-client/issues/1564
-                                        // this shouldn't be necessary at all
-                                        options: options && omitDeep(options, '__typename'),
-                                        solution,
-                                        tags: newTags,
-                                        title: newTitle,
-                                      }
-                                    : {
-                                        id,
-                                        tags: newTags,
-                                        title: newTitle,
-                                      },
-                                  _isNil
-                                ),
-                              })
-
-                              setSubmitting(false)
-                            }}
-                          />
-                        )}
-                      </Mutation>
-                    )
-                  }}
-                </Mutation>
-              )
+        return (
+          <EditForm
+            allTags={tagList.tags}
+            editSuccess={{
+              message: (error && error.message) || null,
+              success: (data && !error) || null,
             }}
-          </Query>
-        )}
-      </Query>
+            intl={intl}
+            loading={loading}
+            questionTags={tags}
+            title={title}
+            type={type}
+            versions={versions}
+            onDiscard={() => {
+              router.push('/questions')
+            }}
+            onSubmit={isNewVersion => async (
+              { title: newTitle, content, options, solution, tags: newTags, files },
+              { setSubmitting }
+            ) => {
+              // split files into newly added and existing entities
+              const existingFiles = files.filter(file => file.id)
+              const newFiles = files.filter(file => !file.id)
+
+              // request presigned urls and filenames for newly added files
+              const fileEntities = await getPresignedURLs(newFiles, requestPresignedURL)
+
+              // upload (put) the new files to the corresponding presigned urls
+              await uploadFilesToPresignedURLs(fileEntities)
+
+              // combine existing files and newly uploaded files into a single array
+              const allFiles = existingFiles.concat(
+                fileEntities.map(({ id: fileId, file, fileName }) => ({
+                  id: fileId,
+                  name: fileName,
+                  originalName: file.name,
+                  type: file.type,
+                }))
+              )
+
+              // modify the question
+              await editQuestion({
+                // reload the question details and tags after update
+                // TODO: replace with optimistic updates
+                refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
+                // update the cache after the mutation has completed
+                update: (store, { data: { modifyQuestion } }) => {
+                  const query = {
+                    query: QuestionDetailsQuery,
+                    variables: { id: router.query.questionId },
+                  }
+
+                  // get the data from the store
+                  const cache: any = store.readQuery(query)
+
+                  cache.question.title = modifyQuestion.title
+                  cache.question.versions = modifyQuestion.versions
+                  cache.question.tags = modifyQuestion.tags
+
+                  // write the updated data to the store
+                  store.writeQuery({
+                    ...query,
+                    data: cache,
+                  })
+                },
+                variables: _omitBy(
+                  isNewVersion
+                    ? {
+                        content: JSON.stringify(convertToRaw(content.getCurrentContent())),
+                        files: omitDeepArray(allFiles, '__typename'),
+                        id,
+                        // HACK: omitDeep for typename removal
+                        // TODO: check https://github.com/apollographql/apollo-client/issues/1564
+                        // this shouldn't be necessary at all
+                        options: options && omitDeep(options, '__typename'),
+                        solution,
+                        tags: newTags,
+                        title: newTitle,
+                      }
+                    : {
+                        id,
+                        tags: newTags,
+                        title: newTitle,
+                      },
+                  _isNil
+                ),
+              })
+
+              setSubmitting(false)
+            }}
+          />
+        )
+      }}
     </TeacherLayout>
   )
 }

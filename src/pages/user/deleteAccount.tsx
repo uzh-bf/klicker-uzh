@@ -1,7 +1,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Mutation } from 'react-apollo'
+import { useMutation } from 'react-apollo'
 import { Button, Message } from 'semantic-ui-react'
 import { useRouter } from 'next/router'
 
@@ -25,6 +25,8 @@ function DeleteAccount(): React.ReactElement {
   const router = useRouter()
   const intl = useIntl()
 
+  const [deleteAccount, { data, error, loading }] = useMutation(ResolveAccountDeletionMutation)
+
   return (
     <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
       <div className="deleteAccount">
@@ -35,42 +37,40 @@ function DeleteAccount(): React.ReactElement {
           />
         </h1>
 
-        <Mutation mutation={ResolveAccountDeletionMutation}>
-          {(deleteAccount, { data, error, loading }): any => {
-            const success = data && !error
+        {(() => {
+          const success = data && !error
 
-            if (success) {
-              return (
-                <Message success>
-                  <FormattedMessage
-                    defaultMessage="Your Klicker account has been deleted."
-                    id="user.deleteAccount.success"
-                  />
-                </Message>
-              )
-            }
-
+          if (success) {
             return (
-              <>
-                <Link href="/questions">
-                  <Button primary>
-                    <FormattedMessage defaultMessage="No, take me back." id="user.deleteAccount.button.cancel" />
-                  </Button>
-                </Link>
-
-                <Button
-                  color="red"
-                  loading={loading}
-                  onClick={(): void => deleteAccount({ variables: { deletionToken: router.query.deletionToken } })}
-                >
-                  <FormattedMessage defaultMessage="Yes, I am sure!" id="user.deleteAccount.button.confirm" />
-                </Button>
-
-                {error && <Message error>{error.message}</Message>}
-              </>
+              <Message success>
+                <FormattedMessage
+                  defaultMessage="Your Klicker account has been deleted."
+                  id="user.deleteAccount.success"
+                />
+              </Message>
             )
-          }}
-        </Mutation>
+          }
+
+          return (
+            <>
+              <Link href="/questions">
+                <Button primary>
+                  <FormattedMessage defaultMessage="No, take me back." id="user.deleteAccount.button.cancel" />
+                </Button>
+              </Link>
+
+              <Button
+                color="red"
+                loading={loading}
+                onClick={() => deleteAccount({ variables: { deletionToken: router.query.deletionToken } })}
+              >
+                <FormattedMessage defaultMessage="Yes, I am sure!" id="user.deleteAccount.button.confirm" />
+              </Button>
+
+              {error && <Message error>{error.message}</Message>}
+            </>
+          )
+        })()}
 
         <style jsx>{`
           @import 'src/theme';

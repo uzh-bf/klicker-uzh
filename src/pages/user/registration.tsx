@@ -1,7 +1,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Mutation } from 'react-apollo'
+import { useMutation } from 'react-apollo'
 import { Message } from 'semantic-ui-react'
 
 import { Errors } from '../../constants'
@@ -25,6 +25,8 @@ function Registration(): React.ReactElement {
 
   const intl = useIntl()
 
+  const [register, { data, error, loading }] = useMutation(RegistrationMutation)
+
   return (
     <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
       <div className="registration">
@@ -32,88 +34,86 @@ function Registration(): React.ReactElement {
           <FormattedMessage defaultMessage="Registration" id="user.registration.title" />
         </h1>
 
-        <Mutation mutation={RegistrationMutation}>
-          {(register, { loading, data, error }): React.ReactElement => {
-            const newEmail = data && data.createUser.email
+        {(() => {
+          const newEmail = data && data.createUser.email
 
-            if (newEmail) {
-              return (
-                <div className="successMessage">
-                  <FormattedMessage
-                    defaultMessage="Successfully registered as {newEmail}.{br} Please login at {link}."
-                    id="user.registration.successNotification"
-                    values={{
-                      br: <br />,
-                      link: <Link href="/user/login">/user/login</Link>,
-                      newEmail,
-                    }}
-                  />
-                </div>
-              )
-            }
-
+          if (newEmail) {
             return (
-              <>
-                <Message warning>
-                  <FormattedMessage
-                    defaultMessage="You dont need an account to respond to polls; just visit the given /join page of your
-                lecturer and respond anonymously. However, feel free to create an account if you would like to create
-                polls yourself."
-                    id="user.registration.studentAccountWarning"
-                  />
-                </Message>
-
-                <Message info>
-                  <FormattedMessage
-                    defaultMessage="Already have an account? {loginLink}"
-                    id="user.registration.loginInfo"
-                    values={{
-                      loginLink: (
-                        <Link href="/user/login">
-                          <a>
-                            <FormattedMessage defaultMessage="Login here." id="user.registration.loginInfoLink" />
-                          </a>
-                        </Link>
-                      ),
-                    }}
-                  />
-                </Message>
-
-                <RegistrationForm
-                  intl={intl}
-                  loading={loading}
-                  onSubmit={async (
-                    { email, password, shortname, institution, useCase },
-                    { setSubmitting, setFieldError }
-                  ): Promise<void> => {
-                    try {
-                      await register({
-                        variables: {
-                          email,
-                          institution,
-                          password,
-                          shortname,
-                          useCase,
-                        },
-                      })
-                    } catch ({ message }) {
-                      if (message === Errors.SHORTNAME_NOT_AVAILABLE) {
-                        setFieldError('shortname', 'NOT_AVAILABLE')
-                      }
-                      if (message === Errors.EMAIL_NOT_AVAILABLE) {
-                        setFieldError('email', 'NOT_AVAILABLE')
-                      }
-
-                      setSubmitting(false)
-                    }
+              <div className="successMessage">
+                <FormattedMessage
+                  defaultMessage="Successfully registered as {newEmail}.{br} Please login at {link}."
+                  id="user.registration.successNotification"
+                  values={{
+                    br: <br />,
+                    link: <Link href="/user/login">/user/login</Link>,
+                    newEmail,
                   }}
                 />
-
-                {error && <div className="errorMessage">Registration failed ({error.message})</div>}
-              </>
+              </div>
             )
-          }}
-        </Mutation>
+          }
+
+          return (
+            <>
+              <Message warning>
+                <FormattedMessage
+                  defaultMessage="You dont need an account to respond to polls; just visit the given /join page of your
+          lecturer and respond anonymously. However, feel free to create an account if you would like to create
+          polls yourself."
+                  id="user.registration.studentAccountWarning"
+                />
+              </Message>
+
+              <Message info>
+                <FormattedMessage
+                  defaultMessage="Already have an account? {loginLink}"
+                  id="user.registration.loginInfo"
+                  values={{
+                    loginLink: (
+                      <Link href="/user/login">
+                        <a>
+                          <FormattedMessage defaultMessage="Login here." id="user.registration.loginInfoLink" />
+                        </a>
+                      </Link>
+                    ),
+                  }}
+                />
+              </Message>
+
+              <RegistrationForm
+                loading={loading}
+                onSubmit={async (
+                  { email, password, shortname, institution, useCase },
+                  { setSubmitting, setFieldError }
+                ): Promise<void> => {
+                  try {
+                    await register({
+                      variables: {
+                        email,
+                        institution,
+                        password,
+                        shortname,
+                        useCase,
+                      },
+                    })
+                  } catch ({ message }) {
+                    if (message === Errors.SHORTNAME_NOT_AVAILABLE) {
+                      setFieldError('shortname', 'NOT_AVAILABLE')
+                    }
+
+                    if (message === Errors.EMAIL_NOT_AVAILABLE) {
+                      setFieldError('email', 'NOT_AVAILABLE')
+                    }
+
+                    setSubmitting(false)
+                  }
+                }}
+              />
+
+              {error && <div className="errorMessage">Registration failed ({error.message})</div>}
+            </>
+          )
+        })()}
 
         <style jsx>{`
           @import 'src/theme';
