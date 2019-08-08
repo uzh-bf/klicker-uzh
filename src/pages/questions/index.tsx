@@ -4,7 +4,6 @@ import _get from 'lodash/get'
 import _debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
 import dayjs from 'dayjs'
-import { List } from 'immutable'
 import { compose } from 'recompose'
 import { defineMessages, useIntl } from 'react-intl'
 import { useQuery, useMutation } from 'react-apollo'
@@ -57,7 +56,7 @@ function Index(): React.ReactElement {
     (): boolean => !!router.query.creationMode || !!router.query.editSessionId
   )
   const [deletionConfirmation, setDeletionConfirmation] = useState(false)
-  const [sessionBlocks, setSessionBlocks] = useState((): any => List([]))
+  const [sessionBlocks, setSessionBlocks] = useState((): any => [])
   const [sessionName, setSessionName] = useState('')
 
   const [startSession] = useMutation(StartSessionMutation)
@@ -85,7 +84,7 @@ function Index(): React.ReactElement {
     // if the creation mode was activated before, reset blocks on toggle
     if (creationMode) {
       setCreationMode(false)
-      setSessionBlocks(List([]))
+      setSessionBlocks([])
     }
 
     // turn on creation mode
@@ -140,22 +139,21 @@ function Index(): React.ReactElement {
     // reset the checked questions
     handleResetSelection()
 
-    setSessionBlocks(
-      sessionBlocks.concat(
-        selectedItems.items.map(({ id, title, type, version }): any => ({
-          id: UUIDv4(),
-          questions: List([
-            {
-              id,
-              key: UUIDv4(),
-              title,
-              type,
-              version,
-            },
-          ]),
-        }))
-      )
-    )
+    setSessionBlocks([
+      ...sessionBlocks,
+      ...selectedItems.items.map(({ id, title, type, version }): any => ({
+        id: UUIDv4(),
+        questions: [
+          {
+            id,
+            key: UUIDv4(),
+            title,
+            type,
+            version,
+          },
+        ],
+      })),
+    ])
   }
 
   // handle creating a new session

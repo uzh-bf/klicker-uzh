@@ -4,7 +4,6 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { Button, Icon, Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import { object } from 'yup'
-import { List } from 'immutable'
 import { removeQuestion, moveQuestion, addToBlock, appendNewBlock } from '../../../lib/utils/move'
 
 import QuestionSingle from '../../questions/QuestionSingle'
@@ -27,7 +26,7 @@ interface Props {
 }
 
 const defaultProps = {
-  sessionBlocks: List([]),
+  sessionBlocks: [],
   sessionInteractionType: 'CREATE',
 }
 
@@ -75,7 +74,7 @@ function SessionCreationForm({
       // initialize a new empty block at the end
       const extendedBlocks = sessionBlocks.push({
         id: blockId,
-        questions: List(),
+        questions: [],
       })
 
       // perform the move between the source and the new block

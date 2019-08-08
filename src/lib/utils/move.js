@@ -1,5 +1,4 @@
 import UUIDv4 from 'uuid/v4'
-import { List } from 'immutable'
 
 function updateArrayElement(array, index, newValue) {
   const oldValue = array[index]
@@ -81,7 +80,7 @@ function addToBlock(blocks, blockId, question, targetIndex = null) {
 function appendNewBlock(blocks, question) {
   return blocks.push({
     id: UUIDv4(),
-    questions: List([{ ...question, key: UUIDv4() }]),
+    questions: [{ ...question, key: UUIDv4() }],
   })
 }
 

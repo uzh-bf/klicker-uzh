@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { useQuery } from '@apollo/react-hooks'
-import { List } from 'immutable'
 
 import { SessionDetailsQuery } from '../../../graphql'
 
@@ -50,20 +49,16 @@ function SessionEditForm({
     handleSetSessionName(router.query.copy ? `${data.session.name} Copy` : data.session.name)
 
     handleSetSessionBlocks(
-      List(
-        data.session.blocks.map(({ id, instances }): any => ({
-          id,
-          key: id,
-          questions: List(
-            instances.map(({ question, version }): any => ({
-              id: question.id,
-              title: question.title,
-              type: question.type,
-              version,
-            }))
-          ),
-        }))
-      )
+      data.session.blocks.map(({ id, instances }): any => ({
+        id,
+        key: id,
+        questions: instances.map(({ question, version }): any => ({
+          id: question.id,
+          title: question.title,
+          type: question.type,
+          version,
+        })),
+      }))
     )
   }, [router.query.editSessionId])
 
