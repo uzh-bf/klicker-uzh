@@ -7,7 +7,6 @@ export { default as withFingerprint, ensureFingerprint } from './withFingerprint
 export { default as withStorage } from './withStorage'
 export { default as omitDeep, omitDeepArray } from './utils/omitDeep'
 export { default as withDnD } from './withDnD'
-export { default as withLogging } from './withLogging'
 export { toSanitizedHTML } from './utils/html'
 export { initGA, logException, logPageView } from './utils/analytics'
 export { createLinks } from './utils/css'

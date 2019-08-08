@@ -1,6 +1,5 @@
 import React from 'react'
 import Link from 'next/link'
-import { compose } from 'recompose'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Mutation } from 'react-apollo'
 import { Message } from 'semantic-ui-react'
@@ -9,7 +8,7 @@ import { Errors } from '../../constants'
 import { StaticLayout } from '../../components/layouts'
 import { RegistrationForm } from '../../components/forms'
 import { RegistrationMutation } from '../../graphql'
-import { withLogging } from '../../lib'
+import useLogging from '../../lib/useLogging'
 
 const messages = defineMessages({
   pageTitle: {
@@ -19,7 +18,13 @@ const messages = defineMessages({
 })
 
 function Registration(): React.ReactElement {
+  useLogging({
+    logRocket: false,
+    slaask: true,
+  })
+
   const intl = useIntl()
+
   return (
     <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
       <div className="registration">
@@ -141,9 +146,4 @@ function Registration(): React.ReactElement {
   )
 }
 
-export default compose(
-  withLogging({
-    logRocket: false,
-    slaask: true,
-  })
-)(Registration)
+export default Registration

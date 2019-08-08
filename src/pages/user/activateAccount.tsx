@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { compose } from 'recompose'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { withApollo } from 'react-apollo'
+import { useApolloClient } from 'react-apollo'
 import { Message } from 'semantic-ui-react'
 import { useRouter } from 'next/router'
 
 import { StaticLayout } from '../../components/layouts'
-import { withLogging } from '../../lib'
 import { ActivateAccountMutation } from '../../graphql'
+import useLogging from '../../lib/useLogging'
 
 const messages = defineMessages({
   pageTitle: {
@@ -17,13 +16,16 @@ const messages = defineMessages({
   },
 })
 
-interface Props {
-  client: any
-}
+function ActivateAccount(): React.ReactElement {
+  useLogging({
+    logRocket: false,
+    slaask: true,
+  })
 
-function ActivateAccount({ client }: Props): React.ReactElement {
+  const client = useApolloClient()
   const router = useRouter()
   const intl = useIntl()
+
   const [success, setSuccess] = useState(false)
 
   useEffect((): void => {
@@ -74,10 +76,4 @@ function ActivateAccount({ client }: Props): React.ReactElement {
   )
 }
 
-export default compose(
-  withApollo,
-  withLogging({
-    logRocket: false,
-    slaask: true,
-  })
-)(ActivateAccount)
+export default ActivateAccount

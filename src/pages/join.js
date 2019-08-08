@@ -4,7 +4,7 @@ import { withRouter } from 'next/router'
 import PropTypes from 'prop-types'
 import React from 'react'
 import { graphql, Query } from 'react-apollo'
-import { defineMessages, FormattedMessage } from 'react-intl'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { branch, compose, renderComponent, withHandlers, withProps, withStateHandlers } from 'recompose'
 import { StudentLayout } from '../components/layouts'
 import FeedbackArea from '../components/sessions/join/FeedbackArea'
@@ -16,7 +16,8 @@ import {
   JoinSessionQuery,
   UpdatedSessionSubscription,
 } from '../graphql'
-import { pageWithIntl, withFingerprint, withLogging, ensureFingerprint } from '../lib'
+import { withFingerprint, ensureFingerprint } from '../lib'
+import useLogging from '../lib/useLogging'
 
 const messages = defineMessages({
   activeQuestionTitle: {
@@ -56,7 +57,6 @@ const defaultProps = {
 function Join({
   activeInstances,
   id,
-  intl,
   feedbacks,
   shortname,
   sidebarActiveItem,
@@ -69,6 +69,10 @@ function Join({
   handleNewFeedback,
   handleNewResponse,
 }) {
+  useLogging({ logRocket: false })
+
+  const intl = useIntl()
+
   const title =
     sidebarActiveItem === 'activeQuestion'
       ? intl.formatMessage(messages.activeQuestionTitle)
@@ -194,10 +198,6 @@ Join.defaultProps = defaultProps
 
 export default compose(
   withRouter,
-  withLogging({
-    logRocket: false,
-  }),
-  pageWithIntl,
   withFingerprint,
   withStateHandlers(
     {

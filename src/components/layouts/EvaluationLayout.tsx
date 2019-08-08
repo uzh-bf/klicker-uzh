@@ -19,7 +19,7 @@ interface Props {
   activeInstances: any[]
   activeVisualization: string
   children: React.ReactElement
-  choices: {
+  choices?: {
     correct?: boolean
     name: string
   }[]
@@ -27,7 +27,7 @@ interface Props {
   description?: string
   instanceSummary?: any[]
   onChangeActiveInstance: (index: number) => void
-  onChangeVisualizationType: (value: string) => void
+  onChangeVisualizationType: (questionType: string, visualizationType: string) => void
   onToggleShowSolution: () => void
   options: any
   pageTitle?: string

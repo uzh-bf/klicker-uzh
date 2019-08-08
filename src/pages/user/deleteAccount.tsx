@@ -1,14 +1,13 @@
 import React from 'react'
 import Link from 'next/link'
-import { compose } from 'recompose'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Mutation } from 'react-apollo'
 import { Button, Message } from 'semantic-ui-react'
 import { useRouter } from 'next/router'
 
 import { StaticLayout } from '../../components/layouts'
-import { withLogging } from '../../lib'
 import { ResolveAccountDeletionMutation } from '../../graphql'
+import useLogging from '../../lib/useLogging'
 
 const messages = defineMessages({
   pageTitle: {
@@ -18,6 +17,11 @@ const messages = defineMessages({
 })
 
 function DeleteAccount(): React.ReactElement {
+  useLogging({
+    logRocket: false,
+    slaask: true,
+  })
+
   const router = useRouter()
   const intl = useIntl()
 
@@ -89,9 +93,4 @@ function DeleteAccount(): React.ReactElement {
   )
 }
 
-export default compose(
-  withLogging({
-    logRocket: false,
-    slaask: true,
-  })
-)(DeleteAccount)
+export default DeleteAccount

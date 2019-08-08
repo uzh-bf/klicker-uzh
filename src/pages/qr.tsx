@@ -1,16 +1,18 @@
 import React from 'react'
 import getConfig from 'next/config'
 import QRCode from 'qrcode.react'
-import { compose } from 'recompose'
 import { useRouter } from 'next/router'
 
 import { StaticLayout } from '../components/layouts'
-import { withLogging } from '../lib'
+import useLogging from '../lib/useLogging'
 
 const { publicRuntimeConfig } = getConfig()
 
 function QR(): React.ReactElement {
+  useLogging()
+
   const router = useRouter()
+
   const { shortname } = router.query
 
   const joinLink = publicRuntimeConfig.joinUrl
@@ -44,4 +46,4 @@ function QR(): React.ReactElement {
   )
 }
 
-export default compose(withLogging())(QR)
+export default QR

@@ -1,12 +1,11 @@
 import React from 'react'
-import { compose } from 'recompose'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Mutation } from 'react-apollo'
 import { Message } from 'semantic-ui-react'
 
 import { StaticLayout } from '../../components/layouts'
 import { PasswordRequestForm } from '../../components/forms'
-import { withLogging } from '../../lib'
+import useLogging from '../../lib/useLogging'
 import { RequestPasswordMutation } from '../../graphql'
 
 const messages = defineMessages({
@@ -17,7 +16,12 @@ const messages = defineMessages({
 })
 
 function RequestPassword(): React.ReactElement {
+  useLogging({
+    slaask: true,
+  })
+
   const intl = useIntl()
+
   return (
     <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
       <div className="resetPassword">
@@ -75,8 +79,4 @@ function RequestPassword(): React.ReactElement {
   )
 }
 
-export default compose(
-  withLogging({
-    slaask: true,
-  })
-)(RequestPassword)
+export default RequestPassword

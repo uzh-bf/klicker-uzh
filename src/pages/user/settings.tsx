@@ -1,9 +1,8 @@
 import React from 'react'
-import { compose } from 'recompose'
 import { defineMessages, useIntl } from 'react-intl'
 
 import { TeacherLayout } from '../../components/layouts'
-import { withLogging } from '../../lib'
+import useLogging from '../../lib/useLogging'
 import UserSettingsForm from '../../components/forms/userSettings/UserSettingsForm'
 
 const messages = defineMessages({
@@ -18,7 +17,10 @@ const messages = defineMessages({
 })
 
 function Settings(): React.ReactElement {
+  useLogging({ slaask: true })
+
   const intl = useIntl()
+
   return (
     <TeacherLayout
       navbar={{ title: intl.formatMessage(messages.title) }}
@@ -30,8 +32,4 @@ function Settings(): React.ReactElement {
   )
 }
 
-export default compose(
-  withLogging({
-    slaask: true,
-  })
-)(Settings)
+export default Settings

@@ -1,6 +1,5 @@
 import React from 'react'
 import Link from 'next/link'
-import { compose } from 'recompose'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Mutation } from 'react-apollo'
 import { Message } from 'semantic-ui-react'
@@ -8,7 +7,7 @@ import { useRouter } from 'next/router'
 
 import { StaticLayout } from '../../components/layouts'
 import { PasswordResetForm } from '../../components/forms'
-import { withLogging } from '../../lib'
+import useLogging from '../../lib/useLogging'
 import { ChangePasswordMutation } from '../../graphql'
 
 const messages = defineMessages({
@@ -19,8 +18,14 @@ const messages = defineMessages({
 })
 
 function ResetPassword(): React.ReactElement {
+  useLogging({
+    logRocket: false,
+    slaask: true,
+  })
+
   const intl = useIntl()
   const router = useRouter()
+
   return (
     <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>
       <div className="resetPassword">
@@ -88,9 +93,4 @@ function ResetPassword(): React.ReactElement {
   )
 }
 
-export default compose(
-  withLogging({
-    logRocket: false,
-    slaask: true,
-  })
-)(ResetPassword)
+export default ResetPassword

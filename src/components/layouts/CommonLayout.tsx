@@ -6,10 +6,10 @@ import Head from 'next/head'
 import '../../lib/semantic/dist/semantic.css'
 
 interface Props {
-  baseFontSize?: string
-  children: React.ReactElement
-  nextHeight?: string
-  nextMinHeight?: string
+  baseFontSize?: string | number
+  children: React.ReactNode
+  nextHeight?: string | number
+  nextMinHeight?: string | number
   pageTitle?: string
 }
 
@@ -17,10 +17,16 @@ const defaultProps = {
   baseFontSize: '14px',
   nextHeight: 'auto',
   nextMinHeight: 0,
-  pageTitle: 'CommonLayout',
+  pageTitle: 'KlickerUZH',
 }
 
-function CommonLayout({ baseFontSize, children, nextHeight, nextMinHeight, pageTitle }: Props): React.ReactElement {
+function CommonLayout({
+  baseFontSize,
+  children,
+  nextHeight,
+  nextMinHeight,
+  pageTitle,
+}: Props): React.ReactElement<any> {
   return (
     <div className="commonLayout">
       <Head>

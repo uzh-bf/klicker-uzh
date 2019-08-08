@@ -1,12 +1,11 @@
 import React from 'react'
-import { compose } from 'recompose'
 import { defineMessages, useIntl } from 'react-intl'
 import { useMutation } from 'react-apollo'
 import _debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
 
-import { withLogging } from '../../lib'
 import useSortingAndFiltering from '../../lib/useSortingAndFiltering'
+import useLogging from '../../lib/useLogging'
 import { AccountSummaryQuery, RunningSessionQuery, StartSessionMutation, SessionListQuery } from '../../graphql'
 import { TeacherLayout } from '../../components/layouts'
 import { SessionList } from '../../components/sessions'
@@ -23,10 +22,12 @@ const messages = defineMessages({
 })
 
 function Index(): React.ReactElement {
+  useLogging({ slaask: true })
+
   const intl = useIntl()
   const router = useRouter()
 
-  const [startSession, _] = useMutation(StartSessionMutation)
+  const [startSession] = useMutation(StartSessionMutation)
 
   const { handleSearch, handleSort, filters } = useSortingAndFiltering()
 
@@ -84,8 +85,4 @@ function Index(): React.ReactElement {
   )
 }
 
-export default compose(
-  withLogging({
-    slaask: true,
-  })
-)(Index)
+export default Index

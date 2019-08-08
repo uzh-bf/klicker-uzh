@@ -9,7 +9,8 @@ import { compose } from 'recompose'
 import { defineMessages, useIntl } from 'react-intl'
 import { useQuery, useMutation } from 'react-apollo'
 
-import { withDnD, withLogging } from '../../lib'
+import { withDnD } from '../../lib'
+import useLogging from '../../lib/useLogging'
 import useSelection from '../../lib/useSelection'
 import useSortingAndFiltering from '../../lib/useSortingAndFiltering'
 import {
@@ -41,8 +42,16 @@ const messages = defineMessages({
 })
 
 function Index(): React.ReactElement {
+  useLogging({ slaask: true })
+
   const intl = useIntl()
   const router = useRouter()
+
+  useEffect((): void => {
+    router.prefetch('/questions/details')
+    router.prefetch('/sessions/running')
+    router.prefetch('/sessions')
+  })
 
   const [creationMode, setCreationMode] = useState(
     (): boolean => !!router.query.creationMode || !!router.query.editSessionId
@@ -69,12 +78,6 @@ function Index(): React.ReactElement {
     handleReset,
     handleToggleArchive,
   } = useSortingAndFiltering()
-
-  useEffect((): void => {
-    router.prefetch('/questions/details')
-    router.prefetch('/sessions/running')
-    router.prefetch('/sessions')
-  })
 
   const { editSessionId, copy: copyMode } = router.query
 
@@ -408,9 +411,4 @@ function Index(): React.ReactElement {
   )
 }
 
-export default compose(
-  withLogging({
-    slaask: true,
-  }),
-  withDnD
-)(Index)
+export default compose(withDnD)(Index)

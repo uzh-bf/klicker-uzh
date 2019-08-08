@@ -1,60 +1,42 @@
 /* eslint-disable */
-import React, { useEffect, useState } from 'react'
-import PropTypes from 'prop-types'
+import React, { useState } from 'react'
 import _round from 'lodash/round'
 import _get from 'lodash/get'
-import { FormattedMessage } from 'react-intl'
-import { compose, withProps, withStateHandlers, branch, renderComponent, renderNothing } from 'recompose'
+import { FormattedMessage, useIntl } from 'react-intl'
+import { compose, withProps, branch, renderNothing } from 'recompose'
 import { withRouter } from 'next/router'
 import { graphql } from 'react-apollo'
 import { max, min, mean, median, quantileSeq, std } from 'mathjs'
 import { Button, Checkbox } from 'semantic-ui-react'
 
-import { CHART_DEFAULTS, QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
-import { toValueArray, pageWithIntl, withLogging } from '../../lib'
+import { CHART_DEFAULTS, QUESTION_TYPES } from '../../constants'
+import { toValueArray } from '../../lib'
 import { Chart, Possibilities, VisualizationType } from '../../components/evaluation'
 import { SessionEvaluationQuery, SessionEvaluationPublicQuery } from '../../graphql'
-import { sessionStatusShape, statisticsShape } from '../../propTypes'
 import { CommonLayout } from '../../components/layouts'
 import { extractInstancesFromSession } from './evaluation'
+import useLogging from '../../lib/useLogging'
 
-const propTypes = {
-  activeInstance: PropTypes.object.isRequired,
-  activeInstanceIndex: PropTypes.number,
-  activeVisualizations: PropTypes.object.isRequired,
-  bins: PropTypes.number.isRequired,
-  handleChangeActiveInstance: PropTypes.func.isRequired,
-  handleChangeVisualizationType: PropTypes.func.isRequired,
-  handleShowGraph: PropTypes.func.isRequired,
-  handleToggleShowSolution: PropTypes.func.isRequired,
-  instanceSummary: PropTypes.arrayOf(PropTypes.object),
-  isPublic: PropTypes.bool.isRequired,
-  sessionId: PropTypes.string.isRequired,
-  sessionStatus: sessionStatusShape.isRequired,
-  showGraph: PropTypes.bool.isRequired,
-  showSolution: PropTypes.bool.isRequired,
-  statistics: statisticsShape,
-  visualizationType: PropTypes.string.isRequired,
-}
-const defaultProps = {
-  activeInstanceIndex: 0,
-  instanceSummary: [],
-  statistics: undefined,
+interface Props {
+  activeInstances: any[]
+  sessionId: string
+  sessionStatus: 'CREATED' | 'RUNNING' | 'COMPLETED'
 }
 
-const divStyle = {
-  heigth: '100%',
-}
+function Print({ activeInstances, sessionId, sessionStatus }: Props): React.ReactElement<any> {
+  useLogging()
 
-function Print({ activeInstances, instanceSummary, intl, isPublic, sessionId, sessionStatus }) {
+  const intl = useIntl()
+  // const router = useRouter()
+
   const [activeVisualizations, setActiveVisualizations] = useState(CHART_DEFAULTS)
   const [showSolution, setShowSolution] = useState(false)
 
   return (
-    <CommonLayout baseFontSize={20}>
+    <CommonLayout baseFontSize="20">
       <div className="noPrint">
         <Button primary content="Print" icon="print" onClick={() => window.print()} />
-        <Checkbox toggle label="Show Solution" value={showSolution} onChange={() => setShowSolution(prev => !prev)} />
+        <Checkbox toggle checked={showSolution} label="Show Solution" onChange={() => setShowSolution(prev => !prev)} />
       </div>
 
       {activeInstances.map(activeInstance => {
@@ -69,7 +51,7 @@ function Print({ activeInstances, instanceSummary, intl, isPublic, sessionId, se
             mean: hasResults && mean(valueArray),
             median: hasResults && median(valueArray),
             min: hasResults && min(valueArray),
-            onChangeBins: e => setBins(+e.target.value),
+            onChangeBins: () => null,
             q1: hasResults && quantileSeq(valueArray, 0.25),
             q3: hasResults && quantileSeq(valueArray, 0.75),
             sd: hasResults && std(valueArray),
@@ -102,7 +84,6 @@ function Print({ activeInstances, instanceSummary, intl, isPublic, sessionId, se
                   activeVisualization={activeVisualization}
                   data={results.data}
                   instanceId={activeInstance.id}
-                  intl={intl}
                   isPublic={false}
                   numBins={null}
                   questionType={question.type}
@@ -130,7 +111,6 @@ function Print({ activeInstances, instanceSummary, intl, isPublic, sessionId, se
                 <div className="visualizationType noPrint">
                   <VisualizationType
                     activeVisualization={activeVisualization}
-                    intl={intl}
                     questionType={question.type}
                     onChangeType={(type, newVisualization) =>
                       setActiveVisualizations(currentState => ({ ...currentState, [type]: newVisualization }))
@@ -202,12 +182,8 @@ function Print({ activeInstances, instanceSummary, intl, isPublic, sessionId, se
   )
 }
 
-Print.propTypes = propTypes
-Print.defaultProps = defaultProps
-
 export default compose(
   withRouter,
-  pageWithIntl,
   withProps(({ router }) => ({
     isPublic: !!router.query.public,
     sessionId: router.query.sessionId,
@@ -215,12 +191,12 @@ export default compose(
   branch(
     ({ isPublic }) => isPublic,
     graphql(SessionEvaluationPublicQuery, {
-      options: ({ sessionId }) => ({
+      options: ({ sessionId }: { sessionId: string }) => ({
         variables: { sessionId },
       }),
     }),
     graphql(SessionEvaluationQuery, {
-      options: ({ sessionId }) => ({
+      options: ({ sessionId }: { sessionId: string }) => ({
         variables: { sessionId },
       }),
     })

@@ -3,7 +3,6 @@ import Cookies from 'js-cookie'
 import Link from 'next/link'
 import _get from 'lodash/get'
 import { useRouter } from 'next/router'
-import { compose } from 'recompose'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Mutation } from 'react-apollo'
 import { Message } from 'semantic-ui-react'
@@ -11,7 +10,7 @@ import { Message } from 'semantic-ui-react'
 import { StaticLayout } from '../../components/layouts'
 import { LoginForm } from '../../components/forms'
 import { LoginMutation } from '../../graphql'
-import { withLogging } from '../../lib'
+import useLogging from '../../lib/useLogging'
 
 const messages = defineMessages({
   pageTitle: {
@@ -21,6 +20,11 @@ const messages = defineMessages({
 })
 
 function Login(): React.ReactElement {
+  useLogging({
+    logRocket: false,
+    slaask: true,
+  })
+
   const intl = useIntl()
   const router = useRouter()
 
@@ -121,9 +125,4 @@ function Login(): React.ReactElement {
   )
 }
 
-export default compose(
-  withLogging({
-    logRocket: false,
-    slaask: true,
-  })
-)(Login)
+export default Login

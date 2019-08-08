@@ -1,8 +1,7 @@
 import React, { useState } from 'react'
-import PropTypes from 'prop-types'
 import _round from 'lodash/round'
 import _get from 'lodash/get'
-import { defineMessages } from 'react-intl'
+import { defineMessages, useIntl } from 'react-intl'
 import { compose, withProps, branch, renderNothing } from 'recompose'
 import { withRouter } from 'next/router'
 import { graphql } from 'react-apollo'
@@ -10,10 +9,10 @@ import { max, min, mean, median, quantileSeq, std } from 'mathjs'
 
 import { CHART_DEFAULTS, QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
-import { toValueArray, pageWithIntl, withLogging } from '../../lib'
+import { toValueArray } from '../../lib'
+import useLogging from '../../lib/useLogging'
 import { Chart } from '../../components/evaluation'
 import { SessionEvaluationQuery, SessionEvaluationPublicQuery } from '../../graphql'
-import { sessionStatusShape } from '../../propTypes'
 
 const messages = defineMessages({
   pageTitle: {
@@ -22,24 +21,14 @@ const messages = defineMessages({
   },
 })
 
-const propTypes = {
-  activeInstances: PropTypes.arrayOf(PropTypes.object),
-  instanceSummary: PropTypes.arrayOf(PropTypes.object),
-  isPublic: PropTypes.bool.isRequired,
-  sessionId: PropTypes.string.isRequired,
-  sessionStatus: sessionStatusShape.isRequired,
-  showSolution: PropTypes.bool.isRequired,
+interface Props {
+  activeInstances?: any[]
+  instanceSummary?: any[]
+  isPublic: boolean
+  sessionId: string
+  sessionStatus: 'CREATED' | 'RUNNING' | 'COMPLETED'
+  showSolution: boolean
 }
-
-// interface Props {
-//   activeInstances?: any[]
-//   instanceSummary?: any[]
-//   intl: IntlShape
-//   isPublic: boolean
-//   sessionId: string
-//   sessionStatus: 'CREATED' | 'RUNNING' | 'COMPLETED'
-//   showSolution: boolean
-// }
 
 const defaultProps = {
   activeInstances: [],
@@ -117,7 +106,18 @@ export function extractInstancesFromSession(session) {
   }
 }
 
-function Evaluation({ activeInstances, instanceSummary, intl, isPublic, sessionId, sessionStatus }) {
+function Evaluation({
+  activeInstances,
+  instanceSummary,
+  isPublic,
+  sessionId,
+  sessionStatus,
+}: Props): React.ReactElement {
+  useLogging()
+
+  const intl = useIntl()
+  // const router = useRouter()
+
   const [activeInstanceIndex, setActiveInstanceIndex] = useState(() => {
     const firstActiveIndex = activeInstances.findIndex(instance => instance.blockStatus === 'ACTIVE')
     return firstActiveIndex >= 0 ? firstActiveIndex : 0
@@ -202,7 +202,6 @@ function Evaluation({ activeInstances, instanceSummary, intl, isPublic, sessionI
         data={results.data}
         handleShowGraph={() => setShowGraph(true)}
         instanceId={activeInstance.id}
-        intl={intl}
         isPublic={isPublic}
         numBins={bins}
         questionType={type}
@@ -218,13 +217,10 @@ function Evaluation({ activeInstances, instanceSummary, intl, isPublic, sessionI
   )
 }
 
-Evaluation.propTypes = propTypes
 Evaluation.defaultProps = defaultProps
 
 export default compose(
   withRouter,
-  withLogging(),
-  pageWithIntl,
   withProps(({ router }) => ({
     isPublic: !!router.query.public,
     sessionId: router.query.sessionId,
@@ -232,12 +228,12 @@ export default compose(
   branch(
     ({ isPublic }) => isPublic,
     graphql(SessionEvaluationPublicQuery, {
-      options: ({ sessionId }) => ({
+      options: ({ sessionId }: { sessionId: string }) => ({
         variables: { sessionId },
       }),
     }),
     graphql(SessionEvaluationQuery, {
-      options: ({ sessionId }) => ({
+      options: ({ sessionId }: { sessionId: string }) => ({
         variables: { sessionId },
       }),
     })
@@ -254,7 +250,7 @@ export default compose(
     ({ data: { session }, isPublic }) => !isPublic && session.status === SESSION_STATUS.RUNNING,
     graphql(SessionEvaluationQuery, {
       // refetch the active instances query every 10s
-      options: ({ sessionId }) => ({
+      options: ({ sessionId }: { sessionId: string }) => ({
         pollInterval: 7000,
         variables: { sessionId },
       }),
