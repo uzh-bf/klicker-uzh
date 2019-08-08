@@ -20,6 +20,10 @@ function PasswordUpdateForm(): React.ReactElement {
   return (
     <div className="passwordUpdateForm">
       <Formik
+        initialValues={{
+          password: undefined,
+          passwordRepeat: undefined,
+        }}
         render={({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting, isValid, dirty }) => (
           <Form onSubmit={handleSubmit}>
             <FormikInput

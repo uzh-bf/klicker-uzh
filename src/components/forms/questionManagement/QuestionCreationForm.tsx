@@ -218,7 +218,6 @@ function QuestionCreationForm({ initialValues, tags, tagsLoading, onSubmit, onDi
                   } */
                   handleBlur={handleBlur}
                   handleChange={handleChange}
-                  intl={intl}
                   label={intl.formatMessage(messages.titleInput)}
                   name="title"
                   tooltip={
@@ -234,14 +233,19 @@ function QuestionCreationForm({ initialValues, tags, tagsLoading, onSubmit, onDi
               </div>
 
               <div className="questionInput questionType">
-                <TypeChooser intl={intl} value={values.type} onChange={newType => setFieldValue('type', newType)} />
+                <TypeChooser value={values.type} onChange={newType => setFieldValue('type', newType)} />
               </div>
 
               <div className="questionInput questionTags">
                 {tagsLoading ? (
                   <Loader active />
                 ) : (
-                  <TagInput tags={tags} value={values.tags} onChange={newTags => setFieldValue('tags', newTags)} />
+                  <TagInput
+                    tags={tags}
+                    touched={touched.tags}
+                    value={values.tags}
+                    onChange={newTags => setFieldValue('tags', newTags)}
+                  />
                 )}
               </div>
 
@@ -265,7 +269,6 @@ function QuestionCreationForm({ initialValues, tags, tagsLoading, onSubmit, onDi
 
               <div className="questionInput questionOptions">
                 <OptionsInput
-                  intl={intl}
                   type={values.type}
                   value={values.options}
                   onChange={newOptions => setFieldValue('options', newOptions)}

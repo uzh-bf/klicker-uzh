@@ -1,13 +1,12 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import classNames from 'classnames'
 import { DropTarget } from 'react-dnd'
 import { Icon } from 'semantic-ui-react'
 
-const propTypes = {
-  canDrop: PropTypes.bool,
-  connectDropTarget: PropTypes.func.isRequired,
-  isOver: PropTypes.bool,
+interface Props {
+  canDrop?: boolean
+  connectDropTarget: any
+  isOver?: boolean
 }
 
 const defaultProps = {
@@ -15,8 +14,8 @@ const defaultProps = {
   isOver: false,
 }
 
-const QuestionDropzone = ({ canDrop, isOver, connectDropTarget }) =>
-  connectDropTarget(
+function QuestionDropzone({ canDrop, isOver, connectDropTarget }: Props): React.ReactElement {
+  return connectDropTarget(
     <div className={classNames('dropzone', { canDrop, isOver })}>
       <Icon name="plus" />
 
@@ -48,6 +47,7 @@ const QuestionDropzone = ({ canDrop, isOver, connectDropTarget }) =>
       </style>
     </div>
   )
+}
 
 // define the target for DnD
 const target = {
@@ -70,7 +70,6 @@ const collect = (connect, monitor) => ({
 // use the same unique id 'question' as defined with the source configuration
 const withDnD = DropTarget('question', target, collect)
 
-QuestionDropzone.propTypes = propTypes
 QuestionDropzone.defaultProps = defaultProps
 
 export default withDnD(QuestionDropzone)

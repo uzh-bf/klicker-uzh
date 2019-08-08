@@ -49,7 +49,9 @@ function RequestPassword(): React.ReactElement {
             <>
               <PasswordRequestForm
                 loading={loading}
-                onSubmit={({ email }): Promise<void> => requestPassword({ variables: { email } })}
+                onSubmit={({ email }): void => {
+                  requestPassword({ variables: { email } })
+                }}
               />
 
               {error && <Message error>{error.message}</Message>}

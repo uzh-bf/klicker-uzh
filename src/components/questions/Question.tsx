@@ -1,26 +1,27 @@
-import React from 'react'
-import PropTypes from 'prop-types'
+import React, { useState } from 'react'
 import classNames from 'classnames'
 import dayjs from 'dayjs'
 import { FormattedMessage } from 'react-intl'
-import { compose, withState, withProps } from 'recompose'
 import { DragSource } from 'react-dnd'
 import { Checkbox, Dropdown, Label } from 'semantic-ui-react'
 
 import QuestionDetails from './QuestionDetails'
 import QuestionTags from './QuestionTags'
 
-const propTypes = {
-  checked: PropTypes.bool,
-  connectDragSource: PropTypes.func.isRequired,
-  creationMode: PropTypes.bool,
-  id: PropTypes.string.isRequired,
-  isArchived: PropTypes.bool.isRequired,
-  isDragging: PropTypes.bool,
-  lastUsed: PropTypes.array,
-  tags: PropTypes.array,
-  title: PropTypes.string.isRequired,
-  type: PropTypes.string.isRequired,
+interface Props {
+  checked?: boolean
+  connectDragSource: any
+  creationMode?: boolean
+  id: string
+  isArchived: boolean
+  isDragging: boolean
+  lastUsed?: any[]
+  tags?: any[]
+  title: string
+  type: string
+  versions: any[]
+  draggable: boolean
+  onCheck: any
 }
 
 const defaultProps = {
@@ -32,15 +33,13 @@ const defaultProps = {
   tags: [],
 }
 
-const Question = ({
+function Question({
   checked,
-  activeVersion,
   id,
   lastUsed,
   tags,
   title,
   type,
-  description,
   versions,
   onCheck,
   draggable,
@@ -48,9 +47,12 @@ const Question = ({
   isDragging,
   isArchived,
   connectDragSource,
-  handleSetActiveVersion,
-}) =>
-  connectDragSource(
+}: Props): React.ReactElement {
+  const [activeVersion, setActiveVersion]: any = useState(versions.length - 1)
+
+  const { description } = versions[activeVersion]
+
+  return connectDragSource(
     <div
       className={classNames('question', {
         creationMode,
@@ -87,7 +89,7 @@ const Question = ({
               value: index,
             }))}
             value={activeVersion}
-            onChange={(param, data) => handleSetActiveVersion(data.value)}
+            onChange={(_, data) => setActiveVersion(data.value)}
           />
         </div>
 
@@ -96,100 +98,98 @@ const Question = ({
         </div>
 
         <div className="details">
-          <QuestionDetails description={description} lastUsed={lastUsed} questionId={id} questionType={type} />
+          <QuestionDetails description={description} lastUsed={lastUsed} questionId={id} />
         </div>
       </div>
 
-      <style jsx>
-        {`
-          @import 'src/theme';
+      <style jsx>{`
+        @import 'src/theme';
 
-          .question {
+        .question {
+          display: flex;
+          flex-flow: column nowrap;
+
+          padding: 0.5rem;
+          border: 1px solid lightgray;
+          background-color: #f9f9f9;
+
+          &.draggable {
+            cursor: grab;
+
+            &:hover {
+              box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.1);
+            }
+          }
+
+          &.isDragging {
+            opacity: 0.5;
+          }
+
+          .checker {
+            flex: 0 0 auto;
+            display: flex;
+
+            align-self: center;
+
+            padding: 0.5rem;
+            padding-left: 0;
+          }
+
+          .wrapper {
             display: flex;
             flex-flow: column nowrap;
 
-            padding: 0.5rem;
-            border: 1px solid lightgray;
-            background-color: #f9f9f9;
-
-            &.draggable {
-              cursor: grab;
-
-              &:hover {
-                box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.1);
-              }
+            .title {
+              color: $color-primary-strong;
+              font-size: $font-size-h1;
+              margin: 0;
+              margin-top: 0.2rem;
             }
+          }
 
-            &.isDragging {
-              opacity: 0.5;
-            }
+          @include desktop-tablet-only {
+            flex-flow: row wrap;
 
             .checker {
-              flex: 0 0 auto;
+              flex: 0 0 1rem;
               display: flex;
+              align-items: center;
 
-              align-self: center;
-
-              padding: 0.5rem;
-              padding-left: 0;
+              padding: 1rem;
+              padding-left: 0.5rem;
             }
 
             .wrapper {
-              display: flex;
-              flex-flow: column nowrap;
-
-              .title {
-                color: $color-primary-strong;
-                font-size: $font-size-h1;
-                margin: 0;
-                margin-top: 0.2rem;
-              }
-            }
-
-            @include desktop-tablet-only {
+              flex: 1;
               flex-flow: row wrap;
 
-              .checker {
-                flex: 0 0 1rem;
-                display: flex;
-                align-items: center;
-
-                padding: 1rem;
-                padding-left: 0.5rem;
+              .title {
+                flex: 0 0 auto;
               }
 
-              .wrapper {
-                flex: 1;
-                flex-flow: row wrap;
+              .versionChooser {
+                flex: 1 1 auto;
+                padding-right: 1rem;
+                text-align: right;
+                align-self: center;
+              }
 
-                .title {
-                  flex: 0 0 auto;
-                }
+              .tags {
+                flex: 0 0 auto;
+                align-self: flex-end;
+              }
 
-                .versionChooser {
-                  flex: 1 1 auto;
-                  padding-right: 1rem;
-                  text-align: right;
-                  align-self: center;
-                }
-
-                .tags {
-                  flex: 0 0 auto;
-                  align-self: flex-end;
-                }
-
-                .details {
-                  flex: 0 0 100%;
-                }
+              .details {
+                flex: 0 0 100%;
               }
             }
           }
-        `}
-      </style>
+        }
+      `}</style>
     </div>
   )
+}
 
-Question.propTypes = propTypes
 Question.defaultProps = defaultProps
 
 // define the source for DnD
@@ -225,10 +225,4 @@ const collect = (connect, monitor) => ({
 // define a unique item type "question"
 const withDnD = DragSource('question', source, collect)
 
-export default compose(
-  withState('activeVersion', 'handleSetActiveVersion', ({ versions }) => versions.length - 1),
-  withProps(({ activeVersion, versions }) => ({
-    description: versions[activeVersion].description,
-  })),
-  withDnD
-)(Question)
+export default withDnD(Question)

@@ -1,5 +1,4 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import _truncate from 'lodash/truncate'
 import Link from 'next/link'
 
@@ -8,17 +7,17 @@ import { FormattedMessage } from 'react-intl'
 
 import { ListWithHeader } from '../common'
 
-const propTypes = {
-  description: PropTypes.string.isRequired,
-  lastUsed: PropTypes.array,
-  questionId: PropTypes.string.isRequired,
+interface Props {
+  description: string
+  lastUsed?: any[]
+  questionId: string
 }
 
 const defaultProps = {
   lastUsed: [],
 }
 
-const QuestionDetails = ({ questionId, description, lastUsed }) => {
+function QuestionDetails({ questionId, description, lastUsed }: Props): React.ReactElement {
   const truncatedDesc = _truncate(description, { length: 250 })
 
   return (
@@ -165,7 +164,6 @@ const QuestionDetails = ({ questionId, description, lastUsed }) => {
   )
 }
 
-QuestionDetails.propTypes = propTypes
 QuestionDetails.defaultProps = defaultProps
 
 export default QuestionDetails

@@ -4,7 +4,6 @@ import _get from 'lodash/get'
 import _debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
 import dayjs from 'dayjs'
-import { compose } from 'recompose'
 import { defineMessages, useIntl } from 'react-intl'
 import { useQuery, useMutation } from 'react-apollo'
 
@@ -409,4 +408,4 @@ function Index(): React.ReactElement {
   )
 }
 
-export default compose(withDnD)(Index)
+export default withDnD(Index)

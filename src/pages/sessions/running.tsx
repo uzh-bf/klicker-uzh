@@ -185,7 +185,6 @@ function Running(): React.ReactElement {
                     },
                   })
                 }}
-                intl={intl}
                 isActive={settings.isConfusionBarometerActive}
                 subscribeToMore={() => {
                   subscribeToMore({
@@ -236,7 +235,6 @@ function Running(): React.ReactElement {
                     },
                   })
                 }}
-                intl={intl}
                 isActive={settings.isFeedbackChannelActive}
                 isPublic={settings.isFeedbackChannelPublic}
                 subscribeToMore={() => {

@@ -1,8 +1,8 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import _isEmpty from 'lodash/isEmpty'
 import { Formik } from 'formik'
 import { object } from 'yup'
+import { useIntl } from 'react-intl'
 
 import { FormWithLinks, FormikInput } from '.'
 import validationSchema from './common/validationSchema'
@@ -10,12 +10,14 @@ import messages from './common/messages'
 
 const { password, passwordRepeat } = validationSchema
 
-const propTypes = {
-  loading: PropTypes.bool.isRequired,
-  onSubmit: PropTypes.func.isRequired,
+interface Props {
+  loading: boolean
+  onSubmit: any
 }
 
-const PasswordResetForm = ({ intl, loading, onSubmit }) => {
+function PasswordResetForm({ loading, onSubmit }: Props): React.ReactElement {
+  const intl = useIntl()
+
   const links = [
     {
       href: '/user/login',
@@ -47,13 +49,13 @@ const PasswordResetForm = ({ intl, loading, onSubmit }) => {
             handleBlur={handleBlur}
             handleChange={handleChange}
             icon="privacy"
-            intl={intl}
             label={intl.formatMessage(messages.passwordLabel)}
             name="password"
             touched={touched.password}
             type="password"
             value={values.password}
           />
+
           <FormikInput
             required
             error={errors.passwordRepeat}
@@ -61,7 +63,6 @@ const PasswordResetForm = ({ intl, loading, onSubmit }) => {
             handleBlur={handleBlur}
             handleChange={handleChange}
             icon="privacy"
-            intl={intl}
             label={intl.formatMessage(messages.passwordRepeatLabel)}
             name="passwordRepeat"
             touched={touched.passwordRepeat}
@@ -80,7 +81,5 @@ const PasswordResetForm = ({ intl, loading, onSubmit }) => {
     />
   )
 }
-
-PasswordResetForm.propTypes = propTypes
 
 export default PasswordResetForm

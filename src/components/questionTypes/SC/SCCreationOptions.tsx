@@ -9,10 +9,10 @@ import SCCreationOption from './SCCreationOption'
 import { updateArrayElement, handleDragEnd, deleteArrayElement } from '../../../lib/utils/move'
 
 interface Props {
-  dirty: boolean
+  dirty?: boolean
   disabled: boolean
   onChange: any
-  invalid: boolean
+  invalid?: boolean
   value: {
     choices: { correct: boolean; name: string }[]
   }

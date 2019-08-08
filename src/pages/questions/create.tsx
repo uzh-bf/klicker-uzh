@@ -1,6 +1,5 @@
 import React from 'react'
 import { useRouter } from 'next/router'
-import { compose } from 'recompose'
 import { useQuery, useMutation } from 'react-apollo'
 import { defineMessages, useIntl } from 'react-intl'
 import { convertToRaw } from 'draft-js'
@@ -81,4 +80,4 @@ function CreateQuestion(): React.ReactElement {
   )
 }
 
-export default compose(withDnD)(CreateQuestion)
+export default withDnD(CreateQuestion)

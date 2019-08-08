@@ -55,7 +55,6 @@ function ResetPassword(): React.ReactElement {
           return (
             <>
               <PasswordResetForm
-                intl={intl}
                 loading={loading}
                 onSubmit={({ password }): void => {
                   changePassword({

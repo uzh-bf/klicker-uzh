@@ -1,5 +1,4 @@
 import React from 'react'
-import { compose } from 'recompose'
 import { useQuery, useMutation } from 'react-apollo'
 import { defineMessages, useIntl } from 'react-intl'
 import { ContentState, convertFromRaw, convertToRaw, EditorState } from 'draft-js'
@@ -32,7 +31,7 @@ const messages = defineMessages({
   },
 })
 
-function DuplicateQuestion() {
+function DuplicateQuestion(): React.ReactElement {
   useLogging({ slaask: true })
 
   const intl = useIntl()
@@ -164,4 +163,4 @@ function DuplicateQuestion() {
   )
 }
 
-export default compose(withDnD)(DuplicateQuestion)
+export default withDnD(DuplicateQuestion)

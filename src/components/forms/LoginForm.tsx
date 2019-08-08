@@ -1,8 +1,8 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import { Formik } from 'formik'
 import { object } from 'yup'
 import _isEmpty from 'lodash/isEmpty'
+import { useIntl } from 'react-intl'
 
 import { FormWithLinks, FormikInput } from '.'
 import validationSchema from './common/validationSchema'
@@ -10,12 +10,14 @@ import messages from './common/messages'
 
 const { email, password } = validationSchema
 
-const propTypes = {
-  loading: PropTypes.bool.isRequired,
-  onSubmit: PropTypes.func.isRequired,
+interface Props {
+  loading: boolean
+  onSubmit: any
 }
 
-const LoginForm = ({ intl, loading, onSubmit }) => {
+function LoginForm({ loading, onSubmit }: Props): React.ReactElement {
+  const intl = useIntl()
+
   const links = [
     {
       href: '/user/requestPassword',
@@ -47,7 +49,6 @@ const LoginForm = ({ intl, loading, onSubmit }) => {
             handleBlur={handleBlur}
             handleChange={handleChange}
             icon="mail"
-            intl={intl}
             label={intl.formatMessage(messages.emailLabel)}
             name="email"
             touched={touched.email}
@@ -61,7 +62,6 @@ const LoginForm = ({ intl, loading, onSubmit }) => {
             handleBlur={handleBlur}
             handleChange={handleChange}
             icon="privacy"
-            intl={intl}
             label={intl.formatMessage(messages.passwordLabel)}
             name="password"
             touched={touched.password}
@@ -80,7 +80,5 @@ const LoginForm = ({ intl, loading, onSubmit }) => {
     />
   )
 }
-
-LoginForm.propTypes = propTypes
 
 export default LoginForm
