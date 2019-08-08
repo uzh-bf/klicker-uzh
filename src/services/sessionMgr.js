@@ -24,7 +24,7 @@ const responseCache = getRedis(3)
 
 async function publishSessionUpdate({ sessionId, activeBlock }) {
   const result = await SessionModel.findById(sessionId).populate({
-    path: `blocks.${activeBlock}.instances`,
+    path: 'blocks.instances',
     populate: {
       path: 'question',
     },
@@ -37,22 +37,32 @@ async function publishSessionUpdate({ sessionId, activeBlock }) {
 
   const activeBlockData = resultObj.blocks[activeBlock]
   if (activeBlockData && activeBlockData.instances !== null) {
-    resultObj.activeInstances = activeBlockData.instances.map(instance => {
-      const { question } = instance
-      const versionInfo = question.versions[instance.version]
-      return {
-        id: instance._id,
-        execution: activeBlockData.execution,
-        questionId: question._id,
-        title: question.title,
-        type: question.type,
-        content: versionInfo.content,
-        description: versionInfo.description,
-        options: versionInfo.options,
-        files: versionInfo.files,
-      }
-    })
+    if (activeBlockData.status === QUESTION_BLOCK_STATUS.EXECUTED) {
+      resultObj.activeInstances = []
+    } else {
+      resultObj.activeInstances = activeBlockData.instances.map(instance => {
+        const { question } = instance
+        const versionInfo = question.versions[instance.version]
+        return {
+          id: instance._id,
+          execution: activeBlockData.execution,
+          questionId: question._id,
+          title: question.title,
+          type: question.type,
+          content: versionInfo.content,
+          description: versionInfo.description,
+          options: versionInfo.options,
+          files: versionInfo.files,
+        }
+      })
+    }
   }
+
+  resultObj.id = resultObj._id
+  const properties = ['blocks', 'feedbacks', 'confusionTS']
+  properties.forEach(property => {
+    resultObj[property] = resultObj[property].map(el => ({ ...el, id: el._id }))
+  })
 
   // Publish Subscription Data to Subscribers
   await pubsub.publish(SESSION_UPDATED, {
