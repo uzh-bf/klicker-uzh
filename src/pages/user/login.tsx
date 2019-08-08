@@ -30,7 +30,8 @@ function Login(): React.ReactElement {
 
   useEffect((): void => {
     router.prefetch('/questions')
-  })
+    router.prefetch('/sessions')
+  }, [])
 
   return (
     <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>

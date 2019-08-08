@@ -29,7 +29,7 @@ function StudentLayout({
 }: Props): React.ReactElement {
   useEffect((): void => {
     subscribeToMore()
-  })
+  }, [])
 
   const activeQuestionItem = {
     href: 'activeQuestion',

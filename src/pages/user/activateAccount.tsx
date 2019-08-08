@@ -32,7 +32,7 @@ function ActivateAccount(): React.ReactElement {
     client
       .mutate({ mutation: ActivateAccountMutation, variables: { activationToken: router.query.activationToken } })
       .then((): void => setSuccess(true))
-  })
+  }, [])
 
   return (
     <StaticLayout pageTitle={intl.formatMessage(messages.pageTitle)}>

@@ -86,7 +86,7 @@ function EvaluationLayout({
   }))
 
   return (
-    <CommonLayout baseFontSize={undefined} nextHeight="100%" pageTitle={pageTitle}>
+    <CommonLayout baseFontSize={20} nextHeight="100%" pageTitle={pageTitle}>
       <div
         className={classNames('evaluationLayout', {
           fullScreen: [CHART_TYPES.CLOUD_CHART, CHART_TYPES.TABLE].includes(activeVisualization),

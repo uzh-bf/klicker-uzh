@@ -76,7 +76,7 @@ function useLogging(cfg = {}) {
         }
       }
     }
-  })
+  }, [])
 }
 
 export default useLogging

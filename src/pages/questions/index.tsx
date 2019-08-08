@@ -51,7 +51,7 @@ function Index(): React.ReactElement {
     router.prefetch('/questions/details')
     router.prefetch('/sessions/running')
     router.prefetch('/sessions')
-  })
+  }, [])
 
   const [creationMode, setCreationMode] = useState(
     (): boolean => !!router.query.creationMode || !!router.query.editSessionId

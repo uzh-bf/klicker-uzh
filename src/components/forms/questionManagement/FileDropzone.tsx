@@ -67,13 +67,10 @@ function FileDropzone({ disabled, files, onChangeFiles }: Props): React.ReactEle
     )
   })
 
-  useEffect(
-    () => () => {
-      // Make sure to revoke the data uris to avoid memory leaks
-      files.forEach(file => URL.revokeObjectURL(file.preview))
-    },
-    [files]
-  )
+  useEffect(() => {
+    // Make sure to revoke the data uris to avoid memory leaks
+    files.forEach(file => URL.revokeObjectURL(file.preview))
+  }, [files])
 
   return (
     <div className="fileDropzone">

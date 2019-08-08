@@ -56,7 +56,7 @@ function Running(): React.ReactElement {
     router.prefetch('/sessions/evaluation')
     router.prefetch('/join')
     router.prefetch('/qr')
-  })
+  }, [])
 
   const accountSummary = useQuery(AccountSummaryQuery)
   const { data, loading, error, subscribeToMore } = useQuery(RunningSessionQuery)
