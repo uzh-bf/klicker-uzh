@@ -1,29 +1,26 @@
 import React from 'react'
-import PropTypes from 'prop-types'
-import { injectIntl } from 'react-intl'
+import { useIntl } from 'react-intl'
 import { generateTypesShort } from '../../lib'
 
-const propTypes = {
-  tags: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-    })
-  ).isRequired,
-  type: PropTypes.string.isRequired,
+interface Props {
+  tags: { id: string; name: string }[]
+  type: string
 }
 
-const QuestionTags = ({ intl, tags, type }) => (
-  <div className="questionTags">
-    {tags.map(tag => (
-      <div className="tag" key={tag.id}>
-        {tag.name}
-      </div>
-    ))}
-    <div className="type tag">{generateTypesShort(intl)[type]}</div>
+function QuestionTags({ tags, type }: Props): React.ReactElement {
+  const intl = useIntl()
 
-    <style jsx>
-      {`
+  return (
+    <div className="questionTags">
+      {tags.map(tag => (
+        <div className="tag" key={tag.id}>
+          {tag.name}
+        </div>
+      ))}
+
+      <div className="type tag">{generateTypesShort(intl)[type]}</div>
+
+      <style jsx>{`
         @import 'src/theme';
 
         .questionTags {
@@ -61,11 +58,9 @@ const QuestionTags = ({ intl, tags, type }) => (
             }
           }
         }
-      `}
-    </style>
-  </div>
-)
+      `}</style>
+    </div>
+  )
+}
 
-QuestionTags.propTypes = propTypes
-
-export default injectIntl(QuestionTags)
+export default QuestionTags

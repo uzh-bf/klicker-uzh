@@ -1,7 +1,7 @@
 import React from 'react'
-import Router from 'next/router'
+import { useRouter } from 'next/router'
 import { Loader, Message } from 'semantic-ui-react'
-import { FormattedMessage, IntlShape, useIntl } from 'react-intl'
+import { FormattedMessage, useIntl } from 'react-intl'
 import { useQuery } from 'react-apollo'
 
 import Session from './Session'
@@ -30,13 +30,13 @@ const statusCases = {
 }
 
 // calculate what action to take on button click based on session status
-function handleSessionAction(sessionId, status, handleStartSession, handleCopySession): Function {
+function handleSessionAction(sessionId, status, router, handleStartSession, handleCopySession): Function {
   if (status === SESSION_STATUS.CREATED || status === SESSION_STATUS.PAUSED) {
     return handleStartSession(sessionId)
   }
 
   if (status === SESSION_STATUS.RUNNING) {
-    return () => Router.push('/sessions/running')
+    return () => router.push('/sessions/running')
   }
 
   if (status === SESSION_STATUS.COMPLETED) {
@@ -54,6 +54,7 @@ interface Props {
 
 function SessionList({ filters, handleCopySession, handleStartSession }: Props): React.ReactElement {
   const intl = useIntl()
+  const router = useRouter()
 
   const { data, loading, error } = useQuery(SessionListQuery)
 
@@ -85,7 +86,7 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
             ...session,
             button: {
               ...statusCases[SESSION_STATUS.RUNNING],
-              onClick: () => Router.push('/sessions/running'),
+              onClick: () => router.push('/sessions/running'),
             },
           }))
 
@@ -97,7 +98,7 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
             button: {
               ...statusCases[SESSION_STATUS.PAUSED],
               disabled: runningSessions.length > 0,
-              onClick: handleSessionAction(session.id, session.status, handleStartSession, handleCopySession),
+              onClick: handleSessionAction(session.id, session.status, router, handleStartSession, handleCopySession),
             },
           }))
 
@@ -110,7 +111,7 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
             ...statusCases[session.status],
             disabled: session.status === SESSION_STATUS.COMPLETED,
             hidden: session.status === SESSION_STATUS.COMPLETED,
-            onClick: handleSessionAction(session.id, session.status, handleStartSession, handleCopySession),
+            onClick: handleSessionAction(session.id, session.status, router, handleStartSession, handleCopySession),
           },
         }))
 
