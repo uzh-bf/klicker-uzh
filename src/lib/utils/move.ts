@@ -1,28 +1,33 @@
 import UUIDv4 from 'uuid/v4'
+import _get from 'lodash/get'
 
-export function updateArrayElement(array, index, newValue): any[] {
+export function insertArrayElement(array: any[], index: number, value: any, replace: boolean = false): any[] {
+  return [...array.slice(0, index), value, ...array.slice(replace ? index + 1 : index)]
+}
+
+export function updateArrayElement(array: any[], index: number, newValue: any): any[] {
   const oldValue = array[index]
 
   if (typeof oldValue === 'object') {
-    return [...array.slice(0, index), { ...oldValue, ...newValue }, ...array.slice(index + 1)]
+    return insertArrayElement(array, index, { ...oldValue, ...newValue }, true)
   }
 
-  return [...array.slice(0, index), newValue, ...array.slice(index + 1)]
+  return insertArrayElement(array, index, newValue, true)
 }
 
-export function deleteArrayElement(array, index): any[] {
+export function deleteArrayElement(array: any[], index: number): any[] {
   return [...array.slice(0, index), ...array.slice(index + 1)]
 }
 
-export function reorder(list, startIndex, endIndex): any[] {
+export function reorder(list: any[], startIndex: number, endIndex: number): any[] {
   const result = Array.from(list)
   const [removed] = result.splice(startIndex, 1)
   result.splice(endIndex, 0, removed)
   return result
 }
 
-export function handleDragEnd(array, onChange): void {
-  return result => {
+export function handleDragEnd(array: any, onChange: Function): Function {
+  return (result: any): void => {
     if (!result.destination) {
       return
     }
@@ -36,24 +41,18 @@ export function handleDragEnd(array, onChange): void {
 }
 
 /**
- * Compute the index of a block in an immutable list given its id
- * @param {*} blocks
- * @param {*} droppableId
+ * Compute the index of a block in a list given its id
  */
-export function getIndex(blocks, droppableId): number {
+export function getIndex(blocks: any[], droppableId: string): number {
   return blocks.findIndex(block => block.id === droppableId)
 }
 
 /**
  * Extend a block with a new question
  * Either at a specific index or by appending to the end
- * @param {*} blocks
- * @param {*} blockId
- * @param {*} question
- * @param {*} targetIndex Optional index that specifies the target location of the question
  */
-export function addToBlock(blocks, blockId, question, targetIndex = null): any[] {
-  let dstBlockIx = blockId
+export function addToBlock(blocks: any[], blockId: string | number, question: any, targetIndex: number = null): any[] {
+  let dstBlockIx: string | number = blockId
 
   // if the blockId passed is not number (index)
   // assume it can be calculated by searching for the id
@@ -62,42 +61,51 @@ export function addToBlock(blocks, blockId, question, targetIndex = null): any[]
   }
 
   // compute the new list of questions for the target block
-  const dstQuestions = blocks.getIn([dstBlockIx, 'questions'])
+  const targetValue = { ...question, key: UUIDv4() }
+  const dstQuestions: any[] = [..._get(blocks, `${dstBlockIx}.questions`)]
   const dstQuestionsWithTarget =
     typeof targetIndex !== 'undefined'
-      ? dstQuestions.insert(targetIndex, { ...question, key: UUIDv4() })
-      : dstQuestions.push({ ...question, key: UUIDv4() })
+      ? insertArrayElement(dstQuestions, targetIndex, targetValue)
+      : dstQuestions.push(targetValue)
 
   // update the target block
-  return blocks.setIn([dstBlockIx, 'questions'], dstQuestionsWithTarget)
+  const newBlocks = [...blocks]
+  newBlocks[dstBlockIx].questions = dstQuestionsWithTarget
+  return newBlocks
 }
 
 /**
  * Append an entirely new block for a new question
- * @param {*} blocks
- * @param {*} question
  */
-export function appendNewBlock(blocks, question): any[] {
-  return blocks.push({
-    id: UUIDv4(),
-    questions: [{ ...question, key: UUIDv4() }],
-  })
+export function appendNewBlock(blocks: any[], question: any): any[] {
+  return [
+    ...blocks,
+    {
+      id: UUIDv4(),
+      questions: [{ ...question, key: UUIDv4() }],
+    },
+  ]
 }
 
 /**
  * Remove a question from a block
- * @param {ImmutableList} blocks
- * @param {int} blockIndex
- * @param {int} questionIndex
- * @param {bool} removeEmpty
  */
-export function removeQuestion(blocks, blockIndex, questionIndex, removeEmpty = false): any[] {
+export function removeQuestion(
+  blocks: any[],
+  blockIndex: number,
+  questionIndex: number,
+  removeEmpty: boolean = false
+): any[] {
   // delete the question with the specified index from the specified block
-  const blocksWithoutQuestion = blocks.deleteIn([blockIndex, 'questions', questionIndex])
+  const blocksWithoutQuestion = [...blocks]
+  blocksWithoutQuestion[blockIndex].questions = deleteArrayElement(
+    _get(blocks, `${blockIndex}.questions`),
+    questionIndex
+  )
 
   // if the block from which the question was removed is now empty, remove the block
-  if (removeEmpty && blocksWithoutQuestion.getIn([blockIndex, 'questions']).size === 0) {
-    return blocksWithoutQuestion.delete(blockIndex)
+  if (removeEmpty && _get(blocksWithoutQuestion, `${blockIndex}.questions`).length === 0) {
+    return deleteArrayElement(blocksWithoutQuestion, blockIndex)
   }
 
   return blocksWithoutQuestion
@@ -105,26 +113,28 @@ export function removeQuestion(blocks, blockIndex, questionIndex, removeEmpty = 
 
 /**
  * Move an existing question from one list to another list
- * @param {ImmutableList} blocks
- * @param {*} srcBlockId
- * @param {*} srcQuestionIx
- * @param {*} dstBlockId
- * @param {*} dstQuestionIx
  * @param {*} removeEmpty Flag that specifies whether empty blocks should be pruned
  */
-export function moveQuestion(blocks, srcBlockId, srcQuestionIx, dstBlockId, dstQuestionIx, removeEmpty = false): any[] {
+export function moveQuestion(
+  blocks: any[],
+  srcBlockId: string,
+  srcQuestionIx: number,
+  dstBlockId: string,
+  dstQuestionIx: number,
+  removeEmpty: boolean = false
+): any[] {
   // compute the index for both source and destination block
   const srcBlockIx = getIndex(blocks, srcBlockId)
   let dstBlockIx = getIndex(blocks, dstBlockId)
 
   // save and remove the question that is to be moved
-  const targetQuestion = blocks.getIn([srcBlockIx, 'questions', srcQuestionIx])
+  const targetQuestion = _get(blocks, `${srcBlockIx}.questions.${srcQuestionIx}`)
   const blocksWithoutSrc = removeQuestion(blocks, srcBlockIx, srcQuestionIx, removeEmpty && srcBlockId !== dstBlockId)
 
   // if the destination block comes after the source block
   // the destination index needs to be updated after the removal of the source block
   // as everything shifts by one block
-  if (blocks.size > blocksWithoutSrc.size && dstBlockIx > srcBlockIx) {
+  if (blocks.length > blocksWithoutSrc.length && dstBlockIx > srcBlockIx) {
     dstBlockIx -= 1
   }
 

@@ -2,6 +2,9 @@ import React from 'react'
 import { Button as SemanticButton } from 'semantic-ui-react'
 
 interface Props {
+  active?: boolean
+  type?: string
+  onClick: () => void
   children: React.ReactNode
 }
 

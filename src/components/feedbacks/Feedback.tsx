@@ -2,12 +2,12 @@ import React from 'react'
 import { Button, Icon } from 'semantic-ui-react'
 
 interface Props {
-  alreadyVoted: boolean
+  alreadyVoted?: boolean
   content: string
   onDelete?: any
   showDelete?: boolean
   showVotes?: boolean
-  updateVotes: any
+  updateVotes?: any
   votes: number
 }
 

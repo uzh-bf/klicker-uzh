@@ -12,7 +12,6 @@ interface Props {
   }[]
   isSolutionShown?: boolean
   totalResponses?: number
-  questionType: string
 }
 
 const defaultProps = {
@@ -21,7 +20,7 @@ const defaultProps = {
   totalResponses: 0,
 }
 
-function PieChart({ isSolutionShown, data, totalResponses, questionType }: Props): React.ReactElement {
+function PieChart({ isSolutionShown, data, totalResponses }: Props): React.ReactElement {
   // filter out choices without any responses (weird labeling)
   // map data to contain percentages and char labels
   const processedData = data
@@ -29,8 +28,8 @@ function PieChart({ isSolutionShown, data, totalResponses, questionType }: Props
       correct,
       count,
       fill: CHART_COLORS[index % 12],
-      labelIn: getLabelIn(CHART_TYPES.PIE_CHART, questionType, count, totalResponses, index),
-      labelOut: getLabelOut(CHART_TYPES.PIE_CHART, questionType, count, totalResponses, index),
+      labelIn: getLabelIn(CHART_TYPES.PIE_CHART, count, totalResponses, index),
+      labelOut: getLabelOut(CHART_TYPES.PIE_CHART, count, totalResponses, index),
       value,
     }))
     .filter(({ count }) => count > 0)

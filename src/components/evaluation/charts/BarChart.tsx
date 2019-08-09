@@ -42,8 +42,8 @@ function BarChart({ isSolutionShown, data, isColored, totalResponses, questionTy
       count,
       fill: CHART_COLORS[index % 12],
       label: questionType === 'FREE_RANGE' ? +value : indexToLetter(index),
-      labelIn: getLabelIn(CHART_TYPES.BAR_CHART, questionType, count, totalResponses, index),
-      labelOut: getLabelOut(CHART_TYPES.BAR_CHART, questionType, count, totalResponses, index),
+      labelIn: getLabelIn(CHART_TYPES.BAR_CHART, count, totalResponses, index),
+      labelOut: getLabelOut(CHART_TYPES.BAR_CHART, count, totalResponses, index),
       value,
     })),
     o => o.label

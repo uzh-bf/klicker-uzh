@@ -6,7 +6,7 @@ interface Props {
   button: {
     disabled?: boolean
     loading?: boolean
-    invalid: boolean
+    invalid?: boolean
     label: string
     onSubmit: any
   }

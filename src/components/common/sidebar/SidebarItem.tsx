@@ -6,7 +6,7 @@ interface Props {
   children: React.ReactNode
   className?: string
   handleSidebarItemClick: any
-  icon?: string
+  icon?: any
   name: string
 }
 

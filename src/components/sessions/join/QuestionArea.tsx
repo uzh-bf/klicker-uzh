@@ -1,14 +1,12 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import classNames from 'classnames'
 import _without from 'lodash/without'
 import _get from 'lodash/get'
 import v8n from 'v8n'
 import dayjs from 'dayjs'
 import getConfig from 'next/config'
-
 import { FormattedMessage } from 'react-intl'
 import { convertFromRaw } from 'draft-js'
-import { compose, withStateHandlers, withHandlers, withProps } from 'recompose'
 
 import QuestionFiles from './QuestionFiles'
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
@@ -17,81 +15,190 @@ import { QuestionDescription, SCAnswerOptions, FREEAnswerOptions } from '../../q
 
 const { publicRuntimeConfig } = getConfig()
 
+const messages = {
+  [QUESTION_TYPES.SC]: (
+    <p>
+      <FormattedMessage defaultMessage="Please choose a single option below:" id="joinSession.questionArea.info.SC" />
+    </p>
+  ),
+  [QUESTION_TYPES.MC]: (
+    <p>
+      <FormattedMessage
+        defaultMessage="Please choose one or multiple of the options below:"
+        id="joinSession.questionArea.info.MC"
+      />
+    </p>
+  ),
+  [QUESTION_TYPES.FREE]: (
+    <p>
+      <FormattedMessage defaultMessage="Please enter your response below:" id="joinSession.questionArea.info.FREE" />
+    </p>
+  ),
+
+  [QUESTION_TYPES.FREE_RANGE]: (
+    <p>
+      <FormattedMessage
+        defaultMessage="Please choose a number from the given range below:"
+        id="joinSession.questionArea.info.FREE_RANGE"
+      />
+    </p>
+  ),
+}
+
 interface Props {
   active: boolean
-  activeQuestion?: number
-  handleActiveChoicesChange: any
-  handleActiveQuestionChange: any
-  handleFreeValueChange: any
-  handleSubmit: any
-  inputEmpty: boolean
-  inputValid: boolean
-  inputValue: string | number | any
-  isCollapsed: boolean
   questions: any[]
-  remainingQuestions: any[]
-  toggleIsCollapsed: any
+  handleNewResponse: Function
+  shortname: string
+  sessionId: string
 }
 
 const defaultProps = {
-  activeQuestion: 0,
   questions: [],
-  remainingQuestions: [],
 }
 
-function QuestionArea({
-  active,
-  activeQuestion,
-  remainingQuestions,
-  isCollapsed,
-  inputEmpty,
-  inputValue,
-  inputValid,
-  questions,
-  toggleIsCollapsed,
-  handleActiveQuestionChange,
-  handleActiveChoicesChange,
-  handleFreeValueChange,
-  handleSubmit,
-}: Props): React.ReactElement {
-  const currentQuestion = questions[activeQuestion]
+function QuestionArea({ active, questions, handleNewResponse, shortname, sessionId }: Props): React.ReactElement {
+  const [remainingQuestions, setRemainingQuestions] = useState([])
 
-  const messages = {
-    [QUESTION_TYPES.SC]: (
-      <p>
-        <FormattedMessage defaultMessage="Please choose a single option below:" id="joinSession.questionArea.info.SC" />
-      </p>
-    ),
-    [QUESTION_TYPES.MC]: (
-      <p>
-        <FormattedMessage
-          defaultMessage="Please choose one or multiple of the options below:"
-          id="joinSession.questionArea.info.MC"
-        />
-      </p>
-    ),
-    [QUESTION_TYPES.FREE]: (
-      <p>
-        <FormattedMessage defaultMessage="Please enter your response below:" id="joinSession.questionArea.info.FREE" />
-      </p>
-    ),
+  useEffect((): void => {
+    try {
+      if (window.localStorage) {
+        const storedResponses = JSON.parse(localStorage.getItem(`${shortname}-${sessionId}-responses`)) || {
+          responses: [],
+        }
 
-    [QUESTION_TYPES.FREE_RANGE]: (
-      <p>
-        <FormattedMessage
-          defaultMessage="Please choose a number from the given range below:"
-          id="joinSession.questionArea.info.FREE_RANGE"
-        />
-      </p>
-    ),
+        return setRemainingQuestions(
+          questions.reduce((indices, { id, execution }, index): any[] => {
+            if (storedResponses.responses.includes(`${id}-${execution}`)) {
+              return indices
+            }
+
+            return [...indices, index]
+          }, [])
+        )
+      }
+    } catch (e) {
+      console.error(e)
+    }
+
+    return setRemainingQuestions(questions.map((_, ix) => ix))
+  })
+
+  const [activeQuestion, setActiveQuestion] = useState(remainingQuestions[0])
+  const [isCollapsed, setIsCollapsed] = useState(true)
+  const [{ inputValue, inputValid, inputEmpty }, setInputState] = useState({
+    inputEmpty: true,
+    inputValid: false,
+    inputValue: undefined,
+  })
+
+  const onActiveChoicesChange = (type): Function => (choice): Function => (): void => {
+    const validateChoices = newValue => (type === QUESTION_TYPES.SC ? newValue.length === 1 : newValue.length > 0)
+
+    if (inputValue && type === QUESTION_TYPES.MC) {
+      // if the choice is already active, remove it
+      if (inputValue.includes(choice)) {
+        const newInputValue = _without(inputValue, choice)
+
+        return setInputState({
+          inputEmpty: newInputValue.length === 0,
+          inputValid: validateChoices(newInputValue),
+          inputValue: newInputValue,
+        })
+      }
+
+      // else add it to the active choices
+      const newInputValue = [...inputValue, choice]
+      return setInputState({
+        inputEmpty: false,
+        inputValid: validateChoices(newInputValue),
+        inputValue: newInputValue,
+      })
+    }
+
+    // initialize the value with the first choice
+    return setInputState({
+      inputEmpty: false,
+      inputValid: true,
+      inputValue: [choice],
+    })
   }
+
+  const onFreeValueChange = (type, options): any => (newInputValue): void => {
+    let validator = v8n()
+
+    if (type === QUESTION_TYPES.FREE_RANGE) {
+      validator = validator.number(false)
+
+      if (_get(options, 'restrictions.max')) {
+        validator = validator.lessThanOrEqual(options.restrictions.max)
+      }
+
+      if (_get(options, 'restrictions.min')) {
+        validator = validator.greaterThanOrEqual(options.restrictions.min)
+      }
+    } else {
+      validator = validator.string()
+    }
+
+    return setInputState({
+      inputEmpty: newInputValue !== 0 && (!newInputValue || newInputValue.length === 0),
+      inputValid: validator.test(newInputValue) || validator.test(+newInputValue),
+      inputValue: newInputValue,
+    })
+  }
+
+  const onSubmit = async (): Promise<void> => {
+    const { id: instanceId, execution, type } = questions[activeQuestion]
+
+    // if the question has been answered, add a response
+    if (typeof inputValue !== 'undefined') {
+      if (inputValue.length > 0 && QUESTION_GROUPS.CHOICES.includes(type)) {
+        handleNewResponse({ instanceId, response: { choices: inputValue } })
+      } else if (QUESTION_GROUPS.FREE.includes(type)) {
+        handleNewResponse({ instanceId, response: { value: String(inputValue) } })
+      }
+    }
+
+    // update the stored responses
+    if (typeof window !== 'undefined') {
+      try {
+        if (window.localStorage) {
+          const prevResponses = JSON.parse(localStorage.getItem(`${shortname}-${sessionId}-responses`))
+          localStorage.setItem(
+            `${shortname}-${sessionId}-responses`,
+            JSON.stringify(
+              prevResponses
+                ? { responses: [...prevResponses.responses, `${instanceId}-${execution}`], timestamp: dayjs().unix() }
+                : { responses: [`${instanceId}-${execution}`], timestamp: dayjs().unix() }
+            )
+          )
+        }
+      } catch (e) {
+        console.error(e)
+      }
+    }
+
+    // calculate the new indices of remaining questions
+    const newRemaining = _without(remainingQuestions, activeQuestion)
+
+    setActiveQuestion(newRemaining[0] || 0)
+    setInputState({
+      inputEmpty: true,
+      inputValid: false,
+      inputValue: undefined,
+    })
+    setRemainingQuestions(newRemaining)
+  }
+
+  const currentQuestion = questions[activeQuestion]
 
   return (
     <div className={classNames('questionArea', { active })}>
       <h1 className="header">
         <FormattedMessage defaultMessage="Question" id="joinSession.questionArea.title" />
       </h1>
-      {(() => {
+      {((): React.ReactElement => {
         if (remainingQuestions.length === 0) {
           return (
             <div className="padded">
@@ -119,13 +226,13 @@ function QuestionArea({
                 /* items={_range(questions.length).map(index => ({
                   done: !remainingQuestions.includes(index),
                 }))} */
-                setActiveIndex={handleActiveQuestionChange}
-                onSubmit={handleSubmit}
+                // setActiveIndex={onActiveQuestionChange}
+                onSubmit={onSubmit}
               />
             </div>
 
             <div className="collapser">
-              <Collapser collapsed={isCollapsed} handleCollapseToggle={toggleIsCollapsed}>
+              <Collapser collapsed={isCollapsed} handleCollapseToggle={() => setIsCollapsed(!isCollapsed)}>
                 <QuestionDescription content={contentState} description={description} />
               </Collapser>
             </div>
@@ -139,14 +246,14 @@ function QuestionArea({
             <div className="options">
               {messages[type]}
 
-              {(() => {
+              {((): React.ReactElement => {
                 if (QUESTION_GROUPS.CHOICES.includes(type)) {
                   return (
                     <SCAnswerOptions
                       disabled={!remainingQuestions.includes(activeQuestion)}
                       options={options[type].choices}
                       value={inputValue}
-                      onChange={handleActiveChoicesChange(type)}
+                      onChange={onActiveChoicesChange(type)}
                     />
                   )
                 }
@@ -158,7 +265,7 @@ function QuestionArea({
                       options={options[type]}
                       questionType={type}
                       value={inputValue}
-                      onChange={handleFreeValueChange(type, options[type])}
+                      onChange={onFreeValueChange(type, options[type])}
                     />
                   )
                 }
@@ -259,169 +366,4 @@ function QuestionArea({
 
 QuestionArea.defaultProps = defaultProps
 
-export default compose(
-  withProps(({ questions, shortname, sessionId }) => {
-    if (typeof window !== 'undefined') {
-      try {
-        if (window.localStorage) {
-          const storedResponses = JSON.parse(localStorage.getItem(`${shortname}-${sessionId}-responses`)) || {
-            responses: [],
-          }
-
-          return {
-            remainingQuestions: questions.reduce((indices, { id, execution }, index) => {
-              if (storedResponses.responses.includes(`${id}-${execution}`)) {
-                return indices
-              }
-
-              return [...indices, index]
-            }, []),
-          }
-        }
-      } catch (e) {
-        console.error(e)
-      }
-    }
-
-    return {
-      remainingQuestions: questions.map((val, ix) => ix),
-    }
-  }),
-  withStateHandlers(
-    ({ remainingQuestions }) => ({
-      activeQuestion: remainingQuestions[0],
-      inputEmpty: true,
-      inputValid: false,
-      inputValue: undefined,
-      isCollapsed: true,
-      remainingQuestions,
-    }),
-    {
-      handleActiveChoicesChange: ({ inputValue }) => (choice, type) => {
-        const validateChoices = newValue => (type === QUESTION_TYPES.SC ? newValue.length === 1 : newValue.length > 0)
-
-        if (inputValue && type === QUESTION_TYPES.MC) {
-          // if the choice is already active, remove it
-          if (inputValue.includes(choice)) {
-            const newInputValue = _without(inputValue, choice)
-
-            return {
-              inputEmpty: newInputValue.length === 0,
-              inputValid: validateChoices(newInputValue),
-              inputValue: newInputValue,
-            }
-          }
-
-          // else add it to the active choices
-          const newInputValue = [...inputValue, choice]
-          return {
-            inputEmpty: false,
-            inputValid: validateChoices(newInputValue),
-            inputValue: newInputValue,
-          }
-        }
-
-        // initialize the value with the first choice
-        return {
-          inputEmpty: false,
-          inputValid: true,
-          inputValue: [choice],
-        }
-      },
-      handleActiveQuestionChange: () => activeQuestion => ({
-        activeQuestion,
-        inputEmpty: true,
-        inputValid: false,
-        inputValue: undefined,
-      }),
-      handleFreeValueChange: () => (inputValue, options, type) => {
-        let validator = v8n()
-
-        if (type === QUESTION_TYPES.FREE_RANGE) {
-          validator = validator.number(false)
-
-          if (_get(options, 'restrictions.max')) {
-            validator = validator.lessThanOrEqual(options.restrictions.max)
-          }
-
-          if (_get(options, 'restrictions.min')) {
-            validator = validator.greaterThanOrEqual(options.restrictions.min)
-          }
-        } else {
-          validator = validator.string()
-        }
-
-        return {
-          inputEmpty: inputValue !== 0 && (!inputValue || inputValue.length === 0),
-          inputValid: validator.test(inputValue) || validator.test(+inputValue),
-          inputValue,
-        }
-      },
-      handleSubmit: ({ activeQuestion, remainingQuestions }) => () => {
-        // calculate the new indices of remaining questions
-        const newRemaining = _without(remainingQuestions, activeQuestion)
-
-        return {
-          // activate the first question that is still remaining
-          activeQuestion: newRemaining[0] || 0,
-          inputEmpty: true,
-          inputValid: false,
-          inputValue: undefined,
-          remainingQuestions: newRemaining,
-        }
-      },
-      toggleIsCollapsed: ({ isCollapsed }) => () => ({
-        isCollapsed: !isCollapsed,
-      }),
-    }
-  ),
-  withHandlers({
-    handleActiveChoicesChange: ({ handleActiveChoicesChange }) => type => choice => () =>
-      handleActiveChoicesChange(choice, type),
-    handleActiveQuestionChange: ({ handleActiveQuestionChange }) => index => () => handleActiveQuestionChange(index),
-    handleCompleteQuestion: ({ handleCompleteQuestion }) => index => () => handleCompleteQuestion(index),
-    handleFreeValueChange: ({ handleFreeValueChange }) => (type, options) => inputValue =>
-      handleFreeValueChange(inputValue, options, type),
-    handleSubmit: ({
-      shortname,
-      sessionId,
-      activeQuestion,
-      questions,
-      handleNewResponse,
-      handleSubmit,
-      inputValue,
-    }) => async () => {
-      const { id: instanceId, execution, type } = questions[activeQuestion]
-
-      // if the question has been answered, add a response
-      if (typeof inputValue !== 'undefined') {
-        if (inputValue.length > 0 && QUESTION_GROUPS.CHOICES.includes(type)) {
-          handleNewResponse({ instanceId, response: { choices: inputValue } })
-        } else if (QUESTION_GROUPS.FREE.includes(type)) {
-          handleNewResponse({ instanceId, response: { value: String(inputValue) } })
-        }
-      }
-
-      // update the stored responses
-      if (typeof window !== 'undefined') {
-        try {
-          if (window.localStorage) {
-            const prevResponses = JSON.parse(localStorage.getItem(`${shortname}-${sessionId}-responses`))
-            localStorage.setItem(
-              `${shortname}-${sessionId}-responses`,
-              JSON.stringify(
-                prevResponses
-                  ? { responses: [...prevResponses.responses, `${instanceId}-${execution}`], timestamp: dayjs().unix() }
-                  : { responses: [`${instanceId}-${execution}`], timestamp: dayjs().unix() }
-              )
-            )
-          }
-        } catch (e) {
-          console.error(e)
-        }
-      }
-
-      handleSubmit()
-    },
-  })
-)(QuestionArea)
+export default QuestionArea

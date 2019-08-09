@@ -8,9 +8,11 @@ interface Props {
   children: React.ReactNode
   handleSidebarItemClick: any
   items?: {
+    className?: any
     href: string
     label: React.ReactElement
     name: string
+    icon?: any
   }[]
   visible?: boolean
 }

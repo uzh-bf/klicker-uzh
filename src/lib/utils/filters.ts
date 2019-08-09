@@ -23,7 +23,7 @@ const indices = {}
   },
 } */
 
-export function buildIndex(name, items, searchIndices): any[] {
+export function buildIndex(name: string, items: any[], searchIndices: any[]): any[] {
   // if an index already exists, return it
   if (indices[name]) {
     return indices[name]
@@ -50,7 +50,7 @@ export function buildIndex(name, items, searchIndices): any[] {
   return search
 }
 
-export function filterQuestions(questions, filters, index): any[] {
+export function filterQuestions(questions: any[], filters: any, index: any): any[] {
   let results = questions.filter(
     ({ isArchived }) => (typeof isArchived === 'undefined' && !filters.archive) || isArchived === filters.archive
   )
@@ -80,7 +80,7 @@ export function filterQuestions(questions, filters, index): any[] {
   return results
 }
 
-export function filterSessions(sessions, filters, index): any[] {
+export function filterSessions(sessions: any[], filters: any, index: any): any[] {
   let results = sessions
 
   if (filters.title) {
@@ -90,7 +90,11 @@ export function filterSessions(sessions, filters, index): any[] {
   return results
 }
 
-export function sortQuestions(questions, sort): any[] {
+export function subtractDates(date1: any, date2: any): any {
+  return date1 - date2
+}
+
+export function sortQuestions(questions: any[], sort: any): any[] {
   const factor = sort.asc ? 1 : -1
 
   if (sort.by === 'TITLE') {
@@ -102,7 +106,7 @@ export function sortQuestions(questions, sort): any[] {
   }
 
   if (sort.by === 'CREATED') {
-    return questions.sort((a, b) => factor * (dayjs(a.createdAt) - dayjs(b.createdAt)))
+    return questions.sort((a, b) => factor * subtractDates(dayjs(a.createdAt), dayjs(b.createdAt)))
   }
 
   if (sort.by === 'USED') {
@@ -119,7 +123,10 @@ export function sortQuestions(questions, sort): any[] {
       // this allows us to sort by "last usage"
       return (
         factor *
-        (dayjs(a.instances[a.instances.length - 1].createdAt) - dayjs(b.instances[b.instances.length - 1].createdAt))
+        subtractDates(
+          dayjs(a.instances[a.instances.length - 1].createdAt),
+          dayjs(b.instances[b.instances.length - 1].createdAt)
+        )
       )
     })
   }
