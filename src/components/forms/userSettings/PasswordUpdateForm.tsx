@@ -6,7 +6,7 @@ import { object } from 'yup'
 import { Form, Button } from 'semantic-ui-react'
 
 import { FormikInput } from '..'
-import { ChangePasswordMutation } from '../../../graphql'
+import ChangePasswordMutation from '../../../graphql/mutations/ChangePasswordMutation.graphql'
 import validationSchema from '../common/validationSchema'
 import messages from '../common/messages'
 

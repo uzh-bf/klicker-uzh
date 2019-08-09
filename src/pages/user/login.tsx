@@ -9,7 +9,7 @@ import { Message } from 'semantic-ui-react'
 
 import { StaticLayout } from '../../components/layouts'
 import { LoginForm } from '../../components/forms'
-import { LoginMutation } from '../../graphql'
+import LoginMutation from '../../graphql/mutations/LoginMutation.graphql'
 import useLogging from '../../lib/useLogging'
 
 const messages = defineMessages({

@@ -10,7 +10,8 @@ import { useQuery, useMutation } from '@apollo/react-hooks'
 import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'
 import SessionArea from './SessionArea'
-import { AccountSummaryQuery, LogoutMutation } from '../../../graphql'
+import LogoutMutation from '../../../graphql/mutations/LogoutMutation.graphql'
+import AccountSummaryQuery from '../../../graphql/queries/AccountSummaryQuery.graphql'
 
 interface KlickerWindow extends Window {
   INIT_LR?: boolean

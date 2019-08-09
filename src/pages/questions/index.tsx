@@ -10,18 +10,16 @@ import { useQuery, useMutation } from '@apollo/react-hooks'
 import useLogging from '../../lib/useLogging'
 import useSelection from '../../lib/useSelection'
 import useSortingAndFiltering from '../../lib/useSortingAndFiltering'
-import {
-  CreateSessionMutation,
-  StartSessionMutation,
-  AccountSummaryQuery,
-  SessionListQuery,
-  RunningSessionQuery,
-  QuestionPoolQuery,
-  ArchiveQuestionsMutation,
-  ModifySessionMutation,
-  DeleteQuestionsMutation,
-  QuestionListQuery,
-} from '../../graphql'
+import CreateSessionMutation from '../../graphql/mutations/CreateSessionMutation.graphql'
+import StartSessionMutation from '../../graphql/mutations/StartSessionMutation.graphql'
+import AccountSummaryQuery from '../../graphql/queries/AccountSummaryQuery.graphql'
+import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
+import RunningSessionQuery from '../../graphql/queries/RunningSessionQuery.graphql'
+import QuestionPoolQuery from '../../graphql/queries/QuestionPoolQuery.graphql'
+import ArchiveQuestionsMutation from '../../graphql/mutations/ArchiveQuestionsMutation.graphql'
+import ModifySessionMutation from '../../graphql/mutations/ModifySessionMutation.graphql'
+import DeleteQuestionsMutation from '../../graphql/mutations/DeleteQuestionsMutation.graphql'
+import QuestionListQuery from '../../graphql/queries/QuestionListQuery.graphql'
 import { SessionEditForm, SessionCreationForm } from '../../components/forms'
 import { QuestionList, TagList, ActionBar } from '../../components/questions'
 import { TeacherLayout } from '../../components/layouts'

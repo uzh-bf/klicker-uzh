@@ -6,7 +6,7 @@ import { useQuery } from '@apollo/react-hooks'
 
 import Question from './Question'
 import { processItems, buildIndex } from '../../lib'
-import { QuestionListQuery } from '../../graphql'
+import QuestionListQuery from '../../graphql/queries/QuestionListQuery.graphql'
 
 interface Props {
   creationMode?: boolean

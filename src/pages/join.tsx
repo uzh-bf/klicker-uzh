@@ -7,13 +7,11 @@ import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { StudentLayout } from '../components/layouts'
 import FeedbackArea from '../components/sessions/join/FeedbackArea'
 import QuestionArea from '../components/sessions/join/QuestionArea'
-import {
-  AddConfusionTSMutation,
-  AddFeedbackMutation,
-  AddResponseMutation,
-  JoinSessionQuery,
-  UpdatedSessionSubscription,
-} from '../graphql'
+import AddConfusionTSMutation from '../graphql/mutations/AddConfusionTSMutation.graphql'
+import AddFeedbackMutation from '../graphql/mutations/AddFeedbackMutation.graphql'
+import AddResponseMutation from '../graphql/mutations/AddResponseMutation.graphql'
+import JoinSessionQuery from '../graphql/queries/JoinSessionQuery.graphql'
+import UpdatedSessionSubscription from '../graphql/subscriptions/UpdateSessionSubscription.graphql'
 import useLogging from '../lib/useLogging'
 import useFingerprint from '../lib/useFingerprint'
 

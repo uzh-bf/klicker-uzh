@@ -4,7 +4,7 @@ import { FormattedMessage } from 'react-intl'
 import { useQuery } from '@apollo/react-hooks'
 
 import { QUESTION_TYPES } from '../../lib'
-import { TagListQuery } from '../../graphql'
+import TagListQuery from '../../graphql/queries/TagListQuery.graphql'
 
 interface Props {
   activeTags: any[]

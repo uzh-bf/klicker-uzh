@@ -6,7 +6,7 @@ import { Button, Message } from 'semantic-ui-react'
 import { useRouter } from 'next/router'
 
 import { StaticLayout } from '../../components/layouts'
-import { ResolveAccountDeletionMutation } from '../../graphql'
+import ResolveAccountDeletionMutation from '../../graphql/mutations/ResolveAccountDeletionMutation.graphql'
 import useLogging from '../../lib/useLogging'
 
 const messages = defineMessages({

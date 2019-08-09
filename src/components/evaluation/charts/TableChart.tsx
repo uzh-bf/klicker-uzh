@@ -4,7 +4,8 @@ import { useMutation } from '@apollo/react-hooks'
 import { Button, Table } from 'semantic-ui-react'
 
 import { QUESTION_GROUPS } from '../../../constants'
-import { SessionEvaluationQuery, DeleteResponseMutation } from '../../../graphql'
+import DeleteResponseMutation from '../../../graphql/mutations/DeleteResponseMutation.graphql'
+import SessionEvaluationQuery from '../../../graphql/queries/SessionEvaluationQuery.graphql'
 
 interface Props {
   sessionId: string

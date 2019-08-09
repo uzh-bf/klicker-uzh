@@ -5,7 +5,7 @@ import { FormattedMessage, useIntl } from 'react-intl'
 import { useQuery } from '@apollo/react-hooks'
 
 import Session from './Session'
-import { SessionListQuery } from '../../graphql'
+import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
 import { SESSION_STATUS } from '../../constants'
 import { buildIndex, filterSessions } from '../../lib'
 

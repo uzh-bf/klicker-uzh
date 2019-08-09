@@ -7,7 +7,11 @@ import { convertToRaw } from 'draft-js'
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionCreationForm } from '../../components/forms'
 import { getPresignedURLs, uploadFilesToPresignedURLs } from '../../lib'
-import { QuestionListQuery, TagListQuery, CreateQuestionMutation, RequestPresignedURLMutation } from '../../graphql'
+import QuestionListQuery from '../../graphql/queries/QuestionListQuery.graphql'
+import TagListQuery from '../../graphql/queries/TagListQuery.graphql'
+import CreateQuestionMutation from '../../graphql/mutations/CreateQuestionMutation.graphql'
+import RequestPresignedURLMutation from '../../graphql/mutations/RequestPresignedURLMutation.graphql'
+
 import useLogging from '../../lib/useLogging'
 
 const messages = defineMessages({

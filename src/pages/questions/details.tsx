@@ -12,13 +12,11 @@ import { TeacherLayout } from '../../components/layouts'
 import { QuestionEditForm } from '../../components/forms'
 import { omitDeep, omitDeepArray, getPresignedURLs, uploadFilesToPresignedURLs } from '../../lib'
 import useLogging from '../../lib/useLogging'
-import {
-  TagListQuery,
-  QuestionListQuery,
-  QuestionDetailsQuery,
-  ModifyQuestionMutation,
-  RequestPresignedURLMutation,
-} from '../../graphql'
+import TagListQuery from '../../graphql/queries/TagListQuery.graphql'
+import QuestionListQuery from '../../graphql/queries/QuestionListQuery.graphql'
+import QuestionDetailsQuery from '../../graphql/queries/QuestionDetailsQuery.graphql'
+import ModifyQuestionMutation from '../../graphql/mutations/ModifyQuestionMutation.graphql'
+import RequestPresignedURLMutation from '../../graphql/mutations/RequestPresignedURLMutation.graphql'
 
 const messages = defineMessages({
   pageTitle: {
@@ -39,7 +37,7 @@ function EditQuestion(): React.ReactElement {
 
   const { data: tagList, loading: tagsLoading } = useQuery(TagListQuery)
   const { data: questionDetails, loading: questionLoading } = useQuery(QuestionDetailsQuery, {
-    variables: { id: router.query.id },
+    variables: { id: router.query.questionId },
   })
   const [editQuestion, { loading, data, error }] = useMutation(ModifyQuestionMutation)
   const [requestPresignedURL] = useMutation(RequestPresignedURLMutation)

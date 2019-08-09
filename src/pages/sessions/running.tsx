@@ -11,20 +11,18 @@ import { ConfusionBarometer } from '../../components/confusion'
 import { FeedbackChannel } from '../../components/feedbacks'
 import { SessionTimeline } from '../../components/sessions'
 import { TeacherLayout } from '../../components/layouts'
-import {
-  AccountSummaryQuery,
-  RunningSessionQuery,
-  EndSessionMutation,
-  PauseSessionMutation,
-  CancelSessionMutation,
-  UpdateSessionSettingsMutation,
-  ActivateNextBlockMutation,
-  DeleteFeedbackMutation,
-  SessionListQuery,
-  FeedbackAddedSubscription,
-  ConfusionAddedSubscription,
-  ResetQuestionBlockMutation,
-} from '../../graphql'
+import AccountSummaryQuery from '../../graphql/queries/AccountSummaryQuery.graphql'
+import RunningSessionQuery from '../../graphql/queries/RunningSessionQuery.graphql'
+import EndSessionMutation from '../../graphql/mutations/EndSessionMutation.graphql'
+import PauseSessionMutation from '../../graphql/mutations/PauseSessionMutation.graphql'
+import CancelSessionMutation from '../../graphql/mutations/CancelSessionMutation.graphql'
+import UpdateSessionSettingsMutation from '../../graphql/mutations/UpdateSessionSettingsMutation.graphql'
+import ActivateNextBlockMutation from '../../graphql/mutations/ActivateNextBlockMutation.graphql'
+import DeleteFeedbackMutation from '../../graphql/mutations/DeleteFeedbackMutation.graphql'
+import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
+import FeedbackAddedSubscription from '../../graphql/subscriptions/FeedbackAddedSubscription.graphql'
+import ConfusionAddedSubscription from '../../graphql/subscriptions/ConfusionAddedSubscription.graphql'
+import ResetQuestionBlockMutation from '../../graphql/mutations/ResetQuestionBlockMutation.graphql'
 import { Messager } from '../../components/common'
 
 const messages = defineMessages({

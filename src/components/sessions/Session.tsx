@@ -6,7 +6,8 @@ import { useMutation } from '@apollo/react-hooks'
 import { Confirm, Button, Icon, Message, Dropdown } from 'semantic-ui-react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 
-import { SessionListQuery, DeleteSessionsMutation } from '../../graphql'
+import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
+import DeleteSessionsMutation from '../../graphql/mutations/DeleteSessionsMutation.graphql'
 import { QuestionBlock } from '../questions'
 import { SESSION_STATUS } from '../../constants'
 

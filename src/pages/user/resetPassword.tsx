@@ -8,7 +8,7 @@ import { useRouter } from 'next/router'
 import { StaticLayout } from '../../components/layouts'
 import { PasswordResetForm } from '../../components/forms'
 import useLogging from '../../lib/useLogging'
-import { ChangePasswordMutation } from '../../graphql'
+import ChangePasswordMutation from '../../graphql/mutations/ChangePasswordMutation.graphql'
 
 const messages = defineMessages({
   pageTitle: {

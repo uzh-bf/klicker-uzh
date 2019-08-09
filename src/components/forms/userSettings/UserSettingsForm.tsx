@@ -6,7 +6,7 @@ import { useMutation } from '@apollo/react-hooks'
 
 import AccountDataForm from './AccountDataForm'
 import PasswordUpdateForm from './PasswordUpdateForm'
-import { RequestAccountDeletionMutation } from '../../../graphql'
+import RequestAccountDeletionMutation from '../../../graphql/mutations/RequestAccountDeletionMutation.graphql'
 
 const messages = defineMessages({
   accountDataItem: {

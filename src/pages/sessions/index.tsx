@@ -6,7 +6,11 @@ import { useRouter } from 'next/router'
 
 import useSortingAndFiltering from '../../lib/useSortingAndFiltering'
 import useLogging from '../../lib/useLogging'
-import { AccountSummaryQuery, RunningSessionQuery, StartSessionMutation, SessionListQuery } from '../../graphql'
+import AccountSummaryQuery from '../../graphql/queries/AccountSummaryQuery.graphql'
+import RunningSessionQuery from '../../graphql/queries/RunningSessionQuery.graphql'
+import StartSessionMutation from '../../graphql/mutations/StartSessionMutation.graphql'
+import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
+
 import { TeacherLayout } from '../../components/layouts'
 import { SessionList } from '../../components/sessions'
 

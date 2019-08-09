@@ -11,13 +11,11 @@ import { TeacherLayout } from '../../components/layouts'
 import { QuestionCreationForm } from '../../components/forms'
 import { getPresignedURLs, uploadFilesToPresignedURLs, omitDeepArray, omitDeep } from '../../lib'
 import useLogging from '../../lib/useLogging'
-import {
-  QuestionListQuery,
-  TagListQuery,
-  CreateQuestionMutation,
-  RequestPresignedURLMutation,
-  QuestionDetailsQuery,
-} from '../../graphql'
+import QuestionListQuery from '../../graphql/queries/QuestionListQuery.graphql'
+import TagListQuery from '../../graphql/queries/TagListQuery.graphql'
+import CreateQuestionMutation from '../../graphql/mutations/CreateQuestionMutation.graphql'
+import RequestPresignedURLMutation from '../../graphql/mutations/RequestPresignedURLMutation.graphql'
+import QuestionDetailsQuery from '../../graphql/queries/QuestionDetailsQuery.graphql'
 import { QUESTION_TYPES } from '../../constants'
 
 const messages = defineMessages({

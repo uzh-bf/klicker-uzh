@@ -6,7 +6,7 @@ import { Message } from 'semantic-ui-react'
 import { StaticLayout } from '../../components/layouts'
 import { PasswordRequestForm } from '../../components/forms'
 import useLogging from '../../lib/useLogging'
-import { RequestPasswordMutation } from '../../graphql'
+import RequestPasswordMutation from '../../graphql/mutations/RequestPasswordMutation.graphql'
 
 const messages = defineMessages({
   pageTitle: {
