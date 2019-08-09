@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import classNames from 'classnames'
 import dayjs from 'dayjs'
 import { FormattedMessage } from 'react-intl'
-import { DragSource } from 'react-dnd'
+import { useDrag } from 'react-dnd'
 import { Checkbox, Dropdown, Label } from 'semantic-ui-react'
 
 import QuestionDetails from './QuestionDetails'
@@ -10,11 +10,9 @@ import QuestionTags from './QuestionTags'
 
 interface Props {
   checked?: boolean
-  connectDragSource: any
   creationMode?: boolean
   id: string
   isArchived: boolean
-  isDragging: boolean
   lastUsed?: any[]
   tags?: any[]
   title: string
@@ -28,7 +26,6 @@ const defaultProps = {
   checked: false,
   creationMode: false,
   isArchived: false,
-  isDragging: false,
   lastUsed: [],
   tags: [],
 }
@@ -44,22 +41,27 @@ function Question({
   onCheck,
   draggable,
   creationMode,
-  isDragging,
   isArchived,
-  connectDragSource,
 }: Props): React.ReactElement {
   const [activeVersion, setActiveVersion]: any = useState(versions.length - 1)
+  const [collectedProps, drag] = useDrag({
+    item: { id, type: 'question', questionType: type, title, version: activeVersion },
+    collect: monitor => ({
+      isDragging: monitor.isDragging(),
+    }),
+  })
 
   const { description } = versions[activeVersion]
 
-  return connectDragSource(
+  return (
     <div
       className={classNames('question', {
         creationMode,
         draggable: creationMode,
         isArchived,
-        isDragging,
+        isDragging: collectedProps.isDragging,
       })}
+      ref={drag}
     >
       <div className={classNames('checker', { active: !draggable })}>
         <Checkbox
@@ -192,37 +194,4 @@ function Question({
 
 Question.defaultProps = defaultProps
 
-// define the source for DnD
-const source = {
-  // only props defined here are "transported" to the dropzone
-  beginDrag({ activeVersion, id, title, type }) {
-    return {
-      id,
-      title,
-      type,
-      version: activeVersion,
-    }
-  },
-  // whether the element can be dragged
-  /* canDrag({ draggable }) {
-    return draggable
-  }, */
-  // if the element is dropped somewhere
-  /* endDrag({ onDrop }, monitor) {
-    if (monitor.didDrop()) {
-      onDrop()
-    }
-  }, */
-}
-
-// define what information the Question component should collect
-// we need to know whether the current question is being dragged
-const collect = (connect, monitor) => ({
-  connectDragSource: connect.dragSource(),
-  isDragging: monitor.isDragging(),
-})
-
-// define a unique item type "question"
-const withDnD = DragSource('question', source, collect)
-
-export default withDnD(Question)
+export default Question

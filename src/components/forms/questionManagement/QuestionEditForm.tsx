@@ -147,8 +147,6 @@ function QuestionEditForm({
     value: id,
   }))
 
-  const onSubmit = () => handleSubmit(isNewVersion)
-
   return (
     <div className="questionEditForm">
       <Formik
@@ -156,7 +154,7 @@ function QuestionEditForm({
         initialValues={initialValues}
         validate={validate}
         // validationSchema={Yup.object().shape({})}
-        onSubmit={onSubmit}
+        onSubmit={handleSubmit(isNewVersion)}
       >
         {({
           values,

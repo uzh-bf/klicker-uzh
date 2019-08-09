@@ -9,7 +9,7 @@ import _isNil from 'lodash/isNil'
 
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionCreationForm } from '../../components/forms'
-import { withDnD, getPresignedURLs, uploadFilesToPresignedURLs, omitDeepArray, omitDeep } from '../../lib'
+import { getPresignedURLs, uploadFilesToPresignedURLs, omitDeepArray, omitDeep } from '../../lib'
 import useLogging from '../../lib/useLogging'
 import {
   QuestionListQuery,
@@ -163,4 +163,4 @@ function DuplicateQuestion(): React.ReactElement {
   )
 }
 
-export default withDnD(DuplicateQuestion)
+export default DuplicateQuestion

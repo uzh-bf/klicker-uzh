@@ -10,7 +10,7 @@ import _get from 'lodash/get'
 
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionEditForm } from '../../components/forms'
-import { omitDeep, omitDeepArray, withDnD, getPresignedURLs, uploadFilesToPresignedURLs } from '../../lib'
+import { omitDeep, omitDeepArray, getPresignedURLs, uploadFilesToPresignedURLs } from '../../lib'
 import useLogging from '../../lib/useLogging'
 import {
   TagListQuery,
@@ -50,7 +50,7 @@ function EditQuestion(): React.ReactElement {
   })
 
   const onSubmit = id => isNewVersion => async (
-    { id, title: newTitle, content, options, solution, tags: newTags, files },
+    { title: newTitle, content, options, solution, tags: newTags, files },
     { setSubmitting }
   ) => {
     // split files into newly added and existing entities
@@ -172,4 +172,4 @@ function EditQuestion(): React.ReactElement {
   )
 }
 
-export default withDnD(EditQuestion)
+export default EditQuestion

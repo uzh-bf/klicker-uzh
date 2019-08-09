@@ -5,6 +5,8 @@ import getConfig from 'next/config'
 import App, { Container } from 'next/app'
 import { ApolloProvider } from '@apollo/react-hooks'
 import { IntlProvider } from 'react-intl'
+import HTML5Backend from 'react-dnd-html5-backend'
+import { DndProvider } from 'react-dnd'
 
 import { withApolloClient } from '../lib'
 
@@ -109,13 +111,15 @@ class Klicker extends App {
 
     return (
       <Container>
-        <IntlProvider initialNow={now} locale={locale} messages={messages}>
-          <ApolloProvider client={apolloClient}>
-            <StrictMode>
-              <Component {...pageProps} error={this.state.error} />
-            </StrictMode>
-          </ApolloProvider>
-        </IntlProvider>
+        <DndProvider backend={HTML5Backend}>
+          <IntlProvider initialNow={now} locale={locale} messages={messages}>
+            <ApolloProvider client={apolloClient}>
+              <StrictMode>
+                <Component {...pageProps} error={this.state.error} />
+              </StrictMode>
+            </ApolloProvider>
+          </IntlProvider>
+        </DndProvider>
       </Container>
     )
   }

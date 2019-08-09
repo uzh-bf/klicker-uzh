@@ -6,7 +6,7 @@ import { convertToRaw } from 'draft-js'
 
 import { TeacherLayout } from '../../components/layouts'
 import { QuestionCreationForm } from '../../components/forms'
-import { withDnD, getPresignedURLs, uploadFilesToPresignedURLs } from '../../lib'
+import { getPresignedURLs, uploadFilesToPresignedURLs } from '../../lib'
 import { QuestionListQuery, TagListQuery, CreateQuestionMutation, RequestPresignedURLMutation } from '../../graphql'
 import useLogging from '../../lib/useLogging'
 
@@ -80,4 +80,4 @@ function CreateQuestion(): React.ReactElement {
   )
 }
 
-export default withDnD(CreateQuestion)
+export default CreateQuestion

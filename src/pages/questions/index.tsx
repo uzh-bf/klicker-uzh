@@ -7,7 +7,6 @@ import dayjs from 'dayjs'
 import { defineMessages, useIntl } from 'react-intl'
 import { useQuery, useMutation } from '@apollo/react-hooks'
 
-import { withDnD } from '../../lib'
 import useLogging from '../../lib/useLogging'
 import useSelection from '../../lib/useSelection'
 import useSortingAndFiltering from '../../lib/useSortingAndFiltering'
@@ -408,4 +407,4 @@ function Index(): React.ReactElement {
   )
 }
 
-export default withDnD(Index)
+export default Index

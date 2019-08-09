@@ -1,22 +1,23 @@
 import React from 'react'
 import classNames from 'classnames'
-import { DropTarget } from 'react-dnd'
+import { useDrop } from 'react-dnd'
 import { Icon } from 'semantic-ui-react'
 
-interface Props {
-  canDrop?: boolean
-  connectDropTarget: any
-  isOver?: boolean
-}
+function QuestionDropzone({ onDrop }): React.ReactElement {
+  const [collectedProps, drop] = useDrop({
+    accept: 'question',
+    drop: item => onDrop(item),
+    collect: monitor => ({
+      canDrop: monitor.canDrop(),
+      isOver: monitor.isOver(),
+    }),
+  })
 
-const defaultProps = {
-  canDrop: true,
-  isOver: false,
-}
-
-function QuestionDropzone({ canDrop, isOver, connectDropTarget }: Props): React.ReactElement {
-  return connectDropTarget(
-    <div className={classNames('dropzone', { canDrop, isOver })}>
+  return (
+    <div
+      className={classNames('dropzone', { canDrop: collectedProps.canDrop, isOver: collectedProps.isOver })}
+      ref={drop}
+    >
       <Icon name="plus" />
 
       <style jsx>
@@ -49,27 +50,4 @@ function QuestionDropzone({ canDrop, isOver, connectDropTarget }: Props): React.
   )
 }
 
-// define the target for DnD
-const target = {
-  // define what should be done once an item is dropped
-  // props are passed through from the instantiation of the dropzone component
-  // monitor.getItem('question') receives the data from the dragged component
-  drop({ onDrop }, monitor) {
-    onDrop(monitor.getItem('question'))
-  },
-}
-
-// define what information the dropzone component should collect
-// we want to know whether we are hovering with a dragged component
-const collect = (connect, monitor) => ({
-  canDrop: monitor.canDrop(),
-  connectDropTarget: connect.dropTarget(),
-  isOver: monitor.isOver(),
-})
-
-// use the same unique id 'question' as defined with the source configuration
-const withDnD = DropTarget('question', target, collect)
-
-QuestionDropzone.defaultProps = defaultProps
-
-export default withDnD(QuestionDropzone)
+export default QuestionDropzone
