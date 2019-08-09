@@ -8,7 +8,7 @@ import { Errors } from '../../constants'
 import StaticLayout from '../../components/layouts/StaticLayout'
 import RegistrationForm from '../../components/forms/RegistrationForm'
 import RegistrationMutation from '../../graphql/mutations/RegistrationMutation.graphql'
-import useLogging from '../../lib/useLogging'
+import useLogging from '../../lib/hooks/useLogging'
 
 const messages = defineMessages({
   pageTitle: {

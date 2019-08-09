@@ -4,7 +4,7 @@ import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Icon } from 'semantic-ui-react'
 
 import { QUESTION_TYPES } from '../../constants'
-import { Button } from '../common'
+import Button from '../common/Button'
 
 const messages = defineMessages({
   freeLabel: {

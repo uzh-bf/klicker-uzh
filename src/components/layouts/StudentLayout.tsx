@@ -3,7 +3,7 @@ import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
 
 import CommonLayout from './CommonLayout'
-import { Sidebar } from '../common/sidebar'
+import Sidebar from '../common/sidebar/Sidebar'
 
 interface Props {
   children: React.ReactNode

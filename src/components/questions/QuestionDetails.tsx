@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Button, Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
-import { ListWithHeader } from '../common'
+import ListWithHeader from '../common/ListWithHeader'
 
 interface Props {
   description: string

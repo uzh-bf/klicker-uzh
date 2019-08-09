@@ -8,7 +8,7 @@ import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 
 import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
 import DeleteSessionsMutation from '../../graphql/mutations/DeleteSessionsMutation.graphql'
-import { QuestionBlock } from '../questions'
+import QuestionBlock from '../questions/QuestionBlock'
 import { SESSION_STATUS } from '../../constants'
 
 const messages = defineMessages({

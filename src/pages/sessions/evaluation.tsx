@@ -5,8 +5,8 @@ import { useRouter } from 'next/router'
 
 import { QUESTION_GROUPS, QUESTION_TYPES } from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
-import useLogging from '../../lib/useLogging'
-import { Chart } from '../../components/evaluation'
+import useLogging from '../../lib/hooks/useLogging'
+import Chart from '../../components/evaluation/Chart'
 import LoadSessionData from '../../components/sessions/LoadSessionData'
 import ComputeActiveInstance from '../../components/sessions/ComputeActiveInstance'
 

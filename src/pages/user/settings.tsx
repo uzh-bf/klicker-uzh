@@ -2,7 +2,7 @@ import React from 'react'
 import { defineMessages, useIntl } from 'react-intl'
 
 import TeacherLayout from '../../components/layouts/TeacherLayout'
-import useLogging from '../../lib/useLogging'
+import useLogging from '../../lib/hooks/useLogging'
 import UserSettingsForm from '../../components/forms/userSettings/UserSettingsForm'
 
 const messages = defineMessages({

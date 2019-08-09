@@ -3,8 +3,8 @@ import _isNumber from 'lodash/isNumber'
 import { FormattedMessage } from 'react-intl'
 
 import { CHART_COLORS, QUESTION_TYPES, QUESTION_GROUPS } from '../../constants'
-import { indexToLetter } from '../../lib'
-import { EvaluationListItem } from '.'
+import { indexToLetter } from '../../lib/utils/charts'
+import EvaluationListItem from './EvaluationListItem'
 
 interface Props {
   data: any[]

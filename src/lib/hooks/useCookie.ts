@@ -10,7 +10,7 @@ interface Params {
 }
 
 // FIXME: refactor to useEffect or similar paradigm for improved handling of side-effects
-export function useCookie({
+function useCookie({
   cookieName,
   initialValue,
   expires = 14,
@@ -31,3 +31,5 @@ export function useCookie({
 
   return [value, setCookieValue]
 }
+
+export default useCookie

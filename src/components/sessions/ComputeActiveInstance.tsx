@@ -3,7 +3,7 @@ import _round from 'lodash/round'
 import _get from 'lodash/get'
 import { max, min, mean, median, quantileSeq, std } from 'mathjs'
 
-import { toValueArray } from '../../lib'
+import { toValueArray } from '../../lib/utils/math'
 import { CHART_DEFAULTS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 
 function ComputeActiveInstance({ activeInstances, children, sessionStatus }): React.ReactElement {

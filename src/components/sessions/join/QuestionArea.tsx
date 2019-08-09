@@ -10,8 +10,11 @@ import { convertFromRaw } from 'draft-js'
 
 import QuestionFiles from './QuestionFiles'
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
-import { ActionMenu, Collapser } from '../../common'
-import { QuestionDescription, SCAnswerOptions, FREEAnswerOptions } from '../../questionTypes'
+import ActionMenu from '../../common/ActionMenu'
+import Collapser from '../../common/Collapser'
+import QuestionDescription from '../../questionTypes/QuestionDescription'
+import SCAnswerOptions from '../../questionTypes/SC/SCAnswerOptions'
+import FREEAnswerOptions from '../../questionTypes/FREE/FREEAnswerOptions'
 
 const { publicRuntimeConfig } = getConfig()
 

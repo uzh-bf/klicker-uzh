@@ -6,13 +6,13 @@ import { convertToRaw } from 'draft-js'
 
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import QuestionCreationForm from '../../components/forms/questionManagement/QuestionCreationForm'
-import { getPresignedURLs, uploadFilesToPresignedURLs } from '../../lib'
+import { getPresignedURLs, uploadFilesToPresignedURLs } from '../../lib/utils/files'
 import QuestionListQuery from '../../graphql/queries/QuestionListQuery.graphql'
 import TagListQuery from '../../graphql/queries/TagListQuery.graphql'
 import CreateQuestionMutation from '../../graphql/mutations/CreateQuestionMutation.graphql'
 import RequestPresignedURLMutation from '../../graphql/mutations/RequestPresignedURLMutation.graphql'
 
-import useLogging from '../../lib/useLogging'
+import useLogging from '../../lib/hooks/useLogging'
 
 const messages = defineMessages({
   pageTitle: {

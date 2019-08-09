@@ -5,7 +5,7 @@ import _get from 'lodash/get'
 import { FormattedMessage } from 'react-intl'
 import { Input } from 'semantic-ui-react'
 
-import { createLinks } from '../../../lib'
+import { createLinks } from '../../../lib/utils/css'
 import { QUESTION_TYPES } from '../../../constants'
 
 interface Props {

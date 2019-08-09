@@ -3,7 +3,12 @@ import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
 import { SizeMe } from 'react-sizeme'
 
-import { BarChart, StackChart, PieChart, TableChart, CloudChart, HistogramChart } from '.'
+import BarChart from './charts/BarChart'
+import StackChart from './charts/StackChart'
+import PieChart from './charts/PieChart'
+import TableChart from './charts/TableChart'
+import CloudChart from './charts/CloudChart'
+import HistogramChart from './charts/HistogramChart'
 import { SESSION_STATUS } from '../../constants'
 
 // TODO

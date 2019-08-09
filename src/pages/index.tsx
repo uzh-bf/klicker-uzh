@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import { Button, List, Input } from 'semantic-ui-react'
 
 import StaticLayout from '../components/layouts/StaticLayout'
-import useLogging from '../lib/useLogging'
+import useLogging from '../lib/hooks/useLogging'
 
 const links = [
   {

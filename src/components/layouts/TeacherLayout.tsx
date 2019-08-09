@@ -3,8 +3,8 @@ import { useRouter } from 'next/router'
 import { FormattedMessage, useIntl } from 'react-intl'
 
 import CommonLayout from './CommonLayout'
-import { Navbar } from '../common/navbar'
-import { Sidebar } from '../common/sidebar'
+import Navbar from '../common/navbar/Navbar'
+import Sidebar from '../common/sidebar/Sidebar'
 
 interface Props {
   actionArea?: React.ReactElement

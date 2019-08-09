@@ -2,7 +2,7 @@ import React from 'react'
 import { Cell, Pie, PieChart as PieChartComponent, ResponsiveContainer, LabelList } from 'recharts'
 
 import { CHART_COLORS, CHART_TYPES } from '../../../constants'
-import { getLabelIn, getLabelOut } from '../../../lib'
+import { getLabelIn, getLabelOut } from '../../../lib/utils/charts'
 
 interface Props {
   data?: {

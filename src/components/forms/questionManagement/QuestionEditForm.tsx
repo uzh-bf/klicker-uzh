@@ -9,9 +9,11 @@ import { Formik } from 'formik'
 
 import FileDropzone from './FileDropzone'
 import FormikInput from '../components/FormikInput'
-import { generateTypesLabel } from '../../../lib'
-import { ContentInput, TagInput } from '../../questions'
-import { FREECreationOptions, SCCreationOptions } from '../../questionTypes'
+import { generateTypesLabel } from '../../../lib/utils/lang'
+import ContentInput from '../../questions/creation/ContentInput'
+import TagInput from '../../questions/creation/TagInput'
+import FREECreationOptions from '../../questionTypes/FREE/FREECreationOptions'
+import SCCreationOptions from '../../questionTypes/SC/SCCreationOptions'
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
 
 const { publicRuntimeConfig } = getConfig()

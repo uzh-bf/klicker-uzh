@@ -1,6 +1,7 @@
 import React from 'react'
 import { useIntl } from 'react-intl'
-import { generateTypesShort } from '../../lib'
+
+import { generateTypesShort } from '../../lib/utils/lang'
 
 interface Props {
   tags: { id: string; name: string }[]

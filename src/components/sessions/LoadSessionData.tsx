@@ -4,7 +4,7 @@ import { useQuery } from '@apollo/react-hooks'
 
 import SessionEvaluationQuery from '../../graphql/queries/SessionEvaluationQuery.graphql'
 import SessionEvaluationPublicQuery from '../../graphql/queries/SessionEvaluationPublicQuery.graphql'
-import { SESSION_STATUS } from '../../lib'
+import { SESSION_STATUS } from '../../constants'
 
 interface Props {
   sessionId: string

@@ -9,16 +9,14 @@ import { Formik } from 'formik'
 import { EditorState } from 'draft-js'
 
 import FileDropzone from './FileDropzone'
-import { ContentInput, TagInput } from '../../questions'
-import {
-  TypeChooser,
-  SCCreationOptions,
-  SCCreationPreview,
-  FREECreationOptions,
-  FREECreationPreview,
-} from '../../questionTypes'
-import { QUESTION_TYPES } from '../../../lib'
-import { QUESTION_GROUPS } from '../../../constants'
+import ContentInput from '../../questions/creation/ContentInput'
+import TagInput from '../../questions/creation/TagInput'
+import TypeChooser from '../../questionTypes/TypeChooser'
+import SCCreationOptions from '../../questionTypes/SC/SCCreationOptions'
+import SCCreationPreview from '../../questionTypes/SC/SCCreationPreview'
+import FREECreationOptions from '../../questionTypes/FREE/FREECreationOptions'
+import FREECreationPreview from '../../questionTypes/FREE/FREECreationPreview'
+import { QUESTION_GROUPS, QUESTION_TYPES } from '../../../constants'
 import FormikInput from '../components/FormikInput'
 
 const { publicRuntimeConfig } = getConfig()

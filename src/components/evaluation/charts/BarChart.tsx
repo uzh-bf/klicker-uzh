@@ -12,7 +12,7 @@ import {
 } from 'recharts'
 
 import { CHART_COLORS, CHART_TYPES } from '../../../constants'
-import { indexToLetter, getLabelIn, getLabelOut } from '../../../lib'
+import { indexToLetter, getLabelIn, getLabelOut } from '../../../lib/utils/charts'
 
 interface Props {
   data?: {

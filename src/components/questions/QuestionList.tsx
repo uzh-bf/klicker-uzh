@@ -5,7 +5,7 @@ import { FormattedMessage } from 'react-intl'
 import { useQuery } from '@apollo/react-hooks'
 
 import Question from './Question'
-import { processItems, buildIndex } from '../../lib'
+import { processItems, buildIndex } from '../../lib/utils/filters'
 import QuestionListQuery from '../../graphql/queries/QuestionListQuery.graphql'
 
 interface Props {

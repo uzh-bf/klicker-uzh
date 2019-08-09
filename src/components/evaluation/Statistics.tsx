@@ -4,7 +4,7 @@ import { FormattedMessage } from 'react-intl'
 import { Input, Popup, Icon } from 'semantic-ui-react'
 import _isNumber from 'lodash/isNumber'
 
-import { EvaluationListItem } from '.'
+import EvaluationListItem from './EvaluationListItem'
 
 interface Props {
   bins: number

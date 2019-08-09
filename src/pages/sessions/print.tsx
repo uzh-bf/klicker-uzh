@@ -8,11 +8,13 @@ import { max, min, mean, median, quantileSeq, std } from 'mathjs'
 import { Button, Checkbox } from 'semantic-ui-react'
 
 import { CHART_DEFAULTS, QUESTION_TYPES } from '../../constants'
-import { toValueArray } from '../../lib'
-import { Chart, Possibilities, VisualizationType } from '../../components/evaluation'
+import { toValueArray } from '../../lib/utils/math'
+import Chart from '../../components/evaluation/Chart'
+import Possibilities from '../../components/evaluation/Possibilities'
+import VisualizationType from '../../components/evaluation/VisualizationType'
 import CommonLayout from '../../components/layouts/CommonLayout'
 import { extractInstancesFromSession } from './evaluation'
-import useLogging from '../../lib/useLogging'
+import useLogging from '../../lib/hooks/useLogging'
 import LoadSessionData from '../../components/sessions/LoadSessionData'
 
 function Print(): React.ReactElement<any> {

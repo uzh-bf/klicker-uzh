@@ -5,11 +5,10 @@ import { useRouter } from 'next/router'
 import { useQuery, useMutation } from '@apollo/react-hooks'
 import { defineMessages, useIntl } from 'react-intl'
 
-import useLogging from '../../lib/useLogging'
-
-import { ConfusionBarometer } from '../../components/confusion'
-import { FeedbackChannel } from '../../components/feedbacks'
-import { SessionTimeline } from '../../components/sessions'
+import useLogging from '../../lib/hooks/useLogging'
+import ConfusionBarometer from '../../components/confusion/ConfusionBarometer'
+import FeedbackChannel from '../../components/feedbacks/FeedbackChannel'
+import SessionTimeline from '../../components/sessions/SessionTimeline'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import AccountSummaryQuery from '../../graphql/queries/AccountSummaryQuery.graphql'
 import RunningSessionQuery from '../../graphql/queries/RunningSessionQuery.graphql'
@@ -23,7 +22,7 @@ import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
 import FeedbackAddedSubscription from '../../graphql/subscriptions/FeedbackAddedSubscription.graphql'
 import ConfusionAddedSubscription from '../../graphql/subscriptions/ConfusionAddedSubscription.graphql'
 import ResetQuestionBlockMutation from '../../graphql/mutations/ResetQuestionBlockMutation.graphql'
-import { Messager } from '../../components/common'
+import Messager from '../../components/common/Messager'
 
 const messages = defineMessages({
   errorLoading: {

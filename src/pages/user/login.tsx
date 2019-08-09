@@ -10,7 +10,7 @@ import { Message } from 'semantic-ui-react'
 import StaticLayout from '../../components/layouts/StaticLayout'
 import LoginForm from '../../components/forms/LoginForm'
 import LoginMutation from '../../graphql/mutations/LoginMutation.graphql'
-import useLogging from '../../lib/useLogging'
+import useLogging from '../../lib/hooks/useLogging'
 
 const messages = defineMessages({
   pageTitle: {

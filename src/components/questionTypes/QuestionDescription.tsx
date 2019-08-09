@@ -2,7 +2,7 @@
 
 import React from 'react'
 
-import { toSanitizedHTML } from '../../lib'
+import { toSanitizedHTML } from '../../lib/utils/html'
 
 interface Props {
   content: object | string

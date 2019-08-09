@@ -4,14 +4,14 @@ import { useMutation } from '@apollo/react-hooks'
 import _debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
 
-import useSortingAndFiltering from '../../lib/useSortingAndFiltering'
-import useLogging from '../../lib/useLogging'
+import useSortingAndFiltering from '../../lib/hooks/useSortingAndFiltering'
+import useLogging from '../../lib/hooks/useLogging'
 import AccountSummaryQuery from '../../graphql/queries/AccountSummaryQuery.graphql'
 import RunningSessionQuery from '../../graphql/queries/RunningSessionQuery.graphql'
 import StartSessionMutation from '../../graphql/mutations/StartSessionMutation.graphql'
 import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
-import { SessionList } from '../../components/sessions'
+import SessionList from '../../components/sessions/SessionList'
 
 const messages = defineMessages({
   pageTitle: {

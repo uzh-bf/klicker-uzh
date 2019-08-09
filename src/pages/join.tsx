@@ -13,8 +13,8 @@ import AddFeedbackMutation from '../graphql/mutations/AddFeedbackMutation.graphq
 import AddResponseMutation from '../graphql/mutations/AddResponseMutation.graphql'
 import JoinSessionQuery from '../graphql/queries/JoinSessionQuery.graphql'
 import UpdatedSessionSubscription from '../graphql/subscriptions/UpdateSessionSubscription.graphql'
-import useLogging from '../lib/useLogging'
-import useFingerprint from '../lib/useFingerprint'
+import useLogging from '../lib/hooks/useLogging'
+import useFingerprint from '../lib/hooks/useFingerprint'
 
 const messages = defineMessages({
   activeQuestionTitle: {
