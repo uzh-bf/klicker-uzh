@@ -1,18 +1,14 @@
-import React, { useState } from 'react'
-import _round from 'lodash/round'
+import React from 'react'
 import _get from 'lodash/get'
 import { defineMessages, useIntl } from 'react-intl'
-import { compose, withProps, branch, renderNothing } from 'recompose'
-import { withRouter } from 'next/router'
-import { graphql } from 'react-apollo'
-import { max, min, mean, median, quantileSeq, std } from 'mathjs'
+import { useRouter } from 'next/router'
 
-import { CHART_DEFAULTS, QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
+import { QUESTION_GROUPS, QUESTION_TYPES } from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
-import { toValueArray } from '../../lib'
 import useLogging from '../../lib/useLogging'
 import { Chart } from '../../components/evaluation'
-import { SessionEvaluationQuery, SessionEvaluationPublicQuery } from '../../graphql'
+import LoadSessionData from '../../components/sessions/LoadSessionData'
+import ComputeActiveInstance from '../../components/sessions/ComputeActiveInstance'
 
 const messages = defineMessages({
   pageTitle: {
@@ -20,20 +16,6 @@ const messages = defineMessages({
     id: 'evaluation.pageTitle',
   },
 })
-
-interface Props {
-  activeInstances?: any[]
-  instanceSummary?: any[]
-  isPublic: boolean
-  sessionId: string
-  sessionStatus: 'CREATED' | 'RUNNING' | 'COMPLETED'
-  showSolution: boolean
-}
-
-const defaultProps = {
-  activeInstances: [],
-  instanceSummary: [],
-}
 
 export function extractInstancesFromSession(session) {
   // reduce question blocks to the active instances
@@ -106,159 +88,92 @@ export function extractInstancesFromSession(session) {
   }
 }
 
-function Evaluation({
-  activeInstances,
-  instanceSummary,
-  isPublic,
-  sessionId,
-  sessionStatus,
-}: Props): React.ReactElement {
+function Evaluation(): React.ReactElement {
   useLogging()
 
   const intl = useIntl()
-  // const router = useRouter()
+  const router = useRouter()
 
-  const [activeInstanceIndex, setActiveInstanceIndex] = useState(() => {
-    const firstActiveIndex = activeInstances.findIndex(instance => instance.blockStatus === 'ACTIVE')
-    return firstActiveIndex >= 0 ? firstActiveIndex : 0
-  })
-  const [activeVisualizations, setActiveVisualizations] = useState(CHART_DEFAULTS)
-  const [bins, setBins] = useState(null)
-  const [showGraph, setShowGraph] = useState(null)
-  const [showSolution, setShowSolution] = useState(sessionStatus !== SESSION_STATUS.RUNNING)
-
-  if (!activeInstances || activeInstances.length === 0) {
-    return <div>No evaluation currently active.</div>
-  }
-
-  const activeInstance = activeInstances[activeInstanceIndex]
-
-  if (activeInstance.question.type === QUESTION_TYPES.FREE_RANGE) {
-    // convert the result data into an array with primitive numbers
-    const valueArray = toValueArray(activeInstance.results.data)
-    const hasResults = valueArray.length > 0
-
-    activeInstance.statistics = {
-      bins,
-      max: hasResults && max(valueArray),
-      mean: hasResults && mean(valueArray),
-      median: hasResults && median(valueArray),
-      min: hasResults && min(valueArray),
-      onChangeBins: e => setBins(+e.target.value),
-      q1: hasResults && quantileSeq(valueArray, 0.25),
-      q3: hasResults && quantileSeq(valueArray, 0.75),
-      sd: hasResults && std(valueArray),
-    }
-  } else {
-    activeInstance.results = {
-      ...activeInstance.results,
-      data:
-        _get(activeInstance, 'results.data') &&
-        activeInstance.results.data.map(({ correct, count, value }) => ({
-          correct,
-          count,
-          percentage: _round(100 * (count / _get(activeInstance, 'results.totalResponses')), 1),
-          value,
-        })),
-      totalResponses: _get(activeInstance, 'results.totalResponses'),
-    }
-  }
-
-  const { results, question, version } = activeInstance
-  const { title, type } = question
-  const { totalResponses, data } = results
-  const { description, options } = question.versions[version]
-
-  const layoutProps = {
-    activeInstances,
-    activeInstance: activeInstanceIndex,
-    activeVisualization: activeVisualizations[type],
-    data,
-    description,
-    instanceSummary,
-    intl,
-    onChangeActiveInstance: setActiveInstanceIndex,
-    onChangeVisualizationType: (questionType, visualizationType) =>
-      setActiveVisualizations({
-        ...activeVisualizations,
-        [questionType]: visualizationType,
-      }),
-    onToggleShowSolution: () => setShowSolution(!showSolution),
-    options,
-    pageTitle: intl.formatMessage(messages.pageTitle),
-    sessionId,
-    showGraph,
-    showSolution,
-    statistics: activeInstance.statistics,
-    title,
-    totalResponses,
-    type,
-  }
+  const isPublic = !!router.query.public
+  const sessionId: string = router.query.sessionId.toString()
 
   return (
-    <EvaluationLayout {...layoutProps}>
-      <Chart
-        activeVisualization={activeVisualizations[type]}
-        data={results.data}
-        handleShowGraph={() => setShowGraph(true)}
-        instanceId={activeInstance.id}
-        isPublic={isPublic}
-        numBins={bins}
-        questionType={type}
-        restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
-        sessionId={sessionId}
-        sessionStatus={sessionStatus}
-        showGraph={showGraph}
-        showSolution={showSolution}
-        statistics={activeInstance.statistics}
-        totalResponses={results.totalResponses}
-      />
-    </EvaluationLayout>
+    <LoadSessionData isPublic={isPublic} sessionId={sessionId}>
+      {({ data, loading }): React.ReactElement => {
+        if (loading || !data) {
+          return null
+        }
+
+        const { activeInstances, sessionStatus, instanceSummary } = extractInstancesFromSession(data)
+
+        return (
+          <ComputeActiveInstance activeInstances={activeInstances} sessionStatus={sessionStatus}>
+            {({
+              activeInstance,
+              activeInstanceIndex,
+              activeVisualizations,
+              showGraph,
+              showSolution,
+              setShowSolution,
+              setActiveInstanceIndex,
+              setActiveVisualizations,
+              setShowGraph,
+              bins,
+            }): React.ReactElement => {
+              const { results, question, version } = activeInstance
+              const { description, options } = question.versions[version]
+
+              const layoutProps = {
+                activeInstances,
+                activeInstance: activeInstanceIndex,
+                activeVisualization: activeVisualizations[question.type],
+                data: results.data,
+                description,
+                instanceSummary,
+                onChangeActiveInstance: setActiveInstanceIndex,
+                onChangeVisualizationType: (questionType, visualizationType) =>
+                  setActiveVisualizations({
+                    ...activeVisualizations,
+                    [questionType]: visualizationType,
+                  }),
+                onToggleShowSolution: () => setShowSolution(!showSolution),
+                options,
+                pageTitle: intl.formatMessage(messages.pageTitle),
+                sessionId,
+                showGraph,
+                showSolution,
+                statistics: activeInstance.statistics,
+                title: question.title,
+                totalResponses: results.totalResponses,
+                type: question.type,
+              }
+
+              return (
+                <EvaluationLayout {...layoutProps}>
+                  <Chart
+                    activeVisualization={activeVisualizations[question.type]}
+                    data={results.data}
+                    handleShowGraph={() => setShowGraph(true)}
+                    instanceId={activeInstance.id}
+                    isPublic={isPublic}
+                    numBins={bins}
+                    questionType={question.type}
+                    restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
+                    sessionId={sessionId}
+                    sessionStatus={sessionStatus}
+                    showGraph={showGraph}
+                    showSolution={showSolution}
+                    statistics={activeInstance.statistics}
+                    totalResponses={results.totalResponses}
+                  />
+                </EvaluationLayout>
+              )
+            }}
+          </ComputeActiveInstance>
+        )
+      }}
+    </LoadSessionData>
   )
 }
 
-Evaluation.defaultProps = defaultProps
-
-export default compose(
-  withRouter,
-  withProps(({ router }) => ({
-    isPublic: !!router.query.public,
-    sessionId: router.query.sessionId,
-  })),
-  branch(
-    ({ isPublic }) => isPublic,
-    graphql(SessionEvaluationPublicQuery, {
-      options: ({ sessionId }: { sessionId: string }) => ({
-        variables: { sessionId },
-      }),
-    }),
-    graphql(SessionEvaluationQuery, {
-      options: ({ sessionId }: { sessionId: string }) => ({
-        variables: { sessionId },
-      }),
-    })
-  ),
-  // if the query is still loading, display nothing
-  branch(
-    ({ data: { loading, session, sessionPublic }, isPublic }) =>
-      loading || (!isPublic && !session) || (isPublic && !sessionPublic),
-    renderNothing
-  ),
-  // override the session evaluation query with a polling query
-  // only if the session is not being publicly accessed
-  branch(
-    ({ data: { session }, isPublic }) => !isPublic && session.status === SESSION_STATUS.RUNNING,
-    graphql(SessionEvaluationQuery, {
-      // refetch the active instances query every 10s
-      options: ({ sessionId }: { sessionId: string }) => ({
-        pollInterval: 7000,
-        variables: { sessionId },
-      }),
-    })
-  ),
-  // if the session is publicly accessed, override the session with its public counterpart
-  withProps(({ data: { session, sessionPublic }, isPublic }) => ({
-    session: isPublic ? sessionPublic : session,
-  })),
-  withProps(({ session }) => extractInstancesFromSession(session))
-)(Evaluation)
+export default Evaluation
