@@ -72,10 +72,13 @@ function SessionCreationForm({
       const blockId = UUIDv4()
 
       // initialize a new empty block at the end
-      const extendedBlocks = sessionBlocks.push({
-        id: blockId,
-        questions: [],
-      })
+      const extendedBlocks = [
+        ...sessionBlocks,
+        {
+          id: blockId,
+          questions: [],
+        },
+      ]
 
       // perform the move between the source and the new block
       return handleSetSessionBlocks(moveQuestion(extendedBlocks, source.droppableId, source.index, blockId, 0, true))
@@ -113,7 +116,7 @@ function SessionCreationForm({
                 <div className="block" key={block.id}>
                   <div className="header">
                     <div>{`Block ${blockIndex + 1}`}</div>
-                    <div>{`(${block.questions.size})`}</div>
+                    <div>{`(${block.questions.length})`}</div>
                   </div>
                   <Droppable droppableId={block.id}>
                     {(provided, snapshot): React.ReactElement => (
@@ -145,7 +148,11 @@ function SessionCreationForm({
                     )}
                   </Droppable>
                   <div className="blockDropzone">
-                    <QuestionDropzone onDrop={(question): void => onExtendBlock(block.id, question)} />
+                    <QuestionDropzone
+                      onDrop={(question): void => {
+                        onExtendBlock(block.id, { ...question, type: question.questionType })
+                      }}
+                    />
                   </div>
                 </div>
               )
@@ -162,7 +169,11 @@ function SessionCreationForm({
                 )}
               </Droppable>
               <div className="blockDropzone">
-                <QuestionDropzone onDrop={onNewBlock} />
+                <QuestionDropzone
+                  onDrop={(question): void => {
+                    onNewBlock({ ...question, type: question.questionType })
+                  }}
+                />
               </div>
             </div>
             {sessionBlocks.size <= 1 && <InfoArea />}

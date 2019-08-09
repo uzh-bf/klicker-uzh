@@ -119,8 +119,9 @@ function Index(): React.ReactElement {
     // reset the checked questions
     handleResetSelection()
 
-    setSessionBlocks(
-      sessionBlocks.push({
+    setSessionBlocks([
+      ...sessionBlocks,
+      {
         id: UUIDv4(),
         questions: selectedItems.items.map(({ id, title, type, version }): any => ({
           id,
@@ -129,8 +130,8 @@ function Index(): React.ReactElement {
           type,
           version,
         })),
-      })
-    )
+      },
+    ])
   }
 
   // build a separate block for each checked question

@@ -174,7 +174,7 @@ function QuestionCreationForm({ initialValues, tags, tagsLoading, onSubmit, onDi
                 min: null,
               },
             },
-            tags: null,
+            tags: [],
             title: '',
             type: QUESTION_TYPES.SC,
           }

@@ -3,7 +3,11 @@ import classNames from 'classnames'
 import { useDrop } from 'react-dnd-cjs'
 import { Icon } from 'semantic-ui-react'
 
-function QuestionDropzone({ onDrop }): React.ReactElement {
+interface Props {
+  onDrop: Function
+}
+
+function QuestionDropzone({ onDrop }: Props): React.ReactElement {
   const [collectedProps, drop] = useDrop({
     accept: 'question',
     drop: item => onDrop(item),

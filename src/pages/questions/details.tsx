@@ -45,7 +45,7 @@ function EditQuestion(): React.ReactElement {
 
   const [activeVersion, setActiveVersion] = useState(() => {
     const versions = _get(questionDetails, 'question.versions')
-    return versions ? versions.length : 1
+    return versions ? versions.length : 0
   })
 
   const onSubmit = id => isNewVersion => async (
@@ -120,6 +120,7 @@ function EditQuestion(): React.ReactElement {
       ),
     })
 
+    setActiveVersion(activeVersion + 1)
     setSubmitting(false)
   }
 

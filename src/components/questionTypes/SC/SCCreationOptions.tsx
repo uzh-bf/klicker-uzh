@@ -50,7 +50,7 @@ function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props)
         </ReactTooltip>
 
         <div className="options">
-          <DragDropContext onDragEnd={handleDragEnd(choices, handleChange)}>
+          <DragDropContext onDragEnd={!disabled && handleDragEnd(choices, handleChange)}>
             <Droppable droppableId="creationOptions">
               {(provided): React.ReactElement => (
                 <div ref={provided.innerRef} {...provided.droppableProps}>
@@ -58,6 +58,7 @@ function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props)
                     ({ correct, name }, index): React.ReactElement => (
                       <SCCreationOption
                         correct={correct}
+                        disabled={disabled}
                         handleCorrectToggle={onToggleOptionCorrect(index)}
                         handleDelete={onDeleteOption(index)}
                         handleSaveNewName={onSaveNewName(index)}

@@ -123,6 +123,8 @@ export function moveQuestion(
   dstQuestionIx: number,
   removeEmpty: boolean = false
 ): any[] {
+  console.log(blocks, srcBlockId, srcQuestionIx, dstBlockId, dstQuestionIx)
+
   // compute the index for both source and destination block
   const srcBlockIx = getIndex(blocks, srcBlockId)
   let dstBlockIx = getIndex(blocks, dstBlockId)

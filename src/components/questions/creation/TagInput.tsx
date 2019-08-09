@@ -57,7 +57,7 @@ function TagInput({ tags, value, onChange, error, touched, disabled }: Props): R
           search
           selection
           disabled={disabled}
-          options={tags}
+          options={tagState}
           value={value}
           onAddItem={onAddNewTag}
           onChange={(_, { value: newVal }) => onChange(newVal)}
