@@ -1,6 +1,6 @@
 import React from 'react'
 import classNames from 'classnames'
-import { useDrop } from 'react-dnd'
+import { useDrop } from 'react-dnd-cjs'
 import { Icon } from 'semantic-ui-react'
 
 function QuestionDropzone({ onDrop }): React.ReactElement {

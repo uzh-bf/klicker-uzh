@@ -3,10 +3,10 @@ import React, { StrictMode } from 'react'
 import Router from 'next/router'
 import getConfig from 'next/config'
 import App, { Container } from 'next/app'
+import HTML5Backend from 'react-dnd-html5-backend-cjs'
 import { ApolloProvider } from '@apollo/react-hooks'
 import { IntlProvider } from 'react-intl'
-import HTML5Backend from 'react-dnd-html5-backend'
-import { DndProvider } from 'react-dnd'
+import { DndProvider } from 'react-dnd-cjs'
 
 import { withApolloClient } from '../lib'
 
