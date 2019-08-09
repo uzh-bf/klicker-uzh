@@ -82,7 +82,7 @@ function QuestionArea({ active, questions, handleNewResponse, shortname, session
     }
 
     return setRemainingQuestions(questions.map((_, ix) => ix))
-  })
+  }, [])
 
   const [activeQuestion, setActiveQuestion] = useState(remainingQuestions[0])
   const [isCollapsed, setIsCollapsed] = useState(true)

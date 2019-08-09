@@ -48,7 +48,7 @@ function FeedbackArea({
     } catch (e) {
       console.error(e)
     }
-  })
+  }, [])
 
   const onNewConfusionTS = () => {
     // send the new confusion entry to the server

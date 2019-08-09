@@ -1,5 +1,5 @@
 /* eslint-disable no-underscore-dangle */
-import React from 'react'
+import React, { StrictMode } from 'react'
 import Router from 'next/router'
 import getConfig from 'next/config'
 import App, { Container } from 'next/app'
@@ -111,7 +111,9 @@ class Klicker extends App {
       <Container>
         <IntlProvider initialNow={now} locale={locale} messages={messages}>
           <ApolloProvider client={apolloClient}>
-            <Component {...pageProps} error={this.state.error} />
+            <StrictMode>
+              <Component {...pageProps} error={this.state.error} />
+            </StrictMode>
           </ApolloProvider>
         </IntlProvider>
       </Container>
