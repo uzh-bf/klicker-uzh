@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import _sortBy from 'lodash/sortBy'
-import { useMutation } from 'react-apollo'
+import { useMutation } from '@apollo/react-hooks'
 import { Button, Table } from 'semantic-ui-react'
 
 import { QUESTION_GROUPS } from '../../../constants'

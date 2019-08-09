@@ -1,6 +1,6 @@
 import React from 'react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { useMutation } from 'react-apollo'
+import { useMutation } from '@apollo/react-hooks'
 import { Message } from 'semantic-ui-react'
 
 import { StaticLayout } from '../../components/layouts'

@@ -3,8 +3,9 @@ import React from 'react'
 import Router from 'next/router'
 import getConfig from 'next/config'
 import App, { Container } from 'next/app'
-import { ApolloProvider } from 'react-apollo'
+import { ApolloProvider } from '@apollo/react-hooks'
 import { IntlProvider } from 'react-intl'
+
 import { withApolloClient } from '../lib'
 
 const { publicRuntimeConfig } = getConfig()

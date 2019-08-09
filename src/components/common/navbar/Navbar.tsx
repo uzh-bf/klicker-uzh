@@ -5,7 +5,7 @@ import getConfig from 'next/config'
 import { useRouter } from 'next/router'
 import _get from 'lodash/get'
 import { Icon, Menu } from 'semantic-ui-react'
-import { useQuery, useMutation } from 'react-apollo'
+import { useQuery, useMutation } from '@apollo/react-hooks'
 
 import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'

@@ -1,6 +1,6 @@
 import React from 'react'
 import _get from 'lodash/get'
-import { useQuery } from 'react-apollo'
+import { useQuery } from '@apollo/react-hooks'
 
 import { SessionEvaluationQuery, SessionEvaluationPublicQuery } from '../../graphql'
 import { SESSION_STATUS } from '../../lib'

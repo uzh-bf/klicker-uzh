@@ -2,7 +2,7 @@ import React from 'react'
 import dayjs from 'dayjs'
 import { Loader, Message } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import { useQuery } from 'react-apollo'
+import { useQuery } from '@apollo/react-hooks'
 
 import Question from './Question'
 import { processItems, buildIndex } from '../../lib'

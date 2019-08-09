@@ -5,7 +5,7 @@ import _debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
 import dayjs from 'dayjs'
 import { defineMessages, useIntl } from 'react-intl'
-import { useQuery, useMutation } from 'react-apollo'
+import { useQuery, useMutation } from '@apollo/react-hooks'
 
 import { withDnD } from '../../lib'
 import useLogging from '../../lib/useLogging'

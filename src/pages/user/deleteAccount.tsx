@@ -1,7 +1,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { useMutation } from 'react-apollo'
+import { useMutation } from '@apollo/react-hooks'
 import { Button, Message } from 'semantic-ui-react'
 import { useRouter } from 'next/router'
 

@@ -2,7 +2,7 @@ import React, { useEffect } from 'react'
 import dayjs from 'dayjs'
 import _get from 'lodash/get'
 import { useRouter } from 'next/router'
-import { useQuery, useMutation } from 'react-apollo'
+import { useQuery, useMutation } from '@apollo/react-hooks'
 import { defineMessages, useIntl } from 'react-intl'
 
 import useLogging from '../../lib/useLogging'

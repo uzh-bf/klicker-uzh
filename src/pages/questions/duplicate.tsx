@@ -1,5 +1,5 @@
 import React from 'react'
-import { useQuery, useMutation } from 'react-apollo'
+import { useQuery, useMutation } from '@apollo/react-hooks'
 import { defineMessages, useIntl } from 'react-intl'
 import { ContentState, convertFromRaw, convertToRaw, EditorState } from 'draft-js'
 import { useRouter } from 'next/router'

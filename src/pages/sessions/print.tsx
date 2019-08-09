@@ -4,7 +4,7 @@ import _round from 'lodash/round'
 import _get from 'lodash/get'
 import { FormattedMessage } from 'react-intl'
 import { useRouter } from 'next/router'
-import { useQuery } from 'react-apollo'
+import { useQuery } from '@apollo/react-hooks'
 import { max, min, mean, median, quantileSeq, std } from 'mathjs'
 import { Button, Checkbox } from 'semantic-ui-react'
 

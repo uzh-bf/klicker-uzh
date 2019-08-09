@@ -1,7 +1,7 @@
 import React from 'react'
 import { Button, Icon, List, Loader, Message } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import { useQuery } from 'react-apollo'
+import { useQuery } from '@apollo/react-hooks'
 
 import { QUESTION_TYPES } from '../../lib'
 import { TagListQuery } from '../../graphql'
