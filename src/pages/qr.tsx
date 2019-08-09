@@ -3,7 +3,7 @@ import getConfig from 'next/config'
 import QRCode from 'qrcode.react'
 import { useRouter } from 'next/router'
 
-import { StaticLayout } from '../components/layouts'
+import StaticLayout from '../components/layouts/StaticLayout'
 import useLogging from '../lib/useLogging'
 
 const { publicRuntimeConfig } = getConfig()

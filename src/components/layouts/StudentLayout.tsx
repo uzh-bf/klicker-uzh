@@ -2,7 +2,7 @@ import React, { useEffect } from 'react'
 import { FormattedMessage } from 'react-intl'
 import { Button } from 'semantic-ui-react'
 
-import { CommonLayout } from '.'
+import CommonLayout from './CommonLayout'
 import { Sidebar } from '../common/sidebar'
 
 interface Props {

@@ -4,7 +4,7 @@ import { useQuery, useMutation } from '@apollo/react-hooks'
 import { defineMessages, useIntl } from 'react-intl'
 import { convertToRaw } from 'draft-js'
 
-import { TeacherLayout } from '../../components/layouts'
+import TeacherLayout from '../../components/layouts/TeacherLayout'
 import { QuestionCreationForm } from '../../components/forms'
 import { getPresignedURLs, uploadFilesToPresignedURLs } from '../../lib'
 import QuestionListQuery from '../../graphql/queries/QuestionListQuery.graphql'

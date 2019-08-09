@@ -5,7 +5,7 @@ import { useMutation } from '@apollo/react-hooks'
 import { Message } from 'semantic-ui-react'
 
 import { Errors } from '../../constants'
-import { StaticLayout } from '../../components/layouts'
+import StaticLayout from '../../components/layouts/StaticLayout'
 import { RegistrationForm } from '../../components/forms'
 import RegistrationMutation from '../../graphql/mutations/RegistrationMutation.graphql'
 import useLogging from '../../lib/useLogging'

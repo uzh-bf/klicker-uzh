@@ -3,7 +3,7 @@ import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { useMutation } from '@apollo/react-hooks'
 import { Message } from 'semantic-ui-react'
 
-import { StaticLayout } from '../../components/layouts'
+import StaticLayout from '../../components/layouts/StaticLayout'
 import { PasswordRequestForm } from '../../components/forms'
 import useLogging from '../../lib/useLogging'
 import RequestPasswordMutation from '../../graphql/mutations/RequestPasswordMutation.graphql'

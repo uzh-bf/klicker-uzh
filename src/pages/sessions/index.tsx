@@ -10,8 +10,7 @@ import AccountSummaryQuery from '../../graphql/queries/AccountSummaryQuery.graph
 import RunningSessionQuery from '../../graphql/queries/RunningSessionQuery.graphql'
 import StartSessionMutation from '../../graphql/mutations/StartSessionMutation.graphql'
 import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
-
-import { TeacherLayout } from '../../components/layouts'
+import TeacherLayout from '../../components/layouts/TeacherLayout'
 import { SessionList } from '../../components/sessions'
 
 const messages = defineMessages({

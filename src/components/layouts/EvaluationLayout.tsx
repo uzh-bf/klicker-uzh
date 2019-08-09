@@ -3,7 +3,7 @@ import classNames from 'classnames'
 import { defineMessages, useIntl } from 'react-intl'
 import { Button, Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
 
-import { CommonLayout } from '.'
+import CommonLayout from './CommonLayout'
 import { Info, Possibilities, Statistics, VisualizationType, CsvExport } from '../evaluation'
 import { QUESTION_GROUPS, CHART_TYPES, QUESTION_TYPES } from '../../constants'
 

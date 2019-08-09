@@ -7,7 +7,7 @@ import _pick from 'lodash/pick'
 import _omitBy from 'lodash/omitBy'
 import _isNil from 'lodash/isNil'
 
-import { TeacherLayout } from '../../components/layouts'
+import TeacherLayout from '../../components/layouts/TeacherLayout'
 import { QuestionCreationForm } from '../../components/forms'
 import { getPresignedURLs, uploadFilesToPresignedURLs, omitDeepArray, omitDeep } from '../../lib'
 import useLogging from '../../lib/useLogging'

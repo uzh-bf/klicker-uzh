@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/router'
 import { FormattedMessage, useIntl } from 'react-intl'
 
-import { CommonLayout } from '.'
+import CommonLayout from './CommonLayout'
 import { Navbar } from '../common/navbar'
 import { Sidebar } from '../common/sidebar'
 

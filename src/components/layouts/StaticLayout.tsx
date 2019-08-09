@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { CommonLayout } from '.'
+import CommonLayout from './CommonLayout'
 
 interface Props {
   children: React.ReactNode

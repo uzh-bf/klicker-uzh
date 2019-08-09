@@ -22,7 +22,7 @@ import DeleteQuestionsMutation from '../../graphql/mutations/DeleteQuestionsMuta
 import QuestionListQuery from '../../graphql/queries/QuestionListQuery.graphql'
 import { SessionEditForm, SessionCreationForm } from '../../components/forms'
 import { QuestionList, TagList, ActionBar } from '../../components/questions'
-import { TeacherLayout } from '../../components/layouts'
+import TeacherLayout from '../../components/layouts/TeacherLayout'
 import { QUESTION_SORTINGS } from '../../constants'
 
 const messages = defineMessages({

@@ -7,7 +7,7 @@ import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { useMutation } from '@apollo/react-hooks'
 import { Message } from 'semantic-ui-react'
 
-import { StaticLayout } from '../../components/layouts'
+import StaticLayout from '../../components/layouts/StaticLayout'
 import { LoginForm } from '../../components/forms'
 import LoginMutation from '../../graphql/mutations/LoginMutation.graphql'
 import useLogging from '../../lib/useLogging'

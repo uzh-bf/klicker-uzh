@@ -5,7 +5,7 @@ import { useApolloClient } from '@apollo/react-hooks'
 import { Message } from 'semantic-ui-react'
 import { useRouter } from 'next/router'
 
-import { StaticLayout } from '../../components/layouts'
+import StaticLayout from '../../components/layouts/StaticLayout'
 import ActivateAccountMutation from '../../graphql/mutations/ActivateAccountMutation.graphql'
 import useLogging from '../../lib/useLogging'
 

@@ -5,7 +5,7 @@ import { useMutation } from '@apollo/react-hooks'
 import { Message } from 'semantic-ui-react'
 import { useRouter } from 'next/router'
 
-import { StaticLayout } from '../../components/layouts'
+import StaticLayout from '../../components/layouts/StaticLayout'
 import { PasswordResetForm } from '../../components/forms'
 import useLogging from '../../lib/useLogging'
 import ChangePasswordMutation from '../../graphql/mutations/ChangePasswordMutation.graphql'
