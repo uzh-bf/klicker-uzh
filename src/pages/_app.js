@@ -8,7 +8,7 @@ import { ApolloProvider } from '@apollo/react-hooks'
 import { IntlProvider } from 'react-intl'
 import { DndProvider } from 'react-dnd-cjs'
 
-import { withApolloClient } from '../lib'
+import withApolloClient from '../lib/withApolloClient'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -50,7 +50,7 @@ class Klicker extends App {
   componentDidMount() {
     if (isProd) {
       if (publicRuntimeConfig.analyticsTrackingID) {
-        const { initGA, logPageView } = require('../lib')
+        const { initGA, logPageView } = require('../lib/utils/analytics')
 
         if (!window.INIT_GA) {
           initGA(publicRuntimeConfig.analyticsTrackingID)
@@ -96,7 +96,7 @@ class Klicker extends App {
       }
 
       if (publicRuntimeConfig.analyticsTrackingID) {
-        const { logException } = require('../lib')
+        const { logException } = require('../lib/utils/analytics')
         logException(error)
       }
     }
