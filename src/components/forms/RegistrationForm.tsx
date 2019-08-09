@@ -6,7 +6,7 @@ import { Button, Checkbox, Form } from 'semantic-ui-react'
 import { object, boolean } from 'yup'
 import { Formik } from 'formik'
 
-import { FormikInput } from '.'
+import FormikInput from './components/FormikInput'
 import validationSchema from './common/validationSchema'
 import messages from './common/messages'
 

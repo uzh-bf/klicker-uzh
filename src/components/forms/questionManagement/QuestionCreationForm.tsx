@@ -19,7 +19,7 @@ import {
 } from '../../questionTypes'
 import { QUESTION_TYPES } from '../../../lib'
 import { QUESTION_GROUPS } from '../../../constants'
-import { FormikInput } from '../components'
+import FormikInput from '../components/FormikInput'
 
 const { publicRuntimeConfig } = getConfig()
 

@@ -8,7 +8,7 @@ import { Button, Form, Dropdown, Message } from 'semantic-ui-react'
 import { Formik } from 'formik'
 
 import FileDropzone from './FileDropzone'
-import { FormikInput } from '../components'
+import FormikInput from '../components/FormikInput'
 import { generateTypesLabel } from '../../../lib'
 import { ContentInput, TagInput } from '../../questions'
 import { FREECreationOptions, SCCreationOptions } from '../../questionTypes'

@@ -6,7 +6,7 @@ import { Message } from 'semantic-ui-react'
 import { useRouter } from 'next/router'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
-import { PasswordResetForm } from '../../components/forms'
+import PasswordResetForm from '../../components/forms/PasswordResetForm'
 import useLogging from '../../lib/useLogging'
 import ChangePasswordMutation from '../../graphql/mutations/ChangePasswordMutation.graphql'
 

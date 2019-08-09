@@ -8,7 +8,7 @@ import { useMutation } from '@apollo/react-hooks'
 import { Message } from 'semantic-ui-react'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
-import { LoginForm } from '../../components/forms'
+import LoginForm from '../../components/forms/LoginForm'
 import LoginMutation from '../../graphql/mutations/LoginMutation.graphql'
 import useLogging from '../../lib/useLogging'
 

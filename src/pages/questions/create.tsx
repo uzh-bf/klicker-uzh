@@ -5,7 +5,7 @@ import { defineMessages, useIntl } from 'react-intl'
 import { convertToRaw } from 'draft-js'
 
 import TeacherLayout from '../../components/layouts/TeacherLayout'
-import { QuestionCreationForm } from '../../components/forms'
+import QuestionCreationForm from '../../components/forms/questionManagement/QuestionCreationForm'
 import { getPresignedURLs, uploadFilesToPresignedURLs } from '../../lib'
 import QuestionListQuery from '../../graphql/queries/QuestionListQuery.graphql'
 import TagListQuery from '../../graphql/queries/TagListQuery.graphql'

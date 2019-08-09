@@ -4,7 +4,8 @@ import _isEmpty from 'lodash/isEmpty'
 import { Formik } from 'formik'
 import { useIntl } from 'react-intl'
 
-import { FormWithLinks, FormikInput } from '.'
+import FormWithLinks from './components/FormWithLinks'
+import FormikInput from './components/FormikInput'
 import validationSchema from './common/validationSchema'
 import messages from './common/messages'
 

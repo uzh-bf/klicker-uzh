@@ -9,7 +9,7 @@ import _isNil from 'lodash/isNil'
 import _get from 'lodash/get'
 
 import TeacherLayout from '../../components/layouts/TeacherLayout'
-import { QuestionEditForm } from '../../components/forms'
+import QuestionEditForm from '../../components/forms/questionManagement/QuestionEditForm'
 import { omitDeep, omitDeepArray, getPresignedURLs, uploadFilesToPresignedURLs } from '../../lib'
 import useLogging from '../../lib/useLogging'
 import TagListQuery from '../../graphql/queries/TagListQuery.graphql'

@@ -9,7 +9,7 @@ import { Form, Button } from 'semantic-ui-react'
 
 import ModifyUserMutation from '../../../graphql/mutations/ModifyUserMutation.graphql'
 import AccountSummaryQuery from '../../../graphql/queries/AccountSummaryQuery.graphql'
-import { FormikInput } from '..'
+import FormikInput from '../components/FormikInput'
 import validationSchema from '../common/validationSchema'
 import messages from '../common/messages'
 import { Errors } from '../../../constants'

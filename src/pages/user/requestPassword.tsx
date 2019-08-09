@@ -4,7 +4,7 @@ import { useMutation } from '@apollo/react-hooks'
 import { Message } from 'semantic-ui-react'
 
 import StaticLayout from '../../components/layouts/StaticLayout'
-import { PasswordRequestForm } from '../../components/forms'
+import PasswordRequestForm from '../../components/forms/PasswordRequestForm'
 import useLogging from '../../lib/useLogging'
 import RequestPasswordMutation from '../../graphql/mutations/RequestPasswordMutation.graphql'
 
