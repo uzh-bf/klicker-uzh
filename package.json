@@ -128,8 +128,8 @@
     "yup": "0.27.0"
   },
   "devDependencies": {
-    "@graphql-codegen/cli": "^1.4.0",
-    "@graphql-codegen/fragment-matcher": "^1.4.0",
+    "@graphql-codegen/cli": "1.4.0",
+    "@graphql-codegen/fragment-matcher": "1.4.0",
     "@testing-library/react": "8.0.7",
     "bundlesize": "0.18.0",
     "enzyme": "3.10.0",
