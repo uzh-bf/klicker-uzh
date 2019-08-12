@@ -19,22 +19,29 @@ const defaultProps = {
 
 function FileDropzone({ disabled, files, onChangeFiles }: Props): React.ReactElement<any> {
   // prepare a callback hook that handles added files
-  const onDrop = useCallback(acceptedFiles => {
-    if (!disabled) {
-      onChangeFiles(
-        files.concat(
-          acceptedFiles.map(file =>
-            Object.assign(file, {
-              preview: URL.createObjectURL(file),
-            })
+  const onDrop = useCallback(
+    acceptedFiles => {
+      if (!disabled) {
+        onChangeFiles(
+          files.concat(
+            acceptedFiles.map(file =>
+              Object.assign({}, file, {
+                preview: URL.createObjectURL(file),
+              })
+            )
           )
         )
-      )
-    }
-  }, [])
+      }
+    },
+    [disabled, files]
+  )
 
   // get properties of the dropzone hook
-  const { getRootProps, getInputProps } = useDropzone({ accept: 'image/*', disabled, onDrop })
+  const { getRootProps, getInputProps } = useDropzone({
+    accept: ['image/png', 'image/jpeg', 'image/gif'],
+    disabled,
+    onDrop,
+  })
 
   const previews = files.map((file, index) => {
     const imageSrc = `${publicRuntimeConfig.s3root}/${file.name}`
