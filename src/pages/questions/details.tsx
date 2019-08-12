@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { convertToRaw } from 'draft-js'
 import { defineMessages, useIntl } from 'react-intl'
@@ -43,10 +43,15 @@ function EditQuestion(): React.ReactElement {
   const [editQuestion, { loading, data, error }] = useMutation(ModifyQuestionMutation)
   const [requestPresignedURL] = useMutation(RequestPresignedURLMutation)
 
-  const [activeVersion, setActiveVersion] = useState(() => {
+  const [activeVersion, setActiveVersion] = useState(0)
+
+  // if the question has finished loading, set the activeVersion state to the latest version
+  useEffect((): void => {
     const versions = _get(questionDetails, 'question.versions')
-    return versions ? versions.length : 0
-  })
+    if (versions) {
+      setActiveVersion(versions.length)
+    }
+  }, [questionLoading])
 
   const onSubmit = id => isNewVersion => async (
     { title: newTitle, content, options, solution, tags: newTags, files },

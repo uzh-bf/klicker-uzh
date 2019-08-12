@@ -112,6 +112,7 @@ function validate({ content, options, tags, title, type }: any): ValidationError
 }
 
 interface Props {
+  isInitialValid?: boolean
   initialValues?: {
     content: any
     files: any[]
@@ -134,10 +135,18 @@ interface Props {
 }
 
 const defaultProps = {
+  isInitialValid: false,
   tags: [],
 }
 
-function QuestionCreationForm({ initialValues, tags, tagsLoading, onSubmit, onDiscard }: Props): React.ReactElement {
+function QuestionCreationForm({
+  isInitialValid,
+  initialValues,
+  tags,
+  tagsLoading,
+  onSubmit,
+  onDiscard,
+}: Props): React.ReactElement {
   const intl = useIntl()
 
   const typeComponents = {
@@ -179,6 +188,7 @@ function QuestionCreationForm({ initialValues, tags, tagsLoading, onSubmit, onDi
             type: QUESTION_TYPES.SC,
           }
         }
+        isInitialValid={isInitialValid}
         validate={validate}
         /* validationSchema={Yup.object().shape({
           content: Yup.string().required(),

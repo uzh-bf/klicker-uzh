@@ -58,7 +58,7 @@ function DuplicateQuestion(): React.ReactElement {
 
         const { tags, title, type, versions } = _pick(questionDetails.question, ['tags', 'title', 'type', 'versions'])
 
-        const duplicateTitle = '(Duplicate)'
+        const duplicateTitle = ' (Duplicate)'
 
         // When duplicating, duplicate newest version of the question
         const initializeVersion = versions.length - 1
@@ -104,9 +104,9 @@ function DuplicateQuestion(): React.ReactElement {
           versions: prepForm,
         }
 
-        // const DuplicationForm = withState(versions.length)(QuestionCreationForm)
         return (
           <QuestionCreationForm
+            isInitialValid
             initialValues={initialValues}
             tags={tagList.tags}
             tagsLoading={tagsLoading}
@@ -118,10 +118,16 @@ function DuplicateQuestion(): React.ReactElement {
               { content, options, tags, title, type, files, solution },
               { setSubmitting }
             ) => {
-              // request presigned urls and filenames for all files
-              const fileEntities = await getPresignedURLs(files, requestPresignedURL)
+              // split files into newly added and existing entities
               const existingFiles = files.filter(file => file.id)
-              // upload (put) the files to the corresponding presigned urls
+              const newFiles = files.filter(file => !file.id)
+
+              // request presigned urls and filenames for newly added files
+              const fileEntities = await getPresignedURLs(newFiles, requestPresignedURL)
+
+              console.log(existingFiles, newFiles, fileEntities)
+
+              // upload (put) the new files to the corresponding presigned urls
               await uploadFilesToPresignedURLs(fileEntities)
 
               // combine existing files and newly uploaded files into a single array
@@ -129,9 +135,13 @@ function DuplicateQuestion(): React.ReactElement {
                 fileEntities.map(({ id: fileId, file, fileName }) => ({
                   id: fileId,
                   name: fileName,
+                  originalName: file.name,
                   type: file.type,
                 }))
               )
+
+              console.log(allFiles)
+
               // create the question
               await createQuestion({
                 refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
@@ -141,7 +151,6 @@ function DuplicateQuestion(): React.ReactElement {
                     files: omitDeepArray(allFiles, '__typename'),
                     // HACK: omitDeep for typename removal
                     // TODO: check https://github.com/apollographql/apollo-client/issues/1564
-                    // this shouldn't be necessary at all
                     options: options && omitDeep(options, '__typename'),
                     solution,
                     tags,
