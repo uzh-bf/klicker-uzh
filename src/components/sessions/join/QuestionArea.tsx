@@ -63,6 +63,14 @@ const defaultProps = {
 function QuestionArea({ active, questions, handleNewResponse, shortname, sessionId }: Props): React.ReactElement {
   const [remainingQuestions, setRemainingQuestions] = useState([])
 
+  const [activeQuestion, setActiveQuestion] = useState(() => remainingQuestions[0])
+  const [isCollapsed, setIsCollapsed] = useState(true)
+  const [{ inputValue, inputValid, inputEmpty }, setInputState] = useState({
+    inputEmpty: true,
+    inputValid: false,
+    inputValue: undefined,
+  })
+
   useEffect((): void => {
     try {
       if (window.localStorage) {
@@ -70,30 +78,25 @@ function QuestionArea({ active, questions, handleNewResponse, shortname, session
           responses: [],
         }
 
-        return setRemainingQuestions(
-          questions.reduce((indices, { id, execution }, index): any[] => {
-            if (storedResponses.responses.includes(`${id}-${execution}`)) {
-              return indices
-            }
+        const remaining = questions.reduce((indices, { id, execution }, index): any[] => {
+          if (storedResponses.responses.includes(`${id}-${execution}`)) {
+            return indices
+          }
 
-            return [...indices, index]
-          }, [])
-        )
+          return [...indices, index]
+        }, [])
+
+        setActiveQuestion(remaining[0])
+        return setRemainingQuestions(remaining)
       }
     } catch (e) {
       console.error(e)
     }
 
-    return setRemainingQuestions(questions.map((_, ix) => ix))
+    const remaining = questions.map((_, ix) => ix)
+    setActiveQuestion(remaining[0])
+    setRemainingQuestions(remaining)
   }, [])
-
-  const [activeQuestion, setActiveQuestion] = useState(remainingQuestions[0])
-  const [isCollapsed, setIsCollapsed] = useState(true)
-  const [{ inputValue, inputValid, inputEmpty }, setInputState] = useState({
-    inputEmpty: true,
-    inputValid: false,
-    inputValue: undefined,
-  })
 
   const onActiveChoicesChange = (type): Function => (choice): Function => (): void => {
     const validateChoices = newValue => (type === QUESTION_TYPES.SC ? newValue.length === 1 : newValue.length > 0)

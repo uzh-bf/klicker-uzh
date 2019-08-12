@@ -17,62 +17,76 @@ const messages = defineMessages({
   },
 })
 
-export function extractInstancesFromSession(session) {
+export function reduceActiveInstances(allInstances, { instances, status }, index) {
+  // inject the status of the block into the instance object
+  const instancesWithBlockStatus = instances.map(instance => ({
+    ...instance,
+    blockNumber: index + 1,
+    blockStatus: status,
+  }))
+  // reduce to a list of all instances, no matter the block status
+  // reduce array of arrays [[], [], []] to [...]
+  return [...allInstances, ...instancesWithBlockStatus]
+}
+
+export function mapActiveInstance(activeInstance) {
+  // map the array of all instances with the custom mapper
+  if (QUESTION_GROUPS.CHOICES.includes(activeInstance.question.type)) {
+    return {
+      ...activeInstance,
+      results: {
+        data: activeInstance.question.versions[activeInstance.version].options[
+          activeInstance.question.type
+        ].choices.map((choice, index) => ({
+          correct: choice.correct,
+          count: _get(activeInstance, `results.CHOICES[${index}]`) || 0,
+          value: choice.name,
+        })),
+        totalResponses: _get(activeInstance, 'results.totalParticipants') || 0,
+      },
+    }
+  }
+
+  if (QUESTION_GROUPS.FREE.includes(activeInstance.question.type)) {
+    let data = _get(activeInstance, 'results.FREE') || []
+
+    // values in FREE_RANGE questions need to be numerical
+    if (activeInstance.question.type === QUESTION_TYPES.FREE_RANGE) {
+      data = data.map(({ value, ...rest }) => ({
+        ...rest,
+        value: +value,
+      }))
+    }
+
+    return {
+      ...activeInstance,
+      results: {
+        data,
+        totalResponses: _get(activeInstance, 'results.totalParticipants') || 0,
+      },
+    }
+  }
+
+  return activeInstance
+}
+
+export function extractInstancesFromSession(data) {
+  const blocks = _get(data, 'session.blocks')
+  if (!blocks) {
+    console.error('no blocks', data)
+    return {
+      activeInstances: [],
+      instanceSummary: [],
+      sessionStatus: _get(data, 'session.status'),
+    }
+  }
+
   // reduce question blocks to the active instances
-  const activeInstances = session.blocks
+  const activeInstances = blocks
     // filter out future blocks as we don't want to display them too early
     .filter(block => block.status !== 'PLANNED')
-    .reduce((allInstances, { instances, status }, index) => {
-      // inject the status of the block into the instance object
-      const instancesWithBlockStatus = instances.map(instance => ({
-        ...instance,
-        blockNumber: index + 1,
-        blockStatus: status,
-      }))
-      // reduce to a list of all instances, no matter the block status
-      // reduce array of arrays [[], [], []] to [...]
-      return [...allInstances, ...instancesWithBlockStatus]
-    }, [])
-    .map(activeInstance => {
-      // map the array of all instances with the custom mapper
-      if (QUESTION_GROUPS.CHOICES.includes(activeInstance.question.type)) {
-        return {
-          ...activeInstance,
-          results: {
-            data: activeInstance.question.versions[activeInstance.version].options[
-              activeInstance.question.type
-            ].choices.map((choice, index) => ({
-              correct: choice.correct,
-              count: _get(activeInstance, `results.CHOICES[${index}]`) || 0,
-              value: choice.name,
-            })),
-            totalResponses: _get(activeInstance, 'results.totalParticipants') || 0,
-          },
-        }
-      }
-
-      if (QUESTION_GROUPS.FREE.includes(activeInstance.question.type)) {
-        let data = _get(activeInstance, 'results.FREE') || []
-
-        // values in FREE_RANGE questions need to be numerical
-        if (activeInstance.question.type === QUESTION_TYPES.FREE_RANGE) {
-          data = data.map(({ value, ...rest }) => ({
-            ...rest,
-            value: +value,
-          }))
-        }
-
-        return {
-          ...activeInstance,
-          results: {
-            data,
-            totalResponses: _get(activeInstance, 'results.totalParticipants') || 0,
-          },
-        }
-      }
-
-      return activeInstance
-    })
+    .reduce(reduceActiveInstances, [])
+    .map(mapActiveInstance)
 
   return {
     activeInstances,
@@ -84,7 +98,7 @@ export function extractInstancesFromSession(session) {
       title: question.title,
       totalResponses: _get(results, 'totalResponses') || 0,
     })),
-    sessionStatus: session.status,
+    sessionStatus: _get(data, 'session.status'),
   }
 }
 
@@ -99,8 +113,8 @@ function Evaluation(): React.ReactElement {
 
   return (
     <LoadSessionData isPublic={isPublic} sessionId={sessionId}>
-      {({ data, loading }): React.ReactElement => {
-        if (loading || !data) {
+      {({ data, loading, error }): React.ReactElement => {
+        if (loading || error || !_get(data, 'session.blocks')) {
           return null
         }
 
