@@ -25,7 +25,7 @@ function FileDropzone({ disabled, files, onChangeFiles }: Props): React.ReactEle
         onChangeFiles(
           files.concat(
             acceptedFiles.map(file =>
-              Object.assign({}, file, {
+              Object.assign(file, {
                 preview: URL.createObjectURL(file),
               })
             )

@@ -285,7 +285,10 @@ function QuestionEditForm({
                   <FileDropzone
                     disabled={!isNewVersion}
                     files={values.files}
-                    onChangeFiles={newFiles => setFieldValue('files', newFiles)}
+                    onChangeFiles={newFiles => {
+                      setFieldTouched('files', true, false)
+                      setFieldValue('files', newFiles)
+                    }}
                   />
                 </div>
               )}
