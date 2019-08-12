@@ -303,13 +303,7 @@ function QuestionCreationForm({
                   )}
                 </Button>
 
-                <Button
-                  primary
-                  className="save"
-                  disabled={!_isEmpty(errors) || _isEmpty(touched)}
-                  loading={isSubmitting}
-                  type="submit"
-                >
+                <Button primary className="save" disabled={!_isEmpty(errors)} loading={isSubmitting} type="submit">
                   <FormattedMessage defaultMessage="Save" id="common.button.save" />
                 </Button>
               </div>
