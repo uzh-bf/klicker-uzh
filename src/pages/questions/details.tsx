@@ -57,8 +57,6 @@ function EditQuestion(): React.ReactElement {
     { title: newTitle, content, options, solution, tags: newTags, files },
     { setSubmitting }
   ) => {
-    console.log(files)
-
     // split files into newly added and existing entities
     const existingFiles = files.filter(file => file.id)
     const newFiles = files.filter(file => !file.id)

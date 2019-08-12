@@ -43,6 +43,54 @@ function DuplicateQuestion(): React.ReactElement {
   const [createQuestion] = useMutation(CreateQuestionMutation)
   const [requestPresignedURL] = useMutation(RequestPresignedURLMutation)
 
+  const onSubmit = async (
+    // eslint-disable-next-line no-shadow
+    { content, options, tags, title, type, files, solution },
+    { setSubmitting }
+  ) => {
+    // split files into newly added and existing entities
+    const existingFiles = files.filter(file => file.id)
+    const newFiles = files.filter(file => !file.id)
+
+    // request presigned urls and filenames for newly added files
+    const fileEntities = await getPresignedURLs(newFiles, requestPresignedURL)
+
+    // upload (put) the new files to the corresponding presigned urls
+    await uploadFilesToPresignedURLs(fileEntities)
+
+    // combine existing files and newly uploaded files into a single array
+    const allFiles = existingFiles.concat(
+      fileEntities.map(({ id: fileId, file, fileName }) => ({
+        id: fileId,
+        name: fileName,
+        originalName: file.name,
+        type: file.type,
+      }))
+    )
+
+    // create the question
+    await createQuestion({
+      refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
+      variables: _omitBy(
+        {
+          content: JSON.stringify(convertToRaw(content.getCurrentContent())),
+          files: omitDeepArray(allFiles, '__typename'),
+          // HACK: omitDeep for typename removal
+          // TODO: check https://github.com/apollographql/apollo-client/issues/1564
+          options: options && omitDeep(options, '__typename'),
+          solution,
+          tags,
+          title,
+          type,
+        },
+        _isNil
+      ),
+    })
+    setSubmitting(false)
+
+    router.push('/questions')
+  }
+
   return (
     <TeacherLayout
       navbar={{
@@ -113,57 +161,7 @@ function DuplicateQuestion(): React.ReactElement {
             // handle discarding a new question
             onDiscard={() => router.push('/questions')}
             // handle submitting a new question
-            onSubmit={async (
-              // eslint-disable-next-line no-shadow
-              { content, options, tags, title, type, files, solution },
-              { setSubmitting }
-            ) => {
-              // split files into newly added and existing entities
-              const existingFiles = files.filter(file => file.id)
-              const newFiles = files.filter(file => !file.id)
-
-              // request presigned urls and filenames for newly added files
-              const fileEntities = await getPresignedURLs(newFiles, requestPresignedURL)
-
-              console.log(existingFiles, newFiles, fileEntities)
-
-              // upload (put) the new files to the corresponding presigned urls
-              await uploadFilesToPresignedURLs(fileEntities)
-
-              // combine existing files and newly uploaded files into a single array
-              const allFiles = existingFiles.concat(
-                fileEntities.map(({ id: fileId, file, fileName }) => ({
-                  id: fileId,
-                  name: fileName,
-                  originalName: file.name,
-                  type: file.type,
-                }))
-              )
-
-              console.log(allFiles)
-
-              // create the question
-              await createQuestion({
-                refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
-                variables: _omitBy(
-                  {
-                    content: JSON.stringify(convertToRaw(content.getCurrentContent())),
-                    files: omitDeepArray(allFiles, '__typename'),
-                    // HACK: omitDeep for typename removal
-                    // TODO: check https://github.com/apollographql/apollo-client/issues/1564
-                    options: options && omitDeep(options, '__typename'),
-                    solution,
-                    tags,
-                    title,
-                    type,
-                  },
-                  _isNil
-                ),
-              })
-              setSubmitting(false)
-
-              router.push('/questions')
-            }}
+            onSubmit={onSubmit}
           />
         )
       }}
