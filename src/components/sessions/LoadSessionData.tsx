@@ -31,16 +31,16 @@ function LoadSessionData({ sessionId, children, isPublic }: Props): React.ReactE
 
   // if the session is public, return only public data
   if (isPublic) {
-    return children(sessionPublic)
+    return children({ ...sessionPublic, session: _get(sessionPublic, 'data.sessionPublic') })
   }
 
   // if the session is running, return a refetching query
   if (_get(session, 'data.status') === SESSION_STATUS.RUNNING) {
-    return children(sessionWithRefetch)
+    return children({ ...sessionWithRefetch, session: _get(sessionWithRefetch, 'data.session') })
   }
 
   // return the session without refetch per default
-  return children(session)
+  return children({ ...session, session: _get(session, 'data.session') })
 }
 
 export default LoadSessionData

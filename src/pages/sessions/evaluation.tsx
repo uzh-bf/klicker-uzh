@@ -70,14 +70,14 @@ export function mapActiveInstance(activeInstance) {
   return activeInstance
 }
 
-export function extractInstancesFromSession(data) {
-  const blocks = _get(data, 'session.blocks')
+export function extractInstancesFromSession(session) {
+  const blocks = _get(session, 'blocks')
   if (!blocks) {
-    console.error('no blocks', data)
+    console.error('no blocks', session)
     return {
       activeInstances: [],
       instanceSummary: [],
-      sessionStatus: _get(data, 'session.status'),
+      sessionStatus: _get(session, 'status'),
     }
   }
 
@@ -98,7 +98,7 @@ export function extractInstancesFromSession(data) {
       title: question.title,
       totalResponses: _get(results, 'totalResponses') || 0,
     })),
-    sessionStatus: _get(data, 'session.status'),
+    sessionStatus: _get(session, 'status'),
   }
 }
 
@@ -113,12 +113,12 @@ function Evaluation(): React.ReactElement {
 
   return (
     <LoadSessionData isPublic={isPublic} sessionId={sessionId}>
-      {({ data, loading, error }): React.ReactElement => {
-        if (loading || error || !_get(data, 'session.blocks')) {
+      {({ session, loading, error }): React.ReactElement => {
+        if (loading || error || !_get(session, 'blocks')) {
           return null
         }
 
-        const { activeInstances, sessionStatus, instanceSummary } = extractInstancesFromSession(data)
+        const { activeInstances, sessionStatus, instanceSummary } = extractInstancesFromSession(session)
 
         return (
           <ComputeActiveInstance activeInstances={activeInstances} sessionStatus={sessionStatus}>
