@@ -60,7 +60,7 @@ function SessionEditForm({
         })),
       }))
     )
-  }, [router.query.editSessionId])
+  }, [router.query.editSessionId, data.session])
 
   if (loading || !data.session) {
     return null
