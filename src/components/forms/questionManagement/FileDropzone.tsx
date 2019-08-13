@@ -52,7 +52,7 @@ function FileDropzone({ disabled, files, onChangeFiles }: Props): React.ReactEle
             <Card.Meta>
               <span className="imageIndex">{`#${index + 1}`}</span>
             </Card.Meta>
-            <Image height="auto" src={file.preview || imageSrc} width="100%" />
+            <Image crossOrigin="anonymous" height="auto" src={file.preview || imageSrc} width="100%" />
             <Card.Content extra>
               <Button
                 basic
