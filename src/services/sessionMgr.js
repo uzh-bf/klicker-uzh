@@ -52,7 +52,7 @@ async function publishSessionUpdate({ sessionId, activeBlock }) {
           content: versionInfo.content,
           description: versionInfo.description,
           options: versionInfo.options,
-          files: versionInfo.files,
+          files: versionInfo.files.map(el => ({ ...el, id: el._id })),
         }
       })
     }
@@ -509,10 +509,12 @@ const sessionAction = async ({ sessionId, userId }, actionType) => {
         session.activeBlock = -1
         session.activeStep = 0
         session.activeInstances = []
+        session.confusionTS = []
+        session.feedbacks = []
+
         for (let i = 0; i < session.blocks.length; i += 1) {
           session.blocks[i].status = QUESTION_BLOCK_STATUS.PLANNED
           session.blocks[i].execution = 1
-
           // TODO: reset any results that are already present (reset instances)
         }
       }
