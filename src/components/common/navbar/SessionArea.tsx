@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { Button, Icon, Menu, Popup, Modal, Embed } from 'semantic-ui-react'
-import { defineMessages, FormattedMessage, IntlShape } from 'react-intl'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 
 const messages = defineMessages({
   support: {
@@ -16,7 +16,6 @@ const messages = defineMessages({
 })
 
 interface Props {
-  intl: IntlShape
   sessionId?: string
 }
 
@@ -24,7 +23,8 @@ const defaultProps = {
   sessionId: undefined,
 }
 
-function SessionArea({ intl, sessionId }: Props): React.ReactElement<any> {
+function SessionArea({ sessionId }: Props): React.ReactElement {
+  const intl = useIntl()
   return (
     <>
       <Menu.Item button>
@@ -87,37 +87,35 @@ function SessionArea({ intl, sessionId }: Props): React.ReactElement<any> {
         </Popup.Content>
       </Popup>
 
-      <style jsx>
-        {`
-          h3 {
-            font-size: 1.2rem;
-          }
+      <style jsx>{`
+        h3 {
+          font-size: 1.2rem;
+        }
 
-          h4 {
-            font-size: 1rem;
-            margin: 0;
-          }
+        h4 {
+          font-size: 1rem;
+          margin: 0;
+        }
 
-          .popupContent {
-            padding: 0;
+        .popupContent {
+          padding: 0;
 
-            :global(.button) {
-              width: 100%;
-              margin-bottom: 0.5rem;
-            }
+          :global(.button) {
+            width: 100%;
+            margin-bottom: 0.5rem;
           }
+        }
 
-          .popupHelp {
-            width: 20rem;
-          }
+        .popupHelp {
+          width: 20rem;
+        }
 
-          .popupChanges {
-            overflow: auto;
-            max-height: 40rem;
-            width: 35rem;
-          }
-        `}
-      </style>
+        .popupChanges {
+          overflow: auto;
+          max-height: 40rem;
+          width: 35rem;
+        }
+      `}</style>
     </>
   )
 }

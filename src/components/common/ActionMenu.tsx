@@ -1,0 +1,100 @@
+import React from 'react'
+import { Button, Progress } from 'semantic-ui-react'
+import { FormattedMessage } from 'react-intl'
+
+interface Props {
+  activeIndex: number
+  isSkipModeActive?: boolean
+  isSubmitDisabled?: boolean
+  numItems: number
+  onSubmit: any
+}
+
+const defaultProps = {
+  isSkipModeActive: true,
+  isSubmitDisabled: false,
+}
+
+function ActionMenu({
+  activeIndex,
+  isSkipModeActive,
+  isSubmitDisabled,
+  numItems,
+  // items,
+  // setActiveIndex,
+  onSubmit,
+}: Props): React.ReactElement {
+  return (
+    <div className="actionMenu">
+      {/* <Menu borderless className="noBorder">
+        {items.map(({ done }, index) => (
+          <Menu.Item
+            active={index === activeIndex}
+            disabled={done}
+            icon={done ? 'checkmark' : 'hand pointer'}
+            onClick={setActiveIndex(index)}
+          />
+        ))}
+        <Menu.Item className="submitButton" position="right">
+          <Button fluid primary disabled={isSubmitDisabled} onClick={onSubmit}>
+            {isSkipModeActive ? (
+              <FormattedMessage defaultMessage="Skip" id="common.string.skip" />
+            ) : (
+              <FormattedMessage defaultMessage="Submit" id="common.string.submit" />
+            )}
+          </Button>
+        </Menu.Item>
+          </Menu> */}
+      <div className="progress">
+        <Progress autoSuccess progress="ratio" total={numItems} value={activeIndex} />
+      </div>
+      <div className="actions">
+        <Button fluid disabled={isSubmitDisabled} primary={!isSkipModeActive} onClick={onSubmit}>
+          {isSkipModeActive ? (
+            <FormattedMessage defaultMessage="Skip" id="common.button.skip" />
+          ) : (
+            <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+          )}
+        </Button>
+      </div>
+
+      <style jsx>{`
+        @import 'src/theme';
+
+        .actionMenu {
+          align-items: center;
+          border-top: 1px solid $color-primary-20p;
+          display: flex;
+          flex-direction: row;
+
+          padding: 0.3rem;
+
+          .progress {
+            flex: 1;
+            margin-right: 0.5rem;
+
+            :global(.ui.progress) {
+              margin: 0;
+            }
+          }
+
+          .actions {
+            flex: 0 0 7rem;
+
+            :global(button.primary.button) {
+              margin: 0;
+            }
+          }
+
+          @include desktop-tablet-only {
+            padding: 0.5rem 1rem;
+          }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+ActionMenu.defaultProps = defaultProps
+
+export default ActionMenu

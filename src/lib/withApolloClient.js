@@ -2,7 +2,7 @@
 /* eslint-disable react/prop-types */
 import React from 'react'
 import Head from 'next/head'
-import { getDataFromTree } from 'react-apollo'
+import { getDataFromTree } from '@apollo/react-ssr'
 
 import initApollo from './initApollo'
 

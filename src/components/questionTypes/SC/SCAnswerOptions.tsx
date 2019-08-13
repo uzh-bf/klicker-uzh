@@ -14,7 +14,7 @@ interface Props {
 
 const defaultProps = {
   disabled: false,
-  onChange: f => f,
+  onChange: (f): any => f,
   options: [],
   value: [],
 }

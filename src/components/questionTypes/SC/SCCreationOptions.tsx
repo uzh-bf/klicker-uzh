@@ -9,10 +9,10 @@ import SCCreationOption from './SCCreationOption'
 import { updateArrayElement, handleDragEnd, deleteArrayElement } from '../../../lib/utils/move'
 
 interface Props {
-  dirty: boolean
+  dirty?: boolean
   disabled: boolean
   onChange: any
-  invalid: boolean
+  invalid?: boolean
   value: {
     choices: { correct: boolean; name: string }[]
   }
@@ -21,16 +21,16 @@ interface Props {
 function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props): React.ReactElement {
   const { choices } = value
 
-  const handleChange = newChoices => onChange({ ...value, choices: newChoices })
-  const onNewOption = newOption => handleChange([...choices, newOption])
-  const onToggleOptionCorrect = (index: number) => () => {
+  const handleChange = (newChoices): void => onChange({ ...value, choices: newChoices })
+  const onNewOption = (newOption): void => handleChange([...choices, newOption])
+  const onToggleOptionCorrect = (index: number): Function => (): void => {
     const option = choices[index]
     handleChange(updateArrayElement(choices, index, { correct: !option.correct }))
   }
-  const onSaveNewName = (index: number) => ({ newName }): void => {
+  const onSaveNewName = (index: number): Function => ({ newName }): void => {
     handleChange(updateArrayElement(choices, index, { name: newName }))
   }
-  const onDeleteOption = (index: number) => () => handleChange(deleteArrayElement(choices, index))
+  const onDeleteOption = (index: number): Function => (): void => handleChange(deleteArrayElement(choices, index))
 
   return (
     <div className="SCCreationOptions">
@@ -50,7 +50,7 @@ function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props)
         </ReactTooltip>
 
         <div className="options">
-          <DragDropContext onDragEnd={handleDragEnd(choices, handleChange)}>
+          <DragDropContext onDragEnd={!disabled && handleDragEnd(choices, handleChange)}>
             <Droppable droppableId="creationOptions">
               {(provided): React.ReactElement => (
                 <div ref={provided.innerRef} {...provided.droppableProps}>
@@ -58,6 +58,7 @@ function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props)
                     ({ correct, name }, index): React.ReactElement => (
                       <SCCreationOption
                         correct={correct}
+                        disabled={disabled}
                         handleCorrectToggle={onToggleOptionCorrect(index)}
                         handleDelete={onDeleteOption(index)}
                         handleSaveNewName={onSaveNewName(index)}
