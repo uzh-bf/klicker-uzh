@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.0
+
+- TBD
+
 ## 1.1.0
 
 - Perform major upgrade to NextJS 7.0.0 with Webpack 4

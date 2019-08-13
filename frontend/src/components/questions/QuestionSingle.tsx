@@ -1,10 +1,10 @@
 import React from 'react'
 import { Icon } from 'semantic-ui-react'
-import { injectIntl, IntlShape } from 'react-intl'
-import { generateTypesShort } from '../../lib'
+import { useIntl } from 'react-intl'
+
+import { generateTypesShort } from '../../lib/utils/lang'
 
 interface Props {
-  intl: IntlShape
   onDelete?: () => void
   title: string
   totalParticipants?: number
@@ -18,7 +18,9 @@ const defaultProps = {
   version: 0,
 }
 
-function QuestionSingle({ type, intl, title, totalParticipants, version, onDelete }: Props): React.ReactElement {
+function QuestionSingle({ type, title, totalParticipants, version, onDelete }: Props): React.ReactElement {
+  const intl = useIntl()
+
   return (
     <div className="questionSingle">
       <div className="top">
@@ -85,4 +87,4 @@ function QuestionSingle({ type, intl, title, totalParticipants, version, onDelet
 
 QuestionSingle.defaultProps = defaultProps
 
-export default injectIntl(QuestionSingle)
+export default QuestionSingle

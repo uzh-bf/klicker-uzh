@@ -23,7 +23,7 @@
   "createQuestion.button.backToPool": "Zurück zum Fragepool",
   "createQuestion.contentInput.label": "Frage",
   "createQuestion.contentInput.tooltip": "Geben Sie die Frage ein, die Sie den Teilnehmenden stellen möchten.",
-  "createQuestion.filesLabel": "Angehängte Bilder (Beta)",
+  "createQuestion.filesLabel": "Angehängte Bilder",
   "createQuestion.options.max": "Max",
   "createQuestion.options.min": "Min",
   "createQuestion.optionsFREE.label": "Einschränkungen",

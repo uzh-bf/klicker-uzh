@@ -1,5 +1,6 @@
-/* eslint-disable babel/quotes */
+/* eslint-disable babel/quotes, no-unused-vars, @typescript-eslint/no-unused-vars */
 
+require('full-icu')
 const IntlPolyfill = require('intl')
 const glob = require('glob')
 const cookieParser = require('cookie-parser')
@@ -123,7 +124,7 @@ const languages = glob.sync(`${APP_DIR}/lang/*.json`).map(f => basename(f, '.jso
 const localeDataCache = new Map()
 function getLocaleDataScript(locale) {
   if (!localeDataCache.has(locale)) {
-    const localeDataFile = require.resolve(`react-intl/locale-data/${locale}`)
+    const localeDataFile = require.resolve(`@formatjs/intl-relativetimeformat/dist/locale-data/${locale}`)
     const localeDataScript = readFileSync(localeDataFile, 'utf8')
     localeDataCache.set(locale, localeDataScript)
   }
@@ -163,7 +164,7 @@ function setupLocale(req, res) {
   const { locale, setCookie } = getLocale(req)
 
   req.locale = locale
-  req.localeDataScript = getLocaleDataScript(locale)
+  // req.localeDataScript = getLocaleDataScript(locale)
   req.messages = isDev ? {} : getMessages(locale)
 
   // set a locale cookie with the specified language

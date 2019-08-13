@@ -1,4 +1,4 @@
-/* eslint-disable import/no-extraneous-dependencies */
+/* eslint-disable import/no-extraneous-dependencies, no-param-reassign */
 
 const webpack = require('webpack')
 const withCSS = require('@zeit/next-css')
@@ -70,6 +70,13 @@ module.exports = phase => {
           },
         ],
       })
+
+      webpackConfig.module.rules.push({
+        test: /\.mjs$/,
+        type: 'javascript/auto',
+      })
+
+      webpackConfig.resolve.extensions = ['.ts', '.tsx', '.mjs', '.js']
 
       return webpackConfig
     },

@@ -16,9 +16,9 @@ function SCCreationPlaceholder({ handleSave }: Props): React.ReactElement {
   const [inputMode, setInputMode] = useState(false)
   const [name, setName] = useState('')
 
-  const onCorrectToggle = (): void => setCorrect(prevCorrect => !prevCorrect)
+  const onCorrectToggle = (): void => setCorrect((prevCorrect): boolean => !prevCorrect)
   const onInputModeToggle = (): void => {
-    setInputMode(prevInputMode => !prevInputMode)
+    setInputMode((prevInputMode): boolean => !prevInputMode)
     focusField.current.focus()
   }
   const onNameChange = (e): void => setName(e.target.value)

@@ -56,7 +56,6 @@
                     "lodash",
                     "recompose",
                     "semantic-ui-react",
-                    "ramda"
                  ]
               }
            ],

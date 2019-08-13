@@ -1,12 +1,14 @@
 /* eslint-disable no-underscore-dangle */
-import React from 'react'
+import React, { StrictMode } from 'react'
 import Router from 'next/router'
 import getConfig from 'next/config'
 import App, { Container } from 'next/app'
-import { ApolloProvider } from 'react-apollo'
-import { IntlProvider, addLocaleData } from 'react-intl'
+import HTML5Backend from 'react-dnd-html5-backend-cjs'
+import { ApolloProvider } from '@apollo/react-hooks'
+import { IntlProvider } from 'react-intl'
+import { DndProvider } from 'react-dnd-cjs'
 
-import { withApolloClient } from '../lib'
+import withApolloClient from '../lib/withApolloClient'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -19,8 +21,11 @@ const LogRocket = publicRuntimeConfig.logrocketAppID && require('logrocket')
 // locale data was added to the page by `pages/_document.js`. This only happens
 // once, on initial page load in the browser.
 if (typeof window !== 'undefined' && window.ReactIntlLocaleData) {
+  import('intl-pluralrules')
+  import('@formatjs/intl-relativetimeformat/polyfill')
+
   Object.keys(window.ReactIntlLocaleData).forEach(lang => {
-    addLocaleData(window.ReactIntlLocaleData[lang])
+    import(`@formatjs/intl-relativetimeformat/dist/locale-data/${lang}`)
   })
 }
 
@@ -45,7 +50,7 @@ class Klicker extends App {
   componentDidMount() {
     if (isProd) {
       if (publicRuntimeConfig.analyticsTrackingID) {
-        const { initGA, logPageView } = require('../lib')
+        const { initGA, logPageView } = require('../lib/utils/analytics')
 
         if (!window.INIT_GA) {
           initGA(publicRuntimeConfig.analyticsTrackingID)
@@ -91,7 +96,7 @@ class Klicker extends App {
       }
 
       if (publicRuntimeConfig.analyticsTrackingID) {
-        const { logException } = require('../lib')
+        const { logException } = require('../lib/utils/analytics')
         logException(error)
       }
     }
@@ -106,11 +111,15 @@ class Klicker extends App {
 
     return (
       <Container>
-        <IntlProvider initialNow={now} locale={locale} messages={messages}>
-          <ApolloProvider client={apolloClient}>
-            <Component {...pageProps} error={this.state.error} />
-          </ApolloProvider>
-        </IntlProvider>
+        <DndProvider backend={HTML5Backend}>
+          <IntlProvider initialNow={now} locale={locale} messages={messages}>
+            <ApolloProvider client={apolloClient}>
+              <StrictMode>
+                <Component {...pageProps} error={this.state.error} />
+              </StrictMode>
+            </ApolloProvider>
+          </IntlProvider>
+        </DndProvider>
       </Container>
     )
   }
