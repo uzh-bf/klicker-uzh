@@ -84,11 +84,11 @@ function Index(): React.ReactElement {
     if (creationMode) {
       setCreationMode(false)
       setSessionBlocks([])
+    } else {
+      // turn on creation mode
+      setCreationMode(true)
+      setSessionName(dayjs().format('DD.MM.YYYY HH:mm'))
     }
-
-    // turn on creation mode
-    setCreationMode(true)
-    setSessionName(dayjs().format('DD.MM.YYYY HH:mm'))
   }
 
   // override the toggle archive function

@@ -23,7 +23,7 @@ function QuestionFiles({ files }: Props): React.ReactElement {
           const fileSrc = `${publicRuntimeConfig.s3root}/${name}`
           const previewImage = (
             <Card>
-              <Image height="auto" src={fileSrc} width="100%" />
+              <Image crossOrigin="anonymous" height="auto" src={fileSrc} width="100%" />
               <Card.Content extra>#{ix + 1}</Card.Content>
             </Card>
           )
@@ -32,7 +32,7 @@ function QuestionFiles({ files }: Props): React.ReactElement {
             <div className="file" key={id}>
               <Modal closeIcon trigger={previewImage}>
                 <Modal.Content image>
-                  <Image wrapped src={fileSrc} />
+                  <Image wrapped crossOrigin="anonymous" src={fileSrc} />
                 </Modal.Content>
               </Modal>
             </div>
