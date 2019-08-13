@@ -3,37 +3,44 @@ import ReactTooltip from 'react-tooltip'
 import _get from 'lodash/get'
 import { Form, Icon, Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-import { compose, withHandlers, mapProps } from 'recompose'
 
 import { QUESTION_TYPES } from '../../../constants'
 
 interface Props {
-  dirty: boolean
+  dirty?: boolean
   disabled?: boolean
-  handleMaxChange: (value: any) => void
-  handleMinChange: (value: any) => void
-  invalid: boolean
-  max?: number
-  min?: number
+  invalid?: boolean
   type: string
+  value: any
+  onChange: any
 }
 
 const defaultProps = {
   disabled: false,
-  max: undefined,
-  min: undefined,
 }
 
-function FREECreationOptions({
-  disabled,
-  max,
-  min,
-  type,
-  handleMaxChange,
-  handleMinChange,
-  dirty,
-  invalid,
-}: Props): React.ReactElement {
+function FREECreationOptions({ disabled, type, dirty, invalid, value, onChange }: Props): React.ReactElement {
+  const max = _get(value, 'restrictions.max')
+  const min = _get(value, 'restrictions.min')
+
+  // handle a change in the maximum allowed numerical value
+  const onMaxChange = (e): void => {
+    const newMax = e.target.value === '' ? null : +e.target.value
+    onChange({
+      ...value,
+      restrictions: { ...value.restrictions, max: newMax },
+    })
+  }
+
+  // handle a change in the minimum allowed numerical value
+  const onMinChange = (e): void => {
+    const newMin = e.target.value === '' ? null : +e.target.value
+    onChange({
+      ...value,
+      restrictions: { ...value.restrictions, min: newMin },
+    })
+  }
+
   return (
     <div className="FREECreationOptions">
       {type === QUESTION_TYPES.FREE_RANGE && (
@@ -62,10 +69,10 @@ function FREECreationOptions({
               <Input
                 disabled={disabled}
                 name="min"
-                placeholder="-∞"
+                placeholder="-inf"
                 type="number"
                 value={min}
-                onChange={handleMinChange}
+                onChange={onMinChange}
               />
             </Form.Field>
 
@@ -76,90 +83,58 @@ function FREECreationOptions({
               <Input
                 disabled={disabled}
                 name="max"
-                placeholder="∞"
+                placeholder="+inf"
                 type="number"
                 value={max}
-                onChange={handleMaxChange}
+                onChange={onMaxChange}
               />
             </Form.Field>
           </div>
         </Form.Field>
       )}
 
-      <style jsx>
-        {`
-          @import 'src/theme';
+      <style jsx>{`
+        @import 'src/theme';
 
-          .FREECreationOptions {
-            @include tooltip-icon;
+        .FREECreationOptions {
+          @include tooltip-icon;
 
-            .optionsChooser {
-              display: flex;
+          .optionsChooser {
+            display: flex;
 
-              > :global(*):not(:last-child) {
-                margin-right: 1rem;
-              }
+            > :global(*):not(:last-child) {
+              margin-right: 1rem;
+            }
+          }
+
+          .range {
+            display: flex;
+            flex-direction: column;
+
+            margin-top: 1rem;
+
+            :global(.field) > label {
+              font-size: 1rem;
             }
 
-            .range {
-              display: flex;
-              flex-direction: column;
+            @include desktop-tablet-only {
+              flex-direction: row;
 
-              margin-top: 1rem;
+              :global(.field) {
+                width: 10rem;
 
-              :global(.field) > label {
-                font-size: 1rem;
-              }
-
-              @include desktop-tablet-only {
-                flex-direction: row;
-
-                :global(.field) {
-                  width: 10rem;
-
-                  &:not(:last-child) {
-                    margin-right: 1rem;
-                  }
+                &:not(:last-child) {
+                  margin-right: 1rem;
                 }
               }
             }
           }
-        `}
-      </style>
+        }
+      `}</style>
     </div>
   )
 }
 
 FREECreationOptions.defaultProps = defaultProps
 
-export default compose(
-  mapProps(({ disabled, onChange, value, dirty, invalid, type }) => ({
-    dirty,
-    disabled,
-    invalid,
-    max: _get(value, 'restrictions.max'),
-    min: _get(value, 'restrictions.min'),
-    onChange,
-    type,
-    value,
-  })),
-  withHandlers({
-    // handle a change in the maximum allowed numerical value
-    handleMaxChange: ({ onChange, value }) => e => {
-      const max = e.target.value === '' ? null : +e.target.value
-      onChange({
-        ...value,
-        restrictions: { ...value.restrictions, max },
-      })
-    },
-
-    // handle a change in the minimum allowed numerical value
-    handleMinChange: ({ onChange, value }) => e => {
-      const min = e.target.value === '' ? null : +e.target.value
-      onChange({
-        ...value,
-        restrictions: { ...value.restrictions, min },
-      })
-    },
-  })
-)(FREECreationOptions)
+export default FREECreationOptions
