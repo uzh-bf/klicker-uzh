@@ -6,4 +6,3 @@ export function toValueArray(data: any[]): any[] {
     return acc.concat(elements)
   }, [])
 }
-
