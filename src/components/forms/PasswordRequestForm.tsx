@@ -31,7 +31,15 @@ function PasswordRequestForm({ loading, onSubmit }: Props): React.ReactElement {
       initialValues={{
         email: '',
       }}
-      render={({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting }) => (
+      render={({
+        values,
+        errors,
+        touched,
+        handleChange,
+        handleBlur,
+        handleSubmit,
+        isSubmitting,
+      }): React.ReactElement => (
         <FormWithLinks
           button={{
             disabled: !_isEmpty(errors),

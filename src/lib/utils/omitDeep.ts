@@ -5,7 +5,7 @@
 export function omitDeep(obj, key): any {
   const keys = Object.keys(obj)
   const newObj = {}
-  keys.forEach(i => {
+  keys.forEach((i): void => {
     if (i !== key) {
       const val = obj[i]
       if (Array.isArray(val)) newObj[i] = omitDeepArrayWalk(val, key)
@@ -17,11 +17,11 @@ export function omitDeep(obj, key): any {
 }
 
 export function omitDeepArray(arr, key): any[] {
-  return arr.map(obj => omitDeep(obj, key))
+  return arr.map((obj): any => omitDeep(obj, key))
 }
 
 export function omitDeepArrayWalk(arr, key): any[] {
-  return arr.map(val => {
+  return arr.map((val): any => {
     if (Array.isArray(val)) return omitDeepArrayWalk(val, key)
     if (typeof val === 'object' && val !== null) return omitDeep(val, key)
     return val

@@ -31,12 +31,16 @@ function TagList({
 
   return (
     <div className="tagList">
-      <Button basic fluid onClick={() => handleReset()}>
+      <Button basic fluid onClick={(): void => handleReset()}>
         <Icon name="remove circle" />
         <FormattedMessage defaultMessage="Reset filters" id="tagList.button.reset" />
       </Button>
       <List selection size="large">
-        <List.Item active={isArchiveActive} className="listItem archiveItem" onClick={() => handleToggleArchive(true)}>
+        <List.Item
+          active={isArchiveActive}
+          className="listItem archiveItem"
+          onClick={(): void => handleToggleArchive(true)}
+        >
           <List.Icon name="archive" />
           <List.Content>
             <FormattedMessage defaultMessage="Question Archive" id="tagList.string.showArchive" />
@@ -45,7 +49,7 @@ function TagList({
         <List.Item
           active={!isArchiveActive}
           className="listItem archiveItem"
-          onClick={() => handleToggleArchive(false)}
+          onClick={(): void => handleToggleArchive(false)}
         >
           <List.Icon name="list" />
           <List.Content>
@@ -59,7 +63,7 @@ function TagList({
           active={activeType === QUESTION_TYPES.SC}
           className="listItem"
           key="SC"
-          onClick={() => handleTagClick('SC', true)}
+          onClick={(): void => handleTagClick('SC', true)}
         >
           <List.Icon name={activeType === QUESTION_TYPES.SC ? 'folder' : 'folder outline'} />
           <List.Content>
@@ -70,7 +74,7 @@ function TagList({
           active={activeType === QUESTION_TYPES.MC}
           className="listItem"
           key="MC"
-          onClick={() => handleTagClick('MC', true)}
+          onClick={(): void => handleTagClick('MC', true)}
         >
           <List.Icon name={activeType === QUESTION_TYPES.MC ? 'folder' : 'folder outline'} />
           <List.Content>
@@ -81,7 +85,7 @@ function TagList({
           active={activeType === QUESTION_TYPES.FREE}
           className="listItem"
           key="FREE"
-          onClick={() => handleTagClick('FREE', true)}
+          onClick={(): void => handleTagClick('FREE', true)}
         >
           <List.Icon name={activeType === QUESTION_TYPES.FREE ? 'folder' : 'folder outline'} />
           <List.Content>
@@ -92,7 +96,7 @@ function TagList({
           active={activeType === QUESTION_TYPES.FREE_RANGE}
           className="listItem"
           key="FREE_RANGE"
-          onClick={() => handleTagClick('FREE_RANGE', true)}
+          onClick={(): void => handleTagClick('FREE_RANGE', true)}
         >
           <List.Icon name={activeType === QUESTION_TYPES.FREE_RANGE ? 'folder' : 'folder outline'} />
           <List.Content>
@@ -103,7 +107,7 @@ function TagList({
           <FormattedMessage defaultMessage="Tags" id="tagList.header.tags" />
         </List.Header>
 
-        {(() => {
+        {((): React.ReactElement => {
           if (loading) {
             return <Loader active />
           }
@@ -118,17 +122,19 @@ function TagList({
             return <FormattedMessage defaultMessage="No tags available." id="tagList.string.noTags" />
           }
 
-          return tags.map(({ id, name }) => (
-            <List.Item
-              active={activeTags.includes(name)}
-              className="listItem"
-              key={id}
-              onClick={() => handleTagClick(name)}
-            >
-              <List.Icon name="tag" />
-              <List.Content>{name}</List.Content>
-            </List.Item>
-          ))
+          return tags.map(
+            ({ id, name }): React.ReactElement => (
+              <List.Item
+                active={activeTags.includes(name)}
+                className="listItem"
+                key={id}
+                onClick={(): void => handleTagClick(name)}
+              >
+                <List.Icon name="tag" />
+                <List.Content>{name}</List.Content>
+              </List.Item>
+            )
+          )
         })()}
       </List>
 

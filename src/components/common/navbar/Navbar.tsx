@@ -79,7 +79,7 @@ function Navbar({ search, sidebarVisible, title, handleSidebarToggle }: Props): 
       )}
 
       <div className="accountArea">
-        {(() => {
+        {((): React.ReactElement => {
           const accountId = _get(data, 'user.id')
           const userEmail = _get(data, 'user.email')
           const accountShort = _get(data, 'user.shortname')

@@ -34,7 +34,7 @@ function Index(): React.ReactElement {
 
   const { handleSearch, handleSort, filters } = useSortingAndFiltering()
 
-  const onStartSession = id => async () => {
+  const onStartSession = (id: string): any => async (): Promise<void> => {
     try {
       await startSession({
         refetchQueries: [{ query: SessionListQuery }, { query: RunningSessionQuery }, { query: AccountSummaryQuery }],
@@ -63,7 +63,7 @@ function Index(): React.ReactElement {
       sidebar={{ activeItem: 'sessionList' }}
     >
       <div className="sessionList">
-        <SessionList filters={filters} handleCopySession={f => f} handleStartSession={onStartSession} />
+        <SessionList filters={filters} handleCopySession={(f): any => f} handleStartSession={onStartSession} />
       </div>
 
       <style jsx>{`

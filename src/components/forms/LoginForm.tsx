@@ -32,7 +32,15 @@ function LoginForm({ loading, onSubmit }: Props): React.ReactElement {
         email: '',
         password: '',
       }}
-      render={({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting }) => (
+      render={({
+        values,
+        errors,
+        touched,
+        handleChange,
+        handleBlur,
+        handleSubmit,
+        isSubmitting,
+      }): React.ReactElement => (
         <FormWithLinks
           button={{
             disabled: !_isEmpty(errors) || _isEmpty(touched),

@@ -17,9 +17,9 @@ const messages = defineMessages({
   },
 })
 
-export function reduceActiveInstances(allInstances, { instances, status }, index) {
+export function reduceActiveInstances(allInstances: any[], { instances, status }, index: number): any[] {
   // inject the status of the block into the instance object
-  const instancesWithBlockStatus = instances.map(instance => ({
+  const instancesWithBlockStatus = instances.map((instance): any => ({
     ...instance,
     blockNumber: index + 1,
     blockStatus: status,
@@ -29,7 +29,7 @@ export function reduceActiveInstances(allInstances, { instances, status }, index
   return [...allInstances, ...instancesWithBlockStatus]
 }
 
-export function mapActiveInstance(activeInstance) {
+export function mapActiveInstance(activeInstance: any): any {
   // map the array of all instances with the custom mapper
   if (QUESTION_GROUPS.CHOICES.includes(activeInstance.question.type)) {
     return {
@@ -37,7 +37,7 @@ export function mapActiveInstance(activeInstance) {
       results: {
         data: activeInstance.question.versions[activeInstance.version].options[
           activeInstance.question.type
-        ].choices.map((choice, index) => ({
+        ].choices.map((choice, index): any => ({
           correct: choice.correct,
           count: _get(activeInstance, `results.CHOICES[${index}]`) || 0,
           value: choice.name,
@@ -52,7 +52,7 @@ export function mapActiveInstance(activeInstance) {
 
     // values in FREE_RANGE questions need to be numerical
     if (activeInstance.question.type === QUESTION_TYPES.FREE_RANGE) {
-      data = data.map(({ value, ...rest }) => ({
+      data = data.map(({ value, ...rest }): any => ({
         ...rest,
         value: +value,
       }))
@@ -70,7 +70,7 @@ export function mapActiveInstance(activeInstance) {
   return activeInstance
 }
 
-export function extractInstancesFromSession(session) {
+export function extractInstancesFromSession(session): any {
   const blocks = _get(session, 'blocks')
   if (!blocks) {
     console.error('no blocks', session)
@@ -84,14 +84,14 @@ export function extractInstancesFromSession(session) {
   // reduce question blocks to the active instances
   const activeInstances = blocks
     // filter out future blocks as we don't want to display them too early
-    .filter(block => block.status !== 'PLANNED')
+    .filter((block): boolean => block.status !== 'PLANNED')
     .reduce(reduceActiveInstances, [])
     .map(mapActiveInstance)
 
   return {
     activeInstances,
     // generate an instance summary for easy display of "tabs"
-    instanceSummary: activeInstances.map(({ blockStatus, blockNumber, solution, question, results }) => ({
+    instanceSummary: activeInstances.map(({ blockStatus, blockNumber, solution, question, results }): any => ({
       blockNumber,
       blockStatus,
       hasSolution: !!solution,
@@ -145,12 +145,12 @@ function Evaluation(): React.ReactElement {
                 description,
                 instanceSummary,
                 onChangeActiveInstance: setActiveInstanceIndex,
-                onChangeVisualizationType: (questionType, visualizationType) =>
+                onChangeVisualizationType: (questionType, visualizationType): void =>
                   setActiveVisualizations({
                     ...activeVisualizations,
                     [questionType]: visualizationType,
                   }),
-                onToggleShowSolution: () => setShowSolution(!showSolution),
+                onToggleShowSolution: (): void => setShowSolution(!showSolution),
                 options,
                 pageTitle: intl.formatMessage(messages.pageTitle),
                 sessionId,
@@ -167,7 +167,7 @@ function Evaluation(): React.ReactElement {
                   <Chart
                     activeVisualization={activeVisualizations[question.type]}
                     data={results.data}
-                    handleShowGraph={() => setShowGraph(true)}
+                    handleShowGraph={(): void => setShowGraph(true)}
                     instanceId={activeInstance.id}
                     isPublic={isPublic}
                     numBins={bins}

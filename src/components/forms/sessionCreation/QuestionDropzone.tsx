@@ -10,8 +10,8 @@ interface Props {
 function QuestionDropzone({ onDrop }: Props): React.ReactElement {
   const [collectedProps, drop] = useDrop({
     accept: 'question',
-    drop: item => onDrop(item),
-    collect: monitor => ({
+    drop: (item): void => onDrop(item),
+    collect: (monitor): any => ({
       canDrop: monitor.canDrop(),
       isOver: monitor.isOver(),
     }),
@@ -24,32 +24,30 @@ function QuestionDropzone({ onDrop }: Props): React.ReactElement {
     >
       <Icon name="plus" />
 
-      <style jsx>
-        {`
-          .dropzone {
-            display: flex;
-            align-items: center;
-            justify-content: center;
+      <style jsx>{`
+        .dropzone {
+          display: flex;
+          align-items: center;
+          justify-content: center;
 
-            background-color: #f2f2f2;
-            border: 1px solid lightgrey;
-            color: grey;
-            font-size: 1.5rem;
-            height: 100%;
-            width: 100%;
-          }
+          background-color: #f2f2f2;
+          border: 1px solid lightgrey;
+          color: grey;
+          font-size: 1.5rem;
+          height: 100%;
+          width: 100%;
+        }
 
-          .dropzone.canDrop {
-            background-color: lightgrey;
-            border-color: grey;
-            color: grey;
-          }
+        .dropzone.canDrop {
+          background-color: lightgrey;
+          border-color: grey;
+          color: grey;
+        }
 
-          .dropzone.isOver {
-            border-color: blue;
-          }
-        `}
-      </style>
+        .dropzone.isOver {
+          border-color: blue;
+        }
+      `}</style>
     </div>
   )
 }

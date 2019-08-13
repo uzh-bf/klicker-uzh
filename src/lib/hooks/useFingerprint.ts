@@ -10,10 +10,10 @@ declare global {
   }
 }
 
-function computeFingerprint(resolve, setCookie = true) {
+function computeFingerprint(resolve, setCookie = true): void {
   const Fingerprint2 = require('fingerprintjs2')
-  Fingerprint2.get({}, components => {
-    const values = components.map(component => component.value)
+  Fingerprint2.get({}, (components): void => {
+    const values = components.map((component): any => component.value)
     const murmur = Fingerprint2.x64hash128(values.join(''), 31)
 
     if (setCookie) {
@@ -38,9 +38,9 @@ function useFingerprint(): string {
       // otherwise generate a new fingerprint and store it in a cookie
       try {
         if (window.requestIdleCallback) {
-          window.requestIdleCallback(() => computeFingerprint(setFingerprint))
+          window.requestIdleCallback((): void => computeFingerprint(setFingerprint))
         } else {
-          setTimeout(() => computeFingerprint(setFingerprint), 500)
+          setTimeout((): void => computeFingerprint(setFingerprint), 500)
         }
       } catch (err) {
         console.error(err)

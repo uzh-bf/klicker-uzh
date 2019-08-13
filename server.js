@@ -1,4 +1,4 @@
-/* eslint-disable babel/quotes */
+/* eslint-disable babel/quotes, no-unused-vars, @typescript-eslint/no-unused-vars */
 
 require('full-icu')
 const IntlPolyfill = require('intl')

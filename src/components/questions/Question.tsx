@@ -46,7 +46,7 @@ function Question({
   const [activeVersion, setActiveVersion]: any = useState(versions.length - 1)
   const [collectedProps, drag] = useDrag({
     item: { id, type: 'question', questionType: type, title, version: activeVersion },
-    collect: monitor => ({
+    collect: (monitor): any => ({
       isDragging: monitor.isDragging(),
     }),
   })
@@ -68,7 +68,7 @@ function Question({
           checked={checked}
           id={`check-${id}`}
           type="checkbox"
-          onClick={() => onCheck({ version: activeVersion })}
+          onClick={(): void => onCheck({ version: activeVersion })}
         />
       </div>
 
@@ -85,13 +85,13 @@ function Question({
         <div className="versionChooser">
           <Dropdown
             disabled={versions.length === 1}
-            options={versions.map((version, index) => ({
+            options={versions.map((version, index): any => ({
               key: index,
               text: `v${index + 1} - ${dayjs(version.createdAt).format('DD.MM.YYYY HH:mm')}`,
               value: index,
             }))}
             value={activeVersion}
-            onChange={(_, data) => setActiveVersion(data.value)}
+            onChange={(_, data): void => setActiveVersion(data.value)}
           />
         </div>
 

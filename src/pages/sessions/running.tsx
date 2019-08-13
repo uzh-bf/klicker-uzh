@@ -101,7 +101,7 @@ function Running(): React.ReactElement {
                 // activeBlock={activeBlock}
                 activeStep={activeStep}
                 blocks={blocks}
-                handleCancelSession={async () => {
+                handleCancelSession={async (): Promise<void> => {
                   await cancelSession({
                     refetchQueries: [
                       { query: SessionListQuery },
@@ -114,7 +114,7 @@ function Running(): React.ReactElement {
                   // TODO: redirect to a session summary or overview page
                   router.push('/questions')
                 }}
-                handleEndSession={async () => {
+                handleEndSession={async (): Promise<void> => {
                   // run the mutation
                   await endSession({
                     refetchQueries: [
@@ -129,12 +129,12 @@ function Running(): React.ReactElement {
                   // TODO: redirect to a session summary or overview page
                   router.push('/questions')
                 }}
-                handleNextBlock={() => {
+                handleNextBlock={(): void => {
                   activateNextBlock({
                     refetchQueries: [{ query: RunningSessionQuery }],
                   })
                 }}
-                handlePauseSession={async () => {
+                handlePauseSession={async (): Promise<void> => {
                   await pauseSession({
                     refetchQueries: [
                       { query: SessionListQuery },
@@ -146,10 +146,10 @@ function Running(): React.ReactElement {
 
                   router.push('/sessions')
                 }}
-                handleResetQuestionBlock={async blockId => {
+                handleResetQuestionBlock={async (blockId): Promise<void> => {
                   await resetQuestionBlock({ variables: { sessionId: id, blockId } })
                 }}
-                handleTogglePublicEvaluation={() => {
+                handleTogglePublicEvaluation={(): void => {
                   updateSettings({
                     variables: {
                       sessionId: id,
@@ -171,7 +171,7 @@ function Running(): React.ReactElement {
             <div className="confusionBarometer">
               <ConfusionBarometer
                 confusionTS={confusionTS}
-                handleActiveToggle={() => {
+                handleActiveToggle={(): void => {
                   updateSettings({
                     refetchQueries: [{ query: RunningSessionQuery }],
                     variables: {
@@ -183,10 +183,10 @@ function Running(): React.ReactElement {
                   })
                 }}
                 isActive={settings.isConfusionBarometerActive}
-                subscribeToMore={() => {
+                subscribeToMore={(): void => {
                   subscribeToMore({
                     document: ConfusionAddedSubscription,
-                    updateQuery: (prev, { subscriptionData }) => {
+                    updateQuery: (prev, { subscriptionData }): any => {
                       if (!subscriptionData.data) return prev
                       return {
                         ...prev,
@@ -205,7 +205,7 @@ function Running(): React.ReactElement {
             <div className="feedbackChannel">
               <FeedbackChannel
                 feedbacks={feedbacks}
-                handleActiveToggle={() => {
+                handleActiveToggle={(): void => {
                   updateSettings({
                     refetchQueries: [{ query: RunningSessionQuery }],
                     variables: {
@@ -216,12 +216,12 @@ function Running(): React.ReactElement {
                     },
                   })
                 }}
-                handleDeleteFeedback={feedbackId => {
+                handleDeleteFeedback={(feedbackId: string): void => {
                   deleteFeedback({
                     variables: { feedbackId, sessionId: id },
                   })
                 }}
-                handlePublicToggle={() => {
+                handlePublicToggle={(): void => {
                   updateSettings({
                     refetchQueries: [{ query: RunningSessionQuery }],
                     variables: {
@@ -234,10 +234,10 @@ function Running(): React.ReactElement {
                 }}
                 isActive={settings.isFeedbackChannelActive}
                 isPublic={settings.isFeedbackChannelPublic}
-                subscribeToMore={() => {
+                subscribeToMore={(): void => {
                   subscribeToMore({
                     document: FeedbackAddedSubscription,
-                    updateQuery: (prev, { subscriptionData }) => {
+                    updateQuery: (prev, { subscriptionData }): any => {
                       if (!subscriptionData.data) return prev
                       return {
                         ...prev,

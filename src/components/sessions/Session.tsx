@@ -73,21 +73,23 @@ function Session({ button, createdAt, id, name, blocks, status }: Props): React.
             </Message>
           </div>
         )}
-        {blocks.map(({ id: blockId, instances, timeLimit }) => (
-          <div className="block" key={blockId}>
-            <QuestionBlock
-              noDetails
-              questions={instances.map(({ id: instanceId, question, version, results }) => ({
-                id: instanceId,
-                title: question.title,
-                totalParticipants: _get(results, 'totalParticipants') || 0,
-                type: question.type,
-                version,
-              }))}
-              timeLimit={timeLimit}
-            />
-          </div>
-        ))}
+        {blocks.map(
+          ({ id: blockId, instances, timeLimit }): React.ReactElement => (
+            <div className="block" key={blockId}>
+              <QuestionBlock
+                noDetails
+                questions={instances.map(({ id: instanceId, question, version, results }): any => ({
+                  id: instanceId,
+                  title: question.title,
+                  totalParticipants: _get(results, 'totalParticipants') || 0,
+                  type: question.type,
+                  version,
+                }))}
+                timeLimit={timeLimit}
+              />
+            </div>
+          )
+        )}
         <div className="actionArea">
           <div className="settings">
             <Dropdown button labeled className="icon" icon="wrench" text="Options">
@@ -118,7 +120,7 @@ function Session({ button, createdAt, id, name, blocks, status }: Props): React.
                     <Dropdown.Divider />
 
                     <>
-                      <Dropdown.Item onClick={() => setDeletionConfirmation(true)}>
+                      <Dropdown.Item onClick={(): void => setDeletionConfirmation(true)}>
                         <Icon name="trash" />
                         <FormattedMessage defaultMessage="Delete Session" id="session.button.delete" />
                       </Dropdown.Item>
@@ -127,15 +129,15 @@ function Session({ button, createdAt, id, name, blocks, status }: Props): React.
                         confirmButton={intl.formatMessage(messages.deletionConfirmationConfirm)}
                         content={intl.formatMessage(messages.deletionConfirmationContent, { name })}
                         open={deletionConfirmation}
-                        onCancel={() => setDeletionConfirmation(false)}
-                        onConfirm={async () => {
+                        onCancel={(): void => setDeletionConfirmation(false)}
+                        onConfirm={async (): Promise<void> => {
                           try {
                             await deleteSessions({
                               optimisticResponse: {
                                 __typename: 'Mutation',
                                 deleteSessions: 'DELETION_SUCCESSFUL',
                               },
-                              update: (cache, { data }) => {
+                              update: (cache, { data }): void => {
                                 if (data.deleteSessions !== 'DELETION_SUCCESSFUL') {
                                   return
                                 }
@@ -143,7 +145,7 @@ function Session({ button, createdAt, id, name, blocks, status }: Props): React.
                                 const { sessions } = cache.readQuery({ query: SessionListQuery })
                                 cache.writeQuery({
                                   data: {
-                                    sessions: sessions.filter(session => session.id !== id),
+                                    sessions: sessions.filter((session): boolean => session.id !== id),
                                   },
                                   query: SessionListQuery,
                                 })

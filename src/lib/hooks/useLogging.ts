@@ -24,8 +24,8 @@ declare global {
   }
 }
 
-function useLogging(cfg = {}) {
-  useEffect(() => {
+function useLogging(cfg = {}): void {
+  useEffect((): void => {
     // merge default and passed config
     const config = {
       slaask: false,
@@ -54,7 +54,7 @@ function useLogging(cfg = {}) {
         LogRocketReact(LogRocket)
 
         if (Raven && window.INIT_RAVEN) {
-          Raven.setDataCallback(data =>
+          Raven.setDataCallback((data): any =>
             Object.assign({}, data, {
               extra: {
                 sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef

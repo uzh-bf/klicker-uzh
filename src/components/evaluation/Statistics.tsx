@@ -84,26 +84,24 @@ function Statistics({ bins, max, mean, median, min, q1, q3, sd, onChangeBins, wi
         </div>
       )}
 
-      <style jsx>
-        {`
-          .statistics {
-            h2 {
-              font-size: 1.2rem;
-              line-height: 1.2rem;
-              margin-bottom: 0.5rem;
-            }
+      <style jsx>{`
+        .statistics {
+          h2 {
+            font-size: 1.2rem;
+            line-height: 1.2rem;
+            margin-bottom: 0.5rem;
+          }
 
-            .bins {
-              margin-top: 1rem;
+          .bins {
+            margin-top: 1rem;
 
-              :global(.message) {
-                margin-top: 0.5rem;
-                padding: 1rem;
-              }
+            :global(.message) {
+              margin-top: 0.5rem;
+              padding: 1rem;
             }
           }
-        `}
-      </style>
+        }
+      `}</style>
     </div>
   )
 }

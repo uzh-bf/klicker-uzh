@@ -32,7 +32,15 @@ function PasswordResetForm({ loading, onSubmit }: Props): React.ReactElement {
         password: '',
         passwordRepeat: '',
       }}
-      render={({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting }) => (
+      render={({
+        values,
+        errors,
+        touched,
+        handleChange,
+        handleBlur,
+        handleSubmit,
+        isSubmitting,
+      }): React.ReactElement => (
         <FormWithLinks
           button={{
             disabled: !_isEmpty(errors) || _isEmpty(touched),

@@ -38,7 +38,7 @@ function FeedbackArea({
   const [confusionSpeed, setConfusionSpeed] = useState()
   const [feedbackInputValue, setFeedbackInputValue] = useState()
 
-  useEffect(() => {
+  useEffect((): void => {
     try {
       if (window.sessionStorage) {
         const confusion = JSON.parse(sessionStorage.getItem(`${shortname}-${sessionId}-confusion`))
@@ -50,7 +50,7 @@ function FeedbackArea({
     }
   }, [])
 
-  const onNewConfusionTS = () => {
+  const onNewConfusionTS = (): void => {
     // send the new confusion entry to the server
     handleNewConfusionTS({
       difficulty: confusionDifficulty,
@@ -74,7 +74,7 @@ function FeedbackArea({
     }
   }
 
-  const onNewFeedback = () => {
+  const onNewFeedback = (): void => {
     setFeedbackInputValue('')
     handleNewFeedback({ content: feedbackInputValue })
   }
@@ -86,7 +86,7 @@ function FeedbackArea({
       {isConfusionBarometerActive && (
         <div className="confusion">
           <ConfusionSlider
-            handleChange={newValue => setConfusionSpeed(newValue)}
+            handleChange={(newValue): void => setConfusionSpeed(newValue)}
             handleChangeComplete={onNewConfusionTS}
             labels={{ max: 'fast', mid: 'optimal', min: 'slow' }}
             max={5}
@@ -100,7 +100,7 @@ function FeedbackArea({
           />
 
           <ConfusionSlider
-            handleChange={newValue => setConfusionDifficulty(newValue)}
+            handleChange={(newValue): void => setConfusionDifficulty(newValue)}
             handleChangeComplete={onNewConfusionTS}
             labels={{ max: 'hard', mid: 'optimal', min: 'easy' }}
             max={5}
@@ -126,7 +126,7 @@ function FeedbackArea({
                 <textarea
                   name="feedbackInput"
                   value={feedbackInputValue}
-                  onChange={e => setFeedbackInputValue(e.target.value)}
+                  onChange={(e): void => setFeedbackInputValue(e.target.value)}
                 />
               </label>
             </Form.Field>
@@ -142,17 +142,19 @@ function FeedbackArea({
               <FormattedMessage defaultMessage="All feedbacks" id="joinSession.allFeedbacks" />
             </h2>
 
-            {feedbacks.map(({ id, content, votes }) => (
-              <div className="feedback" key={id}>
-                <Feedback
-                  alreadyVoted={false}
-                  content={content}
-                  showDelete={false}
-                  updateVotes={() => null}
-                  votes={votes}
-                />
-              </div>
-            ))}
+            {feedbacks.map(
+              ({ id, content, votes }): React.ReactElement => (
+                <div className="feedback" key={id}>
+                  <Feedback
+                    alreadyVoted={false}
+                    content={content}
+                    showDelete={false}
+                    updateVotes={(): void => null}
+                    votes={votes}
+                  />
+                </div>
+              )
+            )}
           </div>
         )}
       </div>

@@ -47,7 +47,7 @@ function CreateQuestion(): React.ReactElement {
         tags={data.tags}
         tagsLoading={tagsLoading}
         // handle discarding a new question
-        onDiscard={() => router.push('/questions')}
+        onDiscard={(): Promise<boolean> => router.push('/questions')}
         // handle submitting a new question
         onSubmit={async ({ content, options, tags, title, type, files }, { setSubmitting }): Promise<void> => {
           // request presigned urls and filenames for all files
@@ -63,7 +63,7 @@ function CreateQuestion(): React.ReactElement {
             refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
             variables: {
               content: JSON.stringify(convertToRaw(content.getCurrentContent())),
-              files: fileEntities.map(({ file, fileName }) => ({
+              files: fileEntities.map(({ file, fileName }): any => ({
                 name: fileName,
                 originalName: file.name,
                 type: file.type,

@@ -74,7 +74,7 @@ function ContentInput({ value, onChange, error, touched, disabled }: Props): Rea
         <Editor editorState={value} plugins={plugins} readOnly={disabled} onChange={onChange} />
 
         <Toolbar>
-          {props => (
+          {(props): React.ReactNode => (
             <>
               <BoldButton {...props} />
               <ItalicButton {...props} />

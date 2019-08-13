@@ -20,11 +20,11 @@ const defaultProps = {
 function FileDropzone({ disabled, files, onChangeFiles }: Props): React.ReactElement<any> {
   // prepare a callback hook that handles added files
   const onDrop = useCallback(
-    acceptedFiles => {
+    (acceptedFiles): void => {
       if (!disabled) {
         onChangeFiles(
           files.concat(
-            acceptedFiles.map(file =>
+            acceptedFiles.map((file): any =>
               Object.assign(file, {
                 preview: URL.createObjectURL(file),
               })
@@ -43,40 +43,42 @@ function FileDropzone({ disabled, files, onChangeFiles }: Props): React.ReactEle
     onDrop,
   })
 
-  const previews = files.map((file, index) => {
-    const imageSrc = `${publicRuntimeConfig.s3root}/${file.name}`
-    return (
-      <div className="imagePreview" key={file.id || index}>
-        <Card>
-          <Card.Meta>
-            <span className="imageIndex">{`#${index + 1}`}</span>
-          </Card.Meta>
-          <Image height="auto" src={file.preview || imageSrc} width="100%" />
-          <Card.Content extra>
-            <Button
-              basic
-              fluid
-              color="red"
-              disabled={disabled}
-              type="button"
-              onClick={() => {
-                if (!disabled) {
-                  onChangeFiles(files.filter((val, ix) => ix !== index))
-                }
-              }}
-            >
-              <Icon name="trash" />
-              <FormattedMessage defaultMessage="Delete" id="fileDropzone.button.delete" />
-            </Button>
-          </Card.Content>
-        </Card>
-      </div>
-    )
-  })
+  const previews = files.map(
+    (file, index): React.ReactElement => {
+      const imageSrc = `${publicRuntimeConfig.s3root}/${file.name}`
+      return (
+        <div className="imagePreview" key={file.id || index}>
+          <Card>
+            <Card.Meta>
+              <span className="imageIndex">{`#${index + 1}`}</span>
+            </Card.Meta>
+            <Image height="auto" src={file.preview || imageSrc} width="100%" />
+            <Card.Content extra>
+              <Button
+                basic
+                fluid
+                color="red"
+                disabled={disabled}
+                type="button"
+                onClick={(): void => {
+                  if (!disabled) {
+                    onChangeFiles(files.filter((_, ix): boolean => ix !== index))
+                  }
+                }}
+              >
+                <Icon name="trash" />
+                <FormattedMessage defaultMessage="Delete" id="fileDropzone.button.delete" />
+              </Button>
+            </Card.Content>
+          </Card>
+        </div>
+      )
+    }
+  )
 
-  useEffect(() => {
+  useEffect((): void => {
     // Make sure to revoke the data uris to avoid memory leaks
-    files.forEach(file => URL.revokeObjectURL(file.preview))
+    files.forEach((file): void => URL.revokeObjectURL(file.preview))
   })
 
   return (

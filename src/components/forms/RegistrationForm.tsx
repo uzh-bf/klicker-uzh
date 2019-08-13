@@ -34,7 +34,16 @@ function RegistrationForm({ loading, onSubmit }: Props): React.ReactElement {
           shortname: '',
           useCase: '',
         }}
-        render={({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting, setFieldValue }) => (
+        render={({
+          values,
+          errors,
+          touched,
+          handleChange,
+          handleBlur,
+          handleSubmit,
+          isSubmitting,
+          setFieldValue,
+        }): React.ReactElement => (
           <Form error onSubmit={handleSubmit}>
             <FormikInput
               autoFocus
@@ -149,7 +158,7 @@ function RegistrationForm({ loading, onSubmit }: Props): React.ReactElement {
                     </label>
                   }
                   name="acceptTOS"
-                  onChange={() => setFieldValue('acceptTOS', !values.acceptTOS)}
+                  onChange={(): void => setFieldValue('acceptTOS', !values.acceptTOS)}
                 />
               </Form.Field>
               <Button

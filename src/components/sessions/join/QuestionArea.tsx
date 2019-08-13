@@ -63,7 +63,7 @@ const defaultProps = {
 function QuestionArea({ active, questions, handleNewResponse, shortname, sessionId }: Props): React.ReactElement {
   const [remainingQuestions, setRemainingQuestions] = useState([])
 
-  const [activeQuestion, setActiveQuestion] = useState(() => remainingQuestions[0])
+  const [activeQuestion, setActiveQuestion] = useState((): any => remainingQuestions[0])
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [{ inputValue, inputValid, inputEmpty }, setInputState] = useState({
     inputEmpty: true,
@@ -87,19 +87,20 @@ function QuestionArea({ active, questions, handleNewResponse, shortname, session
         }, [])
 
         setActiveQuestion(remaining[0])
-        return setRemainingQuestions(remaining)
+        setRemainingQuestions(remaining)
+      } else {
+        const remaining = questions.map((_, ix): number => ix)
+        setActiveQuestion(remaining[0])
+        setRemainingQuestions(remaining)
       }
     } catch (e) {
       console.error(e)
     }
-
-    const remaining = questions.map((_, ix) => ix)
-    setActiveQuestion(remaining[0])
-    setRemainingQuestions(remaining)
   }, [])
 
   const onActiveChoicesChange = (type): Function => (choice): Function => (): void => {
-    const validateChoices = newValue => (type === QUESTION_TYPES.SC ? newValue.length === 1 : newValue.length > 0)
+    const validateChoices = (newValue): boolean =>
+      type === QUESTION_TYPES.SC ? newValue.length === 1 : newValue.length > 0
 
     if (inputValue && type === QUESTION_TYPES.MC) {
       // if the choice is already active, remove it
@@ -238,7 +239,7 @@ function QuestionArea({ active, questions, handleNewResponse, shortname, session
             </div>
 
             <div className="collapser">
-              <Collapser collapsed={isCollapsed} handleCollapseToggle={() => setIsCollapsed(!isCollapsed)}>
+              <Collapser collapsed={isCollapsed} handleCollapseToggle={(): void => setIsCollapsed(!isCollapsed)}>
                 <QuestionDescription content={contentState} description={description} />
               </Collapser>
             </div>

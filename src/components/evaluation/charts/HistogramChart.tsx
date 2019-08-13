@@ -38,24 +38,24 @@ const defaultProps = {
 
 function HistogramChart({ brush, data, solution, statistics, numBins }: Props): React.ReactElement {
   // calculate the borders of the histogram
-  const min = +_minBy(data, o => +o.value).value
-  const max = +_maxBy(data, o => +o.value).value
+  const min = +_minBy(data, (o): number => +o.value).value
+  const max = +_maxBy(data, (o): number => +o.value).value
 
   // calculate the number of bins according to freedman diaconis
-  const defaultThreshold = thresholdFreedmanDiaconis(data.map(o => +o.value), min, max)
+  const defaultThreshold = thresholdFreedmanDiaconis(data.map((o): number => +o.value), min, max)
 
   // setup the D3 histogram generator
   // use either the passed number of bins or the default threshold
   const histGen = histogram()
     .domain([min, max])
-    .value(o => _round(+o.value, 2))
+    .value((o): number => _round(+o.value, 2))
     .thresholds(numBins || defaultThreshold)
 
   // bin the data using D3
   const bins = histGen(data)
 
   // map the bins to recharts objects
-  const mappedData = bins.map(bin => ({
+  const mappedData = bins.map((bin): any => ({
     count: _sumBy(bin, 'count'),
     value: `${_round(bin.x0, 2)}/${_round(bin.x1, 2)}`,
   }))
@@ -75,7 +75,7 @@ function HistogramChart({ brush, data, solution, statistics, numBins }: Props): 
         <YAxis
           domain={[
             0,
-            dataMax => {
+            (dataMax): number => {
               const rounded = Math.ceil(dataMax * 1.1)
 
               if (rounded % 2 === 0) {

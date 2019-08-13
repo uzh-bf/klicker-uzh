@@ -37,7 +37,7 @@ function BarChart({ isSolutionShown, data, isColored, totalResponses, questionTy
   // filter out choices without any responses (weird labeling)
   // map data to contain percentages and char labels
   const sortedData = _sortBy(
-    data.map(({ correct, count, value }, index) => ({
+    data.map(({ correct, count, value }, index): any => ({
       correct,
       count,
       fill: CHART_COLORS[index % 12],
@@ -46,7 +46,7 @@ function BarChart({ isSolutionShown, data, isColored, totalResponses, questionTy
       labelOut: getLabelOut(CHART_TYPES.BAR_CHART, count, totalResponses, index),
       value,
     })),
-    o => o.label
+    (o): string => o.label
   )
 
   return (
@@ -72,7 +72,7 @@ function BarChart({ isSolutionShown, data, isColored, totalResponses, questionTy
         <YAxis
           domain={[
             0,
-            dataMax => {
+            (dataMax): number => {
               const rounded = Math.ceil(dataMax * 1.1)
 
               if (rounded % 2 === 0) {
@@ -101,18 +101,20 @@ function BarChart({ isSolutionShown, data, isColored, totalResponses, questionTy
             style={{ fontSize: '2rem' }}
           />
           <LabelList dataKey="labelIn" fill="white" position="inside" stroke="white" style={{ fontSize: '2.5rem' }} />
-          {sortedData.map(row => (
-            <Cell
-              fill={
-                isSolutionShown && row.correct // eslint-disable-line
-                  ? '#00FF00'
-                  : isColored
-                  ? row.fill
-                  : '#1395BA'
-              }
-              key={row.value}
-            />
-          ))}
+          {sortedData.map(
+            (row): React.ReactElement => (
+              <Cell
+                fill={
+                  isSolutionShown && row.correct // eslint-disable-line
+                    ? '#00FF00'
+                    : isColored
+                    ? row.fill
+                    : '#1395BA'
+                }
+                key={row.value}
+              />
+            )
+          )}
         </Bar>
       </BarChartComponent>
     </ResponsiveContainer>

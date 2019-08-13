@@ -44,7 +44,7 @@ export function handleDragEnd(array: any, onChange: Function): Function {
  * Compute the index of a block in a list given its id
  */
 export function getIndex(blocks: any[], droppableId: string): number {
-  return blocks.findIndex(block => block.id === droppableId)
+  return blocks.findIndex((block): boolean => block.id === droppableId)
 }
 
 /**

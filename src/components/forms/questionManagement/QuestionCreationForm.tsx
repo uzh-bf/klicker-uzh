@@ -92,7 +92,7 @@ function validate({ content, options, tags, title, type }: any): ValidationError
       errors.options = messages.optionsEmpty
     }
 
-    if (type === QUESTION_TYPES.SC && options.choices.filter(choice => !!choice.correct).length > 1) {
+    if (type === QUESTION_TYPES.SC && options.choices.filter((choice): boolean => !!choice.correct).length > 1) {
       errors.options = messages.optionsInvalidSC
     }
   } else if (type === QUESTION_TYPES.FREE_RANGE) {
@@ -241,7 +241,7 @@ function QuestionCreationForm({
               </div>
 
               <div className="questionInput questionType">
-                <TypeChooser value={values.type} onChange={newType => setFieldValue('type', newType)} />
+                <TypeChooser value={values.type} onChange={(newType): void => setFieldValue('type', newType)} />
               </div>
 
               <div className="questionInput questionTags">
@@ -252,7 +252,7 @@ function QuestionCreationForm({
                     tags={tags}
                     touched={touched.tags}
                     value={values.tags}
-                    onChange={newTags => setFieldValue('tags', newTags)}
+                    onChange={(newTags): void => setFieldValue('tags', newTags)}
                   />
                 )}
               </div>
@@ -262,16 +262,19 @@ function QuestionCreationForm({
                   error={errors.content}
                   touched={touched.content}
                   value={values.content}
-                  onChange={newContent => setFieldValue('content', newContent)}
+                  onChange={(newContent): void => setFieldValue('content', newContent)}
                 />
               </div>
 
               {publicRuntimeConfig.s3root && (
                 <div className="questionInput questionFiles">
                   <h2>
-                    <FormattedMessage defaultMessage="Attached Images (Beta)" id="createQuestion.filesLabel" />
+                    <FormattedMessage defaultMessage="Attached Images" id="createQuestion.filesLabel" />
                   </h2>
-                  <FileDropzone files={values.files} onChangeFiles={newFiles => setFieldValue('files', newFiles)} />
+                  <FileDropzone
+                    files={values.files}
+                    onChangeFiles={(newFiles): void => setFieldValue('files', newFiles)}
+                  />
                 </div>
               )}
 
@@ -279,7 +282,7 @@ function QuestionCreationForm({
                 <OptionsInput
                   type={values.type}
                   value={values.options}
-                  onChange={newOptions => setFieldValue('options', newOptions)}
+                  onChange={(newOptions): void => setFieldValue('options', newOptions)}
                 />
               </div>
 

@@ -31,7 +31,7 @@ function RequestPassword(): React.ReactElement {
           <FormattedMessage defaultMessage="Reset your password" id="user.requestPassword.title" />
         </h1>
 
-        {(() => {
+        {((): React.ReactElement => {
           const success = data && !error
 
           if (success) {

@@ -1,4 +1,4 @@
-/* eslint-disable import/no-extraneous-dependencies */
+/* eslint-disable import/no-extraneous-dependencies, no-param-reassign */
 
 const webpack = require('webpack')
 const withCSS = require('@zeit/next-css')

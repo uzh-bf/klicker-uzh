@@ -93,12 +93,12 @@ function useSortingAndFiltering(): any {
 
   return {
     ...state,
-    handleReset: () => dispatch({ type: 'RESET' }),
-    handleSearch: title => dispatch({ type: 'SEARCH', title }),
-    handleSortByChange: by => dispatch({ type: 'SORT_BY', by }),
-    handleSortOrderToggle: () => dispatch({ type: 'SORT_ORDER' }),
-    handleToggleArchive: newValue => dispatch({ type: 'TOGGLE_ARCHIVE', newValue }),
-    handleTagClick: (tagName, questionType) => dispatch({ type: 'TAG_CLICK', tagName, questionType }),
+    handleReset: (): void => dispatch({ type: 'RESET' }),
+    handleSearch: (title): void => dispatch({ type: 'SEARCH', title }),
+    handleSortByChange: (by): void => dispatch({ type: 'SORT_BY', by }),
+    handleSortOrderToggle: (): void => dispatch({ type: 'SORT_ORDER' }),
+    handleToggleArchive: (newValue): void => dispatch({ type: 'TOGGLE_ARCHIVE', newValue }),
+    handleTagClick: (tagName, questionType): void => dispatch({ type: 'TAG_CLICK', tagName, questionType }),
   }
 }
 

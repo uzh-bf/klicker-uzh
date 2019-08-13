@@ -36,14 +36,14 @@ function handleSessionAction(sessionId, status, router, handleStartSession, hand
   }
 
   if (status === SESSION_STATUS.RUNNING) {
-    return () => router.push('/sessions/running')
+    return (): Promise<boolean> => router.push('/sessions/running')
   }
 
   if (status === SESSION_STATUS.COMPLETED) {
     return handleCopySession(sessionId)
   }
 
-  return () => null
+  return (): void => null
 }
 
 interface Props {
@@ -81,19 +81,19 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
 
         // extract the running session from all sessions
         const runningSessions = sessions
-          .filter(session => session.status === SESSION_STATUS.RUNNING)
-          .map(session => ({
+          .filter((session): boolean => session.status === SESSION_STATUS.RUNNING)
+          .map((session): any => ({
             ...session,
             button: {
               ...statusCases[SESSION_STATUS.RUNNING],
-              onClick: () => router.push('/sessions/running'),
+              onClick: (): Promise<boolean> => router.push('/sessions/running'),
             },
           }))
 
         // extract paused sessions
         const pausedSessions = sessions
-          .filter(session => session.status === SESSION_STATUS.PAUSED)
-          .map(session => ({
+          .filter((session): boolean => session.status === SESSION_STATUS.PAUSED)
+          .map((session): any => ({
             ...session,
             button: {
               ...statusCases[SESSION_STATUS.PAUSED],
@@ -105,7 +105,7 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
         // create a session index
         const sessionIndex = buildIndex('sessions', sessions, ['name', 'createdAt'])
 
-        const processedSessions = filterSessions(sessions, filters, sessionIndex).map(session => ({
+        const processedSessions = filterSessions(sessions, filters, sessionIndex).map((session): any => ({
           ...session,
           button: {
             ...statusCases[session.status],
@@ -115,8 +115,12 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
           },
         }))
 
-        const remainingSessions = processedSessions.filter(session => session.status === SESSION_STATUS.CREATED)
-        const completedSessions = processedSessions.filter(session => session.status === SESSION_STATUS.COMPLETED)
+        const remainingSessions = processedSessions.filter(
+          (session): boolean => session.status === SESSION_STATUS.CREATED
+        )
+        const completedSessions = processedSessions.filter(
+          (session): boolean => session.status === SESSION_STATUS.COMPLETED
+        )
 
         return (
           <>
@@ -127,11 +131,13 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
                   ({runningSessions.length + pausedSessions.length})
                 </h2>
                 <div className="sessions">
-                  {[...runningSessions, ...pausedSessions].map(running => (
-                    <div className="runningSession">
-                      <Session intl={intl} {...running} />
-                    </div>
-                  ))}
+                  {[...runningSessions, ...pausedSessions].map(
+                    (running): React.ReactElement => (
+                      <div className="runningSession">
+                        <Session intl={intl} {...running} />
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
             ) : (
@@ -149,11 +155,13 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
                   <FormattedMessage defaultMessage="Planned sessions" id="sessionList.title.plannedSessions" /> (
                   {remainingSessions.length})
                 </h2>
-                {remainingSessions.map(session => (
-                  <div className="session" key={session.id}>
-                    <Session intl={intl} {...session} />
-                  </div>
-                ))}
+                {remainingSessions.map(
+                  (session): React.ReactElement => (
+                    <div className="session" key={session.id}>
+                      <Session intl={intl} {...session} />
+                    </div>
+                  )
+                )}
               </>
             )}
 
@@ -163,11 +171,13 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
                   <FormattedMessage defaultMessage="Completed sessions" id="sessionList.title.completedSessions" /> (
                   {completedSessions.length})
                 </h2>
-                {completedSessions.map(session => (
-                  <div className="session" key={session.id}>
-                    <Session intl={intl} {...session} />
-                  </div>
-                ))}
+                {completedSessions.map(
+                  (session): React.ReactElement => (
+                    <div className="session" key={session.id}>
+                      <Session intl={intl} {...session} />
+                    </div>
+                  )
+                )}
               </>
             )}
           </>

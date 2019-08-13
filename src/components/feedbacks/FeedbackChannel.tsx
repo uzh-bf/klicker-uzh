@@ -40,7 +40,9 @@ function FeedbackChannel({
   handleDeleteFeedback,
   subscribeToMore,
 }: Props): React.ReactElement {
-  useEffect(() => subscribeToMore(), [])
+  useEffect((): void => {
+    subscribeToMore()
+  }, [])
 
   const intl = useIntl()
 
@@ -72,11 +74,13 @@ function FeedbackChannel({
 
       {isActive && (
         <div className="feedbacks">
-          {feedbacks.map(({ id, content, votes }) => (
-            <div className="feedback">
-              <Feedback content={content} key={id} votes={votes} onDelete={() => handleDeleteFeedback(id)} />
-            </div>
-          ))}
+          {feedbacks.map(
+            ({ id, content, votes }): React.ReactElement => (
+              <div className="feedback">
+                <Feedback content={content} key={id} votes={votes} onDelete={(): void => handleDeleteFeedback(id)} />
+              </div>
+            )
+          )}
         </div>
       )}
 

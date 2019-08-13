@@ -24,7 +24,7 @@ function FREECreationOptions({ disabled, type, dirty, invalid, value, onChange }
   const min = _get(value, 'restrictions.min')
 
   // handle a change in the maximum allowed numerical value
-  const onMaxChange = e => {
+  const onMaxChange = (e): void => {
     const newMax = e.target.value === '' ? null : +e.target.value
     onChange({
       ...value,
@@ -33,7 +33,7 @@ function FREECreationOptions({ disabled, type, dirty, invalid, value, onChange }
   }
 
   // handle a change in the minimum allowed numerical value
-  const onMinChange = e => {
+  const onMinChange = (e): void => {
     const newMin = e.target.value === '' ? null : +e.target.value
     onChange({
       ...value,

@@ -12,7 +12,7 @@ interface Props {
 }
 
 const defaultProps = {
-  onDelete: f => f,
+  onDelete: (f): any => f,
   showDelete: true,
   showVotes: false,
 }

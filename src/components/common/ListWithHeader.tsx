@@ -12,7 +12,7 @@ const defaultProps = {
   limit: undefined,
 }
 
-const mapItems = items => items.map(item => <List.Item>{item}</List.Item>)
+const mapItems = (items): React.ReactElement[] => items.map((item): React.ReactElement => <List.Item>{item}</List.Item>)
 
 function ListWithHeader({ children, items, limit }: Props): React.ReactElement {
   return (

@@ -24,7 +24,17 @@ function PasswordUpdateForm(): React.ReactElement {
           password: undefined,
           passwordRepeat: undefined,
         }}
-        render={({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting, isValid, dirty }) => (
+        render={({
+          values,
+          errors,
+          touched,
+          handleChange,
+          handleBlur,
+          handleSubmit,
+          isSubmitting,
+          isValid,
+          dirty,
+        }): React.ReactElement => (
           <Form onSubmit={handleSubmit}>
             <FormikInput
               required
@@ -69,7 +79,7 @@ function PasswordUpdateForm(): React.ReactElement {
             passwordRepeat,
           })
           .required()}
-        onSubmit={async (values, { setSubmitting }) => {
+        onSubmit={async (values, { setSubmitting }): Promise<void> => {
           try {
             await changePassword({
               variables: {

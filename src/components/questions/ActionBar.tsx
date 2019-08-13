@@ -66,7 +66,7 @@ function ActionBar({
       <div className="creationButtons">
         {creationMode ? (
           <>
-            <Button icon disabled={itemsChecked === 0} labelPosition="left" onClick={() => handleQuickBlocks()}>
+            <Button icon disabled={itemsChecked === 0} labelPosition="left" onClick={(): void => handleQuickBlocks()}>
               <Icon name="lightning" />
               <FormattedMessage
                 defaultMessage="Split questions into {num} blocks"
@@ -75,7 +75,7 @@ function ActionBar({
               />
             </Button>
 
-            <Button icon disabled={itemsChecked === 0} labelPosition="left" onClick={() => handleQuickBlock()}>
+            <Button icon disabled={itemsChecked === 0} labelPosition="left" onClick={(): void => handleQuickBlock()}>
               <Icon name="lightning" />
               <FormattedMessage
                 defaultMessage="Group questions into one block ({num}->1)"
@@ -86,7 +86,12 @@ function ActionBar({
           </>
         ) : (
           <>
-            <Button icon disabled={itemsChecked === 0} labelPosition="left" onClick={() => handleArchiveQuestions()}>
+            <Button
+              icon
+              disabled={itemsChecked === 0}
+              labelPosition="left"
+              onClick={(): void => handleArchiveQuestions()}
+            >
               <Icon name="archive" />
               {isArchiveActive ? (
                 <FormattedMessage
@@ -107,7 +112,7 @@ function ActionBar({
               color="red"
               disabled={itemsChecked === 0}
               labelPosition="left"
-              onClick={() => handleDeleteQuestions(false)}
+              onClick={(): void => handleDeleteQuestions(false)}
             >
               <Icon name="trash" />
               <FormattedMessage
@@ -121,8 +126,8 @@ function ActionBar({
               confirmButton={intl.formatMessage(messages.deletionConfirmationConfirm, { num: +itemsChecked })}
               content={intl.formatMessage(messages.deletionConfirmationContent, { num: +itemsChecked })}
               open={deletionConfirmation}
-              onCancel={() => handleDeleteQuestions(false)}
-              onConfirm={() => handleDeleteQuestions(true)}
+              onCancel={(): void => handleDeleteQuestions(false)}
+              onConfirm={(): void => handleDeleteQuestions(true)}
             />
           </>
         )}

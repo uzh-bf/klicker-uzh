@@ -30,7 +30,7 @@ const defaultProps = {
   sessionInteractionType: 'CREATE',
 }
 
-const getItemStyle = (isDragging, draggableStyle) => ({
+const getItemStyle = (isDragging, draggableStyle): any => ({
   // change background colour if dragging
   background: isDragging ? 'white' : 'grey',
 
@@ -41,7 +41,7 @@ const getItemStyle = (isDragging, draggableStyle) => ({
   ...draggableStyle,
 })
 
-const getListStyle = isDraggingOver => ({
+const getListStyle = (isDraggingOver): any => ({
   background: isDraggingOver ? 'lightblue' : 'white',
 })
 
@@ -136,7 +136,7 @@ function SessionCreationForm({
                                     title={title}
                                     type={type}
                                     version={version}
-                                    onDelete={() => onRemoveQuestion(blockIndex, index)}
+                                    onDelete={(): void => onRemoveQuestion(blockIndex, index)}
                                   />
                                 </div>
                               )}

@@ -61,11 +61,11 @@ function Join(): React.ReactElement {
     setSidebarVisible(false)
   }
 
-  const onToggleSidebarVisible = (): void => setSidebarVisible(prev => !prev)
+  const onToggleSidebarVisible = (): void => setSidebarVisible((prev): boolean => !prev)
 
   // handle creation of a new confusion timestep
   const onNewConfusionTS = _debounce(
-    async ({ difficulty = 0, speed = 0 }) => {
+    async ({ difficulty = 0, speed = 0 }): Promise<void> => {
       try {
         newConfusionTS({
           variables: {
@@ -84,7 +84,7 @@ function Join(): React.ReactElement {
   )
 
   // handle creation of a new feedback
-  const onNewFeedback = async ({ content }) => {
+  const onNewFeedback = async ({ content }): Promise<void> => {
     if (!newFeedback) {
       return
     }
@@ -108,7 +108,7 @@ function Join(): React.ReactElement {
             },
           },
           // update the cache after the mutation has completed
-          update: (store, { data: { addFeedback } }) => {
+          update: (store, { data: { addFeedback } }): void => {
             const query = {
               query: JoinSessionQuery,
               variables: { shortname: router.query.shortname },
@@ -136,7 +136,7 @@ function Join(): React.ReactElement {
   }
 
   // handle creation of a new response
-  const onNewResponse = async ({ instanceId, response }) => {
+  const onNewResponse = async ({ instanceId, response }): Promise<void> => {
     try {
       newResponse({
         variables: { fp: fingerprint, instanceId, response },
@@ -169,10 +169,10 @@ function Join(): React.ReactElement {
         handleToggleSidebarVisible: onToggleSidebarVisible,
         sidebarVisible,
       }}
-      subscribeToMore={() =>
+      subscribeToMore={(): any =>
         subscribeToMore({
           document: UpdatedSessionSubscription,
-          updateQuery: (prev, { subscriptionData }) => {
+          updateQuery: (prev, { subscriptionData }): any => {
             if (!subscriptionData.data) return prev
             return { joinSession: subscriptionData.data.sessionUpdated }
           },

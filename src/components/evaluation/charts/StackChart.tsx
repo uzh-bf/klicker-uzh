@@ -46,7 +46,7 @@ const renderTooltip = (props) => {
 function StackChart({ isSolutionShown, data, totalResponses }: Props): React.ReactElement {
   // filter out choices without any responses (weird labeling)
   // map data to contain percentages and char labels
-  const processedData = data.map(({ correct, count, value }, index) => ({
+  const processedData = data.map(({ correct, count, value }, index): any => ({
     correct,
     count: count || null, // if count is 0, return null
     fill: CHART_COLORS[index % 12],
@@ -69,7 +69,7 @@ function StackChart({ isSolutionShown, data, totalResponses }: Props): React.Rea
         <YAxis
           domain={[
             0,
-            dataMax => {
+            (dataMax): number => {
               const rounded = Math.ceil(dataMax * 1.1)
 
               if (rounded % 2 === 0) {
@@ -90,9 +90,11 @@ function StackChart({ isSolutionShown, data, totalResponses }: Props): React.Rea
           stackId="a"
         >
           <LabelList dataKey="count" fill="white" position="inside" stroke="white" style={{ fontSize: '3rem' }} />
-          {processedData.map(row => (
-            <Cell fill={row.fill} key={row.value} />
-          ))}
+          {processedData.map(
+            (row): React.ReactElement => (
+              <Cell fill={row.fill} key={row.value} />
+            )
+          )}
         </Bar>
 
         <Bar
@@ -109,7 +111,7 @@ function StackChart({ isSolutionShown, data, totalResponses }: Props): React.Rea
             position="top"
             stroke="black"
             style={{ fontSize: '3rem' }}
-            valueAccessor={({ correct, index }) => {
+            valueAccessor={({ correct, index }): string => {
               const label = String.fromCharCode(65 + index)
 
               if (isSolutionShown) {
@@ -119,9 +121,11 @@ function StackChart({ isSolutionShown, data, totalResponses }: Props): React.Rea
               return label
             }}
           />
-          {processedData.map(row => (
-            <Cell fill="lightgrey" key={row.value} />
-          ))}
+          {processedData.map(
+            (row): React.ReactElement => (
+              <Cell fill="lightgrey" key={row.value} />
+            )
+          )}
         </Bar>
       </BarChartComponent>
     </ResponsiveContainer>

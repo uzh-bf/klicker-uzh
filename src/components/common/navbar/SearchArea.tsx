@@ -46,7 +46,7 @@ function SearchArea({
         fluid
         icon="search"
         placeholder={intl.formatMessage(messages.searchPlaceholder)}
-        onChange={e => handleSearch(e.target.value)}
+        onChange={(e): void => handleSearch(e.target.value)}
       >
         <input />
       </Input>
@@ -62,39 +62,37 @@ function SearchArea({
           />
           <Dropdown
             selection
-            options={sortingTypes.map(({ content, id }) => ({
+            options={sortingTypes.map(({ content, id }): any => ({
               text: content,
               value: id,
             }))}
             value={sortBy}
-            onChange={(_, data) => handleSortByChange(data.value)}
+            onChange={(_, data): void => handleSortByChange(data.value)}
           />
         </>
       )}
 
-      <style jsx>
-        {`
-          .searchArea {
-            @import 'src/theme';
+      <style jsx>{`
+        .searchArea {
+          @import 'src/theme';
 
-            display: flex;
-            justify-content: flex-start;
+          display: flex;
+          justify-content: flex-start;
 
-            > :global(.input) {
-              flex: 1;
-              margin-right: 1rem;
-            }
-
-            :global(.dropdown),
-            input {
-              background-color: $color-primary-input;
-              color: $color-primary-strong;
-              line-height: 1rem;
-              font-size: 1rem;
-            }
+          > :global(.input) {
+            flex: 1;
+            margin-right: 1rem;
           }
-        `}
-      </style>
+
+          :global(.dropdown),
+          input {
+            background-color: $color-primary-input;
+            color: $color-primary-strong;
+            line-height: 1rem;
+            font-size: 1rem;
+          }
+        }
+      `}</style>
     </div>
   )
 }

@@ -13,11 +13,13 @@ function QuestionTags({ tags, type }: Props): React.ReactElement {
 
   return (
     <div className="questionTags">
-      {tags.map(tag => (
-        <div className="tag" key={tag.id}>
-          {tag.name}
-        </div>
-      ))}
+      {tags.map(
+        (tag): React.ReactElement => (
+          <div className="tag" key={tag.id}>
+            {tag.name}
+          </div>
+        )
+      )}
 
       <div className="type tag">{generateTypesShort(intl)[type]}</div>
 

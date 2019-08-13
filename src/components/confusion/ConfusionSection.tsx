@@ -24,7 +24,7 @@ function ConfusionSection({ data, title, ylabel }: Props): React.ReactElement {
       <h3>{title}</h3>
 
       <div className="chart">
-        {(() => {
+        {((): React.ReactElement => {
           // if there is no data for the section, display a message
           if (data.length === 0) {
             return <FormattedMessage defaultMessage="No data yet." id="runningSession.confusionSection.noData" />

@@ -70,7 +70,7 @@ function FREEAnswerOptions({ disabled, onChange, options, value, questionType }:
                 min={options.restrictions.min}
                 type="number"
                 value={value}
-                onChange={e => onChange(e.target.value)}
+                onChange={(e): void => onChange(e.target.value)}
               />
             </div>
           )
@@ -113,7 +113,7 @@ function FREEAnswerOptions({ disabled, onChange, options, value, questionType }:
               disabled={disabled}
               id="responseInput"
               value={value}
-              onChange={e => onChange(e.target.value)}
+              onChange={(e): void => onChange(e.target.value)}
             />
           </div>
         )

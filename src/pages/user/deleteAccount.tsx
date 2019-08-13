@@ -37,7 +37,7 @@ function DeleteAccount(): React.ReactElement {
           />
         </h1>
 
-        {(() => {
+        {((): React.ReactElement => {
           const success = data && !error
 
           if (success) {
@@ -62,7 +62,9 @@ function DeleteAccount(): React.ReactElement {
               <Button
                 color="red"
                 loading={loading}
-                onClick={() => deleteAccount({ variables: { deletionToken: router.query.deletionToken } })}
+                onClick={(): void => {
+                  deleteAccount({ variables: { deletionToken: router.query.deletionToken } })
+                }}
               >
                 <FormattedMessage defaultMessage="Yes, I am sure!" id="user.deleteAccount.button.confirm" />
               </Button>

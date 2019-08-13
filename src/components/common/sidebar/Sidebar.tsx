@@ -36,18 +36,20 @@ function Sidebar({ activeItem, children, items, visible, handleSidebarItemClick 
           visible={visible}
           width="wide"
         >
-          {items.map(({ name, className, href, icon, label }) => (
-            <SidebarItem
-              active={name === activeItem}
-              className={className}
-              handleSidebarItemClick={handleSidebarItemClick(href)}
-              icon={icon}
-              key={name}
-              name={name}
-            >
-              {label}
-            </SidebarItem>
-          ))}
+          {items.map(
+            ({ name, className, href, icon, label }): React.ReactElement => (
+              <SidebarItem
+                active={name === activeItem}
+                className={className}
+                handleSidebarItemClick={handleSidebarItemClick(href)}
+                icon={icon}
+                key={name}
+                name={name}
+              >
+                {label}
+              </SidebarItem>
+            )
+          )}
           <div className="extras">
             <div className="langSwitcher">
               <LanguageSwitcher />

@@ -24,7 +24,7 @@ function PieChart({ isSolutionShown, data, totalResponses }: Props): React.React
   // filter out choices without any responses (weird labeling)
   // map data to contain percentages and char labels
   const processedData = data
-    .map(({ correct, count, value }, index) => ({
+    .map(({ correct, count, value }, index): any => ({
       correct,
       count,
       fill: CHART_COLORS[index % 12],
@@ -32,7 +32,7 @@ function PieChart({ isSolutionShown, data, totalResponses }: Props): React.React
       labelOut: getLabelOut(CHART_TYPES.PIE_CHART, count, totalResponses, index),
       value,
     }))
-    .filter(({ count }) => count > 0)
+    .filter(({ count }): boolean => count > 0)
 
   return (
     <ResponsiveContainer>
@@ -70,9 +70,11 @@ function PieChart({ isSolutionShown, data, totalResponses }: Props): React.React
             strokeWidth={1}
             style={{ fontSize: '3rem' }}
           />
-          {processedData.map(row => (
-            <Cell fill={isSolutionShown && row.correct ? '#00FF00' : row.fill} key={row.value} strokeWidth={5} />
-          ))}
+          {processedData.map(
+            (row): React.ReactElement => (
+              <Cell fill={isSolutionShown && row.correct ? '#00FF00' : row.fill} key={row.value} strokeWidth={5} />
+            )
+          )}
         </Pie>
       </PieChartComponent>
     </ResponsiveContainer>

@@ -2,7 +2,7 @@ import React from 'react'
 import { FormattedMessage } from 'react-intl'
 import { Message, Divider } from 'semantic-ui-react'
 
-function InfoArea() {
+function InfoArea(): React.ReactElement {
   return (
     <div className="infoArea">
       <Message info>

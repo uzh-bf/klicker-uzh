@@ -34,7 +34,17 @@ function AccountDataForm(): React.ReactElement {
           shortname: _get(data, 'user.shortname'),
           useCase: _get(data, 'user.useCase'),
         }}
-        render={({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting, isValid, dirty }) => (
+        render={({
+          values,
+          errors,
+          touched,
+          handleChange,
+          handleBlur,
+          handleSubmit,
+          isSubmitting,
+          isValid,
+          dirty,
+        }): React.ReactElement => (
           <Form loading={loading} onSubmit={handleSubmit}>
             <FormikInput
               disabled
@@ -114,7 +124,7 @@ function AccountDataForm(): React.ReactElement {
             useCase,
           })
           .required()}
-        onSubmit={async (values, { setSubmitting, setFieldError }) => {
+        onSubmit={async (values, { setSubmitting, setFieldError }): Promise<void> => {
           try {
             await modifyUser({
               variables: values,

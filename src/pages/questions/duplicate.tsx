@@ -47,10 +47,10 @@ function DuplicateQuestion(): React.ReactElement {
     // eslint-disable-next-line no-shadow
     { content, options, tags, title, type, files, solution },
     { setSubmitting }
-  ) => {
+  ): Promise<void> => {
     // split files into newly added and existing entities
-    const existingFiles = files.filter(file => file.id)
-    const newFiles = files.filter(file => !file.id)
+    const existingFiles = files.filter((file): boolean => !!file.id)
+    const newFiles = files.filter((file): boolean => !file.id)
 
     // request presigned urls and filenames for newly added files
     const fileEntities = await getPresignedURLs(newFiles, requestPresignedURL)
@@ -60,7 +60,7 @@ function DuplicateQuestion(): React.ReactElement {
 
     // combine existing files and newly uploaded files into a single array
     const allFiles = existingFiles.concat(
-      fileEntities.map(({ id: fileId, file, fileName }) => ({
+      fileEntities.map(({ id: fileId, file, fileName }): any => ({
         id: fileId,
         name: fileName,
         originalName: file.name,
@@ -99,7 +99,7 @@ function DuplicateQuestion(): React.ReactElement {
       pageTitle={intl.formatMessage(messages.pageTitle)}
       sidebar={{ activeItem: 'createQuestion' }}
     >
-      {() => {
+      {(): React.ReactElement => {
         if (tagsLoading || questionLoading || !tagList.tags || !questionDetails.question) {
           return null
         }
@@ -146,7 +146,7 @@ function DuplicateQuestion(): React.ReactElement {
             : EditorState.createWithContent(ContentState.createFromText(prepForm[initializeVersion].description)),
           files: prepForm[initializeVersion].files || [],
           options: prepForm[initializeVersion].options[type] || {},
-          tags: tags.map(tag => tag.name),
+          tags: tags.map((tag): string => tag.name),
           title: title + duplicateTitle,
           type,
           versions: prepForm,
@@ -159,7 +159,7 @@ function DuplicateQuestion(): React.ReactElement {
             tags={tagList.tags}
             tagsLoading={tagsLoading}
             // handle discarding a new question
-            onDiscard={() => router.push('/questions')}
+            onDiscard={(): Promise<boolean> => router.push('/questions')}
             // handle submitting a new question
             onSubmit={onSubmit}
           />

@@ -78,7 +78,7 @@ function Chart({
 }: Props): React.ReactElement {
   return (
     <div className="chart">
-      {(() => {
+      {((): React.ReactElement => {
         // if the chart display has not already been toggled
         if (!showGraph) {
           return (
@@ -102,7 +102,7 @@ function Chart({
         if (ChartComponent) {
           return (
             <SizeMe refreshRate={250}>
-              {({ size }) => (
+              {({ size }): React.ReactElement => (
                 <ChartComponent
                   brush={sessionStatus !== SESSION_STATUS.RUNNING}
                   data={data}

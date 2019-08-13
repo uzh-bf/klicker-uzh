@@ -18,25 +18,27 @@ const defaultProps = {
 function QuestionFiles({ files }: Props): React.ReactElement {
   return (
     <div className="questionFiles">
-      {files.map(({ id, name }, ix) => {
-        const fileSrc = `${publicRuntimeConfig.s3root}/${name}`
-        const previewImage = (
-          <Card>
-            <Image height="auto" src={fileSrc} width="100%" />
-            <Card.Content extra>#{ix + 1}</Card.Content>
-          </Card>
-        )
+      {files.map(
+        ({ id, name }, ix): React.ReactElement => {
+          const fileSrc = `${publicRuntimeConfig.s3root}/${name}`
+          const previewImage = (
+            <Card>
+              <Image height="auto" src={fileSrc} width="100%" />
+              <Card.Content extra>#{ix + 1}</Card.Content>
+            </Card>
+          )
 
-        return (
-          <div className="file" key={id}>
-            <Modal closeIcon trigger={previewImage}>
-              <Modal.Content image>
-                <Image wrapped src={fileSrc} />
-              </Modal.Content>
-            </Modal>
-          </div>
-        )
-      })}
+          return (
+            <div className="file" key={id}>
+              <Modal closeIcon trigger={previewImage}>
+                <Modal.Content image>
+                  <Image wrapped src={fileSrc} />
+                </Modal.Content>
+              </Modal>
+            </div>
+          )
+        }
+      )}
       <style jsx>{`
         .questionFiles {
           display: flex;

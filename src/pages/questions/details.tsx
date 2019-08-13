@@ -53,13 +53,13 @@ function EditQuestion(): React.ReactElement {
     }
   }, [questionLoading])
 
-  const onSubmit = id => isNewVersion => async (
+  const onSubmit = (id: string): any => (isNewVersion: boolean): any => async (
     { title: newTitle, content, options, solution, tags: newTags, files },
     { setSubmitting }
-  ) => {
+  ): Promise<void> => {
     // split files into newly added and existing entities
-    const existingFiles = files.filter(file => file.id)
-    const newFiles = files.filter(file => !file.id)
+    const existingFiles = files.filter((file): boolean => !!file.id)
+    const newFiles = files.filter((file): boolean => !file.id)
 
     // request presigned urls and filenames for newly added files
     const fileEntities = await getPresignedURLs(newFiles, requestPresignedURL)
@@ -69,7 +69,7 @@ function EditQuestion(): React.ReactElement {
 
     // combine existing files and newly uploaded files into a single array
     const allFiles = existingFiles.concat(
-      fileEntities.map(({ id: fileId, file, fileName }) => ({
+      fileEntities.map(({ id: fileId, file, fileName }): any => ({
         id: fileId,
         name: fileName,
         originalName: file.name,
@@ -83,7 +83,7 @@ function EditQuestion(): React.ReactElement {
       // TODO: replace with optimistic updates
       refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
       // update the cache after the mutation has completed
-      update: (store, { data: { modifyQuestion } }) => {
+      update: (store, { data: { modifyQuestion } }): void => {
         const query = {
           query: QuestionDetailsQuery,
           variables: { id: router.query.questionId },
@@ -137,7 +137,7 @@ function EditQuestion(): React.ReactElement {
       pageTitle={intl.formatMessage(messages.pageTitle)}
       sidebar={{ activeItem: 'editQuestion' }}
     >
-      {() => {
+      {(): React.ReactElement => {
         // if the tags or the question is still loading, return null
         if (tagsLoading || questionLoading || !tagList.tags || !questionDetails.question) {
           return null
@@ -161,9 +161,7 @@ function EditQuestion(): React.ReactElement {
               success: (data && !error) || null,
             }}
             handleActiveVersionChange={setActiveVersion}
-            handleDiscard={() => {
-              router.push('/questions')
-            }}
+            handleDiscard={(): Promise<boolean> => router.push('/questions')}
             handleSubmit={onSubmit(id)}
             loading={loading}
             questionTags={tags}

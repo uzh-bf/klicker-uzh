@@ -23,7 +23,7 @@ function Possibilities({ data, questionOptions, questionType, showGraph, showSol
   return (
     <div className="possibilities">
       <h2>
-        {(() => {
+        {((): React.ReactNode => {
           if (QUESTION_GROUPS.CHOICES.includes(questionType)) {
             return <FormattedMessage defaultMessage="Choices" id="evaluation.possibilities.choices" />
           }
@@ -36,22 +36,24 @@ function Possibilities({ data, questionOptions, questionType, showGraph, showSol
         })()}
       </h2>
 
-      {(() => {
+      {((): React.ReactElement => {
         if (QUESTION_GROUPS.CHOICES.includes(questionType)) {
           return (
             <div>
-              {data.map(({ correct, percentage, value }, index) => (
-                <EvaluationListItem
-                  color={CHART_COLORS[index % 12]}
-                  correct={showGraph && showSolution && correct}
-                  marker={indexToLetter(index)}
-                  percentage={percentage}
-                  questionType={questionType}
-                  showGraph={showGraph}
-                >
-                  {value}
-                </EvaluationListItem>
-              ))}
+              {data.map(
+                ({ correct, percentage, value }, index): React.ReactElement => (
+                  <EvaluationListItem
+                    color={CHART_COLORS[index % 12]}
+                    correct={showGraph && showSolution && correct}
+                    marker={indexToLetter(index)}
+                    percentage={percentage}
+                    questionType={questionType}
+                    showGraph={showGraph}
+                  >
+                    {value}
+                  </EvaluationListItem>
+                )
+              )}
             </div>
           )
         }
@@ -63,7 +65,7 @@ function Possibilities({ data, questionOptions, questionType, showGraph, showSol
 
           return (
             <div>
-              {(() => {
+              {((): React.ReactElement | React.ReactElement[] => {
                 const comp = []
                 if (restrictions && _isNumber(restrictions.min)) {
                   comp.push(

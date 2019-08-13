@@ -40,7 +40,7 @@ export function buildIndex(name: string, items: any[], searchIndices: any[]): an
   // search.tokenizer = new JsSearch.StopWordsTokenizer(new JsSearch.SimpleTokenizer())
 
   // index by title, type, creation date and the description of the first version
-  searchIndices.forEach(index => search.addIndex(index))
+  searchIndices.forEach((index): void => search.addIndex(index))
 
   // build the index based on the items
   search.addDocuments(items)
@@ -52,7 +52,8 @@ export function buildIndex(name: string, items: any[], searchIndices: any[]): an
 
 export function filterQuestions(questions: any[], filters: any, index: any): any[] {
   let results = questions.filter(
-    ({ isArchived }) => (typeof isArchived === 'undefined' && !filters.archive) || isArchived === filters.archive
+    ({ isArchived }): boolean =>
+      (typeof isArchived === 'undefined' && !filters.archive) || isArchived === filters.archive
   )
 
   // if a title (query) was given, search the index with it
@@ -62,14 +63,14 @@ export function filterQuestions(questions: any[], filters: any, index: any): any
 
   // if either type or tags were selected, filter the results
   if (filters.type || filters.tags) {
-    results = results.filter(({ type, tags }) => {
+    results = results.filter(({ type, tags }): boolean => {
       // compare the type selected and the type of each question
       if (filters.type && type !== filters.type) {
         return false
       }
 
       // compare the tags selected and check whether the question fulfills all of them
-      if (filters.tags && !_every(filters.tags, tag => tags.map(t => t.name).includes(tag))) {
+      if (filters.tags && !_every(filters.tags, (tag): boolean => tags.map((t): string => t.name).includes(tag))) {
         return false
       }
 
@@ -98,19 +99,19 @@ export function sortQuestions(questions: any[], sort: any): any[] {
   const factor = sort.asc ? 1 : -1
 
   if (sort.by === 'TITLE') {
-    return questions.sort((a, b) => factor * a.title.localeCompare(b.title))
+    return questions.sort((a, b): number => factor * a.title.localeCompare(b.title))
   }
 
   if (sort.by === 'TYPE') {
-    return questions.sort((a, b) => factor * a.type.localeCompare(b.type))
+    return questions.sort((a, b): number => factor * a.type.localeCompare(b.type))
   }
 
   if (sort.by === 'CREATED') {
-    return questions.sort((a, b) => factor * subtractDates(dayjs(a.createdAt), dayjs(b.createdAt)))
+    return questions.sort((a, b): number => factor * subtractDates(dayjs(a.createdAt), dayjs(b.createdAt)))
   }
 
   if (sort.by === 'USED') {
-    return questions.sort((a, b) => {
+    return questions.sort((a, b): number => {
       if (a.instances.length === 0 || b.instances.length === 0) {
         if (a.instances.length === 0 && b.instances.length === 0) {
           return 0

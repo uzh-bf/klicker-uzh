@@ -54,7 +54,7 @@ function SCCreationOption({
             disabled={disabled}
             type="text"
             value={name}
-            onChange={e => handleSaveNewName({ newName: e.target.value })}
+            onChange={(e): void => handleSaveNewName({ newName: e.target.value })}
           />
 
           <div className="grabHandle">

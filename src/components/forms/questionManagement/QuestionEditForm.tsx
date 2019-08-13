@@ -50,7 +50,7 @@ const messages = defineMessages({
 })
 
 // form validation
-const validate = ({ title, content, options, tags, type }) => {
+const validate = ({ title, content, options, tags, type }): any => {
   const errors: any = {}
 
   if (!title || _isEmpty(title)) {
@@ -138,13 +138,13 @@ function QuestionEditForm({
       : EditorState.createWithContent(ContentState.createFromText(versions[initializeVersion].description)),
     files: versions[initializeVersion].files || [],
     options: versions[initializeVersion].options[type] || {},
-    tags: questionTags.map(tag => tag.name),
+    tags: questionTags.map((tag): string => tag.name),
     title,
     type,
     versions,
   }
 
-  const versionOptions = versions.map(({ id }, index) => ({
+  const versionOptions = versions.map(({ id }, index): any => ({
     text: `v${index + 1}`,
     value: id,
   }))
@@ -168,7 +168,7 @@ function QuestionEditForm({
           setFieldValue,
           setFieldTouched,
           isSubmitting,
-        }: any) => {
+        }: any): React.ReactElement => {
           const OptionsInput = typeComponents[type]
           const { message, success } = editSuccess
 
@@ -232,21 +232,23 @@ function QuestionEditForm({
                   <Dropdown.Menu>
                     <Dropdown.Item
                       active={isNewVersion}
-                      onClick={() => handleActiveVersionChange(versionOptions.length)}
+                      onClick={(): void => handleActiveVersionChange(versionOptions.length)}
                     >
                       {`v${versionOptions.length + 1} (draft)`}
                     </Dropdown.Item>
 
                     {versionOptions
-                      .map(({ id, text }: any, index) => (
-                        <Dropdown.Item
-                          active={activeVersion === index}
-                          key={id}
-                          onClick={() => handleActiveVersionChange(index)}
-                        >
-                          {text}
-                        </Dropdown.Item>
-                      ))
+                      .map(
+                        ({ id, text }: any, index): React.ReactElement => (
+                          <Dropdown.Item
+                            active={activeVersion === index}
+                            key={id}
+                            onClick={(): void => handleActiveVersionChange(index)}
+                          >
+                            {text}
+                          </Dropdown.Item>
+                        )
+                      )
                       .reverse()}
                   </Dropdown.Menu>
                 </Dropdown>
@@ -257,7 +259,7 @@ function QuestionEditForm({
                   tags={allTags}
                   touched={touched.tags}
                   value={values.tags}
-                  onChange={newTags => {
+                  onChange={(newTags): void => {
                     setFieldTouched('tags', true, false)
                     setFieldValue('tags', newTags)
                   }}
@@ -270,7 +272,7 @@ function QuestionEditForm({
                   error={errors.content}
                   touched={touched.content}
                   value={values.content}
-                  onChange={newContent => {
+                  onChange={(newContent): void => {
                     setFieldTouched('content', true, false)
                     setFieldValue('content', newContent)
                   }}
@@ -285,7 +287,7 @@ function QuestionEditForm({
                   <FileDropzone
                     disabled={!isNewVersion}
                     files={values.files}
-                    onChangeFiles={newFiles => {
+                    onChangeFiles={(newFiles): void => {
                       setFieldTouched('files', true, false)
                       setFieldValue('files', newFiles)
                     }}
@@ -298,7 +300,7 @@ function QuestionEditForm({
                   disabled={!isNewVersion}
                   type={values.type}
                   value={values.options}
-                  onChange={newOptions => {
+                  onChange={(newOptions): void => {
                     setFieldTouched('options', true, false)
                     setFieldValue('options', newOptions)
                   }}

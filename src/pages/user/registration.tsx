@@ -34,7 +34,7 @@ function Registration(): React.ReactElement {
           <FormattedMessage defaultMessage="Registration" id="user.registration.title" />
         </h1>
 
-        {(() => {
+        {((): React.ReactElement => {
           const newEmail = data && data.createUser.email
 
           if (newEmail) {

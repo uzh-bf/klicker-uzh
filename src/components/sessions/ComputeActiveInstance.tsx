@@ -7,8 +7,8 @@ import { toValueArray } from '../../lib/utils/math'
 import { CHART_DEFAULTS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 
 function ComputeActiveInstance({ activeInstances, children, sessionStatus }): React.ReactElement {
-  const [activeInstanceIndex, setActiveInstanceIndex] = useState(() => {
-    const firstActiveIndex = activeInstances.findIndex(instance => instance.blockStatus === 'ACTIVE')
+  const [activeInstanceIndex, setActiveInstanceIndex] = useState((): number => {
+    const firstActiveIndex = activeInstances.findIndex((instance): boolean => instance.blockStatus === 'ACTIVE')
     return firstActiveIndex >= 0 ? firstActiveIndex : 0
   })
   const [activeVisualizations, setActiveVisualizations] = useState(CHART_DEFAULTS)
@@ -33,7 +33,7 @@ function ComputeActiveInstance({ activeInstances, children, sessionStatus }): Re
       mean: hasResults && mean(valueArray),
       median: hasResults && median(valueArray),
       min: hasResults && min(valueArray),
-      onChangeBins: e => setBins(+e.target.value),
+      onChangeBins: (e): void => setBins(+e.target.value),
       q1: hasResults && quantileSeq(valueArray, 0.25),
       q3: hasResults && quantileSeq(valueArray, 0.75),
       sd: hasResults && std(valueArray),
@@ -43,7 +43,7 @@ function ComputeActiveInstance({ activeInstances, children, sessionStatus }): Re
       ...activeInstance.results,
       data:
         _get(activeInstance, 'results.data') &&
-        activeInstance.results.data.map(({ correct, count, value }) => ({
+        activeInstance.results.data.map(({ correct, count, value }): any => ({
           correct,
           count,
           percentage: _round(100 * (count / _get(activeInstance, 'results.totalResponses')), 1),

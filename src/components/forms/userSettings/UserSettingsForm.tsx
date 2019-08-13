@@ -23,7 +23,7 @@ const messages = defineMessages({
   },
 })
 
-function UserSettingsForm() {
+function UserSettingsForm(): React.ReactElement {
   const intl = useIntl()
 
   const [requestAccountDeletion, { loading, data }] = useMutation(RequestAccountDeletionMutation)
@@ -31,7 +31,7 @@ function UserSettingsForm() {
   const panes = [
     {
       menuItem: intl.formatMessage(messages.accountDataItem),
-      render: () => (
+      render: (): React.ReactElement => (
         <Tab.Pane>
           <AccountDataForm />
         </Tab.Pane>
@@ -39,7 +39,7 @@ function UserSettingsForm() {
     },
     {
       menuItem: intl.formatMessage(messages.changePasswordItem),
-      render: () => (
+      render: (): React.ReactElement => (
         <Tab.Pane>
           <PasswordUpdateForm />
         </Tab.Pane>
@@ -47,7 +47,7 @@ function UserSettingsForm() {
     },
     {
       menuItem: intl.formatMessage(messages.deleteAccountItem),
-      render: () => {
+      render: (): React.ReactElement => {
         const success = !loading && _get(data, 'requestAccountDeletion') === 'ACCOUNT_DELETION_EMAIL_SENT'
         return (
           <Tab.Pane>
@@ -73,7 +73,14 @@ function UserSettingsForm() {
                 />
               </Message>
             ) : (
-              <Button color="red" disabled={success} loading={loading} onClick={() => requestAccountDeletion()}>
+              <Button
+                color="red"
+                disabled={success}
+                loading={loading}
+                onClick={(): void => {
+                  requestAccountDeletion()
+                }}
+              >
                 <FormattedMessage
                   defaultMessage="Yes, I want to delete my account!"
                   id="form.userSettings.button.requestAccountDeletion"

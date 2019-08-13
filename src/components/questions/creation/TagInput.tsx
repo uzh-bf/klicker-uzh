@@ -23,10 +23,10 @@ const defaultProps = {
 }
 
 function TagInput({ tags, value, onChange, error, touched, disabled }: Props): React.ReactElement {
-  const [tagState, setTagState] = useState(tags.map(({ id, name }) => ({ key: id, text: name, value: name })))
+  const [tagState, setTagState] = useState(tags.map(({ id, name }): any => ({ key: id, text: name, value: name })))
 
-  const onAddNewTag = (_, { value: newTagValue }) => {
-    if (tagState.map(({ text }) => text).includes(newTagValue)) {
+  const onAddNewTag = (_, { value: newTagValue }): void => {
+    if (tagState.map(({ text }): string => text).includes(newTagValue)) {
       return
     }
 
@@ -60,7 +60,7 @@ function TagInput({ tags, value, onChange, error, touched, disabled }: Props): R
           options={tagState}
           value={value}
           onAddItem={onAddNewTag}
-          onChange={(_, { value: newVal }) => onChange(newVal)}
+          onChange={(_, { value: newVal }): void => onChange(newVal)}
         />
       </Form.Field>
 
