@@ -20,7 +20,7 @@ function LoadSessionData({ sessionId, children, isPublic }: Props): React.ReactE
 
   const sessionWithRefetch = useQuery(SessionEvaluationQuery, {
     pollInterval: 7000,
-    skip: isPublic || _get(session, 'data.status') !== SESSION_STATUS.RUNNING,
+    skip: isPublic || _get(session, 'data.session.status') !== SESSION_STATUS.RUNNING,
     variables: { sessionId },
   })
 
