@@ -117,7 +117,7 @@ const createQuestion = async ({ title, type, content, options, solution, files, 
   const { allTagIds, allTags, createdTagIds } = processTags(user.tags, tags, userId)
 
   // process files
-  const { createdFiles, createdFileIds } = processFiles(files, userId)
+  const { createdFiles, createdFileIds, existingFileIds } = processFiles(files, userId)
 
   // create a new question
   // pass the list of tag ids for reference
@@ -134,7 +134,7 @@ const createQuestion = async ({ title, type, content, options, solution, files, 
         options: QUESTION_GROUPS.WITH_OPTIONS.includes(type) && {
           [type]: options,
         },
-        files: createdFileIds,
+        files: existingFileIds.concat(createdFileIds),
         solution,
       },
     ],
