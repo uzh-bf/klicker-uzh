@@ -132,9 +132,17 @@ function DuplicateQuestion(): React.ReactElement {
             break
           case QUESTION_TYPES.MC:
             prepForm[initializeVersion].options[type].randomized = false
+            prepForm[initializeVersion].options[type].restrictions = {
+              max: null,
+              min: null,
+            }
             break
           case QUESTION_TYPES.SC:
             prepForm[initializeVersion].options[type].randomized = false
+            prepForm[initializeVersion].options[type].restrictions = {
+              max: null,
+              min: null,
+            }
             break
           default:
             break
