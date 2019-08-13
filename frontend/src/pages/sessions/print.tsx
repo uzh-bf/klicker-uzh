@@ -30,12 +30,12 @@ function Print(): React.ReactElement<any> {
 
   return (
     <LoadSessionData sessionId={sessionId} isPublic={isPublic}>
-      {({ data, loading }) => {
-        if (loading || !data) {
+      {({ session, loading, error }) => {
+        if (loading || error || !_get(session, 'blocks')) {
           return null
         }
 
-        const { activeInstances, sessionStatus } = extractInstancesFromSession(data)
+        const { activeInstances, sessionStatus } = extractInstancesFromSession(session)
 
         return (
           <CommonLayout baseFontSize="20">
