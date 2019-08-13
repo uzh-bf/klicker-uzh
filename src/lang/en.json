@@ -23,7 +23,7 @@
   "createQuestion.button.backToPool": "Return to Question Pool",
   "createQuestion.contentInput.label": "Question",
   "createQuestion.contentInput.tooltip": "Enter the question you want to ask the audience.",
-  "createQuestion.filesLabel": "Attached Images (Beta)",
+  "createQuestion.filesLabel": "Attached Images",
   "createQuestion.options.max": "Max",
   "createQuestion.options.min": "Min",
   "createQuestion.optionsFREE.label": "Input Restrictions",

@@ -18,7 +18,7 @@ interface Props {
   questions: Question[]
   status?: string
   timeLimit?: number
-  handleResetQuestionBlock: () => void
+  handleResetQuestionBlock?: () => void
 }
 
 const defaultProps = {

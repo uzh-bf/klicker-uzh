@@ -3,23 +3,21 @@ import getConfig from 'next/config'
 import _isEmpty from 'lodash/isEmpty'
 import _isNumber from 'lodash/isNumber'
 import _some from 'lodash/some'
-import { defineMessages, FormattedMessage, InjectedIntl } from 'react-intl'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Form, Message, List, Loader } from 'semantic-ui-react'
 import { Formik } from 'formik'
 import { EditorState } from 'draft-js'
 
 import FileDropzone from './FileDropzone'
-import { ContentInput, TagInput } from '../../questions'
-import {
-  TypeChooser,
-  SCCreationOptions,
-  SCCreationPreview,
-  FREECreationOptions,
-  FREECreationPreview,
-} from '../../questionTypes'
-import { QUESTION_TYPES } from '../../../lib'
-import { QUESTION_GROUPS } from '../../../constants'
-import { FormikInput } from '../components'
+import ContentInput from '../../questions/creation/ContentInput'
+import TagInput from '../../questions/creation/TagInput'
+import TypeChooser from '../../questionTypes/TypeChooser'
+import SCCreationOptions from '../../questionTypes/SC/SCCreationOptions'
+import SCCreationPreview from '../../questionTypes/SC/SCCreationPreview'
+import FREECreationOptions from '../../questionTypes/FREE/FREECreationOptions'
+import FREECreationPreview from '../../questionTypes/FREE/FREECreationPreview'
+import { QUESTION_GROUPS, QUESTION_TYPES } from '../../../constants'
+import FormikInput from '../components/FormikInput'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -94,7 +92,7 @@ function validate({ content, options, tags, title, type }: any): ValidationError
       errors.options = messages.optionsEmpty
     }
 
-    if (type === QUESTION_TYPES.SC && options.choices.filter(choice => !!choice.correct).length > 1) {
+    if (type === QUESTION_TYPES.SC && options.choices.filter((choice): boolean => !!choice.correct).length > 1) {
       errors.options = messages.optionsInvalidSC
     }
   } else if (type === QUESTION_TYPES.FREE_RANGE) {
@@ -114,6 +112,7 @@ function validate({ content, options, tags, title, type }: any): ValidationError
 }
 
 interface Props {
+  isInitialValid?: boolean
   initialValues?: {
     content: any
     files: any[]
@@ -129,25 +128,27 @@ interface Props {
     title: string
     type: any
   }
-  intl: InjectedIntl
-  onDiscard: () => void
-  onSubmit: () => void
+  onDiscard: any
+  onSubmit: any
   tags?: any[]
   tagsLoading: boolean
 }
 
 const defaultProps = {
+  isInitialValid: false,
   tags: [],
 }
 
 function QuestionCreationForm({
+  isInitialValid,
   initialValues,
-  intl,
   tags,
   tagsLoading,
   onSubmit,
   onDiscard,
 }: Props): React.ReactElement {
+  const intl = useIntl()
+
   const typeComponents = {
     [QUESTION_TYPES.SC]: {
       input: SCCreationOptions,
@@ -182,11 +183,12 @@ function QuestionCreationForm({
                 min: null,
               },
             },
-            tags: null,
+            tags: [],
             title: '',
             type: QUESTION_TYPES.SC,
           }
         }
+        isInitialValid={isInitialValid}
         validate={validate}
         /* validationSchema={Yup.object().shape({
           content: Yup.string().required(),
@@ -224,7 +226,6 @@ function QuestionCreationForm({
                   } */
                   handleBlur={handleBlur}
                   handleChange={handleChange}
-                  intl={intl}
                   label={intl.formatMessage(messages.titleInput)}
                   name="title"
                   tooltip={
@@ -240,14 +241,19 @@ function QuestionCreationForm({
               </div>
 
               <div className="questionInput questionType">
-                <TypeChooser intl={intl} value={values.type} onChange={newType => setFieldValue('type', newType)} />
+                <TypeChooser value={values.type} onChange={(newType): void => setFieldValue('type', newType)} />
               </div>
 
               <div className="questionInput questionTags">
                 {tagsLoading ? (
                   <Loader active />
                 ) : (
-                  <TagInput tags={tags} value={values.tags} onChange={newTags => setFieldValue('tags', newTags)} />
+                  <TagInput
+                    tags={tags}
+                    touched={touched.tags}
+                    value={values.tags}
+                    onChange={(newTags): void => setFieldValue('tags', newTags)}
+                  />
                 )}
               </div>
 
@@ -256,25 +262,27 @@ function QuestionCreationForm({
                   error={errors.content}
                   touched={touched.content}
                   value={values.content}
-                  onChange={newContent => setFieldValue('content', newContent)}
+                  onChange={(newContent): void => setFieldValue('content', newContent)}
                 />
               </div>
 
               {publicRuntimeConfig.s3root && (
                 <div className="questionInput questionFiles">
                   <h2>
-                    <FormattedMessage defaultMessage="Attached Images (Beta)" id="createQuestion.filesLabel" />
+                    <FormattedMessage defaultMessage="Attached Images" id="createQuestion.filesLabel" />
                   </h2>
-                  <FileDropzone files={values.files} onChangeFiles={newFiles => setFieldValue('files', newFiles)} />
+                  <FileDropzone
+                    files={values.files}
+                    onChangeFiles={(newFiles): void => setFieldValue('files', newFiles)}
+                  />
                 </div>
               )}
 
               <div className="questionInput questionOptions">
                 <OptionsInput
-                  intl={intl}
                   type={values.type}
                   value={values.options}
-                  onChange={newOptions => setFieldValue('options', newOptions)}
+                  onChange={(newOptions): void => setFieldValue('options', newOptions)}
                 />
               </div>
 
@@ -301,7 +309,7 @@ function QuestionCreationForm({
                 <Button
                   primary
                   className="save"
-                  disabled={!_isEmpty(errors) || _isEmpty(touched)}
+                  disabled={!_isEmpty(errors) || (!isInitialValid && _isEmpty(touched))}
                   loading={isSubmitting}
                   type="submit"
                 >

@@ -9,7 +9,7 @@ if (typeof global.Intl !== 'object') {
 
 // The document (which is SSR-only) needs to be customized to expose the locale
 // data for the user's locale for React Intl to work in the browser.
-export default class IntlDocument extends Document {
+class IntlDocument extends Document {
   static async getInitialProps(context) {
     const props = await super.getInitialProps(context)
     const {
@@ -34,6 +34,7 @@ export default class IntlDocument extends Document {
             crossOrigin="anonymous"
             src="https://polyfill.io/v3/polyfill.min.js?flags=gated&features=default%2CIntl%2CArray.prototype.includes%2CString.prototype.repeat%2CSymbol%2CSymbol.iterator"
           />
+          <script async="true" crossOrigin="anonymous" src="https://cdn.slaask.com/chat.js" />
         </Head>
         <body>
           <Main />
@@ -48,3 +49,5 @@ export default class IntlDocument extends Document {
     )
   }
 }
+
+export default IntlDocument

@@ -14,7 +14,7 @@ jobs:
       stage: test
       language: node_js
       node_js:
-        - "10"
+        - '10'
       cache: npm
       before_script:
         - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
@@ -35,6 +35,11 @@ jobs:
       script:
         - npm run build
         - npm run bundlesize
+
+    # ensure that the types are valid
+    - <<: *test-setup
+      script:
+        - npm run type-check
 
     # build all commits to master
     # push a new latest tag to Docker Hub

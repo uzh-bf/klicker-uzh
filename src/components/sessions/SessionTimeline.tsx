@@ -4,8 +4,9 @@ import QRCode from 'qrcode.react'
 import getConfig from 'next/config'
 import { defineMessages, FormattedMessage } from 'react-intl'
 import { Button, Checkbox, Icon, Popup, Message } from 'semantic-ui-react'
-import { QuestionBlock } from '../questions'
-import { CancelModal } from '.'
+
+import QuestionBlock from '../questions/QuestionBlock'
+import CancelModal from './CancelModal'
 
 const { publicRuntimeConfig } = getConfig()
 

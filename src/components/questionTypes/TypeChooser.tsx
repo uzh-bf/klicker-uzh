@@ -1,10 +1,10 @@
 import React from 'react'
 import ReactTooltip from 'react-tooltip'
-import { defineMessages, FormattedMessage, InjectedIntl } from 'react-intl'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Icon } from 'semantic-ui-react'
 
 import { QUESTION_TYPES } from '../../constants'
-import { Button } from '../common'
+import Button from '../common/Button'
 
 const messages = defineMessages({
   freeLabel: {
@@ -26,12 +26,13 @@ const messages = defineMessages({
 })
 
 interface Props {
-  intl: InjectedIntl
   onChange: (value: string) => void
   value: string
 }
 
-function TypeChooser({ intl, value, onChange }: Props): React.ReactElement {
+function TypeChooser({ value, onChange }: Props): React.ReactElement {
+  const intl = useIntl()
+
   const types = [
     {
       name: intl.formatMessage(messages.scLabel),
@@ -68,11 +69,18 @@ function TypeChooser({ intl, value, onChange }: Props): React.ReactElement {
       </ReactTooltip>
 
       <div className="types">
-        {types.map(({ name, value: typeValue }) => (
-          <Button active={typeValue === value} key={typeValue} type="button" onClick={() => onChange(typeValue)}>
-            {name}
-          </Button>
-        ))}
+        {types.map(
+          ({ name, value: typeValue }): React.ReactElement => (
+            <Button
+              active={typeValue === value}
+              key={typeValue}
+              type="button"
+              onClick={(): void => onChange(typeValue)}
+            >
+              {name}
+            </Button>
+          )
+        )}
       </div>
 
       <style jsx>

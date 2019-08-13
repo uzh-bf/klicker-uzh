@@ -50,7 +50,12 @@ function SCCreationOption({
             {correct ? <Icon name="checkmark" /> : <Icon name="remove" />}
           </button>
 
-          <Input type="text" value={name} onChange={e => handleSaveNewName({ newName: e.target.value })} />
+          <Input
+            disabled={disabled}
+            type="text"
+            value={name}
+            onChange={(e): void => handleSaveNewName({ newName: e.target.value })}
+          />
 
           <div className="grabHandle">
             <Icon name="grab" />

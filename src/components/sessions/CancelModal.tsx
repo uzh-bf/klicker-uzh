@@ -15,13 +15,13 @@ function CancelModal({ handleCancelSession }: Props): React.ReactElement {
       open={isOpen}
       size="small"
       trigger={
-        <Button icon labelPosition="left" size="small" onClick={() => setIsOpen(true)}>
+        <Button icon labelPosition="left" size="small" onClick={(): void => setIsOpen(true)}>
           <FormattedMessage defaultMessage="Cancel Session" id="sessionArea.button.cancelSession" />
           <Icon name="cancel" />
         </Button>
       }
-      onClose={() => setIsOpen(false)}
-      onOpen={() => setIsOpen(true)}
+      onClose={(): void => setIsOpen(false)}
+      onOpen={(): void => setIsOpen(true)}
     >
       <Header
         content={<FormattedMessage defaultMessage="Cancel Session" id="sessionArea.button.cancelSession" />}
@@ -34,7 +34,7 @@ function CancelModal({ handleCancelSession }: Props): React.ReactElement {
         />
       </Modal.Content>
       <Modal.Actions>
-        <Button onClick={() => setIsOpen(false)}>
+        <Button onClick={(): void => setIsOpen(false)}>
           <FormattedMessage defaultMessage="No" id="common.button.no" />
         </Button>
         <Button primary onClick={handleCancelSession}>
