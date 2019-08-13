@@ -742,28 +742,7 @@ exports[`Integration Session Execution allows running the full session flow (res
     runningSession {
       activeStep: 1
       confusionTS: 
-        difficulty: 2
-        speed: 4
-      ,
-        difficulty: -2
-        speed: 3
-      ,
-        difficulty: -5
-        speed: 3
-      ,
-        difficulty: 5
-        speed: 2
-      
       feedbacks: 
-        content: my test feedback
-        votes: 0
-      ,
-        content: good lecture
-        votes: 0
-      ,
-        content: my test feedback
-        votes: 0
-      
       blocks: 
         status: ACTIVE
         instances: 
@@ -992,28 +971,7 @@ exports[`Integration Session Execution allows running the full session flow (res
     runningSession {
       activeStep: 3
       confusionTS: 
-        difficulty: 2
-        speed: 4
-      ,
-        difficulty: -2
-        speed: 3
-      ,
-        difficulty: -5
-        speed: 3
-      ,
-        difficulty: 5
-        speed: 2
-      
       feedbacks: 
-        content: my test feedback
-        votes: 0
-      ,
-        content: good lecture
-        votes: 0
-      ,
-        content: my test feedback
-        votes: 0
-      
       blocks: 
         status: EXECUTED
         instances: 
@@ -1242,28 +1200,7 @@ exports[`Integration Session Execution allows running the full session flow (res
     runningSession {
       activeStep: 5
       confusionTS: 
-        difficulty: 2
-        speed: 4
-      ,
-        difficulty: -2
-        speed: 3
-      ,
-        difficulty: -5
-        speed: 3
-      ,
-        difficulty: 5
-        speed: 2
-      
       feedbacks: 
-        content: my test feedback
-        votes: 0
-      ,
-        content: good lecture
-        votes: 0
-      ,
-        content: my test feedback
-        votes: 0
-      
       blocks: 
         status: EXECUTED
         instances: 
@@ -1951,15 +1888,6 @@ exports[`Integration Session Execution allows running the full session flow (res
         options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
       
       feedbacks: 
-        content: my test feedback
-        votes: 0
-      ,
-        content: good lecture
-        votes: 0
-      ,
-        content: my test feedback
-        votes: 0
-      
     }
   
 `;
@@ -1976,15 +1904,6 @@ exports[`Integration Session Execution allows running the full session flow (res
         options: {"FREE_RANGE":null,"SC":null,"MC":null}
       
       feedbacks: 
-        content: my test feedback
-        votes: 0
-      ,
-        content: good lecture
-        votes: 0
-      ,
-        content: my test feedback
-        votes: 0
-      
     }
   
 `;
@@ -2013,15 +1932,6 @@ exports[`Integration Session Execution allows running the full session flow (res
         options: {"FREE_RANGE":{"restrictions":{"min":null,"max":null}},"SC":null,"MC":null}
       
       feedbacks: 
-        content: my test feedback
-        votes: 0
-      ,
-        content: good lecture
-        votes: 0
-      ,
-        content: my test feedback
-        votes: 0
-      
     }
   
 `;
