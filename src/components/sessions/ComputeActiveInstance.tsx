@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import _round from 'lodash/round'
 import _get from 'lodash/get'
 import { max, min, mean, median, quantileSeq, std } from 'mathjs'
@@ -7,10 +7,13 @@ import { toValueArray } from '../../lib/utils/math'
 import { CHART_DEFAULTS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 
 function ComputeActiveInstance({ activeInstances, children, sessionStatus }): React.ReactElement {
-  const [activeInstanceIndex, setActiveInstanceIndex] = useState((): number => {
+  const [activeInstanceIndex, setActiveInstanceIndex] = useState(0)
+
+  useEffect((): void => {
     const firstActiveIndex = activeInstances.findIndex((instance): boolean => instance.blockStatus === 'ACTIVE')
-    return firstActiveIndex >= 0 ? firstActiveIndex : 0
-  })
+    setActiveInstanceIndex(firstActiveIndex >= 0 ? firstActiveIndex : 0)
+  }, [activeInstances.length])
+
   const [activeVisualizations, setActiveVisualizations] = useState(CHART_DEFAULTS)
   const [bins, setBins] = useState(null)
   const [showGraph, setShowGraph] = useState(null)
@@ -56,6 +59,7 @@ function ComputeActiveInstance({ activeInstances, children, sessionStatus }): Re
   return children({
     activeInstances,
     activeInstance,
+    activeInstanceIndex,
     bins,
     setBins,
     showGraph,
