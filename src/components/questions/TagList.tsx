@@ -143,7 +143,6 @@ function TagList({
 
         .tagList {
           font-size: 0.9rem;
-          min-width: 12rem;
 
           :global(.listHeader) {
             color: grey;
