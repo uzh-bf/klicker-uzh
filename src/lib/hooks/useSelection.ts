@@ -8,10 +8,11 @@ function reducer(state, action): any {
       // if the id is already selected, unselect (toggle)
       if (state.ids.includes(action.id)) {
         const index = state.ids.indexOf(action.id)
-        return {
-          ids: [...state.ids].splice(index),
-          items: [...state.items].splice(index),
-        }
+        const ids = [...state.ids]
+        const items = [...state.items]
+        ids.splice(index, 1)
+        items.splice(index, 1)
+        return { ids, items }
       }
 
       // if the id has not been selected before, add it

@@ -135,11 +135,10 @@ function ActionBar({
 
       <div className="checkedCounter">
         <FormattedMessage
-          defaultMessage="{count} item{end} checked"
+          defaultMessage="{count} items checked"
           id="questionPool.string.itemsChecked"
           values={{
             count: +itemsChecked,
-            end: itemsChecked > 1 ? 's' : '',
           }}
         />
       </div>
