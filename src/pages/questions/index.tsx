@@ -347,7 +347,7 @@ function Index(): React.ReactElement {
 
           .tagList {
             height: 100%;
-            min-width: 5rem;
+            flex: 0 0 5rem;
 
             flex: 1;
             background: $color-primary-05p;
