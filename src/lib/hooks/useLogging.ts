@@ -17,15 +17,21 @@ if (isProd && publicRuntimeConfig.logrocketAppID) {
 
 declare global {
   interface Window {
+    INIT?: boolean
     INIT_APM?: boolean
     INIT_LR?: boolean
     INIT_RAVEN?: boolean
+    INIT_SLAASK?: boolean
     _slaask?: any
   }
 }
 
 function useLogging(cfg = {}): void {
   useEffect((): void => {
+    if (window.INIT) {
+      return
+    }
+
     // merge default and passed config
     const config = {
       slaask: false,
@@ -54,27 +60,30 @@ function useLogging(cfg = {}): void {
         LogRocketReact(LogRocket)
 
         if (Raven && window.INIT_RAVEN) {
-          Raven.setDataCallback((data): any =>
-            Object.assign({}, data, {
-              extra: {
-                sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef
-              },
-            })
-          )
+          Raven.setDataCallback((data): any => ({
+            ...data,
+            extra: {
+              sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef
+            },
+          }))
         }
 
         window.INIT_LR = true
       }
 
       // embed slaask if enabled
-      if (publicRuntimeConfig.slaaskWidgetKey && config.slaask) {
+      if (publicRuntimeConfig.slaaskWidgetKey && config.slaask && !window.INIT_SLAASK) {
         try {
           // eslint-disable-next-line no-underscore-dangle
           window._slaask.init(publicRuntimeConfig.slaaskWidgetKey)
         } catch (e) {
           console.error(e)
         }
+
+        window.INIT_SLAASK = true
       }
+
+      window.INIT = true
     }
   }, [])
 }
