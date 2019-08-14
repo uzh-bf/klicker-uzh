@@ -347,8 +347,6 @@ function Index(): React.ReactElement {
 
           .tagList {
             height: 100%;
-            flex: 0 0 5rem;
-
             flex: 1;
             background: $color-primary-05p;
             padding: 0.5rem;
@@ -385,6 +383,11 @@ function Index(): React.ReactElement {
               padding: 2rem 1rem;
 
               border-right: 1px solid $color-primary;
+
+              @supports (-webkit-text-size-adjust: none) and (not (-ms-ime-align: auto)) and
+                (not (-moz-appearance: none)) {
+                flex: 0 0 17rem;
+              }
             }
 
             .wrapper {
