@@ -25,9 +25,14 @@ const responseCache = getRedis(3)
 async function publishSessionUpdate({ sessionId, activeBlock }) {
   const result = await SessionModel.findById(sessionId).populate({
     path: 'blocks.instances',
-    populate: {
-      path: 'question',
-    },
+    populate: [
+      {
+        path: 'question',
+        populate: {
+          path: 'versions.files',
+        },
+      },
+    ],
   })
   const resultObj = result.toObject()
 
@@ -434,10 +439,6 @@ const sessionAction = async ({ sessionId, userId }, actionType) => {
       // this will also continue the session when it has been paused
       session.status = SESSION_STATUS.RUNNING
 
-      // increase the execution counter
-      // invalidates user input in case a session is cancelled and repeated
-      session.executions += 1
-
       // if the session has not been paused, initialize the startedAt date
       if (session.status !== SESSION_STATUS.PAUSED) {
         session.startedAt = Date.now()
@@ -499,24 +500,38 @@ const sessionAction = async ({ sessionId, userId }, actionType) => {
         throw new ForbiddenError('SESSION_NOT_STARTED')
       }
 
-      // if the session was already completed, return it
-      // if (session.status === SESSION_STATUS.COMPLETED) {
-      // return session
-      // }
-
       // Reset any session progress, in order to revert the session to its "CREATED" state.
       if (session.blocks.length > 0) {
         session.activeBlock = -1
         session.activeStep = 0
         session.activeInstances = []
+        session.settings.isFeedbackChannelActive = false
+        session.settings.isConfusionBarometerActive = false
         session.confusionTS = []
         session.feedbacks = []
 
+        // increase the execution counter
+        // invalidates user input in case a session is cancelled and repeated
+        session.executions += 1
+
+        const promises = []
         for (let i = 0; i < session.blocks.length; i += 1) {
           session.blocks[i].status = QUESTION_BLOCK_STATUS.PLANNED
-          session.blocks[i].execution = 1
-          // TODO: reset any results that are already present (reset instances)
+          session.blocks[i].execution += 1
+
+          // reset any results that are already stored in the database
+          promises.push(
+            session.blocks[i].instances.map(async instanceId => {
+              const instance = await QuestionInstanceModel.findById(instanceId)
+              instance.isOpen = false
+              instance.responses = []
+              instance.results = null
+              return instance.save()
+            })
+          )
         }
+
+        await Promise.all(promises)
       }
       // update the session status to CREATED
       session.status = SESSION_STATUS.CREATED
