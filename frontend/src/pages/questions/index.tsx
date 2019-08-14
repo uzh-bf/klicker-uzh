@@ -379,15 +379,10 @@ function Index(): React.ReactElement {
 
             .tagList {
               overflow-y: auto;
-              flex: 0 0 auto;
+              flex: 0 0 17rem;
               padding: 2rem 1rem;
 
               border-right: 1px solid $color-primary;
-
-              @supports (-webkit-text-size-adjust: none) and (not (-ms-ime-align: auto)) and
-                (not (-moz-appearance: none)) {
-                flex: 0 0 17rem;
-              }
             }
 
             .wrapper {
