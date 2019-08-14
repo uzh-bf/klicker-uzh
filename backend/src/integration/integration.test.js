@@ -834,6 +834,27 @@ describe('Integration', () => {
         expect(data).toMatchSnapshot()
       })
 
+      it('LECTURER: can update settings of the restarted session', async () => {
+        const data = ensureNoErrors(
+          await sendQuery(
+            {
+              query: Mutations.UpdateSessionSettingsMutation,
+              variables: {
+                sessionId,
+                settings: {
+                  isConfusionBarometerActive: true,
+                  isFeedbackChannelActive: true,
+                  isFeedbackChannelPublic: true,
+                },
+              },
+            },
+            authCookie
+          )
+        )
+
+        expect(data).toMatchSnapshot()
+      })
+
       it('LECTURER: can activate the first question block', async () => {
         const data = ensureNoErrors(
           await sendQuery(
