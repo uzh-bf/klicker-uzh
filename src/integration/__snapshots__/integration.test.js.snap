@@ -1839,6 +1839,14 @@ exports[`Integration Session Execution allows running the full session flow (res
     
 `;
 
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can update settings of the restarted session 1`] = `
+
+    updateSessionSettings {
+      settings: {"isConfusionBarometerActive":true,"isFeedbackChannelActive":true,"isFeedbackChannelPublic":true}
+    }
+  
+`;
+
 exports[`Integration Session Execution allows running the full session flow (responding and evaluation) PARTICIPANT: can join the session initially (initial) 1`] = `
 
     joinSession {
