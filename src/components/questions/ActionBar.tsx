@@ -165,7 +165,7 @@ function ActionBar({
             }
 
             @include desktop-tablet-only {
-              flex-direction: row;
+              flex-flow: row wrap;
               align-items: center;
               justify-content: space-between;
 
