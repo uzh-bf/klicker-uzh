@@ -21,8 +21,8 @@
     "yarn": "YARN NO LONGER USED - use npm instead."
   },
   "dependencies": {
-    "@apollo/react-hooks": "3.0.0",
-    "@apollo/react-ssr": "3.0.0",
+    "@apollo/react-hooks": "3.0.1",
+    "@apollo/react-ssr": "3.0.1",
     "@babel/plugin-transform-react-constant-elements": "7.5.0",
     "@babel/preset-env": "7.5.5",
     "@formatjs/intl-relativetimeformat": "2.6.3",
