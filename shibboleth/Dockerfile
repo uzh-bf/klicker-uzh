@@ -1,4 +1,4 @@
-FROM unicon/shibboleth-sp
+FROM uzhbf/shibboleth-sp-dockerized
 
-ADD /shibboleth/ /etc/shibboleth/
-ADD /app/ /var/www/html/
+ADD shibboleth/ /etc/shibboleth/
+ADD app/ /var/www/html/
