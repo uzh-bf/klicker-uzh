@@ -1,3 +1,4 @@
 FROM unicon/shibboleth-sp
 
-ADD /shibboleth-sp/ /etc/shibboleth/
+ADD /shibboleth/ /etc/shibboleth/
+ADD /app/ /var/www/html/
