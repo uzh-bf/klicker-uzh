@@ -10,12 +10,10 @@ jobs:
  
     steps:
     - uses: actions/checkout@v1
-   
-    - uses: actions/docker/login@master
-      secrets:
-      - DOCKER_USERNAME
-      - DOCKER_PASSWORD
+    - uses: pangzineng/Github-Action-One-Click-Docker@master
       env:
-        DOCKER_REGISTRY_URL: docker.pkg.github.com
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag klicker-aai:$(date +%s)
+        DOCKER_USERNAME: ${{secrets.docker_username}}
+        DOCKER_PASSWORD: ${{secrets.docker_password}}
+        DOCKER_NAMESPACE: uzhbf
+        DOCKER_IMAGE_NAME: klicker-aai
+      
