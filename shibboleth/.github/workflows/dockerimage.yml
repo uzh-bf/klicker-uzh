@@ -10,5 +10,12 @@ jobs:
  
     steps:
     - uses: actions/checkout@v1
+   
+    - uses: actions/docker/login@master
+      secrets:
+      - DOCKER_USERNAME
+      - DOCKER_PASSWORD
+      env:
+        DOCKER_REGISTRY_URL: docker.pkg.github.com
     - name: Build the Docker image
       run: docker build . --file Dockerfile --tag klicker-aai:$(date +%s)
