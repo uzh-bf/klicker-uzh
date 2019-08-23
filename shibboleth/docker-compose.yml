@@ -1,0 +1,9 @@
+version: '3'
+services:
+  klicker-aai:
+    build: .
+    ports:
+      - '8080:8080'
+    volumes:
+      - './sp-cert.pem:/etc/shibboleth/sp-cert.pem:ro'
+      - './sp-key.pem:/etc/shibboleth/sp-key.pem:ro'
