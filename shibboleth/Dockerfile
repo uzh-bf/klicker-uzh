@@ -1,4 +1,4 @@
-FROM uzh-bf/docker-shibboleth
+FROM uzhbf/docker-shibboleth
 
 COPY --chown=1001:root shibboleth/* /etc/shibboleth/
 
