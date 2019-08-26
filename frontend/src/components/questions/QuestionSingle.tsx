@@ -2,6 +2,7 @@ import React from 'react'
 import { Icon } from 'semantic-ui-react'
 import { useIntl } from 'react-intl'
 
+import Ellipsis from '../common/Ellipsis'
 import { generateTypesShort } from '../../lib/utils/lang'
 
 interface Props {
@@ -41,7 +42,7 @@ function QuestionSingle({ type, title, totalParticipants, version, onDelete }: P
       </div>
 
       <div className="title">
-        {title} <span>{`(v${version + 1})`}</span>
+        <Ellipsis>{title}</Ellipsis> <span>{`(v${version + 1})`}</span>
       </div>
 
       <style jsx>
