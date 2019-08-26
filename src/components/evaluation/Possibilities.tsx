@@ -39,7 +39,7 @@ function Possibilities({ data, questionOptions, questionType, showGraph, showSol
       {((): React.ReactElement => {
         if (QUESTION_GROUPS.CHOICES.includes(questionType)) {
           return (
-            <div>
+            <div className="choiceItems">
               {data.map(
                 ({ correct, percentage, value }, index): React.ReactElement => (
                   <EvaluationListItem
@@ -64,7 +64,7 @@ function Possibilities({ data, questionOptions, questionType, showGraph, showSol
           } = questionOptions
 
           return (
-            <div>
+            <div className="choiceItems">
               {((): React.ReactElement | React.ReactElement[] => {
                 const comp = []
                 if (restrictions && _isNumber(restrictions.min)) {
