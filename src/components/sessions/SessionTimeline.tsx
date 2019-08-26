@@ -182,13 +182,16 @@ function SessionTimeline({
                 <QuestionBlock
                   handleResetQuestionBlock={(): void => handleResetQuestionBlock(block.id)}
                   index={index + 1}
+                  questionBlockId={block.id}
                   questions={block.instances.map(({ id, question, version }): any => ({
                     id,
                     title: question.title,
                     type: question.type,
                     version,
                   }))}
+                  sessionId={sessionId}
                   status={block.status}
+                  timeLimit={block.timeLimit}
                 />
               </div>
               {index === blocks.length - 1 && (

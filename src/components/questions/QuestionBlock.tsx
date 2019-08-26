@@ -1,7 +1,9 @@
 import React from 'react'
 import classNames from 'classnames'
-import { Icon, Dropdown } from 'semantic-ui-react'
+import { Form, Icon, Dropdown, Modal, Button, Input } from 'semantic-ui-react'
+import { useMutation } from '@apollo/react-hooks'
 
+import ModifyQuestionBlockMutation from '../../graphql/mutations/ModifyQuestionBlockMutation.graphql'
 import QuestionSingle from './QuestionSingle'
 
 interface Question {
@@ -18,6 +20,8 @@ interface Props {
   questions: Question[]
   status?: string
   timeLimit?: number
+  questionBlockId?: string
+  sessionId?: string
   handleResetQuestionBlock?: () => void
 }
 
@@ -41,11 +45,45 @@ function SessionStatusIcon({ status }: { status: string }): React.ReactElement {
   return <Icon name="calendar outline" />
 }
 
-function BlockActionsDropdown({ onResetQuestionBlock }: { onResetQuestionBlock: () => void }): React.ReactElement {
+function BlockActionsDropdown({
+  sessionId,
+  questionBlockId,
+  timeLimit,
+  onResetQuestionBlock,
+}: {
+  sessionId: string
+  questionBlockId: string
+  timeLimit?: number
+  onResetQuestionBlock: () => void
+}): React.ReactElement {
+  const [modifyQuestionBlock] = useMutation(ModifyQuestionBlockMutation)
+
   return (
     <Dropdown icon="settings">
       <Dropdown.Menu>
         <Dropdown.Item icon="redo" text="Reset block results" onClick={onResetQuestionBlock} />
+        <Modal trigger={<Dropdown.Item icon="settings" text="Block settings" />}>
+          <Modal.Header>Block Settings</Modal.Header>
+          <Modal.Content>
+            <Form>
+              <Form.Field>
+                <label>Time limit</label>
+                <Input
+                  name="blockTimeLimit"
+                  type="number"
+                  value={timeLimit}
+                  onChange={(_, { value }) =>
+                    modifyQuestionBlock({ variables: { sessionId, id: questionBlockId, timeLimit: +value } })
+                  }
+                />
+              </Form.Field>
+            </Form>
+          </Modal.Content>
+          <Modal.Actions>
+            <Button content="Discard" icon="times" />
+            <Button primary content="Save" icon="save" />
+          </Modal.Actions>
+        </Modal>
       </Dropdown.Menu>
     </Dropdown>
   )
@@ -58,6 +96,8 @@ function QuestionBlock({
   questions,
   timeLimit,
   noDetails,
+  questionBlockId,
+  sessionId,
 }: Props): React.ReactElement {
   const questionElements = questions.map(
     (question): React.ReactElement => (
@@ -81,7 +121,7 @@ function QuestionBlock({
 
       {index >= 0 && <div className="index">Block {index}</div>}
 
-      {!noDetails && timeLimit && (
+      {!noDetails && timeLimit > -1 && (
         <div className="timeLimit">
           <Icon name="clock" />
           {timeLimit}s
@@ -90,7 +130,12 @@ function QuestionBlock({
 
       {!noDetails && (
         <div className="blockActions">
-          <BlockActionsDropdown onResetQuestionBlock={handleResetQuestionBlock} />
+          <BlockActionsDropdown
+            questionBlockId={questionBlockId}
+            sessionId={sessionId}
+            timeLimit={timeLimit}
+            onResetQuestionBlock={handleResetQuestionBlock}
+          />
         </div>
       )}
 
@@ -133,6 +178,10 @@ function QuestionBlock({
           .blockActions {
             flex: 1 1 auto;
             margin-bottom: 0.2rem;
+          }
+
+          .timeLimit {
+            text-align: center;
           }
 
           .blockActions {
