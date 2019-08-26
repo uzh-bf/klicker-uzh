@@ -39,7 +39,7 @@ function Print(): React.ReactElement<any> {
 
         return (
           <CommonLayout baseFontSize="20">
-            <div className="noPrint">
+            <div className="actions noPrint">
               <Button primary content="Print" icon="print" onClick={() => window.print()} />
               <Checkbox
                 toggle
@@ -86,27 +86,28 @@ function Print(): React.ReactElement<any> {
               const activeVisualization = activeVisualizations[question.type]
 
               return (
-                <>
+                <div className="container">
                   <div className="description">{description}</div>
-                  <div className="flexContainer">
-                    <div className="chart">
-                      <Chart
-                        activeVisualization={activeVisualization}
-                        data={results.data}
-                        instanceId={activeInstance.id}
-                        isPublic={false}
-                        numBins={null}
-                        handleShowGraph={null}
-                        questionType={question.type}
-                        restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
-                        sessionId={sessionId}
-                        sessionStatus={sessionStatus}
-                        showGraph={true}
-                        showSolution={showSolution}
-                        statistics={statistics}
-                        totalResponses={results.totalResponses}
-                      />
-                    </div>
+                  <div className="chart">
+                    <Chart
+                      activeVisualization={activeVisualization}
+                      data={results.data}
+                      instanceId={activeInstance.id}
+                      isPublic={false}
+                      numBins={null}
+                      handleShowGraph={null}
+                      questionType={question.type}
+                      restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
+                      sessionId={sessionId}
+                      sessionStatus={sessionStatus}
+                      showGraph={true}
+                      showSolution={showSolution}
+                      statistics={statistics}
+                      totalResponses={results.totalResponses}
+                    />
+                  </div>
+
+                  <div className="info">
                     <div className="possibilities">
                       <Possibilities
                         data={results.data}
@@ -115,25 +116,22 @@ function Print(): React.ReactElement<any> {
                         showGraph={true}
                         showSolution={showSolution}
                       />
-                      <div className="totalResponses">
-                        <FormattedMessage
-                          id="evaluation.totalParticipants.label"
-                          defaultMessage="Total participants:"
-                        />{' '}
-                        {results.totalResponses}
-                      </div>
-                      <div className="visualizationType noPrint">
-                        <VisualizationType
-                          activeVisualization={activeVisualization}
-                          questionType={question.type}
-                          onChangeType={(type, newVisualization) =>
-                            setActiveVisualizations(currentState => ({ ...currentState, [type]: newVisualization }))
-                          }
-                        />
-                      </div>
+                    </div>
+                    <div className="totalResponses">
+                      <FormattedMessage id="evaluation.totalParticipants.label" defaultMessage="Total participants:" />{' '}
+                      {results.totalResponses}
+                    </div>
+                    <div className="visualizationType noPrint">
+                      <VisualizationType
+                        activeVisualization={activeVisualization}
+                        questionType={question.type}
+                        onChangeType={(type, newVisualization) =>
+                          setActiveVisualizations(currentState => ({ ...currentState, [type]: newVisualization }))
+                        }
+                      />
                     </div>
                   </div>
-                </>
+                </div>
               )
             })}
             <style jsx global>{`
@@ -147,38 +145,60 @@ function Print(): React.ReactElement<any> {
 
               @page {
                 size: landscape;
+                margin: 0;
+              }
+
+              .actions {
+                padding: 0.5rem;
+              }
+
+              .container {
+                height: 1240px;
+                width: 1754px;
+
+                page-break-after: always;
               }
 
               .description {
+                height: 120px;
+
                 background-color: $color-primary-background;
                 border-top: 2px solid $color-primary;
                 border-bottom: 2px solid $color-primary;
                 font-weight: bold;
-                font-size: 1.2em;
-                padding: 1em;
+                font-size: 1em;
+                padding: 0.7em;
                 text-align: left;
               }
 
-              .flexContainer {
+              .chart {
+                height: 620px;
+
+                padding-left: 30px;
+              }
+
+              .info {
+                height: 500px;
+
                 display: flex;
+                align-items: flex-end;
                 flex-flow: row nowrap;
-                page-break-after: always;
-                height: 100%;
+
+                :global(button) {
+                  padding: 0.7em;
+                }
               }
 
               .possibilities {
-                flex: 0 0 30%;
-                padding: 1em;
-              }
-
-              .chart {
-                padding: 1rem;
                 flex: 1;
-                height: 30em;
+
+                padding: 0.7em;
               }
 
               .totalResponses {
-                padding: 1rem;
+                flex: 0 0 auto;
+
+                padding: 0.7em;
                 padding-left: 0;
               }
 
@@ -188,7 +208,7 @@ function Print(): React.ReactElement<any> {
                 }
 
                 :global(button) {
-                  margin: 1rem;
+                  margin: 0;
                 }
               }
             `}</style>
