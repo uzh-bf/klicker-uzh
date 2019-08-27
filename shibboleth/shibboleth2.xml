@@ -27,10 +27,10 @@
                         <Handler type="MetadataGenerator" Location="/Metadata" signing="false" />
 
                         <!-- Status reporting service. The first IPv4/IPv6 address pair allows access from local host. The remaining addresses are used (or will be used in the future) by the AAI Resource Registry operated by SWITCH -->
-                        <Handler type="Status" Location="/Status" acl="127.0.0.1 ::1 130.59.118.224 130.59.138.32 130.59.10.146 130.59.198.12 2001:620:0:1006::255 2001:620:0:3006::256" />
+                        <Handler type="Status" Location="/Status" acl="127.0.0.1 ::1 10.1.0.0/16 130.59.118.224 130.59.138.32 130.59.10.146 130.59.198.12 2001:620:0:1006::255 2001:620:0:3006::256" />
 
                         <!-- Session diagnostic service. -->
-                        <Handler type="Session" Location="/Session" acl="127.0.0.1 ::1 130.59.138.32" />
+                        <Handler type="Session" Location="/Session" acl="127.0.0.1 ::1 10.1.0.0/16 130.59.138.32" />
 
                         <!-- JSON feed of discovery information. -->
                         <Handler type="DiscoveryFeed" Location="/DiscoFeed" />
