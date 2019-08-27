@@ -1,10 +1,10 @@
 import React from 'react'
 import classNames from 'classnames'
-import { Form, Icon, Dropdown, Modal, Button, Input } from 'semantic-ui-react'
-import { useMutation } from '@apollo/react-hooks'
 
-import ModifyQuestionBlockMutation from '../../graphql/mutations/ModifyQuestionBlockMutation.graphql'
 import QuestionSingle from './QuestionSingle'
+import Countdown from '../common/Countdown'
+import BlockActionsDropdown from './BlockActionsDropdown'
+import SessionStatusIcon from './SessionStatusIcon'
 
 interface Question {
   id: number
@@ -31,62 +31,6 @@ const defaultProps = {
   noVersions: false,
   status: 'PLANNED',
   timeLimit: undefined,
-}
-
-function SessionStatusIcon({ status }: { status: string }): React.ReactElement {
-  if (status === 'EXECUTED') {
-    return <Icon name="checkmark" />
-  }
-
-  if (status === 'ACTIVE') {
-    return <Icon name="comments outline" />
-  }
-
-  return <Icon name="calendar outline" />
-}
-
-function BlockActionsDropdown({
-  sessionId,
-  questionBlockId,
-  timeLimit,
-  onResetQuestionBlock,
-}: {
-  sessionId: string
-  questionBlockId: string
-  timeLimit?: number
-  onResetQuestionBlock: () => void
-}): React.ReactElement {
-  const [modifyQuestionBlock] = useMutation(ModifyQuestionBlockMutation)
-
-  return (
-    <Dropdown icon="settings">
-      <Dropdown.Menu>
-        <Dropdown.Item icon="redo" text="Reset block results" onClick={onResetQuestionBlock} />
-        <Modal trigger={<Dropdown.Item icon="settings" text="Block settings" />}>
-          <Modal.Header>Block Settings</Modal.Header>
-          <Modal.Content>
-            <Form>
-              <Form.Field>
-                <label>Time limit</label>
-                <Input
-                  name="blockTimeLimit"
-                  type="number"
-                  value={timeLimit}
-                  onChange={(_, { value }) =>
-                    modifyQuestionBlock({ variables: { sessionId, id: questionBlockId, timeLimit: +value } })
-                  }
-                />
-              </Form.Field>
-            </Form>
-          </Modal.Content>
-          <Modal.Actions>
-            <Button content="Discard" icon="times" />
-            <Button primary content="Save" icon="save" />
-          </Modal.Actions>
-        </Modal>
-      </Dropdown.Menu>
-    </Dropdown>
-  )
 }
 
 function QuestionBlock({
@@ -123,8 +67,7 @@ function QuestionBlock({
 
       {!noDetails && timeLimit > -1 && (
         <div className="timeLimit">
-          <Icon name="clock" />
-          {timeLimit}s
+          <Countdown countdownDuration={timeLimit} countdownStepSize={1000} isActive={status === 'ACTIVE'} />
         </div>
       )}
 

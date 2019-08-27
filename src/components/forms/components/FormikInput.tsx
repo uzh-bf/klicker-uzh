@@ -6,6 +6,8 @@ import { Form, Icon, Input } from 'semantic-ui-react'
 import { FormikErrors, FormikTouched } from 'formik'
 
 interface Props {
+  action?: any
+  actionPosition?: any
   autoFocus?: boolean
   disabled?: boolean
   error?: string | FormikErrors<any>
@@ -15,6 +17,9 @@ interface Props {
   icon?: string
   inlineLabel?: string
   label?: string
+  labelPosition?: 'left' | 'right' | 'left corner' | 'right corner'
+  min?: number
+  max?: number
   name: string
   placeholder?: string
   renderInput?: () => React.ReactElement
