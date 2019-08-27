@@ -26,7 +26,7 @@
     "@babel/plugin-transform-react-constant-elements": "7.5.0",
     "@babel/preset-env": "7.5.5",
     "@formatjs/intl-relativetimeformat": "2.6.3",
-    "@types/lodash": "4.14.136",
+    "@types/lodash": "4.14.138",
     "@types/react": "16.9.1",
     "@types/react-dom": "16.8.5",
     "@types/styled-jsx": "2.2.8",
