@@ -8,7 +8,7 @@
         Controls session lifetimes, address checks, cookie handling, and the protocol handlers.
         More information on: https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPSessions
         -->
-                <Sessions target="https://aai.klicker.uzh.ch/Shibboleth.sso" redirectLimit="host" lifetime="28800" timeout="3600" relayState="ss:mem" checkAddress="false" consistentAddress="true" handlerSSL="false" cookieProps="https">
+                <Sessions redirectLimit="host" lifetime="28800" timeout="3600" relayState="ss:mem" checkAddress="false" consistentAddress="true" handlerSSL="false" cookieProps="https">
 
                         <!--
             In order to use a default Identity Provider add an attribute like:
