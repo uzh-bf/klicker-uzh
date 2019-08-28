@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import classNames from 'classnames'
 import QRCode from 'qrcode.react'
 import getConfig from 'next/config'
@@ -33,30 +33,6 @@ const messages = defineMessages({
   },
 })
 
-interface Props {
-  activeStep: number
-  blocks?: any[]
-  handleCancelSession: () => void
-  handleEndSession: () => void
-  handleNextBlock: () => void
-  handlePauseSession: () => void
-  handleResetQuestionBlock: (instanceIds: string[]) => void
-  handleTogglePublicEvaluation: () => void
-  intl: any
-  isEvaluationPublic?: boolean
-  runtime?: string
-  sessionId: string
-  shortname: string
-  startedAt?: string
-}
-
-const defaultProps = {
-  blocks: [],
-  isEvaluationPublic: false,
-  runtime: '00:00:00',
-  startedAt: '00:00:00',
-}
-
 function getMessage(intl, num: number, max: number): any {
   if (num === 0) {
     return {
@@ -85,6 +61,31 @@ function getMessage(intl, num: number, max: number): any {
   }
 }
 
+interface Props {
+  activeStep: number
+  blocks?: any[]
+  handleCancelSession: () => void
+  handleEndSession: () => void
+  handleNextBlock: () => void
+  handlePauseSession: () => void
+  handleResetQuestionBlock: (instanceIds: string[]) => void
+  handleTogglePublicEvaluation: () => void
+  intl: any
+  isEvaluationPublic?: boolean
+  runtime?: string
+  sessionId: string
+  shortname: string
+  startedAt?: string
+  subscribeToMore: Function
+}
+
+const defaultProps = {
+  blocks: [],
+  isEvaluationPublic: false,
+  runtime: '00:00:00',
+  startedAt: '00:00:00',
+}
+
 function SessionTimeline({
   sessionId,
   blocks,
@@ -100,7 +101,12 @@ function SessionTimeline({
   handleCancelSession,
   handleTogglePublicEvaluation,
   handleResetQuestionBlock,
+  subscribeToMore,
 }: Props): React.ReactElement {
+  useEffect((): void => {
+    subscribeToMore()
+  }, [])
+
   const isFeedbackSession = blocks.length === 0
 
   return (
@@ -180,15 +186,19 @@ function SessionTimeline({
               </div>
               <div className="block" key={block.id}>
                 <QuestionBlock
+                  expiresAt={block.expiresAt}
                   handleResetQuestionBlock={(): void => handleResetQuestionBlock(block.id)}
                   index={index + 1}
+                  questionBlockId={block.id}
                   questions={block.instances.map(({ id, question, version }): any => ({
                     id,
                     title: question.title,
                     type: question.type,
                     version,
                   }))}
+                  sessionId={sessionId}
                   status={block.status}
+                  timeLimit={block.timeLimit}
                 />
               </div>
               {index === blocks.length - 1 && (

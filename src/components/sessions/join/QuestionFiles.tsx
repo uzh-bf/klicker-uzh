@@ -5,17 +5,19 @@ import getConfig from 'next/config'
 const { publicRuntimeConfig } = getConfig()
 
 interface Props {
-  files?: {
+  files: {
     id: string
     name: string
   }[]
+  isCompact?: boolean
 }
 
 const defaultProps = {
   files: [],
+  isCompact: false,
 }
 
-function QuestionFiles({ files }: Props): React.ReactElement {
+function QuestionFiles({ files, isCompact }: Props): React.ReactElement {
   return (
     <div className="questionFiles">
       {files.map(
@@ -24,7 +26,7 @@ function QuestionFiles({ files }: Props): React.ReactElement {
           const previewImage = (
             <Card>
               <Image crossOrigin="anonymous" height="auto" src={fileSrc} width="100%" />
-              <Card.Content extra>#{ix + 1}</Card.Content>
+              {!isCompact && <Card.Content extra>#{ix + 1}</Card.Content>}
             </Card>
           )
 

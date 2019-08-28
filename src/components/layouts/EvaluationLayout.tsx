@@ -1,5 +1,6 @@
 import React from 'react'
 import classNames from 'classnames'
+import getConfig from 'next/config'
 import { defineMessages, useIntl } from 'react-intl'
 import { Button, Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
 
@@ -10,6 +11,9 @@ import Statistics from '../evaluation/Statistics'
 import VisualizationType from '../evaluation/VisualizationType'
 import CsvExport from '../evaluation/CsvExport'
 import { QUESTION_GROUPS, CHART_TYPES, QUESTION_TYPES } from '../../constants'
+import QuestionFiles from '../sessions/join/QuestionFiles'
+
+const { publicRuntimeConfig } = getConfig()
 
 const messages = defineMessages({
   showSolutionLabel: {
@@ -29,6 +33,7 @@ interface Props {
   }[]
   data: any[]
   description?: string
+  files?: []
   instanceSummary?: any[]
   onChangeActiveInstance: (index: number) => void
   onChangeVisualizationType: (questionType: string, visualizationType: string) => void
@@ -74,6 +79,7 @@ function EvaluationLayout({
   instanceSummary,
   statistics,
   sessionId,
+  files,
 }: Props): React.ReactElement {
   const intl = useIntl()
 
@@ -166,6 +172,11 @@ function EvaluationLayout({
 
         <div className="questionDetails">
           <p>{description}</p>
+          {publicRuntimeConfig.s3root && files.length > 0 && (
+            <div className="files">
+              <QuestionFiles isCompact files={files} />
+            </div>
+          )}
         </div>
 
         <div className="info">

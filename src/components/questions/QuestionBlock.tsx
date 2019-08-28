@@ -1,8 +1,10 @@
 import React from 'react'
 import classNames from 'classnames'
-import { Icon, Dropdown } from 'semantic-ui-react'
 
 import QuestionSingle from './QuestionSingle'
+import Countdown from '../common/Countdown'
+import BlockActionsDropdown from './BlockActionsDropdown'
+import SessionStatusIcon from './SessionStatusIcon'
 
 interface Question {
   id: number
@@ -13,11 +15,14 @@ interface Question {
 }
 
 interface Props {
+  expiresAt?: any
   index?: number
   noDetails?: boolean
   questions: Question[]
   status?: string
   timeLimit?: number
+  questionBlockId?: string
+  sessionId?: string
   handleResetQuestionBlock?: () => void
 }
 
@@ -29,35 +34,16 @@ const defaultProps = {
   timeLimit: undefined,
 }
 
-function SessionStatusIcon({ status }: { status: string }): React.ReactElement {
-  if (status === 'EXECUTED') {
-    return <Icon name="checkmark" />
-  }
-
-  if (status === 'ACTIVE') {
-    return <Icon name="comments outline" />
-  }
-
-  return <Icon name="calendar outline" />
-}
-
-function BlockActionsDropdown({ onResetQuestionBlock }: { onResetQuestionBlock: () => void }): React.ReactElement {
-  return (
-    <Dropdown icon="settings">
-      <Dropdown.Menu>
-        <Dropdown.Item icon="redo" text="Reset block results" onClick={onResetQuestionBlock} />
-      </Dropdown.Menu>
-    </Dropdown>
-  )
-}
-
 function QuestionBlock({
+  expiresAt,
   handleResetQuestionBlock,
   index,
   status,
   questions,
   timeLimit,
   noDetails,
+  questionBlockId,
+  sessionId,
 }: Props): React.ReactElement {
   const questionElements = questions.map(
     (question): React.ReactElement => (
@@ -81,16 +67,26 @@ function QuestionBlock({
 
       {index >= 0 && <div className="index">Block {index}</div>}
 
-      {!noDetails && timeLimit && (
+      {!noDetails && timeLimit > -1 && (
         <div className="timeLimit">
-          <Icon name="clock" />
-          {timeLimit}s
+          <Countdown
+            countdownDuration={timeLimit}
+            countdownEnd={expiresAt}
+            countdownStepSize={1000}
+            isActive={status === 'ACTIVE'}
+            isCompleted={status === 'EXECUTED'}
+          />
         </div>
       )}
 
       {!noDetails && (
         <div className="blockActions">
-          <BlockActionsDropdown onResetQuestionBlock={handleResetQuestionBlock} />
+          <BlockActionsDropdown
+            questionBlockId={questionBlockId}
+            sessionId={sessionId}
+            timeLimit={timeLimit}
+            onResetQuestionBlock={handleResetQuestionBlock}
+          />
         </div>
       )}
 
@@ -133,6 +129,10 @@ function QuestionBlock({
           .blockActions {
             flex: 1 1 auto;
             margin-bottom: 0.2rem;
+          }
+
+          .timeLimit {
+            text-align: center;
           }
 
           .blockActions {
