@@ -27,7 +27,7 @@ function CsvExport({ activeInstances, sessionId }: Props): React.ReactElement {
       result.push(counts)
     })
     setCsvData(result)
-  })
+  }, [sessionId, activeInstances.length])
 
   return (
     <div className="csvExport">
