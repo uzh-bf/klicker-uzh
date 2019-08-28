@@ -5,7 +5,7 @@ services:
     build: .
     ports:
       - '8080:8080'
-    command: /usr/bin/run-httpd
+    command: /usr/libexec/s2i/run
     volumes:
       - shib-socket:/var/run/shibboleth
 
