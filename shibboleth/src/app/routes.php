@@ -37,8 +37,13 @@ return function (App $app) {
          */
         $jwt = JWT::encode($token, $key);
 
-        // TODO: set a cookie with the JWT instead of returning it
-        $response->getBody()->write($jwt);
+        // set a cookie with the JWT
+        $expires = 0;
+        $path = "/";
+        $domain = ".klicker.uzh.ch";
+        $secure = true;
+        $httponly = true;
+        setcookie("jwt", $jwt, $expires, $path, $domain, $secure, $httponly);
 
         // TODO: redirect the user to the app instead of returning a response
         return $response;
