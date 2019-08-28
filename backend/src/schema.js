@@ -40,6 +40,7 @@ const {
   modifySession,
   deleteSessions,
   resetQuestionBlock,
+  modifyQuestionBlock,
 } = require('./resolvers/sessions')
 const { allTags, tags } = require('./resolvers/tags')
 const {
@@ -58,7 +59,7 @@ const {
   activateAccount,
 } = require('./resolvers/users')
 const { files } = require('./resolvers/files')
-const { confusionAdded, feedbackAdded, sessionUpdated } = require('./resolvers/subscriptions')
+const { confusionAdded, feedbackAdded, sessionUpdated, runningSessionUpdated } = require('./resolvers/subscriptions')
 const { allTypes } = require('./types')
 
 // create graphql schema in schema language
@@ -108,6 +109,7 @@ const typeDefs = [
     endSession(id: ID!): Session!
     login(email: String!, password: String!): ID!
     logout: String!
+    modifyQuestionBlock(sessionId: ID!, id: ID!, questionBlockSettings: Session_QuestionBlockModifyInput!): Session!
     modifyQuestion(id: ID!, question: QuestionModifyInput!): Question!
     modifySession(id: ID!, session: SessionModifyInput!): Session!
     modifyUser(user: User_Modify!): User!
@@ -127,6 +129,7 @@ const typeDefs = [
     confusionAdded(sessionId: ID!): Session_ConfusionTimestep
     feedbackAdded(sessionId: ID!): Session_Feedback
     sessionUpdated(sessionId: ID!): Session_Public
+    runningSessionUpdated(sessionId: ID!): Session_Update
   }
 `,
   ...allTypes,
@@ -181,12 +184,14 @@ const resolvers = {
     updateSessionSettings: requireAuth(updateSessionSettings),
     activateNextBlock: requireAuth(activateNextBlock),
     resetQuestionBlock: requireAuth(resetQuestionBlock),
+    modifyQuestionBlock: requireAuth(modifyQuestionBlock),
   },
   Subscription: {
     // TODO: some form of authentication
     confusionAdded,
     feedbackAdded,
     sessionUpdated,
+    runningSessionUpdated,
   },
   // map our own types
   Question: {

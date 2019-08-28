@@ -3,8 +3,10 @@ module.exports = {
   print: ({ activateNextBlock: { blocks } }) => `
     activateNextBlock {
       blocks: ${blocks.map(
-        ({ status, instances }) => `
+        ({ status, instances, timeLimit }) => `
         status: ${status}
+        timeLimit: ${timeLimit}
+        expiresAt: ${expect.any(String)}
         instances: ${instances.map(instance => instance.isOpen)}
       `
       )}

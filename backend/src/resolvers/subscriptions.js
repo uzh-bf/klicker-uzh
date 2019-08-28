@@ -35,6 +35,11 @@ const sessionUpdatedSubscription = {
   subscribe: withFilter(() => pubsub.asyncIterator(SESSION_UPDATED), compareSessionId),
 }
 
+const RUNNING_SESSION_UPDATED = 'runningSessionUpdated'
+const runningSessionUpdatedSubscription = {
+  subscribe: withFilter(() => pubsub.asyncIterator(RUNNING_SESSION_UPDATED), compareSessionId),
+}
+
 module.exports = {
   // export the pubsub interface
   pubsub,
@@ -43,9 +48,11 @@ module.exports = {
   confusionAdded: confusionAddedSubscription,
   feedbackAdded: feedbackAddedSubscription,
   sessionUpdated: sessionUpdatedSubscription,
+  runningSessionUpdated: runningSessionUpdatedSubscription,
 
   // export subscription types
   CONFUSION_ADDED,
   FEEDBACK_ADDED,
   SESSION_UPDATED,
+  RUNNING_SESSION_UPDATED,
 }

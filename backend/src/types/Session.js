@@ -15,7 +15,10 @@ module.exports = `
   type Session_Public {
     id: ID!
 
+    timeLimit: Int
+    expiresAt: DateTime
     execution: Int
+
     settings: Session_Settings!
 
     activeInstances: [Question_Public]!
@@ -77,12 +80,18 @@ module.exports = `
     version: Int!
   }
   input Session_QuestionBlockInput {
+    timeLimit: Int
     questions: [Session_QuestionBlockQuestionInput!]!
+  }
+  input Session_QuestionBlockModifyInput {
+    timeLimit: Int
   }
   type Session_QuestionBlock {
     id: ID!
 
     status: Session_QuestionBlockStatus!
+    timeLimit: Int
+    expiresAt: DateTime
 
     instances: [QuestionInstance!]!
   }
@@ -107,5 +116,20 @@ module.exports = `
     votes: Int!
 
     createdAt: DateTime!
+  }
+
+  type Session_Update {
+    id: ID!
+    activeStep: Int!
+    activeBlock: Int!
+
+    blocks: [SessionUpdate_Block!]!
+  }
+
+  type SessionUpdate_Block {
+    id: ID!
+    status: Session_QuestionBlockStatus!
+    timeLimit: Int
+    expiresAt: DateTime
   }
 `

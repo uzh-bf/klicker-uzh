@@ -14,6 +14,7 @@ module.exports = {
         enum: _values(QUESTION_BLOCK_STATUS),
         default: QUESTION_BLOCK_STATUS.PLANNED,
       },
+      expiresAt: { type: Date },
       timeLimit: { type: Number, default: -1, min: -1 },
       showSolutions: { type: Boolean, default: false },
 

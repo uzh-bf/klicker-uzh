@@ -78,6 +78,8 @@ module.exports = `
   }
   type Question_Public {
     id: ID!
+    timeLimit: Int
+    expiresAt: DateTime
     execution: Int
     questionId: ID!
     title: String!

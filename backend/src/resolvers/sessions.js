@@ -149,6 +149,9 @@ const updateSessionSettingsMutation = (parentValue, { sessionId, settings }, { a
 const deleteSessionsMutation = (parentValue, { ids }, { auth }) =>
   SessionMgrService.deleteSessions({ userId: auth.sub, ids })
 
+const modifyQuestionBlockMutation = (parentValue, { sessionId, id, questionBlockSettings }, { auth }) =>
+  SessionMgrService.modifyQuestionBlock({ id, sessionId, userId: auth.sub, questionBlockSettings })
+
 module.exports = {
   // queries
   allSessions: allSessionsQuery,
@@ -173,4 +176,5 @@ module.exports = {
   joinSession: joinSessionQuery,
   deleteSessions: deleteSessionsMutation,
   resetQuestionBlock: resetQuestionBlockMutation,
+  modifyQuestionBlock: modifyQuestionBlockMutation,
 }

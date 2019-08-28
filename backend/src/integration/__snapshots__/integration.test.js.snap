@@ -586,15 +586,23 @@ exports[`Integration Session Execution allows running the full session flow (res
     activateNextBlock {
       blocks: 
         status: ACTIVE
+        timeLimit: -1
+        expiresAt: Any
         instances: true,true
       ,
         status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
         instances: false
       ,
         status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
         instances: false,false,false
       ,
         status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
         instances: false,false
       
     }
@@ -606,15 +614,23 @@ exports[`Integration Session Execution allows running the full session flow (res
     activateNextBlock {
       blocks: 
         status: ACTIVE
+        timeLimit: -1
+        expiresAt: Any
         instances: true,true
       ,
         status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
         instances: false
       ,
         status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
         instances: false,false,false
       ,
         status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
         instances: false,false
       
     }
@@ -626,15 +642,23 @@ exports[`Integration Session Execution allows running the full session flow (res
     activateNextBlock {
       blocks: 
         status: EXECUTED
+        timeLimit: -1
+        expiresAt: Any
         instances: false,false
       ,
         status: ACTIVE
+        timeLimit: -1
+        expiresAt: Any
         instances: true
       ,
         status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
         instances: false,false,false
       ,
         status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
         instances: false,false
       
     }
@@ -646,15 +670,23 @@ exports[`Integration Session Execution allows running the full session flow (res
     activateNextBlock {
       blocks: 
         status: EXECUTED
+        timeLimit: -1
+        expiresAt: Any
         instances: false,false
       ,
         status: EXECUTED
+        timeLimit: -1
+        expiresAt: Any
         instances: false
       ,
         status: ACTIVE
+        timeLimit: 60
+        expiresAt: Any
         instances: true,true,true
       ,
         status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
         instances: false,false
       
     }
@@ -669,20 +701,48 @@ exports[`Integration Session Execution allows running the full session flow (res
     
 `;
 
+exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can change the settings of the third question block 1`] = `
+
+    modifyQuestionBlock {
+      blocks: 
+        timeLimit: -1
+        expiresAt: null
+      ,
+        timeLimit: -1
+        expiresAt: null
+      ,
+        timeLimit: 60
+        expiresAt: null
+      ,
+        timeLimit: -1
+        expiresAt: null
+      
+    }
+  
+`;
+
 exports[`Integration Session Execution allows running the full session flow (responding and evaluation) LECTURER: can close the first question block 1`] = `
 
     activateNextBlock {
       blocks: 
         status: EXECUTED
+        timeLimit: -1
+        expiresAt: Any
         instances: false,false
       ,
         status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
         instances: false
       ,
         status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
         instances: false,false,false
       ,
         status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
         instances: false,false
       
     }
@@ -694,15 +754,23 @@ exports[`Integration Session Execution allows running the full session flow (res
     activateNextBlock {
       blocks: 
         status: EXECUTED
+        timeLimit: -1
+        expiresAt: Any
         instances: false,false
       ,
         status: EXECUTED
+        timeLimit: -1
+        expiresAt: Any
         instances: false
       ,
         status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
         instances: false,false,false
       ,
         status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
         instances: false,false
       
     }
@@ -714,15 +782,23 @@ exports[`Integration Session Execution allows running the full session flow (res
     activateNextBlock {
       blocks: 
         status: EXECUTED
+        timeLimit: -1
+        expiresAt: Any
         instances: false,false
       ,
         status: EXECUTED
+        timeLimit: -1
+        expiresAt: Any
         instances: false
       ,
         status: EXECUTED
+        timeLimit: 60
+        expiresAt: Any
         instances: false,false,false
       ,
         status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
         instances: false,false
       
     }
