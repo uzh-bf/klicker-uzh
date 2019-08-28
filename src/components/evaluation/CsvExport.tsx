@@ -12,7 +12,7 @@ const defaultProps = {
 }
 
 function CsvExport({ activeInstances, sessionId }: Props): React.ReactElement {
-  const [csvData, setCsvData] = useState()
+  const [csvData, setCsvData] = useState([])
 
   useEffect((): void => {
     const result = []
@@ -27,11 +27,11 @@ function CsvExport({ activeInstances, sessionId }: Props): React.ReactElement {
       result.push(counts)
     })
     setCsvData(result)
-  }, [sessionId, activeInstances.length])
+  }, [activeInstances.length, sessionId])
 
   return (
     <div className="csvExport">
-      <CSVLink data={csvData || []} filename={`klicker-results-${sessionId}.csv`}>
+      <CSVLink data={csvData} filename={`klicker-results-${sessionId}.csv`}>
         <Button content="Export CSV" icon="table" />
       </CSVLink>
     </div>
