@@ -37,15 +37,13 @@ return function (App $app) {
 
         // set a cookie with the JWT
         $expires = 0;
-        $path = "/";
+        $path = "/graphql";
         $domain = "klicker.uzh.ch";
         $secure = true;
         $httponly = true;
         setcookie("jwt", $jwt, $expires, $path, $domain, $secure, $httponly);
 
-        var_dump($_SERVER);
-
-        // TODO: redirect the user to the app instead of returning a response
-        return $response;
+        // redirect the user to the app instead of returning a response
+        header('Location', 'https://app.klicker.uzh.ch/questions');
     });
 };
