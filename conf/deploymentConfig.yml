@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - command:
-            - /usr/bin/run-httpd
+            - /usr/libexec/s2i/run
           image: docker.io/uzhbf/klicker-aai
           imagePullPolicy: Always
           name: httpd
