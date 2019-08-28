@@ -14,7 +14,7 @@
 
   # If the above doesn't work you might need to set the `RewriteBase` directive manually, it should be the
   # absolute physical path to the directory that contains this htaccess file.
-  RewriteBase /opt/app-root/src/public/
+  # RewriteBase /opt/app-root/src/public/
 
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteRule ^ index.php [QSA,L]
