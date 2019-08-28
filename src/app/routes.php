@@ -44,6 +44,6 @@ return function (App $app) {
         setcookie("jwt", $jwt, $expires, $path, $domain, $secure, $httponly);
 
         // redirect the user to the app instead of returning a response
-        header('Location https://app.klicker.uzh.ch/entrypoint');
+        header('Location: https://app.klicker.uzh.ch/entrypoint');
     });
 };
