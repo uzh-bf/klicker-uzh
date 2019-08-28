@@ -1,0 +1,3 @@
+query CheckAccountStatus {
+  checkAccountStatus
+}
