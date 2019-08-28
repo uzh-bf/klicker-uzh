@@ -38,7 +38,7 @@ return function (App $app) {
         // set a cookie with the JWT
         $expires = 0;
         $path = "/";
-        $domain = ".klicker.uzh.ch";
+        $domain = "klicker.uzh.ch";
         $secure = true;
         $httponly = true;
         setcookie("jwt", $jwt, $expires, $path, $domain, $secure, $httponly);
