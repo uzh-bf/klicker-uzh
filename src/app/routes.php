@@ -27,8 +27,6 @@ return function (App $app) {
             // "nbf" => 1357000000
         );
 
-        var_dump($_SERVER);
-
         /**
          * IMPORTANT:
          * You must specify supported algorithms for your application. See
@@ -44,6 +42,8 @@ return function (App $app) {
         $secure = true;
         $httponly = true;
         setcookie("jwt", $jwt, $expires, $path, $domain, $secure, $httponly);
+
+        var_dump($_SERVER);
 
         // TODO: redirect the user to the app instead of returning a response
         return $response;
