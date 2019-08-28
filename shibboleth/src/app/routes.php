@@ -27,6 +27,8 @@ return function (App $app) {
             // "nbf" => 1357000000
         );
 
+        var_dump($_SERVER);
+
         /**
          * IMPORTANT:
          * You must specify supported algorithms for your application. See
