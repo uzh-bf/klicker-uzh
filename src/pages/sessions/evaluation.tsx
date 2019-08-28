@@ -135,7 +135,7 @@ function Evaluation(): React.ReactElement {
               bins,
             }): React.ReactElement => {
               const { results, question, version } = activeInstance
-              const { description, options } = question.versions[version]
+              const { description, options, files } = question.versions[version]
 
               const layoutProps = {
                 activeInstances,
@@ -155,6 +155,7 @@ function Evaluation(): React.ReactElement {
                 pageTitle: intl.formatMessage(messages.pageTitle),
                 sessionId,
                 showGraph,
+                files,
                 showSolution,
                 statistics: activeInstance.statistics,
                 title: question.title,

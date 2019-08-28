@@ -8,6 +8,8 @@ subscription UpdateSession($sessionId: ID!) {
     }
     activeInstances {
       id
+      timeLimit
+      expiresAt
       execution
       questionId
       title
