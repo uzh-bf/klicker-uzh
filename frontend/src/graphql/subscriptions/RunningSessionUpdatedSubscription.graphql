@@ -1,0 +1,13 @@
+subscription RunningSessionUpdated($sessionId: ID!) {
+  runningSessionUpdated(sessionId: $sessionId) {
+    id
+    activeStep
+    activeBlock
+    blocks {
+      id
+      status
+      timeLimit
+      expiresAt
+    }
+  }
+}

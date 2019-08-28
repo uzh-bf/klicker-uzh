@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import dayjs from 'dayjs'
 import _get from 'lodash/get'
+import _pick from 'lodash/pick'
 import { useRouter } from 'next/router'
 import { useQuery, useMutation } from '@apollo/react-hooks'
 import { defineMessages, useIntl } from 'react-intl'
@@ -21,6 +22,7 @@ import DeleteFeedbackMutation from '../../graphql/mutations/DeleteFeedbackMutati
 import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
 import FeedbackAddedSubscription from '../../graphql/subscriptions/FeedbackAddedSubscription.graphql'
 import ConfusionAddedSubscription from '../../graphql/subscriptions/ConfusionAddedSubscription.graphql'
+import RunningSessionUpdatedSubscription from '../../graphql/subscriptions/RunningSessionUpdatedSubscription.graphql'
 import ResetQuestionBlockMutation from '../../graphql/mutations/ResetQuestionBlockMutation.graphql'
 import Messager from '../../components/common/Messager'
 
@@ -165,6 +167,21 @@ function Running(): React.ReactElement {
                 sessionId={id}
                 shortname={shortname}
                 startedAt={dayjs(startedAt).format('HH:mm:ss')}
+                subscribeToMore={subscribeToMore({
+                  document: RunningSessionUpdatedSubscription,
+                  updateQuery: (prev, { subscriptionData }): any => {
+                    if (!subscriptionData.data) return prev
+                    console.log(subscriptionData.data.runningSessionUpdated.blocks)
+                    return {
+                      ...prev,
+                      runningSession: {
+                        ...prev.runningSession,
+                        ..._pick(subscriptionData.data.runningSessionUpdated, ['activeBlock', 'activeStep']),
+                      },
+                    }
+                  },
+                  variables: { sessionId: id },
+                })}
               />
             </div>
 

@@ -50,6 +50,7 @@ const messages = {
 
 interface Props {
   active: boolean
+  expiresAt?: any
   questions: any[]
   handleNewResponse: Function
   shortname: string
@@ -60,7 +61,14 @@ const defaultProps = {
   questions: [],
 }
 
-function QuestionArea({ active, questions, handleNewResponse, shortname, sessionId }: Props): React.ReactElement {
+function QuestionArea({
+  active,
+  questions,
+  handleNewResponse,
+  shortname,
+  sessionId,
+  expiresAt,
+}: Props): React.ReactElement {
   const [remainingQuestions, setRemainingQuestions] = useState([])
 
   const [activeQuestion, setActiveQuestion] = useState((): any => remainingQuestions[0])
@@ -227,13 +235,10 @@ function QuestionArea({ active, questions, handleNewResponse, shortname, session
             <div className="actions">
               <ActionMenu
                 activeIndex={questions.length - remainingQuestions.length}
+                expiresAt={expiresAt}
                 isSkipModeActive={inputEmpty}
                 isSubmitDisabled={remainingQuestions.length === 0 || (!inputEmpty && !inputValid)}
                 numItems={questions.length}
-                /* items={_range(questions.length).map(index => ({
-                  done: !remainingQuestions.includes(index),
-                }))} */
-                // setActiveIndex={onActiveQuestionChange}
                 onSubmit={onSubmit}
               />
             </div>

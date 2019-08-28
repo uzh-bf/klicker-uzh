@@ -1,6 +1,8 @@
 query JoinSession($shortname: String!) {
   joinSession(shortname: $shortname) {
     id
+    timeLimit
+    expiresAt
     settings {
       isFeedbackChannelActive
       isFeedbackChannelPublic

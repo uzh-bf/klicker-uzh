@@ -37,6 +37,11 @@ query EvaluateSession($sessionId: ID!) {
                 randomized
               }
             }
+            files {
+              id
+              name
+              type
+            }
           }
         }
         results {
