@@ -186,6 +186,7 @@ function SessionTimeline({
               </div>
               <div className="block" key={block.id}>
                 <QuestionBlock
+                  expiresAt={block.expiresAt}
                   handleResetQuestionBlock={(): void => handleResetQuestionBlock(block.id)}
                   index={index + 1}
                   questionBlockId={block.id}

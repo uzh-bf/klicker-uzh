@@ -171,14 +171,12 @@ function Running(): React.ReactElement {
                   document: RunningSessionUpdatedSubscription,
                   updateQuery: (prev, { subscriptionData }): any => {
                     if (!subscriptionData.data) return prev
+                    console.log(subscriptionData.data.runningSessionUpdated.blocks)
                     return {
                       ...prev,
                       runningSession: {
                         ...prev.runningSession,
                         ..._pick(subscriptionData.data.runningSessionUpdated, ['activeBlock', 'activeStep']),
-                        // blocks: subscriptionData.data.runningSessionUpdated.blocks(block => {
-                        //   // const matchingBlock =
-                        // })
                       },
                     }
                   },

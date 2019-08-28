@@ -1,6 +1,8 @@
 query JoinSession($shortname: String!) {
   joinSession(shortname: $shortname) {
     id
+    timeLimit
+    expiresAt
     settings {
       isFeedbackChannelActive
       isFeedbackChannelPublic
@@ -8,8 +10,6 @@ query JoinSession($shortname: String!) {
     }
     activeInstances {
       id
-      timeLimit
-      expiresAt
       execution
       questionId
       title

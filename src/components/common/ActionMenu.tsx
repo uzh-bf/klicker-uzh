@@ -2,12 +2,15 @@ import React from 'react'
 import { Button, Progress } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
+import Countdown from './Countdown'
+
 interface Props {
   activeIndex: number
   isSkipModeActive?: boolean
   isSubmitDisabled?: boolean
   numItems: number
   onSubmit: any
+  expiresAt?: any
 }
 
 const defaultProps = {
@@ -20,34 +23,19 @@ function ActionMenu({
   isSkipModeActive,
   isSubmitDisabled,
   numItems,
-  // items,
-  // setActiveIndex,
+  expiresAt,
   onSubmit,
 }: Props): React.ReactElement {
   return (
     <div className="actionMenu">
-      {/* <Menu borderless className="noBorder">
-        {items.map(({ done }, index) => (
-          <Menu.Item
-            active={index === activeIndex}
-            disabled={done}
-            icon={done ? 'checkmark' : 'hand pointer'}
-            onClick={setActiveIndex(index)}
-          />
-        ))}
-        <Menu.Item className="submitButton" position="right">
-          <Button fluid primary disabled={isSubmitDisabled} onClick={onSubmit}>
-            {isSkipModeActive ? (
-              <FormattedMessage defaultMessage="Skip" id="common.string.skip" />
-            ) : (
-              <FormattedMessage defaultMessage="Submit" id="common.string.submit" />
-            )}
-          </Button>
-        </Menu.Item>
-          </Menu> */}
       <div className="progress">
         <Progress autoSuccess progress="ratio" total={numItems} value={activeIndex} />
       </div>
+      {expiresAt && (
+        <div className="countdown">
+          <Countdown isActive countdownEnd={expiresAt} countdownStepSize={1000} />
+        </div>
+      )}
       <div className="actions">
         <Button fluid disabled={isSubmitDisabled} primary={!isSkipModeActive} onClick={onSubmit}>
           {isSkipModeActive ? (
@@ -68,6 +56,11 @@ function ActionMenu({
           flex-direction: row;
 
           padding: 0.3rem;
+
+          .countdown {
+            flex: 0 0 auto;
+            padding-right: 0.5rem;
+          }
 
           .progress {
             flex: 1;

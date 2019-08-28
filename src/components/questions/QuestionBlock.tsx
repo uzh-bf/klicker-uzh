@@ -15,6 +15,7 @@ interface Question {
 }
 
 interface Props {
+  expiresAt?: any
   index?: number
   noDetails?: boolean
   questions: Question[]
@@ -34,6 +35,7 @@ const defaultProps = {
 }
 
 function QuestionBlock({
+  expiresAt,
   handleResetQuestionBlock,
   index,
   status,
@@ -67,7 +69,13 @@ function QuestionBlock({
 
       {!noDetails && timeLimit > -1 && (
         <div className="timeLimit">
-          <Countdown countdownDuration={timeLimit} countdownStepSize={1000} isActive={status === 'ACTIVE'} />
+          <Countdown
+            countdownDuration={timeLimit}
+            countdownEnd={expiresAt}
+            countdownStepSize={1000}
+            isActive={status === 'ACTIVE'}
+            isCompleted={status === 'EXECUTED'}
+          />
         </div>
       )}
 

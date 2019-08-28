@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react'
+import dayjs from 'dayjs'
 import { Icon } from 'semantic-ui-react'
 
 interface Props {
   isActive?: boolean
   isCompleted?: boolean
-  countdownDuration: number
+  countdownEnd?: any
+  countdownDuration?: number
   countdownStepSize?: number
   children?: Function
 }
@@ -13,14 +15,16 @@ function Countdown({
   isCompleted,
   isActive,
   countdownDuration,
+  countdownEnd,
   countdownStepSize,
   children,
 }: Props): React.ReactElement {
   const [secondsRemaining, setSecondsRemaining] = useState(countdownDuration)
 
   useEffect((): any => {
+    let interval
     if (isActive) {
-      const interval = setInterval((): void => {
+      interval = setInterval((): void => {
         setSecondsRemaining((prev): number => {
           const newValue = prev - countdownStepSize / 1000
           if (newValue <= 0) {
@@ -30,19 +34,27 @@ function Countdown({
           return newValue
         })
       }, countdownStepSize)
-      return (): void => clearInterval(interval)
     }
-    return () => null
-  }, [isActive, countdownStepSize, countdownDuration])
+    return (): void => clearInterval(interval)
+  }, [isActive, countdownStepSize, countdownDuration, countdownEnd])
 
   if (children) {
     return children(secondsRemaining)
   }
 
+  if (isCompleted || !isActive) {
+    return (
+      <>
+        <Icon name="clock outline" />
+        {countdownDuration}s
+      </>
+    )
+  }
+
   return (
     <>
       <Icon name="clock" />
-      {isCompleted ? '0' : secondsRemaining}s
+      {countdownEnd ? dayjs(countdownEnd).diff(dayjs(), 'second') : secondsRemaining}s
     </>
   )
 }
