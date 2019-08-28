@@ -4,6 +4,8 @@ mutation ActivateNextBlock {
     blocks {
       id
       status
+      expiresAt
+      timeLimit
       instances {
         id
         isOpen

@@ -1,0 +1,8 @@
+mutation ModifyQuestionBlock($sessionId: ID!, $id: ID!, $timeLimit: Int) {
+  modifyQuestionBlock(sessionId: $sessionId, id: $id, questionBlockSettings: { timeLimit: $timeLimit }) {
+    blocks {
+      timeLimit
+      expiresAt
+    }
+  }
+}

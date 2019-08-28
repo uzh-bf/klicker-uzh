@@ -47,6 +47,7 @@ describe('Integration', () => {
   let sessionId
   let initialUserId
   let initialShortname
+  let blockIds
   const questions = {}
 
   beforeAll(async () => {
@@ -625,6 +626,8 @@ describe('Integration', () => {
       )
 
       expect(data).toMatchSnapshot()
+
+      blockIds = data.modifySession.blocks.map(block => block.id)
     })
   })
 
@@ -1045,6 +1048,24 @@ describe('Integration', () => {
           await sendQuery(
             {
               query: Mutations.ActivateNextBlockMutation,
+            },
+            authCookie
+          )
+        )
+
+        expect(data).toMatchSnapshot()
+      })
+
+      it('LECTURER: can change the settings of the third question block', async () => {
+        const data = ensureNoErrors(
+          await sendQuery(
+            {
+              query: Mutations.ModifyQuestionBlockMutation,
+              variables: {
+                id: blockIds[2],
+                sessionId,
+                timeLimit: 60,
+              },
             },
             authCookie
           )

@@ -2,13 +2,16 @@ const mongoose = require('mongoose')
 const { ForbiddenError } = require('apollo-server-express')
 const _mapValues = require('lodash/mapValues')
 const _forOwn = require('lodash/forOwn')
+const dayjs = require('dayjs')
+const schedule = require('node-schedule')
+const _pick = require('lodash/pick')
 
 const { ObjectId } = mongoose.Types
 
 const { sendSlackNotification } = require('./notifications')
 const { QuestionInstanceModel, SessionModel, UserModel, QuestionModel } = require('../models')
 const { getRedis } = require('../redis')
-const { pubsub, SESSION_UPDATED } = require('../resolvers/subscriptions')
+const { pubsub, SESSION_UPDATED, RUNNING_SESSION_UPDATED } = require('../resolvers/subscriptions')
 const {
   QUESTION_TYPES,
   QUESTION_GROUPS,
@@ -21,6 +24,40 @@ const { logDebug } = require('../lib/utils')
 
 const redisCache = getRedis()
 const responseCache = getRedis(3)
+
+function mapPropertyIds(elem) {
+  if (Array.isArray(elem)) {
+    return elem.map(obj => ({ ...obj, id: obj._id, _id: undefined }))
+  }
+
+  const result = { ...elem }
+  result.id = result._id
+  delete result._id
+  return result
+}
+
+async function publishRunningSessionUpdate({ sessionId }) {
+  const result = await SessionModel.findById(sessionId).populate({
+    path: 'blocks.instances',
+    populate: [
+      {
+        path: 'question',
+      },
+    ],
+  })
+
+  const resultObj = mapPropertyIds(result.toObject())
+  resultObj.blocks = resultObj.blocks.map(block => ({
+    ...mapPropertyIds(block),
+    instances: mapPropertyIds(block.instances),
+  }))
+
+  // Publish Subscription Data to Subscribers
+  await pubsub.publish(RUNNING_SESSION_UPDATED, {
+    [RUNNING_SESSION_UPDATED]: resultObj,
+    sessionId,
+  })
+}
 
 async function publishSessionUpdate({ sessionId, activeBlock }) {
   const result = await SessionModel.findById(sessionId).populate({
@@ -45,6 +82,8 @@ async function publishSessionUpdate({ sessionId, activeBlock }) {
     if (activeBlockData.status === QUESTION_BLOCK_STATUS.EXECUTED) {
       resultObj.activeInstances = []
     } else {
+      resultObj.timeLimit = activeBlockData.timeLimit
+      resultObj.expiresAt = activeBlockData.expiresAt
       resultObj.activeInstances = activeBlockData.instances.map(instance => {
         const { question } = instance
         const versionInfo = question.versions[instance.version]
@@ -57,16 +96,18 @@ async function publishSessionUpdate({ sessionId, activeBlock }) {
           content: versionInfo.content,
           description: versionInfo.description,
           options: versionInfo.options,
-          files: versionInfo.files.map(el => ({ ...el, id: el._id })),
+          files: versionInfo.files.map(el => ({ ...el, id: el._id, _id: undefined })),
         }
       })
     }
   }
 
   resultObj.id = resultObj._id
+  delete resultObj._id
+
   const properties = ['blocks', 'feedbacks', 'confusionTS']
   properties.forEach(property => {
-    resultObj[property] = resultObj[property].map(el => ({ ...el, id: el._id }))
+    resultObj[property] = resultObj[property].map(el => ({ ...el, id: el._id, _id: undefined }))
   })
 
   // Publish Subscription Data to Subscribers
@@ -115,7 +156,6 @@ const getRunningSession = async sessionId => {
  * Pass through all the question blocks in params
  * Skip any blocks that are empty (erroneous blocks)
  * Create question instances for all questions within
- * @param {*} param0
  */
 const mapBlocks = ({ sessionId, questionBlocks, userId }) => {
   // initialize a store for newly created instance models
@@ -206,7 +246,6 @@ const freeToResults = (redisResults, responseHashes) => {
 
 /**
  * Initialize the redis response cache as needed for session execution
- * @param {*} param0
  */
 const initializeResponseCache = async ({ id, question, version, results }) => {
   const transaction = responseCache.multi()
@@ -251,7 +290,6 @@ const initializeResponseCache = async ({ id, question, version, results }) => {
 
 /**
  * Compute the question instance results based on the redis response cache
- * @param {*} param0
  */
 const computeInstanceResults = async ({ id, question }) => {
   // setup a transaction for result extraction from redis
@@ -287,7 +325,6 @@ const computeInstanceResults = async ({ id, question }) => {
 
 /**
  * Create a new session
- * @param {*} param0
  */
 const createSession = async ({ name, questionBlocks = [], userId }) => {
   const sessionId = ObjectId()
@@ -324,7 +361,6 @@ const createSession = async ({ name, questionBlocks = [], userId }) => {
 
 /**
  * Modify a session
- * @param {*} param0
  */
 const modifySession = async ({ id, name, questionBlocks, userId }) => {
   // get the specified session from the database
@@ -394,8 +430,6 @@ const modifySession = async ({ id, name, questionBlocks, userId }) => {
 
 /**
  * Generic session action handler (start, pause, stop...)
- * @param {*} param0
- * @param {*} actionType
  */
 const sessionAction = async ({ sessionId, userId }, actionType) => {
   // get the current user instance
@@ -518,6 +552,7 @@ const sessionAction = async ({ sessionId, userId }, actionType) => {
         for (let i = 0; i < session.blocks.length; i += 1) {
           session.blocks[i].status = QUESTION_BLOCK_STATUS.PLANNED
           session.blocks[i].execution += 1
+          session.blocks[i].expiresAt = null
 
           // reset any results that are already stored in the database
           promises.push(
@@ -631,9 +666,8 @@ const updateSettings = async ({ sessionId, userId, settings, shortname }) => {
 
 /**
  * Activate the next question block of a running session
- * @param {*} param0
  */
-const activateNextBlock = async ({ userId }) => {
+const activateNextBlock = async ({ userId, scheduledStep }) => {
   const user = await UserModel.findById(userId).populate(['activeInstances', 'runningSession'])
 
   const { shortname, runningSession } = user
@@ -652,6 +686,10 @@ const activateNextBlock = async ({ userId }) => {
 
   const prevBlockIndex = runningSession.activeBlock
   const nextBlockIndex = runningSession.activeBlock + 1
+
+  if (scheduledStep && (runningSession.activeInstances.length === 0 || scheduledStep !== runningSession.activeStep)) {
+    throw new ForbiddenError('CANNOT_EXECUTE_SCHEDULE')
+  }
 
   if (runningSession.activeInstances.length === 0) {
     // if there are no active instances, activate the next block
@@ -684,6 +722,21 @@ const activateNextBlock = async ({ userId }) => {
 
     // set the status of the instances in the next block to active
     runningSession.blocks[nextBlockIndex].status = QUESTION_BLOCK_STATUS.ACTIVE
+
+    // check whether the next block has a time limit
+    if (runningSession.blocks[nextBlockIndex].timeLimit > -1) {
+      // set expiresAt for time-limited blocks
+      runningSession.blocks[nextBlockIndex].expiresAt = dayjs().add(
+        runningSession.blocks[nextBlockIndex].timeLimit,
+        'second'
+      )
+
+      // schedule the activation of the next block
+      schedule.scheduleJob(runningSession.blocks[nextBlockIndex].expiresAt, async () => {
+        await activateNextBlock({ userId, scheduledStep: runningSession.activeStep })
+        await publishRunningSessionUpdate({ sessionId: runningSession.id })
+      })
+    }
 
     // set the instances of the next block to be the users active instances
     runningSession.activeInstances = nextBlock.instances
@@ -767,6 +820,22 @@ const deleteSessions = async ({ userId, ids }) => {
   return 'DELETION_SUCCESSFUL'
 }
 
+async function modifyQuestionBlock({ sessionId, id, questionBlockSettings, userId }) {
+  const session = await SessionModel.findOne({ _id: sessionId, user: userId })
+  if (!session) {
+    throw new ForbiddenError('INVALID_QUESTION_BLOCK')
+  }
+
+  const blockIndex = session.blocks.findIndex(block => block.id === id)
+  if (blockIndex < 0) {
+    return session
+  }
+
+  session.blocks[blockIndex].timeLimit = questionBlockSettings.timeLimit
+
+  return session.save()
+}
+
 module.exports = {
   createSession,
   modifySession,
@@ -782,4 +851,5 @@ module.exports = {
   freeToResults,
   cleanCache,
   publishSessionUpdate,
+  modifyQuestionBlock,
 }
