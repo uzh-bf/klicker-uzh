@@ -17,8 +17,8 @@ return function (App $app) {
         // TODO: get the key from the environment/secret
         $key = "example_key";
         $token = array(
-            "iss" => "aai.klicker.uzh.ch",
-            "aud" => "api.klicker.uzh.ch",
+            "iss" => isset($_ENV['AAI_ISSUER']) ? $_ENV['AAI_ISSUER'] : "aai.klicker.uzh.ch",
+            "aud" => isset($_ENV['AAI_AUDIENCE']) ? $_ENV['AAI_AUDIENCE'] : "api.klicker.uzh.ch",
             'sub' => 'newuser@xyz.ch',
             'scope' => ['user'],
             'aai' => true
@@ -38,14 +38,14 @@ return function (App $app) {
         // set a cookie with the JWT
         $expires = 0;
         $path = "/graphql";
-        $domain = "klicker.uzh.ch";
+        $domain = isset($_ENV['COOKIE_DOMAIN']) ? $_ENV['COOKIE_DOMAIN'] : "klicker.uzh.ch";
         $secure = true;
         $httponly = true;
         setcookie("jwt", $jwt, $expires, $path, $domain, $secure, $httponly);
 
         // redirect the user to the app instead of returning a response
         return $response
-            ->withHeader('Location', 'https://app.klicker.uzh.ch/entrypoint')
+            ->withHeader('Location', isset($_ENV['REDIRECT_LOCATION']) ? $_ENV['REDIRECT_LOCATION'] : 'https://app.klicker.uzh.ch/entrypoint')
             ->withStatus(302);
     });
 };
