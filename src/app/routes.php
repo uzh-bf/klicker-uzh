@@ -17,9 +17,9 @@ return function (App $app) {
         // TODO: get the key from the environment/secret
         $key = "example_key";
         $token = array(
-            "iss" => "https://aai.klicker.uzh.ch",
-            "aud" => "https://api.klicker.uzh.ch",
-            'sub' => 'roland.schlaefli@bf.uzh.ch',
+            "iss" => "aai.klicker.uzh.ch",
+            "aud" => "api.klicker.uzh.ch",
+            'sub' => 'newuser@xyz.ch',
             'scope' => ['user'],
             'aai' => true
             // TODO: embed valid properties in the token
