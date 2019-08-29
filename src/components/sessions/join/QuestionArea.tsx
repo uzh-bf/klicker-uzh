@@ -55,6 +55,7 @@ interface Props {
   handleNewResponse: Function
   shortname: string
   sessionId: string
+  timeLimit?: number
 }
 
 const defaultProps = {
@@ -68,6 +69,7 @@ function QuestionArea({
   shortname,
   sessionId,
   expiresAt,
+  timeLimit,
 }: Props): React.ReactElement {
   const [remainingQuestions, setRemainingQuestions] = useState([])
 
@@ -239,6 +241,7 @@ function QuestionArea({
                 isSkipModeActive={inputEmpty}
                 isSubmitDisabled={remainingQuestions.length === 0 || (!inputEmpty && !inputValid)}
                 numItems={questions.length}
+                timeLimit={timeLimit}
                 onSubmit={onSubmit}
               />
             </div>

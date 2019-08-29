@@ -23,7 +23,7 @@ function Countdown({
 
   useEffect((): any => {
     let interval
-    if (isActive) {
+    if (!isCompleted && isActive) {
       interval = setInterval((): void => {
         setSecondsRemaining((prev): number => {
           const newValue = prev - countdownStepSize / 1000
@@ -36,7 +36,7 @@ function Countdown({
       }, countdownStepSize)
     }
     return (): void => clearInterval(interval)
-  }, [isActive, countdownStepSize, countdownDuration, countdownEnd])
+  }, [isCompleted, isActive, countdownStepSize])
 
   if (children) {
     return children(secondsRemaining)
@@ -51,10 +51,29 @@ function Countdown({
     )
   }
 
+  if (countdownEnd) {
+    const remaining = dayjs(countdownEnd).diff(dayjs(), 'second')
+    if (remaining > 0) {
+      return (
+        <>
+          <Icon name="clock" />
+          {remaining}s
+        </>
+      )
+    }
+
+    return (
+      <>
+        <Icon name="clock" />
+        0s
+      </>
+    )
+  }
+
   return (
     <>
       <Icon name="clock" />
-      {countdownEnd ? dayjs(countdownEnd).diff(dayjs(), 'second') : secondsRemaining}s
+      {secondsRemaining}s
     </>
   )
 }
