@@ -106,8 +106,8 @@ jobs:
       before_script:
         - echo $PASSWORD | docker login --username $USER --password-stdin $REGISTRY
       script:
-        - travis_retry docker pull $IMAGE_NAME:latest
-        - docker build . --cache-from $IMAGE_NAME:latest --build-arg VERSION=$TRAVIS_TAG -t $IMAGE_NAME:$TRAVIS_TAG
+        - travis_retry docker pull $IMAGE_NAME:canary
+        - docker build . --cache-from $IMAGE_NAME:canary --build-arg VERSION=$TRAVIS_TAG -t $IMAGE_NAME:$TRAVIS_TAG
         - travis_retry docker push $IMAGE_NAME:$TRAVIS_TAG
 
     # build stable tags (e.g. v1.0.0)
@@ -133,8 +133,8 @@ jobs:
       before_script:
         - echo $PASSWORD | docker login --username $USER --password-stdin $REGISTRY
       script:
-        - travis_retry docker pull $IMAGE_NAME:stable
-        - docker build . --cache-from $IMAGE_NAME:stable --build-arg VERSION=$TRAVIS_TAG -t $IMAGE_NAME:stable -t $IMAGE_NAME:$TRAVIS_TAG
+        - travis_retry docker pull $IMAGE_NAME:canary
+        - docker build . --cache-from $IMAGE_NAME:canary --build-arg VERSION=$TRAVIS_TAG -t $IMAGE_NAME:stable -t $IMAGE_NAME:$TRAVIS_TAG
         - travis_retry docker push $IMAGE_NAME:$TRAVIS_TAG
         - travis_retry docker push $IMAGE_NAME:stable
         - >
