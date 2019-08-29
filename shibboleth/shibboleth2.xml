@@ -58,14 +58,6 @@
                         </MetadataFilter>
                 </MetadataProvider>
 
-                <MetadataProvider type="XML" validate="true" url="https://samltest.id/saml/idp" backingFilePath="SAMLtest.xml">
-                        <!-- You should always check the signature and freshness of remote
-             metadata.  It's commented out until you get the basics working.
-          <MetadataFilter type="RequireValidUntil" maxValidityInterval="2419200"/>
-          <MetadataFilter type="Signature" certificate="signet.crt" verifyBackup="false"/>
-        -->
-                </MetadataProvider>
-
                 <!-- Map to extract attributes from SAML assertions. -->
                 <AttributeExtractor type="XML" validate="true" reloadChanges="false" path="attribute-map.xml" />
 
