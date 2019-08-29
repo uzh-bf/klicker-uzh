@@ -38,7 +38,7 @@ function Print(): React.ReactElement<any> {
         const { activeInstances, sessionStatus } = extractInstancesFromSession(session)
 
         return (
-          <CommonLayout baseFontSize="20">
+          <CommonLayout baseFontSize="16">
             <div className="actions noPrint">
               <Button primary content="Print" icon="print" onClick={() => window.print()} />
               <Checkbox
@@ -153,8 +153,11 @@ function Print(): React.ReactElement<any> {
               }
 
               .container {
-                height: 1240px;
-                width: 1754px;
+                position: relative;
+                height: 1190px;
+                width: 1704px;
+
+                padding: 25px;
 
                 page-break-after: always;
               }
@@ -172,34 +175,38 @@ function Print(): React.ReactElement<any> {
               }
 
               .chart {
-                height: 620px;
+                height: 1020px;
+                width: 1100px;
 
-                padding-left: 30px;
+                :global(.tableChart) {
+                  padding: 1em;
+                }
               }
 
               .info {
-                height: 500px;
+                position: absolute;
+                top: 170px;
+                left: 1100px;
+                height: 1020px;
+                width: 464px;
 
-                display: flex;
-                align-items: flex-end;
-                flex-flow: row nowrap;
+                padding: 1em;
 
-                :global(button) {
-                  padding: 0.7em;
+                :global(h2) {
+                  font-size: 1rem !important;
+                }
+
+                :global(*) {
+                  font-size: 0.7rem;
                 }
               }
 
               .possibilities {
-                flex: 1;
-
-                padding: 0.7em;
+                margin-bottom: 0.7em;
               }
 
               .totalResponses {
-                flex: 0 0 auto;
-
-                padding: 0.7em;
-                padding-left: 0;
+                margin-bottom: 0.7em;
               }
 
               .noPrint {
