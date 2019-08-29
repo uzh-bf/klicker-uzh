@@ -344,24 +344,26 @@ const joinSession = async ({ shortname }) => {
     expiresAt: currentBlock.expiresAt,
     timeLimit: currentBlock.timeLimit,
     // map active instances to be in the correct format
-    activeInstances: currentBlock.instances.map(({ id: instanceId, question, version: instanceVersion }) => {
-      const version = question.versions[instanceVersion]
+    activeInstances: currentBlock.instances
+      .filter(instance => instance.isOpen)
+      .map(({ id: instanceId, question, version: instanceVersion }) => {
+        const version = question.versions[instanceVersion]
 
-      // get the files that correspond to the current question version
-      const files = FileModel.find({ _id: { $in: version.files } })
+        // get the files that correspond to the current question version
+        const files = FileModel.find({ _id: { $in: version.files } })
 
-      return {
-        execution: currentBlock.execution,
-        questionId: question.id,
-        id: instanceId,
-        title: question.title,
-        type: question.type,
-        content: version.content,
-        description: version.description,
-        options: version.options,
-        files,
-      }
-    }),
+        return {
+          execution: currentBlock.execution,
+          questionId: question.id,
+          id: instanceId,
+          title: question.title,
+          type: question.type,
+          content: version.content,
+          description: version.description,
+          options: version.options,
+          files,
+        }
+      }),
     feedbacks: settings.isFeedbackChannelActive && settings.isFeedbackChannelPublic ? feedbacks : null,
   }
 }
