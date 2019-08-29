@@ -54,7 +54,7 @@ function Join(): React.ReactElement {
   }
 
   const { shortname }: { shortname?: string } = router.query
-  const { id: sessionId, settings, activeInstances, feedbacks, expiresAt } = data.joinSession
+  const { id: sessionId, settings, activeInstances, feedbacks, expiresAt, timeLimit } = data.joinSession
 
   const onSidebarActiveItemChange = (newSidebarActiveItem): any => (): void => {
     setSidebarActiveItem(newSidebarActiveItem)
@@ -190,6 +190,7 @@ function Join(): React.ReactElement {
             questions={activeInstances}
             sessionId={sessionId}
             shortname={shortname}
+            timeLimit={timeLimit}
           />
         ) : (
           <div
