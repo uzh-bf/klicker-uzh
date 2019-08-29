@@ -11,6 +11,7 @@ interface Props {
   numItems: number
   onSubmit: any
   expiresAt?: any
+  timeLimit?: number
 }
 
 const defaultProps = {
@@ -25,6 +26,7 @@ function ActionMenu({
   numItems,
   expiresAt,
   onSubmit,
+  timeLimit,
 }: Props): React.ReactElement {
   return (
     <div className="actionMenu">
@@ -33,7 +35,7 @@ function ActionMenu({
       </div>
       {expiresAt && (
         <div className="countdown">
-          <Countdown isActive countdownEnd={expiresAt} countdownStepSize={1000} />
+          <Countdown isActive countdownDuration={timeLimit} countdownEnd={expiresAt} countdownStepSize={1000} />
         </div>
       )}
       <div className="actions">
