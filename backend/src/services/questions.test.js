@@ -226,7 +226,7 @@ describe('QuestionService', () => {
   })
 
   describe('deleteQuestions', () => {
-    it('performs soft-deletion on useds question', async () => {
+    it('performs soft-deletion on a used question', async () => {
       // perform the deletion
       const result = await QuestionService.deleteQuestions({
         ids: [questions.SC.id],
@@ -237,6 +237,7 @@ describe('QuestionService', () => {
       const question = await QuestionModel.findById(questions.SC.id)
       expect(question.isDeleted).toEqual(true)
     })
+
     it.skip('performs hard-deletion on an unused question', async () => {
       // TODO: implementation
     })

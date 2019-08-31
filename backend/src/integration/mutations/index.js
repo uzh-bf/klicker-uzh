@@ -28,6 +28,7 @@ const ResolveAccountDeletionMutation = loadAsString('./ResolveAccountDeletionMut
 const ActivateAccountMutation = loadAsString('./ActivateAccountMutation.graphql')
 const DeleteResponseMutation = loadAsString('./DeleteResponseMutation.graphql')
 const ModifyQuestionBlockMutation = loadAsString('./ModifyQuestionBlockMutation.graphql')
+const QuestionStatisticsMutation = loadAsString('./QuestionStatisticsMutation.graphql')
 
 const RegistrationSerializer = require('./RegistrationSerializer')
 const ActivateNextBlockSerializer = require('./ActivateNextBlockSerializer')
@@ -68,6 +69,7 @@ module.exports = {
   DeleteResponseMutation,
   CancelSessionMutation,
   ModifyQuestionBlockMutation,
+  QuestionStatisticsMutation,
   serializers: [
     RegistrationSerializer,
     ActivateNextBlockSerializer,

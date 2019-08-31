@@ -1306,6 +1306,24 @@ describe('Integration', () => {
     })
   })
 
+  describe('Question Statistics', () => {
+    it('can load question statistics for all question types', async () => {
+      const data = ensureNoErrors(
+        await sendQuery(
+          {
+            query: Mutations.QuestionStatisticsMutation,
+            variables: {
+              ids: [questions.SC, questions.MC, questions.FREE, questions.FREE_RANGE],
+            },
+          },
+          authCookie
+        )
+      )
+
+      expect(data).toMatchSnapshot()
+    })
+  })
+
   describe('Question Archiving', () => {
     it('can archive questions', async () => {
       const data = ensureNoErrors(

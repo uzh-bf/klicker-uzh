@@ -263,6 +263,138 @@ exports[`Integration Question Modification modifies unrestricted FREE_RANGE ques
   
 `;
 
+exports[`Integration Question Statistics can load question statistics for all question types 1`] = `
+Object {
+  "questionStatistics": Array [
+    Object {
+      "statistics": Array [
+        Object {
+          "CHOICES": Array [
+            Object {
+              "chosen": 1,
+              "correct": false,
+              "name": "option1",
+              "percentageChosen": 1,
+              "total": 1,
+            },
+            Object {
+              "chosen": 0,
+              "correct": true,
+              "name": "option2",
+              "percentageChosen": 0,
+              "total": 1,
+            },
+          ],
+          "FREE": null,
+          "version": 0,
+        },
+      ],
+      "title": "Test SC #2",
+      "type": "SC",
+      "usageDetails": Array [
+        Object {
+          "count": 1,
+          "version": 0,
+        },
+      ],
+      "usageTotal": 1,
+    },
+    Object {
+      "statistics": Array [
+        Object {
+          "CHOICES": Array [
+            Object {
+              "chosen": 1,
+              "correct": false,
+              "name": "option1",
+              "percentageChosen": 1,
+              "total": 1,
+            },
+            Object {
+              "chosen": 1,
+              "correct": true,
+              "name": "option2",
+              "percentageChosen": 1,
+              "total": 1,
+            },
+            Object {
+              "chosen": 0,
+              "correct": true,
+              "name": "option3",
+              "percentageChosen": 0,
+              "total": 1,
+            },
+          ],
+          "FREE": null,
+          "version": 0,
+        },
+      ],
+      "title": "Test MC #2",
+      "type": "MC",
+      "usageDetails": Array [
+        Object {
+          "count": 1,
+          "version": 0,
+        },
+      ],
+      "usageTotal": 1,
+    },
+    Object {
+      "statistics": Array [
+        Object {
+          "CHOICES": null,
+          "FREE": Array [
+            Object {
+              "chosen": 1,
+              "key": "5eb63bbbe01eeed093cb22bb8f5acdc3",
+              "percentageChosen": 1,
+              "total": 1,
+              "value": "hello world",
+            },
+          ],
+          "version": 0,
+        },
+      ],
+      "title": "Test FREE #2",
+      "type": "FREE",
+      "usageDetails": Array [
+        Object {
+          "count": 1,
+          "version": 0,
+        },
+      ],
+      "usageTotal": 1,
+    },
+    Object {
+      "statistics": Array [
+        Object {
+          "CHOICES": null,
+          "FREE": Array [
+            Object {
+              "chosen": 1,
+              "key": "a87ff679a2f3e71d9181a67b7542122c",
+              "percentageChosen": 1,
+              "total": 1,
+              "value": "4",
+            },
+          ],
+          "version": 0,
+        },
+      ],
+      "title": "Test FREE_RANGE #2",
+      "type": "FREE_RANGE",
+      "usageDetails": Array [
+        Object {
+          "count": 1,
+          "version": 0,
+        },
+      ],
+      "usageTotal": 1,
+    },
+  ],
+}
+`;
+
 exports[`Integration Session Execution allows adding confusion timesteps 1`] = `
 Object {
   "addConfusionTS": "CONFUSION_ADDED",

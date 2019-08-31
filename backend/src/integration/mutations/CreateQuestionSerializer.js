@@ -1,7 +1,7 @@
 const { draftContentSerializer } = require('../../lib/test/serializers')
 
 module.exports = {
-  test: ({ createQuestion, modifyQuestion }) => !!createQuestion || !!modifyQuestion,
+  test: data => data && (!!data.createQuestion || !!data.modifyQuestion),
   print: ({ createQuestion, modifyQuestion }) => {
     const { title, type, tags, versions } = createQuestion || modifyQuestion
 

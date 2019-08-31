@@ -1,5 +1,4 @@
 const _isNumber = require('lodash/isNumber')
-// TODO: find a way to use draft.js without needing react and react-dom
 const { ContentState, convertToRaw } = require('draft-js')
 const { UserInputError } = require('apollo-server-express')
 
@@ -323,6 +322,7 @@ const archiveQuestions = async ({ ids, userId }) => {
   // await the question update promises
   return Promise.all(promises)
 }
+
 /**
  * Delete a question from the database
  * @param {*} param0

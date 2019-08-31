@@ -1,5 +1,5 @@
 module.exports = {
-  test: ({ createUser }) => !!createUser,
+  test: data => data && !!data.createUser,
   print: ({ createUser: { email, shortname, institution, useCase } }) => `
     createUser {
       email: ${email}
