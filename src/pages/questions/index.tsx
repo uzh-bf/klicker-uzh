@@ -20,6 +20,7 @@ import ArchiveQuestionsMutation from '../../graphql/mutations/ArchiveQuestionsMu
 import ModifySessionMutation from '../../graphql/mutations/ModifySessionMutation.graphql'
 import DeleteQuestionsMutation from '../../graphql/mutations/DeleteQuestionsMutation.graphql'
 import QuestionListQuery from '../../graphql/queries/QuestionListQuery.graphql'
+import QuestionStatisticsMutation from '../../graphql/queries/QuestionStatisticsMutation.graphql'
 import SessionEditForm from '../../components/forms/sessionCreation/SessionEditForm'
 import SessionCreationForm from '../../components/forms/sessionCreation/SessionCreationForm'
 import QuestionList from '../../components/questions/QuestionList'
@@ -63,6 +64,7 @@ function Index(): React.ReactElement {
   const [archiveQuestions] = useMutation(ArchiveQuestionsMutation)
   const [modifySession] = useMutation(ModifySessionMutation)
   const [deleteQuestions] = useMutation(DeleteQuestionsMutation)
+  const [getQuestionStatistics, { data: statisticsData }] = useMutation(QuestionStatisticsMutation)
   const { data } = useQuery(QuestionPoolQuery)
 
   const [selectedItems, handleSelectItem, handleResetSelection] = useSelection()
@@ -245,6 +247,18 @@ function Index(): React.ReactElement {
     setDeletionConfirmation(false)
   }
 
+  const onGetQuestionStatistics = async (): Promise<void> => {
+    try {
+      const questionIds = Array.from(selectedItems.ids)
+      await getQuestionStatistics({
+        variables: { ids: questionIds },
+      })
+      console.log(statisticsData)
+    } catch (e) {
+      console.error(e.message)
+    }
+  }
+
   const renderActionArea = (runningSessionId): React.ReactElement => {
     if (creationMode) {
       if (editSessionId) {
@@ -308,19 +322,20 @@ function Index(): React.ReactElement {
           />
         </div>
         <div className="wrapper">
-          <div className="questionList">
-            <ActionBar
-              creationMode={creationMode}
-              deletionConfirmation={deletionConfirmation}
-              handleArchiveQuestions={onArchiveQuestions}
-              handleCreationModeToggle={onCreationModeToggle}
-              handleDeleteQuestions={onDeleteQuestions}
-              handleQuickBlock={onQuickBlock}
-              handleQuickBlocks={onQuickBlocks}
-              isArchiveActive={filters.archive}
-              itemsChecked={selectedItems.ids.length}
-            />
+          <ActionBar
+            creationMode={creationMode}
+            deletionConfirmation={deletionConfirmation}
+            handleArchiveQuestions={onArchiveQuestions}
+            handleCreationModeToggle={onCreationModeToggle}
+            handleDeleteQuestions={onDeleteQuestions}
+            handleGetQuestionStatistics={onGetQuestionStatistics}
+            handleQuickBlock={onQuickBlock}
+            handleQuickBlocks={onQuickBlocks}
+            isArchiveActive={filters.archive}
+            itemsChecked={selectedItems.ids.length}
+          />
 
+          <div className="questionList">
             <div className="questionListContent">
               <QuestionList
                 creationMode={creationMode}

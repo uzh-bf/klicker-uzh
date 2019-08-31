@@ -1,7 +1,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Button, Confirm, Icon } from 'semantic-ui-react'
+import { Button, Confirm, Icon, Label } from 'semantic-ui-react'
 
 const messages = defineMessages({
   deletionConfirmationCancel: {
@@ -27,6 +27,7 @@ interface Props {
   handleDeleteQuestions: any
   handleQuickBlock: any
   handleQuickBlocks: any
+  handleGetQuestionStatistics: any
   isArchiveActive?: boolean
   itemsChecked?: number
 }
@@ -47,8 +48,10 @@ function ActionBar({
   handleDeleteQuestions,
   handleQuickBlock,
   handleQuickBlocks,
+  handleGetQuestionStatistics,
 }: Props): React.ReactElement {
   const intl = useIntl()
+
   return (
     <div className="actionBar">
       <div className="actionButtons">
@@ -66,7 +69,13 @@ function ActionBar({
       <div className="creationButtons">
         {creationMode ? (
           <>
-            <Button icon disabled={itemsChecked === 0} labelPosition="left" onClick={(): void => handleQuickBlocks()}>
+            <Button
+              icon
+              disabled={itemsChecked <= 1}
+              labelPosition="left"
+              size="small"
+              onClick={(): void => handleQuickBlocks()}
+            >
               <Icon name="lightning" />
               <FormattedMessage
                 defaultMessage="Split questions into {num} blocks"
@@ -75,7 +84,13 @@ function ActionBar({
               />
             </Button>
 
-            <Button icon disabled={itemsChecked === 0} labelPosition="left" onClick={(): void => handleQuickBlock()}>
+            <Button
+              icon
+              disabled={itemsChecked === 0}
+              labelPosition="left"
+              size="small"
+              onClick={(): void => handleQuickBlock()}
+            >
               <Icon name="lightning" />
               <FormattedMessage
                 defaultMessage="Group questions into one block ({num}->1)"
@@ -90,37 +105,39 @@ function ActionBar({
               icon
               disabled={itemsChecked === 0}
               labelPosition="left"
+              size="small"
+              onClick={handleGetQuestionStatistics}
+            >
+              <Icon name="calculator" />
+              <FormattedMessage defaultMessage="Statistics" id="questionPool.button.computeStatistics" />
+            </Button>
+
+            <Button
+              icon
+              disabled={itemsChecked === 0}
+              labelPosition="left"
+              size="small"
               onClick={(): void => handleArchiveQuestions()}
             >
               <Icon name="archive" />
               {isArchiveActive ? (
-                <FormattedMessage
-                  defaultMessage="Unarchive questions ({num})"
-                  id="questionPool.button.unarchiveQuestions"
-                  values={{ num: +itemsChecked }}
-                />
+                <FormattedMessage defaultMessage="Unarchive" id="questionPool.button.unarchiveQuestions" />
               ) : (
-                <FormattedMessage
-                  defaultMessage="Archive questions ({num})"
-                  id="questionPool.button.archiveQuestions"
-                  values={{ num: +itemsChecked }}
-                />
+                <FormattedMessage defaultMessage="Archive" id="questionPool.button.archiveQuestions" />
               )}
             </Button>
+
             <Button
               icon
-              color="red"
               disabled={itemsChecked === 0}
               labelPosition="left"
+              size="small"
               onClick={(): void => handleDeleteQuestions(false)}
             >
               <Icon name="trash" />
-              <FormattedMessage
-                defaultMessage="Delete questions ({num})"
-                id="questionPool.button.deleteQuestions"
-                values={{ num: +itemsChecked }}
-              />
+              <FormattedMessage defaultMessage="Delete" id="questionPool.button.deleteQuestions" />
             </Button>
+
             <Confirm
               cancelButton={intl.formatMessage(messages.deletionConfirmationCancel)}
               confirmButton={intl.formatMessage(messages.deletionConfirmationConfirm, { num: +itemsChecked })}
@@ -133,15 +150,14 @@ function ActionBar({
         )}
       </div>
 
-      <div className="checkedCounter">
+      <Label className="checkedCounter">
+        <Icon name="thumbtack" />
         <FormattedMessage
           defaultMessage="{count} items checked"
           id="questionPool.string.itemsChecked"
-          values={{
-            count: +itemsChecked,
-          }}
+          values={{ count: +itemsChecked }}
         />
-      </div>
+      </Label>
 
       <style jsx>
         {`
@@ -155,9 +171,7 @@ function ActionBar({
           }
 
           .actionBar {
-            background-color: $color-primary-05p;
-            border: 1px solid $color-primary;
-            padding: 0.5rem;
+            padding: 1rem;
 
             .actionButtons,
             .creationButtons {
@@ -168,6 +182,7 @@ function ActionBar({
               flex-flow: row wrap;
               align-items: center;
               justify-content: space-between;
+              padding: 0;
 
               .creationButtons,
               .actionButtons {
@@ -182,8 +197,6 @@ function ActionBar({
               .checkedCounter {
                 color: grey;
                 order: 1;
-
-                padding-left: 1rem;
               }
 
               .creationButtons {
