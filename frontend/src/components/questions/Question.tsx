@@ -112,7 +112,7 @@ function Question({
           flex-flow: column nowrap;
 
           padding: 0.5rem;
-          border: 1px solid lightgray;
+          border: 1px solid gainsboro;
           background-color: #f9f9f9;
 
           &.draggable {
