@@ -11,6 +11,7 @@ const {
   modifyQuestion,
   archiveQuestions,
   deleteQuestions,
+  questionStatistics,
 } = require('./resolvers/questions')
 const {
   questionInstancesByPV,
@@ -123,6 +124,7 @@ const typeDefs = [
     startSession(id: ID!): Session!
     updateSessionSettings(sessionId: ID!, settings: Session_SettingsInput!): Session!
     resetQuestionBlock(sessionId: ID!, blockId: ID!): Session!
+    questionStatistics(ids: [ID!]!): [QuestionStatistics!]!
   }
 
   type Subscription {
@@ -185,6 +187,7 @@ const resolvers = {
     activateNextBlock: requireAuth(activateNextBlock),
     resetQuestionBlock: requireAuth(resetQuestionBlock),
     modifyQuestionBlock: requireAuth(modifyQuestionBlock),
+    questionStatistics: requireAuth(questionStatistics),
   },
   Subscription: {
     // TODO: some form of authentication

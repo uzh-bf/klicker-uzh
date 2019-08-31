@@ -1,5 +1,5 @@
 module.exports = {
-  test: ({ sessionPublic }) => !!sessionPublic,
+  test: data => data && !!data.sessionPublic,
   print: ({ sessionPublic: { status, blocks } }) => `
     evaluateSession {
       status: ${status}

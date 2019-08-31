@@ -1,5 +1,5 @@
 module.exports = {
-  test: ({ modifyQuestionBlock }) => !!modifyQuestionBlock,
+  test: data => data && !!data.modifyQuestionBlock,
   print: ({ modifyQuestionBlock: { blocks } }) => `
     modifyQuestionBlock {
       blocks: ${blocks.map(

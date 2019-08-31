@@ -1,5 +1,5 @@
 module.exports = {
-  test: ({ activateNextBlock }) => !!activateNextBlock,
+  test: data => data && !!data.activateNextBlock,
   print: ({ activateNextBlock: { blocks } }) => `
     activateNextBlock {
       blocks: ${blocks.map(

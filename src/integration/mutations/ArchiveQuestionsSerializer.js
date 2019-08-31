@@ -1,5 +1,5 @@
 module.exports = {
-  test: ({ archiveQuestions }) => !!archiveQuestions,
+  test: data => data && !!data.archiveQuestions,
   print: ({ archiveQuestions }) => `
     archiveQuestions: [${archiveQuestions.map(
       ({ isArchived }) => `

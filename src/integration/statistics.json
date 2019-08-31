@@ -1,0 +1,73 @@
+{
+  "questionStatistics": [
+    {
+      "title": "Test SC #2",
+      "usageTotal": 1,
+      "type": "SC",
+      "usageDetails": [{ "count": 1, "version": 0 }],
+      "statistics": [
+        {
+          "version": 0,
+          "CHOICES": [
+            { "correct": false, "name": "option1", "chosen": 1, "total": 1, "percentageChosen": 1 },
+            { "correct": true, "name": "option2", "chosen": 0, "total": 1, "percentageChosen": 0 }
+          ],
+          "FREE": null
+        }
+      ]
+    },
+    {
+      "title": "Test MC #2",
+      "usageTotal": 1,
+      "type": "MC",
+      "usageDetails": [{ "count": 1, "version": 0 }],
+      "statistics": [
+        {
+          "version": 0,
+          "CHOICES": [
+            { "correct": false, "name": "option1", "chosen": 1, "total": 1, "percentageChosen": 1 },
+            { "correct": true, "name": "option2", "chosen": 1, "total": 1, "percentageChosen": 1 },
+            { "correct": true, "name": "option3", "chosen": 0, "total": 1, "percentageChosen": 0 }
+          ],
+          "FREE": null
+        }
+      ]
+    },
+    {
+      "title": "Test FREE #2",
+      "usageTotal": 1,
+      "type": "FREE",
+      "usageDetails": [{ "count": 1, "version": 0 }],
+      "statistics": [
+        {
+          "version": 0,
+          "CHOICES": null,
+          "FREE": [
+            {
+              "chosen": 1,
+              "percentageChosen": 1,
+              "total": 1,
+              "key": "5eb63bbbe01eeed093cb22bb8f5acdc3",
+              "value": "hello world"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Test FREE_RANGE #2",
+      "usageTotal": 1,
+      "type": "FREE_RANGE",
+      "usageDetails": [{ "count": 1, "version": 0 }],
+      "statistics": [
+        {
+          "version": 0,
+          "CHOICES": null,
+          "FREE": [
+            { "chosen": 1, "percentageChosen": 1, "total": 1, "key": "a87ff679a2f3e71d9181a67b7542122c", "value": "4" }
+          ]
+        }
+      ]
+    }
+  ]
+}
