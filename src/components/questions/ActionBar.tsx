@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
+import _sortBy from 'lodash/sortBy'
 import { CSVDownload } from 'react-csv'
 import { useToasts } from 'react-toast-notifications'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Button, Confirm, Icon, Label } from 'semantic-ui-react'
+import { Button, Confirm, Icon, Label, Feed } from 'semantic-ui-react'
 import { useMutation } from '@apollo/react-hooks'
 
 import QuestionStatisticsMutation from '../../graphql/mutations/QuestionStatisticsMutation.graphql'
@@ -77,20 +78,24 @@ function ActionBar({
 
         statistics.forEach(({ version, CHOICES, FREE }) => {
           if (type === 'SC' || type === 'MC') {
-            CHOICES.forEach(({ name, correct, chosen, total, percentageChosen }, ix) => {
-              versionResults[`${id}_v${version}`][`c${ix}_name`] = name
-              versionResults[`${id}_v${version}`][`c${ix}_correct`] = correct
-              versionResults[`${id}_v${version}`][`c${ix}_chosen`] = chosen
-              versionResults[`${id}_v${version}`][`c${ix}_total`] = total
-              versionResults[`${id}_v${version}`][`c${ix}_percentageChosen`] = percentageChosen
-            })
+            _sortBy(CHOICES, choice => choice.chosen)
+              .reverse()
+              .forEach(({ name, correct, chosen, total, percentageChosen }, ix) => {
+                versionResults[`${id}_v${version}`][`c${ix}_name`] = name
+                versionResults[`${id}_v${version}`][`c${ix}_correct`] = correct
+                versionResults[`${id}_v${version}`][`c${ix}_chosen`] = chosen
+                versionResults[`${id}_v${version}`][`c${ix}_total`] = total
+                versionResults[`${id}_v${version}`][`c${ix}_percentageChosen`] = percentageChosen
+              })
           } else if (type === 'FREE' || type === 'FREE_RANGE') {
-            FREE.forEach(({ key, value, chosen, total, percentageChosen }, ix) => {
-              versionResults[`${id}_v${version}`][`f${ix}_value`] = value
-              versionResults[`${id}_v${version}`][`f${ix}_chosen`] = chosen
-              versionResults[`${id}_v${version}`][`f${ix}_total`] = total
-              versionResults[`${id}_v${version}`][`f${ix}_percentageChosen`] = percentageChosen
-            })
+            _sortBy(FREE, free => free.chosen)
+              .reverse()
+              .forEach(({ value, chosen, total, percentageChosen }, ix) => {
+                versionResults[`${id}_v${version}`][`f${ix}_value`] = value
+                versionResults[`${id}_v${version}`][`f${ix}_chosen`] = chosen
+                versionResults[`${id}_v${version}`][`f${ix}_total`] = total
+                versionResults[`${id}_v${version}`][`f${ix}_percentageChosen`] = percentageChosen
+              })
           }
         })
       })
@@ -102,6 +107,7 @@ function ActionBar({
   }, [loading, data, error])
 
   const onGetQuestionStatistics = async (): Promise<void> => {
+    setCsvData(null)
     try {
       await getQuestionStatistics({
         variables: { ids: itemsChecked },
