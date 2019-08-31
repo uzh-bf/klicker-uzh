@@ -308,29 +308,27 @@ function Index(): React.ReactElement {
           />
         </div>
         <div className="wrapper">
-          <div className="questionList">
-            <ActionBar
-              creationMode={creationMode}
-              deletionConfirmation={deletionConfirmation}
-              handleArchiveQuestions={onArchiveQuestions}
-              handleCreationModeToggle={onCreationModeToggle}
-              handleDeleteQuestions={onDeleteQuestions}
-              handleQuickBlock={onQuickBlock}
-              handleQuickBlocks={onQuickBlocks}
-              isArchiveActive={filters.archive}
-              itemsChecked={selectedItems.ids.length}
-            />
+          <ActionBar
+            creationMode={creationMode}
+            deletionConfirmation={deletionConfirmation}
+            handleArchiveQuestions={onArchiveQuestions}
+            handleCreationModeToggle={onCreationModeToggle}
+            handleDeleteQuestions={onDeleteQuestions}
+            handleQuickBlock={onQuickBlock}
+            handleQuickBlocks={onQuickBlocks}
+            isArchiveActive={filters.archive}
+            itemsChecked={selectedItems.ids}
+          />
 
-            <div className="questionListContent">
-              <QuestionList
-                creationMode={creationMode}
-                filters={filters}
-                isArchiveActive={filters.archive}
-                selectedItems={selectedItems}
-                sort={sort}
-                onQuestionChecked={handleSelectItem}
-              />
-            </div>
+          <div className="questionList">
+            <QuestionList
+              creationMode={creationMode}
+              filters={filters}
+              isArchiveActive={filters.archive}
+              selectedItems={selectedItems}
+              sort={sort}
+              onQuestionChecked={handleSelectItem}
+            />
           </div>
         </div>
       </div>
@@ -356,20 +354,12 @@ function Index(): React.ReactElement {
             height: 100%;
 
             .questionList {
-              height: 100%;
-
-              display: flex;
-              flex-direction: column;
+              height: 95%;
 
               margin: 0 auto;
               max-width: $max-width;
 
-              .questionListContent {
-                flex: 1;
-                height: 100%;
-
-                padding: 1rem;
-              }
+              padding: 1rem;
             }
           }
 
@@ -390,10 +380,8 @@ function Index(): React.ReactElement {
               padding: 1rem;
 
               .questionList {
-                .questionListContent {
-                  overflow-y: auto;
-                  padding: 1rem 1rem 0 0;
-                }
+                overflow-y: auto;
+                padding: 1rem 1rem 0 0;
               }
             }
           }
