@@ -20,7 +20,6 @@ import ArchiveQuestionsMutation from '../../graphql/mutations/ArchiveQuestionsMu
 import ModifySessionMutation from '../../graphql/mutations/ModifySessionMutation.graphql'
 import DeleteQuestionsMutation from '../../graphql/mutations/DeleteQuestionsMutation.graphql'
 import QuestionListQuery from '../../graphql/queries/QuestionListQuery.graphql'
-import QuestionStatisticsMutation from '../../graphql/queries/QuestionStatisticsMutation.graphql'
 import SessionEditForm from '../../components/forms/sessionCreation/SessionEditForm'
 import SessionCreationForm from '../../components/forms/sessionCreation/SessionCreationForm'
 import QuestionList from '../../components/questions/QuestionList'
@@ -64,7 +63,6 @@ function Index(): React.ReactElement {
   const [archiveQuestions] = useMutation(ArchiveQuestionsMutation)
   const [modifySession] = useMutation(ModifySessionMutation)
   const [deleteQuestions] = useMutation(DeleteQuestionsMutation)
-  const [getQuestionStatistics, { data: statisticsData }] = useMutation(QuestionStatisticsMutation)
   const { data } = useQuery(QuestionPoolQuery)
 
   const [selectedItems, handleSelectItem, handleResetSelection] = useSelection()
@@ -247,18 +245,6 @@ function Index(): React.ReactElement {
     setDeletionConfirmation(false)
   }
 
-  const onGetQuestionStatistics = async (): Promise<void> => {
-    try {
-      const questionIds = Array.from(selectedItems.ids)
-      await getQuestionStatistics({
-        variables: { ids: questionIds },
-      })
-      console.log(statisticsData)
-    } catch (e) {
-      console.error(e.message)
-    }
-  }
-
   const renderActionArea = (runningSessionId): React.ReactElement => {
     if (creationMode) {
       if (editSessionId) {
@@ -328,24 +314,21 @@ function Index(): React.ReactElement {
             handleArchiveQuestions={onArchiveQuestions}
             handleCreationModeToggle={onCreationModeToggle}
             handleDeleteQuestions={onDeleteQuestions}
-            handleGetQuestionStatistics={onGetQuestionStatistics}
             handleQuickBlock={onQuickBlock}
             handleQuickBlocks={onQuickBlocks}
             isArchiveActive={filters.archive}
-            itemsChecked={selectedItems.ids.length}
+            itemsChecked={selectedItems.ids}
           />
 
           <div className="questionList">
-            <div className="questionListContent">
-              <QuestionList
-                creationMode={creationMode}
-                filters={filters}
-                isArchiveActive={filters.archive}
-                selectedItems={selectedItems}
-                sort={sort}
-                onQuestionChecked={handleSelectItem}
-              />
-            </div>
+            <QuestionList
+              creationMode={creationMode}
+              filters={filters}
+              isArchiveActive={filters.archive}
+              selectedItems={selectedItems}
+              sort={sort}
+              onQuestionChecked={handleSelectItem}
+            />
           </div>
         </div>
       </div>
@@ -371,20 +354,12 @@ function Index(): React.ReactElement {
             height: 100%;
 
             .questionList {
-              height: 100%;
-
-              display: flex;
-              flex-direction: column;
+              height: 95%;
 
               margin: 0 auto;
               max-width: $max-width;
 
-              .questionListContent {
-                flex: 1;
-                height: 100%;
-
-                padding: 1rem;
-              }
+              padding: 1rem;
             }
           }
 
@@ -405,10 +380,8 @@ function Index(): React.ReactElement {
               padding: 1rem;
 
               .questionList {
-                .questionListContent {
-                  overflow-y: auto;
-                  padding: 1rem 1rem 0 0;
-                }
+                overflow-y: auto;
+                padding: 1rem 1rem 0 0;
               }
             }
           }

@@ -1,5 +1,6 @@
 mutation QuestionStatistics($ids: [ID!]!) {
   questionStatistics(ids: $ids) {
+    id
     title
     usageTotal
     type

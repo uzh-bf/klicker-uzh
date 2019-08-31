@@ -1,7 +1,12 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { CSVDownload } from 'react-csv'
+import { useToasts } from 'react-toast-notifications'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Confirm, Icon, Label } from 'semantic-ui-react'
+import { useMutation } from '@apollo/react-hooks'
+
+import QuestionStatisticsMutation from '../../graphql/mutations/QuestionStatisticsMutation.graphql'
 
 const messages = defineMessages({
   deletionConfirmationCancel: {
@@ -27,15 +32,14 @@ interface Props {
   handleDeleteQuestions: any
   handleQuickBlock: any
   handleQuickBlocks: any
-  handleGetQuestionStatistics: any
   isArchiveActive?: boolean
-  itemsChecked?: number
+  itemsChecked?: string[]
 }
 
 const defaultProps = {
   creationMode: false,
   isArchiveActive: false,
-  itemsChecked: 0,
+  itemsChecked: [],
 }
 
 function ActionBar({
@@ -48,9 +52,66 @@ function ActionBar({
   handleDeleteQuestions,
   handleQuickBlock,
   handleQuickBlocks,
-  handleGetQuestionStatistics,
 }: Props): React.ReactElement {
   const intl = useIntl()
+  const { addToast } = useToasts()
+  const [csvData, setCsvData] = useState()
+
+  const [getQuestionStatistics, { data, error, loading }] = useMutation(QuestionStatisticsMutation)
+
+  useEffect((): void => {
+    if (data) {
+      const versionResults = {}
+
+      data.questionStatistics.forEach(({ id, title, type, usageTotal, usageDetails, statistics }) => {
+        usageDetails.forEach(({ version, count }) => {
+          versionResults[`${id}_v${version}`] = {
+            _title: title,
+            _type: type,
+            _question: id,
+            _usageTotal: usageTotal,
+            _usageVersion: count,
+            _version: version,
+          }
+        })
+
+        statistics.forEach(({ version, CHOICES, FREE }) => {
+          if (type === 'SC' || type === 'MC') {
+            CHOICES.forEach(({ name, correct, chosen, total, percentageChosen }, ix) => {
+              versionResults[`${id}_v${version}`][`c${ix}_name`] = name
+              versionResults[`${id}_v${version}`][`c${ix}_correct`] = correct
+              versionResults[`${id}_v${version}`][`c${ix}_chosen`] = chosen
+              versionResults[`${id}_v${version}`][`c${ix}_total`] = total
+              versionResults[`${id}_v${version}`][`c${ix}_percentageChosen`] = percentageChosen
+            })
+          } else if (type === 'FREE' || type === 'FREE_RANGE') {
+            FREE.forEach(({ key, value, chosen, total, percentageChosen }, ix) => {
+              versionResults[`${id}_v${version}`][`f${ix}_value`] = value
+              versionResults[`${id}_v${version}`][`f${ix}_chosen`] = chosen
+              versionResults[`${id}_v${version}`][`f${ix}_total`] = total
+              versionResults[`${id}_v${version}`][`f${ix}_percentageChosen`] = percentageChosen
+            })
+          }
+        })
+      })
+
+      setCsvData(Object.values(versionResults))
+    } else if (error) {
+      addToast(error.message, { appearance: 'error' })
+    }
+  }, [loading, data, error])
+
+  const onGetQuestionStatistics = async (): Promise<void> => {
+    try {
+      await getQuestionStatistics({
+        variables: { ids: itemsChecked },
+      })
+    } catch (e) {
+      console.error(e.message)
+    }
+  }
+
+  const itemCount = itemsChecked.length
 
   return (
     <div className="actionBar">
@@ -71,7 +132,7 @@ function ActionBar({
           <>
             <Button
               icon
-              disabled={itemsChecked <= 1}
+              disabled={itemCount <= 1}
               labelPosition="left"
               size="small"
               onClick={(): void => handleQuickBlocks()}
@@ -80,13 +141,13 @@ function ActionBar({
               <FormattedMessage
                 defaultMessage="Split questions into {num} blocks"
                 id="questionPool.button.quickCreateSeparate"
-                values={{ num: +itemsChecked }}
+                values={{ num: itemCount }}
               />
             </Button>
 
             <Button
               icon
-              disabled={itemsChecked === 0}
+              disabled={itemCount === 0}
               labelPosition="left"
               size="small"
               onClick={(): void => handleQuickBlock()}
@@ -95,26 +156,20 @@ function ActionBar({
               <FormattedMessage
                 defaultMessage="Group questions into one block ({num}->1)"
                 id="questionPool.button.quickCreateSingle"
-                values={{ num: +itemsChecked }}
+                values={{ num: itemCount }}
               />
             </Button>
           </>
         ) : (
           <>
-            <Button
-              icon
-              disabled={itemsChecked === 0}
-              labelPosition="left"
-              size="small"
-              onClick={handleGetQuestionStatistics}
-            >
+            <Button icon disabled={itemCount === 0} labelPosition="left" size="small" onClick={onGetQuestionStatistics}>
               <Icon name="calculator" />
               <FormattedMessage defaultMessage="Statistics" id="questionPool.button.computeStatistics" />
             </Button>
 
             <Button
               icon
-              disabled={itemsChecked === 0}
+              disabled={itemCount === 0}
               labelPosition="left"
               size="small"
               onClick={(): void => handleArchiveQuestions()}
@@ -129,7 +184,7 @@ function ActionBar({
 
             <Button
               icon
-              disabled={itemsChecked === 0}
+              disabled={itemCount === 0}
               labelPosition="left"
               size="small"
               onClick={(): void => handleDeleteQuestions(false)}
@@ -140,8 +195,8 @@ function ActionBar({
 
             <Confirm
               cancelButton={intl.formatMessage(messages.deletionConfirmationCancel)}
-              confirmButton={intl.formatMessage(messages.deletionConfirmationConfirm, { num: +itemsChecked })}
-              content={intl.formatMessage(messages.deletionConfirmationContent, { num: +itemsChecked })}
+              confirmButton={intl.formatMessage(messages.deletionConfirmationConfirm, { num: itemCount })}
+              content={intl.formatMessage(messages.deletionConfirmationContent, { num: itemCount })}
               open={deletionConfirmation}
               onCancel={(): void => handleDeleteQuestions(false)}
               onConfirm={(): void => handleDeleteQuestions(true)}
@@ -150,14 +205,18 @@ function ActionBar({
         )}
       </div>
 
-      <Label className="checkedCounter">
-        <Icon name="thumbtack" />
-        <FormattedMessage
-          defaultMessage="{count} items checked"
-          id="questionPool.string.itemsChecked"
-          values={{ count: +itemsChecked }}
-        />
-      </Label>
+      <div className="checkedCounter">
+        <Label size="medium">
+          <Icon name="thumbtack" />
+          <FormattedMessage
+            defaultMessage="{count} items checked"
+            id="questionPool.string.itemsChecked"
+            values={{ count: itemCount }}
+          />
+        </Label>
+      </div>
+
+      {csvData && <CSVDownload data={csvData} />}
 
       <style jsx>
         {`
