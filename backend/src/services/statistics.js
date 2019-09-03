@@ -2,6 +2,7 @@ const _round = require('lodash/round')
 const _pick = require('lodash/pick')
 const _sum = require('lodash/sum')
 const _mapValues = require('lodash/mapValues')
+const _sumBy = require('lodash/sumBy')
 
 const { QuestionModel } = require('../models')
 const { QUESTION_GROUPS } = require('../constants')
@@ -35,12 +36,18 @@ async function computeQuestionStatistics({ ids, userId }) {
         usageDetails[instance.version] += 1
 
         if (QUESTION_GROUPS.CHOICES.includes(question.type)) {
+          if (!instance.results.CHOICES) {
+            return
+          }
           // add choices to the overall version data
           // map them such that the overall participant count is included
           statistics[instance.version].push(
             instance.results.CHOICES.map(choice => ({ chosen: choice, total: instance.results.totalParticipants }))
           )
         } else if (QUESTION_GROUPS.FREE.includes(question.type)) {
+          if (!instance.results.FREE) {
+            return
+          }
           // append free responses to the overall version data
           // such that it can later be aggregated easily
           statistics[instance.version] = statistics[instance.version].concat(
@@ -82,7 +89,7 @@ async function computeQuestionStatistics({ ids, userId }) {
 
                 return acc.map((choice, index) => ({
                   ...choice,
-                  chosen: choice.chosen + response[index].choice,
+                  chosen: choice.chosen + response[index].chosen,
                   total: choice.total + response[index].total,
                 }))
               }, [])
@@ -94,7 +101,7 @@ async function computeQuestionStatistics({ ids, userId }) {
         // additionally include metadata and percentage in the aggregated result
         question.statistics = Object.entries(
           _mapValues(question.statistics, (versionData, version) => {
-            const total = question.statistics[version].length
+            const total = _sumBy(question.statistics[version], 'count')
             return Object.values(
               versionData.reduce((acc, { key, count, value }) => {
                 const newCount = acc[key] ? acc[key].chosen + count : count
