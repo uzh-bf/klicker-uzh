@@ -21,67 +21,71 @@ function reducer(state, action): any {
       // if the changed tag is a question type tag
       if (action.questionType) {
         if (state.filters.type === action.tagName) {
-          return Object.assign({}, state, { filters: { ...state.filters, type: null } })
+          return { ...state, filters: { ...state.filters, type: null } }
         }
 
         // add the tag to active tags
-        return Object.assign({}, state, { filters: { ...state.filters, type: action.tagName } })
+        return { ...state, filters: { ...state.filters, type: action.tagName } }
       }
 
       // remove the tag from active tags
       if (state.filters.tags.includes(action.tagName)) {
-        return Object.assign({}, state, {
+        return {
+          ...state,
           filters: {
             ...state.filters,
             tags: state.filters.tags.filter((tag): boolean => tag !== action.tagName),
           },
-        })
+        }
       }
 
       // add the tag to active tags
-      return Object.assign({}, state, {
+      return {
+        ...state,
         filters: {
           ...state.filters,
           tags: [...state.filters.tags, action.tagName],
         },
-      })
+      }
 
     case 'TOGGLE_ARCHIVE':
-      return Object.assign({}, state, {
+      return {
+        ...state,
         filters: {
           ...state.filters,
           archive: typeof action.newValue !== 'undefined' ? action.newValue : !state.filters.archive,
         },
-      })
+      }
 
     case 'SORT_ORDER':
-      return Object.assign({}, state, {
+      return {
+        ...state,
         sort: {
           ...state.sort,
           asc: !state.sort.asc,
         },
-      })
+      }
 
     case 'SORT_BY':
-      return Object.assign({}, state, {
+      return {
+        ...state,
         sort: {
           ...state.sort,
           by: action.by,
         },
-      })
+      }
 
     case 'SEARCH':
-      return Object.assign({}, state, {
+      return {
+        ...state,
         filters: {
           ...state.filters,
           title: action.title,
         },
-      })
+      }
 
     case 'RESET':
-      return Object.assign({}, state, {
-        filters: INITIAL_STATE.filters,
-      })
+      return { ...state, filters: INITIAL_STATE.filters }
 
     default:
       return state

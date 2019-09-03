@@ -3,7 +3,6 @@ import { useDropzone } from 'react-dropzone'
 import getConfig from 'next/config'
 import { FormattedMessage } from 'react-intl'
 import { Icon, Card, Image, Button, Input } from 'semantic-ui-react'
-import { Field } from 'formik'
 
 const { publicRuntimeConfig } = getConfig()
 
