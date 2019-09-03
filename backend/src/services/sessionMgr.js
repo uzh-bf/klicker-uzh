@@ -4,7 +4,6 @@ const _mapValues = require('lodash/mapValues')
 const _forOwn = require('lodash/forOwn')
 const dayjs = require('dayjs')
 const schedule = require('node-schedule')
-const _pick = require('lodash/pick')
 
 const { ObjectId } = mongoose.Types
 
