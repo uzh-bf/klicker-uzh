@@ -41,6 +41,7 @@ query EvaluateSession($sessionId: ID!) {
               id
               name
               type
+              description
             }
           }
         }
