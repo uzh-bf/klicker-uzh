@@ -9,6 +9,7 @@ module.exports = `
     name: String!
     type: String!
     originalName: String!
+    description: String
   }
   type File {
     id: ID!
@@ -16,6 +17,7 @@ module.exports = `
     name: String!
     originalName: String!
     type: String!
+    description: String
 
     question: Question!
     user: User!
@@ -27,5 +29,6 @@ module.exports = `
     id: ID!
     name: String!
     type: String!
+    description: String
   }
 `

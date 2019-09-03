@@ -42,25 +42,37 @@ const processTags = (existingTags, newTags, userId) => {
  */
 const processFiles = (files = [], userId) => {
   // extract the ids of already existing files
-  const existingFileIds = files.filter(file => file.id).map(file => file.id)
+  const existingFiles = files.filter(file => file.id)
+  const modifiedFiles = existingFiles.flatMap(async existingFile => {
+    const updatedFile = await FileModel.findById(existingFile.id)
+    if (updatedFile.description !== existingFile.description) {
+      updatedFile.description = existingFile.description
+      return updatedFile.save()
+    }
+    return null
+  })
+
+  console.log(modifiedFiles)
 
   // create models for entirely new files
   const createdFiles = files
     .filter(file => !file.id)
     .map(
-      ({ name, originalName, type }) =>
+      ({ name, originalName, type, description }) =>
         new FileModel({
           name,
           originalName,
           type,
+          description,
           user: userId,
         })
     )
 
   return {
     createdFiles,
+    modifiedFiles,
     createdFileIds: createdFiles.map(file => file.id),
-    existingFileIds,
+    existingFileIds: existingFiles.map(file => file.id),
   }
 }
 
@@ -261,12 +273,12 @@ const modifyQuestion = async (questionId, userId, { title, tags, content, option
     const lastVersion = question.versions[question.versions.length - 1]
 
     // process files
-    const { createdFiles, createdFileIds, existingFileIds } = processFiles(files, userId)
+    const { createdFiles, createdFileIds, existingFileIds, modifiedFiles } = processFiles(files, userId)
 
     // replace the files of the user
     if (files) {
       user.files = Array.from(new Set([...user.files, ...createdFileIds]))
-      promises.push(createdFiles.map(file => file.save()))
+      promises.push(createdFiles.map(file => file.save()), modifiedFiles)
     }
 
     // push a new version into the question model
