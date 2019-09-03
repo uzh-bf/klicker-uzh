@@ -20,6 +20,9 @@ const File = new mongoose.Schema(
       required: true,
       index: true,
     },
+    description: {
+      type: String,
+    },
 
     user: {
       type: ObjectId,
