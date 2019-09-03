@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import _isEmpty from 'lodash/isEmpty'
-import { useIntl } from 'react-intl'
+import { useIntl, FormattedMessage, defineMessages } from 'react-intl'
 import { useMutation } from '@apollo/react-hooks'
 import { Dropdown, Form, Button, Modal } from 'semantic-ui-react'
 import { Formik } from 'formik'
@@ -18,8 +18,19 @@ const defaultProps = {
   initialTimeLimit: -1,
 }
 
+const messages = defineMessages({
+  timeLimit: {
+    id: 'form.blockSettings.timeLimit',
+    defaultMessage: 'Time limit',
+  },
+  blockSettings: {
+    id: 'form.blockSettings.header',
+    defaultMessage: 'Block settings',
+  },
+})
+
 function BlockSettingsForm({ sessionId, questionBlockId, initialTimeLimit }: Props): React.ReactElement {
-  // const intl = useIntl()
+  const intl = useIntl()
 
   const [isModalVisible, setIsModalVisible] = useState(false)
 
@@ -52,9 +63,11 @@ function BlockSettingsForm({ sessionId, questionBlockId, initialTimeLimit }: Pro
       }): React.ReactElement => (
         <Modal
           open={isModalVisible}
-          trigger={<Dropdown.Item icon="settings" text="Block settings" onClick={onModalOpen} />}
+          trigger={
+            <Dropdown.Item icon="settings" text={intl.formatMessage(messages.blockSettings)} onClick={onModalOpen} />
+          }
         >
-          <Modal.Header>Block Settings</Modal.Header>
+          <Modal.Header>{intl.formatMessage(messages.blockSettings)}</Modal.Header>
           <Modal.Content>
             <Form loading={isSubmitting}>
               <FormikInput
@@ -67,7 +80,7 @@ function BlockSettingsForm({ sessionId, questionBlockId, initialTimeLimit }: Pro
                 handleBlur={handleBlur}
                 handleChange={handleChange}
                 inlineLabel="sec"
-                label="Time limit"
+                label={intl.formatMessage(messages.timeLimit)}
                 labelPosition="right"
                 max={3600}
                 min={-1}
@@ -79,15 +92,18 @@ function BlockSettingsForm({ sessionId, questionBlockId, initialTimeLimit }: Pro
             </Form>
           </Modal.Content>
           <Modal.Actions>
-            <Button content="Discard" icon="times" type="button" onClick={onModalClose} />
+            <Button icon="times" type="button" onClick={onModalClose}>
+              <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+            </Button>
             <Button
               primary
-              content="Save"
               disabled={isSubmitting || !_isEmpty(errors)}
               icon="save"
               type="submit"
               onClick={(): any => handleSubmit()}
-            />
+            >
+              <FormattedMessage defaultMessage="Save" id="common.button.save" />
+            </Button>
           </Modal.Actions>
         </Modal>
       )}
