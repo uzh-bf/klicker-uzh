@@ -78,7 +78,7 @@
     "graphql": "14.4.2",
     "graphql-tag": "2.10.1",
     "gulp": "3.9.1",
-    "helmet": "3.20.0",
+    "helmet": "3.20.1",
     "hoist-non-react-statics": "3.3.0",
     "intl": "1.2.5",
     "intl-pluralrules": "1.0.3",
