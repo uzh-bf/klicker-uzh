@@ -40,6 +40,7 @@ query QuestionDetails($id: ID!) {
         name
         originalName
         type
+        description
       }
       solution {
         SC

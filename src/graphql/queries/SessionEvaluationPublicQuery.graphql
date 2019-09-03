@@ -39,6 +39,7 @@ query EvaluateSessionPublic($sessionId: ID!) {
               id
               name
               type
+              description
             }
           }
         }
