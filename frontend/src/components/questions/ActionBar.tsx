@@ -4,7 +4,7 @@ import _sortBy from 'lodash/sortBy'
 import { CSVDownload } from 'react-csv'
 import { useToasts } from 'react-toast-notifications'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Button, Confirm, Icon, Label, Feed } from 'semantic-ui-react'
+import { Button, Confirm, Icon, Label } from 'semantic-ui-react'
 import { useMutation } from '@apollo/react-hooks'
 
 import QuestionStatisticsMutation from '../../graphql/mutations/QuestionStatisticsMutation.graphql'
@@ -64,8 +64,8 @@ function ActionBar({
     if (data) {
       const versionResults = {}
 
-      data.questionStatistics.forEach(({ id, title, type, usageTotal, usageDetails, statistics }) => {
-        usageDetails.forEach(({ version, count }) => {
+      data.questionStatistics.forEach(({ id, title, type, usageTotal, usageDetails, statistics }): void => {
+        usageDetails.forEach(({ version, count }): void => {
           versionResults[`${id}_v${version}`] = {
             _title: title,
             _type: type,
@@ -76,21 +76,21 @@ function ActionBar({
           }
         })
 
-        statistics.forEach(({ version, CHOICES, FREE }) => {
+        statistics.forEach(({ version, CHOICES, FREE }): void => {
           if (type === 'SC' || type === 'MC') {
-            _sortBy(CHOICES, choice => choice.chosen)
+            _sortBy(CHOICES, (choice): boolean => choice.chosen)
               .reverse()
-              .forEach(({ name, correct, chosen, total, percentageChosen }, ix) => {
+              .forEach(({ name, correct, chosen, total, percentageChosen }, ix): void => {
                 versionResults[`${id}_v${version}`][`c${ix}_name`] = name
-                versionResults[`${id}_v${version}`][`c${ix}_correct`] = correct
+                versionResults[`${id}_v${version}`][`c${ix}_correct`] = correct ? 'T' : 'F'
                 versionResults[`${id}_v${version}`][`c${ix}_chosen`] = chosen
                 versionResults[`${id}_v${version}`][`c${ix}_total`] = total
                 versionResults[`${id}_v${version}`][`c${ix}_percentageChosen`] = percentageChosen
               })
           } else if (type === 'FREE' || type === 'FREE_RANGE') {
-            _sortBy(FREE, free => free.chosen)
+            _sortBy(FREE, (free): boolean => free.chosen)
               .reverse()
-              .forEach(({ value, chosen, total, percentageChosen }, ix) => {
+              .forEach(({ value, chosen, total, percentageChosen }, ix): void => {
                 versionResults[`${id}_v${version}`][`f${ix}_value`] = value
                 versionResults[`${id}_v${version}`][`f${ix}_chosen`] = chosen
                 versionResults[`${id}_v${version}`][`f${ix}_total`] = total
