@@ -43,7 +43,7 @@ function TagList({
         >
           <List.Icon name="archive" />
           <List.Content>
-            <FormattedMessage defaultMessage="Question Archive" id="tagList.string.showArchive" />
+            <FormattedMessage defaultMessage="Show Archive" id="tagList.string.showArchive" />
           </List.Content>
         </List.Item>
         <List.Item
@@ -53,7 +53,7 @@ function TagList({
         >
           <List.Icon name="list" />
           <List.Content>
-            <FormattedMessage defaultMessage="Question Pool" id="tagList.string.showPool" />
+            <FormattedMessage defaultMessage="Show Pool" id="tagList.string.showPool" />
           </List.Content>
         </List.Item>
         <List.Header className="listHeader types">
