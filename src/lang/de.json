@@ -150,6 +150,8 @@
   "questionPool.string.deletionConfirmationContent": "Sind Sie sicher, dass Sie die {num} ausgewählten Fragen löschen wollen? Allenfalls könnten Sie diese auch archivieren, falls Sie sie wieder einmal brauchen sollten.",
   "questionPool.string.itemsChecked": "{count} Fragen ausgewählt",
   "questionPool.title": "Fragepool",
+  "runningSession.blockActions.activateBlock": "Block aktivieren",
+  "runningSession.blockActions.resetBlockResults": "Blockergebnisse zurücksetzen",
   "runningSession.button.closeBlock": "Aktiven Frageblock schliessen",
   "runningSession.button.evaluation": "Auswertung (Resultate)",
   "runningSession.button.finish": "Session beenden",
