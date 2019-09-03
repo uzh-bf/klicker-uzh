@@ -8,6 +8,7 @@ interface Props {
   files: {
     id: string
     name: string
+    description?: string
   }[]
   isCompact?: boolean
 }
@@ -21,7 +22,7 @@ function QuestionFiles({ files, isCompact }: Props): React.ReactElement {
   return (
     <div className="questionFiles">
       {files.map(
-        ({ id, name }, ix): React.ReactElement => {
+        ({ id, name, description }, ix): React.ReactElement => {
           const fileSrc = `${publicRuntimeConfig.s3root}/${name}`
           const previewImage = (
             <Card>
@@ -33,8 +34,9 @@ function QuestionFiles({ files, isCompact }: Props): React.ReactElement {
           return (
             <div className="file" key={id}>
               <Modal closeIcon trigger={previewImage}>
+                {description && <Modal.Header>{description}</Modal.Header>}
                 <Modal.Content image>
-                  <Image wrapped crossOrigin="anonymous" src={fileSrc} />
+                  <Image crossOrigin="anonymous" src={fileSrc} />
                 </Modal.Content>
               </Modal>
             </div>
