@@ -41,7 +41,7 @@ function Registration(): React.ReactElement {
             return (
               <div className="successMessage">
                 <FormattedMessage
-                  defaultMessage="Successfully registered as {newEmail}.{br} Please login at {link}."
+                  defaultMessage="Successfully registered as {newEmail}.{br} Please activate your new account using the link in the email we just sent you. You can then login at {link}."
                   id="user.registration.successNotification"
                   values={{
                     br: <br />,
@@ -57,9 +57,7 @@ function Registration(): React.ReactElement {
             <>
               <Message warning>
                 <FormattedMessage
-                  defaultMessage="You dont need an account to respond to polls; just visit the given /join page of your
-          lecturer and respond anonymously. However, feel free to create an account if you would like to create
-          polls yourself."
+                  defaultMessage="You don't need an account to respond to polls; just visit the given /join page of your lecturer and respond anonymously. However, feel free to create an account if you would like to create polls yourself."
                   id="user.registration.studentAccountWarning"
                 />
               </Message>
