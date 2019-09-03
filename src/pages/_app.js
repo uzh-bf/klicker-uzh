@@ -73,13 +73,12 @@ class Klicker extends App {
         }).install()
 
         if (LogRocket && window.INIT_LR) {
-          Raven.setDataCallback(data =>
-            Object.assign({}, data, {
-              extra: {
-                sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef
-              },
-            })
-          )
+          Raven.setDataCallback(data => ({
+            ...data,
+            extra: {
+              sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef
+            },
+          }))
         }
 
         window.INIT_RAVEN = true

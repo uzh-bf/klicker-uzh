@@ -11,11 +11,8 @@ export default ({ propName, propDefault, storageType = 'session', json = false }
   class WithStorage extends React.Component {
     static displayName = `WithStorage(${getComponentDisplayName(ComposedComponent)})`
 
-    constructor(props) {
-      super(props)
-      this.state = {
-        [propName]: propDefault,
-      }
+    state = {
+      [propName]: propDefault,
     }
 
     componentDidMount() {
