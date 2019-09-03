@@ -42,6 +42,7 @@ query JoinSession($shortname: String!) {
         id
         name
         type
+        description
       }
     }
     feedbacks {

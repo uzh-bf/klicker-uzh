@@ -55,6 +55,7 @@ mutation ModifyQuestion(
         originalName
         name
         type
+        description
       }
       createdAt
     }

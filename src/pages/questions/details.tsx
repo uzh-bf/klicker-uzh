@@ -74,6 +74,7 @@ function EditQuestion(): React.ReactElement {
         name: fileName,
         originalName: file.name,
         type: file.type,
+        description: file.description,
       }))
     )
 
