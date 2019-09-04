@@ -8,6 +8,7 @@ import { Button, Confirm, Icon, Label } from 'semantic-ui-react'
 import { useMutation } from '@apollo/react-hooks'
 
 import QuestionStatisticsMutation from '../../graphql/mutations/QuestionStatisticsMutation.graphql'
+import ExportQuestionsMutation from '../../graphql/mutations/ExportQuestionsMutation.graphql'
 
 const messages = defineMessages({
   deletionConfirmationCancel: {
@@ -59,6 +60,9 @@ function ActionBar({
   const [csvData, setCsvData] = useState()
 
   const [getQuestionStatistics, { data, error, loading }] = useMutation(QuestionStatisticsMutation)
+  const [exportQuestions, { data: exportData, error: exportError, loading: exportLoading }] = useMutation(
+    ExportQuestionsMutation
+  )
 
   useEffect((): void => {
     if (data) {
@@ -117,6 +121,16 @@ function ActionBar({
     }
   }
 
+  const onExportQuestions = async (): Promise<void> => {
+    try {
+      await exportQuestions({
+        variables: { ids: itemsChecked },
+      })
+    } catch (e) {
+      console.error(e.message)
+    }
+  }
+
   const itemCount = itemsChecked.length
 
   return (
@@ -168,6 +182,11 @@ function ActionBar({
           </>
         ) : (
           <>
+            <Button icon disabled={itemCount === 0} labelPosition="left" size="small" onClick={onExportQuestions}>
+              <Icon name="disk" />
+              <FormattedMessage defaultMessage="Export" id="questionPool.button.exportQuestions" />
+            </Button>
+
             <Button icon disabled={itemCount === 0} labelPosition="left" size="small" onClick={onGetQuestionStatistics}>
               <Icon name="calculator" />
               <FormattedMessage defaultMessage="Statistics" id="questionPool.button.computeStatistics" />
