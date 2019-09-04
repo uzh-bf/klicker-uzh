@@ -152,6 +152,8 @@
   "questionPool.string.deletionConfirmationContent": "Are you sure you want to delete the {num} selected questions? Consider moving them to the archive if you could have use for them in the future.",
   "questionPool.string.itemsChecked": "{count} items checked",
   "questionPool.title": "Question Pool",
+  "runningSession.blockActions.activateBlock": "Activate block",
+  "runningSession.blockActions.resetBlockResults": "Reset block results",
   "runningSession.button.closeBlock": "Close current block",
   "runningSession.button.evaluation": "Evaluation (Results)",
   "runningSession.button.finish": "Finish session",
