@@ -1,9 +1,11 @@
 import React from 'react'
 import classNames from 'classnames'
+import { Dropdown } from 'semantic-ui-react'
+import { defineMessages, useIntl } from 'react-intl'
 
+import BlockSettingsForm from '../forms/BlockSettingsForm'
 import QuestionSingle from './QuestionSingle'
 import Countdown from '../common/Countdown'
-import BlockActionsDropdown from './BlockActionsDropdown'
 import SessionStatusIcon from './SessionStatusIcon'
 
 interface Question {
@@ -24,6 +26,7 @@ interface Props {
   questionBlockId?: string
   sessionId?: string
   handleResetQuestionBlock?: () => void
+  handleActivateQuestionBlock?: () => void
 }
 
 const defaultProps = {
@@ -34,9 +37,21 @@ const defaultProps = {
   timeLimit: undefined,
 }
 
+const messages = defineMessages({
+  activateBlock: {
+    defaultMessage: 'Activate block',
+    id: 'runningSession.blockActions.activateBlock',
+  },
+  resetBlockResults: {
+    id: 'runningSession.blockActions.resetBlockResults',
+    defaultMessage: 'Reset block results',
+  },
+})
+
 function QuestionBlock({
   expiresAt,
   handleResetQuestionBlock,
+  handleActivateQuestionBlock,
   index,
   status,
   questions,
@@ -45,17 +60,7 @@ function QuestionBlock({
   questionBlockId,
   sessionId,
 }: Props): React.ReactElement {
-  const questionElements = questions.map(
-    (question): React.ReactElement => (
-      <QuestionSingle
-        key={question.id}
-        title={question.title}
-        totalParticipants={question.totalParticipants}
-        type={question.type}
-        version={question.version}
-      />
-    )
-  )
+  const intl = useIntl()
 
   return (
     <div className={classNames('questionBlock', { active: status === 'ACTIVE' })}>
@@ -81,16 +86,44 @@ function QuestionBlock({
 
       {!noDetails && (
         <div className="blockActions">
-          <BlockActionsDropdown
-            questionBlockId={questionBlockId}
-            sessionId={sessionId}
-            timeLimit={timeLimit}
-            onResetQuestionBlock={handleResetQuestionBlock}
-          />
+          <Dropdown icon="settings">
+            <Dropdown.Menu>
+              <Dropdown.Item
+                disabled={status === 'ACTIVE'}
+                icon="play"
+                text={intl.formatMessage(messages.activateBlock)}
+                onClick={handleActivateQuestionBlock}
+              />
+              <Dropdown.Item
+                icon="redo"
+                text={intl.formatMessage(messages.resetBlockResults)}
+                onClick={handleResetQuestionBlock}
+              />
+
+              <BlockSettingsForm
+                disabled={status === 'ACTIVE'}
+                initialTimeLimit={timeLimit}
+                questionBlockId={questionBlockId}
+                sessionId={sessionId}
+              />
+            </Dropdown.Menu>
+          </Dropdown>
         </div>
       )}
 
-      <div className="questions">{questionElements}</div>
+      <div className="questions">
+        {questions.map(
+          (question): React.ReactElement => (
+            <QuestionSingle
+              key={question.id}
+              title={question.title}
+              totalParticipants={question.totalParticipants}
+              type={question.type}
+              version={question.version}
+            />
+          )
+        )}
+      </div>
 
       <style jsx>{`
         @import 'src/theme';
