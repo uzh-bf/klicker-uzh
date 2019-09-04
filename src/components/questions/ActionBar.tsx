@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import _sortBy from 'lodash/sortBy'
+import dayjs from 'dayjs'
+import { saveAs } from 'file-saver'
 import { CSVDownload } from 'react-csv'
 import { useToasts } from 'react-toast-notifications'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Confirm, Icon, Label } from 'semantic-ui-react'
 import { useMutation } from '@apollo/react-hooks'
 
+import { omitDeep } from '../../lib/utils/omitDeep'
 import QuestionStatisticsMutation from '../../graphql/mutations/QuestionStatisticsMutation.graphql'
 import ExportQuestionsMutation from '../../graphql/mutations/ExportQuestionsMutation.graphql'
 
@@ -59,10 +62,8 @@ function ActionBar({
   const { addToast } = useToasts()
   const [csvData, setCsvData] = useState()
 
-  const [getQuestionStatistics, { data, error, loading }] = useMutation(QuestionStatisticsMutation)
-  const [exportQuestions, { data: exportData, error: exportError, loading: exportLoading }] = useMutation(
-    ExportQuestionsMutation
-  )
+  const [getQuestionStatistics, { data, error }] = useMutation(QuestionStatisticsMutation)
+  const [exportQuestions, { data: exportData, error: exportError }] = useMutation(ExportQuestionsMutation)
 
   useEffect((): void => {
     if (data) {
@@ -108,7 +109,17 @@ function ActionBar({
     } else if (error) {
       addToast(error.message, { appearance: 'error' })
     }
-  }, [loading, data, error])
+  }, [data, error])
+
+  useEffect((): void => {
+    if (exportData) {
+      const dataWithoutTypename = omitDeep(exportData, '__typename')
+      const blob = new Blob([JSON.stringify(dataWithoutTypename)], { type: 'text/plain;charset=utf-8' })
+      saveAs(blob, `klicker_export_${dayjs().format('YYYY-MM-DD_H-m-s')}.json`)
+    } else if (exportError) {
+      addToast(error.message, { appearance: 'error' })
+    }
+  }, [exportData, exportError])
 
   const onGetQuestionStatistics = async (): Promise<void> => {
     setCsvData(null)
