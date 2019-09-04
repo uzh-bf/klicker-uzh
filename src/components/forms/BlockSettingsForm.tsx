@@ -9,12 +9,14 @@ import FormikInput from './components/FormikInput'
 import ModifyQuestionBlockMutation from '../../graphql/mutations/ModifyQuestionBlockMutation.graphql'
 
 interface Props {
+  disabled?: boolean
   sessionId: string
   questionBlockId: string
   initialTimeLimit?: number
 }
 
 const defaultProps = {
+  disabled: false,
   initialTimeLimit: -1,
 }
 
@@ -29,7 +31,7 @@ const messages = defineMessages({
   },
 })
 
-function BlockSettingsForm({ sessionId, questionBlockId, initialTimeLimit }: Props): React.ReactElement {
+function BlockSettingsForm({ disabled, sessionId, questionBlockId, initialTimeLimit }: Props): React.ReactElement {
   const intl = useIntl()
 
   const [isModalVisible, setIsModalVisible] = useState(false)
@@ -64,7 +66,12 @@ function BlockSettingsForm({ sessionId, questionBlockId, initialTimeLimit }: Pro
         <Modal
           open={isModalVisible}
           trigger={
-            <Dropdown.Item icon="settings" text={intl.formatMessage(messages.blockSettings)} onClick={onModalOpen} />
+            <Dropdown.Item
+              disabled={disabled}
+              icon="settings"
+              text={intl.formatMessage(messages.blockSettings)}
+              onClick={onModalOpen}
+            />
           }
         >
           <Modal.Header>{intl.formatMessage(messages.blockSettings)}</Modal.Header>

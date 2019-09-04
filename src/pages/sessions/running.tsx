@@ -24,6 +24,7 @@ import FeedbackAddedSubscription from '../../graphql/subscriptions/FeedbackAdded
 import ConfusionAddedSubscription from '../../graphql/subscriptions/ConfusionAddedSubscription.graphql'
 import RunningSessionUpdatedSubscription from '../../graphql/subscriptions/RunningSessionUpdatedSubscription.graphql'
 import ResetQuestionBlockMutation from '../../graphql/mutations/ResetQuestionBlockMutation.graphql'
+import ActivateBlockByIdMutation from '../../graphql/mutations/ActivateBlockByIdMutation.graphql'
 import Messager from '../../components/common/Messager'
 
 const messages = defineMessages({
@@ -66,6 +67,7 @@ function Running(): React.ReactElement {
   const [cancelSession] = useMutation(CancelSessionMutation)
   const [activateNextBlock] = useMutation(ActivateNextBlockMutation)
   const [deleteFeedback] = useMutation(DeleteFeedbackMutation)
+  const [activateBlockById] = useMutation(ActivateBlockByIdMutation)
 
   const shortname = _get(accountSummary, 'data.user.shortname')
 
@@ -103,6 +105,11 @@ function Running(): React.ReactElement {
                 // activeBlock={activeBlock}
                 activeStep={activeStep}
                 blocks={blocks}
+                handleActivateBlockById={(blockId): void => {
+                  activateBlockById({
+                    variables: { blockId, sessionId: id },
+                  })
+                }}
                 handleCancelSession={async (): Promise<void> => {
                   await cancelSession({
                     refetchQueries: [
@@ -148,8 +155,8 @@ function Running(): React.ReactElement {
 
                   router.push('/sessions')
                 }}
-                handleResetQuestionBlock={async (blockId): Promise<void> => {
-                  await resetQuestionBlock({ variables: { sessionId: id, blockId } })
+                handleResetQuestionBlock={(blockId): void => {
+                  resetQuestionBlock({ variables: { sessionId: id, blockId } })
                 }}
                 handleTogglePublicEvaluation={(): void => {
                   updateSettings({
