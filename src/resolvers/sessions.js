@@ -87,6 +87,9 @@ const activateNextBlockMutation = (parentValue, args, { auth }) =>
     userId: auth.sub,
   })
 
+const activateBlockByIdMutation = (parentValue, { blockId, sessionId }, { auth }) =>
+  SessionMgrService.activateBlockById({ userId: auth.sub, sessionId, blockId })
+
 const pauseSessionMutation = (parentValue, { id }, { auth }) =>
   SessionMgrService.pauseSession({
     id,
@@ -166,6 +169,7 @@ module.exports = {
   modifySession: modifySessionMutation,
   endSession: endSessionMutation,
   activateNextBlock: activateNextBlockMutation,
+  activateBlockById: activateBlockByIdMutation,
   pauseSession: pauseSessionMutation,
   cancelSession: cancelSessionMutation,
   startSession: startSessionMutation,

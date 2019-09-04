@@ -372,10 +372,12 @@ const joinSession = async ({ shortname }) => {
  * Resets question instances
  */
 async function resetQuestionInstances({ instanceIds }) {
-  // TODO: handle instances that have been completed (have been persisted to db)
-
   return Promise.all(
     instanceIds.map(async instanceId => {
+      // reset any data that has been persisted to the database
+      await QuestionInstanceModel.findByIdAndUpdate(instanceId, { responses: [], results: null })
+
+      // get metadata from the redis cache
       const type = await responseCache.hget(`instance:${instanceId}:info`, 'type')
       const responseResults = await responseCache.hgetall(`instance:${instanceId}:responseHashes`)
 
@@ -397,7 +399,9 @@ async function resetQuestionInstances({ instanceIds }) {
         })
       }
 
-      await responseCache.hset(`instance:${instanceId}:results`, 'participants', 0)
+      if (type) {
+        await responseCache.hset(`instance:${instanceId}:results`, 'participants', 0)
+      }
     })
   )
 }

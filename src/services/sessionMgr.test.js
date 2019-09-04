@@ -472,7 +472,7 @@ describe('SessionMgrService', () => {
       expect(session.activeBlock).toEqual(0)
       expect(session.activeStep).toEqual(1)
       // expect the session to have some active instances
-      // expect(session.activeInstances.map(v => v.toString())).toEqual(session.blocks[0].instances.map(v => v.toString()))
+      expect(session.activeInstances.length).toEqual(1)
       // expect matching snapshots
       expect(session).toMatchSnapshot()
       expect(instances).toMatchSnapshot()
@@ -504,6 +504,50 @@ describe('SessionMgrService', () => {
       instances.forEach(async ({ id }) => {
         const instanceExists = await responseCache.exists(`instance:${id}:info`)
         expect(instanceExists).toBeFalsy()
+      })
+    })
+
+    afterAll(async () => {
+      await SessionMgrService.endSession({
+        id: preparedSession.id,
+        userId,
+      })
+    })
+  })
+
+  describe('activateBlockById', () => {
+    let preparedSession
+
+    beforeAll(async () => {
+      preparedSession = await prepareSession(userId)
+    })
+
+    it('allows activating the first question block by id', async () => {
+      // activate the next block of the running session
+      const session = await SessionMgrService.activateBlockById({
+        userId,
+        sessionId: preparedSession.id,
+        blockId: preparedSession.blocks[0].id,
+      })
+
+      // find all instances that belong to the current session
+      const instances = await QuestionInstanceModel.find({
+        _id: { $in: session.blocks[0].instances },
+      })
+
+      // expect the first block to be active
+      expect(session.activeBlock).toEqual(0)
+      expect(session.activeStep).toEqual(1)
+      // expect the session to have some active instances
+      // expect(session.activeInstances.map(v => v.toString())).toEqual(session.blocks[0].instances.map(v => v.toString()))
+      // expect matching snapshots
+      expect(session).toMatchSnapshot()
+      expect(instances).toMatchSnapshot()
+
+      instances.forEach(async ({ id }) => {
+        // expect that a redis object for the instance has been created
+        const instanceStatus = await responseCache.hget(`instance:${id}:info`, 'status')
+        expect(instanceStatus).toEqual('OPEN')
       })
     })
 
