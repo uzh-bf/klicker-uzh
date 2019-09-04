@@ -1,9 +1,13 @@
 mutation ActivateNextBlock {
   activateNextBlock {
     id
+    activeStep
+    activeBlock
     blocks {
       id
       status
+      timeLimit
+      expiresAt
       instances {
         id
         isOpen

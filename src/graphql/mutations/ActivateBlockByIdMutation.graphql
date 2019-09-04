@@ -6,6 +6,8 @@ mutation ActivateBlockById($sessionId: ID!, $blockId: ID!) {
     blocks {
       id
       status
+      timeLimit
+      expiresAt
       instances {
         id
         isOpen
