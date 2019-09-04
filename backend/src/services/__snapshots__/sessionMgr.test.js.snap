@@ -1,5 +1,49 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`SessionMgrService activateBlockById allows activating the first question block by id 1`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: CREATED
+
+    ActiveBlock: 0
+    ActiveStep: 1
+    ActiveInstances: 1
+
+    Blocks: [{
+      Show solutions: false
+      Status: ACTIVE
+      Time limit: -1
+      Number of instances: 1
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: false
+    }
+`;
+
+exports[`SessionMgrService activateBlockById allows activating the first question block by id 2`] = `
+Array [
+  
+    QUESTION_INSTANCE
+
+    isOpen: true
+    version: 0
+
+    responses: []
+
+    results: undefined
+  ,
+]
+`;
+
 exports[`SessionMgrService activateNextBlock allows activating the first question block 1`] = `
 
     SESSION
