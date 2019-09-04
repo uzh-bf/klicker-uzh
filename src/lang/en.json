@@ -144,6 +144,7 @@
   "questionPool.button.deleteQuestions": "Delete",
   "questionPool.button.deletionConfirmationCancel": "Cancel",
   "questionPool.button.deletionConfirmationConfirm": "Delete {num} question(s)!",
+  "questionPool.button.importQuestions": "Import Questions",
   "questionPool.button.quickCreateSeparate": "Split questions into {num} blocks",
   "questionPool.button.quickCreateSingle": "Group questions into one block ({num}->1)",
   "questionPool.button.unarchiveQuestions": "Unarchive",

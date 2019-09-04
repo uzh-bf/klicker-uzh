@@ -6,12 +6,13 @@ import { saveAs } from 'file-saver'
 import { CSVDownload } from 'react-csv'
 import { useToasts } from 'react-toast-notifications'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Button, Confirm, Icon, Label } from 'semantic-ui-react'
+import { Button, Confirm, Icon, Label, Dropdown } from 'semantic-ui-react'
 import { useMutation } from '@apollo/react-hooks'
 
-import { omitDeep } from '../../lib/utils/omitDeep'
+import UploadModal from './UploadModal'
 import QuestionStatisticsMutation from '../../graphql/mutations/QuestionStatisticsMutation.graphql'
 import ExportQuestionsMutation from '../../graphql/mutations/ExportQuestionsMutation.graphql'
+import { omitDeep } from '../../lib/utils/omitDeep'
 
 const messages = defineMessages({
   deletionConfirmationCancel: {
@@ -147,15 +148,28 @@ function ActionBar({
   return (
     <div className="actionBar">
       <div className="actionButtons">
-        <Link href="/questions/create">
-          <Button primary>
-            <FormattedMessage defaultMessage="Create Question" id="questionPool.button.createQuestion" />
-          </Button>
-        </Link>
-
-        <Button primary disabled={!!creationMode} onClick={handleCreationModeToggle}>
-          <FormattedMessage defaultMessage="Create Session" id="questionPool.button.createSession" />
-        </Button>
+        <Dropdown button className="primary" direction="left" text="Create">
+          <Dropdown.Menu>
+            <Dropdown.Item isabled={!!creationMode} onClick={handleCreationModeToggle}>
+              <Icon name="plus" />
+              <FormattedMessage defaultMessage="Create Session" id="questionPool.button.createSession" />
+            </Dropdown.Item>
+            <Link href="/questions/create">
+              <Dropdown.Item>
+                <Icon name="plus" />
+                <FormattedMessage defaultMessage="Create Question" id="questionPool.button.createQuestion" />
+              </Dropdown.Item>
+            </Link>
+            <UploadModal
+              trigger={
+                <Dropdown.Item>
+                  <Icon name="upload" />
+                  <FormattedMessage defaultMessage="Import Questions" id="questionPool.button.importQuestions" />
+                </Dropdown.Item>
+              }
+            />
+          </Dropdown.Menu>
+        </Dropdown>
       </div>
 
       <div className="creationButtons">
@@ -194,7 +208,7 @@ function ActionBar({
         ) : (
           <>
             <Button icon disabled={itemCount === 0} labelPosition="left" size="small" onClick={onExportQuestions}>
-              <Icon name="disk" />
+              <Icon name="download" />
               <FormattedMessage defaultMessage="Export" id="questionPool.button.exportQuestions" />
             </Button>
 
