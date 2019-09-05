@@ -1,9 +1,4 @@
-<afp:AttributeFilterPolicyGroup
-    xmlns="urn:mace:shibboleth:2.0:afp:mf:basic"
-    xmlns:saml="urn:mace:shibboleth:2.0:afp:mf:saml"
-    xmlns:basic="urn:mace:shibboleth:2.0:afp:mf:basic"
-    xmlns:afp="urn:mace:shibboleth:2.0:afp"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<afp:AttributeFilterPolicyGroup xmlns="urn:mace:shibboleth:2.0:afp:mf:basic" xmlns:saml="urn:mace:shibboleth:2.0:afp:mf:saml" xmlns:basic="urn:mace:shibboleth:2.0:afp:mf:basic" xmlns:afp="urn:mace:shibboleth:2.0:afp" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
     <!--
         SWITCHaai federation attribute policy configuration file
@@ -13,15 +8,15 @@
 
     <!-- Shared rule for affiliation values. -->
     <afp:PermitValueRule id="eduPersonAffiliationValues" xsi:type="OR">
-        <Rule xsi:type="AttributeValueString" value="faculty"/>
-        <Rule xsi:type="AttributeValueString" value="student"/>
-        <Rule xsi:type="AttributeValueString" value="staff"/>
-        <Rule xsi:type="AttributeValueString" value="alum"/>
-        <Rule xsi:type="AttributeValueString" value="member"/>
-        <Rule xsi:type="AttributeValueString" value="affiliate"/>
+        <Rule xsi:type="AttributeValueString" value="faculty" />
+        <Rule xsi:type="AttributeValueString" value="student" />
+        <Rule xsi:type="AttributeValueString" value="staff" />
+        <Rule xsi:type="AttributeValueString" value="alum" />
+        <Rule xsi:type="AttributeValueString" value="member" />
+        <Rule xsi:type="AttributeValueString" value="affiliate" />
         <!-- The value 'employee' is not allowed in SWITCHaai -->
         <!-- <Rule xsi:type="AttributeValueString" value="employee"/> -->
-        <Rule xsi:type="AttributeValueString" value="library-walk-in"/>
+        <Rule xsi:type="AttributeValueString" value="library-walk-in" />
     </afp:PermitValueRule>
 
     <!--
@@ -30,37 +25,37 @@
     -->
     <afp:PermitValueRule id="ScopingRules" xsi:type="AND">
         <Rule xsi:type="NOT">
-            <Rule xsi:type="AttributeValueRegex" regex="@"/>
+            <Rule xsi:type="AttributeValueRegex" regex="@" />
         </Rule>
-        <Rule xsi:type="saml:AttributeScopeMatchesShibMDScope"/>
+        <Rule xsi:type="saml:AttributeScopeMatchesShibMDScope" />
     </afp:PermitValueRule>
 
     <afp:AttributeFilterPolicy>
         <!-- This policy is in effect in all cases. -->
-        <afp:PolicyRequirementRule xsi:type="ANY"/>
+        <afp:PolicyRequirementRule xsi:type="ANY" />
 
         <!-- Filter out undefined affiliations and ensure only one primary. -->
         <afp:AttributeRule attributeID="scoped-affiliation">
             <afp:PermitValueRule xsi:type="AND">
-                <RuleReference ref="eduPersonAffiliationValues"/>
-                <RuleReference ref="ScopingRules"/>
+                <RuleReference ref="eduPersonAffiliationValues" />
+                <RuleReference ref="ScopingRules" />
             </afp:PermitValueRule>
         </afp:AttributeRule>
 
         <afp:AttributeRule attributeID="affiliation">
-            <afp:PermitValueRuleReference ref="eduPersonAffiliationValues"/>
+            <afp:PermitValueRuleReference ref="eduPersonAffiliationValues" />
         </afp:AttributeRule>
 
         <afp:AttributeRule attributeID="primary-affiliation">
-            <afp:PermitValueRuleReference ref="eduPersonAffiliationValues"/>
+            <afp:PermitValueRuleReference ref="eduPersonAffiliationValues" />
         </afp:AttributeRule>
 
         <afp:AttributeRule attributeID="principalName">
-            <afp:PermitValueRuleReference ref="ScopingRules"/>
+            <afp:PermitValueRuleReference ref="ScopingRules" />
         </afp:AttributeRule>
 
         <afp:AttributeRule attributeID="targeted-id">
-            <afp:PermitValueRuleReference ref="ScopingRules"/>
+            <afp:PermitValueRuleReference ref="ScopingRules" />
         </afp:AttributeRule>
 
         <!-- Regular expression filter for E-mail -->
@@ -71,14 +66,14 @@
         <!-- Value filter for Home organization type -->
         <afp:AttributeRule attributeID="homeOrganizationType">
             <afp:PermitValueRule xsi:type="OR">
-                 <Rule xsi:type="AttributeValueString" value="university"/>
-                 <Rule xsi:type="AttributeValueString" value="uas"/>
-                 <Rule xsi:type="AttributeValueString" value="hospital"/>
-                 <Rule xsi:type="AttributeValueString" value="library"/>
-                 <Rule xsi:type="AttributeValueString" value="tertiaryb"/>
-                 <Rule xsi:type="AttributeValueString" value="uppersecondary"/>
-                 <Rule xsi:type="AttributeValueString" value="vho"/>
-                 <Rule xsi:type="AttributeValueString" value="others"/>
+                <Rule xsi:type="AttributeValueString" value="university" />
+                <Rule xsi:type="AttributeValueString" value="uas" />
+                <Rule xsi:type="AttributeValueString" value="hospital" />
+                <Rule xsi:type="AttributeValueString" value="library" />
+                <Rule xsi:type="AttributeValueString" value="tertiaryb" />
+                <Rule xsi:type="AttributeValueString" value="uppersecondary" />
+                <Rule xsi:type="AttributeValueString" value="vho" />
+                <Rule xsi:type="AttributeValueString" value="others" />
             </afp:PermitValueRule>
         </afp:AttributeRule>
 
@@ -110,10 +105,10 @@
         <!-- Value filter for Gender -->
         <afp:AttributeRule attributeID="gender">
             <afp:PermitValueRule xsi:type="OR">
-                 <Rule xsi:type="AttributeValueString" value="0"/>
-                 <Rule xsi:type="AttributeValueString" value="1"/>
-                 <Rule xsi:type="AttributeValueString" value="2"/>
-                 <Rule xsi:type="AttributeValueString" value="9"/>
+                <Rule xsi:type="AttributeValueString" value="0" />
+                <Rule xsi:type="AttributeValueString" value="1" />
+                <Rule xsi:type="AttributeValueString" value="2" />
+                <Rule xsi:type="AttributeValueString" value="9" />
             </afp:PermitValueRule>
         </afp:AttributeRule>
 
@@ -139,13 +134,13 @@
 
         <!-- Require NameQualifier/SPNameQualifier match IdP and SP entityID respectively. -->
         <afp:AttributeRule attributeID="persistent-id">
-            <afp:PermitValueRule xsi:type="saml:NameIDQualifierString"/>
+            <afp:PermitValueRule xsi:type="saml:NameIDQualifierString" />
         </afp:AttributeRule>
 
 
         <!-- Catch-all that passes everything else through unmolested. -->
         <afp:AttributeRule attributeID="*">
-            <afp:PermitValueRule xsi:type="ANY"/>
+            <afp:PermitValueRule xsi:type="ANY" />
         </afp:AttributeRule>
 
     </afp:AttributeFilterPolicy>
