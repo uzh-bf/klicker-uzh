@@ -41,7 +41,7 @@
       <Handler type="Status" Location="/Status" acl="127.0.0.1/32 ::1/128 10.1.0.0/16 130.59.118.224/32 2001:620:0:1006::255/128 130.59.198.12/32 2001:620:0:3006::256/128" />
 
       <!-- Session diagnostic service. -->
-      <Handler type="Session" Location="/Session" />
+      <Handler type="Session" Location="/Session" acl="127.0.0.1 ::1 10.1.0.0/16 130.59.138.32" />
 
       <!-- JSON feed of discovery information. -->
       <Handler type="DiscoveryFeed" Location="/DiscoFeed" />
@@ -55,7 +55,7 @@
     <Errors access="accessError.html" supportContact="klicker.support@uzh.ch" helpLocation="https://www.switch.ch/aai/help" logoLocation="https://www.switch.ch/aai/design/images/SWITCHaai.gif" styleSheet="https://www.switch.ch/aai/design/shib-error.css" />
 
     <!-- Download and verify SWITCHaai metadata -->
-    <MetadataProvider type="XML" validate="true" url="http://metadata.aai.switch.ch/metadata.switchaai+idp.xml" backingFilePath="metadata.switchaai+idp.xml" reloadInterval="3600">
+    <MetadataProvider type="XML" validate="true" uri="http://metadata.aai.switch.ch/metadata.switchaai+idp.xml" backingFilePath="metadata.switchaai+idp.xml" reloadInterval="3600">
       <MetadataFilter type="RequireValidUntil" maxValidityInterval="604800" />
       <MetadataFilter type="Signature" verifyBackup="false">
         <TrustEngine type="StaticPKIX" certificate="SWITCHaaiRootCA.crt.pem" verifyDepth="2" checkRevocation="fullChain" policyMappingInhibit="true" anyPolicyInhibit="true">
