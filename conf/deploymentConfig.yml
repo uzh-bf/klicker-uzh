@@ -31,6 +31,10 @@ spec:
           volumeMounts:
             - mountPath: /var/run/shibboleth
               name: shib-socket
+            - mountPath: /etc/httpd/conf.d/shib.conf
+              name: shib-conf
+              readOnly: true
+              subPath: shib.conf
         - image: docker.io/uzhbf/klicker-aai
           imagePullPolicy: Always
           name: shibd
@@ -48,6 +52,22 @@ spec:
               subPath: sp-key.pem
             - mountPath: /var/run/shibboleth
               name: shib-socket
+            - mountPath: /etc/shibboleth/shibboleth2.xml
+              name: shibboleth2
+              readOnly: true
+              subPath: shibboleth2.xml
+            - mountPath: /etc/shibboleth/attribute-policy.xml
+              name: attribute-policy
+              readOnly: true
+              subPath: attribute-policy.xml
+            - mountPath: /etc/shibboleth/attribute-map.xml
+              name: attribute-map
+              readOnly: true
+              subPath: attribute-map.xml
+            - mountPath: /etc/shibboleth/SWITCHaaiRootCA.crt.pem
+              name: root-cert
+              readOnly: true
+              subPath: SWITCHaaiRootCA.crt.pem
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
@@ -56,17 +76,37 @@ spec:
       volumes:
         - name: sp-cert
           secret:
-            defaultMode: 420
+            defaultMode: 0440
             items:
               - key: sp-cert.pem
                 path: sp-cert.pem
             secretName: aai-sp-cert
         - name: sp-key
           secret:
-            defaultMode: 420
+            defaultMode: 0440
             items:
               - key: sp-key.pem
                 path: sp-key.pem
             secretName: aai-sp-key
         - emptyDir: {}
           name: shib-socket
+        - configMap:
+            defaultMode: 0440
+            name: shib-conf-prod
+          name: shib-conf
+        - configMap:
+            defaultMode: 0440
+            name: shibboleth2-prod
+          name: shibboleth2
+        - configMap:
+            defaultMode: 0440
+            name: shib-policy-prod
+          name: attribute-policy
+        - configMap:
+            defaultMode: 0440
+            name: shib-map-prod
+          name: attribute-map
+        - configMap:
+            defaultMode: 0440
+            name: shib-root-cert
+          name: root-cert
