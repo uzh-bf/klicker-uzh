@@ -1,4 +1,4 @@
-<SPConfig xmlns="urn:mace:shibboleth:3.0:native:sp:config" xmlns:conf="urn:mace:shibboleth:3.0:native:sp:config" xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" clockSkew="180">
+<SPConfig xmlns="urn:mace:shibboleth:2.0:native:sp:config" xmlns:conf="urn:mace:shibboleth:2.0:native:sp:config" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" clockSkew="180">
 
   <OutOfProcess tranLogFormat="%u|%s|%IDP|%i|%ac|%t|%attr|%n|%b|%E|%S|%SS|%L|%UA|%a" />
 
@@ -100,7 +100,7 @@
         -->
     <CredentialResolver type="Chaining">
       <!-- Active certificate -->
-      <CredentialResolver type="File" key="/etc/shibboleth/sp-key.pem" certificate="/etc/shibboleth/sp-cert.pem" />
+      <CredentialResolver type="File" key="sp-key.pem" certificate="sp-cert.pem" />
     </CredentialResolver>
 
     <!--
