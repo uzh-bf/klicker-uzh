@@ -10,5 +10,5 @@ COPY --chown=1001:root src/ /tmp/src/
 RUN set -x && /usr/libexec/s2i/assemble
 
 # inject shibboleth config files for shib and httpd
-COPY --chown=1001:root shibboleth/* /etc/shibboleth/
-COPY --chown=1001:root conf/shib.conf /etc/httpd/conf.d/shib.conf
+# COPY --chown=1001:root shibboleth/* /etc/shibboleth/
+# COPY --chown=1001:root conf/shib.conf /etc/httpd/conf.d/shib.conf
