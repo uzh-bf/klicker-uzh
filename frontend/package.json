@@ -27,7 +27,7 @@
     "@babel/preset-env": "7.5.5",
     "@formatjs/intl-relativetimeformat": "2.8.3",
     "@types/lodash": "4.14.138",
-    "@types/react": "16.9.1",
+    "@types/react": "16.9.2",
     "@types/react-dom": "16.9.0",
     "@types/styled-jsx": "2.2.8",
     "@typescript-eslint/eslint-plugin": "1.13.0",
