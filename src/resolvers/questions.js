@@ -41,6 +41,9 @@ const deleteQuestionsMutation = (parentValue, { ids }, { auth }) =>
 const questionStatisticsMutation = (parentValue, { ids }, { auth }) =>
   StatisticsService.computeQuestionStatistics({ ids, userId: auth.sub })
 
+const exportQuestionsMutation = (parentValue, { ids }, { auth }) =>
+  QuestionService.exportQuestions({ ids, userId: auth.sub })
+
 module.exports = {
   // queries
   allQuestions: allQuestionsQuery,
@@ -54,4 +57,5 @@ module.exports = {
   archiveQuestions: archiveQuestionsMutation,
   deleteQuestions: deleteQuestionsMutation,
   questionStatistics: questionStatisticsMutation,
+  exportQuestions: exportQuestionsMutation,
 }

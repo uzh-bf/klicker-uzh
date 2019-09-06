@@ -52,8 +52,6 @@ const processFiles = (files = [], userId) => {
     return null
   })
 
-  console.log(modifiedFiles)
-
   // create models for entirely new files
   const createdFiles = files
     .filter(file => !file.id)
@@ -361,9 +359,31 @@ const deleteQuestions = async ({ ids, userId }) => {
   return 'DELETION_SUCCESSFUL'
 }
 
+async function exportQuestions({ ids, userId }) {
+  const questions = await QuestionModel.find({ _id: { $in: ids }, user: userId }).populate(['tags', 'versions.files'])
+  return questions.map(question => {
+    const latestVersion = question.versions[question.versions.length - 1]
+    return {
+      title: question.title,
+      type: question.type,
+      tags: question.tags,
+      content: latestVersion.content,
+      description: latestVersion.description,
+      options: latestVersion.options,
+      solution: latestVersion.solution,
+      files: latestVersion.files.map(file => ({
+        name: file.name,
+        description: file.description,
+        type: file.type,
+      })),
+    }
+  })
+}
+
 module.exports = {
   createQuestion,
   modifyQuestion,
   archiveQuestions,
   deleteQuestions,
+  exportQuestions,
 }
