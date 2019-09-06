@@ -84,23 +84,31 @@ function UploadModal({ trigger }: Props): React.ReactElement {
 
   return (
     <Modal closeIcon size="fullscreen" trigger={trigger} onClose={onResetImportState}>
-      <Modal.Header>Question Import</Modal.Header>
+      <Modal.Header>
+        <FormattedMessage defaultMessage="Question Import" id="questionImport.string.header" />
+      </Modal.Header>
       <Modal.Content>
         <div className="wrapper">
           <div className="dropzone" {...getRootProps()}>
             <input {...getInputProps()} />
             <Button fluid icon primary disabled={false} type="button">
               <Icon name="plus" />
-              <FormattedMessage defaultMessage="Add questions" id="fileDropzone.button.addQuestions" />
+              <FormattedMessage defaultMessage="Add questions" id="questionImport.button.addQuestions" />
             </Button>
           </div>
           <div className="questions">
             <Table unstackable>
               <Table.Header>
                 <Table.Row>
-                  <Table.HeaderCell>Type</Table.HeaderCell>
-                  <Table.HeaderCell>Title</Table.HeaderCell>
-                  <Table.HeaderCell>Description</Table.HeaderCell>
+                  <Table.HeaderCell>
+                    <FormattedMessage defaultMessage="Type" id="questionImport.string.questionType" />
+                  </Table.HeaderCell>
+                  <Table.HeaderCell>
+                    <FormattedMessage defaultMessage="Title" id="questionImport.string.questionTitle" />
+                  </Table.HeaderCell>
+                  <Table.HeaderCell>
+                    <FormattedMessage defaultMessage="Content" id="questionImport.string.questionContent" />
+                  </Table.HeaderCell>
                 </Table.Row>
               </Table.Header>
               <Table.Body>
@@ -126,14 +134,10 @@ function UploadModal({ trigger }: Props): React.ReactElement {
         </div>
       </Modal.Content>
       <Modal.Actions>
-        <Button
-          primary
-          content="Upload"
-          disabled={questions.length === 0}
-          icon="upload"
-          loading={isLoading}
-          onClick={onImportQuestions}
-        />
+        <Button icon primary disabled={questions.length === 0} loading={isLoading} onClick={onImportQuestions}>
+          <Icon name="upload" />
+          <FormattedMessage defaultMessage="Start Upload" id="questionImport.button.upload" />
+        </Button>
       </Modal.Actions>
 
       <style jsx>{`
