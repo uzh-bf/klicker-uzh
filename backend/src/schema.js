@@ -12,6 +12,7 @@ const {
   archiveQuestions,
   deleteQuestions,
   questionStatistics,
+  exportQuestions,
 } = require('./resolvers/questions')
 const {
   questionInstancesByPV,
@@ -127,6 +128,7 @@ const typeDefs = [
     updateSessionSettings(sessionId: ID!, settings: Session_SettingsInput!): Session!
     resetQuestionBlock(sessionId: ID!, blockId: ID!): Session!
     questionStatistics(ids: [ID!]!): [QuestionStatistics!]!
+    exportQuestions(ids: [ID!]!): [Question_Export!]!
   }
 
   type Subscription {
@@ -191,6 +193,7 @@ const resolvers = {
     resetQuestionBlock: requireAuth(resetQuestionBlock),
     modifyQuestionBlock: requireAuth(modifyQuestionBlock),
     questionStatistics: requireAuth(questionStatistics),
+    exportQuestions: requireAuth(exportQuestions),
   },
   Subscription: {
     // TODO: some form of authentication

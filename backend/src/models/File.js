@@ -8,7 +8,6 @@ const File = new mongoose.Schema(
       type: String,
       required: true,
       index: true,
-      unique: true,
     },
     originalName: {
       type: String,

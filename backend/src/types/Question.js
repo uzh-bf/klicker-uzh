@@ -118,4 +118,17 @@ module.exports = `
     options: Question_Options_Public
     files: [File_Public!]!
   }
+
+  type Question_Export {
+    title: String!
+    content: String
+    description: String!
+
+    type: Question_Type!
+    options: Question_Options
+    solution: Question_Solution
+
+    tags: [Tag!]!
+    files: [File_Public!]!
+  }
 `
