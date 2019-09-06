@@ -1,13 +1,18 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import _sortBy from 'lodash/sortBy'
+import dayjs from 'dayjs'
+import { saveAs } from 'file-saver'
 import { CSVDownload } from 'react-csv'
 import { useToasts } from 'react-toast-notifications'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Button, Confirm, Icon, Label } from 'semantic-ui-react'
+import { Button, Confirm, Icon, Label, Dropdown } from 'semantic-ui-react'
 import { useMutation } from '@apollo/react-hooks'
 
+import UploadModal from './UploadModal'
 import QuestionStatisticsMutation from '../../graphql/mutations/QuestionStatisticsMutation.graphql'
+import ExportQuestionsMutation from '../../graphql/mutations/ExportQuestionsMutation.graphql'
+import { omitDeep } from '../../lib/utils/omitDeep'
 
 const messages = defineMessages({
   deletionConfirmationCancel: {
@@ -58,7 +63,8 @@ function ActionBar({
   const { addToast } = useToasts()
   const [csvData, setCsvData] = useState()
 
-  const [getQuestionStatistics, { data, error, loading }] = useMutation(QuestionStatisticsMutation)
+  const [getQuestionStatistics, { data, error }] = useMutation(QuestionStatisticsMutation)
+  const [exportQuestions, { data: exportData, error: exportError }] = useMutation(ExportQuestionsMutation)
 
   useEffect((): void => {
     if (data) {
@@ -104,7 +110,17 @@ function ActionBar({
     } else if (error) {
       addToast(error.message, { appearance: 'error' })
     }
-  }, [loading, data, error])
+  }, [data, error])
+
+  useEffect((): void => {
+    if (exportData) {
+      const dataWithoutTypename = omitDeep(exportData, '__typename')
+      const blob = new Blob([JSON.stringify(dataWithoutTypename)], { type: 'text/plain;charset=utf-8' })
+      saveAs(blob, `klicker_export_${dayjs().format('YYYY-MM-DD_H-m-s')}.json`)
+    } else if (exportError) {
+      addToast(error.message, { appearance: 'error' })
+    }
+  }, [exportData, exportError])
 
   const onGetQuestionStatistics = async (): Promise<void> => {
     setCsvData(null)
@@ -117,20 +133,43 @@ function ActionBar({
     }
   }
 
+  const onExportQuestions = async (): Promise<void> => {
+    try {
+      await exportQuestions({
+        variables: { ids: itemsChecked },
+      })
+    } catch (e) {
+      console.error(e.message)
+    }
+  }
+
   const itemCount = itemsChecked.length
 
   return (
     <div className="actionBar">
       <div className="actionButtons">
-        <Link href="/questions/create">
-          <Button primary>
-            <FormattedMessage defaultMessage="Create Question" id="questionPool.button.createQuestion" />
-          </Button>
-        </Link>
-
-        <Button primary disabled={!!creationMode} onClick={handleCreationModeToggle}>
-          <FormattedMessage defaultMessage="Create Session" id="questionPool.button.createSession" />
-        </Button>
+        <Dropdown button className="primary" direction="left" text="Create">
+          <Dropdown.Menu>
+            <Dropdown.Item isabled={!!creationMode} onClick={handleCreationModeToggle}>
+              <Icon name="plus" />
+              <FormattedMessage defaultMessage="Create Session" id="questionPool.button.createSession" />
+            </Dropdown.Item>
+            <Link href="/questions/create">
+              <Dropdown.Item>
+                <Icon name="plus" />
+                <FormattedMessage defaultMessage="Create Question" id="questionPool.button.createQuestion" />
+              </Dropdown.Item>
+            </Link>
+            <UploadModal
+              trigger={
+                <Dropdown.Item>
+                  <Icon name="upload" />
+                  <FormattedMessage defaultMessage="Import Questions" id="questionPool.button.importQuestions" />
+                </Dropdown.Item>
+              }
+            />
+          </Dropdown.Menu>
+        </Dropdown>
       </div>
 
       <div className="creationButtons">
@@ -168,6 +207,11 @@ function ActionBar({
           </>
         ) : (
           <>
+            <Button icon disabled={itemCount === 0} labelPosition="left" size="small" onClick={onExportQuestions}>
+              <Icon name="download" />
+              <FormattedMessage defaultMessage="Export" id="questionPool.button.exportQuestions" />
+            </Button>
+
             <Button icon disabled={itemCount === 0} labelPosition="left" size="small" onClick={onGetQuestionStatistics}>
               <Icon name="calculator" />
               <FormattedMessage defaultMessage="Statistics" id="questionPool.button.computeStatistics" />
