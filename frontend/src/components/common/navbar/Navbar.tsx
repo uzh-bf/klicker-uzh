@@ -24,6 +24,7 @@ declare const window: KlickerWindow
 const { publicRuntimeConfig } = getConfig()
 
 interface Props {
+  actions?: any[]
   search?: {
     handleSearch: any
     handleSortByChange: any
@@ -43,11 +44,12 @@ interface Props {
 }
 
 const defaultProps = {
+  actions: [],
   search: undefined,
   sidebarVisible: false,
 }
 
-function Navbar({ search, sidebarVisible, title, handleSidebarToggle }: Props): React.ReactElement {
+function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }: Props): React.ReactElement {
   const router = useRouter()
 
   const [logout] = useMutation(LogoutMutation)
@@ -63,6 +65,8 @@ function Navbar({ search, sidebarVisible, title, handleSidebarToggle }: Props): 
           <h1>{title}</h1>
         </Menu>
       </div>
+
+      {actions && <div className="actionArea">{actions}</div>}
 
       {search && (
         <div className="searchArea">
