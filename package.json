@@ -142,7 +142,7 @@
     "eslint-plugin-prettier": "3.1.0",
     "eslint-plugin-react": "7.14.3",
     "husky": "3.0.5",
-    "jest": "24.8.0",
+    "jest": "24.9.0",
     "lint-staged": "9.2.1",
     "prettier": "1.18.2",
     "react-dnd-test-backend": "9.3.4",
