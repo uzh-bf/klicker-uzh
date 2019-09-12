@@ -2,12 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Application\Actions\User\ListUsersAction;
-use App\Application\Actions\User\ViewUserAction;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\App;
-use Slim\Interfaces\RouteCollectorProxyInterface as Group;
 use \Firebase\JWT\JWT;
 
 return function (App $app) {
@@ -18,18 +15,19 @@ return function (App $app) {
         $token = array(
             "iss" => isset($_ENV['AAI_ISSUER']) ? $_ENV['AAI_ISSUER'] : "aai.klicker.uzh.ch",
             "aud" => isset($_ENV['AAI_AUDIENCE']) ? $_ENV['AAI_AUDIENCE'] : "api.klicker.uzh.ch",
-            'sub' => 'newuser@xyz.ch',
+            'sub' => $_SERVER['REDIRECT_mail'],
             'scope' => ['user'],
-            'aai' => true
+            'aai' => true,
+            'org' => $_SERVER['REDIRECT_homeOrganization']
             // TODO: embed valid properties in the token
             // "iat" => 1356999524,
             // "nbf" => 1357000000
         );
 
-        $out = fopen('php://stdout', 'w');
-        fwrite($out, json_encode($_SERVER));
+        // $out = fopen('php://stdout', 'w');
+        // fwrite($out, json_encode($_SERVER));
 
-        throw Error('fail');
+        // throw Error('fail');
 
         /**
          * IMPORTANT:
