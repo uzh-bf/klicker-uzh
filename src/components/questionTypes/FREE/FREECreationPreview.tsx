@@ -33,35 +33,35 @@ function FREECreationPreview({ questionType, options: { restrictions }, descript
         <QuestionDescription content={description} />
       </div>
       {((): React.ReactElement => {
-        // if the type is FREE_RANGE and both restrictions are specified
-        // display a slider and selection
-        if (questionType === QUESTION_TYPES.FREE_RANGE && isMinDefined && isMaxDefined) {
-          return (
-            <div>
-              <div className="diagram">
-                {isMinDefined && (
-                  <div className="min">
-                    <FormattedMessage defaultMessage="Min" id="createQuestion.options.min" />: {restrictions.min}
-                  </div>
-                )}
-                {isMaxDefined && (
-                  <div className="max">
-                    <FormattedMessage defaultMessage="Max" id="createQuestion.options.max" />: {restrictions.max}
-                  </div>
-                )}
-                <div className="line" />
-                <div className="box" />
-              </div>
-              <div className="selection">
-                {/* TODO how to align title horizontally centered? */}
-                <b className="title">
-                  <FormattedMessage defaultMessage="Selection" id="createQuestion.selection" />
-                </b>
-                <div className="box">{(+restrictions.min + +restrictions.max) / 2}</div>
-              </div>
-            </div>
-          )
-        }
+        // // if the type is FREE_RANGE and both restrictions are specified
+        // // display a slider and selection
+        // if (questionType === QUESTION_TYPES.FREE_RANGE && isMinDefined && isMaxDefined) {
+        //   return (
+        //     <div>
+        //       <div className="diagram">
+        //         {isMinDefined && (
+        //           <div className="min">
+        //             <FormattedMessage defaultMessage="Min" id="createQuestion.options.min" />: {restrictions.min}
+        //           </div>
+        //         )}
+        //         {isMaxDefined && (
+        //           <div className="max">
+        //             <FormattedMessage defaultMessage="Max" id="createQuestion.options.max" />: {restrictions.max}
+        //           </div>
+        //         )}
+        //         <div className="line" />
+        //         <div className="box" />
+        //       </div>
+        //       <div className="selection">
+        //         {/* TODO how to align title horizontally centered? */}
+        //         <b className="title">
+        //           <FormattedMessage defaultMessage="Selection" id="createQuestion.selection" />
+        //         </b>
+        //         <div className="box">{(+restrictions.min + +restrictions.max) / 2}</div>
+        //       </div>
+        //     </div>
+        //   )
+        // }
 
         return (
           <div>
