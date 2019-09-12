@@ -8,6 +8,11 @@ module.exports = convict({
       env: 'APP_BASE_URL',
       format: 'url',
     },
+    cookieDomain: {
+      default: undefined,
+      env: 'APP_COOKIE_DOMAIN',
+      format: 'url',
+    },
     domain: {
       default: 'localhost',
       env: 'APP_DOMAIN',

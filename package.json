@@ -36,6 +36,7 @@
     "express": "4.17.1",
     "express-jwt": "5.3.1",
     "express-rate-limit": "5.0.0",
+    "generate-password": "1.4.2",
     "graphql": "14.5.4",
     "graphql-iso-date": "3.6.1",
     "graphql-redis-subscriptions": "2.1.1",
