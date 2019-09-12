@@ -44,7 +44,7 @@
     </Attribute>
 
     <!-- The following list is structured like the 'SWITCHaai Attributes' web page:
-         https://www.switch.ch/aai/support/documents/attributes/ -->
+         https://www.switch.ch/aai/support/documents/attributes/  -->
 
 
     <!-- Core attributes -->
@@ -308,7 +308,7 @@
     <Attribute name="urn:oid:2.16.756.1.2.5.1.1.1029" id="swissEduIDLinkedAffiliation"/>
     -->
 
-    <!-- SWITCH edu-ID Linked Affiliation Mail -->
+    <!-- SWITCH edu-ID Linked Affiliation E-Mail -->
     <!--
     <Attribute name="urn:oid:2.16.756.1.2.5.1.1.1031" id="swissEduIDLinkedAffiliationMail"/>
     -->
@@ -356,6 +356,21 @@
     <!-- UZH SAP user ID -->
     <!--
     <Attribute name="urn:oid:1.3.6.1.4.1.11817.1.1.2.13" id="uzhSAPUserId"/>
+    -->
+
+    <!-- ZHAW Department Code -->
+    <!--
+    <Attribute name="urn:oid:2.16.756.1.2.5.1.1.1015" id="zhawDepartmentCode"/>
+    -->
+
+    <!-- ZHAW Institute Code -->
+    <!--
+    <Attribute name="urn:oid:2.16.756.1.2.5.1.1.1016" id="zhawInstituteCode"/>
+    -->
+
+    <!-- ZHAW Institute Name -->
+    <!--
+    <Attribute name="urn:oid:2.16.756.1.2.5.1.1.1017" id="zhawInstitute"/>
     -->
 
 </Attributes>
