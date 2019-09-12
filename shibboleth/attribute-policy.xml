@@ -2,8 +2,8 @@
 
     <!--
         SWITCHaai federation attribute policy configuration file
-        Based on SWITCHaai Attribute Specification 1.5 from 2010-05-01
-        Last update: 2012-12-19
+        Based on SWITCHaai Attribute Specification 1.6 from 2017-04-11
+        Last update: 2018-07-04
     -->
 
     <!-- Shared rule for affiliation values. -->
@@ -42,8 +42,20 @@
             </afp:PermitValueRule>
         </afp:AttributeRule>
 
+        <afp:AttributeRule attributeID="subject-id">
+            <afp:PermitValueRuleReference ref="ScopingRules" />
+        </afp:AttributeRule>
+
+        <afp:AttributeRule attributeID="pairwise-id">
+            <afp:PermitValueRuleReference ref="ScopingRules" />
+        </afp:AttributeRule>
+
         <afp:AttributeRule attributeID="affiliation">
             <afp:PermitValueRuleReference ref="eduPersonAffiliationValues" />
+        </afp:AttributeRule>
+
+        <afp:AttributeRule attributeID="eduPersonUniqueId">
+            <afp:PermitValueRuleReference ref="ScopingRules" />
         </afp:AttributeRule>
 
         <afp:AttributeRule attributeID="primary-affiliation">
@@ -54,7 +66,7 @@
             <afp:PermitValueRuleReference ref="ScopingRules" />
         </afp:AttributeRule>
 
-        <afp:AttributeRule attributeID="targeted-id">
+        <afp:AttributeRule attributeID="uniqueID">
             <afp:PermitValueRuleReference ref="ScopingRules" />
         </afp:AttributeRule>
 
@@ -75,11 +87,6 @@
                 <Rule xsi:type="AttributeValueString" value="vho" />
                 <Rule xsi:type="AttributeValueString" value="others" />
             </afp:PermitValueRule>
-        </afp:AttributeRule>
-
-        <!-- Regular expression filter for Unique ID -->
-        <afp:AttributeRule attributeID="uniqueID">
-            <afp:PermitValueRule xsi:type="basic:AttributeValueRegex" regex="^.+@.+$" />
         </afp:AttributeRule>
 
         <!-- Regular expression filter for Study level -->
@@ -137,11 +144,18 @@
             <afp:PermitValueRule xsi:type="saml:NameIDQualifierString" />
         </afp:AttributeRule>
 
+        <!-- Enforce that the value of swissEduPersonHomeOrganization is a valid Scope. -->
+        <afp:AttributeRule attributeID="swissEduPersonHomeOrganization">
+            <afp:PermitValueRule xsi:type="saml:AttributeValueMatchesShibMDScope" />
+        </afp:AttributeRule>
+
+        <!-- Enforce that the value of schacHomeOrganization is a valid Scope. -->
+        <afp:AttributeRule attributeID="schacHomeOrganization">
+            <afp:PermitValueRule xsi:type="saml:AttributeValueMatchesShibMDScope" />
+        </afp:AttributeRule>
 
         <!-- Catch-all that passes everything else through unmolested. -->
-        <afp:AttributeRule attributeID="*">
-            <afp:PermitValueRule xsi:type="ANY" />
-        </afp:AttributeRule>
+        <afp:AttributeRule attributeID="*" permitAny="true" />
 
     </afp:AttributeFilterPolicy>
 
