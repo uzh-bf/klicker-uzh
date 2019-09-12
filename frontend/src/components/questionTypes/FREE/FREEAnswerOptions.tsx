@@ -1,11 +1,11 @@
 import React from 'react'
-import Slider from 'react-rangeslider'
-import Head from 'next/head'
+// import Slider from 'react-rangeslider'
+// import Head from 'next/head'
 import _get from 'lodash/get'
 import { FormattedMessage } from 'react-intl'
 import { Input } from 'semantic-ui-react'
 
-import { createLinks } from '../../../lib/utils/css'
+// import { createLinks } from '../../../lib/utils/css'
 import { QUESTION_TYPES } from '../../../constants'
 
 interface Props {
@@ -31,7 +31,7 @@ const defaultProps = {
 function FREEAnswerOptions({ disabled, onChange, options, value, questionType }: Props): React.ReactElement {
   return (
     <div className="ui form freeAnswerOptions">
-      <Head>{createLinks(['https://unpkg.com/react-rangeslider/umd/rangeslider.min.css'])}</Head>
+      {/* <Head>{createLinks(['https://unpkg.com/react-rangeslider/umd/rangeslider.min.css'])}</Head> */}
 
       {((): React.ReactElement => {
         if (
@@ -42,19 +42,19 @@ function FREEAnswerOptions({ disabled, onChange, options, value, questionType }:
         ) {
           return (
             <div className="field slider">
-              <span className="min">
+              <div>
                 <strong>
                   <FormattedMessage defaultMessage="Min" id="createQuestion.options.min" />
                 </strong>
-                :{options.restrictions.min}
-              </span>
-              <span className="max">
+                : {options.restrictions.min}
+              </div>
+              <div>
                 <strong>
                   <FormattedMessage defaultMessage="Max" id="createQuestion.options.max" />
                 </strong>
-                :{options.restrictions.max}
-              </span>
-              <Slider
+                : {options.restrictions.max}
+              </div>
+              {/* <Slider
                 disabled={disabled}
                 handleLabel={value}
                 max={options.restrictions.max}
@@ -63,7 +63,7 @@ function FREEAnswerOptions({ disabled, onChange, options, value, questionType }:
                 tooltip={false}
                 value={value}
                 onChange={onChange}
-              />
+              /> */}
               <Input
                 disabled={disabled}
                 max={options.restrictions.max}
