@@ -13,7 +13,7 @@ use \Firebase\JWT\JWT;
 return function (App $app) {
     $container = $app->getContainer();
 
-    $app->get('/public', function (Request $request, Response $response) {
+    $app->get('/public/', function (Request $request, Response $response) {
         // TODO: get the key from the environment/secret
         $key = "example_key";
         $token = array(
