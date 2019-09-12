@@ -29,7 +29,7 @@ return function (App $app) {
         $out = fopen('php://stdout', 'w');
         fwrite($out, json_encode($_SERVER));
 
-        throw Error('fail')
+        throw Error('fail');
 
         /**
          * IMPORTANT:
