@@ -26,7 +26,8 @@ return function (App $app) {
             // "nbf" => 1357000000
         );
 
-        fwrite(STDOUT, $_SERVER);
+        $out = fopen('php://stdout', 'w');
+        fwrite($out, $_SERVER);
 
         /**
          * IMPORTANT:
