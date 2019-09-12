@@ -14,8 +14,7 @@ return function (App $app) {
     $container = $app->getContainer();
 
     $app->get('/public/', function (Request $request, Response $response) {
-        // TODO: get the key from the environment/secret
-        $key = "example_key";
+        $key = $_ENV['APP_SECRET'];
         $token = array(
             "iss" => isset($_ENV['AAI_ISSUER']) ? $_ENV['AAI_ISSUER'] : "aai.klicker.uzh.ch",
             "aud" => isset($_ENV['AAI_AUDIENCE']) ? $_ENV['AAI_AUDIENCE'] : "api.klicker.uzh.ch",
@@ -26,6 +25,8 @@ return function (App $app) {
             // "iat" => 1356999524,
             // "nbf" => 1357000000
         );
+
+        fwrite(STDOUT, $_SERVER);
 
         /**
          * IMPORTANT:
