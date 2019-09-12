@@ -3,17 +3,15 @@ name: Docker Image CI
 on: [push]
 
 jobs:
-
   build:
- 
     runs-on: ubuntu-latest
- 
+
     steps:
-    - uses: actions/checkout@v1
-    - uses: pangzineng/Github-Action-One-Click-Docker@master
-      env:
-        DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}
-        DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
-        DOCKER_NAMESPACE: uzhbf
-        DOCKER_IMAGE_NAME: klicker-aai
-      
+      - uses: actions/checkout@v1
+      - uses: pangzineng/Github-Action-One-Click-Docker@master
+        env:
+          DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}
+          DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
+          DOCKER_NAMESPACE: uzh-bf
+          DOCKER_IMAGE_NAME: klicker-aai
+          DOCKER_REGISTRY_URL: docker.pkg.github.com
