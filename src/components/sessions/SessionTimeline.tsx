@@ -70,6 +70,7 @@ interface Props {
   handlePauseSession: () => void
   handleResetQuestionBlock: (instanceIds: string[]) => void
   handleTogglePublicEvaluation: () => void
+  handleActivateBlockById: (blockId: number) => void
   intl: any
   isEvaluationPublic?: boolean
   runtime?: string
@@ -101,6 +102,7 @@ function SessionTimeline({
   handleCancelSession,
   handleTogglePublicEvaluation,
   handleResetQuestionBlock,
+  handleActivateBlockById,
   subscribeToMore,
 }: Props): React.ReactElement {
   useEffect((): void => {
@@ -187,6 +189,7 @@ function SessionTimeline({
               <div className="block" key={block.id}>
                 <QuestionBlock
                   expiresAt={block.expiresAt}
+                  handleActivateQuestionBlock={(): void => handleActivateBlockById(block.id)}
                   handleResetQuestionBlock={(): void => handleResetQuestionBlock(block.id)}
                   index={index + 1}
                   questionBlockId={block.id}
@@ -327,6 +330,7 @@ function SessionTimeline({
               display: flex;
               flex-direction: column;
               align-items: center;
+              min-height: 200px;
 
               background: linear-gradient(
                 to right,
@@ -406,6 +410,7 @@ function SessionTimeline({
                 padding: 0.5rem;
 
                 overflow-x: auto;
+                overflow-y: visible;
               }
 
               .blockWrap {

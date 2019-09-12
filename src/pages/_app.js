@@ -7,6 +7,7 @@ import HTML5Backend from 'react-dnd-html5-backend-cjs'
 import { ApolloProvider } from '@apollo/react-hooks'
 import { IntlProvider } from 'react-intl'
 import { DndProvider } from 'react-dnd-cjs'
+import { ToastProvider } from 'react-toast-notifications'
 
 import withApolloClient from '../lib/withApolloClient'
 
@@ -72,13 +73,12 @@ class Klicker extends App {
         }).install()
 
         if (LogRocket && window.INIT_LR) {
-          Raven.setDataCallback(data =>
-            Object.assign({}, data, {
-              extra: {
-                sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef
-              },
-            })
-          )
+          Raven.setDataCallback(data => ({
+            ...data,
+            extra: {
+              sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef
+            },
+          }))
         }
 
         window.INIT_RAVEN = true
@@ -114,9 +114,11 @@ class Klicker extends App {
         <DndProvider backend={HTML5Backend}>
           <IntlProvider initialNow={now} locale={locale} messages={messages}>
             <ApolloProvider client={apolloClient}>
-              <StrictMode>
-                <Component {...pageProps} error={this.state.error} />
-              </StrictMode>
+              <ToastProvider>
+                <StrictMode>
+                  <Component {...pageProps} error={this.state.error} />
+                </StrictMode>
+              </ToastProvider>
             </ApolloProvider>
           </IntlProvider>
         </DndProvider>

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import getConfig from 'next/config'
 import { FormattedMessage } from 'react-intl'
-import { Icon, Card, Image, Button } from 'semantic-ui-react'
+import { Icon, Card, Image, Button, Input } from 'semantic-ui-react'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -26,6 +26,7 @@ function FileDropzone({ disabled, files, onChangeFiles }: Props): React.ReactEle
           files.concat(
             acceptedFiles.map((file): any =>
               Object.assign(file, {
+                description: '',
                 preview: URL.createObjectURL(file),
               })
             )
@@ -49,14 +50,30 @@ function FileDropzone({ disabled, files, onChangeFiles }: Props): React.ReactEle
       return (
         <div className="imagePreview" key={file.id || index}>
           <Card>
-            <Card.Meta>
-              <span className="imageIndex">{`#${index + 1}`}</span>
-            </Card.Meta>
             <Image crossOrigin="anonymous" height="auto" src={file.preview || imageSrc} width="100%" />
+            <Card.Content>
+              <Input
+                fluid
+                name="description"
+                placeholder="Description..."
+                value={file.description}
+                onChange={(_, { value }): void =>
+                  onChangeFiles(
+                    files.map((existingFile): any => {
+                      if (existingFile.id === file.id) {
+                        return Object.assign(existingFile, {
+                          description: value,
+                        })
+                      }
+                      return existingFile
+                    })
+                  )
+                }
+              />
+            </Card.Content>
             <Card.Content extra>
               <Button
                 basic
-                fluid
                 color="red"
                 disabled={disabled}
                 type="button"
@@ -121,8 +138,8 @@ function FileDropzone({ disabled, files, onChangeFiles }: Props): React.ReactEle
             margin-left: 1rem;
             padding: 0.5rem;
 
-            .imagePreview {
-              width: 150px;
+            :global(.imagePreview) {
+              width: 200px;
               margin: 0.5rem;
             }
 
