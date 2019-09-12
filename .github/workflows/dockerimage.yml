@@ -13,5 +13,5 @@ jobs:
           DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}
           DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
           DOCKER_NAMESPACE: uzh-bf
-          DOCKER_IMAGE_NAME: klicker-aai
+          DOCKER_IMAGE_NAME: klicker-aai/prod
           DOCKER_REGISTRY_URL: docker.pkg.github.com
