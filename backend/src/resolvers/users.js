@@ -11,6 +11,7 @@ const authUserByIDQuery = (parentValue, args, { auth }) => UserModel.findById(au
 const userByIDQuery = parentValue => UserModel.findById(parentValue.user)
 const checkAvailabilityQuery = (parentValue, { email, shortname }) =>
   AccountService.checkAvailability({ email, shortname })
+const checkAccountStatusQuery = (parentValue, args, { auth, res }) => AccountService.checkAccountStatus({ auth, res })
 
 // Generate an HMAC for user identity verification
 const hmacQuery = (parentValue, args, { auth }) =>
@@ -51,6 +52,7 @@ module.exports = {
   user: userByIDQuery,
   hmac: hmacQuery,
   checkAvailability: checkAvailabilityQuery,
+  checkAccountStatus: checkAccountStatusQuery,
 
   // mutations
   changePassword: changePasswordMutation,

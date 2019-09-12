@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs')
 const JWT = require('jsonwebtoken')
 const _get = require('lodash/get')
+const passwordGenerator = require('generate-password')
 const { isLength, isEmail, normalizeEmail } = require('validator')
 const { AuthenticationError, ForbiddenError, UserInputError } = require('apollo-server-express')
 
@@ -22,7 +23,7 @@ const isDev = process.env.NODE_ENV !== 'production'
 // secure: whether the cookie should only be sent over https
 // TODO: set other important cookie settings?
 const AUTH_COOKIE_SETTINGS = {
-  domain: APP_CFG.domain,
+  domain: APP_CFG.cookieDomain || APP_CFG.domain,
   httpOnly: true,
   maxAge: 86400000,
   path: APP_CFG.path ? `${APP_CFG.path}/graphql` : '/graphql',
@@ -175,6 +176,124 @@ const checkAvailability = async ({ email, shortname }) => {
 }
 
 /**
+ * Register an account for a new user
+ * @param {String} email The email of the new user
+ * @param {String} password The password of the new user
+ * @param {String} shortname The shortname of the new user
+ * @param {String} institution  The institution of the new user
+ * @param {String} useCase The use case given by the new user
+ * @param {Boolean} isAAI Whether the user registrations is performed via AAI
+ * @param {Boolean} isActive Whether the user is initially active
+ */
+const signup = async (email, password, shortname, institution, useCase, { isAAI, isActive } = {}) => {
+  if (!isEmail(email)) {
+    throw new UserInputError(Errors.INVALID_EMAIL)
+  }
+
+  if (!isLength(password, { min: 8 })) {
+    throw new UserInputError(Errors.INVALID_PASSWORD)
+  }
+
+  // normalize the email address
+  const normalizedEmail = normalizeEmail(email)
+
+  // check for the availability of the normalized email and the chosen shortname
+  // throw an error if a matching account already exists
+  const availability = await checkAvailability({ email: normalizedEmail, shortname })
+  if (availability.email === false) {
+    throw new UserInputError(Errors.EMAIL_NOT_AVAILABLE)
+  }
+  if (availability.shortname === false) {
+    throw new UserInputError(Errors.SHORTNAME_NOT_AVAILABLE)
+  }
+
+  // generate a salt with bcrypt using 10 rounds
+  // hash and salt the password
+  const hash = bcrypt.hashSync(password, 10)
+
+  // create a new user based on the passed data
+  const newUser = await new UserModel({
+    email: normalizedEmail,
+    password: hash,
+    shortname,
+    institution,
+    useCase,
+    isAAI,
+    isActive,
+  }).save()
+
+  if (newUser) {
+    // send a slack notification (if configured)
+    sendSlackNotification(
+      'accounts',
+      `New user has registered: ${normalizedEmail}, ${shortname}, ${institution}, ${useCase || '-'}, ${isAAI}`
+    )
+
+    if (!isActive) {
+      // generate a token scoped for user account activation
+      const jwt = generateScopedToken(newUser, 'activate')
+
+      // load the template source and compile it
+      const html = compileEmailTemplate('accountActivation', {
+        email: normalizedEmail,
+        jwt,
+      })
+
+      // send an account activation email
+      try {
+        sendEmailNotification({
+          html,
+          subject: 'Klicker UZH - Account Activation',
+          to: normalizedEmail,
+        })
+      } catch (e) {
+        sendSlackNotification('accounts', `Activation email could not be sent to ${normalizedEmail}`)
+      }
+    }
+
+    // return the data of the newly created user
+    return newUser
+  }
+
+  throw new UserInputError('SIGNUP_FAILED')
+}
+
+async function checkAccountStatus({ res, auth }) {
+  if (!auth || !auth.sub) {
+    return null
+  }
+
+  let user
+  try {
+    user = await UserModel.findOne({ email: auth.sub })
+    if (!user) {
+      user = await UserModel.findById(auth.sub)
+    }
+  } catch (e) {
+    console.log(e.message)
+  }
+
+  if (!user) {
+    const shortname = passwordGenerator.generate({ length: 6, uppercase: false, symbols: false, numbers: true })
+    const password = passwordGenerator.generate({ length: 20, uppercase: true, symbols: true, numbers: true })
+    user = await signup(auth.sub, password, shortname, 'aai institution', '-', { isAAI: true, isActive: true })
+  }
+
+  // generate a JWT for future authentication
+  const jwt = generateScopedToken(user, 'user')
+
+  // set a cookie with the generated JWT
+  if (res && res.cookie) {
+    res.cookie('jwt', jwt, AUTH_COOKIE_SETTINGS)
+  }
+
+  // update the last login date
+  await UserModel.findByIdAndUpdate(user.id, { $currentDate: { lastLoginAt: true } })
+
+  return user.id
+}
+
+/**
  * Update personal account data
  * @param {ID} userId
  * @param {String} email
@@ -230,87 +349,6 @@ const updateAccountData = async ({ userId, email, shortname, institution, useCas
   }
 
   return user.save()
-}
-
-/**
- * Register an account for a new user
- * @param {String} email The email of the new user
- * @param {String} password The password of the new user
- * @param {String} shortname The shortname of the new user
- * @param {String} institution  The institution of the new user
- * @param {String} useCase The use case given by the new user
- * @param {Boolean} isAAI Whether the user registrations is performed via AAI
- * @param {Boolean} isActive Whether the user is initially active
- */
-const signup = async (email, password, shortname, institution, useCase, { isAAI, isActive } = {}) => {
-  if (!isEmail(email)) {
-    throw new UserInputError(Errors.INVALID_EMAIL)
-  }
-
-  if (!isLength(password, { min: 8 })) {
-    throw new UserInputError(Errors.INVALID_PASSWORD)
-  }
-
-  // normalize the email address
-  const normalizedEmail = normalizeEmail(email)
-
-  // check for the availability of the normalized email and the chosen shortname
-  // throw an error if a matching account already exists
-  const availability = await checkAvailability({ email: normalizedEmail, shortname })
-  if (availability.email === false) {
-    throw new UserInputError(Errors.EMAIL_NOT_AVAILABLE)
-  }
-  if (availability.shortname === false) {
-    throw new UserInputError(Errors.SHORTNAME_NOT_AVAILABLE)
-  }
-
-  // generate a salt with bcrypt using 10 rounds
-  // hash and salt the password
-  const hash = bcrypt.hashSync(password, 10)
-
-  // create a new user based on the passed data
-  const newUser = await new UserModel({
-    email: normalizedEmail,
-    password: hash,
-    shortname,
-    institution,
-    useCase,
-    isAAI,
-    isActive,
-  }).save()
-
-  if (newUser) {
-    // send a slack notification (if configured)
-    sendSlackNotification(
-      'accounts',
-      `New user has registered: ${normalizedEmail}, ${shortname}, ${institution}, ${useCase || '-'}`
-    )
-
-    // generate a token scoped for user account activation
-    const jwt = generateScopedToken(newUser, 'activate')
-
-    // load the template source and compile it
-    const html = compileEmailTemplate('accountActivation', {
-      email: normalizedEmail,
-      jwt,
-    })
-
-    // send an account activation email
-    try {
-      sendEmailNotification({
-        html,
-        subject: 'Klicker UZH - Account Activation',
-        to: normalizedEmail,
-      })
-    } catch (e) {
-      sendSlackNotification('accounts', `Activation email could not be sent to ${normalizedEmail}`)
-    }
-
-    // return the data of the newly created user
-    return newUser
-  }
-
-  throw new UserInputError('SIGNUP_FAILED')
 }
 
 /**
@@ -562,6 +600,7 @@ const resolveAccountDeletion = async (userId, deletionToken) => {
 
 module.exports = {
   checkAvailability,
+  checkAccountStatus,
   updateAccountData,
   isAuthenticated,
   requireAuth,
