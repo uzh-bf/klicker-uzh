@@ -263,12 +263,15 @@ async function checkAccountStatus({ res, auth }) {
     return null
   }
 
+  console.log(auth)
+
   let user
   try {
     user = await UserModel.findOne({ email: auth.sub })
     if (!user) {
       user = await UserModel.findById(auth.sub)
     }
+    console.log(user)
   } catch (e) {
     console.log(e.message)
   }
@@ -276,11 +279,15 @@ async function checkAccountStatus({ res, auth }) {
   if (!user) {
     const shortname = passwordGenerator.generate({ length: 6, uppercase: false, symbols: false, numbers: true })
     const password = passwordGenerator.generate({ length: 20, uppercase: true, symbols: true, numbers: true })
-    user = await signup(auth.sub, password, shortname, 'aai institution', '-', { isAAI: true, isActive: true })
+    user = await signup(auth.sub, password, shortname, auth.org, '-', { isAAI: true, isActive: true })
   }
+
+  console.log(user)
 
   // generate a JWT for future authentication
   const jwt = generateScopedToken(user, 'user')
+
+  console.log(jwt)
 
   // set a cookie with the generated JWT
   if (res && res.cookie) {
