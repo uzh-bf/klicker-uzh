@@ -30,14 +30,20 @@ function ActionMenu({
 }: Props): React.ReactElement {
   return (
     <div className="actionMenu">
+      {expiresAt && (
+        <div className="countdown">
+          <Countdown
+            circularDisplay
+            isActive
+            countdownDuration={timeLimit}
+            countdownEnd={expiresAt}
+            countdownStepSize={1000}
+          />
+        </div>
+      )}
       <div className="progress">
         <Progress autoSuccess progress="ratio" total={numItems} value={activeIndex} />
       </div>
-      {expiresAt && (
-        <div className="countdown">
-          <Countdown isActive countdownDuration={timeLimit} countdownEnd={expiresAt} countdownStepSize={1000} />
-        </div>
-      )}
       <div className="actions">
         <Button fluid disabled={isSubmitDisabled} primary={!isSkipModeActive} onClick={onSubmit}>
           {isSkipModeActive ? (
@@ -60,7 +66,7 @@ function ActionMenu({
           padding: 0.3rem;
 
           .countdown {
-            flex: 0 0 auto;
+            flex: 0 0 3rem;
             padding-right: 0.5rem;
           }
 

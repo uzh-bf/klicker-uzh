@@ -95,7 +95,7 @@ function QuestionBlock({
                 onClick={handleActivateQuestionBlock}
               />
               <Dropdown.Item
-                icon="redo"
+                icon="undo"
                 text={intl.formatMessage(messages.resetBlockResults)}
                 onClick={handleResetQuestionBlock}
               />
