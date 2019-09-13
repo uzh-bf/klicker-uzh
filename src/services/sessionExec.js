@@ -4,7 +4,7 @@ const { ForbiddenError, UserInputError } = require('apollo-server-express')
 
 const CFG = require('../klicker.conf.js')
 const { QuestionInstanceModel, UserModel, FileModel, SessionModel } = require('../models')
-const { QUESTION_GROUPS, QUESTION_TYPES } = require('../constants')
+const { QUESTION_GROUPS, QUESTION_TYPES, QUESTION_BLOCK_STATUS } = require('../constants')
 const { getRedis } = require('../redis')
 const { getRunningSession, cleanCache, publishSessionUpdate } = require('./sessionMgr')
 const { pubsub, CONFUSION_ADDED, FEEDBACK_ADDED } = require('../resolvers/subscriptions')
@@ -424,6 +424,9 @@ async function resetQuestionBlock({ sessionId, blockId }) {
 
   // increment the execution counter of the block
   await SessionModel.findByIdAndUpdate(session.id, {
+    $set: {
+      [`blocks.${blockIndex}.status`]: QUESTION_BLOCK_STATUS.PLANNED,
+    },
     $inc: {
       [`blocks.${blockIndex}.execution`]: 1,
     },
@@ -435,7 +438,7 @@ async function resetQuestionBlock({ sessionId, blockId }) {
   await publishSessionUpdate({ sessionId: session.id, activeBlock: session.activeBlock })
 
   // return the updated session
-  return session
+  return getRunningSession(sessionId)
 }
 
 module.exports = {
