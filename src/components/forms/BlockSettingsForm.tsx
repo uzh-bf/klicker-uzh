@@ -27,7 +27,7 @@ const messages = defineMessages({
   },
   blockSettings: {
     id: 'form.blockSettings.header',
-    defaultMessage: 'Block settings',
+    defaultMessage: 'Set time limit',
   },
 })
 
@@ -68,7 +68,7 @@ function BlockSettingsForm({ disabled, sessionId, questionBlockId, initialTimeLi
           trigger={
             <Dropdown.Item
               disabled={disabled}
-              icon="settings"
+              icon="time"
               text={intl.formatMessage(messages.blockSettings)}
               onClick={onModalOpen}
             />
