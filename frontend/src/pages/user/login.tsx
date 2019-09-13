@@ -82,6 +82,12 @@ function Login(): React.ReactElement {
             }}
           />
 
+          <div className="aai">
+            <a href="https://aai.klicker.uzh.ch/public" role="button">
+              <img alt="AAI Login" src="https://www.switch.ch/aai/design/images/aai_login_button.png" />
+            </a>
+          </div>
+
           {!error && _get(router, 'query.expired') && (
             <div className="errorMessage message">Login expired. Please login again.</div>
           )}
@@ -97,6 +103,11 @@ function Login(): React.ReactElement {
 
             h1 {
               margin-top: 0;
+            }
+
+            .aai {
+              margin-top: 1rem;
+              text-align: right;
             }
 
             .message {
