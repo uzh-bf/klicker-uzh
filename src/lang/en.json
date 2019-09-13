@@ -63,7 +63,7 @@
   "evaluation.visualization.title": "Visualization",
   "fileDropzone.button.delete": "Delete",
   "fileDropzone.button.upload": "Upload",
-  "form.blockSettings.header": "Block settings",
+  "form.blockSettings.header": "Set time limit",
   "form.blockSettings.timeLimit": "Time limit",
   "form.button.saveChanges": "Save Changes",
   "form.common.button.submit": "Submit",

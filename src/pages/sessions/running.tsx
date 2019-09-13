@@ -120,8 +120,7 @@ function Running(): React.ReactElement {
                     variables: { id },
                   })
                   // redirect to the question pool
-                  // TODO: redirect to a session summary or overview page
-                  router.push('/questions')
+                  router.push('/sessions')
                 }}
                 handleEndSession={async (): Promise<void> => {
                   // run the mutation
@@ -135,7 +134,6 @@ function Running(): React.ReactElement {
                   })
 
                   // redirect to the question pool
-                  // TODO: redirect to a session summary or overview page
                   router.push('/questions')
                 }}
                 handleNextBlock={(): void => {
