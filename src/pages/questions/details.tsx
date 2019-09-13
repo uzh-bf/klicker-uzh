@@ -14,7 +14,7 @@ import { omitDeep, omitDeepArray } from '../../lib/utils/omitDeep'
 import { getPresignedURLs, uploadFilesToPresignedURLs } from '../../lib/utils/files'
 import useLogging from '../../lib/hooks/useLogging'
 import TagListQuery from '../../graphql/queries/TagListQuery.graphql'
-import QuestionListQuery from '../../graphql/queries/QuestionListQuery.graphql'
+import QuestionPoolQuery from '../../graphql/queries/QuestionPoolQuery.graphql'
 import QuestionDetailsQuery from '../../graphql/queries/QuestionDetailsQuery.graphql'
 import ModifyQuestionMutation from '../../graphql/mutations/ModifyQuestionMutation.graphql'
 import RequestPresignedURLMutation from '../../graphql/mutations/RequestPresignedURLMutation.graphql'
@@ -82,7 +82,7 @@ function EditQuestion(): React.ReactElement {
     await editQuestion({
       // reload the question details and tags after update
       // TODO: replace with optimistic updates
-      refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
+      refetchQueries: [{ query: QuestionPoolQuery }, { query: TagListQuery }],
       // update the cache after the mutation has completed
       update: (store, { data: { modifyQuestion } }): void => {
         const query = {

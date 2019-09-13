@@ -63,7 +63,7 @@
   "evaluation.visualization.title": "Diagramm",
   "fileDropzone.button.delete": "Löschen",
   "fileDropzone.button.upload": "Hochladen",
-  "form.blockSettings.header": "Blockeinstellungen",
+  "form.blockSettings.header": "Zeitlimit setzen",
   "form.blockSettings.timeLimit": "Zeitlimit",
   "form.button.saveChanges": "Änderungen speichern",
   "form.common.button.submit": "Absenden",
