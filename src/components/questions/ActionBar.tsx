@@ -6,7 +6,7 @@ import { saveAs } from 'file-saver'
 import { CSVDownload } from 'react-csv'
 import { useToasts } from 'react-toast-notifications'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Button, Confirm, Icon, Label, Dropdown } from 'semantic-ui-react'
+import { Button, Confirm, Icon, Label, Dropdown, Checkbox } from 'semantic-ui-react'
 import { useMutation } from '@apollo/react-hooks'
 
 import UploadModal from './UploadModal'
@@ -38,14 +38,18 @@ interface Props {
   handleDeleteQuestions: any
   handleQuickBlock: any
   handleQuickBlocks: any
+  handleSetItemsChecked: any
+  handleResetItemsChecked: any
   isArchiveActive?: boolean
   itemsChecked?: string[]
+  questions?: any[]
 }
 
 const defaultProps = {
   creationMode: false,
   isArchiveActive: false,
   itemsChecked: [],
+  questions: [],
 }
 
 function ActionBar({
@@ -58,10 +62,14 @@ function ActionBar({
   handleDeleteQuestions,
   handleQuickBlock,
   handleQuickBlocks,
+  handleSetItemsChecked,
+  handleResetItemsChecked,
+  questions,
 }: Props): React.ReactElement {
   const intl = useIntl()
   const { addToast } = useToasts()
   const [csvData, setCsvData] = useState()
+  const [allItemsChecked, setAllItemsChecked] = useState(false)
 
   const [getQuestionStatistics, { data, error }] = useMutation(QuestionStatisticsMutation)
   const [exportQuestions, { data: exportData, error: exportError }] = useMutation(ExportQuestionsMutation)
@@ -143,12 +151,24 @@ function ActionBar({
     }
   }
 
+  const onSetAllItemsChecked = (): void => {
+    // if all items have been checked, reset selection
+    if (allItemsChecked) {
+      handleResetItemsChecked()
+      setAllItemsChecked(false)
+    } else {
+      // otherwise, select all items
+      handleSetItemsChecked(questions)
+      setAllItemsChecked(true)
+    }
+  }
+
   const itemCount = itemsChecked.length
 
   return (
     <div className="actionBar">
       <div className="actionButtons">
-        <Dropdown button className="primary" direction="left" text="Create">
+        <Dropdown button className="primary icon large" direction="left" icon="plus">
           <Dropdown.Menu>
             <Dropdown.Item isabled={!!creationMode} onClick={handleCreationModeToggle}>
               <Icon name="plus" />
@@ -255,16 +275,20 @@ function ActionBar({
         )}
       </div>
 
-      <div className="checkedCounter">
-        <Label size="medium">
-          <Icon name="thumbtack" />
+      <Label className="checkedCounter">
+        <Checkbox
+          checked={allItemsChecked}
+          indeterminate={!allItemsChecked && itemsChecked.length > 0}
+          onChange={(): void => onSetAllItemsChecked()}
+        />
+        <span className="content">
           <FormattedMessage
             defaultMessage="{count} items checked"
             id="questionPool.string.itemsChecked"
             values={{ count: itemCount }}
           />
-        </Label>
-      </div>
+        </span>
+      </Label>
 
       {csvData && <CSVDownload data={csvData} />}
 
@@ -277,6 +301,19 @@ function ActionBar({
           .creationButtons {
             display: flex;
             flex-direction: column;
+          }
+
+          .actionBar :global(.checkedCounter) {
+            display: flex;
+            flex-align: center;
+
+            :global(.checkbox) {
+              margin-right: 0.5rem;
+            }
+
+            span {
+              margin-top: 0.2rem;
+            }
           }
 
           .actionBar {
