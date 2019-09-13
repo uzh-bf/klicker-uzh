@@ -4,6 +4,9 @@ const INITIAL_STATE = { ids: [], items: [] }
 
 function reducer(state, action): any {
   switch (action.type) {
+    case 'SELECT_BATCH':
+      return { ids: action.items.map((el): void => el.id), items: action.items }
+
     case 'SELECT':
       // if the id is already selected, unselect (toggle)
       if (state.ids.includes(action.id)) {
@@ -29,17 +32,20 @@ function reducer(state, action): any {
   }
 }
 
-function useSelection(): [any, any, any] {
+function useSelection(): [any, any, any, Function] {
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE)
 
   const onSelectItem = (id, item): any => (extra): void => {
     dispatch({ type: 'SELECT', id, item: { ...item, ...extra } })
   }
+  const onSelectItems = (items): any => {
+    dispatch({ type: 'SELECT_BATCH', items })
+  }
   const onResetSelection = (): void => {
     dispatch({ type: 'RESET' })
   }
 
-  return [state, onSelectItem, onResetSelection]
+  return [state, onSelectItem, onResetSelection, onSelectItems]
 }
 
 export default useSelection

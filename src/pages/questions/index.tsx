@@ -6,6 +6,7 @@ import { useRouter } from 'next/router'
 import dayjs from 'dayjs'
 import { defineMessages, useIntl } from 'react-intl'
 import { useQuery, useMutation } from '@apollo/react-hooks'
+import { Loader } from 'semantic-ui-react'
 
 import useLogging from '../../lib/hooks/useLogging'
 import useSelection from '../../lib/hooks/useSelection'
@@ -19,7 +20,6 @@ import QuestionPoolQuery from '../../graphql/queries/QuestionPoolQuery.graphql'
 import ArchiveQuestionsMutation from '../../graphql/mutations/ArchiveQuestionsMutation.graphql'
 import ModifySessionMutation from '../../graphql/mutations/ModifySessionMutation.graphql'
 import DeleteQuestionsMutation from '../../graphql/mutations/DeleteQuestionsMutation.graphql'
-import QuestionListQuery from '../../graphql/queries/QuestionListQuery.graphql'
 import SessionEditForm from '../../components/forms/sessionCreation/SessionEditForm'
 import SessionCreationForm from '../../components/forms/sessionCreation/SessionCreationForm'
 import QuestionList from '../../components/questions/QuestionList'
@@ -27,6 +27,7 @@ import TagList from '../../components/questions/TagList'
 import ActionBar from '../../components/questions/ActionBar'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import { QUESTION_SORTINGS } from '../../constants'
+import { processItems, buildIndex } from '../../lib/utils/filters'
 
 const messages = defineMessages({
   pageTitle: {
@@ -63,9 +64,9 @@ function Index(): React.ReactElement {
   const [archiveQuestions] = useMutation(ArchiveQuestionsMutation)
   const [modifySession] = useMutation(ModifySessionMutation)
   const [deleteQuestions] = useMutation(DeleteQuestionsMutation)
-  const { data } = useQuery(QuestionPoolQuery)
+  const { data, loading } = useQuery(QuestionPoolQuery)
 
-  const [selectedItems, handleSelectItem, handleResetSelection] = useSelection()
+  const [selectedItems, handleSelectItem, handleResetSelection, handleSelectItems] = useSelection()
   const {
     filters,
     sort,
@@ -103,7 +104,7 @@ function Index(): React.ReactElement {
     try {
       // archive the questions
       await archiveQuestions({
-        refetchQueries: [{ query: QuestionListQuery }],
+        refetchQueries: [{ query: QuestionPoolQuery }],
         variables: { ids: selectedItems.ids },
       })
 
@@ -222,12 +223,12 @@ function Index(): React.ReactElement {
               return
             }
 
-            const { questions } = cache.readQuery({ query: QuestionListQuery })
+            const { questions } = cache.readQuery({ query: QuestionPoolQuery })
             cache.writeQuery({
               data: {
                 questions: questions.filter((question): boolean => !questionIds.includes(question.id)),
               },
-              query: QuestionListQuery,
+              query: QuestionPoolQuery,
             })
 
             setDeletionConfirmation(false)
@@ -308,28 +309,43 @@ function Index(): React.ReactElement {
           />
         </div>
         <div className="wrapper">
-          <ActionBar
-            creationMode={creationMode}
-            deletionConfirmation={deletionConfirmation}
-            handleArchiveQuestions={onArchiveQuestions}
-            handleCreationModeToggle={onCreationModeToggle}
-            handleDeleteQuestions={onDeleteQuestions}
-            handleQuickBlock={onQuickBlock}
-            handleQuickBlocks={onQuickBlocks}
-            isArchiveActive={filters.archive}
-            itemsChecked={selectedItems.ids}
-          />
+          {((): React.ReactElement | React.ReactElement[] => {
+            if (!data || loading) {
+              return <Loader active />
+            }
 
-          <div className="questionList">
-            <QuestionList
-              creationMode={creationMode}
-              filters={filters}
-              isArchiveActive={filters.archive}
-              selectedItems={selectedItems}
-              sort={sort}
-              onQuestionChecked={handleSelectItem}
-            />
-          </div>
+            // build an index from the received questions
+            const index = buildIndex('questions', data.questions, ['title', 'createdAt'])
+
+            // process questions according to filters and sort settings
+            const processedQuestions = processItems(data.questions, filters, sort, index)
+
+            return [
+              <ActionBar
+                creationMode={creationMode}
+                deletionConfirmation={deletionConfirmation}
+                handleArchiveQuestions={onArchiveQuestions}
+                handleCreationModeToggle={onCreationModeToggle}
+                handleDeleteQuestions={onDeleteQuestions}
+                handleQuickBlock={onQuickBlock}
+                handleQuickBlocks={onQuickBlocks}
+                handleResetItemsChecked={handleResetSelection}
+                handleSetItemsChecked={handleSelectItems}
+                isArchiveActive={filters.archive}
+                itemsChecked={selectedItems.ids}
+                questions={processedQuestions}
+              />,
+              <div className="questionList">
+                <QuestionList
+                  creationMode={creationMode}
+                  isArchiveActive={filters.archive}
+                  questions={processedQuestions}
+                  selectedItems={selectedItems}
+                  onQuestionChecked={handleSelectItem}
+                />
+              </div>,
+            ]
+          })()}
         </div>
       </div>
 
