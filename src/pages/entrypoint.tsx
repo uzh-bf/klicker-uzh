@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { useQuery } from '@apollo/react-hooks'
+import { useLazyQuery } from '@apollo/react-hooks'
 import { Message } from 'semantic-ui-react'
 
 import useLogging from '../lib/hooks/useLogging'
@@ -11,9 +11,10 @@ function Entrypoint(): React.ReactElement {
 
   const router = useRouter()
 
-  const { data, error } = useQuery(CheckAccountStatusQuery)
+  const [checkAccountStatus, { data, error }] = useLazyQuery(CheckAccountStatusQuery)
 
   useEffect((): void => {
+    checkAccountStatus()
     if (data && data.checkAccountStatus) {
       router.push('/questions')
     }
