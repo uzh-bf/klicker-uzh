@@ -12,7 +12,7 @@ import QuestionCreationForm from '../../components/forms/questionManagement/Ques
 import { getPresignedURLs, uploadFilesToPresignedURLs } from '../../lib/utils/files'
 import { omitDeepArray, omitDeep } from '../../lib/utils/omitDeep'
 import useLogging from '../../lib/hooks/useLogging'
-import QuestionListQuery from '../../graphql/queries/QuestionListQuery.graphql'
+import QuestionPoolQuery from '../../graphql/queries/QuestionPoolQuery.graphql'
 import TagListQuery from '../../graphql/queries/TagListQuery.graphql'
 import CreateQuestionMutation from '../../graphql/mutations/CreateQuestionMutation.graphql'
 import RequestPresignedURLMutation from '../../graphql/mutations/RequestPresignedURLMutation.graphql'
@@ -70,7 +70,7 @@ function DuplicateQuestion(): React.ReactElement {
 
     // create the question
     await createQuestion({
-      refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
+      refetchQueries: [{ query: QuestionPoolQuery }, { query: TagListQuery }],
       variables: _omitBy(
         {
           content: JSON.stringify(convertToRaw(content.getCurrentContent())),

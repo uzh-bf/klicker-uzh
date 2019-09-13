@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import dayjs from 'dayjs'
 import { Icon } from 'semantic-ui-react'
+import { CircularProgressbar, buildStyles } from 'react-circular-progressbar'
+
+import 'react-circular-progressbar/dist/styles.css'
 
 interface Props {
   isActive?: boolean
@@ -9,6 +12,7 @@ interface Props {
   countdownDuration?: number
   countdownStepSize?: number
   children?: Function
+  circularDisplay?: boolean
 }
 
 function Countdown({
@@ -18,6 +22,7 @@ function Countdown({
   countdownEnd,
   countdownStepSize,
   children,
+  circularDisplay,
 }: Props): React.ReactElement {
   const [secondsRemaining, setSecondsRemaining] = useState(countdownDuration)
 
@@ -54,6 +59,26 @@ function Countdown({
   if (countdownEnd) {
     const remaining = dayjs(countdownEnd).diff(dayjs(), 'second')
     if (remaining > 0) {
+      if (circularDisplay) {
+        return (
+          <>
+            <CircularProgressbar
+              maxValue={countdownDuration}
+              minValue={0}
+              strokeWidth={20}
+              styles={buildStyles({
+                pathColor: 'darkorange',
+                strokeLinecap: 'butt',
+                textColor: 'darkorange',
+                textSize: '30px',
+              })}
+              text={`${remaining}`}
+              value={countdownDuration - remaining}
+            />
+          </>
+        )
+      }
+
       return (
         <>
           <Icon name="clock" />
@@ -82,6 +107,7 @@ Countdown.defaultProps = {
   countdownStepSize: 1000,
   isActive: true,
   isCompleted: false,
+  circularDisplay: false,
 }
 
 export default Countdown

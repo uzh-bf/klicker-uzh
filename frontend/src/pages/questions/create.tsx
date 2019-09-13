@@ -7,7 +7,7 @@ import { convertToRaw } from 'draft-js'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import QuestionCreationForm from '../../components/forms/questionManagement/QuestionCreationForm'
 import { getPresignedURLs, uploadFilesToPresignedURLs } from '../../lib/utils/files'
-import QuestionListQuery from '../../graphql/queries/QuestionListQuery.graphql'
+import QuestionPoolQuery from '../../graphql/queries/QuestionPoolQuery.graphql'
 import TagListQuery from '../../graphql/queries/TagListQuery.graphql'
 import CreateQuestionMutation from '../../graphql/mutations/CreateQuestionMutation.graphql'
 import RequestPresignedURLMutation from '../../graphql/mutations/RequestPresignedURLMutation.graphql'
@@ -60,7 +60,7 @@ function CreateQuestion(): React.ReactElement {
           await createQuestion({
             // reload the list of questions and tags after creation
             // TODO: replace with optimistic updates
-            refetchQueries: [{ query: QuestionListQuery }, { query: TagListQuery }],
+            refetchQueries: [{ query: QuestionPoolQuery }, { query: TagListQuery }],
             variables: {
               content: JSON.stringify(convertToRaw(content.getCurrentContent())),
               files: fileEntities.map(({ file, fileName }): any => ({
