@@ -99,7 +99,7 @@ const FeaturesHeader = props => (
     className="productShowcaseSection"
     style={{ textAlign: 'center', marginBottom: '20px' }}
   >
-    <h2>New Features</h2>
+    <h2>Key Features</h2>
   </div>
 )
 
@@ -246,7 +246,6 @@ class Index extends React.Component {
         <HomeSplash language={language} />
 
         <div className="mainContainer">
-          <FeaturesHeader />
           <Features />
           <ChartsHeader />
           <Charts />

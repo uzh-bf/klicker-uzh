@@ -15,7 +15,7 @@ To archive a question and see all archived questions follow these steps:
 6. Check questions in the archive folder and click on the _Unarchive Qestions_ button.
 7. Click on _Show Pool_ (or _Question Pool_) to return to your question pool.
 
-All archived questions are no longer visible within the question pool.
+All archived questions are no longer visible within the question pool, unless the archive is displayed explicitly.
 
 ![Archive Question](assets/question_archive.png)
 ![Archived Question](assets/question_archived.png)

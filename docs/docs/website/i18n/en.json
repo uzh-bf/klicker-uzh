@@ -20,6 +20,21 @@
       "advanced/question_edit": {
         "title": "Edit a Question"
       },
+      "advanced/question_export": {
+        "title": "Export/Import of Questions"
+      },
+      "advanced/question_statistics": {
+        "title": "Export of Question Statistics"
+      },
+      "advanced/session_cancel": {
+        "title": "advanced/session_cancel"
+      },
+      "advanced/session_countdown": {
+        "title": "advanced/session_countdown"
+      },
+      "advanced/session_nonsequential": {
+        "title": "advanced/session_nonsequential"
+      },
       "advanced/settings": {
         "title": "User Settings"
       },

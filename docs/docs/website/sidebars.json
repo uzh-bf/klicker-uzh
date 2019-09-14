@@ -1,7 +1,7 @@
 {
   "docs": {
     "Introduction": ["introduction/getting_started", "introduction/concepts"],
-    "Basic Tutorial": [
+    "Tutorial": [
       "basics/question_pool",
       "basics/question_create",
       "basics/session_create",
@@ -11,10 +11,15 @@
       "basics/audience_view",
       "basics/evaluation"
     ],
-    "Advanced Tutorial": [
+    "Advanced Features": [
       "advanced/question_edit",
       "advanced/question_archive",
       "advanced/question_delete",
+      "advanced/question_export",
+      "advanced/question_statistics",
+      "advanced/session_countdown",
+      "advanced/session_nonsequential",
+      "advanced/session_block_reset",
       "advanced/language",
       "advanced/settings",
       "advanced/delete_account"

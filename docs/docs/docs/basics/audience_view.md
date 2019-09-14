@@ -5,7 +5,7 @@ title: Audience View
 
 This page is presented to the audience to answer questions (left side) and give instant feedback (right side) to the speaker. If you have followed the tutorial, you should see your question ready to be answered on the left side of the screen.
 
-**Notice that participants need to reload this page after the activation of a new question block.**
+**The view of participants will automatically update upon closing the current and/or opening the next question block.**
 
 Moving the sliders for speed and difficulty instantly sends feedback to the speaker. The input box on the bottom enables sending text feedback or questions to the speaker's session cockpit.
 
