@@ -7,6 +7,19 @@ hide_title: true
 
 # Frequently Asked Questions
 
+## What are the biggest changes released for HS19 (v1.3.0)?
+
+Preceding the fall semester of 2019, the KlickerUZH has been extended with many often asked for features:
+
+- Easy login and registration with SWITCH AAI
+- Export and import of questions
+- Export of simple question statistics
+- Export of evaluation results to CSV and PDF formats
+- Executing sessions nonsequentially to continue past blocks and/or skip future blocks
+- Setting countdowns for question blocks to automatically close them
+- Resetting results of question blocks to restart polling
+- Cancelling sessions (and later restarting them)
+
 ## What are the biggest news and changes coming with the release of KlickerUZH 2018?
 
 In 2017 and 2018, KlickerUZH was built on a completely new infrastructure in order to able to work in a forward-looking and dynamic way. In terms of functionalities, users can expect the following enhancements:
