@@ -21,7 +21,7 @@ const siteConfig = {
     { doc: 'introduction/getting_started', label: 'Docs' },
     { doc: 'faq/faq', label: 'FAQ' },
     {
-      href: 'https://github.com/uzh-bf/klicker-uzh/projects/1',
+      href: 'https://github.com/uzh-bf/klicker-uzh/projects/4',
       label: 'Roadmap',
     },
   ],

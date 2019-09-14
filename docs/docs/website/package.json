@@ -4,9 +4,9 @@
     "yarn": "YARN NO LONGER USED - use npm instead."
   },
   "devDependencies": {
-    "cross-env": "5.2.0",
-    "docusaurus": "1.7.2",
-    "nodemon": "1.18.10"
+    "cross-env": "5.2.1",
+    "docusaurus": "1.12.0",
+    "nodemon": "1.19.2"
   },
   "scripts": {
     "examples": "docusaurus-examples",
