@@ -42,7 +42,7 @@ function SessionEditForm({
   })
 
   useEffect((): void => {
-    if (!data.session) {
+    if (!data || !data.session) {
       return
     }
 
@@ -60,7 +60,7 @@ function SessionEditForm({
         })),
       }))
     )
-  }, [router.query.editSessionId, data.session])
+  }, [router.query.editSessionId, data])
 
   if (loading || !data.session) {
     return null
