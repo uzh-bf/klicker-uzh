@@ -26,6 +26,10 @@ function QuestionList({
   isArchiveActive,
   questions,
 }: Props): React.ReactElement {
+  if (!questions) {
+    return null
+  }
+
   if (questions.length === 0) {
     return (
       <Message info>
