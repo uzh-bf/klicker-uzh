@@ -2,7 +2,7 @@
 import React, { StrictMode } from 'react'
 import Router from 'next/router'
 import getConfig from 'next/config'
-import App, { Container } from 'next/app'
+import App from 'next/app'
 import HTML5Backend from 'react-dnd-html5-backend-cjs'
 import { ApolloProvider } from '@apollo/react-hooks'
 import { IntlProvider } from 'react-intl'
@@ -10,6 +10,9 @@ import { DndProvider } from 'react-dnd-cjs'
 import { ToastProvider } from 'react-toast-notifications'
 
 import withApolloClient from '../lib/withApolloClient'
+
+// HACK: import an empty css file such that pages with css files loaded don't become unroutable (e.g., pages with Countdown.js)
+import './app.css'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -110,19 +113,17 @@ class Klicker extends App {
     const now = Date.now()
 
     return (
-      <Container>
-        <DndProvider backend={HTML5Backend}>
-          <IntlProvider initialNow={now} locale={locale} messages={messages}>
-            <ApolloProvider client={apolloClient}>
-              <ToastProvider>
-                <StrictMode>
-                  <Component {...pageProps} error={this.state.error} />
-                </StrictMode>
-              </ToastProvider>
-            </ApolloProvider>
-          </IntlProvider>
-        </DndProvider>
-      </Container>
+      <DndProvider backend={HTML5Backend}>
+        <IntlProvider initialNow={now} locale={locale} messages={messages}>
+          <ApolloProvider client={apolloClient}>
+            <ToastProvider>
+              <StrictMode>
+                <Component {...pageProps} error={this.state.error} />
+              </StrictMode>
+            </ToastProvider>
+          </ApolloProvider>
+        </IntlProvider>
+      </DndProvider>
     )
   }
 }

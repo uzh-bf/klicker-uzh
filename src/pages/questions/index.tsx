@@ -78,6 +78,26 @@ function Index(): React.ReactElement {
     handleToggleArchive,
   } = useSortingAndFiltering()
 
+  const [index, setIndex] = useState()
+  useEffect((): any => {
+    if (!data || !data.questions) {
+      return
+    }
+
+    // build an index from the received questions
+    setIndex(buildIndex('questions', data.questions, ['title', 'createdAt']))
+  }, [data])
+
+  const [processedQuestions, setProcessedQuestions] = useState()
+  useEffect((): any => {
+    if (!data || !data.questions) {
+      return
+    }
+
+    // process questions according to filters and sort settings
+    setProcessedQuestions(processItems(data.questions, filters, sort, index))
+  }, [data, filters, sort])
+
   const { editSessionId, copy: copyMode } = router.query
 
   const onCreationModeToggle = (): void => {
@@ -313,12 +333,6 @@ function Index(): React.ReactElement {
             if (!data || loading) {
               return <Loader active />
             }
-
-            // build an index from the received questions
-            const index = buildIndex('questions', data.questions, ['title', 'createdAt'])
-
-            // process questions according to filters and sort settings
-            const processedQuestions = processItems(data.questions, filters, sort, index)
 
             return [
               <ActionBar
