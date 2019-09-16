@@ -33,7 +33,6 @@
       "contributing/contributing_guidelines",
       "contributing/contributing_setup"
     ],
-    "FAQ": ["faq/faq"],
-    "Other": ["other/troubleshooting"]
+    "FAQ": ["faq/faq"]
   }
 }
