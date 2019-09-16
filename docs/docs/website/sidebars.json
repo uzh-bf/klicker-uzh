@@ -12,17 +12,17 @@
       "basics/evaluation"
     ],
     "Advanced Features": [
-      "advanced/question_edit",
+      "advanced/delete_account",
+      "advanced/language",
+      "advanced/session_nonsequential",
       "advanced/question_archive",
+      "advanced/session_countdown",
+      "advanced/session_block_reset",
       "advanced/question_delete",
       "advanced/question_export",
+      "advanced/question_edit",
       "advanced/question_statistics",
-      "advanced/session_countdown",
-      "advanced/session_nonsequential",
-      "advanced/session_block_reset",
-      "advanced/language",
-      "advanced/settings",
-      "advanced/delete_account"
+      "advanced/settings"
     ],
     "Deployment": [
       "deployment/deployment_architecture",

@@ -2,10 +2,7 @@
 id: getting_started
 title: Getting Started
 sidebar_label: Getting Started
-hide_title: true
 ---
-
-# Getting Started
 
 Klicker UZH is a web application that supports the interaction between speakers and their audience in various ways. During a Klicker session (e.g., a lecture), a speaker may pose questions to be answered by participants over their devices. If so desired by the speaker, the audience may also rate the speed and difficulty of the session and provide open feedback. Next to the well-known speaker-to-audience interaction, this enables interactions initiated by the audience, which can serve as a useful orientation to the lecturer.
 

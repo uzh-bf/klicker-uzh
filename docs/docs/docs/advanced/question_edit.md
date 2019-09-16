@@ -1,6 +1,6 @@
 ---
 id: question_edit
-title: Edit a Question
+title: Question Modification
 ---
 
 On the [Question Pool](basics/question_pool.md) screen, click the _Edit_ button next to the question to edit it.

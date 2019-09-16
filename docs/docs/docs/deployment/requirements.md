@@ -1,10 +1,7 @@
 ---
 id: deployment_requirements
 title: Requirements
-hide_title: true
 ---
-
-# Requirements
 
 To be able to deploy the Klicker UZH as a private instance, several requirements need to be fulfilled. A supported version of the following dependencies need to be setup:
 

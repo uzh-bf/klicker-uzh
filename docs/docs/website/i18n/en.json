@@ -6,34 +6,34 @@
     "tagline": "Open source instant audience response system",
     "docs": {
       "advanced/delete_account": {
-        "title": "Deleting your account"
+        "title": "Account Deletion"
       },
       "advanced/language": {
         "title": "Language Settings"
       },
       "advanced/question_archive": {
-        "title": "Archive Questions"
+        "title": "Question Archival"
       },
       "advanced/question_delete": {
-        "title": "Delete Questions"
+        "title": "Question Deletion"
       },
       "advanced/question_edit": {
-        "title": "Edit a Question"
+        "title": "Question Modification"
       },
       "advanced/question_export": {
-        "title": "Export/Import of Questions"
+        "title": "Question Export/Import"
       },
       "advanced/question_statistics": {
-        "title": "Export of Question Statistics"
+        "title": "Question Statistics"
       },
-      "advanced/session_cancel": {
-        "title": "advanced/session_cancel"
+      "advanced/session_block_reset": {
+        "title": "Question Block Reset"
       },
       "advanced/session_countdown": {
-        "title": "advanced/session_countdown"
+        "title": "Question Block Countdown"
       },
       "advanced/session_nonsequential": {
-        "title": "advanced/session_nonsequential"
+        "title": "Nonsequential Session Execution"
       },
       "advanced/settings": {
         "title": "User Settings"
@@ -106,8 +106,8 @@
     },
     "categories": {
       "Introduction": "Introduction",
-      "Basic Tutorial": "Basic Tutorial",
-      "Advanced Tutorial": "Advanced Tutorial",
+      "Tutorial": "Tutorial",
+      "Advanced Features": "Advanced Features",
       "Deployment": "Deployment",
       "Contributing": "Contributing",
       "FAQ": "FAQ",

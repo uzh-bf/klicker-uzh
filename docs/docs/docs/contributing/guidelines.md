@@ -1,10 +1,7 @@
 ---
 id: contributing_guidelines
 title: Contributing Guidelines
-hide_title: true
 ---
-
-# Contributing Guidelines
 
 When contributing to any KlickerUZH service or project, please ensure that you follow our guidelines. These have mainly been set to ensure consistency within our projects and should not be a cause of inconvenience.
 

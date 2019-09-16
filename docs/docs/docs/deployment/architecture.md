@@ -2,10 +2,7 @@
 id: deployment_architecture
 title: Architecture Overview
 sidebar_label: Architecture
-hide_title: true
 ---
-
-# Architecture Overview
 
 The Klicker UZH is composed of two services: a frontend service that serves a React single-page application with Next.js, as well as a backend service that serves a GraphQL API with Express/Node.js and Apollo Server.
 

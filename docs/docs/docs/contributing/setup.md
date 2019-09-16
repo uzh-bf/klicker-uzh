@@ -1,10 +1,7 @@
 ---
 id: contributing_setup
 title: Development Setup
-hide_title: true
 ---
-
-# Development Setup
 
 To develop on the KlickerUZH, your development environment needs to be setup correctly. This guide will shortly walk you through all the dependencies that need to be installed, as well as through the steps from getting the application code to running the application in development mode.
 

@@ -1,10 +1,7 @@
 ---
 id: deployment_docker
 title: Deploying the Klicker UZH
-hide_title: true
 ---
-
-# Deploying the Klicker UZH
 
 As described in the section on the Klicker [Architecture](deployment/architecture.md), a Klicker application is composed of both an instance of _klicker-react_ for the frontend service as well as _klicker-api_ for the backend service.
 

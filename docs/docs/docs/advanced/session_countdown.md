@@ -1,6 +1,6 @@
 ---
 id: session_countdown
-title: Countdown for Question Block
+title: Question Block Countdown
 ---
 
 The [Running Session](basics/session_running.md) screen offers the option of setting a countdown timer for question blocks (separately), which will cause the question block to close automatically once the timer reaches zero. While the question block with an associated timer is active, the countdown will also be shown to participants in the audience view, which can serve as an incentive to participate.

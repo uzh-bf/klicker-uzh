@@ -1,10 +1,7 @@
 ---
 id: concepts
 title: Core Concepts
-hide_title: true
 ---
-
-# Core Concepts
 
 The Klicker UZH is based on a few concepts that are key to understand and use the application effectively. This section summarizes these concepts, allowing you to follow the remainder of the documentation more easily.
 

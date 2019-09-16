@@ -2,10 +2,7 @@
 id: faq
 title: Frequently Asked Questions
 sidebar_label: Overview
-hide_title: true
 ---
-
-# Frequently Asked Questions
 
 ## What are the biggest changes released for HS19 (v1.3.0)?
 
@@ -112,12 +109,4 @@ The functionalities of KlickerUZH should also be available on the tablet. We tri
 
 ## Where is my data stored?
 
-Your data is stored at a service partner of the University of Zurich based in Switzerland and will not be used for commercial purposes. The service partner agreed to the data protection guidelines of the University of Zurich. Likewise, the data will not be passed on or sold to third parties. Further details can be found in our detailed Privacy Policy or Terms of Service.
-
-<!-- ## How can I delete questions?
-
-As questions are used within sessions and the answers and evaluation graphs link to a specific question, _deleting a question is not possible_. However, it is possible to [archive questions](question_archive.md). Thus, the question is not deleted entirely but not visible within the question pool anymore. All archived questions can be viewed by setting the filter on the left to "Show Archived". All archived questions are marked with a red label.
-
-## How can I edit questions?
-
-As questions are used within sessions and the answers and evaluation graphs link to a specific question, _editing a question is only partially possible_. The question title and the tags are only used for organization. Therfore, it is possible to change the title and tags at any time. To change the question asked to the audience and the possible answers or input restrictions a [new version](question_edit.md) needs to be created. -->
+Your data is stored at a service partner (SWITCH) of the University of Zurich based in Switzerland and will not be used for commercial purposes. The service partner agreed to the data protection guidelines of the University of Zurich. Likewise, the data will not be passed on or sold to third parties. Further details can be found in our detailed Privacy Policy or Terms of Service.

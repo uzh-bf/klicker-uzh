@@ -1,6 +1,6 @@
 ---
 id: question_archive
-title: Archive Questions
+title: Question Archival
 ---
 
 Questions are used within sessions and answered by the audience. Also the evaluation is linked to the questions. If you don't need a question in your question pool anymore, you may archive it.
