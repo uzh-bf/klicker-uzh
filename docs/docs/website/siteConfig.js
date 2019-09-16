@@ -8,6 +8,10 @@
 const users = []
 
 const siteConfig = {
+  algolia: {
+    apiKey: 'b945507eeedf6bb6f02688350c0ecc4b',
+    indexName: 'klicker-uzh',
+  },
   title:
     '' /* empty, as we have the logo in the header title for your website */,
   title_index: 'Klicker',
