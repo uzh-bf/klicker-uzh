@@ -118,7 +118,7 @@
   "joinSession.allFeedbacks": "Alle Feedbacks",
   "joinSession.newFeedbackInput.label": "Neues offenes Feedback",
   "joinSession.noQuestionActive": "Keine Frage aktiv.",
-  "joinSession.noSessionActive": "Keine Session aktiv.",
+  "joinSession.noSessionActive": "Keine Session aktiv. Bitte laden Sie die Seite neu, sobald eine Session gestartet wurde.",
   "joinSession.questionArea.alreadyAnswered": "Sie haben bereits alle aktiven Fragen beantwortet.",
   "joinSession.questionArea.info.FREE": "Bitte eine Antwort eingeben:",
   "joinSession.questionArea.info.FREE_RANGE": "Bitte eine Antwort aus dem vorgegebenen Bereich auswählen:",

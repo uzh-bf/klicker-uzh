@@ -4,6 +4,7 @@ import { useRouter } from 'next/router'
 import React, { useState } from 'react'
 import { useMutation, useQuery } from '@apollo/react-hooks'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { Button } from 'semantic-ui-react'
 
 import StudentLayout from '../components/layouts/StudentLayout'
 import FeedbackArea from '../components/sessions/join/FeedbackArea'
@@ -47,8 +48,23 @@ function Join(): React.ReactElement {
 
   if (loading || error || !data.joinSession || data.joinSession.status === 'COMPLETED') {
     return (
-      <div>
-        <FormattedMessage defaultMessage="No session active." id="joinSession.noSessionActive" />
+      <div className="noSession">
+        <Button icon="refresh" onClick={() => window.location.reload()} />
+        <FormattedMessage
+          defaultMessage="No session active. Please reload the page once a session has been started."
+          id="joinSession.noSessionActive"
+        />
+        <style jsx>{`
+          .noSession {
+            padding: 1rem;
+            font-weight: bold;
+
+            :global(button) {
+              margin-right: 1rem;
+              margin-bottom: 1rem;
+            }
+          }
+        `}</style>
       </div>
     )
   }

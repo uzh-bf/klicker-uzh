@@ -120,7 +120,7 @@
   "joinSession.allFeedbacks": "All feedbacks",
   "joinSession.newFeedbackInput.label": "New open feedback",
   "joinSession.noQuestionActive": "No question active.",
-  "joinSession.noSessionActive": "No session active.",
+  "joinSession.noSessionActive": "No session active. Please reload the page once a session has been started.",
   "joinSession.questionArea.alreadyAnswered": "You have already answered all active questions.",
   "joinSession.questionArea.info.FREE": "Please enter your response below:",
   "joinSession.questionArea.info.FREE_RANGE": "Please choose a number from the given range below:",
