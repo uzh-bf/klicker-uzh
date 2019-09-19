@@ -1,8 +1,10 @@
 import React from 'react'
 import classNames from 'classnames'
 import _isFinite from 'lodash/isFinite'
-import { Icon, Popup } from 'semantic-ui-react'
+import { Icon } from 'semantic-ui-react'
 import { QUESTION_GROUPS } from '../../constants'
+
+import Ellipsis from '../common/Ellipsis'
 
 interface Props {
   children: string
@@ -44,14 +46,7 @@ function EvaluationListItem({
 
       {marker && reverse && <div className="marker">{marker}</div>}
       <div className="content">
-        {children.length > 70 ? (
-          <>
-            {children.slice(0, 70)}{' '}
-            <Popup content={children} trigger={<Icon name="ellipsis horizontal" size="small" />} wide="very" />
-          </>
-        ) : (
-          children
-        )}
+        <Ellipsis maxLength={40}>{children}</Ellipsis>
       </div>
 
       {QUESTION_GROUPS.WITH_PERCENTAGES.includes(questionType) && showGraph && _isFinite(percentage) && (
@@ -95,7 +90,8 @@ function EvaluationListItem({
 
           .content {
             flex: 1;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
+            hyphens: auto;
           }
 
           .percentage {

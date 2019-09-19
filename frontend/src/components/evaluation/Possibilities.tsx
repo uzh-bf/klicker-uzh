@@ -22,20 +22,6 @@ const defaultProps = {
 function Possibilities({ data, questionOptions, questionType, showGraph, showSolution }: Props): React.ReactElement {
   return (
     <div className="possibilities">
-      <h2>
-        {((): React.ReactNode => {
-          if (QUESTION_GROUPS.CHOICES.includes(questionType)) {
-            return <FormattedMessage defaultMessage="Choices" id="evaluation.possibilities.choices" />
-          }
-
-          if (questionType === QUESTION_TYPES.FREE_RANGE) {
-            return <FormattedMessage defaultMessage="Restrictions" id="evaluation.possibilities.restrictions" />
-          }
-
-          return null
-        })()}
-      </h2>
-
       {((): React.ReactElement => {
         if (QUESTION_GROUPS.CHOICES.includes(questionType)) {
           return (
