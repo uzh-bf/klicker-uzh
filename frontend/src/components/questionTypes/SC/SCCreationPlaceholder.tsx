@@ -23,6 +23,10 @@ function SCCreationPlaceholder({ handleSave }: Props): React.ReactElement {
   }
   const onNameChange = (e): void => setName(e.target.value)
   const onSave = (): void => {
+    if (!name || name.length === 0) {
+      setInputMode(false)
+      return
+    }
     handleSave({ correct, name })
     setCorrect(false)
     setInputMode(false)
