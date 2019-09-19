@@ -174,6 +174,22 @@ function QuestionEditForm({
 
           return (
             <Form error={success === false} success={success === true} onSubmit={handleFormSubmit}>
+              <div className="actionArea">
+                <Button className="discard" size="large" type="reset" onClick={handleDiscard}>
+                  <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+                </Button>
+                <Button
+                  primary
+                  className="save"
+                  disabled={!_isEmpty(errors) || _isEmpty(touched)}
+                  loading={loading && isSubmitting}
+                  size="large"
+                  type="submit"
+                >
+                  <FormattedMessage defaultMessage="Save" id="common.button.save" />
+                </Button>
+              </div>
+
               <div className="infoMessage">
                 <Message success>
                   <FormattedMessage defaultMessage="Successfully modified question." id="editQuestion.sucess" />
@@ -306,21 +322,6 @@ function QuestionEditForm({
                   }}
                 />
               </div>
-
-              <div className="actionArea">
-                <Button className="discard" type="reset" onClick={handleDiscard}>
-                  <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
-                </Button>
-                <Button
-                  primary
-                  className="save"
-                  disabled={!_isEmpty(errors) || _isEmpty(touched)}
-                  loading={loading && isSubmitting}
-                  type="submit"
-                >
-                  <FormattedMessage defaultMessage="Save" id="common.button.save" />
-                </Button>
-              </div>
             </Form>
           )
         }}
@@ -376,14 +377,14 @@ function QuestionEditForm({
               grid-template-columns: 1fr 4fr;
               grid-template-rows: auto;
               grid-template-areas:
+                'actions actions'
                 'message message'
                 'type title'
                 'tags tags'
                 'version version'
                 'content content'
                 'files files'
-                'options options'
-                'actions actions';
+                'options options';
 
               .questionInput {
                 margin-bottom: 0;
