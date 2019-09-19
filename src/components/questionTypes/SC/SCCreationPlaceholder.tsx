@@ -50,11 +50,7 @@ function SCCreationPlaceholder({ handleSave }: Props): React.ReactElement {
         {correct ? <Icon name="checkmark" /> : <Icon name="remove" />}
       </button>
 
-      <input ref={focusField} type="text" value={name} onChange={onNameChange} onKeyDown={onKeyPress} />
-
-      <button className="rightAction" type="button" onClick={onSave}>
-        <Icon name="save" />
-      </button>
+      <input ref={focusField} type="text" value={name} onBlur={onSave} onChange={onNameChange} onKeyDown={onKeyPress} />
 
       <style jsx>{styles}</style>
       <style jsx>{`
