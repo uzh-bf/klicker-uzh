@@ -15,6 +15,7 @@ module.exports = `
   type Session_Public {
     id: ID!
 
+    status: Session_Status!
     timeLimit: Int
     expiresAt: DateTime
     execution: Int

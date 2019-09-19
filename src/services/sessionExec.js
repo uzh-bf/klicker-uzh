@@ -348,12 +348,13 @@ const joinSession = async ({ shortname }) => {
     },
   })
 
-  const { id, activeBlock, blocks, settings, feedbacks } = runningSession
+  const { id, activeBlock, blocks, settings, feedbacks, status } = runningSession
   const currentBlock = blocks[activeBlock] || { instances: [] }
 
   return {
     id,
     settings,
+    status,
     expiresAt: currentBlock.expiresAt,
     timeLimit: currentBlock.timeLimit,
     // map active instances to be in the correct format
