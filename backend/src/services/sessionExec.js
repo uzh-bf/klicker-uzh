@@ -1,5 +1,6 @@
 const md5 = require('md5')
 const v8n = require('v8n')
+const _trim = require('lodash/trim')
 const { ForbiddenError, UserInputError } = require('apollo-server-express')
 
 const CFG = require('../klicker.conf.js')
@@ -141,6 +142,9 @@ const addResponse = async ({ ip, fp, instanceId, response }) => {
       throw new UserInputError('INVALID_RESPONSE')
     }
 
+    let resultKey
+    let resultValue
+
     // validate whether the numerical answer respects the defined ranges
     if (type === QUESTION_TYPES.FREE_RANGE) {
       // create a new base validator
@@ -166,17 +170,26 @@ const addResponse = async ({ ip, fp, instanceId, response }) => {
       } catch (e) {
         throw new UserInputError('RESPONSE_OUT_OF_RANGE')
       }
-    }
 
-    // hash the response value to get a unique identifier
-    const resultKey = md5(response.value)
+      // hash the response value to get a unique identifier
+      resultValue = response.value
+      resultKey = md5(resultValue)
+    } else {
+      if (response.length === 0) {
+        throw new UserInputError('RESPONSE_EMPTY')
+      }
+
+      // hash the response value to get a unique identifier
+      resultValue = _trim(response.value.toLowerCase())
+      resultKey = md5(resultValue)
+    }
 
     // hash the open response value and add it to the redis hash
     // or increment if the hashed value already exists in the cache
     transaction.hincrby(`instance:${instanceId}:results`, resultKey, 1)
 
     // cache the response value <-> hash mapping
-    transaction.hset(`instance:${instanceId}:responseHashes`, resultKey, response.value)
+    transaction.hset(`instance:${instanceId}:responseHashes`, resultKey, resultValue)
   }
 
   // if ip filtering is enabled, add the ip to the redis respondent set
