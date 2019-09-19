@@ -595,6 +595,8 @@ const sessionAction = async ({ sessionId, userId }, actionType) => {
 
   await Promise.all(promises)
 
+  await publishSessionUpdate({ sessionId: session.id, activeBlock: session.activeBlock })
+
   sendSlackNotification('sessions', `${actionType} session at /join/${user.shortname}`)
 
   return session
