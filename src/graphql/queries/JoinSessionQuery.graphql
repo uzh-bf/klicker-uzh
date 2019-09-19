@@ -3,6 +3,7 @@ query JoinSession($shortname: String!) {
     id
     timeLimit
     expiresAt
+    status
     settings {
       isFeedbackChannelActive
       isFeedbackChannelPublic
