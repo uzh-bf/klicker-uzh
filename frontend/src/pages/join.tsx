@@ -45,7 +45,7 @@ function Join(): React.ReactElement {
 
   const fingerprint = useFingerprint()
 
-  if (loading || error || !data.joinSession) {
+  if (loading || error || !data.joinSession || data.joinSession.status === 'COMPLETED') {
     return (
       <div>
         <FormattedMessage defaultMessage="No session active." id="joinSession.noSessionActive" />
@@ -174,6 +174,7 @@ function Join(): React.ReactElement {
           document: UpdatedSessionSubscription,
           updateQuery: (prev, { subscriptionData }): any => {
             if (!subscriptionData.data) return prev
+            console.log(subscriptionData)
             return { joinSession: subscriptionData.data.sessionUpdated }
           },
           variables: { sessionId },

@@ -3,6 +3,7 @@ subscription UpdateSession($sessionId: ID!) {
     id
     expiresAt
     timeLimit
+    status
     settings {
       isFeedbackChannelActive
       isFeedbackChannelPublic

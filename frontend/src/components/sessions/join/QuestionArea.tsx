@@ -11,7 +11,6 @@ import { convertFromRaw } from 'draft-js'
 import QuestionFiles from './QuestionFiles'
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
 import ActionMenu from '../../common/ActionMenu'
-import Collapser from '../../common/Collapser'
 import QuestionDescription from '../../questionTypes/QuestionDescription'
 import SCAnswerOptions from '../../questionTypes/SC/SCAnswerOptions'
 import FREEAnswerOptions from '../../questionTypes/FREE/FREEAnswerOptions'
@@ -74,7 +73,6 @@ function QuestionArea({
   const [remainingQuestions, setRemainingQuestions] = useState([])
 
   const [activeQuestion, setActiveQuestion] = useState((): any => remainingQuestions[0])
-  const [isCollapsed, setIsCollapsed] = useState(true)
   const [{ inputValue, inputValid, inputEmpty }, setInputState] = useState({
     inputEmpty: true,
     inputValid: false,
@@ -247,9 +245,7 @@ function QuestionArea({
             </div>
 
             <div className="collapser">
-              <Collapser collapsed={isCollapsed} handleCollapseToggle={(): void => setIsCollapsed(!isCollapsed)}>
-                <QuestionDescription content={contentState} description={description} />
-              </Collapser>
+              <QuestionDescription content={contentState} description={description} />
             </div>
 
             {publicRuntimeConfig.s3root && files.length > 0 && (
@@ -337,6 +333,23 @@ function QuestionArea({
 
           .collapser {
             border-top: 1px solid $color-primary;
+
+            flex: 0 0 auto;
+            line-height: 1.2rem;
+            margin: 0.5rem;
+            margin-bottom: 0.3rem;
+            min-height: 6rem;
+            overflow: hidden;
+            word-wrap: break-word;
+
+            :global(p) {
+              margin-top: 0;
+              margin-bottom: 0.6rem;
+            }
+
+            :global(p:last-child) {
+              margin-bottom: 0;
+            }
           }
 
           .files {
