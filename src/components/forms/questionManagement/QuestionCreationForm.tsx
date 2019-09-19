@@ -213,6 +213,27 @@ function QuestionCreationForm({
 
           return (
             <Form error={!_isEmpty(errors)} onSubmit={handleSubmit}>
+              <div className="questionActions">
+                <Button className="discard" size="large" type="reset" onClick={onDiscard}>
+                  {_some(touched) ? (
+                    <FormattedMessage defaultMessage="Discard Changes" id="common.button.discard" />
+                  ) : (
+                    <FormattedMessage defaultMessage="Return to Question Pool" id="createQuestion.button.backToPool" />
+                  )}
+                </Button>
+
+                <Button
+                  primary
+                  className="save"
+                  disabled={!_isEmpty(errors) || (!isInitialValid && _isEmpty(touched))}
+                  loading={isSubmitting}
+                  size="large"
+                  type="submit"
+                >
+                  <FormattedMessage defaultMessage="Save" id="common.button.save" />
+                </Button>
+              </div>
+
               <div className="questionInput questionTitle">
                 <FormikInput
                   autoFocus
@@ -297,26 +318,6 @@ function QuestionCreationForm({
                 />
               </div>
 
-              <div className="questionActions">
-                <Button className="discard" type="reset" onClick={onDiscard}>
-                  {_some(touched) ? (
-                    <FormattedMessage defaultMessage="Discard Changes" id="common.button.discard" />
-                  ) : (
-                    <FormattedMessage defaultMessage="Return to Question Pool" id="createQuestion.button.backToPool" />
-                  )}
-                </Button>
-
-                <Button
-                  primary
-                  className="save"
-                  disabled={!_isEmpty(errors) || (!isInitialValid && _isEmpty(touched))}
-                  loading={isSubmitting}
-                  type="submit"
-                >
-                  <FormattedMessage defaultMessage="Save" id="common.button.save" />
-                </Button>
-              </div>
-
               {_some(errors) && (
                 <Message error>
                   <List>
@@ -354,10 +355,6 @@ function QuestionCreationForm({
             margin-bottom: 0.5rem !important;
           }
 
-          .questionActions {
-            margin-top: 1rem;
-          }
-
           @supports (grid-gap: 1rem) {
             @include desktop-tablet-only {
               display: grid;
@@ -365,15 +362,14 @@ function QuestionCreationForm({
 
               grid-gap: 1rem;
               grid-template-columns: repeat(3, 1fr);
-              grid-template-rows: 5rem auto auto auto;
+              grid-template-rows: auto auto auto auto;
               grid-template-areas:
+                'actions actions actions'
                 'title title preview'
                 'type tags preview'
                 'content content content'
                 'files files files'
-                'options options options'
-                'actions actions actions';
-
+                'options options options';
               .questionInput,
               .questionPreview {
                 margin: 0;
