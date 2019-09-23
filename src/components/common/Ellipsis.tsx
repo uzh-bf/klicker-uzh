@@ -8,7 +8,7 @@ interface Props {
 }
 
 function Ellipsis({ children, maxLength, withPopup }: Props): React.ReactElement {
-  if (children.length <= maxLength) {
+  if (children.length <= maxLength || typeof children !== 'string') {
     return <span title={children}>{children}</span>
   }
   return (
