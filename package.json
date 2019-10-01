@@ -107,7 +107,7 @@
     "react-csv": "1.1.1",
     "react-d3-cloud": "0.7.0",
     "react-dnd-cjs": "9.3.9",
-    "react-dnd-html5-backend-cjs": "9.3.9",
+    "react-dnd-html5-backend-cjs": "9.4.0",
     "react-dom": "16.9.0",
     "react-dropzone": "10.1.8",
     "react-ga": "2.6.0",
