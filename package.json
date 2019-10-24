@@ -148,7 +148,7 @@
     "prettier": "1.18.2",
     "react-dnd-test-backend": "9.3.4",
     "react-perf-devtool": "3.1.8",
-    "react-test-renderer": "16.9.0",
+    "react-test-renderer": "16.11.0",
     "semantic-ui": "2.4.2",
     "semantic-ui-css": "2.4.1",
     "webpack-bundle-analyzer": "3.5.0",
