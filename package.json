@@ -157,8 +157,8 @@
   },
   "scripts": {
     "analyze": "cross-env BUNDLE_ANALYZE=both NODE_ENV=production next build src",
-    "build": "next build src",
-    "build:lang": "next build src && node ./src/lib/defaultLang",
+    "build": "next build",
+    "build:lang": "next build && node ./src/lib/defaultLang",
     "build:semantic": "cd src/lib/semantic && gulp build-css build-assets",
     "bundlesize": "bundlesize",
     "compile-queries": "persistgraphql src/graphql/ --add_typename",
@@ -176,7 +176,7 @@
     "test": "jest",
     "test:ci": "jest --coverage",
     "test:watch": "jest --watch",
-    "type-check": "tsc --noEmit -p src/tsconfig.json",
+    "type-check": "tsc --noEmit -p tsconfig.json",
     "type-check:watch": "npm run type-check -- --watch"
   },
   "jest": {
@@ -186,7 +186,7 @@
     ],
     "testPathIgnorePatterns": [
       "/node_modules/",
-      "src/.next"
+      "/.next"
     ]
   },
   "lint-staged": {
@@ -216,13 +216,13 @@
   },
   "bundlesize": [
     {
-      "path": "./src/.next/static/chunks/commons.*.js"
+      "path": "./.next/static/chunks/commons.*.js"
     },
     {
-      "path": "./src/.next/static/css/commons.*.css"
+      "path": "./.next/static/css/commons.*.css"
     },
     {
-      "path": "./src/.next/static/runtime/main-*.js"
+      "path": "./.next/static/runtime/main-*.js"
     }
   ],
   "husky": {
