@@ -218,7 +218,11 @@ describe('SessionExecService', () => {
           choices: [0],
         },
       })
-      expect(instanceWithResponse).toEqual([[null, 1], [null, 1], [null, 1]])
+      expect(instanceWithResponse).toEqual([
+        [null, 1],
+        [null, 1],
+        [null, 1],
+      ])
 
       const instanceWithResponses = await SessionExecService.addResponse({
         instanceId: session.activeInstances[activeInstance],
@@ -226,7 +230,11 @@ describe('SessionExecService', () => {
           choices: [1],
         },
       })
-      expect(instanceWithResponses).toEqual([[null, 1], [null, 2], [null, 2]])
+      expect(instanceWithResponses).toEqual([
+        [null, 1],
+        [null, 2],
+        [null, 2],
+      ])
 
       const instanceWithResponses2 = await SessionExecService.addResponse({
         instanceId: session.activeInstances[activeInstance],
@@ -234,7 +242,11 @@ describe('SessionExecService', () => {
           choices: [1],
         },
       })
-      expect(instanceWithResponses2).toEqual([[null, 2], [null, 3], [null, 3]])
+      expect(instanceWithResponses2).toEqual([
+        [null, 2],
+        [null, 3],
+        [null, 3],
+      ])
 
       const tooManyChoices = SessionExecService.addResponse({
         instanceId: session.activeInstances[activeInstance],
@@ -260,7 +272,11 @@ describe('SessionExecService', () => {
           choices: [0],
         },
       })
-      expect(instanceWithResponse).toEqual([[null, 1], [null, 1], [null, 1]])
+      expect(instanceWithResponse).toEqual([
+        [null, 1],
+        [null, 1],
+        [null, 1],
+      ])
 
       const instanceWithResponses = await SessionExecService.addResponse({
         instanceId: session.activeInstances[activeInstance],
@@ -268,7 +284,13 @@ describe('SessionExecService', () => {
           choices: [0, 1, 2],
         },
       })
-      expect(instanceWithResponses).toEqual([[null, 2], [null, 1], [null, 1], [null, 2], [null, 2]])
+      expect(instanceWithResponses).toEqual([
+        [null, 2],
+        [null, 1],
+        [null, 1],
+        [null, 2],
+        [null, 2],
+      ])
     })
 
     it('allows adding responses to a FREE question', async () => {
@@ -296,7 +318,12 @@ describe('SessionExecService', () => {
           value: 'SCHWEIZ',
         },
       })
-      expect(instanceWithResponse).toEqual([[null, 1], [null, 1], [null, 1], [null, 1]])
+      expect(instanceWithResponse).toEqual([
+        [null, 1],
+        [null, 1],
+        [null, 1],
+        [null, 1],
+      ])
 
       // add more responses
       const instanceWithResponses = await SessionExecService.addResponse({
@@ -305,7 +332,12 @@ describe('SessionExecService', () => {
           value: 'schwiiz...',
         },
       })
-      expect(instanceWithResponses).toEqual([[null, 1], [null, 1], [null, 2], [null, 2]])
+      expect(instanceWithResponses).toEqual([
+        [null, 1],
+        [null, 1],
+        [null, 2],
+        [null, 2],
+      ])
 
       const instanceWithResponses2 = await SessionExecService.addResponse({
         instanceId: session.activeInstances[activeInstance],
@@ -313,7 +345,12 @@ describe('SessionExecService', () => {
           value: 'SCHWEIZ',
         },
       })
-      expect(instanceWithResponses2).toEqual([[null, 2], [null, 0], [null, 3], [null, 3]])
+      expect(instanceWithResponses2).toEqual([
+        [null, 2],
+        [null, 0],
+        [null, 3],
+        [null, 3],
+      ])
     })
 
     it('allows adding responses to a FREE_RANGE question', async () => {
@@ -359,7 +396,12 @@ describe('SessionExecService', () => {
           value: 10,
         },
       })
-      expect(instanceWithResponse).toEqual([[null, 1], [null, 1], [null, 1], [null, 1]])
+      expect(instanceWithResponse).toEqual([
+        [null, 1],
+        [null, 1],
+        [null, 1],
+        [null, 1],
+      ])
 
       // add more responses
       const instanceWithResponses = await SessionExecService.addResponse({
@@ -368,7 +410,12 @@ describe('SessionExecService', () => {
           value: 14,
         },
       })
-      expect(instanceWithResponses).toEqual([[null, 1], [null, 1], [null, 2], [null, 2]])
+      expect(instanceWithResponses).toEqual([
+        [null, 1],
+        [null, 1],
+        [null, 2],
+        [null, 2],
+      ])
 
       const instanceWithResponses2 = await SessionExecService.addResponse({
         instanceId: session.activeInstances[activeInstance],
@@ -376,7 +423,12 @@ describe('SessionExecService', () => {
           value: 10,
         },
       })
-      expect(instanceWithResponses2).toEqual([[null, 2], [null, 0], [null, 3], [null, 3]])
+      expect(instanceWithResponses2).toEqual([
+        [null, 2],
+        [null, 0],
+        [null, 3],
+        [null, 3],
+      ])
     })
   })
 })
