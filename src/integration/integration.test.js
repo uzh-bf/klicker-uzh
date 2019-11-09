@@ -231,7 +231,10 @@ describe('Integration', () => {
               content: createContentState(questionContent),
               type: 'SC',
               options: {
-                choices: [{ correct: false, name: 'option1' }, { correct: true, name: 'option2' }],
+                choices: [
+                  { correct: false, name: 'option1' },
+                  { correct: true, name: 'option2' },
+                ],
                 randomized: false,
               },
               solution: {
@@ -399,7 +402,10 @@ describe('Integration', () => {
               title: 'Test SC #2',
               content: createContentState('This is a simple modified SC question.'),
               options: {
-                choices: [{ correct: true, name: 'option3' }, { correct: false, name: 'option4' }],
+                choices: [
+                  { correct: true, name: 'option3' },
+                  { correct: false, name: 'option4' },
+                ],
                 randomized: false,
               },
               solution: {
