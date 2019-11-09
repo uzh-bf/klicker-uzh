@@ -5,7 +5,7 @@ const withCSS = require('@zeit/next-css')
 const withSourceMaps = require('@zeit/next-source-maps')
 const { DEVELOPMENT_SERVER, PHASE_PRODUCTION_BUILD } = require('next/constants')
 
-const CFG = require('./klicker.conf.js')
+const CFG = require('./src/klicker.conf.js')
 
 const API_CFG = CFG.get('api')
 const APP_CFG = CFG.get('app')
@@ -110,11 +110,11 @@ module.exports = phase => {
       bundleAnalyzerConfig: {
         browser: {
           analyzerMode: 'static',
-          reportFilename: '../bundles/client.html',
+          reportFilename: 'bundles/client.html',
         },
         server: {
           analyzerMode: 'static',
-          reportFilename: '../../bundles/server.html',
+          reportFilename: '../bundles/server.html',
         },
       },
       ...config,
