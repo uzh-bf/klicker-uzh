@@ -316,11 +316,13 @@ const computeInstanceResults = async ({ id, question }) => {
 
   if (QUESTION_GROUPS.FREE.includes(question.type)) {
     // extract the response hashes from redis
-    const responseHashes = (await responseCache
-      .multi()
-      .hgetall(`instance:${id}:responseHashes`)
-      .del(`instance:${id}:responseHashes`)
-      .exec())[0][1]
+    const responseHashes = (
+      await responseCache
+        .multi()
+        .hgetall(`instance:${id}:responseHashes`)
+        .del(`instance:${id}:responseHashes`)
+        .exec()
+    )[0][1]
 
     return freeToResults(redisResults, responseHashes)
   }

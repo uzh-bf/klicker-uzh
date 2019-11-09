@@ -276,7 +276,10 @@ const modifyQuestion = async (questionId, userId, { title, tags, content, option
     // replace the files of the user
     if (files) {
       user.files = Array.from(new Set([...user.files, ...createdFileIds]))
-      promises.push(createdFiles.map(file => file.save()), modifiedFiles)
+      promises.push(
+        createdFiles.map(file => file.save()),
+        modifiedFiles
+      )
     }
 
     // push a new version into the question model

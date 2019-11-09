@@ -198,7 +198,10 @@ describe('QuestionService', () => {
       const modifiedQuestion = await QuestionService.modifyQuestion(questions.SC.id, questions.SC.user, {
         content: createContentState('This is the new description for version 2'),
         options: {
-          choices: [{ correct: true, name: 'option3' }, { correct: false, name: 'option4' }],
+          choices: [
+            { correct: true, name: 'option3' },
+            { correct: false, name: 'option4' },
+          ],
           randomized: true,
         },
       })
