@@ -15,11 +15,18 @@ describe('move', () => {
     },
     {
       id: 'bb',
-      questions: [{ content: 'bleb', id: 'qe' }, { content: 'blaa', id: 'qf' }, { content: 'blaaa', id: 'qg' }],
+      questions: [
+        { content: 'bleb', id: 'qe' },
+        { content: 'blaa', id: 'qf' },
+        { content: 'blaaa', id: 'qg' },
+      ],
     },
     {
       id: 'bc',
-      questions: [{ content: 'blaaaa', id: 'qh' }, { content: 'blabb', id: 'qi' }],
+      questions: [
+        { content: 'blaaaa', id: 'qh' },
+        { content: 'blabb', id: 'qi' },
+      ],
     },
     {
       id: 'bd',
