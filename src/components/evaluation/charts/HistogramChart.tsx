@@ -42,7 +42,11 @@ function HistogramChart({ brush, data, solution, statistics, numBins }: Props): 
   const max = +_maxBy(data, (o): number => +o.value).value
 
   // calculate the number of bins according to freedman diaconis
-  const defaultThreshold = thresholdFreedmanDiaconis(data.map((o): number => +o.value), min, max)
+  const defaultThreshold = thresholdFreedmanDiaconis(
+    data.map((o): number => +o.value),
+    min,
+    max
+  )
 
   // setup the D3 histogram generator
   // use either the passed number of bins or the default threshold

@@ -48,11 +48,6 @@ module.exports = convict({
       env: 'APP_PORT',
       format: 'port',
     },
-    staticPath: {
-      default: 'public',
-      env: 'APP_STATIC_PATH',
-      format: String,
-    },
     trustProxy: {
       default: false,
       env: 'APP_TRUST_PROXY',
