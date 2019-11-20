@@ -81,7 +81,7 @@
     "graphql-tag": "2.10.1",
     "gulp": "3.9.1",
     "helmet": "3.21.2",
-    "hoist-non-react-statics": "3.3.0",
+    "hoist-non-react-statics": "3.3.1",
     "intl": "1.2.5",
     "intl-pluralrules": "1.1.1",
     "ioredis": "4.14.1",
