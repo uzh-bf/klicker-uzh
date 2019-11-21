@@ -23,12 +23,6 @@ export default css`
 
     cursor: grab;
     margin-bottom: 0.5rem;
-
-    &:hover {
-      box-shadow: 0 0 0.2rem blue;
-      -webkit-transition: all 0.1s;
-      transition: all 0.1s;
-    }
   }
 
   .SCEditQuestionOption {
@@ -37,12 +31,15 @@ export default css`
     inline-size: -webkit-fill-available;
   }
 
-  .grabHandle {
-    flex: 0 0 auto;
-    padding: 0 0.5rem;
+  .moveHandles {
+    flex: 0 0 1rem;
+    padding: 0;
 
-    :global(i.grab.icon) {
-      color: grey;
+    :global(button.ui.basic.button) {
+      border: 0;
+      box-shadow: none;
+      padding: 0.5rem;
+      margin-right: 0;
     }
   }
 

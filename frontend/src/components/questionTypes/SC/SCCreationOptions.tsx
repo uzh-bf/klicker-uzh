@@ -1,12 +1,11 @@
 import React from 'react'
 import ReactTooltip from 'react-tooltip'
-import { DragDropContext, Droppable } from 'react-beautiful-dnd'
 import { FormattedMessage } from 'react-intl'
 import { Form, Icon } from 'semantic-ui-react'
 
 import SCCreationPlaceholder from './SCCreationPlaceholder'
 import SCCreationOption from './SCCreationOption'
-import { updateArrayElement, handleDragEnd, deleteArrayElement } from '../../../lib/utils/move'
+import { updateArrayElement, deleteArrayElement, reorder } from '../../../lib/utils/move'
 
 interface Props {
   dirty?: boolean
@@ -31,6 +30,8 @@ function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props)
     handleChange(updateArrayElement(choices, index, { name: newName }))
   }
   const onDeleteOption = (index: number): Function => (): void => handleChange(deleteArrayElement(choices, index))
+  const onMoveUp = (index: number): Function => (): void => handleChange(reorder(choices, index, index - 1))
+  const onMoveDown = (index: number): Function => (): void => handleChange(reorder(choices, index, index + 1))
 
   return (
     <div className="SCCreationOptions">
@@ -50,28 +51,21 @@ function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props)
         </ReactTooltip>
 
         <div className="options">
-          <DragDropContext onDragEnd={!disabled && handleDragEnd(choices, handleChange)}>
-            <Droppable droppableId="creationOptions">
-              {(provided): React.ReactElement => (
-                <div ref={provided.innerRef} {...provided.droppableProps}>
-                  {choices.map(
-                    ({ correct, name }, index): React.ReactElement => (
-                      <SCCreationOption
-                        correct={correct}
-                        disabled={disabled}
-                        handleCorrectToggle={onToggleOptionCorrect(index)}
-                        handleDelete={onDeleteOption(index)}
-                        handleSaveNewName={onSaveNewName(index)}
-                        index={index}
-                        name={name}
-                      />
-                    )
-                  )}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </DragDropContext>
+          {choices.map(
+            ({ correct, name }, index): React.ReactElement => (
+              <SCCreationOption
+                correct={correct}
+                disabled={disabled}
+                handleCorrectToggle={onToggleOptionCorrect(index)}
+                handleDelete={onDeleteOption(index)}
+                handleMoveDown={onMoveDown(index)}
+                handleMoveUp={onMoveUp(index)}
+                handleSaveNewName={onSaveNewName(index)}
+                index={index}
+                name={name}
+              />
+            )
+          )}
         </div>
 
         {!disabled && <SCCreationPlaceholder handleSave={onNewOption} />}
