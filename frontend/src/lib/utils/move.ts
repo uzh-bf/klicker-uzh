@@ -1,7 +1,7 @@
 import UUIDv4 from 'uuid/v4'
 import _get from 'lodash/get'
 
-export function insertArrayElement(array: any[], index: number, value: any, replace: boolean = false): any[] {
+export function insertArrayElement(array: any[], index: number, value: any, replace = false): any[] {
   return [...array.slice(0, index), value, ...array.slice(replace ? index + 1 : index)]
 }
 
@@ -64,9 +64,9 @@ export function addToBlock(blocks: any[], blockId: string | number, question: an
   const targetValue = { ...question, key: UUIDv4() }
   const dstQuestions: any[] = [..._get(blocks, `${dstBlockIx}.questions`)]
   const dstQuestionsWithTarget =
-    typeof targetIndex !== 'undefined'
+    typeof targetIndex !== 'undefined' && targetIndex !== null
       ? insertArrayElement(dstQuestions, targetIndex, targetValue)
-      : dstQuestions.push(targetValue)
+      : [...dstQuestions, targetValue]
 
   // update the target block
   const newBlocks = [...blocks]
@@ -90,12 +90,7 @@ export function appendNewBlock(blocks: any[], question: any): any[] {
 /**
  * Remove a question from a block
  */
-export function removeQuestion(
-  blocks: any[],
-  blockIndex: number,
-  questionIndex: number,
-  removeEmpty: boolean = false
-): any[] {
+export function removeQuestion(blocks: any[], blockIndex: number, questionIndex: number, removeEmpty = false): any[] {
   // delete the question with the specified index from the specified block
   const blocksWithoutQuestion = [...blocks]
   blocksWithoutQuestion[blockIndex].questions = deleteArrayElement(
@@ -121,7 +116,7 @@ export function moveQuestion(
   srcQuestionIx: number,
   dstBlockId: string,
   dstQuestionIx: number,
-  removeEmpty: boolean = false
+  removeEmpty = false
 ): any[] {
   console.log(blocks, srcBlockId, srcQuestionIx, dstBlockId, dstQuestionIx)
 
