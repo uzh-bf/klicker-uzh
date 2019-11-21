@@ -35,8 +35,10 @@ const sessionByPVQuery = (parentValue, args, { loaders }) => {
 
   return ensureLoaders(loaders).sessions.load(parentValue.runningSession)
 }
-const sessionsByPVQuery = (parentValue, args, { loaders }) =>
-  ensureLoaders(loaders).sessions.loadMany(parentValue.sessions)
+const sessionsByPVQuery = (parentValue, args, { loaders }) => {
+  const loader = ensureLoaders(loaders).sessions
+  return Promise.all(parentValue.sessions.map(session => loader.load(session)))
+}
 
 const runningSessionQuery = async (parentValue, args, { auth }) => {
   const user = await UserModel.findById(auth.sub).populate('runningSession')

@@ -12,7 +12,10 @@ const allTagsQuery = async (parentValue, args, { auth, loaders }) => {
 }
 
 const tagByIDQuery = (parentValue, { id }, { loaders }) => ensureLoaders(loaders).tags.load(id)
-const tagsByPVQuery = (parentValue, args, { loaders }) => ensureLoaders(loaders).tags.loadMany(parentValue.tags)
+const tagsByPVQuery = (parentValue, args, { loaders }) => {
+  const loader = ensureLoaders(loaders).tags
+  return Promise.all(parentValue.tags.map(tag => loader.load(tag)))
+}
 
 module.exports = {
   // queries

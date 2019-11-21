@@ -12,7 +12,8 @@ const responseCache = getRedis(3)
 const questionInstanceByIDQuery = (_, { id }, { loaders }) => ensureLoaders(loaders).questionInstances.load(id)
 
 const questionInstancesByPVQuery = async (parentValue, args, { loaders }) => {
-  const instances = await ensureLoaders(loaders).questionInstances.loadMany(parentValue.instances)
+  const loader = ensureLoaders(loaders).questionInstances
+  const instances = await Promise.all(parentValue.instances.map(instance => loader.load(instance)))
   return instances.filter(instance => !!instance)
 }
 
