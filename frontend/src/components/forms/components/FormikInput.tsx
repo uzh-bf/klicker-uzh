@@ -10,7 +10,7 @@ interface Props {
   actionPosition?: any
   autoFocus?: boolean
   disabled?: boolean
-  error?: string | FormikErrors<any>
+  error?: string | string[] | FormikErrors<any> | FormikErrors<any>[]
   errorMessage?: string
   handleBlur: any
   handleChange: any
@@ -25,7 +25,7 @@ interface Props {
   renderInput?: () => React.ReactElement
   required?: boolean
   tooltip?: string | React.ReactElement
-  touched: boolean | FormikTouched<any>
+  touched: boolean | FormikTouched<any> | FormikTouched<any>[]
   type?: string
   value: string | number
   width?: any // SemanticWIDTHSNUMBER
