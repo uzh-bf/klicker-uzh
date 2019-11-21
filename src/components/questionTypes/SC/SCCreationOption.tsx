@@ -1,7 +1,6 @@
 import React from 'react'
 import classNames from 'classnames'
-import { Icon, Input } from 'semantic-ui-react'
-import { Draggable } from 'react-beautiful-dnd'
+import { Icon, Button, Input } from 'semantic-ui-react'
 
 import styles from './styles'
 
@@ -11,6 +10,8 @@ interface Props {
   handleCorrectToggle: any
   handleDelete: any
   handleSaveNewName: any
+  handleMoveUp: any
+  handleMoveDown: any
   index: number
   name: string
 }
@@ -26,45 +27,38 @@ function SCCreationOption({
   handleCorrectToggle,
   handleDelete,
   handleSaveNewName,
-  index,
+  handleMoveUp,
+  handleMoveDown,
 }: Props): React.ReactElement {
   return (
-    <Draggable draggableId={`option-${name}`} index={index}>
-      {(provided): React.ReactElement => (
-        <div
-          className={classNames('option', { correct })}
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          {...provided.dragHandleProps}
-        >
-          <button className="leftAction" disabled={disabled} type="button" onClick={handleDelete}>
-            <Icon name="trash" />
-          </button>
+    <div className={classNames('option', { correct })}>
+      <button className="leftAction" disabled={disabled} type="button" onClick={handleDelete}>
+        <Icon name="trash" />
+      </button>
 
-          <button
-            className={classNames('toggle', { correct })}
-            disabled={disabled}
-            type="button"
-            onClick={handleCorrectToggle}
-          >
-            {correct ? <Icon name="checkmark" /> : <Icon name="remove" />}
-          </button>
+      <button
+        className={classNames('toggle', { correct })}
+        disabled={disabled}
+        type="button"
+        onClick={handleCorrectToggle}
+      >
+        {correct ? <Icon name="checkmark" /> : <Icon name="remove" />}
+      </button>
 
-          <Input
-            disabled={disabled}
-            type="text"
-            value={name}
-            onChange={(e): void => handleSaveNewName({ newName: e.target.value })}
-          />
+      <Input
+        disabled={disabled}
+        type="text"
+        value={name}
+        onChange={(e): void => handleSaveNewName({ newName: e.target.value })}
+      />
 
-          <div className="grabHandle">
-            <Icon name="grab" />
-          </div>
+      <div className="moveHandles">
+        <Button basic icon="arrow up" size="mini" type="button" onClick={handleMoveUp} />
+        <Button basic icon="arrow down" size="mini" type="button" onClick={handleMoveDown} />
+      </div>
 
-          <style jsx>{styles}</style>
-        </div>
-      )}
-    </Draggable>
+      <style jsx>{styles}</style>
+    </div>
   )
 }
 

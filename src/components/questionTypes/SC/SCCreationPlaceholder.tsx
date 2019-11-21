@@ -1,6 +1,6 @@
 import React, { RefObject, useState } from 'react'
 import classNames from 'classnames'
-import { Icon } from 'semantic-ui-react'
+import { Button, Icon } from 'semantic-ui-react'
 import styles from './styles'
 
 interface Props {
@@ -55,6 +55,11 @@ function SCCreationPlaceholder({ handleSave }: Props): React.ReactElement {
       </button>
 
       <input ref={focusField} type="text" value={name} onBlur={onSave} onChange={onNameChange} onKeyDown={onKeyPress} />
+
+      <div className="moveHandles">
+        <Button basic disabled icon="arrow up" size="mini" type="button" />
+        <Button basic disabled icon="arrow down" size="mini" type="button" />
+      </div>
 
       <style jsx>{styles}</style>
       <style jsx>{`
