@@ -1,7 +1,7 @@
 {
   "common.FREE.label": "Free Text (FT)",
   "common.FREE.short": "FT",
-  "common.FREE_RANGE.label": "Number Range (NR)",
+  "common.FREE_RANGE.label": "Numerical (NR)",
   "common.FREE_RANGE.short": "NR",
   "common.MC.label": "Multiple Choice (MC)",
   "common.MC.short": "MC",

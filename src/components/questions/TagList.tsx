@@ -100,7 +100,7 @@ function TagList({
         >
           <List.Icon name={activeType === QUESTION_TYPES.FREE_RANGE ? 'folder' : 'folder outline'} />
           <List.Content>
-            <FormattedMessage defaultMessage="Number Range (NR)" id="common.FREE_RANGE.label" />
+            <FormattedMessage defaultMessage="Numerical (NR)" id="common.FREE_RANGE.label" />
           </List.Content>
         </List.Item>
         <List.Header className="listHeader tags">
