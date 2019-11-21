@@ -22,8 +22,10 @@ const allQuestionsQuery = async (parentValue, args, { auth, loaders }) => {
 const questionQuery = async (parentValue, { id }, { loaders }) => ensureLoaders(loaders).questions.load(id)
 const questionByPVQuery = (parentValue, args, { loaders }) =>
   ensureLoaders(loaders).questions.load(parentValue.question)
-const questionsByPVQuery = (parentValue, args, { loaders }) =>
-  ensureLoaders(loaders).questions.loadMany(parentValue.questions)
+const questionsByPVQuery = (parentValue, args, { loaders }) => {
+  const loader = ensureLoaders(loaders).questions
+  return Promise.all(parentValue.questions.map(question => loader.load(question)))
+}
 
 /* ----- mutations ----- */
 const createQuestionMutation = (parentValue, { question }, { auth }) =>
