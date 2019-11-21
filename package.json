@@ -1,6 +1,6 @@
 {
   "name": "klicker-react",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "main": "server.js",
   "homepage": "https://www.klicker.uzh.ch",
   "repository": "https://github.com/uzh-bf/klicker-api.git",
