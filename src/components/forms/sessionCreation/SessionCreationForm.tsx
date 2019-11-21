@@ -4,7 +4,14 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { Button, Icon, Input } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import { object } from 'yup'
-import { removeQuestion, moveQuestion, addToBlock, appendNewBlock } from '../../../lib/utils/move'
+import {
+  removeQuestion,
+  moveQuestion,
+  addToBlock,
+  appendNewBlock,
+  reorder,
+  deleteArrayElement,
+} from '../../../lib/utils/move'
 
 import QuestionSingle from '../../questions/QuestionSingle'
 import QuestionDropzone from './QuestionDropzone'
@@ -96,6 +103,14 @@ function SessionCreationForm({
     handleSetSessionBlocks(removeQuestion(sessionBlocks, blockIndex, questionIndex, true))
   }
 
+  const onReorderBlocks = (startIndex, endIndex): void => {
+    handleSetSessionBlocks(reorder(sessionBlocks, startIndex, endIndex))
+  }
+
+  const onRemoveBlock = (blockIndex): void => {
+    handleSetSessionBlocks(deleteArrayElement(sessionBlocks, blockIndex))
+  }
+
   // synchronous validation
   // synchronously validate the schema
   const isValid = object()
@@ -115,8 +130,32 @@ function SessionCreationForm({
               (block, blockIndex): React.ReactElement => (
                 <div className="block" key={block.id}>
                   <div className="header">
-                    <div>{`Block ${blockIndex + 1}`}</div>
-                    <div>{`(${block.questions.length})`}</div>
+                    <div>
+                      {`Block ${blockIndex + 1}`} {`(${block.questions.length})`}
+                    </div>
+                    <div>
+                      <Button
+                        basic
+                        icon="arrow left"
+                        size="mini"
+                        type="button"
+                        onClick={(): void => onReorderBlocks(blockIndex, blockIndex - 1)}
+                      />
+                      <Button
+                        basic
+                        icon="trash"
+                        size="mini"
+                        type="button"
+                        onClick={(): void => onRemoveBlock(blockIndex)}
+                      />
+                      <Button
+                        basic
+                        icon="arrow right"
+                        size="mini"
+                        type="button"
+                        onClick={(): void => onReorderBlocks(blockIndex, blockIndex + 1)}
+                      />
+                    </div>
                   </div>
                   <Droppable droppableId={block.id}>
                     {(provided, snapshot): React.ReactElement => (
@@ -259,12 +298,20 @@ function SessionCreationForm({
               justify-content: space-between;
               font-weight: bold;
               text-align: center;
-              padding: 0 0.5rem;
+              align-items: center;
+              padding: 0 0.5rem 0.3rem 0.5rem;
+
+              :global(button.ui.basic.button) {
+                border: 0;
+                box-shadow: none;
+                padding: 0.5rem;
+                margin-right: 0;
+              }
             }
 
             .questions {
               flex: 1;
-              padding: 1rem 0.5rem 1rem 0.5rem;
+              padding: 0.5rem;
               overflow: auto;
               max-height: 23rem;
 
