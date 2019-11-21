@@ -12,7 +12,7 @@ const messages = defineMessages({
     id: 'common.FREE.label',
   },
   freeRangeLabel: {
-    defaultMessage: 'Number Range (NR)',
+    defaultMessage: 'Numerical (NR)',
     id: 'common.FREE_RANGE.label',
   },
   mcLabel: {
