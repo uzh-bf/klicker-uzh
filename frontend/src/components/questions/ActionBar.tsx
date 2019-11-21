@@ -229,12 +229,12 @@ function ActionBar({
           <>
             <Button icon disabled={itemCount === 0} labelPosition="left" size="small" onClick={onExportQuestions}>
               <Icon name="download" />
-              <FormattedMessage defaultMessage="Export" id="questionPool.button.exportQuestions" />
+              <FormattedMessage defaultMessage="Export (CSV)" id="questionPool.button.exportQuestions" />
             </Button>
 
             <Button icon disabled={itemCount === 0} labelPosition="left" size="small" onClick={onGetQuestionStatistics}>
               <Icon name="calculator" />
-              <FormattedMessage defaultMessage="Statistics" id="questionPool.button.computeStatistics" />
+              <FormattedMessage defaultMessage="Statistics (CSV)" id="questionPool.button.computeStatistics" />
             </Button>
 
             <Button
