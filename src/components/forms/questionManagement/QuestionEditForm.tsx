@@ -174,10 +174,10 @@ function QuestionEditForm({
             <Form error={success === false} success={success === true} onSubmit={handleFormSubmit}>
               <div className="actionArea">
                 <div className="infoMessage">
-                  <Message compact success size="mini">
+                  <Message compact success size="small">
                     <FormattedMessage defaultMessage="Successfully modified question." id="editQuestion.sucess" />
                   </Message>
-                  <Message compact error size="mini">
+                  <Message compact error size="small">
                     <FormattedMessage
                       defaultMessage="Could not modify question: {error}"
                       id="editQuestion.error"

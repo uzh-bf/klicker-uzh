@@ -1,12 +1,12 @@
 import React from 'react'
 import _truncate from 'lodash/truncate'
-import Link from 'next/link'
 
-import { Button, Icon } from 'semantic-ui-react'
+import { Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 import ListWithHeader from '../common/ListWithHeader'
 import QuestionDetailsModal from './QuestionDetailsModal'
+import QuestionDuplicationModal from './QuestionDuplicationModal'
 
 interface Props {
   description: string
@@ -36,14 +36,7 @@ function QuestionDetails({ questionId, description, lastUsed }: Props): React.Re
 
       <div className="column buttons">
         <QuestionDetailsModal questionId={questionId} />
-        <Link
-          as={`/questions/duplicate/${questionId}`}
-          href={{ pathname: '/questions/duplicate', query: { questionId } }}
-        >
-          <Button fluid>
-            <FormattedMessage defaultMessage="Duplicate" id="questionDetails.button.duplicate" />
-          </Button>
-        </Link>
+        <QuestionDuplicationModal questionId={questionId} />
       </div>
 
       <style jsx>{`
