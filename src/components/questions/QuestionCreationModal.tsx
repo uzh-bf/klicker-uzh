@@ -1,5 +1,4 @@
 import React from 'react'
-import { useRouter } from 'next/router'
 import { useQuery, useMutation } from '@apollo/react-hooks'
 import { convertToRaw } from 'draft-js'
 import { Icon, Dropdown, Modal } from 'semantic-ui-react'
@@ -13,14 +12,13 @@ import CreateQuestionMutation from '../../graphql/mutations/CreateQuestionMutati
 import RequestPresignedURLMutation from '../../graphql/mutations/RequestPresignedURLMutation.graphql'
 
 function QuestionCreationModal(): React.ReactElement {
-  const router = useRouter()
-
   const [createQuestion] = useMutation(CreateQuestionMutation)
   const [requestPresignedURL] = useMutation(RequestPresignedURLMutation)
   const { data, loading: tagsLoading } = useQuery(TagListQuery)
 
   return (
     <Modal
+      closeIcon
       size="large"
       trigger={
         <Dropdown.Item>
@@ -36,8 +34,6 @@ function QuestionCreationModal(): React.ReactElement {
         <QuestionCreationForm
           tags={data ? data.tags : []}
           tagsLoading={tagsLoading}
-          // handle discarding a new question
-          onDiscard={(): Promise<boolean> => router.push('/questions')}
           // handle submitting a new question
           onSubmit={async ({ content, options, tags, title, type, files }, { setSubmitting }): Promise<void> => {
             // request presigned urls and filenames for all files

@@ -128,7 +128,6 @@ interface Props {
     title: string
     type: any
   }
-  onDiscard: any
   onSubmit: any
   tags?: any[]
   tagsLoading: boolean
@@ -145,7 +144,6 @@ function QuestionCreationForm({
   tags,
   tagsLoading,
   onSubmit,
-  onDiscard,
 }: Props): React.ReactElement {
   const intl = useIntl()
 
@@ -214,14 +212,18 @@ function QuestionCreationForm({
           return (
             <Form error={!_isEmpty(errors)} onSubmit={handleSubmit}>
               <div className="questionActions">
-                <Button className="discard" size="large" type="reset" onClick={onDiscard}>
-                  {_some(touched) ? (
-                    <FormattedMessage defaultMessage="Discard Changes" id="common.button.discard" />
-                  ) : (
-                    <FormattedMessage defaultMessage="Return to Question Pool" id="createQuestion.button.backToPool" />
+                <div>
+                  {_some(errors) && (
+                    <Message error>
+                      <List>
+                        {errors.title && <List.Item>{intl.formatMessage(errors.title)}</List.Item>}
+                        {errors.tags && <List.Item>{intl.formatMessage(errors.tags)}</List.Item>}
+                        {errors.content && <List.Item>{intl.formatMessage(errors.content)}</List.Item>}
+                        {errors.options && <List.Item>{intl.formatMessage(errors.options)}</List.Item>}
+                      </List>
+                    </Message>
                   )}
-                </Button>
-
+                </div>
                 <Button
                   primary
                   className="save"
@@ -317,17 +319,6 @@ function QuestionCreationForm({
                   questionType={values.type}
                 />
               </div>
-
-              {_some(errors) && (
-                <Message error>
-                  <List>
-                    {errors.title && <List.Item>{intl.formatMessage(errors.title)}</List.Item>}
-                    {errors.tags && <List.Item>{intl.formatMessage(errors.tags)}</List.Item>}
-                    {errors.content && <List.Item>{intl.formatMessage(errors.content)}</List.Item>}
-                    {errors.options && <List.Item>{intl.formatMessage(errors.options)}</List.Item>}
-                  </List>
-                </Message>
-              )}
             </Form>
           )
         }}
@@ -406,6 +397,7 @@ function QuestionCreationForm({
                 grid-area: actions;
                 display: flex;
                 justify-content: space-between;
+                align-items: start;
 
                 :global(button) {
                   margin-right: 0;
