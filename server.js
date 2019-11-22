@@ -114,7 +114,7 @@ const app = next({ dev: isDev })
 const handle = app.getRequestHandler()
 
 // Get the supported languages by looking for translations in the `lang/` dir.
-const languages = glob.sync(`src/lang/*.json`).map(f => basename(f, '.json'))
+const languages = glob.sync(`./src/lang/*.json`).map(f => basename(f, '.json'))
 
 // We need to expose React Intl's locale data on the request for the user's
 // locale. This function will also cache the scripts by lang in memory.
@@ -132,7 +132,7 @@ function getLocaleDataScript(locale) {
 // locale. These will only be used in production, in dev the `defaultMessage` in
 // each message description in the source code will be used.
 function getMessages(locale) {
-  return require(`src/lang/${locale}.json`)
+  return require(`./src/lang/${locale}.json`)
 }
 
 function getLocale(req) {
