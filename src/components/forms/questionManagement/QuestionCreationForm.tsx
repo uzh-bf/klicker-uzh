@@ -340,8 +340,6 @@ function QuestionCreationForm({
           display: flex;
           flex-direction: column;
 
-          padding: 1rem;
-
           .questionInput,
           .questionPreview {
             margin-bottom: 1rem;
@@ -364,12 +362,12 @@ function QuestionCreationForm({
               grid-template-columns: repeat(3, 1fr);
               grid-template-rows: auto auto auto auto;
               grid-template-areas:
-                'actions actions actions'
                 'title title preview'
                 'type tags preview'
                 'content content content'
                 'files files files'
-                'options options options';
+                'options options options'
+                'actions actions actions';
               .questionInput,
               .questionPreview {
                 margin: 0;
@@ -413,11 +411,6 @@ function QuestionCreationForm({
                   margin-right: 0;
                 }
               }
-            }
-
-            @include desktop-only {
-              margin: 0 20%;
-              padding: 1rem 0;
             }
           }
         }
