@@ -214,7 +214,7 @@ function QuestionCreationForm({
               <div className="questionActions">
                 <div>
                   {_some(errors) && (
-                    <Message error>
+                    <Message compact error size="small">
                       <List>
                         {errors.title && <List.Item>{intl.formatMessage(errors.title)}</List.Item>}
                         {errors.tags && <List.Item>{intl.formatMessage(errors.tags)}</List.Item>}
@@ -396,11 +396,15 @@ function QuestionCreationForm({
               .questionActions {
                 grid-area: actions;
                 display: flex;
-                justify-content: space-between;
+                justify-content: flex-end;
                 align-items: start;
 
                 :global(button) {
                   margin-right: 0;
+                }
+
+                :global(.message) {
+                  margin-right: 1rem;
                 }
               }
             }

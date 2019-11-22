@@ -27,9 +27,9 @@ function QuestionCreationModal(): React.ReactElement {
         </Dropdown.Item>
       }
     >
-      <Modal.Header>
+      {/* <Modal.Header>
         <FormattedMessage defaultMessage="Create Question" id="createQuestion.title" />
-      </Modal.Header>
+      </Modal.Header> */}
       <Modal.Content>
         <QuestionCreationForm
           tags={data ? data.tags : []}

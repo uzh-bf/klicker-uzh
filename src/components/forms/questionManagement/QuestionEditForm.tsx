@@ -90,7 +90,6 @@ interface Props {
   editSuccess: any
   loading: boolean
   handleActiveVersionChange: any
-  handleDiscard: any
   handleSubmit: any
   allTags: any[]
   title: string
@@ -121,7 +120,6 @@ function QuestionEditForm({
   allTags,
   handleSubmit,
   handleActiveVersionChange,
-  handleDiscard,
   versions,
 }: Props): React.ReactElement {
   const intl = useIntl()
@@ -175,9 +173,19 @@ function QuestionEditForm({
           return (
             <Form error={success === false} success={success === true} onSubmit={handleFormSubmit}>
               <div className="actionArea">
-                <Button className="discard" size="large" type="reset" onClick={handleDiscard}>
-                  <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
-                </Button>
+                <div className="infoMessage">
+                  <Message compact success size="mini">
+                    <FormattedMessage defaultMessage="Successfully modified question." id="editQuestion.sucess" />
+                  </Message>
+                  <Message compact error size="mini">
+                    <FormattedMessage
+                      defaultMessage="Could not modify question: {error}"
+                      id="editQuestion.error"
+                      values={{ error: message }}
+                    />
+                  </Message>
+                </div>
+
                 <Button
                   primary
                   className="save"
@@ -190,18 +198,6 @@ function QuestionEditForm({
                 </Button>
               </div>
 
-              <div className="infoMessage">
-                <Message success>
-                  <FormattedMessage defaultMessage="Successfully modified question." id="editQuestion.sucess" />
-                </Message>
-                <Message error>
-                  <FormattedMessage
-                    defaultMessage="Could not modify question: {error}"
-                    id="editQuestion.error"
-                    values={{ error: message }}
-                  />
-                </Message>
-              </div>
               <div className="questionInput questionType">
                 <Form.Field>
                   <label htmlFor="type">
@@ -334,8 +330,6 @@ function QuestionEditForm({
           display: flex;
           flex-direction: column;
 
-          padding: 1rem;
-
           .questionInput,
           .questionPreview {
             margin-bottom: 1rem;
@@ -377,14 +371,16 @@ function QuestionEditForm({
               grid-template-columns: 1fr 4fr;
               grid-template-rows: auto;
               grid-template-areas:
-                'actions actions'
                 'message message'
                 'type title'
                 'tags tags'
                 'version version'
                 'content content'
                 'files files'
-                'options options';
+                'options options'
+                'actions actions';
+
+              margin-top: -1rem;
 
               .questionInput {
                 margin-bottom: 0;
@@ -435,13 +431,13 @@ function QuestionEditForm({
                 grid-area: actions;
                 flex-direction: row;
 
-                justify-content: space-between;
-              }
-            }
+                justify-content: flex-end;
+                align-items: start;
 
-            @include desktop-only {
-              margin: 0 20%;
-              padding: 1rem 0;
+                :global(.message) {
+                  margin-right: 1rem;
+                }
+              }
             }
           }
         }

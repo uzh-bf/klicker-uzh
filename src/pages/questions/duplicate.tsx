@@ -166,8 +166,6 @@ function DuplicateQuestion(): React.ReactElement {
             initialValues={initialValues}
             tags={tagList.tags}
             tagsLoading={tagsLoading}
-            // handle discarding a new question
-            onDiscard={(): Promise<boolean> => router.push('/questions')}
             // handle submitting a new question
             onSubmit={onSubmit}
           />

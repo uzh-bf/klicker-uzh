@@ -1,44 +1,30 @@
 import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/router'
-import { convertToRaw } from 'draft-js'
-import { defineMessages, useIntl } from 'react-intl'
 import { useQuery, useMutation } from '@apollo/react-hooks'
+import { convertToRaw } from 'draft-js'
+import { Loader, Button, Modal } from 'semantic-ui-react'
+import { FormattedMessage } from 'react-intl'
 import _pick from 'lodash/pick'
 import _omitBy from 'lodash/omitBy'
 import _isNil from 'lodash/isNil'
 import _get from 'lodash/get'
 
-import TeacherLayout from '../../components/layouts/TeacherLayout'
-import QuestionEditForm from '../../components/forms/questionManagement/QuestionEditForm'
-import { omitDeep, omitDeepArray } from '../../lib/utils/omitDeep'
+import QuestionEditForm from '../forms/questionManagement/QuestionEditForm'
 import { getPresignedURLs, uploadFilesToPresignedURLs } from '../../lib/utils/files'
-import useLogging from '../../lib/hooks/useLogging'
-import TagListQuery from '../../graphql/queries/TagListQuery.graphql'
 import QuestionPoolQuery from '../../graphql/queries/QuestionPoolQuery.graphql'
 import QuestionDetailsQuery from '../../graphql/queries/QuestionDetailsQuery.graphql'
+import TagListQuery from '../../graphql/queries/TagListQuery.graphql'
 import ModifyQuestionMutation from '../../graphql/mutations/ModifyQuestionMutation.graphql'
 import RequestPresignedURLMutation from '../../graphql/mutations/RequestPresignedURLMutation.graphql'
+import { omitDeep, omitDeepArray } from '../../lib/utils/omitDeep'
 
-const messages = defineMessages({
-  pageTitle: {
-    defaultMessage: 'Edit Question',
-    id: 'editQuestion.pageTitle',
-  },
-  title: {
-    defaultMessage: 'Edit Question',
-    id: 'editQuestion.title',
-  },
-})
+interface Props {
+  questionId: string
+}
 
-function EditQuestion(): React.ReactElement {
-  useLogging({ slaask: true })
-
-  const intl = useIntl()
-  const router = useRouter()
-
+function QuestionDetailsModal({ questionId }: Props): React.ReactElement {
   const { data: tagList, loading: tagsLoading } = useQuery(TagListQuery)
   const { data: questionDetails, loading: questionLoading } = useQuery(QuestionDetailsQuery, {
-    variables: { id: router.query.questionId },
+    variables: { id: questionId },
   })
   const [editQuestion, { loading, data, error }] = useMutation(ModifyQuestionMutation)
   const [requestPresignedURL] = useMutation(RequestPresignedURLMutation)
@@ -87,7 +73,7 @@ function EditQuestion(): React.ReactElement {
       update: (store, { data: { modifyQuestion } }): void => {
         const query = {
           query: QuestionDetailsQuery,
-          variables: { id: router.query.questionId },
+          variables: { id: questionId },
         }
 
         // get the data from the store
@@ -131,49 +117,56 @@ function EditQuestion(): React.ReactElement {
   }
 
   return (
-    <TeacherLayout
-      navbar={{
-        title: intl.formatMessage(messages.title),
-      }}
-      pageTitle={intl.formatMessage(messages.pageTitle)}
-      sidebar={{ activeItem: 'editQuestion' }}
+    <Modal
+      closeIcon
+      size="large"
+      trigger={
+        <Button fluid>
+          <FormattedMessage defaultMessage="View / Edit" id="questionDetails.button.edit" />
+        </Button>
+      }
     >
-      {(): React.ReactElement => {
-        // if the tags or the question is still loading, return null
-        if (tagsLoading || questionLoading || !tagList.tags || !questionDetails.question) {
-          return null
-        }
+      {/* <Modal.Header>
+        <FormattedMessage defaultMessage="Edit Question" id="editQuestion.title" />
+      </Modal.Header> */}
+      <Modal.Content>
+        {((): React.ReactElement => {
+          // if the tags or the question is still loading, return null
+          if (tagsLoading || questionLoading || !tagList.tags || !questionDetails.question) {
+            console.log(tagsLoading, questionLoading, tagList, questionDetails)
+            return <Loader active />
+          }
 
-        // if everything was loaded successfully, render the edit form
-        const { id, tags, title, type, versions } = _pick(questionDetails.question, [
-          'id',
-          'tags',
-          'title',
-          'type',
-          'versions',
-        ])
+          // if everything was loaded successfully, render the edit form
+          const { id, tags, title, type, versions } = _pick(questionDetails.question, [
+            'id',
+            'tags',
+            'title',
+            'type',
+            'versions',
+          ])
 
-        return (
-          <QuestionEditForm
-            activeVersion={activeVersion}
-            allTags={tagList.tags}
-            editSuccess={{
-              message: (error && error.message) || null,
-              success: (data && !error) || null,
-            }}
-            handleActiveVersionChange={setActiveVersion}
-            handleDiscard={(): Promise<boolean> => router.push('/questions')}
-            handleSubmit={onSubmit(id)}
-            loading={loading}
-            questionTags={tags}
-            title={title}
-            type={type}
-            versions={versions}
-          />
-        )
-      }}
-    </TeacherLayout>
+          return (
+            <QuestionEditForm
+              activeVersion={activeVersion}
+              allTags={tagList.tags}
+              editSuccess={{
+                message: (error && error.message) || null,
+                success: (data && !error) || null,
+              }}
+              handleActiveVersionChange={setActiveVersion}
+              handleSubmit={onSubmit(id)}
+              loading={loading}
+              questionTags={tags}
+              title={title}
+              type={type}
+              versions={versions}
+            />
+          )
+        })()}
+      </Modal.Content>
+    </Modal>
   )
 }
 
-export default EditQuestion
+export default QuestionDetailsModal
