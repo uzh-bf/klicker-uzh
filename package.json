@@ -97,7 +97,7 @@
     "morgan": "1.9.1",
     "next": "9.1.4",
     "node-sass": "4.13.0",
-    "nodemon": "2.0.0",
+    "nodemon": "2.0.1",
     "prismjs": "1.17.1",
     "qrcode.react": "1.0.0",
     "raven-js": "3.27.2",
