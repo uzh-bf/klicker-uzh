@@ -128,8 +128,8 @@ interface Props {
     title: string
     type: any
   }
-  onDiscard: any
   onSubmit: any
+  onDiscard: () => void
   tags?: any[]
   tagsLoading: boolean
 }
@@ -214,14 +214,21 @@ function QuestionCreationForm({
           return (
             <Form error={!_isEmpty(errors)} onSubmit={handleSubmit}>
               <div className="questionActions">
-                <Button className="discard" size="large" type="reset" onClick={onDiscard}>
-                  {_some(touched) ? (
-                    <FormattedMessage defaultMessage="Discard Changes" id="common.button.discard" />
-                  ) : (
-                    <FormattedMessage defaultMessage="Return to Question Pool" id="createQuestion.button.backToPool" />
-                  )}
+                <Button className="discard" size="large" type="button" onClick={onDiscard}>
+                  <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
                 </Button>
-
+                <div>
+                  {_some(errors) && (
+                    <Message compact error size="small">
+                      <List>
+                        {errors.title && <List.Item>{intl.formatMessage(errors.title)}</List.Item>}
+                        {errors.tags && <List.Item>{intl.formatMessage(errors.tags)}</List.Item>}
+                        {errors.content && <List.Item>{intl.formatMessage(errors.content)}</List.Item>}
+                        {errors.options && <List.Item>{intl.formatMessage(errors.options)}</List.Item>}
+                      </List>
+                    </Message>
+                  )}
+                </div>
                 <Button
                   primary
                   className="save"
@@ -317,17 +324,6 @@ function QuestionCreationForm({
                   questionType={values.type}
                 />
               </div>
-
-              {_some(errors) && (
-                <Message error>
-                  <List>
-                    {errors.title && <List.Item>{intl.formatMessage(errors.title)}</List.Item>}
-                    {errors.tags && <List.Item>{intl.formatMessage(errors.tags)}</List.Item>}
-                    {errors.content && <List.Item>{intl.formatMessage(errors.content)}</List.Item>}
-                    {errors.options && <List.Item>{intl.formatMessage(errors.options)}</List.Item>}
-                  </List>
-                </Message>
-              )}
             </Form>
           )
         }}
@@ -339,8 +335,6 @@ function QuestionCreationForm({
         .questionCreationForm > :global(form) {
           display: flex;
           flex-direction: column;
-
-          padding: 1rem;
 
           .questionInput,
           .questionPreview {
@@ -364,12 +358,12 @@ function QuestionCreationForm({
               grid-template-columns: repeat(3, 1fr);
               grid-template-rows: auto auto auto auto;
               grid-template-areas:
-                'actions actions actions'
                 'title title preview'
                 'type tags preview'
                 'content content content'
                 'files files files'
-                'options options options';
+                'options options options'
+                'actions actions actions';
               .questionInput,
               .questionPreview {
                 margin: 0;
@@ -408,16 +402,16 @@ function QuestionCreationForm({
                 grid-area: actions;
                 display: flex;
                 justify-content: space-between;
+                align-items: start;
 
                 :global(button) {
                   margin-right: 0;
                 }
-              }
-            }
 
-            @include desktop-only {
-              margin: 0 20%;
-              padding: 1rem 0;
+                :global(.message) {
+                  margin-right: 1rem;
+                }
+              }
             }
           }
         }

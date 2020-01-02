@@ -1,11 +1,12 @@
 import React from 'react'
 import _truncate from 'lodash/truncate'
-import Link from 'next/link'
 
-import { Button, Icon } from 'semantic-ui-react'
+import { Icon } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 import ListWithHeader from '../common/ListWithHeader'
+import QuestionDetailsModal from './QuestionDetailsModal'
+import QuestionDuplicationModal from './QuestionDuplicationModal'
 
 interface Props {
   description: string
@@ -27,31 +28,15 @@ function QuestionDetails({ questionId, description, lastUsed }: Props): React.Re
       <div className="column options" />
 
       <div className="column lastUsed">
-        <ListWithHeader items={lastUsed.length > 0 ? lastUsed : ['-']} limit={2}>
+        <ListWithHeader items={lastUsed.length > 0 ? lastUsed.reverse() : ['-']} limit={2}>
           <Icon name="history" />
           <FormattedMessage defaultMessage="Usage history" id="questionDetails.usageHistory" />
         </ListWithHeader>
       </div>
 
       <div className="column buttons">
-        <Link as={`/questions/${questionId}`} href={{ pathname: '/questions/details', query: { questionId } }}>
-          <Button fluid>
-            <FormattedMessage defaultMessage="View" id="questionDetails.button.view" />
-          </Button>
-        </Link>
-        <Link as={`/questions/${questionId}`} href={{ pathname: '/questions/details', query: { questionId } }}>
-          <Button fluid>
-            <FormattedMessage defaultMessage="Edit" id="questionDetails.button.edit" />
-          </Button>
-        </Link>
-        <Link
-          as={`/questions/duplicate/${questionId}`}
-          href={{ pathname: '/questions/duplicate', query: { questionId } }}
-        >
-          <Button fluid>
-            <FormattedMessage defaultMessage="Duplicate" id="questionDetails.button.duplicate" />
-          </Button>
-        </Link>
+        <QuestionDetailsModal questionId={questionId} />
+        <QuestionDuplicationModal questionId={questionId} />
       </div>
 
       <style jsx>{`
