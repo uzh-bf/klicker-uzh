@@ -135,7 +135,6 @@ function QuestionDetailsModal({ questionId }: Props): React.ReactElement {
         {((): React.ReactElement => {
           // if the tags or the question is still loading, return null
           if (tagsLoading || questionLoading || !tagList.tags || !questionDetails.question) {
-            console.log(tagsLoading, questionLoading, tagList, questionDetails)
             return <Loader active />
           }
 
