@@ -27,7 +27,7 @@ function SessionArea({ sessionId }: Props): React.ReactElement {
   const intl = useIntl()
   return (
     <>
-      <Menu.Item button>
+      <Menu.Item>
         <Button
           icon
           as="a"
