@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import _pick from 'lodash/pick'
 import _omitBy from 'lodash/omitBy'
 import _isNil from 'lodash/isNil'
@@ -22,6 +22,7 @@ interface Props {
 }
 
 function QuestionDuplicationModal({ questionId }: Props): React.ReactElement {
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const [createQuestion] = useMutation(CreateQuestionMutation)
   const [requestPresignedURL] = useMutation(RequestPresignedURLMutation)
   const { data: questionDetails, loading: questionLoading } = useQuery(QuestionDetailsQuery, {
@@ -77,13 +78,14 @@ function QuestionDuplicationModal({ questionId }: Props): React.ReactElement {
 
   return (
     <Modal
-      closeIcon
+      open={isModalOpen}
       size="large"
       trigger={
-        <Button fluid>
+        <Button fluid onClick={(): void => setIsModalOpen(true)}>
           <FormattedMessage defaultMessage="Duplicate" id="questionDetails.button.duplicate" />
         </Button>
       }
+      onClose={(): void => setIsModalOpen(false)}
     >
       {/* <Modal.Header>
         <FormattedMessage defaultMessage="Create Question" id="createQuestion.title" />
@@ -156,6 +158,7 @@ function QuestionDuplicationModal({ questionId }: Props): React.ReactElement {
               initialValues={initialValues}
               tags={tagList.tags}
               tagsLoading={tagsLoading}
+              onDiscard={(): void => setIsModalOpen(false)}
               // handle submitting a new question
               onSubmit={onSubmit}
             />

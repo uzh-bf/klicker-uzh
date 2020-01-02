@@ -22,6 +22,7 @@ interface Props {
 }
 
 function QuestionDetailsModal({ questionId }: Props): React.ReactElement {
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const { data: tagList, loading: tagsLoading } = useQuery(TagListQuery)
   const { data: questionDetails, loading: questionLoading } = useQuery(QuestionDetailsQuery, {
     variables: { id: questionId },
@@ -118,13 +119,14 @@ function QuestionDetailsModal({ questionId }: Props): React.ReactElement {
 
   return (
     <Modal
-      closeIcon
+      open={isModalOpen}
       size="large"
       trigger={
-        <Button fluid>
+        <Button fluid onClick={(): void => setIsModalOpen(true)}>
           <FormattedMessage defaultMessage="View / Edit" id="questionDetails.button.edit" />
         </Button>
       }
+      onClose={(): void => setIsModalOpen(false)}
     >
       {/* <Modal.Header>
         <FormattedMessage defaultMessage="Edit Question" id="editQuestion.title" />
@@ -155,6 +157,7 @@ function QuestionDetailsModal({ questionId }: Props): React.ReactElement {
                 success: (data && !error) || null,
               }}
               handleActiveVersionChange={setActiveVersion}
+              handleDiscard={(): void => setIsModalOpen(false)}
               handleSubmit={onSubmit(id)}
               loading={loading}
               questionTags={tags}

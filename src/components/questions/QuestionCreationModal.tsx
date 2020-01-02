@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/react-hooks'
 import { convertToRaw } from 'draft-js'
 import { Icon, Dropdown, Modal } from 'semantic-ui-react'
@@ -12,20 +12,22 @@ import CreateQuestionMutation from '../../graphql/mutations/CreateQuestionMutati
 import RequestPresignedURLMutation from '../../graphql/mutations/RequestPresignedURLMutation.graphql'
 
 function QuestionCreationModal(): React.ReactElement {
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const [createQuestion] = useMutation(CreateQuestionMutation)
   const [requestPresignedURL] = useMutation(RequestPresignedURLMutation)
   const { data, loading: tagsLoading } = useQuery(TagListQuery)
 
   return (
     <Modal
-      closeIcon
+      open={isModalOpen}
       size="large"
       trigger={
-        <Dropdown.Item>
+        <Dropdown.Item onClick={(): void => setIsModalOpen(true)}>
           <Icon name="plus" />
           <FormattedMessage defaultMessage="Create Question" id="questionPool.button.createQuestion" />
         </Dropdown.Item>
       }
+      onClose={(): void => setIsModalOpen(false)}
     >
       {/* <Modal.Header>
         <FormattedMessage defaultMessage="Create Question" id="createQuestion.title" />
@@ -34,6 +36,7 @@ function QuestionCreationModal(): React.ReactElement {
         <QuestionCreationForm
           tags={data ? data.tags : []}
           tagsLoading={tagsLoading}
+          onDiscard={(): void => setIsModalOpen(false)}
           // handle submitting a new question
           onSubmit={async ({ content, options, tags, title, type, files }, { setSubmitting }): Promise<void> => {
             // request presigned urls and filenames for all files

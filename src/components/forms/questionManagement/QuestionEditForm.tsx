@@ -91,6 +91,7 @@ interface Props {
   loading: boolean
   handleActiveVersionChange: any
   handleSubmit: any
+  handleDiscard: () => void
   allTags: any[]
   title: string
   questionTags: any[]
@@ -119,6 +120,7 @@ function QuestionEditForm({
   type,
   allTags,
   handleSubmit,
+  handleDiscard,
   handleActiveVersionChange,
   versions,
 }: Props): React.ReactElement {
@@ -173,6 +175,10 @@ function QuestionEditForm({
           return (
             <Form error={success === false} success={success === true} onSubmit={handleFormSubmit}>
               <div className="actionArea">
+                <Button className="discard" size="large" type="button" onClick={handleDiscard}>
+                  <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+                </Button>
+
                 <div className="infoMessage">
                   <Message compact success size="small">
                     <FormattedMessage defaultMessage="Successfully modified question." id="editQuestion.sucess" />
@@ -431,7 +437,7 @@ function QuestionEditForm({
                 grid-area: actions;
                 flex-direction: row;
 
-                justify-content: flex-end;
+                justify-content: space-between;
                 align-items: start;
 
                 :global(.message) {

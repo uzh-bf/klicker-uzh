@@ -129,6 +129,7 @@ interface Props {
     type: any
   }
   onSubmit: any
+  onDiscard: () => void
   tags?: any[]
   tagsLoading: boolean
 }
@@ -144,6 +145,7 @@ function QuestionCreationForm({
   tags,
   tagsLoading,
   onSubmit,
+  onDiscard,
 }: Props): React.ReactElement {
   const intl = useIntl()
 
@@ -212,6 +214,9 @@ function QuestionCreationForm({
           return (
             <Form error={!_isEmpty(errors)} onSubmit={handleSubmit}>
               <div className="questionActions">
+                <Button className="discard" size="large" type="button" onClick={onDiscard}>
+                  <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+                </Button>
                 <div>
                   {_some(errors) && (
                     <Message compact error size="small">
@@ -396,7 +401,7 @@ function QuestionCreationForm({
               .questionActions {
                 grid-area: actions;
                 display: flex;
-                justify-content: flex-end;
+                justify-content: space-between;
                 align-items: start;
 
                 :global(button) {
