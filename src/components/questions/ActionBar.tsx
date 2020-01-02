@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react'
-import Link from 'next/link'
 import _sortBy from 'lodash/sortBy'
 import dayjs from 'dayjs'
 import { saveAs } from 'file-saver'
@@ -9,6 +8,7 @@ import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Confirm, Icon, Label, Dropdown, Checkbox } from 'semantic-ui-react'
 import { useMutation } from '@apollo/react-hooks'
 
+import QuestionCreationModal from './QuestionCreationModal'
 import UploadModal from './UploadModal'
 import QuestionStatisticsMutation from '../../graphql/mutations/QuestionStatisticsMutation.graphql'
 import ExportQuestionsMutation from '../../graphql/mutations/ExportQuestionsMutation.graphql'
@@ -174,12 +174,7 @@ function ActionBar({
               <Icon name="plus" />
               <FormattedMessage defaultMessage="Create Session" id="questionPool.button.createSession" />
             </Dropdown.Item>
-            <Link href="/questions/create">
-              <Dropdown.Item>
-                <Icon name="plus" />
-                <FormattedMessage defaultMessage="Create Question" id="questionPool.button.createQuestion" />
-              </Dropdown.Item>
-            </Link>
+            <QuestionCreationModal />
             <UploadModal
               trigger={
                 <Dropdown.Item>
