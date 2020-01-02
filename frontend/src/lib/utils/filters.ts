@@ -57,7 +57,7 @@ export function filterQuestions(questions: any[], filters: any, index: any): any
   )
 
   // if a title (query) was given, search the index with it
-  if (filters.title) {
+  if (index && filters.title) {
     results = index.search(filters.title)
   }
 

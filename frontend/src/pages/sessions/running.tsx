@@ -5,6 +5,7 @@ import _pick from 'lodash/pick'
 import { useRouter } from 'next/router'
 import { useQuery, useMutation } from '@apollo/react-hooks'
 import { defineMessages, useIntl } from 'react-intl'
+import { useToasts } from 'react-toast-notifications'
 
 import useLogging from '../../lib/hooks/useLogging'
 import ConfusionBarometer from '../../components/confusion/ConfusionBarometer'
@@ -51,6 +52,7 @@ function Running(): React.ReactElement {
 
   const intl = useIntl()
   const router = useRouter()
+  const { addToast } = useToasts()
 
   useEffect((): void => {
     router.prefetch('/sessions/evaluation')
@@ -153,8 +155,11 @@ function Running(): React.ReactElement {
 
                   router.push('/sessions')
                 }}
-                handleResetQuestionBlock={(blockId): void => {
-                  resetQuestionBlock({ variables: { sessionId: id, blockId } })
+                handleResetQuestionBlock={async (blockId): Promise<void> => {
+                  await resetQuestionBlock({ variables: { sessionId: id, blockId } })
+                  addToast('Question block successfully reset.', {
+                    appearance: 'success',
+                  })
                 }}
                 handleTogglePublicEvaluation={(): void => {
                   updateSettings({

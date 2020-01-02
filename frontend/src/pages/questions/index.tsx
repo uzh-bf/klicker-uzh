@@ -7,6 +7,7 @@ import dayjs from 'dayjs'
 import { defineMessages, useIntl } from 'react-intl'
 import { useQuery, useMutation } from '@apollo/react-hooks'
 import { Loader } from 'semantic-ui-react'
+import { useToasts } from 'react-toast-notifications'
 
 import useLogging from '../../lib/hooks/useLogging'
 import useSelection from '../../lib/hooks/useSelection'
@@ -45,6 +46,7 @@ function Index(): React.ReactElement {
 
   const intl = useIntl()
   const router = useRouter()
+  const { addToast } = useToasts()
 
   useEffect((): void => {
     router.prefetch('/questions/details')
@@ -84,8 +86,12 @@ function Index(): React.ReactElement {
       return
     }
 
-    // build an index from the received questions
-    setIndex(buildIndex('questions', data.questions, ['title', 'createdAt']))
+    try {
+      // build an index from the received questions
+      setIndex(buildIndex('questions', data.questions, ['title', 'createdAt']))
+    } catch (e) {
+      console.error(e)
+    }
   }, [data])
 
   const [processedQuestions, setProcessedQuestions] = useState()
@@ -128,10 +134,15 @@ function Index(): React.ReactElement {
         variables: { ids: selectedItems.ids },
       })
 
+      addToast('Questions successfully archived.', { appearance: 'success' })
+
       handleResetSelection()
     } catch ({ message }) {
-      // TODO: if anything fails, display the error
       console.error(message)
+      addToast(`Unable to archive questions: ${message}`, {
+        appearance: 'error',
+        autoDismiss: false,
+      })
     }
   }
 
@@ -217,9 +228,16 @@ function Index(): React.ReactElement {
 
       // disable creation mode
       onCreationModeToggle()
+
+      addToast('Session successfully created. Visit the session list to manage your new session.', {
+        appearance: 'success',
+      })
     } catch ({ message }) {
-      // TODO: if anything fails, display the error in the form
       console.error(message)
+      addToast(`Unable to create session: ${message}`, {
+        appearance: 'error',
+        autoDismiss: false,
+      })
     }
   }
 
@@ -257,9 +275,16 @@ function Index(): React.ReactElement {
         })
 
         handleResetSelection()
+
+        addToast('Questions successfully deleted.', {
+          appearance: 'success',
+        })
       } catch ({ message }) {
-        // TODO: if anything fails, display the error
         console.error(message)
+        addToast(`Unable to delete questions: ${message}`, {
+          appearance: 'error',
+          autoDismiss: false,
+        })
       }
     }
 
