@@ -224,14 +224,14 @@ function Index(): React.ReactElement {
           variables: { id: result.data.createSession.id },
         })
         router.push('/sessions/running')
+      } else {
+        addToast('Session successfully created. Visit the session list to manage your new session.', {
+          appearance: 'success',
+        })
       }
 
       // disable creation mode
       onCreationModeToggle()
-
-      addToast('Session successfully created. Visit the session list to manage your new session.', {
-        appearance: 'success',
-      })
     } catch ({ message }) {
       console.error(message)
       addToast(`Unable to create session: ${message}`, {
