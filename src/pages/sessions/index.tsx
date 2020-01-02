@@ -3,6 +3,7 @@ import { defineMessages, useIntl } from 'react-intl'
 import { useMutation } from '@apollo/react-hooks'
 import _debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
+import { useToasts } from 'react-toast-notifications'
 
 import useSortingAndFiltering from '../../lib/hooks/useSortingAndFiltering'
 import useLogging from '../../lib/hooks/useLogging'
@@ -29,6 +30,7 @@ function Index(): React.ReactElement {
 
   const intl = useIntl()
   const router = useRouter()
+  const { addToast } = useToasts()
 
   const [startSession] = useMutation(StartSessionMutation)
 
@@ -44,6 +46,10 @@ function Index(): React.ReactElement {
       router.push('/sessions/running')
     } catch ({ message }) {
       console.error(message)
+      addToast(`Unable to start session: ${message}`, {
+        appearance: 'error',
+        autoDismiss: false,
+      })
     }
   }
 
