@@ -2,6 +2,7 @@ import React, { useEffect } from 'react'
 import dayjs from 'dayjs'
 import _get from 'lodash/get'
 import _pick from 'lodash/pick'
+import _some from 'lodash/some'
 import { useRouter } from 'next/router'
 import { useQuery, useMutation } from '@apollo/react-hooks'
 import { defineMessages, useIntl } from 'react-intl'
@@ -62,16 +63,27 @@ function Running(): React.ReactElement {
 
   const accountSummary = useQuery(AccountSummaryQuery)
   const { data, loading, error, subscribeToMore } = useQuery(RunningSessionQuery)
-  const [updateSettings] = useMutation(UpdateSessionSettingsMutation)
-  const [endSession] = useMutation(EndSessionMutation)
-  const [pauseSession] = useMutation(PauseSessionMutation)
-  const [resetQuestionBlock] = useMutation(ResetQuestionBlockMutation)
-  const [cancelSession] = useMutation(CancelSessionMutation)
-  const [activateNextBlock] = useMutation(ActivateNextBlockMutation)
-  const [deleteFeedback] = useMutation(DeleteFeedbackMutation)
-  const [activateBlockById] = useMutation(ActivateBlockByIdMutation)
+  const [updateSettings, { loading: isUpdateSettingsLoading }] = useMutation(UpdateSessionSettingsMutation)
+  const [endSession, { loading: isEndSessionLoading }] = useMutation(EndSessionMutation)
+  const [pauseSession, { loading: isPauseSessionLoading }] = useMutation(PauseSessionMutation)
+  const [resetQuestionBlock, { loading: isResetQuestionBlockLoading }] = useMutation(ResetQuestionBlockMutation)
+  const [cancelSession, { loading: isCancelSessionLoading }] = useMutation(CancelSessionMutation)
+  const [activateNextBlock, { loading: isActivateNextBlockLoading }] = useMutation(ActivateNextBlockMutation)
+  const [deleteFeedback, { loading: isDeleteFeedbackLoading }] = useMutation(DeleteFeedbackMutation)
+  const [activateBlockById, { loading: isActivateBlockByIdLoading }] = useMutation(ActivateBlockByIdMutation)
 
   const shortname = _get(accountSummary, 'data.user.shortname')
+
+  const isAnythingLoading = _some([
+    isUpdateSettingsLoading,
+    isEndSessionLoading,
+    isPauseSessionLoading,
+    isResetQuestionBlockLoading,
+    isCancelSessionLoading,
+    isActivateNextBlockLoading,
+    isDeleteFeedbackLoading,
+    isActivateBlockByIdLoading,
+  ])
 
   return (
     <TeacherLayout
@@ -108,52 +120,62 @@ function Running(): React.ReactElement {
                 activeStep={activeStep}
                 blocks={blocks}
                 handleActivateBlockById={(blockId): void => {
-                  activateBlockById({
-                    variables: { blockId, sessionId: id },
-                  })
+                  if (!_some([isActivateBlockByIdLoading, isActivateNextBlockLoading])) {
+                    activateBlockById({
+                      variables: { blockId, sessionId: id },
+                    })
+                  }
                 }}
                 handleCancelSession={async (): Promise<void> => {
-                  await cancelSession({
-                    refetchQueries: [
-                      { query: SessionListQuery },
-                      { query: RunningSessionQuery },
-                      { query: AccountSummaryQuery },
-                    ],
-                    variables: { id },
-                  })
-                  // redirect to the question pool
-                  router.push('/sessions')
+                  if (!isAnythingLoading) {
+                    await cancelSession({
+                      refetchQueries: [
+                        { query: SessionListQuery },
+                        { query: RunningSessionQuery },
+                        { query: AccountSummaryQuery },
+                      ],
+                      variables: { id },
+                    })
+                    // redirect to the question pool
+                    router.push('/sessions')
+                  }
                 }}
                 handleEndSession={async (): Promise<void> => {
-                  // run the mutation
-                  await endSession({
-                    refetchQueries: [
-                      { query: SessionListQuery },
-                      { query: RunningSessionQuery },
-                      { query: AccountSummaryQuery },
-                    ],
-                    variables: { id },
-                  })
+                  if (!isAnythingLoading) {
+                    // run the mutation
+                    await endSession({
+                      refetchQueries: [
+                        { query: SessionListQuery },
+                        { query: RunningSessionQuery },
+                        { query: AccountSummaryQuery },
+                      ],
+                      variables: { id },
+                    })
 
-                  // redirect to the question pool
-                  router.push('/questions')
+                    // redirect to the question pool
+                    router.push('/questions')
+                  }
                 }}
                 handleNextBlock={(): void => {
-                  activateNextBlock({
-                    refetchQueries: [{ query: RunningSessionQuery }],
-                  })
+                  if (!_some([isActivateBlockByIdLoading, isActivateNextBlockLoading])) {
+                    activateNextBlock({
+                      refetchQueries: [{ query: RunningSessionQuery }],
+                    })
+                  }
                 }}
                 handlePauseSession={async (): Promise<void> => {
-                  await pauseSession({
-                    refetchQueries: [
-                      { query: SessionListQuery },
-                      { query: RunningSessionQuery },
-                      { query: AccountSummaryQuery },
-                    ],
-                    variables: { id },
-                  })
+                  if (!isAnythingLoading) {
+                    await pauseSession({
+                      refetchQueries: [
+                        { query: SessionListQuery },
+                        { query: RunningSessionQuery },
+                        { query: AccountSummaryQuery },
+                      ],
+                      variables: { id },
+                    })
 
-                  router.push('/sessions')
+                    router.push('/sessions')
+                  }
                 }}
                 handleResetQuestionBlock={async (blockId): Promise<void> => {
                   await resetQuestionBlock({ variables: { sessionId: id, blockId } })
