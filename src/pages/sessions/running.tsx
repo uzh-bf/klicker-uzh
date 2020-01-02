@@ -314,7 +314,7 @@ function Running(): React.ReactElement {
             max-width: 100%;
           }
           .confusionBarometer {
-            flex: 0 0 30%;
+            flex: 0 0 40%;
           }
         }
 
