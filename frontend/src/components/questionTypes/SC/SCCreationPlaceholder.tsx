@@ -46,7 +46,7 @@ function SCCreationPlaceholder({ handleSave }: Props): React.ReactElement {
 
   return (
     <div className={classNames('option', { inputMode })}>
-      <button className="leftAction" type="button" onClick={onInputModeToggle}>
+      <button className="leftAction" disabled={inputMode} type="button" onClick={onInputModeToggle}>
         {inputMode ? <Icon name="trash" /> : <Icon name="plus" />}
       </button>
 
