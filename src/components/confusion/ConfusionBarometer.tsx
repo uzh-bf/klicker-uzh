@@ -77,6 +77,13 @@ function ConfusionBarometer({ confusionTS, isActive, handleActiveToggle, subscri
         <FormattedMessage defaultMessage="Confusion-Barometer" id="runningSession.confusion.title" />
       </h2>
 
+      <div className="infoMessage">
+        <FormattedMessage
+          defaultMessage="The Confusion-Barometer allows you to get feedback on the speed and difficulty of your lecture as it evolves over time."
+          id="runningSession.confusion.info"
+        />
+      </div>
+
       <Checkbox
         toggle
         checked={isActive}
@@ -122,7 +129,12 @@ function ConfusionBarometer({ confusionTS, isActive, handleActiveToggle, subscri
           flex-direction: column;
 
           h2 {
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
+          }
+
+          .infoMessage {
+            color: #404040;
+            margin-bottom: 0.5rem;
           }
 
           h3 {
