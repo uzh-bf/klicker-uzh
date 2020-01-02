@@ -10,8 +10,8 @@ const messages = defineMessages({
     id: 'common.string.activated',
   },
   publishQuestions: {
-    defaultMessage: 'Publish questions',
-    id: 'runningSession.feedbackChannel.publishQuestions',
+    defaultMessage: 'Publish feedbacks',
+    id: 'runningSession.feedbackChannel.publishFeedbacks',
   },
 })
 
@@ -51,6 +51,14 @@ function FeedbackChannel({
       <h2>
         <FormattedMessage defaultMessage="Feedback-Channel" id="runningSession.feedbackChannel.string.title" />
       </h2>
+
+      <div className="infoMessage">
+        <FormattedMessage
+          defaultMessage="The Feedback-Channel allows you to get open feedback from your participants. If you publish the feedbacks, your participants will be able to see what other participants have already posted."
+          id="runningSession.feedbackChannel.info"
+        />
+      </div>
+
       <div className="toggle">
         <Checkbox
           toggle
@@ -99,7 +107,12 @@ function FeedbackChannel({
         }
 
         h2 {
-          margin-bottom: 1rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .infoMessage {
+          color: 404040;
+          margin-bottom: 0.5rem;
         }
 
         .publicationToggle {
