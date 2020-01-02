@@ -170,7 +170,7 @@ function ActionBar({
       <div className="actionButtons">
         <Dropdown button className="primary icon large" direction="left" icon="plus">
           <Dropdown.Menu>
-            <Dropdown.Item isabled={!!creationMode} onClick={handleCreationModeToggle}>
+            <Dropdown.Item disabled={!!creationMode} onClick={handleCreationModeToggle}>
               <Icon name="plus" />
               <FormattedMessage defaultMessage="Create Session" id="questionPool.button.createSession" />
             </Dropdown.Item>
