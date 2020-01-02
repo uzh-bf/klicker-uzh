@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import UUIDv4 from 'uuid'
 import _get from 'lodash/get'
 import _debounce from 'lodash/debounce'
+import _some from 'lodash/some'
 import { useRouter } from 'next/router'
 import dayjs from 'dayjs'
 import { defineMessages, useIntl } from 'react-intl'
@@ -61,11 +62,11 @@ function Index(): React.ReactElement {
   const [sessionBlocks, setSessionBlocks] = useState((): any => [])
   const [sessionName, setSessionName] = useState('')
 
-  const [startSession] = useMutation(StartSessionMutation)
-  const [createSession] = useMutation(CreateSessionMutation)
-  const [archiveQuestions] = useMutation(ArchiveQuestionsMutation)
-  const [modifySession] = useMutation(ModifySessionMutation)
-  const [deleteQuestions] = useMutation(DeleteQuestionsMutation)
+  const [startSession, { loading: isStartSessionLoading }] = useMutation(StartSessionMutation)
+  const [createSession, { loading: isCreateSessionLoading }] = useMutation(CreateSessionMutation)
+  const [archiveQuestions, { loading: isArchiveQuestionsLoading }] = useMutation(ArchiveQuestionsMutation)
+  const [modifySession, { loading: isModifySessionLoading }] = useMutation(ModifySessionMutation)
+  const [deleteQuestions, { loading: isDeleteQuestionsLoading }] = useMutation(DeleteQuestionsMutation)
   const { data, loading } = useQuery(QuestionPoolQuery)
 
   const [selectedItems, handleSelectItem, handleResetSelection, handleSelectItems] = useSelection()
@@ -127,6 +128,9 @@ function Index(): React.ReactElement {
 
   // handle archiving a question
   const onArchiveQuestions = async (): Promise<void> => {
+    if (isArchiveQuestionsLoading) {
+      return
+    }
     try {
       // archive the questions
       await archiveQuestions({
@@ -192,6 +196,9 @@ function Index(): React.ReactElement {
   const onCreateSession = (type): any => async (e): Promise<void> => {
     // prevent a page reload on submit
     e.preventDefault()
+    if (_some([isCreateSessionLoading, isModifySessionLoading, isStartSessionLoading])) {
+      return
+    }
 
     try {
       // prepare blocks for consumption through the api
@@ -245,6 +252,10 @@ function Index(): React.ReactElement {
   const onDeleteQuestions = async (confirm): Promise<any> => {
     if (!deletionConfirmation) {
       setDeletionConfirmation(true)
+      return
+    }
+
+    if (isDeleteQuestionsLoading) {
       return
     }
 
