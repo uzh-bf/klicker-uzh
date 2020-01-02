@@ -116,7 +116,7 @@ class Klicker extends App {
       <DndProvider backend={HTML5Backend}>
         <IntlProvider initialNow={now} locale={locale} messages={messages}>
           <ApolloProvider client={apolloClient}>
-            <ToastProvider>
+            <ToastProvider autoDismiss>
               <StrictMode>
                 <Component {...pageProps} error={this.state.error} />
               </StrictMode>
