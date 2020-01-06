@@ -74,6 +74,7 @@ function QuestionDuplicationModal({ questionId }: Props): React.ReactElement {
       ),
     })
     setSubmitting(false)
+    setIsModalOpen(false)
   }
 
   return (
