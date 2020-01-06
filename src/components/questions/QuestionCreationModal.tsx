@@ -19,6 +19,7 @@ function QuestionCreationModal(): React.ReactElement {
 
   return (
     <Modal
+      closeOnDimmerClick={false}
       open={isModalOpen}
       size="large"
       trigger={
