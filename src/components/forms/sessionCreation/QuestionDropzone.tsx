@@ -30,8 +30,9 @@ function QuestionDropzone({ onDrop }: Props): React.ReactElement {
           align-items: center;
           justify-content: center;
 
-          background-color: #f2f2f2;
-          border: 1px solid lightgrey;
+          background-color: #efefef;
+          border: 1px solid grey;
+          border-style: dashed;
           color: grey;
           font-size: 1.5rem;
           height: 100%;
@@ -39,13 +40,12 @@ function QuestionDropzone({ onDrop }: Props): React.ReactElement {
         }
 
         .dropzone.canDrop {
-          background-color: lightgrey;
-          border-color: grey;
-          color: grey;
+          border: 2px solid #6cbad8;
         }
 
         .dropzone.isOver {
-          border-color: blue;
+          background-color: #6cbad8;
+          color: #012f42;
         }
       `}</style>
     </div>

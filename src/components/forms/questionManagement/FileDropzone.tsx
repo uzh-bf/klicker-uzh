@@ -102,9 +102,11 @@ function FileDropzone({ disabled, files, onChangeFiles }: Props): React.ReactEle
     <div className="fileDropzone">
       <div className="dropzone" {...getRootProps()}>
         <input {...getInputProps()} />
-        <Button fluid primary disabled={disabled} type="button">
+        <Button fluid color="grey" disabled={disabled} type="button">
+          <Icon name="upload" />
           <FormattedMessage defaultMessage="Upload" id="fileDropzone.button.upload" />
         </Button>
+        <div className="dndInfo">or Drag & Drop</div>
       </div>
 
       <div className="previews">{previews}</div>
@@ -118,13 +120,19 @@ function FileDropzone({ disabled, files, onChangeFiles }: Props): React.ReactEle
           .dropzone {
             flex: 0 0 auto;
 
+            background-color: #efefef;
             position: relative;
             width: 150px;
             height: 100px;
-            border-width: 2px;
-            border-color: rgb(102, 102, 102);
-            padding: 0.5rem;
+            border: 1px solid grey;
             border-style: dashed;
+            padding: 0.5rem;
+
+            .dndInfo {
+              color: grey;
+              text-align: center;
+              margin-top: 0.3rem;
+            }
           }
 
           .previews {
