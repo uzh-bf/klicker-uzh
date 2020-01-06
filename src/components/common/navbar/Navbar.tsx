@@ -214,7 +214,8 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
           .accountArea {
             display: none;
 
-            :global(.menu) {
+            :global(.menu),
+            :global(.ui.dropdown .menu > .item) {
               background-color: $background-color;
               color: $color-white;
 
