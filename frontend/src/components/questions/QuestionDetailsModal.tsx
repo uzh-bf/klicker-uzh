@@ -119,6 +119,7 @@ function QuestionDetailsModal({ questionId }: Props): React.ReactElement {
 
   return (
     <Modal
+      closeOnDimmerClick={false}
       open={isModalOpen}
       size="large"
       trigger={
