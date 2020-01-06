@@ -54,7 +54,6 @@ function SessionArea({ sessionId }: Props): React.ReactElement {
       >
         <Popup.Content>
           <div className="popupHelp popupContent">
-            <h3>Support</h3>
             <a href="mailto:klicker.support@uzh.ch">
               <Button fluid icon labelPosition="left">
                 <Icon name="mail" />
