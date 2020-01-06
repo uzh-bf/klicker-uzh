@@ -75,8 +75,8 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
             handleSortByChange={search.handleSortByChange}
             handleSortOrderToggle={search.handleSortOrderToggle}
             sortBy={search.sortBy}
-            sortOrder={search.sortOrder}
             sortingTypes={search.sortingTypes}
+            sortOrder={search.sortOrder}
             withSorting={search.withSorting}
           />
         </div>
@@ -214,7 +214,8 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
           .accountArea {
             display: none;
 
-            :global(.menu) {
+            :global(.menu),
+            :global(.ui.dropdown .menu > .item) {
               background-color: $background-color;
               color: $color-white;
 
