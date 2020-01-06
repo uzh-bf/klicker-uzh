@@ -15,7 +15,7 @@ const defaultProps = {
 }
 
 const AccountArea: React.FunctionComponent<Props> = ({ accountShort, onLogout }): React.ReactElement<any> => (
-  <Dropdown item simple icon="user" text={`${accountShort} `}>
+  <Dropdown item icon="user" text={`${accountShort} `}>
     <Dropdown.Menu>
       <Link href="/user/settings">
         <Dropdown.Item>
