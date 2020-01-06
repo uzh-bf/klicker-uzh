@@ -44,14 +44,20 @@ function Question({
   isArchived,
 }: Props): React.ReactElement {
   const [activeVersion, setActiveVersion]: any = useState(versions.length - 1)
+  const { description } = versions[activeVersion]
   const [collectedProps, drag] = useDrag({
-    item: { id, type: 'question', questionType: type, title, version: activeVersion },
+    item: {
+      id,
+      type: 'question',
+      questionType: type,
+      title,
+      version: activeVersion,
+      description,
+    },
     collect: (monitor): any => ({
       isDragging: monitor.isDragging(),
     }),
   })
-
-  const { description } = versions[activeVersion]
 
   return (
     <div

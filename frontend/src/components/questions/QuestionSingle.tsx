@@ -1,4 +1,5 @@
 import React from 'react'
+import ReactTooltip from 'react-tooltip'
 import { Icon } from 'semantic-ui-react'
 import { useIntl } from 'react-intl'
 
@@ -6,6 +7,8 @@ import Ellipsis from '../common/Ellipsis'
 import { generateTypesShort } from '../../lib/utils/lang'
 
 interface Props {
+  id?: string
+  description?: string
   onDelete?: () => void
   title: string
   totalParticipants?: number
@@ -19,11 +22,19 @@ const defaultProps = {
   version: 0,
 }
 
-function QuestionSingle({ type, title, totalParticipants, version, onDelete }: Props): React.ReactElement {
+function QuestionSingle({
+  id,
+  description,
+  type,
+  title,
+  totalParticipants,
+  version,
+  onDelete,
+}: Props): React.ReactElement {
   const intl = useIntl()
 
   return (
-    <div className="questionSingle">
+    <div data-tip className="questionSingle" data-for={`questionTooltip${id}`}>
       <div className="top">
         <div className="type">{generateTypesShort(intl)[type]}</div>
 
@@ -82,6 +93,11 @@ function QuestionSingle({ type, title, totalParticipants, version, onDelete }: P
           }
         `}
       </style>
+      {id && description && (
+        <ReactTooltip effect="solid" id={`questionTooltip${id}`} place="right" type="info">
+          <span>{description}</span>
+        </ReactTooltip>
+      )}
     </div>
   )
 }

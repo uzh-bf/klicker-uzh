@@ -161,7 +161,7 @@ function SessionCreationForm({
                     {(provided, snapshot): React.ReactElement => (
                       <div className="questions" ref={provided.innerRef} style={getListStyle(snapshot.isDraggingOver)}>
                         {block.questions.map(
-                          ({ id, key, title, type, version }, index): React.ReactElement => (
+                          ({ id, key, title, type, version, description }, index): React.ReactElement => (
                             <Draggable draggableId={`${key}-${index}-${id}`} index={index} key={key}>
                               {(innerProvided, innerSnapshot): React.ReactElement => (
                                 <div
@@ -172,6 +172,8 @@ function SessionCreationForm({
                                   style={getItemStyle(innerSnapshot.isDragging, innerProvided.draggableProps.style)}
                                 >
                                   <QuestionSingle
+                                    description={description}
+                                    id={id}
                                     title={title}
                                     type={type}
                                     version={version}
