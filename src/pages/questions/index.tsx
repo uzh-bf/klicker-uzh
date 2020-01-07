@@ -138,7 +138,7 @@ function Index(): React.ReactElement {
         variables: { ids: selectedItems.ids },
       })
 
-      addToast('Questions successfully archived.', { appearance: 'success' })
+      addToast('Questions successfully archived/unarchived.', { appearance: 'success' })
 
       handleResetSelection()
     } catch ({ message }) {
