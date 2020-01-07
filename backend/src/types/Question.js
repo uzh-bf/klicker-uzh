@@ -107,7 +107,7 @@ module.exports = `
     solution: Question_Solution
 
     instances: [QuestionInstance!]!
-    files: [File!]!
+    files: [File!]
 
     createdAt: DateTime!
     updatedAt: DateTime!
