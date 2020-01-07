@@ -94,7 +94,14 @@ function QuestionDuplicationModal({ questionId }: Props): React.ReactElement {
       </Modal.Header> */}
       <Modal.Content>
         {((): React.ReactElement => {
-          if (tagsLoading || questionLoading || !tagList.tags || !questionDetails.question) {
+          if (
+            tagsLoading ||
+            questionLoading ||
+            !tagList ||
+            !tagList.tags ||
+            !questionDetails ||
+            !questionDetails.question
+          ) {
             return null
           }
 
