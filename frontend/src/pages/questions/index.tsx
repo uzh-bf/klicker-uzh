@@ -3,8 +3,9 @@ import UUIDv4 from 'uuid'
 import _get from 'lodash/get'
 import _debounce from 'lodash/debounce'
 import _some from 'lodash/some'
-import { useRouter } from 'next/router'
 import dayjs from 'dayjs'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { defineMessages, useIntl } from 'react-intl'
 import { useQuery, useMutation } from '@apollo/react-hooks'
 import { Loader } from 'semantic-ui-react'
@@ -232,7 +233,13 @@ function Index(): React.ReactElement {
         })
         router.push('/sessions/running')
       } else {
-        addToast('Session successfully created. Visit the session list to manage your new session.', {
+        const ToastContent = (
+          <div>
+            Session successfully created. Visit the <Link href="/sessions">Session List</Link> to manage your new
+            session.
+          </div>
+        )
+        addToast(ToastContent, {
           appearance: 'success',
         })
       }
