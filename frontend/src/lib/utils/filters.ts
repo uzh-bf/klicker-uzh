@@ -37,7 +37,7 @@ export function buildIndex(name: string, items: any[], searchIndices: any[]): an
 
   // look for all substrings, not only prefixed
   search.indexStrategy = new JsSearch.AllSubstringsIndexStrategy()
-  // search.tokenizer = new JsSearch.StopWordsTokenizer(new JsSearch.SimpleTokenizer())
+  search.tokenizer = new JsSearch.StopWordsTokenizer(new JsSearch.SimpleTokenizer())
 
   // index by title, type, creation date and the description of the first version
   searchIndices.forEach((index): void => search.addIndex(index))
@@ -51,15 +51,17 @@ export function buildIndex(name: string, items: any[], searchIndices: any[]): an
 }
 
 export function filterQuestions(questions: any[], filters: any, index: any): any[] {
-  let results = questions.filter(
-    ({ isArchived }): boolean =>
-      (typeof isArchived === 'undefined' && !filters.archive) || isArchived === filters.archive
-  )
+  let results = [...questions]
 
   // if a title (query) was given, search the index with it
   if (index && filters.title) {
     results = index.search(filters.title)
   }
+
+  results = results.filter(
+    ({ isArchived }): boolean =>
+      (typeof isArchived === 'undefined' && !filters.archive) || isArchived === filters.archive
+  )
 
   // if either type or tags were selected, filter the results
   if (filters.type || filters.tags) {
