@@ -110,7 +110,7 @@
     "react-dnd-cjs": "9.4.0",
     "react-dnd-html5-backend-cjs": "9.4.0",
     "react-dom": "16.12.0",
-    "react-dropzone": "10.2.0",
+    "react-dropzone": "10.2.1",
     "react-ga": "2.7.0",
     "react-intl": "3.6.1",
     "react-rangeslider": "2.2.0",
