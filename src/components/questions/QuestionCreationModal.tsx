@@ -67,6 +67,7 @@ function QuestionCreationModal(): React.ReactElement {
             })
 
             setSubmitting(false)
+            setIsModalOpen(false)
           }}
         />
       </Modal.Content>
