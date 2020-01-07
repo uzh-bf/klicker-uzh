@@ -1,7 +1,7 @@
-import React from 'react'
+import React, { useState } from 'react'
 import _truncate from 'lodash/truncate'
 
-import { Icon } from 'semantic-ui-react'
+import { Icon, Button } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 
 import ListWithHeader from '../common/ListWithHeader'
@@ -19,6 +19,9 @@ const defaultProps = {
 }
 
 function QuestionDetails({ questionId, description, lastUsed }: Props): React.ReactElement {
+  const [isDuplicationModalOpen, setIsDuplicationModalOpen] = useState(false)
+  const [isModificationModalOpen, setIsModificationModalOpen] = useState(false)
+
   const truncatedDesc = _truncate(description, { length: 250 })
 
   return (
@@ -35,8 +38,27 @@ function QuestionDetails({ questionId, description, lastUsed }: Props): React.Re
       </div>
 
       <div className="column buttons">
-        <QuestionDetailsModal questionId={questionId} />
-        <QuestionDuplicationModal questionId={questionId} />
+        <Button fluid onClick={(): void => setIsModificationModalOpen(true)}>
+          <FormattedMessage defaultMessage="View / Edit" id="questionDetails.button.edit" />
+        </Button>
+        {isModificationModalOpen && (
+          <QuestionDetailsModal
+            handleSetIsOpen={setIsModificationModalOpen}
+            isOpen={isModificationModalOpen}
+            questionId={questionId}
+          />
+        )}
+
+        <Button fluid onClick={(): void => setIsDuplicationModalOpen(true)}>
+          <FormattedMessage defaultMessage="Duplicate" id="questionDetails.button.duplicate" />
+        </Button>
+        {isDuplicationModalOpen && (
+          <QuestionDuplicationModal
+            handleSetIsOpen={setIsDuplicationModalOpen}
+            isOpen={isDuplicationModalOpen}
+            questionId={questionId}
+          />
+        )}
       </div>
 
       <style jsx>{`
