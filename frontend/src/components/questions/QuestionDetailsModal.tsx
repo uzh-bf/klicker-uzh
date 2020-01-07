@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useQuery, useMutation } from '@apollo/react-hooks'
 import { convertToRaw } from 'draft-js'
-import { Loader, Button, Modal } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
+import { Modal } from 'semantic-ui-react'
 import _pick from 'lodash/pick'
 import _omitBy from 'lodash/omitBy'
 import _isNil from 'lodash/isNil'
@@ -18,11 +17,12 @@ import RequestPresignedURLMutation from '../../graphql/mutations/RequestPresigne
 import { omitDeep, omitDeepArray } from '../../lib/utils/omitDeep'
 
 interface Props {
+  isOpen: boolean
+  handleSetIsOpen: (boolean) => void
   questionId: string
 }
 
-function QuestionDetailsModal({ questionId }: Props): React.ReactElement {
-  const [isModalOpen, setIsModalOpen] = useState(false)
+function QuestionDetailsModal({ isOpen, handleSetIsOpen, questionId }: Props): React.ReactElement {
   const { data: tagList, loading: tagsLoading } = useQuery(TagListQuery)
   const { data: questionDetails, loading: questionLoading } = useQuery(QuestionDetailsQuery, {
     variables: { id: questionId },
@@ -117,35 +117,18 @@ function QuestionDetailsModal({ questionId }: Props): React.ReactElement {
     setSubmitting(false)
   }
 
+  // if the tags or the question is still loading, return null
+  if (tagsLoading || questionLoading || !tagList || !tagList.tags || !questionDetails || !questionDetails.question) {
+    return null
+  }
+
   return (
-    <Modal
-      closeOnDimmerClick={false}
-      open={isModalOpen}
-      size="large"
-      trigger={
-        <Button fluid onClick={(): void => setIsModalOpen(true)}>
-          <FormattedMessage defaultMessage="View / Edit" id="questionDetails.button.edit" />
-        </Button>
-      }
-      onClose={(): void => setIsModalOpen(false)}
-    >
+    <Modal closeOnDimmerClick={false} open={isOpen} size="large" onClose={(): void => handleSetIsOpen(false)}>
       {/* <Modal.Header>
         <FormattedMessage defaultMessage="Edit Question" id="editQuestion.title" />
       </Modal.Header> */}
       <Modal.Content>
         {((): React.ReactElement => {
-          // if the tags or the question is still loading, return null
-          if (
-            tagsLoading ||
-            questionLoading ||
-            !tagList ||
-            !tagList.tags ||
-            !questionDetails ||
-            !questionDetails.question
-          ) {
-            return <Loader active />
-          }
-
           // if everything was loaded successfully, render the edit form
           const { id, tags, title, type, versions } = _pick(questionDetails.question, [
             'id',
@@ -164,7 +147,7 @@ function QuestionDetailsModal({ questionId }: Props): React.ReactElement {
                 success: (data && !error) || null,
               }}
               handleActiveVersionChange={setActiveVersion}
-              handleDiscard={(): void => setIsModalOpen(false)}
+              handleDiscard={(): void => handleSetIsOpen(false)}
               handleSubmit={onSubmit(id)}
               loading={loading}
               questionTags={tags}

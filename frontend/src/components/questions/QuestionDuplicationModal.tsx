@@ -1,11 +1,10 @@
-import React, { useState } from 'react'
+import React from 'react'
 import _pick from 'lodash/pick'
 import _omitBy from 'lodash/omitBy'
 import _isNil from 'lodash/isNil'
 import { ContentState, convertFromRaw, convertToRaw, EditorState } from 'draft-js'
 import { useQuery, useMutation } from '@apollo/react-hooks'
-import { Button, Modal } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
+import { Modal } from 'semantic-ui-react'
 
 import QuestionCreationForm from '../forms/questionManagement/QuestionCreationForm'
 import QuestionPoolQuery from '../../graphql/queries/QuestionPoolQuery.graphql'
@@ -18,11 +17,12 @@ import { omitDeepArray, omitDeep } from '../../lib/utils/omitDeep'
 import { QUESTION_TYPES } from '../../constants'
 
 interface Props {
+  isOpen: boolean
+  handleSetIsOpen: (boolean) => void
   questionId: string
 }
 
-function QuestionDuplicationModal({ questionId }: Props): React.ReactElement {
-  const [isModalOpen, setIsModalOpen] = useState(false)
+function QuestionDuplicationModal({ isOpen, handleSetIsOpen, questionId }: Props): React.ReactElement {
   const [createQuestion] = useMutation(CreateQuestionMutation)
   const [requestPresignedURL] = useMutation(RequestPresignedURLMutation)
   const { data: questionDetails, loading: questionLoading } = useQuery(QuestionDetailsQuery, {
@@ -74,37 +74,20 @@ function QuestionDuplicationModal({ questionId }: Props): React.ReactElement {
       ),
     })
     setSubmitting(false)
-    setIsModalOpen(false)
+    handleSetIsOpen(false)
+  }
+
+  if (tagsLoading || questionLoading || !tagList || !tagList.tags || !questionDetails || !questionDetails.question) {
+    return null
   }
 
   return (
-    <Modal
-      closeOnDimmerClick={false}
-      open={isModalOpen}
-      size="large"
-      trigger={
-        <Button fluid onClick={(): void => setIsModalOpen(true)}>
-          <FormattedMessage defaultMessage="Duplicate" id="questionDetails.button.duplicate" />
-        </Button>
-      }
-      onClose={(): void => setIsModalOpen(false)}
-    >
+    <Modal closeOnDimmerClick={false} open={isOpen} size="large" onClose={(): void => handleSetIsOpen(false)}>
       {/* <Modal.Header>
         <FormattedMessage defaultMessage="Create Question" id="createQuestion.title" />
       </Modal.Header> */}
       <Modal.Content>
         {((): React.ReactElement => {
-          if (
-            tagsLoading ||
-            questionLoading ||
-            !tagList ||
-            !tagList.tags ||
-            !questionDetails ||
-            !questionDetails.question
-          ) {
-            return null
-          }
-
           const { tags, title, type, versions } = _pick(questionDetails.question, ['tags', 'title', 'type', 'versions'])
 
           const duplicateTitle = ' (Duplicate)'
@@ -167,7 +150,7 @@ function QuestionDuplicationModal({ questionId }: Props): React.ReactElement {
               initialValues={initialValues}
               tags={tagList.tags}
               tagsLoading={tagsLoading}
-              onDiscard={(): void => setIsModalOpen(false)}
+              onDiscard={(): void => handleSetIsOpen(false)}
               // handle submitting a new question
               onSubmit={onSubmit}
             />
