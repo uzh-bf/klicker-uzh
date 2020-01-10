@@ -55,13 +55,13 @@ export default () => (
           <Button primary>Login</Button>
         </a>
       </Slider.Item>
-      <Slider.Embed>
+      {/* <Slider.Embed>
         <Embed
           id="Dpx7BWKeqlo"
           placeholder="/images/image-16by9.png"
           source="youtube"
         />
-      </Slider.Embed>
+      </Slider.Embed> */}
     </Slider>
 
     <div className="sections">
