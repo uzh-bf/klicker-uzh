@@ -123,7 +123,13 @@ function QuestionDetailsModal({ isOpen, handleSetIsOpen, questionId }: Props): R
   }
 
   return (
-    <Modal closeOnDimmerClick={false} open={isOpen} size="large" onClose={(): void => handleSetIsOpen(false)}>
+    <Modal
+      closeOnDimmerClick={false}
+      open={isOpen}
+      size="large"
+      // we don't want to have ESC close the modal, so don't do this
+      // onClose={(): void => setIsModalOpen(false)}
+    >
       {/* <Modal.Header>
         <FormattedMessage defaultMessage="Edit Question" id="editQuestion.title" />
       </Modal.Header> */}
