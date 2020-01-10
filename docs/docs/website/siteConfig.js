@@ -8,6 +8,7 @@
 const users = []
 
 const siteConfig = {
+  gaTrackingId: 'UA-33258666-20',
   algolia: {
     apiKey: 'b945507eeedf6bb6f02688350c0ecc4b',
     indexName: 'klicker-uzh',
