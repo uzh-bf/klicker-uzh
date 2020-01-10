@@ -1,7 +1,7 @@
 /* eslint-disable react/prop-types, react/no-array-index-key */
 
 import * as React from 'react'
-import { Button, Icon, Menu, Popup, Modal, Embed } from 'semantic-ui-react'
+import { Button, Icon, Menu, Popup } from 'semantic-ui-react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 
 const messages = defineMessages({
@@ -68,7 +68,7 @@ function SessionArea({ sessionId }: Props): React.ReactElement {
               </Button>
             </a>
 
-            <Modal
+            {/* <Modal
               closeIcon
               trigger={
                 <Button fluid icon labelPosition="left">
@@ -81,7 +81,7 @@ function SessionArea({ sessionId }: Props): React.ReactElement {
               <Modal.Content>
                 <Embed id="Dpx7BWKeqlo" source="youtube" />
               </Modal.Content>
-            </Modal>
+            </Modal> */}
           </div>
         </Popup.Content>
       </Popup>
