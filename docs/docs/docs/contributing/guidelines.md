@@ -13,4 +13,4 @@ The code style of KlickerUZH is checked using ESLint (https://eslint.org/). Our 
 
 ## Formatting
 
-All KlickerUZH code is to be formatted with Prettier (https://prettier.io/) to ensure a consistent code formatting over all projects. To simplify this process, we have added the `npm run format` command as well as a git hook that will format your code automatically on pre-commit. Please note that our CI will check the formatting and throw if erroneous formatting is encountered.
+All KlickerUZH code is to be formatted with Prettier (https://prettier.io/) to ensure a consistent code formatting across all projects. To simplify this process, we have added the `npm run format` command as well as a git hook that will format your code automatically on pre-commit. Please note that our CI will check the formatting and throw if erroneous formatting is encountered.

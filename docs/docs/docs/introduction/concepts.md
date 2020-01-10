@@ -9,7 +9,7 @@ The Klicker UZH is based on a few concepts that are key to understand and use th
 
 Sessions are the fundamental concept on which all of the other functionality of Klicker UZH is built. A Klicker session corresponds to a single event during which the Klicker is planned to be used (e.g., a 1.5h lecture block). Klicker sessions are structured such that they can be started at the beginning of an event and closed after its completion (decoupled from the actual timing of questions posed).
 
-During an active Klicker session, the speaker can pose the questions that have been assigned to the respective session. The speaker can further enable optional audience-to-speaker interactions, allowing the audience to rate the speed and difficulty of the session as well as to give open-form feedback.
+During an active Klicker session, the speaker can pose the questions that have been assigned to the particular session. The speaker can further enable optional audience-to-speaker interactions, allowing the audience to rate the speed and difficulty of the session as well as to give open-form feedback.
 
 ## Questions and Question Blocks
 

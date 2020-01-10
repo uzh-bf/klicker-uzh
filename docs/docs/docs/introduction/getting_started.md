@@ -18,7 +18,7 @@ In case of any questions, please have a look if your problem has already been de
 
 ## Deployment
 
-Instead of using the publicly hosted version of the application (the official "Klicker UZH") it is also possible to host an instance on private infrastructure. This can be useful if an institution prefers to host their questions on private infrastructure only (e.g., if the question contents are sensitive). The only thing to keep in mind is that we kindly ask (as reinforced by the license) that any extensions of self-hosted instances be provided back to the open source project (as is good open source spirit).
+Instead of using the publicly hosted version of the application (the official "Klicker UZH"), it is also possible to host an instance on private infrastructure. This can be useful if an institution prefers to host their questions on private infrastructure only (e.g., if the question contents are sensitive). The only thing to keep in mind is that we kindly ask (as reinforced by the license) that any extensions of self-hosted instances be provided back to the open-source project (as is good open-source spirit).
 
 To deploy a private Klicker instance, we strongly recommend that you first familiarize yourself with the architecture of the application (see [Architecture Overview](deployment/architecture.md)). The remainder of the chapter on deployment will then lead you through the steps necessary to deploy the application yourself.
 
@@ -28,7 +28,7 @@ In the spirit of open source, we welcome any good-spirited contributions to the 
 
 It is generally a good idea to first get an orientation about the general direction of the project from the [Roadmap](https://github.com/uzh-bf/klicker-uzh/projects/1), as contributions should not be completely orthogonal or lead to duplicate work. Please feel free to create an issue on the `klicker-uzh` project if you are unsure about any specifics.
 
-Additionally, in order to reduce the time spent on reviewing and refactoring code (on our side as well as yours), we put some [Contributing Guidelines](contributing/guidelines.md) into place that must be followed for a contribution to be accepted (describing things like code style and testing).
+Additionally, in order to reduce the time spent on reviewing and refactoring code (on our side as well as yours), we put some [Contributing Guidelines](contributing/guidelines.md) in place that must be followed for a contribution to be accepted (describing things like code style and testing).
 
 ## Support & Community
 
@@ -38,4 +38,4 @@ We offer support for the Klicker UZH on various channels:
 - Email on [klicker.support@uzh.ch](mailto:klicker.support@uzh.ch)
 - Spectrum Community on [spectrum.chat/klickeruzh](https://spectrum.chat/klickeruzh)
 
-Please bear in mind that even though we strive for good response time and general support, we do not have any dedicated support staff for the project. This is due to the fact that the project does not generate any monetary inflow and its operations are funded only by the Department of Banking and Finance and UZH.
+Please bear in mind that even though we strive for good response time and general support, we do not have any dedicated support staff for the project. This is due to the fact that the project does not generate any monetary inflow, and its operations are funded only by the Department of Banking and Finance and UZH.
