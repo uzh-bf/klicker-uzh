@@ -13,7 +13,6 @@
     ],
     "Advanced Features": [
       "advanced/delete_account",
-      "advanced/language",
       "advanced/session_nonsequential",
       "advanced/question_archive",
       "advanced/session_countdown",
