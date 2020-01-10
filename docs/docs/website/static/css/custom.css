@@ -21,11 +21,6 @@
   font-weight: 500;
 }
 
-.mainContainer .wrapper .post h1 {
-  margin-top: 0;
-  margin-bottom: 20px;
-}
-
 .mainContainer .wrapper .post h3 {
   color: black;
   margin: 20px 0 0 0;
@@ -57,51 +52,9 @@ img[alt='Student View Mobile'] {
 }
 
 footer.nav-footer {
-  background-color: lightgrey;
+  background-color: white;
 }
 
 footer.nav-footer .copyright {
-  color: black;
-}
-
-.button {
-  background-color: #2185d0;
-  color: #fff;
-  border-radius: 0.28571429rem;
-  font-weight: 700;
-  padding: 0.78571429em 1.5em 0.78571429em;
-  border: none;
-}
-
-.docMainWrapper .mainContainer {
-  margin: 0 auto;
-}
-
-.docMainWrapper .mainContainer .wrapper p {
-  max-width: none;
-}
-
-.navPusher {
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  justify-content: space-between;
-  min-height: 100%;
-  height: auto;
-}
-
-.mainContainer {
-  padding-top: 0;
-}
-
-.container.paddingTop {
-  padding-top: 2.5rem;
-}
-
-.container.paddingBottom {
-  padding-bottom: 2.5rem;
-}
-
-.container .wrapper .imageAlignSide p {
-  margin-bottom: 1rem;
+  color: grey;
 }
