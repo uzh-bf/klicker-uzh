@@ -95,12 +95,6 @@
       "introduction/getting_started": {
         "title": "Getting Started",
         "sidebar_label": "Getting Started"
-      },
-      "other/roadmap": {
-        "title": "Roadmap"
-      },
-      "other/troubleshooting": {
-        "title": "Troubleshooting"
       }
     },
     "links": {
