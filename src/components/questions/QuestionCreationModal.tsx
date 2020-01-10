@@ -28,7 +28,8 @@ function QuestionCreationModal(): React.ReactElement {
           <FormattedMessage defaultMessage="Create Question" id="questionPool.button.createQuestion" />
         </Dropdown.Item>
       }
-      onClose={(): void => setIsModalOpen(false)}
+      // we don't want to have ESC close the modal, so don't do this
+      // onClose={(): void => setIsModalOpen(false)}
     >
       {/* <Modal.Header>
         <FormattedMessage defaultMessage="Create Question" id="createQuestion.title" />
