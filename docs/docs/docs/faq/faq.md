@@ -4,6 +4,20 @@ title: Frequently Asked Questions
 sidebar_label: Overview
 ---
 
+## What are the biggest changes released for FS20 (v1.4.0)?
+
+With its latest release in January 2020, the KlickerUZH has been improved in a few critical areas:
+
+- Rework of question management and session creation
+  - It is now possible to create new questions even during session creation
+  - Blocks during session creation can be reordered and removed
+- Improvements in the editor for SC/MC questions
+  - It is easier to reorder answering options in SC/MC questions (no more Drag and Drop)
+  - Answering options are automatically saved on loss of focus, which means that the final option will not be lost anymore (if the question is saved without saving that option)
+- Initial toast notifications provide more transparency on the success/failure of certain actions
+  - If this feature is well-received, we might extend it to encompass further areas of the KlickerUZH
+- Many other small usability changes thanks to the valuable feedback of [Prof. Chat Wacharamanotham](https://www.ifi.uzh.ch/en/zpac/people/chat.html)
+
 ## What are the biggest changes released for HS19 (v1.3.0)?
 
 Preceding the fall semester of 2019, the KlickerUZH has been extended with many often asked for features:
