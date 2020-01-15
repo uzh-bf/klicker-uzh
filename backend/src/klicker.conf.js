@@ -191,9 +191,9 @@ module.exports = convict({
         format: 'Boolean',
       },
       origin: {
-        default: 'http://localhost:3000',
+        default: ['http://localhost:3000'],
         env: 'SECURITY_CORS_ORIGIN',
-        format: 'url',
+        format: Array,
       },
     },
     expectCt: {
