@@ -31,16 +31,6 @@ export default function Header() {
             </Menu.Item>
 
             <Menu.Item
-              name="status"
-              as="a"
-              href="https://uptime.statuscake.com/?TestID=AEHThYQ2ig"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Status
-            </Menu.Item>
-
-            <Menu.Item
               as={ScrollLink}
               to="footer"
               smooth
