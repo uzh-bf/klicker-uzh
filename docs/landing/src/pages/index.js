@@ -13,16 +13,24 @@ import evaluationMacPNG from '../img/evaluation_mac.png'
 import iphonePNG from '../img/iphone.png'
 import codePNG from '../img/code.png'
 
-async function pingKlickerEndpoint(serviceName, setIsAvailable) {
+async function pingKlickerEndpoint({
+  serviceName,
+  callback,
+  accept,
+  path = '',
+  method = 'get',
+}) {
   try {
-    const response = await axios.head(`https://${serviceName}.klicker.uzh.ch`, {
+    await axios({
+      method,
+      url: `https://${serviceName}.klicker.uzh.ch${path}`,
       timeout: 1500,
+      accept,
     })
-    console.log(response)
-    setIsAvailable(true)
+    callback(true)
   } catch (error) {
     console.log(error)
-    setIsAvailable(false)
+    callback(false)
   }
 }
 
@@ -31,46 +39,55 @@ export default function Index() {
   const [isApiAvailable, setIsApiAvailable] = useState(null)
   const [isAaiAvailable, setIsAaiAvailable] = useState(null)
 
-  async function pingKlickerEndpoints() {
-    pingKlickerEndpoint('app', setIsAppAvailable)
-    pingKlickerEndpoint('api', setIsApiAvailable)
-    pingKlickerEndpoint('aai', setIsAaiAvailable)
-  }
-
   useEffect(() => {
+    async function pingKlickerEndpoints() {
+      pingKlickerEndpoint({
+        serviceName: 'app',
+        callback: setIsAppAvailable,
+      })
+      // pingKlickerEndpoint({
+      //   serviceName: 'api',
+      //   callback: setIsApiAvailable,
+      //   path: '/graphql',
+      //   method: 'post',
+      // })
+      // pingKlickerEndpoint({
+      //   serviceName: 'aai',
+      //   callback: setIsAaiAvailable,
+      // })
+    }
+
     pingKlickerEndpoints()
   }, [])
 
   return (
     <Layout>
-      {isAppAvailable !== null &&
-        isApiAvailable !== null &&
-        (!isAppAvailable || !isApiAvailable) && (
-          <Message error>
-            The Klicker is unavailable at the moment. We are trying to fix the
-            problem as quickly as possible. <br />
-            You can get updates on our{' '}
-            <a
-              target="_blank"
-              rel="noopener noreferrer"
-              href="https://uptime.statuscake.com/?TestID=AEHThYQ2ig"
-            >
-              status page
-            </a>
-            . Please excuse the inconvenience and try again later.
-            <Message.List>
-              <Message.Item>
-                Frontend - {isAppAvailable ? 'UP' : 'DOWN'}
-              </Message.Item>
-              <Message.Item>
-                Backend - {isApiAvailable ? 'UP' : 'DOWN'}
-              </Message.Item>
-              {/* <Message.Item>
+      {isAppAvailable === false && (
+        <Message error>
+          The Klicker is unavailable at the moment. We are trying to fix the
+          problem as quickly as possible. <br />
+          You can get updates on our{' '}
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href="https://uptime.statuscake.com/?TestID=AEHThYQ2ig"
+          >
+            status page
+          </a>
+          . Please excuse the inconvenience and try again later.
+          <Message.List>
+            <Message.Item>
+              Frontend - {isAppAvailable ? 'UP' : 'DOWN'}
+            </Message.Item>
+            {/* <Message.Item>
+              Backend - {isApiAvailable ? 'UP' : 'DOWN'}
+            </Message.Item> */}
+            {/* <Message.Item>
                 AAI - {isAaiAvailable ? 'UP' : 'DOWN'}
               </Message.Item> */}
-            </Message.List>
-          </Message>
-        )}
+          </Message.List>
+        </Message>
+      )}
 
       <Slider>
         <Slider.Item
