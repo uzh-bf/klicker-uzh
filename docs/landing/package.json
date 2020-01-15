@@ -4,7 +4,7 @@
     "yarn": "YARN NO LONGER USED - use npm instead."
   },
   "dependencies": {
-    "gatsby": "2.18.21",
+    "gatsby": "2.18.22",
     "gatsby-plugin-react-helmet": "3.1.21",
     "gatsby-plugin-styled-jsx": "3.1.18",
     "react": "16.12.0",
