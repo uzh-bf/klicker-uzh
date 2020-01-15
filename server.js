@@ -7,6 +7,7 @@ const cookieParser = require('cookie-parser')
 const express = require('express')
 const next = require('next')
 const compression = require('compression')
+const cors = require('cors')
 const helmet = require('helmet')
 const morgan = require('morgan')
 const { basename, join } = require('path')
@@ -311,10 +312,21 @@ app
       )
     }
 
-    let middleware = [
-      // enable cookie parsing for the locale cookie
-      cookieParser(),
-    ]
+    let middleware = []
+
+    // add CORS if defined
+    if (SECURITY_CFG.cors.origin) {
+      middleware.push(
+        cors({
+          credentials: SECURITY_CFG.cors.credentials,
+          origin: SECURITY_CFG.cors.origin,
+          optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
+        })
+      )
+    }
+
+    // enable cookie parsing for the locale cookie
+    middleware.push(cookieParser())
 
     // add morgan logger
     if (process.env.NODE_ENV !== 'test') {
