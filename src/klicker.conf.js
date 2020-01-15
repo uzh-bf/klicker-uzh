@@ -115,6 +115,18 @@ module.exports = convict({
     },
   },
   security: {
+    cors: {
+      credentials: {
+        default: true,
+        env: 'SECURITY_CORS_CREDENTIALS',
+        format: 'Boolean',
+      },
+      origin: {
+        default: undefined,
+        env: 'SECURITY_CORS_ORIGIN',
+        format: Array,
+      },
+    },
     csp: {
       connectSrc: {
         default: ["'self'", process.env.API_ENDPOINT, process.env.API_ENDPOINT_WS],
