@@ -45,6 +45,16 @@ export default class Header extends React.Component {
                 </a>
               </Menu.Item>
 
+              <Menu.Item>
+                <a
+                  href="https://uptime.statuscake.com/?TestID=AEHThYQ2ig"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Status
+                </a>
+              </Menu.Item>
+
               <Menu.Item
                 name="contact"
                 active={this.state.activeMenuItem === 'contact'}
