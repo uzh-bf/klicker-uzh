@@ -8,7 +8,7 @@ module.exports = {
     {
       resolve: 'gatsby-plugin-matomo',
       options: {
-        siteId: '328',
+        siteId: '355',
         matomoUrl: 'https://webstats.uzh.ch',
         siteUrl: 'https://www.klicker.uzh.ch',
       },
