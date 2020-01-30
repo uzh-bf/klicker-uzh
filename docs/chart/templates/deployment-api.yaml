@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "klicker-uzh.fullname" . }}-api
+  labels:
+    {{- include "klicker-uzh.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "klicker-uzh.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "klicker-uzh.selectorLabels" . | nindent 8 }}
+    spec:
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+
+      # securityContext:
+      #   {{- toYaml .Values.podSecurityContext | nindent 8 }}
+
+      containers:
+        - name: {{ .Chart.Name }}-api
+          image: "{{ .Values.image.repository }}:v{{ .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          ports:
+            - name: http
+              containerPort: 4000
+              protocol: TCP
+
+          env:
+            - name: APP_SECRET
+                valueFrom:
+                  secretKeyRef:
+                    name: klicker-secret
+                    key: value
+            - name: CACHE_REDIS_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: redis-password
+                    key: value
+
+          envFrom:
+            - configMapRef:
+                name: klicker-conf-common
+            - configMapRef:
+                name: klicker-conf-api
+
+          # securityContext:
+          #   {{- toYaml .Values.securityContext | nindent 12 }}
+
+          # livenessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          # readinessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}

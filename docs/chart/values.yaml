@@ -1,0 +1,84 @@
+react:
+  replicaCount: 2
+
+  image:
+    repository: uzhbf/klicker-react
+    pullPolicy: IfNotPresent
+
+  imagePullSecrets: []
+  nameOverride: ""
+  fullnameOverride: ""
+
+  service:
+    type: ClusterIP
+    port: 3000
+
+  resources:
+    limits:
+      cpu: '1'
+      memory: 512Mi
+    requests:
+      cpu: 500m
+      memory: 256Mi
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  # podSecurityContext: {}
+    # fsGroup: 2000
+
+  # securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+
+
+api:
+  replicaCount: 2
+
+  image:
+    repository: uzhbf/klicker-api
+    pullPolicy: IfNotPresent
+
+  imagePullSecrets: []
+  nameOverride: ""
+  fullnameOverride: ""
+
+  service:
+    type: ClusterIP
+    port: 4000
+
+  resources:
+    limits:
+      cpu: '1'
+      memory: 512Mi
+    requests:
+      cpu: 500m
+      memory: 256Mi
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  # podSecurityContext: {}
+    # fsGroup: 2000
+
+  # securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+
+redis:
+  enabled: true
+  password: 'abcd'
+
+services:
+  slack:
+    enabled: false
