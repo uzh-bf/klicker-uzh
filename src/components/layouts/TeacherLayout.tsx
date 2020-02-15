@@ -47,12 +47,6 @@ function TeacherLayout({ actionArea, children, fixedHeight, navbar, pageTitle, s
       name: 'runningSession',
     },
     {
-      className: 'createQuestion',
-      href: '/questions/create',
-      label: <FormattedMessage defaultMessage="Create Question" id="createQuestion.title" />,
-      name: 'createQuestion',
-    },
-    {
       className: 'createSession',
       href: '/questions?creationMode=true',
       label: <FormattedMessage defaultMessage="Create Session" id="createSession.title" />,
