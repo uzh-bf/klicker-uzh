@@ -205,7 +205,7 @@
   "sessionArea.whatsNew": "Updates",
   "sessionCreation.blockGrouping": "Group questions inside a block to activate and evaluate them simultaneously.",
   "sessionCreation.blockSequence": "Create multiple blocks to evaluate questions sequentially.",
-  "sessionCreation.emptyDropzoneInfo": "Drag & drop a question onto the grey dropzone to begin.",
+  "sessionCreation.emptyDropzoneInfo": "Drag & drop a question onto the grey plus sign to begin.",
   "sessionList.pageTitle": "Session List",
   "sessionList.string.createdOn": "Created on",
   "sessionList.string.noSessionRunning": "No session is currently running.",

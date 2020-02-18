@@ -17,7 +17,7 @@ function InfoArea(): React.ReactElement {
         />
         <Divider />
         <FormattedMessage
-          defaultMessage="Drag & drop a question onto the grey dropzone to begin."
+          defaultMessage="Drag & drop a question onto the grey plus sign to begin."
           id="sessionCreation.emptyDropzoneInfo"
         />
       </Message>

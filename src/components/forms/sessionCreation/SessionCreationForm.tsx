@@ -217,7 +217,7 @@ function SessionCreationForm({
                 />
               </div>
             </div>
-            {sessionBlocks.size <= 1 && <InfoArea />}
+            {sessionBlocks.length <= 1 && <InfoArea />}
           </div>
 
           <div className="sessionConfig">
