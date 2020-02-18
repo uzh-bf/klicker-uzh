@@ -203,7 +203,7 @@
   "sessionArea.whatsNew": "Updates",
   "sessionCreation.blockGrouping": "Gruppieren Sie Fragen in einem Frageblock, um sie gleichzeitig zu aktivieren und auszuwerten.",
   "sessionCreation.blockSequence": "Erstellen Sie mehrere Frageblöcke, um Fragen sequentiell auszuwerten.",
-  "sessionCreation.emptyDropzoneInfo": "Benutzen Sie Drag & Drop und ziehen Sie eine Frage in die graue Ablagezone.",
+  "sessionCreation.emptyDropzoneInfo": "Benutzen Sie Drag & Drop und ziehen Sie eine Frage auf das graue Plus.",
   "sessionCreation.newBlock": "Neuer Frageblock",
   "sessionCreation.newBlock.tooltip": "Gruppieren Sie Fragen in einem Frageblock, um sie gleichzeitig zu aktivieren und auszuwerten.",
   "sessionCreation.title": "Session erstellen",
