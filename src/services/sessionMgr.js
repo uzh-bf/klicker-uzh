@@ -156,37 +156,50 @@ const getRunningSession = async sessionId => {
  * Skip any blocks that are empty (erroneous blocks)
  * Create question instances for all questions within
  */
-const mapBlocks = ({ sessionId, questionBlocks, userId }) => {
+const mapBlocks = async ({ sessionId, questionBlocks, userId }) => {
   // initialize a store for newly created instance models
   let instances = []
   const promises = []
 
-  const blocks = questionBlocks
-    .filter(block => block.questions.length > 0)
-    .map(block => ({
-      instances: block.questions.map(({ question, version }) => {
-        // create a new question instance model
-        const instance = new QuestionInstanceModel({
-          question,
-          session: sessionId,
-          user: userId,
-          version,
-        })
+  const blocks = await Promise.all(
+    questionBlocks
+      .filter(block => block.questions.length > 0)
+      .map(async block => ({
+        instances: await Promise.all(
+          block.questions.map(async ({ question, version }) => {
+            let questionVersion = version
 
-        // update the question with the corresponding instances
-        promises.push(
-          QuestionModel.findByIdAndUpdate(question, {
-            $push: { instances: instance.id },
+            // if there is no valid defined version, look up the latest one
+            if (questionVersion < 0) {
+              const questionInfo = await QuestionModel.findById(question)
+              questionVersion = questionInfo.versions.length - 1
+              console.log(questionInfo, questionVersion)
+            }
+
+            // create a new question instance model
+            const instance = new QuestionInstanceModel({
+              question,
+              session: sessionId,
+              user: userId,
+              version: questionVersion,
+            })
+
+            // update the question with the corresponding instances
+            promises.push(
+              QuestionModel.findByIdAndUpdate(question, {
+                $push: { instances: instance.id },
+              })
+            )
+
+            // append the new question instance to the store
+            instances = [...instances, instance]
+
+            // return only the id of the new instance
+            return [instance.id]
           })
-        )
-
-        // append the new question instance to the store
-        instances = [...instances, instance]
-
-        // return only the id of the new instance
-        return [instance.id]
-      }),
-    }))
+        ),
+      }))
+  )
 
   return {
     blocks,
@@ -335,7 +348,7 @@ const computeInstanceResults = async ({ id, question }) => {
  */
 const createSession = async ({ name, questionBlocks = [], userId }) => {
   const sessionId = ObjectId()
-  const { blocks, instances, promises } = mapBlocks({
+  const { blocks, instances, promises } = await mapBlocks({
     sessionId,
     questionBlocks,
     userId,
@@ -415,7 +428,7 @@ const modifySession = async ({ id, name, questionBlocks, userId }) => {
     })
 
     // map the blocks
-    const { blocks, instances, promises } = mapBlocks({
+    const { blocks, instances, promises } = await mapBlocks({
       sessionId: id,
       questionBlocks,
       userId,
