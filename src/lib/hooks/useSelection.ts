@@ -5,7 +5,10 @@ const INITIAL_STATE = { ids: [], items: [] }
 function reducer(state, action): any {
   switch (action.type) {
     case 'SELECT_BATCH':
-      return { ids: action.items.map((el): void => el.id), items: action.items }
+      return {
+        ids: action.items.map((el): void => el.id),
+        items: action.items.map(item => ({ ...item, version: -1 })),
+      }
 
     case 'SELECT':
       // if the id is already selected, unselect (toggle)
