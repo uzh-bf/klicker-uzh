@@ -53,7 +53,8 @@ function QuestionSingle({
       </div>
 
       <div className="title">
-        <Ellipsis>{title}</Ellipsis> <span>{`(v${version + 1})`}</span>
+        <Ellipsis>{title}</Ellipsis>
+        {version >= 0 && <span> {`(v${version + 1})`}</span>}
       </div>
 
       <style jsx>
