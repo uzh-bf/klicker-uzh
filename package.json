@@ -129,7 +129,7 @@
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "2.15.0",
-    "@typescript-eslint/parser": "2.15.0",
+    "@typescript-eslint/parser": "2.23.0",
     "@graphql-codegen/cli": "1.11.0",
     "@graphql-codegen/fragment-matcher": "1.11.0",
     "@testing-library/react": "9.4.0",
