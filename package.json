@@ -154,7 +154,7 @@
     "semantic-ui": "2.4.2",
     "semantic-ui-css": "2.4.1",
     "webpack-bundle-analyzer": "3.6.0",
-    "why-did-you-update": "1.0.6"
+    "why-did-you-update": "1.0.8"
   },
   "scripts": {
     "analyze": "cross-env BUNDLE_ANALYZE=both NODE_ENV=production next build src",
