@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import UUIDv4 from 'uuid'
+import React, { useState, useEffect, useMemo } from 'react'
+import { v4 as UUIDv4 } from 'uuid'
 import _get from 'lodash/get'
 import _debounce from 'lodash/debounce'
 import _some from 'lodash/some'
@@ -82,21 +82,13 @@ function Index(): React.ReactElement {
     handleToggleArchive,
   } = useSortingAndFiltering()
 
-  const [index, setIndex] = useState()
-  useEffect((): any => {
-    if (!data || !data.questions) {
-      return
-    }
-
-    try {
-      // build an index from the received questions
-      setIndex(buildIndex('questions', data.questions, ['title', 'createdAt']))
-    } catch (e) {
-      console.error(e)
+  const index = useMemo(() => {
+    if (data?.questions) {
+      buildIndex('questions', data.questions, ['title', 'createdAt'])
     }
   }, [data])
 
-  const [processedQuestions, setProcessedQuestions] = useState()
+  const [processedQuestions, setProcessedQuestions] = useState([])
   useEffect((): any => {
     if (!data || !data.questions) {
       return

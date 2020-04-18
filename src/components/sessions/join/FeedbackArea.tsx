@@ -36,7 +36,7 @@ function FeedbackArea({
 }: Props): React.ReactElement {
   const [confusionDifficulty, setConfusionDifficulty] = useState()
   const [confusionSpeed, setConfusionSpeed] = useState()
-  const [feedbackInputValue, setFeedbackInputValue] = useState()
+  const [feedbackInputValue, setFeedbackInputValue] = useState('')
 
   useEffect((): void => {
     try {

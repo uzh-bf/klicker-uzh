@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import classNames from 'classnames'
 import dayjs from 'dayjs'
 import { FormattedMessage } from 'react-intl'
-import { useDrag } from 'react-dnd-cjs'
+import { useDrag } from 'react-dnd'
 import { Checkbox, Dropdown, Label } from 'semantic-ui-react'
 
 import QuestionDetails from './QuestionDetails'
