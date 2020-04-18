@@ -13,7 +13,7 @@ const allSessionsQuery = async (parentValue, args, { auth, loaders }) => {
   })
 
   // prime the dataloader cache
-  results.forEach(session => ensureLoaders(loaders).sessions.prime(session.id, session))
+  results.forEach((session) => ensureLoaders(loaders).sessions.prime(session.id, session))
 
   return results
 }
@@ -37,7 +37,7 @@ const sessionByPVQuery = (parentValue, args, { loaders }) => {
 }
 const sessionsByPVQuery = (parentValue, args, { loaders }) => {
   const loader = ensureLoaders(loaders).sessions
-  return Promise.all(parentValue.sessions.map(session => loader.load(session)))
+  return Promise.all(parentValue.sessions.map((session) => loader.load(session)))
 }
 
 const runningSessionQuery = async (parentValue, args, { auth }) => {

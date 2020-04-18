@@ -4,7 +4,7 @@ const { QuestionInstanceModel, SessionModel, QuestionModel, TagModel, FileModel 
 // create a mapping from a mongo result array to a dataloader array
 function createMapping(arr) {
   const mapping = {}
-  arr.forEach(item => {
+  arr.forEach((item) => {
     mapping[item.id] = item
   })
   return mapping
@@ -12,8 +12,8 @@ function createMapping(arr) {
 
 // create a factory function for simple dataloaders
 // optionally provided authentication enables user-scoped loaders
-const createBasicLoader = model => auth =>
-  new DataLoader(async ids => {
+const createBasicLoader = (model) => (auth) =>
+  new DataLoader(async (ids) => {
     const query = { _id: { $in: ids } }
 
     // if the request was authenticated, inject the subject into the loader
@@ -23,7 +23,7 @@ const createBasicLoader = model => auth =>
 
     const results = await model.find(query)
     const mapping = createMapping(results)
-    return ids.map(id => mapping[id])
+    return ids.map((id) => mapping[id])
   })
 
 // setup the real loaders using the factory
@@ -33,7 +33,7 @@ const sessionsLoader = createBasicLoader(SessionModel)
 const questionInstancesLoader = createBasicLoader(QuestionInstanceModel)
 const filesLoader = createBasicLoader(FileModel)
 
-const createLoaders = auth => ({
+const createLoaders = (auth) => ({
   files: filesLoader(auth),
   questions: questionsLoader(auth),
   questionInstances: questionInstancesLoader(auth),
@@ -41,7 +41,7 @@ const createLoaders = auth => ({
   tags: tagsLoader(auth),
 })
 
-const ensureLoaders = loaders => {
+const ensureLoaders = (loaders) => {
   if (!loaders) {
     throw new Error('LOADERS_NOT_INITIALIZED')
   }

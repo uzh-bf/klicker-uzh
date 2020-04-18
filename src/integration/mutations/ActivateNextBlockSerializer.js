@@ -1,5 +1,5 @@
 module.exports = {
-  test: data => data && !!data.activateNextBlock,
+  test: (data) => data && !!data.activateNextBlock,
   print: ({ activateNextBlock: { blocks } }) => `
     activateNextBlock {
       blocks: ${blocks.map(
@@ -7,7 +7,7 @@ module.exports = {
         status: ${status}
         timeLimit: ${timeLimit}
         expiresAt: ${expect.any(String)}
-        instances: ${instances.map(instance => instance.isOpen)}
+        instances: ${instances.map((instance) => instance.isOpen)}
       `
       )}
     }

@@ -28,7 +28,7 @@ const User = new mongoose.Schema(
       unique: true,
       validate: {
         message: Errors.INVALID_SHORTNAME,
-        validator: value => isAlphanumeric(value),
+        validator: (value) => isAlphanumeric(value),
       },
     },
     institution: {
@@ -56,7 +56,7 @@ const User = new mongoose.Schema(
   { timestamps: true }
 )
 
-User.pre('save', next => {
+User.pre('save', (next) => {
   // ensure the email is properly normalized
   if (this.email) {
     this.email = normalizeEmail(this.email)

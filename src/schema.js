@@ -241,7 +241,7 @@ const resolvers = {
     question: questionByPV,
     responses: responsesByPV,
     results: resultsByPV,
-    session: pv => String(pv.session), // HACK: fix broken ID coercion of graphql 14.0.0
+    session: (pv) => String(pv.session), // HACK: fix broken ID coercion of graphql 14.0.0
   },
   QuestionInstance_Public: {
     question: questionByPV,

@@ -8,17 +8,14 @@ const APP_CFG = cfg.get('app')
 
 /* ----- queries ----- */
 const authUserByIDQuery = (parentValue, args, { auth }) => UserModel.findById(auth.sub)
-const userByIDQuery = parentValue => UserModel.findById(parentValue.user)
+const userByIDQuery = (parentValue) => UserModel.findById(parentValue.user)
 const checkAvailabilityQuery = (parentValue, { email, shortname }) =>
   AccountService.checkAvailability({ email, shortname })
 const checkAccountStatusQuery = (parentValue, args, { auth, res }) => AccountService.checkAccountStatus({ auth, res })
 
 // Generate an HMAC for user identity verification
 const hmacQuery = (parentValue, args, { auth }) =>
-  crypto
-    .createHmac('sha256', APP_CFG.secret)
-    .update(auth.sub)
-    .digest('hex')
+  crypto.createHmac('sha256', APP_CFG.secret).update(auth.sub).digest('hex')
 
 /* ----- mutations ----- */
 const createUserMutation = (parentValue, { email, password, shortname, institution, useCase }) =>

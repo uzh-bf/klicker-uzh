@@ -6,7 +6,7 @@ const allTagsQuery = async (parentValue, args, { auth, loaders }) => {
   const results = await TagModel.find({ user: auth.sub }).sort({ name: 1 })
 
   // prime the dataloader cache
-  results.forEach(tag => ensureLoaders(loaders).tags.prime(tag.id, tag))
+  results.forEach((tag) => ensureLoaders(loaders).tags.prime(tag.id, tag))
 
   return results
 }
@@ -14,7 +14,7 @@ const allTagsQuery = async (parentValue, args, { auth, loaders }) => {
 const tagByIDQuery = (parentValue, { id }, { loaders }) => ensureLoaders(loaders).tags.load(id)
 const tagsByPVQuery = (parentValue, args, { loaders }) => {
   const loader = ensureLoaders(loaders).tags
-  return Promise.all(parentValue.tags.map(tag => loader.load(tag)))
+  return Promise.all(parentValue.tags.map((tag) => loader.load(tag)))
 }
 
 module.exports = {

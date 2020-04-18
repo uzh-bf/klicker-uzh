@@ -1,5 +1,5 @@
 module.exports = {
-  test: data => data && !!data.runningSession,
+  test: (data) => data && !!data.runningSession,
   print: ({ runningSession: { activeStep, confusionTS, feedbacks, blocks, settings } }) => `
     runningSession {
       activeStep: ${activeStep}

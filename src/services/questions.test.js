@@ -26,7 +26,7 @@ describe('QuestionService', () => {
       withLogin: true,
     }))
   })
-  afterAll(async done => {
+  afterAll(async (done) => {
     userId = undefined
     await mongoose.disconnect(done)
   })

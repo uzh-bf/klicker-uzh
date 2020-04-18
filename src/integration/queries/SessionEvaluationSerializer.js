@@ -1,5 +1,5 @@
 module.exports = {
-  test: data => data && !!data.session,
+  test: (data) => data && !!data.session,
   print: ({ session: { status, blocks } }) => `
     evaluateSession {
       status: ${status}
@@ -21,7 +21,7 @@ module.exports = {
             )}
           }
           results: ${JSON.stringify(results)}
-          responses: ${responses && responses.map(response => response.value)}
+          responses: ${responses && responses.map((response) => response.value)}
         `
         )}
       `

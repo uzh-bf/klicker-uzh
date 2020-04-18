@@ -1,5 +1,5 @@
 module.exports = {
-  test: data => data && (!!data.createSession || !!data.modifySession),
+  test: (data) => data && (!!data.createSession || !!data.modifySession),
   print: ({ createSession, modifySession }) => {
     const { confusionTS, feedbacks, blocks, settings } = createSession || modifySession
 

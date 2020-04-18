@@ -14,7 +14,7 @@ const allQuestionsQuery = async (parentValue, args, { auth, loaders }) => {
   })
 
   // prime the dataloader cache
-  results.forEach(question => ensureLoaders(loaders).questions.prime(question.id, question))
+  results.forEach((question) => ensureLoaders(loaders).questions.prime(question.id, question))
 
   return results
 }
@@ -24,7 +24,7 @@ const questionByPVQuery = (parentValue, args, { loaders }) =>
   ensureLoaders(loaders).questions.load(parentValue.question)
 const questionsByPVQuery = (parentValue, args, { loaders }) => {
   const loader = ensureLoaders(loaders).questions
-  return Promise.all(parentValue.questions.map(question => loader.load(question)))
+  return Promise.all(parentValue.questions.map((question) => loader.load(question)))
 }
 
 /* ----- mutations ----- */

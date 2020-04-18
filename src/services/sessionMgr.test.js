@@ -34,7 +34,7 @@ describe('SessionMgrService', () => {
       withQuestions: true,
     }))
   })
-  afterAll(async done => {
+  afterAll(async (done) => {
     userId = undefined
     await mongoose.disconnect(done)
   })
@@ -573,7 +573,7 @@ describe('SessionMgrService', () => {
       const instanceIds = preparedSession.blocks.reduce((acc, block) => [...acc, ...block.instances], [])
 
       // ensure that all the instances are present
-      instanceIds.forEach(async questionInstance => {
+      instanceIds.forEach(async (questionInstance) => {
         const matchingInstances = await QuestionInstanceModel.count({
           _id: questionInstance,
         })
@@ -596,7 +596,7 @@ describe('SessionMgrService', () => {
       expect(matchingSessions).toEqual(0)
 
       // expect the instances to have been deleted
-      instanceIds.forEach(async questionInstance => {
+      instanceIds.forEach(async (questionInstance) => {
         const matchingInstances = await QuestionInstanceModel.count({
           _id: questionInstance,
         })

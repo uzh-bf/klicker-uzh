@@ -1,5 +1,5 @@
 module.exports = {
-  test: data => data && (!!data.endSession || !!data.startSession || !!data.pauseSession || !!data.cancelSession),
+  test: (data) => data && (!!data.endSession || !!data.startSession || !!data.pauseSession || !!data.cancelSession),
   print: ({ endSession, startSession, pauseSession, cancelSession }) => {
     const status =
       (endSession && endSession.status) ||
