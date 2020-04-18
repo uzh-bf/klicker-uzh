@@ -9,13 +9,13 @@ export function logPageView(): void {
   ReactGA.pageview(window.location.pathname)
 }
 
-export function logEvent(category: string = '', action: string = ''): void {
+export function logEvent(category = '', action = ''): void {
   if (category && action) {
     ReactGA.event({ action, category })
   }
 }
 
-export function logException(description: string = '', fatal: boolean = false): void {
+export function logException(description = '', fatal = false): void {
   if (description) {
     ReactGA.exception({ description, fatal })
   }

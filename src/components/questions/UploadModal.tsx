@@ -65,9 +65,9 @@ function UploadModal({ trigger }: Props): React.ReactElement {
           mutation: CreateQuestionMutation,
           variables: {
             content: question.content,
-            files: question.files.map(file => ({ ...file, originalName: file.name })),
+            files: question.files.map((file) => ({ ...file, originalName: file.name })),
             options,
-            tags: question.tags.map(tag => tag.name),
+            tags: question.tags.map((tag) => tag.name),
             title: question.title,
             type: question.type,
           },

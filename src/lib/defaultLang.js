@@ -4,8 +4,8 @@ const glob = require('glob')
 
 const defaultMessages = glob
   .sync('./src/lang/.messages/**/*.json')
-  .map(filename => readFileSync(filename, 'utf8'))
-  .map(file => JSON.parse(file))
+  .map((filename) => readFileSync(filename, 'utf8'))
+  .map((file) => JSON.parse(file))
   .reduce((messages, descriptors) => {
     descriptors.forEach(({ id, defaultMessage }) => {
       if (Object.prototype.hasOwnProperty.call(messages, id)) {
