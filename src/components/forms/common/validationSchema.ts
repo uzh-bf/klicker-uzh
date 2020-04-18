@@ -1,9 +1,7 @@
 import { string, ref } from 'yup'
 
 export default {
-  email: string()
-    .email()
-    .lowercase(),
+  email: string().email().lowercase(),
   institution: string(),
   password: string().min(8),
   passwordRepeat: string()

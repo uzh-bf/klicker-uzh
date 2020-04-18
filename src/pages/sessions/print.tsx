@@ -45,11 +45,11 @@ function Print(): React.ReactElement<any> {
                 toggle
                 checked={showSolution}
                 label="Show Solution"
-                onChange={() => setShowSolution(prev => !prev)}
+                onChange={() => setShowSolution((prev) => !prev)}
               />
             </div>
 
-            {activeInstances.map(activeInstance => {
+            {activeInstances.map((activeInstance) => {
               if (activeInstance.question.type === QUESTION_TYPES.FREE_RANGE) {
                 // convert the result data into an array with primitive numbers
                 const valueArray = toValueArray(activeInstance.results.data)
@@ -126,7 +126,7 @@ function Print(): React.ReactElement<any> {
                         activeVisualization={activeVisualization}
                         questionType={question.type}
                         onChangeType={(type, newVisualization) =>
-                          setActiveVisualizations(currentState => ({ ...currentState, [type]: newVisualization }))
+                          setActiveVisualizations((currentState) => ({ ...currentState, [type]: newVisualization }))
                         }
                       />
                     </div>
