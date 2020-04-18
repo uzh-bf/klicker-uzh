@@ -3,10 +3,10 @@ import React, { StrictMode } from 'react'
 import Router from 'next/router'
 import getConfig from 'next/config'
 import App from 'next/app'
-import HTML5Backend from 'react-dnd-html5-backend-cjs'
+import HTML5Backend from 'react-dnd-html5-backend'
 import { ApolloProvider } from '@apollo/react-hooks'
 import { IntlProvider } from 'react-intl'
-import { DndProvider } from 'react-dnd-cjs'
+import { DndProvider } from 'react-dnd'
 import { ToastProvider } from 'react-toast-notifications'
 
 import withApolloClient from '../lib/withApolloClient'
@@ -28,7 +28,7 @@ if (typeof window !== 'undefined' && window.ReactIntlLocaleData) {
   import('intl-pluralrules')
   import('@formatjs/intl-relativetimeformat/polyfill')
 
-  Object.keys(window.ReactIntlLocaleData).forEach(lang => {
+  Object.keys(window.ReactIntlLocaleData).forEach((lang) => {
     import(`@formatjs/intl-relativetimeformat/dist/locale-data/${lang}`)
   })
 }
@@ -76,7 +76,7 @@ class Klicker extends App {
         }).install()
 
         if (LogRocket && window.INIT_LR) {
-          Raven.setDataCallback(data => ({
+          Raven.setDataCallback((data) => ({
             ...data,
             extra: {
               sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef

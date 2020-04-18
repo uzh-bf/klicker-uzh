@@ -1,4 +1,4 @@
-import UUIDv4 from 'uuid/v4'
+import { v4 as UUIDv4 } from 'uuid'
 import _get from 'lodash/get'
 
 export function insertArrayElement(array: any[], index: number, value: any, replace = false): any[] {

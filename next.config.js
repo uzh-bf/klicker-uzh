@@ -13,7 +13,7 @@ const S3_CFG = CFG.get('s3')
 const SECURITY_CFG = CFG.get('security')
 const SERVICES_CFG = CFG.get('services')
 
-module.exports = phase => {
+module.exports = (phase) => {
   let config = {
     // custom runtime configuration
     publicRuntimeConfig: {
@@ -62,6 +62,7 @@ module.exports = phase => {
             loader: 'url-loader',
             options: {
               fallback: 'file-loader',
+              esModule: false,
               limit: 100000,
               name: '[name]-[hash].[ext]',
               outputPath: `${isServer ? '../' : ''}static/images/`,
@@ -85,7 +86,7 @@ module.exports = phase => {
   // development only configuration
   if (phase === DEVELOPMENT_SERVER) {
     // activate polling to make watching work inside Docker on Windows
-    config.webpackDevMiddleware = middlewareConfig => ({
+    config.webpackDevMiddleware = (middlewareConfig) => ({
       ...middlewareConfig,
       watchOptions: {
         poll: 1000,
