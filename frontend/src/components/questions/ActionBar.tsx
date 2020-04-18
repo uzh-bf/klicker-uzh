@@ -68,7 +68,7 @@ function ActionBar({
 }: Props): React.ReactElement {
   const intl = useIntl()
   const { addToast } = useToasts()
-  const [csvData, setCsvData] = useState()
+  const [csvData, setCsvData] = useState([])
   const [allItemsChecked, setAllItemsChecked] = useState(false)
 
   const [getQuestionStatistics, { data, error }] = useMutation(QuestionStatisticsMutation)
@@ -285,7 +285,7 @@ function ActionBar({
         </span>
       </Label>
 
-      {csvData && <CSVDownload data={csvData} />}
+      {csvData?.length > 0 && <CSVDownload data={csvData} />}
 
       <style jsx>
         {`
