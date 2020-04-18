@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import UUIDv4 from 'uuid'
+import { v4 as UUIDv4 } from 'uuid'
 import _get from 'lodash/get'
 import _debounce from 'lodash/debounce'
 import _some from 'lodash/some'
