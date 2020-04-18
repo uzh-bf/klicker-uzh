@@ -13,7 +13,7 @@
     "Jokkis80 <jokki@windowslive.com>"
   ],
   "engines": {
-    "node": ">=10",
+    "node": ">=12",
     "yarn": "YARN NO LONGER USED - use npm instead."
   },
   "license": "AGPL-3.0",
