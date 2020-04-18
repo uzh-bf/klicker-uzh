@@ -31,12 +31,6 @@ jobs:
       script:
         - npm run format:ci
 
-    # calculate the bundle size
-    - <<: *test-setup
-      script:
-        - npm run build
-        - npm run bundlesize
-
     # ensure that the types are valid
     - <<: *test-setup
       script:
