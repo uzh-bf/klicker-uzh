@@ -15,7 +15,7 @@ jobs:
       stage: test
       language: node_js
       node_js:
-        - "10"
+        - '12'
       cache: npm
       before_script:
         - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
