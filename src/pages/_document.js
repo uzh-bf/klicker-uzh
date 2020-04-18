@@ -34,7 +34,7 @@ class IntlDocument extends Document {
             crossOrigin="anonymous"
             src="https://polyfill.io/v3/polyfill.min.js?flags=gated&features=default%2CIntl%2CArray.prototype.includes%2CString.prototype.repeat%2CSymbol%2CSymbol.iterator"
           />
-          <script async="true" crossOrigin="anonymous" src="https://cdn.slaask.com/chat.js" />
+          {/* <script async="true" crossOrigin="anonymous" src="https://cdn.slaask.com/chat.js" /> */}
         </Head>
         <body>
           <Main />
