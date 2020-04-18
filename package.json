@@ -27,7 +27,7 @@
     "@babel/preset-env": "7.7.7",
     "@formatjs/intl-relativetimeformat": "4.5.5",
     "@types/draft-js": "0.10.38",
-    "@types/lodash": "4.14.149",
+    "@types/lodash": "4.14.150",
     "@types/react": "16.9.17",
     "@types/react-dom": "16.9.4",
     "@types/styled-jsx": "2.2.8",
