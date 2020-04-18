@@ -21,6 +21,6 @@ jobs:
             ${{ runner.OS }}-node-
             ${{ runner.OS }}-
       - run: npm ci
-      - run: npm run lint:ci
+      - run: npm run lint
       - run: npm run format:ci
       - run: npm run type-check
