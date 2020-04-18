@@ -133,7 +133,6 @@
     "@graphql-codegen/cli": "1.13.2",
     "@graphql-codegen/fragment-matcher": "1.13.2",
     "@testing-library/react": "10.0.2",
-    "bundlesize": "0.18.0",
     "enzyme": "3.11.0",
     "eslint": "6.8.0",
     "eslint-config-airbnb": "18.1.0",
@@ -161,7 +160,6 @@
     "build": "next build",
     "build:lang": "next build && node ./src/lib/defaultLang",
     "build:semantic": "cd src/lib/semantic && gulp build-css build-assets",
-    "bundlesize": "bundlesize",
     "compile-queries": "persistgraphql src/graphql/ --add_typename",
     "cypress:open": "cypress open",
     "dev": "cross-env NODE_ENV=development nodemon -w .env -w package.json -w server.js -w src/klicker.conf.js server.js",
@@ -210,17 +208,6 @@
       "prettier --write"
     ]
   },
-  "bundlesize": [
-    {
-      "path": "./.next/static/chunks/commons.*.js"
-    },
-    {
-      "path": "./.next/static/css/commons.*.css"
-    },
-    {
-      "path": "./.next/static/runtime/main-*.js"
-    }
-  ],
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged",
