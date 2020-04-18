@@ -30,7 +30,7 @@ function create(initialState) {
 
   const cache = new InMemoryCache({
     addTypename: true,
-    dataIdFromObject: o => o.id,
+    dataIdFromObject: (o) => o.id,
     fragmentMatcher,
   }).restore(initialState || {})
 

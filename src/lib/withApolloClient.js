@@ -6,7 +6,7 @@ import { getDataFromTree } from '@apollo/react-ssr'
 
 import initApollo from './initApollo'
 
-export default App =>
+export default (App) =>
   class Apollo extends React.Component {
     static displayName = 'withApollo(App)'
 
@@ -35,7 +35,7 @@ export default App =>
       if (typeof window === 'undefined') {
         try {
           // Run all GraphQL queries
-          await getDataFromTree(<App {...appProps} Component={Component} apolloClient={apollo} router={router} />)
+          await getDataFromTree(<App {...appProps} apolloClient={apollo} Component={Component} router={router} />)
         } catch (error) {
           // Prevent Apollo Client GraphQL errors from crashing SSR.
           // Handle them in components via the data.error prop:
