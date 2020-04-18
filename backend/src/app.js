@@ -74,7 +74,7 @@ mongoose.connection
   .once('open', () => {
     console.log('[mongo] Connection to MongoDB established.')
   })
-  .on('error', error => {
+  .on('error', (error) => {
     throw new Error(`[mongo] Could not connect to MongoDB: ${error}`)
   })
 
@@ -145,7 +145,7 @@ if (isProd) {
       } else if (Array.isArray(req.body)) {
         // if the transaction is a batch of operations
         const operationsConcat = req.body
-          .map(o => o.operationName)
+          .map((o) => o.operationName)
           .sort()
           .join('/')
         apm.setTransactionName(operationsConcat)
@@ -167,8 +167,8 @@ if (isProd) {
     const limiterSettings = {
       windowMs,
       max,
-      keyGenerator: req => `${req.auth ? req.auth.sub : req.ip}`,
-      onLimitReached: req => {
+      keyGenerator: (req) => `${req.auth ? req.auth.sub : req.ip}`,
+      onLimitReached: (req) => {
         const error = `> Rate-Limited a Request from ${req.ip} ${req.auth.sub || 'anon'}!`
 
         console.error(error)
@@ -231,7 +231,7 @@ const apollo = new ApolloServer({
   engine: SERVICES_CFG.apolloEngine.enabled && {
     apiKey: SERVICES_CFG.apolloEngine.apiKey,
   },
-  formatError: e => {
+  formatError: (e) => {
     console.log(pe.render(e))
 
     if (isProd && Raven) {

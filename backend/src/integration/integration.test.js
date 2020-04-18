@@ -14,22 +14,17 @@ const { Errors, QUESTION_TYPES } = require('../constants')
 process.env.NODE_ENV = 'test'
 
 const serializers = [...Queries.serializers, ...Mutations.serializers]
-serializers.forEach(serializer => expect.addSnapshotSerializer(serializer))
+serializers.forEach((serializer) => expect.addSnapshotSerializer(serializer))
 
 const initialPassword = 'somePassword'
 const passwordAfterChange = 'someOtherPassword'
 
 const sendQuery = (body, authCookie) => {
   if (authCookie) {
-    return request(app)
-      .post('/graphql')
-      .set('Cookie', authCookie)
-      .send(body)
+    return request(app).post('/graphql').set('Cookie', authCookie).send(body)
   }
 
-  return request(app)
-    .post('/graphql')
-    .send(body)
+  return request(app).post('/graphql').send(body)
 }
 
 // ensure that there were no errors with the graphql request
@@ -59,12 +54,12 @@ describe('Integration', () => {
     }))
   })
 
-  afterAll(async done => {
+  afterAll(async (done) => {
     authCookie = null
     await mongoose.disconnect(done)
   })
 
-  const login = async password => {
+  const login = async (password) => {
     // send a login request
     const response = await sendQuery({
       query: Mutations.LoginMutation,
@@ -633,7 +628,7 @@ describe('Integration', () => {
 
       expect(data).toMatchSnapshot()
 
-      blockIds = data.modifySession.blocks.map(block => block.id)
+      blockIds = data.modifySession.blocks.map((block) => block.id)
     })
   })
 

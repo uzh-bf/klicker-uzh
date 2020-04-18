@@ -39,13 +39,13 @@ if (CACHE_CFG.redis.enabled) {
 const httpServer = createServer(app)
 apollo.installSubscriptionHandlers(httpServer)
 
-httpServer.listen(APP_CFG.port, err => {
+httpServer.listen(APP_CFG.port, (err) => {
   if (err) throw err
 
   console.log(`[klicker-api] GraphQL ready on http://${APP_CFG.domain}:${APP_CFG.port}/${APP_CFG.path || ''}!`)
 })
 
-const shutdown = signal => async () => {
+const shutdown = (signal) => async () => {
   console.log('[klicker-api] Shutting down server')
 
   await mongoose.disconnect()
@@ -61,4 +61,4 @@ const shutdown = signal => async () => {
 }
 
 const shutdownSignals = ['SIGINT', 'SIGUSR2', 'SIGTERM']
-shutdownSignals.forEach(signal => process.once(signal, shutdown(signal)))
+shutdownSignals.forEach((signal) => process.once(signal, shutdown(signal)))

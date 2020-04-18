@@ -14,10 +14,10 @@ mongoose.connect(`mongodb://${process.env.MONGO_URL}`, {
 mongoose.connection
   .once('open', async () => {
     const users = await UserModel.find({ createdAt: { $gt: new Date('2019-09-01') } })
-    users.map(user => console.log(`${user.email};${user.institution};${user.lastLoginAt};${user.createdAt}`))
+    users.map((user) => console.log(`${user.email};${user.institution};${user.lastLoginAt};${user.createdAt}`))
     mongoose.connection.close()
   })
 
-  .on('error', error => {
+  .on('error', (error) => {
     console.warn('> Warning: ', error)
   })

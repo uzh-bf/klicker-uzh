@@ -17,13 +17,13 @@ mongoose.connection
     const users = await UserModel.find({})
 
     await Promise.all(
-      users.map(user =>
+      users.map((user) =>
         Promise.all(
-          user.sessions.map(async sessionId => {
+          user.sessions.map(async (sessionId) => {
             const session = await SessionModel.findById(sessionId)
 
-            const promises = _flatMap(session.blocks, block =>
-              block.instances.map(async instanceId => {
+            const promises = _flatMap(session.blocks, (block) =>
+              block.instances.map(async (instanceId) => {
                 const instance = await QuestionInstanceModel.findById(instanceId)
 
                 if (session.id.toString() !== instance.session.toString()) {
@@ -43,6 +43,6 @@ mongoose.connection
     mongoose.connection.close()
   })
 
-  .on('error', error => {
+  .on('error', (error) => {
     console.warn('> Warning: ', error)
   })

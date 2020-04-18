@@ -18,7 +18,7 @@ mongoose.connection
     // extract all users from the database
     const user = await UserModel.findById('5b68c27dccb5dc1eb4b30526')
 
-    const promises = user.questions.map(async questionId => {
+    const promises = user.questions.map(async (questionId) => {
       const question = await QuestionModel.findById(questionId)
 
       question.type = 'MC'
@@ -40,6 +40,6 @@ mongoose.connection
     await Promise.all(promises)
   })
 
-  .on('error', error => {
+  .on('error', (error) => {
     console.warn('> Warning: ', error)
   })

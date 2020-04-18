@@ -59,7 +59,7 @@ const deleteFeedback = async ({ sessionId, feedbackId, userId }) => {
     throw new ForbiddenError('UNAUTHORIZED')
   }
 
-  session.feedbacks = session.feedbacks.filter(feedback => feedback.id !== feedbackId)
+  session.feedbacks = session.feedbacks.filter((feedback) => feedback.id !== feedbackId)
 
   // save the updated session
   await session.save()
@@ -133,7 +133,7 @@ const addResponse = async ({ ip, fp, instanceId, response }) => {
     }
 
     // for each choice in the response, increment the corresponding hash key
-    response.choices.forEach(choiceIndex => {
+    response.choices.forEach((choiceIndex) => {
       transaction.hincrby(`instance:${instanceId}:results`, choiceIndex, 1)
     })
   } else if (QUESTION_GROUPS.FREE.includes(type)) {
@@ -359,7 +359,7 @@ const joinSession = async ({ shortname }) => {
     timeLimit: currentBlock.timeLimit,
     // map active instances to be in the correct format
     activeInstances: currentBlock.instances
-      .filter(instance => instance.isOpen)
+      .filter((instance) => instance.isOpen)
       .map(({ id: instanceId, question, version: instanceVersion }) => {
         const version = question.versions[instanceVersion]
 
@@ -387,7 +387,7 @@ const joinSession = async ({ shortname }) => {
  */
 async function resetQuestionInstances({ instanceIds }) {
   return Promise.all(
-    instanceIds.map(async instanceId => {
+    instanceIds.map(async (instanceId) => {
       // reset any data that has been persisted to the database
       await QuestionInstanceModel.findByIdAndUpdate(instanceId, { responses: [], results: null })
 
@@ -396,7 +396,7 @@ async function resetQuestionInstances({ instanceIds }) {
       const responseResults = await responseCache.hgetall(`instance:${instanceId}:responseHashes`)
 
       if (type === QUESTION_TYPES.SC || type === QUESTION_TYPES.MC) {
-        Object.keys(responseResults).forEach(key => {
+        Object.keys(responseResults).forEach((key) => {
           responseCache.hset(`instance:${instanceId}:results`, `${key}`, 0)
         })
       }
@@ -404,11 +404,11 @@ async function resetQuestionInstances({ instanceIds }) {
       if (type === QUESTION_TYPES.FREE || type === QUESTION_TYPES.FREE_RANGE) {
         const responseHashes = await responseCache.hgetall(`instance:${instanceId}:responseHashes`)
 
-        Object.keys(responseHashes).forEach(key => {
+        Object.keys(responseHashes).forEach((key) => {
           responseCache.hdel(`instance:${instanceId}:responseHashes`, `${key}`)
         })
 
-        Object.keys(responseResults).forEach(key => {
+        Object.keys(responseResults).forEach((key) => {
           responseCache.hdel(`instance:${instanceId}:results`, `${key}`)
         })
       }
@@ -430,7 +430,7 @@ async function resetQuestionBlock({ sessionId, blockId }) {
   const user = await UserModel.findById(session.user)
 
   // find the block requested by id and extract all instance ids
-  const blockIndex = session.blocks.findIndex(block => block.id === blockId)
+  const blockIndex = session.blocks.findIndex((block) => block.id === blockId)
   const instanceIds = session.blocks[blockIndex].instances
 
   // reset the question instances found

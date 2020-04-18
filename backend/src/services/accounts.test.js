@@ -35,7 +35,7 @@ describe('AccountService', () => {
       }))
     })
 
-    afterAll(async done => {
+    afterAll(async (done) => {
       userId = undefined
       await mongoose.disconnect(done)
     })
@@ -185,7 +185,7 @@ describe('AccountService', () => {
         shortname: 'auth',
       })
     })
-    afterAll(done => {
+    afterAll((done) => {
       mongoose.disconnect(done)
     })
 

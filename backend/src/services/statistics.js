@@ -15,11 +15,11 @@ async function computeQuestionStatistics({ ids, userId }) {
 
   const results = questions
     // prepare the question data for aggregation
-    .flatMap(question => {
+    .flatMap((question) => {
       const usageDetails = {}
       const statistics = {}
 
-      question.instances.forEach(instance => {
+      question.instances.forEach((instance) => {
         // if the current instance has no results, there is nothing to compute
         if (!instance.results) {
           return
@@ -42,7 +42,7 @@ async function computeQuestionStatistics({ ids, userId }) {
           // add choices to the overall version data
           // map them such that the overall participant count is included
           statistics[instance.version].push(
-            instance.results.CHOICES.map(choice => ({ chosen: choice, total: instance.results.totalParticipants }))
+            instance.results.CHOICES.map((choice) => ({ chosen: choice, total: instance.results.totalParticipants }))
           )
         } else if (QUESTION_GROUPS.FREE.includes(question.type)) {
           if (!instance.results.FREE) {
@@ -63,7 +63,7 @@ async function computeQuestionStatistics({ ids, userId }) {
       }
     })
     // aggregate the prepared version data and compute statistics
-    .map(result => {
+    .map((result) => {
       const question = { ...result }
 
       // calculate the total usage count
@@ -93,7 +93,7 @@ async function computeQuestionStatistics({ ids, userId }) {
                   total: choice.total + response[index].total,
                 }))
               }, [])
-              .map(choice => ({ ...choice, percentageChosen: _round(choice.chosen / choice.total, 2) }))
+              .map((choice) => ({ ...choice, percentageChosen: _round(choice.chosen / choice.total, 2) }))
           })
         ).map(([version, CHOICES]) => ({ version, CHOICES }))
       } else if (QUESTION_GROUPS.FREE.includes(question.type)) {

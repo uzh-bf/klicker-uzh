@@ -1,9 +1,9 @@
 const { convertToRaw, convertFromRaw, ContentState } = require('draft-js')
 
-const createContentState = text => JSON.stringify(convertToRaw(ContentState.createFromText(text)))
+const createContentState = (text) => JSON.stringify(convertToRaw(ContentState.createFromText(text)))
 
 // calculate the plain text question description from content state
-const convertToPlainText = content => {
+const convertToPlainText = (content) => {
   let description
 
   try {

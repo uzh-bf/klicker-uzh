@@ -14,18 +14,18 @@ const { convertToPlainText } = require('../lib/draft')
  */
 const processTags = (existingTags, newTags, userId) => {
   // get references for the already existing tags
-  const reusableTags = existingTags.filter(tag => newTags.includes(tag.name))
-  const reusableTagNames = reusableTags.map(tag => tag.name)
+  const reusableTags = existingTags.filter((tag) => newTags.includes(tag.name))
+  const reusableTagNames = reusableTags.map((tag) => tag.name)
 
   // if non-existent tags are passed, they need to be created
   const createdTags = [...new Set(newTags)]
-    .filter(name => !reusableTagNames.includes(name))
-    .map(name => new TagModel({ name, user: userId }))
-  const createdTagIds = createdTags.map(tag => tag.id)
+    .filter((name) => !reusableTagNames.includes(name))
+    .map((name) => new TagModel({ name, user: userId }))
+  const createdTagIds = createdTags.map((tag) => tag.id)
 
   // append the newly created tags to the list of tag ids
   const allTags = [...reusableTags, ...createdTags]
-  const allTagIds = allTags.map(tag => tag.id)
+  const allTagIds = allTags.map((tag) => tag.id)
 
   return {
     allTags,
@@ -42,8 +42,8 @@ const processTags = (existingTags, newTags, userId) => {
  */
 const processFiles = (files = [], userId) => {
   // extract the ids of already existing files
-  const existingFiles = files.filter(file => file.id)
-  const modifiedFiles = existingFiles.flatMap(async existingFile => {
+  const existingFiles = files.filter((file) => file.id)
+  const modifiedFiles = existingFiles.flatMap(async (existingFile) => {
     const updatedFile = await FileModel.findById(existingFile.id)
     if (updatedFile.description !== existingFile.description) {
       updatedFile.description = existingFile.description
@@ -54,7 +54,7 @@ const processFiles = (files = [], userId) => {
 
   // create models for entirely new files
   const createdFiles = files
-    .filter(file => !file.id)
+    .filter((file) => !file.id)
     .map(
       ({ name, originalName, type, description }) =>
         new FileModel({
@@ -69,8 +69,8 @@ const processFiles = (files = [], userId) => {
   return {
     createdFiles,
     modifiedFiles,
-    createdFileIds: createdFiles.map(file => file.id),
-    existingFileIds: existingFiles.map(file => file.id),
+    createdFileIds: createdFiles.map((file) => file.id),
+    existingFileIds: existingFiles.map((file) => file.id),
   }
 }
 
@@ -149,12 +149,12 @@ const createQuestion = async ({ title, type, content, options, solution, files, 
     ],
   })
 
-  const allTagsUpdate = allTags.map(tag => {
+  const allTagsUpdate = allTags.map((tag) => {
     tag.questions.push(newQuestion.id)
     return tag.save()
   })
 
-  const allFilesSave = createdFiles.map(file => file.save())
+  const allFilesSave = createdFiles.map((file) => file.save())
 
   // push the new question and possibly tags into the user model
   user.questions.push(newQuestion.id)
@@ -218,7 +218,7 @@ const modifyQuestion = async (questionId, userId, { title, tags, content, option
     const { allTags, allTagIds } = processTags(user.tags, tags, userId)
 
     // update all tags to contain the question
-    const allTagsUpdate = allTags.map(tag => {
+    const allTagsUpdate = allTags.map((tag) => {
       // if the tag doesn't already contain the question, add it
       if (!tag.questions.includes(questionId)) {
         tag.questions.push(questionId)
@@ -227,8 +227,8 @@ const modifyQuestion = async (questionId, userId, { title, tags, content, option
       return tag.save()
     })
 
-    const oldTags = question.tags.filter(prevTag => !allTagIds.includes(prevTag.id))
-    const oldTagsUpdate = oldTags.map(tag => {
+    const oldTags = question.tags.filter((prevTag) => !allTagIds.includes(prevTag.id))
+    const oldTagsUpdate = oldTags.map((tag) => {
       // remove the current question from any old tag
       tag.questions = tag.questions.filter(({ id }) => id !== question.id) // eslint-disable-line
 
@@ -277,7 +277,7 @@ const modifyQuestion = async (questionId, userId, { title, tags, content, option
     if (files) {
       user.files = Array.from(new Set([...user.files, ...createdFileIds]))
       promises.push(
-        createdFiles.map(file => file.save()),
+        createdFiles.map((file) => file.save()),
         modifiedFiles
       )
     }
@@ -326,7 +326,7 @@ const archiveQuestions = async ({ ids, userId }) => {
 
   // set the questions to be archived if it does not yet have the attribute
   // otherwise invert the previously set value
-  const promises = questions.map(question => {
+  const promises = questions.map((question) => {
     // eslint-disable-next-line no-param-reassign
     question.isArchived = !question.isArchived
     return question.save()
@@ -364,7 +364,7 @@ const deleteQuestions = async ({ ids, userId }) => {
 
 async function exportQuestions({ ids, userId }) {
   const questions = await QuestionModel.find({ _id: { $in: ids }, user: userId }).populate(['tags', 'versions.files'])
-  return questions.map(question => {
+  return questions.map((question) => {
     const latestVersion = question.versions[question.versions.length - 1]
     return {
       title: question.title,
@@ -374,7 +374,7 @@ async function exportQuestions({ ids, userId }) {
       description: latestVersion.description,
       options: latestVersion.options,
       solution: latestVersion.solution,
-      files: latestVersion.files.map(file => ({
+      files: latestVersion.files.map((file) => ({
         name: file.name,
         description: file.description,
         type: file.type,
