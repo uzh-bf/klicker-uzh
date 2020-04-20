@@ -110,7 +110,7 @@
     "react-dom": "16.13.1",
     "react-dropzone": "10.2.2",
     "react-ga": "2.7.0",
-    "react-intl": "4.4.0",
+    "react-intl": "4.5.0",
     "react-rangeslider": "2.2.0",
     "react-sizeme": "2.6.12",
     "react-toast-notifications": "2.4.0",
