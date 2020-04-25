@@ -18,6 +18,7 @@ import QuestionDropzone from './QuestionDropzone'
 import InfoArea from './InfoArea'
 
 import validationSchema from '../common/validationSchema'
+import SessionParticipantsModal from './participantsModal/SessionParticipantsModal'
 
 const { sessionName: sessionNameValidator } = validationSchema
 
@@ -26,10 +27,18 @@ interface Props {
   handleSetSessionBlocks: any
   runningSessionId: string
   sessionName: string
+  isAuthenticationEnabled: boolean
+  sessionParticipants: any[]
   handleSetSessionName: any
+  handleSetSessionParticipants: any
+  handleSetIsAuthenticationEnabled: any
   handleCreateSession: any
   handleCreationModeToggle: any
   sessionInteractionType?: string
+  sessionAuthenticationMode: string
+  sessionDataStorageMode: string
+  handleSetSessionAuthenticationMode: any
+  handleSetSessionDataStorageMode: any
 }
 
 const defaultProps = {
@@ -57,10 +66,18 @@ function SessionCreationForm({
   handleSetSessionBlocks,
   runningSessionId,
   sessionName,
+  sessionParticipants,
+  isAuthenticationEnabled,
+  handleSetIsAuthenticationEnabled,
   handleSetSessionName,
+  handleSetSessionParticipants,
   handleCreateSession,
   handleCreationModeToggle,
   sessionInteractionType,
+  sessionAuthenticationMode,
+  sessionDataStorageMode,
+  handleSetSessionAuthenticationMode,
+  handleSetSessionDataStorageMode,
 }: Props): React.ReactElement {
   const onChangeName = (e): void => handleSetSessionName(e.target.value)
 
@@ -242,12 +259,30 @@ function SessionCreationForm({
             </h2>
 
             <div className="sessionName">
-              <label>
-                <FormattedMessage defaultMessage="Session Name" id="form.createSession.sessionName" />
-                <Input name="asd" placeholder="Name..." value={sessionName} onChange={onChangeName} />
-              </label>
+              <Input name="sessionName" placeholder="Session Name..." value={sessionName} onChange={onChangeName} />
             </div>
-            <Button fluid icon disabled={!isValid} labelPosition="left" type="submit">
+
+            <div className="sessionParticipants">
+              <SessionParticipantsModal
+                authenticationMode={sessionAuthenticationMode}
+                dataStorageMode={sessionDataStorageMode}
+                isAuthenticationEnabled={isAuthenticationEnabled}
+                participants={sessionParticipants}
+                onChangeAuthenticationMode={handleSetSessionAuthenticationMode}
+                onChangeDataStorageMode={handleSetSessionDataStorageMode}
+                onChangeIsAuthenticationEnabled={handleSetIsAuthenticationEnabled}
+                onChangeParticipants={handleSetSessionParticipants}
+              />
+            </div>
+
+            <Button
+              fluid
+              icon
+              disabled={!isValid || isAuthenticationEnabled}
+              labelPosition="left"
+              size="small"
+              type="submit"
+            >
               <Icon name="save" />
               <FormattedMessage defaultMessage="Save & Close" id="form.createSession.button.save" />
             </Button>
@@ -255,8 +290,9 @@ function SessionCreationForm({
               fluid
               icon
               primary
-              disabled={!isValid || !!runningSessionId}
+              disabled={!isValid || !!runningSessionId || isAuthenticationEnabled}
               labelPosition="left"
+              size="small"
               onClick={handleCreateSession('start')}
             >
               <Icon name="play" />
@@ -349,16 +385,18 @@ function SessionCreationForm({
               }
             }
 
-            h2 {
+            h2.interactionType {
               border-bottom: 1px solid lightgrey;
-              font-size: 1rem;
+              font-size: 1rem !important;
               margin: 0;
               padding: 0.5rem 0 0.25rem 0;
               margin-bottom: 0.5rem;
             }
 
-            .sessionName {
+            .sessionName,
+            .sessionParticipants {
               flex: 1;
+              margin-bottom: 0.5rem;
 
               label {
                 font-weight: bold;

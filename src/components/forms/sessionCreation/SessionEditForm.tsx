@@ -10,10 +10,18 @@ interface EditFormProps {
   sessionBlocks: any[]
   handleSetSessionBlocks: any
   sessionName: string
+  isAuthenticationEnabled: boolean
+  sessionParticipants: any[]
   handleSetSessionName: any
+  handleSetSessionParticipants: any
+  handleSetIsAuthenticationEnabled: any
   runningSessionId: string
   handleCreateSession: any
   handleCreationModeToggle: any
+  sessionAuthenticationMode: string
+  handleSetSessionAuthenticationMode: any
+  handleSetSessionDataStorageMode: any
+  sessionDataStorageMode: string
 }
 
 function getInteractionType(sessionId, copyMode): 'CREATE' | 'COPY' | 'MODIFY' {
@@ -30,10 +38,18 @@ function SessionEditForm({
   sessionBlocks,
   handleSetSessionBlocks,
   sessionName,
+  sessionParticipants,
+  isAuthenticationEnabled,
+  sessionAuthenticationMode,
+  handleSetIsAuthenticationEnabled,
   handleSetSessionName,
+  handleSetSessionParticipants,
   runningSessionId,
   handleCreateSession,
+  handleSetSessionAuthenticationMode,
   handleCreationModeToggle,
+  handleSetSessionDataStorageMode,
+  sessionDataStorageMode,
 }: EditFormProps): React.ReactElement {
   const router = useRouter()
 
@@ -70,12 +86,20 @@ function SessionEditForm({
     <SessionCreationForm
       handleCreateSession={handleCreateSession}
       handleCreationModeToggle={handleCreationModeToggle}
+      handleSetIsAuthenticationEnabled={handleSetIsAuthenticationEnabled}
+      handleSetSessionAuthenticationMode={handleSetSessionAuthenticationMode}
       handleSetSessionBlocks={handleSetSessionBlocks}
+      handleSetSessionDataStorageMode={handleSetSessionDataStorageMode}
       handleSetSessionName={handleSetSessionName}
+      handleSetSessionParticipants={handleSetSessionParticipants}
+      isAuthenticationEnabled={isAuthenticationEnabled}
       runningSessionId={runningSessionId}
+      sessionAuthenticationMode={sessionAuthenticationMode}
       sessionBlocks={sessionBlocks}
+      sessionDataStorageMode={sessionDataStorageMode}
       sessionInteractionType={getInteractionType(data.session.id, router.query.copy)}
       sessionName={sessionName}
+      sessionParticipants={sessionParticipants}
     />
   )
 }

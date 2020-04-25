@@ -49,6 +49,7 @@
     "transition",
     "segment",
     "card",
-    "progress"
+    "progress",
+    "step"
   ]
 }

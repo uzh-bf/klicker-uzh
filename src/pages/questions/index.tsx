@@ -63,6 +63,11 @@ function Index(): React.ReactElement {
   const [sessionBlocks, setSessionBlocks] = useState((): any => [])
   const [sessionName, setSessionName] = useState('')
 
+  const [isAuthenticationEnabled, setIsAuthenticationEnabled] = useState(false)
+  const [sessionParticipants, setSessionParticipants] = useState([])
+  const [sessionAuthenticationMode, setSessionAuthenticationMode] = useState(null)
+  const [sessionDataStorageMode, setSessionDataStorageMode] = useState(null)
+
   const [startSession, { loading: isStartSessionLoading }] = useMutation(StartSessionMutation)
   const [createSession, { loading: isCreateSessionLoading }] = useMutation(CreateSessionMutation)
   const [archiveQuestions, { loading: isArchiveQuestionsLoading }] = useMutation(ArchiveQuestionsMutation)
@@ -308,11 +313,19 @@ function Index(): React.ReactElement {
           <SessionEditForm
             handleCreateSession={onCreateSession}
             handleCreationModeToggle={onCreationModeToggle}
+            handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
+            handleSetSessionAuthenticationMode={setSessionAuthenticationMode}
             handleSetSessionBlocks={setSessionBlocks}
+            handleSetSessionDataStorageMode={setSessionDataStorageMode}
             handleSetSessionName={setSessionName}
+            handleSetSessionParticipants={setSessionParticipants}
+            isAuthenticationEnabled={isAuthenticationEnabled}
             runningSessionId={runningSessionId}
+            sessionAuthenticationMode={sessionAuthenticationMode}
             sessionBlocks={sessionBlocks}
+            sessionDataStorageMode={sessionDataStorageMode}
             sessionName={sessionName}
+            sessionParticipants={sessionParticipants}
           />
         )
       }
@@ -321,11 +334,19 @@ function Index(): React.ReactElement {
         <SessionCreationForm
           handleCreateSession={onCreateSession}
           handleCreationModeToggle={onCreationModeToggle}
+          handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
+          handleSetSessionAuthenticationMode={setSessionAuthenticationMode}
           handleSetSessionBlocks={setSessionBlocks}
+          handleSetSessionDataStorageMode={setSessionDataStorageMode}
           handleSetSessionName={setSessionName}
+          handleSetSessionParticipants={setSessionParticipants}
+          isAuthenticationEnabled={isAuthenticationEnabled}
           runningSessionId={runningSessionId}
+          sessionAuthenticationMode={sessionAuthenticationMode}
           sessionBlocks={sessionBlocks}
+          sessionDataStorageMode={sessionDataStorageMode}
           sessionName={sessionName}
+          sessionParticipants={sessionParticipants}
         />
       )
     }
