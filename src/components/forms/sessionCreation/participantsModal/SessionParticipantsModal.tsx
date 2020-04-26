@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
-import classNames from 'classnames'
-import { Icon, Modal, Button, Checkbox, Step, Message, Segment, Grid, Divider, Header, Search } from 'semantic-ui-react'
+import { Icon, Modal, Button, Checkbox, Step } from 'semantic-ui-react'
 import Authentication from './Authentication'
 import Participants from './Participants'
 import DataStorage from './DataStorage'
@@ -71,7 +70,7 @@ function SessionParticipantsModal({
           onClick={(): void => setIsModalOpen(true)}
         >
           <Icon name="lock" />
-          {participants && participants.length > 0 ? `Update ${participants.length} Participants` : 'Set Participants'}
+          {participants && participants.length > 0 ? `${participants.length} Participants` : 'Set Participants'}
         </Button>
       )}
     </div>

@@ -281,7 +281,7 @@ function SessionCreationForm({
             <Button
               fluid
               icon
-              disabled={!isValid || isAuthenticationEnabled}
+              disabled={!isValid || (isAuthenticationEnabled && sessionParticipants.length === 0)}
               labelPosition="left"
               size="small"
               type="submit"
@@ -293,7 +293,7 @@ function SessionCreationForm({
               fluid
               icon
               primary
-              disabled={!isValid || !!runningSessionId || isAuthenticationEnabled}
+              disabled={!isValid || !!runningSessionId || (isAuthenticationEnabled && sessionParticipants.length === 0)}
               labelPosition="left"
               size="small"
               onClick={handleCreateSession('start')}
