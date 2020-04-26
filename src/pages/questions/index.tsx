@@ -5,6 +5,7 @@ import _debounce from 'lodash/debounce'
 import _some from 'lodash/some'
 import dayjs from 'dayjs'
 import Link from 'next/link'
+// import { Formik, useField } from 'formik'
 import { useRouter } from 'next/router'
 import { defineMessages, useIntl } from 'react-intl'
 import { useQuery, useMutation } from '@apollo/react-hooks'
@@ -31,6 +32,10 @@ import ActionBar from '../../components/questions/ActionBar'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import { QUESTION_SORTINGS } from '../../constants'
 import { processItems, buildIndex } from '../../lib/utils/filters'
+import {
+  AuthenticationMode,
+  DataStorageMode,
+} from '../../components/forms/sessionCreation/participantsModal/SessionParticipantsModal'
 
 const messages = defineMessages({
   pageTitle: {
@@ -65,8 +70,8 @@ function Index(): React.ReactElement {
 
   const [isAuthenticationEnabled, setIsAuthenticationEnabled] = useState(false)
   const [sessionParticipants, setSessionParticipants] = useState([])
-  const [sessionAuthenticationMode, setSessionAuthenticationMode] = useState(null)
-  const [sessionDataStorageMode, setSessionDataStorageMode] = useState(null)
+  const [sessionAuthenticationMode, setSessionAuthenticationMode] = useState(null as AuthenticationMode)
+  const [sessionDataStorageMode, setSessionDataStorageMode] = useState(null as DataStorageMode)
 
   const [startSession, { loading: isStartSessionLoading }] = useMutation(StartSessionMutation)
   const [createSession, { loading: isCreateSessionLoading }] = useMutation(CreateSessionMutation)

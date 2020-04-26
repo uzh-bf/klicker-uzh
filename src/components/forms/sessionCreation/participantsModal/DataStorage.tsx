@@ -1,13 +1,21 @@
 import React from 'react'
 import classNames from 'classnames'
 import { Modal, Segment, Grid, Divider, Header, Button } from 'semantic-ui-react'
+import { DataStorageMode } from './SessionParticipantsModal'
+
+interface Props {
+  dataStorageMode: DataStorageMode
+  onChangeDataStorageMode: (storageMode: DataStorageMode) => void
+  onActivatePreviousStep: () => void
+  onSaveSettings: () => void
+}
 
 function DataStorage({
   dataStorageMode,
   onChangeDataStorageMode,
   onActivatePreviousStep,
   onSaveSettings,
-}): React.ReactElement {
+}: Props): React.ReactElement {
   return (
     <>
       <Modal.Content>

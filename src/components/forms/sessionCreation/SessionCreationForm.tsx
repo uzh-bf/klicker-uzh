@@ -18,7 +18,10 @@ import QuestionDropzone from './QuestionDropzone'
 import InfoArea from './InfoArea'
 
 import validationSchema from '../common/validationSchema'
-import SessionParticipantsModal from './participantsModal/SessionParticipantsModal'
+import SessionParticipantsModal, {
+  DataStorageMode,
+  AuthenticationMode,
+} from './participantsModal/SessionParticipantsModal'
 
 const { sessionName: sessionNameValidator } = validationSchema
 
@@ -35,8 +38,8 @@ interface Props {
   handleCreateSession: any
   handleCreationModeToggle: any
   sessionInteractionType?: string
-  sessionAuthenticationMode: string
-  sessionDataStorageMode: string
+  sessionAuthenticationMode: AuthenticationMode
+  sessionDataStorageMode: DataStorageMode
   handleSetSessionAuthenticationMode: any
   handleSetSessionDataStorageMode: any
 }

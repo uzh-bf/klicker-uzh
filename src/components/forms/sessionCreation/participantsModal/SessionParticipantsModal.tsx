@@ -5,19 +5,18 @@ import Authentication from './Authentication'
 import Participants from './Participants'
 import DataStorage from './DataStorage'
 
-type Participant = {
-  username: string
-}
+export type AuthenticationMode = 'password' | 'aai'
+export type DataStorageMode = 'complete' | 'secret'
 
 interface Props {
   isAuthenticationEnabled: boolean
   onChangeIsAuthenticationEnabled: (newValue: boolean) => void
-  participants: Participant[]
-  onChangeParticipants: (participants: Participant[]) => void
-  onChangeAuthenticationMode: (mode: string) => void
-  authenticationMode: string
-  dataStorageMode: string
-  onChangeDataStorageMode: (mode: string) => void
+  participants: string[]
+  onChangeParticipants: (participants: string[]) => void
+  onChangeAuthenticationMode: (mode: AuthenticationMode) => void
+  authenticationMode: AuthenticationMode
+  dataStorageMode: DataStorageMode
+  onChangeDataStorageMode: (mode: DataStorageMode) => void
 }
 
 function SessionParticipantsModal({
@@ -50,7 +49,6 @@ function SessionParticipantsModal({
   }
 
   const onSaveParticipants = (): void => {
-    onChangeParticipants([{ username: 'roland.schlaefli@bf.uzh.ch' }])
     setIsModalOpen(false)
   }
 

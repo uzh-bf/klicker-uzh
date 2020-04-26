@@ -1,12 +1,19 @@
 import React from 'react'
 import classNames from 'classnames'
 import { Modal, Segment, Grid, Divider, Header, Button } from 'semantic-ui-react'
+import { AuthenticationMode } from './SessionParticipantsModal'
+
+interface Props {
+  sessionAuthenticationMode: AuthenticationMode
+  onChangeSessionAuthenticationMode: (authenticationMode: AuthenticationMode) => void
+  onActivateNextStep: () => void
+}
 
 function Authentication({
   sessionAuthenticationMode,
   onChangeSessionAuthenticationMode,
   onActivateNextStep,
-}): React.ReactElement {
+}: Props): React.ReactElement {
   return (
     <>
       <Modal.Content>

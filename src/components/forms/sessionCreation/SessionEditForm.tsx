@@ -5,6 +5,7 @@ import { useQuery } from '@apollo/react-hooks'
 import SessionDetailsQuery from '../../../graphql/queries/SessionDetailsQuery.graphql'
 
 import SessionCreationForm from './SessionCreationForm'
+import { AuthenticationMode, DataStorageMode } from './participantsModal/SessionParticipantsModal'
 
 interface EditFormProps {
   sessionBlocks: any[]
@@ -18,10 +19,10 @@ interface EditFormProps {
   runningSessionId: string
   handleCreateSession: any
   handleCreationModeToggle: any
-  sessionAuthenticationMode: string
+  sessionAuthenticationMode: AuthenticationMode
   handleSetSessionAuthenticationMode: any
   handleSetSessionDataStorageMode: any
-  sessionDataStorageMode: string
+  sessionDataStorageMode: DataStorageMode
 }
 
 function getInteractionType(sessionId, copyMode): 'CREATE' | 'COPY' | 'MODIFY' {
