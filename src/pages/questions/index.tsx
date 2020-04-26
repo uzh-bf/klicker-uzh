@@ -217,13 +217,18 @@ function Index(): React.ReactElement {
         // modify an existing session
         result = await modifySession({
           refetchQueries: [{ query: SessionListQuery }],
-          variables: { blocks, id: editSessionId, name: sessionName },
+          variables: {
+            blocks,
+            id: editSessionId,
+            name: sessionName,
+            participants: sessionParticipants.map((username) => ({ username })),
+          },
         })
       } else {
         // create a new session
         result = await createSession({
           refetchQueries: [{ query: SessionListQuery }],
-          variables: { blocks, name: sessionName },
+          variables: { blocks, name: sessionName, participants: sessionParticipants.map((username) => ({ username })) },
         })
       }
 
