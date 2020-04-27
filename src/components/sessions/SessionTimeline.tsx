@@ -151,7 +151,9 @@ function SessionTimeline({
           </a>
           <Dropdown button simple className="icon small" icon="wrench">
             <Dropdown.Menu direction="left">
-              <Dropdown.Header>Link for Participants</Dropdown.Header>
+              <Dropdown.Header>
+                <FormattedMessage defaultMessage="Link for Participants" id="runningSession.string.participantLink" />
+              </Dropdown.Header>
               <Dropdown.Item>
                 <a href={`${publicRuntimeConfig.baseUrl}/join/${shortname}`} rel="noopener noreferrer" target="_blank">
                   <Icon name="external" />
@@ -161,7 +163,9 @@ function SessionTimeline({
                 </a>
               </Dropdown.Item>
 
-              <Dropdown.Header>Public Evaluation</Dropdown.Header>
+              <Dropdown.Header>
+                <FormattedMessage defaultMessage="Public Evaluation" id="runningSession.string.publicEvaluation" />
+              </Dropdown.Header>
               <Dropdown.Item>
                 <Checkbox
                   checked={isEvaluationPublic}
@@ -181,7 +185,12 @@ function SessionTimeline({
                   </a>
                 </Dropdown.Item>
               )}
-              <Dropdown.Header>Participant Authentication</Dropdown.Header>
+              <Dropdown.Header>
+                <FormattedMessage
+                  defaultMessage="Participant Authentication"
+                  id="runningSession.string.participantAuthentication"
+                />
+              </Dropdown.Header>
               <Dropdown.Item>
                 <Checkbox
                   disabled
@@ -196,7 +205,7 @@ function SessionTimeline({
                   trigger={
                     <Menu.Item icon>
                       <Icon name="table" />
-                      Participant List
+                      <FormattedMessage defaultMessage="Participant List" id="runningSession.string.participantList" />
                     </Menu.Item>
                   }
                 >
@@ -204,8 +213,12 @@ function SessionTimeline({
                     <Table celled>
                       <Table.Header>
                         <Table.Row>
-                          <Table.HeaderCell>Username</Table.HeaderCell>
-                          <Table.HeaderCell>Password</Table.HeaderCell>
+                          <Table.HeaderCell>
+                            <FormattedMessage defaultMessage="Username" id="common.string.username" />
+                          </Table.HeaderCell>
+                          <Table.HeaderCell>
+                            <FormattedMessage defaultMessage="Password" id="common.string.password" />
+                          </Table.HeaderCell>
                         </Table.Row>
                       </Table.Header>
                       <Table.Body>
@@ -418,6 +431,14 @@ function SessionTimeline({
                   background-color: white;
                   color: lightgrey;
                   margin-right: 0;
+                }
+
+                :global(i.green) {
+                  color: green;
+                }
+
+                :global(i.red) {
+                  color: red;
                 }
               }
             }
