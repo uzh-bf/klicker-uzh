@@ -3,6 +3,8 @@ import classNames from 'classnames'
 import { defineMessages, FormattedMessage } from 'react-intl'
 import { Button, Checkbox, Icon, Message, Dropdown, Menu, Modal, Table } from 'semantic-ui-react'
 import getConfig from 'next/config'
+import { CSVLink } from 'react-csv'
+import { pick } from 'ramda'
 
 import QuestionBlock from '../questions/QuestionBlock'
 import CancelModal from './CancelModal'
@@ -198,24 +200,42 @@ function SessionTimeline({
                     </Menu.Item>
                   }
                 >
-                  <Table celled>
-                    <Table.Header>
-                      <Table.Row>
-                        <Table.HeaderCell>Username</Table.HeaderCell>
-                        <Table.HeaderCell>Password</Table.HeaderCell>
-                      </Table.Row>
-                    </Table.Header>
-                    <Table.Body>
-                      {participants.map(({ username, password }) => (
+                  <Modal.Content>
+                    <Table celled>
+                      <Table.Header>
                         <Table.Row>
-                          <Table.Cell>{username}</Table.Cell>
-                          <Table.Cell>
-                            <span className="password">{password}</span>
-                          </Table.Cell>
+                          <Table.HeaderCell>Username</Table.HeaderCell>
+                          <Table.HeaderCell>Password</Table.HeaderCell>
                         </Table.Row>
-                      ))}
-                    </Table.Body>
-                  </Table>
+                      </Table.Header>
+                      <Table.Body>
+                        {participants.map(({ username, password }) => (
+                          <Table.Row>
+                            <Table.Cell>{username}</Table.Cell>
+                            <Table.Cell>
+                              <span className="password">{password}</span>
+                            </Table.Cell>
+                          </Table.Row>
+                        ))}
+                      </Table.Body>
+                    </Table>
+                  </Modal.Content>
+
+                  <Modal.Actions>
+                    <CSVLink
+                      data={participants.map(pick(['username', 'password']))}
+                      filename="participants.csv"
+                      headers={[
+                        { label: 'username', key: 'username' },
+                        { label: 'password', key: 'password' },
+                      ]}
+                    >
+                      <Button icon>
+                        <Icon name="file" />
+                        Download (CSV)
+                      </Button>
+                    </CSVLink>
+                  </Modal.Actions>
                 </Modal>
               )}
             </Dropdown.Menu>
