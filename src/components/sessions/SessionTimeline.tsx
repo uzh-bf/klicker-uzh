@@ -185,22 +185,22 @@ function SessionTimeline({
                   </a>
                 </Dropdown.Item>
               )}
-              <Dropdown.Header>
-                <FormattedMessage
-                  defaultMessage="Participant Authentication"
-                  id="runningSession.string.participantAuthentication"
-                />
-              </Dropdown.Header>
-              <Dropdown.Item>
-                <Checkbox
-                  disabled
-                  checked={isParticipantAuthenticationEnabled}
-                  defaultChecked={isParticipantAuthenticationEnabled}
-                  label={intl.formatMessage(messages.toggleParticipantAuthentication)}
-                />
-              </Dropdown.Item>
 
-              {isParticipantAuthenticationEnabled && (
+              {isParticipantAuthenticationEnabled && [
+                <Dropdown.Header>
+                  <FormattedMessage
+                    defaultMessage="Participant Authentication"
+                    id="runningSession.string.participantAuthentication"
+                  />
+                </Dropdown.Header>,
+                // <Dropdown.Item>
+                //   <Checkbox
+                //     disabled
+                //     checked={isParticipantAuthenticationEnabled}
+                //     defaultChecked={isParticipantAuthenticationEnabled}
+                //     label={intl.formatMessage(messages.toggleParticipantAuthentication)}
+                //   />
+                // </Dropdown.Item>,
                 <Modal
                   trigger={
                     <Menu.Item icon>
@@ -209,6 +209,9 @@ function SessionTimeline({
                     </Menu.Item>
                   }
                 >
+                  <Modal.Header>
+                    <FormattedMessage defaultMessage="Participant List" id="runningSession.string.participantList" />
+                  </Modal.Header>
                   <Modal.Content>
                     <Table celled>
                       <Table.Header>
@@ -249,8 +252,8 @@ function SessionTimeline({
                       </Button>
                     </CSVLink>
                   </Modal.Actions>
-                </Modal>
-              )}
+                </Modal>,
+              ]}
             </Dropdown.Menu>
           </Dropdown>
         </div>
