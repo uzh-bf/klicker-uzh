@@ -15,8 +15,8 @@ const initialValues = { username: '', password: '' }
 
 const validationSchema = object()
   .shape({
-    username: string().required(),
-    password: string().required(),
+    username: string().min(1).required(),
+    password: string().min(1).required(),
   })
   .required()
 
@@ -24,8 +24,22 @@ function ParticipantLoginForm({ onSubmit }: Props): React.ReactElement {
   const intl = useIntl()
 
   return (
-    <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={onSubmit}>
-      {({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting }): React.ReactElement => (
+    <Formik
+      initialValues={initialValues}
+      isInitialValid={false}
+      validationSchema={validationSchema}
+      onSubmit={onSubmit}
+    >
+      {({
+        values,
+        errors,
+        touched,
+        handleChange,
+        handleBlur,
+        handleSubmit,
+        isSubmitting,
+        isValid,
+      }): React.ReactElement => (
         <Form error onSubmit={handleSubmit}>
           <FormikInput
             required
@@ -55,7 +69,7 @@ function ParticipantLoginForm({ onSubmit }: Props): React.ReactElement {
             value={values.password}
           />
 
-          <Button primary disabled={isSubmitting} type="submit">
+          <Button primary disabled={!isValid || isSubmitting} type="submit">
             <FormattedMessage defaultMessage="Login" id="common.button.login" />
           </Button>
         </Form>
