@@ -313,10 +313,12 @@ function SessionTimeline({
       </div>
       <div className="buttons">
         <div className="left">
-          <Button icon labelPosition="left" size="small" onClick={handlePauseSession}>
-            <Icon name="pause" />
-            <FormattedMessage defaultMessage="Pause Session" id="sessionArea.button.pauseSession" />
-          </Button>
+          {!isParticipantAuthenticationEnabled && (
+            <Button icon labelPosition="left" size="small" onClick={handlePauseSession}>
+              <Icon name="pause" />
+              <FormattedMessage defaultMessage="Pause Session" id="sessionArea.button.pauseSession" />
+            </Button>
+          )}
           <CancelModal handleCancelSession={handleCancelSession} />
         </div>
 
