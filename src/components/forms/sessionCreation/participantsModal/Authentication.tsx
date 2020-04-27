@@ -26,7 +26,7 @@ function Authentication({
                 className={classNames('option', { active: sessionAuthenticationMode === 'password' })}
                 onClick={(): void => onChangeSessionAuthenticationMode('password')}
               >
-                <Header>Password Distribution</Header>
+                <Header>Password Distribution (Beta)</Header>
                 <p>
                   After your upload of a list of arbitrary usernames/pseudonyms, we generate a list of username-password
                   combinations that you can distribute to your participants.
@@ -34,10 +34,10 @@ function Authentication({
               </Grid.Column>
 
               <Grid.Column
-                className={classNames('option', { active: sessionAuthenticationMode === 'aai' })}
-                onClick={(): void => onChangeSessionAuthenticationMode('aai')}
+                className={classNames('disabled option', { active: sessionAuthenticationMode === 'aai' })}
+                // onClick={(): void => onChangeSessionAuthenticationMode('aai')}
               >
-                <Header>SwitchAAI</Header>
+                <Header>SwitchAAI (Coming Soon)</Header>
                 <p>
                   After your upload of a list of SwitchAAI accounts (exact matches by email), participants will get
                   access to your KlickerUZH session using their personal SwitchAAI login. Therefore, you will not be
@@ -75,6 +75,15 @@ function Authentication({
 
         :global(.option.active) {
           background-color: $color-primary-20p;
+        }
+
+        :global(.option.disabled) {
+          background-color: initial;
+          cursor: initial;
+
+          &:hover {
+            background-color: initial;
+          }
         }
       `}</style>
     </>

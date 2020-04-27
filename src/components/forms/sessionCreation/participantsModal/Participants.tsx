@@ -40,7 +40,13 @@ function Participants({
                   value={participantsRaw}
                   onChange={(e, { value }): void => setParticipantsRaw(value as string)}
                 />
-                <Button type="button" onClick={onParseParticipants}>
+                <Button
+                  className="participantsUpdateButton"
+                  color={participants.length === 0 ? 'red' : undefined}
+                  floated="right"
+                  type="button"
+                  onClick={onParseParticipants}
+                >
                   Update Participants
                 </Button>
               </Form>
@@ -85,6 +91,7 @@ function Participants({
         }
 
         :global(textarea) {
+          margin-bottom: 1rem !important;
           width: 100%;
         }
       `}</style>

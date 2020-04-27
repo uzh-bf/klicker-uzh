@@ -25,10 +25,10 @@ function DataStorage({
 
             <Grid.Row>
               <Grid.Column
-                className={classNames('option', { active: dataStorageMode === 'complete' })}
-                onClick={(): void => onChangeDataStorageMode('complete')}
+                className={classNames('disabled option', { active: dataStorageMode === 'complete' })}
+                // onClick={(): void => onChangeDataStorageMode('complete')}
               >
-                <Header>Complete Results</Header>
+                <Header>Complete Results (Coming Soon)</Header>
                 <p>
                   The results of a session will be stored in a way that makes accessible individual participant
                   responses and the corresponding username.
@@ -79,6 +79,15 @@ function DataStorage({
 
         :global(.option.active) {
           background-color: $color-primary-20p;
+        }
+
+        :global(.option.disabled) {
+          background-color: initial;
+          cursor: initial;
+
+          &:hover {
+            background-color: initial;
+          }
         }
       `}</style>
     </>
