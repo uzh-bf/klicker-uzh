@@ -64,6 +64,7 @@ function Join(): React.ReactElement {
           defaultMessage="No session active. Please reload the page once a session has been started."
           id="joinSession.noSessionActive"
         />
+
         <style jsx>{`
           .noSession {
             padding: 1rem;

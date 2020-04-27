@@ -1,11 +1,28 @@
 import React, { useState } from 'react'
 import { Icon, Modal, Button, Checkbox, Step } from 'semantic-ui-react'
+import { useIntl, defineMessages, FormattedMessage } from 'react-intl'
+
 import Authentication from './Authentication'
 import Participants from './Participants'
 import DataStorage from './DataStorage'
 
 export type AuthenticationMode = 'password' | 'aai'
 export type DataStorageMode = 'complete' | 'secret'
+
+const messages = defineMessages({
+  participantAuthentication: {
+    defaultMessage: 'Participant Authentication',
+    id: 'form.createSession.participantAuth.string.participantAuthentication',
+  },
+  xParticipants: {
+    defaultMessage: '{num} Participants',
+    id: 'form.createSession.participantAuth.button.xParticipants',
+  },
+  setParticipants: {
+    defaultMessage: 'Set Participants',
+    id: 'form.createSession.participantAuth.button.setParticipants',
+  },
+})
 
 interface Props {
   isAuthenticationEnabled: boolean
@@ -28,6 +45,8 @@ function SessionParticipantsModal({
   dataStorageMode,
   onChangeDataStorageMode,
 }: Props): React.ReactElement {
+  const intl = useIntl()
+
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [activeStep, setActiveStep] = useState(0)
 
@@ -55,7 +74,7 @@ function SessionParticipantsModal({
     <div>
       <Checkbox
         checked={isAuthenticationEnabled}
-        label="Participant authentication"
+        label={intl.formatMessage(messages.participantAuthentication)}
         size="tiny"
         onChange={onChangeAuthenticationEnabled}
       />
@@ -70,7 +89,9 @@ function SessionParticipantsModal({
           onClick={(): void => setIsModalOpen(true)}
         >
           <Icon name="lock" />
-          {participants && participants.length > 0 ? `${participants.length} Participants` : 'Set Participants'}
+          {participants && participants.length > 0
+            ? intl.formatMessage(messages.xParticipants, { num: participants.length })
+            : intl.formatMessage(messages.setParticipants)}
         </Button>
       )}
     </div>
@@ -79,7 +100,12 @@ function SessionParticipantsModal({
   return (
     <div className="sessionParticipantsModal">
       <Modal open={isModalOpen} size="large" trigger={triggerButton} onClose={(): void => setIsModalOpen(false)}>
-        <Modal.Header>Participant Authentication</Modal.Header>
+        <Modal.Header>
+          <FormattedMessage
+            defaultMessage="Participant Authentication"
+            id="form.createSession.participantAuth.string.participantAuthentication"
+          />
+        </Modal.Header>
 
         {activeStep === 0 && (
           <Authentication
@@ -111,19 +137,36 @@ function SessionParticipantsModal({
           <Step active={activeStep === 0} onClick={(): void => setActiveStep(0)}>
             <Icon name="lock" />
             <Step.Content>
-              <Step.Title>Authentication</Step.Title>
+              <Step.Title>
+                <FormattedMessage
+                  defaultMessage="Authentication"
+                  id="form.createSession.participantAuth.steps.authentication"
+                />
+              </Step.Title>
             </Step.Content>
           </Step>
+
           <Step active={activeStep === 1} onClick={(): void => setActiveStep(1)}>
             <Icon name="list" />
             <Step.Content>
-              <Step.Title>Participants</Step.Title>
+              <Step.Title>
+                <FormattedMessage
+                  defaultMessage="Authentication"
+                  id="form.createSession.participantAuth.steps.participants"
+                />
+              </Step.Title>
             </Step.Content>
           </Step>
+
           <Step active={activeStep === 2} onClick={(): void => setActiveStep(2)}>
             <Icon name="database" />
             <Step.Content>
-              <Step.Title>Data Storage</Step.Title>
+              <Step.Title>
+                <FormattedMessage
+                  defaultMessage="Authentication"
+                  id="form.createSession.participantAuth.steps.dataStorage"
+                />
+              </Step.Title>
             </Step.Content>
           </Step>
         </Step.Group>

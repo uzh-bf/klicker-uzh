@@ -1,6 +1,7 @@
 import React from 'react'
 import classNames from 'classnames'
 import { Modal, Segment, Grid, Divider, Header, Button } from 'semantic-ui-react'
+import { FormattedMessage } from 'react-intl'
 import { DataStorageMode } from './SessionParticipantsModal'
 
 interface Props {
@@ -21,17 +22,27 @@ function DataStorage({
       <Modal.Content>
         <Segment>
           <Grid stackable columns={2} textAlign="center">
-            <Divider vertical>Or</Divider>
+            <Divider vertical>
+              <FormattedMessage defaultMessage="Or" id="common.string.or" />
+            </Divider>
 
             <Grid.Row>
               <Grid.Column
                 className={classNames('disabled option', { active: dataStorageMode === 'complete' })}
                 // onClick={(): void => onChangeDataStorageMode('complete')}
               >
-                <Header>Complete Results (Coming Soon)</Header>
+                <Header>
+                  <FormattedMessage
+                    defaultMessage="Complete Results (Coming Soon)"
+                    id="form.createSession.participantAuth.completeResults.title"
+                  />
+                </Header>
                 <p>
-                  The results of a session will be stored in a way that makes accessible individual participant
-                  responses and the corresponding username.
+                  <FormattedMessage
+                    defaultMessage="The results of a session will be stored in a way that makes accessible individual participant
+                  responses and the corresponding username."
+                    id="form.createSession.participantAuth.completeResults.description"
+                  />
                 </p>
               </Grid.Column>
 
@@ -39,24 +50,34 @@ function DataStorage({
                 className={classNames('option', { active: dataStorageMode === 'secret' })}
                 onClick={(): void => onChangeDataStorageMode('secret')}
               >
-                <Header>Aggregated Results</Header>
+                <Header>
+                  <FormattedMessage
+                    defaultMessage="Aggregated Results"
+                    id="form.createSession.participantAuth.aggregatedResults.title"
+                  />
+                </Header>
                 <p>
-                  The results of a session will only be stored in an aggregated format, making it impossible to derive
-                  the responses of individual participants.
+                  <FormattedMessage
+                    defaultMessage="The results of a session will only be stored in an aggregated format, making it impossible to derive
+                  the responses of individual participants."
+                    id="form.createSession.participantAuth.aggregatedResults.description"
+                  />
                 </p>
               </Grid.Column>
             </Grid.Row>
           </Grid>
         </Segment>
       </Modal.Content>
+
       <Modal.Actions>
         <Button type="button" onClick={onActivatePreviousStep}>
-          Back
+          <FormattedMessage defaultMessage="Back" id="common.button.back" />
         </Button>
         <Button primary disabled={!dataStorageMode} type="button" onClick={onSaveSettings}>
-          Save
+          <FormattedMessage defaultMessage="Save" id="common.button.save" />
         </Button>
       </Modal.Actions>
+
       <style jsx>{`
         @import 'src/theme';
 

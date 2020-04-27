@@ -1,5 +1,13 @@
 import React, { useState } from 'react'
 import { Modal, Button, TextArea, Grid, Table, Form } from 'semantic-ui-react'
+import { FormattedMessage, useIntl, defineMessages } from 'react-intl'
+
+const messages = defineMessages({
+  participantsPlaceholder: {
+    defaultMessage: 'Input your participants (each on a new line)',
+    id: 'form.createSession.participantAuth.string.participantsPlaceholder',
+  },
+})
 
 interface Props {
   participants: string[]
@@ -14,12 +22,14 @@ function Participants({
   onActivateNextStep,
   onActivatePreviousStep,
 }: Props): React.ReactElement {
+  const intl = useIntl()
+
   const [participantsRaw, setParticipantsRaw] = useState('')
 
   const onParseParticipants = (): void => {
     try {
       const cleanedParticipants = participantsRaw.replace(/;|,/g, '\n')
-      const separatedParticipants = cleanedParticipants.split('\n').map((participant) => participant.replace(' ', ''))
+      const separatedParticipants = cleanedParticipants.split('\n').map((participant) => participant.replace(/ /g, ''))
       const filteredParticipants = separatedParticipants.filter((participant) => !!participant)
       onChangeParticipants(filteredParticipants)
     } catch (e) {
@@ -35,7 +45,7 @@ function Participants({
             <Grid.Column>
               <Form>
                 <TextArea
-                  placeholder="Input your participants..."
+                  placeholder={intl.formatMessage(messages.participantsPlaceholder)}
                   rows={10}
                   value={participantsRaw}
                   onChange={(e, { value }): void => setParticipantsRaw(value as string)}
@@ -47,7 +57,10 @@ function Participants({
                   type="button"
                   onClick={onParseParticipants}
                 >
-                  Update Participants
+                  <FormattedMessage
+                    defaultMessage="Update Participants"
+                    id="form.createSession.participantAuth.button.updateParticipants"
+                  />
                 </Button>
               </Form>
             </Grid.Column>
@@ -55,9 +68,16 @@ function Participants({
               <Table celled>
                 <Table.Header>
                   <Table.Row>
-                    <Table.HeaderCell>Participants: {participants.length}</Table.HeaderCell>
+                    <Table.HeaderCell>
+                      <FormattedMessage
+                        defaultMessage="Participants"
+                        id="form.createSession.participantAuth.string.participants"
+                      />
+                      : {participants.length}
+                    </Table.HeaderCell>
                   </Table.Row>
                 </Table.Header>
+
                 <Table.Body>
                   {participants.map((participant) => (
                     <Table.Row>
@@ -70,9 +90,10 @@ function Participants({
           </Grid.Row>
         </Grid>
       </Modal.Content>
+
       <Modal.Actions>
         <Button type="button" onClick={onActivatePreviousStep}>
-          Back
+          <FormattedMessage defaultMessage="Back" id="common.button.back" />
         </Button>
         <Button
           primary
@@ -80,9 +101,10 @@ function Participants({
           type="button"
           onClick={onActivateNextStep}
         >
-          Continue
+          <FormattedMessage defaultMessage="Continue" id="common.button.continue" />
         </Button>
       </Modal.Actions>
+
       <style jsx>{`
         @import 'src/theme';
 

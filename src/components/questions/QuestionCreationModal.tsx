@@ -24,8 +24,8 @@ function QuestionCreationModal(): React.ReactElement {
       size="large"
       trigger={
         <Dropdown.Item onClick={(): void => setIsModalOpen(true)}>
-          <Icon name="plus" />
-          <FormattedMessage defaultMessage="Create Question" id="questionPool.button.createQuestion" />
+          <Icon name="question circle" />
+          <FormattedMessage defaultMessage="New Question" id="questionPool.button.createQuestion" />
         </Dropdown.Item>
       }
       // we don't want to have ESC close the modal, so don't do this
