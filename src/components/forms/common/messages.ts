@@ -76,7 +76,7 @@ export default defineMessages({
   },
   usernameLabel: {
     defaultMessage: 'Username',
-    id: 'form.username.label',
+    id: 'common.string.username',
   },
   usernameInvalid: {
     defaultMessage: 'Please provide a valid username.',

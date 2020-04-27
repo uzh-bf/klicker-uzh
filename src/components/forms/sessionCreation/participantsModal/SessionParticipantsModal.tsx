@@ -151,7 +151,7 @@ function SessionParticipantsModal({
             <Step.Content>
               <Step.Title>
                 <FormattedMessage
-                  defaultMessage="Authentication"
+                  defaultMessage="Participants"
                   id="form.createSession.participantAuth.steps.participants"
                 />
               </Step.Title>
@@ -163,7 +163,7 @@ function SessionParticipantsModal({
             <Step.Content>
               <Step.Title>
                 <FormattedMessage
-                  defaultMessage="Authentication"
+                  defaultMessage="Data Storage"
                   id="form.createSession.participantAuth.steps.dataStorage"
                 />
               </Step.Title>
