@@ -8,8 +8,6 @@ import initApollo from './initApollo'
 
 export default (App) =>
   class Apollo extends React.Component {
-    static displayName = 'withApollo(App)'
-
     static async getInitialProps(ctx) {
       const { Component, router, res } = ctx
 
@@ -56,6 +54,8 @@ export default (App) =>
         apolloState,
       }
     }
+
+    static displayName = 'withApollo(App)'
 
     constructor(props) {
       super(props)

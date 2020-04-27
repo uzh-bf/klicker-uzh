@@ -82,7 +82,7 @@ function SessionParticipantsModal({
         <Button
           fluid
           icon
-          color={isAuthenticationEnabled && (!participants || participants.length === 0) ? 'red' : 'grey'}
+          color={!participants || participants.length === 0 ? 'red' : 'grey'}
           labelPosition="left"
           size="small"
           type="button"
