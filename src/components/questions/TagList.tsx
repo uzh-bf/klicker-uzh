@@ -146,9 +146,11 @@ function TagList({
 
           :global(.listHeader) {
             color: grey;
-            font-size: 1rem;
             font-weight: bold;
-            padding: 0 1rem;
+            padding: 0.3rem 1rem;
+            font-size: 1.1rem;
+            border-bottom: 1px solid lightgrey;
+            margin-bottom: 0.3rem;
           }
           :global(.listHeader.tags),
           :global(.listHeader.types) {

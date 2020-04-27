@@ -15,10 +15,6 @@ import ExportQuestionsMutation from '../../graphql/mutations/ExportQuestionsMuta
 import { omitDeep } from '../../lib/utils/omitDeep'
 
 const messages = defineMessages({
-  batch: {
-    defaultMessage: 'Batch',
-    id: 'questionPool.button.batch',
-  },
   create: {
     defaultMessage: 'Create',
     id: 'questionPool.button.create',
@@ -179,30 +175,6 @@ function ActionBar({
         <Dropdown
           button
           labeled
-          className="icon"
-          direction="left"
-          icon="wrench"
-          text={intl.formatMessage(messages.batch)}
-        >
-          <Dropdown.Menu>
-            <Dropdown.Item disabled={!!creationMode} onClick={handleCreationModeToggle}>
-              <Icon name="play" />
-              <FormattedMessage defaultMessage="New Session" id="questionPool.button.createSession" />
-            </Dropdown.Item>
-            <QuestionCreationModal />
-            <UploadModal
-              trigger={
-                <Dropdown.Item>
-                  <Icon name="upload" />
-                  <FormattedMessage defaultMessage="Questions via Import" id="questionPool.button.importQuestions" />
-                </Dropdown.Item>
-              }
-            />
-          </Dropdown.Menu>
-        </Dropdown>
-        <Dropdown
-          button
-          labeled
           className="primary icon"
           direction="left"
           icon="plus square"
@@ -227,7 +199,7 @@ function ActionBar({
       </div>
 
       <div className="creationButtons">
-        {creationMode ? (
+        {creationMode && (
           <>
             <Button
               icon
@@ -259,70 +231,62 @@ function ActionBar({
               />
             </Button>
           </>
-        ) : (
-          <>
-            <Button icon disabled={itemCount === 0} labelPosition="left" size="small" onClick={onExportQuestions}>
+        )}
+      </div>
+
+      <div className="batchOperations">
+        <Dropdown button className="icon" direction="right" disabled={itemCount === 0} icon="wrench">
+          <Dropdown.Menu>
+            <Dropdown.Item icon labelPosition="left" size="small" onClick={onExportQuestions}>
               <Icon name="download" />
               <FormattedMessage defaultMessage="Export (CSV)" id="questionPool.button.exportQuestions" />
-            </Button>
+            </Dropdown.Item>
 
-            <Button icon disabled={itemCount === 0} labelPosition="left" size="small" onClick={onGetQuestionStatistics}>
+            <Dropdown.Item icon labelPosition="left" size="small" onClick={onGetQuestionStatistics}>
               <Icon name="calculator" />
               <FormattedMessage defaultMessage="Statistics (CSV)" id="questionPool.button.computeStatistics" />
-            </Button>
+            </Dropdown.Item>
 
-            <Button
-              icon
-              disabled={itemCount === 0}
-              labelPosition="left"
-              size="small"
-              onClick={(): void => handleArchiveQuestions()}
-            >
+            <Dropdown.Item icon labelPosition="left" size="small" onClick={(): void => handleArchiveQuestions()}>
               <Icon name="archive" />
               {isArchiveActive ? (
                 <FormattedMessage defaultMessage="Unarchive" id="questionPool.button.unarchiveQuestions" />
               ) : (
                 <FormattedMessage defaultMessage="Archive" id="questionPool.button.archiveQuestions" />
               )}
-            </Button>
+            </Dropdown.Item>
 
-            <Button
-              icon
-              disabled={itemCount === 0}
-              labelPosition="left"
-              size="small"
-              onClick={(): void => handleDeleteQuestions(false)}
-            >
+            <Dropdown.Item icon labelPosition="left" size="small" onClick={(): void => handleDeleteQuestions(false)}>
               <Icon name="trash" />
               <FormattedMessage defaultMessage="Delete" id="questionPool.button.deleteQuestions" />
-            </Button>
+            </Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown>
 
-            <Confirm
-              cancelButton={intl.formatMessage(messages.deletionConfirmationCancel)}
-              confirmButton={intl.formatMessage(messages.deletionConfirmationConfirm, { num: itemCount })}
-              content={intl.formatMessage(messages.deletionConfirmationContent, { num: itemCount })}
-              open={deletionConfirmation}
-              onCancel={(): void => handleDeleteQuestions(false)}
-              onConfirm={(): void => handleDeleteQuestions(true)}
-            />
-          </>
-        )}
-      </div>
-
-      <Label className="checkedCounter">
-        <Checkbox
-          checked={allItemsChecked}
-          indeterminate={!allItemsChecked && itemsChecked.length > 0}
-          onChange={(): void => onSetAllItemsChecked()}
-        />
-        <span className="content">
-          <FormattedMessage
-            defaultMessage="{count} items checked"
-            id="questionPool.string.itemsChecked"
-            values={{ count: itemCount }}
+        <Label className="checkedCounter">
+          <Checkbox
+            checked={allItemsChecked}
+            indeterminate={!allItemsChecked && itemsChecked.length > 0}
+            onChange={(): void => onSetAllItemsChecked()}
           />
-        </span>
-      </Label>
+          <span className="content">
+            <FormattedMessage
+              defaultMessage="{count} items checked"
+              id="questionPool.string.itemsChecked"
+              values={{ count: itemCount }}
+            />
+          </span>
+        </Label>
+
+        <Confirm
+          cancelButton={intl.formatMessage(messages.deletionConfirmationCancel)}
+          confirmButton={intl.formatMessage(messages.deletionConfirmationConfirm, { num: itemCount })}
+          content={intl.formatMessage(messages.deletionConfirmationContent, { num: itemCount })}
+          open={deletionConfirmation}
+          onCancel={(): void => handleDeleteQuestions(false)}
+          onConfirm={(): void => handleDeleteQuestions(true)}
+        />
+      </div>
 
       {csvData?.length > 0 && <CSVDownload data={csvData} />}
 
@@ -337,17 +301,6 @@ function ActionBar({
             flex-direction: column;
           }
 
-          .actionBar :global(.checkedCounter) {
-            display: flex;
-            flex-align: center;
-            align-items: center;
-            height: 36px;
-
-            :global(.checkbox) {
-              margin-right: 0.5rem;
-            }
-          }
-
           .actionBar {
             padding: 1rem;
 
@@ -356,11 +309,31 @@ function ActionBar({
               flex: 1;
             }
 
+            .batchOperations,
+            :global(.checkedCounter) {
+              display: flex;
+              flex-align: center;
+              align-items: center;
+            }
+
+            :global(.checkedCounter) {
+              height: 36px;
+
+              :global(.checkbox) {
+                margin-right: 0.5rem;
+              }
+            }
+
             @include desktop-tablet-only {
               flex-flow: row wrap;
               align-items: center;
               justify-content: space-between;
               padding: 0;
+
+              margin: 0 auto;
+              max-width: $max-width;
+
+              padding: 0 0.5rem;
 
               .creationButtons,
               .actionButtons {
@@ -373,7 +346,6 @@ function ActionBar({
               }
 
               .checkedCounter {
-                color: grey;
                 order: 1;
               }
 
