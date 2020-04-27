@@ -15,6 +15,10 @@ import ExportQuestionsMutation from '../../graphql/mutations/ExportQuestionsMuta
 import { omitDeep } from '../../lib/utils/omitDeep'
 
 const messages = defineMessages({
+  create: {
+    defaultMessage: 'Create',
+    id: 'questionPool.button.create',
+  },
   deletionConfirmationCancel: {
     defaultMessage: 'Cancel',
     id: 'questionPool.button.deletionConfirmationCancel',
@@ -168,18 +172,25 @@ function ActionBar({
   return (
     <div className="actionBar">
       <div className="actionButtons">
-        <Dropdown button className="primary icon large" direction="left" icon="plus">
+        <Dropdown
+          button
+          labeled
+          className="primary icon"
+          direction="left"
+          icon="plus square"
+          text={intl.formatMessage(messages.create)}
+        >
           <Dropdown.Menu>
             <Dropdown.Item disabled={!!creationMode} onClick={handleCreationModeToggle}>
-              <Icon name="plus" />
-              <FormattedMessage defaultMessage="Create Session" id="questionPool.button.createSession" />
+              <Icon name="play" />
+              <FormattedMessage defaultMessage="New Session" id="questionPool.button.createSession" />
             </Dropdown.Item>
             <QuestionCreationModal />
             <UploadModal
               trigger={
                 <Dropdown.Item>
                   <Icon name="upload" />
-                  <FormattedMessage defaultMessage="Import Questions" id="questionPool.button.importQuestions" />
+                  <FormattedMessage defaultMessage="Questions via Import" id="questionPool.button.importQuestions" />
                 </Dropdown.Item>
               }
             />
