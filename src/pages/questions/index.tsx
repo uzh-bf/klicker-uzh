@@ -455,7 +455,7 @@ function Index(): React.ReactElement {
               margin: 0 auto;
               max-width: $max-width;
 
-              padding: 1rem;
+              padding: 0.5rem;
             }
           }
 
@@ -466,18 +466,16 @@ function Index(): React.ReactElement {
             .tagList {
               overflow-y: auto;
               flex: 0 0 17rem;
-              padding: 2rem 1rem;
 
-              border-right: 1px solid $color-primary;
+              border-right: 1px solid $color-primary-50p;
             }
 
             .wrapper {
               flex: 1;
-              padding: 1rem;
+              padding: 0.5rem;
 
               .questionList {
                 overflow-y: auto;
-                padding: 1rem 1rem 0 0;
               }
             }
           }

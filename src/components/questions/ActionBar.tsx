@@ -15,6 +15,10 @@ import ExportQuestionsMutation from '../../graphql/mutations/ExportQuestionsMuta
 import { omitDeep } from '../../lib/utils/omitDeep'
 
 const messages = defineMessages({
+  batch: {
+    defaultMessage: 'Batch',
+    id: 'questionPool.button.batch',
+  },
   create: {
     defaultMessage: 'Create',
     id: 'questionPool.button.create',
@@ -175,6 +179,30 @@ function ActionBar({
         <Dropdown
           button
           labeled
+          className="icon"
+          direction="left"
+          icon="wrench"
+          text={intl.formatMessage(messages.batch)}
+        >
+          <Dropdown.Menu>
+            <Dropdown.Item disabled={!!creationMode} onClick={handleCreationModeToggle}>
+              <Icon name="play" />
+              <FormattedMessage defaultMessage="New Session" id="questionPool.button.createSession" />
+            </Dropdown.Item>
+            <QuestionCreationModal />
+            <UploadModal
+              trigger={
+                <Dropdown.Item>
+                  <Icon name="upload" />
+                  <FormattedMessage defaultMessage="Questions via Import" id="questionPool.button.importQuestions" />
+                </Dropdown.Item>
+              }
+            />
+          </Dropdown.Menu>
+        </Dropdown>
+        <Dropdown
+          button
+          labeled
           className="primary icon"
           direction="left"
           icon="plus square"
@@ -312,13 +340,11 @@ function ActionBar({
           .actionBar :global(.checkedCounter) {
             display: flex;
             flex-align: center;
+            align-items: center;
+            height: 36px;
 
             :global(.checkbox) {
               margin-right: 0.5rem;
-            }
-
-            span {
-              margin-top: 0.2rem;
             }
           }
 
