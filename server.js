@@ -77,6 +77,11 @@ const pages = [
     renderPath: '/join',
     url: '/join/:shortname',
   },
+  {
+    mapParams: (req) => ({ shortname: req.params.shortname, sessionId: req.params.sessionId }),
+    renderPath: '/login',
+    url: '/login/:shortname/:sessionId',
+  },
 ]
 
 // initialize elastic-apm if so configured

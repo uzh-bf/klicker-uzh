@@ -1,7 +1,7 @@
 import classNames from 'classnames'
 import _debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@apollo/react-hooks'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button } from 'semantic-ui-react'
@@ -44,6 +44,16 @@ function Join(): React.ReactElement {
     variables: { shortname: router.query.shortname },
   })
 
+  const { shortname }: { shortname?: string } = router.query
+
+  useEffect(() => {
+    // if we need to login before being able to access the session, redirect to the login
+    if (['INVALID_PARTICIPANT_LOGIN', 'SESSION_NOT_ACCESSIBLE'].includes(error?.graphQLErrors[0]?.message)) {
+      const sessionId = error.graphQLErrors[0].extensions.id
+      router.push(`/login/${shortname}/${sessionId}`)
+    }
+  }, [error])
+
   const fingerprint = useFingerprint()
 
   if (loading || error || !data.joinSession || data.joinSession.status === 'COMPLETED') {
@@ -69,7 +79,6 @@ function Join(): React.ReactElement {
     )
   }
 
-  const { shortname }: { shortname?: string } = router.query
   const { id: sessionId, settings, activeInstances, feedbacks, expiresAt, timeLimit } = data.joinSession
 
   const onSidebarActiveItemChange = (newSidebarActiveItem): any => (): void => {

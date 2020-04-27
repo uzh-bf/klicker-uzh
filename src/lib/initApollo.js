@@ -77,7 +77,8 @@ function create(initialState) {
         graphQLErrors.forEach(({ message, path, locations, extensions }) => {
           console.log(`[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`)
 
-          if (isBrowser && extensions.code === 'UNAUTHENTICATED') {
+          // redirect the user to the login page on errors
+          if (isBrowser && (extensions.code === 'UNAUTHENTICATED' || extensions.code === 'INTERNAL_SERVER_ERROR')) {
             Router.push('/user/login?expired=true')
           }
         })

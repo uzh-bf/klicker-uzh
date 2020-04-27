@@ -74,4 +74,12 @@ export default defineMessages({
     defaultMessage: 'Short description of your planned use case for the Klicker UZH.',
     id: 'form.useCase.tooltip',
   },
+  usernameLabel: {
+    defaultMessage: 'Username',
+    id: 'form.username.label',
+  },
+  usernameInvalid: {
+    defaultMessage: 'Please provide a valid username.',
+    id: 'form.username.invalid',
+  },
 })
