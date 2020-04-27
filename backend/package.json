@@ -44,7 +44,7 @@
     "graphql-tools": "5.0.0",
     "handlebars": "4.7.6",
     "helmet": "3.22.0",
-    "ioredis": "4.16.2",
+    "ioredis": "4.16.3",
     "jsonwebtoken": "8.5.1",
     "lodash": "4.17.15",
     "md5": "2.2.1",
