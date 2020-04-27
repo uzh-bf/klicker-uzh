@@ -39,8 +39,7 @@ function DataStorage({
                 </Header>
                 <p>
                   <FormattedMessage
-                    defaultMessage="The results of a session will be stored in a way that makes accessible individual participant
-                  responses and the corresponding username."
+                    defaultMessage="The results of a session will be stored in a way that makes accessible individual participant responses and the corresponding username."
                     id="form.createSession.participantAuth.completeResults.description"
                   />
                 </p>
@@ -58,8 +57,7 @@ function DataStorage({
                 </Header>
                 <p>
                   <FormattedMessage
-                    defaultMessage="The results of a session will only be stored in an aggregated format, making it impossible to derive
-                  the responses of individual participants."
+                    defaultMessage="The results of a session will only be stored in an aggregated format, making it impossible to derive the responses of individual participants."
                     id="form.createSession.participantAuth.aggregatedResults.description"
                   />
                 </p>

@@ -35,8 +35,7 @@ function Authentication({
                 </Header>
                 <p>
                   <FormattedMessage
-                    defaultMessage="After your upload of a list of arbitrary usernames/pseudonyms, we generate a list of username-password
-                    combinations that you can distribute to your participants."
+                    defaultMessage="After your upload of a list of arbitrary usernames/pseudonyms, we generate a list of username-password combinations that you can distribute to your participants."
                     id="form.createSession.participantAuth.passwordDistribution.description"
                   />
                 </p>
@@ -54,9 +53,7 @@ function Authentication({
                 </Header>
                 <p>
                   <FormattedMessage
-                    defaultMessage="After your upload of a list of SwitchAAI accounts (exact matches by email), participants will get
-                    access to your KlickerUZH session using their personal SwitchAAI login. Therefore, you will not be
-                    able to emulate any of your participants."
+                    defaultMessage="After your upload of a list of SwitchAAI accounts (exact matches by email), participants will get access to your KlickerUZH session using their personal SwitchAAI login. Therefore, you will not be able to emulate any of your participants."
                     id="form.createSession.participantAuth.switchAai.description"
                   />
                 </p>
