@@ -2,7 +2,7 @@ import React from 'react'
 import { v4 as UUIDv4 } from 'uuid'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { Button, Icon, Input } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
+import { FormattedMessage, defineMessages, useIntl } from 'react-intl'
 import { object } from 'yup'
 import {
   removeQuestion,
@@ -24,6 +24,13 @@ import SessionParticipantsModal, {
 } from './participantsModal/SessionParticipantsModal'
 
 const { sessionName: sessionNameValidator } = validationSchema
+
+const messages = defineMessages({
+  sessionNamePlaceholder: {
+    defaultMessage: 'Session Name',
+    id: 'form.createSession.sessionName',
+  },
+})
 
 interface Props {
   sessionBlocks: any
@@ -82,6 +89,8 @@ function SessionCreationForm({
   handleSetSessionAuthenticationMode,
   handleSetSessionDataStorageMode,
 }: Props): React.ReactElement {
+  const intl = useIntl()
+
   const onChangeName = (e): void => handleSetSessionName(e.target.value)
 
   const onExtendBlock = (blockId, question): void => {
@@ -262,7 +271,12 @@ function SessionCreationForm({
             </h2>
 
             <div className="sessionName">
-              <Input name="sessionName" placeholder="Session Name..." value={sessionName} onChange={onChangeName} />
+              <Input
+                name="sessionName"
+                placeholder={intl.formatMessage(messages.sessionNamePlaceholder)}
+                value={sessionName}
+                onChange={onChangeName}
+              />
             </div>
 
             <div className="sessionParticipants">
