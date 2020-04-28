@@ -130,6 +130,8 @@
     "yup": "0.28.3"
   },
   "devDependencies": {
+    "@formatjs/cli": "1.6.9",
+    "@formatjs/intl-utils": "2.2.4",
     "@typescript-eslint/eslint-plugin": "2.30.0",
     "@typescript-eslint/parser": "2.30.0",
     "@graphql-codegen/cli": "1.13.3",
@@ -162,7 +164,7 @@
   "scripts": {
     "analyze": "cross-env BUNDLE_ANALYZE=both NODE_ENV=production next build src",
     "build": "next build",
-    "build:lang": "next build && node ./src/lib/defaultLang",
+    "build:lang": "next build && node ./scripts/extract '{pages,components}/*.{js,ts,tsx}'",
     "build:semantic": "cd src/lib/semantic && gulp build-css build-assets",
     "compile-queries": "persistgraphql src/graphql/ --add_typename",
     "cypress:open": "cypress open",

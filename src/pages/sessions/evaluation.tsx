@@ -9,6 +9,7 @@ import useLogging from '../../lib/hooks/useLogging'
 import Chart from '../../components/evaluation/Chart'
 import LoadSessionData from '../../components/sessions/LoadSessionData'
 import ComputeActiveInstance from '../../components/sessions/ComputeActiveInstance'
+import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   pageTitle: {
@@ -191,4 +192,4 @@ function Evaluation(): React.ReactElement {
   )
 }
 
-export default Evaluation
+export default withApollo()(Evaluation)
