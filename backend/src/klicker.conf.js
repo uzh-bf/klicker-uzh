@@ -365,5 +365,12 @@ module.exports = convict({
         sensitive: true,
       },
     },
+    newRelic: {
+      enabled: {
+        default: false,
+        env: 'SERVICES_NEWRELIC_ENABLED',
+        format: 'Boolean',
+      },
+    },
   },
 })
