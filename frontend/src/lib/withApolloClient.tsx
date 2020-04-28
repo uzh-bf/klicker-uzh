@@ -6,15 +6,15 @@ import { getDataFromTree } from '@apollo/react-ssr'
 
 import initApollo from './initApollo'
 
-export default (App) =>
+export default (App): any =>
   class Apollo extends React.Component {
-    static displayName = 'withApollo(App)'
+    apolloClient: any
 
-    static async getInitialProps(ctx) {
+    static async getInitialProps(ctx): Promise<any> {
       const { Component, router, res } = ctx
 
       // initialize apollo client
-      const apollo = initApollo()
+      const apollo = initApollo({})
 
       // inject apollo client to the context passed down to the app component
       ctx.ctx.apolloClient = apollo
@@ -57,12 +57,14 @@ export default (App) =>
       }
     }
 
+    static displayName = 'withApollo(App)'
+
     constructor(props) {
       super(props)
       this.apolloClient = initApollo(props.apolloState)
     }
 
-    render() {
+    render(): React.ReactElement {
       return <App {...this.props} apolloClient={this.apolloClient} />
     }
   }
