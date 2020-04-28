@@ -20,7 +20,6 @@ class IntlDocument extends Document<Props> {
     const {
       req: { locale, localeDataScript },
     } = context
-
     return {
       ...props,
       locale,
