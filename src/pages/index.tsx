@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { Button, List, Input } from 'semantic-ui-react'
 
-import { withApollo } from '../lib/apollo'
 import StaticLayout from '../components/layouts/StaticLayout'
 import useLogging from '../lib/hooks/useLogging'
 
@@ -258,4 +257,4 @@ function Index(): React.ReactElement {
   )
 }
 
-export default withApollo({ ssr: true })(Index)
+export default Index
