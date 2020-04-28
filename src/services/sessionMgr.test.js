@@ -22,6 +22,7 @@ const responseCache = getRedis(3)
 
 describe('SessionMgrService', () => {
   let sessionId
+  let sessionIdWithAuth
   let userId
   let questions
 
@@ -152,6 +153,8 @@ describe('SessionMgrService', () => {
   })
 
   describe('modifySession', () => {
+    // TODO: make use of the session factory
+
     it('allows modifying a session', async () => {
       const updatedSession = await SessionMgrService.modifySession({
         id: sessionId,
@@ -605,6 +608,50 @@ describe('SessionMgrService', () => {
 
       const userAfter = await UserModel.findById(userId)
       expect(userAfter.sessions.length).toEqual(userBefore.sessions.length - 1)
+    })
+  })
+
+  describe('createSession (auth)', () => {
+    it('allows creating a valid session with participant authentication', async () => {
+      const newSession = await SessionMgrService.createSession({
+        name: 'with authentication',
+        participants: [{ username: 'testparticipant' }, { username: 'participant2' }],
+        questionBlocks: [
+          {
+            questions: [
+              { question: questions[QUESTION_TYPES.SC].id, version: 0 },
+              { question: questions[QUESTION_TYPES.MC].id, version: 0 },
+            ],
+          },
+          {
+            questions: [
+              { question: questions[QUESTION_TYPES.FREE].id, version: 0 },
+              { question: questions[QUESTION_TYPES.FREE_RANGE].id, version: 0 },
+            ],
+          },
+        ],
+        userId,
+      })
+
+      expect(newSession.participants).toHaveLength(2)
+      expect(newSession).toMatchSnapshot()
+
+      sessionIdWithAuth = newSession.id
+    })
+  })
+
+  describe('modifySession (auth)', () => {
+    // TODO: make use of the session factory
+
+    it('allows changing the participants of a session', async () => {
+      const updatedSession = await SessionMgrService.modifySession({
+        id: sessionIdWithAuth,
+        participants: [{ username: 'newparticipant' }],
+        userId,
+      })
+
+      expect(updatedSession.participants).toHaveLength(1)
+      expect(updatedSession).toMatchSnapshot()
     })
   })
 })

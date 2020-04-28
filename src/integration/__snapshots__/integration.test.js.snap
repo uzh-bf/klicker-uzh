@@ -395,6 +395,222 @@ Object {
 }
 `;
 
+exports[`Integration Session Execution (authenticated) LECTURER: can activate the first question block (initial) 1`] = `
+
+    activateNextBlock {
+      blocks: 
+        status: ACTIVE
+        timeLimit: -1
+        expiresAt: Any
+        instances: true,true
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false,false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution (authenticated) LECTURER: can activate the second question block 1`] = `
+
+    activateNextBlock {
+      blocks: 
+        status: EXECUTED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      ,
+        status: ACTIVE
+        timeLimit: -1
+        expiresAt: Any
+        instances: true
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false,false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution (authenticated) LECTURER: can close the first question block 1`] = `
+
+    activateNextBlock {
+      blocks: 
+        status: EXECUTED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false,false
+      ,
+        status: PLANNED
+        timeLimit: -1
+        expiresAt: Any
+        instances: false,false
+      
+    }
+  
+`;
+
+exports[`Integration Session Execution (authenticated) LECTURER: can evaluate the first question block 1`] = `
+
+    runningSession {
+      activeStep: 1
+      confusionTS: 
+      feedbacks: 
+      blocks: 
+        status: ACTIVE
+        instances: 
+          isOpen: true
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+          }
+        ,
+          isOpen: true
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE #2
+            type: FREE
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test FREE_RANGE #2
+            type: FREE_RANGE
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test partly restricted FREE_RANGE
+            type: FREE_RANGE
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test unrestricted FREE_RANGE
+            type: FREE_RANGE
+          }
+        
+      ,
+        status: PLANNED
+        instances: 
+          isOpen: false
+          version: 0
+          question {
+            title: Test MC #2
+            type: MC
+          }
+        ,
+          isOpen: false
+          version: 0
+          question {
+            title: Test SC #2
+            type: SC
+          }
+        
+      
+      settings: {"isConfusionBarometerActive":false,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":false}
+    }
+  
+`;
+
+exports[`Integration Session Execution (authenticated) LECTURER: can evaluate the first question block 2`] = `
+Object {
+  "session": null,
+}
+`;
+
+exports[`Integration Session Execution (authenticated) PARTICIPANT: can join the session initially (initial) 1`] = `
+
+    joinSession {
+      settings: {"isFeedbackChannelActive":false,"isFeedbackChannelPublic":false,"isConfusionBarometerActive":false}
+      activeInstances: 
+        title: Test SC #2
+        content: {"blocks":[{"data":{},"text":"This is a simple SC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple SC question.
+        type: SC
+        options: {"FREE_RANGE":null,"SC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"}],"randomized":false},"MC":null}
+      ,
+        title: Test MC #2
+        content: {"blocks":[{"data":{},"text":"This is a simple MC question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple MC question.
+        type: MC
+        options: {"FREE_RANGE":null,"SC":null,"MC":{"choices":[{"correct":false,"name":"option1"},{"correct":true,"name":"option2"},{"correct":true,"name":"option3"}],"randomized":false}}
+      
+      feedbacks: null
+    }
+  
+`;
+
+exports[`Integration Session Execution (authenticated) PARTICIPANT: can update the joined session for the second block 1`] = `
+
+    joinSession {
+      settings: {"isFeedbackChannelActive":false,"isFeedbackChannelPublic":false,"isConfusionBarometerActive":false}
+      activeInstances: 
+        title: Test FREE #2
+        content: {"blocks":[{"data":{},"text":"This is a simple FREE question.","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[]}],"entityMap":{}}
+        description: This is a simple FREE question.
+        type: FREE
+        options: {"FREE_RANGE":null,"SC":null,"MC":null}
+      
+      feedbacks: null
+    }
+  
+`;
+
+exports[`Integration Session Execution (authenticated) allows starting sessions 1`] = `
+
+    startSession / pauseSession / endSession / cancelSession {
+      status: RUNNING
+    }
+    
+`;
+
 exports[`Integration Session Execution allows adding confusion timesteps 1`] = `
 Object {
   "addConfusionTS": "CONFUSION_ADDED",
@@ -2168,12 +2384,12 @@ exports[`Integration Session Execution allows updating session settings 1`] = `
   
 `;
 
-exports[`Integration Session Management enables modifications on the created session 1`] = `
+exports[`Integration Session Management (authenticated) enables modifications on the created session 1`] = `
 
     createSession / modifySession {
       confusionTS: undefined
       feedbacks: undefined
-      blocks: 
+      blocks: [
         status: undefined
         instances: 
           title: Test SC #2
@@ -2209,7 +2425,101 @@ exports[`Integration Session Management enables modifications on the created ses
           title: Test SC #2
           type: SC
         
-      
+      ]
+      participants: [
+          username: integration-2,
+      ,
+          username: integration-3,
+      ]
+      settings: undefined
+    }
+  
+`;
+
+exports[`Integration Session Management (authenticated) enables the creation of a new session) 1`] = `
+
+    createSession / modifySession {
+      confusionTS: 
+      feedbacks: 
+      blocks: [
+        status: PLANNED
+        instances: 
+          title: Test SC #2
+          type: SC
+        ,
+          title: Test MC #2
+          type: MC
+        
+      ,
+        status: PLANNED
+        instances: 
+          title: Test FREE #2
+          type: FREE
+        
+      ,
+        status: PLANNED
+        instances: 
+          title: Test FREE_RANGE #2
+          type: FREE_RANGE
+        ,
+          title: Test partly restricted FREE_RANGE
+          type: FREE_RANGE
+        ,
+          title: Test unrestricted FREE_RANGE
+          type: FREE_RANGE
+        
+      ]
+      participants: [
+          username: integration-1,
+      ]
+      settings: {"isParticipantAuthenticationEnabled":true,"isConfusionBarometerActive":false,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":false}
+    }
+  
+`;
+
+exports[`Integration Session Management enables modifications on the created session 1`] = `
+
+    createSession / modifySession {
+      confusionTS: undefined
+      feedbacks: undefined
+      blocks: [
+        status: undefined
+        instances: 
+          title: Test SC #2
+          type: SC
+        ,
+          title: Test MC #2
+          type: MC
+        
+      ,
+        status: undefined
+        instances: 
+          title: Test FREE #2
+          type: FREE
+        
+      ,
+        status: undefined
+        instances: 
+          title: Test FREE_RANGE #2
+          type: FREE_RANGE
+        ,
+          title: Test partly restricted FREE_RANGE
+          type: FREE_RANGE
+        ,
+          title: Test unrestricted FREE_RANGE
+          type: FREE_RANGE
+        
+      ,
+        status: undefined
+        instances: 
+          title: Test MC #2
+          type: MC
+        ,
+          title: Test SC #2
+          type: SC
+        
+      ]
+      participants: []
       settings: undefined
     }
   
@@ -2220,7 +2530,7 @@ exports[`Integration Session Management enables the creation of a new session 1`
     createSession / modifySession {
       confusionTS: 
       feedbacks: 
-      blocks: 
+      blocks: [
         status: PLANNED
         instances: 
           title: Test SC #2
@@ -2247,8 +2557,9 @@ exports[`Integration Session Management enables the creation of a new session 1`
           title: Test unrestricted FREE_RANGE
           type: FREE_RANGE
         
-      
-      settings: {"isConfusionBarometerActive":false,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":false}
+      ]
+      participants: []
+      settings: {"isParticipantAuthenticationEnabled":false,"isConfusionBarometerActive":false,"isFeedbackChannelActive":false,"isFeedbackChannelPublic":false}
     }
   
 `;

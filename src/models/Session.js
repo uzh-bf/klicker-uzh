@@ -5,6 +5,7 @@ const { ObjectId } = mongoose.Schema.Types
 
 const Feedback = require('./Feedback')
 const ConfusionTimestep = require('./ConfusionTimestep')
+const SessionParticipant = require('./SessionParticipant')
 const { QuestionBlock } = require('./QuestionBlock')
 const { SESSION_STATUS } = require('../constants')
 
@@ -18,6 +19,7 @@ const Session = new mongoose.Schema(
       index: true,
     },
     settings: {
+      isParticipantAuthenticationEnabled: { type: Boolean, default: false },
       isConfusionBarometerActive: { type: Boolean, default: false },
       isEvaluationPublic: { type: Boolean, default: false },
       isFeedbackChannelActive: { type: Boolean, default: false },
@@ -40,6 +42,7 @@ const Session = new mongoose.Schema(
     activeBlock: { type: Number, default: -1 },
     activeStep: { type: Number, default: 0 },
     activeInstances: [{ type: ObjectId, ref: 'QuestionInstance' }],
+    participants: [{ type: SessionParticipant }],
 
     startedAt: { type: Date },
     finishedAt: { type: Date },

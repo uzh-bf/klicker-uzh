@@ -39,10 +39,13 @@ const ensureNoErrors = (response, debug = false) => {
 
 describe('Integration', () => {
   let authCookie
+  let authCookieParticipant
   let sessionId
+  let sessionIdWithAuth
   let initialUserId
   let initialShortname
   let blockIds
+  let participantCredentials
   const questions = {}
 
   beforeAll(async () => {
@@ -1390,6 +1393,296 @@ describe('Integration', () => {
       )
 
       expect(deleteQuestions).toEqual('DELETION_SUCCESSFUL')
+    })
+  })
+
+  describe('Session Management (authenticated)', () => {
+    it('enables the creation of a new session)', async () => {
+      const data = ensureNoErrors(
+        await sendQuery(
+          {
+            query: Mutations.CreateSessionMutation,
+            variables: {
+              name: 'Session Name (auth)',
+              blocks: [
+                {
+                  questions: [
+                    { question: questions[QUESTION_TYPES.SC], version: 0 },
+                    { question: questions[QUESTION_TYPES.MC], version: 0 },
+                  ],
+                },
+                {
+                  questions: [{ question: questions[QUESTION_TYPES.FREE], version: 0 }],
+                },
+                {
+                  questions: [
+                    {
+                      question: questions[QUESTION_TYPES.FREE_RANGE],
+                      version: 0,
+                    },
+                    { question: questions.FREE_RANGE_PART, version: 0 },
+                    { question: questions.FREE_RANGE_OPEN, version: 0 },
+                  ],
+                },
+              ],
+              participants: [{ username: 'integration-1' }],
+            },
+          },
+          authCookie
+        )
+      )
+
+      sessionIdWithAuth = data.createSession.id
+
+      expect(data).toMatchSnapshot()
+    })
+
+    it('enables modifications on the created session', async () => {
+      const data = ensureNoErrors(
+        await sendQuery(
+          {
+            query: Mutations.ModifySessionMutation,
+            variables: {
+              id: sessionIdWithAuth,
+              name: 'Updated Session Name (auth)',
+              blocks: [
+                {
+                  questions: [
+                    { question: questions[QUESTION_TYPES.SC], version: 0 },
+                    { question: questions[QUESTION_TYPES.MC], version: 0 },
+                  ],
+                },
+                {
+                  questions: [{ question: questions[QUESTION_TYPES.FREE], version: 0 }],
+                },
+                {
+                  questions: [
+                    {
+                      question: questions[QUESTION_TYPES.FREE_RANGE],
+                      version: 0,
+                    },
+                    { question: questions.FREE_RANGE_PART, version: 0 },
+                    { question: questions.FREE_RANGE_OPEN, version: 0 },
+                  ],
+                },
+                {
+                  questions: [
+                    { question: questions[QUESTION_TYPES.MC], version: 0 },
+                    { question: questions[QUESTION_TYPES.SC], version: 0 },
+                  ],
+                },
+              ],
+              participants: [{ username: 'integration-2' }, { username: 'integration-3' }],
+            },
+          },
+          authCookie
+        )
+      )
+
+      expect(data).toMatchSnapshot()
+
+      blockIds = data.modifySession.blocks.map((block) => block.id)
+      participantCredentials = data.modifySession.participants
+    })
+  })
+
+  describe('Session Execution (authenticated)', () => {
+    const instanceIds = {}
+
+    it('allows starting sessions', async () => {
+      const data = ensureNoErrors(
+        await sendQuery(
+          {
+            query: Mutations.StartSessionMutation,
+            variables: { id: sessionIdWithAuth },
+          },
+          authCookie
+        )
+      )
+
+      expect(data).toMatchSnapshot()
+    })
+
+    it('LECTURER: can activate the first question block (initial)', async () => {
+      const data = ensureNoErrors(
+        await sendQuery(
+          {
+            query: Mutations.ActivateNextBlockMutation,
+          },
+          authCookie
+        )
+      )
+
+      expect(data).toMatchSnapshot()
+    })
+
+    it('PARTICIPANT: can login to the session', async () => {
+      // send a login request
+      const response = await sendQuery({
+        query: Mutations.LoginParticipantMutation,
+        variables: {
+          sessionId: sessionIdWithAuth,
+          username: participantCredentials[0].username,
+          password: participantCredentials[0].password,
+        },
+      })
+
+      const data = ensureNoErrors(response)
+      expect(data).toBeTruthy()
+
+      // save the authorization cookie
+      authCookieParticipant = response.header['set-cookie']
+      expect(authCookieParticipant.length).toEqual(1)
+    })
+
+    it('PARTICIPANT: can join the session initially (initial)', async () => {
+      const data = ensureNoErrors(
+        await sendQuery(
+          {
+            query: Queries.JoinSessionQuery,
+            variables: { shortname: 'integr' },
+          },
+          authCookieParticipant
+        )
+      )
+
+      instanceIds.SC = data.joinSession.activeInstances[0].id
+      instanceIds.MC = data.joinSession.activeInstances[1].id
+
+      expect(data).toMatchSnapshot()
+    })
+
+    it('PARTICIPANT: can respond to the SC question in the first block (initial)', async () => {
+      ensureNoErrors(
+        await sendQuery(
+          {
+            query: Mutations.AddResponseMutation,
+            variables: {
+              fp: 'myfp1',
+              instanceId: instanceIds.SC,
+              response: {
+                choices: [0],
+              },
+            },
+          },
+          authCookieParticipant
+        )
+      )
+    })
+
+    it('LECTURER: can evaluate the first question block', async () => {
+      const runningSession = ensureNoErrors(
+        await sendQuery(
+          {
+            query: Queries.RunningSessionQuery,
+          },
+          authCookie
+        )
+      )
+      expect(runningSession).toMatchSnapshot()
+
+      const evaluateSession = ensureNoErrors(
+        await sendQuery(
+          {
+            query: Queries.SessionEvaluationQuery,
+            variables: { sessionId },
+          },
+          authCookie
+        )
+      )
+      expect(evaluateSession).toMatchSnapshot()
+    })
+
+    it('LECTURER: can close the first question block', async () => {
+      const data = ensureNoErrors(
+        await sendQuery(
+          {
+            query: Mutations.ActivateNextBlockMutation,
+          },
+          authCookie
+        )
+      )
+
+      expect(data).toMatchSnapshot()
+    })
+
+    it('LECTURER: can activate the second question block', async () => {
+      const data = ensureNoErrors(
+        await sendQuery(
+          {
+            query: Mutations.ActivateNextBlockMutation,
+          },
+          authCookie
+        )
+      )
+
+      expect(data).toMatchSnapshot()
+    })
+
+    it('PARTICIPANT: can update the joined session for the second block', async () => {
+      const data = ensureNoErrors(
+        await sendQuery(
+          {
+            query: Queries.JoinSessionQuery,
+            variables: { shortname: 'integr' },
+          },
+          authCookieParticipant
+        )
+      )
+
+      instanceIds.FREE = data.joinSession.activeInstances[0].id
+
+      expect(data).toMatchSnapshot()
+    })
+
+    it('PARTICIPANT: can respond to the FREE question in the second block', async () => {
+      ensureNoErrors(
+        await sendQuery(
+          {
+            query: Mutations.AddResponseMutation,
+            variables: {
+              fp: 'myfp1',
+              instanceId: instanceIds.FREE,
+              response: { value: 'hello world' },
+            },
+          },
+          authCookieParticipant
+        )
+      )
+    })
+
+    it('PARTICIPANT: is unable to respond to the FREE question a second time', async () => {
+      const response = await sendQuery(
+        {
+          query: Mutations.AddResponseMutation,
+          variables: {
+            fp: 'myfp2',
+            instanceId: instanceIds.FREE,
+            response: { value: 'hello different world' },
+          },
+        },
+        authCookieParticipant
+      )
+
+      expect(response.body.errors).toMatchInlineSnapshot(`
+        Array [
+          Object {
+            "extensions": Object {
+              "code": "FORBIDDEN",
+            },
+            "locations": Array [
+              Object {
+                "column": 3,
+                "line": 2,
+              },
+            ],
+            "message": "RESPONSE_NOT_ALLOWED",
+            "path": Array [
+              "addResponse",
+            ],
+          },
+        ]
+      `)
     })
   })
 

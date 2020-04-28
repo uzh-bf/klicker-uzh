@@ -1,15 +1,18 @@
 const md5 = require('md5')
 const v8n = require('v8n')
 const _trim = require('lodash/trim')
+const JWT = require('jsonwebtoken')
 const { ForbiddenError, UserInputError } = require('apollo-server-express')
 
 const CFG = require('../klicker.conf.js')
 const { QuestionInstanceModel, UserModel, FileModel, SessionModel } = require('../models')
-const { QUESTION_GROUPS, QUESTION_TYPES, QUESTION_BLOCK_STATUS } = require('../constants')
+const { QUESTION_GROUPS, QUESTION_TYPES, QUESTION_BLOCK_STATUS, SESSION_STATUS } = require('../constants')
 const { getRedis } = require('../redis')
 const { getRunningSession, cleanCache, publishSessionUpdate } = require('./sessionMgr')
 const { pubsub, CONFUSION_ADDED, FEEDBACK_ADDED } = require('../resolvers/subscriptions')
+const { AUTH_COOKIE_SETTINGS } = require('./accounts')
 
+const APP_CFG = CFG.get('app')
 const FILTERING_CFG = CFG.get('security.filtering')
 
 // initialize redis if available
@@ -103,14 +106,14 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
  * Add a response to an active question instance
  * @param {*} param0
  */
-const addResponse = async ({ ip, fp, instanceId, response }) => {
+const addResponse = async ({ ip, fp, instanceId, response, participantId }) => {
   // ensure that a response cache is available
   if (!responseCache) {
     throw new Error('REDIS_NOT_AVAILABLE')
   }
 
   // extract important instance information from the corresponding redis hash
-  const { status, type, min, max } = await responseCache.hgetall(`instance:${instanceId}:info`)
+  const { auth, status, type, min, max } = await responseCache.hgetall(`instance:${instanceId}:info`)
 
   // ensure that the instance targeted is actually running
   // this approach allows us to not have to fetch the instance from the database at all
@@ -120,6 +123,25 @@ const addResponse = async ({ ip, fp, instanceId, response }) => {
 
   // prepare a redis transaction pipeline to batch all actions into an atomic transaction
   const transaction = responseCache.multi()
+
+  // if authentication is enabled for the session with the current instance
+  // check if the current participant has already responded and exit early if so
+  if (auth === 'true') {
+    // ensure that a participant id is available (i.e., the participant has logged in)
+    if (typeof participantId === 'undefined') {
+      throw new ForbiddenError('MISSING_PARTICIPANT_ID')
+    }
+
+    // ensure that the participant is within the allowed set of voters
+    const isAllowedVoter = await responseCache.sismember(`instance:${instanceId}:participants`, participantId)
+    if (!isAllowedVoter) {
+      await responseCache.rpush(`instance:${instanceId}:dropped`, JSON.stringify({ ip, fp, response, participantId }))
+      throw new ForbiddenError('RESPONSE_NOT_ALLOWED')
+    }
+
+    // remove the participant from the set of participants that can still vote
+    transaction.srem(`instance:${instanceId}:participants`, participantId)
+  }
 
   if (QUESTION_GROUPS.CHOICES.includes(type)) {
     // if the response doesn't contain any valid choices, throw
@@ -202,75 +224,13 @@ const addResponse = async ({ ip, fp, instanceId, response }) => {
     transaction.sadd(`instance:${instanceId}:fp`, fp)
   }
 
-  // add the response to the list of responses
-  transaction.rpush(`instance:${instanceId}:responses`, JSON.stringify({ ip, fp, response }))
+  transaction.rpush(`instance:${instanceId}:responses`, JSON.stringify({ ip, fp, response, participantId }))
 
   // increment the number of participants by one
   transaction.hincrby(`instance:${instanceId}:results`, 'participants', 1)
 
   // as we are based on redis, leave early (no db access at all)
   return transaction.exec()
-
-  // if redis is available, save the ip, fp and response under the key of the corresponding instance
-  // also check if any matching response (ip or fp) is already in the database.
-  // TODO: results should still be written to the database? but responses will not be saved seperately!
-  /* if (redis && (FILTERING_CFG.byIP.enabled || FILTERING_CFG.byFP.enabled)) {
-    // prepare a redis pipeline
-    const pipeline = redis.pipeline()
-
-    const dropResponse = () => {
-      // add the dropped response to the redis database
-      redis.rpush(`${instanceId}:dropped`, JSON.stringify({ response }))
-
-      // if strict filtering fails, drop here
-      throw new ForbiddenError('ALREADY_RESPONDED')
-    }
-
-    // if ip filtering is enabled, try adding the ip to redis
-    if (FILTERING_CFG.byIP.enabled) {
-      pipeline.sadd(`${instanceId}:ip`, ip)
-    }
-
-    // if fingerprinting is enabled, try adding the fingerprint to redis
-    if (FILTERING_CFG.byFP.enabled) {
-      pipeline.sadd(`${instanceId}:fp`, fp)
-    }
-
-    const results = await pipeline.exec()
-
-    // if ip filtering is enabled, parse the results
-    let startIndex = 0
-    if (FILTERING_CFG.byIP.enabled) {
-      const ipUnique = results[0][1]
-
-      // if filtering is strict, drop on non unique
-      if (FILTERING_CFG.byIP.strict && !ipUnique) {
-        dropResponse()
-      }
-
-      // otherwise save the flag in the response
-      saveResponse.ipUnique = ipUnique
-
-      // increment startIndex such that the fp check knows which result to take
-      startIndex = 1
-    }
-
-    // if fp filtering is enabled, parse the results
-    if (FILTERING_CFG.byFP.enabled) {
-      const fpUnique = results[startIndex][1]
-
-      // if filtering is strict, drop on non unique
-      if (FILTERING_CFG.byFP.strict && !fpUnique) {
-        dropResponse()
-      }
-
-      // otherwise save the flag in the response
-      saveResponse.fpUnique = fpUnique
-    }
-
-    // add the response to the redis database
-    redis.rpush(`${instanceId}:responses`, JSON.stringify(saveResponse))
-  } */
 }
 
 /**
@@ -330,10 +290,51 @@ const deleteResponse = async ({ userId, instanceId, response }) => {
 }
 
 /**
+ *
+ * @param {*} res
+ */
+const loginParticipant = async ({ res, sessionId, username, password }) => {
+  const session = await SessionModel.findOne({ _id: sessionId, status: SESSION_STATUS.RUNNING })
+  if (!session) {
+    throw new ForbiddenError('INVALID_SESSION')
+  }
+
+  // check if we have a participant with the given username and password
+  const participantIndex = session.participants.findIndex((p) => p.username === username && p.password === password)
+  if (participantIndex === -1) {
+    throw new ForbiddenError('INVALID_PARTICIPANT_LOGIN')
+  }
+
+  // participant has logged in, get the relevant data
+  const participant = session.participants[participantIndex]
+
+  // set a token for the participant
+  const jwt = JWT.sign(
+    {
+      expiresIn: 86400,
+      sub: participant.id,
+      scope: ['PARTICIPANT'],
+      session: session.id,
+    },
+    APP_CFG.secret,
+    {
+      expiresIn: '1w',
+    }
+  )
+
+  // set a cookie with the generated JWT
+  if (res && res.cookie) {
+    res.cookie('jwt', jwt, AUTH_COOKIE_SETTINGS)
+  }
+
+  return participant.id
+}
+
+/**
  * Prepare data needed for participating in a session
  * @param {*} param0
  */
-const joinSession = async ({ shortname }) => {
+const joinSession = async ({ shortname, auth }) => {
   // find the user with the given shortname
   const user = await UserModel.findOne({ shortname }).populate('runningSession')
   if (!user || !user.runningSession) {
@@ -350,6 +351,18 @@ const joinSession = async ({ shortname }) => {
 
   const { id, activeBlock, blocks, settings, feedbacks, status } = runningSession
   const currentBlock = blocks[activeBlock] || { instances: [] }
+
+  if (settings.isParticipantAuthenticationEnabled) {
+    const participantId = auth ? auth.sub : undefined
+
+    if (typeof participantId === 'undefined' || !auth.scope.includes('PARTICIPANT')) {
+      throw new UserInputError('INVALID_PARTICIPANT_LOGIN', { id })
+    }
+
+    if (!runningSession.participants.map((participant) => participant.id).includes(participantId)) {
+      throw new UserInputError('SESSION_NOT_ACCESSIBLE', { id })
+    }
+  }
 
   return {
     id,
@@ -464,4 +477,5 @@ module.exports = {
   deleteFeedback,
   joinSession,
   resetQuestionBlock,
+  loginParticipant,
 }

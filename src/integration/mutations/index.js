@@ -2,6 +2,7 @@ const { loadAsString } = require('../../lib/utils')
 
 const RegistrationMutation = loadAsString('./RegistrationMutation.graphql')
 const LoginMutation = loadAsString('./LoginMutation.graphql')
+const LoginParticipantMutation = loadAsString('./LoginParticipantMutation.graphql')
 const LogoutMutation = loadAsString('./LogoutMutation.graphql')
 const CreateQuestionMutation = loadAsString('./CreateQuestionMutation.graphql')
 const ModifyQuestionMutation = loadAsString('./ModifyQuestionMutation.graphql')
@@ -43,6 +44,7 @@ const ModifyQuestionBlockSerializer = require('./ModifyQuestionBlockSerializer')
 module.exports = {
   RegistrationMutation,
   LoginMutation,
+  LoginParticipantMutation,
   LogoutMutation,
   CreateQuestionMutation,
   ModifyQuestionMutation,

@@ -45,7 +45,8 @@ const runningSessionQuery = async (parentValue, args, { auth }) => {
   return user.runningSession
 }
 
-const joinSessionQuery = async (parentValue, { shortname }) => SessionExecService.joinSession({ shortname })
+const joinSessionQuery = async (parentValue, { shortname }, { auth }) =>
+  SessionExecService.joinSession({ shortname, auth })
 
 // calculate the session runtime
 const runtimeByPVQuery = ({ startedAt }) => {
@@ -63,17 +64,19 @@ const runtimeByPVQuery = ({ startedAt }) => {
 }
 
 /* ----- mutations ----- */
-const createSessionMutation = (parentValue, { session: { name, blocks } }, { auth }) =>
+const createSessionMutation = (parentValue, { session: { name, blocks, participants } }, { auth }) =>
   SessionMgrService.createSession({
     name,
     questionBlocks: blocks,
+    participants,
     userId: auth.sub,
   })
 
-const modifySessionMutation = (parentValue, { id, session: { name, blocks } }, { auth }) =>
+const modifySessionMutation = (parentValue, { id, session: { name, blocks, participants } }, { auth }) =>
   SessionMgrService.modifySession({
     id,
     name,
+    participants,
     questionBlocks: blocks,
     userId: auth.sub,
   })
@@ -157,6 +160,9 @@ const deleteSessionsMutation = (parentValue, { ids }, { auth }) =>
 const modifyQuestionBlockMutation = (parentValue, { sessionId, id, questionBlockSettings }, { auth }) =>
   SessionMgrService.modifyQuestionBlock({ id, sessionId, userId: auth.sub, questionBlockSettings })
 
+const loginParticipantMutation = (parentValue, { sessionId, username, password }, { res }) =>
+  SessionExecService.loginParticipant({ sessionId, username, password, res })
+
 module.exports = {
   // queries
   allSessions: allSessionsQuery,
@@ -183,4 +189,5 @@ module.exports = {
   deleteSessions: deleteSessionsMutation,
   resetQuestionBlock: resetQuestionBlockMutation,
   modifyQuestionBlock: modifyQuestionBlockMutation,
+  loginParticipant: loginParticipantMutation,
 }
