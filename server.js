@@ -1,4 +1,4 @@
-/* eslint-disable babel/quotes, no-unused-vars, @typescript-eslint/no-unused-vars */
+/* eslint-disable */
 
 require('full-icu')
 const IntlPolyfill = require('intl')
@@ -76,6 +76,11 @@ const pages = [
     mapParams: (req) => ({ shortname: req.params.shortname }),
     renderPath: '/join',
     url: '/join/:shortname',
+  },
+  {
+    mapParams: (req) => ({ shortname: req.params.shortname, sessionId: req.params.sessionId }),
+    renderPath: '/login',
+    url: '/login/:shortname/:sessionId',
   },
 ]
 

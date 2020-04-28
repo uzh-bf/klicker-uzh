@@ -33,10 +33,16 @@ if (typeof window !== 'undefined' && window.ReactIntlLocaleData) {
   })
 }
 
-class Klicker extends App {
+interface Props {
+  apolloClient: any
+  locale: string
+  messages: any
+}
+
+class Klicker extends App<Props> {
   state = { error: null }
 
-  static async getInitialProps({ Component, ctx }) {
+  static async getInitialProps({ Component, ctx }): Promise<any> {
     let pageProps = {}
 
     // Get the `locale` and `messages` from the request object on the server.
@@ -51,7 +57,7 @@ class Klicker extends App {
     return { locale, messages, pageProps }
   }
 
-  componentDidMount() {
+  componentDidMount(): any {
     if (isProd) {
       if (publicRuntimeConfig.analyticsTrackingID) {
         const { initGA, logPageView } = require('../lib/utils/analytics')
@@ -89,7 +95,7 @@ class Klicker extends App {
     }
   }
 
-  componentDidCatch(error, errorInfo) {
+  componentDidCatch(error, errorInfo): any {
     this.setState({ error })
 
     if (isProd) {
@@ -108,13 +114,12 @@ class Klicker extends App {
     super.componentDidCatch(error, errorInfo)
   }
 
-  render() {
+  render(): React.ReactElement {
     const { Component, pageProps, apolloClient, locale, messages } = this.props
-    const now = Date.now()
 
     return (
       <DndProvider backend={HTML5Backend}>
-        <IntlProvider initialNow={now} locale={locale} messages={messages}>
+        <IntlProvider locale={locale} messages={messages}>
           <ApolloProvider client={apolloClient}>
             <ToastProvider autoDismiss>
               <StrictMode>
