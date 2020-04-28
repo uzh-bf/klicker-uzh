@@ -7,6 +7,7 @@ import StaticLayout from '../../components/layouts/StaticLayout'
 import PasswordRequestForm from '../../components/forms/PasswordRequestForm'
 import useLogging from '../../lib/hooks/useLogging'
 import RequestPasswordMutation from '../../graphql/mutations/RequestPasswordMutation.graphql'
+import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   pageTitle: {
@@ -80,4 +81,4 @@ function RequestPassword(): React.ReactElement {
   )
 }
 
-export default RequestPassword
+export default withApollo()(RequestPassword)

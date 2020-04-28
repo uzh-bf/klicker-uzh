@@ -228,7 +228,7 @@ function QuestionEditForm({
                   name="title"
                   tooltip={
                     <FormattedMessage
-                      defaultMessage="Enter a short summarizing title for the question. This is only visible to you!"
+                      defaultMessage="Enter a short summarizing title for the question."
                       id="createQuestion.titleInput.tooltip"
                     />
                   }
@@ -300,7 +300,7 @@ function QuestionEditForm({
               {publicRuntimeConfig.s3root && (
                 <div className="questionInput questionFiles">
                   <h3>
-                    <FormattedMessage defaultMessage="Attached Files" id="createQuestion.filesLabel" />
+                    <FormattedMessage defaultMessage="Attached Images" id="createQuestion.filesLabel" />
                   </h3>
                   <FileDropzone
                     disabled={!isNewVersion}

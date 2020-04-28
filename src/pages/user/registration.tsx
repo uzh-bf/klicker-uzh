@@ -9,6 +9,7 @@ import StaticLayout from '../../components/layouts/StaticLayout'
 import RegistrationForm from '../../components/forms/RegistrationForm'
 import RegistrationMutation from '../../graphql/mutations/RegistrationMutation.graphql'
 import useLogging from '../../lib/hooks/useLogging'
+import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   pageTitle: {
@@ -144,4 +145,4 @@ function Registration(): React.ReactElement {
   )
 }
 
-export default Registration
+export default withApollo()(Registration)

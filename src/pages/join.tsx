@@ -6,6 +6,7 @@ import { useMutation, useQuery } from '@apollo/react-hooks'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button } from 'semantic-ui-react'
 
+import { withApollo } from '../lib/apollo'
 import StudentLayout from '../components/layouts/StudentLayout'
 import FeedbackArea from '../components/sessions/join/FeedbackArea'
 import QuestionArea from '../components/sessions/join/QuestionArea'
@@ -294,4 +295,4 @@ function Join(): React.ReactElement {
   )
 }
 
-export default Join
+export default withApollo({ ssr: true })(Join)

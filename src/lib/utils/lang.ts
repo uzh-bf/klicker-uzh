@@ -7,7 +7,7 @@ export function generateTypesLabel(intl: IntlShape): any {
       id: 'common.FREE.label',
     },
     freeRangeLabel: {
-      defaultMessage: 'Number Range (NR)',
+      defaultMessage: 'Numerical (NR)',
       id: 'common.FREE_RANGE.label',
     },
     mcLabel: {

@@ -11,6 +11,7 @@ import StaticLayout from '../../components/layouts/StaticLayout'
 import LoginForm from '../../components/forms/LoginForm'
 import LoginMutation from '../../graphql/mutations/LoginMutation.graphql'
 import useLogging from '../../lib/hooks/useLogging'
+import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   pageTitle: {
@@ -134,4 +135,4 @@ function Login(): React.ReactElement {
   )
 }
 
-export default Login
+export default withApollo()(Login)

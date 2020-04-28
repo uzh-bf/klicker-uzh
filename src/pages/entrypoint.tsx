@@ -4,6 +4,7 @@ import { useRouter } from 'next/router'
 import { useLazyQuery } from '@apollo/react-hooks'
 import { Message } from 'semantic-ui-react'
 
+import { withApollo } from '../lib/apollo'
 import useLogging from '../lib/hooks/useLogging'
 import CheckAccountStatusQuery from '../graphql/queries/CheckAccountStatusQuery.graphql'
 
@@ -29,4 +30,4 @@ function Entrypoint(): React.ReactElement {
   return null
 }
 
-export default Entrypoint
+export default withApollo()(Entrypoint)

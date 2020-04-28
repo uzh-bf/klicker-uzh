@@ -4,6 +4,7 @@ import { defineMessages, useIntl } from 'react-intl'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import useLogging from '../../lib/hooks/useLogging'
 import UserSettingsForm from '../../components/forms/userSettings/UserSettingsForm'
+import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   pageTitle: {
@@ -32,4 +33,4 @@ function Settings(): React.ReactElement {
   )
 }
 
-export default Settings
+export default withApollo()(Settings)

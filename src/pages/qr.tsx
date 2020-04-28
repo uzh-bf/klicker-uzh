@@ -3,6 +3,7 @@ import getConfig from 'next/config'
 import QRCode from 'qrcode.react'
 import { useRouter } from 'next/router'
 
+import { withApollo } from '../lib/apollo'
 import StaticLayout from '../components/layouts/StaticLayout'
 import useLogging from '../lib/hooks/useLogging'
 
@@ -46,4 +47,4 @@ function QR(): React.ReactElement {
   )
 }
 
-export default QR
+export default withApollo()(QR)

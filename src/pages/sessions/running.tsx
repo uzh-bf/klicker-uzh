@@ -29,6 +29,7 @@ import RunningSessionUpdatedSubscription from '../../graphql/subscriptions/Runni
 import ResetQuestionBlockMutation from '../../graphql/mutations/ResetQuestionBlockMutation.graphql'
 import ActivateBlockByIdMutation from '../../graphql/mutations/ActivateBlockByIdMutation.graphql'
 import Messager from '../../components/common/Messager'
+import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   errorLoading: {
@@ -365,4 +366,4 @@ function Running(): React.ReactElement {
   )
 }
 
-export default Running
+export default withApollo()(Running)
