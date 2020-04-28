@@ -12,7 +12,7 @@ const CACHE_CFG = cfg.get('cache')
 const SERVICES_CFG = cfg.get('services')
 
 if (SERVICES_CFG.newRelic.enabled) {
-  require('./newrelic.js') //eslint-disable-line
+  require('newrelic')
 }
 
 const { createServer } = require('http')
