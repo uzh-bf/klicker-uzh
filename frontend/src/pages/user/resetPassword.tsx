@@ -9,6 +9,7 @@ import StaticLayout from '../../components/layouts/StaticLayout'
 import PasswordResetForm from '../../components/forms/PasswordResetForm'
 import useLogging from '../../lib/hooks/useLogging'
 import ChangePasswordMutation from '../../graphql/mutations/ChangePasswordMutation.graphql'
+import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   pageTitle: {
@@ -92,4 +93,4 @@ function ResetPassword(): React.ReactElement {
   )
 }
 
-export default ResetPassword
+export default withApollo()(ResetPassword)

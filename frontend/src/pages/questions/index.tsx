@@ -36,6 +36,7 @@ import {
   AuthenticationMode,
   DataStorageMode,
 } from '../../components/forms/sessionCreation/participantsModal/SessionParticipantsModal'
+import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   pageTitle: {
@@ -489,4 +490,4 @@ function Index(): React.ReactElement {
   )
 }
 
-export default Index
+export default withApollo()(Index)
