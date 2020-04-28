@@ -14,12 +14,15 @@ module.exports = {
         options: ${JSON.stringify(options)}
       `
       )}
-      feedbacks: ${feedbacks.map(
-        ({ content, votes }) => `
+      feedbacks: ${
+        feedbacks &&
+        feedbacks.map(
+          ({ content, votes }) => `
         content: ${content}
         votes: ${votes}
       `
-      )}
+        )
+      }
     }
   `,
 }

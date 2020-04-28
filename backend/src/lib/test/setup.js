@@ -45,7 +45,7 @@ const setupTestEnv = async ({ email, password, shortname, isActive = true }) => 
 }
 
 // prepare a new session instance
-const prepareSessionFactory = (SessionMgrService) => async (userId, questions, started = false) => {
+const prepareSessionFactory = (SessionMgrService) => async (userId, questions, started = false, participants = []) => {
   let session
 
   if (!questions) {
@@ -68,12 +68,14 @@ const prepareSessionFactory = (SessionMgrService) => async (userId, questions, s
     session = await SessionMgrService.createSession({
       name: 'testing session',
       questionBlocks: [{ questions: [{ question: question.id, version: 0 }] }],
+      participants,
       userId,
     })
   } else {
     session = await SessionMgrService.createSession({
       name: 'testing session',
       questionBlocks: [{ questions }],
+      participants,
       userId,
     })
   }

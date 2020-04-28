@@ -1,0 +1,3 @@
+mutation LoginParticipant($sessionId: ID!, $username: String!, $password: String!) {
+  loginParticipant(sessionId: $sessionId, username: $username, password: $password)
+}

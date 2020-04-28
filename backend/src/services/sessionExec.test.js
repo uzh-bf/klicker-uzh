@@ -369,7 +369,7 @@ describe('SessionExecService', () => {
             value: 'asd',
           },
         })
-      ).rejects.toEqual(new Error('INVALID_RESPONSE'))
+      ).rejects.toThrow('INVALID_RESPONSE')
       expect(
         SessionExecService.addResponse({
           instanceId: session.activeInstances[activeInstance],
@@ -377,7 +377,7 @@ describe('SessionExecService', () => {
             xyz: 'asd',
           },
         })
-      ).rejects.toEqual(new Error('INVALID_RESPONSE'))
+      ).rejects.toThrow('INVALID_RESPONSE')
 
       // try adding a value that is out-of-range
       expect(
@@ -387,7 +387,7 @@ describe('SessionExecService', () => {
             value: 99999,
           },
         })
-      ).rejects.toEqual(new Error('RESPONSE_OUT_OF_RANGE'))
+      ).rejects.toThrow('RESPONSE_OUT_OF_RANGE')
 
       // add a response
       const instanceWithResponse = await SessionExecService.addResponse({
@@ -429,6 +429,103 @@ describe('SessionExecService', () => {
         [null, 3],
         [null, 3],
       ])
+    })
+  })
+
+  describe('addResponse (auth)', () => {
+    let preparedSession
+
+    beforeEach(async () => {
+      // prepare a session with a SC question
+      preparedSession = await prepareSession(
+        userId,
+        [
+          { question: questions[QUESTION_TYPES.SC].id, version: 0 },
+          { question: questions[QUESTION_TYPES.MC].id, version: 0 },
+          { question: questions[QUESTION_TYPES.FREE].id, version: 0 },
+          { question: questions[QUESTION_TYPES.FREE_RANGE].id, version: 0 },
+        ],
+        true,
+        [{ username: 'testparticipant1' }, { username: 'participant2' }]
+      )
+    })
+
+    afterEach(async () => {
+      // end the session
+      await SessionMgrService.endSession({
+        id: preparedSession.id,
+        userId,
+      })
+    })
+
+    it('prevents participants without a login from responding', async () => {
+      const activeInstance = 0
+
+      // activate the next block of the running session
+      // this opens the instances for responses
+      const session = await SessionMgrService.activateNextBlock({ userId })
+      expect(session).toMatchSnapshot()
+
+      expect(
+        SessionExecService.addResponse({
+          instanceId: session.activeInstances[activeInstance],
+          response: {
+            choices: [0],
+          },
+        })
+      ).rejects.toThrow('MISSING_PARTICIPANT_ID')
+    })
+
+    it('prevents unauthorized participants from responding', async () => {
+      const activeInstance = 0
+
+      // activate the next block of the running session
+      // this opens the instances for responses
+      const session = await SessionMgrService.activateNextBlock({ userId })
+      expect(session).toMatchSnapshot()
+
+      expect(
+        SessionExecService.addResponse({
+          instanceId: session.activeInstances[activeInstance],
+          response: {
+            choices: [1],
+          },
+          participantId: 'participant-unauthorized',
+        })
+      ).rejects.toThrow('RESPONSE_NOT_ALLOWED')
+    })
+
+    it('allows participants with a login to respond exactly once', async () => {
+      const activeInstance = 0
+
+      // activate the next block of the running session
+      // this opens the instances for responses
+      const session = await SessionMgrService.activateNextBlock({ userId })
+      expect(session).toMatchSnapshot()
+
+      const instanceWithResponse = await SessionExecService.addResponse({
+        instanceId: session.activeInstances[activeInstance],
+        response: {
+          choices: [0],
+        },
+        participantId: session.participants[0].id,
+      })
+      expect(instanceWithResponse).toEqual([
+        [null, 1],
+        [null, 1],
+        [null, 1],
+        [null, 1],
+      ])
+
+      expect(
+        SessionExecService.addResponse({
+          instanceId: session.activeInstances[activeInstance],
+          response: {
+            choices: [1],
+          },
+          participantId: session.participants[0].id,
+        })
+      ).rejects.toThrow('RESPONSE_NOT_ALLOWED')
     })
   })
 })

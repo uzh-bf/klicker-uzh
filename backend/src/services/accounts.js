@@ -622,4 +622,5 @@ module.exports = {
   resolveAccountDeletion,
   activateAccount,
   generateScopedToken,
+  AUTH_COOKIE_SETTINGS,
 }

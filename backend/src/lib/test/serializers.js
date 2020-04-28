@@ -125,10 +125,17 @@ const sessionSerializer = {
     }`
     )}]
 
+    Participants: [${val.participants.map(
+      (participant) => `{
+      Username: ${participant.username}
+    }`
+    )}]
+
     Settings: {
       ConfusionActive: ${val.settings.isConfusionBarometerActive}
       FeedbacksActive: ${val.settings.isFeedbackChannelActive}
       FeedbacksPublic: ${val.settings.isFeedbackChannelPublic}
+      ParticipantAuthentication: ${val.settings.isParticipantAuthenticationEnabled}
     }`,
 }
 
@@ -142,6 +149,7 @@ const questionInstanceSerializer = {
 
     responses: [${val.responses.map(
       (response) => `
+      participant: ${response.participant}
       ipUnique: ${response.ipUnique}
       fpUnique: ${response.fpUnique}
       value: {

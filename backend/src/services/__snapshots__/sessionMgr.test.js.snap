@@ -22,10 +22,13 @@ exports[`SessionMgrService activateBlockById allows activating the first questio
 
     Feedbacks: []
 
+    Participants: []
+
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
       FeedbacksPublic: false
+      ParticipantAuthentication: false
     }
 `;
 
@@ -66,10 +69,13 @@ exports[`SessionMgrService activateNextBlock allows activating the first questio
 
     Feedbacks: []
 
+    Participants: []
+
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
       FeedbacksPublic: false
+      ParticipantAuthentication: false
     }
 `;
 
@@ -110,10 +116,13 @@ exports[`SessionMgrService activateNextBlock has a valid initial state 1`] = `
 
     Feedbacks: []
 
+    Participants: []
+
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
       FeedbacksPublic: false
+      ParticipantAuthentication: false
     }
 `;
 
@@ -154,10 +163,13 @@ exports[`SessionMgrService activateNextBlock recognizes that the final block has
 
     Feedbacks: []
 
+    Participants: []
+
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
       FeedbacksPublic: false
+      ParticipantAuthentication: false
     }
 `;
 
@@ -191,6 +203,47 @@ Object {
 }
 `;
 
+exports[`SessionMgrService createSession (auth) allows creating a valid session with participant authentication 1`] = `
+
+    SESSION
+
+    Name: with authentication
+    Status: CREATED
+
+    ActiveBlock: -1
+    ActiveStep: 0
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 2
+    },{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 2
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: [{
+      Username: testparticipant
+    },{
+      Username: participant2
+    }]
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: false
+      ParticipantAuthentication: true
+    }
+`;
+
 exports[`SessionMgrService createSession allows creating a valid session 1`] = `
 
     SESSION
@@ -218,10 +271,13 @@ exports[`SessionMgrService createSession allows creating a valid session 1`] = `
 
     Feedbacks: []
 
+    Participants: []
+
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
       FeedbacksPublic: false
+      ParticipantAuthentication: false
     }
 `;
 
@@ -242,10 +298,13 @@ exports[`SessionMgrService createSession allows creating sessions without questi
 
     Feedbacks: []
 
+    Participants: []
+
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
       FeedbacksPublic: false
+      ParticipantAuthentication: false
     }
 `;
 
@@ -276,10 +335,13 @@ exports[`SessionMgrService createSession skips over question blocks without ques
 
     Feedbacks: []
 
+    Participants: []
+
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
       FeedbacksPublic: false
+      ParticipantAuthentication: false
     }
 `;
 
@@ -305,10 +367,13 @@ exports[`SessionMgrService deleteSession fully deletes a session and all questio
 
     Feedbacks: []
 
+    Participants: []
+
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
       FeedbacksPublic: false
+      ParticipantAuthentication: false
     }
 `;
 
@@ -334,10 +399,13 @@ exports[`SessionMgrService endSession allows ending a running session 1`] = `
 
     Feedbacks: []
 
+    Participants: []
+
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
       FeedbacksPublic: false
+      ParticipantAuthentication: false
     }
 `;
 
@@ -363,10 +431,13 @@ exports[`SessionMgrService endSession returns on an already completed session 1`
 
     Feedbacks: []
 
+    Participants: []
+
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
       FeedbacksPublic: false
+      ParticipantAuthentication: false
     }
 `;
 
@@ -388,6 +459,45 @@ Object {
   },
   "totalParticipants": 4,
 }
+`;
+
+exports[`SessionMgrService modifySession (auth) allows changing the participants of a session 1`] = `
+
+    SESSION
+
+    Name: with authentication
+    Status: CREATED
+
+    ActiveBlock: -1
+    ActiveStep: 0
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 2
+    },{
+      Show solutions: false
+      Status: PLANNED
+      Time limit: -1
+      Number of instances: 2
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: [{
+      Username: newparticipant
+    }]
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: false
+      ParticipantAuthentication: true
+    }
 `;
 
 exports[`SessionMgrService modifySession allows modifying a session 1`] = `
@@ -417,10 +527,13 @@ exports[`SessionMgrService modifySession allows modifying a session 1`] = `
 
     Feedbacks: []
 
+    Participants: []
+
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
       FeedbacksPublic: false
+      ParticipantAuthentication: false
     }
 `;
 
@@ -446,10 +559,13 @@ exports[`SessionMgrService startSession allows starting a created session 1`] = 
 
     Feedbacks: []
 
+    Participants: []
+
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
       FeedbacksPublic: false
+      ParticipantAuthentication: false
     }
 `;
 
@@ -475,10 +591,13 @@ exports[`SessionMgrService updateSessionSettings allows changing all settings at
 
     Feedbacks: []
 
+    Participants: []
+
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
       FeedbacksPublic: false
+      ParticipantAuthentication: false
     }
 `;
 
@@ -504,10 +623,13 @@ exports[`SessionMgrService updateSessionSettings allows changing each setting se
 
     Feedbacks: []
 
+    Participants: []
+
     Settings: {
       ConfusionActive: true
       FeedbacksActive: false
       FeedbacksPublic: false
+      ParticipantAuthentication: false
     }
 `;
 
@@ -533,10 +655,13 @@ exports[`SessionMgrService updateSessionSettings allows changing each setting se
 
     Feedbacks: []
 
+    Participants: []
+
     Settings: {
       ConfusionActive: true
       FeedbacksActive: true
       FeedbacksPublic: false
+      ParticipantAuthentication: false
     }
 `;
 
@@ -562,10 +687,13 @@ exports[`SessionMgrService updateSessionSettings allows changing each setting se
 
     Feedbacks: []
 
+    Participants: []
+
     Settings: {
       ConfusionActive: true
       FeedbacksActive: true
       FeedbacksPublic: true
+      ParticipantAuthentication: false
     }
 `;
 
@@ -591,10 +719,13 @@ exports[`SessionMgrService updateSessionSettings allows changing each setting se
 
     Feedbacks: []
 
+    Participants: []
+
     Settings: {
       ConfusionActive: false
       FeedbacksActive: true
       FeedbacksPublic: true
+      ParticipantAuthentication: false
     }
 `;
 
@@ -620,9 +751,12 @@ exports[`SessionMgrService updateSessionSettings allows changing each setting se
 
     Feedbacks: []
 
+    Participants: []
+
     Settings: {
       ConfusionActive: false
       FeedbacksActive: false
       FeedbacksPublic: false
+      ParticipantAuthentication: false
     }
 `;

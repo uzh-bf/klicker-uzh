@@ -1,5 +1,9 @@
-mutation CreateSession($name: String!, $blocks: [Session_QuestionBlockInput!]!) {
-  createSession(session: { name: $name, blocks: $blocks }) {
+mutation CreateSession(
+  $name: String!
+  $blocks: [Session_QuestionBlockInput!]!
+  $participants: [Session_ParticipantInput!]
+) {
+  createSession(session: { name: $name, blocks: $blocks, participants: $participants }) {
     id
     confusionTS {
       difficulty
@@ -22,7 +26,12 @@ mutation CreateSession($name: String!, $blocks: [Session_QuestionBlockInput!]!) 
         }
       }
     }
+    participants {
+      username
+      password
+    }
     settings {
+      isParticipantAuthenticationEnabled
       isConfusionBarometerActive
       isFeedbackChannelActive
       isFeedbackChannelPublic

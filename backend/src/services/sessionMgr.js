@@ -4,6 +4,7 @@ const _mapValues = require('lodash/mapValues')
 const _forOwn = require('lodash/forOwn')
 const dayjs = require('dayjs')
 const schedule = require('node-schedule')
+const passwordGenerator = require('generate-password')
 
 const { ObjectId } = mongoose.Types
 
@@ -259,15 +260,24 @@ const freeToResults = (redisResults, responseHashes) => {
 /**
  * Initialize the redis response cache as needed for session execution
  */
-const initializeResponseCache = async ({ id, question, version, results }) => {
+const initializeResponseCache = async ({ id, question, version, results }, sessionParticipants = []) => {
+  // TODO: participant auth reinitialization if the session is resumed
+
+  const isAuthEnabled = sessionParticipants.length > 0
+
   const transaction = responseCache.multi()
 
   // extract relevant information from the question entity
   const questionVersion = question.versions[version]
 
   // set the instance status, opening the instance for responses
-  transaction.hmset(`instance:${id}:info`, 'status', 'OPEN', 'type', question.type)
+  transaction.hmset(`instance:${id}:info`, 'status', 'OPEN', 'type', question.type, 'auth', isAuthEnabled)
   transaction.hset(`instance:${id}:results`, 'participants', results ? results.totalParticipants : 0)
+
+  // if participant authentication is enabled, hydrate the set of allowed participant ids
+  if (isAuthEnabled) {
+    transaction.sadd(`instance:${id}:participants`, ...sessionParticipants.map((participant) => participant.id))
+  }
 
   // include the min/max restrictions in the cache for FREE_RANGE questions
   if (question.type === QUESTION_TYPES.FREE_RANGE && questionVersion.options.FREE_RANGE.restrictions) {
@@ -339,16 +349,27 @@ const computeInstanceResults = async ({ id, question }) => {
   return null
 }
 
+function enhanceSessionParticipants({ sessionId, participants }) {
+  return participants.map((participant) => ({
+    session: sessionId,
+    username: participant.username,
+    password: passwordGenerator.generate({ length: 14, uppercase: true, symbols: false, numbers: true }),
+  }))
+}
+
 /**
  * Create a new session
  */
-const createSession = async ({ name, questionBlocks = [], userId }) => {
+const createSession = async ({ name, questionBlocks = [], participants = [], userId }) => {
   const sessionId = ObjectId()
   const { blocks, instances, promises } = await mapBlocks({
     sessionId,
     questionBlocks,
     userId,
   })
+
+  // if there are any participants specified, set the session to be authentication-based
+  const participantsWithPasswords = enhanceSessionParticipants({ sessionId, participants })
 
   // create a new session model
   // pass in the list of blocks created above
@@ -357,6 +378,10 @@ const createSession = async ({ name, questionBlocks = [], userId }) => {
     name,
     blocks,
     user: userId,
+    participants: participantsWithPasswords,
+    settings: {
+      isParticipantAuthenticationEnabled: participantsWithPasswords.length > 0,
+    },
   })
 
   // save everything at once
@@ -378,7 +403,7 @@ const createSession = async ({ name, questionBlocks = [], userId }) => {
 /**
  * Modify a session
  */
-const modifySession = async ({ id, name, questionBlocks, userId }) => {
+const modifySession = async ({ id, name, questionBlocks, participants, userId }) => {
   // get the specified session from the database
   const sessionWithInstances = await SessionModel.findOne({
     _id: id,
@@ -437,6 +462,18 @@ const modifySession = async ({ id, name, questionBlocks, userId }) => {
     await Promise.all([...promises, instances.map((instance) => instance.save()), questionCleanup, instanceCleanup])
   }
 
+  // if the participants parameter is set, update the participants list
+  if (typeof participants !== 'undefined') {
+    if (participants.length === 0) {
+      session.participants = []
+      session.settings.isParticipantAuthenticationEnabled = false
+    } else {
+      const participantsWithPassword = enhanceSessionParticipants({ sessionId: id, participants })
+      session.participants = participantsWithPassword
+      session.settings.isParticipantAuthenticationEnabled = true
+    }
+  }
+
   // save the updated session to the database
   await session.save()
 
@@ -480,7 +517,7 @@ const sessionAction = async ({ sessionId, userId }, actionType) => {
         await Promise.all(
           session.activeInstances.map(async (instanceId) => {
             const instance = await QuestionInstanceModel.findById(instanceId).populate('question')
-            await initializeResponseCache(instance)
+            await initializeResponseCache(instance, session.participants)
           })
         )
       }
@@ -660,6 +697,8 @@ const updateSettings = async ({ sessionId, userId, settings, shortname }) => {
   session.settings = {
     ...session.settings,
     ...settings,
+    // ensure that participant authentication cannot be changed here
+    isParticipantAuthenticationEnabled: session.settings.isParticipantAuthenticationEnabled,
   }
 
   // if the feedback channel functionality is set to be deactivated
@@ -768,7 +807,7 @@ async function activateBlockById({ userId, sessionId, blockId }) {
     await Promise.all(
       newBlock.instances.map(async (instance) => {
         const instanceWithDetails = await QuestionInstanceModel.findById(instance).populate('question')
-        return initializeResponseCache(instanceWithDetails)
+        return initializeResponseCache(instanceWithDetails, session.participants)
       })
     )
   }
@@ -793,7 +832,7 @@ async function activateBlockById({ userId, sessionId, blockId }) {
 
       // if a response cache is available, hydrate it with the newly activated instances
       if (responseCache) {
-        await initializeResponseCache(instance)
+        await initializeResponseCache(instance, session.participants)
       }
 
       return instance.save()

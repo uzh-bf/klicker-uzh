@@ -4,6 +4,7 @@ const { ObjectId } = mongoose.Schema.Types
 
 const Response = new mongoose.Schema(
   {
+    participant: { type: ObjectId, ref: 'SessionParticipant' },
     ipUnique: { type: Boolean },
     fpUnique: { type: Boolean },
     value: { type: Object, required: true },
