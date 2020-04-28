@@ -1,7 +1,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 // https://github.com/zeit/next.js/blob/canary/examples/with-apollo/lib/initApollo.js
 // websockets: https://github.com/zeit/next.js/issues/3261
-import fetch from 'isomorphic-unfetch'
+// import fetch from 'isomorphic-unfetch'
 import getConfig from 'next/config'
 import Router from 'next/router'
 
@@ -11,7 +11,7 @@ import { onError } from 'apollo-link-error'
 import { ApolloLink, split } from 'apollo-link'
 import { WebSocketLink } from 'apollo-link-ws'
 import { SubscriptionClient } from 'subscriptions-transport-ws'
-import { InMemoryCache, IntrospectionFragmentMatcher } from 'apollo-cache-inmemory'
+import { InMemoryCache, IntrospectionFragmentMatcher, NormalizedCacheObject } from 'apollo-cache-inmemory'
 import { getMainDefinition } from 'apollo-utilities'
 // import { withClientState } from 'apollo-link-state'
 
@@ -21,7 +21,7 @@ const { publicRuntimeConfig, serverRuntimeConfig } = getConfig()
 
 let apolloClient = null
 
-function create(initialState) {
+function create(initialState): ApolloClient<NormalizedCacheObject> {
   const isBrowser = typeof window !== 'undefined'
 
   const fragmentMatcher = new IntrospectionFragmentMatcher({
@@ -30,12 +30,12 @@ function create(initialState) {
 
   const cache = new InMemoryCache({
     addTypename: true,
-    dataIdFromObject: (o) => o.id,
+    dataIdFromObject: (o): string => o.id,
     fragmentMatcher,
   }).restore(initialState || {})
 
   // initialize the basic http link for both SSR and client-side usage
-  let httpLink = new BatchHttpLink({
+  let httpLink: any = new BatchHttpLink({
     credentials: 'include', // Additional fetch() options like `credentials` or `headers`
     uri: isBrowser
       ? publicRuntimeConfig.apiUrl
@@ -56,7 +56,7 @@ function create(initialState) {
     // use websocket link for subscriptions, http link for remainder
     httpLink = split(
       ({ query }) => {
-        const { kind, operation } = getMainDefinition(query)
+        const { kind, operation } = getMainDefinition(query) as any
         return kind === 'OperationDefinition' && operation === 'subscription'
       },
       wsLink,
@@ -103,13 +103,13 @@ function create(initialState) {
   return new ApolloClient({
     cache,
     connectToDevTools: isBrowser,
-    fetch: !isBrowser && fetch,
+    // fetch: !isBrowser && fetch,
     link: persistedQueryLink ? persistedQueryLink.concat(link) : link,
     ssrMode: !isBrowser, // Disables forceFetch on the server (so queries are only run once)
   })
 }
 
-export default function initApollo(initialState) {
+export default function initApollo(initialState): ApolloClient<NormalizedCacheObject> {
   // Make sure to create a new client for every server-side request so that data
   // isn't shared between connections (which would be bad)
   if (typeof window === 'undefined') {

@@ -59,7 +59,7 @@ function Join(): React.ReactElement {
   if (loading || error || !data.joinSession || data.joinSession.status === 'COMPLETED') {
     return (
       <div className="noSession">
-        <Button icon="refresh" onClick={() => window.location.reload()} />
+        <Button icon="refresh" onClick={(): void => window.location.reload()} />
         <FormattedMessage
           defaultMessage="No session active. Please reload the page once a session has been started."
           id="joinSession.noSessionActive"
