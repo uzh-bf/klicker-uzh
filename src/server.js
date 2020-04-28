@@ -1,9 +1,7 @@
 /* eslint-disable global-require */
-const { createServer } = require('http')
-const mongoose = require('mongoose')
 
 // import the configuration
-const cfg = require('./klicker.conf.js')
+const cfg = require('./klicker.conf.js') // eslint-disable-line
 
 // validate the configuration
 // fail early if anything is invalid
@@ -11,6 +9,14 @@ cfg.validate({ allowed: 'strict' })
 
 const APP_CFG = cfg.get('app')
 const CACHE_CFG = cfg.get('cache')
+const SERVICES_CFG = cfg.get('services')
+
+if (SERVICES_CFG.newRelic.enabled) {
+  require('./newrelic.js') //eslint-disable-line
+}
+
+const { createServer } = require('http')
+const mongoose = require('mongoose')
 
 const isDev = process.env.NODE_ENV === 'development'
 
