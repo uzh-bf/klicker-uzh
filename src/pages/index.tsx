@@ -258,4 +258,4 @@ function Index(): React.ReactElement {
   )
 }
 
-export default withApollo()(Index)
+export default withApollo({ ssr: true })(Index)

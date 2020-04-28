@@ -2,7 +2,6 @@
 
 import Document, { Head, Main, NextScript } from 'next/document'
 import React from 'react'
-import { GetServerSideProps } from 'next'
 
 if (typeof global.Intl !== 'object') {
   global.Intl = require('intl')
@@ -13,21 +12,21 @@ interface Props {
   localeDataScript: any
 }
 
-export const getServerSideProps: GetServerSideProps = async (ctx: any) => {
-  const {
-    req: { locale, localeDataScript },
-  } = ctx
-
-  return {
-    props: {},
-    locale,
-    localeDataScript,
-  }
-}
-
 // The document (which is SSR-only) needs to be customized to expose the locale
 // data for the user's locale for React Intl to work in the browser.
 class IntlDocument extends Document<Props> {
+  static async getInitialProps(context): Promise<any> {
+    const props = await super.getInitialProps(context)
+    const {
+      req: { locale, localeDataScript },
+    } = context
+    return {
+      ...props,
+      locale,
+      localeDataScript,
+    }
+  }
+
   render(): React.ReactElement {
     return (
       <html lang={this.props.locale}>

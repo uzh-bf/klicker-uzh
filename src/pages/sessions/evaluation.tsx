@@ -192,4 +192,4 @@ function Evaluation(): React.ReactElement {
   )
 }
 
-export default withApollo({ ssr: true })(Evaluation)
+export default withApollo()(Evaluation)

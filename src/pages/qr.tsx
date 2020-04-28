@@ -47,4 +47,4 @@ function QR(): React.ReactElement {
   )
 }
 
-export default withApollo()(QR)
+export default withApollo({ ssr: true })(QR)

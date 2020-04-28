@@ -227,4 +227,4 @@ function Print(): React.ReactElement<any> {
   )
 }
 
-export default withApollo({ ssr: true })(Print)
+export default withApollo()(Print)

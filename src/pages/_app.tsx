@@ -10,7 +10,6 @@ import { createIntl, createIntlCache, RawIntlProvider } from 'react-intl'
 
 // HACK: import an empty css file such that pages with css files loaded don't become unroutable (e.g., pages with Countdown.js)
 import './app.css'
-import { GetServerSideProps } from 'next'
 
 // This is optional but highly recommended
 // since it prevents memory leak
@@ -41,17 +40,23 @@ interface Props {
   messages: any
 }
 
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  // Get the `locale` and `messages` from the request object on the server.
-  // In the browser, use the same values that the server serialized.
-  const { req } = ctx
-  const { locale, messages } = req || window.__NEXT_DATA__.props
-
-  return { props: {}, locale, messages }
-}
-
 class Klicker extends App<Props> {
   state = { error: null }
+
+  static async getInitialProps({ Component, ctx }): Promise<any> {
+    let pageProps = {}
+
+    if (Component.getInitialProps) {
+      pageProps = await Component.getInitialProps(ctx)
+    }
+
+    // Get the `locale` and `messages` from the request object on the server.
+    // In the browser, use the same values that the server serialized.
+    const { req } = ctx
+    const { locale, messages } = req || window.__NEXT_DATA__.props
+
+    return { pageProps, locale, messages }
+  }
 
   componentDidMount(): any {
     if (isProd) {
@@ -113,13 +118,7 @@ class Klicker extends App<Props> {
   render(): React.ReactElement {
     const { Component, pageProps, locale, messages } = this.props
 
-    const intl = createIntl(
-      {
-        locale,
-        messages,
-      },
-      cache
-    )
+    const intl = createIntl({ locale, messages }, cache)
 
     return (
       <DndProvider backend={HTML5Backend}>
