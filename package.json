@@ -102,7 +102,7 @@
     "ramda": "0.27.0",
     "raven-js": "3.27.2",
     "react": "16.13.1",
-    "react-autosuggest": "10.0.0",
+    "react-autosuggest": "10.0.1",
     "react-beautiful-dnd": "13.0.0",
     "react-circular-progressbar": "2.0.3",
     "react-csv": "2.0.3",
