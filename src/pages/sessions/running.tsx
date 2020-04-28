@@ -7,6 +7,7 @@ import { useRouter } from 'next/router'
 import { useQuery, useMutation } from '@apollo/react-hooks'
 import { defineMessages, useIntl } from 'react-intl'
 import { useToasts } from 'react-toast-notifications'
+import { Message, Icon } from 'semantic-ui-react'
 
 import useLogging from '../../lib/hooks/useLogging'
 import ConfusionBarometer from '../../components/confusion/ConfusionBarometer'
@@ -110,11 +111,18 @@ function Running(): React.ReactElement {
           startedAt,
           confusionTS,
           feedbacks,
+          participants,
         } = data.runningSession
 
         return (
           <div className="runningSession">
             <div className="sessionProgress">
+              {settings.isParticipantAuthenticationEnabled && (
+                <Message icon warning>
+                  <Icon name="lock" />
+                  This session is restriced to a predefined list of participants.
+                </Message>
+              )}
               <SessionTimeline
                 // activeBlock={activeBlock}
                 activeStep={activeStep}
@@ -195,6 +203,8 @@ function Running(): React.ReactElement {
                 }}
                 intl={intl}
                 isEvaluationPublic={settings.isEvaluationPublic}
+                isParticipantAuthenticationEnabled={settings.isParticipantAuthenticationEnabled}
+                participants={participants}
                 runtime={runtime}
                 sessionId={id}
                 shortname={shortname}
