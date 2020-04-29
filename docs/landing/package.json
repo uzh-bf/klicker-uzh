@@ -5,7 +5,7 @@
   },
   "dependencies": {
     "axios": "^0.19.1",
-    "gatsby": "2.18.22",
+    "gatsby": "2.21.1",
     "gatsby-plugin-matomo": "0.7.2",
     "gatsby-plugin-react-helmet": "3.1.21",
     "gatsby-plugin-styled-jsx": "3.1.18",
