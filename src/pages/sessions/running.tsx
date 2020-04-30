@@ -1,11 +1,11 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import dayjs from 'dayjs'
 import _get from 'lodash/get'
 import _pick from 'lodash/pick'
 import _some from 'lodash/some'
 import { useRouter } from 'next/router'
 import { useQuery, useMutation } from '@apollo/react-hooks'
-import { defineMessages, useIntl } from 'react-intl'
+import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
 import { useToasts } from 'react-toast-notifications'
 import { Message, Icon } from 'semantic-ui-react'
 
@@ -74,6 +74,8 @@ function Running(): React.ReactElement {
   const [deleteFeedback, { loading: isDeleteFeedbackLoading }] = useMutation(DeleteFeedbackMutation)
   const [activateBlockById, { loading: isActivateBlockByIdLoading }] = useMutation(ActivateBlockByIdMutation)
 
+  const [isParticipantListVisible, setIsParticipantListVisible] = useState(false)
+
   const shortname = _get(accountSummary, 'data.user.shortname')
 
   const isAnythingLoading = _some([
@@ -121,7 +123,20 @@ function Running(): React.ReactElement {
               {settings.isParticipantAuthenticationEnabled && (
                 <Message icon warning>
                   <Icon name="lock" />
-                  This session is restriced to a predefined list of participants.
+                  <FormattedMessage
+                    defaultMessage="This session is restricted to a predefined list of participants. For participant details, open the"
+                    id="runningSession.string.restrictedSession"
+                  />
+                  <a
+                    className="participantListTrigger"
+                    role="button"
+                    tabIndex={0}
+                    onClick={(): void => setIsParticipantListVisible(true)}
+                    onKeyDown={(): void => setIsParticipantListVisible(true)}
+                  >
+                    <FormattedMessage defaultMessage="Participant List" id="runningSession.string.participantList" />
+                  </a>
+                  .
                 </Message>
               )}
               <SessionTimeline
@@ -192,6 +207,7 @@ function Running(): React.ReactElement {
                     appearance: 'success',
                   })
                 }}
+                handleToggleParticipantList={(): void => setIsParticipantListVisible((isVisible) => !isVisible)}
                 handleTogglePublicEvaluation={(): void => {
                   updateSettings({
                     variables: {
@@ -205,6 +221,7 @@ function Running(): React.ReactElement {
                 intl={intl}
                 isEvaluationPublic={settings.isEvaluationPublic}
                 isParticipantAuthenticationEnabled={settings.isParticipantAuthenticationEnabled}
+                isParticipantListVisible={isParticipantListVisible}
                 participants={participants}
                 runtime={runtime}
                 sessionId={id}
@@ -332,6 +349,11 @@ function Running(): React.ReactElement {
           flex: 1;
 
           margin-bottom: 1rem;
+        }
+
+        a.participantListTrigger {
+          cursor: pointer;
+          margin-left: 0.5rem;
         }
 
         @include desktop-tablet-only {

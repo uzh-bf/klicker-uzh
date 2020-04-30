@@ -5,6 +5,7 @@ query JoinSession($shortname: String!) {
     expiresAt
     status
     settings {
+      isParticipantAuthenticationEnabled
       isFeedbackChannelActive
       isFeedbackChannelPublic
       isConfusionBarometerActive
