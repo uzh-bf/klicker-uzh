@@ -203,6 +203,7 @@
   "runningSession.string.participantLink": "Link für Teilnehmende",
   "runningSession.string.participantList": "Teilnehmerliste",
   "runningSession.string.publicEvaluation": "Öffentliche Auswertung",
+  "runningSession.string.restrictedSession": "Diese Session ist nur für vordefinierte Teilnehmer zugänglich. Für Teilnehmerdetails öffnen Sie die",
   "runningSession.title": "Laufende Session",
   "session.button.completed.content": "Kopieren",
   "session.button.copyAndModify": "Kopieren & Editieren",

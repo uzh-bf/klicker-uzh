@@ -136,7 +136,7 @@ function FeedbackArea({
             </Button>
           </Form>
         )}
-        {isFeedbackChannelActive && feedbacks && (
+        {isFeedbackChannelActive && feedbacks && feedbacks.length > 0 && (
           <div className="existingFeedbacks">
             <h2>
               <FormattedMessage defaultMessage="All feedbacks" id="joinSession.allFeedbacks" />
@@ -169,7 +169,7 @@ function FeedbackArea({
           flex-direction: column;
 
           padding: 1rem;
-          padding-bottom: 15rem;
+          padding-bottom: 5rem;
 
           flex: 1;
 
@@ -241,6 +241,7 @@ function FeedbackArea({
 
             .header {
               display: block;
+              font-size: 1.2rem !important;
             }
           }
         }
