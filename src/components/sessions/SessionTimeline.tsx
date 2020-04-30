@@ -77,9 +77,11 @@ interface Props {
   handleResetQuestionBlock: (instanceIds: string[]) => void
   handleTogglePublicEvaluation: () => void
   handleActivateBlockById: (blockId: number) => void
+  handleToggleParticipantList?: () => void
   intl: any
   isParticipantAuthenticationEnabled: boolean
   isEvaluationPublic?: boolean
+  isParticipantListVisible: boolean
   participants: any[]
   runtime?: string
   sessionId: string
@@ -92,6 +94,7 @@ const defaultProps = {
   blocks: [],
   isEvaluationPublic: false,
   isParticipantAuthenticationEnabled: false,
+  isParticipantListVisible: false,
   participants: [],
   runtime: '00:00:00',
   startedAt: '00:00:00',
@@ -108,6 +111,8 @@ function SessionTimeline({
   participants,
   isEvaluationPublic,
   isParticipantAuthenticationEnabled,
+  isParticipantListVisible,
+  handleToggleParticipantList,
   handleNextBlock,
   handleEndSession,
   handlePauseSession,
@@ -202,12 +207,14 @@ function SessionTimeline({
                 //   />
                 // </Dropdown.Item>,
                 <Modal
+                  open={isParticipantListVisible}
                   trigger={
-                    <Menu.Item icon>
+                    <Menu.Item icon onClick={handleToggleParticipantList}>
                       <Icon name="table" />
                       <FormattedMessage defaultMessage="Participant List" id="runningSession.string.participantList" />
                     </Menu.Item>
                   }
+                  onClose={handleToggleParticipantList}
                 >
                   <Modal.Header>
                     <FormattedMessage defaultMessage="Participant List" id="runningSession.string.participantList" />
