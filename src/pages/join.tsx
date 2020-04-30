@@ -40,7 +40,7 @@ function Join(): React.ReactElement {
 
   const [newConfusionTS] = useMutation(AddConfusionTSMutation)
   const [newFeedback] = useMutation(AddFeedbackMutation)
-  const [newResponse] = useMutation(AddResponseMutation)
+  const [newResponse, { error: responseError }] = useMutation(AddResponseMutation)
   const { data, loading, error, subscribeToMore } = useQuery(JoinSessionQuery, {
     variables: { shortname: router.query.shortname },
   })
@@ -54,6 +54,12 @@ function Join(): React.ReactElement {
       router.push(`/login/${shortname}/${sessionId}`)
     }
   }, [error])
+
+  useEffect(() => {
+    if (responseError?.graphQLErrors[0]?.message === 'RESPONSE_NOT_ALLOWED') {
+      console.log('failll')
+    }
+  }, [responseError])
 
   const fingerprint = useFingerprint()
 

@@ -7,7 +7,7 @@ import { useRouter } from 'next/router'
 import { useQuery, useMutation } from '@apollo/react-hooks'
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
 import { useToasts } from 'react-toast-notifications'
-import { Message, Icon, MessageHeader, MessageList, Button } from 'semantic-ui-react'
+import { Message, Icon } from 'semantic-ui-react'
 
 import useLogging from '../../lib/hooks/useLogging'
 import ConfusionBarometer from '../../components/confusion/ConfusionBarometer'
