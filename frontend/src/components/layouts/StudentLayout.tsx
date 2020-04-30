@@ -36,12 +36,12 @@ function StudentLayout({
 
   const activeQuestionItem = {
     href: 'activeQuestion',
-    label: <FormattedMessage defaultMessage="Active Question" id="joinSessionsidebar.activeQuestion" />,
+    label: <FormattedMessage defaultMessage="Active Question" id="joinSession.sidebar.activeQuestion" />,
     name: 'activeQuestion',
   }
   const feedbackChannelItem = {
     href: 'feedbackChannel',
-    label: <FormattedMessage defaultMessage="Feedback-Channel" id="joinSessionsidebar.feedbackChannel" />,
+    label: <FormattedMessage defaultMessage="Feedback-Channel" id="joinSession.sidebar.feedbackChannel" />,
     name: 'feedbackChannel',
   }
 

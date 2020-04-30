@@ -8,7 +8,7 @@ import getConfig from 'next/config'
 import { FormattedMessage } from 'react-intl'
 import { convertFromRaw } from 'draft-js'
 
-import { Icon } from 'semantic-ui-react'
+import { Icon, Message } from 'semantic-ui-react'
 import QuestionFiles from './QuestionFiles'
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
 import ActionMenu from '../../common/ActionMenu'
@@ -49,6 +49,7 @@ const messages = {
 }
 
 interface Props {
+  message?: string
   active: boolean
   expiresAt?: any
   questions: any[]
@@ -65,6 +66,7 @@ const defaultProps = {
 }
 
 function QuestionArea({
+  message,
   active,
   questions,
   handleNewResponse,
@@ -222,6 +224,7 @@ function QuestionArea({
         if (remainingQuestions.length === 0) {
           return (
             <div className="padded">
+              {message && <Message warning>{message}</Message>}
               <FormattedMessage
                 defaultMessage="You have already answered all active questions."
                 id="joinSession.questionArea.alreadyAnswered"
@@ -321,6 +324,12 @@ function QuestionArea({
 
           .space {
             margin: 1rem;
+          }
+
+          .padded {
+            :global(.message) {
+              margin-bottom: 1rem;
+            }
           }
 
           .options,
