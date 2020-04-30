@@ -21,11 +21,15 @@ import useFingerprint from '../lib/hooks/useFingerprint'
 const messages = defineMessages({
   activeQuestionTitle: {
     defaultMessage: 'Active Question',
-    id: 'joinSessionactiveQuestion.title',
+    id: 'joinSession.activeQuestion.title',
   },
   feedbackChannelTitle: {
     defaultMessage: 'Feedback-Channel',
-    id: 'joinSessionfeedbackChannel.title',
+    id: 'joinSession.feedbackChannel.title',
+  },
+  ignoredSecondResponse: {
+    defaultMessage: 'As you are only allowed to respond once, we did not count your latest response.',
+    id: 'joinSession.string.responseIgnored',
   },
 })
 
@@ -37,6 +41,7 @@ function Join(): React.ReactElement {
 
   const [sidebarVisible, setSidebarVisible] = useState(false)
   const [sidebarActiveItem, setSidebarActiveItem] = useState('activeQuestion')
+  const [extraMessage, setExtraMessage] = useState(null as string)
 
   const [newConfusionTS] = useMutation(AddConfusionTSMutation)
   const [newFeedback] = useMutation(AddFeedbackMutation)
@@ -56,10 +61,11 @@ function Join(): React.ReactElement {
   }, [error])
 
   useEffect(() => {
+    setExtraMessage(null)
     if (responseError?.graphQLErrors[0]?.message === 'RESPONSE_NOT_ALLOWED') {
-      console.log('failll')
+      setExtraMessage(intl.formatMessage(messages.ignoredSecondResponse))
     }
-  }, [responseError])
+  }, [data, loading, responseError])
 
   const fingerprint = useFingerprint()
 
@@ -223,6 +229,7 @@ function Join(): React.ReactElement {
             expiresAt={expiresAt}
             handleNewResponse={onNewResponse}
             isAuthenticationEnabled={settings.isParticipantAuthenticationEnabled}
+            message={extraMessage}
             questions={activeInstances}
             sessionId={sessionId}
             shortname={shortname}
