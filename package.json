@@ -152,7 +152,7 @@
     "fomantic-ui-css": "2.8.4",
     "gulp": "4.0.2",
     "husky": "4.2.5",
-    "jest": "25.4.0",
+    "jest": "25.5.2",
     "lint-staged": "10.1.7",
     "prettier": "2.0.5",
     "react-dnd-test-backend": "10.0.2",
