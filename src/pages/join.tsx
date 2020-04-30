@@ -188,6 +188,7 @@ function Join(): React.ReactElement {
 
   return (
     <StudentLayout
+      isAuthenticationEnabled={settings.isParticipantAuthenticationEnabled}
       isInteractionEnabled={settings.isConfusionBarometerActive || settings.isFeedbackChannelActive}
       pageTitle={`Join ${shortname}`}
       sidebar={{
@@ -215,6 +216,7 @@ function Join(): React.ReactElement {
             active={sidebarActiveItem === 'activeQuestion'}
             expiresAt={expiresAt}
             handleNewResponse={onNewResponse}
+            isAuthenticationEnabled={settings.isParticipantAuthenticationEnabled}
             questions={activeInstances}
             sessionId={sessionId}
             shortname={shortname}

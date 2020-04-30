@@ -1,12 +1,13 @@
 import React, { useEffect } from 'react'
 import { FormattedMessage } from 'react-intl'
-import { Button } from 'semantic-ui-react'
+import { Button, Icon } from 'semantic-ui-react'
 
 import CommonLayout from './CommonLayout'
 import Sidebar from '../common/sidebar/Sidebar'
 
 interface Props {
   children: React.ReactNode
+  isAuthenticationEnabled?: boolean
   isInteractionEnabled?: boolean
   pageTitle?: string
   sidebar: any
@@ -15,12 +16,14 @@ interface Props {
 }
 
 const defaultProps = {
+  isAuthenticationEnabled: false,
   isInteractionEnabled: false,
   pageTitle: 'StudentLayout',
 }
 
 function StudentLayout({
   children,
+  isAuthenticationEnabled,
   isInteractionEnabled,
   pageTitle,
   sidebar,
@@ -48,8 +51,17 @@ function StudentLayout({
     <CommonLayout baseFontSize="16px" nextHeight="100%" pageTitle={pageTitle}>
       <div className="studentLayout">
         <div className="header">
-          <Button basic active={sidebar.sidebarVisible} icon="content" onClick={sidebar.handleToggleSidebarVisible} />
-          <h1 className="pageTitle">{title}</h1>
+          <Button
+            basic
+            active={sidebar.sidebarVisible}
+            disabled={sidebarItems.length === 1}
+            icon="content"
+            onClick={sidebar.handleToggleSidebarVisible}
+          />
+
+          <h1 className="pageTitle">
+            {isAuthenticationEnabled && <Icon color="green" name="lock" />} {title}
+          </h1>
           <Button basic icon="refresh" onClick={(): void => window.location.reload()} />
         </div>
 
@@ -91,9 +103,8 @@ function StudentLayout({
               }
 
               .pageTitle {
-                font-size: 1.2rem !important;
+                font-size: 1.1rem !important;
                 margin: 0;
-                margin-left: 1rem;
               }
 
               .content {

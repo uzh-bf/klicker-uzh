@@ -8,6 +8,7 @@ import getConfig from 'next/config'
 import { FormattedMessage } from 'react-intl'
 import { convertFromRaw } from 'draft-js'
 
+import { Icon } from 'semantic-ui-react'
 import QuestionFiles from './QuestionFiles'
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
 import ActionMenu from '../../common/ActionMenu'
@@ -55,10 +56,12 @@ interface Props {
   shortname: string
   sessionId: string
   timeLimit?: number
+  isAuthenticationEnabled?: boolean
 }
 
 const defaultProps = {
   questions: [],
+  isAuthenticationEnabled: false,
 }
 
 function QuestionArea({
@@ -69,6 +72,7 @@ function QuestionArea({
   sessionId,
   expiresAt,
   timeLimit,
+  isAuthenticationEnabled,
 }: Props): React.ReactElement {
   const [remainingQuestions, setRemainingQuestions] = useState([])
 
@@ -211,6 +215,7 @@ function QuestionArea({
   return (
     <div className={classNames('questionArea', { active })}>
       <h1 className="header">
+        {isAuthenticationEnabled && <Icon color="green" name="lock" />}{' '}
         <FormattedMessage defaultMessage="Question" id="joinSession.questionArea.title" />
       </h1>
       {((): React.ReactElement => {
@@ -367,6 +372,7 @@ function QuestionArea({
             margin-right: 0.25rem;
 
             .header {
+              font-size: 1.2rem !important;
               display: block;
               margin: 1rem;
             }
