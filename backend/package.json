@@ -29,7 +29,7 @@
     "cors": "2.8.5",
     "cross-env": "7.0.2",
     "dataloader": "2.0.0",
-    "dayjs": "1.8.25",
+    "dayjs": "1.8.26",
     "dotenv": "8.2.0",
     "draft-js": "0.11.5",
     "elastic-apm-node": "3.5.0",
