@@ -91,7 +91,7 @@
   "form.createSession.participantAuth.steps.authentication": "Authentifizierung",
   "form.createSession.participantAuth.steps.dataStorage": "Datenspeicherung",
   "form.createSession.participantAuth.steps.participants": "Teilnehmerliste",
-  "form.createSession.participantAuth.string.participantAuthentication": "TeilnehmerAuthentifizierung Authentication",
+  "form.createSession.participantAuth.string.participantAuthentication": "Teilnehmer-Authentifizierung",
   "form.createSession.participantAuth.string.participants": "Teilnehmer",
   "form.createSession.participantAuth.string.participantsPlaceholder": "Bitte einen Teilnehmer pro Zeile eingeben",
   "form.createSession.participantAuth.switchAai.description": "Nach dem Hochladen einer Liste von SwitchAAI-Accounts (exakt übereinstimmende Email-Adressen) können sich definierte Teilnehmende mit ihrem persönlichen AAI-Konto für die Umfrage anmelden. Sie erhalten daher keinen Zugriff auf die Umgebung Ihrer Teilnehmenden.",
