@@ -10,7 +10,7 @@ const compression = require('compression')
 const cors = require('cors')
 const helmet = require('helmet')
 const morgan = require('morgan')
-const { basename, join } = require('path')
+const { basename } = require('path')
 const { readFileSync } = require('fs')
 
 // import the configuration
