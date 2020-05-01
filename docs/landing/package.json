@@ -9,7 +9,7 @@
     "gatsby-plugin-matomo": "0.7.2",
     "gatsby-plugin-react-helmet": "3.3.0",
     "gatsby-plugin-styled-jsx": "3.3.0",
-    "react": "16.12.0",
+    "react": "16.13.1",
     "react-dom": "16.13.0",
     "react-helmet": "5.2.1",
     "react-scroll": "1.7.16",
