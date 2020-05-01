@@ -82,7 +82,7 @@
   "form.createSession.participantAuth.button.updateParticipants": "Update Participants",
   "form.createSession.participantAuth.button.xParticipants": "{num} Participants",
   "form.createSession.participantAuth.completeResults.description": "The results of a session will be stored in a way that makes accessible individual participant responses and the corresponding username.",
-  "form.createSession.participantAuth.completeResults.title": "Complete Results (Coming Soon)",
+  "form.createSession.participantAuth.completeResults.title": "Complete Results",
   "form.createSession.participantAuth.passwordDistribution.description": "After your upload of a list of arbitrary usernames/pseudonyms, we generate a list of username-password combinations that you can distribute to your participants.",
   "form.createSession.participantAuth.passwordDistribution.title": "Password Distribution (Beta)",
   "form.createSession.participantAuth.steps.authentication": "Authentication",

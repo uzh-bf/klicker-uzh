@@ -24,8 +24,8 @@ function Authentication({
 
             <Grid.Row>
               <Grid.Column
-                className={classNames('option', { active: sessionAuthenticationMode === 'password' })}
-                onClick={(): void => onChangeSessionAuthenticationMode('password')}
+                className={classNames('option', { active: sessionAuthenticationMode === 'PASSWORD' })}
+                onClick={(): void => onChangeSessionAuthenticationMode('PASSWORD')}
               >
                 <Header>
                   <FormattedMessage
@@ -42,7 +42,7 @@ function Authentication({
               </Grid.Column>
 
               <Grid.Column
-                className={classNames('disabled option', { active: sessionAuthenticationMode === 'aai' })}
+                className={classNames('disabled option', { active: sessionAuthenticationMode === 'AAI' })}
                 // onClick={(): void => onChangeSessionAuthenticationMode('aai')}
               >
                 <Header>
