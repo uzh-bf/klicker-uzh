@@ -116,6 +116,9 @@ function Index(): React.ReactElement {
     if (creationMode) {
       setCreationMode(false)
       setSessionBlocks([])
+      setSessionParticipants([])
+      setSessionAuthenticationMode('PASSWORD')
+      setSessionDataStorageMode('SECRET')
     } else {
       // turn on creation mode
       setCreationMode(true)
