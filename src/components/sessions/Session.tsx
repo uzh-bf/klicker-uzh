@@ -3,7 +3,7 @@ import dayjs from 'dayjs'
 import Link from 'next/link'
 import _get from 'lodash/get'
 import { useMutation } from '@apollo/react-hooks'
-import { Confirm, Button, Icon, Message, Dropdown } from 'semantic-ui-react'
+import { Confirm, Button, Label, Icon, Message, Dropdown } from 'semantic-ui-react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 
 import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
@@ -39,13 +39,24 @@ interface Props {
   id: string
   name: string
   status: string
+  isParticipantAuthenticationEnabled?: boolean
+  storageMode?: string
 }
 
 const defaultProps = {
   blocks: [],
 }
 
-function Session({ button, createdAt, id, name, blocks, status }: Props): React.ReactElement {
+function Session({
+  button,
+  createdAt,
+  id,
+  name,
+  blocks,
+  status,
+  isParticipantAuthenticationEnabled,
+  storageMode,
+}: Props): React.ReactElement {
   const intl = useIntl()
 
   const [deletionConfirmation, setDeletionConfirmation] = useState(false)
@@ -56,7 +67,12 @@ function Session({ button, createdAt, id, name, blocks, status }: Props): React.
 
   return (
     <div className="session">
-      <h2 className="title">{name}</h2>
+      <h2 className="title">
+        {isParticipantAuthenticationEnabled && <Label content="asdasd" icon="shield alternate" />}
+        {storageMode === 'SECRET' && <Label content="asdas" icon="user secret" />}
+        {storageMode === 'COMPLETE' && <Label content="asdasd" icon="archive" />}
+        {name}
+      </h2>
       <div className="date">
         <FormattedMessage defaultMessage="Created on" id="sessionList.string.createdOn" />{' '}
         {dayjs(createdAt).format('DD.MM.YY HH:mm')}

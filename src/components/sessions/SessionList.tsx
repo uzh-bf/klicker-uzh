@@ -84,6 +84,7 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
           .filter((session): boolean => session.status === SESSION_STATUS.RUNNING)
           .map((session): any => ({
             ...session,
+            ...session.settings,
             button: {
               ...statusCases[SESSION_STATUS.RUNNING],
               onClick: (): Promise<boolean> => router.push('/sessions/running'),
@@ -95,6 +96,7 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
           .filter((session): boolean => session.status === SESSION_STATUS.PAUSED)
           .map((session): any => ({
             ...session,
+            ...session.settings,
             button: {
               ...statusCases[SESSION_STATUS.PAUSED],
               disabled: runningSessions.length > 0,
@@ -107,6 +109,7 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
 
         const processedSessions = filterSessions(sessions, filters, sessionIndex).map((session): any => ({
           ...session,
+          ...session.settings,
           button: {
             ...statusCases[session.status],
             disabled: session.status === SESSION_STATUS.COMPLETED,

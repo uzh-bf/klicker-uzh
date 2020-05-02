@@ -87,6 +87,7 @@ interface Props {
   sessionId: string
   shortname: string
   startedAt?: string
+  storageMode?: string
   subscribeToMore: Function
 }
 
@@ -112,6 +113,7 @@ function SessionTimeline({
   isEvaluationPublic,
   isParticipantAuthenticationEnabled,
   isParticipantListVisible,
+  storageMode,
   handleToggleParticipantList,
   handleNextBlock,
   handleEndSession,
@@ -261,6 +263,7 @@ function SessionTimeline({
                   </Modal.Actions>
                 </Modal>,
               ]}
+              {storageMode === 'COMPLETE' && <Dropdown.Item>Download Results</Dropdown.Item>}
             </Dropdown.Menu>
           </Dropdown>
         </div>

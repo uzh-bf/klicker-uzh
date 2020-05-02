@@ -23,6 +23,10 @@ query SessionList {
         }
       }
     }
+    settings {
+      isParticipantAuthenticationEnabled
+      storageMode
+    }
     createdAt
     updatedAt
   }
