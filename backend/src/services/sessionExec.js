@@ -6,14 +6,13 @@ const { ForbiddenError, UserInputError } = require('apollo-server-express')
 
 const CFG = require('../klicker.conf.js')
 const { QuestionInstanceModel, UserModel, FileModel, SessionModel } = require('../models')
-const { QUESTION_GROUPS, QUESTION_TYPES, QUESTION_BLOCK_STATUS, SESSION_STATUS } = require('../constants')
+const { QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS, SESSION_STORAGE_MODE } = require('../constants')
 const { getRedis } = require('../redis')
 const { getRunningSession, cleanCache, publishSessionUpdate } = require('./sessionMgr')
 const { pubsub, CONFUSION_ADDED, FEEDBACK_ADDED } = require('../resolvers/subscriptions')
 const { AUTH_COOKIE_SETTINGS } = require('./accounts')
 
 const APP_CFG = CFG.get('app')
-const FILTERING_CFG = CFG.get('security.filtering')
 
 // initialize redis if available
 // const responseControl = getRedis(2)
@@ -24,6 +23,8 @@ const responseCache = getRedis(3)
  * @param {*} param0
  */
 const addFeedback = async ({ sessionId, content }) => {
+  // TODO: participant auth
+
   const session = await getRunningSession(sessionId)
 
   // if the feedback channel is not activated, do not allow new additions
@@ -76,6 +77,8 @@ const deleteFeedback = async ({ sessionId, feedbackId, userId }) => {
  * @param {*} param0
  */
 const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
+  // TODO: participant auth
+
   const session = await getRunningSession(sessionId)
 
   // if the confusion barometer is not activated, do not allow new additions
@@ -106,14 +109,16 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
  * Add a response to an active question instance
  * @param {*} param0
  */
-const addResponse = async ({ ip, fp, instanceId, response, participantId }) => {
+const addResponse = async ({ instanceId, response, participantId }) => {
   // ensure that a response cache is available
   if (!responseCache) {
     throw new Error('REDIS_NOT_AVAILABLE')
   }
 
+  const instanceKey = `instance:${instanceId}`
+
   // extract important instance information from the corresponding redis hash
-  const { auth, status, type, min, max } = await responseCache.hgetall(`instance:${instanceId}:info`)
+  const { auth, status, type, min, max, mode } = await responseCache.hgetall(`${instanceKey}:info`)
 
   // ensure that the instance targeted is actually running
   // this approach allows us to not have to fetch the instance from the database at all
@@ -132,15 +137,19 @@ const addResponse = async ({ ip, fp, instanceId, response, participantId }) => {
       throw new ForbiddenError('MISSING_PARTICIPANT_ID')
     }
 
-    // ensure that the participant is within the allowed set of voters
-    const isAllowedVoter = await responseCache.sismember(`instance:${instanceId}:participants`, participantId)
-    if (!isAllowedVoter) {
-      await responseCache.rpush(`instance:${instanceId}:dropped`, JSON.stringify({ ip, fp, response, participantId }))
+    // ensure that the participant has not already voted
+    const isAuthorizedToVote = await responseCache.sismember(`${instanceKey}:participantList`, participantId)
+    const hasAlreadyVoted = await responseCache.sismember(`${instanceKey}:participants`, participantId)
+    if (!isAuthorizedToVote || hasAlreadyVoted) {
+      // if we are using authentication and the responses should be stored
+      if (mode === SESSION_STORAGE_MODE.COMPLETE) {
+        await responseCache.rpush(`${instanceKey}:dropped`, JSON.stringify({ response, participant: participantId }))
+      }
       throw new ForbiddenError('RESPONSE_NOT_ALLOWED')
     }
 
-    // remove the participant from the set of participants that can still vote
-    transaction.srem(`instance:${instanceId}:participants`, participantId)
+    // add the participant to the set of participants that have voted
+    transaction.sadd(`${instanceKey}:participants`, participantId)
   }
 
   if (QUESTION_GROUPS.CHOICES.includes(type)) {
@@ -156,7 +165,7 @@ const addResponse = async ({ ip, fp, instanceId, response, participantId }) => {
 
     // for each choice in the response, increment the corresponding hash key
     response.choices.forEach((choiceIndex) => {
-      transaction.hincrby(`instance:${instanceId}:results`, choiceIndex, 1)
+      transaction.hincrby(`${instanceKey}:results`, choiceIndex, 1)
     })
   } else if (QUESTION_GROUPS.FREE.includes(type)) {
     // validate that a response value has been passed and that it is not extremely long
@@ -208,26 +217,18 @@ const addResponse = async ({ ip, fp, instanceId, response, participantId }) => {
 
     // hash the open response value and add it to the redis hash
     // or increment if the hashed value already exists in the cache
-    transaction.hincrby(`instance:${instanceId}:results`, resultKey, 1)
+    transaction.hincrby(`${instanceKey}:results`, resultKey, 1)
 
     // cache the response value <-> hash mapping
-    transaction.hset(`instance:${instanceId}:responseHashes`, resultKey, resultValue)
+    transaction.hset(`${instanceKey}:responseHashes`, resultKey, resultValue)
   }
 
-  // if ip filtering is enabled, add the ip to the redis respondent set
-  if (FILTERING_CFG.byIP.enabled && ip) {
-    transaction.sadd(`instance:${instanceId}:ip`, ip)
+  if (mode === SESSION_STORAGE_MODE.COMPLETE) {
+    transaction.rpush(`${instanceKey}:responses`, JSON.stringify({ response, participant: participantId }))
   }
-
-  // if fingerprinting is enabled, add the fingerprint to the redis respondent set
-  if (FILTERING_CFG.byFP.enabled && fp) {
-    transaction.sadd(`instance:${instanceId}:fp`, fp)
-  }
-
-  transaction.rpush(`instance:${instanceId}:responses`, JSON.stringify({ ip, fp, response, participantId }))
 
   // increment the number of participants by one
-  transaction.hincrby(`instance:${instanceId}:results`, 'participants', 1)
+  transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
 
   // as we are based on redis, leave early (no db access at all)
   return transaction.exec()
@@ -402,32 +403,37 @@ async function resetQuestionInstances({ instanceIds }) {
   return Promise.all(
     instanceIds.map(async (instanceId) => {
       // reset any data that has been persisted to the database
-      await QuestionInstanceModel.findByIdAndUpdate(instanceId, { responses: [], results: null })
+      await QuestionInstanceModel.findByIdAndUpdate(instanceId, {
+        responses: [],
+        dropped: [],
+        blockedParticipants: [],
+        results: null,
+      })
 
-      // get metadata from the redis cache
-      const type = await responseCache.hget(`instance:${instanceId}:info`, 'type')
-      const responseResults = await responseCache.hgetall(`instance:${instanceId}:responseHashes`)
+      const instanceKey = `instance:${instanceId}`
+      const isInstanceActive = await responseCache.exists(`${instanceKey}:info`)
 
-      if (type === QUESTION_TYPES.SC || type === QUESTION_TYPES.MC) {
-        Object.keys(responseResults).forEach((key) => {
-          responseCache.hset(`instance:${instanceId}:results`, `${key}`, 0)
-        })
-      }
+      // if there is an instance in the cache (i.e., the block is currently active)
+      if (isInstanceActive) {
+        // get metadata from the redis cache
+        const type = await responseCache.hget(`${instanceKey}:info`, 'type')
 
-      if (type === QUESTION_TYPES.FREE || type === QUESTION_TYPES.FREE_RANGE) {
-        const responseHashes = await responseCache.hgetall(`instance:${instanceId}:responseHashes`)
+        // remove the participants, responses, and dropped responses from the cache
+        await responseCache.del(`${instanceKey}:participants`, `${instanceKey}:responses`, `${instanceKey}:dropped`)
 
-        Object.keys(responseHashes).forEach((key) => {
-          responseCache.hdel(`instance:${instanceId}:responseHashes`, `${key}`)
-        })
+        // await responseCache.sadd(`${instanceKey}:participantList`, ...participants)
 
-        Object.keys(responseResults).forEach((key) => {
-          responseCache.hdel(`instance:${instanceId}:results`, `${key}`)
-        })
-      }
+        if (type === QUESTION_TYPES.SC || type === QUESTION_TYPES.MC) {
+          const choiceKeys = await responseCache.hkeys(`${instanceKey}:results`)
+          await Promise.all(choiceKeys.map((key) => responseCache.hset(`${instanceKey}:results`, `${key}`, 0)))
+        }
 
-      if (type) {
-        await responseCache.hset(`instance:${instanceId}:results`, 'participants', 0)
+        if (type === QUESTION_TYPES.FREE || type === QUESTION_TYPES.FREE_RANGE) {
+          const responseHashes = await responseCache.hgetall(`${instanceKey}:responseHashes`)
+          await responseCache.del(`${instanceKey}:responseHashes`)
+          await responseCache.hdel(`${instanceKey}:results`, Object.keys(responseHashes))
+          await responseCache.hset(`${instanceKey}:results`, 'participants', 0)
+        }
       }
     })
   )
@@ -445,15 +451,13 @@ async function resetQuestionBlock({ sessionId, blockId }) {
   // find the block requested by id and extract all instance ids
   const blockIndex = session.blocks.findIndex((block) => block.id === blockId)
   const instanceIds = session.blocks[blockIndex].instances
+  const participants = session.settings.isParticipantAuthenticationEnabled && session.participants
 
   // reset the question instances found
-  await resetQuestionInstances({ instanceIds })
+  await resetQuestionInstances({ instanceIds, participants })
 
   // increment the execution counter of the block
   await SessionModel.findByIdAndUpdate(session.id, {
-    $set: {
-      [`blocks.${blockIndex}.status`]: QUESTION_BLOCK_STATUS.PLANNED,
-    },
     $inc: {
       [`blocks.${blockIndex}.execution`]: 1,
     },

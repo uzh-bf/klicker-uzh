@@ -1,5 +1,5 @@
 const AWS = require('aws-sdk')
-const UUID = require('uuid/v4')
+const { v4: uuidv4 } = require('uuid')
 const { UserInputError, ForbiddenError } = require('apollo-server-express')
 
 const cfg = require('../klicker.conf.js')
@@ -46,7 +46,7 @@ const requestPresignedURL = async ({ fileType, userId }) => {
   // compute a scoped filename
   // images are scoped to the question as they can be reused across versions
   // const fileName = `${userId}/${questionId}/${UUID()}.${fileType}`
-  const fileName = `${userId}/${UUID()}.${fileExtensions[fileType]}`
+  const fileName = `${userId}/${uuidv4()}.${fileExtensions[fileType]}`
 
   // generate a presigned url with the specified file type and generated name
   const signedUrl = await S3.getSignedUrl('putObject', {

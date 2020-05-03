@@ -2,9 +2,11 @@ query JoinSession($shortname: String!) {
   joinSession(shortname: $shortname) {
     id
     settings {
+      isParticipantAuthenticationEnabled
       isFeedbackChannelActive
       isFeedbackChannelPublic
       isConfusionBarometerActive
+      storageMode
     }
     activeInstances {
       id

@@ -12,6 +12,11 @@ module.exports = `
     EXECUTED
   }
 
+  enum Session_StorageMode {
+    SECRET
+    COMPLETE
+  }
+
   type Session_Public {
     id: ID!
 
@@ -30,11 +35,13 @@ module.exports = `
     name: String!
     blocks: [Session_QuestionBlockInput!]!
     participants: [Session_ParticipantInput!]
+    storageMode: Session_StorageMode
   }
   input SessionModifyInput {
     name: String
     blocks: [Session_QuestionBlockInput!]
     participants: [Session_ParticipantInput!]
+    storageMode: Session_StorageMode
   }
   type Session {
     id: ID!
@@ -78,6 +85,7 @@ module.exports = `
     isEvaluationPublic: Boolean!
     isFeedbackChannelActive: Boolean!
     isFeedbackChannelPublic: Boolean!
+    storageMode: Session_StorageMode!
   }
 
   input Session_ParticipantInput {
