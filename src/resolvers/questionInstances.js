@@ -69,10 +69,8 @@ const resultsByPVQuery = async ({ session, id, isOpen, results }) => {
 }
 
 /* ----- mutations ----- */
-const addResponseMutation = async (_, { fp, instanceId, response }, { ip, auth }) => {
+const addResponseMutation = async (_, { instanceId, response }, { auth }) => {
   await SessionExecService.addResponse({
-    fp,
-    ip,
     instanceId,
     response,
     participantId: auth ? auth.sub : undefined,

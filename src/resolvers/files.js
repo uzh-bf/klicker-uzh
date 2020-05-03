@@ -8,10 +8,7 @@ const filesByPVQuery = (parentValue, args, { loaders }) => {
 }
 
 const requestPresignedURLMutation = async (parentValue, { fileType }, { auth }) =>
-  FileService.requestPresignedURL({
-    fileType,
-    userId: auth.sub,
-  })
+  FileService.requestPresignedURL({ fileType, userId: auth.sub })
 
 module.exports = {
   // queries

@@ -221,7 +221,7 @@ describe('SessionExecService', () => {
       expect(instanceWithResponse).toEqual([
         [null, 1],
         [null, 1],
-        [null, 1],
+        // [null, 1],
       ])
 
       const instanceWithResponses = await SessionExecService.addResponse({
@@ -233,7 +233,7 @@ describe('SessionExecService', () => {
       expect(instanceWithResponses).toEqual([
         [null, 1],
         [null, 2],
-        [null, 2],
+        // [null, 2],
       ])
 
       const instanceWithResponses2 = await SessionExecService.addResponse({
@@ -245,7 +245,7 @@ describe('SessionExecService', () => {
       expect(instanceWithResponses2).toEqual([
         [null, 2],
         [null, 3],
-        [null, 3],
+        // [null, 3],
       ])
 
       const tooManyChoices = SessionExecService.addResponse({
@@ -275,7 +275,7 @@ describe('SessionExecService', () => {
       expect(instanceWithResponse).toEqual([
         [null, 1],
         [null, 1],
-        [null, 1],
+        // [null, 1],
       ])
 
       const instanceWithResponses = await SessionExecService.addResponse({
@@ -289,7 +289,7 @@ describe('SessionExecService', () => {
         [null, 1],
         [null, 1],
         [null, 2],
-        [null, 2],
+        // [null, 2],
       ])
     })
 
@@ -322,7 +322,7 @@ describe('SessionExecService', () => {
         [null, 1],
         [null, 1],
         [null, 1],
-        [null, 1],
+        // [null, 1],
       ])
 
       // add more responses
@@ -336,7 +336,7 @@ describe('SessionExecService', () => {
         [null, 1],
         [null, 1],
         [null, 2],
-        [null, 2],
+        // [null, 2],
       ])
 
       const instanceWithResponses2 = await SessionExecService.addResponse({
@@ -349,7 +349,7 @@ describe('SessionExecService', () => {
         [null, 2],
         [null, 0],
         [null, 3],
-        [null, 3],
+        // [null, 3],
       ])
     })
 
@@ -400,7 +400,7 @@ describe('SessionExecService', () => {
         [null, 1],
         [null, 1],
         [null, 1],
-        [null, 1],
+        // [null, 1],
       ])
 
       // add more responses
@@ -414,7 +414,7 @@ describe('SessionExecService', () => {
         [null, 1],
         [null, 1],
         [null, 2],
-        [null, 2],
+        // [null, 2],
       ])
 
       const instanceWithResponses2 = await SessionExecService.addResponse({
@@ -427,7 +427,7 @@ describe('SessionExecService', () => {
         [null, 2],
         [null, 0],
         [null, 3],
-        [null, 3],
+        // [null, 3],
       ])
     })
   })
@@ -514,7 +514,7 @@ describe('SessionExecService', () => {
         [null, 1],
         [null, 1],
         [null, 1],
-        [null, 1],
+        // [null, 1],
       ])
 
       expect(
@@ -528,4 +528,6 @@ describe('SessionExecService', () => {
       ).rejects.toThrow('RESPONSE_NOT_ALLOWED')
     })
   })
+
+  // TODO: testing for the COMPLETE storage mode
 })

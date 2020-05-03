@@ -8,9 +8,7 @@ const { ensureLoaders } = require('../lib/loaders')
 /* ----- queries ----- */
 const allSessionsQuery = async (parentValue, args, { auth, loaders }) => {
   // get all the sessions for the given user
-  const results = await SessionModel.find({ user: auth.sub }).sort({
-    createdAt: -1,
-  })
+  const results = await SessionModel.find({ user: auth.sub }).sort({ createdAt: -1 })
 
   // prime the dataloader cache
   results.forEach((session) => ensureLoaders(loaders).sessions.prime(session.id, session))
@@ -64,69 +62,32 @@ const runtimeByPVQuery = ({ startedAt }) => {
 }
 
 /* ----- mutations ----- */
-const createSessionMutation = (parentValue, { session: { name, blocks, participants } }, { auth }) =>
-  SessionMgrService.createSession({
-    name,
-    questionBlocks: blocks,
-    participants,
-    userId: auth.sub,
-  })
+const createSessionMutation = (parentValue, { session: { name, blocks, participants, storageMode } }, { auth }) =>
+  SessionMgrService.createSession({ name, questionBlocks: blocks, participants, storageMode, userId: auth.sub })
 
-const modifySessionMutation = (parentValue, { id, session: { name, blocks, participants } }, { auth }) =>
-  SessionMgrService.modifySession({
-    id,
-    name,
-    participants,
-    questionBlocks: blocks,
-    userId: auth.sub,
-  })
+const modifySessionMutation = (parentValue, { id, session: { name, blocks, participants, storageMode } }, { auth }) =>
+  SessionMgrService.modifySession({ id, name, participants, storageMode, questionBlocks: blocks, userId: auth.sub })
 
-const startSessionMutation = (parentValue, { id }, { auth }) =>
-  SessionMgrService.startSession({
-    id,
-    userId: auth.sub,
-  })
+const startSessionMutation = (parentValue, { id }, { auth }) => SessionMgrService.startSession({ id, userId: auth.sub })
 
 const activateNextBlockMutation = (parentValue, args, { auth }) =>
-  SessionMgrService.activateNextBlock({
-    userId: auth.sub,
-  })
+  SessionMgrService.activateNextBlock({ userId: auth.sub })
 
 const activateBlockByIdMutation = (parentValue, { blockId, sessionId }, { auth }) =>
   SessionMgrService.activateBlockById({ userId: auth.sub, sessionId, blockId })
 
-const pauseSessionMutation = (parentValue, { id }, { auth }) =>
-  SessionMgrService.pauseSession({
-    id,
-    userId: auth.sub,
-  })
+const pauseSessionMutation = (parentValue, { id }, { auth }) => SessionMgrService.pauseSession({ id, userId: auth.sub })
 
 const cancelSessionMutation = (parentValue, { id }, { auth }) =>
-  SessionMgrService.cancelSession({
-    id,
-    userId: auth.sub,
-  })
+  SessionMgrService.cancelSession({ id, userId: auth.sub })
 
 const resetQuestionBlockMutation = (parentValue, { sessionId, blockId }, { auth }) =>
-  SessionExecService.resetQuestionBlock({
-    sessionId,
-    blockId,
-    userId: auth.sub,
-  })
+  SessionExecService.resetQuestionBlock({ sessionId, blockId, userId: auth.sub })
 
-const endSessionMutation = (parentValue, { id }, { auth }) =>
-  SessionMgrService.endSession({
-    id,
-    userId: auth.sub,
-  })
+const endSessionMutation = (parentValue, { id }, { auth }) => SessionMgrService.endSession({ id, userId: auth.sub })
 
-const addFeedbackMutation = async (parentValue, { fp, sessionId, content }, { ip }) => {
-  await SessionExecService.addFeedback({
-    fp,
-    ip,
-    sessionId,
-    content,
-  })
+const addFeedbackMutation = async (parentValue, { sessionId, content }) => {
+  await SessionExecService.addFeedback({ sessionId, content })
 
   return 'FEEDBACK_ADDED'
 }
@@ -134,25 +95,14 @@ const addFeedbackMutation = async (parentValue, { fp, sessionId, content }, { ip
 const deleteFeedbackMutation = (parentValue, { sessionId, feedbackId }, { auth }) =>
   SessionExecService.deleteFeedback({ sessionId, feedbackId, userId: auth.sub })
 
-const addConfusionTSMutation = async (parentValue, { fp, sessionId, difficulty, speed }, { ip }) => {
-  await SessionExecService.addConfusionTS({
-    fp,
-    ip,
-    sessionId,
-    difficulty,
-    speed,
-  })
+const addConfusionTSMutation = async (parentValue, { sessionId, difficulty, speed }) => {
+  await SessionExecService.addConfusionTS({ sessionId, difficulty, speed })
 
   return 'CONFUSION_ADDED'
 }
 
 const updateSessionSettingsMutation = (parentValue, { sessionId, settings }, { auth }) =>
-  SessionMgrService.updateSettings({
-    sessionId,
-    userId: auth.sub,
-    settings,
-    shortname: auth.shortname,
-  })
+  SessionMgrService.updateSettings({ sessionId, userId: auth.sub, settings, shortname: auth.shortname })
 
 const deleteSessionsMutation = (parentValue, { ids }, { auth }) =>
   SessionMgrService.deleteSessions({ userId: auth.sub, ids })

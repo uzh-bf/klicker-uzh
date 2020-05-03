@@ -57,11 +57,6 @@ module.exports = convict({
   },
   cache: {
     redis: {
-      enabled: {
-        default: false,
-        env: 'CACHE_REDIS_ENABLED',
-        format: 'Boolean',
-      },
       host: {
         default: undefined,
         env: 'CACHE_REDIS_HOST',
@@ -363,13 +358,6 @@ module.exports = convict({
         env: 'SERVICES_SLACK_WEBHOOK',
         format: 'url',
         sensitive: true,
-      },
-    },
-    newRelic: {
-      enabled: {
-        default: false,
-        env: 'SERVICES_NEWRELIC_ENABLED',
-        format: 'Boolean',
       },
     },
   },

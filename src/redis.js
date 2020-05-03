@@ -7,19 +7,15 @@ const CACHE_CFG = CFG.get('cache')
 
 const newRedis = (db = 0) => {
   // otherwise initialize a new redis client for the respective url and database
-  if (CACHE_CFG.redis.enabled) {
-    try {
-      const { host, password, port } = CACHE_CFG.redis
-      const newClient = new Redis({ db, family: 4, host, password, port })
+  try {
+    const { host, password, port } = CACHE_CFG.redis
+    const newClient = new Redis({ db, family: 4, host, password, port })
 
-      console.log(`[redis] Connected to db ${db}`)
-      return newClient
-    } catch ({ message }) {
-      console.error(`[redis] Failed to connect: ${message}`)
-    }
+    console.log(`[redis] Connected to db ${db}`)
+    return newClient
+  } catch ({ message }) {
+    throw new Error(`[redis] Failed to connect: ${message}`)
   }
-
-  return null
 }
 
 const clients = new Map()

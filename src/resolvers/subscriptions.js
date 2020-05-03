@@ -7,10 +7,7 @@ let pubsub
 const redis = newRedis(3)
 if (redis) {
   // instantiate a new redis-based pubsub instance
-  pubsub = new RedisPubSub({
-    publisher: redis,
-    subscriber: newRedis(3),
-  })
+  pubsub = new RedisPubSub({ publisher: redis, subscriber: newRedis(3) })
 } else {
   pubsub = new PubSub()
 }
