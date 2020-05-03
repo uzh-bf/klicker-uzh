@@ -263,7 +263,12 @@ function SessionTimeline({
                   </Modal.Actions>
                 </Modal>,
               ]}
-              {storageMode === 'COMPLETE' && <Dropdown.Item>Download Results</Dropdown.Item>}
+              {storageMode === 'COMPLETE' && (
+                <Dropdown.Item disabled>
+                  <Icon name="download" />
+                  <FormattedMessage defaultMessage="Export Responses" id="runningSession.string.downloadResponses" />
+                </Dropdown.Item>
+              )}
             </Dropdown.Menu>
           </Dropdown>
         </div>
