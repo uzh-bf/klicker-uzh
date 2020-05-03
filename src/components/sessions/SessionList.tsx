@@ -192,16 +192,21 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
 
         .session,
         .sessions {
-          margin-bottom: 1rem;
-          padding: 0.5rem;
-          border: 1px solid lightgrey;
-          background-color: #f9f9f9;
+          //margin-bottom: 1.5rem;
+          //padding: 0.3rem;
+          //border: 1px solid lightgrey;
+          //background-color: #f9f9f9;
+        }
+
+        .session {
+          padding: 1rem 0;
+          border-top: 1px solid lightgrey;
         }
 
         .runningSessions {
           & > .sessions {
-            background-color: #f9f9f9;
-            border: 1px solid $color-primary;
+            //background-color: #f9f9f9;
+            //border: 1px solid $color-primary;
           }
 
           .runningSession:not(:last-child) {

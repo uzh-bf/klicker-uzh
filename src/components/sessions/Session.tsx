@@ -67,15 +67,15 @@ function Session({
 
   return (
     <div className="session">
-      <h2 className="title">
-        {isParticipantAuthenticationEnabled && <Label content="asdasd" icon="shield alternate" />}
-        {storageMode === 'SECRET' && <Label content="asdas" icon="user secret" />}
-        {storageMode === 'COMPLETE' && <Label content="asdasd" icon="archive" />}
-        {name}
-      </h2>
-      <div className="date">
-        <FormattedMessage defaultMessage="Created on" id="sessionList.string.createdOn" />{' '}
-        {dayjs(createdAt).format('DD.MM.YY HH:mm')}
+      <h2 className="title">{name}</h2>
+
+      <div className="labels">
+        <Label className="date" content={dayjs(createdAt).format('DD.MM.YY HH:mm')} icon="calendar" />
+        {isParticipantAuthenticationEnabled && [
+          <Label className="authMode" color="green" content="AUTH" icon="shield alternate" />,
+          storageMode === 'SECRET' && <Label className="storageMode" content="SECRET" icon="user secret" />,
+          storageMode === 'COMPLETE' && <Label className="storageMode" content="COMPLETE" icon="archive" />,
+        ]}
       </div>
 
       <div className="details">
@@ -108,7 +108,7 @@ function Session({
         )}
         <div className="actionArea">
           <div className="settings">
-            <Dropdown button labeled className="icon" icon="wrench" text="Options">
+            <Dropdown button labeled className="icon left" icon="wrench" text="Options">
               <Dropdown.Menu>
                 {status === SESSION_STATUS.CREATED && (
                   <Link href={{ pathname: '/questions', query: { editSessionId: id } }}>
@@ -203,7 +203,6 @@ function Session({
           )}
         </div>
       </div>
-
       <style jsx>{`
         @import 'src/theme';
 
@@ -216,16 +215,24 @@ function Session({
 
         .title {
           color: $color-primary-strong;
+          margin-bottom: 0.3rem;
         }
 
-        .title,
-        .date {
-          margin: auto;
-          margin-bottom: 0.5rem;
+        .labels {
+          display: flex;
+          flex-direction: row;
+
+          margin-bottom: 0.2rem;
+
+          :global(.label) {
+            min-width: 5.8rem;
+            margin-right: 0.2rem !important;
+            text-align: center;
+          }
         }
 
         .block {
-          margin-bottom: 0.5rem;
+          margin-top: 0.3rem;
         }
 
         .actionArea {
@@ -234,11 +241,9 @@ function Session({
 
           :global(.button),
           a :global(.button) {
+            text-align: center;
             margin-right: 0 !important;
             width: 100%;
-          }
-          :global(.button:not(:first-child)),
-          a:not(:first-child) :global(.button) {
             margin-top: 0.3rem !important;
           }
         }
@@ -249,28 +254,53 @@ function Session({
             flex-flow: row wrap;
           }
           .title,
-          .date {
+          .labels {
             flex: 0 0 50%;
             margin: 0;
+            margin-bottom: 0.4rem;
           }
           .title {
+            align-self: end;
             font-size: 1.2rem;
-            margin-bottom: 0.5rem;
           }
-          .date {
-            align-self: center;
-            text-align: right;
-          }
-          .details {
-            //border: 1px solid lightgrey;
+          .labels {
+            display: flex;
+            justify-content: end;
+
+            :global(.label) {
+              // min-width: 6rem;
+              margin-right: 0 !important;
+              margin-left: 0.4rem !important;
+              text-align: center;
+            }
+
+            :global(.label.storageMode) {
+              order: 1;
+            }
+
+            :global(.label.authMode) {
+              order: 2;
+            }
+
+            :global(.label.date) {
+              order: 3;
+              width: 11rem;
+            }
           }
           .block {
             flex: 1;
             margin: 0;
-            margin-right: 0.5rem;
+            margin-right: 0.4rem;
           }
           .actionArea {
-            align-self: flex-end;
+            align-self: flex-start;
+            width: 11rem;
+
+            :global(.button),
+            a :global(.button) {
+              margin-top: 0 !important;
+              margin-bottom: 0.4rem !important;
+            }
           }
         }
       `}</style>
