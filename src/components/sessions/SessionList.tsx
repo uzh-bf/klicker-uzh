@@ -190,27 +190,14 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
       <style jsx>{`
         @import 'src/theme';
 
-        .session,
-        .sessions {
-          //margin-bottom: 1.5rem;
-          //padding: 0.3rem;
-          //border: 1px solid lightgrey;
-          //background-color: #f9f9f9;
-        }
-
         .session {
-          padding: 1rem 0;
-          border-top: 1px solid lightgrey;
+          padding-bottom: 1.5rem;
         }
 
-        .runningSessions {
-          & > .sessions {
-            //background-color: #f9f9f9;
-            //border: 1px solid $color-primary;
-          }
-
-          .runningSession:not(:last-child) {
-            margin-bottom: 0.5rem;
+        @include desktop-tablet-only {
+          .session {
+            padding: 1rem 0;
+            border-top: 1px solid lightgrey;
           }
         }
       `}</style>
