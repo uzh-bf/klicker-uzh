@@ -6,8 +6,8 @@ import Authentication from './Authentication'
 import Participants from './Participants'
 import DataStorage from './DataStorage'
 
-export type AuthenticationMode = 'password' | 'aai'
-export type DataStorageMode = 'complete' | 'secret'
+export type AuthenticationMode = 'PASSWORD' | 'AAI'
+export type DataStorageMode = 'COMPLETE' | 'SECRET'
 
 const messages = defineMessages({
   participantAuthentication: {

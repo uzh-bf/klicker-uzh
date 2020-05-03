@@ -10,10 +10,10 @@ import CreateQuestionMutation from '../../graphql/mutations/CreateQuestionMutati
 import { QUESTION_GROUPS, QUESTION_TYPES } from '../../constants'
 
 interface Props {
-  trigger: React.ReactElement
+  children: React.ReactChild
 }
 
-function UploadModal({ trigger }: Props): React.ReactElement {
+function UploadModal({ children }: Props): React.ReactElement {
   const client = useApolloClient()
   const [isLoading, setIsLoading] = useState(false)
   const [questions, setQuestions] = useState([])
@@ -83,7 +83,7 @@ function UploadModal({ trigger }: Props): React.ReactElement {
   }
 
   return (
-    <Modal closeIcon size="fullscreen" trigger={trigger} onClose={onResetImportState}>
+    <Modal closeIcon size="fullscreen" trigger={children} onClose={onResetImportState}>
       <Modal.Header>
         <FormattedMessage defaultMessage="Question Import" id="questionImport.string.header" />
       </Modal.Header>
