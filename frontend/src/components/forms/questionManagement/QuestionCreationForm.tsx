@@ -7,6 +7,7 @@ import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Form, Message, List, Loader } from 'semantic-ui-react'
 import { Formik } from 'formik'
 import { EditorState } from 'draft-js'
+import FocusLock, { AutoFocusInside } from 'react-focus-lock'
 
 import FileDropzone from './FileDropzone'
 import ContentInput from '../../questions/creation/ContentInput'
@@ -169,254 +170,257 @@ function QuestionCreationForm({
   }
 
   return (
-    <div className="questionCreationForm">
-      <Formik
-        initialValues={
-          initialValues || {
-            content: EditorState.createEmpty(),
-            files: [],
-            options: {
-              choices: [],
-              randomized: false,
-              restrictions: {
-                max: null,
-                min: null,
+    <FocusLock>
+      <div className="questionCreationForm">
+        <Formik
+          initialValues={
+            initialValues || {
+              content: EditorState.createEmpty(),
+              files: [],
+              options: {
+                choices: [],
+                randomized: false,
+                restrictions: {
+                  max: null,
+                  min: null,
+                },
               },
-            },
-            tags: [],
-            title: '',
-            type: QUESTION_TYPES.SC,
+              tags: [],
+              title: '',
+              type: QUESTION_TYPES.SC,
+            }
           }
-        }
-        isInitialValid={isInitialValid}
-        validate={validate}
-        /* validationSchema={Yup.object().shape({
+          isInitialValid={isInitialValid}
+          validate={validate}
+          /* validationSchema={Yup.object().shape({
           content: Yup.string().required(),
           tags: Yup.array().min(1).required(),
           title: Yup.string().required(),
           type: Yup.oneOf(QUESTION_TYPES.values()).required(),
         })} */
-        onSubmit={onSubmit}
-      >
-        {({
-          values,
-          errors,
-          touched,
-          handleChange,
-          handleBlur,
-          handleSubmit,
-          isSubmitting,
-          setFieldValue,
-        }: any): React.ReactElement => {
-          const Preview = typeComponents[values.type].preview
-          const OptionsInput = typeComponents[values.type].input
+          onSubmit={onSubmit}
+        >
+          {({
+            values,
+            errors,
+            touched,
+            handleChange,
+            handleBlur,
+            handleSubmit,
+            isSubmitting,
+            setFieldValue,
+          }: any): React.ReactElement => {
+            const Preview = typeComponents[values.type].preview
+            const OptionsInput = typeComponents[values.type].input
 
-          return (
-            <Form error={!_isEmpty(errors)} onSubmit={handleSubmit}>
-              <div className="questionActions">
-                <Button className="discard" size="large" type="button" onClick={onDiscard}>
-                  <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
-                </Button>
-                <div>
-                  {_some(errors) && (
-                    <Message compact error size="small">
-                      <List>
-                        {errors.title && <List.Item>{intl.formatMessage(errors.title)}</List.Item>}
-                        {errors.tags && <List.Item>{intl.formatMessage(errors.tags)}</List.Item>}
-                        {errors.content && <List.Item>{intl.formatMessage(errors.content)}</List.Item>}
-                        {errors.options && <List.Item>{intl.formatMessage(errors.options)}</List.Item>}
-                      </List>
-                    </Message>
-                  )}
+            return (
+              <Form error={!_isEmpty(errors)} onSubmit={handleSubmit}>
+                <div className="questionActions">
+                  <Button className="discard" size="large" type="button" onClick={onDiscard}>
+                    <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+                  </Button>
+                  <div>
+                    {_some(errors) && (
+                      <Message compact error size="small">
+                        <List>
+                          {errors.title && <List.Item>{intl.formatMessage(errors.title)}</List.Item>}
+                          {errors.tags && <List.Item>{intl.formatMessage(errors.tags)}</List.Item>}
+                          {errors.content && <List.Item>{intl.formatMessage(errors.content)}</List.Item>}
+                          {errors.options && <List.Item>{intl.formatMessage(errors.options)}</List.Item>}
+                        </List>
+                      </Message>
+                    )}
+                  </div>
+                  <Button
+                    primary
+                    className="save"
+                    disabled={!_isEmpty(errors) || (!isInitialValid && _isEmpty(touched))}
+                    loading={isSubmitting}
+                    size="large"
+                    type="submit"
+                  >
+                    <FormattedMessage defaultMessage="Save" id="common.button.save" />
+                  </Button>
                 </div>
-                <Button
-                  primary
-                  className="save"
-                  disabled={!_isEmpty(errors) || (!isInitialValid && _isEmpty(touched))}
-                  loading={isSubmitting}
-                  size="large"
-                  type="submit"
-                >
-                  <FormattedMessage defaultMessage="Save" id="common.button.save" />
-                </Button>
-              </div>
 
-              <div className="questionInput questionTitle">
-                <FormikInput
-                  autoFocus
-                  required
-                  /* error={errors.title}
+                <div className="questionInput questionTitle">
+                  <AutoFocusInside>
+                    <FormikInput
+                      required
+                      /* error={errors.title}
                   errorMessage={
                     <FormattedMessage
                       defaultMessage="Please provide a valid question title (summary)."
                       id="form.questionTitle.invalid"
                     />
                   } */
-                  handleBlur={handleBlur}
-                  handleChange={handleChange}
-                  label={intl.formatMessage(messages.titleInput)}
-                  name="title"
-                  tooltip={
-                    <FormattedMessage
-                      defaultMessage="Enter a short summarizing title for the question."
-                      id="createQuestion.titleInput.tooltip"
+                      handleBlur={handleBlur}
+                      handleChange={handleChange}
+                      label={intl.formatMessage(messages.titleInput)}
+                      name="title"
+                      tooltip={
+                        <FormattedMessage
+                          defaultMessage="Enter a short summarizing title for the question."
+                          id="createQuestion.titleInput.tooltip"
+                        />
+                      }
+                      touched={touched.title}
+                      type="text"
+                      value={values.title}
                     />
-                  }
-                  touched={touched.title}
-                  type="text"
-                  value={values.title}
-                />
-              </div>
+                  </AutoFocusInside>
+                </div>
 
-              <div className="questionInput questionType">
-                <TypeChooser value={values.type} onChange={(newType): void => setFieldValue('type', newType)} />
-              </div>
+                <div className="questionInput questionType">
+                  <TypeChooser value={values.type} onChange={(newType): void => setFieldValue('type', newType)} />
+                </div>
 
-              <div className="questionInput questionTags">
-                {tagsLoading ? (
-                  <Loader active />
-                ) : (
-                  <TagInput
-                    tags={tags}
-                    touched={touched.tags}
-                    value={values.tags}
-                    onChange={(newTags): void => setFieldValue('tags', newTags)}
-                  />
-                )}
-              </div>
+                <div className="questionInput questionTags">
+                  {tagsLoading ? (
+                    <Loader active />
+                  ) : (
+                    <TagInput
+                      tags={tags}
+                      touched={touched.tags}
+                      value={values.tags}
+                      onChange={(newTags): void => setFieldValue('tags', newTags)}
+                    />
+                  )}
+                </div>
 
-              <div className="questionInput questionContent">
-                <ContentInput
-                  error={errors.content}
-                  touched={touched.content}
-                  value={values.content}
-                  onChange={(newContent): void => setFieldValue('content', newContent)}
-                />
-              </div>
-
-              {publicRuntimeConfig.s3root && (
-                <div className="questionInput questionFiles">
-                  <h2>
-                    <FormattedMessage defaultMessage="Attached Images" id="createQuestion.filesLabel" />
-                  </h2>
-                  <FileDropzone
-                    files={values.files}
-                    onChangeFiles={(newFiles): void => setFieldValue('files', newFiles)}
+                <div className="questionInput questionContent">
+                  <ContentInput
+                    error={errors.content}
+                    touched={touched.content}
+                    value={values.content}
+                    onChange={(newContent): void => setFieldValue('content', newContent)}
                   />
                 </div>
-              )}
 
-              <div className="questionInput questionOptions">
-                <OptionsInput
-                  type={values.type}
-                  value={values.options}
-                  onChange={(newOptions): void => setFieldValue('options', newOptions)}
-                />
-              </div>
+                {publicRuntimeConfig.s3root && (
+                  <div className="questionInput questionFiles">
+                    <h2>
+                      <FormattedMessage defaultMessage="Attached Images" id="createQuestion.filesLabel" />
+                    </h2>
+                    <FileDropzone
+                      files={values.files}
+                      onChangeFiles={(newFiles): void => setFieldValue('files', newFiles)}
+                    />
+                  </div>
+                )}
 
-              <div className="questionPreview">
-                <h2>
-                  <FormattedMessage defaultMessage="Audience Preview" id="createQuestion.previewLabel" />
-                </h2>
-                <Preview
-                  description={values.content.getCurrentContent()}
-                  options={values.options}
-                  questionType={values.type}
-                />
-              </div>
-            </Form>
-          )
-        }}
-      </Formik>
+                <div className="questionInput questionOptions">
+                  <OptionsInput
+                    type={values.type}
+                    value={values.options}
+                    onChange={(newOptions): void => setFieldValue('options', newOptions)}
+                  />
+                </div>
 
-      <style jsx>{`
-        @import 'src/theme';
+                <div className="questionPreview">
+                  <h2>
+                    <FormattedMessage defaultMessage="Audience Preview" id="createQuestion.previewLabel" />
+                  </h2>
+                  <Preview
+                    description={values.content.getCurrentContent()}
+                    options={values.options}
+                    questionType={values.type}
+                  />
+                </div>
+              </Form>
+            )
+          }}
+        </Formik>
 
-        .questionCreationForm > :global(form) {
-          display: flex;
-          flex-direction: column;
+        <style jsx>{`
+          @import 'src/theme';
 
-          .questionInput,
-          .questionPreview {
-            margin-bottom: 1rem;
-          }
+          .questionCreationForm > :global(form) {
+            display: flex;
+            flex-direction: column;
 
-          .questionInput :global(.field > label),
-          .questionPreview > h2,
-          .questionFiles > h2 {
-            font-size: 1.2rem !important;
-            margin: 0 !important;
-            margin-bottom: 0.5rem !important;
-          }
+            .questionInput,
+            .questionPreview {
+              margin-bottom: 1rem;
+            }
 
-          @supports (grid-gap: 1rem) {
-            @include desktop-tablet-only {
-              display: grid;
-              align-content: start;
+            .questionInput :global(.field > label),
+            .questionPreview > h2,
+            .questionFiles > h2 {
+              font-size: 1.2rem !important;
+              margin: 0 !important;
+              margin-bottom: 0.5rem !important;
+            }
 
-              grid-gap: 1rem;
-              grid-template-columns: repeat(3, 1fr);
-              grid-template-rows: auto auto auto auto;
-              grid-template-areas:
-                'title title preview'
-                'type tags preview'
-                'content content content'
-                'files files files'
-                'options options options'
-                'actions actions actions';
-              .questionInput,
-              .questionPreview {
-                margin: 0;
-              }
+            @supports (grid-gap: 1rem) {
+              @include desktop-tablet-only {
+                display: grid;
+                align-content: start;
 
-              .questionTitle {
-                grid-area: title;
-              }
-
-              .questionType {
-                grid-area: type;
-              }
-
-              .questionTags {
-                grid-area: tags;
-              }
-
-              .questionPreview {
-                grid-area: preview;
-                align-self: stretch;
-              }
-
-              .questionContent {
-                grid-area: content;
-              }
-
-              .questionFiles {
-                grid-area: files;
-              }
-
-              .questionOptions {
-                grid-area: options;
-              }
-
-              .questionActions {
-                grid-area: actions;
-                display: flex;
-                justify-content: space-between;
-                align-items: start;
-
-                :global(button) {
-                  margin-right: 0;
+                grid-gap: 1rem;
+                grid-template-columns: repeat(3, 1fr);
+                grid-template-rows: auto auto auto auto;
+                grid-template-areas:
+                  'title title preview'
+                  'type tags preview'
+                  'content content content'
+                  'files files files'
+                  'options options options'
+                  'actions actions actions';
+                .questionInput,
+                .questionPreview {
+                  margin: 0;
                 }
 
-                :global(.message) {
-                  margin-right: 1rem;
+                .questionTitle {
+                  grid-area: title;
+                }
+
+                .questionType {
+                  grid-area: type;
+                }
+
+                .questionTags {
+                  grid-area: tags;
+                }
+
+                .questionPreview {
+                  grid-area: preview;
+                  align-self: stretch;
+                }
+
+                .questionContent {
+                  grid-area: content;
+                }
+
+                .questionFiles {
+                  grid-area: files;
+                }
+
+                .questionOptions {
+                  grid-area: options;
+                }
+
+                .questionActions {
+                  grid-area: actions;
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: start;
+
+                  :global(button) {
+                    margin-right: 0;
+                  }
+
+                  :global(.message) {
+                    margin-right: 1rem;
+                  }
                 }
               }
             }
           }
-        }
-      `}</style>
-    </div>
+        `}</style>
+      </div>{' '}
+    </FocusLock>
   )
 }
 

@@ -185,15 +185,20 @@ function ActionBar({
               <Icon name="play" />
               <FormattedMessage defaultMessage="New Session" id="questionPool.button.createSession" />
             </Dropdown.Item>
-            <QuestionCreationModal />
-            <UploadModal
-              trigger={
-                <Dropdown.Item>
-                  <Icon name="upload" />
-                  <FormattedMessage defaultMessage="Questions via Import" id="questionPool.button.importQuestions" />
+            <QuestionCreationModal>
+              {({ setIsModalOpen }): any => (
+                <Dropdown.Item onClick={(): void => setIsModalOpen(true)}>
+                  <Icon name="question circle" />
+                  <FormattedMessage defaultMessage="New Question" id="questionPool.button.createQuestion" />
                 </Dropdown.Item>
-              }
-            />
+              )}
+            </QuestionCreationModal>
+            <UploadModal>
+              <Dropdown.Item>
+                <Icon name="upload" />
+                <FormattedMessage defaultMessage="Questions via Import" id="questionPool.button.importQuestions" />
+              </Dropdown.Item>
+            </UploadModal>
           </Dropdown.Menu>
         </Dropdown>
       </div>

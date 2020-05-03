@@ -9,6 +9,7 @@ query JoinSession($shortname: String!) {
       isFeedbackChannelActive
       isFeedbackChannelPublic
       isConfusionBarometerActive
+      storageMode
     }
     activeInstances {
       id

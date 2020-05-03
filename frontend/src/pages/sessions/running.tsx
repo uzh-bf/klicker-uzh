@@ -227,6 +227,7 @@ function Running(): React.ReactElement {
                 sessionId={id}
                 shortname={shortname}
                 startedAt={dayjs(startedAt).format('HH:mm:ss')}
+                storageMode={settings.storageMode}
                 subscribeToMore={subscribeToMore({
                   document: RunningSessionUpdatedSubscription,
                   updateQuery: (prev, { subscriptionData }): any => {

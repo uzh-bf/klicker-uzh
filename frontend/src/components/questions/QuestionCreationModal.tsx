@@ -1,8 +1,7 @@
 import React, { useState } from 'react'
 import { useQuery, useMutation } from '@apollo/react-hooks'
 import { convertToRaw } from 'draft-js'
-import { Icon, Dropdown, Modal } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
+import { Modal } from 'semantic-ui-react'
 
 import QuestionCreationForm from '../forms/questionManagement/QuestionCreationForm'
 import { getPresignedURLs, uploadFilesToPresignedURLs } from '../../lib/utils/files'
@@ -11,29 +10,21 @@ import TagListQuery from '../../graphql/queries/TagListQuery.graphql'
 import CreateQuestionMutation from '../../graphql/mutations/CreateQuestionMutation.graphql'
 import RequestPresignedURLMutation from '../../graphql/mutations/RequestPresignedURLMutation.graphql'
 
-function QuestionCreationModal(): React.ReactElement {
+interface Props {
+  children: ({ setIsModalOpen: Function }) => React.ReactChild
+}
+
+function QuestionCreationModal({ children }: Props): React.ReactElement {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [createQuestion] = useMutation(CreateQuestionMutation)
   const [requestPresignedURL] = useMutation(RequestPresignedURLMutation)
   const { data, loading: tagsLoading } = useQuery(TagListQuery)
 
   return (
-    <Modal
-      closeOnDimmerClick={false}
-      open={isModalOpen}
-      size="large"
-      trigger={
-        <Dropdown.Item onClick={(): void => setIsModalOpen(true)}>
-          <Icon name="question circle" />
-          <FormattedMessage defaultMessage="New Question" id="questionPool.button.createQuestion" />
-        </Dropdown.Item>
-      }
-      // we don't want to have ESC close the modal, so don't do this
-      // onClose={(): void => setIsModalOpen(false)}
-    >
+    <Modal closeOnDimmerClick={false} open={isModalOpen} size="large" trigger={children({ setIsModalOpen })}>
       {/* <Modal.Header>
         <FormattedMessage defaultMessage="Create Question" id="createQuestion.title" />
-      </Modal.Header> */}
+      </Modal.Header> */}{' '}
       <Modal.Content>
         <QuestionCreationForm
           tags={data ? data.tags : []}

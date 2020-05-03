@@ -28,12 +28,12 @@ function DataStorage({
 
             <Grid.Row>
               <Grid.Column
-                className={classNames('disabled option', { active: dataStorageMode === 'complete' })}
-                // onClick={(): void => onChangeDataStorageMode('complete')}
+                className={classNames('option', { active: dataStorageMode === 'COMPLETE' })}
+                onClick={(): void => onChangeDataStorageMode('COMPLETE')}
               >
                 <Header>
                   <FormattedMessage
-                    defaultMessage="Complete Results (Coming Soon)"
+                    defaultMessage="Complete Results"
                     id="form.createSession.participantAuth.completeResults.title"
                   />
                 </Header>
@@ -46,8 +46,8 @@ function DataStorage({
               </Grid.Column>
 
               <Grid.Column
-                className={classNames('option', { active: dataStorageMode === 'secret' })}
-                onClick={(): void => onChangeDataStorageMode('secret')}
+                className={classNames('option', { active: dataStorageMode === 'SECRET' })}
+                onClick={(): void => onChangeDataStorageMode('SECRET')}
               >
                 <Header>
                   <FormattedMessage

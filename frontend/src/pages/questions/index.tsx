@@ -71,8 +71,8 @@ function Index(): React.ReactElement {
 
   const [isAuthenticationEnabled, setIsAuthenticationEnabled] = useState(false)
   const [sessionParticipants, setSessionParticipants] = useState([])
-  const [sessionAuthenticationMode, setSessionAuthenticationMode] = useState(null as AuthenticationMode)
-  const [sessionDataStorageMode, setSessionDataStorageMode] = useState(null as DataStorageMode)
+  const [sessionAuthenticationMode, setSessionAuthenticationMode] = useState('PASSWORD' as AuthenticationMode)
+  const [sessionDataStorageMode, setSessionDataStorageMode] = useState('SECRET' as DataStorageMode)
 
   const [startSession, { loading: isStartSessionLoading }] = useMutation(StartSessionMutation)
   const [createSession, { loading: isCreateSessionLoading }] = useMutation(CreateSessionMutation)
@@ -116,6 +116,10 @@ function Index(): React.ReactElement {
     if (creationMode) {
       setCreationMode(false)
       setSessionBlocks([])
+      setIsAuthenticationEnabled(false)
+      setSessionParticipants([])
+      setSessionAuthenticationMode('PASSWORD')
+      setSessionDataStorageMode('SECRET')
     } else {
       // turn on creation mode
       setCreationMode(true)
@@ -223,13 +227,19 @@ function Index(): React.ReactElement {
             id: editSessionId,
             name: sessionName,
             participants: sessionParticipants.map((username) => ({ username })),
+            storageMode: sessionDataStorageMode,
           },
         })
       } else {
         // create a new session
         result = await createSession({
           refetchQueries: [{ query: SessionListQuery }],
-          variables: { blocks, name: sessionName, participants: sessionParticipants.map((username) => ({ username })) },
+          variables: {
+            blocks,
+            name: sessionName,
+            participants: sessionParticipants.map((username) => ({ username })),
+            storageMode: sessionDataStorageMode,
+          },
         })
       }
 
