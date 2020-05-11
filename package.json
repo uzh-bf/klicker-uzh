@@ -49,7 +49,7 @@
     "babel-plugin-import-graphql": "2.7.0",
     "babel-plugin-inline-dotenv": "1.5.0",
     "babel-plugin-lodash": "3.3.4",
-    "babel-plugin-react-intl": "7.5.4",
+    "babel-plugin-react-intl": "7.5.7",
     "babel-plugin-transform-inline-environment-variables": "0.4.3",
     "classnames": "2.2.6",
     "compression": "1.7.4",
