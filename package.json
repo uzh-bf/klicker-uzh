@@ -48,7 +48,7 @@
     "jsonwebtoken": "8.5.1",
     "lodash": "4.17.15",
     "md5": "2.2.1",
-    "moment": "2.25.1",
+    "moment": "2.25.3",
     "mongodb": "3.5.7",
     "mongoose": "5.9.13",
     "morgan": "1.10.0",
