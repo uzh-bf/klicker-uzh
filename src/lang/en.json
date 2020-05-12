@@ -206,6 +206,8 @@
   "runningSession.string.publicEvaluation": "Public Evaluation",
   "runningSession.string.restrictedSession": "This session is restricted to a predefined list of participants. For participant details, open the",
   "runningSession.title": "Running Session",
+  "session.authMode.aai": "AAI",
+  "session.authMode.password": "PASS",
   "session.button.completed.content": "Copy",
   "session.button.copyAndModify": "Copy & Modify",
   "session.button.created.content": "Start",
