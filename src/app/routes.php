@@ -10,7 +10,7 @@ use \Firebase\JWT\JWT;
 return function (App $app) {
     $container = $app->getContainer();
 
-    $app->get('/participants/', function (Request $request, Response $response) {
+    $app->get('/public/participants', function (Request $request, Response $response) {
         $query = $request->getQueryParams();
 
         $key = $_ENV['APP_SECRET'];
