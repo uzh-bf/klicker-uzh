@@ -10,7 +10,7 @@ const { UserModel } = require('../models')
 const { app } = require('../app')
 const { initializeDb } = require('../lib/test/setup')
 const { createContentState } = require('../lib/draft')
-const { Errors, QUESTION_TYPES, SESSION_STORAGE_MODE } = require('../constants')
+const { Errors, QUESTION_TYPES, SESSION_STORAGE_MODE, SESSION_AUTHENTICATION_MODE } = require('../constants')
 const { getRedis } = require('../redis')
 
 process.env.NODE_ENV = 'test'
@@ -41,8 +41,8 @@ const ensureNoErrors = (response, debug = false) => {
   return response.body.data
 }
 
-const isParticipantIdValid = (value) => {
-  if (typeof value === 'string' && value.length === 24) {
+const isUuidValid = (value) => {
+  if (typeof value === 'string' && (value.length === 24 || value.length === 36)) {
     return 'UUID_VALID'
   }
   return 'UUID_INVALID'
@@ -92,13 +92,16 @@ const ensureCacheConsistency = async (questionBlock, { expectedKeys, unexpectedK
           switch (REDIS_KEY_TYPES[key]) {
             case REDIS_TYPES.HASH:
               data[key] = await responseCache.hgetall(`${instanceKey}:${key}`)
+              if (typeof data[key] !== 'undefined' && typeof data[key].namespace !== 'undefined') {
+                data[key].namespace = isUuidValid(data[key].namespace)
+              }
               break
             case REDIS_TYPES.LIST: {
               const listItems = await responseCache.lrange(`${instanceKey}:${key}`, 0, -1)
               if (['responses', 'dropped'].includes(key)) {
                 data[key] = map((response) => {
                   const json = JSON.parse(response)
-                  return { ...json, participant: isParticipantIdValid(json.participant) }
+                  return { ...json, participant: isUuidValid(json.participant) }
                 }, listItems)
               } else {
                 data[key] = listItems
@@ -109,7 +112,7 @@ const ensureCacheConsistency = async (questionBlock, { expectedKeys, unexpectedK
             case REDIS_TYPES.SET: {
               const setMembers = await responseCache.smembers(`${instanceKey}:${key}`)
               if (['participants', 'participantList'].includes(key)) {
-                data[key] = map(isParticipantIdValid, setMembers)
+                data[key] = map(isUuidValid, setMembers)
               } else {
                 data[key] = setMembers
               }
@@ -876,36 +879,38 @@ describe('Integration', () => {
       expect(data).toMatchSnapshot()
 
       expect(ensureCacheConsistency(blocks[0], { expectedKeys: ['info', 'results'] })).resolves.toMatchInlineSnapshot(`
-          Array [
-            Object {
-              "info": Object {
-                "auth": "false",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "SC",
-              },
-              "results": Object {
-                "0": "0",
-                "1": "0",
-                "participants": "0",
-              },
+        Array [
+          Object {
+            "info": Object {
+              "auth": "false",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "SC",
             },
-            Object {
-              "info": Object {
-                "auth": "false",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "MC",
-              },
-              "results": Object {
-                "0": "0",
-                "1": "0",
-                "2": "0",
-                "participants": "0",
-              },
+            "results": Object {
+              "0": "0",
+              "1": "0",
+              "participants": "0",
             },
-          ]
-        `)
+          },
+          Object {
+            "info": Object {
+              "auth": "false",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "MC",
+            },
+            "results": Object {
+              "0": "0",
+              "1": "0",
+              "2": "0",
+              "participants": "0",
+            },
+          },
+        ]
+      `)
     })
 
     it('PARTICIPANT: can join the session initially (initial)', async () => {
@@ -937,36 +942,38 @@ describe('Integration', () => {
       )
 
       expect(ensureCacheConsistency(blocks[0])).resolves.toMatchInlineSnapshot(`
-          Array [
-            Object {
-              "info": Object {
-                "auth": "false",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "SC",
-              },
-              "results": Object {
-                "0": "1",
-                "1": "0",
-                "participants": "1",
-              },
+        Array [
+          Object {
+            "info": Object {
+              "auth": "false",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "SC",
             },
-            Object {
-              "info": Object {
-                "auth": "false",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "MC",
-              },
-              "results": Object {
-                "0": "0",
-                "1": "0",
-                "2": "0",
-                "participants": "0",
-              },
+            "results": Object {
+              "0": "1",
+              "1": "0",
+              "participants": "1",
             },
-          ]
-        `)
+          },
+          Object {
+            "info": Object {
+              "auth": "false",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "MC",
+            },
+            "results": Object {
+              "0": "0",
+              "1": "0",
+              "2": "0",
+              "participants": "0",
+            },
+          },
+        ]
+      `)
     })
 
     it('LECTURER: can cancel the running session', async () => {
@@ -1039,36 +1046,38 @@ describe('Integration', () => {
 
       // ensure that the question instances are initialized in the response cache
       expect(ensureCacheConsistency(blocks[0])).resolves.toMatchInlineSnapshot(`
-          Array [
-            Object {
-              "info": Object {
-                "auth": "false",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "SC",
-              },
-              "results": Object {
-                "0": "0",
-                "1": "0",
-                "participants": "0",
-              },
+        Array [
+          Object {
+            "info": Object {
+              "auth": "false",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "SC",
             },
-            Object {
-              "info": Object {
-                "auth": "false",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "MC",
-              },
-              "results": Object {
-                "0": "0",
-                "1": "0",
-                "2": "0",
-                "participants": "0",
-              },
+            "results": Object {
+              "0": "0",
+              "1": "0",
+              "participants": "0",
             },
-          ]
-        `)
+          },
+          Object {
+            "info": Object {
+              "auth": "false",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "MC",
+            },
+            "results": Object {
+              "0": "0",
+              "1": "0",
+              "2": "0",
+              "participants": "0",
+            },
+          },
+        ]
+      `)
     })
 
     it('PARTICIPANT: can join the session initially', async () => {
@@ -1101,36 +1110,38 @@ describe('Integration', () => {
 
       // ensure that the results in the response cache have been updated
       expect(ensureCacheConsistency(blocks[0])).resolves.toMatchInlineSnapshot(`
-          Array [
-            Object {
-              "info": Object {
-                "auth": "false",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "SC",
-              },
-              "results": Object {
-                "0": "1",
-                "1": "0",
-                "participants": "1",
-              },
+        Array [
+          Object {
+            "info": Object {
+              "auth": "false",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "SC",
             },
-            Object {
-              "info": Object {
-                "auth": "false",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "MC",
-              },
-              "results": Object {
-                "0": "0",
-                "1": "0",
-                "2": "0",
-                "participants": "0",
-              },
+            "results": Object {
+              "0": "1",
+              "1": "0",
+              "participants": "1",
             },
-          ]
-        `)
+          },
+          Object {
+            "info": Object {
+              "auth": "false",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "MC",
+            },
+            "results": Object {
+              "0": "0",
+              "1": "0",
+              "2": "0",
+              "participants": "0",
+            },
+          },
+        ]
+      `)
     })
 
     it('PARTICIPANT: can respond to the MC question in the first block', async () => {
@@ -1149,36 +1160,38 @@ describe('Integration', () => {
 
       // ensure that the results in the response cache have been updated
       expect(ensureCacheConsistency(blocks[0])).resolves.toMatchInlineSnapshot(`
-          Array [
-            Object {
-              "info": Object {
-                "auth": "false",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "SC",
-              },
-              "results": Object {
-                "0": "1",
-                "1": "0",
-                "participants": "1",
-              },
+        Array [
+          Object {
+            "info": Object {
+              "auth": "false",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "SC",
             },
-            Object {
-              "info": Object {
-                "auth": "false",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "MC",
-              },
-              "results": Object {
-                "0": "1",
-                "1": "1",
-                "2": "0",
-                "participants": "1",
-              },
+            "results": Object {
+              "0": "1",
+              "1": "0",
+              "participants": "1",
             },
-          ]
-        `)
+          },
+          Object {
+            "info": Object {
+              "auth": "false",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "MC",
+            },
+            "results": Object {
+              "0": "1",
+              "1": "1",
+              "2": "0",
+              "participants": "1",
+            },
+          },
+        ]
+      `)
     })
 
     it('LECTURER: can evaluate the first question block', async () => {
@@ -1238,36 +1251,38 @@ describe('Integration', () => {
 
       // ensure that the response cache has been rehydrated from the database results
       expect(ensureCacheConsistency(blocks[0])).resolves.toMatchInlineSnapshot(`
-          Array [
-            Object {
-              "info": Object {
-                "auth": "false",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "SC",
-              },
-              "results": Object {
-                "0": "1",
-                "1": "0",
-                "participants": "1",
-              },
+        Array [
+          Object {
+            "info": Object {
+              "auth": "false",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "SC",
             },
-            Object {
-              "info": Object {
-                "auth": "false",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "MC",
-              },
-              "results": Object {
-                "0": "1",
-                "1": "1",
-                "2": "0",
-                "participants": "1",
-              },
+            "results": Object {
+              "0": "1",
+              "1": "0",
+              "participants": "1",
             },
-          ]
-        `)
+          },
+          Object {
+            "info": Object {
+              "auth": "false",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "MC",
+            },
+            "results": Object {
+              "0": "1",
+              "1": "1",
+              "2": "0",
+              "participants": "1",
+            },
+          },
+        ]
+      `)
     })
 
     it('LECTURER: can close the first question block', async () => {
@@ -1302,20 +1317,21 @@ describe('Integration', () => {
 
       // ensure that the question instances are initialized in the response cache
       expect(ensureCacheConsistency(blocks[1])).resolves.toMatchInlineSnapshot(`
-          Array [
-            Object {
-              "info": Object {
-                "auth": "false",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "FREE",
-              },
-              "results": Object {
-                "participants": "0",
-              },
+        Array [
+          Object {
+            "info": Object {
+              "auth": "false",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "FREE",
             },
-          ]
-        `)
+            "results": Object {
+              "participants": "0",
+            },
+          },
+        ]
+      `)
     })
 
     it('PARTICIPANT: can update the joined session for the second block', async () => {
@@ -1345,24 +1361,25 @@ describe('Integration', () => {
 
       // ensure that the results in the response cache have been updated
       expect(ensureCacheConsistency(blocks[1])).resolves.toMatchInlineSnapshot(`
-          Array [
-            Object {
-              "info": Object {
-                "auth": "false",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "FREE",
-              },
-              "responseHashes": Object {
-                "5eb63bbbe01eeed093cb22bb8f5acdc3": "hello world",
-              },
-              "results": Object {
-                "5eb63bbbe01eeed093cb22bb8f5acdc3": "1",
-                "participants": "1",
-              },
+        Array [
+          Object {
+            "info": Object {
+              "auth": "false",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "FREE",
             },
-          ]
-        `)
+            "responseHashes": Object {
+              "5eb63bbbe01eeed093cb22bb8f5acdc3": "hello world",
+            },
+            "results": Object {
+              "5eb63bbbe01eeed093cb22bb8f5acdc3": "1",
+              "participants": "1",
+            },
+          },
+        ]
+      `)
     })
 
     it('LECTURER: can evaluate the second question block', async () => {
@@ -1438,48 +1455,51 @@ describe('Integration', () => {
 
       // ensure that the question instances are initialized in the response cache
       expect(ensureCacheConsistency(blocks[2])).resolves.toMatchInlineSnapshot(`
-          Array [
-            Object {
-              "info": Object {
-                "auth": "false",
-                "max": "10",
-                "min": "0",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "FREE_RANGE",
-              },
-              "results": Object {
-                "participants": "0",
-              },
+        Array [
+          Object {
+            "info": Object {
+              "auth": "false",
+              "max": "10",
+              "min": "0",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "FREE_RANGE",
             },
-            Object {
-              "info": Object {
-                "auth": "false",
-                "max": "",
-                "min": "10",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "FREE_RANGE",
-              },
-              "results": Object {
-                "participants": "0",
-              },
+            "results": Object {
+              "participants": "0",
             },
-            Object {
-              "info": Object {
-                "auth": "false",
-                "max": "",
-                "min": "",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "FREE_RANGE",
-              },
-              "results": Object {
-                "participants": "0",
-              },
+          },
+          Object {
+            "info": Object {
+              "auth": "false",
+              "max": "",
+              "min": "10",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "FREE_RANGE",
             },
-          ]
-        `)
+            "results": Object {
+              "participants": "0",
+            },
+          },
+          Object {
+            "info": Object {
+              "auth": "false",
+              "max": "",
+              "min": "",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "FREE_RANGE",
+            },
+            "results": Object {
+              "participants": "0",
+            },
+          },
+        ]
+      `)
     })
 
     it('PARTICIPANT: can update the joined session for the third block', async () => {
@@ -1511,52 +1531,55 @@ describe('Integration', () => {
 
       // ensure that the results in the response cache have been updated
       expect(ensureCacheConsistency(blocks[2])).resolves.toMatchInlineSnapshot(`
-          Array [
-            Object {
-              "info": Object {
-                "auth": "false",
-                "max": "10",
-                "min": "0",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "FREE_RANGE",
-              },
-              "responseHashes": Object {
-                "a87ff679a2f3e71d9181a67b7542122c": "4",
-              },
-              "results": Object {
-                "a87ff679a2f3e71d9181a67b7542122c": "1",
-                "participants": "1",
-              },
+        Array [
+          Object {
+            "info": Object {
+              "auth": "false",
+              "max": "10",
+              "min": "0",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "FREE_RANGE",
             },
-            Object {
-              "info": Object {
-                "auth": "false",
-                "max": "",
-                "min": "10",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "FREE_RANGE",
-              },
-              "results": Object {
-                "participants": "0",
-              },
+            "responseHashes": Object {
+              "a87ff679a2f3e71d9181a67b7542122c": "4",
             },
-            Object {
-              "info": Object {
-                "auth": "false",
-                "max": "",
-                "min": "",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "FREE_RANGE",
-              },
-              "results": Object {
-                "participants": "0",
-              },
+            "results": Object {
+              "a87ff679a2f3e71d9181a67b7542122c": "1",
+              "participants": "1",
             },
-          ]
-        `)
+          },
+          Object {
+            "info": Object {
+              "auth": "false",
+              "max": "",
+              "min": "10",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "FREE_RANGE",
+            },
+            "results": Object {
+              "participants": "0",
+            },
+          },
+          Object {
+            "info": Object {
+              "auth": "false",
+              "max": "",
+              "min": "",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "FREE_RANGE",
+            },
+            "results": Object {
+              "participants": "0",
+            },
+          },
+        ]
+      `)
     })
 
     it('PARTICIPANT: can respond to the partly restricted FREE_RANGE question in the third block', async () => {
@@ -1573,56 +1596,59 @@ describe('Integration', () => {
 
       // ensure that the results in the response cache have been updated
       expect(ensureCacheConsistency(blocks[2])).resolves.toMatchInlineSnapshot(`
-          Array [
-            Object {
-              "info": Object {
-                "auth": "false",
-                "max": "10",
-                "min": "0",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "FREE_RANGE",
-              },
-              "responseHashes": Object {
-                "a87ff679a2f3e71d9181a67b7542122c": "4",
-              },
-              "results": Object {
-                "a87ff679a2f3e71d9181a67b7542122c": "1",
-                "participants": "1",
-              },
+        Array [
+          Object {
+            "info": Object {
+              "auth": "false",
+              "max": "10",
+              "min": "0",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "FREE_RANGE",
             },
-            Object {
-              "info": Object {
-                "auth": "false",
-                "max": "",
-                "min": "10",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "FREE_RANGE",
-              },
-              "responseHashes": Object {
-                "d3eb9a9233e52948740d7eb8c3062d14": "99999",
-              },
-              "results": Object {
-                "d3eb9a9233e52948740d7eb8c3062d14": "1",
-                "participants": "1",
-              },
+            "responseHashes": Object {
+              "a87ff679a2f3e71d9181a67b7542122c": "4",
             },
-            Object {
-              "info": Object {
-                "auth": "false",
-                "max": "",
-                "min": "",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "FREE_RANGE",
-              },
-              "results": Object {
-                "participants": "0",
-              },
+            "results": Object {
+              "a87ff679a2f3e71d9181a67b7542122c": "1",
+              "participants": "1",
             },
-          ]
-        `)
+          },
+          Object {
+            "info": Object {
+              "auth": "false",
+              "max": "",
+              "min": "10",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "FREE_RANGE",
+            },
+            "responseHashes": Object {
+              "d3eb9a9233e52948740d7eb8c3062d14": "99999",
+            },
+            "results": Object {
+              "d3eb9a9233e52948740d7eb8c3062d14": "1",
+              "participants": "1",
+            },
+          },
+          Object {
+            "info": Object {
+              "auth": "false",
+              "max": "",
+              "min": "",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "FREE_RANGE",
+            },
+            "results": Object {
+              "participants": "0",
+            },
+          },
+        ]
+      `)
     })
 
     it('PARTICIPANT: can respond to the unrestricted FREE_RANGE question in the third block', async () => {
@@ -1679,66 +1705,69 @@ describe('Integration', () => {
 
       // ensure that the results in the response cache have been updated
       expect(ensureCacheConsistency(blocks[2])).resolves.toMatchInlineSnapshot(`
-          Array [
-            Object {
-              "info": Object {
-                "auth": "false",
-                "max": "10",
-                "min": "0",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "FREE_RANGE",
-              },
-              "responseHashes": Object {
-                "a87ff679a2f3e71d9181a67b7542122c": "4",
-              },
-              "results": Object {
-                "a87ff679a2f3e71d9181a67b7542122c": "1",
-                "participants": "1",
-              },
+        Array [
+          Object {
+            "info": Object {
+              "auth": "false",
+              "max": "10",
+              "min": "0",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "FREE_RANGE",
             },
-            Object {
-              "info": Object {
-                "auth": "false",
-                "max": "",
-                "min": "10",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "FREE_RANGE",
-              },
-              "responseHashes": Object {
-                "d3eb9a9233e52948740d7eb8c3062d14": "99999",
-              },
-              "results": Object {
-                "d3eb9a9233e52948740d7eb8c3062d14": "1",
-                "participants": "1",
-              },
+            "responseHashes": Object {
+              "a87ff679a2f3e71d9181a67b7542122c": "4",
             },
-            Object {
-              "info": Object {
-                "auth": "false",
-                "max": "",
-                "min": "",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "FREE_RANGE",
-              },
-              "responseHashes": Object {
-                "1017bfd4673955ffee4641ad3d481b1c": "50000",
-                "177b84641c41559c3c2f24c2ae749816": "-10.344",
-                "cfcd208495d565ef66e7dff9f98764da": "0",
-                "e4b1fc5758fb519823c9f2feb30b9a87": "99999.3784",
-              },
-              "results": Object {
-                "1017bfd4673955ffee4641ad3d481b1c": "2",
-                "177b84641c41559c3c2f24c2ae749816": "1",
-                "cfcd208495d565ef66e7dff9f98764da": "1",
-                "e4b1fc5758fb519823c9f2feb30b9a87": "1",
-                "participants": "5",
-              },
+            "results": Object {
+              "a87ff679a2f3e71d9181a67b7542122c": "1",
+              "participants": "1",
             },
-          ]
-        `)
+          },
+          Object {
+            "info": Object {
+              "auth": "false",
+              "max": "",
+              "min": "10",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "FREE_RANGE",
+            },
+            "responseHashes": Object {
+              "d3eb9a9233e52948740d7eb8c3062d14": "99999",
+            },
+            "results": Object {
+              "d3eb9a9233e52948740d7eb8c3062d14": "1",
+              "participants": "1",
+            },
+          },
+          Object {
+            "info": Object {
+              "auth": "false",
+              "max": "",
+              "min": "",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "FREE_RANGE",
+            },
+            "responseHashes": Object {
+              "1017bfd4673955ffee4641ad3d481b1c": "50000",
+              "177b84641c41559c3c2f24c2ae749816": "-10.344",
+              "cfcd208495d565ef66e7dff9f98764da": "0",
+              "e4b1fc5758fb519823c9f2feb30b9a87": "99999.3784",
+            },
+            "results": Object {
+              "1017bfd4673955ffee4641ad3d481b1c": "2",
+              "177b84641c41559c3c2f24c2ae749816": "1",
+              "cfcd208495d565ef66e7dff9f98764da": "1",
+              "e4b1fc5758fb519823c9f2feb30b9a87": "1",
+              "participants": "5",
+            },
+          },
+        ]
+      `)
     })
 
     it('LECTURER: can evaluate the third question block', async () => {
@@ -1781,65 +1810,68 @@ describe('Integration', () => {
 
       // ensure that the response has been removed from the response cache
       expect(ensureCacheConsistency(blocks[2])).resolves.toMatchInlineSnapshot(`
-          Array [
-            Object {
-              "info": Object {
-                "auth": "false",
-                "max": "10",
-                "min": "0",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "FREE_RANGE",
-              },
-              "responseHashes": Object {
-                "a87ff679a2f3e71d9181a67b7542122c": "4",
-              },
-              "results": Object {
-                "a87ff679a2f3e71d9181a67b7542122c": "1",
-                "participants": "1",
-              },
+        Array [
+          Object {
+            "info": Object {
+              "auth": "false",
+              "max": "10",
+              "min": "0",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "FREE_RANGE",
             },
-            Object {
-              "info": Object {
-                "auth": "false",
-                "max": "",
-                "min": "10",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "FREE_RANGE",
-              },
-              "responseHashes": Object {
-                "d3eb9a9233e52948740d7eb8c3062d14": "99999",
-              },
-              "results": Object {
-                "d3eb9a9233e52948740d7eb8c3062d14": "1",
-                "participants": "1",
-              },
+            "responseHashes": Object {
+              "a87ff679a2f3e71d9181a67b7542122c": "4",
             },
-            Object {
-              "info": Object {
-                "auth": "false",
-                "max": "",
-                "min": "",
-                "mode": "SECRET",
-                "status": "OPEN",
-                "type": "FREE_RANGE",
-              },
-              "responseHashes": Object {
-                "1017bfd4673955ffee4641ad3d481b1c": "50000",
-                "177b84641c41559c3c2f24c2ae749816": "-10.344",
-                "cfcd208495d565ef66e7dff9f98764da": "0",
-                "e4b1fc5758fb519823c9f2feb30b9a87": "99999.3784",
-              },
-              "results": Object {
-                "177b84641c41559c3c2f24c2ae749816": "1",
-                "cfcd208495d565ef66e7dff9f98764da": "1",
-                "e4b1fc5758fb519823c9f2feb30b9a87": "1",
-                "participants": "3",
-              },
+            "results": Object {
+              "a87ff679a2f3e71d9181a67b7542122c": "1",
+              "participants": "1",
             },
-          ]
-        `)
+          },
+          Object {
+            "info": Object {
+              "auth": "false",
+              "max": "",
+              "min": "10",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "FREE_RANGE",
+            },
+            "responseHashes": Object {
+              "d3eb9a9233e52948740d7eb8c3062d14": "99999",
+            },
+            "results": Object {
+              "d3eb9a9233e52948740d7eb8c3062d14": "1",
+              "participants": "1",
+            },
+          },
+          Object {
+            "info": Object {
+              "auth": "false",
+              "max": "",
+              "min": "",
+              "mode": "SECRET",
+              "namespace": "UUID_VALID",
+              "status": "OPEN",
+              "type": "FREE_RANGE",
+            },
+            "responseHashes": Object {
+              "1017bfd4673955ffee4641ad3d481b1c": "50000",
+              "177b84641c41559c3c2f24c2ae749816": "-10.344",
+              "cfcd208495d565ef66e7dff9f98764da": "0",
+              "e4b1fc5758fb519823c9f2feb30b9a87": "99999.3784",
+            },
+            "results": Object {
+              "177b84641c41559c3c2f24c2ae749816": "1",
+              "cfcd208495d565ef66e7dff9f98764da": "1",
+              "e4b1fc5758fb519823c9f2feb30b9a87": "1",
+              "participants": "3",
+            },
+          },
+        ]
+      `)
 
       const evaluateSession = ensureNoErrors(
         await sendQuery(
@@ -2060,6 +2092,8 @@ describe('Integration', () => {
                 },
               ],
               participants: [{ username: 'integration-1' }],
+              authenticationMode: SESSION_AUTHENTICATION_MODE.NONE,
+              storageMode: SESSION_STORAGE_MODE.SECRET,
             },
           },
           authCookie
@@ -2157,6 +2191,7 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "SECRET",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "SC",
             },
@@ -2174,6 +2209,7 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "SECRET",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "MC",
             },
@@ -2252,6 +2288,7 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "SECRET",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "SC",
             },
@@ -2272,6 +2309,7 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "SECRET",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "MC",
             },
@@ -2352,6 +2390,7 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "SECRET",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "SC",
             },
@@ -2372,6 +2411,7 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "SECRET",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "MC",
             },
@@ -2463,6 +2503,7 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "SECRET",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "FREE",
             },
@@ -2521,6 +2562,7 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "SECRET",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "FREE",
             },
@@ -2587,6 +2629,7 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "SECRET",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "FREE",
             },
@@ -2667,6 +2710,7 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "SECRET",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "FREE",
             },
@@ -2709,6 +2753,7 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "SECRET",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "FREE",
             },
@@ -2750,6 +2795,7 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "SECRET",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "SC",
             },
@@ -2767,6 +2813,7 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "SECRET",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "MC",
             },
@@ -2810,6 +2857,7 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "SECRET",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "SC",
             },
@@ -2827,6 +2875,7 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "SECRET",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "MC",
             },
@@ -2868,6 +2917,7 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "SECRET",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "FREE",
             },
@@ -2934,6 +2984,7 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "SECRET",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "FREE",
             },
@@ -2980,6 +3031,7 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "SECRET",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "FREE",
             },
@@ -3022,6 +3074,7 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "SECRET",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "FREE",
             },
@@ -3094,7 +3147,8 @@ describe('Integration', () => {
                   ],
                 },
               ],
-              participants: [{ username: 'integration-1' }, { username: 'tester-1' }],
+              participants: [{ username: 'integration-1' }, { username: 'tester-1' }, { username: 'aai-1' }],
+              authenticationMode: SESSION_AUTHENTICATION_MODE.PASSWORD,
               storageMode: SESSION_STORAGE_MODE.COMPLETE,
             },
           },
@@ -3147,10 +3201,12 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "COMPLETE",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "SC",
             },
             "participantList": Array [
+              "UUID_VALID",
               "UUID_VALID",
               "UUID_VALID",
             ],
@@ -3164,10 +3220,12 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "COMPLETE",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "MC",
             },
             "participantList": Array [
+              "UUID_VALID",
               "UUID_VALID",
               "UUID_VALID",
             ],
@@ -3242,10 +3300,12 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "COMPLETE",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "SC",
             },
             "participantList": Array [
+              "UUID_VALID",
               "UUID_VALID",
               "UUID_VALID",
             ],
@@ -3272,10 +3332,12 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "COMPLETE",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "MC",
             },
             "participantList": Array [
+              "UUID_VALID",
               "UUID_VALID",
               "UUID_VALID",
             ],
@@ -3314,10 +3376,12 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "COMPLETE",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "SC",
             },
             "participantList": Array [
+              "UUID_VALID",
               "UUID_VALID",
               "UUID_VALID",
             ],
@@ -3344,10 +3408,12 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "COMPLETE",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "MC",
             },
             "participantList": Array [
+              "UUID_VALID",
               "UUID_VALID",
               "UUID_VALID",
             ],
@@ -3428,10 +3494,12 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "COMPLETE",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "SC",
             },
             "participantList": Array [
+              "UUID_VALID",
               "UUID_VALID",
               "UUID_VALID",
             ],
@@ -3458,10 +3526,12 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "COMPLETE",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "MC",
             },
             "participantList": Array [
+              "UUID_VALID",
               "UUID_VALID",
               "UUID_VALID",
             ],
@@ -3539,10 +3609,12 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "COMPLETE",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "SC",
             },
             "participantList": Array [
+              "UUID_VALID",
               "UUID_VALID",
               "UUID_VALID",
             ],
@@ -3569,10 +3641,12 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "COMPLETE",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "MC",
             },
             "participantList": Array [
+              "UUID_VALID",
               "UUID_VALID",
               "UUID_VALID",
             ],
@@ -3657,10 +3731,12 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "COMPLETE",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "FREE",
             },
             "participantList": Array [
+              "UUID_VALID",
               "UUID_VALID",
               "UUID_VALID",
             ],
@@ -3710,10 +3786,12 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "COMPLETE",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "FREE",
             },
             "participantList": Array [
+              "UUID_VALID",
               "UUID_VALID",
               "UUID_VALID",
             ],
@@ -3759,10 +3837,12 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "COMPLETE",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "SC",
             },
             "participantList": Array [
+              "UUID_VALID",
               "UUID_VALID",
               "UUID_VALID",
             ],
@@ -3776,10 +3856,12 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "COMPLETE",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "MC",
             },
             "participantList": Array [
+              "UUID_VALID",
               "UUID_VALID",
               "UUID_VALID",
             ],
@@ -3819,10 +3901,12 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "COMPLETE",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "SC",
             },
             "participantList": Array [
+              "UUID_VALID",
               "UUID_VALID",
               "UUID_VALID",
             ],
@@ -3836,10 +3920,12 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "COMPLETE",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "MC",
             },
             "participantList": Array [
+              "UUID_VALID",
               "UUID_VALID",
               "UUID_VALID",
             ],
@@ -3888,10 +3974,12 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "COMPLETE",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "FREE",
             },
             "participantList": Array [
+              "UUID_VALID",
               "UUID_VALID",
               "UUID_VALID",
             ],
@@ -3971,10 +4059,12 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "COMPLETE",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "FREE",
             },
             "participantList": Array [
+              "UUID_VALID",
               "UUID_VALID",
               "UUID_VALID",
             ],
@@ -4031,10 +4121,12 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "COMPLETE",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "FREE",
             },
             "participantList": Array [
+              "UUID_VALID",
               "UUID_VALID",
               "UUID_VALID",
             ],
@@ -4068,10 +4160,12 @@ describe('Integration', () => {
             "info": Object {
               "auth": "true",
               "mode": "COMPLETE",
+              "namespace": "UUID_VALID",
               "status": "OPEN",
               "type": "FREE",
             },
             "participantList": Array [
+              "UUID_VALID",
               "UUID_VALID",
               "UUID_VALID",
             ],
@@ -4096,6 +4190,50 @@ describe('Integration', () => {
           },
         ]
       `)
+    })
+  })
+
+  describe('Session Management (authentication, aai)', () => {
+    it('enables the creation of a new session)', async () => {
+      const data = ensureNoErrors(
+        await sendQuery(
+          {
+            query: Mutations.CreateSessionMutation,
+            variables: {
+              name: 'Session Name (auth & aai)',
+              blocks: [
+                {
+                  questions: [
+                    { question: questions[QUESTION_TYPES.SC], version: 0 },
+                    { question: questions[QUESTION_TYPES.MC], version: 0 },
+                  ],
+                },
+                {
+                  questions: [{ question: questions[QUESTION_TYPES.FREE], version: 0 }],
+                },
+                {
+                  questions: [
+                    {
+                      question: questions[QUESTION_TYPES.FREE_RANGE],
+                      version: 0,
+                    },
+                    { question: questions.FREE_RANGE_PART, version: 0 },
+                    { question: questions.FREE_RANGE_OPEN, version: 0 },
+                  ],
+                },
+              ],
+              participants: [{ username: 'integration-1' }, { username: 'tester-1' }, { username: 'aai-1' }],
+              authenticationMode: SESSION_AUTHENTICATION_MODE.AAI,
+              storageMode: SESSION_STORAGE_MODE.SECRET,
+            },
+          },
+          authCookie
+        )
+      )
+
+      console.log(data.createSession.participants)
+
+      expect(data).toMatchSnapshot()
     })
   })
 

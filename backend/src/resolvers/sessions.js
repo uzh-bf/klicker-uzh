@@ -62,11 +62,34 @@ const runtimeByPVQuery = ({ startedAt }) => {
 }
 
 /* ----- mutations ----- */
-const createSessionMutation = (parentValue, { session: { name, blocks, participants, storageMode } }, { auth }) =>
-  SessionMgrService.createSession({ name, questionBlocks: blocks, participants, storageMode, userId: auth.sub })
+const createSessionMutation = (
+  parentValue,
+  { session: { name, blocks, participants, authenticationMode, storageMode } },
+  { auth }
+) =>
+  SessionMgrService.createSession({
+    name,
+    questionBlocks: blocks,
+    authenticationMode,
+    participants,
+    storageMode,
+    userId: auth.sub,
+  })
 
-const modifySessionMutation = (parentValue, { id, session: { name, blocks, participants, storageMode } }, { auth }) =>
-  SessionMgrService.modifySession({ id, name, participants, storageMode, questionBlocks: blocks, userId: auth.sub })
+const modifySessionMutation = (
+  parentValue,
+  { id, session: { name, blocks, participants, authenticationMode, storageMode } },
+  { auth }
+) =>
+  SessionMgrService.modifySession({
+    id,
+    name,
+    participants,
+    authenticationMode,
+    storageMode,
+    questionBlocks: blocks,
+    userId: auth.sub,
+  })
 
 const startSessionMutation = (parentValue, { id }, { auth }) => SessionMgrService.startSession({ id, userId: auth.sub })
 

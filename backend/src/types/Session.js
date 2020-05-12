@@ -17,6 +17,12 @@ module.exports = `
     COMPLETE
   }
 
+  enum Session_AuthenticationMode {
+    PASSWORD
+    AAI
+    NONE
+  }
+
   type Session_Public {
     id: ID!
 
@@ -35,12 +41,14 @@ module.exports = `
     name: String!
     blocks: [Session_QuestionBlockInput!]!
     participants: [Session_ParticipantInput!]
+    authenticationMode: Session_AuthenticationMode
     storageMode: Session_StorageMode
   }
   input SessionModifyInput {
     name: String
     blocks: [Session_QuestionBlockInput!]
     participants: [Session_ParticipantInput!]
+    authenticationMode: Session_AuthenticationMode
     storageMode: Session_StorageMode
   }
   type Session {
@@ -85,18 +93,20 @@ module.exports = `
     isEvaluationPublic: Boolean!
     isFeedbackChannelActive: Boolean!
     isFeedbackChannelPublic: Boolean!
+    authenticationMode: Session_AuthenticationMode!
     storageMode: Session_StorageMode!
   }
 
   input Session_ParticipantInput {
     username: String!
+    isAAI: Boolean
   }
 
   type Session_Participant {
     id: ID!
 
     username: String!
-    password: String!
+    password: String
   }
 
   input Session_QuestionBlockQuestionInput {
