@@ -25,6 +25,7 @@ query SessionList {
     }
     settings {
       isParticipantAuthenticationEnabled
+      authenticationMode
       storageMode
     }
     createdAt
