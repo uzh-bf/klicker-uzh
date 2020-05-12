@@ -19,7 +19,7 @@ return function (App $app) {
             "aud" => isset($_ENV['AAI_AUDIENCE']) ? $_ENV['AAI_AUDIENCE'] : "api.klicker.uzh.ch",
             'sub' => $_SERVER['REDIRECT_mail'],
             'scope' => ['PARTICIPANT'],
-            'session' => $query->session,
+            'session' => $query['session'],
             'aai' => true,
         );
 
@@ -35,7 +35,7 @@ return function (App $app) {
 
         // redirect the user to the app instead of returning a response
         return $response
-            ->withHeader('Location', 'https://app.klicker.uzh.ch/join/' . $query->shortname)
+            ->withHeader('Location', 'https://app.klicker.uzh.ch/join/' . $query['shortname'])
             ->withStatus(302);
     });
 
