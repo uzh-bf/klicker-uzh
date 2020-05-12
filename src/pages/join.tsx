@@ -55,8 +55,12 @@ function Join(): React.ReactElement {
   useEffect(() => {
     // if we need to login before being able to access the session, redirect to the login
     if (['INVALID_PARTICIPANT_LOGIN', 'SESSION_NOT_ACCESSIBLE'].includes(error?.graphQLErrors[0]?.message)) {
-      const sessionId = error.graphQLErrors[0].extensions.id
-      router.push(`/login/${shortname}/${sessionId}`)
+      const { id, authenticationMode } = error.graphQLErrors[0].extensions
+      if (authenticationMode === 'AAI') {
+        window.location = `https://aai.klicker.uzh.ch/public/participants?shortname=${shortname}&sessionId=${id}` as any
+      } else {
+        router.push(`/login/${shortname}/${id}`)
+      }
     }
   }, [error])
 
