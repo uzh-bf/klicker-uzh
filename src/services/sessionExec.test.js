@@ -446,7 +446,7 @@ describe('SessionExecService', () => {
           { question: questions[QUESTION_TYPES.FREE_RANGE].id, version: 0 },
         ],
         true,
-        [{ username: 'testparticipant1' }, { username: 'participant2' }]
+        [{ username: 'testparticipant1' }, { username: 'participant2' }, { username: 'aaiparticipant', isAAI: true }]
       )
     })
 
@@ -456,6 +456,17 @@ describe('SessionExecService', () => {
         id: preparedSession.id,
         userId,
       })
+    })
+
+    it('does not allow aai participants to login', async () => {
+      // activate the next block of the running session
+      // this opens the instances for responses
+      const session = await SessionMgrService.activateNextBlock({ userId })
+      expect(session).toMatchSnapshot()
+
+      expect(
+        SessionExecService.loginParticipant({ sessionId: session.id, username: 'aaiparticipant', password: '' })
+      ).rejects.toThrow('INVALID_PARTICIPANT_LOGIN')
     })
 
     it('prevents participants without a login from responding', async () => {
@@ -490,7 +501,9 @@ describe('SessionExecService', () => {
           response: {
             choices: [1],
           },
-          participantId: 'participant-unauthorized',
+          auth: {
+            sub: 'participant-unauthorized',
+          },
         })
       ).rejects.toThrow('RESPONSE_NOT_ALLOWED')
     })
@@ -508,7 +521,9 @@ describe('SessionExecService', () => {
         response: {
           choices: [0],
         },
-        participantId: session.participants[0].id,
+        auth: {
+          sub: session.participants[0].id,
+        },
       })
       expect(instanceWithResponse).toEqual([
         [null, 1],
@@ -523,7 +538,9 @@ describe('SessionExecService', () => {
           response: {
             choices: [1],
           },
-          participantId: session.participants[0].id,
+          auth: {
+            sub: session.participants[0].id,
+          },
         })
       ).rejects.toThrow('RESPONSE_NOT_ALLOWED')
     })

@@ -3,6 +3,7 @@ const v8n = require('v8n')
 const _trim = require('lodash/trim')
 const JWT = require('jsonwebtoken')
 const { ForbiddenError, UserInputError } = require('apollo-server-express')
+const { v5: uuidv5 } = require('uuid')
 
 const CFG = require('../klicker.conf.js')
 const { QuestionInstanceModel, UserModel, FileModel, SessionModel } = require('../models')
@@ -105,11 +106,27 @@ const addConfusionTS = async ({ sessionId, difficulty, speed }) => {
   return session
 }
 
+const computeParticipantIdentifier = (authToken, namespace) => {
+  if (typeof authToken === 'undefined' || typeof authToken.sub === 'undefined') {
+    return null
+  }
+
+  if (authToken.aai) {
+    if (typeof namespace === 'undefined') {
+      return null
+    }
+
+    return uuidv5(authToken.sub, namespace)
+  }
+
+  return authToken.sub
+}
+
 /**
  * Add a response to an active question instance
  * @param {*} param0
  */
-const addResponse = async ({ instanceId, response, participantId }) => {
+const addResponse = async ({ instanceId, response, auth: authToken }) => {
   // ensure that a response cache is available
   if (!responseCache) {
     throw new Error('REDIS_NOT_AVAILABLE')
@@ -118,7 +135,7 @@ const addResponse = async ({ instanceId, response, participantId }) => {
   const instanceKey = `instance:${instanceId}`
 
   // extract important instance information from the corresponding redis hash
-  const { auth, status, type, min, max, mode } = await responseCache.hgetall(`${instanceKey}:info`)
+  const { auth, status, type, min, max, mode, namespace } = await responseCache.hgetall(`${instanceKey}:info`)
 
   // ensure that the instance targeted is actually running
   // this approach allows us to not have to fetch the instance from the database at all
@@ -132,24 +149,29 @@ const addResponse = async ({ instanceId, response, participantId }) => {
   // if authentication is enabled for the session with the current instance
   // check if the current participant has already responded and exit early if so
   if (auth === 'true') {
+    const participantIdentifier = computeParticipantIdentifier(authToken, namespace)
+
     // ensure that a participant id is available (i.e., the participant has logged in)
-    if (typeof participantId === 'undefined') {
+    if (!participantIdentifier) {
       throw new ForbiddenError('MISSING_PARTICIPANT_ID')
     }
 
     // ensure that the participant has not already voted
-    const isAuthorizedToVote = await responseCache.sismember(`${instanceKey}:participantList`, participantId)
-    const hasAlreadyVoted = await responseCache.sismember(`${instanceKey}:participants`, participantId)
+    const isAuthorizedToVote = await responseCache.sismember(`${instanceKey}:participantList`, participantIdentifier)
+    const hasAlreadyVoted = await responseCache.sismember(`${instanceKey}:participants`, participantIdentifier)
     if (!isAuthorizedToVote || hasAlreadyVoted) {
       // if we are using authentication and the responses should be stored
       if (mode === SESSION_STORAGE_MODE.COMPLETE) {
-        await responseCache.rpush(`${instanceKey}:dropped`, JSON.stringify({ response, participant: participantId }))
+        await responseCache.rpush(
+          `${instanceKey}:dropped`,
+          JSON.stringify({ response, participant: participantIdentifier })
+        )
       }
       throw new ForbiddenError('RESPONSE_NOT_ALLOWED')
     }
 
     // add the participant to the set of participants that have voted
-    transaction.sadd(`${instanceKey}:participants`, participantId)
+    transaction.sadd(`${instanceKey}:participants`, participantIdentifier)
   }
 
   if (QUESTION_GROUPS.CHOICES.includes(type)) {
@@ -224,7 +246,10 @@ const addResponse = async ({ instanceId, response, participantId }) => {
   }
 
   if (mode === SESSION_STORAGE_MODE.COMPLETE) {
-    transaction.rpush(`${instanceKey}:responses`, JSON.stringify({ response, participant: participantId }))
+    transaction.rpush(
+      `${instanceKey}:responses`,
+      JSON.stringify({ response, participant: authToken ? authToken.sub : undefined })
+    )
   }
 
   // increment the number of participants by one
@@ -301,7 +326,9 @@ const loginParticipant = async ({ res, sessionId, username, password }) => {
   }
 
   // check if we have a participant with the given username and password
-  const participantIndex = session.participants.findIndex((p) => p.username === username && p.password === password)
+  const participantIndex = session.participants.findIndex(
+    (p) => typeof p.password !== 'undefined' && p.username === username && p.password === password
+  )
   if (participantIndex === -1) {
     throw new ForbiddenError('INVALID_PARTICIPANT_LOGIN')
   }
@@ -316,6 +343,7 @@ const loginParticipant = async ({ res, sessionId, username, password }) => {
       sub: participant.id,
       scope: ['PARTICIPANT'],
       session: session.id,
+      aai: false,
     },
     APP_CFG.secret,
     {
@@ -354,14 +382,18 @@ const joinSession = async ({ shortname, auth }) => {
   const currentBlock = blocks[activeBlock] || { instances: [] }
 
   if (settings.isParticipantAuthenticationEnabled) {
-    const participantId = auth ? auth.sub : undefined
+    const participantIdentifier = auth ? auth.sub : undefined
 
-    if (typeof participantId === 'undefined' || !auth.scope.includes('PARTICIPANT')) {
-      throw new UserInputError('INVALID_PARTICIPANT_LOGIN', { id })
+    if (typeof participantIdentifier === 'undefined' || !auth.scope.includes('PARTICIPANT') || auth.session !== id) {
+      throw new UserInputError('INVALID_PARTICIPANT_LOGIN', { id, authenticationMode: settings.authenticationMode })
     }
 
-    if (!runningSession.participants.map((participant) => participant.id).includes(participantId)) {
-      throw new UserInputError('SESSION_NOT_ACCESSIBLE', { id })
+    if (
+      (auth.aai &&
+        !runningSession.participants.map((participant) => participant.username).includes(participantIdentifier)) ||
+      !runningSession.participants.map((participant) => participant.id).includes(participantIdentifier)
+    ) {
+      throw new UserInputError('SESSION_NOT_ACCESSIBLE', { id, authenticationMode: settings.authenticationMode })
     }
   }
 

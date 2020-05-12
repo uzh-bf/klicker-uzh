@@ -4,7 +4,7 @@ const { ObjectId } = mongoose.Schema.Types
 
 const Response = new mongoose.Schema(
   {
-    participant: { type: ObjectId, ref: 'SessionParticipant' },
+    participant: { type: String, ref: 'SessionParticipant' },
     value: { type: Object, required: true },
   },
   { timestamps: true }

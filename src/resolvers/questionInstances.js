@@ -73,7 +73,7 @@ const addResponseMutation = async (_, { instanceId, response }, { auth }) => {
   await SessionExecService.addResponse({
     instanceId,
     response,
-    participantId: auth ? auth.sub : undefined,
+    auth,
   })
 
   return 'RESPONSE_ADDED'

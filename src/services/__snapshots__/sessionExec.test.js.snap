@@ -172,6 +172,46 @@ exports[`SessionExecService addResponse (auth) allows participants with a login 
       Username: testparticipant1
     },{
       Username: participant2
+    },{
+      Username: aaiparticipant
+    }]
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: false
+      ParticipantAuthentication: true
+    }
+`;
+
+exports[`SessionExecService addResponse (auth) does not allow aai participants to login 1`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: RUNNING
+
+    ActiveBlock: 0
+    ActiveStep: 1
+    ActiveInstances: 4
+
+    Blocks: [{
+      Show solutions: false
+      Status: ACTIVE
+      Time limit: -1
+      Number of instances: 4
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: [{
+      Username: testparticipant1
+    },{
+      Username: participant2
+    },{
+      Username: aaiparticipant
     }]
 
     Settings: {
@@ -208,6 +248,8 @@ exports[`SessionExecService addResponse (auth) prevents participants without a l
       Username: testparticipant1
     },{
       Username: participant2
+    },{
+      Username: aaiparticipant
     }]
 
     Settings: {
@@ -244,6 +286,8 @@ exports[`SessionExecService addResponse (auth) prevents unauthorized participant
       Username: testparticipant1
     },{
       Username: participant2
+    },{
+      Username: aaiparticipant
     }]
 
     Settings: {
