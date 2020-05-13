@@ -29,7 +29,7 @@ function Authentication({
               >
                 <Header>
                   <FormattedMessage
-                    defaultMessage="Password Distribution (Beta)"
+                    defaultMessage="Password Distribution"
                     id="form.createSession.participantAuth.passwordDistribution.title"
                   />
                 </Header>
@@ -42,12 +42,12 @@ function Authentication({
               </Grid.Column>
 
               <Grid.Column
-                className={classNames('disabled option', { active: sessionAuthenticationMode === 'AAI' })}
-                // onClick={(): void => onChangeSessionAuthenticationMode('aai')}
+                className={classNames('option', { active: sessionAuthenticationMode === 'AAI' })}
+                onClick={(): void => onChangeSessionAuthenticationMode('AAI')}
               >
                 <Header>
                   <FormattedMessage
-                    defaultMessage="SwitchAAI (Coming Soon)"
+                    defaultMessage="SwitchAAI"
                     id="form.createSession.participantAuth.switchAai.title"
                   />
                 </Header>
