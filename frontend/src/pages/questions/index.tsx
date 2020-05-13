@@ -71,7 +71,7 @@ function Index(): React.ReactElement {
 
   const [isAuthenticationEnabled, setIsAuthenticationEnabled] = useState(false)
   const [sessionParticipants, setSessionParticipants] = useState([])
-  const [sessionAuthenticationMode, setSessionAuthenticationMode] = useState('PASSWORD' as AuthenticationMode)
+  const [sessionAuthenticationMode, setSessionAuthenticationMode] = useState('NONE' as AuthenticationMode)
   const [sessionDataStorageMode, setSessionDataStorageMode] = useState('SECRET' as DataStorageMode)
 
   const [startSession, { loading: isStartSessionLoading }] = useMutation(StartSessionMutation)
