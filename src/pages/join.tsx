@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import React, { useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@apollo/react-hooks'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Button } from 'semantic-ui-react'
+import { Button, Message } from 'semantic-ui-react'
 
 import { withApollo } from '../lib/apollo'
 import StudentLayout from '../components/layouts/StudentLayout'
@@ -31,6 +31,10 @@ const messages = defineMessages({
     defaultMessage: 'As you are only allowed to respond once, we did not count your latest response.',
     id: 'joinSession.string.responseIgnored',
   },
+  joinForbidden: {
+    defaultMessage: 'You are not permitted to join this session',
+    id: 'joinSession.string.joinForbidden',
+  },
 })
 
 function Join(): React.ReactElement {
@@ -54,13 +58,17 @@ function Join(): React.ReactElement {
 
   useEffect(() => {
     // if we need to login before being able to access the session, redirect to the login
-    if (['INVALID_PARTICIPANT_LOGIN', 'SESSION_NOT_ACCESSIBLE'].includes(error?.graphQLErrors[0]?.message)) {
+    if (error?.graphQLErrors[0]?.message === 'INVALID_PARTICIPANT_LOGIN') {
       const { id, authenticationMode } = error.graphQLErrors[0].extensions
       if (authenticationMode === 'AAI') {
         window.location = `https://aai.klicker.uzh.ch/public/participants?shortname=${shortname}&session=${id}` as any
       } else {
         router.push(`/login/${shortname}/${id}`)
       }
+    } else if (error?.graphQLErrors[0]?.message === 'SESSION_NOT_ACCESSIBLE') {
+      setExtraMessage(intl.formatMessage(messages.joinForbidden))
+    } else {
+      setExtraMessage(null)
     }
   }, [error])
 
@@ -76,6 +84,7 @@ function Join(): React.ReactElement {
   if (loading || error || !data.joinSession || data.joinSession.status === 'COMPLETED') {
     return (
       <div className="noSession">
+        {extraMessage && <Message error>{extraMessage}</Message>}
         <Button icon="refresh" onClick={(): void => window.location.reload()} />
         <FormattedMessage
           defaultMessage="No session active. Please reload the page once a session has been started."

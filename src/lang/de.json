@@ -147,6 +147,7 @@
   "joinSession.questionArea.title": "Frage",
   "joinSession.sidebar.activeQuestion": "Aktive Frage",
   "joinSession.sidebar.feedbackChannel": "Feedback-Channel",
+  "joinSession.string.joinForbidden": "Sie sind nicht berechtigt, an dieser Session teilzunehmen.",
   "joinSession.string.responseIgnored": "Ihre letzte Eingabe wurde ignoriert, da Sie nur einmal teilnehmen dürfen.",
   "questionDetails.button.duplicate": "Duplizieren",
   "questionDetails.button.edit": "Editieren",

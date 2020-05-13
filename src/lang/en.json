@@ -146,6 +146,7 @@
   "joinSession.questionArea.title": "Question",
   "joinSession.sidebar.activeQuestion": "Active Question",
   "joinSession.sidebar.feedbackChannel": "Feedback-Channel",
+  "joinSession.string.joinForbidden": "You are not permitted to join this session",
   "joinSession.string.responseIgnored": "As you are only allowed to respond once, we did not count your latest response.",
   "questionDetails.button.duplicate": "Duplicate",
   "questionDetails.button.edit": "View / Edit",
