@@ -384,7 +384,11 @@ const joinSession = async ({ shortname, auth }) => {
   if (settings.isParticipantAuthenticationEnabled) {
     const participantIdentifier = auth ? auth.sub : undefined
 
-    if (typeof participantIdentifier === 'undefined' || !auth.scope.includes('PARTICIPANT') || auth.session !== id) {
+    if (
+      typeof participantIdentifier === 'undefined' ||
+      !auth.scope.includes('PARTICIPANT') ||
+      auth.session !== id.toString()
+    ) {
       throw new UserInputError('INVALID_PARTICIPANT_LOGIN', { id, authenticationMode: settings.authenticationMode })
     }
 
