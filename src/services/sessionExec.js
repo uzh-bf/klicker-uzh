@@ -395,7 +395,7 @@ const joinSession = async ({ shortname, auth }) => {
     if (
       (auth.aai &&
         !runningSession.participants.map((participant) => participant.username).includes(participantIdentifier)) ||
-      !runningSession.participants.map((participant) => participant.id).includes(participantIdentifier)
+      (!auth.aai && !runningSession.participants.map((participant) => participant.id).includes(participantIdentifier))
     ) {
       throw new UserInputError('SESSION_NOT_ACCESSIBLE', { id, authenticationMode: settings.authenticationMode })
     }
