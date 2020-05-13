@@ -8,6 +8,9 @@ services:
       - 6379:6379
     networks:
       - klicker-dev
+    volumes:
+      - /tmp/redis-data:/data
+    # command: redis-server --appendonly yes
 
   mongodb:
     image: mongo:4.2

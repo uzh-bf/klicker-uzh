@@ -1,8 +1,8 @@
 coverage/
 node_modules/
-
-*.log
-
 .idea/
 
+*rdb
+*.archive
+*.log
 .env

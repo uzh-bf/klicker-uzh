@@ -1,7 +1,7 @@
 require('dotenv').config()
 
 const mongoose = require('mongoose')
-const { UserModel } = require('../models')
+const { UserModel } = require('../../../src/models')
 
 mongoose.Promise = Promise
 

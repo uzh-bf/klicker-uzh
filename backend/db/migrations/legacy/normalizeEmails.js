@@ -8,7 +8,8 @@ require('dotenv').config()
 
 const mongoose = require('mongoose')
 const { isEmail, normalizeEmail } = require('validator')
-const { UserModel } = require('../models')
+
+const { UserModel } = require('../../../src/models')
 
 mongoose.Promise = Promise
 

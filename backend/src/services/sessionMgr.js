@@ -638,6 +638,8 @@ const sessionAction = async ({ sessionId, userId }, actionType) => {
           session.activeInstances.map(async (instanceId) => {
             const instance = await QuestionInstanceModel.findById(instanceId).populate('question')
             await initializeResponseCache(instance, session)
+            instance.isOpen = true
+            await instance.save()
           })
         )
       }
@@ -671,6 +673,8 @@ const sessionAction = async ({ sessionId, userId }, actionType) => {
         await Promise.all(
           session.activeInstances.map(async (instanceId) => {
             const instance = await QuestionInstanceModel.findById(instanceId).populate('question')
+
+            instance.isOpen = false
 
             // persist the results of the paused instances
             instance.results = await computeInstanceResults(instance)
@@ -1122,4 +1126,5 @@ module.exports = {
   publishSessionUpdate,
   modifyQuestionBlock,
   activateBlockById,
+  computeInstanceResults,
 }
