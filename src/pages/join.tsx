@@ -57,7 +57,7 @@ function Join(): React.ReactElement {
     if (['INVALID_PARTICIPANT_LOGIN', 'SESSION_NOT_ACCESSIBLE'].includes(error?.graphQLErrors[0]?.message)) {
       const { id, authenticationMode } = error.graphQLErrors[0].extensions
       if (authenticationMode === 'AAI') {
-        window.location = `https://aai.klicker.uzh.ch/public/participants?shortname=${shortname}&sessionId=${id}` as any
+        window.location = `https://aai.klicker.uzh.ch/public/participants?shortname=${shortname}&session=${id}` as any
       } else {
         router.push(`/login/${shortname}/${id}`)
       }
