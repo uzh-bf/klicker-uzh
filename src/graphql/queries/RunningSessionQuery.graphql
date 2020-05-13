@@ -46,6 +46,7 @@ query RunningSession {
       isEvaluationPublic
       isFeedbackChannelActive
       isFeedbackChannelPublic
+      authenticationMode
       storageMode
     }
     participants {

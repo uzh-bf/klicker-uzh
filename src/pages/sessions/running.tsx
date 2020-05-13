@@ -142,6 +142,7 @@ function Running(): React.ReactElement {
               <SessionTimeline
                 // activeBlock={activeBlock}
                 activeStep={activeStep}
+                authenticationMode={settings.authenticationMode}
                 blocks={blocks}
                 handleActivateBlockById={(blockId): void => {
                   if (!_some([isActivateBlockByIdLoading, isActivateNextBlockLoading])) {

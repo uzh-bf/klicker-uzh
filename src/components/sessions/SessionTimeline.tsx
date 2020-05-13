@@ -87,7 +87,8 @@ interface Props {
   sessionId: string
   shortname: string
   startedAt?: string
-  storageMode?: string
+  authenticationMode?: 'PASSWORD' | 'AAI' | 'NONE'
+  storageMode?: 'SECRET' | 'COMPLETE'
   subscribeToMore: Function
 }
 
@@ -113,6 +114,7 @@ function SessionTimeline({
   isEvaluationPublic,
   isParticipantAuthenticationEnabled,
   isParticipantListVisible,
+  authenticationMode,
   storageMode,
   handleToggleParticipantList,
   handleNextBlock,
@@ -222,24 +224,30 @@ function SessionTimeline({
                     <FormattedMessage defaultMessage="Participant List" id="runningSession.string.participantList" />
                   </Modal.Header>
                   <Modal.Content>
+                    {authenticationMode === 'AAI' && <Message info>AAI</Message>}
+
                     <Table celled>
                       <Table.Header>
                         <Table.Row>
                           <Table.HeaderCell>
                             <FormattedMessage defaultMessage="Username" id="common.string.username" />
                           </Table.HeaderCell>
-                          <Table.HeaderCell>
-                            <FormattedMessage defaultMessage="Password" id="common.string.password" />
-                          </Table.HeaderCell>
+                          {authenticationMode === 'PASSWORD' && (
+                            <Table.HeaderCell>
+                              <FormattedMessage defaultMessage="Password" id="common.string.password" />
+                            </Table.HeaderCell>
+                          )}
                         </Table.Row>
                       </Table.Header>
                       <Table.Body>
                         {participants.map(({ username, password }) => (
                           <Table.Row>
                             <Table.Cell>{username}</Table.Cell>
-                            <Table.Cell>
-                              <span className="password">{password}</span>
-                            </Table.Cell>
+                            {authenticationMode === 'PASSWORD' && (
+                              <Table.Cell>
+                                <span className="password">{password}</span>
+                              </Table.Cell>
+                            )}
                           </Table.Row>
                         ))}
                       </Table.Body>
@@ -248,7 +256,7 @@ function SessionTimeline({
 
                   <Modal.Actions>
                     <CSVLink
-                      data={participants.map(pick(['username', 'password']))}
+                      data={participants.map(pick(['username', authenticationMode === 'PASSWORD' && 'password']))}
                       filename="participants.csv"
                       headers={[
                         { label: 'username', key: 'username' },

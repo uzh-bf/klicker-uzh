@@ -32,6 +32,14 @@ const messages = defineMessages({
     defaultMessage: 'AGGREGATED',
     id: 'session.storageMode.secret',
   },
+  authModePassword: {
+    defaultMessage: 'PASS',
+    id: 'session.authMode.password',
+  },
+  authModeAAI: {
+    defaultMessage: 'AAI',
+    id: 'session.authMode.aai',
+  },
 })
 
 interface Props {
@@ -48,6 +56,7 @@ interface Props {
   name: string
   status: string
   isParticipantAuthenticationEnabled?: boolean
+  authenticationMode?: 'PASSWORD' | 'AAI' | 'NONE'
   storageMode?: string
 }
 
@@ -63,6 +72,7 @@ function Session({
   blocks,
   status,
   isParticipantAuthenticationEnabled,
+  authenticationMode,
   storageMode,
 }: Props): React.ReactElement {
   const intl = useIntl()
@@ -81,6 +91,12 @@ function Session({
         <Label className="date" content={dayjs(createdAt).format('DD.MM.YY HH:mm')} icon="calendar" />
         {isParticipantAuthenticationEnabled && [
           <Label className="authMode" color="green" content="AUTH" icon="shield alternate" />,
+          authenticationMode === 'PASSWORD' && (
+            <Label className="storageMode" content={intl.formatMessage(messages.authModePassword)} icon="key" />
+          ),
+          authenticationMode === 'AAI' && (
+            <Label className="storageMode" content={intl.formatMessage(messages.authModeAAI)} icon="key" />
+          ),
           storageMode === 'SECRET' && (
             <Label
               className="storageMode"

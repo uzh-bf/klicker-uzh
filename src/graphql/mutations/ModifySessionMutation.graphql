@@ -3,11 +3,18 @@ mutation ModifySession(
   $name: String!
   $blocks: [Session_QuestionBlockInput!]!
   $participants: [Session_ParticipantInput!]
+  $authenticationMode: Session_AuthenticationMode
   $storageMode: Session_StorageMode
 ) {
   modifySession(
     id: $id
-    session: { name: $name, blocks: $blocks, participants: $participants, storageMode: $storageMode }
+    session: {
+      name: $name
+      blocks: $blocks
+      participants: $participants
+      authenticationMode: $authenticationMode
+      storageMode: $storageMode
+    }
   ) {
     id
     status
