@@ -227,6 +227,7 @@ function Index(): React.ReactElement {
             id: editSessionId,
             name: sessionName,
             participants: sessionParticipants.map((username) => ({ username })),
+            authenticationMode: sessionAuthenticationMode,
             storageMode: sessionDataStorageMode,
           },
         })
@@ -238,6 +239,7 @@ function Index(): React.ReactElement {
             blocks,
             name: sessionName,
             participants: sessionParticipants.map((username) => ({ username })),
+            authenticationMode: sessionAuthenticationMode,
             storageMode: sessionDataStorageMode,
           },
         })
