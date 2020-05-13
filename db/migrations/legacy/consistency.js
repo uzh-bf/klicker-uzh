@@ -2,7 +2,8 @@ require('dotenv').config()
 
 const mongoose = require('mongoose')
 const _flatMap = require('lodash/flatMap')
-const { SessionModel, QuestionInstanceModel, UserModel } = require('../models')
+
+const { SessionModel, QuestionInstanceModel, UserModel } = require('../../../src/models')
 
 mongoose.Promise = Promise
 
