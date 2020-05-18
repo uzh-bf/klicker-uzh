@@ -19,8 +19,8 @@ charts are not available for all question types. The two screens show all featur
 7. **Statistics:** Statistics are only displayed for number range questions.
 8. **Chart:** The chart is only displayed after the "Show Graph" button is clicked. Providing this feature enables the speaker to wait until enough participants answered the question before showing the results.
 9. **Export CSV:** Clicking this button exports all collected results in a CSV format.
-10. **Export PDF:** Clicking this button opens the print preview, which can be used to print the current session evaluations to a PDF of on paper.
+10. **Export PDF:** Clicking this button opens the print preview, which can be used to print the current session evaluations to a PDF.
 
 ![Evaluation](assets/evaluation_2.png)
 
-This step concludes the basic tutorial which led you through all of the basic features that the KlickerUZH offers. If you would like to see how you can edit, archive, or delete questions, or how you can update certain user settings, please continue in the _Advanced Tutorial_ section.
+This step concludes the basic tutorial which led you through all of the basic features that the KlickerUZH offers. If you would like to see how you can edit, archive, or delete questions, or how you can update certain user settings, please continue with the _Advanced Tutorial_ section.
