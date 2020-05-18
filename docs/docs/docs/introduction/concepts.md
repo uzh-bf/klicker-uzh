@@ -13,7 +13,7 @@ During an active Klicker session, the speaker can pose the questions that have b
 
 ## Questions and Question Blocks
 
-In preparation for a Klicker session, a speaker can create questions of different types and subsequently assigns the questions to a new session, wherein the questions can further be grouped into blocks of questions. A question block signifies a group of questions that are shown to the audience simultaneously in a sequence and are also evaluated as such (as a "block"). A session may contain an arbitrary sequence of said question blocks.
+In preparation for a Klicker session, a speaker can create questions of different types and subsequently assign the questions to a new session, wherein the questions can further be grouped into blocks of questions. A question block signifies a group of questions that are shown to the audience simultaneously in a sequence and are also evaluated as such (as a "block"). A session may contain an arbitrary sequence of said question blocks.
 
 During the execution of a session, the question blocks are then activated and evaluated in the predefined order. Activating a question block presents the questions to the audience and adds them to the evaluation screen, on which the results may be observed in near real-time.
 
