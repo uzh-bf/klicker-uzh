@@ -7,7 +7,7 @@ On the [Question Pool](basics/question_pool.md) screen, click the _Edit_ button 
 
 If you edit a question, a new version of the question is created automatically (4.1). This way already used questions in past sessions are not altered. You always see the latest version. The following list shows how to edit a question and how create a new version of a question:
 
-1. **Question Type:** Once a question is created the question type can not be changed.
+1. **Question Type:** Once a question is created the question type cannot be changed.
 
 2. **Question Title:** The question title may be changed at any time and stays the same for all versions of a question.
 
