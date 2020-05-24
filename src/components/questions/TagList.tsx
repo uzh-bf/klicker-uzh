@@ -31,11 +31,12 @@ function TagList({
 
   return (
     <div className="tagList">
-      <Button basic fluid onClick={(): void => handleReset()}>
+      <Button basic fluid className="resetFilters" onClick={(): void => handleReset()}>
         <Icon name="remove circle" />
         <FormattedMessage defaultMessage="Reset filters" id="tagList.button.reset" />
       </Button>
-      <List selection size="large">
+
+      <List selection>
         <List.Item
           active={isArchiveActive}
           className="listItem archiveItem"
@@ -56,6 +57,7 @@ function TagList({
             <FormattedMessage defaultMessage="Show Pool" id="tagList.string.showPool" />
           </List.Content>
         </List.Item>
+
         <List.Header className="listHeader types">
           <FormattedMessage defaultMessage="Types" id="tagList.header.types" />
         </List.Header>
@@ -103,6 +105,7 @@ function TagList({
             <FormattedMessage defaultMessage="Numerical (NR)" id="common.FREE_RANGE.label" />
           </List.Content>
         </List.Item>
+
         <List.Header className="listHeader tags">
           <FormattedMessage defaultMessage="Tags" id="tagList.header.tags" />
         </List.Header>
@@ -144,11 +147,17 @@ function TagList({
         .tagList {
           font-size: 0.9rem;
 
+          :global(.resetFilters) {
+            padding: 0.5rem;
+          }
+
           :global(.listHeader) {
             color: grey;
-            font-size: 1rem;
             font-weight: bold;
-            padding: 0 1rem;
+            padding: 0.3rem 1rem;
+            font-size: 1.05rem;
+            border-bottom: 1px solid lightgrey;
+            margin-bottom: 0.3rem;
           }
           :global(.listHeader.tags),
           :global(.listHeader.types) {

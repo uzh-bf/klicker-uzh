@@ -8,3 +8,9 @@ declare module '*.graphql' {
   const value: DocumentNode
   export = value
 }
+
+declare interface Window {
+  ReactIntlLocaleData: any
+  __NEXT_DATA__: any
+  INIT_GA: any
+}

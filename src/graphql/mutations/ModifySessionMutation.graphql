@@ -1,5 +1,21 @@
-mutation ModifySession($id: ID!, $name: String!, $blocks: [Session_QuestionBlockInput!]!) {
-  modifySession(id: $id, session: { name: $name, blocks: $blocks }) {
+mutation ModifySession(
+  $id: ID!
+  $name: String!
+  $blocks: [Session_QuestionBlockInput!]!
+  $participants: [Session_ParticipantInput!]
+  $authenticationMode: Session_AuthenticationMode
+  $storageMode: Session_StorageMode
+) {
+  modifySession(
+    id: $id
+    session: {
+      name: $name
+      blocks: $blocks
+      participants: $participants
+      authenticationMode: $authenticationMode
+      storageMode: $storageMode
+    }
+  ) {
     id
     status
     blocks {
@@ -13,6 +29,9 @@ mutation ModifySession($id: ID!, $name: String!, $blocks: [Session_QuestionBlock
           type
         }
       }
+    }
+    participants {
+      username
     }
   }
 }

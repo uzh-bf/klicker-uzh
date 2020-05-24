@@ -41,10 +41,17 @@ query RunningSession {
       createdAt
     }
     settings {
+      isParticipantAuthenticationEnabled
       isConfusionBarometerActive
       isEvaluationPublic
       isFeedbackChannelActive
       isFeedbackChannelPublic
+      authenticationMode
+      storageMode
+    }
+    participants {
+      username
+      password
     }
   }
 }

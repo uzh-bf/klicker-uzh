@@ -3,19 +3,22 @@
 import React from 'react'
 import Cookies from 'js-cookie'
 
-function getComponentDisplayName(Component) {
+function getComponentDisplayName(Component): string {
   return Component.displayName || Component.name || 'Unknown'
 }
 
-export default ({ propName, propDefault, storageType = 'session', json = false }) => ComposedComponent =>
+export default ({ propName, propDefault, storageType = 'session', json = false }) => (ComposedComponent): any =>
   class WithStorage extends React.Component {
     static displayName = `WithStorage(${getComponentDisplayName(ComposedComponent)})`
 
-    state = {
-      [propName]: propDefault,
+    constructor(props) {
+      super(props)
+      this.state = {
+        [propName]: propDefault,
+      }
     }
 
-    componentDidMount() {
+    componentDidMount(): void {
       let data
 
       try {
@@ -36,7 +39,7 @@ export default ({ propName, propDefault, storageType = 'session', json = false }
             data = JSON.parse(data)
           }
 
-          this.setState(prevState => {
+          this.setState((prevState) => {
             if (prevState[propName] === data) {
               return undefined
             }
@@ -51,7 +54,7 @@ export default ({ propName, propDefault, storageType = 'session', json = false }
       }
     }
 
-    render() {
+    render(): React.ReactElement {
       return <ComposedComponent {...this.props} {...this.state} />
     }
   }

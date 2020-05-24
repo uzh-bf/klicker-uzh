@@ -1,11 +1,12 @@
 import classNames from 'classnames'
 import _debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@apollo/react-hooks'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Button } from 'semantic-ui-react'
+import { Button, Message } from 'semantic-ui-react'
 
+import { withApollo } from '../lib/apollo'
 import StudentLayout from '../components/layouts/StudentLayout'
 import FeedbackArea from '../components/sessions/join/FeedbackArea'
 import QuestionArea from '../components/sessions/join/QuestionArea'
@@ -20,11 +21,19 @@ import useFingerprint from '../lib/hooks/useFingerprint'
 const messages = defineMessages({
   activeQuestionTitle: {
     defaultMessage: 'Active Question',
-    id: 'joinSessionactiveQuestion.title',
+    id: 'joinSession.activeQuestion.title',
   },
   feedbackChannelTitle: {
     defaultMessage: 'Feedback-Channel',
-    id: 'joinSessionfeedbackChannel.title',
+    id: 'joinSession.feedbackChannel.title',
+  },
+  ignoredSecondResponse: {
+    defaultMessage: 'As you are only allowed to respond once, we did not count your latest response.',
+    id: 'joinSession.string.responseIgnored',
+  },
+  joinForbidden: {
+    defaultMessage: 'You are not permitted to join this session',
+    id: 'joinSession.string.joinForbidden',
   },
 })
 
@@ -36,24 +45,52 @@ function Join(): React.ReactElement {
 
   const [sidebarVisible, setSidebarVisible] = useState(false)
   const [sidebarActiveItem, setSidebarActiveItem] = useState('activeQuestion')
+  const [extraMessage, setExtraMessage] = useState(null as string)
 
   const [newConfusionTS] = useMutation(AddConfusionTSMutation)
   const [newFeedback] = useMutation(AddFeedbackMutation)
-  const [newResponse] = useMutation(AddResponseMutation)
+  const [newResponse, { error: responseError }] = useMutation(AddResponseMutation)
   const { data, loading, error, subscribeToMore } = useQuery(JoinSessionQuery, {
     variables: { shortname: router.query.shortname },
   })
+
+  const { shortname }: { shortname?: string } = router.query
+
+  useEffect(() => {
+    // if we need to login before being able to access the session, redirect to the login
+    if (error?.graphQLErrors[0]?.message === 'INVALID_PARTICIPANT_LOGIN') {
+      const { id, authenticationMode } = error.graphQLErrors[0].extensions
+      if (authenticationMode === 'AAI') {
+        window.location = `https://aai.klicker.uzh.ch/public/participants?shortname=${shortname}&session=${id}` as any
+      } else {
+        router.push(`/login/${shortname}/${id}`)
+      }
+    } else if (error?.graphQLErrors[0]?.message === 'SESSION_NOT_ACCESSIBLE') {
+      setExtraMessage(intl.formatMessage(messages.joinForbidden))
+    } else {
+      setExtraMessage(null)
+    }
+  }, [error])
+
+  useEffect(() => {
+    setExtraMessage(null)
+    if (responseError?.graphQLErrors[0]?.message === 'RESPONSE_NOT_ALLOWED') {
+      setExtraMessage(intl.formatMessage(messages.ignoredSecondResponse))
+    }
+  }, [data, loading, responseError])
 
   const fingerprint = useFingerprint()
 
   if (loading || error || !data.joinSession || data.joinSession.status === 'COMPLETED') {
     return (
       <div className="noSession">
-        <Button icon="refresh" onClick={() => window.location.reload()} />
+        {extraMessage && <Message error>{extraMessage}</Message>}
+        <Button icon="refresh" onClick={(): void => window.location.reload()} />
         <FormattedMessage
           defaultMessage="No session active. Please reload the page once a session has been started."
           id="joinSession.noSessionActive"
         />
+
         <style jsx>{`
           .noSession {
             padding: 1rem;
@@ -69,7 +106,6 @@ function Join(): React.ReactElement {
     )
   }
 
-  const { shortname }: { shortname?: string } = router.query
   const { id: sessionId, settings, activeInstances, feedbacks, expiresAt, timeLimit } = data.joinSession
 
   const onSidebarActiveItemChange = (newSidebarActiveItem): any => (): void => {
@@ -177,6 +213,7 @@ function Join(): React.ReactElement {
 
   return (
     <StudentLayout
+      isAuthenticationEnabled={settings.isParticipantAuthenticationEnabled}
       isInteractionEnabled={settings.isConfusionBarometerActive || settings.isFeedbackChannelActive}
       pageTitle={`Join ${shortname}`}
       sidebar={{
@@ -204,6 +241,8 @@ function Join(): React.ReactElement {
             active={sidebarActiveItem === 'activeQuestion'}
             expiresAt={expiresAt}
             handleNewResponse={onNewResponse}
+            isAuthenticationEnabled={settings.isParticipantAuthenticationEnabled}
+            message={extraMessage}
             questions={activeInstances}
             sessionId={sessionId}
             shortname={shortname}
@@ -284,4 +323,4 @@ function Join(): React.ReactElement {
   )
 }
 
-export default Join
+export default withApollo({ ssr: true })(Join)

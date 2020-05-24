@@ -1,8 +1,8 @@
 import React from 'react'
-import UUIDv4 from 'uuid'
+import { v4 as UUIDv4 } from 'uuid'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { Button, Icon, Input } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
+import { FormattedMessage, defineMessages, useIntl } from 'react-intl'
 import { object } from 'yup'
 import {
   removeQuestion,
@@ -18,18 +18,37 @@ import QuestionDropzone from './QuestionDropzone'
 import InfoArea from './InfoArea'
 
 import validationSchema from '../common/validationSchema'
+import SessionParticipantsModal, {
+  DataStorageMode,
+  AuthenticationMode,
+} from './participantsModal/SessionParticipantsModal'
 
 const { sessionName: sessionNameValidator } = validationSchema
+
+const messages = defineMessages({
+  sessionNamePlaceholder: {
+    defaultMessage: 'Session Name',
+    id: 'form.createSession.sessionName',
+  },
+})
 
 interface Props {
   sessionBlocks: any
   handleSetSessionBlocks: any
   runningSessionId: string
   sessionName: string
+  isAuthenticationEnabled: boolean
+  sessionParticipants: any[]
   handleSetSessionName: any
+  handleSetSessionParticipants: any
+  handleSetIsAuthenticationEnabled: any
   handleCreateSession: any
   handleCreationModeToggle: any
   sessionInteractionType?: string
+  sessionAuthenticationMode: AuthenticationMode
+  sessionDataStorageMode: DataStorageMode
+  handleSetSessionAuthenticationMode: any
+  handleSetSessionDataStorageMode: any
 }
 
 const defaultProps = {
@@ -57,11 +76,21 @@ function SessionCreationForm({
   handleSetSessionBlocks,
   runningSessionId,
   sessionName,
+  sessionParticipants,
+  isAuthenticationEnabled,
+  handleSetIsAuthenticationEnabled,
   handleSetSessionName,
+  handleSetSessionParticipants,
   handleCreateSession,
   handleCreationModeToggle,
   sessionInteractionType,
+  sessionAuthenticationMode,
+  sessionDataStorageMode,
+  handleSetSessionAuthenticationMode,
+  handleSetSessionDataStorageMode,
 }: Props): React.ReactElement {
+  const intl = useIntl()
+
   const onChangeName = (e): void => handleSetSessionName(e.target.value)
 
   const onExtendBlock = (blockId, question): void => {
@@ -242,12 +271,35 @@ function SessionCreationForm({
             </h2>
 
             <div className="sessionName">
-              <label>
-                <FormattedMessage defaultMessage="Session Name" id="form.createSession.sessionName" />
-                <Input name="asd" placeholder="Name..." value={sessionName} onChange={onChangeName} />
-              </label>
+              <Input
+                name="sessionName"
+                placeholder={intl.formatMessage(messages.sessionNamePlaceholder)}
+                value={sessionName}
+                onChange={onChangeName}
+              />
             </div>
-            <Button fluid icon disabled={!isValid} labelPosition="left" type="submit">
+
+            <div className="sessionParticipants">
+              <SessionParticipantsModal
+                authenticationMode={sessionAuthenticationMode}
+                dataStorageMode={sessionDataStorageMode}
+                isAuthenticationEnabled={isAuthenticationEnabled}
+                participants={sessionParticipants}
+                onChangeAuthenticationMode={handleSetSessionAuthenticationMode}
+                onChangeDataStorageMode={handleSetSessionDataStorageMode}
+                onChangeIsAuthenticationEnabled={handleSetIsAuthenticationEnabled}
+                onChangeParticipants={handleSetSessionParticipants}
+              />
+            </div>
+
+            <Button
+              fluid
+              icon
+              disabled={!isValid || (isAuthenticationEnabled && sessionParticipants.length === 0)}
+              labelPosition="left"
+              size="small"
+              type="submit"
+            >
               <Icon name="save" />
               <FormattedMessage defaultMessage="Save & Close" id="form.createSession.button.save" />
             </Button>
@@ -255,8 +307,9 @@ function SessionCreationForm({
               fluid
               icon
               primary
-              disabled={!isValid || !!runningSessionId}
+              disabled={!isValid || !!runningSessionId || (isAuthenticationEnabled && sessionParticipants.length === 0)}
               labelPosition="left"
+              size="small"
               onClick={handleCreateSession('start')}
             >
               <Icon name="play" />
@@ -349,16 +402,18 @@ function SessionCreationForm({
               }
             }
 
-            h2 {
+            h2.interactionType {
               border-bottom: 1px solid lightgrey;
-              font-size: 1rem;
+              font-size: 1rem !important;
               margin: 0;
               padding: 0.5rem 0 0.25rem 0;
               margin-bottom: 0.5rem;
             }
 
-            .sessionName {
+            .sessionName,
+            .sessionParticipants {
               flex: 1;
+              margin-bottom: 0.5rem;
 
               label {
                 font-weight: bold;

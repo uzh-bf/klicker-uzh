@@ -8,6 +8,7 @@ import getConfig from 'next/config'
 import { FormattedMessage } from 'react-intl'
 import { convertFromRaw } from 'draft-js'
 
+import { Icon, Message } from 'semantic-ui-react'
 import QuestionFiles from './QuestionFiles'
 import { QUESTION_TYPES, QUESTION_GROUPS } from '../../../constants'
 import ActionMenu from '../../common/ActionMenu'
@@ -48,6 +49,7 @@ const messages = {
 }
 
 interface Props {
+  message?: string
   active: boolean
   expiresAt?: any
   questions: any[]
@@ -55,13 +57,16 @@ interface Props {
   shortname: string
   sessionId: string
   timeLimit?: number
+  isAuthenticationEnabled?: boolean
 }
 
 const defaultProps = {
   questions: [],
+  isAuthenticationEnabled: false,
 }
 
 function QuestionArea({
+  message,
   active,
   questions,
   handleNewResponse,
@@ -69,6 +74,7 @@ function QuestionArea({
   sessionId,
   expiresAt,
   timeLimit,
+  isAuthenticationEnabled,
 }: Props): React.ReactElement {
   const [remainingQuestions, setRemainingQuestions] = useState([])
 
@@ -211,12 +217,14 @@ function QuestionArea({
   return (
     <div className={classNames('questionArea', { active })}>
       <h1 className="header">
+        {isAuthenticationEnabled && <Icon color="green" name="lock" />}{' '}
         <FormattedMessage defaultMessage="Question" id="joinSession.questionArea.title" />
       </h1>
       {((): React.ReactElement => {
         if (remainingQuestions.length === 0) {
           return (
             <div className="padded">
+              {message && <Message warning>{message}</Message>}
               <FormattedMessage
                 defaultMessage="You have already answered all active questions."
                 id="joinSession.questionArea.alreadyAnswered"
@@ -318,6 +326,12 @@ function QuestionArea({
             margin: 1rem;
           }
 
+          .padded {
+            :global(.message) {
+              margin-bottom: 1rem;
+            }
+          }
+
           .options,
           .padded {
             padding: 1rem;
@@ -367,6 +381,7 @@ function QuestionArea({
             margin-right: 0.25rem;
 
             .header {
+              font-size: 1.2rem !important;
               display: block;
               margin: 1rem;
             }

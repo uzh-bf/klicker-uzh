@@ -84,6 +84,7 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
           .filter((session): boolean => session.status === SESSION_STATUS.RUNNING)
           .map((session): any => ({
             ...session,
+            ...session.settings,
             button: {
               ...statusCases[SESSION_STATUS.RUNNING],
               onClick: (): Promise<boolean> => router.push('/sessions/running'),
@@ -95,6 +96,7 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
           .filter((session): boolean => session.status === SESSION_STATUS.PAUSED)
           .map((session): any => ({
             ...session,
+            ...session.settings,
             button: {
               ...statusCases[SESSION_STATUS.PAUSED],
               disabled: runningSessions.length > 0,
@@ -107,6 +109,7 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
 
         const processedSessions = filterSessions(sessions, filters, sessionIndex).map((session): any => ({
           ...session,
+          ...session.settings,
           button: {
             ...statusCases[session.status],
             disabled: session.status === SESSION_STATUS.COMPLETED,
@@ -187,22 +190,14 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
       <style jsx>{`
         @import 'src/theme';
 
-        .session,
-        .sessions {
-          margin-bottom: 1rem;
-          padding: 0.5rem;
-          border: 1px solid lightgrey;
-          background-color: #f9f9f9;
+        .session {
+          padding-bottom: 1.5rem;
         }
 
-        .runningSessions {
-          & > .sessions {
-            background-color: #f9f9f9;
-            border: 1px solid $color-primary;
-          }
-
-          .runningSession:not(:last-child) {
-            margin-bottom: 0.5rem;
+        @include desktop-tablet-only {
+          .session {
+            padding: 1rem 0;
+            border-top: 1px solid lightgrey;
           }
         }
       `}</style>

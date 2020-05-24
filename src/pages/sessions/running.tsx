@@ -1,12 +1,13 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import dayjs from 'dayjs'
 import _get from 'lodash/get'
 import _pick from 'lodash/pick'
 import _some from 'lodash/some'
 import { useRouter } from 'next/router'
 import { useQuery, useMutation } from '@apollo/react-hooks'
-import { defineMessages, useIntl } from 'react-intl'
+import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
 import { useToasts } from 'react-toast-notifications'
+import { Message, Icon } from 'semantic-ui-react'
 
 import useLogging from '../../lib/hooks/useLogging'
 import ConfusionBarometer from '../../components/confusion/ConfusionBarometer'
@@ -28,6 +29,7 @@ import RunningSessionUpdatedSubscription from '../../graphql/subscriptions/Runni
 import ResetQuestionBlockMutation from '../../graphql/mutations/ResetQuestionBlockMutation.graphql'
 import ActivateBlockByIdMutation from '../../graphql/mutations/ActivateBlockByIdMutation.graphql'
 import Messager from '../../components/common/Messager'
+import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   errorLoading: {
@@ -72,6 +74,8 @@ function Running(): React.ReactElement {
   const [deleteFeedback, { loading: isDeleteFeedbackLoading }] = useMutation(DeleteFeedbackMutation)
   const [activateBlockById, { loading: isActivateBlockByIdLoading }] = useMutation(ActivateBlockByIdMutation)
 
+  const [isParticipantListVisible, setIsParticipantListVisible] = useState(false)
+
   const shortname = _get(accountSummary, 'data.user.shortname')
 
   const isAnythingLoading = _some([
@@ -110,14 +114,35 @@ function Running(): React.ReactElement {
           startedAt,
           confusionTS,
           feedbacks,
+          participants,
         } = data.runningSession
 
         return (
           <div className="runningSession">
             <div className="sessionProgress">
+              {settings.isParticipantAuthenticationEnabled && (
+                <Message icon warning>
+                  <Icon name="lock" />
+                  <FormattedMessage
+                    defaultMessage="This session is restricted to a predefined list of participants. For participant details, open the"
+                    id="runningSession.string.restrictedSession"
+                  />
+                  <a
+                    className="participantListTrigger"
+                    role="button"
+                    tabIndex={0}
+                    onClick={(): void => setIsParticipantListVisible(true)}
+                    onKeyDown={(): void => setIsParticipantListVisible(true)}
+                  >
+                    <FormattedMessage defaultMessage="Participant List" id="runningSession.string.participantList" />
+                  </a>
+                  .
+                </Message>
+              )}
               <SessionTimeline
                 // activeBlock={activeBlock}
                 activeStep={activeStep}
+                authenticationMode={settings.authenticationMode}
                 blocks={blocks}
                 handleActivateBlockById={(blockId): void => {
                   if (!_some([isActivateBlockByIdLoading, isActivateNextBlockLoading])) {
@@ -183,6 +208,7 @@ function Running(): React.ReactElement {
                     appearance: 'success',
                   })
                 }}
+                handleToggleParticipantList={(): void => setIsParticipantListVisible((isVisible) => !isVisible)}
                 handleTogglePublicEvaluation={(): void => {
                   updateSettings({
                     variables: {
@@ -195,10 +221,14 @@ function Running(): React.ReactElement {
                 }}
                 intl={intl}
                 isEvaluationPublic={settings.isEvaluationPublic}
+                isParticipantAuthenticationEnabled={settings.isParticipantAuthenticationEnabled}
+                isParticipantListVisible={isParticipantListVisible}
+                participants={participants}
                 runtime={runtime}
                 sessionId={id}
                 shortname={shortname}
                 startedAt={dayjs(startedAt).format('HH:mm:ss')}
+                storageMode={settings.storageMode}
                 subscribeToMore={subscribeToMore({
                   document: RunningSessionUpdatedSubscription,
                   updateQuery: (prev, { subscriptionData }): any => {
@@ -323,6 +353,11 @@ function Running(): React.ReactElement {
           margin-bottom: 1rem;
         }
 
+        a.participantListTrigger {
+          cursor: pointer;
+          margin-left: 0.5rem;
+        }
+
         @include desktop-tablet-only {
           .runningSession {
             flex-flow: row wrap;
@@ -355,4 +390,4 @@ function Running(): React.ReactElement {
   )
 }
 
-export default Running
+export default withApollo()(Running)

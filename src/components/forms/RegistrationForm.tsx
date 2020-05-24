@@ -175,9 +175,7 @@ function RegistrationForm({ loading, onSubmit }: Props): React.ReactElement {
         )}
         validationSchema={object()
           .shape({
-            acceptTOS: boolean()
-              .oneOf([true])
-              .required(),
+            acceptTOS: boolean().oneOf([true]).required(),
             email: email.required(),
             institution: institution.required(),
             password: password.required(),
