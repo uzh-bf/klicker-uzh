@@ -1,5 +1,19 @@
-mutation CreateSession($name: String!, $blocks: [Session_QuestionBlockInput!]!) {
-  createSession(session: { name: $name, blocks: $blocks }) {
+mutation CreateSession(
+  $name: String!
+  $blocks: [Session_QuestionBlockInput!]!
+  $participants: [Session_ParticipantInput!]
+  $authenticationMode: Session_AuthenticationMode
+  $storageMode: Session_StorageMode
+) {
+  createSession(
+    session: {
+      name: $name
+      blocks: $blocks
+      participants: $participants
+      authenticationMode: $authenticationMode
+      storageMode: $storageMode
+    }
+  ) {
     id
     confusionTS {
       difficulty
@@ -22,10 +36,16 @@ mutation CreateSession($name: String!, $blocks: [Session_QuestionBlockInput!]!) 
         }
       }
     }
+    participants {
+      username
+    }
     settings {
+      isParticipantAuthenticationEnabled
       isConfusionBarometerActive
       isFeedbackChannelActive
       isFeedbackChannelPublic
+      authenticationMode
+      storageMode
     }
   }
 }

@@ -15,6 +15,10 @@ import ExportQuestionsMutation from '../../graphql/mutations/ExportQuestionsMuta
 import { omitDeep } from '../../lib/utils/omitDeep'
 
 const messages = defineMessages({
+  create: {
+    defaultMessage: 'Create',
+    id: 'questionPool.button.create',
+  },
   deletionConfirmationCancel: {
     defaultMessage: 'Cancel',
     id: 'questionPool.button.deletionConfirmationCancel',
@@ -68,7 +72,7 @@ function ActionBar({
 }: Props): React.ReactElement {
   const intl = useIntl()
   const { addToast } = useToasts()
-  const [csvData, setCsvData] = useState()
+  const [csvData, setCsvData] = useState([])
   const [allItemsChecked, setAllItemsChecked] = useState(false)
 
   const [getQuestionStatistics, { data, error }] = useMutation(QuestionStatisticsMutation)
@@ -168,27 +172,39 @@ function ActionBar({
   return (
     <div className="actionBar">
       <div className="actionButtons">
-        <Dropdown button className="primary icon large" direction="left" icon="plus">
+        <Dropdown
+          button
+          labeled
+          className="primary icon"
+          direction="left"
+          icon="plus square"
+          text={intl.formatMessage(messages.create)}
+        >
           <Dropdown.Menu>
             <Dropdown.Item disabled={!!creationMode} onClick={handleCreationModeToggle}>
-              <Icon name="plus" />
-              <FormattedMessage defaultMessage="Create Session" id="questionPool.button.createSession" />
+              <Icon name="play" />
+              <FormattedMessage defaultMessage="New Session" id="questionPool.button.createSession" />
             </Dropdown.Item>
-            <QuestionCreationModal />
-            <UploadModal
-              trigger={
-                <Dropdown.Item>
-                  <Icon name="upload" />
-                  <FormattedMessage defaultMessage="Import Questions" id="questionPool.button.importQuestions" />
+            <QuestionCreationModal>
+              {({ setIsModalOpen }): any => (
+                <Dropdown.Item onClick={(): void => setIsModalOpen(true)}>
+                  <Icon name="question circle" />
+                  <FormattedMessage defaultMessage="New Question" id="questionPool.button.createQuestion" />
                 </Dropdown.Item>
-              }
-            />
+              )}
+            </QuestionCreationModal>
+            <UploadModal>
+              <Dropdown.Item>
+                <Icon name="upload" />
+                <FormattedMessage defaultMessage="Questions via Import" id="questionPool.button.importQuestions" />
+              </Dropdown.Item>
+            </UploadModal>
           </Dropdown.Menu>
         </Dropdown>
       </div>
 
       <div className="creationButtons">
-        {creationMode ? (
+        {creationMode && (
           <>
             <Button
               icon
@@ -220,72 +236,64 @@ function ActionBar({
               />
             </Button>
           </>
-        ) : (
-          <>
-            <Button icon disabled={itemCount === 0} labelPosition="left" size="small" onClick={onExportQuestions}>
+        )}
+      </div>
+
+      <div className="batchOperations">
+        <Dropdown button className="icon" direction="right" disabled={itemCount === 0} icon="wrench">
+          <Dropdown.Menu>
+            <Dropdown.Item icon labelPosition="left" size="small" onClick={onExportQuestions}>
               <Icon name="download" />
               <FormattedMessage defaultMessage="Export (CSV)" id="questionPool.button.exportQuestions" />
-            </Button>
+            </Dropdown.Item>
 
-            <Button icon disabled={itemCount === 0} labelPosition="left" size="small" onClick={onGetQuestionStatistics}>
+            <Dropdown.Item icon labelPosition="left" size="small" onClick={onGetQuestionStatistics}>
               <Icon name="calculator" />
               <FormattedMessage defaultMessage="Statistics (CSV)" id="questionPool.button.computeStatistics" />
-            </Button>
+            </Dropdown.Item>
 
-            <Button
-              icon
-              disabled={itemCount === 0}
-              labelPosition="left"
-              size="small"
-              onClick={(): void => handleArchiveQuestions()}
-            >
+            <Dropdown.Item icon labelPosition="left" size="small" onClick={(): void => handleArchiveQuestions()}>
               <Icon name="archive" />
               {isArchiveActive ? (
                 <FormattedMessage defaultMessage="Unarchive" id="questionPool.button.unarchiveQuestions" />
               ) : (
                 <FormattedMessage defaultMessage="Archive" id="questionPool.button.archiveQuestions" />
               )}
-            </Button>
+            </Dropdown.Item>
 
-            <Button
-              icon
-              disabled={itemCount === 0}
-              labelPosition="left"
-              size="small"
-              onClick={(): void => handleDeleteQuestions(false)}
-            >
+            <Dropdown.Item icon labelPosition="left" size="small" onClick={(): void => handleDeleteQuestions(false)}>
               <Icon name="trash" />
               <FormattedMessage defaultMessage="Delete" id="questionPool.button.deleteQuestions" />
-            </Button>
+            </Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown>
 
-            <Confirm
-              cancelButton={intl.formatMessage(messages.deletionConfirmationCancel)}
-              confirmButton={intl.formatMessage(messages.deletionConfirmationConfirm, { num: itemCount })}
-              content={intl.formatMessage(messages.deletionConfirmationContent, { num: itemCount })}
-              open={deletionConfirmation}
-              onCancel={(): void => handleDeleteQuestions(false)}
-              onConfirm={(): void => handleDeleteQuestions(true)}
+        <Label className="checkedCounter">
+          <Checkbox
+            checked={allItemsChecked}
+            indeterminate={!allItemsChecked && itemsChecked.length > 0}
+            onChange={(): void => onSetAllItemsChecked()}
+          />
+          <span className="content">
+            <FormattedMessage
+              defaultMessage="{count} items checked"
+              id="questionPool.string.itemsChecked"
+              values={{ count: itemCount }}
             />
-          </>
-        )}
+          </span>
+        </Label>
+
+        <Confirm
+          cancelButton={intl.formatMessage(messages.deletionConfirmationCancel)}
+          confirmButton={intl.formatMessage(messages.deletionConfirmationConfirm, { num: itemCount })}
+          content={intl.formatMessage(messages.deletionConfirmationContent, { num: itemCount })}
+          open={deletionConfirmation}
+          onCancel={(): void => handleDeleteQuestions(false)}
+          onConfirm={(): void => handleDeleteQuestions(true)}
+        />
       </div>
 
-      <Label className="checkedCounter">
-        <Checkbox
-          checked={allItemsChecked}
-          indeterminate={!allItemsChecked && itemsChecked.length > 0}
-          onChange={(): void => onSetAllItemsChecked()}
-        />
-        <span className="content">
-          <FormattedMessage
-            defaultMessage="{count} items checked"
-            id="questionPool.string.itemsChecked"
-            values={{ count: itemCount }}
-          />
-        </span>
-      </Label>
-
-      {csvData && <CSVDownload data={csvData} />}
+      {csvData?.length > 0 && <CSVDownload data={csvData} />}
 
       <style jsx>
         {`
@@ -298,19 +306,6 @@ function ActionBar({
             flex-direction: column;
           }
 
-          .actionBar :global(.checkedCounter) {
-            display: flex;
-            flex-align: center;
-
-            :global(.checkbox) {
-              margin-right: 0.5rem;
-            }
-
-            span {
-              margin-top: 0.2rem;
-            }
-          }
-
           .actionBar {
             padding: 1rem;
 
@@ -319,11 +314,31 @@ function ActionBar({
               flex: 1;
             }
 
+            .batchOperations,
+            :global(.checkedCounter) {
+              display: flex;
+              flex-align: center;
+              align-items: center;
+            }
+
+            :global(.checkedCounter) {
+              height: 36px;
+
+              :global(.checkbox) {
+                margin-right: 0.5rem;
+              }
+            }
+
             @include desktop-tablet-only {
               flex-flow: row wrap;
               align-items: center;
               justify-content: space-between;
               padding: 0;
+
+              margin: 0 auto;
+              max-width: $max-width;
+
+              padding: 0 0.5rem;
 
               .creationButtons,
               .actionButtons {
@@ -336,7 +351,6 @@ function ActionBar({
               }
 
               .checkedCounter {
-                color: grey;
                 order: 1;
               }
 

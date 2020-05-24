@@ -13,6 +13,7 @@ import StartSessionMutation from '../../graphql/mutations/StartSessionMutation.g
 import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import SessionList from '../../components/sessions/SessionList'
+import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   pageTitle: {
@@ -94,4 +95,4 @@ function Index(): React.ReactElement {
   )
 }
 
-export default Index
+export default withApollo()(Index)

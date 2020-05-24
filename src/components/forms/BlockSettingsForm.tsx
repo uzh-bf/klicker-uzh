@@ -116,10 +116,7 @@ function BlockSettingsForm({ disabled, sessionId, questionBlockId, initialTimeLi
       )}
       validationSchema={object()
         .shape({
-          timeLimit: number()
-            .min(-1)
-            .max(3600)
-            .required(),
+          timeLimit: number().min(-1).max(3600).required(),
         })
         .required()}
       onSubmit={async ({ timeLimit }, { setSubmitting }): Promise<void> => {

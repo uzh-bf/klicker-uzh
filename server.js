@@ -1,4 +1,4 @@
-/* eslint-disable babel/quotes, no-unused-vars, @typescript-eslint/no-unused-vars */
+/* eslint-disable */
 
 require('full-icu')
 const IntlPolyfill = require('intl')
@@ -10,7 +10,7 @@ const compression = require('compression')
 const cors = require('cors')
 const helmet = require('helmet')
 const morgan = require('morgan')
-const { basename, join } = require('path')
+const { basename } = require('path')
 const { readFileSync } = require('fs')
 
 // import the configuration
@@ -42,40 +42,45 @@ const pages = [
   { url: '/questions/create' },
   {
     cached: CACHE_CFG.pages.qr,
-    mapParams: req => ({ shortname: req.params.shortname }),
+    mapParams: (req) => ({ shortname: req.params.shortname }),
     renderPath: '/qr',
     url: '/qr/:shortname',
   },
   {
-    mapParams: req => ({ public: true, sessionId: req.params.sessionId }),
+    mapParams: (req) => ({ public: true, sessionId: req.params.sessionId }),
     renderPath: '/sessions/evaluation',
     url: '/sessions/public/:sessionId',
   },
   {
-    mapParams: req => ({ sessionId: req.params.sessionId }),
+    mapParams: (req) => ({ sessionId: req.params.sessionId }),
     renderPath: '/sessions/print',
     url: '/sessions/print/:sessionId',
   },
   {
-    mapParams: req => ({ sessionId: req.params.sessionId }),
+    mapParams: (req) => ({ sessionId: req.params.sessionId }),
     renderPath: '/sessions/evaluation',
     url: '/sessions/evaluation/:sessionId',
   },
   {
-    mapParams: req => ({ questionId: req.params.questionId }),
+    mapParams: (req) => ({ questionId: req.params.questionId }),
     renderPath: '/questions/details',
     url: '/questions/:questionId',
   },
   {
-    mapParams: req => ({ questionId: req.params.questionId }),
+    mapParams: (req) => ({ questionId: req.params.questionId }),
     renderPath: '/questions/duplicate',
     url: '/questions/duplicate/:questionId',
   },
   {
     cached: CACHE_CFG.pages.join,
-    mapParams: req => ({ shortname: req.params.shortname }),
+    mapParams: (req) => ({ shortname: req.params.shortname }),
     renderPath: '/join',
     url: '/join/:shortname',
+  },
+  {
+    mapParams: (req) => ({ shortname: req.params.shortname, sessionId: req.params.sessionId }),
+    renderPath: '/login',
+    url: '/login/:shortname/:sessionId',
   },
 ]
 
@@ -115,7 +120,7 @@ const app = next({ dev: isDev })
 const handle = app.getRequestHandler()
 
 // Get the supported languages by looking for translations in the `lang/` dir.
-const languages = glob.sync(`./src/lang/*.json`).map(f => basename(f, '.json'))
+const languages = glob.sync(`./src/lang/*.json`).map((f) => basename(f, '.json'))
 
 // We need to expose React Intl's locale data on the request for the user's
 // locale. This function will also cache the scripts by lang in memory.
@@ -373,17 +378,17 @@ app
       return handle(req, res)
     })
 
-    server.listen(3000, err => {
+    server.listen(3000, (err) => {
       if (err) throw err
       console.log('[klicker-react] Ready on http://localhost:3000')
     })
   })
-  .catch(err => {
+  .catch((err) => {
     console.error(err.stack)
     process.exit(1)
   })
 
-const shutdown = signal => async () => {
+const shutdown = (signal) => async () => {
   console.log('[klicker-react] Shutting down server')
 
   if (hasRedis) {
@@ -396,4 +401,4 @@ const shutdown = signal => async () => {
 }
 
 const shutdownSignals = ['SIGINT', 'SIGUSR2', 'SIGTERM', 'exit']
-shutdownSignals.forEach(signal => process.once(signal, shutdown(signal)))
+shutdownSignals.forEach((signal) => process.once(signal, shutdown(signal)))

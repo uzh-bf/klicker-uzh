@@ -30,11 +30,11 @@ const questions = [
 ]
 
 expect.addSnapshotSerializer({
-  print: val => `Question #${val.id}
+  print: (val) => `Question #${val.id}
   - Title: ${val.title}
-  - Tags: ${val.tags.map(tag => tag.name)}
+  - Tags: ${val.tags.map((tag) => tag.name)}
   - Type: ${val.type}`,
-  test: val => val.id && val.tags && val.title && val.type,
+  test: (val) => val.id && val.tags && val.title && val.type,
 })
 
 describe.skip('filterQuestions', () => {

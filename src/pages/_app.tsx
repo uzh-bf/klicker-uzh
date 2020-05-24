@@ -3,16 +3,17 @@ import React, { StrictMode } from 'react'
 import Router from 'next/router'
 import getConfig from 'next/config'
 import App from 'next/app'
-import HTML5Backend from 'react-dnd-html5-backend-cjs'
-import { ApolloProvider } from '@apollo/react-hooks'
-import { IntlProvider } from 'react-intl'
-import { DndProvider } from 'react-dnd-cjs'
+import HTML5Backend from 'react-dnd-html5-backend'
+import { DndProvider } from 'react-dnd'
 import { ToastProvider } from 'react-toast-notifications'
-
-import withApolloClient from '../lib/withApolloClient'
+import { createIntl, createIntlCache, RawIntlProvider } from 'react-intl'
 
 // HACK: import an empty css file such that pages with css files loaded don't become unroutable (e.g., pages with Countdown.js)
 import './app.css'
+
+// This is optional but highly recommended
+// since it prevents memory leak
+const cache = createIntlCache()
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -28,30 +29,36 @@ if (typeof window !== 'undefined' && window.ReactIntlLocaleData) {
   import('intl-pluralrules')
   import('@formatjs/intl-relativetimeformat/polyfill')
 
-  Object.keys(window.ReactIntlLocaleData).forEach(lang => {
+  Object.keys(window.ReactIntlLocaleData).forEach((lang) => {
     import(`@formatjs/intl-relativetimeformat/dist/locale-data/${lang}`)
   })
 }
 
-class Klicker extends App {
+interface Props {
+  apolloClient: any
+  locale: string
+  messages: any
+}
+
+class Klicker extends App<Props> {
   state = { error: null }
 
-  static async getInitialProps({ Component, ctx }) {
+  static async getInitialProps({ Component, ctx }): Promise<any> {
     let pageProps = {}
+
+    if (Component.getInitialProps) {
+      pageProps = await Component.getInitialProps(ctx)
+    }
 
     // Get the `locale` and `messages` from the request object on the server.
     // In the browser, use the same values that the server serialized.
     const { req } = ctx
     const { locale, messages } = req || window.__NEXT_DATA__.props
 
-    if (Component.getInitialProps) {
-      pageProps = await Component.getInitialProps(ctx)
-    }
-
-    return { locale, messages, pageProps }
+    return { pageProps, locale, messages }
   }
 
-  componentDidMount() {
+  componentDidMount(): any {
     if (isProd) {
       if (publicRuntimeConfig.analyticsTrackingID) {
         const { initGA, logPageView } = require('../lib/utils/analytics')
@@ -76,7 +83,7 @@ class Klicker extends App {
         }).install()
 
         if (LogRocket && window.INIT_LR) {
-          Raven.setDataCallback(data => ({
+          Raven.setDataCallback((data) => ({
             ...data,
             extra: {
               sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef
@@ -89,7 +96,7 @@ class Klicker extends App {
     }
   }
 
-  componentDidCatch(error, errorInfo) {
+  componentDidCatch(error, errorInfo): any {
     this.setState({ error })
 
     if (isProd) {
@@ -108,24 +115,23 @@ class Klicker extends App {
     super.componentDidCatch(error, errorInfo)
   }
 
-  render() {
-    const { Component, pageProps, apolloClient, locale, messages } = this.props
-    const now = Date.now()
+  render(): React.ReactElement {
+    const { Component, pageProps, locale, messages } = this.props
+
+    const intl = createIntl({ locale, messages }, cache)
 
     return (
       <DndProvider backend={HTML5Backend}>
-        <IntlProvider initialNow={now} locale={locale} messages={messages}>
-          <ApolloProvider client={apolloClient}>
-            <ToastProvider autoDismiss>
-              <StrictMode>
-                <Component {...pageProps} error={this.state.error} />
-              </StrictMode>
-            </ToastProvider>
-          </ApolloProvider>
-        </IntlProvider>
+        <RawIntlProvider value={intl}>
+          <ToastProvider autoDismiss>
+            <StrictMode>
+              <Component {...pageProps} error={this.state.error} />
+            </StrictMode>
+          </ToastProvider>
+        </RawIntlProvider>
       </DndProvider>
     )
   }
 }
 
-export default withApolloClient(Klicker)
+export default Klicker

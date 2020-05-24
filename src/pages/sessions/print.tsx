@@ -16,6 +16,7 @@ import CommonLayout from '../../components/layouts/CommonLayout'
 import { extractInstancesFromSession } from './evaluation'
 import useLogging from '../../lib/hooks/useLogging'
 import LoadSessionData from '../../components/sessions/LoadSessionData'
+import { withApollo } from '../../lib/apollo'
 
 function Print(): React.ReactElement<any> {
   useLogging()
@@ -45,11 +46,11 @@ function Print(): React.ReactElement<any> {
                 toggle
                 checked={showSolution}
                 label="Show Solution"
-                onChange={() => setShowSolution(prev => !prev)}
+                onChange={() => setShowSolution((prev) => !prev)}
               />
             </div>
 
-            {activeInstances.map(activeInstance => {
+            {activeInstances.map((activeInstance) => {
               if (activeInstance.question.type === QUESTION_TYPES.FREE_RANGE) {
                 // convert the result data into an array with primitive numbers
                 const valueArray = toValueArray(activeInstance.results.data)
@@ -126,7 +127,7 @@ function Print(): React.ReactElement<any> {
                         activeVisualization={activeVisualization}
                         questionType={question.type}
                         onChangeType={(type, newVisualization) =>
-                          setActiveVisualizations(currentState => ({ ...currentState, [type]: newVisualization }))
+                          setActiveVisualizations((currentState) => ({ ...currentState, [type]: newVisualization }))
                         }
                       />
                     </div>
@@ -226,4 +227,4 @@ function Print(): React.ReactElement<any> {
   )
 }
 
-export default Print
+export default withApollo()(Print)

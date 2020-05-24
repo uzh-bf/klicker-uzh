@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react'
-import UUIDv4 from 'uuid'
+import React, { useState, useEffect, useMemo } from 'react'
+import { v4 as UUIDv4 } from 'uuid'
 import _get from 'lodash/get'
 import _debounce from 'lodash/debounce'
 import _some from 'lodash/some'
 import dayjs from 'dayjs'
 import Link from 'next/link'
+// import { Formik, useField } from 'formik'
 import { useRouter } from 'next/router'
 import { defineMessages, useIntl } from 'react-intl'
 import { useQuery, useMutation } from '@apollo/react-hooks'
@@ -31,6 +32,11 @@ import ActionBar from '../../components/questions/ActionBar'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import { QUESTION_SORTINGS } from '../../constants'
 import { processItems, buildIndex } from '../../lib/utils/filters'
+import {
+  AuthenticationMode,
+  DataStorageMode,
+} from '../../components/forms/sessionCreation/participantsModal/SessionParticipantsModal'
+import { withApollo } from '../../lib/apollo'
 
 const messages = defineMessages({
   pageTitle: {
@@ -63,6 +69,11 @@ function Index(): React.ReactElement {
   const [sessionBlocks, setSessionBlocks] = useState((): any => [])
   const [sessionName, setSessionName] = useState('')
 
+  const [isAuthenticationEnabled, setIsAuthenticationEnabled] = useState(false)
+  const [sessionParticipants, setSessionParticipants] = useState([])
+  const [sessionAuthenticationMode, setSessionAuthenticationMode] = useState('NONE' as AuthenticationMode)
+  const [sessionDataStorageMode, setSessionDataStorageMode] = useState('SECRET' as DataStorageMode)
+
   const [startSession, { loading: isStartSessionLoading }] = useMutation(StartSessionMutation)
   const [createSession, { loading: isCreateSessionLoading }] = useMutation(CreateSessionMutation)
   const [archiveQuestions, { loading: isArchiveQuestionsLoading }] = useMutation(ArchiveQuestionsMutation)
@@ -82,21 +93,13 @@ function Index(): React.ReactElement {
     handleToggleArchive,
   } = useSortingAndFiltering()
 
-  const [index, setIndex] = useState()
-  useEffect((): any => {
-    if (!data || !data.questions) {
-      return
-    }
-
-    try {
-      // build an index from the received questions
-      setIndex(buildIndex('questions', data.questions, ['title', 'createdAt']))
-    } catch (e) {
-      console.error(e)
+  const index = useMemo(() => {
+    if (data?.questions) {
+      buildIndex('questions', data.questions, ['title', 'createdAt'])
     }
   }, [data])
 
-  const [processedQuestions, setProcessedQuestions] = useState()
+  const [processedQuestions, setProcessedQuestions] = useState([])
   useEffect((): any => {
     if (!data || !data.questions) {
       return
@@ -113,6 +116,10 @@ function Index(): React.ReactElement {
     if (creationMode) {
       setCreationMode(false)
       setSessionBlocks([])
+      setIsAuthenticationEnabled(false)
+      setSessionParticipants([])
+      setSessionAuthenticationMode('PASSWORD')
+      setSessionDataStorageMode('SECRET')
     } else {
       // turn on creation mode
       setCreationMode(true)
@@ -215,13 +222,26 @@ function Index(): React.ReactElement {
         // modify an existing session
         result = await modifySession({
           refetchQueries: [{ query: SessionListQuery }],
-          variables: { blocks, id: editSessionId, name: sessionName },
+          variables: {
+            blocks,
+            id: editSessionId,
+            name: sessionName,
+            participants: sessionParticipants.map((username) => ({ username })),
+            authenticationMode: sessionAuthenticationMode,
+            storageMode: sessionDataStorageMode,
+          },
         })
       } else {
         // create a new session
         result = await createSession({
           refetchQueries: [{ query: SessionListQuery }],
-          variables: { blocks, name: sessionName },
+          variables: {
+            blocks,
+            name: sessionName,
+            participants: sessionParticipants.map((username) => ({ username })),
+            authenticationMode: sessionAuthenticationMode,
+            storageMode: sessionDataStorageMode,
+          },
         })
       }
 
@@ -316,11 +336,19 @@ function Index(): React.ReactElement {
           <SessionEditForm
             handleCreateSession={onCreateSession}
             handleCreationModeToggle={onCreationModeToggle}
+            handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
+            handleSetSessionAuthenticationMode={setSessionAuthenticationMode}
             handleSetSessionBlocks={setSessionBlocks}
+            handleSetSessionDataStorageMode={setSessionDataStorageMode}
             handleSetSessionName={setSessionName}
+            handleSetSessionParticipants={setSessionParticipants}
+            isAuthenticationEnabled={isAuthenticationEnabled}
             runningSessionId={runningSessionId}
+            sessionAuthenticationMode={sessionAuthenticationMode}
             sessionBlocks={sessionBlocks}
+            sessionDataStorageMode={sessionDataStorageMode}
             sessionName={sessionName}
+            sessionParticipants={sessionParticipants}
           />
         )
       }
@@ -329,11 +357,19 @@ function Index(): React.ReactElement {
         <SessionCreationForm
           handleCreateSession={onCreateSession}
           handleCreationModeToggle={onCreationModeToggle}
+          handleSetIsAuthenticationEnabled={setIsAuthenticationEnabled}
+          handleSetSessionAuthenticationMode={setSessionAuthenticationMode}
           handleSetSessionBlocks={setSessionBlocks}
+          handleSetSessionDataStorageMode={setSessionDataStorageMode}
           handleSetSessionName={setSessionName}
+          handleSetSessionParticipants={setSessionParticipants}
+          isAuthenticationEnabled={isAuthenticationEnabled}
           runningSessionId={runningSessionId}
+          sessionAuthenticationMode={sessionAuthenticationMode}
           sessionBlocks={sessionBlocks}
+          sessionDataStorageMode={sessionDataStorageMode}
           sessionName={sessionName}
+          sessionParticipants={sessionParticipants}
         />
       )
     }
@@ -432,7 +468,7 @@ function Index(): React.ReactElement {
               margin: 0 auto;
               max-width: $max-width;
 
-              padding: 1rem;
+              padding: 0.5rem;
             }
           }
 
@@ -443,18 +479,16 @@ function Index(): React.ReactElement {
             .tagList {
               overflow-y: auto;
               flex: 0 0 17rem;
-              padding: 2rem 1rem;
 
-              border-right: 1px solid $color-primary;
+              border-right: 1px solid $color-primary-50p;
             }
 
             .wrapper {
               flex: 1;
-              padding: 1rem;
+              padding: 0.5rem;
 
               .questionList {
                 overflow-y: auto;
-                padding: 1rem 1rem 0 0;
               }
             }
           }
@@ -468,4 +502,4 @@ function Index(): React.ReactElement {
   )
 }
 
-export default Index
+export default withApollo()(Index)

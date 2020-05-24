@@ -18,7 +18,7 @@
   },
   "permission": false,
   "rtl": false,
-  "version": "2.4.2",
+  "version": "2.8.4",
   "components": [
     "reset",
     "site",
@@ -49,6 +49,7 @@
     "transition",
     "segment",
     "card",
-    "progress"
+    "progress",
+    "step"
   ]
 }

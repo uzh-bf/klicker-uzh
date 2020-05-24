@@ -7,7 +7,7 @@ function reducer(state, action): any {
     case 'SELECT_BATCH':
       return {
         ids: action.items.map((el): void => el.id),
-        items: action.items.map(item => ({ ...item, version: -1 })),
+        items: action.items.map((item) => ({ ...item, version: -1 })),
       }
 
     case 'SELECT':

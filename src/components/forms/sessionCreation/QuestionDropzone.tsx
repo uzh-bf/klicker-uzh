@@ -1,6 +1,6 @@
 import React from 'react'
 import classNames from 'classnames'
-import { useDrop } from 'react-dnd-cjs'
+import { useDrop } from 'react-dnd'
 import { Icon } from 'semantic-ui-react'
 
 interface Props {
