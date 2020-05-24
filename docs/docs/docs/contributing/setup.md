@@ -21,7 +21,7 @@ Download the KlickerUZH application code to your machine by cloning the two main
 - `git clone https://github.com/uzh-bf/klicker-react.git`
 - `git clone https://github.com/uzh-bf/klicker-api.git`
 
-Upon successThe klicker-uzh repository is only necessary if you would like to work on the documentation or other auxiliary materials.
+Upon success the klicker-uzh repository is only necessary if you would like to work on the documentation or other auxiliary materials.
 
 ## Database and Cache Setup
 

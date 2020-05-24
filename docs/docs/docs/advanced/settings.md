@@ -10,7 +10,7 @@ There you can change:
 
 3. your **E-mail address**
 4. the **participants' link**
-5. your **institutions**, where "migrated" means, that your data from your former Klicker account was migrated
+5. your **institutions**, where "migrated" means, that your data from your former KlickerUZH account was migrated
 6. your **use case description**
 7. your **password**.
 

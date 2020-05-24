@@ -3,7 +3,7 @@ id: question_export
 title: Question Export/Import
 ---
 
-On the [Question Pool](basics/question_pool.md) screen, select the questions you would like to export and click the _Export_ button in the action bar on top of the question list. The file that can then be downloaded includes all the data necessary to import the latest version of included questions into another Klicker instance or account.
+On the [Question Pool](basics/question_pool.md) screen, select the questions you would like to export and click the _Export_ button in the action bar on top of the question list. The file that can then be downloaded includes all the data necessary to import the latest version of included questions into another KlickerUZH instance or account.
 
 ![Question Export](assets/question_export.gif)
 
