@@ -109,7 +109,7 @@
     "react-csv": "2.0.3",
     "react-d3-cloud": "0.7.0",
     "react-dnd": "10.0.2",
-    "react-dnd-html5-backend": "10.0.2",
+    "react-dnd-html5-backend": "11.0.0",
     "react-dom": "16.13.1",
     "react-dropzone": "11.0.1",
     "react-focus-lock": "2.3.1",
