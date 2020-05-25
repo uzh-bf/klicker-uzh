@@ -136,7 +136,7 @@
     "@formatjs/intl-utils": "2.3.0",
     "@typescript-eslint/eslint-plugin": "2.33.0",
     "@typescript-eslint/parser": "2.32.0",
-    "@graphql-codegen/cli": "1.13.5",
+    "@graphql-codegen/cli": "1.14.0",
     "@graphql-codegen/fragment-matcher": "1.14.0",
     "@testing-library/react": "10.0.4",
     "enzyme": "3.11.0",
