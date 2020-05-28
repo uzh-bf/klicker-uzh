@@ -3,8 +3,9 @@
     "",
     "\\docs",
     "\\docs\\docs",
-    "\\docs\\docs\\advanced"
+    "\\docs\\docs\\advanced",
+    "\\docs\\docs\\assets"
   ],
-  "SelectedNode": "\\docs\\docs\\advanced\\login.md",
+  "SelectedNode": "\\docs\\docs\\assets",
   "PreviewInSolutionExplorer": false
 }
