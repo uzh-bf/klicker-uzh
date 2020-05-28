@@ -12,6 +12,7 @@
       "basics/evaluation"
     ],
     "Advanced Features": [
+      "advanced/participant_authentication",
       "advanced/delete_account",
       "advanced/session_nonsequential",
       "advanced/question_archive",
