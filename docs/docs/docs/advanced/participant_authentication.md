@@ -17,20 +17,18 @@ Step by step guide for participant authentication.
 
 ![Create Session](assets/create_session_participants.gif)
 
-2. Define participants
-
-![Define Participants](assets/set_participants.gif)
-
-3. Choose complete or aggregated results
+2. Define participants and choose complete or aggregated results
 
 **Complete Results:** The results of a session will be stored in a way that makes accessible individual participant responses and the corresponding username.
 
 **Aggregated Results:** The results of a session will only be stored in an aggregated format, making it impossible to derive the responses of individual participants.
 
-4. Get participants list
+![Define Participants](assets/set_participants.gif)
+
+3. Get participants list
 
 ![Get Participants](assets/get_participants.gif)
 
-5. Participants can now log in with the password they got from the participants list (copied in the GIF before).
+4. Participants can now log in with the password they got from the participants list (copied in the GIF before).
 
 ![Log In](assets/log_in.gif)
