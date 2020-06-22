@@ -25,7 +25,7 @@
     "@apollo/react-ssr": "3.1.5",
     "@babel/plugin-transform-react-constant-elements": "7.9.0",
     "@babel/preset-env": "7.9.6",
-    "@babel/core": "7.9.6",
+    "@babel/core": "7.10.3",
     "@formatjs/intl-relativetimeformat": "4.5.16",
     "@types/draft-js": "0.10.40",
     "@types/lodash": "4.14.156",
