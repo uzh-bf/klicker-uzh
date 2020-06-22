@@ -80,7 +80,7 @@
     "glob": "7.1.6",
     "graphql": "14.5.8",
     "graphql-tag": "2.10.3",
-    "helmet": "3.22.0",
+    "helmet": "3.23.1",
     "hoist-non-react-statics": "3.3.2",
     "intl": "1.2.5",
     "intl-pluralrules": "1.2.0",
