@@ -138,7 +138,7 @@
     "@typescript-eslint/parser": "2.32.0",
     "@graphql-codegen/cli": "1.15.4",
     "@graphql-codegen/fragment-matcher": "1.16.3",
-    "@testing-library/react": "10.3.0",
+    "@testing-library/react": "10.4.4",
     "enzyme": "3.11.0",
     "eslint": "7.2.0",
     "eslint-config-airbnb": "18.1.0",
