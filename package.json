@@ -124,7 +124,7 @@
     "sanitize-html": "1.23.0",
     "semantic-ui-react": "0.88.2",
     "styled-jsx-plugin-sass": "1.0.0",
-    "subscriptions-transport-ws": "0.9.16",
+    "subscriptions-transport-ws": "0.9.17",
     "typescript": "3.8.3",
     "url-loader": "4.1.0",
     "uuid": "8.0.0",
