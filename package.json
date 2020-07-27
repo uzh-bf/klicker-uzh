@@ -61,7 +61,7 @@
     "react": "16.13.1",
     "react-dom": "16.13.1",
     "request": "2.88.2",
-    "request-promise": "4.2.5",
+    "request-promise": "4.2.6",
     "saslprep": "1.0.3",
     "subscriptions-transport-ws": "0.9.16",
     "uuid": "8.0.0",
