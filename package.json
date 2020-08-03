@@ -39,7 +39,7 @@
     "generate-password": "1.5.1",
     "graphql": "14.5.8",
     "graphql-iso-date": "3.6.1",
-    "graphql-redis-subscriptions": "2.2.1",
+    "graphql-redis-subscriptions": "2.2.2",
     "graphql-subscriptions": "1.1.0",
     "graphql-tools": "5.0.0",
     "handlebars": "4.7.6",
