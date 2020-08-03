@@ -12,7 +12,7 @@
     "react": "16.13.1",
     "react-dom": "16.13.1",
     "react-helmet": "5.2.1",
-    "react-scroll": "1.7.16",
+    "react-scroll": "1.8.0",
     "react-slick": "0.25.2",
     "semantic-ui-css": "2.4.1",
     "semantic-ui-react": "0.88.2",
