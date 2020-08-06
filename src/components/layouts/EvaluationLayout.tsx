@@ -164,6 +164,13 @@ function EvaluationLayout({
                       </Menu.Item>
                     )
                   )}
+                  {/* TODO */}
+                  <Menu.Item
+                    className={classNames('hoverable', 'feedback')}
+                    onClick={(): void => onChangeActiveInstance(1)}
+                  >
+                    Feedback
+                  </Menu.Item>
                 </Menu>
               </div>
             </>
@@ -399,6 +406,10 @@ function EvaluationLayout({
                       }
 
                       :global(.item.executed) {
+                        color: grey;
+                      }
+
+                      :global(.item.feedback) {
                         color: grey;
                       }
                     }

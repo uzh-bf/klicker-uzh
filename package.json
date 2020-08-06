@@ -23,9 +23,9 @@
   "dependencies": {
     "@apollo/react-hooks": "3.1.5",
     "@apollo/react-ssr": "3.1.5",
+    "@babel/core": "7.9.6",
     "@babel/plugin-transform-react-constant-elements": "7.9.0",
     "@babel/preset-env": "7.9.6",
-    "@babel/core": "7.9.6",
     "@formatjs/intl-relativetimeformat": "4.5.16",
     "@types/draft-js": "0.10.40",
     "@types/lodash": "4.14.158",
@@ -105,6 +105,7 @@
     "react": "16.13.1",
     "react-autosuggest": "10.0.2",
     "react-beautiful-dnd": "13.0.0",
+    "react-charts": "^2.0.0-beta.7",
     "react-circular-progressbar": "2.0.3",
     "react-csv": "2.0.3",
     "react-d3-cloud": "0.7.0",
