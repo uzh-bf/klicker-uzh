@@ -166,10 +166,18 @@ function EvaluationLayout({
                   )}
                   {/* TODO */}
                   <Menu.Item
+                    fitted
                     className={classNames('hoverable', 'feedback')}
                     onClick={(): void => onChangeActiveInstance(1)}
                   >
-                    Feedback
+                    Feedback-Channel
+                  </Menu.Item>
+                  <Menu.Item
+                    fitted
+                    className={classNames('hoverable', 'feedback')}
+                    onClick={(): void => onChangeActiveInstance(1)}
+                  >
+                    Confusion-Barometer
                   </Menu.Item>
                 </Menu>
               </div>

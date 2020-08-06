@@ -73,6 +73,7 @@ export function mapActiveInstance(activeInstance: any): any {
 
 export function extractInstancesFromSession(session): any {
   const blocks = _get(session, 'blocks')
+  const feedback = _get(session, 'feedback')
   if (!blocks) {
     console.error('no blocks', session)
     return {
@@ -91,6 +92,7 @@ export function extractInstancesFromSession(session): any {
 
   return {
     activeInstances,
+    feedback,
     // generate an instance summary for easy display of "tabs"
     instanceSummary: activeInstances.map(({ blockStatus, blockNumber, solution, question, results }): any => ({
       blockNumber,
