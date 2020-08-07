@@ -1,5 +1,5 @@
 import React from 'react'
-import { Formik } from 'formik'
+import { useFormik } from 'formik'
 import { object } from 'yup'
 import _isEmpty from 'lodash/isEmpty'
 import { useIntl } from 'react-intl'
@@ -26,67 +26,60 @@ function LoginForm({ loading, onSubmit }: Props): React.ReactElement {
     },
   ]
 
+  const requiredValidationSchema = object()
+    .shape({
+      email: email.required(),
+      password: password.required(),
+    })
+    .required()
+
+  const formik = useFormik({
+    initialValues: {
+      email: '',
+      password: '',
+    },
+    onSubmit,
+    validationSchema: requiredValidationSchema,
+  })
+
   return (
-    <Formik
-      initialValues={{
-        email: '',
-        password: '',
+    <FormWithLinks
+      button={{
+        disabled: !_isEmpty(formik.errors) || _isEmpty(formik.touched),
+        label: intl.formatMessage(messages.submit),
+        loading: loading && formik.isSubmitting,
+        onSubmit: formik.handleSubmit,
       }}
-      render={({
-        values,
-        errors,
-        touched,
-        handleChange,
-        handleBlur,
-        handleSubmit,
-        isSubmitting,
-      }): React.ReactElement => (
-        <FormWithLinks
-          button={{
-            disabled: !_isEmpty(errors) || _isEmpty(touched),
-            label: intl.formatMessage(messages.submit),
-            loading: loading && isSubmitting,
-            onSubmit: handleSubmit,
-          }}
-          links={links}
-        >
-          <FormikInput
-            autoFocus
-            required
-            error={errors.email}
-            errorMessage={intl.formatMessage(messages.emailInvalid)}
-            handleBlur={handleBlur}
-            handleChange={handleChange}
-            icon="mail"
-            label={intl.formatMessage(messages.emailLabel)}
-            name="email"
-            touched={touched.email}
-            type="email"
-            value={values.email}
-          />
-          <FormikInput
-            required
-            error={errors.password}
-            errorMessage={intl.formatMessage(messages.passwordInvalid)}
-            handleBlur={handleBlur}
-            handleChange={handleChange}
-            icon="privacy"
-            label={intl.formatMessage(messages.passwordLabel)}
-            name="password"
-            touched={touched.password}
-            type="password"
-            value={values.password}
-          />
-        </FormWithLinks>
-      )}
-      validationSchema={object()
-        .shape({
-          email: email.required(),
-          password: password.required(),
-        })
-        .required()}
-      onSubmit={onSubmit}
-    />
+      links={links}
+    >
+      <FormikInput
+        autoFocus
+        required
+        error={formik.errors.email}
+        errorMessage={intl.formatMessage(messages.emailInvalid)}
+        handleBlur={formik.handleBlur}
+        handleChange={formik.handleChange}
+        icon="mail"
+        label={intl.formatMessage(messages.emailLabel)}
+        name="email"
+        touched={formik.touched.email}
+        type="email"
+        value={formik.values.email}
+      />
+      <FormikInput
+        required
+        error={formik.errors.password}
+        errorMessage={intl.formatMessage(messages.passwordInvalid)}
+        handleBlur={formik.handleBlur}
+        handleChange={formik.handleChange}
+        icon="privacy"
+        label={intl.formatMessage(messages.passwordLabel)}
+        name="password"
+        touched={formik.touched.password}
+        type="password"
+        value={formik.values.password}
+      />
+    </FormWithLinks>
   )
 }
 

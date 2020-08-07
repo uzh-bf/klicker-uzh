@@ -1,7 +1,7 @@
 import React from 'react'
 import { object } from 'yup'
 import _isEmpty from 'lodash/isEmpty'
-import { Formik } from 'formik'
+import { useFormik } from 'formik'
 import { useIntl } from 'react-intl'
 
 import FormWithLinks from './components/FormWithLinks'
@@ -26,52 +26,45 @@ function PasswordRequestForm({ loading, onSubmit }: Props): React.ReactElement {
     },
   ]
 
+  const requiredValidationSchema = object()
+    .shape({
+      email: email.required(),
+    })
+    .required()
+
+  const formik = useFormik({
+    initialValues: {
+      email: '',
+    },
+    onSubmit,
+    validationSchema: requiredValidationSchema,
+  })
+
   return (
-    <Formik
-      initialValues={{
-        email: '',
+    <FormWithLinks
+      button={{
+        disabled: !_isEmpty(formik.errors),
+        label: intl.formatMessage(messages.submit),
+        loading: loading && formik.isSubmitting,
+        onSubmit: formik.handleSubmit,
       }}
-      render={({
-        values,
-        errors,
-        touched,
-        handleChange,
-        handleBlur,
-        handleSubmit,
-        isSubmitting,
-      }): React.ReactElement => (
-        <FormWithLinks
-          button={{
-            disabled: !_isEmpty(errors),
-            label: intl.formatMessage(messages.submit),
-            loading: loading && isSubmitting,
-            onSubmit: handleSubmit,
-          }}
-          links={links}
-        >
-          <FormikInput
-            autoFocus
-            required
-            error={errors.email}
-            errorMessage={intl.formatMessage(messages.emailInvalid)}
-            handleBlur={handleBlur}
-            handleChange={handleChange}
-            icon="mail"
-            label={intl.formatMessage(messages.emailLabel)}
-            name="email"
-            touched={touched.email}
-            type="email"
-            value={values.email}
-          />
-        </FormWithLinks>
-      )}
-      validationSchema={object()
-        .shape({
-          email: email.required(),
-        })
-        .required()}
-      onSubmit={onSubmit}
-    />
+      links={links}
+    >
+      <FormikInput
+        autoFocus
+        required
+        error={formik.errors.email}
+        errorMessage={intl.formatMessage(messages.emailInvalid)}
+        handleBlur={formik.handleBlur}
+        handleChange={formik.handleChange}
+        icon="mail"
+        label={intl.formatMessage(messages.emailLabel)}
+        name="email"
+        touched={formik.touched.email}
+        type="email"
+        value={formik.values.email}
+      />
+    </FormWithLinks>
   )
 }
 

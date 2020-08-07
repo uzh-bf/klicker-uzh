@@ -1,6 +1,6 @@
 import React from 'react'
 import _isEmpty from 'lodash/isEmpty'
-import { Formik } from 'formik'
+import { useFormik } from 'formik'
 import { object } from 'yup'
 import { useIntl } from 'react-intl'
 
@@ -26,68 +26,61 @@ function PasswordResetForm({ loading, onSubmit }: Props): React.ReactElement {
     },
   ]
 
-  return (
-    <Formik
-      initialValues={{
-        password: '',
-        passwordRepeat: '',
-      }}
-      render={({
-        values,
-        errors,
-        touched,
-        handleChange,
-        handleBlur,
-        handleSubmit,
-        isSubmitting,
-      }): React.ReactElement => (
-        <FormWithLinks
-          button={{
-            disabled: !_isEmpty(errors) || _isEmpty(touched),
-            label: intl.formatMessage(messages.submit),
-            loading: loading && isSubmitting,
-            onSubmit: handleSubmit,
-          }}
-          links={links}
-        >
-          <FormikInput
-            autoFocus
-            required
-            error={errors.password}
-            errorMessage={intl.formatMessage(messages.passwordInvalid)}
-            handleBlur={handleBlur}
-            handleChange={handleChange}
-            icon="privacy"
-            label={intl.formatMessage(messages.passwordLabel)}
-            name="password"
-            touched={touched.password}
-            type="password"
-            value={values.password}
-          />
+  const requiredValidationSchema = object()
+    .shape({
+      password: password.required(),
+      passwordRepeat: passwordRepeat.required(),
+    })
+    .required()
 
-          <FormikInput
-            required
-            error={errors.passwordRepeat}
-            errorMessage={intl.formatMessage(messages.passwordRepeatInvalid)}
-            handleBlur={handleBlur}
-            handleChange={handleChange}
-            icon="privacy"
-            label={intl.formatMessage(messages.passwordRepeatLabel)}
-            name="passwordRepeat"
-            touched={touched.passwordRepeat}
-            type="password"
-            value={values.passwordRepeat}
-          />
-        </FormWithLinks>
-      )}
-      validationSchema={object()
-        .shape({
-          password: password.required(),
-          passwordRepeat: passwordRepeat.required(),
-        })
-        .required()}
-      onSubmit={onSubmit}
-    />
+  const formik = useFormik({
+    initialValues: {
+      password: '',
+      passwordRepeat: '',
+    },
+    onSubmit,
+    validationSchema: requiredValidationSchema,
+  })
+
+  return (
+    <FormWithLinks
+      button={{
+        disabled: !_isEmpty(formik.errors) || _isEmpty(formik.touched),
+        label: intl.formatMessage(messages.submit),
+        loading: loading && formik.isSubmitting,
+        onSubmit: formik.handleSubmit,
+      }}
+      links={links}
+    >
+      <FormikInput
+        autoFocus
+        required
+        error={formik.errors.password}
+        errorMessage={intl.formatMessage(messages.passwordInvalid)}
+        handleBlur={formik.handleBlur}
+        handleChange={formik.handleChange}
+        icon="privacy"
+        label={intl.formatMessage(messages.passwordLabel)}
+        name="password"
+        touched={formik.touched.password}
+        type="password"
+        value={formik.values.password}
+      />
+
+      <FormikInput
+        required
+        error={formik.errors.passwordRepeat}
+        errorMessage={intl.formatMessage(messages.passwordRepeatInvalid)}
+        handleBlur={formik.handleBlur}
+        handleChange={formik.handleChange}
+        icon="privacy"
+        label={intl.formatMessage(messages.passwordRepeatLabel)}
+        name="passwordRepeat"
+        touched={formik.touched.passwordRepeat}
+        type="password"
+        value={formik.values.passwordRepeat}
+      />
+    </FormWithLinks>
   )
 }
 

@@ -11,7 +11,7 @@ interface Props {
     id: string
     name: string
   }[]
-  touched: boolean
+  touched: any
   value?: any[]
 }
 

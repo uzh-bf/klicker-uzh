@@ -3,7 +3,7 @@ import _isEmpty from 'lodash/isEmpty'
 import { useIntl, FormattedMessage, defineMessages } from 'react-intl'
 import { useMutation } from '@apollo/react-hooks'
 import { Dropdown, Form, Button, Modal } from 'semantic-ui-react'
-import { Formik } from 'formik'
+import { useFormik } from 'formik'
 import { object, number } from 'yup'
 import FormikInput from './components/FormikInput'
 import ModifyQuestionBlockMutation from '../../graphql/mutations/ModifyQuestionBlockMutation.graphql'
@@ -40,91 +40,84 @@ function BlockSettingsForm({ disabled, sessionId, questionBlockId, initialTimeLi
 
   const onModalOpen = (): void => setIsModalVisible(true)
   const onModalClose = (): void => setIsModalVisible(false)
-  const onResetTimeLimit = ({ setFieldValue, setSubmitting }): any => async (): Promise<void> => {
-    setSubmitting(true)
+  const onResetTimeLimit = (formik): any => async (): Promise<void> => {
+    formik.setSubmitting(true)
     await modifyQuestionBlock({ variables: { sessionId, id: questionBlockId, timeLimit: -1 } })
-    setFieldValue('timeLimit', -1)
-    setSubmitting(false)
+    formik.setFieldValue('timeLimit', -1)
+    formik.setSubmitting(false)
   }
 
+  const requiredValidationSchema = object()
+    .shape({
+      timeLimit: number().min(-1).max(3600).required(),
+    })
+    .required()
+
+  const onSubmit = async ({ timeLimit }, { setSubmitting }): Promise<void> => {
+    await modifyQuestionBlock({ variables: { sessionId, id: questionBlockId, timeLimit } })
+    setSubmitting(false)
+    onModalClose()
+  }
+
+  const formik = useFormik({
+    initialValues: {
+      timeLimit: initialTimeLimit,
+    },
+    onSubmit,
+    validationSchema: requiredValidationSchema,
+  })
+
   return (
-    <Formik
-      initialValues={{
-        timeLimit: initialTimeLimit,
-      }}
-      render={({
-        values,
-        errors,
-        touched,
-        handleChange,
-        handleBlur,
-        handleSubmit,
-        isSubmitting,
-        setSubmitting,
-        setFieldValue,
-      }): React.ReactElement => (
-        <Modal
-          open={isModalVisible}
-          trigger={
-            <Dropdown.Item
-              disabled={disabled}
-              icon="time"
-              text={intl.formatMessage(messages.blockSettings)}
-              onClick={onModalOpen}
-            />
-          }
+    <Modal
+      open={isModalVisible}
+      trigger={
+        <Dropdown.Item
+          disabled={disabled}
+          icon="time"
+          text={intl.formatMessage(messages.blockSettings)}
+          onClick={onModalOpen}
+        />
+      }
+    >
+      <Modal.Header>{intl.formatMessage(messages.blockSettings)}</Modal.Header>
+      <Modal.Content>
+        <Form loading={formik.isSubmitting}>
+          <FormikInput
+            autoFocus
+            required
+            action={<Button icon="times" onClick={onResetTimeLimit(formik)} />}
+            actionPosition="left"
+            error={formik.errors.timeLimit}
+            // errorMessage={intl.formatMessage(messages.emailInvalid)}
+            handleBlur={formik.handleBlur}
+            handleChange={formik.handleChange}
+            inlineLabel="sec"
+            label={intl.formatMessage(messages.timeLimit)}
+            labelPosition="right"
+            max={3600}
+            min={-1}
+            name="timeLimit"
+            touched={formik.touched.timeLimit}
+            type="number"
+            value={formik.values.timeLimit}
+          />
+        </Form>
+      </Modal.Content>
+      <Modal.Actions>
+        <Button icon="times" type="button" onClick={onModalClose}>
+          <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+        </Button>
+        <Button
+          primary
+          disabled={formik.isSubmitting || !_isEmpty(formik.errors)}
+          icon="save"
+          type="submit"
+          onClick={(): any => formik.handleSubmit()}
         >
-          <Modal.Header>{intl.formatMessage(messages.blockSettings)}</Modal.Header>
-          <Modal.Content>
-            <Form loading={isSubmitting}>
-              <FormikInput
-                autoFocus
-                required
-                action={<Button icon="times" onClick={onResetTimeLimit({ setFieldValue, setSubmitting })} />}
-                actionPosition="left"
-                error={errors.timeLimit}
-                // errorMessage={intl.formatMessage(messages.emailInvalid)}
-                handleBlur={handleBlur}
-                handleChange={handleChange}
-                inlineLabel="sec"
-                label={intl.formatMessage(messages.timeLimit)}
-                labelPosition="right"
-                max={3600}
-                min={-1}
-                name="timeLimit"
-                touched={touched.timeLimit}
-                type="number"
-                value={values.timeLimit}
-              />
-            </Form>
-          </Modal.Content>
-          <Modal.Actions>
-            <Button icon="times" type="button" onClick={onModalClose}>
-              <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
-            </Button>
-            <Button
-              primary
-              disabled={isSubmitting || !_isEmpty(errors)}
-              icon="save"
-              type="submit"
-              onClick={(): any => handleSubmit()}
-            >
-              <FormattedMessage defaultMessage="Save" id="common.button.save" />
-            </Button>
-          </Modal.Actions>
-        </Modal>
-      )}
-      validationSchema={object()
-        .shape({
-          timeLimit: number().min(-1).max(3600).required(),
-        })
-        .required()}
-      onSubmit={async ({ timeLimit }, { setSubmitting }): Promise<void> => {
-        await modifyQuestionBlock({ variables: { sessionId, id: questionBlockId, timeLimit } })
-        setSubmitting(false)
-        onModalClose()
-      }}
-    />
+          <FormattedMessage defaultMessage="Save" id="common.button.save" />
+        </Button>
+      </Modal.Actions>
+    </Modal>
   )
 }
 
