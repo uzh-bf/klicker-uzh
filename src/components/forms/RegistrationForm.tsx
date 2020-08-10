@@ -22,6 +22,15 @@ interface Props {
 function RegistrationForm({ loading, onSubmit }: Props): React.ReactElement {
   const intl = useIntl()
 
+  const initialValues = {
+    acceptTOS: false,
+    email: '',
+    institution: '',
+    password: '',
+    passwordRepeat: '',
+    shortname: '',
+    useCase: '',
+  }
   const requiredValidationSchema = object()
     .shape({
       acceptTOS: boolean().oneOf([true]).required(),
@@ -35,15 +44,7 @@ function RegistrationForm({ loading, onSubmit }: Props): React.ReactElement {
     .required()
 
   const formik = useFormik({
-    initialValues: {
-      acceptTOS: false,
-      email: '',
-      institution: '',
-      password: '',
-      passwordRepeat: '',
-      shortname: '',
-      useCase: '',
-    },
+    initialValues,
     onSubmit,
     validationSchema: requiredValidationSchema,
   })
