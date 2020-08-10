@@ -204,133 +204,129 @@ function QuestionCreationForm({
     validate,
   })
 
+  const Preview = typeComponents[formik.values.type].preview
+  const OptionsInput = typeComponents[formik.values.type].input
+
   return (
     <FocusLock>
       <div className="questionCreationForm">
-        {(): React.ReactElement => {
-          const Preview = typeComponents[formik.values.type].preview
-          const OptionsInput = typeComponents[formik.values.type].input
-          return (
-            <Form error={!_isEmpty(formik.errors)} onSubmit={formik.handleSubmit}>
-              <div className="questionActions">
-                <Button className="discard" size="large" type="button" onClick={onDiscard}>
-                  <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
-                </Button>
-                <div>
-                  {_some(formik.errors) && (
-                    <Message compact error size="small">
-                      <List>
-                        {formik.errors.title && formatError(formik.errors.title)}
-                        {formik.errors.tags && formatError(formik.errors.tags)}
-                        {formik.errors.content && formatError(formik.errors.content)}
-                        {formik.errors.options && formatError(formik.errors.options)}
-                      </List>
-                    </Message>
-                  )}
-                </div>
-                <Button
-                  primary
-                  className="save"
-                  disabled={!_isEmpty(formik.errors) || (!isInitialValid && _isEmpty(formik.touched))}
-                  loading={formik.isSubmitting}
-                  size="large"
-                  type="submit"
-                >
-                  <FormattedMessage defaultMessage="Save" id="common.button.save" />
-                </Button>
-              </div>
-
-              <div className="questionInput questionTitle">
-                <AutoFocusInside>
-                  <FormikInput
-                    required
-                    /* error={errors.title}
-                  errorMessage={
-                    <FormattedMessage
-                      defaultMessage="Please provide a valid question title (summary)."
-                      id="form.questionTitle.invalid"
-                    />
-                  } */
-                    handleBlur={formik.handleBlur}
-                    handleChange={formik.handleChange}
-                    label={intl.formatMessage(messages.titleInput)}
-                    name="title"
-                    tooltip={
-                      <FormattedMessage
-                        defaultMessage="Enter a short summarizing title for the question."
-                        id="createQuestion.titleInput.tooltip"
-                      />
-                    }
-                    touched={formik.touched.title}
-                    type="text"
-                    value={formik.values.title}
-                  />
-                </AutoFocusInside>
-              </div>
-
-              <div className="questionInput questionType">
-                <TypeChooser
-                  value={formik.values.type}
-                  onChange={(newType): void => formik.setFieldValue('type', newType)}
-                />
-              </div>
-
-              <div className="questionInput questionTags">
-                {tagsLoading ? (
-                  <Loader active />
-                ) : (
-                  <TagInput
-                    tags={tags}
-                    touched={formik.touched.tags}
-                    value={formik.values.tags}
-                    onChange={(newTags): void => formik.setFieldValue('tags', newTags)}
-                  />
-                )}
-              </div>
-
-              <div className="questionInput questionContent">
-                <ContentInput
-                  error={formik.errors.content}
-                  touched={formik.touched.content}
-                  value={formik.values.content}
-                  onChange={(newContent): void => formik.setFieldValue('content', newContent)}
-                />
-              </div>
-
-              {publicRuntimeConfig.s3root && (
-                <div className="questionInput questionFiles">
-                  <h2>
-                    <FormattedMessage defaultMessage="Attached Images" id="createQuestion.filesLabel" />
-                  </h2>
-                  <FileDropzone
-                    files={formik.values.files}
-                    onChangeFiles={(newFiles): void => formik.setFieldValue('files', newFiles)}
-                  />
-                </div>
+        <Form error={!_isEmpty(formik.errors)} onSubmit={formik.handleSubmit}>
+          <div className="questionActions">
+            <Button className="discard" size="large" type="button" onClick={onDiscard}>
+              <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+            </Button>
+            <div>
+              {_some(formik.errors) && (
+                <Message compact error size="small">
+                  <List>
+                    {formik.errors.title && formatError(formik.errors.title)}
+                    {formik.errors.tags && formatError(formik.errors.tags)}
+                    {formik.errors.content && formatError(formik.errors.content)}
+                    {formik.errors.options && formatError(formik.errors.options)}
+                  </List>
+                </Message>
               )}
+            </div>
+            <Button
+              primary
+              className="save"
+              disabled={!_isEmpty(formik.errors) || (!isInitialValid && _isEmpty(formik.touched))}
+              loading={formik.isSubmitting}
+              size="large"
+              type="submit"
+            >
+              <FormattedMessage defaultMessage="Save" id="common.button.save" />
+            </Button>
+          </div>
 
-              <div className="questionInput questionOptions">
-                <OptionsInput
-                  type={formik.values.type}
-                  value={formik.values.options}
-                  onChange={(newOptions): void => formik.setFieldValue('options', newOptions)}
+          <div className="questionInput questionTitle">
+            <AutoFocusInside>
+              <FormikInput
+                required
+                /* error={errors.title}
+              errorMessage={
+                <FormattedMessage
+                  defaultMessage="Please provide a valid question title (summary)."
+                  id="form.questionTitle.invalid"
                 />
-              </div>
+              } */
+                handleBlur={formik.handleBlur}
+                handleChange={formik.handleChange}
+                label={intl.formatMessage(messages.titleInput)}
+                name="title"
+                tooltip={
+                  <FormattedMessage
+                    defaultMessage="Enter a short summarizing title for the question."
+                    id="createQuestion.titleInput.tooltip"
+                  />
+                }
+                touched={formik.touched.title}
+                type="text"
+                value={formik.values.title}
+              />
+            </AutoFocusInside>
+          </div>
 
-              <div className="questionPreview">
-                <h2>
-                  <FormattedMessage defaultMessage="Audience Preview" id="createQuestion.previewLabel" />
-                </h2>
-                <Preview
-                  description={formik.values.content.getCurrentContent()}
-                  options={formik.values.options}
-                  questionType={formik.values.type}
-                />
-              </div>
-            </Form>
-          )
-        }}
+          <div className="questionInput questionType">
+            <TypeChooser
+              value={formik.values.type}
+              onChange={(newType): void => formik.setFieldValue('type', newType)}
+            />
+          </div>
 
+          <div className="questionInput questionTags">
+            {tagsLoading ? (
+              <Loader active />
+            ) : (
+              <TagInput
+                tags={tags}
+                touched={formik.touched.tags}
+                value={formik.values.tags}
+                onChange={(newTags): void => formik.setFieldValue('tags', newTags)}
+              />
+            )}
+          </div>
+
+          <div className="questionInput questionContent">
+            <ContentInput
+              error={formik.errors.content}
+              touched={formik.touched.content}
+              value={formik.values.content}
+              onChange={(newContent): void => formik.setFieldValue('content', newContent)}
+            />
+          </div>
+
+          {publicRuntimeConfig.s3root && (
+            <div className="questionInput questionFiles">
+              <h2>
+                <FormattedMessage defaultMessage="Attached Images" id="createQuestion.filesLabel" />
+              </h2>
+              <FileDropzone
+                files={formik.values.files}
+                onChangeFiles={(newFiles): void => formik.setFieldValue('files', newFiles)}
+              />
+            </div>
+          )}
+
+          <div className="questionInput questionOptions">
+            <OptionsInput
+              type={formik.values.type}
+              value={formik.values.options}
+              onChange={(newOptions): void => formik.setFieldValue('options', newOptions)}
+            />
+          </div>
+
+          <div className="questionPreview">
+            <h2>
+              <FormattedMessage defaultMessage="Audience Preview" id="createQuestion.previewLabel" />
+            </h2>
+            <Preview
+              description={formik.values.content.getCurrentContent()}
+              options={formik.values.options}
+              questionType={formik.values.type}
+            />
+          </div>
+        </Form>
         <style jsx>{`
           @import 'src/theme';
 

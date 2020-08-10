@@ -161,170 +161,166 @@ function QuestionEditForm({
     enableReinitialize: true,
   })
 
+  const OptionsInput = typeComponents[type]
+  const { message, success } = editSuccess
+
   return (
     <FocusLock>
       <div className="questionEditForm">
-        {(): React.ReactElement => {
-          const OptionsInput = typeComponents[type]
-          const { message, success } = editSuccess
+        <Form error={success === false} success={success === true} onSubmit={formik.handleSubmit}>
+          <div className="actionArea">
+            <Button className="discard" size="large" type="button" onClick={handleDiscard}>
+              <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+            </Button>
 
-          return (
-            <Form error={success === false} success={success === true} onSubmit={formik.handleSubmit}>
-              <div className="actionArea">
-                <Button className="discard" size="large" type="button" onClick={handleDiscard}>
-                  <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
-                </Button>
-
-                <div className="infoMessage">
-                  <Message compact success size="small">
-                    <FormattedMessage defaultMessage="Successfully modified question." id="editQuestion.sucess" />
-                  </Message>
-                  <Message compact error size="small">
-                    <FormattedMessage
-                      defaultMessage="Could not modify question: {error}"
-                      id="editQuestion.error"
-                      values={{ error: message }}
-                    />
-                  </Message>
-                </div>
-
-                <Button
-                  primary
-                  className="save"
-                  disabled={!_isEmpty(formik.errors) || _isEmpty(formik.touched)}
-                  loading={loading && formik.isSubmitting}
-                  size="large"
-                  type="submit"
-                >
-                  <FormattedMessage defaultMessage="Save" id="common.button.save" />
-                </Button>
-              </div>
-
-              <div className="questionInput questionType">
-                <Form.Field>
-                  <label htmlFor="type">
-                    <FormattedMessage defaultMessage="Question Type" id="editQuestion.type" />
-                  </label>
-                  <div className="type">{generateTypesLabel(intl)[type]}</div>
-                </Form.Field>
-              </div>
-
-              <div className="questionInput questionTitle">
-                <AutoFocusInside>
-                  <FormikInput
-                    /* error={errors.title}
-              errorMessage={
+            <div className="infoMessage">
+              <Message compact success size="small">
+                <FormattedMessage defaultMessage="Successfully modified question." id="editQuestion.sucess" />
+              </Message>
+              <Message compact error size="small">
                 <FormattedMessage
-                  defaultMessage="Please provide a valid question title (summary)."
-                  id="form.questionTitle.invalid"
+                  defaultMessage="Could not modify question: {error}"
+                  id="editQuestion.error"
+                  values={{ error: message }}
                 />
-              } */
-                    handleBlur={formik.handleBlur}
-                    handleChange={formik.handleChange}
-                    label={intl.formatMessage(messages.titleInput)}
-                    name="title"
-                    tooltip={
-                      <FormattedMessage
-                        defaultMessage="Enter a short summarizing title for the question."
-                        id="createQuestion.titleInput.tooltip"
-                      />
-                    }
-                    touched={formik.touched.title}
-                    type="text"
-                    value={formik.values.title}
+              </Message>
+            </div>
+
+            <Button
+              primary
+              className="save"
+              disabled={!_isEmpty(formik.errors) || _isEmpty(formik.touched)}
+              loading={loading && formik.isSubmitting}
+              size="large"
+              type="submit"
+            >
+              <FormattedMessage defaultMessage="Save" id="common.button.save" />
+            </Button>
+          </div>
+
+          <div className="questionInput questionType">
+            <Form.Field>
+              <label htmlFor="type">
+                <FormattedMessage defaultMessage="Question Type" id="editQuestion.type" />
+              </label>
+              <div className="type">{generateTypesLabel(intl)[type]}</div>
+            </Form.Field>
+          </div>
+
+          <div className="questionInput questionTitle">
+            <AutoFocusInside>
+              <FormikInput
+                /* error={errors.title}
+          errorMessage={
+            <FormattedMessage
+              defaultMessage="Please provide a valid question title (summary)."
+              id="form.questionTitle.invalid"
+            />
+          } */
+                handleBlur={formik.handleBlur}
+                handleChange={formik.handleChange}
+                label={intl.formatMessage(messages.titleInput)}
+                name="title"
+                tooltip={
+                  <FormattedMessage
+                    defaultMessage="Enter a short summarizing title for the question."
+                    id="createQuestion.titleInput.tooltip"
                   />
-                </AutoFocusInside>
-              </div>
+                }
+                touched={formik.touched.title}
+                type="text"
+                value={formik.values.title}
+              />
+            </AutoFocusInside>
+          </div>
 
-              <div className="questionVersion">
-                <h2>
-                  <FormattedMessage defaultMessage="Question Contents" id="editQuestion.questionContents.title" />
-                </h2>
+          <div className="questionVersion">
+            <h2>
+              <FormattedMessage defaultMessage="Question Contents" id="editQuestion.questionContents.title" />
+            </h2>
 
-                <Dropdown
-                  text={isNewVersion ? `v${versionOptions.length + 1} (draft)` : `v${activeVersion + 1}`}
-                  value={activeVersion}
+            <Dropdown
+              text={isNewVersion ? `v${versionOptions.length + 1} (draft)` : `v${activeVersion + 1}`}
+              value={activeVersion}
+            >
+              <Dropdown.Menu>
+                <Dropdown.Item
+                  active={isNewVersion}
+                  onClick={(): void => handleActiveVersionChange(versionOptions.length)}
                 >
-                  <Dropdown.Menu>
-                    <Dropdown.Item
-                      active={isNewVersion}
-                      onClick={(): void => handleActiveVersionChange(versionOptions.length)}
-                    >
-                      {`v${versionOptions.length + 1} (draft)`}
-                    </Dropdown.Item>
+                  {`v${versionOptions.length + 1} (draft)`}
+                </Dropdown.Item>
 
-                    {versionOptions
-                      .map(
-                        ({ id, text }: any, index): React.ReactElement => (
-                          <Dropdown.Item
-                            active={activeVersion === index}
-                            key={id}
-                            onClick={(): void => handleActiveVersionChange(index)}
-                          >
-                            {text}
-                          </Dropdown.Item>
-                        )
-                      )
-                      .reverse()}
-                  </Dropdown.Menu>
-                </Dropdown>
-              </div>
+                {versionOptions
+                  .map(
+                    ({ id, text }: any, index): React.ReactElement => (
+                      <Dropdown.Item
+                        active={activeVersion === index}
+                        key={id}
+                        onClick={(): void => handleActiveVersionChange(index)}
+                      >
+                        {text}
+                      </Dropdown.Item>
+                    )
+                  )
+                  .reverse()}
+              </Dropdown.Menu>
+            </Dropdown>
+          </div>
 
-              <div className="questionInput questionTags">
-                <TagInput
-                  tags={allTags}
-                  touched={formik.touched.tags}
-                  value={formik.values.tags}
-                  onChange={(newTags): void => {
-                    formik.setFieldTouched('tags', true, false)
-                    formik.setFieldValue('tags', newTags)
-                  }}
-                />
-              </div>
+          <div className="questionInput questionTags">
+            <TagInput
+              tags={allTags}
+              touched={formik.touched.tags}
+              value={formik.values.tags}
+              onChange={(newTags): void => {
+                formik.setFieldTouched('tags', true, false)
+                formik.setFieldValue('tags', newTags)
+              }}
+            />
+          </div>
 
-              <div className="questionInput questionContent">
-                <ContentInput
-                  disabled={!isNewVersion}
-                  error={formik.errors.content}
-                  touched={formik.touched.content}
-                  value={formik.values.content}
-                  onChange={(newContent): void => {
-                    formik.setFieldTouched('content', true, false)
-                    formik.setFieldValue('content', newContent)
-                  }}
-                />
-              </div>
+          <div className="questionInput questionContent">
+            <ContentInput
+              disabled={!isNewVersion}
+              error={formik.errors.content}
+              touched={formik.touched.content}
+              value={formik.values.content}
+              onChange={(newContent): void => {
+                formik.setFieldTouched('content', true, false)
+                formik.setFieldValue('content', newContent)
+              }}
+            />
+          </div>
 
-              {publicRuntimeConfig.s3root && (
-                <div className="questionInput questionFiles">
-                  <h3>
-                    <FormattedMessage defaultMessage="Attached Images" id="createQuestion.filesLabel" />
-                  </h3>
-                  <FileDropzone
-                    disabled={!isNewVersion}
-                    files={formik.values.files}
-                    onChangeFiles={(newFiles): void => {
-                      formik.setFieldTouched('files', true, false)
-                      formik.setFieldValue('files', newFiles)
-                    }}
-                  />
-                </div>
-              )}
+          {publicRuntimeConfig.s3root && (
+            <div className="questionInput questionFiles">
+              <h3>
+                <FormattedMessage defaultMessage="Attached Images" id="createQuestion.filesLabel" />
+              </h3>
+              <FileDropzone
+                disabled={!isNewVersion}
+                files={formik.values.files}
+                onChangeFiles={(newFiles): void => {
+                  formik.setFieldTouched('files', true, false)
+                  formik.setFieldValue('files', newFiles)
+                }}
+              />
+            </div>
+          )}
 
-              <div className="questionInput questionOptions">
-                <OptionsInput
-                  disabled={!isNewVersion}
-                  type={formik.values.type}
-                  value={formik.values.options}
-                  onChange={(newOptions): void => {
-                    formik.setFieldTouched('options', true, false)
-                    formik.setFieldValue('options', newOptions)
-                  }}
-                />
-              </div>
-            </Form>
-          )
-        }}
+          <div className="questionInput questionOptions">
+            <OptionsInput
+              disabled={!isNewVersion}
+              type={formik.values.type}
+              value={formik.values.options}
+              onChange={(newOptions): void => {
+                formik.setFieldTouched('options', true, false)
+                formik.setFieldValue('options', newOptions)
+              }}
+            />
+          </div>
+        </Form>
 
         <style jsx>{`
           @import 'src/theme';
