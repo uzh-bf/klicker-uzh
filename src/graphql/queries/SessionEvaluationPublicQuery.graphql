@@ -2,6 +2,10 @@ query EvaluateSessionPublic($sessionId: ID!) {
   sessionPublic(id: $sessionId) {
     id
     status
+    feedbacks {
+      content
+      votes
+    }
     blocks {
       id
       status

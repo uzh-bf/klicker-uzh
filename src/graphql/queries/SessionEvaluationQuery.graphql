@@ -2,6 +2,15 @@ query EvaluateSession($sessionId: ID!) {
   session(id: $sessionId) {
     id
     status
+    feedbacks {
+      content
+      votes
+    }
+    confusionTS {
+      difficulty
+      speed
+      createdAt
+    }
     blocks {
       id
       status

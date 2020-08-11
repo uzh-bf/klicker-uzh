@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import _get from 'lodash/get'
 import { defineMessages, useIntl } from 'react-intl'
 import { useRouter } from 'next/router'
@@ -10,6 +10,8 @@ import Chart from '../../components/evaluation/Chart'
 import LoadSessionData from '../../components/sessions/LoadSessionData'
 import ComputeActiveInstance from '../../components/sessions/ComputeActiveInstance'
 import { withApollo } from '../../lib/apollo'
+import FeedbackTable from '../../components/evaluation/FeedbackTable'
+import ConfusionBarometerChart from '../../components/evaluation/charts/ConfusionBarometerChart'
 
 const messages = defineMessages({
   pageTitle: {
@@ -73,7 +75,9 @@ export function mapActiveInstance(activeInstance: any): any {
 
 export function extractInstancesFromSession(session): any {
   const blocks = _get(session, 'blocks')
-  const feedback = _get(session, 'feedback')
+  const feedback = _get(session, 'feedbacks')
+  const confusionTS = _get(session, 'confusionTS')
+
   if (!blocks) {
     console.error('no blocks', session)
     return {
@@ -93,6 +97,7 @@ export function extractInstancesFromSession(session): any {
   return {
     activeInstances,
     feedback,
+    confusionTS,
     // generate an instance summary for easy display of "tabs"
     instanceSummary: activeInstances.map(({ blockStatus, blockNumber, solution, question, results }): any => ({
       blockNumber,
@@ -114,6 +119,13 @@ function Evaluation(): React.ReactElement {
   const isPublic = !!router.query.public
   const sessionId: string = router.query.sessionId.toString()
 
+  const [showFeedback, setShowFeedback] = useState(false)
+  const [showConfusionTS, setShowConfusionTS] = useState(false)
+  const [showQuestionLayout, setShowQuestionLayout] = useState(true)
+  useEffect(() => {
+    setShowQuestionLayout(!(showFeedback || showConfusionTS))
+  }, [showFeedback, showConfusionTS])
+
   return (
     <LoadSessionData isPublic={isPublic} sessionId={sessionId}>
       {({ session, loading, error }): React.ReactElement => {
@@ -121,7 +133,9 @@ function Evaluation(): React.ReactElement {
           return null
         }
 
-        const { activeInstances, sessionStatus, instanceSummary } = extractInstancesFromSession(session)
+        const { activeInstances, feedback, confusionTS, sessionStatus, instanceSummary } = extractInstancesFromSession(
+          session
+        )
 
         return (
           <ComputeActiveInstance activeInstances={activeInstances} sessionStatus={sessionStatus}>
@@ -164,26 +178,37 @@ function Evaluation(): React.ReactElement {
                 title: question.title,
                 totalResponses: results.totalResponses,
                 type: question.type,
+                feedback,
+                onChangeShowFeedback: setShowFeedback,
+                showFeedback,
+                confusionTS,
+                onChangeShowConfusionTS: setShowConfusionTS,
+                showConfusionTS,
+                showQuestionLayout,
               }
 
               return (
                 <EvaluationLayout {...layoutProps}>
-                  <Chart
-                    activeVisualization={activeVisualizations[question.type]}
-                    data={results.data}
-                    handleShowGraph={(): void => setShowGraph(true)}
-                    instanceId={activeInstance.id}
-                    isPublic={isPublic}
-                    numBins={bins}
-                    questionType={question.type}
-                    restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
-                    sessionId={sessionId}
-                    sessionStatus={sessionStatus}
-                    showGraph={showGraph}
-                    showSolution={showSolution}
-                    statistics={activeInstance.statistics}
-                    totalResponses={results.totalResponses}
-                  />
+                  {(showQuestionLayout && (
+                    <Chart
+                      activeVisualization={activeVisualizations[question.type]}
+                      data={results.data}
+                      handleShowGraph={(): void => setShowGraph(true)}
+                      instanceId={activeInstance.id}
+                      isPublic={isPublic}
+                      numBins={bins}
+                      questionType={question.type}
+                      restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
+                      sessionId={sessionId}
+                      sessionStatus={sessionStatus}
+                      showGraph={showGraph}
+                      showSolution={showSolution}
+                      statistics={activeInstance.statistics}
+                      totalResponses={results.totalResponses}
+                    />
+                  )) ||
+                    (showFeedback && <FeedbackTable feedback={feedback} />) ||
+                    (showConfusionTS && <ConfusionBarometerChart confusionTS={confusionTS} />)}
                 </EvaluationLayout>
               )
             }}

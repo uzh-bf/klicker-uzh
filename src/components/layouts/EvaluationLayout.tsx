@@ -47,6 +47,13 @@ interface Props {
   title: string
   totalResponses?: number
   type: string
+  feedback: any[]
+  showFeedback: boolean
+  onChangeShowFeedback: (showFeedback: boolean) => void
+  confusionTS: any[]
+  onChangeShowConfusionTS: (showConfusionTS: boolean) => void
+  showConfusionTS: boolean
+  showQuestionLayout: boolean
 }
 
 const defaultProps = {
@@ -80,6 +87,13 @@ function EvaluationLayout({
   statistics,
   sessionId,
   files,
+  feedback,
+  showFeedback,
+  onChangeShowFeedback,
+  confusionTS,
+  onChangeShowConfusionTS,
+  showConfusionTS,
+  showQuestionLayout,
 }: Props): React.ReactElement {
   const intl = useIntl()
 
@@ -153,11 +167,15 @@ function EvaluationLayout({
                     ({ blockStatus, title, totalResponses: count }, index): React.ReactElement => (
                       <Menu.Item
                         fitted
-                        active={index === activeInstance}
+                        active={index === activeInstance && !showFeedback && !showConfusionTS}
                         className={classNames('hoverable', {
                           executed: blockStatus === 'EXECUTED',
                         })}
-                        onClick={(): void => onChangeActiveInstance(index)}
+                        onClick={(): void => {
+                          onChangeActiveInstance(index)
+                          onChangeShowFeedback(false)
+                          onChangeShowConfusionTS(false)
+                        }}
                       >
                         <Icon name={blockStatus === 'ACTIVE' ? 'comments' : 'checkmark'} />
                         {title.length > 15 ? `${title.substring(0, 15)}...` : title} ({count})
@@ -165,20 +183,32 @@ function EvaluationLayout({
                     )
                   )}
                   {/* TODO */}
-                  <Menu.Item
-                    fitted
-                    className={classNames('hoverable', 'feedback')}
-                    onClick={(): void => onChangeActiveInstance(1)}
-                  >
-                    Feedback-Channel
-                  </Menu.Item>
-                  <Menu.Item
-                    fitted
-                    className={classNames('hoverable', 'feedback')}
-                    onClick={(): void => onChangeActiveInstance(1)}
-                  >
-                    Confusion-Barometer
-                  </Menu.Item>
+                  {feedback.length > 0 && (
+                    <Menu.Item
+                      fitted
+                      active={showFeedback}
+                      className={classNames('hoverable', 'feedback')}
+                      onClick={(): void => {
+                        onChangeShowFeedback(true)
+                        onChangeShowConfusionTS(false)
+                      }}
+                    >
+                      Feedback-Channel
+                    </Menu.Item>
+                  )}
+                  {confusionTS.length > 0 && (
+                    <Menu.Item
+                      fitted
+                      active={showConfusionTS}
+                      className={classNames('hoverable', 'feedback')}
+                      onClick={(): void => {
+                        onChangeShowConfusionTS(true)
+                        onChangeShowFeedback(false)
+                      }}
+                    >
+                      Confusion-Barometer
+                    </Menu.Item>
+                  )}
                 </Menu>
               </div>
             </>
@@ -186,7 +216,11 @@ function EvaluationLayout({
         })()}
 
         <div className="questionDetails">
-          <p>{description}</p>
+          <p>
+            {(showQuestionLayout && description) ||
+              (showFeedback && 'Feedback-Channel') ||
+              (showConfusionTS && 'Confusion-Barometer')}
+          </p>
           {publicRuntimeConfig.s3root && files.length > 0 && (
             <div className="files">
               <QuestionFiles isCompact files={files} />
@@ -198,7 +232,8 @@ function EvaluationLayout({
           <Info totalResponses={totalResponses} />
           {type !== QUESTION_TYPES.FREE &&
             type !== QUESTION_TYPES.FREE_RANGE &&
-            activeVisualization !== CHART_TYPES.CLOUD_CHART && (
+            activeVisualization !== CHART_TYPES.CLOUD_CHART &&
+            showQuestionLayout && (
               <Checkbox
                 toggle
                 defaultChecked={showSolution}
@@ -206,42 +241,48 @@ function EvaluationLayout({
                 onChange={onToggleShowSolution}
               />
             )}
-          <div className="exportButtons">
-            <CsvExport activeInstances={activeInstances} sessionId={sessionId} />
-            <a href={`/sessions/print/${sessionId}`}>
-              <Button content="Export PDF" icon="file" />
-            </a>
-          </div>
-          <VisualizationType
-            activeVisualization={activeVisualization}
-            questionType={type}
-            onChangeType={onChangeVisualizationType}
-          />
+          {showQuestionLayout && (
+            <div className="exportButtons">
+              <CsvExport activeInstances={activeInstances} sessionId={sessionId} />
+              <a href={`/sessions/print/${sessionId}`}>
+                <Button content="Export PDF" icon="file" />
+              </a>
+            </div>
+          )}
+          {showQuestionLayout && (
+            <VisualizationType
+              activeVisualization={activeVisualization}
+              questionType={type}
+              onChangeType={onChangeVisualizationType}
+            />
+          )}
         </div>
 
         <div className="chart">{children}</div>
 
-        {activeVisualization !== CHART_TYPES.CLOUD_CHART && activeVisualization !== CHART_TYPES.TABLE && (
-          <>
-            {QUESTION_GROUPS.WITH_POSSIBILITIES.includes(type) && (
-              <div className="optionDisplay">
-                <Possibilities
-                  data={data}
-                  questionOptions={options}
-                  questionType={type}
-                  showGraph={showGraph}
-                  showSolution={showSolution}
-                />
-              </div>
-            )}
+        {activeVisualization !== CHART_TYPES.CLOUD_CHART &&
+          activeVisualization !== CHART_TYPES.TABLE &&
+          showQuestionLayout && (
+            <>
+              {QUESTION_GROUPS.WITH_POSSIBILITIES.includes(type) && (
+                <div className="optionDisplay">
+                  <Possibilities
+                    data={data}
+                    questionOptions={options}
+                    questionType={type}
+                    showGraph={showGraph}
+                    showSolution={showSolution}
+                  />
+                </div>
+              )}
 
-            {QUESTION_GROUPS.WITH_STATISTICS.includes(type) && statistics && (
-              <div className="statistics">
-                <Statistics {...statistics} withBins={activeVisualization === CHART_TYPES.HISTOGRAM} />
-              </div>
-            )}
-          </>
-        )}
+              {QUESTION_GROUPS.WITH_STATISTICS.includes(type) && statistics && !showFeedback && (
+                <div className="statistics">
+                  <Statistics {...statistics} withBins={activeVisualization === CHART_TYPES.HISTOGRAM} />
+                </div>
+              )}
+            </>
+          )}
 
         <style global jsx>{`
           html {
@@ -311,7 +352,8 @@ function EvaluationLayout({
                 order: 5;
               }
 
-              .questionDetails {
+              .questionDetails,
+              .feedbackDetails {
                 flex: 0 0 auto;
                 order: 1;
 
@@ -427,7 +469,8 @@ function EvaluationLayout({
                     font-size: 0.8rem;
                   }
 
-                  .questionDetails {
+                  .questionDetails,
+                  .feedbackDetails {
                     grid-area: questionDetails;
                     align-self: start;
 
