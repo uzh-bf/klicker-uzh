@@ -6,6 +6,11 @@ query EvaluateSessionPublic($sessionId: ID!) {
       content
       votes
     }
+    confusionTS {
+      difficulty
+      speed
+      createdAt
+    }
     blocks {
       id
       status
