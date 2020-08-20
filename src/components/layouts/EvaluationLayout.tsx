@@ -127,7 +127,7 @@ function EvaluationLayout({
   }, [numberOfTabs])
 
   useEffect(() => {
-    const indexToSet = () => {
+    const indexToSet = (): number => {
       if (showConfusionTS) {
         return confusionIndex
       }
