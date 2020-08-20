@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import classNames from 'classnames'
 import getConfig from 'next/config'
 import { defineMessages, useIntl } from 'react-intl'
@@ -97,6 +97,62 @@ function EvaluationLayout({
 }: Props): React.ReactElement {
   const intl = useIntl()
 
+  const [existsFeedback, setExistsFeedback] = useState(feedback.length > 0)
+  const [existsConfusion, setExistsConfusion] = useState(confusionTS.length > 0)
+  const [numberOfTabs, setNumberOfTabs] = useState(
+    instanceSummary.length + (existsFeedback ? 1 : 0) + (existsConfusion ? 1 : 0)
+  )
+  const [currentIndex, setCurrentIndex] = useState(activeInstance)
+  const [feedbackIndex, setFeedbackIndex] = useState(existsConfusion ? numberOfTabs - 2 : numberOfTabs - 1)
+  const [confusionIndex, setConfusionIndex] = useState(numberOfTabs - 1)
+
+  useEffect(() => {
+    setExistsFeedback(feedback.length > 0)
+  }, [feedback])
+
+  useEffect(() => {
+    setExistsConfusion(confusionTS.length > 0)
+  }, [confusionTS])
+
+  useEffect(() => {
+    setNumberOfTabs(instanceSummary.length + (existsFeedback ? 1 : 0) + (existsConfusion ? 1 : 0))
+  }, [existsFeedback, existsConfusion, instanceSummary])
+
+  useEffect(() => {
+    setFeedbackIndex(existsConfusion ? numberOfTabs - 2 : numberOfTabs - 1)
+  }, [existsConfusion, numberOfTabs])
+
+  useEffect(() => {
+    setConfusionIndex(numberOfTabs - 1)
+  }, [numberOfTabs])
+
+  useEffect(() => {
+    const indexToSet = () => {
+      if (showConfusionTS) {
+        return confusionIndex
+      }
+      if (showFeedback) {
+        return feedbackIndex
+      }
+      return currentIndex
+    }
+    setCurrentIndex(indexToSet)
+  })
+
+  const feedbackOption = {
+    icon: undefined,
+    key: feedbackIndex,
+    text: 'Feedback-Channel',
+    value: feedbackIndex,
+  }
+
+  const confusionOption = {
+    icon: undefined,
+    key: confusionIndex,
+    text: 'Confusion-Barometer',
+    value: confusionIndex,
+  }
+
   const dropdownOptions = instanceSummary.map(({ blockStatus, title, totalResponses: count }, index): {
     icon: string
     key: number
@@ -108,6 +164,33 @@ function EvaluationLayout({
     text: `${title} (${count})`,
     value: index,
   }))
+
+  existsFeedback ? dropdownOptions.push(feedbackOption) : dropdownOptions
+  existsConfusion ? dropdownOptions.push(confusionOption) : dropdownOptions
+
+  const activateInstance = (index: number): void => {
+    const activateConfusion =
+      (existsFeedback && existsConfusion && index === numberOfTabs - 1) ||
+      (!existsFeedback && existsConfusion && index === numberOfTabs - 1)
+    const activateFeedback =
+      (existsFeedback && existsConfusion && index === numberOfTabs - 2) ||
+      (existsFeedback && !existsConfusion && index === numberOfTabs - 1)
+    const activateIndex = !(activateConfusion || activateFeedback)
+
+    if (activateIndex) {
+      onChangeShowFeedback(false)
+      onChangeShowConfusionTS(false)
+      onChangeActiveInstance(index)
+    } else if (activateConfusion) {
+      onChangeShowFeedback(false)
+      onChangeShowConfusionTS(true)
+    } else if (activateFeedback) {
+      onChangeShowFeedback(true)
+      onChangeShowConfusionTS(false)
+    }
+
+    setCurrentIndex(index)
+  }
 
   return (
     <CommonLayout baseFontSize={20} nextHeight="100%" pageTitle={pageTitle}>
@@ -127,54 +210,54 @@ function EvaluationLayout({
                 <Button
                   basic
                   className="hoverable"
-                  disabled={activeInstance === 0}
+                  disabled={currentIndex === 0}
                   icon="arrow left"
-                  onClick={(): void => onChangeActiveInstance(activeInstance - 1)}
+                  onClick={(): void => activateInstance(currentIndex - 1)}
                 />
                 <Button
                   basic
                   className="hoverable"
-                  disabled={activeInstance + 1 === instanceSummary.length}
+                  disabled={currentIndex + 1 === numberOfTabs}
                   icon="arrow right"
-                  onClick={(): void => onChangeActiveInstance(activeInstance + 1)}
+                  onClick={(): void => activateInstance(currentIndex + 1)}
                 />
                 <Dropdown
                   search
                   selection
                   options={dropdownOptions}
                   placeholder="Select Question"
-                  value={activeInstance}
-                  onChange={(_, { value }: { value: number }): void => onChangeActiveInstance(value)}
+                  value={currentIndex}
+                  onChange={(_, { value }: { value: any }): void => {
+                    activateInstance(value)
+                  }}
                 />
               </div>
               <div className="instanceChooser">
                 <Menu fitted tabular>
                   <Menu.Item
                     className="hoverable"
-                    disabled={activeInstance === 0}
+                    disabled={currentIndex === 0}
                     icon="arrow left"
-                    onClick={(): void => onChangeActiveInstance(activeInstance - 1)}
+                    onClick={(): void => activateInstance(currentIndex - 1)}
                   />
 
                   <Menu.Item
                     className="hoverable"
-                    disabled={activeInstance + 1 === instanceSummary.length}
+                    disabled={currentIndex + 1 === numberOfTabs}
                     icon="arrow right"
-                    onClick={(): void => onChangeActiveInstance(activeInstance + 1)}
+                    onClick={(): void => activateInstance(currentIndex + 1)}
                   />
 
                   {instanceSummary.map(
                     ({ blockStatus, title, totalResponses: count }, index): React.ReactElement => (
                       <Menu.Item
                         fitted
-                        active={index === activeInstance && !showFeedback && !showConfusionTS}
+                        active={index === currentIndex}
                         className={classNames('hoverable', {
                           executed: blockStatus === 'EXECUTED',
                         })}
                         onClick={(): void => {
-                          onChangeActiveInstance(index)
-                          onChangeShowFeedback(false)
-                          onChangeShowConfusionTS(false)
+                          activateInstance(index)
                         }}
                       >
                         <Icon name={blockStatus === 'ACTIVE' ? 'comments' : 'checkmark'} />
@@ -182,28 +265,25 @@ function EvaluationLayout({
                       </Menu.Item>
                     )
                   )}
-                  {/* TODO */}
-                  {feedback.length > 0 && (
+                  {existsFeedback && (
                     <Menu.Item
                       fitted
                       active={showFeedback}
                       className={classNames('hoverable', 'feedback')}
                       onClick={(): void => {
-                        onChangeShowFeedback(true)
-                        onChangeShowConfusionTS(false)
+                        activateInstance(existsConfusion ? numberOfTabs - 2 : numberOfTabs - 1) // if there is a confusion-tab, the tab is the second to last, otherwise the last
                       }}
                     >
                       Feedback-Channel
                     </Menu.Item>
                   )}
-                  {confusionTS.length > 0 && (
+                  {existsConfusion && (
                     <Menu.Item
                       fitted
                       active={showConfusionTS}
                       className={classNames('hoverable', 'feedback')}
                       onClick={(): void => {
-                        onChangeShowConfusionTS(true)
-                        onChangeShowFeedback(false)
+                        activateInstance(numberOfTabs - 1)
                       }}
                     >
                       Confusion-Barometer
