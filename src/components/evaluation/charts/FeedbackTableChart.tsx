@@ -5,7 +5,7 @@ interface Props {
   feedback: any[]
 }
 
-function FeedbackTable({ feedback }: Props): React.ReactElement {
+function FeedbackTableChart({ feedback }: Props): React.ReactElement {
   return (
     <div className="tableChart">
       <Table striped>
@@ -31,4 +31,4 @@ function FeedbackTable({ feedback }: Props): React.ReactElement {
     </div>
   )
 }
-export default FeedbackTable
+export default FeedbackTableChart

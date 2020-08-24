@@ -10,8 +10,6 @@ import Chart from '../../components/evaluation/Chart'
 import LoadSessionData from '../../components/sessions/LoadSessionData'
 import ComputeActiveInstance from '../../components/sessions/ComputeActiveInstance'
 import { withApollo } from '../../lib/apollo'
-import FeedbackTable from '../../components/evaluation/FeedbackTable'
-import ConfusionBarometerChart from '../../components/evaluation/charts/ConfusionBarometerChart'
 
 const messages = defineMessages({
   pageTitle: {
@@ -189,26 +187,27 @@ function Evaluation(): React.ReactElement {
 
               return (
                 <EvaluationLayout {...layoutProps}>
-                  {(showQuestionLayout && (
-                    <Chart
-                      activeVisualization={activeVisualizations[question.type]}
-                      data={results.data}
-                      handleShowGraph={(): void => setShowGraph(true)}
-                      instanceId={activeInstance.id}
-                      isPublic={isPublic}
-                      numBins={bins}
-                      questionType={question.type}
-                      restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
-                      sessionId={sessionId}
-                      sessionStatus={sessionStatus}
-                      showGraph={showGraph}
-                      showSolution={showSolution}
-                      statistics={activeInstance.statistics}
-                      totalResponses={results.totalResponses}
-                    />
-                  )) ||
-                    (showFeedback && <FeedbackTable feedback={feedback} />) ||
-                    (showConfusionTS && <ConfusionBarometerChart confusionTS={confusionTS} />)}
+                  <Chart
+                    activeVisualization={activeVisualizations[question.type]}
+                    confusionTS={confusionTS}
+                    data={results.data}
+                    feedback={feedback}
+                    handleShowGraph={(): void => setShowGraph(true)}
+                    instanceId={activeInstance.id}
+                    isPublic={isPublic}
+                    numBins={bins}
+                    questionType={question.type}
+                    restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
+                    sessionId={sessionId}
+                    sessionStatus={sessionStatus}
+                    showConfusionTS={showConfusionTS}
+                    showFeedback={showFeedback}
+                    showGraph={showGraph}
+                    showQuestionLayout={showQuestionLayout}
+                    showSolution={showSolution}
+                    statistics={activeInstance.statistics}
+                    totalResponses={results.totalResponses}
+                  />
                 </EvaluationLayout>
               )
             }}
