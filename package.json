@@ -45,7 +45,7 @@
     "apollo-link-persisted-queries": "0.2.2",
     "apollo-link-state": "0.4.2",
     "apollo-link-ws": "1.0.20",
-    "axios": "0.19.2",
+    "axios": "0.20.0",
     "babel-plugin-add-react-displayname": "0.0.5",
     "babel-plugin-import-graphql": "2.7.0",
     "babel-plugin-inline-dotenv": "1.5.0",
