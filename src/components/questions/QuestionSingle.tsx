@@ -7,7 +7,9 @@ import Ellipsis from '../common/Ellipsis'
 import { generateTypesShort } from '../../lib/utils/lang'
 
 interface Props {
+  calledFromCreationForm?: boolean
   id?: string
+  isSessionRunning?: boolean
   description?: string
   onDelete?: () => void
   title: string
@@ -17,12 +19,14 @@ interface Props {
 }
 
 const defaultProps = {
+  calledFromCreationForm: false,
   onDelete: undefined,
-  totalParticipants: 0,
+  totalParticipants: -1,
   version: 0,
 }
 
 function QuestionSingle({
+  calledFromCreationForm,
   id,
   description,
   type,
@@ -44,7 +48,7 @@ function QuestionSingle({
           </button>
         )}
 
-        {totalParticipants > 0 && (
+        {!calledFromCreationForm && totalParticipants >= 0 && (
           <div className="responseCount">
             <Icon name="user outline" />
             {totalParticipants}

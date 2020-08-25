@@ -3,6 +3,7 @@ import classNames from 'classnames'
 import { defineMessages, FormattedMessage } from 'react-intl'
 import { Button, Checkbox, Icon, Message, Dropdown, Menu, Modal, Table } from 'semantic-ui-react'
 import getConfig from 'next/config'
+import _get from 'lodash/get'
 import { CSVLink } from 'react-csv'
 import { pick } from 'ramda'
 
@@ -300,9 +301,10 @@ function SessionTimeline({
                   handleResetQuestionBlock={(): void => handleResetQuestionBlock(block.id)}
                   index={index + 1}
                   questionBlockId={block.id}
-                  questions={block.instances.map(({ id, question, version }): any => ({
+                  questions={block.instances.map(({ id, question, version, results }): any => ({
                     id,
                     title: question.title,
+                    totalParticipants: index < activeStep / 2 - 0.5 ? _get(results, 'totalParticipants') : -1,
                     type: question.type,
                     version,
                   }))}
