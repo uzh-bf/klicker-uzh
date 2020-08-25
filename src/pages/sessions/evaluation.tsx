@@ -121,7 +121,7 @@ function Evaluation(): React.ReactElement {
   const [showConfusionTS, setShowConfusionTS] = useState(false)
   const [showQuestionLayout, setShowQuestionLayout] = useState(true)
   useEffect(() => {
-    setShowQuestionLayout(!(showFeedback || showConfusionTS))
+    setShowQuestionLayout(!showFeedback && !showConfusionTS)
   }, [showFeedback, showConfusionTS])
 
   return (

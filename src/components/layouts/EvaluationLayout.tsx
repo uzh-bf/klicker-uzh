@@ -139,6 +139,10 @@ function EvaluationLayout({
     setCurrentIndex(indexToSet)
   })
 
+  useEffect(() => {
+    setCurrentIndex(activeInstance)
+  }, [activeInstance])
+
   const feedbackOption = {
     icon: undefined,
     key: feedbackIndex,
@@ -309,7 +313,15 @@ function EvaluationLayout({
         </div>
 
         <div className="info">
-          <Info totalResponses={totalResponses} />
+          {showQuestionLayout && Info}
+          <Info
+            totalResponses={
+              (showQuestionLayout && totalResponses) ||
+              (showFeedback && feedback.length) ||
+              (showConfusionTS && confusionTS.length) ||
+              0
+            }
+          />
           {type !== QUESTION_TYPES.FREE &&
             type !== QUESTION_TYPES.FREE_RANGE &&
             activeVisualization !== CHART_TYPES.CLOUD_CHART &&
@@ -329,13 +341,16 @@ function EvaluationLayout({
               </a>
             </div>
           )}
-          {showQuestionLayout && (
-            <VisualizationType
-              activeVisualization={activeVisualization}
-              questionType={type}
-              onChangeType={onChangeVisualizationType}
-            />
-          )}
+          <VisualizationType
+            activeVisualization={
+              (showQuestionLayout && activeVisualization) ||
+              (showFeedback && CHART_TYPES.TABLE) ||
+              (showConfusionTS && CHART_TYPES.SCATTER_CHART)
+            }
+            disabled={!showQuestionLayout}
+            questionType={type}
+            onChangeType={onChangeVisualizationType}
+          />
         </div>
 
         <div className="chart">{children}</div>
