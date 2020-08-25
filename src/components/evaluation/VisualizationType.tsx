@@ -37,7 +37,7 @@ const options = [
     withinType: ['SC', 'MC', 'FREE', 'FREE_RANGE'],
   },
   { text: 'Histogram', value: CHART_TYPES.HISTOGRAM, withinType: ['FREE_RANGE'] },
-  { text: 'Scatter Chart', value: CHART_TYPES.SCATTER_CHART, withinType: ['SC', 'MC', 'FREE', 'FREE_RANGE'] },
+  { text: 'Scatter Chart', value: CHART_TYPES.SCATTER_CHART, withinType: [] },
 ]
 
 function VisualizationType({ activeVisualization, onChangeType, questionType, disabled }: Props): React.ReactElement {
