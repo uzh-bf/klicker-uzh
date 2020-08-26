@@ -7,7 +7,7 @@ import dayjs from 'dayjs'
 import Link from 'next/link'
 // import { Formik, useField } from 'formik'
 import { useRouter } from 'next/router'
-import { defineMessages, useIntl } from 'react-intl'
+import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
 import { useQuery, useMutation } from '@apollo/react-hooks'
 import { Loader } from 'semantic-ui-react'
 import { useToasts } from 'react-toast-notifications'
@@ -146,15 +146,28 @@ function Index(): React.ReactElement {
         variables: { ids: selectedItems.ids },
       })
 
-      addToast('Questions successfully archived/unarchived.', { appearance: 'success' })
+      addToast(
+        <FormattedMessage
+          defaultMessage="Questions successfully archived/unarchived."
+          id="questions.index.archivation.toast.successful"
+        />,
+        { appearance: 'success' }
+      )
 
       handleResetSelection()
     } catch ({ message }) {
       console.error(message)
-      addToast(`Unable to archive questions: ${message}`, {
-        appearance: 'error',
-        autoDismiss: false,
-      })
+      addToast(
+        <FormattedMessage
+          defaultMessage="Unable to archive question: {errorMessage}"
+          id="questions.index.archivation.toast.error"
+          values={{ errorMessage: message }}
+        />,
+        {
+          appearance: 'error',
+          autoDismiss: false,
+        }
+      )
     }
   }
 
@@ -254,10 +267,14 @@ function Index(): React.ReactElement {
         router.push('/sessions/running')
       } else {
         const ToastContent = (
-          <div>
-            Session successfully created. Visit the <Link href="/sessions">Session List</Link> to manage your new
-            session.
-          </div>
+          <FormattedMessage
+            defaultMessage="Session successfully created. Visit the {link} to manage your new
+            session."
+            id="questions.index.createSession.success"
+            values={{
+              link: <Link href="/sessions">Session List</Link>,
+            }}
+          />
         )
         addToast(ToastContent, {
           appearance: 'success',
@@ -268,10 +285,17 @@ function Index(): React.ReactElement {
       onCreationModeToggle()
     } catch ({ message }) {
       console.error(message)
-      addToast(`Unable to create session: ${message}`, {
-        appearance: 'error',
-        autoDismiss: false,
-      })
+      addToast(
+        <FormattedMessage
+          defaultMessage="Unable to create session: {errorMessage}"
+          id="questions.index.createSession.error"
+          values={{ errorMessage: message }}
+        />,
+        {
+          appearance: 'error',
+          autoDismiss: false,
+        }
+      )
     }
   }
 
@@ -314,15 +338,28 @@ function Index(): React.ReactElement {
 
         handleResetSelection()
 
-        addToast('Questions successfully deleted.', {
-          appearance: 'success',
-        })
+        addToast(
+          <FormattedMessage
+            defaultMessage="Questions successfully deleted."
+            id="questions.index.deleteQuestion.success"
+          />,
+          {
+            appearance: 'success',
+          }
+        )
       } catch ({ message }) {
         console.error(message)
-        addToast(`Unable to delete questions: ${message}`, {
-          appearance: 'error',
-          autoDismiss: false,
-        })
+        addToast(
+          <FormattedMessage
+            defaultMessage="Unable to delete questions: {errorMessage}"
+            id="questions.index.deleteQuestion.error"
+            values={{ errorMessage: message }}
+          />,
+          {
+            appearance: 'error',
+            autoDismiss: false,
+          }
+        )
       }
     }
 
