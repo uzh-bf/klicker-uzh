@@ -135,7 +135,7 @@ describe('Integration', () => {
   let authCookieParticipant
   let sessionId
   let sessionIdWithAuth
-  let sessionIdCompleteWithAuth
+  // let sessionIdCompleteWithAuth
   let initialUserId
   let initialShortname
   let blocks
@@ -3118,6 +3118,8 @@ describe('Integration', () => {
     })
   })
 
+  /* Currently unnused since storageMode: 'COMPLETE' is disabled
+
   describe('Session Management (authenticated, complete)', () => {
     it('enables the creation of a new session)', async () => {
       const data = ensureNoErrors(
@@ -4192,6 +4194,7 @@ describe('Integration', () => {
       `)
     })
   })
+  */
 
   describe('Session Management (authentication, aai)', () => {
     it('enables the creation of a new session)', async () => {
