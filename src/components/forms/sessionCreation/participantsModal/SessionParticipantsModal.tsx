@@ -4,7 +4,7 @@ import { useIntl, defineMessages, FormattedMessage } from 'react-intl'
 
 import Authentication from './Authentication'
 import Participants from './Participants'
-import DataStorage from './DataStorage'
+// import DataStorage from './DataStorage'
 
 export type AuthenticationMode = 'NONE' | 'PASSWORD' | 'AAI'
 export type DataStorageMode = 'COMPLETE' | 'SECRET'
@@ -42,7 +42,7 @@ function SessionParticipantsModal({
   onChangeParticipants,
   onChangeAuthenticationMode,
   authenticationMode,
-  dataStorageMode,
+  // dataStorageMode,
   onChangeDataStorageMode,
 }: Props): React.ReactElement {
   const intl = useIntl()
@@ -118,20 +118,21 @@ function SessionParticipantsModal({
         {activeStep === 1 && (
           <Participants
             participants={participants}
-            onActivateNextStep={(): void => setActiveStep(2)}
             onActivatePreviousStep={(): void => setActiveStep(0)}
             onChangeParticipants={onChangeParticipants}
+            onSaveSettings={onSaveParticipants}
           />
         )}
 
-        {activeStep === 2 && (
+        {/* Feature is not implemented yet
+          activeStep === 2 && (
           <DataStorage
             dataStorageMode={dataStorageMode}
             onActivatePreviousStep={(): void => setActiveStep(1)}
             onChangeDataStorageMode={onChangeDataStorageMode}
             onSaveSettings={onSaveParticipants}
           />
-        )}
+        ) */}
 
         <Step.Group attached="top" size="small">
           <Step active={activeStep === 0} onClick={(): void => setActiveStep(0)}>
@@ -157,7 +158,7 @@ function SessionParticipantsModal({
               </Step.Title>
             </Step.Content>
           </Step>
-
+          {/* Feature not implemented yet
           <Step active={activeStep === 2} onClick={(): void => setActiveStep(2)}>
             <Icon name="database" />
             <Step.Content>
@@ -169,6 +170,7 @@ function SessionParticipantsModal({
               </Step.Title>
             </Step.Content>
           </Step>
+          */}
         </Step.Group>
       </Modal>
       <style jsx>{`
