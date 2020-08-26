@@ -445,6 +445,7 @@ function EvaluationLayout({
               .chart {
                 flex: 1 0 50vh;
                 order: 5;
+                overflow-y: hidden;
               }
 
               .questionDetails,

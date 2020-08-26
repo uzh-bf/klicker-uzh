@@ -120,7 +120,14 @@ function ActionBar({
 
       setCsvData(Object.values(versionResults))
     } else if (error) {
-      addToast(error.message, { appearance: 'error' })
+      addToast(
+        <FormattedMessage
+          defaultMessage="{errorMessage}"
+          id="components.questions.actionBar.data.error"
+          values={{ errorMessage: error.message }}
+        />,
+        { appearance: 'error' }
+      )
     }
   }, [data, error])
 
@@ -130,7 +137,14 @@ function ActionBar({
       const blob = new Blob([JSON.stringify(dataWithoutTypename)], { type: 'text/plain;charset=utf-8' })
       saveAs(blob, `klicker_export_${dayjs().format('YYYY-MM-DD_H-m-s')}.json`)
     } else if (exportError) {
-      addToast(error.message, { appearance: 'error' })
+      addToast(
+        <FormattedMessage
+          defaultMessage="{errorMessage}"
+          id="components.questions.actionBar.export.error"
+          values={{ errorMessage: error.message }}
+        />,
+        { appearance: 'error' }
+      )
     }
   }, [exportData, exportError])
 
