@@ -3,10 +3,12 @@ query EvaluateSession($sessionId: ID!) {
     id
     status
     feedbacks {
+      id
       content
       votes
     }
     confusionTS {
+      id
       difficulty
       speed
       createdAt

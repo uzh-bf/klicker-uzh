@@ -15,7 +15,6 @@ interface Props {
   activeVisualization: string
   onChangeType: (questionType: string, value: string) => void
   questionType: string
-  disabled: boolean
 }
 
 const options = [
@@ -37,17 +36,15 @@ const options = [
     withinType: ['SC', 'MC', 'FREE', 'FREE_RANGE'],
   },
   { text: 'Histogram', value: CHART_TYPES.HISTOGRAM, withinType: ['FREE_RANGE'] },
-  { text: 'Scatter Chart', value: CHART_TYPES.SCATTER_CHART, withinType: [] },
 ]
 
-function VisualizationType({ activeVisualization, onChangeType, questionType, disabled }: Props): React.ReactElement {
+function VisualizationType({ activeVisualization, onChangeType, questionType }: Props): React.ReactElement {
   const intl = useIntl()
   return (
     <div className="visualizationType">
       <Dropdown
         selection
         upward
-        disabled={disabled}
         options={options.filter((o): boolean => o.withinType.includes(questionType))}
         placeholder={intl.formatMessage(messages.title)}
         value={activeVisualization}

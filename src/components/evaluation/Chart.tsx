@@ -9,28 +9,16 @@ import PieChart from './charts/PieChart'
 import TableChart from './charts/TableChart'
 import CloudChart from './charts/CloudChart'
 import HistogramChart from './charts/HistogramChart'
-import ConfusionBarometerChart from './charts/ConfusionBarometerChart'
-import FeedbackTableChart from './charts/FeedbackTableChart'
-
 import { SESSION_STATUS } from '../../constants'
 
 // TODO
 interface Props {
   activeVisualization: string
-  confusionTS?: {
-    difficulty: number
-    speed: number
-    createdAt: string
-  }[]
   data?: {
     correct?: boolean
     count: number
     name: string
     percentage: number
-  }[]
-  feedback?: {
-    content: string
-    votes: any
   }[]
   handleShowGraph: any
   instanceId: string
@@ -43,10 +31,7 @@ interface Props {
   }
   sessionId: string
   sessionStatus: string
-  showConfusionTS: boolean
-  showFeedback: boolean
   showGraph?: boolean
-  showQuestionLayout: boolean
   showSolution?: boolean
   statistics?: {
     max: number
@@ -77,9 +62,7 @@ const chartTypes = {
 
 function Chart({
   activeVisualization,
-  confusionTS,
   data,
-  feedback,
   instanceId,
   isPublic,
   restrictions,
@@ -88,10 +71,7 @@ function Chart({
   questionType,
   sessionId,
   sessionStatus,
-  showConfusionTS,
-  showFeedback,
   showGraph,
-  showQuestionLayout,
   showSolution,
   statistics,
   totalResponses,
@@ -110,7 +90,7 @@ function Chart({
           )
         }
 
-        if (totalResponses === 0 && !(showConfusionTS || showFeedback)) {
+        if (totalResponses === 0) {
           return (
             <div className="noChart">
               <FormattedMessage defaultMessage="No Results Available" id="evaluation.graph.noResults" />
@@ -122,27 +102,23 @@ function Chart({
         if (ChartComponent) {
           return (
             <SizeMe refreshRate={250}>
-              {({ size }): React.ReactElement =>
-                (showQuestionLayout && (
-                  <ChartComponent
-                    brush={sessionStatus !== SESSION_STATUS.RUNNING}
-                    data={data}
-                    instanceId={instanceId}
-                    isColored={questionType !== 'FREE_RANGE'}
-                    isPublic={isPublic}
-                    isSolutionShown={showSolution}
-                    numBins={numBins}
-                    questionType={questionType}
-                    restrictions={restrictions}
-                    sessionId={sessionId}
-                    size={size}
-                    statistics={statistics}
-                    totalResponses={totalResponses}
-                  />
-                )) ||
-                (showConfusionTS && <ConfusionBarometerChart confusionTS={confusionTS} />) ||
-                (showFeedback && <FeedbackTableChart feedback={feedback} />)
-              }
+              {({ size }): React.ReactElement => (
+                <ChartComponent
+                  brush={sessionStatus !== SESSION_STATUS.RUNNING}
+                  data={data}
+                  instanceId={instanceId}
+                  isColored={questionType !== 'FREE_RANGE'}
+                  isPublic={isPublic}
+                  isSolutionShown={showSolution}
+                  numBins={numBins}
+                  questionType={questionType}
+                  restrictions={restrictions}
+                  sessionId={sessionId}
+                  size={size}
+                  statistics={statistics}
+                  totalResponses={totalResponses}
+                />
+              )}
             </SizeMe>
           )
         }

@@ -2,10 +2,10 @@ import React from 'react'
 import { Table } from 'semantic-ui-react'
 
 interface Props {
-  feedback: any[]
+  feedbacks: any[]
 }
 
-function FeedbackTableChart({ feedback }: Props): React.ReactElement {
+function FeedbackTableChart({ feedbacks }: Props): React.ReactElement {
   return (
     <div className="tableChart">
       <Table striped>
@@ -13,7 +13,7 @@ function FeedbackTableChart({ feedback }: Props): React.ReactElement {
           <Table.HeaderCell>Feedback</Table.HeaderCell>
         </Table.Header>
         <Table.Body>
-          {feedback.map(
+          {feedbacks.map(
             (element: any): React.ReactElement => (
               <Table.Row>
                 <Table.Cell>{element.content}</Table.Cell>
