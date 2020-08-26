@@ -271,7 +271,7 @@ const initializeResponseCache = async (
 
   // initialize auth and storage mode settings
   const isAuthEnabled = settings.isParticipantAuthenticationEnabled || false
-  const storageMode = settings.storageMode || SESSION_STORAGE_MODE.SECRET
+  const storageMode = SESSION_STORAGE_MODE.SECRET // Storage mode is always set to 'SECRET' until 'COMPLETE' mode is implemented
 
   // extract relevant information from the question entity
   const questionVersion = question.versions[version]
@@ -453,7 +453,7 @@ const createSession = async ({
   questionBlocks = [],
   participants = [],
   authenticationMode,
-  storageMode,
+  // storageMode,
   userId,
 }) => {
   const sessionId = ObjectId()
@@ -486,7 +486,7 @@ const createSession = async ({
     settings: {
       isParticipantAuthenticationEnabled: enhancedParticipants.length > 0,
       authenticationMode: authenticationMode || SESSION_AUTHENTICATION_MODE.NONE,
-      storageMode: storageMode || SESSION_STORAGE_MODE.SECRET,
+      storageMode: SESSION_STORAGE_MODE.SECRET, // Storage mode is always set to 'SECRET' until 'COMPLETE' mode is implemented
     },
   })
 
@@ -591,7 +591,8 @@ const modifySession = async ({ id, name, questionBlocks, participants, authentic
     session.settings.authenticationMode = authenticationMode
   }
   if (storageMode) {
-    session.settings.storageMode = storageMode
+    // session.settings.storageMode = storageMode
+    session.settings.storageMode = SESSION_STORAGE_MODE.SECRET // Storage mode is always set to 'SECRET' until 'COMPLETE' mode is implemented
   }
 
   // save the updated session to the database
