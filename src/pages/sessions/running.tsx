@@ -204,9 +204,15 @@ function Running(): React.ReactElement {
                 }}
                 handleResetQuestionBlock={async (blockId): Promise<void> => {
                   await resetQuestionBlock({ variables: { sessionId: id, blockId } })
-                  addToast('Question block successfully reset.', {
-                    appearance: 'success',
-                  })
+                  addToast(
+                    <FormattedMessage
+                      defaultMessage="Question block successfully reset."
+                      id="sessions.running.resetSessionblock.success"
+                    />,
+                    {
+                      appearance: 'success',
+                    }
+                  )
                 }}
                 handleToggleParticipantList={(): void => setIsParticipantListVisible((isVisible) => !isVisible)}
                 handleTogglePublicEvaluation={(): void => {
