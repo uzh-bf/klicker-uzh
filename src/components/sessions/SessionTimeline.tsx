@@ -304,7 +304,7 @@ function SessionTimeline({
                   questions={block.instances.map(({ id, question, version, results }): any => ({
                     id,
                     title: question.title,
-                    totalParticipants: index < activeStep / 2 - 0.5 ? _get(results, 'totalParticipants') : -1,
+                    totalParticipants: index < activeStep / 2 ? _get(results, 'totalParticipants') : -1,
                     type: question.type,
                     version,
                   }))}

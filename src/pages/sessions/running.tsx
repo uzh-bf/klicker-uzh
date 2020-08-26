@@ -64,7 +64,7 @@ function Running(): React.ReactElement {
   }, [])
 
   const accountSummary = useQuery(AccountSummaryQuery)
-  const { data, loading, error, subscribeToMore } = useQuery(RunningSessionQuery)
+  const { data, loading, error, subscribeToMore } = useQuery(RunningSessionQuery, { pollInterval: 5000 })
   const [updateSettings, { loading: isUpdateSettingsLoading }] = useMutation(UpdateSessionSettingsMutation)
   const [endSession, { loading: isEndSessionLoading }] = useMutation(EndSessionMutation)
   const [pauseSession, { loading: isPauseSessionLoading }] = useMutation(PauseSessionMutation)
