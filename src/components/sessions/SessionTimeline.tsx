@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import classNames from 'classnames'
 import { defineMessages, FormattedMessage } from 'react-intl'
 import { Button, Checkbox, Icon, Message, Dropdown, Menu, Modal, Table } from 'semantic-ui-react'
@@ -71,6 +71,8 @@ function getMessage(intl, num: number, max: number): any {
 interface Props {
   activeStep: number
   blocks?: any[]
+  handleActiveBlock: () => void
+  handleNoActiveBlock: () => void
   handleCancelSession: () => void
   handleEndSession: () => void
   handleNextBlock: () => void
@@ -125,11 +127,23 @@ function SessionTimeline({
   handleTogglePublicEvaluation,
   handleResetQuestionBlock,
   handleActivateBlockById,
+  handleActiveBlock,
+  handleNoActiveBlock,
   subscribeToMore,
 }: Props): React.ReactElement {
   useEffect((): void => {
     subscribeToMore()
   }, [])
+
+  const [isBlockActive, setIsBlockActive] = useState(activeStep % 2 === 1)
+
+  useEffect(() => {
+    setIsBlockActive(activeStep % 2 === 1)
+  }, [activeStep])
+
+  useEffect(() => {
+    isBlockActive ? handleActiveBlock() : handleNoActiveBlock()
+  }, [isBlockActive])
 
   const isFeedbackSession = blocks.length === 0
 

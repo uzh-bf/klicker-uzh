@@ -64,7 +64,7 @@ function Running(): React.ReactElement {
   }, [])
 
   const accountSummary = useQuery(AccountSummaryQuery)
-  const { data, loading, error, subscribeToMore } = useQuery(RunningSessionQuery, { pollInterval: 5000 })
+  const { data, loading, error, startPolling, stopPolling, subscribeToMore } = useQuery(RunningSessionQuery)
   const [updateSettings, { loading: isUpdateSettingsLoading }] = useMutation(UpdateSessionSettingsMutation)
   const [endSession, { loading: isEndSessionLoading }] = useMutation(EndSessionMutation)
   const [pauseSession, { loading: isPauseSessionLoading }] = useMutation(PauseSessionMutation)
@@ -151,6 +151,9 @@ function Running(): React.ReactElement {
                     })
                   }
                 }}
+                handleActiveBlock={(): void => {
+                  startPolling(10000)
+                }}
                 handleCancelSession={async (): Promise<void> => {
                   if (!isAnythingLoading) {
                     await cancelSession({
@@ -187,6 +190,9 @@ function Running(): React.ReactElement {
                       refetchQueries: [{ query: RunningSessionQuery }],
                     })
                   }
+                }}
+                handleNoActiveBlock={(): void => {
+                  stopPolling()
                 }}
                 handlePauseSession={async (): Promise<void> => {
                   if (!isAnythingLoading) {
