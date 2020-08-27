@@ -10,6 +10,7 @@ import FeatureOverview from '../components/section/FeatureOverview'
 
 import questionPoolMacPNG from '../img/question_pool_mac.png'
 import evaluationMacPNG from '../img/evaluation_mac.png'
+import runningSessionMacPNG from '../img/running_session_mac.png'
 import iphonePNG from '../img/iphone.png'
 import codePNG from '../img/code.png'
 
@@ -34,10 +35,29 @@ async function pingKlickerEndpoint({
   }
 }
 
+function Buttons() {
+  return [
+    <a
+      href="https://uzh-bf.github.io/klicker-uzh/docs/introduction/getting_started"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <Button primary>Get Started</Button>
+    </a>,
+    <a
+      href="https://app.klicker.uzh.ch/user/login"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <Button primary>Login</Button>
+    </a>,
+  ]
+}
+
 export default function Index() {
   const [isAppAvailable, setIsAppAvailable] = useState(null)
-  const [isApiAvailable, setIsApiAvailable] = useState(null)
-  const [isAaiAvailable, setIsAaiAvailable] = useState(null)
+  // const [isApiAvailable, setIsApiAvailable] = useState(null)
+  // const [isAaiAvailable, setIsAaiAvailable] = useState(null)
 
   useEffect(() => {
     async function pingKlickerEndpoints() {
@@ -92,43 +112,24 @@ export default function Index() {
       <Slider>
         <Slider.Item
           title={<KlickerUZH />}
-          description="Now released in version 2.0"
+          description="The question pool enables lecturers to manage all of their past and future questions in one place."
           imageSrc={questionPoolMacPNG}
         >
-          <a
-            href="https://app.klicker.uzh.ch/user/registration"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Button primary>Get Started</Button>
-          </a>
-          <a
-            href="https://app.klicker.uzh.ch/user/login"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Button primary>Login</Button>
-          </a>
+          <Buttons />
         </Slider.Item>
         <Slider.Item
           title={<KlickerUZH />}
-          description="Now released in version 2.0"
+          description="The dedicated evaluation screen offers a clean presentation of the results."
           imageSrc={evaluationMacPNG}
         >
-          <a
-            href="https://app.klicker.uzh.ch/user/registration"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Button primary>Get Started</Button>
-          </a>
-          <a
-            href="https://app.klicker.uzh.ch/user/login"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Button primary>Login</Button>
-          </a>
+          <Buttons />
+        </Slider.Item>
+        <Slider.Item
+          title={<KlickerUZH />}
+          description="The running session cockpit guides through the previously created sessions."
+          imageSrc={runningSessionMacPNG}
+        >
+          <Buttons />
         </Slider.Item>
         {/* <Slider.Embed>
         <Embed
@@ -156,27 +157,26 @@ export default function Index() {
                   }
                 >
                   <FeatureOverview.Item title="Question &amp; Session Management">
-                    Based on the newly introduced question pool, lecturers can
-                    manage all their past as well as future questions in one
-                    place. The advanced question management allows lecturers to
-                    create and arrange questions into sessions prior to their
-                    lectures, allowing them to plan their lectures in advance.
+                    Based on the question pool, lecturers can manage all their
+                    past as well as future questions in one place. The advanced
+                    question management enables lecturers to create and arrange
+                    questions into sessions prior to their lectures, allowing
+                    them to plan their lectures in advance.
                   </FeatureOverview.Item>
                   <FeatureOverview.Item title="Dedicated Presentation Mode">
                     With the dedicated presentation mode, lecturers always have
                     the most important information available at a glance. The
-                    session evaluation screen can be displayed independently
-                    from the remainder of the application and is purely focused
-                    on presenting the results of an evaluation as cleanly as
-                    possible.
+                    session evaluation screen can be displayed independent of
+                    the remainder of the application and is purely dedicated to
+                    a clean presentation of the results.
                   </FeatureOverview.Item>
                   <FeatureOverview.Item title="Advanced Question Types">
                     <KlickerUZH fontSize={1} /> offers a range of different
                     question types such as single choice (SC), multiple choice
-                    (MC), free text (FT), and number ranges (NR). As an
-                    additional feature, solutions can be defined and displayed
-                    for SC and MC questions. Further question types are still on
-                    the roadmap.
+                    (MC), free text (FT), and numerical (NR). As an additional
+                    feature, solutions can be defined and displayed for SC and
+                    MC questions. Further question types are still on the
+                    roadmap.
                   </FeatureOverview.Item>
                   <FeatureOverview.Item title="Integrated Feedback-Channel">
                     The integrated feedback channel and confusion barometer
@@ -200,50 +200,40 @@ export default function Index() {
             <Grid.Row>
               <Grid.Column verticalAlign="middle" width={7}>
                 <FeatureOverview icon="github" title="Open Source">
-                  <FeatureOverview.Item>
-                    The development and sources of <KlickerUZH fontSize={1} />{' '}
-                    are completely open source. This gives lecturers the
-                    potential to implement their own visualizations, languages,
-                    or even question types. Contributions and feedbacks are
-                    always welcome!
-                  </FeatureOverview.Item>
-                  <FeatureOverview.Item title="Project Documentation">
-                    The project documentation is available on{' '}
-                    <a href="https://uzh-bf.github.io/klicker-uzh/">
-                      klicker-uzh
-                    </a>{' '}
-                    and is being updated regularly. A major upcoming addition
-                    includes contents on the architecture of the application as
-                    well as possible ways of collaborating with the project.
-                  </FeatureOverview.Item>
-                  <FeatureOverview.Item title="Project Sources">
-                    <List>
-                      <List.Item>
-                        <List.Icon name="github" />
-                        <List.Content>
-                          <a href="https://github.com/uzh-bf/klicker-react">
-                            klicker-react - React/NextJS Frontend
-                          </a>
-                        </List.Content>
-                      </List.Item>
-                      <List.Item>
-                        <List.Icon name="github" />
-                        <List.Content>
-                          <a href="https://github.com/uzh-bf/klicker-api">
-                            klicker-api - GraphQL/NodeJS API
-                          </a>
-                        </List.Content>
-                      </List.Item>
-                      <List.Item>
-                        <List.Icon name="github" />
-                        <List.Content>
-                          <a href="https://github.com/uzh-bf/klicker-uzh">
-                            klicker-uzh - Documentation and Roadmap
-                          </a>
-                        </List.Content>
-                      </List.Item>
-                    </List>
-                  </FeatureOverview.Item>
+                  The development and sources of <KlickerUZH fontSize={1} /> are
+                  completely open source. This gives users the potential to
+                  implement their own visualizations, languages, or even
+                  question types. Contributions and feedbacks are always
+                  welcome!
+                  <List>
+                    <List.Item>
+                      <List.Icon name="github" />
+                      <List.Content>
+                        <a href="https://github.com/uzh-bf/klicker-react">
+                          klicker-react - React/NextJS Frontend
+                        </a>
+                      </List.Content>
+                    </List.Item>
+                    <List.Item>
+                      <List.Icon name="github" />
+                      <List.Content>
+                        <a href="https://github.com/uzh-bf/klicker-api">
+                          klicker-api - GraphQL/NodeJS API
+                        </a>
+                      </List.Content>
+                    </List.Item>
+                    <List.Item>
+                      <List.Icon name="github" />
+                      <List.Content>
+                        <a href="https://github.com/uzh-bf/klicker-uzh">
+                          klicker-uzh - Documentation and Roadmap
+                        </a>
+                      </List.Content>
+                    </List.Item>
+                  </List>
+                  The project documentation is available{' '}
+                  <a href="https://uzh-bf.github.io/klicker-uzh/">online</a> and
+                  is being updated for every release.
                 </FeatureOverview>
               </Grid.Column>
               <Grid.Column verticalAlign="middle" width={9}>

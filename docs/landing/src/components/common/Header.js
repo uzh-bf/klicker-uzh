@@ -3,15 +3,16 @@ import { Button, Container, Menu } from 'semantic-ui-react'
 import { Link as ScrollLink } from 'react-scroll'
 import { Link } from 'gatsby'
 
-export default function Header() {
+import KlickerUZH from './KlickerUZH'
+
+function Header() {
   return (
     <header>
       <Container>
         <div className="klicker-headerContent">
           <div className="klicker-logo">
             <Link to="/">
-              Klicker
-              <span className="klicker-logo-high">UZH</span>
+              <KlickerUZH />
             </Link>
           </div>
 
@@ -38,7 +39,7 @@ export default function Header() {
               offset={-50}
               name="contact"
             >
-              Contact
+              Contact Us
             </Menu.Item>
 
             <Menu.Item>
@@ -71,16 +72,6 @@ export default function Header() {
 
         .klicker-logo {
           margin-top: 1rem;
-
-          color: #375164;
-          font-size: 2rem;
-          line-height: 2rem;
-        }
-
-        .klicker-logo-high {
-          font-size: 1rem;
-          line-height: 1rem;
-          vertical-align: top;
         }
 
         :global(a.item) {
@@ -101,3 +92,5 @@ export default function Header() {
     </header>
   )
 }
+
+export default Header

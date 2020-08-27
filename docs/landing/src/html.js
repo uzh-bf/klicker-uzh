@@ -22,17 +22,6 @@ export default class HTML extends React.Component {
             dangerouslySetInnerHTML={{ __html: this.props.body }}
           />
           {this.props.postBodyComponents}
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `
-                !function(){var x=document.createElement("script");x.src="https://cdn.slaask.com/chat.js",x.type="text/javascript",x.async="true",x.onload=x.onreadystatechange=function(){var x=this.readyState;if(!x||"complete"==x||"loaded"==x)try{
-
-                  _slaask.init('55579fb3b88d0cd9710b8e17ee6c0234');
-
-                }catch(x){}};var t=document.getElementsByTagName("script")[0];t.parentNode.insertBefore(x,t)}();
-              `,
-            }}
-          />
         </body>
       </html>
     )

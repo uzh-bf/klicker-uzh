@@ -36,12 +36,14 @@ const Slider = ({ children }) => (
 Slider.Item = ({ title, description, imageSrc, children }) => (
   <div className="sliderItem">
     <Grid stackable reversed="mobile">
+      <Grid.Column width={1} />
       <Grid.Column verticalAlign="middle" width={5}>
         <h2>{title}</h2>
         <p>{description}</p>
         <div className="actions">{children}</div>
       </Grid.Column>
-      <Grid.Column verticalAlign="middle" width={11}>
+      <Grid.Column width={1} />
+      <Grid.Column verticalAlign="middle" width={9}>
         <div className="image">
           <Image fluid src={imageSrc} />
         </div>
