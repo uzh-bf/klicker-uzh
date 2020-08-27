@@ -1,7 +1,9 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import classNames from 'classnames'
+import dayjs from 'dayjs'
 import { defineMessages, FormattedMessage } from 'react-intl'
 import { Button, Checkbox, Icon, Message, Dropdown, Menu, Modal, Table } from 'semantic-ui-react'
+import moment from 'moment'
 import getConfig from 'next/config'
 import { CSVLink } from 'react-csv'
 import { pick } from 'ramda'
@@ -67,6 +69,19 @@ function getMessage(intl, num: number, max: number): any {
   }
 }
 
+const calculateRuntime = ({ startedAt }): string => {
+  const duration = moment.duration(moment().diff(startedAt))
+  const days = duration.days()
+  const hours = `0${duration.hours()}`.slice(-2)
+  const minutes = `0${duration.minutes()}`.slice(-2)
+  const seconds = `0${duration.seconds()}`.slice(-2)
+
+  if (days > 0) {
+    return `${days}d ${hours}:${minutes}:${seconds}`
+  }
+  return `${hours}:${minutes}:${seconds}`
+}
+
 interface Props {
   activeStep: number
   blocks?: any[]
@@ -83,7 +98,6 @@ interface Props {
   isEvaluationPublic?: boolean
   isParticipantListVisible: boolean
   participants: any[]
-  runtime?: string
   sessionId: string
   shortname: string
   startedAt?: string
@@ -98,15 +112,12 @@ const defaultProps = {
   isParticipantAuthenticationEnabled: false,
   isParticipantListVisible: false,
   participants: [],
-  runtime: '00:00:00',
-  startedAt: '00:00:00',
 }
 
 function SessionTimeline({
   sessionId,
   blocks,
   intl,
-  runtime,
   startedAt,
   shortname,
   activeStep,
@@ -132,12 +143,24 @@ function SessionTimeline({
 
   const isFeedbackSession = blocks.length === 0
 
+  const [runtime, setRuntime] = useState(calculateRuntime({ startedAt }))
+
+  const startingTime = runtime.includes('d')
+    ? dayjs(startedAt).format('DD.MM. HH:mm:ss')
+    : dayjs(startedAt).format('HH:mm:ss')
+
+  useEffect(() => {
+    setInterval(() => {
+      setRuntime(calculateRuntime({ startedAt }))
+    }, 1000)
+  }, [runtime])
+
   return (
     <div className="sessionTimeline">
       <div className="topRow">
         <div className="infos">
           <div className="startingTime">
-            <Icon name="time" /> {startedAt}
+            <Icon name="time" /> {startingTime}
           </div>
           <div className="runningTime">
             <Icon name="play circle" /> {runtime}

@@ -1,7 +1,6 @@
 mutation ResetQuestionBlock($sessionId: ID!, $blockId: ID!) {
   resetQuestionBlock(sessionId: $sessionId, blockId: $blockId) {
     id
-    runtime
     startedAt
     activeStep
     activeBlock
