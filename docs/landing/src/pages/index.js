@@ -8,9 +8,9 @@ import Slider from '../components/slider/Slider'
 import Section from '../components/section/Section'
 import FeatureOverview from '../components/section/FeatureOverview'
 
-import questionPoolMacPNG from '../img/question_pool_mac.png'
-import evaluationMacPNG from '../img/evaluation_mac.png'
-import runningSessionMacPNG from '../img/running_session_mac.png'
+import questionPoolMacPNG from '../img/question_pool_mac_small.png'
+import evaluationMacPNG from '../img/evaluation_mac_small.png'
+import runningSessionMacPNG from '../img/running_session_mac_small.png'
 import iphonePNG from '../img/iphone.png'
 import codePNG from '../img/code.png'
 
