@@ -57,7 +57,6 @@ module.exports = `
     activeBlock: Int!
     activeStep: Int!
     execution: Int
-    runtime: String
 
     status: Session_Status!
     settings: Session_Settings!
