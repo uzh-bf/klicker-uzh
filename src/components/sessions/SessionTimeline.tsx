@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect } from 'react'
 import classNames from 'classnames'
 import { defineMessages, FormattedMessage } from 'react-intl'
 import { Button, Checkbox, Icon, Message, Dropdown, Menu, Modal, Table } from 'semantic-ui-react'
@@ -135,15 +135,16 @@ function SessionTimeline({
     subscribeToMore()
   }, [])
 
-  const [isBlockActive, setIsBlockActive] = useState(activeStep % 2 === 1)
+  let isBlockActive = activeStep % 2 === 1
 
   useEffect(() => {
-    setIsBlockActive(activeStep % 2 === 1)
+    isBlockActive = activeStep % 2 === 1
+    if (isBlockActive) {
+      handleActiveBlock()
+    } else {
+      handleNoActiveBlock()
+    }
   }, [activeStep])
-
-  useEffect(() => {
-    isBlockActive ? handleActiveBlock() : handleNoActiveBlock()
-  }, [isBlockActive])
 
   const isFeedbackSession = blocks.length === 0
 
