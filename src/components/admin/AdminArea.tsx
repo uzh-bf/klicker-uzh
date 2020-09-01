@@ -11,7 +11,11 @@ const messages = defineMessages({
   },
 })
 
-function AdminArea(): React.ReactElement {
+interface Props {
+  filters: any
+}
+
+function AdminArea({ filters }: Props): React.ReactElement {
   const intl = useIntl()
 
   // Organized as array for the sake of extendability
@@ -20,7 +24,7 @@ function AdminArea(): React.ReactElement {
       menuItem: intl.formatMessage(messages.userManagement),
       render: (): React.ReactElement => (
         <Tab.Pane>
-          <UserList />
+          <UserList filters={filters} />
         </Tab.Pane>
       ),
     },

@@ -4,8 +4,13 @@ import { Loader, Message } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import UserListQuery from '../../graphql/queries/UserListQuery.graphql'
 import User from './User'
+import { buildIndex, filterByTitle } from '../../lib/utils/filters'
 
-function UserList(): React.ReactElement {
+interface Props {
+  filters: any
+}
+
+function UserList({ filters }: Props): React.ReactElement {
   const { data, loading, error } = useQuery(UserListQuery)
 
   if (loading) {
@@ -17,17 +22,24 @@ function UserList(): React.ReactElement {
 
   const { users } = data
 
-  if (users.length === 0) {
+  // create a user index TODO: define which attributes are desired searching
+  const userIndex = buildIndex('users', users, ['email', 'shortname', 'institution'])
+
+  // apply the filters
+  const matchingUsers = filterByTitle(users, filters, userIndex)
+
+  if (matchingUsers.length === 0) {
     return (
-      <div className="user">
-        <FormattedMessage defaultMessage="No user was found." id="admin.AdminArea.UserManagement.noUsers" />
+      <div className="userList">
+        <h1>{filters.title}</h1>
+        <FormattedMessage defaultMessage="No matching user was found." id="admin.AdminArea.UserManagement.noUsers" />
       </div>
     )
   }
 
   return (
     <div className="userList">
-      {users.map(({ id, email, shortname, institution, isActive, isAAI, role }) => {
+      {matchingUsers.map(({ id, email, shortname, institution, isActive, isAAI, role }) => {
         const userProps = {
           id,
           email,
