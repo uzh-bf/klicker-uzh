@@ -3,7 +3,6 @@ import classNames from 'classnames'
 import dayjs from 'dayjs'
 import { defineMessages, FormattedMessage } from 'react-intl'
 import { Button, Checkbox, Icon, Message, Dropdown, Menu, Modal, Table } from 'semantic-ui-react'
-import moment from 'moment'
 import getConfig from 'next/config'
 import { CSVLink } from 'react-csv'
 import { pick } from 'ramda'
@@ -70,11 +69,12 @@ function getMessage(intl, num: number, max: number): any {
 }
 
 const calculateRuntime = ({ startedAt }): string => {
-  const duration = moment.duration(moment().diff(startedAt))
-  const days = duration.days()
-  const hours = `0${duration.hours()}`.slice(-2)
-  const minutes = `0${duration.minutes()}`.slice(-2)
-  const seconds = `0${duration.seconds()}`.slice(-2)
+  const duration = dayjs(dayjs().diff(startedAt))
+
+  const days = duration.day()
+  const hours = `0${duration.hour()}`.slice(-2)
+  const minutes = `0${duration.minute()}`.slice(-2)
+  const seconds = `0${duration.second()}`.slice(-2)
 
   if (days > 0) {
     return `${days}d ${hours}:${minutes}:${seconds}`
@@ -150,9 +150,10 @@ function SessionTimeline({
     : dayjs(startedAt).format('HH:mm:ss')
 
   useEffect(() => {
-    setInterval(() => {
+    const currentRuntime = setInterval(() => {
       setRuntime(calculateRuntime({ startedAt }))
     }, 1000)
+    return () => clearInterval(currentRuntime)
   }, [runtime])
 
   return (
