@@ -1,5 +1,9 @@
-import React from 'react'
-import { Icon, Button } from 'semantic-ui-react'
+import React, { useState } from 'react'
+import { Icon, Button, Label } from 'semantic-ui-react'
+// import { useMutation } from '@apollo/react-hooks'
+
+// import DeleteUserMutation from '../../graphql/mutations/DeleteUserMutation.graphql'
+import ModifyUserForm from '../forms/userManagement/ModifyUserForm'
 
 interface Props {
   id: string
@@ -12,39 +16,67 @@ interface Props {
 }
 
 function User({
-  // id,
+  id,
   email,
   shortname,
   institution,
-  // isActive,
-  isAAI,
-}: // role,
+  role,
+}: // isAAI,
 Props): React.ReactElement {
+  // const [deleteUser] = useMutation(DeleteUserMutation)
+
+  const [userEditable, setUserEditable] = useState(false)
+
+  /*
+  const handleUserDeletion = async (userId : string) : Promise<void> => {
+    // TODO open some popup and confirm that you want to delete the user
+    deleteUser({variables: { id: userId }})
+  }
+  */
+
   return (
     <div className="user">
       <div className="wrapper">
         <div className="header">
-          <h2 className="email">
-            {email} {isAAI ? ' (AAI)' : ''}
-          </h2>
-          <div className="userIcon">
-            <Icon name="user outline" size="large" />
-          </div>
+          {true && <Label className="AAILabel" content={'AAI'} />}
+          <Label className="emailLabel" content={email} icon="user outline" />
         </div>
         <div className="body">
-          <div className="userInformation">
-            <p>Diesen Teil ersetzen mit Accountdataform?</p>
-            <p>{institution}</p>
-            <p>{shortname}</p>
-          </div>
-          <div className="edit">
-            <div className="buttonContainer">
-              <Button icon="edit" />
+          {(userEditable && (
+            <ModifyUserForm
+              currentEmail={email}
+              currentInsitution={institution}
+              currentRole={role}
+              currentShortname={shortname}
+              id={id}
+            />
+          )) || (
+            <div className="content">
+              <div className="information">
+                <div className="informationTitle">User-Information</div>
+                <p>Email: {email}</p>
+                <p>Shortname: {email}</p>
+                <p>Institution: {institution}</p>
+                <p>Role: {role}</p>
+              </div>
+              <div className="buttonArea">
+                <Button
+                  icon
+                  labelPosition="left"
+                  onClick={(): void => {
+                    setUserEditable(true)
+                  }}
+                >
+                  <Icon name="edit" />
+                  Edit User
+                </Button>
+                <Button icon disabled={role === 'ADMIN'} labelPosition="left">
+                  <Icon name="trash" />
+                  Delete User
+                </Button>
+              </div>
             </div>
-            <div className="buttonContainer">
-              <Button icon="trash" />
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -53,21 +85,37 @@ Props): React.ReactElement {
           @import 'src/theme';
 
           .user {
-            display: flex;
             margin-bottom: 1rem;
             padding: 0.5rem;
             border: 1px solid gainsboro;
             background-color: #f9f9f9;
           }
+
+          :global(.label.emailLabel) {
+            order: 2;
+            min-width: 15rem;
+            border-right: 1px solid rgb(124, 184, 228);
+            border-top: 1px solid rgb(124, 184, 228);
+          }
+
+          :global(.label.AAILabel) {
+            order: 1;
+            width: 3rem;
+            border-right: 1px solid rgb(124, 184, 228);
+            border-top: 1px solid rgb(124, 184, 228);
+          }
+
+          :global(.ui.labeled.icon.button) {
+            margin-top: 0.2rem;
+          }
+
           .wrapper {
             width: 100%;
-            display: flex;
-            flex-direction: column;
 
             .header {
               width: 100%;
               display: flex;
-              justify-content: space-between;
+              justify-content: flex-end;
 
               .email {
               }
@@ -78,20 +126,33 @@ Props): React.ReactElement {
 
             .body {
               width: 100%;
-              display: flex;
-              justify-content: space-between;
               border: 1px solid rgb(124, 184, 228);
-              padding-left: 0.2rem;
+              padding: 0.5rem;
+              overflow-y: auto;
 
-              .edit {
-                padding: 0.2rem;
+              .content {
+                font-size: 14px;
                 display: flex;
-                flex-direction: column;
-                justify-content: flex-end;
-              }
+                flex-direction: row;
+                justify-content: space-between;
+                p {
+                  line-height: 100%;
+                }
 
-              .buttonContainer + .buttonContainer {
-                margin-top: 0.2rem;
+                .information {
+                  width: 75%;
+                  .informationTitle {
+                    font-weight: bold;
+                    margin-bottom: 0.5rem;
+                    padding-left: 0.2rem;
+                    background-color: rgb(124, 184, 228);
+                  }
+                }
+                .buttonArea {
+                  display: flex;
+                  flex-direction: column;
+                  align-self: flex-end;
+                }
               }
             }
           }
