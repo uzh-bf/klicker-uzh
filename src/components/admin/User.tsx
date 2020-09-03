@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
-import { Icon, Button, Label } from 'semantic-ui-react'
-// import { useMutation } from '@apollo/react-hooks'
+import { Icon, Button, Label, Confirm } from 'semantic-ui-react'
+import { useMutation } from '@apollo/react-hooks'
 
-// import DeleteUserMutation from '../../graphql/mutations/DeleteUserMutation.graphql'
 import ModifyUserForm from '../forms/userManagement/ModifyUserForm'
+import ModifyUserAsAdminMutation from '../../graphql/mutations/ModifyUserAsAdminMutation.graphql'
 
 interface Props {
   id: string
@@ -13,6 +13,9 @@ interface Props {
   isActive: boolean
   isAAI: boolean
   role: string
+  handleUserDeletion: (userId, confirm) => Promise<void>
+  deletionConfirmation: boolean,
+  setDeletionConfirmation: any,
 }
 
 function User({
@@ -20,25 +23,38 @@ function User({
   email,
   shortname,
   institution,
+  isAAI,
   role,
-}: // isAAI,
+  handleUserDeletion,
+  deletionConfirmation,
+  setDeletionConfirmation,
+}: 
 Props): React.ReactElement {
-  // const [deleteUser] = useMutation(DeleteUserMutation)
 
   const [userEditable, setUserEditable] = useState(false)
+  const [editConfirmation, setEditConfirmation] = useState(false)
+  const [modifyUser] = useMutation(ModifyUserAsAdminMutation)
 
-  /*
-  const handleUserDeletion = async (userId : string) : Promise<void> => {
-    // TODO open some popup and confirm that you want to delete the user
-    deleteUser({variables: { id: userId }})
-  }
-  */
+  const onUserModification = async (values, confirm) : Promise<any> => {
+    if (!editConfirmation){
+      setEditConfirmation(true)
+      return
+    }
+    if (confirm){
+       await modifyUser({
+        variables: {id, user: {email, shortname, institution, role}},
+        })
+    }
+    setEditConfirmation(false)
+  } 
+    
+
 
   return (
     <div className="user">
       <div className="wrapper">
         <div className="header">
-          {true && <Label className="AAILabel" content={'AAI'} />}
+          {isAAI && <Label className="AAILabel" content={'AAI'} />}
           <Label className="emailLabel" content={email} icon="user outline" />
         </div>
         <div className="body">
@@ -48,14 +64,17 @@ Props): React.ReactElement {
               currentInsitution={institution}
               currentRole={role}
               currentShortname={shortname}
+              editConfirmation={editConfirmation}
+              handleModification={onUserModification}
               id={id}
+              onDiscard={() => { setUserEditable(false) }}
             />
           )) || (
             <div className="content">
               <div className="information">
                 <div className="informationTitle">User-Information</div>
                 <p>Email: {email}</p>
-                <p>Shortname: {email}</p>
+                <p>Shortname: {shortname}</p>
                 <p>Institution: {institution}</p>
                 <p>Role: {role}</p>
               </div>
@@ -70,16 +89,32 @@ Props): React.ReactElement {
                   <Icon name="edit" />
                   Edit User
                 </Button>
-                <Button icon disabled={role === 'ADMIN'} labelPosition="left">
+                <Button 
+                  icon 
+                  disabled={role === 'ADMIN'} 
+                  labelPosition="left"
+                  onClick={()=>{
+                    setDeletionConfirmation(true)
+                  }}
+                >
                   <Icon name="trash" />
                   Delete User
                 </Button>
+                <h1>{id}</h1>
+                <Confirm 
+                  cancelButton={'Go Back'}
+                  confirmButton={'Delete User'}
+                  content={`Are you sure that you want to delete the user ${id}?`}
+                  open={deletionConfirmation}
+                  onCancel={() => handleUserDeletion(id, false)}
+                  onConfirm={() => handleUserDeletion(id, true)}
+                />         
               </div>
             </div>
           )}
         </div>
       </div>
-
+      
       <style jsx>
         {`
           @import 'src/theme';

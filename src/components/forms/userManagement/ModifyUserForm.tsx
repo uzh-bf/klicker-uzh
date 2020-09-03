@@ -1,16 +1,13 @@
 import React from 'react'
 import getConfig from 'next/config'
-import { useMutation } from '@apollo/react-hooks'
 import { FormattedMessage, useIntl } from 'react-intl'
 import { Formik } from 'formik'
 import { object } from 'yup'
-import { Form, Button } from 'semantic-ui-react'
+import { Form, Button, Confirm } from 'semantic-ui-react'
 
-import ModifyUserAsAdminMutation from '../../../graphql/mutations/ModifyUserAsAdminMutation.graphql'
 import FormikInput from '../components/FormikInput'
 import validationSchema from '../common/validationSchema'
 import messages from '../common/messages'
-import { Errors } from '../../../constants'
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -22,6 +19,9 @@ interface Props {
   currentShortname: string
   currentInsitution: string
   currentRole: string
+  editConfirmation: boolean
+  handleModification: (values, confirm) => Promise<any>
+  onDiscard: () => void
 }
 
 function ModifyUserForm({
@@ -30,10 +30,12 @@ function ModifyUserForm({
   currentShortname,
   currentInsitution,
   currentRole,
+  editConfirmation,
+  handleModification,
+  onDiscard,
 }: Props): React.ReactElement {
   const intl = useIntl()
 
-  const [modifyUser] = useMutation(ModifyUserAsAdminMutation)
 
   return (
     <div className="accountDataForm">
@@ -52,7 +54,6 @@ function ModifyUserForm({
           handleChange,
           handleBlur,
           handleSubmit,
-          isSubmitting,
           isValid,
           dirty,
         }): React.ReactElement => (
@@ -121,13 +122,31 @@ function ModifyUserForm({
 
             <Button
               primary
-              disabled={isSubmitting || !isValid || !dirty}
+              disabled={ !isValid || !dirty}
               floated="right"
-              loading={isSubmitting}
               type="submit"
             >
               <FormattedMessage defaultMessage="Save Changes" id="form.button.saveChanges" />
             </Button>
+            <Button 
+                className="discard" 
+                floated="right" 
+                type="button"
+                onClick={onDiscard} 
+                >
+                <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
+            </Button>
+            <Confirm 
+                  className="userDeletion"
+                  cancelButton={'Go Back'}
+                  confirmButton={'Delete User'}
+                  content={`Are you sure that you want to delete the user ${id}?`}
+                  open={editConfirmation}
+                  onCancel={(values) => {
+                    handleModification(values, true)
+                    }}
+                  onConfirm={(values) => handleModification(values, true)}
+                />
             <style jsx>
               {`
                 @import 'src/theme';
@@ -152,22 +171,12 @@ function ModifyUserForm({
             shortname,
           })
           .required()}
-        onSubmit={async (values, { setSubmitting, setFieldError }): Promise<void> => {
-          try {
-            await modifyUser({
-              variables: values,
-            })
-          } catch ({ message }) {
-            if (message === Errors.SHORTNAME_NOT_AVAILABLE) {
-              setFieldError('shortname', 'NOT_AVAILABLE')
-            }
-            if (message === Errors.EMAIL_NOT_AVAILABLE) {
-              setFieldError('email', 'NOT_AVAILABLE')
-            }
-          }
-
-          setSubmitting(false)
+        onSubmit={(values, {setSubmitting, setFieldError}) => {
+            try {
+                handleModification(values, true)
+            }catch(message){}
         }}
+        
       />
     </div>
   )
