@@ -1,4 +1,4 @@
-# klicker-api &middot;
+# klicker-uzh
 
 Sources for the [KlickerUZH](https://www.klicker.uzh.ch/) instant-class-response system documentation (https://uzh-bf.github.io/klicker-uzh/) and landing page (https://www.klicker.uzh.ch/).
 
