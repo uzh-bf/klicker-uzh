@@ -249,7 +249,7 @@
   "sessionList.title.completedSessions": "Completed sessions",
   "sessionList.title.plannedSessions": "Planned sessions",
   "sessionList.title.runningSession": "Running / paused sessions",
-  "sessions.index.startSession.error": "`Unable to start session: {errorMessage}",
+  "sessions.index.startSession.error": "Unable to start session: {errorMessage}",
   "sessions.running.resetSessionblock.success": "Question block successfully reset.",
   "tagList.button.reset": "Reset filters",
   "tagList.header.tags": "Tags",
