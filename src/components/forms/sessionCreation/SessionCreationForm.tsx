@@ -201,8 +201,8 @@ function SessionCreationForm({
                                   style={getItemStyle(innerSnapshot.isDragging, innerProvided.draggableProps.style)}
                                 >
                                   <QuestionSingle
-                                    calledFromCreationForm
                                     description={description}
+                                    hasParticipantCount={false}
                                     id={id}
                                     title={title}
                                     type={type}
