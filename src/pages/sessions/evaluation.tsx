@@ -1,9 +1,11 @@
-import React from 'react'
+import React, { useState } from 'react'
 import _get from 'lodash/get'
 import { defineMessages, useIntl } from 'react-intl'
 import { useRouter } from 'next/router'
 
-import { QUESTION_GROUPS, QUESTION_TYPES } from '../../constants'
+import ConfusionCharts from 'src/components/confusion/ConfusionCharts'
+import FeedbackTableChart from 'src/components/feedbacks/FeedbackTableChart'
+import { QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
 import useLogging from '../../lib/hooks/useLogging'
 import Chart from '../../components/evaluation/Chart'
@@ -73,6 +75,7 @@ export function mapActiveInstance(activeInstance: any): any {
 
 export function extractInstancesFromSession(session): any {
   const blocks = _get(session, 'blocks')
+
   if (!blocks) {
     console.error('no blocks', session)
     return {
@@ -112,6 +115,9 @@ function Evaluation(): React.ReactElement {
   const isPublic = !!router.query.public
   const sessionId: string = router.query.sessionId.toString()
 
+  const [showFeedback, setShowFeedback] = useState(false)
+  const [showConfusionTS, setShowConfusionTS] = useState(false)
+
   return (
     <LoadSessionData isPublic={isPublic} sessionId={sessionId}>
       {({ session, loading, error }): React.ReactElement => {
@@ -120,6 +126,7 @@ function Evaluation(): React.ReactElement {
         }
 
         const { activeInstances, sessionStatus, instanceSummary } = extractInstancesFromSession(session)
+        const { feedbacks, confusionTS } = session
 
         return (
           <ComputeActiveInstance activeInstances={activeInstances} sessionStatus={sessionStatus}>
@@ -162,26 +169,42 @@ function Evaluation(): React.ReactElement {
                 title: question.title,
                 totalResponses: results.totalResponses,
                 type: question.type,
+                feedbacks,
+                onChangeShowFeedback: setShowFeedback,
+                showFeedback,
+                confusionTS,
+                onChangeShowConfusionTS: setShowConfusionTS,
+                showConfusionTS,
+                showQuestionLayout: !(showFeedback || showConfusionTS),
+                sessionStatus,
               }
 
               return (
                 <EvaluationLayout {...layoutProps}>
-                  <Chart
-                    activeVisualization={activeVisualizations[question.type]}
-                    data={results.data}
-                    handleShowGraph={(): void => setShowGraph(true)}
-                    instanceId={activeInstance.id}
-                    isPublic={isPublic}
-                    numBins={bins}
-                    questionType={question.type}
-                    restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
-                    sessionId={sessionId}
-                    sessionStatus={sessionStatus}
-                    showGraph={showGraph}
-                    showSolution={showSolution}
-                    statistics={activeInstance.statistics}
-                    totalResponses={results.totalResponses}
-                  />
+                  {!(showFeedback || showConfusionTS) && (
+                    <Chart
+                      activeVisualization={activeVisualizations[question.type]}
+                      data={results.data}
+                      handleShowGraph={(): void => setShowGraph(true)}
+                      instanceId={activeInstance.id}
+                      isPublic={isPublic}
+                      numBins={bins}
+                      questionType={question.type}
+                      restrictions={options.FREE_RANGE && options.FREE_RANGE.restrictions}
+                      sessionId={sessionId}
+                      sessionStatus={sessionStatus}
+                      showGraph={showGraph}
+                      showSolution={showSolution}
+                      statistics={activeInstance.statistics}
+                      totalResponses={results.totalResponses}
+                    />
+                  )}
+                  {sessionStatus === SESSION_STATUS.COMPLETED && showFeedback && (
+                    <FeedbackTableChart feedbacks={feedbacks} />
+                  )}
+                  {sessionStatus === SESSION_STATUS.COMPLETED && showConfusionTS && (
+                    <ConfusionCharts confusionTS={confusionTS} />
+                  )}
                 </EvaluationLayout>
               )
             }}
