@@ -1,6 +1,6 @@
 {
   "name": "klicker-react",
-  "version": "1.5.0",
+  "version": "1.5.2",
   "main": "server.js",
   "homepage": "https://www.klicker.uzh.ch",
   "repository": "https://github.com/uzh-bf/klicker-api.git",
@@ -13,7 +13,8 @@
     "Pascal Zehnder <pascal.zehnder@bf.uzh.ch",
     "wuergrob <32273110+wuergrob@users.noreply.github.com>",
     "Jokkis80 <jokki@windowslive.com>",
-    "mnmldev <aleloewe@gmail.com>"
+    "mnmldev <aleloewe@gmail.com>",
+    "Luca Locher <luca.locher@bf.uzh.ch>"
   ],
   "license": "AGPL-3.0",
   "engines": {
