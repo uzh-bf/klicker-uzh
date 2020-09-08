@@ -1,6 +1,9 @@
 import React, { useState } from 'react'
 import { Icon, Button, Label, Confirm } from 'semantic-ui-react'
 import { useMutation } from '@apollo/react-hooks'
+import { useToasts } from 'react-toast-notifications'
+import { FormattedMessage } from 'react-intl'
+import getConfig from 'next/config'
 
 import ModifyUserForm from '../forms/userManagement/ModifyUserForm'
 import ModifyUserAsAdminMutation from '../../graphql/mutations/ModifyUserAsAdminMutation.graphql'
@@ -34,18 +37,46 @@ Props): React.ReactElement {
   const [userEditable, setUserEditable] = useState(false)
   const [editConfirmation, setEditConfirmation] = useState(false)
   const [modifyUser] = useMutation(ModifyUserAsAdminMutation)
+  const { addToast } = useToasts()
+
+  const { publicRuntimeConfig } = getConfig()
+  
+
 
   const onUserModification = async (values, confirm) : Promise<any> => {
     if (!editConfirmation){
       setEditConfirmation(true)
-      return
+        return
     }
     if (confirm){
+      try{
        await modifyUser({
-        variables: {id, user: {email, shortname, institution, role}},
+        variables: {id, email: values.email, shortname: values.shortname, institution: values.institution, role: values.role},
         })
+        addToast(
+          <FormattedMessage
+            defaultMessage="User successfully modified."
+            id="components.admin.user.edit.success"
+          />,
+          {
+            appearance: 'success',
+          }
+        )
+      }catch(error){
+        addToast(
+          <FormattedMessage
+            defaultMessage="{errorMessage}"
+            id="components.admin.user.edit.error"
+            values={{ errorMessage: error.message }}
+          />,
+          {
+            appearance: 'error',
+          }
+        ) 
+      }
     }
     setEditConfirmation(false)
+    setUserEditable(false)
   } 
     
 
@@ -61,22 +92,23 @@ Props): React.ReactElement {
           {(userEditable && (
             <ModifyUserForm
               currentEmail={email}
-              currentInsitution={institution}
+              currentInstitution={institution}
               currentRole={role}
               currentShortname={shortname}
               editConfirmation={editConfirmation}
               handleModification={onUserModification}
-              id={id}
-              onDiscard={() => { setUserEditable(false) }}
+              onDiscard={() : void => { setUserEditable(false) }}
             />
           )) || (
             <div className="content">
               <div className="information">
-                <div className="informationTitle">User-Information</div>
-                <p>Email: {email}</p>
-                <p>Shortname: {shortname}</p>
-                <p>Institution: {institution}</p>
-                <p>Role: {role}</p>
+                <div className="informationTitle"><Icon circular inverted color="blue" name="user" /></div>
+                <div className="informationContent">
+                  <p><Icon name="mail" />Email: {email}</p>
+                  <p><Icon name="hashtag" />Account ID / Join Link: {publicRuntimeConfig.baseUrl}/join/{shortname}</p>
+                  <p><Icon name="university" />Institution: {institution}</p>
+                  <p><Icon name="id badge" />Role: {role}</p>
+                </div>
               </div>
               <div className="buttonArea">
                 <Button
@@ -93,21 +125,20 @@ Props): React.ReactElement {
                   icon 
                   disabled={role === 'ADMIN'} 
                   labelPosition="left"
-                  onClick={()=>{
+                  onClick={() : void =>{
                     setDeletionConfirmation(true)
                   }}
                 >
                   <Icon name="trash" />
                   Delete User
                 </Button>
-                <h1>{id}</h1>
                 <Confirm 
                   cancelButton={'Go Back'}
                   confirmButton={'Delete User'}
                   content={`Are you sure that you want to delete the user ${id}?`}
                   open={deletionConfirmation}
-                  onCancel={() => handleUserDeletion(id, false)}
-                  onConfirm={() => handleUserDeletion(id, true)}
+                  onCancel={() : Promise<void> => handleUserDeletion(id, false)}
+                  onConfirm={() : Promise<void>  => handleUserDeletion(id, true)}
                 />         
               </div>
             </div>
@@ -168,24 +199,32 @@ Props): React.ReactElement {
               .content {
                 font-size: 14px;
                 display: flex;
-                flex-direction: row;
+                flex-direction: column;
                 justify-content: space-between;
                 p {
                   line-height: 100%;
                 }
 
                 .information {
-                  width: 75%;
+                  display: flex;
+                  width: 100%;
+                  border: 1px solid rgb(124, 184, 228);
+                  padding: 0.4rem;
+                  margin-bottom: 0.2rem;
                   .informationTitle {
-                    font-weight: bold;
-                    margin-bottom: 0.5rem;
                     padding-left: 0.2rem;
                     background-color: rgb(124, 184, 228);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                  }
+                  .informationContent {
+                    padding: 0.4rem;
                   }
                 }
                 .buttonArea {
                   display: flex;
-                  flex-direction: column;
+                  flex-direction: row;
                   align-self: flex-end;
                 }
               }

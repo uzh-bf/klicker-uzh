@@ -45,6 +45,14 @@ export default defineMessages({
     defaultMessage: 'Repeat password',
     id: 'form.passwordRepeat.label',
   },
+  roleInvalid: {
+    default: 'Please provide a valid role (USER/ADMIN).',
+    id: 'form.role.invalid',
+  },
+  roleLabel: {
+    default: 'Role',
+    id: 'form.role.label',
+  },
   shortnameInvalid: {
     defaultMessage: 'Please provide a valid account ID (3-8 characters).',
     id: 'form.shortname.invalid',

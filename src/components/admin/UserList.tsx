@@ -58,22 +58,31 @@ function UserList({ filters }: Props): React.ReactElement {
           variables: { id: userId },
         })
         addToast(
-          'User Successfully deleted',
+          <FormattedMessage
+            defaultMessage="User successfully deleted."
+            id="components.admin.userlist.delete.success"
+          />,
           {
             appearance: 'success',
           }
         )
-      } catch({message}){
+      } catch(error){
         addToast(
-          'Unable to delete user: {erriormessage}',
+          <FormattedMessage
+            defaultMessage="{errorMessage}"
+            id="components.admin.userList.delete.error"
+            values={{ errorMessage: error.message }}
+          />,
           {
-            appearance: 'success',
+            appearance: 'error',
           }
         ) 
       }
   }
+  
   setDeletionConfirmation(false)
-    
+  
+   console.log(`Deleted ${userId}`)
   }
 
   return (

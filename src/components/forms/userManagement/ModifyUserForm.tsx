@@ -11,24 +11,34 @@ import messages from '../common/messages'
 
 const { publicRuntimeConfig } = getConfig()
 
-const { email, institution, shortname } = validationSchema
+const { email, institution, shortname, role } = validationSchema
 
 interface Props {
-  id: string
   currentEmail: string
   currentShortname: string
-  currentInsitution: string
+  currentInstitution: string
   currentRole: string
   editConfirmation: boolean
   handleModification: (values, confirm) => Promise<any>
   onDiscard: () => void
 }
 
+function ConfirmationContent({currentEmail, newEmail, currentShortname, newShortname, currentInstitution, newInstitution, currentRole, newRole}){
+  return (
+    <p>
+      <h3>The following changes will be made: {'\n'}</h3>
+      {currentEmail !== newEmail ? <p>{'\n'}Email: {currentEmail} -&gt; {newEmail} </p> : ''}
+      {currentShortname !== newShortname ? <p>{'\n'}Shortname: {currentShortname} -&gt; {newShortname} </p> : ''}
+      {currentInstitution !== newInstitution ? <p>{'\n'}Institution: {currentInstitution} -&gt; {newInstitution} </p> : ''}
+      {currentRole !== newRole ? <p>{'\n'}Role: {currentRole} -&gt; {newRole} </p> : ''}
+    </p>
+  )
+}
+
 function ModifyUserForm({
-  id,
   currentEmail,
   currentShortname,
-  currentInsitution,
+  currentInstitution,
   currentRole,
   editConfirmation,
   handleModification,
@@ -44,7 +54,7 @@ function ModifyUserForm({
         initialValues={{
           email: currentEmail,
           shortname: currentShortname,
-          institution: currentInsitution,
+          institution: currentInstitution,
           role: currentRole,
         }}
         render={({
@@ -91,7 +101,6 @@ function ModifyUserForm({
               type="text"
               value={values.shortname}
             />
-
             <FormikInput
               required
               error={errors.institution}
@@ -105,21 +114,19 @@ function ModifyUserForm({
               type="text"
               value={values.institution}
             />
-
             <FormikInput
+              required
               error={errors.role}
+              errorMessage={intl.formatMessage(messages.roleInvalid)}
               handleBlur={handleBlur}
               handleChange={handleChange}
-              icon="info"
-              label={intl.formatMessage(messages.useCaseLabel)}
+              icon="id badge"
+              label={intl.formatMessage(messages.roleLabel)}
               name="role"
-              tooltip={intl.formatMessage(messages.useCaseTooltip)}
               touched={touched.role}
               type="text"
               value={values.role}
             />
-            <h1>{id}</h1>
-
             <Button
               primary
               disabled={ !isValid || !dirty}
@@ -137,16 +144,24 @@ function ModifyUserForm({
                 <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
             </Button>
             <Confirm 
-                  className="userDeletion"
-                  cancelButton={'Go Back'}
-                  confirmButton={'Delete User'}
-                  content={`Are you sure that you want to delete the user ${id}?`}
-                  open={editConfirmation}
-                  onCancel={(values) => {
-                    handleModification(values, true)
-                    }}
-                  onConfirm={(values) => handleModification(values, true)}
-                />
+              className="userDeletion"
+              cancelButton={'Go Back'}
+              confirmButton={'Modify User'}
+              content={<ConfirmationContent
+                currentEmail={currentEmail}
+                currentInstitution={currentInstitution}
+                currentRole={currentRole}
+                currentShortname={currentShortname}
+                newEmail={values.email}
+                newInstitution={values.institution}
+                newRole={values.role}
+                newShortname={values.shortname}
+              />
+              }
+              open={editConfirmation}
+              onCancel={() => handleModification(values, false)}
+              onConfirm={() => handleModification(values, true)}
+            />
             <style jsx>
               {`
                 @import 'src/theme';
@@ -169,12 +184,11 @@ function ModifyUserForm({
             email,
             institution,
             shortname,
+            role,
           })
           .required()}
-        onSubmit={(values, {setSubmitting, setFieldError}) => {
-            try {
-                handleModification(values, true)
-            }catch(message){}
+        onSubmit={(values) => {
+            handleModification(values, false)
         }}
         
       />
