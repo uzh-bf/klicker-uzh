@@ -4,6 +4,7 @@ import dayjs from 'dayjs'
 import { defineMessages, FormattedMessage } from 'react-intl'
 import { Button, Checkbox, Icon, Message, Dropdown, Menu, Modal, Table } from 'semantic-ui-react'
 import getConfig from 'next/config'
+import _get from 'lodash/get'
 import { CSVLink } from 'react-csv'
 import { pick } from 'ramda'
 
@@ -90,6 +91,8 @@ const calculateRuntime = ({ startedAt }): string => {
 interface Props {
   activeStep: number
   blocks?: any[]
+  handleActiveBlock: () => void
+  handleNoActiveBlock: () => void
   handleCancelSession: () => void
   handleEndSession: () => void
   handleNextBlock: () => void
@@ -140,11 +143,22 @@ function SessionTimeline({
   handleTogglePublicEvaluation,
   handleResetQuestionBlock,
   handleActivateBlockById,
+  handleActiveBlock,
+  handleNoActiveBlock,
   subscribeToMore,
 }: Props): React.ReactElement {
   useEffect((): void => {
     subscribeToMore()
   }, [])
+
+  useEffect(() => {
+    const isBlockActive = activeStep % 2 === 1
+    if (isBlockActive) {
+      handleActiveBlock()
+    } else {
+      handleNoActiveBlock()
+    }
+  }, [activeStep])
 
   const isFeedbackSession = blocks.length === 0
 
@@ -329,9 +343,10 @@ function SessionTimeline({
                   handleResetQuestionBlock={(): void => handleResetQuestionBlock(block.id)}
                   index={index + 1}
                   questionBlockId={block.id}
-                  questions={block.instances.map(({ id, question, version }): any => ({
+                  questions={block.instances.map(({ id, question, version, results }): any => ({
                     id,
                     title: question.title,
+                    totalParticipants: index < activeStep / 2 ? _get(results, 'totalParticipants') : -1,
                     type: question.type,
                     version,
                   }))}
