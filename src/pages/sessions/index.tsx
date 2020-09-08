@@ -49,7 +49,7 @@ function Index(): React.ReactElement {
       console.error(message)
       addToast(
         <FormattedMessage
-          defaultMessage="`Unable to start session: {errorMessage}"
+          defaultMessage="Unable to start session: {errorMessage}"
           id="sessions.index.startSession.error"
           values={{ errorMessage: message }}
         />,
