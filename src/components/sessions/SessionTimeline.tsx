@@ -151,10 +151,8 @@ function SessionTimeline({
     subscribeToMore()
   }, [])
 
-  let isBlockActive = activeStep % 2 === 1
-
   useEffect(() => {
-    isBlockActive = activeStep % 2 === 1
+    const isBlockActive = activeStep % 2 === 1
     if (isBlockActive) {
       handleActiveBlock()
     } else {
