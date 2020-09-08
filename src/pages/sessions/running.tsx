@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react'
-import dayjs from 'dayjs'
 import _get from 'lodash/get'
 import _pick from 'lodash/pick'
 import _some from 'lodash/some'
@@ -110,7 +109,6 @@ function Running(): React.ReactElement {
           // activeBlock,
           blocks,
           settings,
-          runtime,
           startedAt,
           confusionTS,
           feedbacks,
@@ -230,10 +228,9 @@ function Running(): React.ReactElement {
                 isParticipantAuthenticationEnabled={settings.isParticipantAuthenticationEnabled}
                 isParticipantListVisible={isParticipantListVisible}
                 participants={participants}
-                runtime={runtime}
                 sessionId={id}
                 shortname={shortname}
-                startedAt={dayjs(startedAt).format('HH:mm:ss')}
+                startedAt={startedAt}
                 storageMode={settings.storageMode}
                 subscribeToMore={subscribeToMore({
                   document: RunningSessionUpdatedSubscription,
