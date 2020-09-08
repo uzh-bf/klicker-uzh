@@ -4,6 +4,16 @@ title: Changelog
 sidebar_label: Changelog
 ---
 
+## v1.5.1 (September 2020)
+
+The latest release of KlickerUZH has been developed during the spring semester 2020, as well as preceding the fall semester 2020. The following features have been added or improved:
+
+- Creation of authenticated sessions with participant authentication using username/password or SWITCHaai (sponsored by the Faculty of Business, Economics, and Informatics at UZH).
+- Display of feedbacks and confusion entries on the evaluation of past sessions
+- Live counters for responses on the running session overview
+- Fix: Issue with focus loss on question creation (i.e., being unable to add spaces in title or content)
+- Miscellaneous small improvements
+
 ## v1.4.0 (January 2020)
 
 With its latest release in January 2020, the KlickerUZH has been improved in a few critical areas:
