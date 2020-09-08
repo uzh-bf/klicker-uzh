@@ -8,9 +8,13 @@ import _get from 'lodash/get'
 import { CSVLink } from 'react-csv'
 import { pick } from 'ramda'
 
+import durationPlugin from 'dayjs/plugin/duration'
+
 import QuestionBlock from '../questions/QuestionBlock'
 import CancelModal from './CancelModal'
 import QRPopup from './QRPopup'
+
+dayjs.extend(durationPlugin)
 
 const { publicRuntimeConfig } = getConfig()
 
@@ -70,12 +74,13 @@ function getMessage(intl, num: number, max: number): any {
 }
 
 const calculateRuntime = ({ startedAt }): string => {
-  const duration = dayjs(dayjs().diff(startedAt))
+  const start = dayjs(startedAt)
+  const duration = dayjs.duration(dayjs().diff(start))
 
-  const days = duration.day()
-  const hours = `0${duration.hour()}`.slice(-2)
-  const minutes = `0${duration.minute()}`.slice(-2)
-  const seconds = `0${duration.second()}`.slice(-2)
+  const days = duration.days()
+  const hours = `0${duration.hours()}`.slice(-2)
+  const minutes = `0${duration.minutes()}`.slice(-2)
+  const seconds = `0${duration.seconds()}`.slice(-2)
 
   if (days > 0) {
     return `${days}d ${hours}:${minutes}:${seconds}`
@@ -162,7 +167,7 @@ function SessionTimeline({
   const [runtime, setRuntime] = useState(calculateRuntime({ startedAt }))
 
   const startingTime = runtime.includes('d')
-    ? dayjs(startedAt).format('DD.MM. HH:mm:ss')
+    ? dayjs(startedAt).format('DD.MM HH:mm:ss')
     : dayjs(startedAt).format('HH:mm:ss')
 
   useEffect(() => {
