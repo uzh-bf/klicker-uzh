@@ -1,31 +1,12 @@
 import React, { useEffect } from 'react'
 import { Checkbox } from 'semantic-ui-react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import _sumBy from 'lodash/sumBy'
-import dayjs from 'dayjs'
-
-import ConfusionSection from './ConfusionSection'
+import ConfusionCharts from './ConfusionCharts'
 
 const messages = defineMessages({
   activated: {
     defaultMessage: 'Activated',
     id: 'common.string.activated',
-  },
-  difficultyRange: {
-    defaultMessage: 'easy - hard',
-    id: 'runningSession.confusion.difficulty.Range',
-  },
-  difficultyTitle: {
-    defaultMessage: 'Difficulty',
-    id: 'runningSession.confusion.difficulty.Title',
-  },
-  speedRange: {
-    defaultMessage: 'slow - fast',
-    id: 'runningSession.confusion.speed.Range',
-  },
-  speedTitle: {
-    defaultMessage: 'Speed',
-    id: 'runningSession.confusion.speed.Title',
   },
 })
 
@@ -37,7 +18,7 @@ interface Props {
   }[]
   isActive?: boolean
   handleActiveToggle: any
-  subscribeToMore: any
+  subscribeToMore?: any
 }
 
 const defaultProps = {
@@ -46,29 +27,12 @@ const defaultProps = {
 }
 
 function ConfusionBarometer({ confusionTS, isActive, handleActiveToggle, subscribeToMore }: Props): React.ReactElement {
-  useEffect((): void => {
-    subscribeToMore()
-  }, [])
-
   const intl = useIntl()
 
-  const parsedTS = confusionTS.reduce((acc, { createdAt, speed, difficulty }): any[] => {
-    const tempAcc = [...acc, { difficulty, speed }]
-
-    // calculate the running average for difficulty and speed
-    const difficultyRunning = _sumBy(tempAcc, 'difficulty') / tempAcc.length
-    const speedRunning = _sumBy(tempAcc, 'speed') / tempAcc.length
-
-    return [
-      ...acc,
-      {
-        difficulty,
-        difficultyRunning,
-        speed,
-        speedRunning,
-        timestamp: dayjs(createdAt).format('H:mm:ss'),
-      },
-    ]
+  useEffect((): void => {
+    if (subscribeToMore) {
+      subscribeToMore()
+    }
   }, [])
 
   return (
@@ -92,34 +56,7 @@ function ConfusionBarometer({ confusionTS, isActive, handleActiveToggle, subscri
         onChange={handleActiveToggle}
       />
 
-      {((): React.ReactNode => {
-        if (isActive) {
-          return (
-            <>
-              <ConfusionSection
-                data={parsedTS.map(({ timestamp, difficulty, difficultyRunning }): any => ({
-                  timestamp,
-                  value: difficulty,
-                  valueRunning: difficultyRunning,
-                }))}
-                title={intl.formatMessage(messages.difficultyTitle)}
-                ylabel={intl.formatMessage(messages.difficultyRange)}
-              />
-              <ConfusionSection
-                data={parsedTS.map(({ timestamp, speed, speedRunning }): any => ({
-                  timestamp,
-                  value: speed,
-                  valueRunning: speedRunning,
-                }))}
-                title={intl.formatMessage(messages.speedTitle)}
-                ylabel={intl.formatMessage(messages.speedRange)}
-              />
-            </>
-          )
-        }
-
-        return null
-      })()}
+      {isActive && <ConfusionCharts confusionTS={confusionTS} />}
 
       <style jsx>{`
         @import 'src/theme';
