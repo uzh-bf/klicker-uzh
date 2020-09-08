@@ -202,6 +202,7 @@ function SessionCreationForm({
                                 >
                                   <QuestionSingle
                                     description={description}
+                                    hasParticipantCount={false}
                                     id={id}
                                     title={title}
                                     type={type}
