@@ -27,8 +27,15 @@ function UploadModal({ children }: Props): React.ReactElement {
         const binaryStr = String(reader.result)
         const json = JSON.parse(binaryStr)
         setQuestions(json.exportQuestions)
-      } catch (e) {
-        addToast(e.message, { appearance: 'error' })
+      } catch (error) {
+        addToast(
+          <FormattedMessage
+            defaultMessage="Unable to parse questions: {errorMessage}"
+            id="components.questions.uploadModal.load.error"
+            values={{ errorMessage: error.message }}
+          />,
+          { appearance: 'error' }
+        )
       }
     }
 
@@ -75,8 +82,15 @@ function UploadModal({ children }: Props): React.ReactElement {
       }, Promise.resolve())
 
       window.location.reload()
-    } catch (e) {
-      addToast(e.message, { appearance: 'error' })
+    } catch (error) {
+      addToast(
+        <FormattedMessage
+          defaultMessage="Unable to import questions: {errorMessage}"
+          id="components.questions.uploadModal.sequence.error"
+          values={{ errorMessage: error.message }}
+        />,
+        { appearance: 'error' }
+      )
     }
 
     setIsLoading(false)

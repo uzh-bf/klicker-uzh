@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import classNames from 'classnames'
 import getConfig from 'next/config'
 import { defineMessages, useIntl } from 'react-intl'
@@ -10,7 +10,7 @@ import Possibilities from '../evaluation/Possibilities'
 import Statistics from '../evaluation/Statistics'
 import VisualizationType from '../evaluation/VisualizationType'
 import CsvExport from '../evaluation/CsvExport'
-import { QUESTION_GROUPS, CHART_TYPES, QUESTION_TYPES } from '../../constants'
+import { QUESTION_GROUPS, CHART_TYPES, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 import QuestionFiles from '../sessions/join/QuestionFiles'
 
 const { publicRuntimeConfig } = getConfig()
@@ -26,7 +26,7 @@ interface Props {
   activeInstance?: number
   activeInstances: any[]
   activeVisualization: string
-  children: React.ReactElement
+  children: React.ReactNode
   choices?: {
     correct?: boolean
     name: string
@@ -47,6 +47,14 @@ interface Props {
   title: string
   totalResponses?: number
   type: string
+  feedbacks: any[]
+  showFeedback: boolean
+  onChangeShowFeedback: (showFeedback: boolean) => void
+  confusionTS: any[]
+  onChangeShowConfusionTS: (showConfusionTS: boolean) => void
+  showConfusionTS: boolean
+  showQuestionLayout: boolean
+  sessionStatus: string
 }
 
 const defaultProps = {
@@ -61,27 +69,60 @@ const defaultProps = {
 }
 
 function EvaluationLayout({
-  activeVisualization,
-  data,
-  pageTitle,
-  showGraph,
-  showSolution,
-  onToggleShowSolution,
-  children,
-  type,
-  description,
-  onChangeVisualizationType,
-  totalResponses,
-  options,
   activeInstance,
   activeInstances,
-  onChangeActiveInstance,
-  instanceSummary,
-  statistics,
-  sessionId,
+  activeVisualization,
+  children,
+  confusionTS,
+  data,
+  description,
+  feedbacks,
   files,
+  instanceSummary,
+  onChangeActiveInstance,
+  onChangeShowConfusionTS,
+  onChangeShowFeedback,
+  onChangeVisualizationType,
+  onToggleShowSolution,
+  options,
+  pageTitle,
+  sessionId,
+  sessionStatus,
+  showConfusionTS,
+  showFeedback,
+  showGraph,
+  showQuestionLayout,
+  showSolution,
+  statistics,
+  totalResponses,
+  type,
 }: Props): React.ReactElement {
   const intl = useIntl()
+
+  const [currentIndex, setCurrentIndex] = useState(activeInstance)
+
+  const existsFeedback = feedbacks.length > 0
+  const existsConfusion = confusionTS.length > 0
+  const numberOfTabs = instanceSummary.length + (existsFeedback ? 1 : 0) + (existsConfusion ? 1 : 0)
+  const feedbackIndex = existsConfusion ? numberOfTabs - 2 : numberOfTabs - 1
+  const confusionIndex = numberOfTabs - 1
+
+  useEffect(() => {
+    const indexToSet = (): number => {
+      if (showConfusionTS) {
+        return confusionIndex
+      }
+      if (showFeedback) {
+        return feedbackIndex
+      }
+      return currentIndex
+    }
+    setCurrentIndex(indexToSet)
+  })
+
+  useEffect(() => {
+    setCurrentIndex(activeInstance)
+  }, [activeInstance])
 
   const dropdownOptions = instanceSummary.map(({ blockStatus, title, totalResponses: count }, index): {
     icon: string
@@ -94,6 +135,30 @@ function EvaluationLayout({
     text: `${title} (${count})`,
     value: index,
   }))
+
+  const activateInstance = (index: number): void => {
+    const activateConfusion =
+      (existsFeedback && existsConfusion && index === numberOfTabs - 1) ||
+      (!existsFeedback && existsConfusion && index === numberOfTabs - 1)
+    const activateFeedback =
+      (existsFeedback && existsConfusion && index === numberOfTabs - 2) ||
+      (existsFeedback && !existsConfusion && index === numberOfTabs - 1)
+    const activateIndex = !(activateConfusion || activateFeedback)
+
+    if (activateIndex) {
+      onChangeShowFeedback(false)
+      onChangeShowConfusionTS(false)
+      onChangeActiveInstance(index)
+    } else if (activateConfusion) {
+      onChangeShowFeedback(false)
+      onChangeShowConfusionTS(true)
+    } else if (activateFeedback) {
+      onChangeShowFeedback(true)
+      onChangeShowConfusionTS(false)
+    }
+
+    setCurrentIndex(index)
+  }
 
   return (
     <CommonLayout baseFontSize={20} nextHeight="100%" pageTitle={pageTitle}>
@@ -108,70 +173,94 @@ function EvaluationLayout({
           }
 
           return (
-            <>
-              <div className="instanceDropdown">
-                <Button
-                  basic
+            <div className="instanceChooser">
+              <Menu fitted tabular>
+                <Menu.Item
                   className="hoverable"
-                  disabled={activeInstance === 0}
+                  disabled={currentIndex === 0}
                   icon="arrow left"
-                  onClick={(): void => onChangeActiveInstance(activeInstance - 1)}
+                  onClick={(): void => activateInstance(currentIndex - 1)}
                 />
-                <Button
-                  basic
+
+                <Menu.Item
                   className="hoverable"
-                  disabled={activeInstance + 1 === instanceSummary.length}
+                  disabled={currentIndex + 1 === numberOfTabs}
                   icon="arrow right"
-                  onClick={(): void => onChangeActiveInstance(activeInstance + 1)}
+                  onClick={(): void => activateInstance(currentIndex + 1)}
                 />
-                <Dropdown
-                  search
-                  selection
-                  options={dropdownOptions}
-                  placeholder="Select Question"
-                  value={activeInstance}
-                  onChange={(_, { value }: { value: number }): void => onChangeActiveInstance(value)}
-                />
-              </div>
-              <div className="instanceChooser">
-                <Menu fitted tabular>
-                  <Menu.Item
-                    className="hoverable"
-                    disabled={activeInstance === 0}
-                    icon="arrow left"
-                    onClick={(): void => onChangeActiveInstance(activeInstance - 1)}
-                  />
 
-                  <Menu.Item
-                    className="hoverable"
-                    disabled={activeInstance + 1 === instanceSummary.length}
-                    icon="arrow right"
-                    onClick={(): void => onChangeActiveInstance(activeInstance + 1)}
-                  />
+                <div className="instanceDropdown">
+                  <Menu.Item fitted active={showQuestionLayout}>
+                    <Dropdown
+                      search
+                      selection
+                      options={dropdownOptions}
+                      placeholder="Select Question"
+                      value={currentIndex}
+                      onChange={(_, { value }: { value: any }): void => {
+                        activateInstance(value)
+                      }}
+                    />
+                  </Menu.Item>
+                </div>
 
-                  {instanceSummary.map(
+                {instanceSummary.length < 7 &&
+                  instanceSummary.map(
                     ({ blockStatus, title, totalResponses: count }, index): React.ReactElement => (
                       <Menu.Item
                         fitted
-                        active={index === activeInstance}
+                        active={index === currentIndex}
                         className={classNames('hoverable', {
                           executed: blockStatus === 'EXECUTED',
                         })}
-                        onClick={(): void => onChangeActiveInstance(index)}
+                        onClick={(): void => {
+                          activateInstance(index)
+                        }}
                       >
                         <Icon name={blockStatus === 'ACTIVE' ? 'comments' : 'checkmark'} />
                         {title.length > 15 ? `${title.substring(0, 15)}...` : title} ({count})
                       </Menu.Item>
                     )
                   )}
-                </Menu>
-              </div>
-            </>
+
+                {sessionStatus === SESSION_STATUS.COMPLETED && existsFeedback && (
+                  <Menu.Item
+                    fitted
+                    active={showFeedback}
+                    className={classNames('hoverable', 'feedback')}
+                    onClick={(): void => {
+                      // TODO: dont go with instance index, use showFeedback
+                      activateInstance(existsConfusion ? numberOfTabs - 2 : numberOfTabs - 1) // if there is a confusion-tab, the tab is the second to last, otherwise the last
+                    }}
+                  >
+                    Feedback-Channel
+                  </Menu.Item>
+                )}
+
+                {sessionStatus === SESSION_STATUS.COMPLETED && existsConfusion && (
+                  <Menu.Item
+                    fitted
+                    active={showConfusionTS}
+                    className={classNames('hoverable', 'feedback')}
+                    onClick={(): void => {
+                      // TODO: dont go with instance index, use showConfusionTS
+                      activateInstance(numberOfTabs - 1)
+                    }}
+                  >
+                    Confusion-Barometer
+                  </Menu.Item>
+                )}
+              </Menu>
+            </div>
           )
         })()}
 
         <div className="questionDetails">
-          <p>{description}</p>
+          <p>
+            {(showQuestionLayout && description) ||
+              (showFeedback && 'Feedback-Channel') ||
+              (showConfusionTS && 'Confusion-Barometer')}
+          </p>
           {publicRuntimeConfig.s3root && files.length > 0 && (
             <div className="files">
               <QuestionFiles isCompact files={files} />
@@ -180,10 +269,19 @@ function EvaluationLayout({
         </div>
 
         <div className="info">
-          <Info totalResponses={totalResponses} />
+          {showQuestionLayout && Info}
+          <Info
+            totalResponses={
+              (showQuestionLayout && totalResponses) ||
+              (showFeedback && feedbacks.length) ||
+              (showConfusionTS && confusionTS.length) ||
+              0
+            }
+          />
           {type !== QUESTION_TYPES.FREE &&
             type !== QUESTION_TYPES.FREE_RANGE &&
-            activeVisualization !== CHART_TYPES.CLOUD_CHART && (
+            activeVisualization !== CHART_TYPES.CLOUD_CHART &&
+            showQuestionLayout && (
               <Checkbox
                 toggle
                 defaultChecked={showSolution}
@@ -191,42 +289,48 @@ function EvaluationLayout({
                 onChange={onToggleShowSolution}
               />
             )}
-          <div className="exportButtons">
-            <CsvExport activeInstances={activeInstances} sessionId={sessionId} />
-            <a href={`/sessions/print/${sessionId}`}>
-              <Button content="Export PDF" icon="file" />
-            </a>
-          </div>
-          <VisualizationType
-            activeVisualization={activeVisualization}
-            questionType={type}
-            onChangeType={onChangeVisualizationType}
-          />
+          {showQuestionLayout && (
+            <div className="exportButtons">
+              <CsvExport activeInstances={activeInstances} sessionId={sessionId} />
+              <a href={`/sessions/print/${sessionId}`}>
+                <Button content="Export PDF" icon="file" />
+              </a>
+            </div>
+          )}
+          {showQuestionLayout && (
+            <VisualizationType
+              activeVisualization={activeVisualization}
+              questionType={type}
+              onChangeType={onChangeVisualizationType}
+            />
+          )}
         </div>
 
         <div className="chart">{children}</div>
 
-        {activeVisualization !== CHART_TYPES.CLOUD_CHART && activeVisualization !== CHART_TYPES.TABLE && (
-          <>
-            {QUESTION_GROUPS.WITH_POSSIBILITIES.includes(type) && (
-              <div className="optionDisplay">
-                <Possibilities
-                  data={data}
-                  questionOptions={options}
-                  questionType={type}
-                  showGraph={showGraph}
-                  showSolution={showSolution}
-                />
-              </div>
-            )}
+        {activeVisualization !== CHART_TYPES.CLOUD_CHART &&
+          activeVisualization !== CHART_TYPES.TABLE &&
+          showQuestionLayout && (
+            <>
+              {QUESTION_GROUPS.WITH_POSSIBILITIES.includes(type) && (
+                <div className="optionDisplay">
+                  <Possibilities
+                    data={data}
+                    questionOptions={options}
+                    questionType={type}
+                    showGraph={showGraph}
+                    showSolution={showSolution}
+                  />
+                </div>
+              )}
 
-            {QUESTION_GROUPS.WITH_STATISTICS.includes(type) && statistics && (
-              <div className="statistics">
-                <Statistics {...statistics} withBins={activeVisualization === CHART_TYPES.HISTOGRAM} />
-              </div>
-            )}
-          </>
-        )}
+              {QUESTION_GROUPS.WITH_STATISTICS.includes(type) && statistics && !showFeedback && (
+                <div className="statistics">
+                  <Statistics {...statistics} withBins={activeVisualization === CHART_TYPES.HISTOGRAM} />
+                </div>
+              )}
+            </>
+          )}
 
         <style global jsx>{`
           html {
@@ -273,8 +377,7 @@ function EvaluationLayout({
 
               .instanceChooser {
                 flex: 0 0 auto;
-                order: 0;
-                display: ${instanceSummary.length < 7 ? 'flex' : 'none'};
+                display: flex;
 
                 @media all and (max-width: 600px) {
                   display: none;
@@ -282,21 +385,17 @@ function EvaluationLayout({
               }
 
               .instanceDropdown {
-                flex: 0 0 auto;
-                order: 0;
-                display: ${instanceSummary.length >= 7 ? 'flex' : 'none'};
-
-                @media all and (max-width: 600px) {
-                  display: flex;
-                }
+                display: ${instanceSummary.length >= 7 ? 'block' : 'none'};
               }
 
               .chart {
                 flex: 1 0 50vh;
                 order: 5;
+                overflow-y: hidden;
               }
 
-              .questionDetails {
+              .questionDetails,
+              .feedbackDetails {
                 flex: 0 0 auto;
                 order: 1;
 
@@ -376,39 +475,63 @@ function EvaluationLayout({
                     padding-bottom: 0;
                     border-bottom: 1px solid $color-primary;
 
-                    :global(.menu) {
+                    :global(> .menu) {
                       min-height: 0;
                       margin-bottom: -1px;
                       border-bottom: 1px solid $color-primary;
 
-                      :global(.item) {
+                      :global(> .item) {
                         font-size: 0.7rem;
                         padding: 0 0.6rem;
                         margin: 0 0 -1px 0;
                         height: 2rem;
                       }
 
-                      :global(.item.active) {
+                      :global(> .item.active) {
                         border-color: $color-primary;
                         background-color: $color-primary-background;
                         border-bottom: 1px solid $color-primary-background;
                       }
 
-                      :global(.item.hoverable:hover) {
+                      :global(> .item.hoverable:hover) {
                         background-color: $color-primary-10p;
                       }
 
-                      :global(.item.executed) {
+                      :global(> .item.executed) {
+                        color: grey;
+                      }
+
+                      :global(> .item.feedback) {
                         color: grey;
                       }
                     }
                   }
 
                   .instanceDropdown {
-                    font-size: 0.8rem;
+                    :global(> .item) {
+                      padding: 3px;
+                      margin: 0 0 -1px 0;
+                      height: 2rem;
+                    }
+
+                    :global(> .item.active) {
+                      border-color: $color-primary;
+                      background-color: $color-primary-background;
+                      border-bottom: 1px solid $color-primary-background;
+                    }
+
+                    :global(.dropdown) {
+                      font-size: 0.6rem;
+                      line-height: 0.6rem;
+
+                      :global(.item) {
+                        min-height: 0;
+                      }
+                    }
                   }
 
-                  .questionDetails {
+                  .questionDetails,
+                  .feedbackDetails {
                     grid-area: questionDetails;
                     align-self: start;
 
@@ -432,7 +555,7 @@ function EvaluationLayout({
                     padding: 1rem 0.5rem 1rem 1rem;
 
                     :global(> *) {
-                      border: 1px solid lightgrey;
+                      border: ${showQuestionLayout ? '1px solid lightgrey' : '0'};
                     }
                   }
 
