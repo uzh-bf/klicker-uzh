@@ -7,7 +7,6 @@ query AccountSummary {
     useCase
     runningSession {
       id
-      runtime
     }
   }
 }
