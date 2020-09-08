@@ -71,9 +71,12 @@ function ActionBar({
   questions,
 }: Props): React.ReactElement {
   const intl = useIntl()
+
   const { addToast } = useToasts()
+
   const [csvData, setCsvData] = useState([])
   const [allItemsChecked, setAllItemsChecked] = useState(false)
+  const [isAnyModalOpen, setIsAnyModalOpen] = useState(false)
 
   const [getQuestionStatistics, { data, error }] = useMutation(QuestionStatisticsMutation)
   const [exportQuestions, { data: exportData, error: exportError }] = useMutation(ExportQuestionsMutation)
@@ -120,7 +123,14 @@ function ActionBar({
 
       setCsvData(Object.values(versionResults))
     } else if (error) {
-      addToast(error.message, { appearance: 'error' })
+      addToast(
+        <FormattedMessage
+          defaultMessage="Unable to export statistics: {errorMessage}"
+          id="components.questions.actionBar.data.error"
+          values={{ errorMessage: error.message }}
+        />,
+        { appearance: 'error' }
+      )
     }
   }, [data, error])
 
@@ -130,7 +140,14 @@ function ActionBar({
       const blob = new Blob([JSON.stringify(dataWithoutTypename)], { type: 'text/plain;charset=utf-8' })
       saveAs(blob, `klicker_export_${dayjs().format('YYYY-MM-DD_H-m-s')}.json`)
     } else if (exportError) {
-      addToast(error.message, { appearance: 'error' })
+      addToast(
+        <FormattedMessage
+          defaultMessage="Unable to export questions: {errorMessage}"
+          id="components.questions.actionBar.export.error"
+          values={{ errorMessage: error.message }}
+        />,
+        { appearance: 'error' }
+      )
     }
   }, [exportData, exportError])
 
@@ -177,6 +194,7 @@ function ActionBar({
           labeled
           className="primary icon"
           direction="left"
+          disabled={isAnyModalOpen}
           icon="plus square"
           text={intl.formatMessage(messages.create)}
         >
@@ -185,7 +203,7 @@ function ActionBar({
               <Icon name="play" />
               <FormattedMessage defaultMessage="New Session" id="questionPool.button.createSession" />
             </Dropdown.Item>
-            <QuestionCreationModal>
+            <QuestionCreationModal handleModalOpenChange={setIsAnyModalOpen}>
               {({ setIsModalOpen }): any => (
                 <Dropdown.Item onClick={(): void => setIsModalOpen(true)}>
                   <Icon name="question circle" />

@@ -170,50 +170,50 @@ function QuestionCreationForm({
   }
 
   return (
-    <FocusLock>
-      <div className="questionCreationForm">
-        <Formik
-          initialValues={
-            initialValues || {
-              content: EditorState.createEmpty(),
-              files: [],
-              options: {
-                choices: [],
-                randomized: false,
-                restrictions: {
-                  max: null,
-                  min: null,
-                },
+    <div className="questionCreationForm">
+      <Formik
+        initialValues={
+          initialValues || {
+            content: EditorState.createEmpty(),
+            files: [],
+            options: {
+              choices: [],
+              randomized: false,
+              restrictions: {
+                max: null,
+                min: null,
               },
-              tags: [],
-              title: '',
-              type: QUESTION_TYPES.SC,
-            }
+            },
+            tags: [],
+            title: '',
+            type: QUESTION_TYPES.SC,
           }
-          isInitialValid={isInitialValid}
-          validate={validate}
-          /* validationSchema={Yup.object().shape({
+        }
+        isInitialValid={isInitialValid}
+        validate={validate}
+        /* validationSchema={Yup.object().shape({
           content: Yup.string().required(),
           tags: Yup.array().min(1).required(),
           title: Yup.string().required(),
           type: Yup.oneOf(QUESTION_TYPES.values()).required(),
         })} */
-          onSubmit={onSubmit}
-        >
-          {({
-            values,
-            errors,
-            touched,
-            handleChange,
-            handleBlur,
-            handleSubmit,
-            isSubmitting,
-            setFieldValue,
-          }: any): React.ReactElement => {
-            const Preview = typeComponents[values.type].preview
-            const OptionsInput = typeComponents[values.type].input
+        onSubmit={onSubmit}
+      >
+        {({
+          values,
+          errors,
+          touched,
+          handleChange,
+          handleBlur,
+          handleSubmit,
+          isSubmitting,
+          setFieldValue,
+        }: any): React.ReactElement => {
+          const Preview = typeComponents[values.type].preview
+          const OptionsInput = typeComponents[values.type].input
 
-            return (
+          return (
+            <FocusLock>
               <Form error={!_isEmpty(errors)} onSubmit={handleSubmit}>
                 <div className="questionActions">
                   <Button className="discard" size="large" type="button" onClick={onDiscard}>
@@ -328,99 +328,99 @@ function QuestionCreationForm({
                   />
                 </div>
               </Form>
-            )
-          }}
-        </Formik>
+            </FocusLock>
+          )
+        }}
+      </Formik>
 
-        <style jsx>{`
-          @import 'src/theme';
+      <style jsx>{`
+        @import 'src/theme';
 
-          .questionCreationForm > :global(form) {
-            display: flex;
-            flex-direction: column;
+        .questionCreationForm :global(form) {
+          display: flex;
+          flex-direction: column;
 
-            .questionInput,
-            .questionPreview {
-              margin-bottom: 1rem;
-            }
+          .questionInput,
+          .questionPreview {
+            margin-bottom: 1rem;
+          }
 
-            .questionInput :global(.field > label),
-            .questionPreview > h2,
-            .questionFiles > h2 {
-              font-size: 1.2rem !important;
-              margin: 0 !important;
-              margin-bottom: 0.5rem !important;
-            }
+          .questionInput :global(.field > label),
+          .questionPreview > h2,
+          .questionFiles > h2 {
+            font-size: 1.2rem !important;
+            margin: 0 !important;
+            margin-bottom: 0.5rem !important;
+          }
 
-            @supports (grid-gap: 1rem) {
-              @include desktop-tablet-only {
-                display: grid;
-                align-content: start;
+          @supports (grid-gap: 1rem) {
+            @include desktop-tablet-only {
+              display: grid;
+              align-content: start;
 
-                grid-gap: 1rem;
-                grid-template-columns: repeat(3, 1fr);
-                grid-template-rows: auto auto auto auto;
-                grid-template-areas:
-                  'title title preview'
-                  'type tags preview'
-                  'content content content'
-                  'files files files'
-                  'options options options'
-                  'actions actions actions';
-                .questionInput,
-                .questionPreview {
-                  margin: 0;
+              grid-gap: 1rem;
+              grid-template-columns: repeat(3, 1fr);
+              grid-template-rows: auto auto auto auto;
+              grid-template-areas:
+                'title title preview'
+                'type tags preview'
+                'content content content'
+                'files files files'
+                'options options options'
+                'actions actions actions';
+              .questionInput,
+              .questionPreview {
+                margin: 0;
+              }
+
+              .questionTitle {
+                grid-area: title;
+              }
+
+              .questionType {
+                grid-area: type;
+              }
+
+              .questionTags {
+                grid-area: tags;
+              }
+
+              .questionPreview {
+                grid-area: preview;
+                align-self: stretch;
+              }
+
+              .questionContent {
+                grid-area: content;
+              }
+
+              .questionFiles {
+                grid-area: files;
+              }
+
+              .questionOptions {
+                grid-area: options;
+              }
+
+              .questionActions {
+                grid-area: actions;
+                display: flex;
+                justify-content: space-between;
+                align-items: start;
+
+                :global(button) {
+                  margin-right: 0;
                 }
 
-                .questionTitle {
-                  grid-area: title;
-                }
-
-                .questionType {
-                  grid-area: type;
-                }
-
-                .questionTags {
-                  grid-area: tags;
-                }
-
-                .questionPreview {
-                  grid-area: preview;
-                  align-self: stretch;
-                }
-
-                .questionContent {
-                  grid-area: content;
-                }
-
-                .questionFiles {
-                  grid-area: files;
-                }
-
-                .questionOptions {
-                  grid-area: options;
-                }
-
-                .questionActions {
-                  grid-area: actions;
-                  display: flex;
-                  justify-content: space-between;
-                  align-items: start;
-
-                  :global(button) {
-                    margin-right: 0;
-                  }
-
-                  :global(.message) {
-                    margin-right: 1rem;
-                  }
+                :global(.message) {
+                  margin-right: 1rem;
                 }
               }
             }
           }
-        `}</style>
-      </div>{' '}
-    </FocusLock>
+        }
+      `}</style>
+    </div>
   )
 }
 

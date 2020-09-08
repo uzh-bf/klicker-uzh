@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useQuery, useMutation } from '@apollo/react-hooks'
 import { convertToRaw } from 'draft-js'
 import { Modal } from 'semantic-ui-react'
@@ -11,14 +11,19 @@ import CreateQuestionMutation from '../../graphql/mutations/CreateQuestionMutati
 import RequestPresignedURLMutation from '../../graphql/mutations/RequestPresignedURLMutation.graphql'
 
 interface Props {
+  handleModalOpenChange: (newValue: boolean) => void
   children: ({ setIsModalOpen: Function }) => React.ReactChild
 }
 
-function QuestionCreationModal({ children }: Props): React.ReactElement {
+function QuestionCreationModal({ handleModalOpenChange, children }: Props): React.ReactElement {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [createQuestion] = useMutation(CreateQuestionMutation)
   const [requestPresignedURL] = useMutation(RequestPresignedURLMutation)
   const { data, loading: tagsLoading } = useQuery(TagListQuery)
+
+  useEffect(() => {
+    handleModalOpenChange(isModalOpen)
+  }, [isModalOpen])
 
   return (
     <Modal closeOnDimmerClick={false} open={isModalOpen} size="large" trigger={children({ setIsModalOpen })}>

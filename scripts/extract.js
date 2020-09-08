@@ -12,7 +12,7 @@ execFileSync('npx', [
   'formatjs',
   'extract',
   '--messages-dir',
-  'src/lang/.messages/',
+  './src/lang/.messages/',
   '--remove-default-message',
   ...sourceFiles,
 ])

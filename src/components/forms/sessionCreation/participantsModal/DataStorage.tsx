@@ -10,7 +10,7 @@ interface Props {
   onActivatePreviousStep: () => void
   onSaveSettings: () => void
 }
-
+// currently not in use
 function DataStorage({
   dataStorageMode,
   onChangeDataStorageMode,
