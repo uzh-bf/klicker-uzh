@@ -122,7 +122,7 @@ function ActionBar({
     } else if (error) {
       addToast(
         <FormattedMessage
-          defaultMessage="{errorMessage}"
+          defaultMessage="Unable to export statistics: {errorMessage}"
           id="components.questions.actionBar.data.error"
           values={{ errorMessage: error.message }}
         />,
@@ -139,7 +139,7 @@ function ActionBar({
     } else if (exportError) {
       addToast(
         <FormattedMessage
-          defaultMessage="{errorMessage}"
+          defaultMessage="Unable to export questions: {errorMessage}"
           id="components.questions.actionBar.export.error"
           values={{ errorMessage: error.message }}
         />,
