@@ -30,7 +30,7 @@
     "@formatjs/intl-relativetimeformat": "4.5.16",
     "@types/draft-js": "0.10.40",
     "@types/lodash": "4.14.161",
-    "@types/ramda": "0.27.4",
+    "@types/ramda": "0.27.15",
     "@types/react": "16.9.46",
     "@types/react-dom": "16.9.8",
     "@types/styled-jsx": "2.2.8",
