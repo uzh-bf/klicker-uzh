@@ -10,7 +10,7 @@ import Possibilities from '../evaluation/Possibilities'
 import Statistics from '../evaluation/Statistics'
 import VisualizationType from '../evaluation/VisualizationType'
 import CsvExport from '../evaluation/CsvExport'
-import { QUESTION_GROUPS, CHART_TYPES, QUESTION_TYPES } from '../../constants'
+import { QUESTION_GROUPS, CHART_TYPES, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 import QuestionFiles from '../sessions/join/QuestionFiles'
 
 const { publicRuntimeConfig } = getConfig()
@@ -54,6 +54,7 @@ interface Props {
   onChangeShowConfusionTS: (showConfusionTS: boolean) => void
   showConfusionTS: boolean
   showQuestionLayout: boolean
+  sessionStatus: string
 }
 
 const defaultProps = {
@@ -68,32 +69,33 @@ const defaultProps = {
 }
 
 function EvaluationLayout({
-  activeVisualization,
-  data,
-  pageTitle,
-  showGraph,
-  showSolution,
-  onToggleShowSolution,
-  children,
-  type,
-  description,
-  onChangeVisualizationType,
-  totalResponses,
-  options,
   activeInstance,
   activeInstances,
-  onChangeActiveInstance,
-  instanceSummary,
-  statistics,
-  sessionId,
-  files,
-  feedbacks,
-  showFeedback,
-  onChangeShowFeedback,
+  activeVisualization,
+  children,
   confusionTS,
+  data,
+  description,
+  feedbacks,
+  files,
+  instanceSummary,
+  onChangeActiveInstance,
   onChangeShowConfusionTS,
+  onChangeShowFeedback,
+  onChangeVisualizationType,
+  onToggleShowSolution,
+  options,
+  pageTitle,
+  sessionId,
+  sessionStatus,
   showConfusionTS,
+  showFeedback,
+  showGraph,
   showQuestionLayout,
+  showSolution,
+  statistics,
+  totalResponses,
+  type,
 }: Props): React.ReactElement {
   const intl = useIntl()
 
@@ -221,7 +223,7 @@ function EvaluationLayout({
                     )
                   )}
 
-                {existsFeedback && (
+                {sessionStatus === SESSION_STATUS.COMPLETED && existsFeedback && (
                   <Menu.Item
                     fitted
                     active={showFeedback}
@@ -235,7 +237,7 @@ function EvaluationLayout({
                   </Menu.Item>
                 )}
 
-                {existsConfusion && (
+                {sessionStatus === SESSION_STATUS.COMPLETED && existsConfusion && (
                   <Menu.Item
                     fitted
                     active={showConfusionTS}

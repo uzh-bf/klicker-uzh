@@ -10,7 +10,9 @@ function FeedbackTableChart({ feedbacks }: Props): React.ReactElement {
     <div className="tableChart">
       <Table striped>
         <Table.Header>
-          <Table.HeaderCell>Feedback</Table.HeaderCell>
+          <Table.Row>
+            <Table.HeaderCell>Feedback</Table.HeaderCell>
+          </Table.Row>
         </Table.Header>
         <Table.Body>
           {feedbacks.map(
