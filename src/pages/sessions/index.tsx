@@ -1,5 +1,5 @@
 import React from 'react'
-import { defineMessages, useIntl } from 'react-intl'
+import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
 import { useMutation } from '@apollo/react-hooks'
 import _debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
@@ -47,10 +47,17 @@ function Index(): React.ReactElement {
       router.push('/sessions/running')
     } catch ({ message }) {
       console.error(message)
-      addToast(`Unable to start session: ${message}`, {
-        appearance: 'error',
-        autoDismiss: false,
-      })
+      addToast(
+        <FormattedMessage
+          defaultMessage="`Unable to start session: {errorMessage}"
+          id="sessions.index.startSession.error"
+          values={{ errorMessage: message }}
+        />,
+        {
+          appearance: 'error',
+          autoDismiss: false,
+        }
+      )
     }
   }
 
