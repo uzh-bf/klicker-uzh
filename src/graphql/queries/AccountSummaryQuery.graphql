@@ -8,7 +8,6 @@ query AccountSummary {
     role
     runningSession {
       id
-      runtime
     }
   }
 }

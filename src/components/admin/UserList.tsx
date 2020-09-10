@@ -4,9 +4,12 @@ import { Loader, Message } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import { useToasts } from 'react-toast-notifications'
 import DeleteUserMutation from '../../graphql/mutations/DeleteUserMutation.graphql'
+import ModifyUserAsAdminMutation from '../../graphql/mutations/ModifyUserAsAdminMutation.graphql'
 import UserListQuery from '../../graphql/queries/UserListQuery.graphql'
-import User from './User'
+// import User from './User'
+import CustomizableTable from '../common/CustomizableTable'
 import { buildIndex, filterByTitle } from '../../lib/utils/filters'
+
 
 
 interface Props {
@@ -19,8 +22,10 @@ function UserList({ filters }: Props): React.ReactElement {
 
   const { data, loading, error } = useQuery(UserListQuery)
   const [deleteUser] = useMutation(DeleteUserMutation)
+  const [modifyUser] = useMutation(ModifyUserAsAdminMutation)
 
   const [deletionConfirmation, setDeletionConfirmation] = useState(false)
+  const [editConfirmation, setEditConfirmation] = useState(false)
   
   if (loading) {
     return <Loader active />
@@ -85,9 +90,76 @@ function UserList({ filters }: Props): React.ReactElement {
    console.log(`Deleted ${userId}`)
   }
 
+  const onUserModification = async (values, confirm, id) : Promise<any> => {
+    if (!editConfirmation){
+      setEditConfirmation(true)
+        return
+    }
+    if (confirm){
+      try{
+       await modifyUser({
+        variables: {id, email: values.email, shortname: values.shortname, institution: values.institution, role: values.role},
+        })
+        addToast(
+          <FormattedMessage
+            defaultMessage="User successfully modified."
+            id="components.admin.user.edit.success"
+          />,
+          {
+            appearance: 'success',
+          }
+        )
+      }catch(error){
+        addToast(
+          <FormattedMessage
+            defaultMessage="{errorMessage}"
+            id="components.admin.user.edit.error"
+            values={{ errorMessage: error.message }}
+          />,
+          {
+            appearance: 'error',
+          }
+        ) 
+      }
+    }
+    setEditConfirmation(false)
+    // setEditableUser(false)
+  } 
+
+  const tableColumns = [
+    {
+      title: 'Email',
+      attributeName: 'email'
+    },
+    {
+      title: 'Shortname',
+      attributeName: 'shortname'
+    },
+    {
+      title: 'Institution',
+      attributeName: 'institution'
+    },
+    {
+      title: 'Role',
+      attributeName: 'role'
+    },
+  ]
+
   return (
     <div className="userList">
-      {matchingUsers.map(({ id, email, shortname, institution, isActive, isAAI, role }) => {
+      <CustomizableTable 
+        hasDeletion
+        hasModification
+        columns={
+          tableColumns
+        }
+        data={matchingUsers} 
+        deletionConfirmation={deletionConfirmation}
+        handleDeletion={onUserDeletion}
+        handleModification={onUserModification}
+      />
+  
+      {/*matchingUsers.map(({ id, email, shortname, institution, isActive, isAAI, role }) => {
         const userProps = {
           id,
           email,
@@ -101,7 +173,7 @@ function UserList({ filters }: Props): React.ReactElement {
           setDeletionConfirmation,
         }
         return <User {...userProps} />
-      })}
+      })*/}
     </div>
   )
 }

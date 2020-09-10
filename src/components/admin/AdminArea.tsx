@@ -46,7 +46,7 @@ function AdminArea({ filters }: Props): React.ReactElement {
           padding: 1rem;
 
           @include desktop-only {
-            margin: 0 20%;
+            margin: 0 5%;
             padding: 1rem 0;
           }
         }

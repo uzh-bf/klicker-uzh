@@ -132,6 +132,7 @@ Props): React.ReactElement {
                   <Icon name="trash" />
                   Delete User
                 </Button>
+                <h1>{id}</h1>
                 <Confirm 
                   cancelButton={'Go Back'}
                   confirmButton={'Delete User'}
