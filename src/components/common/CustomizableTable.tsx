@@ -4,7 +4,12 @@ import { Button, Table, Confirm } from 'semantic-ui-react'
 import EditTableRowForm from '../forms/EditTableRowForm'
 
 interface Props {
-  columns: { title: string, attributeName: string, width?: any }[],
+  columns: { 
+    title: string, // labels column
+    attributeName: string, // used to identify the correct attribute of the data object
+    width?: any, // describes the width of a column (optional)
+    isEditable?: boolean // true if attribute is editable, false otherwise (must only be given if hasModification is true)
+  } [],
   data: any [], 
   deletionConfirmation?: boolean,
   editConfirmation?: boolean,
@@ -15,6 +20,7 @@ interface Props {
 }
 
 const defaultProps = {
+
   deletionConfirmation: false,
   hasDeletion: false,
   hasModification: false,

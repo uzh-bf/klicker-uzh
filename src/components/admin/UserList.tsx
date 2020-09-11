@@ -1,4 +1,5 @@
 import React, {useState} from 'react'
+import dayjs from 'dayjs'
 import { useQuery, useMutation } from '@apollo/react-hooks'
 import { Loader, Message } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
@@ -26,8 +27,15 @@ function UserList({ filters }: Props): React.ReactElement {
   const [deletionConfirmation, setDeletionConfirmation] = useState(false)
   const [editConfirmation, setEditConfirmation] = useState(false)
 
-  
-  
+  // converts the data of the user such that it can be displayed in the table
+  const convertAttributeValues = (users : any []) : void => {
+    users.forEach((user) => {
+      user.createdAt = dayjs(user.createdAt).format('YYYY-MM-DD')
+      user.updatedAt = dayjs(user.updatedAt).format('YYYY-MM-DD')
+      user.isAAI = new String(user.isAAI) === 'true' ? 'Yes' : 'No'
+    })
+  }
+
   if (loading) {
     return <Loader active />
   }
@@ -42,6 +50,8 @@ function UserList({ filters }: Props): React.ReactElement {
 
   // apply the filters
   const matchingUsers = filterByTitle(users, filters, userIndex)
+
+  convertAttributeValues(matchingUsers)
 
   if (matchingUsers.length === 0) {
     return (
@@ -130,26 +140,43 @@ function UserList({ filters }: Props): React.ReactElement {
       title: 'Email',
       attributeName: 'email',
       width: 4,
+      isEditable: true,
     },
     {
       title: 'Shortname',
       attributeName: 'shortname',
       width: 2,
+      isEditable: true,
     },
     {
       title: 'Institution',
       attributeName: 'institution', 
       width: 2,
+      isEditable: true,
     },
     {
       title: 'Role',
       attributeName: 'role',
       width: 2,
+      isEditable: true,
     },
     {
       title: 'Last Login',
-      attributeName: 'role',
+      attributeName: 'updatedAt',
       width: 2,
+      isEditable: false,
+    },
+    {
+      title: 'Created at',
+      attributeName: 'createdAt',
+      width: 2,
+      isEditable: false,
+    },
+    {
+      title: 'AAI',
+      attributeName: 'isAAI',
+      width: 1,
+      isEditable: false,
     },
   ]
 

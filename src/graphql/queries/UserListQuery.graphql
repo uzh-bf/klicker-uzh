@@ -4,8 +4,9 @@ query UserList {
     email
     shortname
     institution
-    isActive
     isAAI
     role
+    createdAt
+    updatedAt
   }
 }

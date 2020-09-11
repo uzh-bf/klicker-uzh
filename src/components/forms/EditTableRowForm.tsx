@@ -33,6 +33,7 @@ interface Props {
 }
     
 function EditTableRowForm({
+
     data,
     columns,
     editConfirmation,
@@ -60,6 +61,7 @@ function EditTableRowForm({
             }) : React.ReactElement => (
                 <>
                     {columns.map((column) : React.ReactElement => (
+                        (column.isEditable && (
                         <Table.Cell verticalAlign={'top'} width={column.width}>
                             <FormikInput 
                                 required
@@ -71,26 +73,38 @@ function EditTableRowForm({
                                 touched={touched[column.attributeName]}
                                 type={column.attributeName}
                                 value={values[column.attributeName]}
-                            />
-                        </Table.Cell>
+                            /> 
+                        </Table.Cell> )) || (
+                            <Table.Cell verticalAlign={'middle'} width={column.width}>
+                                {values[column.attributeName]}
+                            </Table.Cell>
+                        ) 
                     ))}
-                        <Table.Cell className="buttonCell" textAlign="right">
-                            <Button
-                                primary
-                                className="save"
-                                disabled={ !isValid || !dirty}
-                                onClick={() : void => {
-                                    handleModification(data.id, values, false)
-                                }}
-                            >
-                                <FormattedMessage defaultMessage="Save" id="form.button.save" />
-                            </Button>
-                            <Button 
-                                className="discard"  
-                                type="button"
-                                onClick={onDiscard} 
-                            ><FormattedMessage defaultMessage="Discard" id="form.button.discard" /></Button>
+                        <Table.Cell textAlign="right">
+                            <div className="buttonCell">
+                                <div className="saveButton">
+                                    <Button
+                                        primary
+                                        className="save"
+                                        disabled={ !isValid || !dirty}
+                                        onClick={() : void => {
+                                            handleModification(data.id, values, false)
+                                        }}
+                                    >
+                                        <FormattedMessage defaultMessage="Save" id="form.button.save" />
+                                    </Button>
+                                </div>
+                                <div className="saveButton">
+                                    <Button 
+                                        className="discard"  
+                                        type="button"
+                                        onClick={onDiscard} 
+                                    ><FormattedMessage defaultMessage="Discard" id="form.button.discard" />
+                                    </Button>
+                                </div>
+                            </div>
                         </Table.Cell>
+                        
                         <Confirm 
                             cancelButton={'Go Back'}
                             confirmButton={'Modify User'}
@@ -110,6 +124,13 @@ function EditTableRowForm({
 
                                 :global(.ui.input > input ){
                                   width: 100%;
+                                }
+                                .buttonCell{
+                                    display: flex; 
+                                    flex-direction: row;   
+                                    .saveButton {
+                                        width: 50%;
+                                    } 
                                 }
                             `}
                         </style>

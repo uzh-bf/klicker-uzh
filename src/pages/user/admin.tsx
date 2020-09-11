@@ -35,7 +35,7 @@ function Admin(): React.ReactElement {
         title: intl.formatMessage(messages.title),
       }}
       pageTitle={intl.formatMessage(messages.pageTitle)}
-      sidebar={{ activeItem: 'sessionList' }}
+      sidebar={{ activeItem: 'admin' }}
     >
       <AdminArea filters={filters} />
     </TeacherLayout>
