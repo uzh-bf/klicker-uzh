@@ -1,66 +1,87 @@
 import React from 'react'
-import getConfig from 'next/config'
-import { FormattedMessage, useIntl } from 'react-intl'
+import { FormattedMessage } from 'react-intl'
 import { Formik } from 'formik'
 import { object } from 'yup'
-import { Form, Button, Confirm, Table } from 'semantic-ui-react'
+import {  Button, Confirm, Table } from 'semantic-ui-react'
 
 import FormikInput from './components/FormikInput'
 import validationSchema from './common/validationSchema'
-import messages from './common/messages'
 
-const { publicRuntimeConfig } = getConfig()
+function ConfirmationContent({ columns, initialValues , values } : {columns : any, initialValues : any, values : any}) : React.ReactElement {
+    return (
+      <p className="content">
+        <h3>The following changes will be made: {'\n'}</h3>
+        {columns.map((column) => (
+            initialValues[column.attributeName] !== values[column.attributeName] ? <p>{'\n'}{column.title}: {initialValues[column.attributeName]} -&gt; {values[column.attributeName]}</p> : ''
+        ))}
+    <style jsx>
+        {`
+            @import 'src/theme';
+            .content{ padding: 1rem;}
+        `}
+    </style>
+    </p>
+    )}
 
+interface Props {
+    data: any,
+    columns: any [],
+    editConfirmation: boolean,
+    handleModification: (id : string, values : any, confirm : boolean) => Promise<void>
+    onDiscard: () => void
+    onSuccessfulModification: () => void
+}
+    
 function EditTableRowForm({
     data,
     columns,
     editConfirmation,
     handleModification,
     onDiscard,
-    ...args
-}) : React.ReactElement {
+    onSuccessfulModification,
+} : Props) : React.ReactElement {
 
-    let initialValues = new Object()
-    columns.map((column) => {
+    const initialValues = {}
+    columns.forEach((column) => {
         initialValues[column.attributeName] = data[column.attributeName]
     })
 
     return (
        <Formik
             initialValues={initialValues}
-            onSubmit={() => {}}
             render={({
                 values,
                 errors,
                 touched,
                 handleChange,
                 handleBlur,
-                handleSubmit,
                 isValid,
                 dirty,
             }) : React.ReactElement => (
                 <>
                     {columns.map((column) : React.ReactElement => (
-                        <Table.Cell>
+                        <Table.Cell verticalAlign={'top'} width={column.width}>
                             <FormikInput 
                                 required
-                                error={errors[columns[0].attributeName]}
-                                errorMessage={'hello'}
+                                error={errors[column.attributeName]}
+                                errorMessage={`Please provide a valid ${column.title}`}
                                 handleBlur={handleBlur}
                                 handleChange={handleChange}
                                 name={column.attributeName}
-                                touched={true}
+                                touched={touched[column.attributeName]}
                                 type={column.attributeName}
                                 value={values[column.attributeName]}
                             />
                         </Table.Cell>
                     ))}
-                        <Table.Cell>
+                        <Table.Cell className="buttonCell" textAlign="right">
                             <Button
                                 primary
                                 className="save"
                                 disabled={ !isValid || !dirty}
-                                type="submit"
+                                onClick={() : void => {
+                                    handleModification(data.id, values, false)
+                                }}
                             >
                                 <FormattedMessage defaultMessage="Save" id="form.button.save" />
                             </Button>
@@ -70,17 +91,36 @@ function EditTableRowForm({
                                 onClick={onDiscard} 
                             ><FormattedMessage defaultMessage="Discard" id="form.button.discard" /></Button>
                         </Table.Cell>
+                        <Confirm 
+                            cancelButton={'Go Back'}
+                            confirmButton={'Modify User'}
+                            content={() : React.ReactElement => {
+                            return <ConfirmationContent columns={columns} initialValues={initialValues} values={values}/>}
+                        }
+                            open={editConfirmation}
+                            onCancel={() : Promise<void> => handleModification(data.id, values, false)}
+                            onConfirm={() : void  => {
+                                handleModification(data.id, values, true)
+                                onSuccessfulModification()
+                            }}
+                        />
                         <style jsx>
                             {`
                                 @import 'src/theme';
 
-                                :global(.ui .button){
-                                    width: 100%;
+                                :global(.ui.input > input ){
+                                  width: 100%;
                                 }
                             `}
-                            </style>
+                        </style>
                     </>
-            )}
+            )
+        }
+        validationSchema={object()
+            .shape({
+                ...validationSchema
+            })}
+        onSubmit={() : Promise<void> => handleModification(data.id, undefined, false)}
 
        />
     )

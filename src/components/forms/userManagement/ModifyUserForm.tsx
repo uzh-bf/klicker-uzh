@@ -143,6 +143,7 @@ function ModifyUserForm({
                 >
                 <FormattedMessage defaultMessage="Discard" id="common.button.discard" />
             </Button>
+
             <Confirm 
               className="userDeletion"
               cancelButton={'Go Back'}

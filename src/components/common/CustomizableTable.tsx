@@ -1,17 +1,17 @@
 import React, { useState } from 'react'
 import _sortBy from 'lodash/sortBy'
-import { useMutation } from '@apollo/react-hooks'
 import { Button, Table, Confirm } from 'semantic-ui-react'
 import EditTableRowForm from '../forms/EditTableRowForm'
 
 interface Props {
-  columns: { title: string, attributeName: string }[],
+  columns: { title: string, attributeName: string, width?: any }[],
   data: any [], 
   deletionConfirmation?: boolean,
+  editConfirmation?: boolean,
   hasDeletion?: boolean,
   hasModification?: boolean,
   handleDeletion?: (id: string, confirm: boolean) => Promise<void>,
-  handleModification?: (id: string, confirm: boolean, values : any []) => void,
+  handleModification?: (id: string, values : any, confirm: boolean) => Promise<void>,
 }
 
 const defaultProps = {
@@ -20,7 +20,16 @@ const defaultProps = {
   hasModification: false,
 }
 
-function CustomizableTable( {columns, data, deletionConfirmation, hasDeletion, hasModification, handleDeletion} : Props ) : React.ReactElement {
+function CustomizableTable({
+  columns, 
+  data, 
+  deletionConfirmation, 
+  editConfirmation, 
+  hasDeletion, 
+  hasModification, 
+  handleDeletion, 
+  handleModification
+} : Props ) : React.ReactElement {
 
     const [sortBy, setSortBy] = useState(columns[0].attributeName)
     const [sortDirection, setSortDirection] : any = useState('descending')
@@ -45,7 +54,7 @@ function CustomizableTable( {columns, data, deletionConfirmation, hasDeletion, h
               <Table.Header>
                 {
                   columns.map((column) : React.ReactElement => (
-                      <Table.HeaderCell sorted={sortBy === column.attributeName ? sortDirection : null} onClick={onSort(column.attributeName)}>
+                      <Table.HeaderCell sorted={sortBy === column.attributeName ? sortDirection : null} width={column.width} onClick={onSort(column.attributeName)}  >
                         {column.title}
                       </Table.HeaderCell>                 
                   ))
@@ -54,7 +63,7 @@ function CustomizableTable( {columns, data, deletionConfirmation, hasDeletion, h
               <Table.Body>
                 {
                   sortedData.map(( object, index ) : React.ReactElement => (
-                    editableRow != index && (
+                    editableRow !== index && (
                       <Table.Row className="displayRow">
                           {columns.map(( column ): React.ReactElement => (
                             <Table.Cell>
@@ -63,10 +72,10 @@ function CustomizableTable( {columns, data, deletionConfirmation, hasDeletion, h
                           ))}
                           {(hasModification || hasDeletion) && (
                             <Table.Cell textAlign="right">
-                              {hasModification && <Button icon="edit" onClick={() => {
+                              {hasModification && <Button icon="edit" onClick={() : void => {
                                 setEditableRow(index)
                               }}/>}
-                              {hasDeletion && <Button icon="trash" onClick={() => {
+                              {hasDeletion && <Button icon="trash" onClick={() : void => {
                                 handleDeletion(object.id, false)
                                 setActiveId(object.id)
                                 }}/>}
@@ -74,12 +83,14 @@ function CustomizableTable( {columns, data, deletionConfirmation, hasDeletion, h
                         </Table.Row>) || (
                         <Table.Row className="editRow">
                           <EditTableRowForm
-                            data={object}
                             columns={columns}
-                            editConfirmation={false}
-                            handleModification={() => {}}
-                            onDiscard={() => {}}
-
+                            data={object}
+                            editConfirmation={editConfirmation}
+                            handleModification={handleModification}
+                            onDiscard={() : void => setEditableRow(undefined)}
+                            onSuccessfulModification={() : void => {
+                              setEditableRow(undefined)
+                            }} 
                           />
                         </Table.Row>
                       )
@@ -87,14 +98,6 @@ function CustomizableTable( {columns, data, deletionConfirmation, hasDeletion, h
                 }
               </Table.Body>
             </Table>
-            <Confirm 
-              cancelButton={'Go Back'}
-              confirmButton={'Delete User'}
-              content={`Are you sure that you want to delete the user ${activeId}?`}
-              open={deletionConfirmation}
-              onCancel={() : Promise<void> => handleDeletion(activeId, false)}
-              onConfirm={() : Promise<void>  => handleDeletion(activeId, true)}
-            />
             <Confirm 
               cancelButton={'Go Back'}
               confirmButton={'Delete User'}

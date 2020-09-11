@@ -6,7 +6,6 @@ import { useToasts } from 'react-toast-notifications'
 import DeleteUserMutation from '../../graphql/mutations/DeleteUserMutation.graphql'
 import ModifyUserAsAdminMutation from '../../graphql/mutations/ModifyUserAsAdminMutation.graphql'
 import UserListQuery from '../../graphql/queries/UserListQuery.graphql'
-// import User from './User'
 import CustomizableTable from '../common/CustomizableTable'
 import { buildIndex, filterByTitle } from '../../lib/utils/filters'
 
@@ -26,6 +25,8 @@ function UserList({ filters }: Props): React.ReactElement {
 
   const [deletionConfirmation, setDeletionConfirmation] = useState(false)
   const [editConfirmation, setEditConfirmation] = useState(false)
+
+  
   
   if (loading) {
     return <Loader active />
@@ -37,7 +38,7 @@ function UserList({ filters }: Props): React.ReactElement {
   const { users } = data
 
   // create a user index TODO: define which attributes are desired searching
-  const userIndex = buildIndex('users', users, ['email', 'shortname', 'institution'])
+  const userIndex = buildIndex('users', users, ['email', 'shortname', 'institution', 'role'])
 
   // apply the filters
   const matchingUsers = filterByTitle(users, filters, userIndex)
@@ -71,26 +72,25 @@ function UserList({ filters }: Props): React.ReactElement {
             appearance: 'success',
           }
         )
-      } catch(error){
+      } catch({message}){
         addToast(
           <FormattedMessage
             defaultMessage="{errorMessage}"
             id="components.admin.userList.delete.error"
-            values={{ errorMessage: error.message }}
+            values={{ errorMessage: message }}
           />,
           {
             appearance: 'error',
           }
-        ) 
-      }
-  }
-  
-  setDeletionConfirmation(false)
-  
-   console.log(`Deleted ${userId}`)
+          ) }
+    }
+    setDeletionConfirmation(false)
+    
+    console.log(`Deleted ${userId}`)
   }
 
-  const onUserModification = async (values, confirm, id) : Promise<any> => {
+
+  const onUserModification = async (userId: string, values: any, confirm: boolean) : Promise<any> => {
     if (!editConfirmation){
       setEditConfirmation(true)
         return
@@ -98,7 +98,7 @@ function UserList({ filters }: Props): React.ReactElement {
     if (confirm){
       try{
        await modifyUser({
-        variables: {id, email: values.email, shortname: values.shortname, institution: values.institution, role: values.role},
+        variables: {id: userId, email: values.email, shortname: values.shortname, institution: values.institution, role: values.role},
         })
         addToast(
           <FormattedMessage
@@ -109,12 +109,12 @@ function UserList({ filters }: Props): React.ReactElement {
             appearance: 'success',
           }
         )
-      }catch(error){
+      }catch({message}){
         addToast(
           <FormattedMessage
             defaultMessage="{errorMessage}"
             id="components.admin.user.edit.error"
-            values={{ errorMessage: error.message }}
+            values={{ errorMessage: message }}
           />,
           {
             appearance: 'error',
@@ -123,25 +123,33 @@ function UserList({ filters }: Props): React.ReactElement {
       }
     }
     setEditConfirmation(false)
-    // setEditableUser(false)
   } 
 
   const tableColumns = [
     {
       title: 'Email',
-      attributeName: 'email'
+      attributeName: 'email',
+      width: 4,
     },
     {
       title: 'Shortname',
-      attributeName: 'shortname'
+      attributeName: 'shortname',
+      width: 2,
     },
     {
       title: 'Institution',
-      attributeName: 'institution'
+      attributeName: 'institution', 
+      width: 2,
     },
     {
       title: 'Role',
-      attributeName: 'role'
+      attributeName: 'role',
+      width: 2,
+    },
+    {
+      title: 'Last Login',
+      attributeName: 'role',
+      width: 2,
     },
   ]
 
@@ -155,25 +163,10 @@ function UserList({ filters }: Props): React.ReactElement {
         }
         data={matchingUsers} 
         deletionConfirmation={deletionConfirmation}
+        editConfirmation={editConfirmation}
         handleDeletion={onUserDeletion}
         handleModification={onUserModification}
       />
-  
-      {/*matchingUsers.map(({ id, email, shortname, institution, isActive, isAAI, role }) => {
-        const userProps = {
-          id,
-          email,
-          shortname,
-          institution,
-          isActive,
-          isAAI,
-          role,
-          handleUserDeletion: onUserDeletion,
-          deletionConfirmation,
-          setDeletionConfirmation,
-        }
-        return <User {...userProps} />
-      })*/}
     </div>
   )
 }
