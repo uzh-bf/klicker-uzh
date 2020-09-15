@@ -142,7 +142,7 @@
     "@graphql-codegen/fragment-matcher": "1.17.8",
     "@testing-library/react": "10.4.9",
     "enzyme": "3.11.0",
-    "eslint": "7.8.0",
+    "eslint": "7.9.0",
     "eslint-config-airbnb": "18.1.0",
     "eslint-config-prettier": "6.11.0",
     "eslint-import-resolver-typescript": "2.3.0",
