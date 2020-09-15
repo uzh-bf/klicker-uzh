@@ -155,7 +155,7 @@
     "fomantic-ui": "2.8.7",
     "fomantic-ui-css": "2.8.7",
     "gulp": "4.0.2",
-    "husky": "4.2.5",
+    "husky": "4.3.0",
     "jest": "26.4.2",
     "lint-staged": "10.2.11",
     "prettier": "2.1.1",
