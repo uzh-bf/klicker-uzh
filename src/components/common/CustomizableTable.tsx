@@ -9,6 +9,8 @@ interface Props {
     attributeName: string // used to identify the correct attribute of the data object
     width?: any // describes the width of a column (optional)
     isEditable?: boolean // true if attribute is editable, false otherwise (must only be given if hasModification is true)
+    isDropdown?: boolean // true if the form for editing is a dropdown, otherwise
+    dropdownOptions?: { text: any; value: any }[] // must be given if isDropdown = true
   }[]
   data: any[]
   deletionConfirmation?: boolean
@@ -25,6 +27,13 @@ const defaultProps = {
   hasModification: false,
 }
 
+const defaultColumnProperties = {
+  width: 2,
+  isEditable: false,
+  isDropdown: false,
+  dropdownOptions: [{ text: '', value: '' }],
+}
+
 function CustomizableTable({
   columns,
   data,
@@ -39,6 +48,8 @@ function CustomizableTable({
   const [sortDirection, setSortDirection]: any = useState('descending')
   const [activeId, setActiveId] = useState(undefined)
   const [editableRow, setEditableRow] = useState(undefined)
+
+  Object.assign(columns, defaultColumnProperties)
 
   const sortedData = sortDirection === 'ascending' ? _sortBy(data, sortBy) : _sortBy(data, sortBy).reverse()
 

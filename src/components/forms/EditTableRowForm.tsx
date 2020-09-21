@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import { Formik } from 'formik'
 import { object } from 'yup'
 import { Button, Confirm, Table, Dropdown } from 'semantic-ui-react'
-import { ROLES } from '../../constants'
 import FormikInput from './components/FormikInput'
 import validationSchema from './common/validationSchema'
 
@@ -82,7 +81,7 @@ function EditTableRowForm({
         <>
           {columns.map(
             (column): React.ReactElement =>
-              (column.isEditable && column.attributeName !== 'role' && (
+              (column.isEditable && !column.isDropdown && (
                 <Table.Cell verticalAlign={'top'} width={column.width}>
                   <FormikInput
                     required
@@ -97,25 +96,21 @@ function EditTableRowForm({
                   />
                 </Table.Cell>
               )) ||
-              (column.isEditable &&
-              column.attributeName === 'role' && ( // Only needed when there is the option to modify via a dropdown, could be generalized
-                  <Table.Cell verticalAlign={'top'} width={column.width}>
-                    <Dropdown
-                      compact
-                      selection
-                      options={[
-                        { text: 'User', value: ROLES.USER },
-                        { text: 'Admin', value: ROLES.ADMIN },
-                      ]}
-                      placeholder={activeRole}
-                      value={activeRole}
-                      onChange={(_, { value }): void => {
-                        setActiveRole(value)
-                        setFieldValue('role', value)
-                      }}
-                    />
-                  </Table.Cell>
-                )) || (
+              (column.isEditable && column.isDropdown && (
+                <Table.Cell verticalAlign={'top'} width={column.width}>
+                  <Dropdown
+                    compact
+                    selection
+                    options={column.dropdownOptions}
+                    placeholder={activeRole}
+                    value={activeRole}
+                    onChange={(_, { value }): void => {
+                      setActiveRole(value)
+                      setFieldValue(column.attributeName, value)
+                    }}
+                  />
+                </Table.Cell>
+              )) || (
                 <Table.Cell verticalAlign={'middle'} width={column.width}>
                   {values[column.attributeName]}
                 </Table.Cell>

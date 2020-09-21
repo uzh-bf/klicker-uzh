@@ -1,4 +1,4 @@
-import React, {useState} from 'react'
+import React, { useState } from 'react'
 import dayjs from 'dayjs'
 import { useQuery, useMutation } from '@apollo/react-hooks'
 import { Loader, Message } from 'semantic-ui-react'
@@ -9,15 +9,13 @@ import ModifyUserAsAdminMutation from '../../graphql/mutations/ModifyUserAsAdmin
 import UserListQuery from '../../graphql/queries/UserListQuery.graphql'
 import CustomizableTable from '../common/CustomizableTable'
 import { buildIndex, filterByTitle } from '../../lib/utils/filters'
-
-
+import { ROLES } from '../../constants'
 
 interface Props {
   filters: any
 }
 
 function UserList({ filters }: Props): React.ReactElement {
-
   const { addToast } = useToasts()
 
   const { data, loading, error } = useQuery(UserListQuery)
@@ -28,12 +26,16 @@ function UserList({ filters }: Props): React.ReactElement {
   const [editConfirmation, setEditConfirmation] = useState(false)
 
   // converts the data of the user such that it can be displayed in the table
-  const convertAttributeValues = (users : any []) : void => {
+  const convertAttributeValues = (users: any[]): any => {
+    const convertedUserList = []
     users.forEach((user) => {
-      user.createdAt = dayjs(user.createdAt).format('YYYY-MM-DD')
-      user.updatedAt = dayjs(user.updatedAt).format('YYYY-MM-DD')
-      user.isAAI = new String(user.isAAI) === 'true' ? 'Yes' : 'No'
+      const convertedUser = { ...user }
+      convertedUser.createdAt = dayjs(user.createdAt).format('YYYY-MM-DD')
+      convertedUser.updatedAt = dayjs(user.updatedAt).format('YYYY-MM-DD')
+      convertedUser.isAAI = user.isAAI ? 'Yes' : 'No'
+      convertedUserList.push(convertedUser)
     })
+    return convertedUserList
   }
 
   if (loading) {
@@ -49,9 +51,9 @@ function UserList({ filters }: Props): React.ReactElement {
   const userIndex = buildIndex('users', users, ['email', 'shortname', 'institution', 'role'])
 
   // apply the filters
-  const matchingUsers = filterByTitle(users, filters, userIndex)
+  const filteredUsers = filterByTitle(users, filters, userIndex)
 
-  convertAttributeValues(matchingUsers)
+  const matchingUsers = convertAttributeValues(filteredUsers)
 
   if (matchingUsers.length === 0) {
     return (
@@ -62,12 +64,12 @@ function UserList({ filters }: Props): React.ReactElement {
     )
   }
 
-  const onUserDeletion = async (userId : string, confirm : boolean) : Promise<void> => {
-    if (!deletionConfirmation){
+  const onUserDeletion = async (userId: string, confirm: boolean): Promise<void> => {
+    if (!deletionConfirmation) {
       setDeletionConfirmation(true)
       return
     }
-    if (confirm){
+    if (confirm) {
       try {
         await deleteUser({
           refetchQueries: [{ query: UserListQuery }],
@@ -82,7 +84,7 @@ function UserList({ filters }: Props): React.ReactElement {
             appearance: 'success',
           }
         )
-      } catch({message}){
+      } catch ({ message }) {
         addToast(
           <FormattedMessage
             defaultMessage="{errorMessage}"
@@ -92,34 +94,37 @@ function UserList({ filters }: Props): React.ReactElement {
           {
             appearance: 'error',
           }
-          ) }
+        )
+      }
     }
     setDeletionConfirmation(false)
-    
+
     console.log(`Deleted ${userId}`)
   }
 
-
-  const onUserModification = async (userId: string, values: any, confirm: boolean) : Promise<any> => {
-    if (!editConfirmation){
+  const onUserModification = async (userId: string, values: any, confirm: boolean): Promise<any> => {
+    if (!editConfirmation) {
       setEditConfirmation(true)
-        return
+      return
     }
-    if (confirm){
-      try{
-       await modifyUser({
-        variables: {id: userId, email: values.email, shortname: values.shortname, institution: values.institution, role: values.role},
+    if (confirm) {
+      try {
+        await modifyUser({
+          variables: {
+            id: userId,
+            email: values.email,
+            shortname: values.shortname,
+            institution: values.institution,
+            role: values.role,
+          },
         })
         addToast(
-          <FormattedMessage
-            defaultMessage="User successfully modified."
-            id="components.admin.user.edit.success"
-          />,
+          <FormattedMessage defaultMessage="User successfully modified." id="components.admin.user.edit.success" />,
           {
             appearance: 'success',
           }
         )
-      }catch({message}){
+      } catch ({ message }) {
         addToast(
           <FormattedMessage
             defaultMessage="{errorMessage}"
@@ -129,11 +134,11 @@ function UserList({ filters }: Props): React.ReactElement {
           {
             appearance: 'error',
           }
-        ) 
+        )
       }
     }
     setEditConfirmation(false)
-  } 
+  }
 
   const tableColumns = [
     {
@@ -150,7 +155,7 @@ function UserList({ filters }: Props): React.ReactElement {
     },
     {
       title: 'Institution',
-      attributeName: 'institution', 
+      attributeName: 'institution',
       width: 2,
       isEditable: true,
     },
@@ -159,6 +164,17 @@ function UserList({ filters }: Props): React.ReactElement {
       attributeName: 'role',
       width: 2,
       isEditable: true,
+      isDropdown: true,
+      dropdownOptions: [
+        {
+          text: 'User',
+          value: ROLES.USER,
+        },
+        {
+          text: 'Admin',
+          value: ROLES.ADMIN,
+        },
+      ],
     },
     {
       title: 'Last Login',
@@ -182,13 +198,11 @@ function UserList({ filters }: Props): React.ReactElement {
 
   return (
     <div className="userList">
-      <CustomizableTable 
+      <CustomizableTable
         hasDeletion
         hasModification
-        columns={
-          tableColumns
-        }
-        data={matchingUsers} 
+        columns={tableColumns}
+        data={matchingUsers}
         deletionConfirmation={deletionConfirmation}
         editConfirmation={editConfirmation}
         handleDeletion={onUserDeletion}
