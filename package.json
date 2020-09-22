@@ -162,7 +162,7 @@
     "react-dnd-test-backend": "10.0.2",
     "react-perf-devtool": "3.1.8",
     "react-test-renderer": "16.13.1",
-    "webpack-bundle-analyzer": "3.8.0",
+    "webpack-bundle-analyzer": "3.9.0",
     "why-did-you-update": "1.0.8"
   },
   "scripts": {
