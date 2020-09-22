@@ -92,11 +92,8 @@ const resetQuestionBlockMutation = (parentValue, { sessionId, blockId }, { auth 
 
 const endSessionMutation = (parentValue, { id }, { auth }) => SessionMgrService.endSession({ id, userId: auth.sub })
 
-const addFeedbackMutation = async (parentValue, { sessionId, content }) => {
-  await SessionExecService.addFeedback({ sessionId, content })
-
-  return 'FEEDBACK_ADDED'
-}
+const addFeedbackMutation = async (parentValue, { sessionId, content }) =>
+  SessionExecService.addFeedback({ sessionId, content })
 
 const deleteFeedbackMutation = (parentValue, { sessionId, feedbackId }, { auth }) =>
   SessionExecService.deleteFeedback({ sessionId, feedbackId, userId: auth.sub })

@@ -101,7 +101,7 @@ const typeDefs = [
     activateNextBlock: Session!
     activateBlockById(sessionId: ID!, blockId: ID!): Session!
     addConfusionTS(fp: ID, sessionId: ID!, difficulty: Int!, speed: Int!): String!
-    addFeedback(fp: ID, sessionId: ID!, content: String!): String!
+    addFeedback(fp: ID, sessionId: ID!, content: String!): Session_Feedback!
     addResponse(fp: ID, instanceId: ID!, response: QuestionInstance_ResponseInput!): String!
     archiveQuestions(ids: [ID!]!): [Question!]!
     changePassword(newPassword: String!): User!

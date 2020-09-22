@@ -43,13 +43,14 @@ const addFeedback = async ({ sessionId, content }) => {
   // then readd the mongo _id field under the id key and publish the result
   // this is needed as redis swallows the _id field and the client could break!
   const savedFeedback = session.feedbacks[session.feedbacks.length - 1].toObject()
+  const savedFeedbackWithId = { ...savedFeedback, id: savedFeedback._id }
   pubsub.publish(FEEDBACK_ADDED, {
-    [FEEDBACK_ADDED]: { ...savedFeedback, id: savedFeedback._id },
+    [FEEDBACK_ADDED]: savedFeedbackWithId,
     sessionId,
   })
 
   // return the updated session
-  return session
+  return savedFeedbackWithId
 }
 
 /**
