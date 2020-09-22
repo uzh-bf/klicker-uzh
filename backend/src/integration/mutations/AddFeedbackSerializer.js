@@ -1,5 +1,5 @@
 module.exports = {
-  test: (data) => data && data.id && data.content && data.votes,
+  test: (data) => data && data.content && data.votes,
   print: (val) => `
     FEEDBACK
 
