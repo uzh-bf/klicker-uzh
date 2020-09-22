@@ -170,9 +170,20 @@ const questionInstanceSerializer = {
   `,
 }
 
+const feedbackSerializer = {
+  test: (val) => val.id && val.content && val.votes,
+  print: (val) => `
+    FEEDBACK
+
+    content: ${val.content}
+    votes: ${val.votes}
+  `,
+}
+
 module.exports = {
   draftContentSerializer,
   questionSerializer,
   sessionSerializer,
   questionInstanceSerializer,
+  feedbackSerializer,
 }

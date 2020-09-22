@@ -73,28 +73,6 @@ exports[`SessionExecService addConfusionTS allows adding new timesteps 2`] = `
     }
 `;
 
-exports[`SessionExecService addFeedback allows adding new feedbacks to a running session 1`] = `
-Object {
-  "_id": "5f6a6243dcf6092fd150b4f6",
-  "content": "feedback1",
-  "createdAt": 2020-09-22T20:44:51.339Z,
-  "id": "5f6a6243dcf6092fd150b4f6",
-  "updatedAt": 2020-09-22T20:44:51.339Z,
-  "votes": 0,
-}
-`;
-
-exports[`SessionExecService addFeedback allows adding new feedbacks to a running session 2`] = `
-Object {
-  "_id": "5f6a6243dcf6092fd150b4f7",
-  "content": "feedback2",
-  "createdAt": 2020-09-22T20:44:51.350Z,
-  "id": "5f6a6243dcf6092fd150b4f7",
-  "updatedAt": 2020-09-22T20:44:51.350Z,
-  "votes": 0,
-}
-`;
-
 exports[`SessionExecService addResponse (auth) allows participants with a login to respond exactly once 1`] = `
 
     SESSION
