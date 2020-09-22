@@ -95,8 +95,9 @@ function Index(): React.ReactElement {
 
   const index = useMemo(() => {
     if (data?.questions) {
-      buildIndex('questions', data.questions, ['title', 'createdAt'])
+      return buildIndex('questions', data.questions, ['title', 'createdAt'])
     }
+    return null
   }, [data])
 
   const [processedQuestions, setProcessedQuestions] = useState([])
