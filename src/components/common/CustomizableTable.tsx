@@ -68,8 +68,9 @@ function CustomizableTable({
       <Table sortable striped>
         <Table.Header>
           {columns.map(
-            (column): React.ReactElement => (
+            (column, key): React.ReactElement => (
               <Table.HeaderCell
+                key={key.toString()}
                 sorted={sortBy === column.attributeName ? sortDirection : null}
                 width={column.width}
                 onClick={onSort(column.attributeName)}
@@ -83,7 +84,7 @@ function CustomizableTable({
           {sortedData.map(
             (object, index): React.ReactElement =>
               (editableRow !== index && (
-                <Table.Row className="displayRow">
+                <Table.Row className="displayRow" key={index.toString()}>
                   {columns.map(
                     (column): React.ReactElement => (
                       <Table.Cell>{object[column.attributeName]}</Table.Cell>
@@ -120,6 +121,7 @@ function CustomizableTable({
                     data={object}
                     editConfirmation={editConfirmation}
                     handleModification={handleModification}
+                    key={'edit'}
                     onDiscard={(): void => setEditableRow(undefined)}
                     onSuccessfulModification={(): void => {
                       setEditableRow(undefined)
