@@ -17,9 +17,9 @@ function ConfirmationContent({
   return (
     <p className="content">
       <h3>The following changes will be made: {'\n'}</h3>
-      {columns.map((column) =>
+      {columns.map((column, key) =>
         initialValues[column.attributeName] !== values[column.attributeName] ? (
-          <p>
+          <p key={key.toString()}>
             {'\n'}
             {column.title}: {initialValues[column.attributeName]} -&gt; {values[column.attributeName]}
           </p>
@@ -80,9 +80,9 @@ function EditTableRowForm({
       }): React.ReactElement => (
         <>
           {columns.map(
-            (column): React.ReactElement =>
+            (column, key): React.ReactElement =>
               (column.isEditable && !column.isDropdown && (
-                <Table.Cell verticalAlign={'top'} width={column.width}>
+                <Table.Cell key={key.toString()} verticalAlign={'top'} width={column.width}>
                   <FormikInput
                     required
                     error={errors[column.attributeName]}
@@ -97,7 +97,7 @@ function EditTableRowForm({
                 </Table.Cell>
               )) ||
               (column.isEditable && column.isDropdown && (
-                <Table.Cell verticalAlign={'top'} width={column.width}>
+                <Table.Cell key={key.toString()} verticalAlign={'top'} width={column.width}>
                   <Dropdown
                     compact
                     selection
@@ -111,7 +111,7 @@ function EditTableRowForm({
                   />
                 </Table.Cell>
               )) || (
-                <Table.Cell verticalAlign={'middle'} width={column.width}>
+                <Table.Cell key={key.toString()} verticalAlign={'middle'} width={column.width}>
                   {values[column.attributeName]}
                 </Table.Cell>
               )

@@ -86,8 +86,8 @@ function CustomizableTable({
               (editableRow !== index && (
                 <Table.Row className="displayRow" key={index.toString()}>
                   {columns.map(
-                    (column): React.ReactElement => (
-                      <Table.Cell>{object[column.attributeName]}</Table.Cell>
+                    (column, key): React.ReactElement => (
+                      <Table.Cell key={key.toString()}>{object[column.attributeName]}</Table.Cell>
                     )
                   )}
                   {(hasModification || hasDeletion) && (
@@ -115,13 +115,12 @@ function CustomizableTable({
                   )}
                 </Table.Row>
               )) || (
-                <Table.Row className="editRow">
+                <Table.Row className="editRow" key={'edit'}>
                   <EditTableRowForm
                     columns={columns}
                     data={object}
                     editConfirmation={editConfirmation}
                     handleModification={handleModification}
-                    key={'edit'}
                     onDiscard={(): void => setEditableRow(undefined)}
                     onSuccessfulModification={(): void => {
                       setEditableRow(undefined)
