@@ -147,16 +147,11 @@ function Join(): React.ReactElement {
           // optimistically add the feedback to the array already
           optimisticResponse: {
             addFeedback: {
-              feedbacks: [
-                ...feedbacks,
-                {
-                  __typename: 'Feedback',
-                  content,
-                  // randomly generate an id, will be replaced by server response
-                  id: Math.round(Math.random() * -1000000),
-                  votes: 0,
-                },
-              ],
+              __typename: 'Session_Feedback',
+              content,
+              // randomly generate an id, will be replaced by server response
+              id: Math.round(Math.random() * -1000000),
+              votes: 0,
             },
           },
           // update the cache after the mutation has completed
@@ -169,7 +164,7 @@ function Join(): React.ReactElement {
             // get the data from the store
             // replace the feedbacks
             const queryData: any = store.readQuery(query)
-            queryData.joinSession.feedbacks = addFeedback.feedbacks
+            queryData.joinSession.feedbacks = [...queryData.joinSession.feedbacks, addFeedback]
 
             // write the updated data to the store
             store.writeQuery({
