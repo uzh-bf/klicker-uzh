@@ -25,45 +25,6 @@ function UserList({ filters }: Props): React.ReactElement {
   const [deletionConfirmation, setDeletionConfirmation] = useState(false)
   const [editConfirmation, setEditConfirmation] = useState(false)
 
-  // converts the data of the user such that it can be displayed in the table
-  const convertAttributeValues = (users: any[]): any => {
-    const convertedUserList = []
-    users.forEach((user) => {
-      const convertedUser = { ...user }
-      convertedUser.createdAt = dayjs(user.createdAt).format('YYYY-MM-DD')
-      convertedUser.updatedAt = dayjs(user.updatedAt).format('YYYY-MM-DD')
-      convertedUser.isAAI = user.isAAI ? 'Yes' : 'No'
-      convertedUserList.push(convertedUser)
-    })
-    return convertedUserList
-  }
-
-  if (loading) {
-    return <Loader active />
-  }
-  if (error) {
-    return <Message error>{error.message}</Message>
-  }
-
-  const { users } = data
-
-  // create a user index TODO: define which attributes are desired searching
-  const userIndex = buildIndex('users', users, ['email', 'shortname', 'institution', 'role'])
-
-  // apply the filters
-  const filteredUsers = filterByTitle(users, filters, userIndex)
-
-  const matchingUsers = convertAttributeValues(filteredUsers)
-
-  if (matchingUsers.length === 0) {
-    return (
-      <div className="userList">
-        <h1>{filters.title}</h1>
-        <FormattedMessage defaultMessage="No matching user was found." id="admin.AdminArea.UserManagement.noUsers" />
-      </div>
-    )
-  }
-
   const onUserDeletion = async (userId: string, confirm: boolean): Promise<void> => {
     if (!deletionConfirmation) {
       setDeletionConfirmation(true)
@@ -139,6 +100,46 @@ function UserList({ filters }: Props): React.ReactElement {
     }
     setEditConfirmation(false)
   }
+
+  // converts the data of the user such that it can be displayed in the table
+  const convertAttributeValues = (users: any[]): any => {
+    const convertedUserList = []
+    users.forEach((user) => {
+      const convertedUser = { ...user }
+      convertedUser.createdAt = dayjs(user.createdAt).format('YYYY-MM-DD')
+      convertedUser.updatedAt = dayjs(user.updatedAt).format('YYYY-MM-DD')
+      convertedUser.isAAI = user.isAAI ? 'Yes' : 'No'
+      convertedUserList.push(convertedUser)
+    })
+    return convertedUserList
+  }
+
+  if (loading) {
+    return <Loader active />
+  }
+  if (error) {
+    return <Message error>{error.message}</Message>
+  }
+
+  const { users } = data
+
+  // create a user index TODO: define which attributes are desired searching
+  const userIndex = buildIndex('users', users, ['email', 'shortname', 'institution', 'role'])
+
+  // apply the filters
+  const filteredUsers = filterByTitle(users, filters, userIndex)
+
+  const matchingUsers = convertAttributeValues(filteredUsers)
+
+  if (matchingUsers.length === 0) {
+    return (
+      <div className="userList">
+        <h1>{filters.title}</h1>
+        <FormattedMessage defaultMessage="No matching user was found." id="admin.AdminArea.UserManagement.noUsers" />
+      </div>
+    )
+  }
+
 
   const tableColumns = [
     {

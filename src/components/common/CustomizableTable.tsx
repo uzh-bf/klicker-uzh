@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import _get from 'lodash/get'
 import _sortBy from 'lodash/sortBy'
 import { Button, Table, Confirm } from 'semantic-ui-react'
 import EditTableRowForm from '../forms/EditTableRowForm'
@@ -15,14 +16,17 @@ interface Props {
   data: any[]
   deletionConfirmation?: boolean
   editConfirmation?: boolean
+  hasAbort?: boolean
   hasDeletion?: boolean
   hasModification?: boolean
+  handleAbort?: (id: string, confirm: boolean) => Promise<void>
   handleDeletion?: (id: string, confirm: boolean) => Promise<void>
   handleModification?: (id: string, values: any, confirm: boolean) => Promise<void>
 }
 
 const defaultProps = {
   deletionConfirmation: false,
+  hasAbort: false,
   hasDeletion: false,
   hasModification: false,
 }
@@ -39,8 +43,10 @@ function CustomizableTable({
   data,
   deletionConfirmation,
   editConfirmation,
+  hasAbort,
   hasDeletion,
   hasModification,
+  handleAbort,
   handleDeletion,
   handleModification,
 }: Props): React.ReactElement {
@@ -87,10 +93,10 @@ function CustomizableTable({
                 <Table.Row className="displayRow" key={index.toString()}>
                   {columns.map(
                     (column, key): React.ReactElement => (
-                      <Table.Cell key={key.toString()}>{object[column.attributeName]}</Table.Cell>
+                      <Table.Cell key={key.toString()}>{_get(object, column.attributeName)}</Table.Cell>
                     )
                   )}
-                  {(hasModification || hasDeletion) && (
+                  {(hasModification || hasDeletion || hasAbort) && (
                     <Table.Cell textAlign="right">
                       <div className="buttonArea">
                         {hasModification && (
@@ -101,6 +107,15 @@ function CustomizableTable({
                             }}
                           />
                         )}
+                        {hasAbort && (
+                            <Button
+                              icon="stop"
+                              onClick={(): void => {
+                                handleAbort(object.id, false)
+                                setActiveId(object.id)
+                              }}
+                            />
+                          )}
                         {hasDeletion && (
                           <Button
                             icon="trash"
