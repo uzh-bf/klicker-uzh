@@ -2,8 +2,9 @@
 
 const webpack = require('webpack')
 const withCSS = require('@zeit/next-css')
-const withSourceMaps = require('@zeit/next-source-maps')
+const withSourceMaps = require('@zeit/next-source-maps')()
 const { DEVELOPMENT_SERVER, PHASE_PRODUCTION_BUILD } = require('next/constants')
+const SentryWebpackPlugin = require('@sentry/webpack-plugin')
 
 const CFG = require('./src/klicker.conf.js')
 
@@ -13,6 +14,8 @@ const S3_CFG = CFG.get('s3')
 const SECURITY_CFG = CFG.get('security')
 const SERVICES_CFG = CFG.get('services')
 
+const basePath = ''
+
 module.exports = (phase) => {
   let config = {
     // custom runtime configuration
@@ -20,9 +23,6 @@ module.exports = (phase) => {
       analyticsTrackingID: SERVICES_CFG.googleAnalytics.trackingId,
       apiUrl: API_CFG.endpoint,
       apiUrlWS: API_CFG.endpointWS,
-      apmServerUrl: SERVICES_CFG.apm.serverUrl,
-      apmServiceName: SERVICES_CFG.apm.serviceName,
-      apmWithRum: SERVICES_CFG.apm.withRum,
       baseUrl: APP_CFG.baseUrl,
       joinUrl: APP_CFG.joinUrl,
       logrocketAppID: SERVICES_CFG.logrocket.appId,
@@ -34,9 +34,16 @@ module.exports = (phase) => {
     },
     serverRuntimeConfig: {
       apiUrlSSR: API_CFG.endpointSSR,
+      rootDir: __dirname,
     },
     // setup custom webpack configuration
     webpack: (webpackConfig, { isServer }) => {
+      // replace the sentry library when rendering on the client
+      // ref: https://github.com/vercel/next.js/blob/canary/examples/with-sentry/next.config.js
+      if (!isServer) {
+        webpackConfig.resolve.alias['@sentry/node'] = '@sentry/browser'
+      }
+
       // ignore test files when bundling
       webpackConfig.plugins.push(new webpack.IgnorePlugin(/src\/pages.*\/test.*/))
 
@@ -76,6 +83,23 @@ module.exports = (phase) => {
         test: /\.mjs$/,
         type: 'javascript/auto',
       })
+
+      if (
+        SERVICES_CFG.sentry.dsn &&
+        SERVICES_CFG.sentry.org &&
+        SERVICES_CFG.sentry.project &&
+        SERVICES_CFG.sentry.authToken &&
+        process.env.NODE_ENV === 'production'
+      )
+        config.plugins.push(
+          new SentryWebpackPlugin({
+            include: '.next',
+            ignore: ['node_modules'],
+            stripPrefix: ['webpack://_N_E/'],
+            urlPrefix: `~${basePath}/_next`,
+            release: process.env.npm_package_version,
+          })
+        )
 
       webpackConfig.resolve.extensions = ['.ts', '.tsx', '.mjs', '.js']
 

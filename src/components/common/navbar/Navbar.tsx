@@ -15,7 +15,6 @@ import AccountSummaryQuery from '../../../graphql/queries/AccountSummaryQuery.gr
 
 interface KlickerWindow extends Window {
   INIT_LR?: boolean
-  INIT_RAVEN?: boolean
   _slaask?: any
 }
 
@@ -122,12 +121,10 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
               }
             }
 
-            if (window.INIT_RAVEN) {
+            if (publicRuntimeConfig.sentryDSN) {
               try {
-                const Raven = require('raven-js')
-                Raven.identify(accountId, {
-                  name: accountShort,
-                })
+                const Sentry = require('@sentry/browser')
+                Sentry.setUser({ id: accountId, username: accountShort })
               } catch (e) {
                 //
               }

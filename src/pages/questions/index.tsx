@@ -133,6 +133,7 @@ function Index(): React.ReactElement {
   const onToggleArchive = (): void => {
     handleResetSelection()
     handleToggleArchive()
+    throw new Error('this is failing')
   }
 
   // handle archiving a question
