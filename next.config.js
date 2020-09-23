@@ -91,7 +91,7 @@ module.exports = (phase) => {
         SERVICES_CFG.sentry.authToken &&
         process.env.NODE_ENV === 'production'
       )
-        config.plugins.push(
+        webpackConfig.plugins.push(
           new SentryWebpackPlugin({
             include: '.next',
             ignore: ['node_modules'],
