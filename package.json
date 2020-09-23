@@ -25,7 +25,7 @@
     "@apollo/react-hooks": "3.1.5",
     "@apollo/react-ssr": "3.1.5",
     "@babel/core": "7.9.6",
-    "@babel/plugin-transform-react-constant-elements": "7.9.0",
+    "@babel/plugin-transform-react-constant-elements": "7.10.4",
     "@babel/preset-env": "7.9.6",
     "@formatjs/intl-relativetimeformat": "4.5.16",
     "@sentry/browser": "5.24.2",
