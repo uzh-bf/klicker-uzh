@@ -93,7 +93,7 @@
     "isomorphic-unfetch": "3.0.0",
     "js-cookie": "2.2.1",
     "js-search": "2.0.0",
-    "localforage": "1.7.4",
+    "localforage": "1.9.0",
     "lodash": "4.17.20",
     "logrocket": "1.0.13",
     "logrocket-react": "4.0.1",
