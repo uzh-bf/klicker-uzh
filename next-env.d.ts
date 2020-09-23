@@ -12,5 +12,5 @@ declare module '*.graphql' {
 declare interface Window {
   ReactIntlLocaleData: any
   __NEXT_DATA__: any
-  INIT_GA: any
+  INIT_GA?: any
 }
