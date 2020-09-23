@@ -34,7 +34,7 @@
     "@sentry/react": "5.24.2",
     "@sentry/tracing": "5.24.2",
     "@sentry/webpack-plugin": "1.13.0",
-    "@types/draft-js": "0.10.40",
+    "@types/draft-js": "0.10.44",
     "@types/lodash": "4.14.161",
     "@types/ramda": "0.27.4",
     "@types/react": "16.9.49",
