@@ -1,83 +1,120 @@
 import React, { useState } from 'react'
 import dayjs from 'dayjs'
-import { useQuery } from '@apollo/react-hooks'
+import { useMutation, useQuery } from '@apollo/react-hooks'
 import { Loader, Message } from 'semantic-ui-react'
+import { FormattedMessage } from 'react-intl'
+import { useToasts } from 'react-toast-notifications'
 
 import CustomizableTable from '../common/CustomizableTable'
+import AbortSessionMutation from '../../graphql/mutations/AbortSessionMutation.graphql'
 import RunningSessionListQuery from '../../graphql/queries/RunningSessionListQuery.graphql'
 import { buildIndex, filterByTitle } from '../../lib/utils/filters'
 
-
 interface Props {
-    filters: any
+  filters: any
 }
 
-function RunningSessionList({ filters } : Props) : React.ReactElement {
+function RunningSessionList({ filters }: Props): React.ReactElement {
+  const { addToast } = useToasts()
 
-    const [isAbortConfirmationActive, setIsAbortConfirmationActive] = useState(false)
+  const [isAbortConfirmationActive, setIsAbortConfirmationActive] = useState(false)
 
-    const { data, loading, error} = useQuery(RunningSessionListQuery)
+  const { data, loading, error } = useQuery(RunningSessionListQuery)
+  const [abortSession] = useMutation(AbortSessionMutation)
 
-    const convertAttributeValues = (sessions: any[]): any => {
-        const convertedSessionList = []
-        sessions.forEach((session) => {
-          const convertedSession = { ...session }
-          convertedSession.startedAt = dayjs(session.startedAt).format('YYYY-MM-DD HH:mm')
-          convertedSessionList.push(convertedSession)
+  const convertAttributeValues = (sessions: any[]): any => {
+    const convertedSessionList = []
+    sessions.forEach((session) => {
+      const convertedSession = { ...session }
+      convertedSession.startedAt = dayjs(session.startedAt).format('YYYY-MM-DD HH:mm')
+      convertedSessionList.push(convertedSession)
+    })
+    return convertedSessionList
+  }
+
+  const onAbortSession = async (sessionId: string, confirm: boolean): Promise<void> => {
+    if (!isAbortConfirmationActive) {
+      setIsAbortConfirmationActive(true)
+      return
+    }
+    if (confirm) {
+      try {
+        await abortSession({
+          refetchQueries: [{ query: RunningSessionListQuery }],
+          variables: { id: sessionId },
         })
-        return convertedSessionList
+        addToast(
+          <FormattedMessage
+            defaultMessage="Session successfully aborted."
+            id="components.admin.sessionlist.abort.success"
+          />,
+          {
+            appearance: 'success',
+          }
+        )
+      } catch ({ message }) {
+        addToast(
+          <FormattedMessage
+            defaultMessage="{errorMessage}"
+            id="components.admin.userList.delete.error"
+            values={{ errorMessage: message }}
+          />,
+          {
+            appearance: 'error',
+          }
+        )
       }
-
-    const onAbortSession = () : Promise<void> => {
-
     }
-    const { sessions } = data
+    setIsAbortConfirmationActive(false)
+  }
 
-    // create a session index 
-    const sessionIndex = buildIndex('runningSessions', sessions, ['id', 'startedAt', 'user.email'])  // user.email does not work by now
+  if (loading) {
+    return <Loader active />
+  }
 
-    // apply the filters
-    const filteredSessions = filterByTitle(sessions, filters, sessionIndex)
-
-    const matchingSessions = convertAttributeValues(filteredSessions)
-
-    const tableColumns = [
-        {
-            title: 'Session-ID',
-            attributeName: 'id',
-            width: 4,
-        }, 
-        {
-            title: 'User Email',
-            attributeName: "user.email",
-            width: 3,
-        },
-        {
-            title: 'Running since',
-            attributeName: 'startedAt',
-            width: 3,
-        }
-    ]
-
-    if (loading) {
-        return <Loader active />
-      }
-
-    if (error) {
+  if (error) {
     return <Message error>{error.message}</Message>
-    }
+  }
 
-    return (
-        <div className="sessionList">
-            <CustomizableTable 
-                hasAbort
-                columns={tableColumns}
-                data={matchingSessions}
-                deletionConfirmation={isAbortConfirmationActive}
-                handleDeletion={onAbortSession}
-            />
-        </div>
-    )
+  const { sessions } = data
+
+  // create a session index
+  const sessionIndex = buildIndex('runningSessions', sessions, ['id', 'startedAt', 'user.email']) // user.email does not work by now
+
+  // apply the filters
+  const filteredSessions = filterByTitle(sessions, filters, sessionIndex)
+
+  const matchingSessions = convertAttributeValues(filteredSessions)
+
+  const tableColumns = [
+    {
+      title: 'Session-ID',
+      attributeName: 'id',
+      width: 4,
+    },
+    {
+      title: 'User Email',
+      attributeName: 'user.email',
+      width: 3,
+    },
+    {
+      title: 'Running since',
+      attributeName: 'startedAt',
+      width: 3,
+    },
+  ]
+
+  return (
+    <div className="sessionList">
+      <CustomizableTable
+        hasAbort
+        abortConfirmation={isAbortConfirmationActive}
+        columns={tableColumns}
+        data={matchingSessions}
+        handleAbort={onAbortSession}
+      />
+    </div>
+  )
 }
 
 export default RunningSessionList

@@ -14,6 +14,7 @@ interface Props {
     dropdownOptions?: { text: any; value: any }[] // must be given if isDropdown = true
   }[]
   data: any[]
+  abortConfirmation?: boolean
   deletionConfirmation?: boolean
   editConfirmation?: boolean
   hasAbort?: boolean
@@ -25,7 +26,9 @@ interface Props {
 }
 
 const defaultProps = {
+  abortConfirmation: false,
   deletionConfirmation: false,
+  editConfirmation: false,
   hasAbort: false,
   hasDeletion: false,
   hasModification: false,
@@ -41,6 +44,7 @@ const defaultColumnProperties = {
 function CustomizableTable({
   columns,
   data,
+  abortConfirmation,
   deletionConfirmation,
   editConfirmation,
   hasAbort,
@@ -108,14 +112,14 @@ function CustomizableTable({
                           />
                         )}
                         {hasAbort && (
-                            <Button
-                              icon="stop"
-                              onClick={(): void => {
-                                handleAbort(object.id, false)
-                                setActiveId(object.id)
-                              }}
-                            />
-                          )}
+                          <Button
+                            icon="stop"
+                            onClick={(): void => {
+                              handleAbort(object.id, false)
+                              setActiveId(object.id)
+                            }}
+                          />
+                        )}
                         {hasDeletion && (
                           <Button
                             icon="trash"
@@ -153,6 +157,14 @@ function CustomizableTable({
         open={deletionConfirmation}
         onCancel={(): Promise<void> => handleDeletion(activeId, false)}
         onConfirm={(): Promise<void> => handleDeletion(activeId, true)}
+      />
+      <Confirm
+        cancelButton={'Go Back'}
+        confirmButton={'Abort Session'}
+        content={`Are you sure that you want to abort the running session ${activeId}?`}
+        open={abortConfirmation}
+        onCancel={(): Promise<void> => handleAbort(activeId, false)}
+        onConfirm={(): Promise<void> => handleAbort(activeId, true)}
       />
       <style jsx>
         {`

@@ -59,8 +59,6 @@ function UserList({ filters }: Props): React.ReactElement {
       }
     }
     setDeletionConfirmation(false)
-
-    console.log(`Deleted ${userId}`)
   }
 
   const onUserModification = async (userId: string, values: any, confirm: boolean): Promise<any> => {
@@ -139,7 +137,6 @@ function UserList({ filters }: Props): React.ReactElement {
       </div>
     )
   }
-
 
   const tableColumns = [
     {
