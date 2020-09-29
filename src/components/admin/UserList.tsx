@@ -132,7 +132,6 @@ function UserList({ filters }: Props): React.ReactElement {
   if (matchingUsers.length === 0) {
     return (
       <div className="userList">
-        <h1>{filters.title}</h1>
         <FormattedMessage defaultMessage="No matching user was found." id="admin.AdminArea.UserManagement.noUsers" />
       </div>
     )

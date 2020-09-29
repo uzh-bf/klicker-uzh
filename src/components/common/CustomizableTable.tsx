@@ -170,7 +170,7 @@ function CustomizableTable({
         {`
           .buttonArea {
             display: flex;
-            flex-direction: row;
+            flex-direction: row-reverse;
           }
         `}
       </style>

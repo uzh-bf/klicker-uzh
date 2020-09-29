@@ -86,6 +86,17 @@ function RunningSessionList({ filters }: Props): React.ReactElement {
 
   const matchingSessions = convertAttributeValues(filteredSessions)
 
+  if (matchingSessions.length === 0) {
+    return (
+      <div className="sessionList">
+        <FormattedMessage
+          defaultMessage="No matching running session was found."
+          id="admin.AdminArea.SessionManagement.noSession"
+        />
+      </div>
+    )
+  }
+
   const tableColumns = [
     {
       title: 'Session-ID',
