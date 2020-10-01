@@ -77,6 +77,12 @@ function CommonLayout({
           .ui.modal {
             margin-top: 0;
           }
+
+          .noPrint {
+            @media print {
+              display: none !important;
+            }
+          }
         `}
       </style>
       <style jsx>
