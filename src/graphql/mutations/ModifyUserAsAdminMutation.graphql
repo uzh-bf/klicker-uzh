@@ -1,0 +1,9 @@
+mutation ModifyUserAsAdmin($id: ID!, $email: String, $shortname: String, $institution: String, $role: String) {
+  modifyUserAsAdmin(id: $id, user: { email: $email, shortname: $shortname, institution: $institution, role: $role }) {
+    id
+    email
+    shortname
+    institution
+    role
+  }
+}
