@@ -84,7 +84,9 @@ function TableChart({
           )}
 
           {!isPublic && QUESTION_GROUPS.FREE.includes(questionType) && (
-            <Table.HeaderCell collapsing>Actions</Table.HeaderCell>
+            <Table.HeaderCell collapsing className="noPrint">
+              Actions
+            </Table.HeaderCell>
           )}
         </Table.Header>
         <Table.Body>
@@ -99,7 +101,7 @@ function TableChart({
                 {isSolutionShown && <Table.Cell>{typeof correct !== 'undefined' && (correct ? 'T' : 'F')}</Table.Cell>}
 
                 {!isPublic && QUESTION_GROUPS.FREE.includes(questionType) && (
-                  <Table.Cell>
+                  <Table.Cell className="noPrint">
                     <Button
                       icon="trash"
                       onClick={async (): Promise<void> => {
@@ -173,7 +175,10 @@ function TableChart({
         .tableChart {
           width: 100%;
           height: 100%;
-          overflow-y: auto;
+
+          @media screen {
+            overflow-y: auto;
+          }
         }
       `}</style>
     </div>
