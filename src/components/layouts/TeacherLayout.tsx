@@ -54,7 +54,7 @@ function TeacherLayout({ actionArea, children, fixedHeight, navbar, pageTitle, s
     },
     {
       href: '/user/admin',
-      label: <FormattedMessage defaultMessage="Admin" id="admin.title" />,
+      label: <FormattedMessage defaultMessage="Admin Area" id="admin.title" />,
       name: 'admin',
     },
   ]
