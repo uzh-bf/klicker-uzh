@@ -6,7 +6,7 @@ import { CSVDownload } from 'react-csv'
 import { useToasts } from 'react-toast-notifications'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Confirm, Icon, Label, Dropdown, Checkbox } from 'semantic-ui-react'
-import { useMutation } from '@apollo/react-hooks'
+import { useMutation } from '@apollo/client'
 
 import QuestionCreationModal from './QuestionCreationModal'
 import UploadModal from './UploadModal'

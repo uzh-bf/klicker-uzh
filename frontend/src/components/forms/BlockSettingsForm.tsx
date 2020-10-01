@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import _isEmpty from 'lodash/isEmpty'
 import { useIntl, FormattedMessage, defineMessages } from 'react-intl'
-import { useMutation } from '@apollo/react-hooks'
+import { useMutation } from '@apollo/client'
 import { Dropdown, Form, Button, Modal } from 'semantic-ui-react'
 import { Formik } from 'formik'
 import { object, number } from 'yup'
