@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/router'
-import { FormattedMessage, useIntl } from 'react-intl'
+import { FormattedMessage } from 'react-intl'
 
 import CommonLayout from './CommonLayout'
 import Navbar from '../common/navbar/Navbar'
@@ -23,7 +23,6 @@ const defaultProps = {
 }
 
 function TeacherLayout({ actionArea, children, fixedHeight, navbar, pageTitle, sidebar }: Props): React.ReactElement {
-  const intl = useIntl()
   const router = useRouter()
 
   const [isSidebarVisible, setIsSidebarVisible] = useState(false)
@@ -67,7 +66,7 @@ function TeacherLayout({ actionArea, children, fixedHeight, navbar, pageTitle, s
             <Navbar
               handleSidebarToggle={(): void => setIsSidebarVisible((prevState): boolean => !prevState)}
               sidebarVisible={isSidebarVisible}
-              title={intl.formatMessage({ id: `${sidebar.activeItem}.title` })}
+              title={sidebarItems.find((item) => item.name === sidebar.activeItem)?.label}
               {...navbar}
             />
           </div>
