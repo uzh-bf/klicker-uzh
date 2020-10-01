@@ -213,7 +213,7 @@ describe('AccountService', () => {
       it('correctly validates JWTs', () => {
         const jwt1 = null
         const jwt2 = 'abcd'
-        const jwt3 = JWT.sign({ id: 'abcd' }, appSecret)
+        const jwt3 = JWT.sign({ id: 'abcd' }, appSecret, { algorithm: 'HS256' })
 
         expect(AccountService.isValidJWT(jwt1, appSecret)).toBeFalsy()
         expect(AccountService.isValidJWT(jwt2, appSecret)).toBeFalsy()
@@ -226,7 +226,7 @@ describe('AccountService', () => {
         cookies: {},
         headers: {},
       }
-      const validJWT = JWT.sign({ id: 'abcd' }, appSecret)
+      const validJWT = JWT.sign({ id: 'abcd' }, appSecret, { algorithm: 'HS256' })
 
       it('handles nonexistent tokens', () => {
         expect(AccountService.getToken(baseReq)).toBeNull()

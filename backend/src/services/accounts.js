@@ -101,6 +101,7 @@ const getToken = (req) => {
  */
 const generateScopedToken = (user, scope, expiresIn = '1w') =>
   JWT.sign(generateJwtSettings(user, [scope]), APP_CFG.secret, {
+    algorithm: 'HS256',
     expiresIn,
   })
 
@@ -380,6 +381,7 @@ const login = async (res, email, password) => {
   // generate a JWT for future authentication
   // TODO: add more necessary properties for the JWT
   const jwt = JWT.sign(generateJwtSettings(user), APP_CFG.secret, {
+    algorithm: 'HS256',
     expiresIn: '1w',
   })
 
@@ -460,6 +462,7 @@ const requestPassword = async (res, email) => {
 
   // generate a temporary JWT for password reset
   const jwt = JWT.sign(generateJwtSettings(user), APP_CFG.secret, {
+    algorithm: 'HS256',
     expiresIn: '1d',
   })
 

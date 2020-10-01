@@ -8,7 +8,7 @@ const express = require('express')
 const PrettyError = require('pretty-error')
 const { ApolloServer } = require('apollo-server-express')
 const { applyMiddleware } = require('graphql-middleware')
-const { makeExecutableSchema } = require('graphql-tools')
+const { makeExecutableSchema } = require('@graphql-tools/schema')
 
 // express middlewares
 const bodyParser = require('body-parser')
@@ -116,6 +116,7 @@ let middleware = [
   bodyParser.json(),
   // setup JWT authentication
   expressJWT({
+    algorithms: ['HS256'],
     credentialsRequired: false,
     requestProperty: 'auth',
     secret: APP_CFG.secret,
