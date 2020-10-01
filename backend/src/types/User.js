@@ -14,6 +14,13 @@ module.exports = `
     useCase: String
   }
 
+  input User_ModifyAsAdmin {
+    email: String
+    shortname: String
+    institution: String 
+    role: String
+  }
+
   type User {
     id: ID!
     email: String!
@@ -23,6 +30,7 @@ module.exports = `
     institution: String
     useCase: String
     hmac: String!
+    role: String!
 
     runningSession: Session
 

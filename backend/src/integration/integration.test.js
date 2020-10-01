@@ -10,7 +10,7 @@ const { UserModel } = require('../models')
 const { app } = require('../app')
 const { initializeDb } = require('../lib/test/setup')
 const { createContentState } = require('../lib/draft')
-const { Errors, QUESTION_TYPES, SESSION_STORAGE_MODE, SESSION_AUTHENTICATION_MODE } = require('../constants')
+const { Errors, QUESTION_TYPES, SESSION_STORAGE_MODE, SESSION_AUTHENTICATION_MODE, ROLES } = require('../constants')
 const { getRedis } = require('../redis')
 
 process.env.NODE_ENV = 'test'
@@ -132,11 +132,13 @@ const ensureCacheConsistency = async (questionBlock, { expectedKeys, unexpectedK
 
 describe('Integration', () => {
   let authCookie
+  let adminAuthCookie
   let authCookieParticipant
   let sessionId
   let sessionIdWithAuth
   // let sessionIdCompleteWithAuth
   let initialUserId
+  let initialDummyId
   let initialShortname
   let blocks
   let blockIds
@@ -144,16 +146,18 @@ describe('Integration', () => {
   const questions = {}
 
   beforeAll(async () => {
-    ;({ userId: initialUserId, shortname: initialShortname } = await initializeDb({
+    ;({ userId: initialUserId, dummyId: initialDummyId, shortname: initialShortname } = await initializeDb({
       mongoose,
       email: 'testintegration@bf.uzh.ch',
       shortname: 'integr',
       isActive: false,
+      withAdmin: true,
     }))
   })
 
   afterAll(async (done) => {
     authCookie = null
+    adminAuthCookie = null
     await mongoose.disconnect(done)
   })
 
@@ -172,6 +176,24 @@ describe('Integration', () => {
 
     // save the authorization cookie
     authCookie = response.header['set-cookie']
+    expect(authCookie.length).toEqual(1)
+  }
+
+  const loginAsAdmin = async (password) => {
+    // send a login request
+    const response = await sendQuery({
+      query: Mutations.LoginMutation,
+      variables: {
+        email: 'admin@bf.uzh.ch',
+        password,
+      },
+    })
+
+    const data = ensureNoErrors(response)
+    expect(data).toBeTruthy()
+
+    // save the authorization cookie
+    adminAuthCookie = response.header['set-cookie']
     expect(authCookie.length).toEqual(1)
   }
 
@@ -4240,6 +4262,96 @@ describe('Integration', () => {
     })
   })
 
+  describe('User Management (only possible as an admin)', () => {
+    it('login works with valid credentials', async () => {
+      await loginAsAdmin(initialPassword)
+    })
+
+    it('can update another user as admin', async () => {
+      const data = ensureNoErrors(
+        await sendQuery(
+          {
+            query: Mutations.ModifyUserAsAdminMutation,
+            variables: {
+              id: initialDummyId,
+              shortname: 'dummy123',
+              institution: 'University of Dummy',
+              role: ROLES.ADMIN,
+            },
+          },
+          adminAuthCookie
+        )
+      )
+      expect(data).toMatchObject({
+        modifyUserAsAdmin: {
+          id: initialDummyId,
+          shortname: 'dummy123',
+          institution: 'University of Dummy',
+          role: ROLES.ADMIN,
+        },
+      })
+    })
+
+    it('can get a list of all users as admin', async () => {
+      const data = ensureNoErrors(
+        await sendQuery(
+          {
+            query: Queries.UserListQuery,
+          },
+          adminAuthCookie
+        )
+      )
+      expect(data).toHaveProperty('users')
+    })
+
+    it('cannot get a list of all users as regular user', async () => {
+      const { body } = await sendQuery(
+        {
+          query: Queries.UserListQuery,
+        },
+        authCookie
+      )
+      expect(body.errors[0].message).toEqual(Errors.UNAUTHORIZED)
+    })
+
+    it('cannot update another user as regular user', async () => {
+      const { body } = await sendQuery(
+        {
+          query: Mutations.ModifyUserAsAdminMutation,
+          variables: { id: initialDummyId, email: 'aboutToFail@bf.uzh.ch' },
+        },
+        authCookie
+      )
+      expect(body.errors[0].message).toEqual(Errors.UNAUTHORIZED)
+    })
+
+    it('cannot delete another user as a regular user', async () => {
+      const { body } = await sendQuery(
+        {
+          query: Mutations.DeleteUserMutation,
+          variables: { id: initialDummyId },
+        },
+        authCookie
+      )
+      expect(body.errors[0].message).toEqual(Errors.UNAUTHORIZED)
+    })
+
+    it('can delete a user as admin', async () => {
+      const { deleteUser } = ensureNoErrors(
+        await sendQuery(
+          {
+            query: Mutations.DeleteUserMutation,
+            variables: {
+              id: initialDummyId,
+            },
+          },
+          adminAuthCookie
+        )
+      )
+      expect(deleteUser).toEqual('ACCOUNT_DELETED')
+    })
+  })
+
   describe('Logout', () => {
     it('works', async () => {
       const response = await sendQuery(
@@ -4267,9 +4379,9 @@ describe('Integration', () => {
         authCookie
       )
 
-      // expect the response to contain "INVALID_LOGIN"
+      // expect the response to contain "UNAUTHORIZED"
       // expect(response2.body.errors).toMatchSnapshot()
-      expect(response2.body.errors[0].message).toEqual('INVALID_LOGIN')
+      expect(response2.body.errors[0].message).toEqual('UNAUTHORIZED')
     })
   })
 

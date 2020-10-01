@@ -1,9 +1,10 @@
 const mongoose = require('mongoose')
 const { isAlphanumeric, isEmail, normalizeEmail } = require('validator')
+const _values = require('lodash/values')
 
 const { ObjectId } = mongoose.Schema.Types
 
-const { Errors } = require('../constants')
+const { Errors, ROLES } = require('../constants')
 
 const User = new mongoose.Schema(
   {
@@ -40,6 +41,7 @@ const User = new mongoose.Schema(
     isActive: { type: Boolean, default: false },
     isAAI: { type: Boolean, default: false },
     isMigrated: { type: Boolean, default: false },
+    role: { type: String, enum: _values(ROLES), default: ROLES.USER },
 
     files: [{ type: ObjectId, ref: 'File ' }],
     tags: [{ type: ObjectId, ref: 'Tag' }],

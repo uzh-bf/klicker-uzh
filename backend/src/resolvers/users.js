@@ -7,6 +7,7 @@ const { UserModel } = require('../models')
 const APP_CFG = cfg.get('app')
 
 /* ----- queries ----- */
+const allUsersQuery = () => UserModel.find().sort({ createdAt: -1 })
 const authUserByIDQuery = (parentValue, args, { auth }) => UserModel.findById(auth.sub)
 const userByIDQuery = (parentValue) => UserModel.findById(parentValue.user)
 const checkAvailabilityQuery = (parentValue, { email, shortname }) =>
@@ -21,8 +22,16 @@ const hmacQuery = (parentValue, args, { auth }) =>
 const createUserMutation = (parentValue, { email, password, shortname, institution, useCase }) =>
   AccountService.signup(email, password, shortname, institution, useCase)
 
+const deleteUserMutation = (parentValue, { id }) => {
+  return AccountService.resolveAccountDeletion(id)
+}
 const modifyUserMutation = (parentValue, { user: { email, shortname, institution, useCase } }, { auth }) =>
   AccountService.updateAccountData({ userId: auth.sub, email, shortname, institution, useCase })
+
+// caller param can be removed when users are also able to edit their email
+const modifyUserAsAdminMutation = (parentValue, { id, user: { email, shortname, institution, role } }) => {
+  return AccountService.updateAccountData({ userId: id, email, shortname, institution, role, caller: 'ADMIN' })
+}
 
 const loginMutation = (parentValue, { email, password }, { res }) => AccountService.login(res, email, password)
 
@@ -45,6 +54,7 @@ const activateAccountMutation = (parentValue, { activationToken }) => AccountSer
 
 module.exports = {
   // queries
+  allUsers: allUsersQuery,
   authUser: authUserByIDQuery,
   user: userByIDQuery,
   hmac: hmacQuery,
@@ -54,9 +64,11 @@ module.exports = {
   // mutations
   changePassword: changePasswordMutation,
   createUser: createUserMutation,
+  deleteUser: deleteUserMutation,
   login: loginMutation,
   logout: logoutMutation,
   modifyUser: modifyUserMutation,
+  modifyUserAsAdmin: modifyUserAsAdminMutation,
   requestPassword: requestPasswordMutation,
   requestAccountDeletion: requestAccountDeletionMutation,
   resolveAccountDeletion: resolveAccountDeletionMutation,

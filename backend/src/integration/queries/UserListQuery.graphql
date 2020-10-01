@@ -1,0 +1,12 @@
+query UserList {
+  users: allUsers {
+    id
+    email
+    shortname
+    institution
+    isAAI
+    role
+    createdAt
+    updatedAt
+  }
+}

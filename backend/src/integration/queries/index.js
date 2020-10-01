@@ -8,6 +8,7 @@ const JoinSessionQuery = loadAsString('./JoinSessionQuery.graphql')
 const RunningSessionQuery = loadAsString('./RunningSessionQuery.graphql')
 const SessionEvaluationQuery = loadAsString('./SessionEvaluationQuery.graphql')
 const SessionListQuery = loadAsString('./SessionListQuery.graphql')
+const UserListQuery = loadAsString('./UserListQuery.graphql')
 const SessionPublicEvaluationQuery = loadAsString('./SessionPublicEvaluationQuery.graphql')
 const CheckAvailabilityQuery = loadAsString('./CheckAvailabilityQuery.graphql')
 
@@ -27,6 +28,7 @@ module.exports = {
   SessionEvaluationQuery,
   SessionListQuery,
   SessionPublicEvaluationQuery,
+  UserListQuery,
   CheckAvailabilityQuery,
   serializers: [
     QuestionDetailsSerializer,

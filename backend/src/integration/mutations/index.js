@@ -23,6 +23,8 @@ const RequestPasswordMutation = loadAsString('./RequestPasswordMutation.graphql'
 const ChangePasswordMutation = loadAsString('./ChangePasswordMutation.graphql')
 const DeleteQuestionsMutation = loadAsString('./DeleteQuestionsMutation.graphql')
 const DeleteSessionsMutation = loadAsString('./DeleteSessionsMutation.graphql')
+const DeleteUserMutation = loadAsString('./DeleteUserMutation.graphql')
+const ModifyUserAsAdminMutation = loadAsString('./ModifyUserAsAdminMutation.graphql')
 const ModifyUserMutation = loadAsString('./ModifyUserMutation.graphql')
 const RequestAccountDeletionMutation = loadAsString('./RequestAccountDeletionMutation.graphql')
 const ResolveAccountDeletionMutation = loadAsString('./ResolveAccountDeletionMutation.graphql')
@@ -67,6 +69,8 @@ module.exports = {
   ChangePasswordMutation,
   DeleteQuestionsMutation,
   DeleteSessionsMutation,
+  DeleteUserMutation,
+  ModifyUserAsAdminMutation,
   ModifyUserMutation,
   RequestAccountDeletionMutation,
   ResolveAccountDeletionMutation,
