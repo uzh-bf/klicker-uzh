@@ -52,7 +52,7 @@ if (typeof window !== 'undefined' && window.ReactIntlLocaleData) {
   import('@formatjs/intl-relativetimeformat/polyfill')
 
   Object.keys(window.ReactIntlLocaleData).forEach((lang) => {
-    import(`@formatjs/intl-relativetimeformat/dist/locale-data/${lang}`)
+    import(`@formatjs/intl-relativetimeformat/locale-data/${lang}`)
   })
 }
 
