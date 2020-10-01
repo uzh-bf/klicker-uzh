@@ -263,7 +263,7 @@ function Index(): React.ReactElement {
       if (type === 'start') {
         await startSession({
           refetchQueries: [{ query: SessionListQuery }, { query: RunningSessionQuery }, { query: AccountSummaryQuery }],
-          variables: { id: result.data.createSession.id },
+          variables: { id: result.data.createSession?.id || result.data.modifySession?.id },
         })
         router.push('/sessions/running')
       } else {
