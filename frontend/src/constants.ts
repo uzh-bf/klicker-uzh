@@ -17,6 +17,11 @@ export const QUESTION_TYPES = {
   SC: 'SC',
 }
 
+export const ROLES = {
+  USER: 'USER',
+  ADMIN: 'ADMIN',
+}
+
 export const CHART_TYPES = {
   BAR_CHART: 'BAR_CHART',
   CLOUD_CHART: 'CLOUD_CHART',
