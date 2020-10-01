@@ -27,15 +27,12 @@ function UserList({ filters }: Props): React.ReactElement {
 
   // converts the data of the user such that it can be displayed in the table
   const convertAttributeValues = (users: any[]): any => {
-    const convertedUserList = []
-    users.forEach((user) => {
-      const convertedUser = { ...user }
-      convertedUser.createdAt = dayjs(user.createdAt).format('YYYY-MM-DD')
-      convertedUser.updatedAt = dayjs(user.updatedAt).format('YYYY-MM-DD')
-      convertedUser.isAAI = user.isAAI ? 'Yes' : 'No'
-      convertedUserList.push(convertedUser)
-    })
-    return convertedUserList
+    return users.map((user) => ({
+      ...user,
+      createdAt: dayjs(user.createdAt).format('YYYY-MM-DD'),
+      updatedAt: dayjs(user.updatedAt).format('YYYY-MM-DD'),
+      isAAI: user.isAAI ? 'Yes' : 'No',
+    }))
   }
 
   if (loading) {
@@ -47,7 +44,7 @@ function UserList({ filters }: Props): React.ReactElement {
 
   const { users } = data
 
-  // create a user index TODO: define which attributes are desired searching
+  // create a user index
   const userIndex = buildIndex('users', users, ['email', 'shortname', 'institution', 'role'])
 
   // apply the filters
@@ -59,7 +56,7 @@ function UserList({ filters }: Props): React.ReactElement {
     return (
       <div className="userList">
         <h1>{filters.title}</h1>
-        <FormattedMessage defaultMessage="No matching user was found." id="admin.AdminArea.UserManagement.noUsers" />
+        <FormattedMessage defaultMessage="No matching user was found." id="components.admin.userlist.noUsers" />
       </div>
     )
   }
@@ -87,7 +84,7 @@ function UserList({ filters }: Props): React.ReactElement {
       } catch ({ message }) {
         addToast(
           <FormattedMessage
-            defaultMessage="{errorMessage}"
+            defaultMessage="Unable to delete user: {errorMessage}"
             id="components.admin.userList.delete.error"
             values={{ errorMessage: message }}
           />,
@@ -98,8 +95,6 @@ function UserList({ filters }: Props): React.ReactElement {
       }
     }
     setDeletionConfirmation(false)
-
-    console.log(`Deleted ${userId}`)
   }
 
   const onUserModification = async (userId: string, values: any, confirm: boolean): Promise<any> => {
@@ -119,7 +114,7 @@ function UserList({ filters }: Props): React.ReactElement {
           },
         })
         addToast(
-          <FormattedMessage defaultMessage="User successfully modified." id="components.admin.user.edit.success" />,
+          <FormattedMessage defaultMessage="User successfully modified." id="components.admin.userList.edit.success" />,
           {
             appearance: 'success',
           }
@@ -127,8 +122,8 @@ function UserList({ filters }: Props): React.ReactElement {
       } catch ({ message }) {
         addToast(
           <FormattedMessage
-            defaultMessage="{errorMessage}"
-            id="components.admin.user.edit.error"
+            defaultMessage="Unable to edit user: {errorMessage}"
+            id="components.admin.userList.edit.error"
             values={{ errorMessage: message }}
           />,
           {

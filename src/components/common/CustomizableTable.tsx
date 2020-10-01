@@ -1,7 +1,19 @@
 import React, { useState } from 'react'
 import _sortBy from 'lodash/sortBy'
 import { Button, Table, Confirm } from 'semantic-ui-react'
+import { defineMessages, useIntl } from 'react-intl'
 import EditTableRowForm from '../forms/EditTableRowForm'
+
+const messages = defineMessages({
+  confirmDeletion: {
+    id: 'customizableTable.deleteEntity',
+    defaultMessage: 'Delete Entity',
+  },
+  confirmDeletionDescription: {
+    id: 'customizableTable.deleteConfirmation',
+    defaultMessage: 'Are you sure that you want to delete the entity {activeId}?',
+  },
+})
 
 interface Props {
   columns: {
@@ -44,12 +56,14 @@ function CustomizableTable({
   handleDeletion,
   handleModification,
 }: Props): React.ReactElement {
+  const intl = useIntl()
+
   const [sortBy, setSortBy] = useState(columns[0].attributeName)
   const [sortDirection, setSortDirection]: any = useState('descending')
   const [activeId, setActiveId] = useState(undefined)
   const [editableRow, setEditableRow] = useState(undefined)
 
-  Object.assign(columns, defaultColumnProperties)
+  const columnsWithDefaults = Object.assign(columns, defaultColumnProperties)
 
   const sortedData = sortDirection === 'ascending' ? _sortBy(data, sortBy) : _sortBy(data, sortBy).reverse()
 
@@ -67,7 +81,7 @@ function CustomizableTable({
     <div className="tableChart">
       <Table sortable striped>
         <Table.Header>
-          {columns.map(
+          {columnsWithDefaults.map(
             (column, key): React.ReactElement => (
               <Table.HeaderCell
                 key={key.toString()}
@@ -132,9 +146,9 @@ function CustomizableTable({
         </Table.Body>
       </Table>
       <Confirm
-        cancelButton={'Go Back'}
-        confirmButton={'Delete User'}
-        content={`Are you sure that you want to delete the user ${activeId}?`}
+        cancelButton={intl.formatMessage({ id: 'common.button.back' })}
+        confirmButton={intl.formatMessage(messages.confirmDeletion)}
+        content={intl.formatMessage(messages.confirmDeletionDescription, { activeId })}
         open={deletionConfirmation}
         onCancel={(): Promise<void> => handleDeletion(activeId, false)}
         onConfirm={(): Promise<void> => handleDeletion(activeId, true)}
