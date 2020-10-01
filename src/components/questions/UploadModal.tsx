@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import { Modal, Button, Table, Icon } from 'semantic-ui-react'
-import { useApolloClient } from '@apollo/react-hooks'
+import { useApolloClient } from '@apollo/client'
 import { useDropzone } from 'react-dropzone'
 import { FormattedMessage } from 'react-intl'
 import { useToasts } from 'react-toast-notifications'

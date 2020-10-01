@@ -3,6 +3,9 @@
 require('dotenv').config()
 
 const convict = require('convict')
+const convictValidators = require('convict-format-with-validator')
+
+convict.addFormats(convictValidators)
 
 module.exports = convict({
   api: {

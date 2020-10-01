@@ -2,7 +2,7 @@ import React from 'react'
 import { useRouter } from 'next/router'
 import { Loader, Message } from 'semantic-ui-react'
 import { FormattedMessage, useIntl } from 'react-intl'
-import { useQuery } from '@apollo/react-hooks'
+import { useQuery } from '@apollo/client'
 
 import Session from './Session'
 import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
