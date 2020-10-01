@@ -3,7 +3,7 @@ import _pick from 'lodash/pick'
 import _omitBy from 'lodash/omitBy'
 import _isNil from 'lodash/isNil'
 import { ContentState, convertFromRaw, convertToRaw, EditorState } from 'draft-js'
-import { useQuery, useMutation } from '@apollo/react-hooks'
+import { useQuery, useMutation } from '@apollo/client'
 import { Modal } from 'semantic-ui-react'
 
 import QuestionCreationForm from '../forms/questionManagement/QuestionCreationForm'

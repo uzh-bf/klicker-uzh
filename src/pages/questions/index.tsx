@@ -8,7 +8,7 @@ import Link from 'next/link'
 // import { Formik, useField } from 'formik'
 import { useRouter } from 'next/router'
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
-import { useQuery, useMutation } from '@apollo/react-hooks'
+import { useQuery, useMutation } from '@apollo/client'
 import { Loader } from 'semantic-ui-react'
 import { useToasts } from 'react-toast-notifications'
 
