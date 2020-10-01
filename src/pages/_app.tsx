@@ -10,6 +10,7 @@ import { createIntl, createIntlCache, RawIntlProvider } from 'react-intl'
 import * as Sentry from '@sentry/node'
 import { RewriteFrames } from '@sentry/integrations'
 import { Integrations } from '@sentry/tracing'
+import Head from 'next/head'
 
 // HACK: import an empty css file such that pages with css files loaded don't become unroutable (e.g., pages with Countdown.js)
 import './app.css'
@@ -116,15 +117,20 @@ class Klicker extends App<Props> {
     const intl = createIntl({ locale, messages }, cache)
 
     return (
-      <DndProvider backend={HTML5Backend}>
-        <RawIntlProvider value={intl}>
-          <ToastProvider autoDismiss>
-            <StrictMode>
-              <Component {...pageProps} err={this.state.error} />
-            </StrictMode>
-          </ToastProvider>
-        </RawIntlProvider>
-      </DndProvider>
+      <>
+        <Head>
+          <meta content="width=device-width, initial-scale=1" name="viewport" />
+        </Head>
+        <DndProvider backend={HTML5Backend}>
+          <RawIntlProvider value={intl}>
+            <ToastProvider autoDismiss>
+              <StrictMode>
+                <Component {...pageProps} err={this.state.error} />
+              </StrictMode>
+            </ToastProvider>
+          </RawIntlProvider>
+        </DndProvider>
+      </>
     )
   }
 }
