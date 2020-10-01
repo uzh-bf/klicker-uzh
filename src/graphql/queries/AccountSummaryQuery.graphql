@@ -5,6 +5,7 @@ query AccountSummary {
     shortname
     institution
     useCase
+    role
     runningSession {
       id
     }
