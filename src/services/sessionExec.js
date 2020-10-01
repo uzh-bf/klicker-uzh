@@ -348,6 +348,7 @@ const loginParticipant = async ({ res, sessionId, username, password }) => {
     },
     APP_CFG.secret,
     {
+      algorithm: 'HS256',
       expiresIn: '1w',
     }
   )

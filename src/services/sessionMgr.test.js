@@ -50,10 +50,10 @@ describe('SessionMgrService', () => {
 
     it('correctly aggregates SC/MC question results', () => {
       const redisResult = {
-        '0': '1',
-        '3': '3',
-        '2': '1',
-        '1': '4',
+        0: '1',
+        3: '3',
+        2: '1',
+        1: '4',
         participants: '9',
       }
 
