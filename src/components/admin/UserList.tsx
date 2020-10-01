@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import dayjs from 'dayjs'
-import { useQuery, useMutation } from '@apollo/react-hooks'
+import { useQuery, useMutation } from '@apollo/client'
 import { Loader, Message } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import { useToasts } from 'react-toast-notifications'
