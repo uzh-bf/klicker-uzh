@@ -1,7 +1,7 @@
 const { GraphQLDate, GraphQLTime, GraphQLDateTime } = require('graphql-iso-date')
 
-const { requireAuth } = require('./services/accounts')
 const { requestPresignedURL } = require('./resolvers/files')
+
 const {
   allQuestions,
   createQuestion,
@@ -47,8 +47,11 @@ const {
 } = require('./resolvers/sessions')
 const { allTags, tags } = require('./resolvers/tags')
 const {
+  allUsers,
   createUser,
+  deleteUser,
   modifyUser,
+  modifyUserAsAdmin,
   login,
   logout,
   user,
@@ -86,6 +89,7 @@ const typeDefs = [
     allQuestions: [Question]!
     allSessions: [Session]!
     allTags: [Tag]!
+    allUsers: [User]!
     checkAccountStatus: ID
     checkAvailability(email: String, shortname: String): User_Availability!
     joinSession(shortname: String!): Session_Public
@@ -112,6 +116,7 @@ const typeDefs = [
     deleteQuestions(ids: [ID!]!): String!
     deleteResponse(instanceId: ID!, response: String!): String!
     deleteSessions(ids: [ID!]!): String!
+    deleteUser(id: ID!): String!
     endSession(id: ID!): Session!
     login(email: String!, password: String!): ID!
     loginParticipant(sessionId: ID!, username: String, password: String!): ID!
@@ -120,6 +125,7 @@ const typeDefs = [
     modifyQuestion(id: ID!, question: QuestionModifyInput!): Question!
     modifySession(id: ID!, session: SessionModifyInput!): Session!
     modifyUser(user: User_Modify!): User!
+    modifyUserAsAdmin(id: ID!, user: User_ModifyAsAdmin!): User!
     pauseSession(id: ID!): Session!
     cancelSession(id: ID!): Session!
     resetSession(id: ID!): Session!
@@ -152,53 +158,56 @@ const resolvers = {
   DateTime: GraphQLDateTime,
   // map queries and mutations
   Query: {
-    allQuestions: requireAuth(allQuestions),
-    allSessions: requireAuth(allSessions),
-    allTags: requireAuth(allTags),
+    allQuestions,
+    allSessions,
+    allTags,
+    allUsers,
     checkAccountStatus,
     checkAvailability,
     joinSession,
-    question: requireAuth(question),
-    runningSession: requireAuth(runningSession),
-    session: requireAuth(session),
+    question,
+    runningSession,
+    session,
     sessionPublic: session,
-    user: requireAuth(authUser),
+    user: authUser,
   },
   Mutation: {
     activateAccount,
-    archiveQuestions: requireAuth(archiveQuestions),
+    archiveQuestions,
     addFeedback,
-    deleteFeedback: requireAuth(deleteFeedback),
+    deleteFeedback,
     addConfusionTS,
     addResponse,
-    changePassword: requireAuth(changePassword),
-    createQuestion: requireAuth(createQuestion),
-    createSession: requireAuth(createSession),
+    changePassword,
+    createQuestion,
+    createSession,
     createUser,
-    deleteQuestions: requireAuth(deleteQuestions),
-    deleteResponse: requireAuth(deleteResponse),
-    deleteSessions: requireAuth(deleteSessions),
-    endSession: requireAuth(endSession),
+    deleteQuestions,
+    deleteResponse,
+    deleteSessions,
+    deleteUser,
+    endSession,
     login,
     loginParticipant,
     logout,
-    modifyQuestion: requireAuth(modifyQuestion),
-    modifySession: requireAuth(modifySession),
-    modifyUser: requireAuth(modifyUser),
-    pauseSession: requireAuth(pauseSession),
-    cancelSession: requireAuth(cancelSession),
-    requestAccountDeletion: requireAuth(requestAccountDeletion),
-    resolveAccountDeletion: requireAuth(resolveAccountDeletion),
+    modifyQuestion,
+    modifySession,
+    modifyUser,
+    modifyUserAsAdmin,
+    pauseSession,
+    cancelSession,
+    requestAccountDeletion,
+    resolveAccountDeletion,
     requestPassword,
-    requestPresignedURL: requireAuth(requestPresignedURL),
-    startSession: requireAuth(startSession),
-    updateSessionSettings: requireAuth(updateSessionSettings),
-    activateNextBlock: requireAuth(activateNextBlock),
-    activateBlockById: requireAuth(activateBlockById),
-    resetQuestionBlock: requireAuth(resetQuestionBlock),
-    modifyQuestionBlock: requireAuth(modifyQuestionBlock),
-    questionStatistics: requireAuth(questionStatistics),
-    exportQuestions: requireAuth(exportQuestions),
+    requestPresignedURL,
+    startSession,
+    updateSessionSettings,
+    activateNextBlock,
+    activateBlockById,
+    resetQuestionBlock,
+    modifyQuestionBlock,
+    questionStatistics,
+    exportQuestions,
   },
   Subscription: {
     // TODO: some form of authentication

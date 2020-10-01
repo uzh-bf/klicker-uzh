@@ -2,7 +2,7 @@ const { QuestionModel, QuestionInstanceModel, SessionModel, TagModel, UserModel,
 const AccountService = require('../../services/accounts')
 const QuestionService = require('../../services/questions')
 const { createContentState } = require('../draft')
-const { QUESTION_TYPES } = require('../../constants')
+const { QUESTION_TYPES, ROLES } = require('../../constants')
 
 /**
  * Cleanup all data belonging to a user
@@ -31,7 +31,7 @@ const cleanupUser = async ({ email, userId }) => {
   }
 }
 
-const setupTestEnv = async ({ email, password, shortname, isActive = true }) => {
+const setupTestEnv = async ({ email, password, shortname, isActive = true, role = ROLES.USER }) => {
   // find the id of the user to reset
   const user = await UserModel.findOne({ email })
 
@@ -41,7 +41,7 @@ const setupTestEnv = async ({ email, password, shortname, isActive = true }) => 
   }
 
   // sign up a fresh user
-  return AccountService.signup(email, password, shortname, 'IBF Test', 'Testing', { isActive })
+  return AccountService.signup(email, password, shortname, 'IBF Test', 'Testing', role, { isActive })
 }
 
 // prepare a new session instance
@@ -97,6 +97,7 @@ const initializeDb = async ({
   withLogin = false,
   withQuestions = false,
   isActive = true,
+  withAdmin = false,
 }) => {
   if (mongoose.connection.readyState === 0) {
     await mongoose.connect(`mongodb://${process.env.MONGO_URL_TEST}`, {
@@ -107,7 +108,14 @@ const initializeDb = async ({
   }
 
   const createdUser = await setupTestEnv({ email, password: 'somePassword', shortname, isActive })
+  let createdDummy
 
+  if (withAdmin) {
+    // create an admin
+    await setupTestEnv({ email: 'admin@bf.uzh.ch', password: 'somePassword', shortname: 'admin', role: ROLES.ADMIN })
+    // create another user which is modified and later deleted by the admin in the intregration test
+    createdDummy = await setupTestEnv({ email: 'dummy@bf.uzh.ch', password: 'somePassword', shortname: 'dummy' })
+  }
   if (withLogin) {
     const result = { userId: await AccountService.login(null, email, 'somePassword') }
 
@@ -196,7 +204,9 @@ const initializeDb = async ({
     return result
   }
 
-  return { userId: createdUser.id, email, shortname }
+  const dummyId = createdDummy ? createdDummy.id : undefined
+
+  return { userId: createdUser.id, dummyId, email, shortname }
 }
 
 module.exports = {

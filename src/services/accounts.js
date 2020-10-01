@@ -3,13 +3,13 @@ const JWT = require('jsonwebtoken')
 const _get = require('lodash/get')
 const passwordGenerator = require('generate-password')
 const { isLength, isEmail, normalizeEmail } = require('validator')
-const { AuthenticationError, ForbiddenError, UserInputError } = require('apollo-server-express')
+const { AuthenticationError, UserInputError } = require('apollo-server-express')
 
 const CFG = require('../klicker.conf.js')
 const validators = require('../lib/validators')
 const { QuestionInstanceModel, TagModel, FileModel, SessionModel, QuestionModel, UserModel } = require('../models')
 const { sendEmailNotification, sendSlackNotification, compileEmailTemplate } = require('./notifications')
-const { Errors } = require('../constants')
+const { Errors, ROLES } = require('../constants')
 
 const APP_CFG = CFG.get('app')
 
@@ -37,32 +37,11 @@ const AUTH_COOKIE_SETTINGS = {
  */
 const generateJwtSettings = (user, scope = ['user']) => ({
   // expiresIn: 86400,
+  role: user.role,
   sub: user.id,
   scope,
   shortname: user.shortname,
 })
-
-/**
- * Check whether an authentication object is valid
- * @param {Object} auth The authentication object
- */
-const isAuthenticated = (auth) => {
-  if (auth && auth.sub) {
-    return true
-  }
-  return false
-}
-
-/**
- * HOC to ensure the requester is authenticated
- * @param {Function} wrapped The resolver to be secured
- */
-const requireAuth = (wrapped) => (parentValue, args, context) => {
-  if (!isAuthenticated(context.auth)) {
-    throw new AuthenticationError('INVALID_LOGIN')
-  }
-  return wrapped(parentValue, args, context)
-}
 
 /**
  * Check whether a JWT is valid
@@ -126,31 +105,6 @@ const generateScopedToken = (user, scope, expiresIn = '1w') =>
   })
 
 /**
- * Verify an arbitrary JWT for validity and correct scoping
- * @param {*} token The JWT to be evaluated
- * @param {*} wantedScope The scope that the JWT should have to pass
- * @param {*} userId The userId that the JWT should be related to
- */
-const verifyToken = (token, wantedScope, userId) => {
-  // validate the token
-  try {
-    JWT.verify(token, APP_CFG.secret)
-  } catch (e) {
-    throw new ForbiddenError(Errors.INVALID_TOKEN)
-  }
-
-  // decode the valid token
-  const { sub, scope } = JWT.decode(token)
-
-  // ensure that the wanted scope is available
-  if ((wantedScope && !scope.includes(wantedScope)) || (userId && sub !== userId)) {
-    throw new ForbiddenError(Errors.INVALID_TOKEN)
-  }
-
-  return sub
-}
-
-/**
  * Check the availability of fields with uniqueness constraints
  * @param {String} email
  * @param {String} shortname
@@ -185,7 +139,15 @@ const checkAvailability = async ({ email, shortname }) => {
  * @param {Boolean} isAAI Whether the user registrations is performed via AAI
  * @param {Boolean} isActive Whether the user is initially active
  */
-const signup = async (email, password, shortname, institution, useCase, { isAAI, isActive } = {}) => {
+const signup = async (
+  email,
+  password,
+  shortname,
+  institution,
+  useCase,
+  role = ROLES.USER,
+  { isAAI, isActive } = {}
+) => {
   if (!isEmail(email)) {
     throw new UserInputError(Errors.INVALID_EMAIL)
   }
@@ -220,6 +182,7 @@ const signup = async (email, password, shortname, institution, useCase, { isAAI,
     useCase,
     isAAI,
     isActive,
+    role,
   }).save()
 
   if (newUser) {
@@ -301,7 +264,7 @@ async function checkAccountStatus({ res, auth }) {
  * @param {String} institution
  * @param {String} useCase
  */
-const updateAccountData = async ({ userId, email, shortname, institution, useCase }) => {
+const updateAccountData = async ({ userId, email, shortname, institution, useCase, role, caller = ROLES.USER }) => {
   let user
   try {
     user = await UserModel.findById(userId)
@@ -321,8 +284,10 @@ const updateAccountData = async ({ userId, email, shortname, institution, useCas
         throw new UserInputError(Errors.EMAIL_NOT_AVAILABLE)
       }
 
-      // TODO enable after migration
-      // user.email = email
+      // caller param can be removed after migration (when users can also edit their email)
+      if (caller) {
+        user.email = email
+      }
     }
 
     if (shortname) {
@@ -344,6 +309,11 @@ const updateAccountData = async ({ userId, email, shortname, institution, useCas
       validators.useCase.check(useCase)
       user.useCase = useCase
     }
+
+    if (role) {
+      validators.role.check(role)
+      user.role = role
+    }
   } catch (e) {
     throw new UserInputError(Errors.INVALID_INPUT)
   }
@@ -357,11 +327,11 @@ const updateAccountData = async ({ userId, email, shortname, institution, useCas
  * @param {String} activationToken The activation token to be verified
  */
 const activateAccount = async (activationToken) => {
-  // verify the token and extract the userId of the account
-  const userId = verifyToken(activationToken, 'activate')
+  // extract the userId of the account
+  const { sub } = JWT.decode(activationToken)
 
   // activate the user account
-  await UserModel.findByIdAndUpdate(userId, {
+  await UserModel.findByIdAndUpdate(sub, {
     isActive: true,
   })
 
@@ -586,14 +556,10 @@ const performAccountDeletion = async (userId) => {
  * Resolve account deletion requests
  * Validate the deletion token previosuly sent to the stored email
  * @param {ID} userId
- * @param {String} deletionToken
  */
-const resolveAccountDeletion = async (userId, deletionToken) => {
-  // verify the deletion token and extract the user id
-  const userToDelete = verifyToken(deletionToken, 'delete', userId)
-
+const resolveAccountDeletion = async (userId) => {
   // perform the actual account deletion procedures
-  await performAccountDeletion(userToDelete)
+  await performAccountDeletion(userId)
 
   return 'ACCOUNT_DELETED'
 }
@@ -602,8 +568,6 @@ module.exports = {
   checkAvailability,
   checkAccountStatus,
   updateAccountData,
-  isAuthenticated,
-  requireAuth,
   isValidJWT,
   getToken,
   signup,

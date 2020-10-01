@@ -1,6 +1,6 @@
 require('dotenv').config()
 
-const { ForbiddenError, UserInputError } = require('apollo-server-express')
+const { UserInputError } = require('apollo-server-express')
 const mongoose = require('mongoose')
 const JWT = require('jsonwebtoken')
 
@@ -159,20 +159,8 @@ describe('AccountService', () => {
     })
 
     describe('resolveAccountDeletion', () => {
-      it('throws when passed an invalid deletion token', async () => {
-        await expect(AccountService.resolveAccountDeletion(userId, 'invalidToken')).rejects.toThrow(
-          new ForbiddenError(Errors.INVALID_TOKEN)
-        )
-      })
-
-      it('throws when users in deletion and auth token do not match', async () => {
-        await expect(AccountService.resolveAccountDeletion('someOtherUserId', deletionToken)).rejects.toThrow(
-          new ForbiddenError(Errors.INVALID_TOKEN)
-        )
-      })
-
       it('correctly performs account deletion', async () => {
-        await AccountService.resolveAccountDeletion(userId, deletionToken)
+        await AccountService.resolveAccountDeletion(userId)
       })
     })
   })
@@ -189,6 +177,7 @@ describe('AccountService', () => {
       mongoose.disconnect(done)
     })
 
+    /* Not used anymore, is tested by the shield tests now
     describe('isAuthenticated', () => {
       it('correctly validates authentication state', () => {
         const auth1 = null
@@ -218,6 +207,7 @@ describe('AccountService', () => {
         expect(wrappedFunction(null, null, { auth: auth4 })).toEqual('something')
       })
     })
+    */
 
     describe('isValidJWT', () => {
       it('correctly validates JWTs', () => {

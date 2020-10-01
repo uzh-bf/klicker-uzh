@@ -7,6 +7,8 @@ const mongoose = require('mongoose')
 const express = require('express')
 const PrettyError = require('pretty-error')
 const { ApolloServer } = require('apollo-server-express')
+const { applyMiddleware } = require('graphql-middleware')
+const { makeExecutableSchema } = require('graphql-tools')
 
 // express middlewares
 const bodyParser = require('body-parser')
@@ -17,6 +19,9 @@ const compression = require('compression')
 const helmet = require('helmet')
 const morgan = require('morgan')
 const RateLimit = require('express-rate-limit')
+
+// authentication middleware
+const { permissions } = require('./services/authentication')
 
 // import the configuration
 const CFG = require('./klicker.conf.js')
@@ -200,10 +205,13 @@ app.use(middleware)
 // instantiate pretty error
 const pe = new PrettyError()
 
+// apply the graphql-shield middleware to the schema
+const schema = makeExecutableSchema({ typeDefs, resolvers })
+const schemaWithAuthentication = applyMiddleware(schema, permissions)
+
 // setup a new apollo server instance
 const apollo = new ApolloServer({
-  typeDefs,
-  resolvers,
+  schema: schemaWithAuthentication,
   context: async ({ connection, req, res }) => {
     // context handler for subscriptions
     if (connection) {
