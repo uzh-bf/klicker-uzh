@@ -47,10 +47,10 @@ interface Props {
   title: string
   totalResponses?: number
   type: string
-  feedbacks: any[]
+  feedbacks?: any[]
   showFeedback: boolean
   onChangeShowFeedback: (showFeedback: boolean) => void
-  confusionTS: any[]
+  confusionTS?: any[]
   onChangeShowConfusionTS: (showConfusionTS: boolean) => void
   showConfusionTS: boolean
   showQuestionLayout: boolean
@@ -101,8 +101,8 @@ function EvaluationLayout({
 
   const [currentIndex, setCurrentIndex] = useState(activeInstance)
 
-  const existsFeedback = feedbacks.length > 0
-  const existsConfusion = confusionTS.length > 0
+  const existsFeedback = feedbacks?.length > 0
+  const existsConfusion = confusionTS?.length > 0
   const numberOfTabs = instanceSummary.length + (existsFeedback ? 1 : 0) + (existsConfusion ? 1 : 0)
   const feedbackIndex = existsConfusion ? numberOfTabs - 2 : numberOfTabs - 1
   const confusionIndex = numberOfTabs - 1
