@@ -211,10 +211,10 @@ module.exports = convict({
       format: Boolean,
     },
     frameguard: {
-      ancestors: {
-        default: ["'none'"],
-        env: 'SECURITY_FRAMEGUARD_ANCESTORS',
-        format: Array,
+      action: {
+        default: 'sameorigin',
+        env: 'SECURITY_FRAMEGUARD_ACTION',
+        format: String,
       },
       enabled: {
         default: false,

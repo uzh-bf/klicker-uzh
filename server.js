@@ -280,7 +280,9 @@ app
             maxAge: expectCt.maxAge,
             reportUri: expectCt.reportUri,
           },
-          frameguard: frameguard.enabled,
+          frameguard: frameguard.enabled && {
+            action: frameguard.action,
+          },
           hsts: hsts.enabled && {
             includeSubdomains: hsts.includeSubdomains,
             maxAge: hsts.maxAge,
