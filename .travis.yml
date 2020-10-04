@@ -131,11 +131,12 @@ jobs:
         - PASSWORD=$OC_TOKEN_SWITCH
         - REGISTRY="registry.zh.shift.switchengines.ch"
         - IMAGE_NAME="registry.zh.shift.switchengines.ch/klicker/klicker-api-prod"
+        - IMAGE_NAME_CANARY="registry.zh.shift.switchengines.ch/klicker/klicker-api-stage"
       before_script:
         - echo $PASSWORD | docker login --username $USER --password-stdin $REGISTRY
       script:
-        - travis_retry docker pull $IMAGE_NAME:canary
-        - docker build . --cache-from $IMAGE_NAME:canary --build-arg VERSION=$TRAVIS_TAG -t $IMAGE_NAME:stable -t $IMAGE_NAME:$TRAVIS_TAG
+        - travis_retry docker pull $IMAGE_NAME_CANARY:canary
+        - docker build . --cache-from $IMAGE_NAME_CANARY:canary --build-arg VERSION=$TRAVIS_TAG -t $IMAGE_NAME:stable -t $IMAGE_NAME:$TRAVIS_TAG
         - travis_retry docker push $IMAGE_NAME:$TRAVIS_TAG
         - travis_retry docker push $IMAGE_NAME:stable
         - >
