@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useQuery, useMutation } from '@apollo/react-hooks'
+import { useQuery, useMutation } from '@apollo/client'
 import { convertToRaw } from 'draft-js'
 import { Modal } from 'semantic-ui-react'
 import _pick from 'lodash/pick'

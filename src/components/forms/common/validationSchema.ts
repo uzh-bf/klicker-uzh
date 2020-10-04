@@ -1,5 +1,7 @@
 import { string, ref } from 'yup'
 
+import { ROLES } from '../../../constants'
+
 export default {
   email: string().email().lowercase(),
   institution: string(),
@@ -7,6 +9,7 @@ export default {
   passwordRepeat: string()
     .min(8)
     .oneOf([ref('password'), null]),
+  role: string().oneOf(Object.values(ROLES)),
   sessionName: string().min(1),
   shortname: string()
     .min(3)

@@ -3,13 +3,14 @@ import React, { StrictMode } from 'react'
 import Router from 'next/router'
 import getConfig from 'next/config'
 import App from 'next/app'
-import HTML5Backend from 'react-dnd-html5-backend'
+import { HTML5Backend } from 'react-dnd-html5-backend'
 import { DndProvider } from 'react-dnd'
 import { ToastProvider } from 'react-toast-notifications'
 import { createIntl, createIntlCache, RawIntlProvider } from 'react-intl'
 import * as Sentry from '@sentry/node'
 import { RewriteFrames } from '@sentry/integrations'
 import { Integrations } from '@sentry/tracing'
+import Head from 'next/head'
 
 // HACK: import an empty css file such that pages with css files loaded don't become unroutable (e.g., pages with Countdown.js)
 import './app.css'
@@ -51,7 +52,7 @@ if (typeof window !== 'undefined' && window.ReactIntlLocaleData) {
   import('@formatjs/intl-relativetimeformat/polyfill')
 
   Object.keys(window.ReactIntlLocaleData).forEach((lang) => {
-    import(`@formatjs/intl-relativetimeformat/dist/locale-data/${lang}`)
+    import(`@formatjs/intl-relativetimeformat/locale-data/${lang}`)
   })
 }
 
@@ -116,15 +117,20 @@ class Klicker extends App<Props> {
     const intl = createIntl({ locale, messages }, cache)
 
     return (
-      <DndProvider backend={HTML5Backend}>
-        <RawIntlProvider value={intl}>
-          <ToastProvider autoDismiss>
-            <StrictMode>
-              <Component {...pageProps} err={this.state.error} />
-            </StrictMode>
-          </ToastProvider>
-        </RawIntlProvider>
-      </DndProvider>
+      <>
+        <Head>
+          <meta content="width=device-width, initial-scale=1" name="viewport" />
+        </Head>
+        <DndProvider backend={HTML5Backend}>
+          <RawIntlProvider value={intl}>
+            <ToastProvider autoDismiss>
+              <StrictMode>
+                <Component {...pageProps} err={this.state.error} />
+              </StrictMode>
+            </ToastProvider>
+          </RawIntlProvider>
+        </DndProvider>
+      </>
     )
   }
 }
