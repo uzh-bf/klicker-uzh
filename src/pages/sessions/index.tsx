@@ -1,6 +1,6 @@
 import React from 'react'
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
-import { useMutation } from '@apollo/react-hooks'
+import { useMutation } from '@apollo/client'
 import _debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
 import { useToasts } from 'react-toast-notifications'

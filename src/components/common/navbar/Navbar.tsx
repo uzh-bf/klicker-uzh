@@ -5,7 +5,7 @@ import getConfig from 'next/config'
 import { useRouter } from 'next/router'
 import _get from 'lodash/get'
 import { Icon, Menu } from 'semantic-ui-react'
-import { useQuery, useMutation } from '@apollo/react-hooks'
+import { useQuery, useMutation } from '@apollo/client'
 
 import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'
@@ -87,6 +87,7 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
           const userEmail = _get(data, 'user.email')
           const accountShort = _get(data, 'user.shortname')
           // const userHash = _get(data, 'user.hmac')
+          const role = _get(data, 'user.role')
           const runningSessionId = _get(data, 'user.runningSession.id')
 
           if (typeof window !== 'undefined') {
@@ -138,6 +139,7 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
 
                 <AccountArea
                   accountShort={accountShort}
+                  role={role}
                   onLogout={async (): Promise<void> => {
                     // logout
                     await logout()

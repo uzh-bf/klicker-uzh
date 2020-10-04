@@ -2,12 +2,12 @@ import React from 'react'
 import { useRouter } from 'next/router'
 import { Loader, Message } from 'semantic-ui-react'
 import { FormattedMessage, useIntl } from 'react-intl'
-import { useQuery } from '@apollo/react-hooks'
+import { useQuery } from '@apollo/client'
 
 import Session from './Session'
 import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
 import { SESSION_STATUS } from '../../constants'
-import { buildIndex, filterSessions } from '../../lib/utils/filters'
+import { buildIndex, filterByTitle } from '../../lib/utils/filters'
 
 // prepare possible status messages for different session stati
 const statusCases = {
@@ -107,7 +107,7 @@ function SessionList({ filters, handleCopySession, handleStartSession }: Props):
         // create a session index
         const sessionIndex = buildIndex('sessions', sessions, ['name', 'createdAt'])
 
-        const processedSessions = filterSessions(sessions, filters, sessionIndex).map((session): any => ({
+        const processedSessions = filterByTitle(sessions, filters, sessionIndex).map((session): any => ({
           ...session,
           ...session.settings,
           button: {

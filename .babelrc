@@ -64,7 +64,9 @@
            [
               "react-intl",
               {
-                 "messagesDir":"src/lang/.messages"
+                  "idInterpolationPattern": "[sha512:contenthash:base64:6]",
+                  "extractFromFormatMessageCall": true,
+                  "ast": true
               }
            ]
         ]

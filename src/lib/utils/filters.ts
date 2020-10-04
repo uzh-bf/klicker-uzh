@@ -25,6 +25,7 @@ const indices = {}
 
 export function buildIndex(name: string, items: any[], searchIndices: any[]): any[] {
   // if an index already exists, return it
+
   if (indices[name]) {
     return indices[name]
   }
@@ -37,7 +38,11 @@ export function buildIndex(name: string, items: any[], searchIndices: any[]): an
 
   // look for all substrings, not only prefixed
   search.indexStrategy = new JsSearch.AllSubstringsIndexStrategy()
-  search.tokenizer = new JsSearch.StopWordsTokenizer(new JsSearch.SimpleTokenizer())
+
+  if (name !== 'users') {
+    // impedes the user search, must it be included for the other types?
+    search.tokenizer = new JsSearch.StopWordsTokenizer(new JsSearch.SimpleTokenizer())
+  }
 
   // index by title, type, creation date and the description of the first version
   searchIndices.forEach((index): void => search.addIndex(index))
@@ -83,8 +88,9 @@ export function filterQuestions(questions: any[], filters: any, index: any): any
   return results
 }
 
-export function filterSessions(sessions: any[], filters: any, index: any): any[] {
-  let results = sessions
+// both used for sessions and users
+export function filterByTitle(objects: any[], filters: any, index: any): any[] {
+  let results = objects
 
   if (filters.title) {
     results = index.search(filters.title)

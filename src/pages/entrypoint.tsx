@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import Cookies from 'js-cookie'
 import { useRouter } from 'next/router'
-import { useLazyQuery } from '@apollo/react-hooks'
+import { useLazyQuery } from '@apollo/client'
 import { Message } from 'semantic-ui-react'
 
 import { withApollo } from '../lib/apollo'

@@ -1,7 +1,7 @@
 import React from 'react'
 import Cookies from 'js-cookie'
 import { useRouter } from 'next/router'
-import { useMutation } from '@apollo/react-hooks'
+import { useMutation } from '@apollo/client'
 import { Message, Icon } from 'semantic-ui-react'
 
 import { FormattedMessage } from 'react-intl'
