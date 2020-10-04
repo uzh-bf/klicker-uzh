@@ -216,6 +216,11 @@ module.exports = convict({
         env: 'SECURITY_FRAMEGUARD_ACTION',
         format: String,
       },
+      ancestors: {
+        default: ["'none'"],
+        env: 'SECURITY_FRAMEGUARD_ANCESTORS',
+        format: Array,
+      },
       enabled: {
         default: false,
         env: 'SECURITY_FRAMEGUARD_ENABLED',
