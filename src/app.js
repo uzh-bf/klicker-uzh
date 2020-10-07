@@ -91,6 +91,9 @@ const responseCache = getRedis(3)
 // initialize an express server
 const app = express()
 
+// serve public files
+app.use(express.static('public'))
+
 // if the server is behind a proxy, set the APP_PROXY env to true
 // this will make express trust the X-* proxy headers and set corresponding req.ip
 if (APP_CFG.trustProxy) {
