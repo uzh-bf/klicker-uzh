@@ -38,7 +38,7 @@
     "@sentry/integrations": "5.24.2",
     "@sentry/node": "5.24.2",
     "@sentry/react": "5.24.2",
-    "@sentry/tracing": "5.24.2",
+    "@sentry/tracing": "5.26.0",
     "@sentry/webpack-plugin": "1.13.0",
     "@zeit/next-bundle-analyzer": "0.1.2",
     "@zeit/next-css": "1.0.1",
