@@ -32,7 +32,6 @@ class IntlDocument extends Document<Props> {
       <html lang={this.props.locale}>
         <Head>
           <meta content="text/html; charset=utf-8" httpEquiv="Content-type" />
-          <meta content="width=device-width, initial-scale=1" name="viewport" />
           <meta content="IE=Edge" httpEquiv="X-UA-Compatible" />
           <script
             crossOrigin="anonymous"

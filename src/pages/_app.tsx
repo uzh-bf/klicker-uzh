@@ -3,10 +3,14 @@ import React, { StrictMode } from 'react'
 import Router from 'next/router'
 import getConfig from 'next/config'
 import App from 'next/app'
-import HTML5Backend from 'react-dnd-html5-backend'
+import { HTML5Backend } from 'react-dnd-html5-backend'
 import { DndProvider } from 'react-dnd'
 import { ToastProvider } from 'react-toast-notifications'
 import { createIntl, createIntlCache, RawIntlProvider } from 'react-intl'
+import * as Sentry from '@sentry/node'
+import { RewriteFrames } from '@sentry/integrations'
+import { Integrations } from '@sentry/tracing'
+import Head from 'next/head'
 
 // HACK: import an empty css file such that pages with css files loaded don't become unroutable (e.g., pages with Countdown.js)
 import './app.css'
@@ -19,8 +23,26 @@ const { publicRuntimeConfig } = getConfig()
 
 const isProd = process.env.NODE_ENV === 'production'
 
-const Raven = publicRuntimeConfig.sentryDSN && require('raven-js')
-const LogRocket = publicRuntimeConfig.logrocketAppID && require('logrocket')
+if (publicRuntimeConfig.sentryDSN) {
+  const config = getConfig()
+  const distDir = `${config.serverRuntimeConfig.rootDir}/.next`
+  Sentry.init({
+    enabled: isProd,
+    integrations: [
+      new RewriteFrames({
+        iteratee: (frame: any): any => {
+          // eslint-disable-next-line
+          frame.filename = frame.filename.replace(distDir, 'app:///_next')
+          return frame
+        },
+      }),
+      new Integrations.BrowserTracing(),
+    ],
+    dsn: publicRuntimeConfig.sentryDSN,
+    release: process.env.npm_package_version,
+    tracesSampleRate: 1.0, // Be sure to lower this in production
+  })
+}
 
 // Register React Intl's locale data for the user's locale in the browser. This
 // locale data was added to the page by `pages/_document.js`. This only happens
@@ -30,7 +52,7 @@ if (typeof window !== 'undefined' && window.ReactIntlLocaleData) {
   import('@formatjs/intl-relativetimeformat/polyfill')
 
   Object.keys(window.ReactIntlLocaleData).forEach((lang) => {
-    import(`@formatjs/intl-relativetimeformat/dist/locale-data/${lang}`)
+    import(`@formatjs/intl-relativetimeformat/locale-data/${lang}`)
   })
 }
 
@@ -75,44 +97,18 @@ class Klicker extends App<Props> {
         // log the initial page load as a page view
         logPageView()
       }
-
-      if (Raven && !window.INIT_RAVEN) {
-        Raven.config(publicRuntimeConfig.sentryDSN, {
-          environment: process.env.NODE_ENV,
-          release: process.env.VERSION,
-        }).install()
-
-        if (LogRocket && window.INIT_LR) {
-          Raven.setDataCallback((data) => ({
-            ...data,
-            extra: {
-              sessionURL: LogRocket.sessionURL, // eslint-disable-line no-undef
-            },
-          }))
-        }
-
-        window.INIT_RAVEN = true
-      }
     }
   }
 
-  componentDidCatch(error, errorInfo): any {
+  componentDidCatch(error): any {
     this.setState({ error })
 
     if (isProd) {
-      if (Raven) {
-        Raven.captureException(error, { extra: errorInfo })
-        Raven.showReportDialog()
-      }
-
       if (publicRuntimeConfig.analyticsTrackingID) {
         const { logException } = require('../lib/utils/analytics')
         logException(error)
       }
     }
-
-    // needed for correct error handling in development
-    super.componentDidCatch(error, errorInfo)
   }
 
   render(): React.ReactElement {
@@ -121,15 +117,20 @@ class Klicker extends App<Props> {
     const intl = createIntl({ locale, messages }, cache)
 
     return (
-      <DndProvider backend={HTML5Backend}>
-        <RawIntlProvider value={intl}>
-          <ToastProvider autoDismiss>
-            <StrictMode>
-              <Component {...pageProps} error={this.state.error} />
-            </StrictMode>
-          </ToastProvider>
-        </RawIntlProvider>
-      </DndProvider>
+      <>
+        <Head>
+          <meta content="width=device-width, initial-scale=1" name="viewport" />
+        </Head>
+        <DndProvider backend={HTML5Backend}>
+          <RawIntlProvider value={intl}>
+            <ToastProvider autoDismiss>
+              <StrictMode>
+                <Component {...pageProps} err={this.state.error} />
+              </StrictMode>
+            </ToastProvider>
+          </RawIntlProvider>
+        </DndProvider>
+      </>
     )
   }
 }

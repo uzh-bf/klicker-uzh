@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import { Modal, Button, Table, Icon } from 'semantic-ui-react'
-import { useApolloClient } from '@apollo/react-hooks'
+import { useApolloClient } from '@apollo/client'
 import { useDropzone } from 'react-dropzone'
 import { FormattedMessage } from 'react-intl'
 import { useToasts } from 'react-toast-notifications'
@@ -30,7 +30,7 @@ function UploadModal({ children }: Props): React.ReactElement {
       } catch (error) {
         addToast(
           <FormattedMessage
-            defaultMessage="{errorMessage}"
+            defaultMessage="Unable to parse questions: {errorMessage}"
             id="components.questions.uploadModal.load.error"
             values={{ errorMessage: error.message }}
           />,
@@ -85,7 +85,7 @@ function UploadModal({ children }: Props): React.ReactElement {
     } catch (error) {
       addToast(
         <FormattedMessage
-          defaultMessage="{errorMessage}"
+          defaultMessage="Unable to import questions: {errorMessage}"
           id="components.questions.uploadModal.sequence.error"
           values={{ errorMessage: error.message }}
         />,

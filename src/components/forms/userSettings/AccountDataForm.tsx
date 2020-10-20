@@ -1,7 +1,7 @@
 import React from 'react'
 import getConfig from 'next/config'
 import _get from 'lodash/get'
-import { useQuery, useMutation } from '@apollo/react-hooks'
+import { useQuery, useMutation } from '@apollo/client'
 import { FormattedMessage, useIntl } from 'react-intl'
 import { Formik } from 'formik'
 import { object } from 'yup'

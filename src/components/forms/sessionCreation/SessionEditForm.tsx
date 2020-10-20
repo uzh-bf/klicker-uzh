@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { useQuery } from '@apollo/react-hooks'
+import { useQuery } from '@apollo/client'
 
 import SessionDetailsQuery from '../../../graphql/queries/SessionDetailsQuery.graphql'
 

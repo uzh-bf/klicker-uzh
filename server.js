@@ -84,32 +84,6 @@ const pages = [
   },
 ]
 
-// initialize elastic-apm if so configured
-let apm
-if (SERVICES_CFG.apm.enabled) {
-  const { monitorDev, secretToken, serverUrl, serviceName } = SERVICES_CFG.apm
-  apm = require('elastic-apm-node').start({
-    active: monitorDev || !isDev,
-    secretToken,
-    serverUrl,
-    serviceName,
-  })
-}
-
-function setupTransactionAPM(req) {
-  // set the APM transaction name
-  if (apm) {
-    if (req.originalUrl.length > 6 && req.originalUrl.substring(0, 6) !== '/_next') {
-      apm.setTransactionName(`${req.method} ${req.originalUrl}`)
-    }
-
-    // set the user context if a cookie was set
-    if (req.cookies.userId) {
-      apm.setUserContext({ id: req.cookies.userId })
-    }
-  }
-}
-
 // Polyfill Node with `Intl` that has data for all locales.
 // See: https://formatjs.io/guides/runtime-environments/#server
 Intl.NumberFormat = IntlPolyfill.NumberFormat
@@ -306,7 +280,9 @@ app
             maxAge: expectCt.maxAge,
             reportUri: expectCt.reportUri,
           },
-          frameguard: frameguard.enabled,
+          frameguard: frameguard.enabled && {
+            action: frameguard.action,
+          },
           hsts: hsts.enabled && {
             includeSubdomains: hsts.includeSubdomains,
             maxAge: hsts.maxAge,
@@ -352,11 +328,6 @@ app
         // setup locale and get messages for the specific route
         setupLocale(req, res)
 
-        if (apm) {
-          // inject transaction information for APM
-          setupTransactionAPM(req)
-        }
-
         // if the route contents should be cached
         if (cached) {
           renderAndCache(req, res, renderPath || url, mapParams ? mapParams(req) : undefined, cached)
@@ -369,11 +340,6 @@ app
     server.get('*', (req, res) => {
       // setup locale and get messages for the specific route
       setupLocale(req, res)
-
-      if (apm) {
-        // inject transaction information for APM
-        setupTransactionAPM(req)
-      }
 
       return handle(req, res)
     })

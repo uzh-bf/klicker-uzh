@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Formik } from 'formik'
 import { object } from 'yup'
 import { Button, Confirm, Table, Dropdown } from 'semantic-ui-react'
+import { FormattedMessage } from 'react-intl'
 import FormikInput from './components/FormikInput'
 import validationSchema from './common/validationSchema'
 
@@ -16,7 +17,10 @@ function ConfirmationContent({
 }): React.ReactElement {
   return (
     <p className="content">
-      <h3>The following changes will be made: {'\n'}</h3>
+      <h3>
+        <FormattedMessage defaultMessage="The following changes will be made" id="forms.editTableRow.changeLeading" />:
+        {'\n'}
+      </h3>
       {columns.map((column, key) =>
         initialValues[column.attributeName] !== values[column.attributeName] ? (
           <p key={key.toString()}>

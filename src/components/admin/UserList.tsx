@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import dayjs from 'dayjs'
-import { useQuery, useMutation } from '@apollo/react-hooks'
+import { useQuery, useMutation } from '@apollo/client'
 import { Loader, Message } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import { useToasts } from 'react-toast-notifications'
@@ -25,6 +25,42 @@ function UserList({ filters }: Props): React.ReactElement {
   const [deletionConfirmation, setDeletionConfirmation] = useState(false)
   const [editConfirmation, setEditConfirmation] = useState(false)
 
+  // converts the data of the user such that it can be displayed in the table
+  const convertAttributeValues = (users: any[]): any => {
+    return users.map((user) => ({
+      ...user,
+      createdAt: dayjs(user.createdAt).format('YYYY-MM-DD'),
+      updatedAt: dayjs(user.updatedAt).format('YYYY-MM-DD'),
+      isAAI: user.isAAI ? 'Yes' : 'No',
+    }))
+  }
+
+  if (loading) {
+    return <Loader active />
+  }
+  if (error) {
+    return <Message error>{error.message}</Message>
+  }
+
+  const { users } = data
+
+  // create a user index
+  const userIndex = buildIndex('users', users, ['email', 'shortname', 'institution', 'role'])
+
+  // apply the filters
+  const filteredUsers = filterByTitle(users, filters, userIndex)
+
+  const matchingUsers = convertAttributeValues(filteredUsers)
+
+  if (matchingUsers.length === 0) {
+    return (
+      <div className="userList">
+        <h1>{filters.title}</h1>
+        <FormattedMessage defaultMessage="No matching user was found." id="components.admin.userlist.noUsers" />
+      </div>
+    )
+  }
+
   const onUserDeletion = async (userId: string, confirm: boolean): Promise<void> => {
     if (!deletionConfirmation) {
       setDeletionConfirmation(true)
@@ -48,7 +84,7 @@ function UserList({ filters }: Props): React.ReactElement {
       } catch ({ message }) {
         addToast(
           <FormattedMessage
-            defaultMessage="{errorMessage}"
+            defaultMessage="Unable to delete user: {errorMessage}"
             id="components.admin.userList.delete.error"
             values={{ errorMessage: message }}
           />,
@@ -78,7 +114,7 @@ function UserList({ filters }: Props): React.ReactElement {
           },
         })
         addToast(
-          <FormattedMessage defaultMessage="User successfully modified." id="components.admin.user.edit.success" />,
+          <FormattedMessage defaultMessage="User successfully modified." id="components.admin.userList.edit.success" />,
           {
             appearance: 'success',
           }
@@ -86,8 +122,8 @@ function UserList({ filters }: Props): React.ReactElement {
       } catch ({ message }) {
         addToast(
           <FormattedMessage
-            defaultMessage="{errorMessage}"
-            id="components.admin.user.edit.error"
+            defaultMessage="Unable to edit user: {errorMessage}"
+            id="components.admin.userList.edit.error"
             values={{ errorMessage: message }}
           />,
           {
@@ -97,44 +133,6 @@ function UserList({ filters }: Props): React.ReactElement {
       }
     }
     setEditConfirmation(false)
-  }
-
-  // converts the data of the user such that it can be displayed in the table
-  const convertAttributeValues = (users: any[]): any => {
-    const convertedUserList = []
-    users.forEach((user) => {
-      const convertedUser = { ...user }
-      convertedUser.createdAt = dayjs(user.createdAt).format('YYYY-MM-DD')
-      convertedUser.updatedAt = dayjs(user.updatedAt).format('YYYY-MM-DD')
-      convertedUser.isAAI = user.isAAI ? 'Yes' : 'No'
-      convertedUserList.push(convertedUser)
-    })
-    return convertedUserList
-  }
-
-  if (loading) {
-    return <Loader active />
-  }
-  if (error) {
-    return <Message error>{error.message}</Message>
-  }
-
-  const { users } = data
-
-  // create a user index TODO: define which attributes are desired searching
-  const userIndex = buildIndex('users', users, ['email', 'shortname', 'institution', 'role'])
-
-  // apply the filters
-  const filteredUsers = filterByTitle(users, filters, userIndex)
-
-  const matchingUsers = convertAttributeValues(filteredUsers)
-
-  if (matchingUsers.length === 0) {
-    return (
-      <div className="userList">
-        <FormattedMessage defaultMessage="No matching user was found." id="admin.AdminArea.UserManagement.noUsers" />
-      </div>
-    )
   }
 
   const tableColumns = [

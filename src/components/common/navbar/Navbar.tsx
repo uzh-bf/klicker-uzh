@@ -5,7 +5,7 @@ import getConfig from 'next/config'
 import { useRouter } from 'next/router'
 import _get from 'lodash/get'
 import { Icon, Menu } from 'semantic-ui-react'
-import { useQuery, useMutation } from '@apollo/react-hooks'
+import { useQuery, useMutation } from '@apollo/client'
 
 import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'
@@ -15,7 +15,6 @@ import AccountSummaryQuery from '../../../graphql/queries/AccountSummaryQuery.gr
 
 interface KlickerWindow extends Window {
   INIT_LR?: boolean
-  INIT_RAVEN?: boolean
   _slaask?: any
 }
 
@@ -75,8 +74,8 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
             handleSortByChange={search.handleSortByChange}
             handleSortOrderToggle={search.handleSortOrderToggle}
             sortBy={search.sortBy}
-            sortingTypes={search.sortingTypes}
             sortOrder={search.sortOrder}
+            sortingTypes={search.sortingTypes}
             withSorting={search.withSorting}
           />
         </div>
@@ -123,12 +122,10 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
               }
             }
 
-            if (window.INIT_RAVEN) {
+            if (publicRuntimeConfig.sentryDSN) {
               try {
-                const Raven = require('raven-js')
-                Raven.identify(accountId, {
-                  name: accountShort,
-                })
+                const Sentry = require('@sentry/browser')
+                Sentry.setUser({ id: accountId, username: accountShort })
               } catch (e) {
                 //
               }

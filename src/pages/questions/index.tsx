@@ -8,7 +8,7 @@ import Link from 'next/link'
 // import { Formik, useField } from 'formik'
 import { useRouter } from 'next/router'
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
-import { useQuery, useMutation } from '@apollo/react-hooks'
+import { useQuery, useMutation } from '@apollo/client'
 import { Loader } from 'semantic-ui-react'
 import { useToasts } from 'react-toast-notifications'
 
@@ -95,8 +95,9 @@ function Index(): React.ReactElement {
 
   const index = useMemo(() => {
     if (data?.questions) {
-      buildIndex('questions', data.questions, ['title', 'createdAt'])
+      return buildIndex('questions', data.questions, ['title', 'createdAt'])
     }
+    return null
   }, [data])
 
   const [processedQuestions, setProcessedQuestions] = useState([])
@@ -262,7 +263,7 @@ function Index(): React.ReactElement {
       if (type === 'start') {
         await startSession({
           refetchQueries: [{ query: SessionListQuery }, { query: RunningSessionQuery }, { query: AccountSummaryQuery }],
-          variables: { id: result.data.createSession.id },
+          variables: { id: result.data.createSession?.id || result.data.modifySession?.id },
         })
         router.push('/sessions/running')
       } else {

@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import dayjs from 'dayjs'
 import _get from 'lodash/get'
 import _pick from 'lodash/pick'
 import _some from 'lodash/some'
 import { useRouter } from 'next/router'
-import { useQuery, useMutation } from '@apollo/react-hooks'
+import { useQuery, useMutation } from '@apollo/client'
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
 import { useToasts } from 'react-toast-notifications'
 import { Message, Icon } from 'semantic-ui-react'
@@ -64,7 +63,7 @@ function Running(): React.ReactElement {
   }, [])
 
   const accountSummary = useQuery(AccountSummaryQuery)
-  const { data, loading, error, subscribeToMore } = useQuery(RunningSessionQuery)
+  const { data, loading, error, startPolling, stopPolling, subscribeToMore } = useQuery(RunningSessionQuery)
   const [updateSettings, { loading: isUpdateSettingsLoading }] = useMutation(UpdateSessionSettingsMutation)
   const [endSession, { loading: isEndSessionLoading }] = useMutation(EndSessionMutation)
   const [pauseSession, { loading: isPauseSessionLoading }] = useMutation(PauseSessionMutation)
@@ -110,7 +109,6 @@ function Running(): React.ReactElement {
           // activeBlock,
           blocks,
           settings,
-          runtime,
           startedAt,
           confusionTS,
           feedbacks,
@@ -151,6 +149,9 @@ function Running(): React.ReactElement {
                     })
                   }
                 }}
+                handleActiveBlock={(): void => {
+                  startPolling(10000)
+                }}
                 handleCancelSession={async (): Promise<void> => {
                   if (!isAnythingLoading) {
                     await cancelSession({
@@ -187,6 +188,9 @@ function Running(): React.ReactElement {
                       refetchQueries: [{ query: RunningSessionQuery }],
                     })
                   }
+                }}
+                handleNoActiveBlock={(): void => {
+                  stopPolling()
                 }}
                 handlePauseSession={async (): Promise<void> => {
                   if (!isAnythingLoading) {
@@ -230,10 +234,9 @@ function Running(): React.ReactElement {
                 isParticipantAuthenticationEnabled={settings.isParticipantAuthenticationEnabled}
                 isParticipantListVisible={isParticipantListVisible}
                 participants={participants}
-                runtime={runtime}
                 sessionId={id}
                 shortname={shortname}
-                startedAt={dayjs(startedAt).format('HH:mm:ss')}
+                startedAt={startedAt}
                 storageMode={settings.storageMode}
                 subscribeToMore={subscribeToMore({
                   document: RunningSessionUpdatedSubscription,

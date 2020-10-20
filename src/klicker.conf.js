@@ -3,6 +3,9 @@
 require('dotenv').config()
 
 const convict = require('convict')
+const convictValidators = require('convict-format-with-validator')
+
+convict.addFormats(convictValidators)
 
 module.exports = convict({
   api: {
@@ -208,6 +211,11 @@ module.exports = convict({
       format: Boolean,
     },
     frameguard: {
+      action: {
+        default: 'sameorigin',
+        env: 'SECURITY_FRAMEGUARD_ACTION',
+        format: String,
+      },
       ancestors: {
         default: ["'none'"],
         env: 'SECURITY_FRAMEGUARD_ANCESTORS',
@@ -248,40 +256,6 @@ module.exports = convict({
     },
   },
   services: {
-    // Elastic APM
-    apm: {
-      enabled: {
-        default: false,
-        env: 'SERVICES_APM_ENABLED',
-        format: Boolean,
-      },
-      monitorDev: {
-        default: false,
-        env: 'SERVICES_APM_DEV',
-        format: Boolean,
-      },
-      secretToken: {
-        default: undefined,
-        env: 'SERVICES_APM_SECRET_TOKEN',
-        format: String,
-        sensitive: true,
-      },
-      serverUrl: {
-        default: undefined,
-        env: 'SERVICES_APM_SERVER_URL',
-        format: 'url',
-      },
-      serviceName: {
-        default: 'klicker-react',
-        env: 'SERVICES_APM_SERVICE_NAME',
-        format: String,
-      },
-      withRum: {
-        default: false,
-        env: 'SERVICES_APM_WITH_RUM',
-        format: Boolean,
-      },
-    },
     googleAnalytics: {
       enabled: {
         default: false,
@@ -313,6 +287,21 @@ module.exports = convict({
         default: undefined,
         env: 'SERVICES_SENTRY_DSN',
         format: 'url',
+      },
+      org: {
+        default: undefined,
+        env: 'SERVICES_SENTRY_ORG',
+        format: String,
+      },
+      project: {
+        default: undefined,
+        env: 'SERVICES_SENTRY_PROJECT',
+        format: String,
+      },
+      authToken: {
+        default: undefined,
+        env: 'SERVICES_SENTRY_AUTH_TOKEN',
+        format: String,
       },
       enabled: {
         default: false,

@@ -23,6 +23,7 @@ interface Props {
 function AdminArea({ filters }: Props): React.ReactElement {
   const intl = useIntl()
 
+  // Organized as array for the sake of extendability
   const panes = [
     {
       menuItem: intl.formatMessage(messages.userManagement),

@@ -2,7 +2,7 @@ import React from 'react'
 import _get from 'lodash/get'
 import { FormattedMessage, defineMessages, useIntl } from 'react-intl'
 import { Message, Button, Tab } from 'semantic-ui-react'
-import { useMutation } from '@apollo/react-hooks'
+import { useMutation } from '@apollo/client'
 
 import AccountDataForm from './AccountDataForm'
 import PasswordUpdateForm from './PasswordUpdateForm'

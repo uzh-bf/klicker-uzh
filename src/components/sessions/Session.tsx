@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import dayjs from 'dayjs'
 import Link from 'next/link'
 import _get from 'lodash/get'
-import { useMutation } from '@apollo/react-hooks'
+import { useMutation } from '@apollo/client'
 import { Confirm, Button, Label, Icon, Message, Dropdown } from 'semantic-ui-react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 
