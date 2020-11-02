@@ -6,7 +6,7 @@
   "devDependencies": {
     "cross-env": "6.0.3",
     "docusaurus": "1.14.6",
-    "nodemon": "2.0.4"
+    "nodemon": "2.0.6"
   },
   "scripts": {
     "examples": "docusaurus-examples",
