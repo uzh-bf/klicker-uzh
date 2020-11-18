@@ -16,7 +16,7 @@ function useCookie({
   expires = 14,
   secure = true,
   reloadLocation = false,
-}: Params): [string, Function] {
+}: Params): [string, any] {
   const [value, setValue] = useState((): string => Cookies.get(cookieName) || initialValue)
 
   const setCookieValue = (newValue: string): void => {

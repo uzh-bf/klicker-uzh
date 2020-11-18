@@ -10,7 +10,7 @@ interface Props {
     label: string
     onSubmit: any
   }
-  children: React.ReactNode | Function
+  children: React.ReactNode | any
   links: {
     href: string
     label: string

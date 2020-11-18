@@ -8,7 +8,7 @@ import { SESSION_STATUS } from '../../constants'
 
 interface Props {
   sessionId: string
-  children: Function
+  children: any
   isPublic: boolean
 }
 

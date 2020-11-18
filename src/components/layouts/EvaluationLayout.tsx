@@ -43,7 +43,7 @@ interface Props {
   sessionId: string
   showGraph?: boolean
   showSolution?: boolean
-  statistics?: { bins: number; onChangeBins: Function; mean: number; median: number }
+  statistics?: { bins: number; onChangeBins: any; mean: number; median: number }
   title: string
   totalResponses?: number
   type: string
