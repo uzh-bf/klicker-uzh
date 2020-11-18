@@ -128,6 +128,8 @@
   "form.passwordRepeat.invalid": "Please ensure that passwords match.",
   "form.passwordRepeat.label": "Repeat password",
   "form.passwordReset.backToLogin": "Back to login",
+  "form.role.invalid": "Please provide a valid role (USER/ADMIN).",
+  "form.role.label": "Role",
   "form.shortname.invalid": "Please provide a valid account ID (3-8 characters).",
   "form.shortname.label": "Account ID / Join Link",
   "form.shortname.notAvailable": "This Account ID has already been taken. Please choose another one.",

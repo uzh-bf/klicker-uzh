@@ -4,7 +4,7 @@ import { useDrop } from 'react-dnd'
 import { Icon } from 'semantic-ui-react'
 
 interface Props {
-  onDrop: Function
+  onDrop: any
 }
 
 function QuestionDropzone({ onDrop }: Props): React.ReactElement {

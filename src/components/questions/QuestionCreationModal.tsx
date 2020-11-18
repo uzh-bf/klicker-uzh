@@ -12,7 +12,7 @@ import RequestPresignedURLMutation from '../../graphql/mutations/RequestPresigne
 
 interface Props {
   handleModalOpenChange: (newValue: boolean) => void
-  children: ({ setIsModalOpen: Function }) => React.ReactChild
+  children: ({ setIsModalOpen: any }) => React.ReactChild
 }
 
 function QuestionCreationModal({ handleModalOpenChange, children }: Props): React.ReactElement {
