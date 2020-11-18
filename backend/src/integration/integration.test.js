@@ -4262,7 +4262,7 @@ describe('Integration', () => {
     })
   })
 
-  describe('User Management (only possible as an admin)', () => {
+  describe('Admin Area (only possible as an admin)', () => {
     it('login works with valid credentials', async () => {
       await loginAsAdmin(initialPassword)
     })
@@ -4323,6 +4323,76 @@ describe('Integration', () => {
         authCookie
       )
       expect(body.errors[0].message).toEqual(Errors.UNAUTHORIZED)
+    })
+
+    it('create and start session for a user', async () => {
+      const data = ensureNoErrors(
+        await sendQuery(
+          {
+            query: Mutations.CreateSessionMutation,
+            variables: {
+              name: 'Mock Session',
+              blocks: [
+                {
+                  questions: [
+                    { question: questions[QUESTION_TYPES.SC], version: 0 },
+                    { question: questions[QUESTION_TYPES.MC], version: 0 },
+                  ],
+                },
+                {
+                  questions: [{ question: questions[QUESTION_TYPES.FREE], version: 0 }],
+                },
+              ],
+            },
+          },
+          authCookie
+        )
+      )
+
+      sessionId = data.createSession.id
+
+      ensureNoErrors(
+        await sendQuery(
+          {
+            query: Mutations.StartSessionMutation,
+            variables: { id: sessionId },
+          },
+          authCookie
+        )
+      )
+    })
+
+    it('cannot abort a session as a regular user', async () => {
+      const { body } = await sendQuery(
+        {
+          query: Mutations.AbortSessionMutation,
+          variables: { id: sessionId },
+        },
+        authCookie
+      )
+      expect(body.errors[0].message).toEqual(Errors.UNAUTHORIZED)
+    })
+
+    it('can abort a session as an admin', async () => {
+      const response = await sendQuery(
+        {
+          query: Mutations.AbortSessionMutation,
+          variables: { id: sessionId },
+        },
+        adminAuthCookie
+      )
+      const data = ensureNoErrors(response)
+      expect(data.abortSession.status).toEqual('COMPLETED')
+    })
+
+    it('can delete the session again', async () => {
+      await sendQuery({
+        query: Mutations.DeleteSessionsMutation,
+        variables: {
+          ids: [sessionId],
+        },
+        authCookie,
+      })
     })
 
     it('cannot delete another user as a regular user', async () => {

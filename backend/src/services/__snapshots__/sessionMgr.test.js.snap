@@ -1,5 +1,37 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`SessionMgrService abortSession successfully abort a running session of a user 1`] = `
+
+    SESSION
+
+    Name: testing session
+    Status: COMPLETED
+
+    ActiveBlock: 0
+    ActiveStep: 2
+    ActiveInstances: 0
+
+    Blocks: [{
+      Show solutions: false
+      Status: EXECUTED
+      Time limit: -1
+      Number of instances: 1
+    }]
+
+    ConfusionTS: []
+
+    Feedbacks: []
+
+    Participants: []
+
+    Settings: {
+      ConfusionActive: false
+      FeedbacksActive: false
+      FeedbacksPublic: false
+      ParticipantAuthentication: false
+    }
+`;
+
 exports[`SessionMgrService activateBlockById allows activating the first question block by id 1`] = `
 
     SESSION

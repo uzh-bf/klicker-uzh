@@ -7,6 +7,7 @@ const LogoutMutation = loadAsString('./LogoutMutation.graphql')
 const CreateQuestionMutation = loadAsString('./CreateQuestionMutation.graphql')
 const ModifyQuestionMutation = loadAsString('./ModifyQuestionMutation.graphql')
 const ArchiveQuestionsMutation = loadAsString('./ArchiveQuestionsMutation.graphql')
+const AbortSessionMutation = loadAsString('./AbortSessionMutation.graphql')
 const CreateSessionMutation = loadAsString('./CreateSessionMutation.graphql')
 const ModifySessionMutation = loadAsString('./ModifySessionMutation.graphql')
 const StartSessionMutation = loadAsString('./StartSessionMutation.graphql')
@@ -54,6 +55,7 @@ module.exports = {
   CreateQuestionMutation,
   ModifyQuestionMutation,
   ArchiveQuestionsMutation,
+  AbortSessionMutation,
   CreateSessionMutation,
   ModifySessionMutation,
   StartSessionMutation,

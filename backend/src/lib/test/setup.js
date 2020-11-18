@@ -45,7 +45,12 @@ const setupTestEnv = async ({ email, password, shortname, isActive = true, role 
 }
 
 // prepare a new session instance
-const prepareSessionFactory = (SessionMgrService) => async (userId, questions, started = false, participants = []) => {
+const prepareSessionFactory = (SessionMgrService) => async ({
+  userId,
+  questions,
+  started = false,
+  participants = [],
+}) => {
   let session
 
   if (!questions) {

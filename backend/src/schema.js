@@ -25,7 +25,9 @@ const {
   addFeedback,
   deleteFeedback,
   addConfusionTS,
+  allRunningSessions,
   allSessions,
+  abortSession,
   createSession,
   pauseSession,
   cancelSession,
@@ -87,6 +89,7 @@ const typeDefs = [
   type Query {
     activeInstances: [QuestionInstance]!
     allQuestions: [Question]!
+    allRunningSessions: [Session]!
     allSessions: [Session]!
     allTags: [Tag]!
     allUsers: [User]!
@@ -101,6 +104,7 @@ const typeDefs = [
   }
 
   type Mutation {
+    abortSession(id: ID!): Session
     activateAccount(activationToken: String!): String!
     activateNextBlock: Session!
     activateBlockById(sessionId: ID!, blockId: ID!): Session!
@@ -159,6 +163,7 @@ const resolvers = {
   // map queries and mutations
   Query: {
     allQuestions,
+    allRunningSessions,
     allSessions,
     allTags,
     allUsers,
@@ -172,6 +177,7 @@ const resolvers = {
     user: authUser,
   },
   Mutation: {
+    abortSession,
     activateAccount,
     archiveQuestions,
     addFeedback,

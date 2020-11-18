@@ -182,7 +182,7 @@ describe('SessionMgrService', () => {
     let preparedSession
 
     beforeAll(async () => {
-      preparedSession = await prepareSession(userId)
+      preparedSession = await prepareSession({ userId })
     })
 
     it('allows starting a created session', async () => {
@@ -214,7 +214,7 @@ describe('SessionMgrService', () => {
     let preparedSession
 
     beforeAll(async () => {
-      preparedSession = await prepareSession(userId)
+      preparedSession = await prepareSession({ userId })
     })
 
     it('prevents pausing a created session', async () => {
@@ -258,7 +258,7 @@ describe('SessionMgrService', () => {
     let preparedSession
 
     beforeAll(async () => {
-      preparedSession = await prepareSession(userId)
+      preparedSession = await prepareSession({ userId })
     })
 
     it('prevents cancelling a created session', async () => {
@@ -318,7 +318,7 @@ describe('SessionMgrService', () => {
     let preparedSession
 
     beforeAll(async () => {
-      preparedSession = await prepareSession(userId)
+      preparedSession = await prepareSession({ userId })
     })
 
     it('prevents completing a newly created session', async () => {
@@ -362,7 +362,7 @@ describe('SessionMgrService', () => {
     let preparedSession
 
     beforeAll(async () => {
-      preparedSession = await prepareSession(userId)
+      preparedSession = await prepareSession({ userId })
       await SessionMgrService.startSession({
         id: preparedSession.id,
         userId,
@@ -445,7 +445,7 @@ describe('SessionMgrService', () => {
     let preparedSession
 
     beforeAll(async () => {
-      preparedSession = await prepareSession(userId)
+      preparedSession = await prepareSession({ userId })
     })
 
     it('has a valid initial state', async () => {
@@ -527,7 +527,7 @@ describe('SessionMgrService', () => {
     let preparedSession
 
     beforeAll(async () => {
-      preparedSession = await prepareSession(userId)
+      preparedSession = await prepareSession({ userId })
     })
 
     it('allows activating the first question block by id', async () => {
@@ -571,7 +571,7 @@ describe('SessionMgrService', () => {
     let preparedSession
 
     beforeAll(async () => {
-      preparedSession = await prepareSession(userId)
+      preparedSession = await prepareSession({ userId })
     })
 
     it('fully deletes a session and all question instances', async () => {
@@ -613,6 +613,31 @@ describe('SessionMgrService', () => {
 
       const userAfter = await UserModel.findById(userId)
       expect(userAfter.sessions.length).toEqual(userBefore.sessions.length - 1)
+    })
+  })
+
+  describe('abortSession', () => {
+    let preparedSession
+    beforeAll(async () => {
+      preparedSession = await prepareSession({ userId })
+
+      // start a new session
+      await SessionMgrService.startSession({
+        id: preparedSession.id,
+        userId,
+      })
+    })
+
+    it('successfully abort a running session of a user', async () => {
+      // perform the session abort
+      const abortedSession = await SessionMgrService.abortSession({ id: preparedSession.id })
+
+      expect(abortedSession.status).toEqual(SESSION_STATUS.COMPLETED)
+      expect(abortedSession).toMatchSnapshot()
+
+      const userAfter = await UserModel.findById(userId)
+      // make sure User's running session was aborted
+      expect(userAfter.runningSession).toBeFalsy()
     })
   })
 

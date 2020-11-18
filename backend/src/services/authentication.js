@@ -56,6 +56,7 @@ const permissions = shield(
     // List all requests which require authentication
     Query: {
       allQuestions: isAuthenticated,
+      allRunningSessions: and(isAuthenticated, isAdmin),
       allSessions: isAuthenticated,
       allTags: isAuthenticated,
       allUsers: and(isAuthenticated, isAdmin),
@@ -69,6 +70,7 @@ const permissions = shield(
     },
 
     Mutation: {
+      abortSession: and(isAuthenticated, isAdmin),
       activateAccount: isAccountActivationPermitted,
       archiveQuestions: isAuthenticated,
       addFeedback: allow,

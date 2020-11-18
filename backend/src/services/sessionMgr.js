@@ -1027,15 +1027,16 @@ const activateNextBlock = async ({ userId }) => {
     throw new ForbiddenError('NO_RUNNING_SESSION')
   }
 
+  let updatedSession
+
   // if all the blocks have already been activated, simply return the session
   if (runningSession.activeBlock === runningSession.blocks.length) {
-    return user.runningSession
+    return runningSession
   }
 
   const prevBlockIndex = runningSession.activeBlock
   const nextBlockIndex = runningSession.activeBlock + 1
 
-  let updatedSession
   if (runningSession.activeInstances.length === 0) {
     // find the next block for the running session
     const nextBlock = runningSession.blocks[nextBlockIndex]
@@ -1094,6 +1095,43 @@ const deleteSessions = async ({ userId, ids }) => {
   return 'DELETION_SUCCESSFUL'
 }
 
+/**
+ * Abort a running Session of a user by walking through until the end
+ */
+const abortSession = async ({ id }) => {
+  const session = await SessionModel.findById(id).populate('user')
+  const { user } = session
+
+  // if session is already completed return the session
+  if (session.status === SESSION_STATUS.COMPLETED) {
+    return session
+  }
+
+  let isAtTheEnd = false
+
+  try {
+    await activateNextBlock({ userId: user.id })
+  } catch (error) {
+    isAtTheEnd = true
+  }
+
+  // go to the next step until you are at the last step
+  while (!isAtTheEnd) {
+    try {
+      /* eslint-disable no-await-in-loop */
+      await activateNextBlock({ userId: user.id })
+    } catch (error) {
+      isAtTheEnd = true
+    }
+  }
+
+  // end the session
+  await sessionAction({ sessionId: id, userId: user.id }, SESSION_ACTIONS.STOP)
+  const endedSession = await SessionModel.findById(id)
+
+  return endedSession
+}
+
 async function modifyQuestionBlock({ sessionId, id, questionBlockSettings, userId }) {
   const session = await SessionModel.findOne({ _id: sessionId, user: userId })
   if (!session) {
@@ -1127,5 +1165,6 @@ module.exports = {
   publishSessionUpdate,
   modifyQuestionBlock,
   activateBlockById,
+  abortSession,
   computeInstanceResults,
 }
