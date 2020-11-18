@@ -66,7 +66,8 @@
       {
         "order": ["type-annotations", "static-methods", "lifecycle", "everything-else", "render"]
       }
-    ]
+    ],
+    "react/default-props-match-prop-types": 0
   },
   "env": {
     "browser": true,

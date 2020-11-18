@@ -30,7 +30,7 @@ const statusCases = {
 }
 
 // calculate what action to take on button click based on session status
-function handleSessionAction(sessionId, status, router, handleStartSession, handleCopySession): Function {
+function handleSessionAction(sessionId, status, router, handleStartSession, handleCopySession): any {
   if (status === SESSION_STATUS.CREATED || status === SESSION_STATUS.PAUSED) {
     return handleStartSession(sessionId)
   }

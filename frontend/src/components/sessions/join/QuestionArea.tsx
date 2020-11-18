@@ -53,7 +53,7 @@ interface Props {
   active: boolean
   expiresAt?: any
   questions: any[]
-  handleNewResponse: Function
+  handleNewResponse: any
   shortname: string
   sessionId: string
   timeLimit?: number
@@ -112,7 +112,7 @@ function QuestionArea({
     }
   }, [])
 
-  const onActiveChoicesChange = (type): Function => (choice): Function => (): void => {
+  const onActiveChoicesChange = (type): any => (choice): any => (): void => {
     const validateChoices = (newValue): boolean =>
       type === QUESTION_TYPES.SC ? newValue.length === 1 : newValue.length > 0
 

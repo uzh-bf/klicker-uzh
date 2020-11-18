@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import _get from 'lodash/get'
 import _sortBy from 'lodash/sortBy'
 import { Button, Table, Confirm } from 'semantic-ui-react'
 import { defineMessages, useIntl } from 'react-intl'
@@ -13,6 +14,14 @@ const messages = defineMessages({
     id: 'customizableTable.deleteConfirmation',
     defaultMessage: 'Are you sure that you want to delete the entity {activeId}?',
   },
+  confirmAbortion: {
+    id: 'customizableTable.abortSession',
+    defaultMessage: 'Abort Session',
+  },
+  confirmAbortionDescription: {
+    id: 'customizableTable.abortConfirmation',
+    defaultMessage: 'Are you sure that you want to abort the session {activeId}?',
+  },
 })
 
 interface Props {
@@ -25,16 +34,22 @@ interface Props {
     dropdownOptions?: { text: any; value: any }[] // must be given if isDropdown = true
   }[]
   data: any[]
+  abortConfirmation?: boolean
   deletionConfirmation?: boolean
   editConfirmation?: boolean
+  hasAbort?: boolean
   hasDeletion?: boolean
   hasModification?: boolean
+  handleAbort?: (id: string, confirm: boolean) => Promise<void>
   handleDeletion?: (id: string, confirm: boolean) => Promise<void>
   handleModification?: (id: string, values: any, confirm: boolean) => Promise<void>
 }
 
 const defaultProps = {
+  abortConfirmation: false,
   deletionConfirmation: false,
+  editConfirmation: false,
+  hasAbort: false,
   hasDeletion: false,
   hasModification: false,
 }
@@ -49,25 +64,28 @@ const defaultColumnProperties = {
 function CustomizableTable({
   columns,
   data,
+  abortConfirmation,
   deletionConfirmation,
   editConfirmation,
+  hasAbort,
   hasDeletion,
   hasModification,
+  handleAbort,
   handleDeletion,
   handleModification,
 }: Props): React.ReactElement {
-  const intl = useIntl()
-
   const [sortBy, setSortBy] = useState(columns[0].attributeName)
   const [sortDirection, setSortDirection]: any = useState('descending')
   const [activeId, setActiveId] = useState(undefined)
   const [editableRow, setEditableRow] = useState(undefined)
 
+  const intl = useIntl()
+
   const columnsWithDefaults = Object.assign(columns, defaultColumnProperties)
 
   const sortedData = sortDirection === 'ascending' ? _sortBy(data, sortBy) : _sortBy(data, sortBy).reverse()
 
-  const onSort = (clickedColumn: string): Function => (): void => {
+  const onSort = (clickedColumn: string) => (): void => {
     // if the same column as previously active is clicked, reverse the sort direction
     if (sortBy === clickedColumn) {
       setSortDirection(sortDirection === 'ascending' ? 'descending' : 'ascending')
@@ -101,10 +119,10 @@ function CustomizableTable({
                 <Table.Row className="displayRow" key={index.toString()}>
                   {columns.map(
                     (column, key): React.ReactElement => (
-                      <Table.Cell key={key.toString()}>{object[column.attributeName]}</Table.Cell>
+                      <Table.Cell key={key.toString()}>{_get(object, column.attributeName)}</Table.Cell>
                     )
                   )}
-                  {(hasModification || hasDeletion) && (
+                  {(hasModification || hasDeletion || hasAbort) && (
                     <Table.Cell textAlign="right">
                       <div className="buttonArea">
                         {hasModification && (
@@ -112,6 +130,15 @@ function CustomizableTable({
                             icon="edit"
                             onClick={(): void => {
                               setEditableRow(index)
+                            }}
+                          />
+                        )}
+                        {hasAbort && (
+                          <Button
+                            icon="stop"
+                            onClick={(): void => {
+                              handleAbort(object.id, false)
+                              setActiveId(object.id)
                             }}
                           />
                         )}
@@ -153,11 +180,19 @@ function CustomizableTable({
         onCancel={(): Promise<void> => handleDeletion(activeId, false)}
         onConfirm={(): Promise<void> => handleDeletion(activeId, true)}
       />
+      <Confirm
+        cancelButton={intl.formatMessage({ id: 'common.button.back' })}
+        confirmButton={intl.formatMessage(messages.confirmAbortion)}
+        content={intl.formatMessage(messages.confirmAbortionDescription, { activeId })}
+        open={abortConfirmation}
+        onCancel={(): Promise<void> => handleAbort(activeId, false)}
+        onConfirm={(): Promise<void> => handleAbort(activeId, true)}
+      />
       <style jsx>
         {`
           .buttonArea {
             display: flex;
-            flex-direction: row;
+            flex-direction: row-reverse;
           }
         `}
       </style>
