@@ -16,7 +16,7 @@ const messages = defineMessages({
   },
   confirmAbortion: {
     id: 'customizableTable.abortSession',
-    defaultMessage: 'Abort Session'
+    defaultMessage: 'Abort Session',
   },
   confirmAbortionDescription: {
     id: 'customizableTable.abortConfirmation',

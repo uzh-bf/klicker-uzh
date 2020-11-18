@@ -1,9 +1,9 @@
 query RunningSessionList {
-    sessions: allRunningSessions {
-        id
-        startedAt
-        user {
-            email
-        }
+  sessions: allRunningSessions {
+    id
+    startedAt
+    user {
+      email
     }
+  }
 }
