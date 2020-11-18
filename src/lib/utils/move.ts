@@ -26,7 +26,7 @@ export function reorder(list: any[], startIndex: number, endIndex: number): any[
   return result
 }
 
-export function handleDragEnd(array: any, onChange: Function): Function {
+export function handleDragEnd(array: any, onChange: any): any {
   return (result: any): void => {
     if (!result.destination) {
       return

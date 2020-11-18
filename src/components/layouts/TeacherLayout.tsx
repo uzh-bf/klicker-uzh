@@ -8,7 +8,7 @@ import Sidebar from '../common/sidebar/Sidebar'
 
 interface Props {
   actionArea?: React.ReactElement
-  children: React.ReactNode | Function
+  children: React.ReactNode | any
   fixedHeight?: boolean
   navbar?: any
   pageTitle?: string

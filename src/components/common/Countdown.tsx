@@ -11,7 +11,7 @@ interface Props {
   countdownEnd?: any
   countdownDuration?: number
   countdownStepSize?: number
-  children?: Function
+  children?: any
   circularDisplay?: boolean
 }
 
