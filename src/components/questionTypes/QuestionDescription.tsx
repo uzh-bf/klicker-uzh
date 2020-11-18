@@ -5,7 +5,7 @@ import React from 'react'
 import { toSanitizedHTML } from '../../lib/utils/html'
 
 interface Props {
-  content: Record<string, unknown> | string
+  content: Record<string, any> | string
   description?: string
 }
 
