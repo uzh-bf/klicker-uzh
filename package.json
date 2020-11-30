@@ -129,7 +129,7 @@
   "devDependencies": {
     "@formatjs/cli": "2.13.13",
     "@formatjs/intl-utils": "3.8.4",
-    "@typescript-eslint/eslint-plugin": "4.8.1",
+    "@typescript-eslint/eslint-plugin": "4.8.2",
     "@typescript-eslint/parser": "4.0.1",
     "@graphql-codegen/cli": "1.19.2",
     "@graphql-codegen/fragment-matcher": "1.17.8",
