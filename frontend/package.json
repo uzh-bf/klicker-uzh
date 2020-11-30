@@ -127,7 +127,7 @@
     "yup": "0.29.3"
   },
   "devDependencies": {
-    "@formatjs/cli": "2.13.13",
+    "@formatjs/cli": "2.13.15",
     "@formatjs/intl-utils": "3.8.4",
     "@typescript-eslint/eslint-plugin": "4.8.2",
     "@typescript-eslint/parser": "4.0.1",
