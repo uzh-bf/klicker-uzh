@@ -20,7 +20,7 @@
     "styled-jsx": "3.3.2"
   },
   "devDependencies": {
-    "prettier": "2.1.2"
+    "prettier": "2.2.1"
   },
   "scripts": {
     "build": "gatsby build",
