@@ -116,7 +116,7 @@
     "react-toast-notifications": "2.4.0",
     "react-tooltip": "4.2.11",
     "recharts": "1.8.5",
-    "sanitize-html": "2.0.0",
+    "sanitize-html": "2.2.0",
     "semantic-ui-react": "2.0.1",
     "styled-jsx-plugin-sass": "1.0.0",
     "subscriptions-transport-ws": "0.9.18",
