@@ -80,7 +80,7 @@
     "hoist-non-react-statics": "3.3.2",
     "intl": "1.2.5",
     "intl-pluralrules": "1.2.2",
-    "ioredis": "4.17.3",
+    "ioredis": "4.19.4",
     "isomorphic-unfetch": "3.1.0",
     "js-cookie": "2.2.1",
     "js-search": "2.0.0",
