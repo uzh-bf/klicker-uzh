@@ -43,7 +43,7 @@
     "@zeit/next-bundle-analyzer": "0.1.2",
     "@zeit/next-css": "1.0.1",
     "@zeit/next-source-maps": "0.0.4-canary.1",
-    "axios": "0.20.0",
+    "axios": "0.21.1",
     "babel-plugin-add-react-displayname": "0.0.5",
     "babel-plugin-import-graphql": "2.7.0",
     "babel-plugin-inline-dotenv": "1.6.0",
