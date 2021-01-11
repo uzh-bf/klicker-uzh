@@ -93,7 +93,7 @@
     "morgan": "1.10.0",
     "next": "9.5.4",
     "node-sass": "4.14.1",
-    "nodemon": "2.0.6",
+    "nodemon": "2.0.7",
     "prismjs": "1.21.0",
     "qrcode.react": "1.0.1",
     "ramda": "0.27.1",
