@@ -26,7 +26,7 @@ The following question types are supported by KlickerUZH:
 
 - Single Choice (SC): Only one of the given answers can be selected.
 - Multiple Choice (MC): Several of the given answers can be selected.
-- Fee Text (FT): Free text question.
+- Free Text (FT): Free text question.
 - Number Range (NR): A number within a defined range (min, max, or both) can be selected, or any number, if not restricted.
 
 ## Which evaluation and visualization options does KlickerUZH provide?
