@@ -17,7 +17,7 @@
     "fomantic-ui-css": "2.8.7",
     "semantic-ui-react": "1.2.1",
     "slick-carousel": "1.8.1",
-    "styled-jsx": "3.4.1"
+    "styled-jsx": "3.4.4"
   },
   "devDependencies": {
     "prettier": "2.2.1"
