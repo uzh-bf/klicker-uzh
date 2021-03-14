@@ -1,5 +1,5 @@
-import React, { RefObject, useState } from 'react'
 import classNames from 'classnames'
+import React, { RefObject, useState } from 'react'
 import { Button, Icon } from 'semantic-ui-react'
 import styles from './styles'
 

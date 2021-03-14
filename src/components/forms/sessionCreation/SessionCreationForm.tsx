@@ -1,27 +1,25 @@
 import React from 'react'
-import { v4 as UUIDv4 } from 'uuid'
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
+import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Icon, Input } from 'semantic-ui-react'
-import { FormattedMessage, defineMessages, useIntl } from 'react-intl'
+import { v4 as UUIDv4 } from 'uuid'
 import { object } from 'yup'
 import {
-  removeQuestion,
-  moveQuestion,
   addToBlock,
   appendNewBlock,
-  reorder,
   deleteArrayElement,
+  moveQuestion,
+  removeQuestion,
+  reorder,
 } from '../../../lib/utils/move'
-
 import QuestionSingle from '../../questions/QuestionSingle'
-import QuestionDropzone from './QuestionDropzone'
-import InfoArea from './InfoArea'
-
 import validationSchema from '../common/validationSchema'
+import InfoArea from './InfoArea'
 import SessionParticipantsModal, {
-  DataStorageMode,
   AuthenticationMode,
+  DataStorageMode,
 } from './participantsModal/SessionParticipantsModal'
+import QuestionDropzone from './QuestionDropzone'
 
 const { sessionName: sessionNameValidator } = validationSchema
 

@@ -1,10 +1,10 @@
-import React, { useState } from 'react'
 import { Formik } from 'formik'
-import { object } from 'yup'
-import { Button, Confirm, Table, Dropdown } from 'semantic-ui-react'
+import React, { useState } from 'react'
 import { FormattedMessage } from 'react-intl'
-import FormikInput from './components/FormikInput'
+import { Button, Confirm, Dropdown, Table } from 'semantic-ui-react'
+import { object } from 'yup'
 import validationSchema from './common/validationSchema'
+import FormikInput from './components/FormikInput'
 
 function ConfirmationContent({
   columns,

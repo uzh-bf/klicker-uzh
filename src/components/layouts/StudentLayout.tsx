@@ -1,9 +1,8 @@
 import React, { useEffect } from 'react'
 import { FormattedMessage } from 'react-intl'
 import { Button, Icon } from 'semantic-ui-react'
-
-import CommonLayout from './CommonLayout'
 import Sidebar from '../common/sidebar/Sidebar'
+import CommonLayout from './CommonLayout'
 
 interface Props {
   children: React.ReactNode

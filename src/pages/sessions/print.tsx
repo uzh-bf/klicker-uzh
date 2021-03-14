@@ -1,22 +1,21 @@
 /* eslint-disable */
-import React, { useState } from 'react'
-import _round from 'lodash/round'
 import _get from 'lodash/get'
-import { FormattedMessage } from 'react-intl'
+import _round from 'lodash/round'
+import { max, mean, median, min, quantileSeq, std } from 'mathjs'
 import { useRouter } from 'next/router'
-import { max, min, mean, median, quantileSeq, std } from 'mathjs'
+import React, { useState } from 'react'
+import { FormattedMessage } from 'react-intl'
 import { Button, Checkbox } from 'semantic-ui-react'
-
-import { CHART_DEFAULTS, QUESTION_TYPES } from '../../constants'
-import { toValueArray } from '../../lib/utils/math'
 import Chart from '../../components/evaluation/Chart'
 import Possibilities from '../../components/evaluation/Possibilities'
 import VisualizationType from '../../components/evaluation/VisualizationType'
 import CommonLayout from '../../components/layouts/CommonLayout'
-import { extractInstancesFromSession } from './evaluation'
-import useLogging from '../../lib/hooks/useLogging'
 import LoadSessionData from '../../components/sessions/LoadSessionData'
+import { CHART_DEFAULTS, QUESTION_TYPES } from '../../constants'
 import { withApollo } from '../../lib/apollo'
+import useLogging from '../../lib/hooks/useLogging'
+import { toValueArray } from '../../lib/utils/math'
+import { extractInstancesFromSession } from './evaluation'
 
 function Print(): React.ReactElement<any> {
   useLogging()

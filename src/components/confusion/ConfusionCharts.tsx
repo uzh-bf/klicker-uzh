@@ -1,8 +1,7 @@
-import React from 'react'
-import _sumBy from 'lodash/sumBy'
 import dayjs from 'dayjs'
+import _sumBy from 'lodash/sumBy'
+import React from 'react'
 import { defineMessages, useIntl } from 'react-intl'
-
 import ConfusionSection from './ConfusionSection'
 
 const messages = defineMessages({

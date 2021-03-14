@@ -1,8 +1,8 @@
+import getConfig from 'next/config'
 import React, { useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
-import getConfig from 'next/config'
 import { FormattedMessage } from 'react-intl'
-import { Icon, Card, Image, Button, Input } from 'semantic-ui-react'
+import { Button, Card, Icon, Image, Input } from 'semantic-ui-react'
 
 const { publicRuntimeConfig } = getConfig()
 

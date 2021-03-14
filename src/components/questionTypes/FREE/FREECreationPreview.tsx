@@ -1,8 +1,7 @@
 import React from 'react'
 import { FormattedMessage } from 'react-intl'
-
-import QuestionDescription from '../QuestionDescription'
 import { QUESTION_TYPES } from '../../../constants'
+import QuestionDescription from '../QuestionDescription'
 
 interface Props {
   description?: string

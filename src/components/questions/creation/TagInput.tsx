@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
+import { FormattedMessage } from 'react-intl'
 import ReactTooltip from 'react-tooltip'
 import { Dropdown, Form, Icon } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
 
 interface Props {
   disabled?: boolean

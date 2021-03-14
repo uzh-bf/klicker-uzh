@@ -1,10 +1,9 @@
 import React from 'react'
+import { useIntl } from 'react-intl'
 import ReactTooltip from 'react-tooltip'
 import { Icon } from 'semantic-ui-react'
-import { useIntl } from 'react-intl'
-
-import Ellipsis from '../common/Ellipsis'
 import { generateTypesShort } from '../../lib/utils/lang'
+import Ellipsis from '../common/Ellipsis'
 
 interface Props {
   hasParticipantCount?: boolean

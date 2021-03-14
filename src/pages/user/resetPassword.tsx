@@ -1,15 +1,14 @@
-import React from 'react'
-import Link from 'next/link'
-import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { useMutation } from '@apollo/client'
-import { Message } from 'semantic-ui-react'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
-
-import StaticLayout from '../../components/layouts/StaticLayout'
+import React from 'react'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { Message } from 'semantic-ui-react'
 import PasswordResetForm from '../../components/forms/PasswordResetForm'
-import useLogging from '../../lib/hooks/useLogging'
+import StaticLayout from '../../components/layouts/StaticLayout'
 import ChangePasswordMutation from '../../graphql/mutations/ChangePasswordMutation.graphql'
 import { withApollo } from '../../lib/apollo'
+import useLogging from '../../lib/hooks/useLogging'
 
 const messages = defineMessages({
   pageTitle: {

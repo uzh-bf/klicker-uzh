@@ -1,10 +1,9 @@
-import React, { useState } from 'react'
 import classNames from 'classnames'
 import dayjs from 'dayjs'
-import { FormattedMessage } from 'react-intl'
+import React, { useState } from 'react'
 import { useDrag } from 'react-dnd'
+import { FormattedMessage } from 'react-intl'
 import { Checkbox, Dropdown, Label } from 'semantic-ui-react'
-
 import QuestionDetails from './QuestionDetails'
 import QuestionTags from './QuestionTags'
 

@@ -1,9 +1,7 @@
-import React, { useState } from 'react'
 import _truncate from 'lodash/truncate'
-
-import { Icon, Button } from 'semantic-ui-react'
+import React, { useState } from 'react'
 import { FormattedMessage } from 'react-intl'
-
+import { Button, Icon } from 'semantic-ui-react'
 import ListWithHeader from '../common/ListWithHeader'
 import QuestionDetailsModal from './QuestionDetailsModal'
 import QuestionDuplicationModal from './QuestionDuplicationModal'

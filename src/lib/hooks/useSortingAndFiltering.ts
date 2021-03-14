@@ -1,5 +1,4 @@
 import { useReducer } from 'react'
-
 import { QUESTION_SORTINGS } from '../../constants'
 
 const INITIAL_STATE = {

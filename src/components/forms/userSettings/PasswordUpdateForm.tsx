@@ -1,14 +1,13 @@
-import React from 'react'
 import { useMutation } from '@apollo/client'
-import { FormattedMessage, useIntl } from 'react-intl'
 import { Formik } from 'formik'
+import React from 'react'
+import { FormattedMessage, useIntl } from 'react-intl'
+import { Button, Form } from 'semantic-ui-react'
 import { object } from 'yup'
-import { Form, Button } from 'semantic-ui-react'
-
-import FormikInput from '../components/FormikInput'
 import ChangePasswordMutation from '../../../graphql/mutations/ChangePasswordMutation.graphql'
-import validationSchema from '../common/validationSchema'
 import messages from '../common/messages'
+import validationSchema from '../common/validationSchema'
+import FormikInput from '../components/FormikInput'
 
 const { password, passwordRepeat } = validationSchema
 

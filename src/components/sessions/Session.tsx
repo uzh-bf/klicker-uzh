@@ -1,15 +1,14 @@
-import React, { useState } from 'react'
-import dayjs from 'dayjs'
-import Link from 'next/link'
-import _get from 'lodash/get'
 import { useMutation } from '@apollo/client'
-import { Confirm, Button, Label, Icon, Message, Dropdown } from 'semantic-ui-react'
+import dayjs from 'dayjs'
+import _get from 'lodash/get'
+import Link from 'next/link'
+import React, { useState } from 'react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-
-import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
-import DeleteSessionsMutation from '../../graphql/mutations/DeleteSessionsMutation.graphql'
-import QuestionBlock from '../questions/QuestionBlock'
+import { Button, Confirm, Dropdown, Icon, Label, Message } from 'semantic-ui-react'
 import { SESSION_STATUS } from '../../constants'
+import DeleteSessionsMutation from '../../graphql/mutations/DeleteSessionsMutation.graphql'
+import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
+import QuestionBlock from '../questions/QuestionBlock'
 
 const messages = defineMessages({
   deletionConfirmationCancel: {

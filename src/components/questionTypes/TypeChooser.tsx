@@ -1,8 +1,7 @@
 import React from 'react'
-import ReactTooltip from 'react-tooltip'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import ReactTooltip from 'react-tooltip'
 import { Icon } from 'semantic-ui-react'
-
 import { QUESTION_TYPES } from '../../constants'
 import Button from '../common/Button'
 

@@ -1,11 +1,10 @@
 import React from 'react'
-import ReactTooltip from 'react-tooltip'
 import { FormattedMessage } from 'react-intl'
+import ReactTooltip from 'react-tooltip'
 import { Form, Icon } from 'semantic-ui-react'
-
-import SCCreationPlaceholder from './SCCreationPlaceholder'
+import { deleteArrayElement, reorder, updateArrayElement } from '../../../lib/utils/move'
 import SCCreationOption from './SCCreationOption'
-import { updateArrayElement, deleteArrayElement, reorder } from '../../../lib/utils/move'
+import SCCreationPlaceholder from './SCCreationPlaceholder'
 
 interface Props {
   dirty?: boolean

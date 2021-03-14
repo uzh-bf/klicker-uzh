@@ -1,7 +1,6 @@
 import React from 'react'
-import { Button, Progress } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
-
+import { Button, Progress } from 'semantic-ui-react'
 import Countdown from './Countdown'
 
 interface Props {

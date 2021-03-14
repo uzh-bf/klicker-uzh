@@ -1,6 +1,5 @@
 import React from 'react'
 import { Dropdown } from 'semantic-ui-react'
-
 import useCookie from '../../../lib/hooks/useCookie'
 
 const languageOptions = [

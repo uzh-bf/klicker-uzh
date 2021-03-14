@@ -1,9 +1,9 @@
 /* eslint-disable react/prop-types */
 
+import _find from 'lodash/find'
 import * as React from 'react'
 import { defineMessages, useIntl } from 'react-intl'
 import { Button, Dropdown, Input } from 'semantic-ui-react'
-import _find from 'lodash/find'
 
 const messages = defineMessages({
   searchPlaceholder: {

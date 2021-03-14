@@ -1,17 +1,16 @@
-import React, { useEffect } from 'react'
-import Cookies from 'js-cookie'
-import Link from 'next/link'
-import _get from 'lodash/get'
-import { useRouter } from 'next/router'
-import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { useMutation } from '@apollo/client'
+import Cookies from 'js-cookie'
+import _get from 'lodash/get'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
+import React, { useEffect } from 'react'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Message } from 'semantic-ui-react'
-
-import StaticLayout from '../../components/layouts/StaticLayout'
 import LoginForm from '../../components/forms/LoginForm'
+import StaticLayout from '../../components/layouts/StaticLayout'
 import LoginMutation from '../../graphql/mutations/LoginMutation.graphql'
-import useLogging from '../../lib/hooks/useLogging'
 import { withApollo } from '../../lib/apollo'
+import useLogging from '../../lib/hooks/useLogging'
 
 const messages = defineMessages({
   pageTitle: {

@@ -1,8 +1,7 @@
-import React from 'react'
 import getConfig from 'next/config'
-import QRCode from 'qrcode.react'
 import { useRouter } from 'next/router'
-
+import QRCode from 'qrcode.react'
+import React from 'react'
 import StaticLayout from '../components/layouts/StaticLayout'
 import useLogging from '../lib/hooks/useLogging'
 

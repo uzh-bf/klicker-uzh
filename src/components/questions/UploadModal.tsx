@@ -1,13 +1,12 @@
-import React, { useState, useCallback } from 'react'
-import { Modal, Button, Table, Icon } from 'semantic-ui-react'
 import { useApolloClient } from '@apollo/client'
+import React, { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { FormattedMessage } from 'react-intl'
 import { useToasts } from 'react-toast-notifications'
-
-import Ellipsis from '../common/Ellipsis'
-import CreateQuestionMutation from '../../graphql/mutations/CreateQuestionMutation.graphql'
+import { Button, Icon, Modal, Table } from 'semantic-ui-react'
 import { QUESTION_GROUPS, QUESTION_TYPES } from '../../constants'
+import CreateQuestionMutation from '../../graphql/mutations/CreateQuestionMutation.graphql'
+import Ellipsis from '../common/Ellipsis'
 
 interface Props {
   children: React.ReactChild

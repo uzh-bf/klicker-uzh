@@ -1,5 +1,5 @@
 import React from 'react'
-import { Menu, Icon } from 'semantic-ui-react'
+import { Icon, Menu } from 'semantic-ui-react'
 
 interface Props {
   active?: boolean

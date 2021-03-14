@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
-import { Checkbox } from 'semantic-ui-react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { Checkbox } from 'semantic-ui-react'
 import ConfusionCharts from './ConfusionCharts'
 
 const messages = defineMessages({

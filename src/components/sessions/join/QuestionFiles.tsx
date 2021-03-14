@@ -1,6 +1,6 @@
+import getConfig from 'next/config'
 import React from 'react'
 import { Card, Image, Modal } from 'semantic-ui-react'
-import getConfig from 'next/config'
 
 const { publicRuntimeConfig } = getConfig()
 

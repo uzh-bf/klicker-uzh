@@ -1,15 +1,15 @@
-import React, { useState } from 'react'
+import { useMutation, useQuery } from '@apollo/client'
 import dayjs from 'dayjs'
-import { useQuery, useMutation } from '@apollo/client'
-import { Loader, Message } from 'semantic-ui-react'
+import React, { useState } from 'react'
 import { FormattedMessage } from 'react-intl'
 import { useToasts } from 'react-toast-notifications'
+import { Loader, Message } from 'semantic-ui-react'
+import { ROLES } from '../../constants'
 import DeleteUserMutation from '../../graphql/mutations/DeleteUserMutation.graphql'
 import ModifyUserAsAdminMutation from '../../graphql/mutations/ModifyUserAsAdminMutation.graphql'
 import UserListQuery from '../../graphql/queries/UserListQuery.graphql'
-import CustomizableTable from '../common/CustomizableTable'
 import { buildIndex, filterByTitle } from '../../lib/utils/filters'
-import { ROLES } from '../../constants'
+import CustomizableTable from '../common/CustomizableTable'
 
 interface Props {
   filters: any

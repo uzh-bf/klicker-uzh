@@ -1,12 +1,11 @@
-import React, { useEffect } from 'react'
+import { useLazyQuery } from '@apollo/client'
 import Cookies from 'js-cookie'
 import { useRouter } from 'next/router'
-import { useLazyQuery } from '@apollo/client'
+import React, { useEffect } from 'react'
 import { Message } from 'semantic-ui-react'
-
+import CheckAccountStatusQuery from '../graphql/queries/CheckAccountStatusQuery.graphql'
 import { withApollo } from '../lib/apollo'
 import useLogging from '../lib/hooks/useLogging'
-import CheckAccountStatusQuery from '../graphql/queries/CheckAccountStatusQuery.graphql'
 
 function Entrypoint(): React.ReactElement {
   useLogging()

@@ -1,13 +1,12 @@
+import { useMutation } from '@apollo/client'
 import React from 'react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { useMutation } from '@apollo/client'
 import { Message } from 'semantic-ui-react'
-
-import StaticLayout from '../../components/layouts/StaticLayout'
 import PasswordRequestForm from '../../components/forms/PasswordRequestForm'
-import useLogging from '../../lib/hooks/useLogging'
+import StaticLayout from '../../components/layouts/StaticLayout'
 import RequestPasswordMutation from '../../graphql/mutations/RequestPasswordMutation.graphql'
 import { withApollo } from '../../lib/apollo'
+import useLogging from '../../lib/hooks/useLogging'
 
 const messages = defineMessages({
   pageTitle: {

@@ -1,10 +1,9 @@
 /* eslint-disable react/prop-types */
 
-import * as React from 'react'
 import Link from 'next/link'
-import { Icon, Dropdown } from 'semantic-ui-react'
+import * as React from 'react'
 import { FormattedMessage } from 'react-intl'
-
+import { Dropdown, Icon } from 'semantic-ui-react'
 import { ROLES } from '../../../constants'
 
 interface Props {

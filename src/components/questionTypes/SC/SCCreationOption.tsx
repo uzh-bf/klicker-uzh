@@ -1,7 +1,6 @@
-import React from 'react'
 import classNames from 'classnames'
-import { Icon, Button, Input } from 'semantic-ui-react'
-
+import React from 'react'
+import { Button, Icon, Input } from 'semantic-ui-react'
 import styles from './styles'
 
 interface Props {

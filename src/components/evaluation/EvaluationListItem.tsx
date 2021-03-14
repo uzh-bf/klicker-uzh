@@ -1,9 +1,8 @@
-import React from 'react'
 import classNames from 'classnames'
 import _isFinite from 'lodash/isFinite'
+import React from 'react'
 import { Icon } from 'semantic-ui-react'
 import { QUESTION_GROUPS } from '../../constants'
-
 import Ellipsis from '../common/Ellipsis'
 
 interface Props {

@@ -1,18 +1,17 @@
-import React from 'react'
 import _sortBy from 'lodash/sortBy'
+import React from 'react'
 import {
-  ResponsiveContainer,
   Bar,
   BarChart as BarChartComponent,
   CartesianGrid,
   Cell,
   LabelList,
+  ResponsiveContainer,
   XAxis,
   YAxis,
 } from 'recharts'
-
 import { CHART_COLORS, CHART_TYPES } from '../../../constants'
-import { indexToLetter, getLabelIn, getLabelOut } from '../../../lib/utils/charts'
+import { getLabelIn, getLabelOut, indexToLetter } from '../../../lib/utils/charts'
 
 interface Props {
   data?: {

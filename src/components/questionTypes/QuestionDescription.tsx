@@ -1,7 +1,6 @@
 /* eslint-disable react/no-danger */
 
 import React from 'react'
-
 import { toSanitizedHTML } from '../../lib/utils/html'
 
 interface Props {

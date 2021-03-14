@@ -1,8 +1,8 @@
-import React, { useState } from 'react'
 import _get from 'lodash/get'
 import _sortBy from 'lodash/sortBy'
-import { Button, Table, Confirm } from 'semantic-ui-react'
+import React, { useState } from 'react'
 import { defineMessages, useIntl } from 'react-intl'
+import { Button, Confirm, Table } from 'semantic-ui-react'
 import EditTableRowForm from '../forms/EditTableRowForm'
 
 const messages = defineMessages({

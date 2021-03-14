@@ -1,11 +1,10 @@
-import React from 'react'
 import classNames from 'classnames'
-import { Dropdown } from 'semantic-ui-react'
+import React from 'react'
 import { defineMessages, useIntl } from 'react-intl'
-
+import { Dropdown } from 'semantic-ui-react'
+import Countdown from '../common/Countdown'
 import BlockSettingsForm from '../forms/BlockSettingsForm'
 import QuestionSingle from './QuestionSingle'
-import Countdown from '../common/Countdown'
 import SessionStatusIcon from './SessionStatusIcon'
 
 interface Question {

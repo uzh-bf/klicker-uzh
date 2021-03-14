@@ -1,9 +1,9 @@
 /* eslint-disable no-unused-vars */
 
-import _every from 'lodash/every'
 import dayjs from 'dayjs'
 // import Fuse from 'fuse.js'
 import * as JsSearch from 'js-search'
+import _every from 'lodash/every'
 
 const indices = {}
 

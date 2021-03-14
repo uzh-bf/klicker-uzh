@@ -1,12 +1,10 @@
+import { useMutation, useQuery } from '@apollo/client'
 import classNames from 'classnames'
 import _debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
-import React, { useState, useEffect } from 'react'
-import { useMutation, useQuery } from '@apollo/client'
+import React, { useEffect, useState } from 'react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Message } from 'semantic-ui-react'
-
-import { withApollo } from '../lib/apollo'
 import StudentLayout from '../components/layouts/StudentLayout'
 import FeedbackArea from '../components/sessions/join/FeedbackArea'
 import QuestionArea from '../components/sessions/join/QuestionArea'
@@ -15,8 +13,9 @@ import AddFeedbackMutation from '../graphql/mutations/AddFeedbackMutation.graphq
 import AddResponseMutation from '../graphql/mutations/AddResponseMutation.graphql'
 import JoinSessionQuery from '../graphql/queries/JoinSessionQuery.graphql'
 import UpdatedSessionSubscription from '../graphql/subscriptions/UpdateSessionSubscription.graphql'
-import useLogging from '../lib/hooks/useLogging'
+import { withApollo } from '../lib/apollo'
 import useFingerprint from '../lib/hooks/useFingerprint'
+import useLogging from '../lib/hooks/useLogging'
 
 const messages = defineMessages({
   activeQuestionTitle: {

@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { useApolloClient } from '@apollo/client'
-import { Message } from 'semantic-ui-react'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
-
+import React, { useEffect, useState } from 'react'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { Message } from 'semantic-ui-react'
 import StaticLayout from '../../components/layouts/StaticLayout'
 import ActivateAccountMutation from '../../graphql/mutations/ActivateAccountMutation.graphql'
-import useLogging from '../../lib/hooks/useLogging'
 import { withApollo } from '../../lib/apollo'
+import useLogging from '../../lib/hooks/useLogging'
 
 const messages = defineMessages({
   pageTitle: {

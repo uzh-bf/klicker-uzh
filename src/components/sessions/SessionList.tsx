@@ -1,13 +1,12 @@
-import React from 'react'
-import { useRouter } from 'next/router'
-import { Loader, Message } from 'semantic-ui-react'
-import { FormattedMessage, useIntl } from 'react-intl'
 import { useQuery } from '@apollo/client'
-
-import Session from './Session'
-import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
+import { useRouter } from 'next/router'
+import React from 'react'
+import { FormattedMessage, useIntl } from 'react-intl'
+import { Loader, Message } from 'semantic-ui-react'
 import { SESSION_STATUS } from '../../constants'
+import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
 import { buildIndex, filterByTitle } from '../../lib/utils/filters'
+import Session from './Session'
 
 // prepare possible status messages for different session stati
 const statusCases = {

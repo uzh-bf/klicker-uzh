@@ -1,5 +1,5 @@
-import sanitizeHTML from 'sanitize-html'
 import { stateToHTML } from 'draft-js-export-html'
+import sanitizeHTML from 'sanitize-html'
 
 export function toSanitizedHTML(contentState): string {
   try {

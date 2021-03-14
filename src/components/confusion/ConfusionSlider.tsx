@@ -1,7 +1,6 @@
+import Head from 'next/head'
 import React from 'react'
 import Slider from 'react-rangeslider'
-import Head from 'next/head'
-
 import { createLinks } from '../../lib/utils/css'
 
 interface Props {

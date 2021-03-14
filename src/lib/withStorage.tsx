@@ -1,7 +1,7 @@
 /* eslint-disable react/no-did-mount-set-state */
 
-import React from 'react'
 import Cookies from 'js-cookie'
+import React from 'react'
 
 function getComponentDisplayName(Component): string {
   return Component.displayName || Component.name || 'Unknown'

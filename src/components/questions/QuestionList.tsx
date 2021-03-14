@@ -1,8 +1,7 @@
-import React from 'react'
 import dayjs from 'dayjs'
-import { Message } from 'semantic-ui-react'
+import React from 'react'
 import { FormattedMessage } from 'react-intl'
-
+import { Message } from 'semantic-ui-react'
 import Question from './Question'
 
 interface Props {

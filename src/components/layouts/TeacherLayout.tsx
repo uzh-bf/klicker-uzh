@@ -1,10 +1,9 @@
-import React, { useState } from 'react'
 import { useRouter } from 'next/router'
+import React, { useState } from 'react'
 import { FormattedMessage } from 'react-intl'
-
-import CommonLayout from './CommonLayout'
 import Navbar from '../common/navbar/Navbar'
 import Sidebar from '../common/sidebar/Sidebar'
+import CommonLayout from './CommonLayout'
 
 interface Props {
   actionArea?: React.ReactElement

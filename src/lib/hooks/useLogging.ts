@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
 import getConfig from 'next/config'
+import { useEffect } from 'react'
 
 const { publicRuntimeConfig } = getConfig()
 

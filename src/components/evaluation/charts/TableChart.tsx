@@ -1,8 +1,7 @@
-import React, { useState } from 'react'
-import _sortBy from 'lodash/sortBy'
 import { useMutation } from '@apollo/client'
+import _sortBy from 'lodash/sortBy'
+import React, { useState } from 'react'
 import { Button, Table } from 'semantic-ui-react'
-
 import { QUESTION_GROUPS } from '../../../constants'
 import DeleteResponseMutation from '../../../graphql/mutations/DeleteResponseMutation.graphql'
 import SessionEvaluationQuery from '../../../graphql/queries/SessionEvaluationQuery.graphql'

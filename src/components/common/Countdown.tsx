@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react'
 import dayjs from 'dayjs'
-import { Icon } from 'semantic-ui-react'
-import { CircularProgressbar, buildStyles } from 'react-circular-progressbar'
-
+import React, { useEffect, useState } from 'react'
+import { buildStyles, CircularProgressbar } from 'react-circular-progressbar'
 import 'react-circular-progressbar/dist/styles.css'
+import { Icon } from 'semantic-ui-react'
 
 interface Props {
   isActive?: boolean

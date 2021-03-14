@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { Button, Header, Icon, Modal } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
+import { Button, Header, Icon, Modal } from 'semantic-ui-react'
 
 interface Props {
   handleCancelSession: () => void

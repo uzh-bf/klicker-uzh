@@ -1,12 +1,12 @@
-import React, { useState } from 'react'
-import _isEmpty from 'lodash/isEmpty'
-import { useIntl, FormattedMessage, defineMessages } from 'react-intl'
 import { useMutation } from '@apollo/client'
-import { Dropdown, Form, Button, Modal } from 'semantic-ui-react'
 import { Formik } from 'formik'
-import { object, number } from 'yup'
-import FormikInput from './components/FormikInput'
+import _isEmpty from 'lodash/isEmpty'
+import React, { useState } from 'react'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { Button, Dropdown, Form, Modal } from 'semantic-ui-react'
+import { number, object } from 'yup'
 import ModifyQuestionBlockMutation from '../../graphql/mutations/ModifyQuestionBlockMutation.graphql'
+import FormikInput from './components/FormikInput'
 
 interface Props {
   disabled?: boolean

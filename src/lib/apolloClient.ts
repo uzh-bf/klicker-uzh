@@ -1,14 +1,14 @@
 /* eslint-disable import/no-extraneous-dependencies */
 
-import fetch from 'isomorphic-unfetch'
-import getConfig from 'next/config'
-import Router from 'next/router'
-import { ApolloClient, ApolloLink, split, InMemoryCache } from '@apollo/client'
+import { ApolloClient, ApolloLink, InMemoryCache, split } from '@apollo/client'
 import { BatchHttpLink } from '@apollo/client/link/batch-http'
 import { onError } from '@apollo/client/link/error'
 import { WebSocketLink } from '@apollo/client/link/ws'
-import { SubscriptionClient } from 'subscriptions-transport-ws'
 import { getMainDefinition } from '@apollo/client/utilities'
+import fetch from 'isomorphic-unfetch'
+import getConfig from 'next/config'
+import Router from 'next/router'
+import { SubscriptionClient } from 'subscriptions-transport-ws'
 
 export default function createApolloClient(initialState, ctx) {
   const { publicRuntimeConfig, serverRuntimeConfig } = getConfig()

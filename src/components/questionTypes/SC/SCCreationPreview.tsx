@@ -1,6 +1,5 @@
 import React from 'react'
 import { FormattedMessage } from 'react-intl'
-
 import QuestionDescription from '../QuestionDescription'
 import SCAnswerOptions from './SCAnswerOptions'
 

@@ -1,17 +1,16 @@
-import React, { useState, useEffect } from 'react'
 import classNames from 'classnames'
 import getConfig from 'next/config'
+import React, { useEffect, useState } from 'react'
 import { defineMessages, useIntl } from 'react-intl'
-import { Button, Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
-
-import CommonLayout from './CommonLayout'
+import { Button, Checkbox, Dropdown, Icon, Menu } from 'semantic-ui-react'
+import { CHART_TYPES, QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
+import CsvExport from '../evaluation/CsvExport'
 import Info from '../evaluation/Info'
 import Possibilities from '../evaluation/Possibilities'
 import Statistics from '../evaluation/Statistics'
 import VisualizationType from '../evaluation/VisualizationType'
-import CsvExport from '../evaluation/CsvExport'
-import { QUESTION_GROUPS, CHART_TYPES, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 import QuestionFiles from '../sessions/join/QuestionFiles'
+import CommonLayout from './CommonLayout'
 
 const { publicRuntimeConfig } = getConfig()
 

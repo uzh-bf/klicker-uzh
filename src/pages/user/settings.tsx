@@ -1,10 +1,9 @@
 import React from 'react'
 import { defineMessages, useIntl } from 'react-intl'
-
-import TeacherLayout from '../../components/layouts/TeacherLayout'
-import useLogging from '../../lib/hooks/useLogging'
 import UserSettingsForm from '../../components/forms/userSettings/UserSettingsForm'
+import TeacherLayout from '../../components/layouts/TeacherLayout'
 import { withApollo } from '../../lib/apollo'
+import useLogging from '../../lib/hooks/useLogging'
 
 const messages = defineMessages({
   pageTitle: {

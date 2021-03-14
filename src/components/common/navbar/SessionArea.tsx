@@ -1,8 +1,8 @@
 /* eslint-disable react/prop-types, react/no-array-index-key */
 
 import * as React from 'react'
-import { Button, Icon, Menu, Popup } from 'semantic-ui-react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { Button, Icon, Menu, Popup } from 'semantic-ui-react'
 
 const messages = defineMessages({
   support: {

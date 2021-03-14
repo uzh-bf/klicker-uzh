@@ -1,17 +1,16 @@
 /* eslint-disable react/prop-types, no-undef, no-underscore-dangle */
 
-import * as React from 'react'
+import { useMutation, useQuery } from '@apollo/client'
+import _get from 'lodash/get'
 import getConfig from 'next/config'
 import { useRouter } from 'next/router'
-import _get from 'lodash/get'
+import * as React from 'react'
 import { Icon, Menu } from 'semantic-ui-react'
-import { useQuery, useMutation } from '@apollo/client'
-
+import LogoutMutation from '../../../graphql/mutations/LogoutMutation.graphql'
+import AccountSummaryQuery from '../../../graphql/queries/AccountSummaryQuery.graphql'
 import AccountArea from './AccountArea'
 import SearchArea from './SearchArea'
 import SessionArea from './SessionArea'
-import LogoutMutation from '../../../graphql/mutations/LogoutMutation.graphql'
-import AccountSummaryQuery from '../../../graphql/queries/AccountSummaryQuery.graphql'
 
 interface KlickerWindow extends Window {
   INIT_LR?: boolean

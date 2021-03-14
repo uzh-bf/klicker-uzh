@@ -1,18 +1,17 @@
-import React, { useEffect, useState } from 'react'
-import _sortBy from 'lodash/sortBy'
+import { useMutation } from '@apollo/client'
 import dayjs from 'dayjs'
 import { saveAs } from 'file-saver'
+import _sortBy from 'lodash/sortBy'
+import React, { useEffect, useState } from 'react'
 import { CSVDownload } from 'react-csv'
-import { useToasts } from 'react-toast-notifications'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
-import { Button, Confirm, Icon, Label, Dropdown, Checkbox } from 'semantic-ui-react'
-import { useMutation } from '@apollo/client'
-
+import { useToasts } from 'react-toast-notifications'
+import { Button, Checkbox, Confirm, Dropdown, Icon, Label } from 'semantic-ui-react'
+import ExportQuestionsMutation from '../../graphql/mutations/ExportQuestionsMutation.graphql'
+import QuestionStatisticsMutation from '../../graphql/mutations/QuestionStatisticsMutation.graphql'
+import { omitDeep } from '../../lib/utils/omitDeep'
 import QuestionCreationModal from './QuestionCreationModal'
 import UploadModal from './UploadModal'
-import QuestionStatisticsMutation from '../../graphql/mutations/QuestionStatisticsMutation.graphql'
-import ExportQuestionsMutation from '../../graphql/mutations/ExportQuestionsMutation.graphql'
-import { omitDeep } from '../../lib/utils/omitDeep'
 
 const messages = defineMessages({
   create: {

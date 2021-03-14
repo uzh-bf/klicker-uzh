@@ -1,9 +1,8 @@
-import React from 'react'
-import ReactTooltip from 'react-tooltip'
 import _get from 'lodash/get'
-import { Form, Icon, Input } from 'semantic-ui-react'
+import React from 'react'
 import { FormattedMessage } from 'react-intl'
-
+import ReactTooltip from 'react-tooltip'
+import { Form, Icon, Input } from 'semantic-ui-react'
 import { QUESTION_TYPES } from '../../../constants'
 
 interface Props {

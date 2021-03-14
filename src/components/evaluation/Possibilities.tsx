@@ -1,8 +1,7 @@
-import React from 'react'
 import _isNumber from 'lodash/isNumber'
+import React from 'react'
 import { FormattedMessage } from 'react-intl'
-
-import { CHART_COLORS, QUESTION_TYPES, QUESTION_GROUPS } from '../../constants'
+import { CHART_COLORS, QUESTION_GROUPS, QUESTION_TYPES } from '../../constants'
 import { indexToLetter } from '../../lib/utils/charts'
 import EvaluationListItem from './EvaluationListItem'
 

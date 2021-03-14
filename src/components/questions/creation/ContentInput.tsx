@@ -1,20 +1,18 @@
 // import dynamic from 'next/dynamic'
-import React from 'react'
-import ReactTooltip from 'react-tooltip'
-import Editor from 'draft-js-plugins-editor'
-import createToolbarPlugin /* Separator */ from 'draft-js-static-toolbar-plugin'
-import { Form, Icon } from 'semantic-ui-react'
-import { FormattedMessage } from 'react-intl'
 import {
-  ItalicButton,
   BoldButton,
+  ItalicButton,
+  OrderedListButton,
   UnderlineButton,
   // CodeButton,
   UnorderedListButton,
-  OrderedListButton,
-  // BlockquoteButton,
-  // CodeBlockButton,
 } from 'draft-js-buttons'
+import Editor from 'draft-js-plugins-editor'
+import createToolbarPlugin /* Separator */ from 'draft-js-static-toolbar-plugin'
+import React from 'react'
+import { FormattedMessage } from 'react-intl'
+import ReactTooltip from 'react-tooltip'
+import { Form, Icon } from 'semantic-ui-react'
 
 interface Props {
   disabled?: boolean

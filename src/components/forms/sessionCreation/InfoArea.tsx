@@ -1,6 +1,6 @@
 import React from 'react'
 import { FormattedMessage } from 'react-intl'
-import { Message, Divider } from 'semantic-ui-react'
+import { Divider, Message } from 'semantic-ui-react'
 
 function InfoArea(): React.ReactElement {
   return (

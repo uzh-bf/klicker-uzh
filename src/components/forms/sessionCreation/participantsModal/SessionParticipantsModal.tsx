@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
-import { Icon, Modal, Button, Checkbox, Step } from 'semantic-ui-react'
-import { useIntl, defineMessages, FormattedMessage } from 'react-intl'
-
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { Button, Checkbox, Icon, Modal, Step } from 'semantic-ui-react'
 import Authentication from './Authentication'
 import Participants from './Participants'
+
 // import DataStorage from './DataStorage'
 
 export type AuthenticationMode = 'NONE' | 'PASSWORD' | 'AAI'

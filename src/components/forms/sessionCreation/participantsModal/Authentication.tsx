@@ -1,7 +1,7 @@
-import React from 'react'
 import classNames from 'classnames'
-import { Modal, Segment, Grid, Divider, Header, Button } from 'semantic-ui-react'
+import React from 'react'
 import { FormattedMessage } from 'react-intl'
+import { Button, Divider, Grid, Header, Modal, Segment } from 'semantic-ui-react'
 import { AuthenticationMode } from './SessionParticipantsModal'
 
 interface Props {

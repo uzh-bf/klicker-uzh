@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { CSVLink } from 'react-csv'
 import { Button } from 'semantic-ui-react'
 

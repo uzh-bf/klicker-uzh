@@ -8,7 +8,6 @@ import {
   ResponsiveContainer,
   YAxis,
 } from 'recharts'
-
 import { CHART_COLORS } from '../../../constants'
 
 interface Props {

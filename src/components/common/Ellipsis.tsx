@@ -1,5 +1,5 @@
 import React from 'react'
-import { Popup, Icon } from 'semantic-ui-react'
+import { Icon, Popup } from 'semantic-ui-react'
 
 interface Props {
   children: string

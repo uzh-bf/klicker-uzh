@@ -1,11 +1,6 @@
 // import _round from 'lodash/round'
 
-import {
-  // QUESTION_TYPES,
-  SMALL_BAR_THRESHOLD,
-  SMALL_PIE_THRESHOLD,
-  CHART_TYPES,
-} from '../../constants'
+import { CHART_TYPES, SMALL_BAR_THRESHOLD, SMALL_PIE_THRESHOLD } from '../../constants'
 
 // convert an integer index into letters
 export function indexToLetter(index: number): string {

@@ -1,5 +1,5 @@
-import React from 'react'
 import classNames from 'classnames'
+import React from 'react'
 import { useDrop } from 'react-dnd'
 import { Icon } from 'semantic-ui-react'
 

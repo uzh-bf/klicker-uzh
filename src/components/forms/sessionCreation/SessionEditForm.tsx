@@ -1,11 +1,9 @@
-import React, { useEffect } from 'react'
-import { useRouter } from 'next/router'
 import { useQuery } from '@apollo/client'
-
+import { useRouter } from 'next/router'
+import React, { useEffect } from 'react'
 import SessionDetailsQuery from '../../../graphql/queries/SessionDetailsQuery.graphql'
-
-import SessionCreationForm from './SessionCreationForm'
 import { AuthenticationMode, DataStorageMode } from './participantsModal/SessionParticipantsModal'
+import SessionCreationForm from './SessionCreationForm'
 
 interface EditFormProps {
   sessionBlocks: any[]

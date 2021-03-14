@@ -1,5 +1,8 @@
 import React from 'react'
+import { FormattedMessage } from 'react-intl'
 import {
+  CartesianGrid,
+  Label,
   Legend,
   Line,
   LineChart,
@@ -7,10 +10,7 @@ import {
   ResponsiveContainer,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Label,
 } from 'recharts'
-import { FormattedMessage } from 'react-intl'
 
 interface Props {
   data: any[]

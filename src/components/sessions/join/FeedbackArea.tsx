@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react'
 import classNames from 'classnames'
 import dayjs from 'dayjs'
+import React, { useEffect, useState } from 'react'
 import { FormattedMessage } from 'react-intl'
-import { Form, Button } from 'semantic-ui-react'
-
+import { Button, Form } from 'semantic-ui-react'
 import ConfusionSlider from '../../confusion/ConfusionSlider'
 import Feedback from '../../feedbacks/Feedback'
 

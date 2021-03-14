@@ -1,17 +1,16 @@
 /* eslint-disable no-underscore-dangle */
-import React, { StrictMode } from 'react'
-import Router from 'next/router'
-import getConfig from 'next/config'
-import App from 'next/app'
-import { HTML5Backend } from 'react-dnd-html5-backend'
-import { DndProvider } from 'react-dnd'
-import { ToastProvider } from 'react-toast-notifications'
-import { createIntl, createIntlCache, RawIntlProvider } from 'react-intl'
-import * as Sentry from '@sentry/node'
 import { RewriteFrames } from '@sentry/integrations'
+import * as Sentry from '@sentry/node'
 import { Integrations } from '@sentry/tracing'
+import App from 'next/app'
+import getConfig from 'next/config'
 import Head from 'next/head'
-
+import Router from 'next/router'
+import React, { StrictMode } from 'react'
+import { DndProvider } from 'react-dnd'
+import { HTML5Backend } from 'react-dnd-html5-backend'
+import { createIntl, createIntlCache, RawIntlProvider } from 'react-intl'
+import { ToastProvider } from 'react-toast-notifications'
 // HACK: import an empty css file such that pages with css files loaded don't become unroutable (e.g., pages with Countdown.js)
 import './app.css'
 

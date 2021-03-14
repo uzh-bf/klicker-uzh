@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { Modal, Button, TextArea, Grid, Table, Form } from 'semantic-ui-react'
-import { FormattedMessage, useIntl, defineMessages } from 'react-intl'
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
+import { Button, Form, Grid, Modal, Table, TextArea } from 'semantic-ui-react'
 
 const messages = defineMessages({
   participantsPlaceholder: {
