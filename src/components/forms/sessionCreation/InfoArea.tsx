@@ -29,6 +29,10 @@ function InfoArea(): React.ReactElement {
           :global(.divider) {
             margin: 0.5rem 0;
           }
+
+          :global(.message) {
+            display: block !important;
+          }
         }
       `}</style>
     </div>

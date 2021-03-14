@@ -3,11 +3,16 @@ import { defineMessages, useIntl } from 'react-intl'
 import { Tab } from 'semantic-ui-react'
 
 import UserList from './UserList'
+import RunningSessionList from './RunningSessionList'
 
 const messages = defineMessages({
   userManagement: {
     defaultMessage: 'User Management',
     id: 'admin.userManagement',
+  },
+  runningSessions: {
+    defaultMessage: 'Running Sessions',
+    id: 'admin.runningSessions',
   },
 })
 
@@ -25,6 +30,14 @@ function AdminArea({ filters }: Props): React.ReactElement {
       render: (): React.ReactElement => (
         <Tab.Pane>
           <UserList filters={filters} />
+        </Tab.Pane>
+      ),
+    },
+    {
+      menuItem: intl.formatMessage(messages.runningSessions),
+      render: (): React.ReactElement => (
+        <Tab.Pane>
+          <RunningSessionList filters={filters} />
         </Tab.Pane>
       ),
     },

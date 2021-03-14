@@ -8,7 +8,7 @@ import Sidebar from '../common/sidebar/Sidebar'
 
 interface Props {
   actionArea?: React.ReactElement
-  children: React.ReactNode | Function
+  children: React.ReactNode | any
   fixedHeight?: boolean
   navbar?: any
   pageTitle?: string
@@ -51,11 +51,11 @@ function TeacherLayout({ actionArea, children, fixedHeight, navbar, pageTitle, s
       label: <FormattedMessage defaultMessage="Create Session" id="createSession.title" />,
       name: 'createSession',
     },
-    {
-      href: '/user/admin',
-      label: <FormattedMessage defaultMessage="Admin Area" id="admin.title" />,
-      name: 'admin',
-    },
+    // {
+    //   href: '/user/admin',
+    //   label: <FormattedMessage defaultMessage="Admin Area" id="admin.title" />,
+    //   name: 'admin',
+    // },
   ]
 
   return (

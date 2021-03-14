@@ -35,7 +35,7 @@ function reducer(state, action): any {
   }
 }
 
-function useSelection(): [any, any, any, Function] {
+function useSelection(): [any, any, any, any] {
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE)
 
   const onSelectItem = (id, item): any => (extra): void => {

@@ -262,7 +262,7 @@ function ActionBar({
           <Dropdown.Menu>
             <Dropdown.Item icon labelPosition="left" size="small" onClick={onExportQuestions}>
               <Icon name="download" />
-              <FormattedMessage defaultMessage="Export (CSV)" id="questionPool.button.exportQuestions" />
+              <FormattedMessage defaultMessage="Export (JSON)" id="questionPool.button.exportQuestions" />
             </Dropdown.Item>
 
             <Dropdown.Item icon labelPosition="left" size="small" onClick={onGetQuestionStatistics}>

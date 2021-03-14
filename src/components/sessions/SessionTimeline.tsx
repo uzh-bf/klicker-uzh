@@ -111,7 +111,7 @@ interface Props {
   startedAt?: string
   authenticationMode?: 'PASSWORD' | 'AAI' | 'NONE'
   storageMode?: 'SECRET' | 'COMPLETE'
-  subscribeToMore: Function
+  subscribeToMore: any
 }
 
 const defaultProps = {
