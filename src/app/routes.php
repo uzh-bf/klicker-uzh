@@ -47,6 +47,7 @@ return function (App $app) {
             'sub' => $_SERVER['REDIRECT_mail'],
             'scope' => ['user'],
             'aai' => true,
+            'role' => 'USER',
             'org' => $_SERVER['REDIRECT_homeOrganization']
             // TODO: embed valid properties in the token
             // "iat" => 1356999524,
