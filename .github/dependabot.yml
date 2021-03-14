@@ -1,0 +1,19 @@
+version: 2
+updates:
+- package-ecosystem: npm
+  directory: "/"
+  schedule:
+    interval: weekly
+    time: "06:00"
+  open-pull-requests-limit: 99
+  reviewers:
+  - rschlaefli
+  versioning-strategy: increase
+- package-ecosystem: docker
+  directory: "/"
+  schedule:
+    interval: monthly
+    time: "06:00"
+  open-pull-requests-limit: 99
+  reviewers:
+  - rschlaefli
