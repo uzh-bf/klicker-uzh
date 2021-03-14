@@ -240,7 +240,7 @@ async function checkAccountStatus({ res, auth }) {
   if (!user) {
     const shortname = passwordGenerator.generate({ length: 6, uppercase: false, symbols: false, numbers: true })
     const password = passwordGenerator.generate({ length: 20, uppercase: true, symbols: true, numbers: true })
-    user = await signup(auth.sub, password, shortname, auth.org, '-', { isAAI: true, isActive: true })
+    user = await signup(auth.sub, password, shortname, auth.org, '-', ROLES.USER, { isAAI: true, isActive: true })
   }
 
   // generate a JWT for future authentication
