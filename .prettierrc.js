@@ -1,5 +1,2 @@
-module.exports = {
-  semi: false,
-  singleQuote: true,
-  trailingComma: 'es5',
-}
+const { prettier } = require('@uzh-bf/code-style-react-ts')
+module.exports = prettier
