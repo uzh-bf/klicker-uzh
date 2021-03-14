@@ -183,7 +183,7 @@
   "questionPool.button.deleteQuestions": "Delete",
   "questionPool.button.deletionConfirmationCancel": "Cancel",
   "questionPool.button.deletionConfirmationConfirm": "Delete {num} question(s)!",
-  "questionPool.button.exportQuestions": "Export (CSV)",
+  "questionPool.button.exportQuestions": "Export (JSON)",
   "questionPool.button.importQuestions": "Questions via Import",
   "questionPool.button.quickCreateSeparate": "Split questions into {num} blocks",
   "questionPool.button.quickCreateSingle": "Group questions into one block ({num}->1)",
