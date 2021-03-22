@@ -22,7 +22,7 @@
     "yarn": "YARN NO LONGER USED - use npm instead."
   },
   "dependencies": {
-    "@types/draft-js": "0.10.44",
+    "@types/draft-js": "0.11.0",
     "@types/lodash": "4.14.168",
     "@types/node": "12.12.62",
     "@types/ramda": "0.27.19",
