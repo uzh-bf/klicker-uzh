@@ -1,12 +1,10 @@
 import React from 'react'
 import { Container } from 'semantic-ui-react'
 
-import Layout from '../components/layouts/Layout'
-
-export default () => (
-  <Layout>
+function Privacy() {
+  return (
     <Container>
-      <div className="privacy">
+      <div className="pb-8">
         <h1>Privacy Policy</h1>
         <p>
           <strong>Updated on August 1, 2018</strong>
@@ -279,11 +277,7 @@ export default () => (
         </p>
       </div>
     </Container>
+  )
+}
 
-    <style jsx>{`
-      .privacy {
-        padding: 1rem 0;
-      }
-    `}</style>
-  </Layout>
-)
+export default Privacy

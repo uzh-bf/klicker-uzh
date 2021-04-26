@@ -3,21 +3,13 @@ import { Button, Grid, Image, List, Message } from 'semantic-ui-react'
 import axios from 'axios'
 
 import KlickerUZH from '../components/common/KlickerUZH'
-import Layout from '../components/layouts/Layout'
 import Slider from '../components/slider/Slider'
 import Section from '../components/section/Section'
 import FeatureOverview from '../components/section/FeatureOverview'
 
-import questionPoolMacPNG from '../img/question_pool_mac_small.png'
-import evaluationMacPNG from '../img/evaluation_mac_small.png'
-import runningSessionMacPNG from '../img/running_session_mac_small.png'
-import iphonePNG from '../img/iphone.png'
-import codePNG from '../img/code.png'
-
 async function pingKlickerEndpoint({
   serviceName,
   callback,
-  accept,
   path = '',
   method = 'get',
 }) {
@@ -26,8 +18,7 @@ async function pingKlickerEndpoint({
       method,
       url: `https://${serviceName}.klicker.uzh.ch${path}`,
       timeout: 1500,
-      accept,
-    })
+    } as any)
     callback(true)
   } catch (error) {
     console.log(error)
@@ -36,22 +27,24 @@ async function pingKlickerEndpoint({
 }
 
 function Buttons() {
-  return [
-    <a
-      href="https://uzh-bf.github.io/klicker-uzh/docs/introduction/getting_started"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      <Button primary>Get Started</Button>
-    </a>,
-    <a
-      href="https://app.klicker.uzh.ch/user/login"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      <Button primary>Login</Button>
-    </a>,
-  ]
+  return (
+    <>
+      <a
+        href="https://uzh-bf.github.io/klicker-uzh/docs/introduction/getting_started"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <Button primary>Get Started</Button>
+      </a>
+      <a
+        href="https://app.klicker.uzh.ch/user/login"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <Button primary>Login</Button>
+      </a>
+    </>
+  )
 }
 
 export default function Index() {
@@ -81,53 +74,55 @@ export default function Index() {
   }, [])
 
   return (
-    <Layout>
+    <div>
       {isAppAvailable === false && (
-        <Message error>
-          The Klicker is unavailable at the moment. We are trying to fix the
-          problem as quickly as possible. <br />
-          You can get updates on our{' '}
-          <a
-            target="_blank"
-            rel="noopener noreferrer"
-            href="https://uptime.statuscake.com/?TestID=AEHThYQ2ig"
-          >
-            status page
-          </a>
-          . Please excuse the inconvenience and try again later.
-          <Message.List>
-            <Message.Item>
-              Frontend - {isAppAvailable ? 'UP' : 'DOWN'}
-            </Message.Item>
-            {/* <Message.Item>
+        <div className="max-w-3xl m-auto mb-4">
+          <Message error>
+            The Klicker is unavailable at the moment. We are trying to fix the
+            problem as quickly as possible. <br />
+            You can get updates on our{' '}
+            <a
+              target="_blank"
+              rel="noopener noreferrer"
+              href="https://uptime.statuscake.com/?TestID=AEHThYQ2ig"
+            >
+              status page
+            </a>
+            . Please excuse the inconvenience and try again later.
+            <Message.List>
+              <Message.Item>
+                Frontend - {isAppAvailable ? 'UP' : 'DOWN'}
+              </Message.Item>
+              {/* <Message.Item>
               Backend - {isApiAvailable ? 'UP' : 'DOWN'}
             </Message.Item> */}
-            {/* <Message.Item>
+              {/* <Message.Item>
                 AAI - {isAaiAvailable ? 'UP' : 'DOWN'}
               </Message.Item> */}
-          </Message.List>
-        </Message>
+            </Message.List>
+          </Message>
+        </div>
       )}
 
       <Slider>
         <Slider.Item
           title={<KlickerUZH />}
           description="The question pool enables lecturers to manage all of their past and future questions in one place."
-          imageSrc={questionPoolMacPNG}
+          imageSrc="/img/question_pool_mac_small.png"
         >
           <Buttons />
         </Slider.Item>
         <Slider.Item
           title={<KlickerUZH />}
           description="The dedicated evaluation screen offers a clean presentation of the results."
-          imageSrc={evaluationMacPNG}
+          imageSrc="/img/evaluation_mac_small.png"
         >
           <Buttons />
         </Slider.Item>
         <Slider.Item
           title={<KlickerUZH />}
           description="The running session cockpit guides through the previously created sessions."
-          imageSrc={runningSessionMacPNG}
+          imageSrc="/img/running_session_mac_small.png"
         >
           <Buttons />
         </Slider.Item>
@@ -140,12 +135,12 @@ export default function Index() {
       </Slider.Embed> */}
       </Slider>
 
-      <div className="sections">
+      <div className="py-4 px-[10%]">
         <Section>
           <Grid stackable>
             <Grid.Row>
               <Grid.Column verticalAlign="middle" width={5}>
-                <Image src={iphonePNG} />
+                <Image src="/img/iphone.png" />
               </Grid.Column>
               <Grid.Column verticalAlign="middle" width={10}>
                 <FeatureOverview
@@ -237,24 +232,12 @@ export default function Index() {
                 </FeatureOverview>
               </Grid.Column>
               <Grid.Column verticalAlign="middle" width={9}>
-                <Image src={codePNG} />
+                <Image src="/img/code.png" />
               </Grid.Column>
             </Grid.Row>
           </Grid>
         </Section>
       </div>
-
-      <style jsx>{`
-        .sections {
-          padding: 1rem 10%;
-        }
-
-        :global(.message.error) {
-          margin: auto;
-          max-width: 45rem;
-          margin-bottom: 1rem;
-        }
-      `}</style>
-    </Layout>
+    </div>
   )
 }

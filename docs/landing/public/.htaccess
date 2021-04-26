@@ -5,10 +5,11 @@
    # redirect SPA routes to the index.html file
    RewriteRule    ^/tos$ index.html      [L]
    RewriteRule    ^/privacy$ index.html  [L]
+   RewriteRule    ^/roadmap$ index.html  [L]
 
    # redirect everything else to the new klicker
    # except needed assets and routes of the landing SPA
-   RewriteCond %{REQUEST_URI} !^/(favicon\.ico|chunk-map\.json|google85411051d4c13145\.html|tos|privacy|static/|images/|page-data) [NC]
+   RewriteCond %{REQUEST_URI} !^/(favicon\.ico|chunk-map\.json|google85411051d4c13145\.html|tos|privacy|roadmap|img/|_next/|static/|images/|page-data) [NC]
    RewriteCond %{REQUEST_URI} !^/.+\.(js|css|js\.map|css\.map)$ [NC]
    RewriteRule ^.+$ https://app.klicker.uzh.ch/join%{REQUEST_URI} [L,R=301]
  </IfModule>

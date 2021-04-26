@@ -1,12 +1,10 @@
 import React from 'react'
 import { Container } from 'semantic-ui-react'
 
-import Layout from '../components/layouts/Layout'
-
-export default () => (
-  <Layout>
+function TOS() {
+  return (
     <Container>
-      <div className="terms">
+      <div className="pb-8">
         <h1>Terms of Service</h1>
         <p>
           <strong>Updated on August 1, 2018</strong>
@@ -77,11 +75,7 @@ export default () => (
         </p>
       </div>
     </Container>
+  )
+}
 
-    <style jsx>{`
-      .terms {
-        padding: 1rem 0;
-      }
-    `}</style>
-  </Layout>
-)
+export default TOS

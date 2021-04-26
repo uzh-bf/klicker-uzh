@@ -1,30 +1,31 @@
 {
-  "author": "Roland Schlaefli <roland.schlaefli@bf.uzh.ch>",
-  "engines": {
-    "yarn": "YARN NO LONGER USED - use npm instead."
+  "name": "@klickeruzh/landing",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "export": "next build && next export"
   },
   "dependencies": {
-    "axios": "0.20.0",
-    "gatsby": "2.32.8",
-    "gatsby-plugin-matomo": "0.8.3",
-    "gatsby-plugin-react-helmet": "3.10.0",
-    "gatsby-plugin-styled-jsx": "3.10.0",
-    "react": "16.14.0",
-    "react-dom": "16.14.0",
-    "react-helmet": "6.1.0",
-    "react-scroll": "1.8.1",
-    "react-slick": "0.27.10",
+    "@socialgouv/matomo-next": "1.2.1",
+    "axios": "0.21.1",
     "fomantic-ui-css": "2.8.7",
-    "semantic-ui-react": "1.2.1",
-    "slick-carousel": "1.8.1",
-    "styled-jsx": "3.4.4"
+    "next": "10.1.3",
+    "react": "17.0.2",
+    "react-dom": "17.0.2",
+    "react-scroll": "1.8.2",
+    "react-slick": "0.28.1",
+    "semantic-ui-react": "2.0.3",
+    "slick-carousel": "1.8.1"
   },
   "devDependencies": {
-    "prettier": "2.2.1"
-  },
-  "scripts": {
-    "build": "gatsby build",
-    "dev": "gatsby develop",
-    "format": "prettier --write 'src/**/*.js'"
+    "@tailwindcss/typography": "0.4.0",
+    "@types/react": "17.0.3",
+    "autoprefixer": "10.2.5",
+    "postcss": "8.2.10",
+    "tailwindcss": "2.1.1",
+    "typescript": "4.2.4"
   }
 }
