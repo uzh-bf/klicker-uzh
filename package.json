@@ -36,7 +36,7 @@
     "@formatjs/intl-relativetimeformat": "7.2.8",
     "@sentry/browser": "5.24.2",
     "@sentry/integrations": "5.24.2",
-    "@sentry/node": "5.24.2",
+    "@sentry/node": "6.3.6",
     "@sentry/react": "5.24.2",
     "@sentry/tracing": "5.24.2",
     "@sentry/webpack-plugin": "1.13.0",
