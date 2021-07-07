@@ -17,7 +17,7 @@
     "write-translations": "docusaurus-write-translations",
     "version": "docusaurus-version",
     "rename-version": "docusaurus-rename-version",
-    "publish:rschlaefli": "cross-env GIT_USER=rschlaefli CURRENT_BRANCH=master yarn run publish-gh-pages",
-    "publish:alexscheitlin": "cross-env GIT_USER=AlexScheitlin CURRENT_BRANCH=master yarn run publish-gh-pages"
+    "publish:rschlaefli": "cross-env GIT_USER=rschlaefli CURRENT_BRANCH=master npm run publish-gh-pages",
+    "publish:alexscheitlin": "cross-env GIT_USER=AlexScheitlin CURRENT_BRANCH=master npm run publish-gh-pages"
   }
 }
