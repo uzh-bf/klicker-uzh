@@ -1,0 +1,7 @@
+apiVersion: v1
+data:
+  CACHE_REDIS_ENABLED: {{ .Values.redis.enabled }}
+  CACHE_REDIS_HOST: {{ include "klicker-uzh.fullname" . }}-redis
+kind: ConfigMap
+metadata:
+  name: klicker-conf-common

@@ -1,0 +1,7 @@
+website/build/
+website/node_modules
+website/translated_docs
+website/yarn-error.log
+
+website/i18n/*
+!website/i18n/en.json

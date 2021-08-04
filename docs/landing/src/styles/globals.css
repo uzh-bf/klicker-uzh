@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply text-[#375164];
+    @apply font-bold;
+  }
+
+  h1 {
+    @apply text-3xl;
+    @apply mb-4;
+  }
+
+  h2 {
+    @apply text-2xl;
+    @apply mb-3;
+  }
+
+  h3 {
+    @apply text-xl;
+    @apply mb-2;
+  }
+
+  h4 {
+    @apply text-lg;
+    @apply mb-2;
+  }
+
+  a {
+    @apply text-blue-500;
+  }
+
+  footer a {
+    @apply text-gray-300;
+  }
+
+  footer a:hover {
+    @apply text-white;
+  }
+}
+
+body,
+#__next {
+  height: 100%;
+}
