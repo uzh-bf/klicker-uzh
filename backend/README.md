@@ -1,29 +1,6 @@
-# klicker-api &middot; [![Build Status](https://travis-ci.org/uzh-bf/klicker-api.svg?branch=master)](https://travis-ci.org/uzh-bf/klicker-api) [![Maintainability](https://api.codeclimate.com/v1/badges/63d250693c832c79534d/maintainability)](https://codeclimate.com/github/uzh-bf/klicker-api/maintainability) [![Test Coverage](https://api.codeclimate.com/v1/badges/63d250693c832c79534d/test_coverage)](https://codeclimate.com/github/uzh-bf/klicker-api/test_coverage) [![codebeat badge](https://codebeat.co/badges/a046180d-af09-4d35-8d56-52eeeb3502be)](https://codebeat.co/projects/github-com-uzh-bf-klicker-api-master)
+# klicker-api &middot;
 
 `klicker-api` is the GraphQL API backend of the [KlickerUZH](https://www.klicker.uzh.ch/) instant-class-response system.
-
-The KlickerUZH consists of two main services (see [Architecture](https://uzh-bf.github.io/klicker-uzh/docs/deployment/deployment_architecture)):
-
-- [klicker-react](https://github.com/uzh-bf/klicker-react)
-- [klicker-api](https://github.com/uzh-bf/klicker-api)
-
-The following additional resources might be of interest to you:
-
-- [Documentation](https://uzh-bf.github.io/klicker-uzh/docs/introduction/getting_started)
-- [Frequently Asked Questions (FAQ)](https://uzh-bf.github.io/klicker-uzh/docs/faq/faq)
-- [Spectrum Community](https://spectrum.chat/klickeruzh)
-
-## Roadmap / Issues
-
-The KlickerUZH project is publicly managed and documented in the [klicker-uzh](https://github.com/uzh-bf/klicker-uzh) repository. A roadmap can be found at https://github.com/uzh-bf/klicker-uzh/projects/1. Please feel free to add any issues and comments you might have to that repository.
-
-## Deployment
-
-If you would like to deploy an instance of the KlickerUZH at your institution, please have a look at the corresponding documentation with regards to the [Architecture](https://uzh-bf.github.io/klicker-uzh/docs/deployment/deployment_architecture), [Requirements](https://uzh-bf.github.io/klicker-uzh/docs/deployment/deployment_requirements), and further [Instructions](https://uzh-bf.github.io/klicker-uzh/docs/deployment/deployment_docker).
-
-## Contributing
-
-We welcome any contributions to the KlickerUZH project. Before considering any contribution, we recommend that you create an issue to discuss your proposed addition with the project contributors. Please also make sure to follow our [Contributing Guidelines](https://uzh-bf.github.io/klicker-uzh/docs/contributing/contributing_guidelines), as your PR might need amendments otherwise.
 
 ### Requirements
 
@@ -49,7 +26,3 @@ The `klicker-api` repository is composed of the following key parts:
 
 - **Dockerfile**
 - **package.json**
-
-## License
-
-Klicker and all of its subprojects are licensed under the [AGPLv3](https://www.gnu.org/licenses/agpl-3.0.de.html).
