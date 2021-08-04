@@ -1,0 +1,43 @@
+mutation ModifySession(
+  $id: ID!
+  $name: String!
+  $blocks: [Session_QuestionBlockInput!]!
+  $participants: [Session_ParticipantInput!]
+  $authenticationMode: Session_AuthenticationMode
+  $storageMode: Session_StorageMode
+) {
+  modifySession(
+    id: $id
+    session: {
+      name: $name
+      blocks: $blocks
+      participants: $participants
+      authenticationMode: $authenticationMode
+      storageMode: $storageMode
+    }
+  ) {
+    id
+    status
+    blocks {
+      id
+      instances {
+        id
+        version
+        question {
+          id
+          title
+          type
+        }
+      }
+    }
+    participants {
+      username
+      password
+    }
+    settings {
+      isParticipantAuthenticationEnabled
+      authenticationMode
+      storageMode
+    }
+  }
+}

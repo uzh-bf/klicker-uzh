@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  api-prod:
+    build: .
+    environment:
+      APP_DOMAIN: localhost
+      APP_SECRET: hello-world
+      CACHE_REDIS_ENABLED: 'true'
+      CACHE_REDIS_HOST: redis
+      MONGO_URL: klicker:klicker@mongodb:27017/klicker?authSource=admin
+    ports:
+      - 4000:4000
+    volumes:
+      - './.env:/app/.env:ro'
+    networks:
+      - klicker-prod
+
+  redis:
+    image: redis:3-32bit
+    ports:
+      - 6379:6379
+    networks:
+      - klicker-prod
+
+  mongodb:
+    image: mongo:4.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: klicker
+      MONGO_INITDB_ROOT_PASSWORD: klicker
+    ports:
+      - 27017:27017
+    networks:
+      - klicker-prod
+
+networks:
+  klicker-prod:
+    driver: bridge

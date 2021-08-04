@@ -1,0 +1,3 @@
+mutation ResolveAccountDeletion($deletionToken: String!) {
+  resolveAccountDeletion(deletionToken: $deletionToken)
+}
