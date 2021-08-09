@@ -19,7 +19,8 @@
   ],
   "license": "AGPL-3.0",
   "engines": {
-    "node": "=14",
+    "node": "=12",
+    "npm": "=6",
     "yarn": "YARN NO LONGER USED - use npm instead."
   },
   "dependencies": {
