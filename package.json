@@ -4,7 +4,12 @@
   "description": "KlickerUZH instant-class-response system.",
   "main": "index.js",
   "scripts": {
-    "release": "npx standard-version"
+    "release": "npx standard-version",
+    "release:dry": "npx standard-version --dry-run",
+    "release:alpha": "npx standard-version --prerelease alpha",
+    "release:beta": "npx standard-version --prerelease beta",
+    "release:rc": "npx standard-version --prerelease rc"
+  },
   },
   "repository": {
     "type": "git",
