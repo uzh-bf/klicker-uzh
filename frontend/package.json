@@ -14,11 +14,13 @@
     "wuergrob <32273110+wuergrob@users.noreply.github.com>",
     "Jokkis80 <jokki@windowslive.com>",
     "mnmldev <aleloewe@gmail.com>",
-    "Luca Locher <luca.locher@bf.uzh.ch>"
+    "Luca Locher <luca.locher@bf.uzh.ch>",
+    "Maximilian Weber <maximilian.weber@bf.uzh.ch>"
   ],
   "license": "AGPL-3.0",
   "engines": {
-    "node": ">=12",
+    "node": "=12",
+    "npm": "=6",
     "yarn": "YARN NO LONGER USED - use npm instead."
   },
   "dependencies": {
@@ -91,7 +93,7 @@
     "lru-cache": "6.0.0",
     "mathjs": "7.3.0",
     "morgan": "1.10.0",
-    "next": "9.5.4",
+    "next": "10.2.3",
     "node-sass": "4.14.1",
     "nodemon": "2.0.12",
     "prismjs": "1.21.0",
@@ -129,11 +131,16 @@
   "devDependencies": {
     "@formatjs/cli": "2.15.0",
     "@formatjs/intl-utils": "3.8.4",
-    "@typescript-eslint/eslint-plugin": "4.28.5",
-    "@typescript-eslint/parser": "4.0.1",
     "@graphql-codegen/cli": "1.21.8",
     "@graphql-codegen/fragment-matcher": "1.17.8",
+    "@storybook/addon-actions": "6.3.6",
+    "@storybook/addon-essentials": "6.3.6",
+    "@storybook/addon-links": "6.3.6",
+    "@storybook/react": "6.3.6",
     "@testing-library/react": "11.2.7",
+    "@typescript-eslint/eslint-plugin": "4.28.5",
+    "@typescript-eslint/parser": "4.0.1",
+    "babel-loader": "8.2.2",
     "enzyme": "3.11.0",
     "eslint": "7.32.0",
     "eslint-config-airbnb": "18.2.1",
@@ -141,10 +148,10 @@
     "eslint-import-resolver-typescript": "2.4.0",
     "eslint-plugin-babel": "5.3.1",
     "eslint-plugin-import": "2.23.4",
-    "eslint-plugin-react-hooks": "4.2.0",
     "eslint-plugin-jsx-a11y": "6.4.1",
     "eslint-plugin-prettier": "3.4.0",
     "eslint-plugin-react": "7.24.0",
+    "eslint-plugin-react-hooks": "4.2.0",
     "fomantic-ui": "2.8.8",
     "fomantic-ui-css": "2.8.8",
     "gulp": "4.0.2",
@@ -174,12 +181,13 @@
     "lint": "eslint src/ --ext .js --ext .ts --ext .tsx server.js",
     "start": "cross-env NODE_ENV=production node server.js",
     "start:inspect": "cross-env NODE_ENV=production node --inspect server.js",
-    "storybook": "cross-env NODE_ENV=development start-storybook -p 6006 -c .storybook",
+    "storybook": "start-storybook -p 6006",
     "test": "jest",
     "test:ci": "jest --coverage",
     "test:watch": "jest --watch",
     "type-check": "tsc --noEmit -p tsconfig.json",
-    "type-check:watch": "npm run type-check -- --watch"
+    "type-check:watch": "npm run type-check -- --watch",
+    "build-storybook": "build-storybook"
   },
   "jest": {
     "testEnvironment": "node",
