@@ -96,7 +96,7 @@
     "next": "10.2.3",
     "node-sass": "4.14.1",
     "nodemon": "2.0.12",
-    "prismjs": "1.21.0",
+    "prismjs": "1.24.0",
     "qrcode.react": "1.0.1",
     "ramda": "0.27.1",
     "react": "16.13.1",
