@@ -10,7 +10,6 @@
     "release:beta": "npx standard-version --prerelease beta",
     "release:rc": "npx standard-version --prerelease rc"
   },
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/uzh-bf/klicker-uzh.git"
