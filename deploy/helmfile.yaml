@@ -1,0 +1,10 @@
+releases:
+  - name: '{{ env "RELEASE_NAME" | default "klicker-uzh" }}'
+    namespace: '{{ env "KUBE_NAMESPACE" | default "klicker-uzh" }}'
+    createNamespace: true
+    chart: ./chart
+    version: '{{ env "CHART_VERSION" | default "0.1.0" }}'
+    installed: {{ env "INSTALL" | default "true" }}
+    values:
+      - chart/values.yaml
+      - chart/secrets.yaml
