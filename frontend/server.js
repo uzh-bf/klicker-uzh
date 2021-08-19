@@ -159,8 +159,8 @@ async function connectCache() {
 
   if (hasRedis) {
     const Redis = require('ioredis')
-    const { db, host, password, port } = CACHE_CFG.redis
-    cache = new Redis({ db, family: 4, host, password, port })
+    const { db, host, password, port, tls } = CACHE_CFG.redis
+    cache = new Redis({ db, family: 4, host, password, port, tls })
 
     console.log('[redis] Connected to redis (db0) for SSR caching')
   } else {
