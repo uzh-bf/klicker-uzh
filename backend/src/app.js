@@ -56,13 +56,20 @@ const { createLoaders } = require('./lib/loaders')
 // use username and password authentication if passed in the environment
 // otherwise assume that no authentication needed (e.g. docker)
 const mongoConfig = {
-  keepAlive: true,
-  reconnectTries: Number.MAX_VALUE,
-  reconnectInterval: 1000,
-  promiseLibrary: global.Promise,
+  // keepAlive: true,
+  // promiseLibrary: global.Promise,
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  retryWrites: false,
 }
 if (MONGO_CFG.user && MONGO_CFG.password) {
-  mongoose.connect(`mongodb://${MONGO_CFG.user}:${MONGO_CFG.password}@${MONGO_CFG.url}`, mongoConfig)
+  mongoose.connect(`mongodb://${MONGO_CFG.url}`, {
+    ...mongoConfig,
+    auth: {
+      user: MONGO_CFG.user,
+      password: MONGO_CFG.password,
+    },
+  })
 } else {
   mongoose.connect(`mongodb://${MONGO_CFG.url}`, mongoConfig)
 }
