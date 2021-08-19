@@ -5,14 +5,15 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
-  API_ENDPOINT: https://{{ .Values.backend.hostname }}/graphql
-  API_ENDPOINT_WS: wss://{{ .Values.backend.hostname }}/graphql
-  APP_BASE_URL: https://{{ .Values.frontend.hostname }}
+  {{- $protocol := ternary "https" "https" .Values.security.https.enabled -}}
+  API_ENDPOINT: {{ $protocol }}://{{ .Values.backend.hostname }}/graphql
+  API_ENDPOINT_WS: {{ ternary "wss" "ws" .Values.security.https.enabled }}://{{ .Values.backend.hostname }}/graphql
+  APP_BASE_URL: {{ $protocol }}://{{ .Values.frontend.hostname }}
   APP_JOIN_URL: {{ .Values.frontend.hostname }}/join
   APP_PERSIST_QUERIES: 'false'
   APP_TRUST_PROXY: 'true'
   S3_ROOT_URL: https://{{ .Values.s3.endpoint }}/{{ .Values.s3.bucket }}
-  SECURITY_CORS_ORIGIN: https://{{ .Values.frontend.hostname }},{{ .Values.security.cors.frontend }}
+  SECURITY_CORS_ORIGIN: {{ $protocol }}://{{ .Values.frontend.hostname }},{{ .Values.security.cors.frontend }}
   # SECURITY_CSP_ENABLED: {{ .Values.security.csp.enabled | quote }}
   # SECURITY_CSP_REPORT_URI: {{ .Values.security.csp.reportUri | quote }}
   # SECURITY_EXPECT_CT_ENABLED: {{ .Values.security.expectCt.enabled | quote }}
