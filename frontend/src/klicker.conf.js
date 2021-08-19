@@ -77,7 +77,7 @@ module.exports = convict({
     },
     redis: {
       db: {
-        default: 0,
+        default: 2,
         env: 'CACHE_REDIS_DB',
         format: 'nat',
       },

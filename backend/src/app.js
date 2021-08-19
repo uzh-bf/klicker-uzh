@@ -92,9 +92,9 @@ mongoose.connection
   })
 
 // initialize a connection to redis
-const pageCache = getRedis()
+const pageCache = getRedis(2)
 const limitRedis = getRedis(1)
-const responseCache = getRedis(3)
+const responseCache = getRedis()
 
 // initialize an express server
 const app = express()
