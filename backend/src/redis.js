@@ -8,8 +8,8 @@ const CACHE_CFG = CFG.get('cache')
 const newRedis = (db = 0) => {
   // otherwise initialize a new redis client for the respective url and database
   try {
-    const { host, password, port } = CACHE_CFG.redis
-    const newClient = new Redis({ db, family: 4, host, password, port })
+    const { host, password, port, tls } = CACHE_CFG.redis
+    const newClient = new Redis({ db, family: 4, host, password, port, tls })
 
     console.log(`[redis] Connected to db ${db}`)
     return newClient
