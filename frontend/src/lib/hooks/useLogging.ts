@@ -17,8 +17,6 @@ declare global {
   interface Window {
     INIT?: boolean
     INIT_LR?: boolean
-    INIT_SLAASK?: boolean
-    _slaask?: any
   }
 }
 
@@ -30,7 +28,6 @@ function useLogging(cfg = {}): void {
 
     // merge default and passed config
     const config = {
-      slaask: false,
       logRocket: true,
       ...cfg,
     }
@@ -51,18 +48,6 @@ function useLogging(cfg = {}): void {
         // }
 
         window.INIT_LR = true
-      }
-
-      // embed slaask if enabled
-      if (publicRuntimeConfig.slaaskWidgetKey && config.slaask && !window.INIT_SLAASK) {
-        try {
-          // eslint-disable-next-line no-underscore-dangle
-          window._slaask.init(publicRuntimeConfig.slaaskWidgetKey)
-        } catch (e) {
-          console.error(e)
-        }
-
-        window.INIT_SLAASK = true
       }
 
       window.INIT = true

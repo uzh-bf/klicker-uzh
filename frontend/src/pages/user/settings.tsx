@@ -18,7 +18,7 @@ const messages = defineMessages({
 })
 
 function Settings(): React.ReactElement {
-  useLogging({ slaask: true })
+  useLogging()
 
   const intl = useIntl()
 

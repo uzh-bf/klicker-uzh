@@ -27,7 +27,7 @@ const messages = defineMessages({
 })
 
 function Index(): React.ReactElement {
-  useLogging({ slaask: true })
+  useLogging()
 
   const intl = useIntl()
   const router = useRouter()

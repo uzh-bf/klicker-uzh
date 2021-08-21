@@ -29,7 +29,6 @@ module.exports = (phase) => {
       persistQueries: APP_CFG.persistQueries,
       s3root: S3_CFG.rootUrl,
       sentryDSN: SERVICES_CFG.sentry.dsn,
-      slaaskWidgetKey: SERVICES_CFG.slaask.widgetKey,
       withFingerprinting: SECURITY_CFG.fingerprinting,
     },
     serverRuntimeConfig: {
