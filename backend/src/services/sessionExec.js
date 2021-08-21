@@ -17,7 +17,7 @@ const APP_CFG = CFG.get('app')
 
 // initialize redis if available
 // const responseControl = getRedis(2)
-const responseCache = getRedis(3)
+const responseCache = getRedis()
 
 /**
  * Add a new feedback to a session

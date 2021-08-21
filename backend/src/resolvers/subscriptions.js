@@ -1,13 +1,13 @@
 const { PubSub, withFilter } = require('graphql-subscriptions')
 const { RedisPubSub } = require('graphql-redis-subscriptions')
-const { newRedis } = require('../redis')
+const { getRedis, newRedis } = require('../redis')
 
 let pubsub
 
-const redis = newRedis(3)
+const redis = getRedis()
 if (redis) {
   // instantiate a new redis-based pubsub instance
-  pubsub = new RedisPubSub({ publisher: redis, subscriber: newRedis(3) })
+  pubsub = new RedisPubSub({ publisher: redis, subscriber: newRedis() })
 } else {
   pubsub = new PubSub()
 }

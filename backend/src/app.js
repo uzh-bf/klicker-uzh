@@ -92,9 +92,7 @@ mongoose.connection
   })
 
 // initialize a connection to redis
-const pageCache = getRedis(2)
-const limitRedis = getRedis(1)
-const responseCache = getRedis()
+const redisCache = getRedis()
 
 // initialize an express server
 const app = express()
@@ -201,7 +199,7 @@ if (isProd) {
         }
       },
       store: new RedisStore({
-        client: limitRedis,
+        client: redisCache,
         expiry: Math.round(windowMs / 1000),
         prefix: 'limiter:',
       }),
@@ -287,11 +285,7 @@ apollo.applyMiddleware({
     }
 
     // check connection to redis
-    if (
-      (limitRedis && limitRedis.status !== 'ready') ||
-      (pageCache && pageCache.status !== 'ready') ||
-      (responseCache && responseCache.status !== 'ready')
-    ) {
+    if (redisCache && redisCache.status !== 'ready') {
       console.error('[klicker-react] Redis connection failure...')
       throw new Error('REDIS_CONNECTION_ERROR')
     }

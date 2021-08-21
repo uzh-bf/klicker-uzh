@@ -6,7 +6,7 @@ const { getRedis } = require('../redis')
 const { QUESTION_GROUPS, SESSION_STATUS } = require('../constants')
 const { SessionModel } = require('../models')
 
-const responseCache = getRedis(3)
+const responseCache = getRedis()
 
 /* ----- queries ----- */
 const questionInstanceByIDQuery = (_, { id }, { loaders }) => ensureLoaders(loaders).questionInstances.load(id)
