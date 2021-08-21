@@ -67,4 +67,6 @@ User.pre('save', (next) => {
   next()
 })
 
+User.index({ '$**': 1 })
+
 module.exports = mongoose.model('User', User)

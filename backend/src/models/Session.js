@@ -56,6 +56,8 @@ const Session = new mongoose.Schema(
   { timestamps: true }
 )
 
+Session.index({ '$**': 1 })
+
 module.exports = {
   SessionModel: mongoose.model('Session', Session),
 }
