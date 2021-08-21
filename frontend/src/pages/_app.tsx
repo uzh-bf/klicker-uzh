@@ -12,8 +12,7 @@ import { RewriteFrames } from '@sentry/integrations'
 import { Integrations } from '@sentry/tracing'
 import Head from 'next/head'
 
-// HACK: import an empty css file such that pages with css files loaded don't become unroutable (e.g., pages with Countdown.js)
-import './app.css'
+import '../lib/semantic/dist/semantic.css'
 
 // This is optional but highly recommended
 // since it prevents memory leak
