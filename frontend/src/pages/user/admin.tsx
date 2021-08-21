@@ -20,7 +20,7 @@ const messages = defineMessages({
 })
 
 function Admin(): React.ReactElement {
-  useLogging({ slaask: true })
+  useLogging()
 
   const { handleSearch, filters } = useSortingAndFiltering()
 

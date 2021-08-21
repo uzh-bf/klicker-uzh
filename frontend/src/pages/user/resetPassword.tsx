@@ -21,7 +21,6 @@ const messages = defineMessages({
 function ResetPassword(): React.ReactElement {
   useLogging({
     logRocket: false,
-    slaask: true,
   })
 
   const intl = useIntl()

@@ -309,18 +309,5 @@ module.exports = convict({
         format: Boolean,
       },
     },
-    slaask: {
-      enabled: {
-        default: false,
-        env: 'SERVICES_SLAASK_ENABLED',
-        format: Boolean,
-      },
-      widgetKey: {
-        default: undefined,
-        env: 'SERVICES_SLAASK_WIDGET_KEY',
-        format: String,
-        sensitive: true,
-      },
-    },
   },
 })

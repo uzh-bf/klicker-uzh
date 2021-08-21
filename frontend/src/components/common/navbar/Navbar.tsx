@@ -15,7 +15,6 @@ import AccountSummaryQuery from '../../../graphql/queries/AccountSummaryQuery.gr
 
 interface KlickerWindow extends Window {
   INIT_LR?: boolean
-  _slaask?: any
 }
 
 declare const window: KlickerWindow
@@ -99,24 +98,6 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
                   email: userEmail,
                   name: accountShort,
                 })
-              } catch (e) {
-                //
-              }
-            }
-
-            if (typeof window._slaask !== 'undefined') {
-              try {
-                window._slaask.identify({
-                  email: userEmail,
-                  id: accountId,
-                  shortname: accountShort,
-                  // user_hash: userHash,
-                })
-                window._slaask.init(publicRuntimeConfig.slaaskWidgetKey, accountId)
-                /* window._slaask.init(process.env.SLAASK_WIDGET_KEY, {
-      user_hash: userHash,
-      user_token: accountId,
-    }) */
               } catch (e) {
                 //
               }

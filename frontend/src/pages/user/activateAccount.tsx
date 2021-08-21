@@ -20,7 +20,6 @@ const messages = defineMessages({
 function ActivateAccount(): React.ReactElement {
   useLogging({
     logRocket: false,
-    slaask: true,
   })
 
   const client = useApolloClient()
