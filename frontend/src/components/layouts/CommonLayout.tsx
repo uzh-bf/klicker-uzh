@@ -3,8 +3,6 @@
 import React from 'react'
 import Head from 'next/head'
 
-import '../../lib/semantic/dist/semantic.css'
-
 interface Props {
   baseFontSize?: string | number
   children: React.ReactNode
