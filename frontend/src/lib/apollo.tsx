@@ -152,10 +152,6 @@ export const withApollo = ({ ssr = false } = {}) => (PageComponent): any => {
             // https://www.apollographql.com/docs/react/api/react-apollo.html#graphql-query-data-error
             console.error('Error while running `getDataFromTree`', error)
           }
-
-          // getDataFromTree does not call componentWillUnmount
-          // head side effect therefore need to be cleared manually
-          Head.rewind()
         }
       }
 
