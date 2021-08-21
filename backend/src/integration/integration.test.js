@@ -21,7 +21,7 @@ serializers.forEach((serializer) => expect.addSnapshotSerializer(serializer))
 const initialPassword = 'somePassword'
 const passwordAfterChange = 'someOtherPassword'
 
-const responseCache = getRedis(3)
+const responseCache = getRedis()
 
 const sendQuery = (body, authCookie) => {
   if (authCookie) {
