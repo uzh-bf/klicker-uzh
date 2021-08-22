@@ -18,6 +18,12 @@ const basePath = ''
 
 module.exports = (phase) => {
   let config = {
+    // env: {
+    //   __DEV__: PHASE_DEVELOPMENT_SERVER,
+    // },
+    eslint: {
+      ignoreDuringBuilds: true,
+    },
     // custom runtime configuration
     publicRuntimeConfig: {
       analyticsTrackingID: SERVICES_CFG.googleAnalytics.trackingId,
