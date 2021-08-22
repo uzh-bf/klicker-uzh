@@ -4,7 +4,7 @@ import { defineMessages, useIntl } from 'react-intl'
 import { useRouter } from 'next/router'
 
 import ConfusionCharts from 'src/components/confusion/ConfusionCharts'
-import FeedbackTableChart from 'src/components/feedbacks/FeedbackTableChart'
+import FeedbackTableChart from 'src/components/interaction/feedbacks/FeedbackTableChart'
 import { QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
 import useLogging from '../../lib/hooks/useLogging'

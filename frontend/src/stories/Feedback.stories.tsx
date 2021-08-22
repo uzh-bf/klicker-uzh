@@ -1,7 +1,7 @@
 import React from 'react'
 import { ComponentStory, ComponentMeta } from '@storybook/react'
 
-import Feedback from '../components/feedbacks/Feedback'
+import Feedback from '../components/interaction/feedbacks/Feedback'
 
 export default {
   title: 'Example/Feedback',

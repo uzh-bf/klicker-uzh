@@ -33,28 +33,26 @@ function ConfusionBarometer({ confusionTS, isActive, handleActiveToggle, subscri
     if (subscribeToMore) {
       subscribeToMore()
     }
-  }, [])
+  }, [subscribeToMore])
 
   return (
     <div className="confusionBarometer">
-      <h2>
-        <FormattedMessage defaultMessage="Confusion-Barometer" id="runningSession.confusion.title" />
-      </h2>
-
-      <div className="infoMessage">
+      <div className="mb-4 infoMessage">
         <FormattedMessage
           defaultMessage="The Confusion-Barometer allows you to get feedback on the speed and difficulty of your lecture as it evolves over time."
           id="runningSession.confusion.info"
         />
       </div>
 
-      <Checkbox
-        toggle
-        checked={isActive}
-        defaultChecked={isActive}
-        label={intl.formatMessage(messages.activated)}
-        onChange={handleActiveToggle}
-      />
+      <div className="mb-4">
+        <Checkbox
+          toggle
+          checked={isActive}
+          defaultChecked={isActive}
+          label={intl.formatMessage(messages.activated)}
+          onChange={handleActiveToggle}
+        />
+      </div>
 
       {isActive && <ConfusionCharts confusionTS={confusionTS} />}
 
@@ -65,13 +63,8 @@ function ConfusionBarometer({ confusionTS, isActive, handleActiveToggle, subscri
           display: flex;
           flex-direction: column;
 
-          h2 {
-            margin-bottom: 0.5rem;
-          }
-
           .infoMessage {
             color: #404040;
-            margin-bottom: 0.5rem;
           }
 
           h3 {
