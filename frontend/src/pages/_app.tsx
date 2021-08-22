@@ -7,10 +7,6 @@ import { HTML5Backend } from 'react-dnd-html5-backend'
 import { DndProvider } from 'react-dnd'
 import { ToastProvider } from 'react-toast-notifications'
 import { createIntl, createIntlCache, RawIntlProvider } from 'react-intl'
-import * as Sentry from '@sentry/node'
-import { RewriteFrames } from '@sentry/integrations'
-import { Integrations } from '@sentry/tracing'
-import Head from 'next/head'
 
 import '../lib/semantic/dist/semantic.css'
 
@@ -21,27 +17,6 @@ const cache = createIntlCache()
 const { publicRuntimeConfig } = getConfig()
 
 const isProd = process.env.NODE_ENV === 'production'
-
-if (publicRuntimeConfig.sentryDSN) {
-  const config = getConfig()
-  const distDir = `${config.serverRuntimeConfig.rootDir}/.next`
-  Sentry.init({
-    enabled: isProd,
-    integrations: [
-      new RewriteFrames({
-        iteratee: (frame: any): any => {
-          // eslint-disable-next-line
-          frame.filename = frame.filename.replace(distDir, 'app:///_next')
-          return frame
-        },
-      }),
-      new Integrations.BrowserTracing(),
-    ],
-    dsn: publicRuntimeConfig.sentryDSN,
-    release: process.env.npm_package_version,
-    tracesSampleRate: 1.0, // Be sure to lower this in production
-  })
-}
 
 // Register React Intl's locale data for the user's locale in the browser. This
 // locale data was added to the page by `pages/_document.js`. This only happens

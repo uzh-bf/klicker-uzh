@@ -13,12 +13,6 @@ import SessionArea from './SessionArea'
 import LogoutMutation from '../../../graphql/mutations/LogoutMutation.graphql'
 import AccountSummaryQuery from '../../../graphql/queries/AccountSummaryQuery.graphql'
 
-interface KlickerWindow extends Window {
-  INIT_LR?: boolean
-}
-
-declare const window: KlickerWindow
-
 const { publicRuntimeConfig } = getConfig()
 
 interface Props {
@@ -105,7 +99,7 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
 
             if (publicRuntimeConfig.sentryDSN) {
               try {
-                const Sentry = require('@sentry/browser')
+                const Sentry = require('@sentry/nextjs')
                 Sentry.setUser({ id: accountId, username: accountShort })
               } catch (e) {
                 //
