@@ -285,22 +285,22 @@ module.exports = convict({
     sentry: {
       dsn: {
         default: undefined,
-        env: 'SERVICES_SENTRY_DSN',
+        env: 'SENTRY_DSN',
         format: 'url',
       },
       org: {
         default: undefined,
-        env: 'SERVICES_SENTRY_ORG',
+        env: 'SENTRY_ORG',
         format: String,
       },
       project: {
         default: undefined,
-        env: 'SERVICES_SENTRY_PROJECT',
+        env: 'SENTRY_PROJECT',
         format: String,
       },
       authToken: {
         default: undefined,
-        env: 'SERVICES_SENTRY_AUTH_TOKEN',
+        env: 'SENTRY_AUTH_TOKEN',
         format: String,
       },
       enabled: {
