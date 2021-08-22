@@ -1,4 +1,4 @@
-import omitDeep from './omitDeep'
+import { omitDeep } from './omitDeep'
 
 describe('omitDeep', () => {
   it('omits __typename correctly', () => {

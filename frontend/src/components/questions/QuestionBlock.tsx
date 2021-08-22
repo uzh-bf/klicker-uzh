@@ -1,5 +1,5 @@
 import React from 'react'
-import classNames from 'classnames'
+import clsx from 'clsx'
 import { Dropdown } from 'semantic-ui-react'
 import { defineMessages, useIntl } from 'react-intl'
 
@@ -63,7 +63,7 @@ function QuestionBlock({
   const intl = useIntl()
 
   return (
-    <div className={classNames('questionBlock', { active: status === 'ACTIVE' })}>
+    <div className={clsx('questionBlock', { active: status === 'ACTIVE' })}>
       {!noDetails && (
         <div className="sessionStatus">
           <SessionStatusIcon status={status} />

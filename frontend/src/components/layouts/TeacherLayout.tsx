@@ -27,7 +27,10 @@ function TeacherLayout({ actionArea, children, fixedHeight, navbar, pageTitle, s
 
   const [isSidebarVisible, setIsSidebarVisible] = useState(false)
 
-  const handleSidebarItemClick = (href: string): any => (): Promise<boolean> => router.push(href)
+  const handleSidebarItemClick =
+    (href: string): any =>
+    (): Promise<boolean> =>
+      router.push(href)
 
   const sidebarItems = [
     {

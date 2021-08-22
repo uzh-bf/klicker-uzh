@@ -215,90 +215,96 @@ function Index(): React.ReactElement {
   }
 
   // handle creating a new session
-  const onCreateSession = (type): any => async (e): Promise<void> => {
-    // prevent a page reload on submit
-    e.preventDefault()
-    if (_some([isCreateSessionLoading, isModifySessionLoading, isStartSessionLoading])) {
-      return
-    }
-
-    try {
-      // prepare blocks for consumption through the api
-      const blocks = sessionBlocks.map(({ questions }): any => ({
-        questions: questions.map(({ id, version = 0 }): any => ({
-          question: id,
-          version,
-        })),
-      }))
-
-      let result
-      if (editSessionId && !copyMode) {
-        // modify an existing session
-        result = await modifySession({
-          refetchQueries: [{ query: SessionListQuery }],
-          variables: {
-            blocks,
-            id: editSessionId,
-            name: sessionName,
-            participants: sessionParticipants.map((username) => ({ username })),
-            authenticationMode: sessionAuthenticationMode,
-            storageMode: sessionDataStorageMode,
-          },
-        })
-      } else {
-        // create a new session
-        result = await createSession({
-          refetchQueries: [{ query: SessionListQuery }],
-          variables: {
-            blocks,
-            name: sessionName,
-            participants: sessionParticipants.map((username) => ({ username })),
-            authenticationMode: sessionAuthenticationMode,
-            storageMode: sessionDataStorageMode,
-          },
-        })
+  const onCreateSession =
+    (type): any =>
+    async (e): Promise<void> => {
+      // prevent a page reload on submit
+      e.preventDefault()
+      if (_some([isCreateSessionLoading, isModifySessionLoading, isStartSessionLoading])) {
+        return
       }
 
-      // start the session immediately if the respective button was clicked
-      if (type === 'start') {
-        await startSession({
-          refetchQueries: [{ query: SessionListQuery }, { query: RunningSessionQuery }, { query: AccountSummaryQuery }],
-          variables: { id: result.data.createSession?.id || result.data.modifySession?.id },
-        })
-        router.push('/sessions/running')
-      } else {
-        const ToastContent = (
-          <FormattedMessage
-            defaultMessage="Session successfully created. Visit the {link} to manage your new
-            session."
-            id="questions.index.createSession.success"
-            values={{
-              link: <Link href="/sessions">Session List</Link>,
-            }}
-          />
-        )
-        addToast(ToastContent, {
-          appearance: 'success',
-        })
-      }
+      try {
+        // prepare blocks for consumption through the api
+        const blocks = sessionBlocks.map(({ questions }): any => ({
+          questions: questions.map(({ id, version = 0 }): any => ({
+            question: id,
+            version,
+          })),
+        }))
 
-      // disable creation mode
-      onCreationModeToggle()
-    } catch ({ message }) {
-      console.error(message)
-      addToast(
-        <FormattedMessage
-          defaultMessage="Unable to create session: {errorMessage}"
-          id="questions.index.createSession.error"
-          values={{ errorMessage: message }}
-        />,
-        {
-          appearance: 'error',
-          autoDismiss: false,
+        let result
+        if (editSessionId && !copyMode) {
+          // modify an existing session
+          result = await modifySession({
+            refetchQueries: [{ query: SessionListQuery }],
+            variables: {
+              blocks,
+              id: editSessionId,
+              name: sessionName,
+              participants: sessionParticipants.map((username) => ({ username })),
+              authenticationMode: sessionAuthenticationMode,
+              storageMode: sessionDataStorageMode,
+            },
+          })
+        } else {
+          // create a new session
+          result = await createSession({
+            refetchQueries: [{ query: SessionListQuery }],
+            variables: {
+              blocks,
+              name: sessionName,
+              participants: sessionParticipants.map((username) => ({ username })),
+              authenticationMode: sessionAuthenticationMode,
+              storageMode: sessionDataStorageMode,
+            },
+          })
         }
-      )
+
+        // start the session immediately if the respective button was clicked
+        if (type === 'start') {
+          await startSession({
+            refetchQueries: [
+              { query: SessionListQuery },
+              { query: RunningSessionQuery },
+              { query: AccountSummaryQuery },
+            ],
+            variables: { id: result.data.createSession?.id || result.data.modifySession?.id },
+          })
+          router.push('/sessions/running')
+        } else {
+          const ToastContent = (
+            <FormattedMessage
+              defaultMessage="Session successfully created. Visit the {link} to manage your new
+            session."
+              id="questions.index.createSession.success"
+              values={{
+                link: <Link href="/sessions">Session List</Link>,
+              }}
+            />
+          )
+          addToast(ToastContent, {
+            appearance: 'success',
+          })
+        }
+
+        // disable creation mode
+        onCreationModeToggle()
+      } catch ({ message }) {
+        console.error(message)
+        addToast(
+          <FormattedMessage
+            defaultMessage="Unable to create session: {errorMessage}"
+            id="questions.index.createSession.error"
+            values={{ errorMessage: message }}
+          />,
+          {
+            appearance: 'error',
+            autoDismiss: false,
+          }
+        )
+      }
     }
-  }
 
   // handle deleting questions
   const onDeleteQuestions = async (confirm): Promise<any> => {

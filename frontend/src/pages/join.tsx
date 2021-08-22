@@ -1,4 +1,4 @@
-import classNames from 'classnames'
+import clsx from 'clsx'
 import _debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect } from 'react'
@@ -108,10 +108,12 @@ function Join(): React.ReactElement {
 
   const { id: sessionId, settings, activeInstances, feedbacks, expiresAt, timeLimit } = data.joinSession
 
-  const onSidebarActiveItemChange = (newSidebarActiveItem): any => (): void => {
-    setSidebarActiveItem(newSidebarActiveItem)
-    setSidebarVisible(false)
-  }
+  const onSidebarActiveItemChange =
+    (newSidebarActiveItem): any =>
+    (): void => {
+      setSidebarActiveItem(newSidebarActiveItem)
+      setSidebarVisible(false)
+    }
 
   const onToggleSidebarVisible = (): void => setSidebarVisible((prev): boolean => !prev)
 
@@ -245,7 +247,7 @@ function Join(): React.ReactElement {
           />
         ) : (
           <div
-            className={classNames('questionArea', {
+            className={clsx('questionArea', {
               inactive: sidebarActiveItem !== 'activeQuestion',
             })}
           >

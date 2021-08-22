@@ -1,5 +1,5 @@
 import React from 'react'
-import classNames from 'classnames'
+import clsx from 'clsx'
 import { Modal, Segment, Grid, Divider, Header, Button } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import { DataStorageMode } from './SessionParticipantsModal'
@@ -28,7 +28,7 @@ function DataStorage({
 
             <Grid.Row>
               <Grid.Column
-                className={classNames('option', { active: dataStorageMode === 'COMPLETE' })}
+                className={clsx('option', { active: dataStorageMode === 'COMPLETE' })}
                 onClick={(): void => onChangeDataStorageMode('COMPLETE')}
               >
                 <Header>
@@ -46,7 +46,7 @@ function DataStorage({
               </Grid.Column>
 
               <Grid.Column
-                className={classNames('option', { active: dataStorageMode === 'SECRET' })}
+                className={clsx('option', { active: dataStorageMode === 'SECRET' })}
                 onClick={(): void => onChangeDataStorageMode('SECRET')}
               >
                 <Header>

@@ -13,13 +13,6 @@ if (isProd && publicRuntimeConfig.logrocketAppID) {
   LogRocketReact = require('logrocket-react')
 }
 
-declare global {
-  interface Window {
-    INIT?: boolean
-    INIT_LR?: boolean
-  }
-}
-
 function useLogging(cfg = {}): void {
   useEffect((): void => {
     if (window.INIT) {
@@ -52,7 +45,7 @@ function useLogging(cfg = {}): void {
 
       window.INIT = true
     }
-  }, [])
+  }, [cfg])
 }
 
 export default useLogging

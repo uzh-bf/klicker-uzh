@@ -22,16 +22,29 @@ function SCCreationOptions({ disabled, value, dirty, invalid, onChange }: Props)
 
   const handleChange = (newChoices): void => onChange({ ...value, choices: newChoices })
   const onNewOption = (newOption): void => handleChange([...choices, newOption])
-  const onToggleOptionCorrect = (index: number): any => (): void => {
-    const option = choices[index]
-    handleChange(updateArrayElement(choices, index, { correct: !option.correct }))
-  }
-  const onSaveNewName = (index: number): any => ({ newName }): void => {
-    handleChange(updateArrayElement(choices, index, { name: newName }))
-  }
-  const onDeleteOption = (index: number): any => (): void => handleChange(deleteArrayElement(choices, index))
-  const onMoveUp = (index: number): any => (): void => handleChange(reorder(choices, index, index - 1))
-  const onMoveDown = (index: number): any => (): void => handleChange(reorder(choices, index, index + 1))
+  const onToggleOptionCorrect =
+    (index: number): any =>
+    (): void => {
+      const option = choices[index]
+      handleChange(updateArrayElement(choices, index, { correct: !option.correct }))
+    }
+  const onSaveNewName =
+    (index: number): any =>
+    ({ newName }): void => {
+      handleChange(updateArrayElement(choices, index, { name: newName }))
+    }
+  const onDeleteOption =
+    (index: number): any =>
+    (): void =>
+      handleChange(deleteArrayElement(choices, index))
+  const onMoveUp =
+    (index: number): any =>
+    (): void =>
+      handleChange(reorder(choices, index, index - 1))
+  const onMoveDown =
+    (index: number): any =>
+    (): void =>
+      handleChange(reorder(choices, index, index + 1))
 
   return (
     <div className="SCCreationOptions">

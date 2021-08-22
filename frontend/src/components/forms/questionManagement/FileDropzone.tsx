@@ -44,54 +44,52 @@ function FileDropzone({ disabled, files, onChangeFiles }: Props): React.ReactEle
     onDrop,
   })
 
-  const previews = files.map(
-    (file, index): React.ReactElement => {
-      const imageSrc = `${publicRuntimeConfig.s3root}/${file.name}`
-      return (
-        <div className="imagePreview" key={file.id || index}>
-          <Card>
-            <Image crossOrigin="anonymous" height="auto" src={file.preview || imageSrc} width="100%" />
-            <Card.Content>
-              <Input
-                fluid
-                name="description"
-                placeholder="Description..."
-                value={file.description}
-                onChange={(_, { value }): void =>
-                  onChangeFiles(
-                    files.map((existingFile): any => {
-                      if (existingFile.id === file.id) {
-                        return Object.assign(existingFile, {
-                          description: value,
-                        })
-                      }
-                      return existingFile
-                    })
-                  )
+  const previews = files.map((file, index): React.ReactElement => {
+    const imageSrc = `${publicRuntimeConfig.s3root}/${file.name}`
+    return (
+      <div className="imagePreview" key={file.id || index}>
+        <Card>
+          <Image crossOrigin="anonymous" height="auto" src={file.preview || imageSrc} width="100%" />
+          <Card.Content>
+            <Input
+              fluid
+              name="description"
+              placeholder="Description..."
+              value={file.description}
+              onChange={(_, { value }): void =>
+                onChangeFiles(
+                  files.map((existingFile): any => {
+                    if (existingFile.id === file.id) {
+                      return Object.assign(existingFile, {
+                        description: value,
+                      })
+                    }
+                    return existingFile
+                  })
+                )
+              }
+            />
+          </Card.Content>
+          <Card.Content extra>
+            <Button
+              basic
+              color="red"
+              disabled={disabled}
+              type="button"
+              onClick={(): void => {
+                if (!disabled) {
+                  onChangeFiles(files.filter((_, ix): boolean => ix !== index))
                 }
-              />
-            </Card.Content>
-            <Card.Content extra>
-              <Button
-                basic
-                color="red"
-                disabled={disabled}
-                type="button"
-                onClick={(): void => {
-                  if (!disabled) {
-                    onChangeFiles(files.filter((_, ix): boolean => ix !== index))
-                  }
-                }}
-              >
-                <Icon name="trash" />
-                <FormattedMessage defaultMessage="Delete" id="fileDropzone.button.delete" />
-              </Button>
-            </Card.Content>
-          </Card>
-        </div>
-      )
-    }
-  )
+              }}
+            >
+              <Icon name="trash" />
+              <FormattedMessage defaultMessage="Delete" id="fileDropzone.button.delete" />
+            </Button>
+          </Card.Content>
+        </Card>
+      </div>
+    )
+  })
 
   useEffect((): void => {
     // Make sure to revoke the data uris to avoid memory leaks

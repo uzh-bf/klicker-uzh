@@ -1,5 +1,5 @@
 import React from 'react'
-import classNames from 'classnames'
+import clsx from 'clsx'
 import _isFinite from 'lodash/isFinite'
 import { Icon } from 'semantic-ui-react'
 import { QUESTION_GROUPS } from '../../constants'
@@ -37,7 +37,7 @@ function EvaluationListItem({
   showGraph,
 }: Props): React.ReactElement {
   return (
-    <div className={classNames('evaluationListItem', { correct, reverse })}>
+    <div className={clsx('evaluationListItem', { correct, reverse })}>
       {color && (
         <div className="colorSquare">
           <Icon name="square" />

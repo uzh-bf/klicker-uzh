@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import classNames from 'classnames'
+import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { FormattedMessage } from 'react-intl'
 import { Form, Button } from 'semantic-ui-react'
@@ -80,7 +80,7 @@ function FeedbackArea({
   }
 
   return (
-    <div className={classNames('feedbackArea', { active })}>
+    <div className={clsx('feedbackArea', { active })}>
       <h1 className="header">Feedback-Channel</h1>
 
       {isConfusionBarometerActive && (
