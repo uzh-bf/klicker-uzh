@@ -1,102 +1,70 @@
 {
-  "env":{
-     "development":{
-        "presets":[
-           [
-              "next/babel",
-              {
-                 "preset-env":{
-                    "targets":{
-                       "browsers":[
-                          "> 0.25%",
-                          "not dead"
-                       ]
-                    }
-                 },
-                 "styled-jsx":{
-                    "plugins":[
-                       "styled-jsx-plugin-sass"
-                    ]
-                 }
-              },
-
-           ]
-        ],
-        "plugins":[
-           "inline-dotenv",
-           "add-react-displayname"
-        ]
-     },
-     "production":{
-        "presets":[
-           [
-              "next/babel",
-              {
-                 "preset-env":{
-                    "targets":{
-                       "browsers":[
-                          "> 0.25%",
-                          "not dead"
-                       ]
-                    }
-                 },
-                 "styled-jsx":{
-                    "plugins":[
-                       "styled-jsx-plugin-sass"
-                    ]
-                 }
-              },
-           ]
-        ],
-        "plugins":[
-           [
-              "lodash",
-              {
-                 "id":[
-                    "lodash",
-                    "recompose",
-                    "semantic-ui-react",
-                 ]
+  "env": {
+    "development": {
+      "presets": [
+        [
+          "next/babel",
+          {
+            "preset-env": {
+              "targets": {
+                "browsers": ["> 0.25%", "not dead"]
               }
-           ],
-           "transform-inline-environment-variables",
-           "add-react-displayname",
-           [
-              "react-intl",
-              {
-                  "idInterpolationPattern": "[sha512:contenthash:base64:6]",
-                  "extractFromFormatMessageCall": true,
-                  "ast": true
-              }
-           ]
+            },
+            "styled-jsx": {
+              "plugins": ["styled-jsx-plugin-sass"]
+            }
+          }
         ]
-     },
-     "test":{
-        "presets":[
-           [
-
-              "@babel/preset-env",
-              {
-                 "modules":"commonjs"
-              },
-           ],
-           [
-              "next/babel",
-              {
-                 "preset-env":{
-                    "modules":"commonjs"
-                 },
-                 "styled-jsx":{
-                    "plugins":[
-                       "styled-jsx-plugin-sass"
-                    ]
-                 }
+      ],
+      "plugins": ["inline-dotenv"]
+    },
+    "production": {
+      "presets": [
+        [
+          "next/babel",
+          {
+            "preset-env": {
+              "targets": {
+                "browsers": ["> 0.25%", "not dead"]
               }
-           ]
+            },
+            "styled-jsx": {
+              "plugins": ["styled-jsx-plugin-sass"]
+            },
+            "lodash": {
+              "id": ["lodash", "recompose", "semantic-ui-react"]
+            },
+            "react-intl": {
+              "idInterpolationPattern": "[sha512:contenthash:base64:6]",
+              "extractFromFormatMessageCall": true,
+              "ast": true
+            }
+          }
+        ]
+      ],
+      "plugins": ["transform-inline-environment-variables"]
+    },
+    "test": {
+      "presets": [
+        [
+          "@babel/preset-env",
+          {
+            "modules": "commonjs"
+          }
         ],
-        "plugins":[
-           "import-graphql"
+        [
+          "next/babel",
+          {
+            "preset-env": {
+              "modules": "commonjs"
+            },
+            "styled-jsx": {
+              "plugins": ["styled-jsx-plugin-sass"]
+            }
+          }
         ]
-     }
+      ],
+      "plugins": ["import-graphql"]
+    }
   }
 }
