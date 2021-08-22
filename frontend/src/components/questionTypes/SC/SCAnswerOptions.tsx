@@ -1,5 +1,5 @@
 import React from 'react'
-import classNames from 'classnames'
+import clsx from 'clsx'
 import { Button } from 'semantic-ui-react'
 
 interface Props {
@@ -24,7 +24,7 @@ function SCAnswerOptions({ value, disabled, options, onChange }: Props): React.R
     <div className="options">
       {options.map(
         (option, index): React.ReactElement => (
-          <div className={classNames('option', { active: value.includes(index) })} key={option.id}>
+          <div className={clsx('option', { active: value.includes(index) })} key={option.id}>
             <Button fluid disabled={disabled} onClick={onChange(index)}>
               {option.name}
             </Button>

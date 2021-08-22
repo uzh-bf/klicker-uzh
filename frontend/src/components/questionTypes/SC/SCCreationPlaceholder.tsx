@@ -1,5 +1,5 @@
 import React, { RefObject, useState } from 'react'
-import classNames from 'classnames'
+import clsx from 'clsx'
 import { Button, Icon } from 'semantic-ui-react'
 import styles from './styles'
 
@@ -45,12 +45,12 @@ function SCCreationPlaceholder({ handleSave }: Props): React.ReactElement {
   }
 
   return (
-    <div className={classNames('option', { inputMode })}>
+    <div className={clsx('option', { inputMode })}>
       <button className="leftAction" disabled={inputMode} type="button" onClick={onInputModeToggle}>
         {inputMode ? <Icon name="trash" /> : <Icon name="plus" />}
       </button>
 
-      <button className={classNames('toggle', { correct })} type="button" onClick={onCorrectToggle}>
+      <button className={clsx('toggle', { correct })} type="button" onClick={onCorrectToggle}>
         {correct ? <Icon name="checkmark" /> : <Icon name="remove" />}
       </button>
 

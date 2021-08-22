@@ -1,5 +1,5 @@
 import React from 'react'
-import classNames from 'classnames'
+import clsx from 'clsx'
 import { Button, Icon } from 'semantic-ui-react'
 
 interface Props {
@@ -15,7 +15,7 @@ const defaultProps = {
 function Collapser({ children, collapsed, handleCollapseToggle }: Props): React.ReactElement {
   return (
     <div className="collapser">
-      <div className={classNames('content', { collapsed })}>{children}</div>
+      <div className={clsx('content', { collapsed })}>{children}</div>
       <div className="collapse">
         <Button basic icon size="tiny" onClick={handleCollapseToggle}>
           <Icon name={collapsed ? 'angle double down' : 'angle double up'} />

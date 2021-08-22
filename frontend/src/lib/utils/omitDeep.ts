@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-use-before-define, no-use-before-define */
+/* eslint-disable no-use-before-define */
 
 // https://gist.github.com/Billy-/d94b65998501736bfe6521eadc1ab538
 
@@ -27,5 +27,3 @@ export function omitDeepArrayWalk(arr, key): any[] {
     return val
   })
 }
-
-export default omitDeep

@@ -42,15 +42,17 @@ function TableChart({
 
   const sortedData = sortDirection === 'ascending' ? _sortBy(data, sortBy) : _sortBy(data, sortBy).reverse()
 
-  const onSort = (clickedColumn: string): any => (): void => {
-    // if the same column as previously active is clicked, reverse the sort direction
-    if (sortBy === clickedColumn) {
-      setSortDirection(sortDirection === 'ascending' ? 'descending' : 'ascending')
-    }
+  const onSort =
+    (clickedColumn: string): any =>
+    (): void => {
+      // if the same column as previously active is clicked, reverse the sort direction
+      if (sortBy === clickedColumn) {
+        setSortDirection(sortDirection === 'ascending' ? 'descending' : 'ascending')
+      }
 
-    // otherwise update the property we sort by
-    setSortBy(clickedColumn)
-  }
+      // otherwise update the property we sort by
+      setSortBy(clickedColumn)
+    }
 
   return (
     <div className="tableChart">

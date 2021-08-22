@@ -38,9 +38,11 @@ function reducer(state, action): any {
 function useSelection(): [any, any, any, any] {
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE)
 
-  const onSelectItem = (id, item): any => (extra): void => {
-    dispatch({ type: 'SELECT', id, item: { ...item, ...extra } })
-  }
+  const onSelectItem =
+    (id, item): any =>
+    (extra): void => {
+      dispatch({ type: 'SELECT', id, item: { ...item, ...extra } })
+    }
   const onSelectItems = (items): any => {
     dispatch({ type: 'SELECT_BATCH', items })
   }

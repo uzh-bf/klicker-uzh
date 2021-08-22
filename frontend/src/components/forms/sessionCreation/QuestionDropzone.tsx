@@ -1,5 +1,5 @@
 import React from 'react'
-import classNames from 'classnames'
+import clsx from 'clsx'
 import { useDrop } from 'react-dnd'
 import { Icon } from 'semantic-ui-react'
 
@@ -18,10 +18,7 @@ function QuestionDropzone({ onDrop }: Props): React.ReactElement {
   })
 
   return (
-    <div
-      className={classNames('dropzone', { canDrop: collectedProps.canDrop, isOver: collectedProps.isOver })}
-      ref={drop}
-    >
+    <div className={clsx('dropzone', { canDrop: collectedProps.canDrop, isOver: collectedProps.isOver })} ref={drop}>
       <Icon name="plus" />
 
       <style jsx>{`
