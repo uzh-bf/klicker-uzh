@@ -89,7 +89,7 @@ function BarChart({ isSolutionShown, data, isColored, totalResponses, questionTy
           dataKey="count"
           isAnimationActive={false}
           // HACK: don't animate as it causes labels to disappear
-          maxBarSize="5rem"
+          maxBarSize={100}
         >
           <LabelList
             dataKey="labelOut"
