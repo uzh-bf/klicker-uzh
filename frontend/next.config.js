@@ -3,7 +3,7 @@
 // const webpack = require('webpack')
 // const withCSS = require('@zeit/next-css')
 // const withSourceMaps = require('@zeit/next-source-maps')()
-const { PHASE_DEVELOPMENT_SERVER } = require('next/constants')
+const { PHASE_PRODUCTION_BUILD } = require('next/constants')
 // const SentryWebpackPlugin = require('@sentry/webpack-plugin')
 
 const CFG = require('./src/klicker.conf.js')
@@ -94,7 +94,7 @@ module.exports = (phase) => {
         SERVICES_CFG.sentry.org &&
         SERVICES_CFG.sentry.project &&
         SERVICES_CFG.sentry.authToken &&
-        process.env.NODE_ENV === 'production'
+        PHASE_PRODUCTION_BUILD
       )
         webpackConfig.plugins.push(
           new SentryWebpackPlugin({
@@ -150,6 +150,13 @@ module.exports = (phase) => {
   //   ...config,
   // })
   // }
+
+  if (PHASE_PRODUCTION_BUILD) {
+    const withBundleAnalyzer = require('@next/bundle-analyzer')({
+      enabled: process.env.ANALYZE === 'true',
+    })
+    config = withBundleAnalyzer(config)
+  }
 
   return config
 }
