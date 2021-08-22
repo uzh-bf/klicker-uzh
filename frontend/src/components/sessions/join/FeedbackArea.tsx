@@ -4,8 +4,8 @@ import dayjs from 'dayjs'
 import { FormattedMessage } from 'react-intl'
 import { Form, Button } from 'semantic-ui-react'
 
-import ConfusionSlider from '../../confusion/ConfusionSlider'
-import Feedback from '../../feedbacks/Feedback'
+import ConfusionSlider from '../../interaction/confusion/ConfusionSlider'
+import Feedback from '../../interaction/feedbacks/Feedback'
 
 interface Props {
   active: boolean
