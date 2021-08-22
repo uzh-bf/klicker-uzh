@@ -7,6 +7,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend'
 import { DndProvider } from 'react-dnd'
 import { ToastProvider } from 'react-toast-notifications'
 import { createIntl, createIntlCache, RawIntlProvider } from 'react-intl'
+import Head from 'next/head'
 
 import '../lib/semantic/dist/semantic.css'
 import '../globals.css'
@@ -93,6 +94,9 @@ class Klicker extends App<Props> {
 
     return (
       <>
+        <Head>
+          <meta content="width=device-width, initial-scale=1" name="viewport" />
+        </Head>
         <DndProvider backend={HTML5Backend}>
           <RawIntlProvider value={intl}>
             <ToastProvider autoDismiss>
