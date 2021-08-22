@@ -83,25 +83,13 @@ function Join(): React.ReactElement {
 
   if (loading || error || !data.joinSession || data.joinSession.status === 'COMPLETED') {
     return (
-      <div className="noSession">
+      <div className="p-4 font-bold noSession">
         {extraMessage && <Message error>{extraMessage}</Message>}
-        <Button icon="refresh" onClick={(): void => window.location.reload()} />
+        <Button className="!mb-4 !mr-4" icon="refresh" onClick={(): void => window.location.reload()} />
         <FormattedMessage
           defaultMessage="No session active. Please reload the page once a session has been started."
           id="joinSession.noSessionActive"
         />
-
-        <style jsx>{`
-          .noSession {
-            padding: 1rem;
-            font-weight: bold;
-
-            :global(button) {
-              margin-right: 1rem;
-              margin-bottom: 1rem;
-            }
-          }
-        `}</style>
       </div>
     )
   }
