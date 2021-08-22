@@ -117,9 +117,6 @@ class Klicker extends App<Props> {
 
     return (
       <>
-        <Head>
-          <meta content="width=device-width, initial-scale=1" name="viewport" />
-        </Head>
         <DndProvider backend={HTML5Backend}>
           <RawIntlProvider value={intl}>
             <ToastProvider autoDismiss>

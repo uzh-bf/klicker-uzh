@@ -31,12 +31,13 @@ class IntlDocument extends Document<Props> {
     return (
       <Html lang={this.props.locale}>
         <Head>
+          <meta
+            content="The KlickerUZH is an open-source instant-class-response system that supports the interaction between speakers and their audience."
+            name="description"
+          />
+          <meta content="width=device-width, initial-scale=1" name="viewport" />
           <meta content="text/html; charset=utf-8" httpEquiv="Content-type" />
           <meta content="IE=Edge" httpEquiv="X-UA-Compatible" />
-          <script
-            crossOrigin="anonymous"
-            src="https://polyfill.io/v3/polyfill.min.js?flags=gated&features=default%2CIntl%2CArray.prototype.includes%2CString.prototype.repeat%2CSymbol%2CSymbol.iterator"
-          />
         </Head>
         <body>
           <Main />

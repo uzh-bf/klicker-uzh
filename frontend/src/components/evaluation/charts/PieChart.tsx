@@ -47,11 +47,11 @@ function PieChart({ isSolutionShown, data, totalResponses }: Props): React.React
         <Pie
           labelLine
           data={processedData}
+          dataKey="count"
           fill="#8884d8"
           innerRadius={5}
           isAnimationActive={false}
           nameKey="value"
-          valueKey="count"
         >
           <LabelList
             dataKey="labelOut"
