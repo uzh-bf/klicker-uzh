@@ -48,6 +48,7 @@ function FeedbackChannel({
 }: Props) {
   const [showResolved, setShowResolved] = useState(false)
   const [showOpen, setShowOpen] = useState(true)
+  const [sortBy, setSortBy] = useState('upvotes')
 
   useEffect((): void => {
     if (subscribeToMore) {
@@ -66,7 +67,7 @@ function FeedbackChannel({
         />
       </div>
 
-      <div className="flex flex-col mt-4 md:flex-row">
+      {/* <div className="flex flex-col mt-4 md:flex-row">
         <div>
           <Checkbox
             toggle
@@ -86,19 +87,28 @@ function FeedbackChannel({
             onChange={handlePublicToggle}
           />
         </div>
-      </div>
+      </div> */}
 
-      <div>
-        <Checkbox checked={showResolved} label="Resolved" onChange={() => setShowResolved((current) => !current)} />
-        <Checkbox checked={showOpen} label="Open" onChange={() => setShowOpen((current) => !current)} />
+      <div className="flex flex-row items-end justify-between mt-4">
+        <div>
+          <Checkbox checked={showResolved} label="Resolved" onChange={() => setShowResolved((current) => !current)} />
+          <Checkbox
+            checked={showOpen}
+            className="ml-4"
+            label="Open"
+            onChange={() => setShowOpen((current) => !current)}
+          />
+        </div>
+
         <Dropdown
+          selection
           disabled={feedbacks?.length === 0}
-          id="sortBy"
           options={[
-            { content: 'Recency', value: 'recency' },
-            { content: 'Upvotes', value: 'upvotes' },
+            { text: 'Sort by Recency', value: 'recency' },
+            { text: 'Sort by Upvotes', value: 'upvotes' },
           ]}
-          value="upvotes"
+          value={sortBy}
+          onChange={(_, { value }) => setSortBy(value)}
         />
       </div>
 
