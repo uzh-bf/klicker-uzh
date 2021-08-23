@@ -37,6 +37,7 @@ const {
   endSession,
   joinSession,
   runningSession,
+  pinnedFeedbacks,
   sessionByPV,
   sessionsByPV,
   startSession,
@@ -101,6 +102,7 @@ const typeDefs = [
     joinSession(shortname: String!): Session_Public
     question(id: ID!): Question
     runningSession: Session
+    pinnedFeedbacks: [Session_Feedback!]!
     session(id: ID!): Session
     sessionPublic(id: ID!): Session_PublicEvaluation
     user: User
@@ -178,6 +180,7 @@ const resolvers = {
     joinSession,
     question,
     runningSession,
+    pinnedFeedbacks,
     session,
     sessionPublic: session,
     user: authUser,
