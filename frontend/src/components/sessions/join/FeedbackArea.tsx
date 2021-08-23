@@ -143,15 +143,9 @@ function FeedbackArea({
             </h2>
 
             {feedbacks.map(
-              ({ id, content, votes }): React.ReactElement => (
+              ({ id, content }): React.ReactElement => (
                 <div className="feedback" key={id}>
-                  <Feedback
-                    alreadyVoted={false}
-                    content={content}
-                    showDelete={false}
-                    updateVotes={(): void => null}
-                    votes={votes}
-                  />
+                  <Feedback content={content} showDelete={false} />
                 </div>
               )
             )}

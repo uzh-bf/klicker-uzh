@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react'
-import { Checkbox } from 'semantic-ui-react'
+import { useEffect, useState } from 'react'
+import { Checkbox, Dropdown } from 'semantic-ui-react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 
 import Feedback from './Feedback'
@@ -20,6 +20,9 @@ interface Props {
   handleActiveToggle: any
   handleDeleteFeedback: any
   handlePublicToggle: any
+  handlePinFeedback: (id: string, pinState: boolean) => void
+  handleResolveFeedback: (id: string, resolvedState: boolean) => void
+  handleRespondToFeedback: (id: string, response: string) => void
   isActive?: boolean
   isPublic?: boolean
   subscribeToMore: any
@@ -38,13 +41,19 @@ function FeedbackChannel({
   handleActiveToggle,
   handlePublicToggle,
   handleDeleteFeedback,
+  handlePinFeedback,
+  handleResolveFeedback,
+  handleRespondToFeedback,
   subscribeToMore,
-}: Props): React.ReactElement {
+}: Props) {
+  const [showResolved, setShowResolved] = useState(false)
+  const [showOpen, setShowOpen] = useState(true)
+
   useEffect((): void => {
     if (subscribeToMore) {
       subscribeToMore()
     }
-  }, [subscribeToMore])
+  }, [])
 
   const intl = useIntl()
 
@@ -79,15 +88,38 @@ function FeedbackChannel({
         </div>
       </div>
 
+      <div>
+        <Checkbox checked={showResolved} label="Resolved" onChange={() => setShowResolved((current) => !current)} />
+        <Checkbox checked={showOpen} label="Open" onChange={() => setShowOpen((current) => !current)} />
+        <Dropdown
+          disabled={feedbacks?.length === 0}
+          id="sortBy"
+          options={[
+            { content: 'Recency', value: 'recency' },
+            { content: 'Upvotes', value: 'upvotes' },
+          ]}
+          value="upvotes"
+        />
+      </div>
+
       {isActive && (
-        <div className="mt-4">
-          {feedbacks.map(
-            ({ id, content, votes }): React.ReactElement => (
-              <div className="mt-2 first:mt-0" key={id}>
-                <Feedback content={content} votes={votes} onDelete={(): void => handleDeleteFeedback(id)} />
-              </div>
-            )
-          )}
+        <div className="mt-4 overflow-y-auto">
+          {feedbacks.map(({ id, content, createdAt, votes, resolved, pinned, responses }) => (
+            <div className="mt-2 first:mt-0" key={id}>
+              <Feedback
+                content={content}
+                createdAt={createdAt}
+                pinned={pinned}
+                resolved={resolved}
+                responses={responses}
+                votes={votes}
+                onDelete={() => handleDeleteFeedback(id)}
+                onPinFeedback={(pinState) => handlePinFeedback(id, pinState)}
+                onResolveFeedback={(resolvedState) => handleResolveFeedback(id, resolvedState)}
+                onRespondToFeedback={(response) => handleRespondToFeedback(id, response)}
+              />
+            </div>
+          ))}
         </div>
       )}
     </div>
