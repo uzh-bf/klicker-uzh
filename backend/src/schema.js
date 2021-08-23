@@ -23,6 +23,9 @@ const {
 } = require('./resolvers/questionInstances')
 const {
   addFeedback,
+  pinFeedback,
+  resolveFeedback,
+  respondToFeedback,
   deleteFeedback,
   addConfusionTS,
   allRunningSessions,
@@ -110,6 +113,9 @@ const typeDefs = [
     activateBlockById(sessionId: ID!, blockId: ID!): Session!
     addConfusionTS(fp: ID, sessionId: ID!, difficulty: Int!, speed: Int!): String!
     addFeedback(fp: ID, sessionId: ID!, content: String!): Session_Feedback!
+    pinFeedback(sessionId: ID!, feedbackId: ID!, pinState: Boolean!): ID!
+    respondToFeedback(sessionId: ID!, feedbackId: ID!, response: String!): ID!
+    resolveFeedback(sessionId: ID!, feedbackId: ID!, resolvedState: Boolean!): ID!
     addResponse(fp: ID, instanceId: ID!, response: QuestionInstance_ResponseInput!): String!
     archiveQuestions(ids: [ID!]!): [Question!]!
     changePassword(newPassword: String!): User!
@@ -181,6 +187,9 @@ const resolvers = {
     activateAccount,
     archiveQuestions,
     addFeedback,
+    pinFeedback,
+    resolveFeedback,
+    respondToFeedback,
     deleteFeedback,
     addConfusionTS,
     addResponse,

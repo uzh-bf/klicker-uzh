@@ -53,6 +53,78 @@ const addFeedback = async ({ sessionId, content }) => {
   return savedFeedbackWithId
 }
 
+function assertUserMatch(session, userId) {
+  // ensure the user is authorized to modify this session
+  if (!session.user.equals(userId)) {
+    throw new ForbiddenError('UNAUTHORIZED')
+  }
+}
+
+async function pinFeedback({ sessionId, feedbackId, userId, pinState }) {
+  const session = await getRunningSession(sessionId)
+
+  assertUserMatch(session, userId)
+
+  await SessionModel.findOneAndUpdate(
+    {
+      _id: sessionId,
+      'feedbacks._id': feedbackId,
+    },
+    {
+      $set: {
+        'feedbacks.$.pinned': pinState,
+      },
+    }
+  )
+
+  return feedbackId
+}
+
+async function resolveFeedback({ sessionId, feedbackId, userId, resolvedState }) {
+  const session = await getRunningSession(sessionId)
+
+  assertUserMatch(session, userId)
+
+  await SessionModel.findOneAndUpdate(
+    {
+      _id: sessionId,
+      'feedbacks._id': feedbackId,
+    },
+    {
+      $set: resolvedState
+        ? {
+            'feedbacks.$.resolved': resolvedState,
+            'feedbacks.$.pinned': false,
+          }
+        : {
+            'feedbacks.$.resolved': resolvedState,
+          },
+    }
+  )
+
+  return feedbackId
+}
+
+async function respondToFeedback({ sessionId, feedbackId, userId, response }) {
+  const session = await getRunningSession(sessionId)
+
+  assertUserMatch(session, userId)
+
+  await SessionModel.findOneAndUpdate(
+    {
+      _id: sessionId,
+      'feedbacks._id': feedbackId,
+    },
+    {
+      $push: {
+        'feedbacks.$.responses': { content: response },
+      },
+    }
+  )
+
+  return feedbackId
+}
+
 /**
  * Delete a feedback from a session
  * @param {*} param0
@@ -520,4 +592,7 @@ module.exports = {
   joinSession,
   resetQuestionBlock,
   loginParticipant,
+  pinFeedback,
+  resolveFeedback,
+  respondToFeedback,
 }
