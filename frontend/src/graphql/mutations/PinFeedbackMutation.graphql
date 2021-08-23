@@ -1,0 +1,3 @@
+mutation PinFeedback($sessionId: ID!, $feedbackId: ID!, $pinState: Boolean!) {
+  pinFeedback(sessionId: $sessionId, feedbackId: $feedbackId, pinState: $pinState)
+}

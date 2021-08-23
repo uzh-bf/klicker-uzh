@@ -9,6 +9,9 @@ import FeedbackAddedSubscription from '../../graphql/subscriptions/FeedbackAdded
 import ConfusionAddedSubscription from '../../graphql/subscriptions/ConfusionAddedSubscription.graphql'
 import RunningSessionQuery from '../../graphql/queries/RunningSessionQuery.graphql'
 import UpdateSessionSettingsMutation from '../../graphql/mutations/UpdateSessionSettingsMutation.graphql'
+import PinFeedbackMutation from '../../graphql/mutations/PinFeedbackMutation.graphql'
+import ResolveFeedbackMutation from '../../graphql/mutations/ResolveFeedbackMutation.graphql'
+import RespondToFeedbackMutation from '../../graphql/mutations/RespondToFeedbackMutation.graphql'
 
 interface Props {
   sessionId: string
@@ -31,6 +34,9 @@ function AudienceInteraction({
 }: Props) {
   const [deleteFeedback, { loading: isDeleteFeedbackLoading }] = useMutation(DeleteFeedbackMutation)
   const [updateSettings, { loading: isUpdateSettingsLoading }] = useMutation(UpdateSessionSettingsMutation)
+  const [pinFeedback, { loading: isPinFeedbackLoading }] = useMutation(PinFeedbackMutation)
+  const [resolveFeedback, { loading: isResolveFeedbackLoading }] = useMutation(ResolveFeedbackMutation)
+  const [respondToFeedback, { loading: isRespondToFeedbackLoading }] = useMutation(RespondToFeedbackMutation)
 
   return (
     <div>
@@ -61,6 +67,21 @@ function AudienceInteraction({
                 variables: { feedbackId, sessionId },
               })
             }}
+            handlePinFeedback={(id: string, pinState: boolean) => {
+              pinFeedback({
+                refetchQueries: [{ query: RunningSessionQuery }],
+                variables: { sessionId, feedbackId: id, pinState },
+                // update(cache, { data: pinFeedback }) {
+                //   cache.modify({
+                //     fields: {
+                //       feedbacks(existingFeedbacks = []) {
+
+                //       }
+                //     }
+                //   })
+                // }
+              })
+            }}
             handlePublicToggle={(): void => {
               updateSettings({
                 refetchQueries: [{ query: RunningSessionQuery }],
@@ -70,6 +91,18 @@ function AudienceInteraction({
                     isFeedbackChannelPublic: !isFeedbackChannelPublic,
                   },
                 },
+              })
+            }}
+            handleResolveFeedback={(id: string, resolvedState: boolean) => {
+              resolveFeedback({
+                refetchQueries: [{ query: RunningSessionQuery }],
+                variables: { sessionId, feedbackId: id, resolvedState },
+              })
+            }}
+            handleRespondToFeedback={(id: string, response: string) => {
+              respondToFeedback({
+                refetchQueries: [{ query: RunningSessionQuery }],
+                variables: { sessionId, feedbackId: id, response },
               })
             }}
             isActive={isFeedbackChannelActive}

@@ -38,6 +38,13 @@ query RunningSession {
       content
       votes
       createdAt
+      pinned
+      resolved
+      responses {
+        id
+        content
+        createdAt
+      }
     }
     settings {
       isParticipantAuthenticationEnabled
