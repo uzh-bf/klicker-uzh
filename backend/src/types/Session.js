@@ -147,6 +147,18 @@ module.exports = `
     id: ID!
     content: String!
     votes: Int!
+    resolved: Boolean!
+    pinned: Boolean!
+
+    responses: [Session_FeedbackResponse!]!
+
+    createdAt: DateTime!
+  }
+
+  type Session_FeedbackResponse {
+    id: ID!
+
+    content: String!
 
     createdAt: DateTime!
   }
