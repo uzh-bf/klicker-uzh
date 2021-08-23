@@ -66,16 +66,16 @@ function Feedback({
           <p className="mb-0">{content}</p>
           <div className="flex flex-row mt-2 text-gray-500">
             <div>{dayjs(createdAt).format('DD.MM.YYYY HH:mm')}</div>
-            <div>{pinned && <Icon name="pin" />}</div>
-            {resolved && <div className="ml-4">RESOLVED</div>}
+            <div className="ml-8">{resolved ? 'RESOLVED' : 'OPEN'}</div>
+            <div className="ml-8">{pinned && <Icon name="pin" />}</div>
           </div>
         </div>
-        <div className="flex flex-col justify-between flex-initial">
-          <div className="text-gray-500">
+        <div className="flex flex-col items-end justify-between flex-initial p-2">
+          <div className="text-xl text-gray-500">
             {votes} <Icon name="thumbs up outline" />
           </div>
-          <div className="">
-            <Button basic icon className="!p-2" onClick={() => setIsEditingActive((prev) => !prev)}>
+          <div className="mt-2">
+            <Button basic icon className="!p-2" size="tiny" onClick={() => setIsEditingActive((prev) => !prev)}>
               <Icon name={isEditingActive ? 'arrow up' : 'arrow down'} />
             </Button>
           </div>
@@ -98,6 +98,7 @@ function Feedback({
                 <TextArea
                   className="h-full"
                   id="response"
+                  placeholder="Write your response here..."
                   rows={3}
                   value={formik.values.response}
                   onChange={formik.handleChange}

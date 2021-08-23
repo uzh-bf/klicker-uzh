@@ -44,7 +44,7 @@ function ConfusionBarometer({ confusionTS, isActive, handleActiveToggle, subscri
         />
       </div>
 
-      <div className="mb-4">
+      {/* <div className="mb-4">
         <Checkbox
           toggle
           checked={isActive}
@@ -52,7 +52,7 @@ function ConfusionBarometer({ confusionTS, isActive, handleActiveToggle, subscri
           label={intl.formatMessage(messages.activated)}
           onChange={handleActiveToggle}
         />
-      </div>
+      </div> */}
 
       {isActive && <ConfusionCharts confusionTS={confusionTS} />}
 

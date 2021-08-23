@@ -42,8 +42,8 @@ function AudienceInteraction({
     <div>
       <div className="flex flex-row justify-between">
         <div className="mb-4 text-2xl font-bold">Audience Interaction</div>
-        <div>
-          <Checkbox checked defaultChecked toggle label="TOGGLE" onChange={() => null} />
+        <div className="mr-2">
+          <Checkbox checked defaultChecked toggle label="Enable Audience Interaction" onChange={() => null} />
         </div>
       </div>
 
