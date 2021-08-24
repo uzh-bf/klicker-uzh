@@ -82,11 +82,11 @@ function FeedbackArea({
   return (
     <div
       className={clsx(
-        'bg-white p-2 md:p-4 flex-col md:border-primary md:border-solid md:border',
-        active ? 'flex flex-1' : 'hidden'
+        'bg-white p-2 md:p-4 flex-col md:border-primary md:border-solid md:border flex-1 md:flex',
+        active ? 'flex' : 'hidden'
       )}
     >
-      <h1 className="hidden md:block header">Feedback-Channel</h1>
+      <h1>Feedback-Channel</h1>
 
       {isFeedbackChannelActive && (
         <div>
