@@ -54,6 +54,7 @@ query JoinSession($shortname: String!) {
       content
       votes
       pinned
+      resolved
       createdAt
       responses {
         id
