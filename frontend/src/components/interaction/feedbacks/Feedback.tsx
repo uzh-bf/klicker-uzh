@@ -1,10 +1,8 @@
 import { useState } from 'react'
 import dayjs from 'dayjs'
-import { useMutation } from '@apollo/client'
 import { Icon, Button, TextArea, Form } from 'semantic-ui-react'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
-import PinFeedbackMutation from '../../../graphql/mutations/PinFeedbackMutation.graphql'
 
 interface IFeedbackResponse {
   id: string
@@ -22,7 +20,8 @@ interface IFeedback {
 }
 
 interface Props extends IFeedback {
-  onDelete?: any
+  onDeleteFeedback?: () => void
+  onDeleteResponse?: () => void
   onPinFeedback: (pinState: boolean) => void
   onResolveFeedback: (resolvedState: boolean) => void
   onRespondToFeedback: (response: string) => void
@@ -34,17 +33,19 @@ const defaultProps = {
 
 function Feedback({
   content,
-  onDelete,
   createdAt,
   votes,
   resolved,
   pinned,
   responses,
+  onDeleteFeedback,
+  onDeleteResponse,
   onPinFeedback,
   onResolveFeedback,
   onRespondToFeedback,
 }: Props) {
   const [isEditingActive, setIsEditingActive] = useState(false)
+  const [isBeingDeleted, setIsBeingDeleted] = useState(false)
 
   const formik = useFormik({
     initialValues: {
@@ -75,9 +76,27 @@ function Feedback({
             {votes} <Icon name="thumbs up outline" />
           </div>
           <div className="mt-2">
-            <Button basic icon className="!p-2" size="tiny" onClick={() => setIsEditingActive((prev) => !prev)}>
-              <Icon name={isEditingActive ? 'arrow up' : 'arrow down'} />
-            </Button>
+            <Button
+              basic={!isBeingDeleted}
+              className="!p-2 !mr-2"
+              color={isBeingDeleted ? 'red' : undefined}
+              icon="trash"
+              size="tiny"
+              onClick={() => {
+                if (isBeingDeleted) {
+                  onDeleteFeedback()
+                } else {
+                  setIsBeingDeleted(true)
+                }
+              }}
+            />
+            <Button
+              basic
+              className="!p-2"
+              icon={isEditingActive ? 'arrow up' : 'arrow down'}
+              size="tiny"
+              onClick={() => setIsEditingActive((prev) => !prev)}
+            />
           </div>
         </div>
       </div>
@@ -86,7 +105,16 @@ function Feedback({
         <div className="p-4 border border-t-0 border-solid border-primary">
           <div className="mb-4">
             {responses.map((response) => (
-              <div className="p-2 mt-2 border border-solid first:mt-0" key={response.createdAt}>
+              <div className="relative p-2 mt-2 border border-solid first:mt-0" key={response.createdAt}>
+                <div>
+                  <Button
+                    basic
+                    className="absolute top-2 right-2 !mr-0 !p-2"
+                    icon="trash"
+                    size="tiny"
+                    onClick={() => onDeleteResponse()}
+                  />
+                </div>
                 <p className="mb-0">{response.content}</p>
                 <div className="mt-2 text-gray-500">{dayjs(response.createdAt).format('DD.MM.YYYY HH:mm')}</div>
               </div>

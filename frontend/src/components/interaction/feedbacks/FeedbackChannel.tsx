@@ -114,7 +114,7 @@ function FeedbackChannel({
 
       {isActive && (
         <div className="mt-4 overflow-y-auto">
-          {feedbacks.map(({ id, content, createdAt, votes, resolved, pinned, responses }) => (
+          {sortedFeedbacks.map(({ id, content, createdAt, votes, resolved, pinned, responses }) => (
             <div className="mt-2 first:mt-0" key={id}>
               <Feedback
                 content={content}
@@ -123,7 +123,7 @@ function FeedbackChannel({
                 resolved={resolved}
                 responses={responses}
                 votes={votes}
-                onDelete={() => handleDeleteFeedback(id)}
+                onDeleteFeedback={() => handleDeleteFeedback(id)}
                 onPinFeedback={(pinState) => handlePinFeedback(id, pinState)}
                 onResolveFeedback={(resolvedState) => handleResolveFeedback(id, resolvedState)}
                 onRespondToFeedback={(response) => handleRespondToFeedback(id, response)}

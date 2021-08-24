@@ -1,9 +1,9 @@
 import React from 'react'
 import { useMutation } from '@apollo/client'
 import { Checkbox } from 'semantic-ui-react'
+
 import ConfusionBarometer from './confusion/ConfusionBarometer'
 import FeedbackChannel from './feedbacks/FeedbackChannel'
-
 import DeleteFeedbackMutation from '../../graphql/mutations/DeleteFeedbackMutation.graphql'
 import FeedbackAddedSubscription from '../../graphql/subscriptions/FeedbackAddedSubscription.graphql'
 import ConfusionAddedSubscription from '../../graphql/subscriptions/ConfusionAddedSubscription.graphql'
@@ -41,29 +41,36 @@ function AudienceInteraction({
   return (
     <div>
       <div className="flex flex-row justify-between">
-        <div className="mb-4 text-2xl font-bold">Audience Interaction</div>
+        <div className="text-2xl font-bold">Audience Interaction</div>
         <div className="mr-2">
-          <Checkbox checked defaultChecked toggle label="Enable Audience Interaction" onChange={() => null} />
-        </div>
-      </div>
-
-      <div className="flex flex-col md:flex-row">
-        <div className="flex-1 mb-8 md:mb-0 md:pr-8">
-          <FeedbackChannel
-            feedbacks={feedbacks}
-            handleActiveToggle={(): void => {
+          <Checkbox
+            toggle
+            checked={isFeedbackChannelActive}
+            label="Enable Audience Interaction"
+            onChange={(): void => {
               updateSettings({
                 refetchQueries: [{ query: RunningSessionQuery }],
                 variables: {
                   sessionId,
                   settings: {
                     isFeedbackChannelActive: !isFeedbackChannelActive,
+                    isFeedbackChannelPublic: true,
                   },
                 },
               })
             }}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col md:flex-row">
+        <div className="flex-1 mb-8 md:mb-0">
+          <FeedbackChannel
+            feedbacks={feedbacks}
+            handleActiveToggle={() => null}
             handleDeleteFeedback={(feedbackId: string): void => {
               deleteFeedback({
+                refetchQueries: [{ query: RunningSessionQuery }],
                 variables: { feedbackId, sessionId },
               })
             }}
@@ -126,7 +133,7 @@ function AudienceInteraction({
           />
         </div>
 
-        <div className="flex-1 md:pl-4 max-w-[40%]">
+        {/* <div className="flex-1 md:pl-4 max-w-[40%]">
           <ConfusionBarometer
             confusionTS={confusionTS}
             handleActiveToggle={(): void => {
@@ -158,7 +165,7 @@ function AudienceInteraction({
               })
             }}
           />
-        </div>
+        </div> */}
       </div>
     </div>
   )
