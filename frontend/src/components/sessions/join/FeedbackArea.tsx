@@ -114,12 +114,13 @@ function FeedbackArea({
           <div>
             <div>
               {feedbacks.map(
-                ({ id, content, votes, responses, createdAt, pinned }): React.ReactElement => (
+                ({ id, content, votes, responses, createdAt, pinned, resolved }): React.ReactElement => (
                   <div className="mt-2 first:mt-0" key={id}>
                     <PublicFeedback
                       content={content}
                       createdAt={createdAt}
                       pinned={pinned}
+                      resolved={resolved}
                       responses={responses}
                       votes={votes}
                     />
