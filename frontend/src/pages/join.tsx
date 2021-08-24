@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@apollo/client'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Message } from 'semantic-ui-react'
+import _sortBy from 'lodash/sortBy'
 
 import { withApollo } from '../lib/apollo'
 import StudentLayout from '../components/layouts/StudentLayout'
@@ -95,6 +96,8 @@ function Join(): React.ReactElement {
   }
 
   const { id: sessionId, settings, activeInstances, feedbacks, expiresAt, timeLimit } = data.joinSession
+
+  const sortedFeedbacks = _sortBy(feedbacks, ['pinned', 'votes', 'createdAt']).reverse()
 
   const onSidebarActiveItemChange =
     (newSidebarActiveItem): any =>
@@ -243,10 +246,11 @@ function Join(): React.ReactElement {
           </div>
         )}
 
-        {(settings.isConfusionBarometerActive || settings.isFeedbackChannelActive) && (
+        {/* {(settings.isConfusionBarometerActive || settings.isFeedbackChannelActive) && ( */}
+        {settings.isFeedbackChannelActive && (
           <FeedbackArea
             active={sidebarActiveItem === 'feedbackChannel'}
-            feedbacks={feedbacks}
+            feedbacks={sortedFeedbacks}
             handleNewConfusionTS={onNewConfusionTS}
             handleNewFeedback={onNewFeedback}
             isConfusionBarometerActive={settings.isConfusionBarometerActive}
