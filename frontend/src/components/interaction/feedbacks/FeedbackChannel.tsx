@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Checkbox, Dropdown, Input } from 'semantic-ui-react'
+import { Checkbox, Dropdown, Input, Message } from 'semantic-ui-react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import _sortBy from 'lodash/sortBy'
 import * as JsSearch from 'js-search'
@@ -39,7 +39,6 @@ const defaultProps = {
 
 function FeedbackChannel({
   feedbacks,
-  isActive,
   isPublic,
   handleActiveToggle,
   handlePublicToggle,
@@ -57,7 +56,7 @@ function FeedbackChannel({
   }, [])
 
   const [searchString, setSearchString] = useState('')
-  const [showResolved, setShowResolved] = useState(false)
+  const [showResolved, setShowResolved] = useState(true)
   const [showOpen, setShowOpen] = useState(true)
   const [showUnpinned, setShowUnpinned] = useState(true)
   const [sortBy, setSortBy] = useState('upvotes')
@@ -165,27 +164,29 @@ function FeedbackChannel({
         />
       </div>
 
-      {isActive && (
-        <div className="mt-4 overflow-y-auto">
-          {sortedFeedbacks.map(({ id, content, createdAt, votes, resolved, pinned, responses }) => (
-            <div className="mt-2 first:mt-0" key={id}>
-              <Feedback
-                content={content}
-                createdAt={createdAt}
-                pinned={pinned}
-                resolved={resolved}
-                responses={responses}
-                votes={votes}
-                onDeleteFeedback={() => handleDeleteFeedback(id)}
-                onDeleteResponse={(responseId) => handleDeleteFeedbackResponse(id, responseId)}
-                onPinFeedback={(pinState) => handlePinFeedback(id, pinState)}
-                onResolveFeedback={(resolvedState) => handleResolveFeedback(id, resolvedState)}
-                onRespondToFeedback={(response) => handleRespondToFeedback(id, response)}
-              />
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="mt-4 overflow-y-auto">
+        {feedbacks.length === 0 && <Message info>No feedbacks received yet...</Message>}
+        {feedbacks.length > 0 && sortedFeedbacks.length === 0 && (
+          <Message info>No feedbacks matching your current filter selectio...</Message>
+        )}
+        {sortedFeedbacks.map(({ id, content, createdAt, votes, resolved, pinned, responses }) => (
+          <div className="mt-2 first:mt-0" key={id}>
+            <Feedback
+              content={content}
+              createdAt={createdAt}
+              pinned={pinned}
+              resolved={resolved}
+              responses={responses}
+              votes={votes}
+              onDeleteFeedback={() => handleDeleteFeedback(id)}
+              onDeleteResponse={(responseId) => handleDeleteFeedbackResponse(id, responseId)}
+              onPinFeedback={(pinState) => handlePinFeedback(id, pinState)}
+              onResolveFeedback={(resolvedState) => handleResolveFeedback(id, resolvedState)}
+              onRespondToFeedback={(response) => handleRespondToFeedback(id, response)}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
