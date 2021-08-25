@@ -125,6 +125,26 @@ async function respondToFeedback({ sessionId, feedbackId, userId, response }) {
   return feedbackId
 }
 
+async function deleteFeedbackResponse({ sessionId, feedbackId, userId, responseId }) {
+  const session = await getRunningSession(sessionId)
+
+  assertUserMatch(session, userId)
+
+  await SessionModel.findOneAndUpdate(
+    {
+      _id: sessionId,
+      'feedbacks._id': feedbackId,
+    },
+    {
+      $pull: {
+        'feedbacks.$.responses': { _id: responseId },
+      },
+    }
+  )
+
+  return feedbackId
+}
+
 /**
  * Delete a feedback from a session
  * @param {*} param0
@@ -595,4 +615,5 @@ module.exports = {
   pinFeedback,
   resolveFeedback,
   respondToFeedback,
+  deleteFeedbackResponse,
 }
