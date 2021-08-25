@@ -160,7 +160,7 @@ function FeedbackChannel({
             { text: 'Sort by Upvotes', value: 'upvotes' },
           ]}
           value={sortBy}
-          onChange={(_, { value }) => setSortBy(value)}
+          onChange={(_, { value }) => setSortBy(value as string)}
         />
       </div>
 
