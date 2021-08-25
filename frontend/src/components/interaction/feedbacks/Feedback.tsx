@@ -75,7 +75,8 @@ function Feedback({
           <div className="text-xl text-gray-500">
             {votes} <Icon name="thumbs up outline" />
           </div>
-          <div className="mt-2">
+          <div className="flex flex-row items-end mt-2">
+            {responses?.length > 0 && <div className="mr-4">{responses.length} responses given</div>}
             <Button
               basic={!isBeingDeleted}
               className="!p-2 !mr-2"
@@ -167,7 +168,10 @@ function Feedback({
                 disabled={resolved || !formik.isValid || !formik.dirty}
                 icon="send"
                 labelPosition="left"
-                onClick={() => formik.submitForm()}
+                onClick={() => {
+                  formik.submitForm()
+                  setIsEditingActive(false)
+                }}
               />
             </div>
           </div>
