@@ -3,8 +3,8 @@ import _get from 'lodash/get'
 import { defineMessages, useIntl } from 'react-intl'
 import { useRouter } from 'next/router'
 
-import ConfusionCharts from 'src/components/confusion/ConfusionCharts'
-import FeedbackTableChart from 'src/components/interaction/feedbacks/FeedbackTableChart'
+// import ConfusionCharts from 'src/components/confusion/ConfusionCharts'
+import FeedbackTableChart from '../../components/interaction/feedbacks/FeedbackTableChart'
 import { QUESTION_GROUPS, QUESTION_TYPES, SESSION_STATUS } from '../../constants'
 import EvaluationLayout from '../../components/layouts/EvaluationLayout'
 import useLogging from '../../lib/hooks/useLogging'
@@ -202,9 +202,9 @@ function Evaluation(): React.ReactElement {
                   {sessionStatus === SESSION_STATUS.COMPLETED && showFeedback && (
                     <FeedbackTableChart feedbacks={feedbacks} />
                   )}
-                  {sessionStatus === SESSION_STATUS.COMPLETED && showConfusionTS && (
+                  {/* sessionStatus === SESSION_STATUS.COMPLETED && showConfusionTS && (
                     <ConfusionCharts confusionTS={confusionTS} />
-                  )}
+                  ) */}
                 </EvaluationLayout>
               )
             }}
