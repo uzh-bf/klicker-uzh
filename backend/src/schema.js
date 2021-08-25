@@ -26,6 +26,7 @@ const {
   pinFeedback,
   resolveFeedback,
   respondToFeedback,
+  deleteFeedbackResponse,
   deleteFeedback,
   addConfusionTS,
   allRunningSessions,
@@ -117,6 +118,7 @@ const typeDefs = [
     addFeedback(fp: ID, sessionId: ID!, content: String!): Session_Feedback!
     pinFeedback(sessionId: ID!, feedbackId: ID!, pinState: Boolean!): ID!
     respondToFeedback(sessionId: ID!, feedbackId: ID!, response: String!): ID!
+    deleteFeedbackResponse(sessionId: ID!, feedbackId: ID!, responseId: ID!): ID!
     resolveFeedback(sessionId: ID!, feedbackId: ID!, resolvedState: Boolean!): ID!
     addResponse(fp: ID, instanceId: ID!, response: QuestionInstance_ResponseInput!): String!
     archiveQuestions(ids: [ID!]!): [Question!]!
@@ -193,6 +195,7 @@ const resolvers = {
     pinFeedback,
     resolveFeedback,
     respondToFeedback,
+    deleteFeedbackResponse,
     deleteFeedback,
     addConfusionTS,
     addResponse,

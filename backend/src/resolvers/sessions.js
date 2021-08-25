@@ -124,6 +124,9 @@ const resolveFeedbackMutation = (_, { sessionId, feedbackId, resolvedState }, { 
 const respondToFeedbackMutation = (_, { sessionId, feedbackId, response }, { auth }) =>
   SessionExecService.respondToFeedback({ sessionId, feedbackId, userId: auth.sub, response })
 
+const deleteFeedbackResponseMutation = (_, { sessionId, feedbackId, responseId }, { auth }) =>
+  SessionExecService.deleteFeedbackResponse({ sessionId, feedbackId, userId: auth.sub, responseId })
+
 const addConfusionTSMutation = async (parentValue, { sessionId, difficulty, speed }) => {
   await SessionExecService.addConfusionTS({ sessionId, difficulty, speed })
 
@@ -174,4 +177,5 @@ module.exports = {
   pinFeedback: pinFeedbackMutation,
   resolveFeedback: resolveFeedbackMutation,
   respondToFeedback: respondToFeedbackMutation,
+  deleteFeedbackResponse: deleteFeedbackResponseMutation,
 }
