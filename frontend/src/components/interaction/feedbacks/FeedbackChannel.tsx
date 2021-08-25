@@ -61,21 +61,38 @@ function FeedbackChannel({
   const [showOpen, setShowOpen] = useState(true)
   const [showUnpinned, setShowUnpinned] = useState(true)
   const [sortBy, setSortBy] = useState('upvotes')
+  const [searchIndex, setSearchIndex] = useState(null)
+  const [filteredFeedbacks, setFilteredFeedbacks] = useState(feedbacks)
+  const [sortedFeedbacks, setSortedFeedbacks] = useState(feedbacks)
 
-  const search = new JsSearch.Search('content')
-  search.searchIndex = new JsSearch.TfIdfSearchIndex()
-  search.indexStrategy = new JsSearch.AllSubstringsIndexStrategy()
-  search.addDocuments(feedbacks)
+  useEffect(() => {
+    const search = new JsSearch.Search('id')
+    search.searchIndex = new JsSearch.TfIdfSearchIndex()
+    search.indexStrategy = new JsSearch.AllSubstringsIndexStrategy()
+    search.tokenizer = new JsSearch.StopWordsTokenizer(new JsSearch.SimpleTokenizer())
+    search.addIndex('content')
+    search.addDocuments(feedbacks)
+    setSearchIndex(search)
+  }, [feedbacks])
 
-  const sortedFeedbacks = _sortBy(
-    feedbacks.filter((item) => {
-      if (!showResolved && item.resolved) return false
-      if (!showOpen && !item.resolved) return false
-      if (!showUnpinned && !item.pinned) return false
-      return true
-    }),
-    [sortBy]
-  )
+  useEffect(() => {
+    let results = feedbacks
+    if (searchString.length > 0) {
+      results = searchIndex.search(searchString)
+    }
+    setFilteredFeedbacks(
+      results.filter((item) => {
+        if (!showResolved && item.resolved) return false
+        if (!showOpen && !item.resolved) return false
+        if (!showUnpinned && !item.pinned) return false
+        return true
+      })
+    )
+  }, [feedbacks, searchIndex, searchString, showResolved, showOpen, showUnpinned])
+
+  useEffect(() => {
+    setSortedFeedbacks(_sortBy(filteredFeedbacks, [sortBy]))
+  }, [filteredFeedbacks, sortBy])
 
   const intl = useIntl()
 
@@ -110,26 +127,34 @@ function FeedbackChannel({
         </div>
       </div> */}
 
-      <div className="flex flex-row items-end justify-between mt-4">
-        <div>
-          <Input placeholder="Search..." value={searchString} onChange={(_, { data }) => setSearchString(data)} />
-          <Checkbox checked={showResolved} label="Resolved" onChange={() => setShowResolved((current) => !current)} />
-          <Checkbox
-            checked={showOpen}
-            className="ml-4"
-            label="Open"
-            onChange={() => setShowOpen((current) => !current)}
+      <div className="flex flex-col items-stretch justify-between mt-4 md:items-end md:flex-row">
+        <div className="flex flex-col items-end md:flex-row">
+          <Input
+            className="w-full md:w-96"
+            placeholder="Search..."
+            value={searchString}
+            onChange={(e) => setSearchString(e.target.value)}
           />
-          <Checkbox
-            checked={showUnpinned}
-            className="ml-4"
-            label="Unpinned"
-            onChange={() => setShowUnpinned((current) => !current)}
-          />
+          <div className="flex flex-row justify-between flex-initial mt-4 md:mt-0 md:ml-8">
+            <Checkbox checked={showResolved} label="Resolved" onChange={() => setShowResolved((current) => !current)} />
+            <Checkbox
+              checked={showOpen}
+              className="ml-4"
+              label="Open"
+              onChange={() => setShowOpen((current) => !current)}
+            />
+            <Checkbox
+              checked={showUnpinned}
+              className="ml-4"
+              label="Unpinned"
+              onChange={() => setShowUnpinned((current) => !current)}
+            />
+          </div>
         </div>
 
         <Dropdown
           selection
+          className="mt-4 md:mt-0"
           disabled={sortedFeedbacks?.length === 0}
           options={[
             { text: 'Sort by Recency', value: 'recency' },
