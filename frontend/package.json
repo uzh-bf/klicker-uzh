@@ -158,7 +158,7 @@
     "format": "prettier --write \"src/**/*.js\" \"src/**/*.ts\" \"src/**/*.tsx\" \"src/**/*.graphql\" \"src/**/*.json\" server.js",
     "format:ci": "prettier --list-different \"src/**/*.js\" \"src/**/*.ts\" \"src/**/*.tsx\" \"src/**/*.graphql\" \"src/**/*.json\" server.js",
     "gql-gen": "gql-gen",
-    "lint": "eslint src/ --ext .js --ext .ts --ext .tsx server.js",
+    "lint": "next lint",
     "start": "cross-env NODE_ENV=production node server.js",
     "start:inspect": "cross-env NODE_ENV=production node --inspect server.js",
     "storybook": "start-storybook -p 6006",
@@ -182,15 +182,15 @@
   "lint-staged": {
     "*.js": [
       "prettier --write",
-      "next lint"
+      "npm run lint"
     ],
     "*.ts": [
       "prettier --write",
-      "next lint"
+      "npm run lint"
     ],
     "*.tsx": [
       "prettier --write",
-      "next lint"
+      "npm run lint"
     ],
     "*.json": [
       "prettier --write"
