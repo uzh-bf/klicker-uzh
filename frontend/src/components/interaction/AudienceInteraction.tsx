@@ -1,17 +1,18 @@
 import React from 'react'
 import { useMutation } from '@apollo/client'
-import { Checkbox } from 'semantic-ui-react'
+import { Checkbox, Message } from 'semantic-ui-react'
 
-import ConfusionBarometer from './confusion/ConfusionBarometer'
+// import ConfusionBarometer from './confusion/ConfusionBarometer'
 import FeedbackChannel from './feedbacks/FeedbackChannel'
 import DeleteFeedbackMutation from '../../graphql/mutations/DeleteFeedbackMutation.graphql'
 import FeedbackAddedSubscription from '../../graphql/subscriptions/FeedbackAddedSubscription.graphql'
-import ConfusionAddedSubscription from '../../graphql/subscriptions/ConfusionAddedSubscription.graphql'
+// import ConfusionAddedSubscription from '../../graphql/subscriptions/ConfusionAddedSubscription.graphql'
 import RunningSessionQuery from '../../graphql/queries/RunningSessionQuery.graphql'
 import UpdateSessionSettingsMutation from '../../graphql/mutations/UpdateSessionSettingsMutation.graphql'
 import PinFeedbackMutation from '../../graphql/mutations/PinFeedbackMutation.graphql'
 import ResolveFeedbackMutation from '../../graphql/mutations/ResolveFeedbackMutation.graphql'
 import RespondToFeedbackMutation from '../../graphql/mutations/RespondToFeedbackMutation.graphql'
+import DeleteFeedbackResponseMutation from '../../graphql/mutations/DeleteFeedbackResponseMutation.graphql'
 
 interface Props {
   sessionId: string
@@ -37,6 +38,8 @@ function AudienceInteraction({
   const [pinFeedback, { loading: isPinFeedbackLoading }] = useMutation(PinFeedbackMutation)
   const [resolveFeedback, { loading: isResolveFeedbackLoading }] = useMutation(ResolveFeedbackMutation)
   const [respondToFeedback, { loading: isRespondToFeedbackLoading }] = useMutation(RespondToFeedbackMutation)
+  const [deleteFeedbackResponse, { loading: isDeleteFeedbackResponseLoading }] =
+    useMutation(DeleteFeedbackResponseMutation)
 
   return (
     <div>
@@ -63,77 +66,92 @@ function AudienceInteraction({
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row">
-        <div className="flex-1 mb-8 md:mb-0">
-          <FeedbackChannel
-            feedbacks={feedbacks}
-            handleActiveToggle={() => null}
-            handleDeleteFeedback={(feedbackId: string): void => {
-              deleteFeedback({
-                refetchQueries: [{ query: RunningSessionQuery }],
-                variables: { feedbackId, sessionId },
-              })
-            }}
-            handlePinFeedback={(id: string, pinState: boolean) => {
-              pinFeedback({
-                refetchQueries: [{ query: RunningSessionQuery }],
-                variables: { sessionId, feedbackId: id, pinState },
-                // update(cache, { data: pinFeedback }) {
-                //   cache.modify({
-                //     fields: {
-                //       feedbacks(existingFeedbacks = []) {
+      {!isFeedbackChannelActive && (
+        <Message
+          info
+          content="Enabling audience interaction allows participants to ask questions and to provide you with valuable feedback during your lecture."
+          icon="info"
+        />
+      )}
 
-                //       }
-                //     }
-                //   })
-                // }
-              })
-            }}
-            handlePublicToggle={(): void => {
-              updateSettings({
-                refetchQueries: [{ query: RunningSessionQuery }],
-                variables: {
-                  sessionId,
-                  settings: {
-                    isFeedbackChannelPublic: !isFeedbackChannelPublic,
-                  },
-                },
-              })
-            }}
-            handleResolveFeedback={(id: string, resolvedState: boolean) => {
-              resolveFeedback({
-                refetchQueries: [{ query: RunningSessionQuery }],
-                variables: { sessionId, feedbackId: id, resolvedState },
-              })
-            }}
-            handleRespondToFeedback={(id: string, response: string) => {
-              respondToFeedback({
-                refetchQueries: [{ query: RunningSessionQuery }],
-                variables: { sessionId, feedbackId: id, response },
-              })
-            }}
-            isActive={isFeedbackChannelActive}
-            isPublic={isFeedbackChannelPublic}
-            subscribeToMore={(): void => {
-              subscribeToMore({
-                document: FeedbackAddedSubscription,
-                updateQuery: (prev, { subscriptionData }): any => {
-                  if (!subscriptionData.data) return prev
-                  return {
-                    ...prev,
-                    runningSession: {
-                      ...prev.runningSession,
-                      feedbacks: [...prev.runningSession.feedbacks, subscriptionData.data.feedbackAdded],
+      {isFeedbackChannelActive && (
+        <div className="flex flex-col md:flex-row">
+          <div className="flex-1 mb-8 md:mb-0">
+            <FeedbackChannel
+              feedbacks={feedbacks}
+              handleActiveToggle={() => null}
+              handleDeleteFeedback={(feedbackId: string): void => {
+                deleteFeedback({
+                  refetchQueries: [{ query: RunningSessionQuery }],
+                  variables: { feedbackId, sessionId },
+                })
+              }}
+              handleDeleteFeedbackResponse={(feedbackId: string, responseId: string) => {
+                deleteFeedbackResponse({
+                  refetchQueries: [{ query: RunningSessionQuery }],
+                  variables: { sessionId, feedbackId, responseId },
+                })
+              }}
+              handlePinFeedback={(feedbackId: string, pinState: boolean) => {
+                pinFeedback({
+                  refetchQueries: [{ query: RunningSessionQuery }],
+                  variables: { sessionId, feedbackId, pinState },
+                  // update(cache, { data: pinFeedback }) {
+                  //   cache.modify({
+                  //     fields: {
+                  //       feedbacks(existingFeedbacks = []) {
+
+                  //       }
+                  //     }
+                  //   })
+                  // }
+                })
+              }}
+              handlePublicToggle={(): void => {
+                updateSettings({
+                  refetchQueries: [{ query: RunningSessionQuery }],
+                  variables: {
+                    sessionId,
+                    settings: {
+                      isFeedbackChannelPublic: !isFeedbackChannelPublic,
                     },
-                  }
-                },
-                variables: { sessionId },
-              })
-            }}
-          />
-        </div>
+                  },
+                })
+              }}
+              handleResolveFeedback={(feedbackId: string, resolvedState: boolean) => {
+                resolveFeedback({
+                  refetchQueries: [{ query: RunningSessionQuery }],
+                  variables: { sessionId, feedbackId, resolvedState },
+                })
+              }}
+              handleRespondToFeedback={(feedbackId: string, response: string) => {
+                respondToFeedback({
+                  refetchQueries: [{ query: RunningSessionQuery }],
+                  variables: { sessionId, feedbackId, response },
+                })
+              }}
+              isActive={isFeedbackChannelActive}
+              isPublic={isFeedbackChannelPublic}
+              subscribeToMore={(): void => {
+                subscribeToMore({
+                  document: FeedbackAddedSubscription,
+                  updateQuery: (prev, { subscriptionData }): any => {
+                    if (!subscriptionData.data) return prev
+                    return {
+                      ...prev,
+                      runningSession: {
+                        ...prev.runningSession,
+                        feedbacks: [...prev.runningSession.feedbacks, subscriptionData.data.feedbackAdded],
+                      },
+                    }
+                  },
+                  variables: { sessionId },
+                })
+              }}
+            />
+          </div>
 
-        {/* <div className="flex-1 md:pl-4 max-w-[40%]">
+          {/* <div className="flex-1 md:pl-4 max-w-[40%]">
           <ConfusionBarometer
             confusionTS={confusionTS}
             handleActiveToggle={(): void => {
@@ -166,7 +184,8 @@ function AudienceInteraction({
             }}
           />
         </div> */}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
