@@ -25,6 +25,7 @@ interface Props {
   handlePinFeedback: (id: string, pinState: boolean) => void
   handleResolveFeedback: (id: string, resolvedState: boolean) => void
   handleRespondToFeedback: (id: string, response: string) => void
+  handleDeleteFeedbackResponse: (id: string, responseId: string) => void
   isActive?: boolean
   isPublic?: boolean
   subscribeToMore: any
@@ -46,6 +47,7 @@ function FeedbackChannel({
   handlePinFeedback,
   handleResolveFeedback,
   handleRespondToFeedback,
+  handleDeleteFeedbackResponse,
   subscribeToMore,
 }: Props) {
   useEffect((): void => {
@@ -150,6 +152,7 @@ function FeedbackChannel({
                 responses={responses}
                 votes={votes}
                 onDeleteFeedback={() => handleDeleteFeedback(id)}
+                onDeleteResponse={(responseId) => handleDeleteFeedbackResponse(id, responseId)}
                 onPinFeedback={(pinState) => handlePinFeedback(id, pinState)}
                 onResolveFeedback={(resolvedState) => handleResolveFeedback(id, resolvedState)}
                 onRespondToFeedback={(response) => handleRespondToFeedback(id, response)}

@@ -20,11 +20,11 @@ interface IFeedback {
 }
 
 interface Props extends IFeedback {
-  onDeleteFeedback?: () => void
-  onDeleteResponse?: () => void
+  onDeleteFeedback: () => void
   onPinFeedback: (pinState: boolean) => void
   onResolveFeedback: (resolvedState: boolean) => void
   onRespondToFeedback: (response: string) => void
+  onDeleteResponse: (responseId: string) => void
 }
 
 const defaultProps = {
@@ -62,7 +62,7 @@ function Feedback({
 
   return (
     <div>
-      <div className="flex items-center border border-solid bg-primary-10% border-primary">
+      <div className="flex items-center border border-solid bg-primary-10% border-primary rounded shadow">
         <div className="flex-1 p-4">
           <p className="mb-0">{content}</p>
           <div className="flex flex-row mt-2 text-gray-500">
@@ -103,16 +103,19 @@ function Feedback({
 
       {isEditingActive && (
         <div className="p-4 border border-t-0 border-solid border-primary">
-          <div className="mb-4">
+          <div>
             {responses.map((response) => (
-              <div className="relative p-2 mt-2 border border-solid first:mt-0" key={response.createdAt}>
+              <div
+                className="relative p-2 mt-2 border border-solid rounded first:mt-0 last:mb-4"
+                key={response.createdAt}
+              >
                 <div>
                   <Button
                     basic
                     className="absolute top-2 right-2 !mr-0 !p-2"
                     icon="trash"
                     size="tiny"
-                    onClick={() => onDeleteResponse()}
+                    onClick={() => onDeleteResponse(response.id)}
                   />
                 </div>
                 <p className="mb-0">{response.content}</p>
