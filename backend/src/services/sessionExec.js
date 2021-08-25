@@ -119,6 +119,10 @@ async function respondToFeedback({ sessionId, feedbackId, userId, response }) {
       $push: {
         'feedbacks.$.responses': { content: response },
       },
+      $set: {
+        'feedbacks.$.resolved': true,
+        'feedbacks.$.pinned': false,
+      },
     }
   )
 
