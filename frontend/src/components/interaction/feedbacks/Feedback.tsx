@@ -129,6 +129,7 @@ function Feedback({
               <Form className="h-full">
                 <TextArea
                   className="h-full"
+                  disabled={resolved}
                   id="response"
                   placeholder="Write your response here..."
                   rows={3}
