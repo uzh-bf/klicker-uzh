@@ -57,7 +57,7 @@ function FeedbackChannel({
   }, [])
 
   const [searchString, setSearchString] = useState('')
-  const [showResolved, setShowResolved] = useState(true)
+  const [showResolved, setShowResolved] = useState(false)
   const [showOpen, setShowOpen] = useState(true)
   const [showUnpinned, setShowUnpinned] = useState(true)
   const [sortBy, setSortBy] = useState('upvotes')
@@ -177,7 +177,7 @@ function FeedbackChannel({
       <div className="mt-4 overflow-y-auto">
         {feedbacks.length === 0 && <Message info>No feedbacks received yet...</Message>}
         {feedbacks.length > 0 && sortedFeedbacks.length === 0 && (
-          <Message info>No feedbacks matching your current filter selectio...</Message>
+          <Message info>No feedbacks matching your current filter selection...</Message>
         )}
         {sortedFeedbacks.map(({ id, content, createdAt, votes, resolved, pinned, responses }) => (
           <div className="mt-4 first:mt-0" key={id}>
