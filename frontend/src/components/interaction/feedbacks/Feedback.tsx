@@ -8,6 +8,8 @@ import clsx from 'clsx'
 interface IFeedbackResponse {
   id: string
   content: string
+  positiveReactions: number
+  negativeReactions: number
   createdAt: string
 }
 
@@ -18,6 +20,7 @@ interface IFeedback {
   resolved: boolean
   pinned: boolean
   responses: IFeedbackResponse[]
+  resolvedAt: string
 }
 
 interface Props extends IFeedback {
@@ -120,10 +123,10 @@ function Feedback({
                 </div>
                 <div className="flex flex-row items-center flex-initial">
                   <div className={clsx('text-gray-500')}>
-                    0 <Icon name="thumbs up outline" />
+                    {response.positiveReactions} <Icon name="thumbs up outline" />
                   </div>
                   <div className={clsx('ml-2', 'text-gray-500')}>
-                    0 <Icon name="question" />
+                    {response.negativeReactions} <Icon name="question" />
                   </div>
                   <div className="ml-2">
                     <Button basic compact icon="trash" size="tiny" onClick={() => onDeleteResponse(response.id)} />

@@ -114,16 +114,20 @@ async function resolveFeedback({ sessionId, feedbackId, userId, resolvedState })
       _id: sessionId,
       'feedbacks._id': feedbackId,
     },
-    {
-      $set: resolvedState
-        ? {
+    resolvedState
+      ? {
+          $set: {
             'feedbacks.$.resolved': resolvedState,
             'feedbacks.$.pinned': false,
-          }
-        : {
-            'feedbacks.$.resolved': resolvedState,
           },
-    }
+          $currentDate: {
+            'feedbacks.$.resolvedAt': true,
+          },
+        }
+      : {
+          'feedbacks.$.resolved': resolvedState,
+          'feedbacks.$.resolvedAt': null,
+        }
   )
 
   // TODO: publish the feedback update
@@ -148,6 +152,10 @@ async function respondToFeedback({ sessionId, feedbackId, userId, response }) {
       $set: {
         'feedbacks.$.resolved': true,
         'feedbacks.$.pinned': false,
+        'feedbacks.$.published': true,
+      },
+      $currentDate: {
+        'feedbacks.$.resolvedAt': true,
       },
     }
   )
@@ -567,6 +575,7 @@ const joinSession = async ({ shortname, auth }) => {
           files,
         }
       }),
+    // TODO: ensure that there is no information on reactions sent out
     feedbacks: settings.isFeedbackChannelActive ? feedbacks.filter((feedback) => feedback.published) : null,
   }
 }
