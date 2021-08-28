@@ -292,4 +292,4 @@ apollo.applyMiddleware({
   },
 })
 
-module.exports = { app, apollo }
+module.exports = { app, apollo, schemaWithAuthentication }

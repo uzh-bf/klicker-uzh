@@ -21,20 +21,24 @@ if (SERVICES_CFG.apm.enabled) {
   })
 }
 
-const { createServer } = require('http')
 const mongoose = require('mongoose')
+const { useServer } = require('graphql-ws/lib/use/ws')
+const ws = require('ws')
 
-const { app, apollo } = require('./app')
+const { app, schemaWithAuthentication } = require('./app')
 const { getRedis } = require('./redis')
 
 const redis = getRedis()
 
-// wrap express for websockets
-const httpServer = createServer(app)
-apollo.installSubscriptionHandlers(httpServer)
-
-httpServer.listen(APP_CFG.port, (err) => {
+const server = app.listen(APP_CFG.port, (err) => {
   if (err) throw err
+
+  const wsServer = new ws.Server({
+    server,
+    path: '/graphql',
+  })
+
+  useServer({ schema: schemaWithAuthentication }, wsServer)
 
   console.log(`[klicker-api] GraphQL ready on http://${APP_CFG.domain}:${APP_CFG.port}/${APP_CFG.path || ''}!`)
 })
