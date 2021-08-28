@@ -10,6 +10,7 @@ import FeedbackAddedSubscription from '../../graphql/subscriptions/FeedbackAdded
 import RunningSessionQuery from '../../graphql/queries/RunningSessionQuery.graphql'
 import UpdateSessionSettingsMutation from '../../graphql/mutations/UpdateSessionSettingsMutation.graphql'
 import PinFeedbackMutation from '../../graphql/mutations/PinFeedbackMutation.graphql'
+import PublishFeedbackMutation from '../../graphql/mutations/PublishFeedbackMutation.graphql'
 import ResolveFeedbackMutation from '../../graphql/mutations/ResolveFeedbackMutation.graphql'
 import RespondToFeedbackMutation from '../../graphql/mutations/RespondToFeedbackMutation.graphql'
 import DeleteFeedbackResponseMutation from '../../graphql/mutations/DeleteFeedbackResponseMutation.graphql'
@@ -36,6 +37,7 @@ function AudienceInteraction({
   const [deleteFeedback, { loading: isDeleteFeedbackLoading }] = useMutation(DeleteFeedbackMutation)
   const [updateSettings, { loading: isUpdateSettingsLoading }] = useMutation(UpdateSessionSettingsMutation)
   const [pinFeedback, { loading: isPinFeedbackLoading }] = useMutation(PinFeedbackMutation)
+  const [publishFeedback, { loading: isPublishFeedbackLoading }] = useMutation(PublishFeedbackMutation)
   const [resolveFeedback, { loading: isResolveFeedbackLoading }] = useMutation(ResolveFeedbackMutation)
   const [respondToFeedback, { loading: isRespondToFeedbackLoading }] = useMutation(RespondToFeedbackMutation)
   const [deleteFeedbackResponse, { loading: isDeleteFeedbackResponseLoading }] =
@@ -57,7 +59,24 @@ function AudienceInteraction({
                   sessionId,
                   settings: {
                     isFeedbackChannelActive: !isFeedbackChannelActive,
-                    isFeedbackChannelPublic: true,
+                  },
+                },
+              })
+            }}
+          />
+          <Checkbox
+            toggle
+            checked={!isFeedbackChannelPublic}
+            className="ml-8"
+            disabled={!isFeedbackChannelActive}
+            label="Enable Moderation"
+            onChange={(): void => {
+              updateSettings({
+                refetchQueries: [{ query: RunningSessionQuery }],
+                variables: {
+                  sessionId,
+                  settings: {
+                    isFeedbackChannelPublic: !isFeedbackChannelPublic,
                   },
                 },
               })
@@ -116,6 +135,21 @@ function AudienceInteraction({
                       isFeedbackChannelPublic: !isFeedbackChannelPublic,
                     },
                   },
+                })
+              }}
+              handlePublishFeedback={(feedbackId: string, publishState: boolean) => {
+                publishFeedback({
+                  refetchQueries: [{ query: RunningSessionQuery }],
+                  variables: { sessionId, feedbackId, publishState },
+                  // update(cache, { data: pinFeedback }) {
+                  //   cache.modify({
+                  //     fields: {
+                  //       feedbacks(existingFeedbacks = []) {
+
+                  //       }
+                  //     }
+                  //   })
+                  // }
                 })
               }}
               handleResolveFeedback={(feedbackId: string, resolvedState: boolean) => {

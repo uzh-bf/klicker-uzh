@@ -149,6 +149,7 @@ module.exports = `
     votes: Int!
     resolved: Boolean!
     pinned: Boolean!
+    published: Boolean!
 
     responses: [Session_FeedbackResponse!]!
 
