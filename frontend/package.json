@@ -180,16 +180,13 @@
   },
   "lint-staged": {
     "*.js": [
-      "prettier --write",
-      "npm run lint"
+      "prettier --write"
     ],
     "*.ts": [
-      "prettier --write",
-      "npm run lint"
+      "prettier --write"
     ],
     "*.tsx": [
-      "prettier --write",
-      "npm run lint"
+      "prettier --write"
     ],
     "*.json": [
       "prettier --write"
