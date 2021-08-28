@@ -5,6 +5,8 @@ interface IFeedbackResponse {
   id: string
   content: string
   createdAt: string
+  positive: boolean
+  negative: boolean
 }
 
 interface Props {
@@ -12,11 +14,35 @@ interface Props {
   content: string
   votes: number
   resolved: boolean
+  resolvedAt?: string
   pinned: boolean
+  upvoted: boolean
   responses: IFeedbackResponse[]
+  onUpvoteFeedback?: () => void
+  onPositiveResponseReaction?: (responseId: string) => void
+  onNegativeResponseReaction?: (responseId: string) => void
 }
 
-function PublicFeedback({ content, createdAt, votes, pinned, resolved, responses }: Props) {
+const defaultProps = {
+  resolvedAt: undefined,
+  onUpvoteFeedback: () => null,
+  onPositiveResponseReaction: () => null,
+  onNegativeResponseReaction: () => null,
+}
+
+function PublicFeedback({
+  content,
+  createdAt,
+  votes,
+  pinned,
+  resolved,
+  resolvedAt,
+  responses,
+  upvoted,
+  onUpvoteFeedback,
+  onPositiveResponseReaction,
+  onNegativeResponseReaction,
+}: Props) {
   return (
     <div>
       <div className="border border-solid bg-primary-10% border-primary rounded shadow">
@@ -27,18 +53,21 @@ function PublicFeedback({ content, createdAt, votes, pinned, resolved, responses
               <div className="text-sm text-gray-500">{dayjs(createdAt).format('DD.MM.YYYY HH:mm')}</div>
               <div className="ml-4">
                 {resolved ? <Icon name="check" size="small" /> : <Icon name="discussions" size="small" />}
+                {resolved && resolvedAt && dayjs(resolvedAt).format('DD.MM.YYYY HH:mm')}
               </div>
               <div className="ml-4">{pinned && <Icon name="pin" size="small" />}</div>
             </div>
           </div>
           <div className="flex-initial mt-1 mr-1">
             <Button
-              basic
               compact
+              basic={!upvoted}
               className="text-xl text-gray-500 !mr-0"
+              color={upvoted ? 'blue' : undefined}
               content={votes}
-              disabled={true || resolved}
-              icon="thumbs up outline"
+              disabled={resolved}
+              icon={upvoted ? 'thumbs up' : 'thumbs up outline'}
+              onClick={onUpvoteFeedback}
             />
           </div>
         </div>
@@ -55,8 +84,22 @@ function PublicFeedback({ content, createdAt, votes, pinned, resolved, responses
                 <div className="mt-1 text-sm text-gray-500">{dayjs(response.createdAt).format('DD.MM.YYYY HH:mm')}</div>
               </div>
               <div className="flex-initial">
-                <Button basic compact icon="thumbs up outline" size="small" />
-                <Button basic compact icon="question" size="small" />
+                <Button
+                  compact
+                  basic={!response.positive}
+                  color={response.positive ? 'blue' : undefined}
+                  icon={response.positive ? 'thumbs up' : 'thumbs up outline'}
+                  size="small"
+                  onClick={() => onPositiveResponseReaction(response.id)}
+                />
+                <Button
+                  compact
+                  basic={!response.negative}
+                  color={response.negative ? 'blue' : undefined}
+                  icon="question"
+                  size="small"
+                  onClick={() => onNegativeResponseReaction(response.id)}
+                />
               </div>
             </div>
           ))}
@@ -65,5 +108,7 @@ function PublicFeedback({ content, createdAt, votes, pinned, resolved, responses
     </div>
   )
 }
+
+PublicFeedback.defaultProps = defaultProps
 
 export default PublicFeedback
