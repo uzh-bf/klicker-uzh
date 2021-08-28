@@ -24,6 +24,7 @@ const {
 const {
   addFeedback,
   pinFeedback,
+  publishFeedback,
   resolveFeedback,
   respondToFeedback,
   deleteFeedbackResponse,
@@ -117,6 +118,7 @@ const typeDefs = [
     addConfusionTS(fp: ID, sessionId: ID!, difficulty: Int!, speed: Int!): String!
     addFeedback(fp: ID, sessionId: ID!, content: String!): Session_Feedback!
     pinFeedback(sessionId: ID!, feedbackId: ID!, pinState: Boolean!): ID!
+    publishFeedback(sessionId: ID!, feedbackId: ID!, publishState: Boolean!): ID!
     respondToFeedback(sessionId: ID!, feedbackId: ID!, response: String!): ID!
     deleteFeedbackResponse(sessionId: ID!, feedbackId: ID!, responseId: ID!): ID!
     resolveFeedback(sessionId: ID!, feedbackId: ID!, resolvedState: Boolean!): ID!
@@ -193,6 +195,7 @@ const resolvers = {
     archiveQuestions,
     addFeedback,
     pinFeedback,
+    publishFeedback,
     resolveFeedback,
     respondToFeedback,
     deleteFeedbackResponse,

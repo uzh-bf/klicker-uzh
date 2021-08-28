@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Checkbox, Dropdown, Input, Message } from 'semantic-ui-react'
+import { Checkbox, Dropdown, Input, Message, Button } from 'semantic-ui-react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import _sortBy from 'lodash/sortBy'
 import * as JsSearch from 'js-search'
@@ -24,6 +24,7 @@ interface Props {
   handleDeleteFeedback: any
   handlePublicToggle: any
   handlePinFeedback: (id: string, pinState: boolean) => void
+  handlePublishFeedback: (id: string, publishState: boolean) => void
   handleResolveFeedback: (id: string, resolvedState: boolean) => void
   handleRespondToFeedback: (id: string, response: string) => void
   handleDeleteFeedbackResponse: (id: string, responseId: string) => void
@@ -45,6 +46,7 @@ function FeedbackChannel({
   handlePublicToggle,
   handleDeleteFeedback,
   handlePinFeedback,
+  handlePublishFeedback,
   handleResolveFeedback,
   handleRespondToFeedback,
   handleDeleteFeedbackResponse,
@@ -179,21 +181,35 @@ function FeedbackChannel({
         {feedbacks.length > 0 && sortedFeedbacks.length === 0 && (
           <Message info>No feedbacks matching your current filter selection...</Message>
         )}
-        {sortedFeedbacks.map(({ id, content, createdAt, votes, resolved, pinned, responses }) => (
-          <div className="mt-4 first:mt-0" key={id}>
-            <Feedback
-              content={content}
-              createdAt={createdAt}
-              pinned={pinned}
-              resolved={resolved}
-              responses={responses}
-              votes={votes}
-              onDeleteFeedback={() => handleDeleteFeedback(id)}
-              onDeleteResponse={(responseId) => handleDeleteFeedbackResponse(id, responseId)}
-              onPinFeedback={(pinState) => handlePinFeedback(id, pinState)}
-              onResolveFeedback={(resolvedState) => handleResolveFeedback(id, resolvedState)}
-              onRespondToFeedback={(response) => handleRespondToFeedback(id, response)}
-            />
+        {sortedFeedbacks.map(({ id, content, createdAt, votes, resolved, pinned, published, responses }) => (
+          <div className="flex flex-row mt-4 first:mt-0" key={id}>
+            {!isPublic && (
+              <div className="flex-initial">
+                <Button
+                  basic
+                  compact
+                  icon={published ? 'eye' : 'eye slash outline'}
+                  onClick={() => {
+                    handlePublishFeedback(id, !published)
+                  }}
+                />
+              </div>
+            )}
+            <div className="flex-1">
+              <Feedback
+                content={content}
+                createdAt={createdAt}
+                pinned={pinned}
+                resolved={resolved}
+                responses={responses}
+                votes={votes}
+                onDeleteFeedback={() => handleDeleteFeedback(id)}
+                onDeleteResponse={(responseId) => handleDeleteFeedbackResponse(id, responseId)}
+                onPinFeedback={(pinState) => handlePinFeedback(id, pinState)}
+                onResolveFeedback={(resolvedState) => handleResolveFeedback(id, resolvedState)}
+                onRespondToFeedback={(response) => handleRespondToFeedback(id, response)}
+              />
+            </div>
           </div>
         ))}
       </div>
