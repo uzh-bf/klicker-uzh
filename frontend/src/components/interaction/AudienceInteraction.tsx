@@ -1,4 +1,4 @@
-import React from 'react'
+import { useEffect } from 'react'
 import { useMutation } from '@apollo/client'
 import { Checkbox, Message } from 'semantic-ui-react'
 

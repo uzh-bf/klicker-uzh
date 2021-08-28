@@ -3,6 +3,8 @@ import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { FormattedMessage } from 'react-intl'
 import { Form, Button, TextArea } from 'semantic-ui-react'
+import { partition, sortBy } from 'ramda'
+import useStickyState from '../../../lib/hooks/useStickyState'
 
 import ConfusionSlider from '../../interaction/confusion/ConfusionSlider'
 import PublicFeedback from './PublicFeedback'
@@ -37,6 +39,43 @@ function FeedbackArea({
   // const [confusionDifficulty, setConfusionDifficulty] = useState()
   // const [confusionSpeed, setConfusionSpeed] = useState()
   const [feedbackInputValue, setFeedbackInputValue] = useState('')
+  const [processedFeedbacks, setProcessedFeedbacks] = useState({
+    open: [],
+    resolved: [],
+  })
+  const [upvotedFeedbacks, setUpvotedFeedbacks] = useStickyState({}, 'feedbackUpvotes')
+  const [reactions, setReactions] = useStickyState({}, 'responseReactions')
+
+  useEffect(() => {
+    const [resolved, open] = partition((feedback) => feedback.resolved, feedbacks)
+    setProcessedFeedbacks({
+      resolved: sortBy((o) => o.votes, resolved as any[]),
+      open: sortBy((o) => o.votes, open as any[]),
+    })
+  }, [feedbacks])
+
+  useEffect(() => {
+    setProcessedFeedbacks((prev) => ({
+      open: prev.open.map((feedback) => ({
+        ...feedback,
+        upvoted: !!upvotedFeedbacks[feedback.id],
+        responses: feedback.responses.map((response) => ({
+          ...response,
+          positive: reactions[response.id] > 0,
+          negative: reactions[response.id] < 0,
+        })),
+      })),
+      resolved: prev.resolved.map((feedback) => ({
+        ...feedback,
+        upvoted: !!upvotedFeedbacks[feedback.id],
+        responses: feedback.responses.map((response) => ({
+          ...response,
+          positive: reactions[response.id] > 0,
+          negative: reactions[response.id] < 0,
+        })),
+      })),
+    }))
+  }, [upvotedFeedbacks, reactions])
 
   // useEffect((): void => {
   //   try {
@@ -79,6 +118,28 @@ function FeedbackArea({
     handleNewFeedback({ content: feedbackInputValue })
   }
 
+  const handleUpvoteFeedback = (feedbackId: string) => {
+    setUpvotedFeedbacks((prev) => ({ ...prev, [feedbackId]: !prev[feedbackId] }))
+  }
+
+  const handlePositiveResponseReaction = (responseId: string, feedbackId: string) => {
+    setReactions((prev) => {
+      return {
+        ...prev,
+        [responseId]: prev[responseId] > 0 ? undefined : 1,
+      }
+    })
+  }
+
+  const handleNegativeResponseReaction = (responseId: string, feedbackId: string) => {
+    setReactions((prev) => {
+      return {
+        ...prev,
+        [responseId]: prev[responseId] < 0 ? undefined : -1,
+      }
+    })
+  }
+
   return (
     <div
       className={clsx(
@@ -112,22 +173,70 @@ function FeedbackArea({
       <div className="flex flex-col justify-between h-full mt-4">
         {isFeedbackChannelActive && feedbacks && feedbacks.length > 0 && (
           <div>
-            <div>
-              {feedbacks.map(
-                ({ id, content, votes, responses, createdAt, pinned, resolved }): React.ReactElement => (
-                  <div className="mt-2 first:mt-0" key={id}>
-                    <PublicFeedback
-                      content={content}
-                      createdAt={createdAt}
-                      pinned={pinned}
-                      resolved={resolved}
-                      responses={responses}
-                      votes={votes}
-                    />
-                  </div>
-                )
-              )}
-            </div>
+            {processedFeedbacks.open.length > 0 && (
+              <div>
+                <h2 className="!mb-2">Open</h2>
+                {processedFeedbacks.open.map(
+                  ({ id, content, votes, responses, createdAt, pinned, resolved, upvoted }): React.ReactElement => (
+                    <div className="mt-2 first:mt-0" key={id}>
+                      <PublicFeedback
+                        content={content}
+                        createdAt={createdAt}
+                        pinned={pinned}
+                        resolved={resolved}
+                        responses={responses}
+                        upvoted={upvoted}
+                        votes={votes}
+                        onNegativeResponseReaction={(responseId: string) =>
+                          handleNegativeResponseReaction(responseId, id)
+                        }
+                        onPositiveResponseReaction={(responseId: string) =>
+                          handlePositiveResponseReaction(responseId, id)
+                        }
+                        onUpvoteFeedback={() => handleUpvoteFeedback(id)}
+                      />
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+            {processedFeedbacks.resolved.length > 0 && (
+              <div className="mt-4">
+                <h2 className="!mb-2">Resolved</h2>
+                {processedFeedbacks.resolved.map(
+                  ({
+                    id,
+                    content,
+                    votes,
+                    responses,
+                    createdAt,
+                    resolvedAt,
+                    pinned,
+                    resolved,
+                    upvoted,
+                  }): React.ReactElement => (
+                    <div className="mt-2 first:mt-0" key={id}>
+                      <PublicFeedback
+                        content={content}
+                        createdAt={createdAt}
+                        pinned={pinned}
+                        resolved={resolved}
+                        resolvedAt={resolvedAt}
+                        responses={responses}
+                        upvoted={upvoted}
+                        votes={votes}
+                        onNegativeResponseReaction={(responseId: string) =>
+                          handleNegativeResponseReaction(responseId, id)
+                        }
+                        onPositiveResponseReaction={(responseId: string) =>
+                          handlePositiveResponseReaction(responseId, id)
+                        }
+                      />
+                    </div>
+                  )
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
