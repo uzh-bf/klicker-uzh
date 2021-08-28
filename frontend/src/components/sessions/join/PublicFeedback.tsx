@@ -55,8 +55,8 @@ function PublicFeedback({ content, createdAt, votes, pinned, resolved, responses
                 <div className="mt-1 text-sm text-gray-500">{dayjs(response.createdAt).format('DD.MM.YYYY HH:mm')}</div>
               </div>
               <div className="flex-initial">
-                <Button basic compact icon="smile outline" size="small" />
-                <Button basic compact icon="frown outline" size="small" />
+                <Button basic compact icon="thumbs up outline" size="small" />
+                <Button basic compact icon="question" size="small" />
               </div>
             </div>
           ))}

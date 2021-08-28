@@ -120,10 +120,10 @@ function Feedback({
                 </div>
                 <div className="flex flex-row items-center flex-initial">
                   <div className={clsx('text-gray-500')}>
-                    0 <Icon name="smile outline" />
+                    0 <Icon name="thumbs up outline" />
                   </div>
                   <div className={clsx('ml-2', 'text-gray-500')}>
-                    0 <Icon name="frown outline" />
+                    0 <Icon name="question" />
                   </div>
                   <div className="ml-2">
                     <Button basic compact icon="trash" size="tiny" onClick={() => onDeleteResponse(response.id)} />
