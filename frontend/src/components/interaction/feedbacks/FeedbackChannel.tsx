@@ -3,6 +3,7 @@ import { Checkbox, Dropdown, Input, Message } from 'semantic-ui-react'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import _sortBy from 'lodash/sortBy'
 import * as JsSearch from 'js-search'
+import dayjs from 'dayjs'
 
 import Feedback from './Feedback'
 
@@ -90,7 +91,16 @@ function FeedbackChannel({
   }, [feedbacks, searchIndex, searchString, showResolved, showOpen, showUnpinned])
 
   useEffect(() => {
-    setSortedFeedbacks(_sortBy(filteredFeedbacks, [sortBy]))
+    setSortedFeedbacks(
+      _sortBy(
+        filteredFeedbacks,
+        (o) => (o.pinned ? -1 : 1),
+        (o) => {
+          if (sortBy === 'recency') return dayjs(o.recency)
+          return o[sortBy]
+        }
+      )
+    )
   }, [filteredFeedbacks, sortBy])
 
   const intl = useIntl()
@@ -170,7 +180,7 @@ function FeedbackChannel({
           <Message info>No feedbacks matching your current filter selectio...</Message>
         )}
         {sortedFeedbacks.map(({ id, content, createdAt, votes, resolved, pinned, responses }) => (
-          <div className="mt-2 first:mt-0" key={id}>
+          <div className="mt-4 first:mt-0" key={id}>
             <Feedback
               content={content}
               createdAt={createdAt}

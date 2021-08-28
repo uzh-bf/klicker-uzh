@@ -3,6 +3,7 @@ import dayjs from 'dayjs'
 import { Icon, Button, TextArea, Form } from 'semantic-ui-react'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
+import clsx from 'clsx'
 
 interface IFeedbackResponse {
   id: string
@@ -62,24 +63,25 @@ function Feedback({
 
   return (
     <div>
-      <div className="flex items-center border border-solid bg-primary-10% border-primary rounded shadow">
-        <div className="flex-1 p-4">
+      <div className="flex items-center pl-4 p-2 border border-solid bg-primary-10% border-primary rounded shadow">
+        <div className="flex-1">
           <p className="mb-0">{content}</p>
-          <div className="flex flex-row mt-2 text-gray-500">
+          <div className="flex flex-row items-end mt-2 text-gray-500">
             <div>{dayjs(createdAt).format('DD.MM.YYYY HH:mm')}</div>
-            <div className="ml-8">{resolved ? 'RESOLVED' : 'OPEN'}</div>
-            <div className="ml-8">{pinned && <Icon name="pin" />}</div>
+            <div className="ml-4">{resolved ? <Icon name="check" /> : <Icon name="discussions" />}</div>
+            <div className="ml-4">{pinned && <Icon name="pin" />}</div>
           </div>
         </div>
-        <div className="flex flex-col items-end justify-between flex-initial p-2">
+        <div className="flex flex-col items-end justify-between flex-initial">
           <div className="text-xl text-gray-500">
             {votes} <Icon name="thumbs up outline" />
           </div>
           <div className="flex flex-row items-end mt-2">
-            {responses?.length > 0 && <div className="mr-4">{responses.length} responses given</div>}
+            {responses?.length > 0 && <div className="mr-4 text-gray-500">{responses.length} responses given</div>}
             <Button
+              compact
               basic={!isBeingDeleted}
-              className="!p-2 !mr-2"
+              className="!mr-2"
               color={isBeingDeleted ? 'red' : undefined}
               icon="trash"
               size="tiny"
@@ -93,7 +95,7 @@ function Feedback({
             />
             <Button
               basic
-              className="!p-2"
+              compact
               icon={isEditingActive ? 'arrow up' : 'arrow down'}
               size="tiny"
               onClick={() => setIsEditingActive((prev) => !prev)}
@@ -103,24 +105,30 @@ function Feedback({
       </div>
 
       {isEditingActive && (
-        <div className="p-4 border border-t-0 border-solid border-primary">
+        <div className="p-4 border border-t-0 border-gray-300 border-solid">
           <div>
             {responses.map((response) => (
               <div
-                className="relative p-2 mt-2 border border-solid rounded first:mt-0 last:mb-4"
+                className="flex flex-row pl-4 mt-2 border border-solid border-l-[5px] first:mt-0 last:mb-4 items-start bg-gray-50 py-1 rounded shadow-sm"
                 key={response.createdAt}
               >
-                <div>
-                  <Button
-                    basic
-                    className="absolute top-2 right-2 !mr-0 !p-2"
-                    icon="trash"
-                    size="tiny"
-                    onClick={() => onDeleteResponse(response.id)}
-                  />
+                <div className="flex-1">
+                  <p className="mb-0 prose">{response.content}</p>
+                  <div className="mt-1 text-sm text-gray-500">
+                    {dayjs(response.createdAt).format('DD.MM.YYYY HH:mm')}
+                  </div>
                 </div>
-                <p className="mb-0">{response.content}</p>
-                <div className="mt-2 text-gray-500">{dayjs(response.createdAt).format('DD.MM.YYYY HH:mm')}</div>
+                <div className="flex flex-row items-center flex-initial">
+                  <div className={clsx('text-gray-500')}>
+                    0 <Icon name="smile outline" />
+                  </div>
+                  <div className={clsx('ml-2', 'text-gray-500')}>
+                    0 <Icon name="frown outline" />
+                  </div>
+                  <div className="ml-2">
+                    <Button basic compact icon="trash" size="tiny" onClick={() => onDeleteResponse(response.id)} />
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -131,7 +139,9 @@ function Feedback({
                   className="h-full"
                   disabled={resolved}
                   id="response"
-                  placeholder="Write your response here..."
+                  placeholder={
+                    resolved ? 'Reopen the feedback to add a new response...' : 'Write your response here...'
+                  }
                   rows={3}
                   value={formik.values.response}
                   onChange={formik.handleChange}
