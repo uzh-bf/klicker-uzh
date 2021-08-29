@@ -1,13 +1,16 @@
 {
   "name": "klicker-uzh",
-  "version": "1.6.0-alpha.1",
+  "version": "1.6.0-alpha.2",
   "description": "KlickerUZH instant-class-response system.",
   "scripts": {
     "release": "npx standard-version --no-verify",
     "release:dry": "npx standard-version --dry-run",
     "release:alpha": "npx standard-version --prerelease alpha --no-verify",
+    "release:alpha:dry": "npx standard-version --dry-run --prerelease alpha",
     "release:beta": "npx standard-version --prerelease beta --no-verify",
-    "release:rc": "npx standard-version --prerelease rc --no-verify"
+    "release:beta:dry": "npx standard-version --dry-run --prerelease beta",
+    "release:rc": "npx standard-version --prerelease rc --no-verify",
+    "release:rc:dry": "npx standard-version --dry-run --prerelease rc"
   },
   "repository": {
     "type": "git",
