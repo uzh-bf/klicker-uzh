@@ -64,9 +64,9 @@ function PublicFeedback({
               basic={!upvoted}
               className="text-xl text-gray-500 !mr-0"
               color={upvoted ? 'blue' : undefined}
-              content={votes}
               disabled={resolved}
               icon={upvoted ? 'thumbs up' : 'thumbs up outline'}
+              size="small"
               onClick={onUpvoteFeedback}
             />
           </div>
