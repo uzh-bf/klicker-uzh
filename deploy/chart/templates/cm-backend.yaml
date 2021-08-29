@@ -17,11 +17,11 @@ data:
   S3_BUCKET: {{ .Values.s3.bucket | quote }}
   S3_ENABLED: "true"
   S3_ENDPOINT: {{ .Values.s3.endpoint | quote }}
-  # SECURITY_CORS_CREDENTIALS: 'true'
-  # SECURITY_CORS_ORIGIN: https://{{ .Values.frontend.hostname }},{{ .Values.security.cors.backend }}
+  SECURITY_CORS_CREDENTIALS: "true"
+  SECURITY_CORS_ORIGIN: https://{{ .Values.frontend.hostname }},{{ .Values.security.cors.backend }}
+  SECURITY_RATE_LIMIT_ENABLED: "true"
   # SECURITY_EXPECT_CT_ENABLED: {{ .Values.security.expectCt.enabled | quote }}
   # SECURITY_EXPECT_CT_REPORT_URI: {{ .Values.security.expectCt.backend | quote }}
   # SECURITY_HSTS_ENABLED: {{ .Values.security.hsts.enabled | quote }}
-  # SECURITY_RATE_LIMIT_ENABLED: 'true'
   # SERVICES_SENTRY_ENABLED: {{ .Values.analytics.sentry.enabled | quote }}
   # SERVICES_SENTRY_DSN: {{ .Values.analytics.sentry.backend | quote }}
