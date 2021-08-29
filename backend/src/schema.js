@@ -120,7 +120,7 @@ const typeDefs = [
     pinFeedback(sessionId: ID!, feedbackId: ID!, pinState: Boolean!): ID!
     publishFeedback(sessionId: ID!, feedbackId: ID!, publishState: Boolean!): ID!
     respondToFeedback(sessionId: ID!, feedbackId: ID!, response: String!): ID!
-    deleteFeedbackResponse(sessionId: ID!, feedbackId: ID!, responseId: ID!): ID!
+    deleteFeedbackResponse(sessionId: ID!, feedbackId: ID!, responseId: ID!): Session!
     resolveFeedback(sessionId: ID!, feedbackId: ID!, resolvedState: Boolean!): ID!
     addResponse(fp: ID, instanceId: ID!, response: QuestionInstance_ResponseInput!): String!
     archiveQuestions(ids: [ID!]!): [Question!]!

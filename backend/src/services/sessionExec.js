@@ -39,17 +39,20 @@ const addFeedback = async ({ sessionId, content }) => {
   // save the updated session
   await session.save()
 
-  // TODO: only publish if feedback channel is public
-
   // extract the saved feedback and convert it to a plain object
   // then readd the mongo _id field under the id key and publish the result
   // this is needed as redis swallows the _id field and the client could break!
   const savedFeedback = session.feedbacks[session.feedbacks.length - 1].toObject()
   const savedFeedbackWithId = { ...savedFeedback, id: savedFeedback._id }
-  pubsub.publish(FEEDBACK_ADDED, {
-    [FEEDBACK_ADDED]: savedFeedbackWithId,
-    sessionId,
-  })
+
+  // if the feedback channel is public, publish the feedback directly
+  // otherwise, it will need to be published after moderation
+  if (session.settings.isFeedbackChannelPublic) {
+    pubsub.publish(FEEDBACK_ADDED, {
+      [FEEDBACK_ADDED]: savedFeedbackWithId,
+      sessionId,
+    })
+  }
 
   // return the updated session
   return savedFeedbackWithId
@@ -87,7 +90,7 @@ async function publishFeedback({ sessionId, feedbackId, userId, publishState }) 
 
   assertUserMatch(session, userId)
 
-  await SessionModel.findOneAndUpdate(
+  const savedSession = await SessionModel.findOneAndUpdate(
     {
       _id: sessionId,
       'feedbacks._id': feedbackId,
@@ -96,10 +99,21 @@ async function publishFeedback({ sessionId, feedbackId, userId, publishState }) 
       $set: {
         'feedbacks.$.published': publishState,
       },
+    },
+    {
+      new: true,
     }
   )
 
-  // TODO: publish the feedback if it has been private before
+  // if the feedback is newly published, send it out via subscription
+  if (publishState) {
+    const savedFeedback = savedSession.feedbacks.find((feedback) => feedback._id === feedbackId).toObject()
+    const savedFeedbackWithId = { ...savedFeedback, id: savedFeedback._id }
+    pubsub.publish(FEEDBACK_ADDED, {
+      [FEEDBACK_ADDED]: savedFeedbackWithId,
+      sessionId,
+    })
+  }
 
   return feedbackId
 }
@@ -170,7 +184,7 @@ async function deleteFeedbackResponse({ sessionId, feedbackId, userId, responseI
 
   assertUserMatch(session, userId)
 
-  await SessionModel.findOneAndUpdate(
+  const updatedSession = await SessionModel.findOneAndUpdate(
     {
       _id: sessionId,
       'feedbacks._id': feedbackId,
@@ -179,12 +193,15 @@ async function deleteFeedbackResponse({ sessionId, feedbackId, userId, responseI
       $pull: {
         'feedbacks.$.responses': { _id: responseId },
       },
+    },
+    {
+      new: true,
     }
   )
 
   // TODO: publish the deletion
 
-  return feedbackId
+  return updatedSession
 }
 
 /**
@@ -576,7 +593,18 @@ const joinSession = async ({ shortname, auth }) => {
         }
       }),
     // TODO: ensure that there is no information on reactions sent out
-    feedbacks: settings.isFeedbackChannelActive ? feedbacks.filter((feedback) => feedback.published) : null,
+    feedbacks: settings.isFeedbackChannelActive
+      ? feedbacks
+          .filter((feedback) => feedback.published)
+          .map((feedback) => ({
+            ...feedback,
+            responses: feedback.responses.map((response) => ({
+              ...response,
+              positiveReactions: undefined,
+              negativeReactions: undefined,
+            })),
+          }))
+      : null,
   }
 }
 
