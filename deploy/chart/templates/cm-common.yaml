@@ -7,3 +7,5 @@ metadata:
 data:
   CACHE_REDIS_ENABLED: {{ .Values.cache.enabled | quote }}
   CACHE_REDIS_HOST: {{ .Values.cache.host | quote }}
+  CACHE_REDIS_PORT: {{ .Values.cache.port | quote }}
+  CACHE_REDIS_TLS: {{ .Values.cache.tls | quote }}
