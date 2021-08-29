@@ -9,6 +9,7 @@ import { ToastProvider } from 'react-toast-notifications'
 import { createIntl, createIntlCache, RawIntlProvider } from 'react-intl'
 import Head from 'next/head'
 
+import '../lib/semantic/dist/semantic.css'
 import '../globals.css'
 
 // This is optional but highly recommended
