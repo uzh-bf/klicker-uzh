@@ -181,37 +181,40 @@ function FeedbackChannel({
         {feedbacks.length > 0 && sortedFeedbacks.length === 0 && (
           <Message info>No feedbacks matching your current filter selection...</Message>
         )}
-        {sortedFeedbacks.map(({ id, content, createdAt, votes, resolved, pinned, published, responses }) => (
-          <div className="flex flex-row mt-4 first:mt-0" key={id}>
-            {!isPublic && (
-              <div className="flex-initial">
-                <Button
-                  basic
-                  compact
-                  icon={published ? 'eye' : 'eye slash outline'}
-                  onClick={() => {
-                    handlePublishFeedback(id, !published)
-                  }}
+        {sortedFeedbacks.map(
+          ({ id, content, createdAt, votes, resolved, pinned, published, responses, resolvedAt }) => (
+            <div className="flex flex-row mt-4 first:mt-0" key={id}>
+              {!isPublic && (
+                <div className="flex-initial">
+                  <Button
+                    basic
+                    compact
+                    icon={published ? 'eye' : 'eye slash outline'}
+                    onClick={() => {
+                      handlePublishFeedback(id, !published)
+                    }}
+                  />
+                </div>
+              )}
+              <div className="flex-1">
+                <Feedback
+                  content={content}
+                  createdAt={createdAt}
+                  pinned={pinned}
+                  resolved={resolved}
+                  resolvedAt={resolvedAt}
+                  responses={responses}
+                  votes={votes}
+                  onDeleteFeedback={() => handleDeleteFeedback(id)}
+                  onDeleteResponse={(responseId) => handleDeleteFeedbackResponse(id, responseId)}
+                  onPinFeedback={(pinState) => handlePinFeedback(id, pinState)}
+                  onResolveFeedback={(resolvedState) => handleResolveFeedback(id, resolvedState)}
+                  onRespondToFeedback={(response) => handleRespondToFeedback(id, response)}
                 />
               </div>
-            )}
-            <div className="flex-1">
-              <Feedback
-                content={content}
-                createdAt={createdAt}
-                pinned={pinned}
-                resolved={resolved}
-                responses={responses}
-                votes={votes}
-                onDeleteFeedback={() => handleDeleteFeedback(id)}
-                onDeleteResponse={(responseId) => handleDeleteFeedbackResponse(id, responseId)}
-                onPinFeedback={(pinState) => handlePinFeedback(id, pinState)}
-                onResolveFeedback={(resolvedState) => handleResolveFeedback(id, resolvedState)}
-                onRespondToFeedback={(response) => handleRespondToFeedback(id, response)}
-              />
             </div>
-          </div>
-        ))}
+          )
+        )}
       </div>
     </div>
   )
