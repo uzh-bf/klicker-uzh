@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0-alpha.4](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-alpha.3...v1.6.0-alpha.4) (2021-08-29)
+
+
+### Build and CI
+
+* add missing config files to docker image ([2023958](https://github.com/uzh-bf/klicker-uzh/commit/20239585718d83c03750bbafe76c77917c26d013))
+
+
+### Other
+
+* bump chart version ([b5124a7](https://github.com/uzh-bf/klicker-uzh/commit/b5124a7f9dab8edd4ab0b9216885d4baaf256dc8))
+
 ## [1.6.0-alpha.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-alpha.2...v1.6.0-alpha.3) (2021-08-29)
 
 
