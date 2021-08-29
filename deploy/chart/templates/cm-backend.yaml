@@ -1,3 +1,4 @@
+{{- $protocol := ternary "https" "http" .Values.security.https.enabled -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -18,7 +19,7 @@ data:
   S3_ENABLED: "true"
   S3_ENDPOINT: {{ .Values.s3.endpoint | quote }}
   SECURITY_CORS_CREDENTIALS: "true"
-  SECURITY_CORS_ORIGIN: https://{{ .Values.frontend.hostname }},{{ .Values.security.cors.backend }}
+  SECURITY_CORS_ORIGIN: {{ $protocol }}://{{ .Values.frontend.hostname }},{{ .Values.security.cors.backend }}
   SECURITY_RATE_LIMIT_ENABLED: "true"
   # SECURITY_EXPECT_CT_ENABLED: {{ .Values.security.expectCt.enabled | quote }}
   # SECURITY_EXPECT_CT_REPORT_URI: {{ .Values.security.expectCt.backend | quote }}

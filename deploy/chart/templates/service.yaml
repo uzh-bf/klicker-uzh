@@ -12,7 +12,7 @@ spec:
       protocol: TCP
       name: http
   selector:
-    {{- include "chart.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
 ---
 apiVersion: v1
 kind: Service
@@ -28,4 +28,4 @@ spec:
       protocol: TCP
       name: http
   selector:
-    {{- include "chart.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: backend

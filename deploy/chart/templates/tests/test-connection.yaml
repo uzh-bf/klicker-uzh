@@ -27,5 +27,5 @@ spec:
     - name: wget
       image: busybox
       command: ['wget']
-      args: ['{{ include "chart.fullname" . }}-backend:{{ .Values.backend.service.port }}']
+      args: ['{{ include "chart.fullname" . }}-backend:{{ .Values.backend.service.port }}/.well-known/apollo/server-health']
   restartPolicy: Never
