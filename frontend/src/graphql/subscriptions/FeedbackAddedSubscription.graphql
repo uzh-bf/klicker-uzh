@@ -3,6 +3,15 @@ subscription FeedbackAdded($sessionId: ID!) {
     id
     content
     votes
+    pinned
+    resolved
+    createdAt
+    resolvedAt
+    responses {
+      id
+      content
+      createdAt
+    }
     createdAt
   }
 }
