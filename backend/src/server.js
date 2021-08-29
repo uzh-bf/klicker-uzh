@@ -40,7 +40,7 @@ const server = app.listen(APP_CFG.port, (err) => {
 
   useServer({ schema: schemaWithAuthentication }, wsServer)
 
-  console.log(`[klicker-api] GraphQL ready on http://${APP_CFG.domain}:${APP_CFG.port}/${APP_CFG.path || ''}!`)
+  console.log(`[klicker-api] GraphQL ready on ${APP_CFG.domain}:${APP_CFG.port}/${APP_CFG.path || ''}!`)
 })
 
 const shutdown = (signal) => async () => {
