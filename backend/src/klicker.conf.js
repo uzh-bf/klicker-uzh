@@ -76,6 +76,11 @@ module.exports = convict({
         env: 'CACHE_REDIS_PORT',
         format: 'port',
       },
+      tls: {
+        default: false,
+        env: 'CACHE_REDIS_TLS',
+        format: 'Boolean',
+      },
     },
   },
   email: {

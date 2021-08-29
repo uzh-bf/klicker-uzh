@@ -59,4 +59,6 @@ const QuestionInstance = new mongoose.Schema(
   { timestamps: true }
 )
 
+QuestionInstance.index({ '$**': 1 })
+
 module.exports = mongoose.model('QuestionInstance', QuestionInstance)

@@ -26,7 +26,6 @@ const {
 const { logDebug } = require('../lib/utils')
 
 const redisCache = getRedis()
-const responseCache = getRedis(3)
 
 function mapPropertyIds(elem) {
   if (Array.isArray(elem)) {
@@ -267,7 +266,7 @@ const initializeResponseCache = async (
   { settings, participants, namespace }
 ) => {
   const instanceKey = `instance:${id}`
-  const transaction = responseCache.multi()
+  const transaction = redisCache.multi()
 
   // initialize auth and storage mode settings
   const isAuthEnabled = settings.isParticipantAuthenticationEnabled || false
@@ -355,7 +354,7 @@ const computeInstanceResults = async ({ id, question }) => {
   const instanceKey = `instance:${id}`
 
   // setup a transaction for result extraction from redis
-  const redisResponse = await responseCache
+  const redisResponse = await redisCache
     .multi()
     .hgetall(`${instanceKey}:results`)
     .del(`${instanceKey}:info`, `${instanceKey}:results`)
@@ -373,7 +372,7 @@ const computeInstanceResults = async ({ id, question }) => {
 
   if (QUESTION_GROUPS.FREE.includes(question.type)) {
     // extract the response hashes from redis
-    const responseHashes = await responseCache
+    const responseHashes = await redisCache
       .multi()
       .hgetall(`${instanceKey}:responseHashes`)
       .del(`${instanceKey}:responseHashes`)
@@ -388,7 +387,7 @@ const computeInstanceResults = async ({ id, question }) => {
 const getBlockedParticipants = async ({ id }) => {
   const instanceKey = `instance:${id}`
 
-  const participants = await responseCache
+  const participants = await redisCache
     .multi()
     .smembers(`${instanceKey}:participants`)
     .del(`${instanceKey}:participants`, `${instanceKey}:participantList`)
@@ -420,7 +419,7 @@ const parseResponses = (responseData) => {
 const getFullResponseData = async ({ id }) => {
   const instanceKey = `instance:${id}`
 
-  const allResponses = await responseCache
+  const allResponses = await redisCache
     .multi()
     .lrange(`${instanceKey}:responses`, 0, -1)
     .lrange(`${instanceKey}:dropped`, 0, -1)
@@ -742,9 +741,9 @@ const sessionAction = async ({ sessionId, userId }, actionType) => {
           promises.push(
             session.blocks[i].instances.map(async (instanceId) => {
               // cleanup the response cache
-              const cacheKeys = await responseCache.keys(`instance:${instanceId}:*`)
+              const cacheKeys = await redisCache.keys(`instance:${instanceId}:*`)
               if (cacheKeys.length > 0) {
-                await responseCache.del(...cacheKeys)
+                await redisCache.del(...cacheKeys)
               }
 
               // reset all instance data
@@ -978,7 +977,7 @@ async function activateBlockById({ userId, sessionId, blockId }) {
       instance.isOpen = true
 
       // if a response cache is available, hydrate it with the newly activated instances
-      if (responseCache) {
+      if (redisCache) {
         await initializeResponseCache(instance, session)
       }
 

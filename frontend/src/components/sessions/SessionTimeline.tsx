@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import classNames from 'classnames'
+import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { defineMessages, FormattedMessage } from 'react-intl'
 import { Button, Checkbox, Icon, Message, Dropdown, Menu, Modal, Table } from 'semantic-ui-react'
@@ -329,7 +329,7 @@ function SessionTimeline({
         {blocks.map(
           (block, index): React.ReactElement => (
             <div className="blockWrap">
-              <div className={classNames('waiting', { first: index === 0 })}>
+              <div className={clsx('waiting', { first: index === 0 })}>
                 <Icon
                   color={index === activeStep / 2 ? 'green' : undefined}
                   name={index === 0 ? 'video play' : 'pause circle outline'}

@@ -76,11 +76,6 @@ module.exports = convict({
       },
     },
     redis: {
-      db: {
-        default: 0,
-        env: 'CACHE_REDIS_DB',
-        format: 'nat',
-      },
       enabled: {
         default: false,
         env: 'CACHE_REDIS_ENABLED',
@@ -101,6 +96,11 @@ module.exports = convict({
         default: 6379,
         env: 'CACHE_REDIS_PORT',
         format: 'port',
+      },
+      tls: {
+        default: false,
+        env: 'CACHE_REDIS_TLS',
+        format: 'Boolean',
       },
     },
   },
@@ -285,41 +285,28 @@ module.exports = convict({
     sentry: {
       dsn: {
         default: undefined,
-        env: 'SERVICES_SENTRY_DSN',
+        env: 'SENTRY_DSN',
         format: 'url',
       },
       org: {
         default: undefined,
-        env: 'SERVICES_SENTRY_ORG',
+        env: 'SENTRY_ORG',
         format: String,
       },
       project: {
         default: undefined,
-        env: 'SERVICES_SENTRY_PROJECT',
+        env: 'SENTRY_PROJECT',
         format: String,
       },
       authToken: {
         default: undefined,
-        env: 'SERVICES_SENTRY_AUTH_TOKEN',
+        env: 'SENTRY_AUTH_TOKEN',
         format: String,
       },
       enabled: {
         default: false,
         env: 'SERVICES_SENTRY_ENABLED',
         format: Boolean,
-      },
-    },
-    slaask: {
-      enabled: {
-        default: false,
-        env: 'SERVICES_SLAASK_ENABLED',
-        format: Boolean,
-      },
-      widgetKey: {
-        default: undefined,
-        env: 'SERVICES_SLAASK_WIDGET_KEY',
-        format: String,
-        sensitive: true,
       },
     },
   },

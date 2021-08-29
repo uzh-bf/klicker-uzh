@@ -1,0 +1,3 @@
+mutation ResolveFeedback($sessionId: ID!, $feedbackId: ID!, $resolvedState: Boolean!) {
+  resolveFeedback(sessionId: $sessionId, feedbackId: $feedbackId, resolvedState: $resolvedState)
+}

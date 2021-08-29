@@ -20,7 +20,6 @@ const messages = defineMessages({
 function DeleteAccount(): React.ReactElement {
   useLogging({
     logRocket: false,
-    slaask: true,
   })
 
   const router = useRouter()

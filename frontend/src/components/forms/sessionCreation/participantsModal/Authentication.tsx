@@ -1,5 +1,5 @@
 import React from 'react'
-import classNames from 'classnames'
+import clsx from 'clsx'
 import { Modal, Segment, Grid, Divider, Header, Button } from 'semantic-ui-react'
 import { FormattedMessage } from 'react-intl'
 import { AuthenticationMode } from './SessionParticipantsModal'
@@ -24,7 +24,7 @@ function Authentication({
 
             <Grid.Row>
               <Grid.Column
-                className={classNames('option', { active: sessionAuthenticationMode === 'PASSWORD' })}
+                className={clsx('option', { active: sessionAuthenticationMode === 'PASSWORD' })}
                 onClick={(): void => onChangeSessionAuthenticationMode('PASSWORD')}
               >
                 <Header>
@@ -42,7 +42,7 @@ function Authentication({
               </Grid.Column>
 
               <Grid.Column
-                className={classNames('option', { active: sessionAuthenticationMode === 'AAI' })}
+                className={clsx('option', { active: sessionAuthenticationMode === 'AAI' })}
                 onClick={(): void => onChangeSessionAuthenticationMode('AAI')}
               >
                 <Header>

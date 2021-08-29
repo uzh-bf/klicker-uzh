@@ -1,10 +1,11 @@
-import classNames from 'classnames'
+import clsx from 'clsx'
 import _debounce from 'lodash/debounce'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect } from 'react'
 import { useMutation, useQuery } from '@apollo/client'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Message } from 'semantic-ui-react'
+import _sortBy from 'lodash/sortBy'
 
 import { withApollo } from '../lib/apollo'
 import StudentLayout from '../components/layouts/StudentLayout'
@@ -83,35 +84,27 @@ function Join(): React.ReactElement {
 
   if (loading || error || !data.joinSession || data.joinSession.status === 'COMPLETED') {
     return (
-      <div className="noSession">
+      <div className="p-4 font-bold noSession">
         {extraMessage && <Message error>{extraMessage}</Message>}
-        <Button icon="refresh" onClick={(): void => window.location.reload()} />
+        <Button className="!mb-4 !mr-4" icon="refresh" onClick={(): void => window.location.reload()} />
         <FormattedMessage
           defaultMessage="No session active. Please reload the page once a session has been started."
           id="joinSession.noSessionActive"
         />
-
-        <style jsx>{`
-          .noSession {
-            padding: 1rem;
-            font-weight: bold;
-
-            :global(button) {
-              margin-right: 1rem;
-              margin-bottom: 1rem;
-            }
-          }
-        `}</style>
       </div>
     )
   }
 
   const { id: sessionId, settings, activeInstances, feedbacks, expiresAt, timeLimit } = data.joinSession
 
-  const onSidebarActiveItemChange = (newSidebarActiveItem): any => (): void => {
-    setSidebarActiveItem(newSidebarActiveItem)
-    setSidebarVisible(false)
-  }
+  const sortedFeedbacks = _sortBy(feedbacks, ['pinned', 'votes', 'createdAt']).reverse()
+
+  const onSidebarActiveItemChange =
+    (newSidebarActiveItem): any =>
+    (): void => {
+      setSidebarActiveItem(newSidebarActiveItem)
+      setSidebarVisible(false)
+    }
 
   const onToggleSidebarVisible = (): void => setSidebarVisible((prev): boolean => !prev)
 
@@ -245,7 +238,7 @@ function Join(): React.ReactElement {
           />
         ) : (
           <div
-            className={classNames('questionArea', {
+            className={clsx('questionArea', {
               inactive: sidebarActiveItem !== 'activeQuestion',
             })}
           >
@@ -253,10 +246,11 @@ function Join(): React.ReactElement {
           </div>
         )}
 
-        {(settings.isConfusionBarometerActive || settings.isFeedbackChannelActive) && (
+        {/* {(settings.isConfusionBarometerActive || settings.isFeedbackChannelActive) && ( */}
+        {settings.isFeedbackChannelActive && (
           <FeedbackArea
             active={sidebarActiveItem === 'feedbackChannel'}
-            feedbacks={feedbacks}
+            feedbacks={sortedFeedbacks}
             handleNewConfusionTS={onNewConfusionTS}
             handleNewFeedback={onNewFeedback}
             isConfusionBarometerActive={settings.isConfusionBarometerActive}

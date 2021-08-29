@@ -23,7 +23,6 @@ const messages = defineMessages({
 function Login(): React.ReactElement {
   useLogging({
     logRocket: false,
-    slaask: true,
   })
 
   const intl = useIntl()

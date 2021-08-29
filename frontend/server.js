@@ -159,10 +159,10 @@ async function connectCache() {
 
   if (hasRedis) {
     const Redis = require('ioredis')
-    const { db, host, password, port } = CACHE_CFG.redis
-    cache = new Redis({ db, family: 4, host, password, port })
+    const { host, password, port, tls } = CACHE_CFG.redis
+    cache = new Redis({ db: 0, family: 4, host, password, port, tls })
 
-    console.log('[redis] Connected to redis (db0) for SSR caching')
+    console.log('[redis] Connected to redis (db 0) for SSR caching')
   } else {
     const LRUCache = require('lru-cache')
     cache = new LRUCache({
@@ -252,10 +252,9 @@ app
     // secure the server with helmet
     if (isProd) {
       const { csp, expectCt, frameguard, hsts, referrerPolicy } = SECURITY_CFG
-      const { googleAnalytics, slaask, logrocket } = SERVICES_CFG
+      const { googleAnalytics, logrocket } = SERVICES_CFG
 
       const optionalGoogleAnalytics = googleAnalytics.enabled ? ['www.google-analytics.com'] : []
-      const optionalSlaask = slaask.enabled ? ['cdn.slaask.com', 'js.pusher.com', 'cdn.embedly.com'] : []
       const optionalLogrocket = logrocket.enabled ? ['cdn.logrocket.io'] : []
 
       server.use(
@@ -268,10 +267,10 @@ app
               defaultSrc: csp.defaultSrc,
               fontSrc: csp.fontSrc,
               frameAncestors: frameguard.enabled && frameguard.ancestors,
-              imgSrc: [...csp.imgSrc, S3_CFG.rootUrl, ...optionalSlaask, ...optionalGoogleAnalytics],
+              imgSrc: [...csp.imgSrc, S3_CFG.rootUrl, ...optionalGoogleAnalytics],
               reportUri: csp.reportUri,
-              scriptSrc: [...csp.scriptSrc, ...optionalLogrocket, ...optionalSlaask, ...optionalGoogleAnalytics],
-              styleSrc: [...csp.styleSrc, ...optionalSlaask, ...optionalGoogleAnalytics],
+              scriptSrc: [...csp.scriptSrc, ...optionalLogrocket, ...optionalGoogleAnalytics],
+              styleSrc: [...csp.styleSrc, ...optionalGoogleAnalytics],
             },
             reportOnly: !csp.enforce,
           },

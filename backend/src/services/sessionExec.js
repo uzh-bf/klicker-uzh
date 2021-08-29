@@ -17,7 +17,7 @@ const APP_CFG = CFG.get('app')
 
 // initialize redis if available
 // const responseControl = getRedis(2)
-const responseCache = getRedis(3)
+const responseCache = getRedis()
 
 /**
  * Add a new feedback to a session
@@ -34,10 +34,12 @@ const addFeedback = async ({ sessionId, content }) => {
   }
 
   // push a new feedback into the array
-  session.feedbacks.push({ content })
+  session.feedbacks.push({ content, published: session.settings.isFeedbackChannelPublic })
 
   // save the updated session
   await session.save()
+
+  // TODO: only publish if feedback channel is public
 
   // extract the saved feedback and convert it to a plain object
   // then readd the mongo _id field under the id key and publish the result
@@ -53,6 +55,138 @@ const addFeedback = async ({ sessionId, content }) => {
   return savedFeedbackWithId
 }
 
+function assertUserMatch(session, userId) {
+  // ensure the user is authorized to modify this session
+  if (!session.user.equals(userId)) {
+    throw new ForbiddenError('UNAUTHORIZED')
+  }
+}
+
+async function pinFeedback({ sessionId, feedbackId, userId, pinState }) {
+  const session = await getRunningSession(sessionId)
+
+  assertUserMatch(session, userId)
+
+  await SessionModel.findOneAndUpdate(
+    {
+      _id: sessionId,
+      'feedbacks._id': feedbackId,
+    },
+    {
+      $set: {
+        'feedbacks.$.pinned': pinState,
+      },
+    }
+  )
+
+  return feedbackId
+}
+
+async function publishFeedback({ sessionId, feedbackId, userId, publishState }) {
+  const session = await getRunningSession(sessionId)
+
+  assertUserMatch(session, userId)
+
+  await SessionModel.findOneAndUpdate(
+    {
+      _id: sessionId,
+      'feedbacks._id': feedbackId,
+    },
+    {
+      $set: {
+        'feedbacks.$.published': publishState,
+      },
+    }
+  )
+
+  // TODO: publish the feedback if it has been private before
+
+  return feedbackId
+}
+
+async function resolveFeedback({ sessionId, feedbackId, userId, resolvedState }) {
+  const session = await getRunningSession(sessionId)
+
+  assertUserMatch(session, userId)
+
+  await SessionModel.findOneAndUpdate(
+    {
+      _id: sessionId,
+      'feedbacks._id': feedbackId,
+    },
+    resolvedState
+      ? {
+          $set: {
+            'feedbacks.$.resolved': resolvedState,
+            'feedbacks.$.pinned': false,
+          },
+          $currentDate: {
+            'feedbacks.$.resolvedAt': true,
+          },
+        }
+      : {
+          'feedbacks.$.resolved': resolvedState,
+          'feedbacks.$.resolvedAt': null,
+        }
+  )
+
+  // TODO: publish the feedback update
+
+  return feedbackId
+}
+
+async function respondToFeedback({ sessionId, feedbackId, userId, response }) {
+  const session = await getRunningSession(sessionId)
+
+  assertUserMatch(session, userId)
+
+  await SessionModel.findOneAndUpdate(
+    {
+      _id: sessionId,
+      'feedbacks._id': feedbackId,
+    },
+    {
+      $push: {
+        'feedbacks.$.responses': { content: response },
+      },
+      $set: {
+        'feedbacks.$.resolved': true,
+        'feedbacks.$.pinned': false,
+        'feedbacks.$.published': true,
+      },
+      $currentDate: {
+        'feedbacks.$.resolvedAt': true,
+      },
+    }
+  )
+
+  // TODO: publish the response on a subscription
+
+  return feedbackId
+}
+
+async function deleteFeedbackResponse({ sessionId, feedbackId, userId, responseId }) {
+  const session = await getRunningSession(sessionId)
+
+  assertUserMatch(session, userId)
+
+  await SessionModel.findOneAndUpdate(
+    {
+      _id: sessionId,
+      'feedbacks._id': feedbackId,
+    },
+    {
+      $pull: {
+        'feedbacks.$.responses': { _id: responseId },
+      },
+    }
+  )
+
+  // TODO: publish the deletion
+
+  return feedbackId
+}
+
 /**
  * Delete a feedback from a session
  * @param {*} param0
@@ -65,13 +199,24 @@ const deleteFeedback = async ({ sessionId, feedbackId, userId }) => {
     throw new ForbiddenError('UNAUTHORIZED')
   }
 
-  session.feedbacks = session.feedbacks.filter((feedback) => feedback.id !== feedbackId)
+  const updatedSession = await SessionModel.findOneAndUpdate(
+    {
+      _id: sessionId,
+    },
+    {
+      $pull: {
+        feedbacks: { _id: feedbackId },
+      },
+    },
+    {
+      new: true,
+    }
+  )
 
-  // save the updated session
-  await session.save()
+  // TODO: publish the deletion
 
   // return the updated session
-  return session
+  return updatedSession
 }
 
 /**
@@ -430,7 +575,8 @@ const joinSession = async ({ shortname, auth }) => {
           files,
         }
       }),
-    feedbacks: settings.isFeedbackChannelActive && settings.isFeedbackChannelPublic ? feedbacks : null,
+    // TODO: ensure that there is no information on reactions sent out
+    feedbacks: settings.isFeedbackChannelActive ? feedbacks.filter((feedback) => feedback.published) : null,
   }
 }
 
@@ -520,4 +666,9 @@ module.exports = {
   joinSession,
   resetQuestionBlock,
   loginParticipant,
+  pinFeedback,
+  resolveFeedback,
+  respondToFeedback,
+  deleteFeedbackResponse,
+  publishFeedback,
 }

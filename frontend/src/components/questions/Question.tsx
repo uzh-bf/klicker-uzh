@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import classNames from 'classnames'
+import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { FormattedMessage } from 'react-intl'
 import { useDrag } from 'react-dnd'
@@ -61,7 +61,7 @@ function Question({
 
   return (
     <div
-      className={classNames('question', {
+      className={clsx('question', {
         creationMode,
         draggable: creationMode,
         isArchived,
@@ -69,7 +69,7 @@ function Question({
       })}
       ref={drag}
     >
-      <div className={classNames('checker', { active: !draggable })}>
+      <div className={clsx('checker', { active: !draggable })}>
         <Checkbox
           checked={checked}
           id={`check-${id}`}

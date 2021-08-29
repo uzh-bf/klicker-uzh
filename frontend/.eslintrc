@@ -1,27 +1,13 @@
 {
-  "parser": "@typescript-eslint/parser",
-  "parserOptions": {
-    "project": "./tsconfig.json"
-  },
-
-  "extends": ["airbnb", "plugin:@typescript-eslint/recommended", "plugin:prettier/recommended", "prettier/react"],
-  "plugins": ["@typescript-eslint", "babel", "react", "jsx-a11y", "import"],
-
+  "extends": ["airbnb", "next/core-web-vitals", "plugin:prettier/recommended"],
   "rules": {
     "react/static-property-placement": 0,
     "react/jsx-props-no-spreading": 0,
     "@typescript-eslint/indent": 0,
     "@typescript-eslint/no-var-requires": 0,
-    "@typescript-eslint/member-delimiter-style": [
-      1,
-      {
-        "multiline": {
-          "delimiter": "none"
-        }
-      }
-    ],
     "@typescript-eslint/no-explicit-any": 0,
 
+    "no-use-before-define": 0,
     "no-console": 0,
     "function-paren-newline": 0,
     "no-mixed-operators": 0,
@@ -29,10 +15,8 @@
     "global-require": 0,
 
     "no-unused-expressions": 0,
-    "babel/no-unused-expressions": 1,
 
     "quotes": 0,
-    "babel/quotes": [1, "single"],
 
     "import/extensions": [0, "never", { "ts": "never" }],
     "import/prefer-default-export": 0,
@@ -74,9 +58,4 @@
     "node": true,
     "jest": true
   },
-  "settings": {
-    "import/resolver": {
-      "typescript": {}
-    }
-  }
 }

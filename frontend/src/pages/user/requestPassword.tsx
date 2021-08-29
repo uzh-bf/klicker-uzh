@@ -17,9 +17,7 @@ const messages = defineMessages({
 })
 
 function RequestPassword(): React.ReactElement {
-  useLogging({
-    slaask: true,
-  })
+  useLogging()
 
   const intl = useIntl()
 

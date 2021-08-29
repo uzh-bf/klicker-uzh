@@ -1,5 +1,5 @@
 import React from 'react'
-import classNames from 'classnames'
+import clsx from 'clsx'
 import { Icon, Button, Input } from 'semantic-ui-react'
 
 import styles from './styles'
@@ -31,17 +31,12 @@ function SCCreationOption({
   handleMoveDown,
 }: Props): React.ReactElement {
   return (
-    <div className={classNames('option', { correct })}>
+    <div className={clsx('option', { correct })}>
       <button className="leftAction" disabled={disabled} type="button" onClick={handleDelete}>
         <Icon name="trash" />
       </button>
 
-      <button
-        className={classNames('toggle', { correct })}
-        disabled={disabled}
-        type="button"
-        onClick={handleCorrectToggle}
-      >
+      <button className={clsx('toggle', { correct })} disabled={disabled} type="button" onClick={handleCorrectToggle}>
         {correct ? <Icon name="checkmark" /> : <Icon name="remove" />}
       </button>
 

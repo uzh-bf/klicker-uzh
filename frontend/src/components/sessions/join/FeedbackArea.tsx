@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react'
-import classNames from 'classnames'
+import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { FormattedMessage } from 'react-intl'
-import { Form, Button } from 'semantic-ui-react'
+import { Form, Button, TextArea } from 'semantic-ui-react'
+import { partition, sortBy } from 'ramda'
+import useStickyState from '../../../lib/hooks/useStickyState'
 
-import ConfusionSlider from '../../confusion/ConfusionSlider'
-import Feedback from '../../feedbacks/Feedback'
+import ConfusionSlider from '../../interaction/confusion/ConfusionSlider'
+import PublicFeedback from './PublicFeedback'
 
 interface Props {
   active: boolean
@@ -34,56 +36,212 @@ function FeedbackArea({
   shortname,
   sessionId,
 }: Props): React.ReactElement {
-  const [confusionDifficulty, setConfusionDifficulty] = useState()
-  const [confusionSpeed, setConfusionSpeed] = useState()
+  // const [confusionDifficulty, setConfusionDifficulty] = useState()
+  // const [confusionSpeed, setConfusionSpeed] = useState()
   const [feedbackInputValue, setFeedbackInputValue] = useState('')
+  const [processedFeedbacks, setProcessedFeedbacks] = useState({
+    open: [],
+    resolved: [],
+  })
+  const [upvotedFeedbacks, setUpvotedFeedbacks] = useStickyState({}, 'feedbackUpvotes')
+  const [reactions, setReactions] = useStickyState({}, 'responseReactions')
 
-  useEffect((): void => {
-    try {
-      if (window.sessionStorage) {
-        const confusion = JSON.parse(sessionStorage.getItem(`${shortname}-${sessionId}-confusion`))
-        setConfusionDifficulty(confusion.confusionDifficulty)
-        setConfusionSpeed(confusion.confusionSpeed)
-      }
-    } catch (e) {
-      console.error(e)
-    }
-  }, [])
-
-  const onNewConfusionTS = (): void => {
-    // send the new confusion entry to the server
-    handleNewConfusionTS({
-      difficulty: confusionDifficulty,
-      speed: confusionSpeed,
+  useEffect(() => {
+    const [resolved, open] = partition((feedback) => feedback.resolved, feedbacks)
+    setProcessedFeedbacks({
+      resolved: sortBy((o) => o.votes, resolved as any[]),
+      open: sortBy((o) => o.votes, open as any[]),
     })
+  }, [feedbacks])
 
-    // update the confusion cookie
-    try {
-      if (window.sessionStorage) {
-        sessionStorage.setItem(
-          `${shortname}-${sessionId}-confusion`,
-          JSON.stringify({
-            difficulty: confusionDifficulty,
-            speed: confusionSpeed,
-            timestamp: dayjs().unix(),
-          })
-        )
-      }
-    } catch (e) {
-      console.error(e)
-    }
-  }
+  useEffect(() => {
+    setProcessedFeedbacks((prev) => ({
+      open: prev.open.map((feedback) => ({
+        ...feedback,
+        upvoted: !!upvotedFeedbacks[feedback.id],
+        responses: feedback.responses.map((response) => ({
+          ...response,
+          positive: reactions[response.id] > 0,
+          negative: reactions[response.id] < 0,
+        })),
+      })),
+      resolved: prev.resolved.map((feedback) => ({
+        ...feedback,
+        upvoted: !!upvotedFeedbacks[feedback.id],
+        responses: feedback.responses.map((response) => ({
+          ...response,
+          positive: reactions[response.id] > 0,
+          negative: reactions[response.id] < 0,
+        })),
+      })),
+    }))
+  }, [upvotedFeedbacks, reactions])
+
+  // useEffect((): void => {
+  //   try {
+  //     if (window.sessionStorage) {
+  //       const confusion = JSON.parse(sessionStorage.getItem(`${shortname}-${sessionId}-confusion`))
+  //       setConfusionDifficulty(confusion.confusionDifficulty)
+  //       setConfusionSpeed(confusion.confusionSpeed)
+  //     }
+  //   } catch (e) {
+  //     console.error(e)
+  //   }
+  // }, [])
+
+  // const onNewConfusionTS = (): void => {
+  //   // send the new confusion entry to the server
+  //   handleNewConfusionTS({
+  //     difficulty: confusionDifficulty,
+  //     speed: confusionSpeed,
+  //   })
+
+  //   // update the confusion cookie
+  //   try {
+  //     if (window.sessionStorage) {
+  //       sessionStorage.setItem(
+  //         `${shortname}-${sessionId}-confusion`,
+  //         JSON.stringify({
+  //           difficulty: confusionDifficulty,
+  //           speed: confusionSpeed,
+  //           timestamp: dayjs().unix(),
+  //         })
+  //       )
+  //     }
+  //   } catch (e) {
+  //     console.error(e)
+  //   }
+  // }
 
   const onNewFeedback = (): void => {
     setFeedbackInputValue('')
     handleNewFeedback({ content: feedbackInputValue })
   }
 
-  return (
-    <div className={classNames('feedbackArea', { active })}>
-      <h1 className="header">Feedback-Channel</h1>
+  const handleUpvoteFeedback = (feedbackId: string) => {
+    setUpvotedFeedbacks((prev) => ({ ...prev, [feedbackId]: !prev[feedbackId] }))
+  }
 
-      {isConfusionBarometerActive && (
+  const handlePositiveResponseReaction = (responseId: string, feedbackId: string) => {
+    setReactions((prev) => {
+      return {
+        ...prev,
+        [responseId]: prev[responseId] > 0 ? undefined : 1,
+      }
+    })
+  }
+
+  const handleNegativeResponseReaction = (responseId: string, feedbackId: string) => {
+    setReactions((prev) => {
+      return {
+        ...prev,
+        [responseId]: prev[responseId] < 0 ? undefined : -1,
+      }
+    })
+  }
+
+  return (
+    <div
+      className={clsx(
+        'bg-white p-2 md:p-4 flex-col md:border-primary md:border-solid md:border flex-1 md:flex',
+        active ? 'flex' : 'hidden'
+      )}
+    >
+      <h1>Feedback-Channel</h1>
+
+      {isFeedbackChannelActive && (
+        <div>
+          <Form>
+            <Form.Field className="!mb-2">
+              <TextArea
+                className="h-24"
+                name="feedbackInput"
+                placeholder="Post a question or feedback..."
+                rows={4}
+                value={feedbackInputValue}
+                onChange={(e): void => setFeedbackInputValue(e.target.value)}
+              />
+            </Form.Field>
+
+            <Button primary disabled={!feedbackInputValue} type="submit" onClick={onNewFeedback}>
+              <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
+            </Button>
+          </Form>
+        </div>
+      )}
+
+      <div className="flex flex-col justify-between h-full mt-4">
+        {isFeedbackChannelActive && feedbacks && feedbacks.length > 0 && (
+          <div>
+            {processedFeedbacks.open.length > 0 && (
+              <div>
+                <h2 className="!mb-2">Open</h2>
+                {processedFeedbacks.open.map(
+                  ({ id, content, votes, responses, createdAt, pinned, resolved, upvoted }): React.ReactElement => (
+                    <div className="mt-2 first:mt-0" key={id}>
+                      <PublicFeedback
+                        content={content}
+                        createdAt={createdAt}
+                        pinned={pinned}
+                        resolved={resolved}
+                        responses={responses}
+                        upvoted={upvoted}
+                        votes={votes}
+                        onNegativeResponseReaction={(responseId: string) =>
+                          handleNegativeResponseReaction(responseId, id)
+                        }
+                        onPositiveResponseReaction={(responseId: string) =>
+                          handlePositiveResponseReaction(responseId, id)
+                        }
+                        onUpvoteFeedback={() => handleUpvoteFeedback(id)}
+                      />
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+            {processedFeedbacks.resolved.length > 0 && (
+              <div className="mt-4">
+                <h2 className="!mb-2">Resolved</h2>
+                {processedFeedbacks.resolved.map(
+                  ({
+                    id,
+                    content,
+                    votes,
+                    responses,
+                    createdAt,
+                    resolvedAt,
+                    pinned,
+                    resolved,
+                    upvoted,
+                  }): React.ReactElement => (
+                    <div className="mt-2 first:mt-0" key={id}>
+                      <PublicFeedback
+                        content={content}
+                        createdAt={createdAt}
+                        pinned={pinned}
+                        resolved={resolved}
+                        resolvedAt={resolvedAt}
+                        responses={responses}
+                        upvoted={upvoted}
+                        votes={votes}
+                        onNegativeResponseReaction={(responseId: string) =>
+                          handleNegativeResponseReaction(responseId, id)
+                        }
+                        onPositiveResponseReaction={(responseId: string) =>
+                          handlePositiveResponseReaction(responseId, id)
+                        }
+                      />
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* {isConfusionBarometerActive && (
         <div className="confusion">
           <ConfusionSlider
             handleChange={(newValue): void => setConfusionSpeed(newValue)}
@@ -113,139 +271,7 @@ function FeedbackArea({
             value={confusionDifficulty}
           />
         </div>
-      )}
-
-      <div className="feedbacks">
-        {isFeedbackChannelActive && (
-          <Form className="newFeedback">
-            <Form.Field>
-              <label htmlFor="feedbackInput">
-                <h2 className="sectionTitle">
-                  <FormattedMessage defaultMessage="New open feedback" id="joinSession.newFeedbackInput.label" />
-                </h2>
-                <textarea
-                  name="feedbackInput"
-                  value={feedbackInputValue}
-                  onChange={(e): void => setFeedbackInputValue(e.target.value)}
-                />
-              </label>
-            </Form.Field>
-
-            <Button primary disabled={!feedbackInputValue} type="submit" onClick={onNewFeedback}>
-              <FormattedMessage defaultMessage="Submit" id="common.button.submit" />
-            </Button>
-          </Form>
-        )}
-        {isFeedbackChannelActive && feedbacks && feedbacks.length > 0 && (
-          <div className="existingFeedbacks">
-            <h2>
-              <FormattedMessage defaultMessage="All feedbacks" id="joinSession.allFeedbacks" />
-            </h2>
-
-            {feedbacks.map(
-              ({ id, content, votes }): React.ReactElement => (
-                <div className="feedback" key={id}>
-                  <Feedback
-                    alreadyVoted={false}
-                    content={content}
-                    showDelete={false}
-                    updateVotes={(): void => null}
-                    votes={votes}
-                  />
-                </div>
-              )
-            )}
-          </div>
-        )}
-      </div>
-
-      <style jsx>{`
-        @import 'src/theme';
-
-        .feedbackArea {
-          position: relative;
-
-          display: none;
-          flex-direction: column;
-
-          padding: 1rem;
-          padding-bottom: 5rem;
-
-          flex: 1;
-
-          background-color: white;
-
-          &.active {
-            display: flex;
-          }
-
-          .header {
-            display: none;
-          }
-
-          .confusion {
-            background-color: $color-primary-20p;
-            border: 1px solid $color-primary;
-            padding: 1rem;
-
-            > :global(*:first-child) {
-              margin-bottom: 5rem;
-            }
-
-            > :global(*:last-child) {
-              margin-bottom: 3rem;
-            }
-          }
-
-          .feedbacks {
-            flex: 1;
-            margin-top: 1rem;
-
-            h2 {
-              font-size: 1.1rem !important;
-              margin-bottom: 0.5rem;
-            }
-
-            :global(form.newFeedback) {
-              margin-bottom: 0;
-
-              textarea {
-                height: 6rem;
-              }
-
-              :global(.field) {
-                margin-bottom: 0.5rem;
-              }
-            }
-
-            .existingFeedbacks {
-              margin-top: 1rem;
-
-              .feedback:not(:last-child) {
-                margin-bottom: 0.3rem;
-              }
-            }
-          }
-
-          .sectionTitle {
-            font-weight: bold;
-            font-size: 1rem;
-            margin-bottom: 0.5rem;
-          }
-
-          @include desktop-tablet-only {
-            display: flex;
-
-            border: 1px solid $color-primary;
-            margin-left: 0.25rem;
-
-            .header {
-              display: block;
-              font-size: 1.2rem !important;
-            }
-          }
-        }
-      `}</style>
+      )} */}
     </div>
   )
 }

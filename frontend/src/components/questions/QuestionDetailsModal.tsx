@@ -40,82 +40,82 @@ function QuestionDetailsModal({ isOpen, handleSetIsOpen, questionId }: Props): R
     }
   }, [questionLoading])
 
-  const onSubmit = (id: string): any => (isNewVersion: boolean): any => async (
-    { title: newTitle, content, options, solution, tags: newTags, files },
-    { setSubmitting }
-  ): Promise<void> => {
-    // split files into newly added and existing entities
-    const existingFiles = files.filter((file): boolean => !!file.id)
-    const newFiles = files.filter((file): boolean => !file.id)
+  const onSubmit =
+    (id: string): any =>
+    (isNewVersion: boolean): any =>
+    async ({ title: newTitle, content, options, solution, tags: newTags, files }, { setSubmitting }): Promise<void> => {
+      // split files into newly added and existing entities
+      const existingFiles = files.filter((file): boolean => !!file.id)
+      const newFiles = files.filter((file): boolean => !file.id)
 
-    // request presigned urls and filenames for newly added files
-    const fileEntities = await getPresignedURLs(newFiles, requestPresignedURL)
+      // request presigned urls and filenames for newly added files
+      const fileEntities = await getPresignedURLs(newFiles, requestPresignedURL)
 
-    // upload (put) the new files to the corresponding presigned urls
-    await uploadFilesToPresignedURLs(fileEntities)
+      // upload (put) the new files to the corresponding presigned urls
+      await uploadFilesToPresignedURLs(fileEntities)
 
-    // combine existing files and newly uploaded files into a single array
-    const allFiles = existingFiles.concat(
-      fileEntities.map(({ id: fileId, file, fileName }): any => ({
-        id: fileId,
-        name: fileName,
-        originalName: file.name,
-        type: file.type,
-        description: file.description,
-      }))
-    )
+      // combine existing files and newly uploaded files into a single array
+      const allFiles = existingFiles.concat(
+        fileEntities.map(({ id: fileId, file, fileName }): any => ({
+          id: fileId,
+          name: fileName,
+          originalName: file.name,
+          type: file.type,
+          description: file.description,
+        }))
+      )
 
-    // modify the question
-    await editQuestion({
-      // reload the question details and tags after update
-      // TODO: replace with optimistic updates
-      refetchQueries: [{ query: QuestionPoolQuery }, { query: TagListQuery }],
-      // update the cache after the mutation has completed
-      update: (store, { data: { modifyQuestion } }): void => {
-        const query = {
-          query: QuestionDetailsQuery,
-          variables: { id: questionId },
-        }
+      // modify the question
+      await editQuestion({
+        // reload the question details and tags after update
+        // TODO: replace with optimistic updates
+        refetchQueries: [{ query: QuestionPoolQuery }, { query: TagListQuery }],
+        // update the cache after the mutation has completed
+        update: (store, { data: { modifyQuestion } }): void => {
+          const query = {
+            query: QuestionDetailsQuery,
+            variables: { id: questionId },
+          }
 
-        // get the data from the store
-        const cache: any = store.readQuery(query)
+          // get the data from the store
+          const cache: any = store.readQuery(query)
 
-        cache.question.title = modifyQuestion.title
-        cache.question.versions = modifyQuestion.versions
-        cache.question.tags = modifyQuestion.tags
+          cache.question.title = modifyQuestion.title
+          cache.question.versions = modifyQuestion.versions
+          cache.question.tags = modifyQuestion.tags
 
-        // write the updated data to the store
-        store.writeQuery({
-          ...query,
-          data: cache,
-        })
-      },
-      variables: _omitBy(
-        isNewVersion
-          ? {
-              content: JSON.stringify(convertToRaw(content.getCurrentContent())),
-              files: omitDeepArray(allFiles, '__typename'),
-              id,
-              // HACK: omitDeep for typename removal
-              // TODO: check https://github.com/apollographql/apollo-client/issues/1564
-              // this shouldn't be necessary at all
-              options: options && omitDeep(options, '__typename'),
-              solution,
-              tags: newTags,
-              title: newTitle,
-            }
-          : {
-              id,
-              tags: newTags,
-              title: newTitle,
-            },
-        _isNil
-      ),
-    })
+          // write the updated data to the store
+          store.writeQuery({
+            ...query,
+            data: cache,
+          })
+        },
+        variables: _omitBy(
+          isNewVersion
+            ? {
+                content: JSON.stringify(convertToRaw(content.getCurrentContent())),
+                files: omitDeepArray(allFiles, '__typename'),
+                id,
+                // HACK: omitDeep for typename removal
+                // TODO: check https://github.com/apollographql/apollo-client/issues/1564
+                // this shouldn't be necessary at all
+                options: options && omitDeep(options, '__typename'),
+                solution,
+                tags: newTags,
+                title: newTitle,
+              }
+            : {
+                id,
+                tags: newTags,
+                title: newTitle,
+              },
+          _isNil
+        ),
+      })
 
-    setActiveVersion(activeVersion + 1)
-    setSubmitting(false)
-  }
+      setActiveVersion(activeVersion + 1)
+      setSubmitting(false)
+    }
 
   // if the tags or the question is still loading, return null
   if (tagsLoading || questionLoading || !tagList || !tagList.tags || !questionDetails || !questionDetails.question) {

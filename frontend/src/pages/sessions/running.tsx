@@ -8,9 +8,8 @@ import { defineMessages, useIntl, FormattedMessage } from 'react-intl'
 import { useToasts } from 'react-toast-notifications'
 import { Message, Icon } from 'semantic-ui-react'
 
+import AudienceInteraction from '../../components/interaction/AudienceInteraction'
 import useLogging from '../../lib/hooks/useLogging'
-import ConfusionBarometer from '../../components/confusion/ConfusionBarometer'
-import FeedbackChannel from '../../components/feedbacks/FeedbackChannel'
 import SessionTimeline from '../../components/sessions/SessionTimeline'
 import TeacherLayout from '../../components/layouts/TeacherLayout'
 import AccountSummaryQuery from '../../graphql/queries/AccountSummaryQuery.graphql'
@@ -20,10 +19,8 @@ import PauseSessionMutation from '../../graphql/mutations/PauseSessionMutation.g
 import CancelSessionMutation from '../../graphql/mutations/CancelSessionMutation.graphql'
 import UpdateSessionSettingsMutation from '../../graphql/mutations/UpdateSessionSettingsMutation.graphql'
 import ActivateNextBlockMutation from '../../graphql/mutations/ActivateNextBlockMutation.graphql'
-import DeleteFeedbackMutation from '../../graphql/mutations/DeleteFeedbackMutation.graphql'
 import SessionListQuery from '../../graphql/queries/SessionListQuery.graphql'
-import FeedbackAddedSubscription from '../../graphql/subscriptions/FeedbackAddedSubscription.graphql'
-import ConfusionAddedSubscription from '../../graphql/subscriptions/ConfusionAddedSubscription.graphql'
+
 import RunningSessionUpdatedSubscription from '../../graphql/subscriptions/RunningSessionUpdatedSubscription.graphql'
 import ResetQuestionBlockMutation from '../../graphql/mutations/ResetQuestionBlockMutation.graphql'
 import ActivateBlockByIdMutation from '../../graphql/mutations/ActivateBlockByIdMutation.graphql'
@@ -50,7 +47,7 @@ const messages = defineMessages({
 })
 
 function Running(): React.ReactElement {
-  useLogging({ slaask: true })
+  useLogging()
 
   const intl = useIntl()
   const router = useRouter()
@@ -70,7 +67,6 @@ function Running(): React.ReactElement {
   const [resetQuestionBlock, { loading: isResetQuestionBlockLoading }] = useMutation(ResetQuestionBlockMutation)
   const [cancelSession, { loading: isCancelSessionLoading }] = useMutation(CancelSessionMutation)
   const [activateNextBlock, { loading: isActivateNextBlockLoading }] = useMutation(ActivateNextBlockMutation)
-  const [deleteFeedback, { loading: isDeleteFeedbackLoading }] = useMutation(DeleteFeedbackMutation)
   const [activateBlockById, { loading: isActivateBlockByIdLoading }] = useMutation(ActivateBlockByIdMutation)
 
   const [isParticipantListVisible, setIsParticipantListVisible] = useState(false)
@@ -84,7 +80,6 @@ function Running(): React.ReactElement {
     isResetQuestionBlockLoading,
     isCancelSessionLoading,
     isActivateNextBlockLoading,
-    isDeleteFeedbackLoading,
     isActivateBlockByIdLoading,
   ])
 
@@ -116,8 +111,8 @@ function Running(): React.ReactElement {
         } = data.runningSession
 
         return (
-          <div className="runningSession">
-            <div className="sessionProgress">
+          <div className="p-4 md:p-8 lg:py-8 lg:px-[10%]">
+            <div className="mb-8 md:p-2 ">
               {settings.isParticipantAuthenticationEnabled && (
                 <Message icon warning>
                   <Icon name="lock" />
@@ -126,7 +121,7 @@ function Running(): React.ReactElement {
                     id="runningSession.string.restrictedSession"
                   />
                   <a
-                    className="participantListTrigger"
+                    className="ml-2 cursor-pointer"
                     role="button"
                     tabIndex={0}
                     onClick={(): void => setIsParticipantListVisible(true)}
@@ -256,145 +251,18 @@ function Running(): React.ReactElement {
               />
             </div>
 
-            <div className="confusionBarometer">
-              <ConfusionBarometer
-                confusionTS={confusionTS}
-                handleActiveToggle={(): void => {
-                  updateSettings({
-                    refetchQueries: [{ query: RunningSessionQuery }],
-                    variables: {
-                      sessionId: id,
-                      settings: {
-                        isConfusionBarometerActive: !settings.isConfusionBarometerActive,
-                      },
-                    },
-                  })
-                }}
-                isActive={settings.isConfusionBarometerActive}
-                subscribeToMore={(): void => {
-                  subscribeToMore({
-                    document: ConfusionAddedSubscription,
-                    updateQuery: (prev, { subscriptionData }): any => {
-                      if (!subscriptionData.data) return prev
-                      return {
-                        ...prev,
-                        runningSession: {
-                          ...prev.runningSession,
-                          confusionTS: [...prev.runningSession.confusionTS, subscriptionData.data.confusionAdded],
-                        },
-                      }
-                    },
-                    variables: { sessionId: id },
-                  })
-                }}
-              />
-            </div>
-
-            <div className="feedbackChannel">
-              <FeedbackChannel
-                feedbacks={feedbacks}
-                handleActiveToggle={(): void => {
-                  updateSettings({
-                    refetchQueries: [{ query: RunningSessionQuery }],
-                    variables: {
-                      sessionId: id,
-                      settings: {
-                        isFeedbackChannelActive: !settings.isFeedbackChannelActive,
-                      },
-                    },
-                  })
-                }}
-                handleDeleteFeedback={(feedbackId: string): void => {
-                  deleteFeedback({
-                    variables: { feedbackId, sessionId: id },
-                  })
-                }}
-                handlePublicToggle={(): void => {
-                  updateSettings({
-                    refetchQueries: [{ query: RunningSessionQuery }],
-                    variables: {
-                      sessionId: id,
-                      settings: {
-                        isFeedbackChannelPublic: !settings.isFeedbackChannelPublic,
-                      },
-                    },
-                  })
-                }}
-                isActive={settings.isFeedbackChannelActive}
-                isPublic={settings.isFeedbackChannelPublic}
-                subscribeToMore={(): void => {
-                  subscribeToMore({
-                    document: FeedbackAddedSubscription,
-                    updateQuery: (prev, { subscriptionData }): any => {
-                      if (!subscriptionData.data) return prev
-                      return {
-                        ...prev,
-                        runningSession: {
-                          ...prev.runningSession,
-                          feedbacks: [...prev.runningSession.feedbacks, subscriptionData.data.feedbackAdded],
-                        },
-                      }
-                    },
-                    variables: { sessionId: id },
-                  })
-                }}
-              />
-            </div>
+            <AudienceInteraction
+              confusionTS={confusionTS}
+              feedbacks={feedbacks}
+              isConfusionBarometerActive={settings.isConfusionBarometerActive}
+              isFeedbackChannelActive={settings.isFeedbackChannelActive}
+              isFeedbackChannelPublic={settings.isFeedbackChannelPublic}
+              sessionId={id}
+              subscribeToMore={subscribeToMore}
+            />
           </div>
         )
       })()}
-
-      <style jsx>{`
-        @import 'src/theme';
-
-        .runningSession {
-          display: flex;
-          flex-direction: column;
-
-          padding: 1rem;
-        }
-
-        .sessionProgress,
-        .confusionBarometer,
-        .feedbackChannel {
-          flex: 1;
-
-          margin-bottom: 1rem;
-        }
-
-        a.participantListTrigger {
-          cursor: pointer;
-          margin-left: 0.5rem;
-        }
-
-        @include desktop-tablet-only {
-          .runningSession {
-            flex-flow: row wrap;
-
-            padding: 2rem;
-          }
-
-          .sessionProgress,
-          .confusionBarometer,
-          .feedbackChannel {
-            padding: 0.5rem;
-          }
-
-          .sessionProgress {
-            flex: 0 0 100%;
-            max-width: 100%;
-          }
-          .confusionBarometer {
-            flex: 0 0 40%;
-          }
-        }
-
-        @include desktop-only {
-          .runningSession {
-            padding: 2rem 10%;
-          }
-        }
-      `}</style>
     </TeacherLayout>
   )
 }

@@ -86,7 +86,7 @@ function StackChart({ isSolutionShown, data, totalResponses }: Props): React.Rea
           dataKey="count"
           isAnimationActive={false}
           // HACK: don't animate as it causes labels to disappear
-          maxBarSize="5rem"
+          maxBarSize={100}
           stackId="a"
         >
           <LabelList dataKey="count" fill="white" position="inside" stroke="white" style={{ fontSize: '3rem' }} />
@@ -101,7 +101,7 @@ function StackChart({ isSolutionShown, data, totalResponses }: Props): React.Rea
           dataKey="residual"
           isAnimationActive={false}
           // HACK: don't animate as it causes labels to disappear
-          maxBarSize="5rem"
+          maxBarSize={100}
           stackId="a"
         >
           <LabelList dataKey="residual" fill="grey" position="inside" stroke="grey" style={{ fontSize: '3rem' }} />

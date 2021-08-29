@@ -40,12 +40,14 @@ function BlockSettingsForm({ disabled, sessionId, questionBlockId, initialTimeLi
 
   const onModalOpen = (): void => setIsModalVisible(true)
   const onModalClose = (): void => setIsModalVisible(false)
-  const onResetTimeLimit = ({ setFieldValue, setSubmitting }): any => async (): Promise<void> => {
-    setSubmitting(true)
-    await modifyQuestionBlock({ variables: { sessionId, id: questionBlockId, timeLimit: -1 } })
-    setFieldValue('timeLimit', -1)
-    setSubmitting(false)
-  }
+  const onResetTimeLimit =
+    ({ setFieldValue, setSubmitting }): any =>
+    async (): Promise<void> => {
+      setSubmitting(true)
+      await modifyQuestionBlock({ variables: { sessionId, id: questionBlockId, timeLimit: -1 } })
+      setFieldValue('timeLimit', -1)
+      setSubmitting(false)
+    }
 
   return (
     <Formik

@@ -56,13 +56,20 @@ const { createLoaders } = require('./lib/loaders')
 // use username and password authentication if passed in the environment
 // otherwise assume that no authentication needed (e.g. docker)
 const mongoConfig = {
-  keepAlive: true,
-  reconnectTries: Number.MAX_VALUE,
-  reconnectInterval: 1000,
-  promiseLibrary: global.Promise,
+  // keepAlive: true,
+  // promiseLibrary: global.Promise,
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  retryWrites: false,
 }
 if (MONGO_CFG.user && MONGO_CFG.password) {
-  mongoose.connect(`mongodb://${MONGO_CFG.user}:${MONGO_CFG.password}@${MONGO_CFG.url}`, mongoConfig)
+  mongoose.connect(`mongodb://${MONGO_CFG.url}`, {
+    ...mongoConfig,
+    auth: {
+      user: MONGO_CFG.user,
+      password: MONGO_CFG.password,
+    },
+  })
 } else {
   mongoose.connect(`mongodb://${MONGO_CFG.url}`, mongoConfig)
 }
@@ -85,9 +92,7 @@ mongoose.connection
   })
 
 // initialize a connection to redis
-const pageCache = getRedis()
-const limitRedis = getRedis(1)
-const responseCache = getRedis(3)
+const redisCache = getRedis()
 
 // initialize an express server
 const app = express()
@@ -172,7 +177,7 @@ if (isProd) {
 
   // add a rate limiting middleware
   if (SECURITY_CFG.rateLimit.enabled) {
-    const RedisStore = require('rate-limit-redis')
+    // const RedisStore = require('rate-limit-redis')
 
     const { windowMs, max } = SECURITY_CFG.rateLimit
 
@@ -193,11 +198,11 @@ if (isProd) {
           Raven.captureException(error)
         }
       },
-      store: new RedisStore({
-        client: limitRedis,
-        expiry: Math.round(windowMs / 1000),
-        prefix: 'limiter:',
-      }),
+      // store: new RedisStore({
+      //   client: redisCache,
+      //   expiry: Math.round(windowMs / 1000),
+      //   prefix: 'limiter:',
+      // }),
     }
 
     middleware.push(new RateLimit(limiterSettings))
@@ -280,15 +285,11 @@ apollo.applyMiddleware({
     }
 
     // check connection to redis
-    if (
-      (limitRedis && limitRedis.status !== 'ready') ||
-      (pageCache && pageCache.status !== 'ready') ||
-      (responseCache && responseCache.status !== 'ready')
-    ) {
+    if (redisCache && redisCache.status !== 'ready') {
       console.error('[klicker-react] Redis connection failure...')
       throw new Error('REDIS_CONNECTION_ERROR')
     }
   },
 })
 
-module.exports = { app, apollo }
+module.exports = { app, apollo, schemaWithAuthentication }

@@ -4,12 +4,6 @@ import getConfig from 'next/config'
 
 const { publicRuntimeConfig } = getConfig()
 
-declare global {
-  interface Window {
-    requestIdleCallback: any
-  }
-}
-
 function computeFingerprint(resolve, setCookie = true): void {
   const Fingerprint2 = require('fingerprintjs2')
   Fingerprint2.get({}, (components): void => {

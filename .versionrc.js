@@ -22,47 +22,36 @@ module.exports = {
   ),
   types: [
     {
-      type: 'docs',
-      section: 'Documentation',
+      type: 'feat',
+      section: 'Features',
     },
     {
       type: 'enhance',
       section: 'Enhancements',
     },
     {
-      type: 'feat',
-      section: 'Features',
-    },
-    {
       type: 'fix',
       section: 'Bug Fixes',
+    },
+    {
+      type: 'docs',
+      section: 'Documentation',
     },
     {
       type: 'refactor',
       section: 'Refactors',
     },
     {
-      type: 'wip',
-      section: 'Work in Progress',
-    },
-    {
       type: 'perf',
       section: 'Performance',
     },
     {
+      type: 'deploy',
+      section: 'Deployment',
+    },
+    {
       type: 'deps',
       section: 'Dependencies',
-    },
-    {
-      type: 'style',
-      section: 'Styling',
-    },
-    {
-      type: 'chore',
-    },
-    {
-      type: 'test',
-      section: 'Testing',
     },
     {
       type: 'build',
@@ -73,8 +62,20 @@ module.exports = {
       section: 'Build and CI',
     },
     {
-      type: 'deploy',
-      section: 'Deployment',
+      type: 'chore',
+      section: 'Other',
+    },
+    {
+      type: 'wip',
+      section: 'Other',
+    },
+    {
+      type: 'test',
+      section: 'Other',
+    },
+    {
+      type: 'style',
+      section: 'Other',
     },
   ],
 }

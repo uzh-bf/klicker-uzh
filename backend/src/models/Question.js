@@ -39,6 +39,8 @@ const Question = new mongoose.Schema(
   { timestamps: true }
 )
 
+Question.index({ '$**': 1 })
+
 module.exports = {
   QuestionModel: mongoose.model('Question', Question),
 }
