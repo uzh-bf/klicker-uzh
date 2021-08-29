@@ -3,4 +3,4 @@ name: klicker-uzh
 description: A Helm chart for the KlickerUZH
 type: application
 version: 0.1.0
-appVersion: "v1.6.0-alpha.4"
+appVersion: "v1.6.0-alpha.5"
