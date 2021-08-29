@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0-alpha.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-alpha.1...v1.6.0-alpha.2) (2021-08-29)
+
+
+### Bug Fixes
+
+* import semantic in globals.css to prevent it being purged incorrectly ([ca3b7a9](https://github.com/uzh-bf/klicker-uzh/commit/ca3b7a9144891aa525860e0ad82a1df49a61bc3f))
+
+
+### Enhancements
+
+* remove the protocol from startup logging as it is not relevant ([91b6728](https://github.com/uzh-bf/klicker-uzh/commit/91b6728831ba0f08742d447cd5163cd6180f6018))
+* update the helm chart for a working staging deployment ([450b7ad](https://github.com/uzh-bf/klicker-uzh/commit/450b7adffb9e705d95dfc4cb77f49ac5a83c663a))
+
+
+### Other
+
+* add cors and rate limit to config map for backend ([e1bb328](https://github.com/uzh-bf/klicker-uzh/commit/e1bb3287eab91f3bab5170fa6056a58a20cfddf4))
+* bump the version of klicker-uzh to use in the helm chart ([dbc3220](https://github.com/uzh-bf/klicker-uzh/commit/dbc322066cdbaf27d5167d58b9f9d6f3be95e3d2))
+* ensure that git hooks are skipped on releasing ([dce54f3](https://github.com/uzh-bf/klicker-uzh/commit/dce54f3a9f57acfa3cb3845df668e87127a6c550))
+* remove legacy helm chart and update app version ([bf82391](https://github.com/uzh-bf/klicker-uzh/commit/bf82391064540129e23e396cf2e8a71a2f222355))
+
 ## [1.6.0-alpha.1](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-alpha.0...v1.6.0-alpha.1) (2021-08-29)
 
 
