@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import classNames from 'classnames'
+import clsx from 'clsx'
 import _without from 'lodash/without'
 import _get from 'lodash/get'
 import v8n from 'v8n'
@@ -112,62 +112,67 @@ function QuestionArea({
     }
   }, [])
 
-  const onActiveChoicesChange = (type): any => (choice): any => (): void => {
-    const validateChoices = (newValue): boolean =>
-      type === QUESTION_TYPES.SC ? newValue.length === 1 : newValue.length > 0
+  const onActiveChoicesChange =
+    (type): any =>
+    (choice): any =>
+    (): void => {
+      const validateChoices = (newValue): boolean =>
+        type === QUESTION_TYPES.SC ? newValue.length === 1 : newValue.length > 0
 
-    if (inputValue && type === QUESTION_TYPES.MC) {
-      // if the choice is already active, remove it
-      if (inputValue.includes(choice)) {
-        const newInputValue = _without(inputValue, choice)
+      if (inputValue && type === QUESTION_TYPES.MC) {
+        // if the choice is already active, remove it
+        if (inputValue.includes(choice)) {
+          const newInputValue = _without(inputValue, choice)
 
+          return setInputState({
+            inputEmpty: newInputValue.length === 0,
+            inputValid: validateChoices(newInputValue),
+            inputValue: newInputValue,
+          })
+        }
+
+        // else add it to the active choices
+        const newInputValue = [...inputValue, choice]
         return setInputState({
-          inputEmpty: newInputValue.length === 0,
+          inputEmpty: false,
           inputValid: validateChoices(newInputValue),
           inputValue: newInputValue,
         })
       }
 
-      // else add it to the active choices
-      const newInputValue = [...inputValue, choice]
+      // initialize the value with the first choice
       return setInputState({
         inputEmpty: false,
-        inputValid: validateChoices(newInputValue),
-        inputValue: newInputValue,
+        inputValid: true,
+        inputValue: [choice],
       })
     }
 
-    // initialize the value with the first choice
-    return setInputState({
-      inputEmpty: false,
-      inputValid: true,
-      inputValue: [choice],
-    })
-  }
+  const onFreeValueChange =
+    (type, options): any =>
+    (newInputValue): void => {
+      let validator = v8n()
 
-  const onFreeValueChange = (type, options): any => (newInputValue): void => {
-    let validator = v8n()
+      if (type === QUESTION_TYPES.FREE_RANGE) {
+        validator = validator.number(false)
 
-    if (type === QUESTION_TYPES.FREE_RANGE) {
-      validator = validator.number(false)
+        if (_get(options, 'restrictions.max')) {
+          validator = validator.lessThanOrEqual(options.restrictions.max)
+        }
 
-      if (_get(options, 'restrictions.max')) {
-        validator = validator.lessThanOrEqual(options.restrictions.max)
+        if (_get(options, 'restrictions.min')) {
+          validator = validator.greaterThanOrEqual(options.restrictions.min)
+        }
+      } else {
+        validator = validator.string()
       }
 
-      if (_get(options, 'restrictions.min')) {
-        validator = validator.greaterThanOrEqual(options.restrictions.min)
-      }
-    } else {
-      validator = validator.string()
+      return setInputState({
+        inputEmpty: newInputValue !== 0 && (!newInputValue || newInputValue.length === 0),
+        inputValid: validator.test(newInputValue) || validator.test(+newInputValue),
+        inputValue: newInputValue,
+      })
     }
-
-    return setInputState({
-      inputEmpty: newInputValue !== 0 && (!newInputValue || newInputValue.length === 0),
-      inputValid: validator.test(newInputValue) || validator.test(+newInputValue),
-      inputValue: newInputValue,
-    })
-  }
 
   const onSubmit = async (): Promise<void> => {
     const { id: instanceId, execution, type } = questions[activeQuestion]
@@ -215,7 +220,7 @@ function QuestionArea({
   const currentQuestion = questions[activeQuestion]
 
   return (
-    <div className={classNames('questionArea', { active })}>
+    <div className={clsx('questionArea', { active })}>
       <h1 className="header">
         {isAuthenticationEnabled && <Icon color="green" name="lock" />}{' '}
         <FormattedMessage defaultMessage="Question" id="joinSession.questionArea.title" />

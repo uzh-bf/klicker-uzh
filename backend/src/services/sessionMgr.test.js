@@ -18,7 +18,7 @@ expect.addSnapshotSerializer(questionInstanceSerializer)
 
 const prepareSession = prepareSessionFactory(SessionMgrService)
 
-const responseCache = getRedis(3)
+const responseCache = getRedis()
 
 describe('SessionMgrService', () => {
   let sessionId

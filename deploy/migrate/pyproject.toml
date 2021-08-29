@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "migrate"
+version = "0.1.0"
+description = ""
+authors = ["Roland Schlaefli <roland.schlaefli@bf.uzh.ch>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+redis-dump-load = "^1.1"
+ijson = "^3.1.4"
+python-dotenv = "^0.19.0"
+black = "^21.7b0"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

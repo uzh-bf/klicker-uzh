@@ -13,13 +13,6 @@ import SessionArea from './SessionArea'
 import LogoutMutation from '../../../graphql/mutations/LogoutMutation.graphql'
 import AccountSummaryQuery from '../../../graphql/queries/AccountSummaryQuery.graphql'
 
-interface KlickerWindow extends Window {
-  INIT_LR?: boolean
-  _slaask?: any
-}
-
-declare const window: KlickerWindow
-
 const { publicRuntimeConfig } = getConfig()
 
 interface Props {
@@ -104,27 +97,9 @@ function Navbar({ actions, search, sidebarVisible, title, handleSidebarToggle }:
               }
             }
 
-            if (typeof window._slaask !== 'undefined') {
-              try {
-                window._slaask.identify({
-                  email: userEmail,
-                  id: accountId,
-                  shortname: accountShort,
-                  // user_hash: userHash,
-                })
-                window._slaask.init(publicRuntimeConfig.slaaskWidgetKey, accountId)
-                /* window._slaask.init(process.env.SLAASK_WIDGET_KEY, {
-      user_hash: userHash,
-      user_token: accountId,
-    }) */
-              } catch (e) {
-                //
-              }
-            }
-
             if (publicRuntimeConfig.sentryDSN) {
               try {
-                const Sentry = require('@sentry/browser')
+                const Sentry = require('@sentry/nextjs')
                 Sentry.setUser({ id: accountId, username: accountShort })
               } catch (e) {
                 //

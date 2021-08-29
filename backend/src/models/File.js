@@ -32,6 +32,8 @@ const File = new mongoose.Schema(
   { timestamps: true }
 )
 
+File.index({ '$**': 1 })
+
 module.exports = {
   FileModel: mongoose.model('File', File),
 }

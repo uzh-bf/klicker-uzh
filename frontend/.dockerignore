@@ -2,6 +2,7 @@
 
 !public/
 !src/
+src/stories/
 
 !LICENSE.md
 

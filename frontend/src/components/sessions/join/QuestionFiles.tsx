@@ -21,28 +21,26 @@ const defaultProps = {
 function QuestionFiles({ files, isCompact }: Props): React.ReactElement {
   return (
     <div className="questionFiles">
-      {files.map(
-        ({ id, name, description }, ix): React.ReactElement => {
-          const fileSrc = `${publicRuntimeConfig.s3root}/${name}`
-          const previewImage = (
-            <Card>
-              <Image crossOrigin="anonymous" height="auto" src={fileSrc} width="100%" />
-              {!isCompact && <Card.Content extra>#{ix + 1}</Card.Content>}
-            </Card>
-          )
+      {files.map(({ id, name, description }, ix): React.ReactElement => {
+        const fileSrc = `${publicRuntimeConfig.s3root}/${name}`
+        const previewImage = (
+          <Card>
+            <Image crossOrigin="anonymous" height="auto" src={fileSrc} width="100%" />
+            {!isCompact && <Card.Content extra>#{ix + 1}</Card.Content>}
+          </Card>
+        )
 
-          return (
-            <div className="file" key={id}>
-              <Modal closeIcon trigger={previewImage}>
-                {description && <Modal.Header>{description}</Modal.Header>}
-                <Modal.Content image>
-                  <Image crossOrigin="anonymous" src={fileSrc} />
-                </Modal.Content>
-              </Modal>
-            </div>
-          )
-        }
-      )}
+        return (
+          <div className="file" key={id}>
+            <Modal closeIcon trigger={previewImage}>
+              {description && <Modal.Header>{description}</Modal.Header>}
+              <Modal.Content image>
+                <Image crossOrigin="anonymous" src={fileSrc} />
+              </Modal.Content>
+            </Modal>
+          </div>
+        )
+      })}
       <style jsx>{`
         .questionFiles {
           display: flex;

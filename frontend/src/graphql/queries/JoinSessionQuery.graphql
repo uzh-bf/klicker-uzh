@@ -53,6 +53,15 @@ query JoinSession($shortname: String!) {
       id
       content
       votes
+      pinned
+      resolved
+      createdAt
+      resolvedAt
+      responses {
+        id
+        content
+        createdAt
+      }
     }
   }
 }

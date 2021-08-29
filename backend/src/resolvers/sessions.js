@@ -50,6 +50,11 @@ const runningSessionQuery = async (parentValue, args, { auth }) => {
   return user.runningSession
 }
 
+const pinnedFeedbacksQuery = async (parentValue, args, { auth }) => {
+  const user = await UserModel.findById(auth.sub).populate('runningSession')
+  return user.runningSession.feedbacks.filter((feedback) => feedback.pinned)
+}
+
 const joinSessionQuery = async (parentValue, { shortname }, { auth }) =>
   SessionExecService.joinSession({ shortname, auth })
 
@@ -110,6 +115,21 @@ const addFeedbackMutation = async (parentValue, { sessionId, content }) =>
 const deleteFeedbackMutation = (parentValue, { sessionId, feedbackId }, { auth }) =>
   SessionExecService.deleteFeedback({ sessionId, feedbackId, userId: auth.sub })
 
+const pinFeedbackMutation = (_, { sessionId, feedbackId, pinState }, { auth }) =>
+  SessionExecService.pinFeedback({ sessionId, feedbackId, pinState, userId: auth.sub })
+
+const publishFeedbackMutation = (_, { sessionId, feedbackId, publishState }, { auth }) =>
+  SessionExecService.publishFeedback({ sessionId, feedbackId, publishState, userId: auth.sub })
+
+const resolveFeedbackMutation = (_, { sessionId, feedbackId, resolvedState }, { auth }) =>
+  SessionExecService.resolveFeedback({ sessionId, feedbackId, resolvedState, userId: auth.sub })
+
+const respondToFeedbackMutation = (_, { sessionId, feedbackId, response }, { auth }) =>
+  SessionExecService.respondToFeedback({ sessionId, feedbackId, userId: auth.sub, response })
+
+const deleteFeedbackResponseMutation = (_, { sessionId, feedbackId, responseId }, { auth }) =>
+  SessionExecService.deleteFeedbackResponse({ sessionId, feedbackId, userId: auth.sub, responseId })
+
 const addConfusionTSMutation = async (parentValue, { sessionId, difficulty, speed }) => {
   await SessionExecService.addConfusionTS({ sessionId, difficulty, speed })
 
@@ -133,6 +153,7 @@ module.exports = {
   allRunningSessions: allRunningSessionsQuery,
   allSessions: allSessionsQuery,
   runningSession: runningSessionQuery,
+  pinnedFeedbacks: pinnedFeedbacksQuery,
   session: sessionQuery,
   sessionByPV: sessionByPVQuery,
   sessionsByPV: sessionsByPVQuery,
@@ -156,4 +177,9 @@ module.exports = {
   resetQuestionBlock: resetQuestionBlockMutation,
   modifyQuestionBlock: modifyQuestionBlockMutation,
   loginParticipant: loginParticipantMutation,
+  pinFeedback: pinFeedbackMutation,
+  publishFeedback: publishFeedbackMutation,
+  resolveFeedback: resolveFeedbackMutation,
+  respondToFeedback: respondToFeedbackMutation,
+  deleteFeedbackResponse: deleteFeedbackResponseMutation,
 }

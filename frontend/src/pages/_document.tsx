@@ -1,6 +1,6 @@
 /* eslint-disable react/no-danger */
 
-import Document, { Head, Main, NextScript } from 'next/document'
+import Document, { Html, Head, Main, NextScript } from 'next/document'
 import React from 'react'
 
 if (typeof global.Intl !== 'object') {
@@ -29,15 +29,14 @@ class IntlDocument extends Document<Props> {
 
   render(): React.ReactElement {
     return (
-      <html lang={this.props.locale}>
+      <Html lang={this.props.locale}>
         <Head>
+          <meta
+            content="The KlickerUZH is an open-source instant-class-response system that supports the interaction between speakers and their audience."
+            name="description"
+          />
           <meta content="text/html; charset=utf-8" httpEquiv="Content-type" />
           <meta content="IE=Edge" httpEquiv="X-UA-Compatible" />
-          <script
-            crossOrigin="anonymous"
-            src="https://polyfill.io/v3/polyfill.min.js?flags=gated&features=default%2CIntl%2CArray.prototype.includes%2CString.prototype.repeat%2CSymbol%2CSymbol.iterator"
-          />
-          {/* <script async="true" crossOrigin="anonymous" src="https://cdn.slaask.com/chat.js" /> */}
         </Head>
         <body>
           <Main />
@@ -48,7 +47,7 @@ class IntlDocument extends Document<Props> {
           />
           <NextScript />
         </body>
-      </html>
+      </Html>
     )
   }
 }

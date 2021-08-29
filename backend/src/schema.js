@@ -23,6 +23,11 @@ const {
 } = require('./resolvers/questionInstances')
 const {
   addFeedback,
+  pinFeedback,
+  publishFeedback,
+  resolveFeedback,
+  respondToFeedback,
+  deleteFeedbackResponse,
   deleteFeedback,
   addConfusionTS,
   allRunningSessions,
@@ -34,6 +39,7 @@ const {
   endSession,
   joinSession,
   runningSession,
+  pinnedFeedbacks,
   sessionByPV,
   sessionsByPV,
   startSession,
@@ -98,6 +104,7 @@ const typeDefs = [
     joinSession(shortname: String!): Session_Public
     question(id: ID!): Question
     runningSession: Session
+    pinnedFeedbacks: [Session_Feedback!]!
     session(id: ID!): Session
     sessionPublic(id: ID!): Session_PublicEvaluation
     user: User
@@ -110,6 +117,11 @@ const typeDefs = [
     activateBlockById(sessionId: ID!, blockId: ID!): Session!
     addConfusionTS(fp: ID, sessionId: ID!, difficulty: Int!, speed: Int!): String!
     addFeedback(fp: ID, sessionId: ID!, content: String!): Session_Feedback!
+    pinFeedback(sessionId: ID!, feedbackId: ID!, pinState: Boolean!): ID!
+    publishFeedback(sessionId: ID!, feedbackId: ID!, publishState: Boolean!): ID!
+    respondToFeedback(sessionId: ID!, feedbackId: ID!, response: String!): ID!
+    deleteFeedbackResponse(sessionId: ID!, feedbackId: ID!, responseId: ID!): ID!
+    resolveFeedback(sessionId: ID!, feedbackId: ID!, resolvedState: Boolean!): ID!
     addResponse(fp: ID, instanceId: ID!, response: QuestionInstance_ResponseInput!): String!
     archiveQuestions(ids: [ID!]!): [Question!]!
     changePassword(newPassword: String!): User!
@@ -172,6 +184,7 @@ const resolvers = {
     joinSession,
     question,
     runningSession,
+    pinnedFeedbacks,
     session,
     sessionPublic: session,
     user: authUser,
@@ -181,6 +194,11 @@ const resolvers = {
     activateAccount,
     archiveQuestions,
     addFeedback,
+    pinFeedback,
+    publishFeedback,
+    resolveFeedback,
+    respondToFeedback,
+    deleteFeedbackResponse,
     deleteFeedback,
     addConfusionTS,
     addResponse,

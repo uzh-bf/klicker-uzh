@@ -34,26 +34,6 @@ const plugins = [toolbarPlugin]
 const { Toolbar } = toolbarPlugin
 
 function ContentInput({ value, onChange, error, touched, disabled }: Props): React.ReactElement {
-  // ensure that we are in the browser as the plugin breaks SSR
-  /**  if (process.browser) {
-    if (process.env.FEAT_FORMULAS) {
-      const createMathjaxPlugin = require('draft-js-mathjax-plugin').default
-
-      // instantiate the mathjax plugin
-      // FIXME: mathjax plugin currently ignores readOnly flag
-      const mathjaxPlugin = createMathjaxPlugin()
-
-      plugins = [...plugins, mathjaxPlugin]
-    }
-
-    if (process.env.FEAT_CODE_EDITOR) {
-      const Prism = dynamic(() => import('prismjs'), { ssr: false })
-      const createCodeEditorPlugin = dynamic(() => import('draft-js-code-editor-plugin'), { ssr: false })
-      const createPrismPlugin = dynamic(() => import('draft-js-prism-plugin'), { ssr: false })
-      plugins = [...plugins, createPrismPlugin({ prism: Prism }), createCodeEditorPlugin()]
-    }
-  } */
-
   return (
     <div className="contentInput">
       <Form.Field required error={touched && error}>

@@ -27,7 +27,7 @@ const messages = defineMessages({
 })
 
 function Index(): React.ReactElement {
-  useLogging({ slaask: true })
+  useLogging()
 
   const intl = useIntl()
   const router = useRouter()
@@ -37,29 +37,31 @@ function Index(): React.ReactElement {
 
   const { handleSearch, handleSort, filters } = useSortingAndFiltering()
 
-  const onStartSession = (id: string): any => async (): Promise<void> => {
-    try {
-      await startSession({
-        refetchQueries: [{ query: SessionListQuery }, { query: RunningSessionQuery }, { query: AccountSummaryQuery }],
-        variables: { id },
-      })
+  const onStartSession =
+    (id: string): any =>
+    async (): Promise<void> => {
+      try {
+        await startSession({
+          refetchQueries: [{ query: SessionListQuery }, { query: RunningSessionQuery }, { query: AccountSummaryQuery }],
+          variables: { id },
+        })
 
-      router.push('/sessions/running')
-    } catch ({ message }) {
-      console.error(message)
-      addToast(
-        <FormattedMessage
-          defaultMessage="Unable to start session: {errorMessage}"
-          id="sessions.index.startSession.error"
-          values={{ errorMessage: message }}
-        />,
-        {
-          appearance: 'error',
-          autoDismiss: false,
-        }
-      )
+        router.push('/sessions/running')
+      } catch ({ message }) {
+        console.error(message)
+        addToast(
+          <FormattedMessage
+            defaultMessage="Unable to start session: {errorMessage}"
+            id="sessions.index.startSession.error"
+            values={{ errorMessage: message }}
+          />,
+          {
+            appearance: 'error',
+            autoDismiss: false,
+          }
+        )
+      }
     }
-  }
 
   return (
     <TeacherLayout

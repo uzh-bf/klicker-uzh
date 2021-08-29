@@ -1,0 +1,141 @@
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+email:
+  from: klicker.support@uzh.ch
+  host: smtp.uzh.ch
+  user: klicker.support@uzh.ch
+
+cache:
+  enabled: true
+  port: 32602
+  tls: true
+
+s3:
+  endpoint: tc-klicker-stage.s3.amazonaws.com
+  bucket: images
+
+security:
+  domain: klicker-stage.bf-app.ch
+  https:
+    enabled: false
+  csp:
+    enabled: false
+    reportUri: https://sentry.ibf-devops.ch/api/2/security/?sentry_key=d07ee657684f46498c264c01a3fc7226
+  expectCt:
+    enabled: false
+    frontend: https://sentry.ibf-devops.ch/api/2/security/?sentry_key=d07ee657684f46498c264c01a3fc7226
+    backend: https://sentry.ibf-devops.ch/api/3/security/?sentry_key=670985cada43448bae071dc933747c27
+  frameguard:
+    enabled: false
+  hsts:
+    enabled: false
+  cors:
+    frontend: https://www.klicker.uzh.ch,http://www.klicker.uzh.ch,http://localhost:3000
+    backend: https://www.klicker.uzh.ch,http://localhost:3000
+
+analytics:
+  sentry:
+    enabled: false
+    frontend: https://289e41bc625b4b9eb10e1e5d347768f8@o86798.ingest.sentry.io/5431862
+    backend: https://670985cada43448bae071dc933747c27@sentry.ibf-devops.ch/3
+  logrocket:
+    enabled: false
+    appId: vqm2qj/klicker
+  google:
+    enabled: false
+    trackingId: UA-33258666-18
+
+frontend:
+  replicaCount: 1
+
+  hostname: app.klicker-stage.bf-app.ch
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/frontend
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 3000
+
+  ingress:
+    enabled: true
+    annotations: {}
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+    hosts:
+      - host: chart-example.local
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls: []
+    #  - secretName: chart-example-tls
+    #    hosts:
+    #      - chart-example.local
+
+  resources: {}
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 100
+    targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+backend:
+  replicaCount: 1
+
+  hostname: api.klicker-stage.bf-app.ch
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/backend
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 4000
+
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+    hosts:
+      - host: chart-example.local
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls: []
+    #  - secretName: chart-example-tls
+    #    hosts:
+    #      - chart-example.local
+
+  resources: {}
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 100
+    targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import classNames from 'classnames'
+import clsx from 'clsx'
 import getConfig from 'next/config'
 import { defineMessages, useIntl } from 'react-intl'
 import { Button, Checkbox, Dropdown, Menu, Icon } from 'semantic-ui-react'
@@ -124,17 +124,22 @@ function EvaluationLayout({
     setCurrentIndex(activeInstance)
   }, [activeInstance])
 
-  const dropdownOptions = instanceSummary.map(({ blockStatus, title, totalResponses: count }, index): {
-    icon: string
-    key: number
-    text: string
-    value: number
-  } => ({
-    icon: blockStatus === 'ACTIVE' ? 'comments' : 'checkmark',
-    key: index,
-    text: `${title} (${count})`,
-    value: index,
-  }))
+  const dropdownOptions = instanceSummary.map(
+    (
+      { blockStatus, title, totalResponses: count },
+      index
+    ): {
+      icon: string
+      key: number
+      text: string
+      value: number
+    } => ({
+      icon: blockStatus === 'ACTIVE' ? 'comments' : 'checkmark',
+      key: index,
+      text: `${title} (${count})`,
+      value: index,
+    })
+  )
 
   const activateInstance = (index: number): void => {
     const activateConfusion =
@@ -163,7 +168,7 @@ function EvaluationLayout({
   return (
     <CommonLayout baseFontSize={20} nextHeight="100%" pageTitle={pageTitle}>
       <div
-        className={classNames('evaluationLayout', {
+        className={clsx('evaluationLayout', {
           fullScreen: [CHART_TYPES.CLOUD_CHART, CHART_TYPES.TABLE].includes(activeVisualization),
         })}
       >
@@ -210,7 +215,7 @@ function EvaluationLayout({
                       <Menu.Item
                         fitted
                         active={index === currentIndex}
-                        className={classNames('hoverable', {
+                        className={clsx('hoverable', {
                           executed: blockStatus === 'EXECUTED',
                         })}
                         onClick={(): void => {
@@ -227,7 +232,7 @@ function EvaluationLayout({
                   <Menu.Item
                     fitted
                     active={showFeedback}
-                    className={classNames('hoverable', 'feedback')}
+                    className={clsx('hoverable', 'feedback')}
                     onClick={(): void => {
                       // TODO: dont go with instance index, use showFeedback
                       activateInstance(existsConfusion ? numberOfTabs - 2 : numberOfTabs - 1) // if there is a confusion-tab, the tab is the second to last, otherwise the last
@@ -241,7 +246,7 @@ function EvaluationLayout({
                   <Menu.Item
                     fitted
                     active={showConfusionTS}
-                    className={classNames('hoverable', 'feedback')}
+                    className={clsx('hoverable', 'feedback')}
                     onClick={(): void => {
                       // TODO: dont go with instance index, use showConfusionTS
                       activateInstance(numberOfTabs - 1)

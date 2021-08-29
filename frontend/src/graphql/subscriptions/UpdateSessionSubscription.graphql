@@ -8,6 +8,9 @@ subscription UpdateSession($sessionId: ID!) {
       isFeedbackChannelActive
       isFeedbackChannelPublic
       isConfusionBarometerActive
+      isParticipantAuthenticationEnabled
+      authenticationMode
+      storageMode
     }
     activeInstances {
       id

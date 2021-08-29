@@ -1,5 +1,5 @@
 # extend the node alpine base
-FROM node:12-alpine
+FROM node:14-alpine
 
 # root application directory
 ENV APP_DIR /app

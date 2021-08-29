@@ -1,0 +1,3 @@
+mutation RespondToFeedbackMutation($sessionId: ID!, $feedbackId: ID!, $response: String!) {
+  respondToFeedback(sessionId: $sessionId, feedbackId: $feedbackId, response: $response)
+}
