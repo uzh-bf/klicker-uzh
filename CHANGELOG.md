@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0-alpha.5](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-alpha.4...v1.6.0-alpha.5) (2021-08-29)
+
+
+### Dependencies
+
+* ensure that tailwind and other dependencies are in production deps ([df4c23b](https://github.com/uzh-bf/klicker-uzh/commit/df4c23bfffc693bed197394033f59e229e0b839c))
+
 ## [1.6.0-alpha.4](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-alpha.3...v1.6.0-alpha.4) (2021-08-29)
 
 
