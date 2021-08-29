@@ -15,14 +15,15 @@ email:
 
 cache:
   enabled: true
-  host: redis
+  port: 32602
+  tls: true
 
 s3:
-  endpoint: tc-klicker-prod.s3.amazonaws.com
+  endpoint: tc-klicker-stage.s3.amazonaws.com
   bucket: images
 
 security:
-  domain: klicker.uzh.ch
+  domain: klicker-stage.bf-app.ch
   https:
     enabled: false
   csp:
@@ -55,10 +56,10 @@ analytics:
 frontend:
   replicaCount: 1
 
-  hostname: app.klicker.uzh.ch
+  hostname: app.klicker-stage.bf-app.ch
 
   image:
-    repository: nginx
+    repository: ghcr.io/uzh-bf/klicker-uzh/frontend
     pullPolicy: Always
 
   service:
@@ -98,10 +99,10 @@ frontend:
 backend:
   replicaCount: 1
 
-  hostname: api.klicker.uzh.ch
+  hostname: api.klicker-stage.bf-app.ch
 
   image:
-    repository: nginx
+    repository: ghcr.io/uzh-bf/klicker-uzh/backend
     pullPolicy: Always
 
   service:

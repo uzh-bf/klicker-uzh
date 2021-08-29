@@ -1,3 +1,5 @@
+{{- $protocol := ternary "https" "http" .Values.security.https.enabled -}}
+{{- $wsprotocol := ternary "wss" "ws" .Values.security.https.enabled -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -5,15 +7,14 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
-  {{- $protocol := ternary "https" "https" .Values.security.https.enabled -}}
-  API_ENDPOINT: {{ $protocol }}://{{ .Values.backend.hostname }}/graphql
-  API_ENDPOINT_WS: {{ ternary "wss" "ws" .Values.security.https.enabled }}://{{ .Values.backend.hostname }}/graphql
-  APP_BASE_URL: {{ $protocol }}://{{ .Values.frontend.hostname }}
-  APP_JOIN_URL: {{ .Values.frontend.hostname }}/join
-  APP_PERSIST_QUERIES: 'false'
-  APP_TRUST_PROXY: 'true'
-  S3_ROOT_URL: https://{{ .Values.s3.endpoint }}/{{ .Values.s3.bucket }}
-  SECURITY_CORS_ORIGIN: {{ $protocol }}://{{ .Values.frontend.hostname }},{{ .Values.security.cors.frontend }}
+  API_ENDPOINT: "{{ $protocol }}://{{ .Values.backend.hostname }}/graphql"
+  API_ENDPOINT_WS: "{{ $wsprotocol }}://{{ .Values.backend.hostname }}/graphql"
+  APP_BASE_URL: "{{ $protocol }}://{{ .Values.frontend.hostname }}"
+  APP_JOIN_URL: "{{ .Values.frontend.hostname }}/join"
+  APP_PERSIST_QUERIES: "false"
+  APP_TRUST_PROXY: "true"
+  S3_ROOT_URL: "https://{{ .Values.s3.endpoint }}/{{ .Values.s3.bucket }}"
+  SECURITY_CORS_ORIGIN: "{{ $protocol }}://{{ .Values.frontend.hostname }},{{ .Values.security.cors.frontend }}"
   # SECURITY_CSP_ENABLED: {{ .Values.security.csp.enabled | quote }}
   # SECURITY_CSP_REPORT_URI: {{ .Values.security.csp.reportUri | quote }}
   # SECURITY_EXPECT_CT_ENABLED: {{ .Values.security.expectCt.enabled | quote }}

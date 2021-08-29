@@ -10,12 +10,12 @@ data:
   APP_DOMAIN: {{ .Values.backend.hostname | quote }}
   APP_HTTPS: {{ .Values.security.https.enabled | quote }}
   APP_SECURE: {{ .Values.security.https.enabled | quote }}
-  APP_TRUST_PROXY: 'true'
+  APP_TRUST_PROXY: "true"
   EMAIL_FROM: {{ .Values.email.from | quote }}
   EMAIL_HOST: {{ .Values.email.host | quote }}
   EMAIL_USER: {{ .Values.email.user | quote }}
   S3_BUCKET: {{ .Values.s3.bucket | quote }}
-  S3_ENABLED: 'true'
+  S3_ENABLED: "true"
   S3_ENDPOINT: {{ .Values.s3.endpoint | quote }}
   # SECURITY_CORS_CREDENTIALS: 'true'
   # SECURITY_CORS_ORIGIN: https://{{ .Values.frontend.hostname }},{{ .Values.security.cors.backend }}
