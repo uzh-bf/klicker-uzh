@@ -25,7 +25,7 @@ s3:
 security:
   domain: klicker-stage.bf-app.ch
   https:
-    enabled: false
+    enabled: true
   csp:
     enabled: false
     reportUri: https://sentry.ibf-devops.ch/api/2/security/?sentry_key=d07ee657684f46498c264c01a3fc7226
@@ -68,18 +68,18 @@ frontend:
 
   ingress:
     enabled: true
-    annotations: {}
-      # kubernetes.io/ingress.class: nginx
-      # kubernetes.io/tls-acme: "true"
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: 256m
+      cert-manager.io/cluster-issuer: letsencrypt
     hosts:
-      - host: chart-example.local
+      - host: app.klicker-stage.bf-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
-    tls: []
-    #  - secretName: chart-example-tls
-    #    hosts:
-    #      - chart-example.local
+    tls:
+      - secretName: klicker-stage-frontend-tls
+        hosts:
+          - app.klicker-stage.bf-app.ch
 
   resources: {}
 
@@ -110,21 +110,19 @@ backend:
     port: 4000
 
   ingress:
-    enabled: false
-    className: ""
-    annotations: {}
-      # kubernetes.io/ingress.class: nginx
-      # kubernetes.io/tls-acme: "true"
+    enabled: true
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: 256m
+      cert-manager.io/cluster-issuer: letsencrypt
     hosts:
-      - host: chart-example.local
+      - host: api.klicker-stage.bf-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
-    tls: []
-    #  - secretName: chart-example-tls
-    #    hosts:
-    #      - chart-example.local
-
+    tls:
+      - secretName: klicker-stage-backend-tls
+        hosts:
+          - api.klicker-stage.bf-app.ch
   resources: {}
 
   autoscaling:

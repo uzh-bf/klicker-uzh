@@ -4,6 +4,7 @@ metadata:
   name: {{ include "chart.fullname" . }}-frontend
   labels:
     {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
 spec:
   {{- if not .Values.frontend.autoscaling.enabled }}
   replicas: {{ .Values.frontend.replicaCount }}
@@ -19,6 +20,7 @@ spec:
       {{- end }}
       labels:
         {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: frontend
     spec:
       {{- with .Values.frontend.imagePullSecrets }}
       imagePullSecrets:
@@ -43,8 +45,6 @@ spec:
                 name: {{ include "chart.fullname" . }}-config-frontend
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-common
-            - secretRef:
-                name: {{ include "chart.fullname" . }}-secret-frontend
           livenessProbe:
             httpGet:
               path: /
@@ -74,6 +74,7 @@ metadata:
   name: {{ include "chart.fullname" . }}-backend
   labels:
     {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
 spec:
   {{- if not .Values.backend.autoscaling.enabled }}
   replicas: {{ .Values.backend.replicaCount }}
@@ -89,6 +90,7 @@ spec:
       {{- end }}
       labels:
         {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: backend
     spec:
       {{- with .Values.backend.imagePullSecrets }}
       imagePullSecrets:
@@ -117,11 +119,11 @@ spec:
                 name: {{ include "chart.fullname" . }}-secret-backend
           livenessProbe:
             httpGet:
-              path: /
+              path: /.well-known/apollo/server-health
               port: http
           readinessProbe:
             httpGet:
-              path: /
+              path: /.well-known/apollo/server-health
               port: http
           resources:
             {{- toYaml .Values.backend.resources | nindent 12 }}
