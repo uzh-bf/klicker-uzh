@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0-alpha.3](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-alpha.2...v1.6.0-alpha.3) (2021-08-29)
+
+
+### Bug Fixes
+
+* include semantic-ui library in purgecss config ([16e125a](https://github.com/uzh-bf/klicker-uzh/commit/16e125a1b690d0abd54e5c345ddbf3ffb5521e53))
+
 ## [1.6.0-alpha.2](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-alpha.1...v1.6.0-alpha.2) (2021-08-29)
 
 
