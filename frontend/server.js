@@ -345,7 +345,7 @@ app
 
     server.listen(3000, (err) => {
       if (err) throw err
-      console.log('[klicker-react] Ready on http://localhost:3000')
+      console.log('[klicker-react] Ready on localhost:3000')
     })
   })
   .catch((err) => {

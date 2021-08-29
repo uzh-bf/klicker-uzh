@@ -1,3 +1,5 @@
+@import 'src/lib/semantic/dist/semantic.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
