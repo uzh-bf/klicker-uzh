@@ -2,13 +2,12 @@
   "name": "klicker-uzh",
   "version": "1.6.0-alpha.1",
   "description": "KlickerUZH instant-class-response system.",
-  "main": "index.js",
   "scripts": {
-    "release": "npx standard-version",
+    "release": "npx standard-version --no-verify",
     "release:dry": "npx standard-version --dry-run",
-    "release:alpha": "npx standard-version --prerelease alpha",
-    "release:beta": "npx standard-version --prerelease beta",
-    "release:rc": "npx standard-version --prerelease rc"
+    "release:alpha": "npx standard-version --prerelease alpha --no-verify",
+    "release:beta": "npx standard-version --prerelease beta --no-verify",
+    "release:rc": "npx standard-version --prerelease rc --no-verify"
   },
   "repository": {
     "type": "git",
@@ -18,5 +17,5 @@
   "bugs": {
     "url": "https://github.com/uzh-bf/klicker-uzh/issues"
   },
-  "homepage": "https://github.com/uzh-bf/klicker-uzh#readme"
+  "homepage": "https://www.klicker.uzh.ch/"
 }
