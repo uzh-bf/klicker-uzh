@@ -54,7 +54,7 @@ analytics:
     trackingId: UA-33258666-18
 
 frontend:
-  replicaCount: 1
+  replicaCount: 2
 
   hostname: app.klicker-stage.bf-app.ch
 
@@ -97,7 +97,7 @@ frontend:
   affinity: {}
 
 backend:
-  replicaCount: 1
+  replicaCount: 2
 
   hostname: api.klicker-stage.bf-app.ch
 
