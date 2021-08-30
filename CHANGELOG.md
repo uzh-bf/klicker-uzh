@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0-alpha.7](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-alpha.6...v1.6.0-alpha.7) (2021-08-30)
+
+
+### Other
+
+* chart version bump ([96c4057](https://github.com/uzh-bf/klicker-uzh/commit/96c40578eafb20ca51c0e80460333d34edf354a3))
+
 ## [1.6.0-alpha.6](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-alpha.5...v1.6.0-alpha.6) (2021-08-30)
 
 
