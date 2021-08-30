@@ -843,9 +843,9 @@ const updateSettings = async ({ sessionId, userId, settings, shortname }) => {
   }
 
   // if the feedback channel functionality is set to be deactivated
-  // automatically unpublish the channel (needs manual reactivation)
+  // automatically reset publication settings)
   if (settings.isFeedbackChannelActive === false) {
-    session.settings.isFeedbackChannelPublic = false
+    session.settings.isFeedbackChannelPublic = true
   }
 
   // if redis is in use, cleanup the page cache
