@@ -66,7 +66,11 @@ function Feedback({
 
   return (
     <div>
-      <div className="flex items-center pl-4 p-2 border border-solid bg-primary-10% border-primary rounded shadow">
+      <div
+        className="flex items-center pl-4 p-2 border border-solid bg-primary-10% border-primary rounded shadow hover:shadow-md hover:cursor-pointer"
+        role="button"
+        onClick={() => setIsEditingActive((prev) => !prev)}
+      >
         <div className="flex-1">
           <p className="mb-0">{content}</p>
           <div className="flex flex-row items-end mt-2 text-gray-500">
@@ -88,7 +92,8 @@ function Feedback({
               color={isBeingDeleted ? 'red' : undefined}
               icon="trash"
               size="tiny"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation()
                 if (isBeingDeleted) {
                   onDeleteFeedback()
                 } else {
@@ -101,7 +106,10 @@ function Feedback({
               compact
               icon={isEditingActive ? 'arrow up' : 'arrow down'}
               size="tiny"
-              onClick={() => setIsEditingActive((prev) => !prev)}
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsEditingActive((prev) => !prev)
+              }}
             />
           </div>
         </div>
@@ -139,6 +147,7 @@ function Feedback({
             <div className="flex-1">
               <Form className="h-full">
                 <TextArea
+                  autoFocus
                   className="h-full"
                   disabled={resolved}
                   id="response"
