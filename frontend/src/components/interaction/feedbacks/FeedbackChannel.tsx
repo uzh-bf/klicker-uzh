@@ -62,7 +62,7 @@ function FeedbackChannel({
   const [showResolved, setShowResolved] = useState(false)
   const [showOpen, setShowOpen] = useState(true)
   const [showUnpinned, setShowUnpinned] = useState(true)
-  const [sortBy, setSortBy] = useState('upvotes')
+  const [sortBy, setSortBy] = useState('votes')
   const [searchIndex, setSearchIndex] = useState(null)
   const [filteredFeedbacks, setFilteredFeedbacks] = useState(feedbacks)
   const [sortedFeedbacks, setSortedFeedbacks] = useState(feedbacks)
@@ -101,7 +101,7 @@ function FeedbackChannel({
           if (sortBy === 'recency') return dayjs(o.recency)
           return o[sortBy]
         }
-      )
+      ).reverse()
     )
   }, [filteredFeedbacks, sortBy])
 
@@ -169,7 +169,7 @@ function FeedbackChannel({
           disabled={sortedFeedbacks?.length === 0}
           options={[
             { text: 'Sort by Recency', value: 'recency' },
-            { text: 'Sort by Upvotes', value: 'upvotes' },
+            { text: 'Sort by Upvotes', value: 'votes' },
           ]}
           value={sortBy}
           onChange={(_, { value }) => setSortBy(value as string)}
