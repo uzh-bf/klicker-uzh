@@ -25,7 +25,7 @@ const Session = new mongoose.Schema(
       isConfusionBarometerActive: { type: Boolean, default: false },
       isEvaluationPublic: { type: Boolean, default: false },
       isFeedbackChannelActive: { type: Boolean, default: false },
-      isFeedbackChannelPublic: { type: Boolean, default: false },
+      isFeedbackChannelPublic: { type: Boolean, default: true },
       authenticationMode: {
         type: String,
         enum: _values(SESSION_AUTHENTICATION_MODE),
