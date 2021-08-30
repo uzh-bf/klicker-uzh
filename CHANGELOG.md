@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0-alpha.6](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-alpha.5...v1.6.0-alpha.6) (2021-08-30)
+
+
+### Features
+
+* add upvoting and reactions on feedback responses ([96e5362](https://github.com/uzh-bf/klicker-uzh/commit/96e5362ff927ec5508d76cb522dddcec44622927))
+
+
+### Bug Fixes
+
+* ensure sorting works for both recency and votes ([5f064d1](https://github.com/uzh-bf/klicker-uzh/commit/5f064d1a49130104d4b2a97528d6bfccae53cc94))
+* issue where upvotedFeedbacks might not exist ([fac8b99](https://github.com/uzh-bf/klicker-uzh/commit/fac8b99be9681dd825399b1e7ccfc8d04e21fd11))
+* pull upvote and reaction state to the page level ([ed9a4f4](https://github.com/uzh-bf/klicker-uzh/commit/ed9a4f478d6b7cb9354535feb177b821209716a7))
+* sorting and refetch on join page ([1d80ad4](https://github.com/uzh-bf/klicker-uzh/commit/1d80ad403a1fa3ee6836d9666dbfa609b6d20d58))
+* undo upvoting ([17babd1](https://github.com/uzh-bf/klicker-uzh/commit/17babd18a523f2dacf3f574d57af6d2d9b01c652))
+
+
+### Other
+
+* consistently poll running session every 5 seconds ([fc85937](https://github.com/uzh-bf/klicker-uzh/commit/fc85937fa7cef39f86644cb568be7fba23e6a195))
+* reduce default join page caching to 10 seconds ([3314eec](https://github.com/uzh-bf/klicker-uzh/commit/3314eec788a81abfd8fc8e96a6ca12d18264de9b))
+* subscription updates for q&a ([f466505](https://github.com/uzh-bf/klicker-uzh/commit/f4665051e9b014b7cc0be24e9718ca64afa546eb))
+
+
+### Enhancements
+
+* add hover and onclick on the entire feedback in q&a ([f21723a](https://github.com/uzh-bf/klicker-uzh/commit/f21723ab39fe257b6be527d0947ce98d05a9d894))
+* hide vote count on student view ([df84d55](https://github.com/uzh-bf/klicker-uzh/commit/df84d55be001c6cb3a1d876bf08595f7400965f2))
+* make feedbacks public by default ([bade382](https://github.com/uzh-bf/klicker-uzh/commit/bade3828f10b1312f912cf89718b7a525d4b547e))
+* reset the session so feedback channel is public by default ([bc85e25](https://github.com/uzh-bf/klicker-uzh/commit/bc85e252282b1eb8cad1057210aac9e2ac5515ad))
+* show resolved by default ([caa5ce9](https://github.com/uzh-bf/klicker-uzh/commit/caa5ce9c5257f8f722957b634a31218d92bd9551))
+
 ## [1.6.0-alpha.5](https://github.com/uzh-bf/klicker-uzh/compare/v1.6.0-alpha.4...v1.6.0-alpha.5) (2021-08-29)
 
 
