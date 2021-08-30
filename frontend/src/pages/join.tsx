@@ -101,8 +101,6 @@ function Join(): React.ReactElement {
 
   const { id: sessionId, settings, activeInstances, feedbacks, expiresAt, timeLimit } = data.joinSession
 
-  const sortedFeedbacks = _sortBy(feedbacks, ['pinned', 'votes', 'createdAt']).reverse()
-
   const onSidebarActiveItemChange =
     (newSidebarActiveItem): any =>
     (): void => {
@@ -141,39 +139,40 @@ function Join(): React.ReactElement {
     try {
       if (settings.isFeedbackChannelPublic) {
         newFeedback({
+          refetchQueries: [{ query: JoinSessionQuery, variables: { shortname } }],
           // optimistically add the feedback to the array already
-          optimisticResponse: {
-            addFeedback: {
-              __typename: 'Session_Feedback',
-              content,
-              // randomly generate an id, will be replaced by server response
-              id: Math.round(Math.random() * -1000000),
-              votes: 0,
-              pinned: false,
-              resolved: false,
-              createdAt: '',
-              resolvedAt: null,
-              responses: [],
-            },
-          },
+          // optimisticResponse: {
+          //   addFeedback: {
+          //     __typename: 'Session_Feedback',
+          //     content,
+          //     // randomly generate an id, will be replaced by server response
+          //     id: Math.round(Math.random() * -1000000),
+          //     votes: 0,
+          //     pinned: false,
+          //     resolved: false,
+          //     createdAt: '',
+          //     resolvedAt: null,
+          //     responses: [],
+          //   },
+          // },
           // update the cache after the mutation has completed
-          update: (store, { data: { addFeedback } }): void => {
-            const query = {
-              query: JoinSessionQuery,
-              variables: { shortname: router.query.shortname },
-            }
+          // update: (store, { data: { addFeedback } }): void => {
+          //   const query = {
+          //     query: JoinSessionQuery,
+          //     variables: { shortname: router.query.shortname },
+          //   }
 
-            // get the data from the store
-            // replace the feedbacks
-            const queryData: any = store.readQuery(query)
-            queryData.joinSession.feedbacks = [...queryData.joinSession.feedbacks, addFeedback]
+          //   // get the data from the store
+          //   // replace the feedbacks
+          //   const queryData: any = store.readQuery(query)
+          //   queryData.joinSession.feedbacks = [...queryData.joinSession.feedbacks, addFeedback]
 
-            // write the updated data to the store
-            store.writeQuery({
-              ...query,
-              data: queryData,
-            })
-          },
+          //   // write the updated data to the store
+          //   store.writeQuery({
+          //     ...query,
+          //     data: queryData,
+          //   })
+          // },
           variables: { content, fp: fingerprint, sessionId },
         })
       } else {
@@ -275,7 +274,7 @@ function Join(): React.ReactElement {
         {settings.isFeedbackChannelActive && (
           <FeedbackArea
             active={sidebarActiveItem === 'feedbackChannel'}
-            feedbacks={sortedFeedbacks}
+            feedbacks={feedbacks}
             handleNewConfusionTS={onNewConfusionTS}
             handleNewFeedback={onNewFeedback}
             handleReactToFeedbackResponse={onReactToFeedbackResponse}

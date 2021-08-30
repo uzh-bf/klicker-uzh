@@ -640,17 +640,16 @@ const joinSession = async ({ shortname, auth }) => {
       }),
     // TODO: ensure that there is no information on reactions sent out
     feedbacks: settings.isFeedbackChannelActive
-      ? feedbacks
-          .filter((feedback) => feedback.published)
-          .map((feedback) => ({
-            ...feedback,
-            responses: feedback.responses.map((response) => ({
-              ...response,
-              positiveReactions: undefined,
-              negativeReactions: undefined,
-            })),
-          }))
-      : null,
+      ? feedbacks.filter((feedback) => feedback.published)
+      : // .map((feedback) => ({
+        //   ...feedback,
+        //   responses: feedback.responses.map((response) => ({
+        //     ...response,
+        //     positiveReactions: undefined,
+        //     negativeReactions: undefined,
+        //   })),
+        // }))
+        null,
   }
 }
 

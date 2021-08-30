@@ -53,8 +53,8 @@ function FeedbackArea({
   useEffect(() => {
     const [resolved, open] = partition((feedback) => feedback.resolved, feedbacks)
     setProcessedFeedbacks({
-      resolved: sortBy((o) => o.votes, resolved as any[]),
-      open: sortBy((o) => o.votes, open as any[]),
+      resolved: sortBy((o) => -o.votes, resolved as any[]),
+      open: sortBy((o) => -o.votes, open as any[]),
     })
   }, [feedbacks])
 
