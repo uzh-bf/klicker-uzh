@@ -179,6 +179,52 @@ async function respondToFeedback({ sessionId, feedbackId, userId, response }) {
   return feedbackId
 }
 
+async function upvoteFeedback({ sessionId, feedbackId, undo }) {
+  // TODO: fingerprinting
+
+  await SessionModel.findOneAndUpdate(
+    {
+      _id: sessionId,
+    },
+    {
+      $inc: {
+        'feedbacks.$[fb].votes': undo ? -1 : 1,
+      },
+    },
+    {
+      arrayFilters: [{ 'fb._id': feedbackId }],
+    }
+  )
+
+  return feedbackId
+}
+
+async function reactToFeedbackResponse({ sessionId, feedbackId, responseId, positive, negative }) {
+  // TODO: fingerprinting
+
+  const increments = {}
+  if (positive) {
+    increments['feedbacks.$[fb].responses.$[res].positiveReactions'] = positive > 0 ? 1 : -1
+  }
+  if (negative) {
+    increments['feedbacks.$[fb].responses.$[res].negativeReactions'] = negative < 0 ? -1 : 1
+  }
+
+  await SessionModel.findOneAndUpdate(
+    {
+      _id: sessionId,
+    },
+    {
+      $inc: increments,
+    },
+    {
+      arrayFilters: [{ 'fb._id': feedbackId }, { 'res._id': responseId }],
+    }
+  )
+
+  return feedbackId
+}
+
 async function deleteFeedbackResponse({ sessionId, feedbackId, userId, responseId }) {
   const session = await getRunningSession(sessionId)
 
@@ -699,4 +745,6 @@ module.exports = {
   respondToFeedback,
   deleteFeedbackResponse,
   publishFeedback,
+  upvoteFeedback,
+  reactToFeedbackResponse,
 }

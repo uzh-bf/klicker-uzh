@@ -14,6 +14,8 @@ import QuestionArea from '../components/sessions/join/QuestionArea'
 import AddConfusionTSMutation from '../graphql/mutations/AddConfusionTSMutation.graphql'
 import AddFeedbackMutation from '../graphql/mutations/AddFeedbackMutation.graphql'
 import AddResponseMutation from '../graphql/mutations/AddResponseMutation.graphql'
+import UpvoteFeedbackMutation from '../graphql/mutations/UpvoteFeedbackMutation.graphql'
+import ReactToFeedbackResponseMutation from '../graphql/mutations/ReactToFeedbackResponseMutation.graphql'
 import JoinSessionQuery from '../graphql/queries/JoinSessionQuery.graphql'
 import UpdatedSessionSubscription from '../graphql/subscriptions/UpdateSessionSubscription.graphql'
 import useLogging from '../lib/hooks/useLogging'
@@ -51,6 +53,8 @@ function Join(): React.ReactElement {
   const [newConfusionTS] = useMutation(AddConfusionTSMutation)
   const [newFeedback] = useMutation(AddFeedbackMutation)
   const [newResponse, { error: responseError }] = useMutation(AddResponseMutation)
+  const [upvoteFeedback] = useMutation(UpvoteFeedbackMutation)
+  const [reactToFeedbackResponse] = useMutation(ReactToFeedbackResponseMutation)
   const { data, loading, error, subscribeToMore } = useQuery(JoinSessionQuery, {
     variables: { shortname: router.query.shortname },
   })
@@ -194,6 +198,22 @@ function Join(): React.ReactElement {
     }
   }
 
+  const onUpvoteFeedback = async ({ feedbackId, undo }) => {
+    try {
+      await upvoteFeedback({ variables: { sessionId, feedbackId, undo } })
+    } catch ({ message }) {
+      console.error(message)
+    }
+  }
+
+  const onReactToFeedbackResponse = async ({ feedbackId, responseId, positive, negative }) => {
+    try {
+      await reactToFeedbackResponse({ variables: { sessionId, feedbackId, responseId, positive, negative } })
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   const title =
     sidebarActiveItem === 'activeQuestion'
       ? intl.formatMessage(messages.activeQuestionTitle)
@@ -253,6 +273,8 @@ function Join(): React.ReactElement {
             feedbacks={sortedFeedbacks}
             handleNewConfusionTS={onNewConfusionTS}
             handleNewFeedback={onNewFeedback}
+            handleReactToFeedbackResponse={onReactToFeedbackResponse}
+            handleUpvoteFeedback={onUpvoteFeedback}
             isConfusionBarometerActive={settings.isConfusionBarometerActive}
             isFeedbackChannelActive={settings.isFeedbackChannelActive}
             sessionId={sessionId}
