@@ -121,6 +121,12 @@ const pinFeedbackMutation = (_, { sessionId, feedbackId, pinState }, { auth }) =
 const publishFeedbackMutation = (_, { sessionId, feedbackId, publishState }, { auth }) =>
   SessionExecService.publishFeedback({ sessionId, feedbackId, publishState, userId: auth.sub })
 
+const upvoteFeedbackMutation = (_, { sessionId, feedbackId, undo }) =>
+  SessionExecService.upvoteFeedback({ sessionId, feedbackId, undo })
+
+const reactToFeedbackResponseMutation = (_, { sessionId, feedbackId, responseId, positive, negative }) =>
+  SessionExecService.reactToFeedbackResponse({ sessionId, feedbackId, responseId, positive, negative })
+
 const resolveFeedbackMutation = (_, { sessionId, feedbackId, resolvedState }, { auth }) =>
   SessionExecService.resolveFeedback({ sessionId, feedbackId, resolvedState, userId: auth.sub })
 
@@ -182,4 +188,6 @@ module.exports = {
   resolveFeedback: resolveFeedbackMutation,
   respondToFeedback: respondToFeedbackMutation,
   deleteFeedbackResponse: deleteFeedbackResponseMutation,
+  upvoteFeedback: upvoteFeedbackMutation,
+  reactToFeedbackResponse: reactToFeedbackResponseMutation,
 }

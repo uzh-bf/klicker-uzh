@@ -1,0 +1,9 @@
+mutation ReactToFeedbackResponse($sessionId: ID!, $feedbackId: ID!, $responseId: ID!, $positive: Int, $negative: Int) {
+  reactToFeedbackResponse(
+    sessionId: $sessionId
+    feedbackId: $feedbackId
+    responseId: $responseId
+    positive: $positive
+    negative: $negative
+  )
+}

@@ -16,6 +16,8 @@ interface Props {
   feedbacks?: any[]
   handleNewConfusionTS: any
   handleNewFeedback: any
+  handleUpvoteFeedback: any
+  handleReactToFeedbackResponse: any
   shortname: string
   sessionId: string
 }
@@ -33,6 +35,8 @@ function FeedbackArea({
   feedbacks,
   handleNewConfusionTS,
   handleNewFeedback,
+  handleUpvoteFeedback,
+  handleReactToFeedbackResponse,
   shortname,
   sessionId,
 }: Props): React.ReactElement {
@@ -118,11 +122,17 @@ function FeedbackArea({
     handleNewFeedback({ content: feedbackInputValue })
   }
 
-  const handleUpvoteFeedback = (feedbackId: string) => {
+  const onUpvoteFeedback = async (feedbackId: string) => {
+    await handleUpvoteFeedback({ feedbackId, undo: !!upvotedFeedbacks[feedbackId] })
     setUpvotedFeedbacks((prev) => ({ ...prev, [feedbackId]: !prev[feedbackId] }))
   }
 
-  const handlePositiveResponseReaction = (responseId: string, feedbackId: string) => {
+  const handlePositiveResponseReaction = async (responseId: string, feedbackId: string) => {
+    if (reactions[responseId] < 0) {
+      await handleReactToFeedbackResponse({ feedbackId, responseId, positive: 1, negative: -1 })
+    } else {
+      await handleReactToFeedbackResponse({ feedbackId, responseId, positive: 1, negative: 0 })
+    }
     setReactions((prev) => {
       return {
         ...prev,
@@ -131,7 +141,12 @@ function FeedbackArea({
     })
   }
 
-  const handleNegativeResponseReaction = (responseId: string, feedbackId: string) => {
+  const handleNegativeResponseReaction = async (responseId: string, feedbackId: string) => {
+    if (reactions[responseId] > 0) {
+      await handleReactToFeedbackResponse({ feedbackId, responseId, positive: -1, negative: 1 })
+    } else {
+      await handleReactToFeedbackResponse({ feedbackId, responseId, positive: 0, negative: 1 })
+    }
     setReactions((prev) => {
       return {
         ...prev,
@@ -193,7 +208,7 @@ function FeedbackArea({
                         onPositiveResponseReaction={(responseId: string) =>
                           handlePositiveResponseReaction(responseId, id)
                         }
-                        onUpvoteFeedback={() => handleUpvoteFeedback(id)}
+                        onUpvoteFeedback={() => onUpvoteFeedback(id)}
                       />
                     </div>
                   )

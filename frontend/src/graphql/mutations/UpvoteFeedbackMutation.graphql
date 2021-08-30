@@ -1,0 +1,3 @@
+mutation UpvoteFeedback($sessionId: ID!, $feedbackId: ID!) {
+  upvoteFeedback(sessionId: $sessionId, feedbackId: $feedbackId)
+}
