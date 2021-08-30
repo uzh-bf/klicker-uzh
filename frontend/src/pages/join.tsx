@@ -149,6 +149,11 @@ function Join(): React.ReactElement {
               // randomly generate an id, will be replaced by server response
               id: Math.round(Math.random() * -1000000),
               votes: 0,
+              pinned: false,
+              resolved: false,
+              createdAt: '',
+              resolvedAt: null,
+              responses: [],
             },
           },
           // update the cache after the mutation has completed
