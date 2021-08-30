@@ -14,6 +14,8 @@ query JoinSession($shortname: String!) {
     }
     activeInstances {
       id
+      timeLimit
+      expiresAt
       execution
       questionId
       title
