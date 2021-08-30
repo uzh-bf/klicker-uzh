@@ -4,7 +4,6 @@ import dayjs from 'dayjs'
 import { FormattedMessage } from 'react-intl'
 import { Form, Button, TextArea } from 'semantic-ui-react'
 import { partition, sortBy } from 'ramda'
-import useStickyState from '../../../lib/hooks/useStickyState'
 
 import ConfusionSlider from '../../interaction/confusion/ConfusionSlider'
 import PublicFeedback from './PublicFeedback'
@@ -20,6 +19,10 @@ interface Props {
   handleReactToFeedbackResponse: any
   shortname: string
   sessionId: string
+  upvotedFeedbacks: any
+  setUpvotedFeedbacks: any
+  reactions: any
+  setReactions: any
 }
 
 const defaultProps = {
@@ -39,6 +42,10 @@ function FeedbackArea({
   handleReactToFeedbackResponse,
   shortname,
   sessionId,
+  upvotedFeedbacks,
+  setUpvotedFeedbacks,
+  reactions,
+  setReactions,
 }: Props): React.ReactElement {
   // const [confusionDifficulty, setConfusionDifficulty] = useState()
   // const [confusionSpeed, setConfusionSpeed] = useState()
@@ -47,8 +54,6 @@ function FeedbackArea({
     open: [],
     resolved: [],
   })
-  const [upvotedFeedbacks, setUpvotedFeedbacks] = useStickyState({}, 'feedbackUpvotes')
-  const [reactions, setReactions] = useStickyState({}, 'responseReactions')
 
   useEffect(() => {
     const [resolved, open] = partition((feedback) => feedback.resolved, feedbacks)

@@ -6,6 +6,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl'
 import { Button, Message } from 'semantic-ui-react'
 import _sortBy from 'lodash/sortBy'
+import useStickyState from '../lib/hooks/useStickyState'
 
 import { withApollo } from '../lib/apollo'
 import StudentLayout from '../components/layouts/StudentLayout'
@@ -50,6 +51,9 @@ function Join(): React.ReactElement {
   const [sidebarActiveItem, setSidebarActiveItem] = useState('activeQuestion')
   const [extraMessage, setExtraMessage] = useState(null as string)
 
+  const [upvotedFeedbacks, setUpvotedFeedbacks] = useStickyState({}, 'feedbackUpvotes')
+  const [reactions, setReactions] = useStickyState({}, 'responseReactions')
+
   const [newConfusionTS] = useMutation(AddConfusionTSMutation)
   const [newFeedback] = useMutation(AddFeedbackMutation)
   const [newResponse, { error: responseError }] = useMutation(AddResponseMutation)
@@ -57,6 +61,7 @@ function Join(): React.ReactElement {
   const [reactToFeedbackResponse] = useMutation(ReactToFeedbackResponseMutation)
   const { data, loading, error, subscribeToMore } = useQuery(JoinSessionQuery, {
     variables: { shortname: router.query.shortname },
+    pollInterval: 10000,
   })
 
   const { shortname }: { shortname?: string } = router.query
@@ -239,7 +244,6 @@ function Join(): React.ReactElement {
           document: UpdatedSessionSubscription,
           updateQuery: (prev, { subscriptionData }): any => {
             if (!subscriptionData.data) return prev
-            console.log(subscriptionData)
             return { joinSession: subscriptionData.data.sessionUpdated }
           },
           variables: { sessionId },
@@ -281,8 +285,12 @@ function Join(): React.ReactElement {
             handleUpvoteFeedback={onUpvoteFeedback}
             isConfusionBarometerActive={settings.isConfusionBarometerActive}
             isFeedbackChannelActive={settings.isFeedbackChannelActive}
+            reactions={reactions}
             sessionId={sessionId}
+            setReactions={setReactions}
+            setUpvotedFeedbacks={setUpvotedFeedbacks}
             shortname={shortname}
+            upvotedFeedbacks={upvotedFeedbacks}
           />
         )}
       </div>
