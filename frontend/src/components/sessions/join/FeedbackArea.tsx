@@ -62,7 +62,7 @@ function FeedbackArea({
     setProcessedFeedbacks((prev) => ({
       open: prev.open.map((feedback) => ({
         ...feedback,
-        upvoted: !!upvotedFeedbacks[feedback.id],
+        upvoted: upvotedFeedbacks && !!upvotedFeedbacks[feedback.id],
         responses: feedback.responses.map((response) => ({
           ...response,
           positive: reactions[response.id] > 0,
@@ -71,7 +71,7 @@ function FeedbackArea({
       })),
       resolved: prev.resolved.map((feedback) => ({
         ...feedback,
-        upvoted: !!upvotedFeedbacks[feedback.id],
+        upvoted: upvotedFeedbacks && !!upvotedFeedbacks[feedback.id],
         responses: feedback.responses.map((response) => ({
           ...response,
           positive: reactions[response.id] > 0,
@@ -79,7 +79,7 @@ function FeedbackArea({
         })),
       })),
     }))
-  }, [upvotedFeedbacks, reactions])
+  }, [feedbacks, upvotedFeedbacks, reactions])
 
   // useEffect((): void => {
   //   try {
