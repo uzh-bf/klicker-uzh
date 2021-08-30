@@ -723,6 +723,7 @@ const sessionAction = async ({ sessionId, userId }, actionType) => {
         session.activeStep = 0
         session.activeInstances = []
         session.settings.isFeedbackChannelActive = false
+        session.settings.isFeedbackChannelPublic = true
         session.settings.isConfusionBarometerActive = false
         session.confusionTS = []
         session.feedbacks = []
