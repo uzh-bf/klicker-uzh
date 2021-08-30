@@ -59,7 +59,7 @@ function FeedbackChannel({
   }, [])
 
   const [searchString, setSearchString] = useState('')
-  const [showResolved, setShowResolved] = useState(false)
+  const [showResolved, setShowResolved] = useState(true)
   const [showOpen, setShowOpen] = useState(true)
   const [showUnpinned, setShowUnpinned] = useState(true)
   const [sortBy, setSortBy] = useState('votes')
